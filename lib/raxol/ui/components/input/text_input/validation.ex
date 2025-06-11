@@ -36,9 +36,6 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
     end
   end
 
-  @doc """
-  Checks if adding text would exceed the maximum length.
-  """
   def would_exceed_max_length?(state, text) when is_binary(text) do
     case state.max_length do
       nil -> false

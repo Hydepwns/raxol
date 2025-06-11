@@ -43,8 +43,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
   require Raxol.Core.Runtime.Log
 
   @default_renderer Raxol.Renderer
-  # Default to ~60fps for throttling
-  @min_render_interval_ms 16
   # ~60fps for animation ticks
   @animation_tick_interval_ms 16
 
@@ -55,7 +53,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
               previous_composed_tree: nil,
               previous_painted_output: nil,
               renderer_module: nil,
-              min_render_interval_ms: @min_render_interval_ms,
               animation_frame_requests: :queue.new(),
               render_scheduled_for_next_frame: false,
               last_render_time: nil,
@@ -232,8 +229,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
       current_tree: initial_tree,
       previous_tree: nil,
       renderer_module: renderer_module,
-      min_render_interval_ms:
-        Keyword.get(opts, :min_render_interval_ms, @min_render_interval_ms),
       animation_frame_requests: :queue.new(),
       # Ensure this is initialized
       animation_ticker_ref: nil
@@ -305,10 +300,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   @impl true
   def handle_cast({:request_animation_frame, pid, ref}, state) do
-    # TODO: Integrate with a real animation frame mechanism. Currently sends back immediately.
-    #       This should ideally queue the request and a separate :animation_tick process it.
-    # Send.send(pid, {:animation_frame, ref})
-    # {:noreply, state}
     Raxol.Core.Runtime.Log.debug(
       "Pipeline: Received request_animation_frame from #{inspect(pid)} with ref #{inspect(ref)}"
     )
@@ -320,22 +311,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   end
 
   @impl true
-  def handle_call({:request_animation_frame, pid, ref}, from, state) do
-    Raxol.Core.Runtime.Log.debug(
-      "Pipeline: Received request_animation_frame call from #{inspect(pid)}, ref #{inspect(ref)}, from #{inspect(from)}"
-    )
-
-    updated_requests =
-      :queue.in({pid, ref, from}, state.animation_frame_requests)
-
-    new_state = %{state | animation_frame_requests: updated_requests}
-    final_state = ensure_animation_ticker_running(new_state)
-    # Reply will be sent by :animation_tick
-    {:noreply, final_state}
-  end
-
-  @impl true
-  def handle_cast(:schedule_render_on_next_frame, state) do
+  def handle_cast({:schedule_render_on_next_frame, _data}, state) do
     # TODO: Ensure this is only processed on the next actual animation frame tick.
     #       Currently, if no debouncing is active, it might render immediately or schedule soon.
     if state.current_tree do
@@ -355,6 +331,21 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
       {:noreply, state}
     end
+  end
+
+  @impl true
+  def handle_call({:request_animation_frame, pid, ref}, from, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "Pipeline: Received request_animation_frame call from #{inspect(pid)}, ref #{inspect(ref)}, from #{inspect(from)}"
+    )
+
+    updated_requests =
+      :queue.in({pid, ref, from}, state.animation_frame_requests)
+
+    new_state = %{state | animation_frame_requests: updated_requests}
+    final_state = ensure_animation_ticker_running(new_state)
+    # Reply will be sent by :animation_tick
+    {:noreply, final_state}
   end
 
   @impl true
@@ -466,9 +457,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
     time_since_last_render =
       if state.last_render_time,
         do: now - state.last_render_time,
-        else: @min_render_interval_ms + 1
+        else: @animation_tick_interval_ms + 1
 
-    if time_since_last_render >= state.min_render_interval_ms do
+    if time_since_last_render >= @animation_tick_interval_ms do
       Raxol.Core.Runtime.Log.debug("Pipeline: Executing render immediately.")
 
       if state.render_timer_ref,
@@ -492,7 +483,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
           previous_painted_output: painted_data
       }
     else
-      delay = state.min_render_interval_ms - time_since_last_render
+      delay = @animation_tick_interval_ms - time_since_last_render
       Raxol.Core.Runtime.Log.debug("Pipeline: Debouncing render. Will render in #{delay}ms.")
 
       # Cancel previous timer if it exists, to ensure only the latest update is rendered.
@@ -517,12 +508,12 @@ defmodule Raxol.UI.Rendering.Pipeline do
          previous_composed_tree,
          previous_painted_output
        ) do
-    if new_tree_for_reference or diff_result == {:replace, nil} or
-         elem(diff_result, 0) == :replace do
+    if is_map(new_tree_for_reference) or diff_result == {:replace, nil} or
+         (is_tuple(diff_result) and elem(diff_result, 0) == :replace) do
       layout_data = Layouter.layout_tree(diff_result, new_tree_for_reference)
 
-      if layout_data ||
-           (is_tuple(diff_result) && elem(diff_result, 0) == :replace &&
+      if is_map(layout_data) or
+           (is_tuple(diff_result) and elem(diff_result, 0) == :replace and
               elem(diff_result, 1) == nil) do
         composed_data =
           Composer.compose_render_tree(
@@ -531,7 +522,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
             previous_composed_tree
           )
 
-        if composed_data || (is_map(layout_data) && map_size(layout_data) == 0) ||
+        if is_map(composed_data) or (is_map(layout_data) and map_size(layout_data) == 0) or
              layout_data == nil do
           painted_data =
             Painter.paint(

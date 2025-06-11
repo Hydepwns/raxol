@@ -121,9 +121,6 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:ok, new_state, []}
   end
 
-  @doc """
-  Updates the Checkbox component state in response to unknown messages (ignored).
-  """
   @impl true
   @spec update(term(), t()) :: {:ok, t(), list()}
   def update(_msg, state) do

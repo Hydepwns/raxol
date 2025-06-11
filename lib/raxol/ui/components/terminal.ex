@@ -83,7 +83,6 @@ defmodule Raxol.UI.Components.Terminal do
   end
 
   # Catch-all handle_event
-  @doc "Handles other events for the Terminal component."
   @spec handle_event(map(), map(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do

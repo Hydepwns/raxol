@@ -244,13 +244,12 @@ defmodule Raxol.UI.Components.Input.TextField do
   end
 
   defp handle_keypress(state, :home, _modifiers, _context) do
-    width = Map.get(state, :width, 20)
     {:noreply, %{state | cursor_pos: 0, scroll_offset: 0}}
   end
 
   defp handle_keypress(state, :end, _modifiers, _context) do
-    width = Map.get(state, :width, 20)
     new_cursor_pos = String.length(state.value)
+    width = Map.get(state, :width, 20)
 
     new_scroll_offset =
       adjust_scroll_offset(

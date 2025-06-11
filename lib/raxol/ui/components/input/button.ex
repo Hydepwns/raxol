@@ -157,7 +157,8 @@ defmodule Raxol.UI.Components.Input.Button do
     }
   end
 
-  @spec handle_event(t(), any(), map()) :: {:update, t(), list()} | {:handled, t()} | :passthrough
+  @spec handle_event(t(), any(), map()) ::
+          {:update, t(), list()} | {:handled, t()} | :passthrough
   @doc """
   Handles input events for the button component.
 
@@ -215,7 +216,7 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   # Catch-all for unhandled events - Moved to the end
-  def handle_event(button, %Raxol.Core.Events.Event{} = _event, _context) do
+  def handle_event(_button, %Raxol.Core.Events.Event{} = _event, _context) do
     # {:noreply, button}
     # Indicate event was not handled by this component
     :passthrough

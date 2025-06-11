@@ -285,7 +285,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     handle_event(Map.from_struct(event), context, state)
   end
 
-  def handle_event(%{type: :key, data: %{key: key}}, context, state) do
+  def handle_event(%{type: :key, data: %{key: key}}, _context, state) do
     state = ensure_state(state)
 
     cond do
@@ -337,7 +337,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
       key in ["Backspace", :backspace] ->
         if state.is_search_focused and state.search_buffer != "" do
-          new_buffer = String.slice(state.search_buffer, 0..-2)
+          new_buffer = String.slice(state.search_buffer, 0, String.length(state.search_buffer) - 1)
           {new_state, _} = update({:search, new_buffer}, state)
           {new_state, nil}
         else
@@ -355,13 +355,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
     end
   end
 
-  def handle_event(%{type: :focus}, context, state) do
+  def handle_event(%{type: :focus}, _context, state) do
     state = ensure_state(state)
     {new_state, _} = update({:set_focus, true}, state)
     {new_state, nil}
   end
 
-  def handle_event(%{type: :blur}, context, state) do
+  def handle_event(%{type: :blur}, _context, state) do
     state = ensure_state(state)
     {new_state, _} = update({:set_focus, false}, state)
     {new_state, nil}
@@ -369,7 +369,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def handle_event(
         %{type: :resize, data: %{width: _w, height: h}},
-        context,
+        _context,
         state
       ) do
     state = ensure_state(state)
@@ -377,7 +377,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     {Navigation.update_scroll_position(new_state), nil}
   end
 
-  def handle_event(%{type: :mouse, data: %{x: _x, y: y}}, context, state) do
+  def handle_event(%{type: :mouse, data: %{x: _x, y: y}}, _context, state) do
     state = ensure_state(state)
 
     cond do
@@ -474,97 +474,8 @@ defmodule Raxol.UI.Components.Input.SelectList do
     end)
   end
 
-  defp handle_key_up(state) do
-    if state.focused_index > 0 do
-      new_index = state.focused_index - 1
-      Navigation.update_focus_and_scroll(state, new_index)
-    else
-      state
-    end
-  end
-
-  defp handle_key_down(state) do
-    options = state.filtered_options || state.options
-
-    if state.focused_index < length(options) - 1 do
-      new_index = state.focused_index + 1
-      Navigation.update_focus_and_scroll(state, new_index)
-    else
-      state
-    end
-  end
-
-  defp handle_enter(state) do
-    if state.focused_index >= 0 do
-      result = Selection.update_selection_state(state, state.focused_index)
-
-      case result do
-        {new_state, _} -> new_state
-        new_state when is_map(new_state) -> new_state
-        _ -> state
-      end
-    else
-      state
-    end
-  end
-
-  defp handle_backspace(state) do
-    if state.is_search_focused and state.search_buffer != "" do
-      new_buffer = String.slice(state.search_buffer, 0..-2)
-      {new_state, _} = update({:search, new_buffer}, state)
-      new_state
-    else
-      state
-    end
-  end
-
-  defp handle_focus_gain(state) do
-    {new_state, _} = update({:set_focus, true}, state)
-    new_state
-  end
-
-  defp handle_focus_lose(state) do
-    {new_state, _} = update({:set_focus, false}, state)
-    new_state
-  end
-
-  defp handle_resize(state) do
-    # Recalculate visible height and update scroll position if needed
-    if state.visible_height do
-      result = Navigation.update_scroll_position(state)
-
-      case result do
-        new_state when is_map(new_state) -> new_state
-        _ -> state
-      end
-    else
-      state
-    end
-  end
-
-  defp handle_mouse_click(y, state) do
-    # Calculate which option was clicked based on y position
-    # and update focus/selection accordingly
-    if state.visible_height do
-      index = Navigation.calculate_clicked_index(y, state)
-
-      if index >= 0 and index < length(state.options) do
-        result = Selection.update_selection_state(state, index)
-
-        case result do
-          {new_state, _} -> new_state
-          new_state when is_map(new_state) -> new_state
-          _ -> state
-        end
-      else
-        state
-      end
-    else
-      state
-    end
-  end
-
   defp ensure_state(state) do
+    # If state is an empty map or missing required fields, initialize a default state
     cond do
       is_map(state) and map_size(state) == 0 -> init(%{options: []})
       not is_map(state) -> init(%{options: []})

@@ -11,6 +11,7 @@ defmodule Raxol.UI.Theming.Selector do
 
   use Raxol.UI.Components.Base.Component
 
+  alias Raxol.UI.Theming.Theme
   # alias Raxol.UI.Components.Input.SelectList
   # alias Raxol.Core.Events
 
@@ -150,11 +151,11 @@ defmodule Raxol.UI.Theming.Selector do
       Map.get(current_theme_struct.styles, :selector) ||
         %{
           # Fallback colors if :selector style is not defined in the theme
-          fg: Theme.get_color(:foreground) || :white,
-          bg: Theme.get_color(:background) || :black,
-          border: Theme.get_color(:primary) || :blue,
-          highlight: Theme.get_color(:secondary) || :cyan,
-          title: Theme.get_color(:info) || :yellow
+          fg: Theme.get_color(current_theme_struct, :foreground) || :white,
+          bg: Theme.get_color(current_theme_struct, :background) || :black,
+          border: Theme.get_color(current_theme_struct, :primary) || :blue,
+          highlight: Theme.get_color(current_theme_struct, :secondary) || :cyan,
+          title: Theme.get_color(current_theme_struct, :info) || :yellow
         }
 
     if state.expanded do

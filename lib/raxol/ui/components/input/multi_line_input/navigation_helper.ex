@@ -9,7 +9,18 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   require Raxol.Core.Runtime.Log
 
   @doc """
-  Moves the cursor to the specified {row, col} position, clamping to document bounds and clearing selection.
+  Moves the cursor.
+
+  It can take a `{row, col}` tuple to move to a specific position, or an atom to move directionally.
+
+  ## Directions
+  - `{row, col}`: Moves to the specified position, clamped to document bounds.
+  - `:left`: Moves one position to the left, or to the end of the previous line.
+  - `:right`: Moves one position to the right, or to the start of the next line.
+  - `:up`: Moves up by one line.
+  - `:down`: Moves down by one line.
+  - `:word_left`: Moves one word to the left.
+  - `:word_right`: Moves one word to the right.
   """
   def move_cursor(state, {target_row, target_col}) do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
@@ -31,9 +42,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   end
 
   # --- Add heads for directional movement ---
-  @doc """
-  Moves the cursor one position to the left, or to the end of the previous line if at the start of a line.
-  """
   def move_cursor(state, :left) do
     {row, col} = state.cursor_pos
 
@@ -54,9 +62,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     end
   end
 
-  @doc """
-  Moves the cursor one position to the right, or to the start of the next line if at the end of a line.
-  """
   def move_cursor(state, :right) do
     {row, col} = state.cursor_pos
     lines = state.lines
@@ -78,9 +83,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     end
   end
 
-  @doc """
-  Moves the cursor up by one line, keeping the same column if possible.
-  """
   def move_cursor(state, :up) do
     {row, col} = state.cursor_pos
     new_row = max(0, row - 1)
@@ -89,9 +91,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     move_cursor(state, {new_row, new_col})
   end
 
-  @doc """
-  Moves the cursor down by one line, keeping the same column if possible.
-  """
   def move_cursor(state, :down) do
     {row, col} = state.cursor_pos
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
@@ -102,16 +101,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     move_cursor(state, {new_row, new_col})
   end
 
-  @doc """
-  Moves the cursor one word to the left.
-  """
   def move_cursor(state, :word_left) do
     move_cursor_word_left(state)
   end
 
-  @doc """
-  Moves the cursor one word to the right.
-  """
   def move_cursor(state, :word_right) do
     move_cursor_word_right(state)
   end

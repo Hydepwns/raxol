@@ -131,13 +131,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
               ]
             else
               # Cursor after selection
-              before_selection = safe_slice.(line_content, 0, sel_end_col)
-              after_selection = safe_slice.(line_content, sel_end_col, safe_cursor_col - sel_end_col)
+              after_sel_before_cursor = safe_slice.(line_content, sel_end_col, safe_cursor_col - sel_end_col)
               cursor_char = safe_slice.(line_content, safe_cursor_col, 1)
               after_cursor = safe_slice.(line_content, safe_cursor_col + 1, line_len - safe_cursor_col - 1)
               [
-                {before_selection, text_style},
-                {after_selection, text_style},
+                {before_sel, text_style},
+                {selection, selection_style},
+                {after_sel_before_cursor, text_style},
                 {cursor_char, cursor_style},
                 {after_cursor, text_style}
               ]
