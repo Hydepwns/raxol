@@ -14,7 +14,11 @@ defmodule Raxol.Core.Runtime.Plugins.State do
     :load_order,
     :command_registry_table,
     :plugin_config,
-    :initialized
+    :initialized,
+    :plugins_dir,
+    :file_watcher_pid,
+    :file_watching_enabled?,
+    :file_event_timer
   ]
 
   @type t :: %__MODULE__{
@@ -28,6 +32,10 @@ defmodule Raxol.Core.Runtime.Plugins.State do
           load_order: [String.t()],
           command_registry_table: map(),
           plugin_config: %{String.t() => map()},
-          initialized: boolean()
+          initialized: boolean(),
+          plugins_dir: String.t() | nil,
+          file_watcher_pid: pid() | nil,
+          file_watching_enabled?: boolean(),
+          file_event_timer: reference() | nil
         }
 end

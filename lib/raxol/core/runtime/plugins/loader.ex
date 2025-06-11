@@ -35,6 +35,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # --- Loader.Behaviour Callbacks ---
 
+  @impl true
   def discover_plugins(plugin_dirs) when is_list(plugin_dirs) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Discovering plugins in: #{inspect(plugin_dirs)}"
@@ -98,7 +99,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       {:error, :discovery_failed}
   end
 
-  @impl Behaviour
+  @impl true
   def load_plugin_metadata(module_atom) when is_atom(module_atom) do
     # For now, we assume metadata is intrinsically part of the module or accessed via it.
     # The primary goal here is to ensure the module providing metadata is "loaded" or accessible.
@@ -312,7 +313,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl Behaviour
+  @impl true
   def load_plugin_module(module_atom) when is_atom(module_atom) do
     if Code.ensure_loaded?(module_atom) do
       Raxol.Core.Runtime.Log.debug(
@@ -566,7 +567,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl Behaviour
+  @impl true
   def behaviour_implemented?(module, behaviour)
       when is_atom(module) and is_atom(behaviour) do
     case Code.ensure_loaded(module) do
@@ -583,7 +584,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl Behaviour
+  @impl true
   def initialize_plugin(module, config) when is_atom(module) do
     try do
       case module.init(config) do
