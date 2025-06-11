@@ -1,0 +1,375 @@
+defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
+  @moduledoc """
+  Unified plugin system for the Raxol terminal emulator.
+  Handles themes, scripting, and extensions.
+  """
+
+  use GenServer
+  require Logger
+
+  # Types
+  @type plugin_id :: String.t()
+  @type plugin_type :: :theme | :script | :extension
+  @type plugin_state :: %{
+    id: plugin_id(),
+    type: plugin_type(),
+    name: String.t(),
+    version: String.t(),
+    description: String.t(),
+    author: String.t(),
+    dependencies: [String.t()],
+    config: map(),
+    status: :active | :inactive | :error,
+    error: String.t() | nil
+  }
+
+  # Client API
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Loads a plugin from a file or directory.
+  """
+  def load_plugin(path, type, opts \\ []) do
+    GenServer.call(__MODULE__, {:load_plugin, path, type, opts})
+  end
+
+  @doc """
+  Unloads a plugin by ID.
+  """
+  def unload_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
+  end
+
+  @doc """
+  Gets the state of a plugin.
+  """
+  def get_plugin_state(plugin_id) do
+    GenServer.call(__MODULE__, {:get_plugin_state, plugin_id})
+  end
+
+  @doc """
+  Gets all loaded plugins.
+  """
+  def get_plugins(opts \\ []) do
+    GenServer.call(__MODULE__, {:get_plugins, opts})
+  end
+
+  @doc """
+  Updates a plugin's configuration.
+  """
+  def update_plugin_config(plugin_id, config) do
+    GenServer.call(__MODULE__, {:update_plugin_config, plugin_id, config})
+  end
+
+  @doc """
+  Executes a plugin function.
+  """
+  def execute_plugin_function(plugin_id, function, args \\ []) do
+    GenServer.call(__MODULE__, {:execute_plugin_function, plugin_id, function, args})
+  end
+
+  @doc """
+  Reloads a plugin.
+  """
+  def reload_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:reload_plugin, plugin_id})
+  end
+
+  # Server Callbacks
+  @impl true
+  def init(opts) do
+    state = %{
+      plugins: %{},
+      plugin_paths: Map.get(opts, :plugin_paths, []),
+      auto_load: Map.get(opts, :auto_load, true),
+      plugin_config: Map.get(opts, :plugin_config, %{})
+    }
+
+    if state.auto_load do
+      load_plugins_from_paths(state.plugin_paths)
+    end
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:load_plugin, path, type, opts}, _from, state) do
+    case do_load_plugin(path, type, opts, state) do
+      {:ok, plugin_id, plugin_state} ->
+        new_state = put_in(state.plugins[plugin_id], plugin_state)
+        {:reply, {:ok, plugin_id}, new_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:unload_plugin, plugin_id}, _from, state) do
+    case do_unload_plugin(plugin_id, state) do
+      {:ok, new_state} ->
+        {:reply, :ok, new_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:get_plugin_state, plugin_id}, _from, state) do
+    case Map.get(state.plugins, plugin_id) do
+      nil -> {:reply, {:error, :plugin_not_found}, state}
+      plugin_state -> {:reply, {:ok, plugin_state}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:get_plugins, opts}, _from, state) do
+    plugins = filter_plugins(state.plugins, opts)
+    {:reply, {:ok, plugins}, state}
+  end
+
+  @impl true
+  def handle_call({:update_plugin_config, plugin_id, config}, _from, state) do
+    case do_update_plugin_config(plugin_id, config, state) do
+      {:ok, new_state} ->
+        {:reply, :ok, new_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:execute_plugin_function, plugin_id, function, args}, _from, state) do
+    case do_execute_plugin_function(plugin_id, function, args, state) do
+      {:ok, result} ->
+        {:reply, {:ok, result}, state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:reload_plugin, plugin_id}, _from, state) do
+    case do_reload_plugin(plugin_id, state) do
+      {:ok, new_state} ->
+        {:reply, :ok, new_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  # Private Functions
+  defp do_load_plugin(path, type, opts, state) do
+    with {:ok, plugin_id} <- generate_plugin_id(path),
+         {:ok, plugin_state} <- load_plugin_state(path, type, opts),
+         :ok <- validate_plugin(plugin_state),
+         :ok <- check_dependencies(plugin_state, state.plugins) do
+      {:ok, plugin_id, plugin_state}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp do_unload_plugin(plugin_id, state) do
+    case Map.get(state.plugins, plugin_id) do
+      nil ->
+        {:error, :plugin_not_found}
+      plugin_state ->
+        case cleanup_plugin(plugin_state) do
+          :ok ->
+            new_state = update_in(state.plugins, &Map.delete(&1, plugin_id))
+            {:ok, new_state}
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
+  defp do_update_plugin_config(plugin_id, config, state) do
+    case Map.get(state.plugins, plugin_id) do
+      nil ->
+        {:error, :plugin_not_found}
+      plugin_state ->
+        case validate_plugin_config(config) do
+          :ok ->
+            new_plugin_state = put_in(plugin_state.config, config)
+            new_state = put_in(state.plugins[plugin_id], new_plugin_state)
+            {:ok, new_state}
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
+  defp do_execute_plugin_function(plugin_id, function, args, state) do
+    case Map.get(state.plugins, plugin_id) do
+      nil ->
+        {:error, :plugin_not_found}
+      plugin_state ->
+        case plugin_state.status do
+          :active ->
+            execute_function(plugin_state, function, args)
+          :inactive ->
+            {:error, :plugin_inactive}
+          :error ->
+            {:error, :plugin_error}
+        end
+    end
+  end
+
+  defp do_reload_plugin(plugin_id, state) do
+    case Map.get(state.plugins, plugin_id) do
+      nil ->
+        {:error, :plugin_not_found}
+      plugin_state ->
+        with :ok <- cleanup_plugin(plugin_state),
+             {:ok, new_plugin_state} <- load_plugin_state(plugin_state.path, plugin_state.type, plugin_state.config),
+             :ok <- validate_plugin(new_plugin_state),
+             :ok <- check_dependencies(new_plugin_state, state.plugins) do
+          new_state = put_in(state.plugins[plugin_id], new_plugin_state)
+          {:ok, new_state}
+        else
+          {:error, reason} -> {:error, reason}
+        end
+    end
+  end
+
+  defp generate_plugin_id(path) do
+    {:ok, :crypto.hash(:sha256, path) |> Base.encode16()}
+  end
+
+  defp load_plugin_state(path, type, opts) do
+    case type do
+      :theme -> load_theme_plugin(path, opts)
+      :script -> load_script_plugin(path, opts)
+      :extension -> load_extension_plugin(path, opts)
+      _ -> {:error, :invalid_plugin_type}
+    end
+  end
+
+  defp validate_plugin(plugin_state) do
+    required_fields = [:id, :type, :name, :version, :description, :author]
+    case Enum.all?(required_fields, &Map.has_key?(plugin_state, &1)) do
+      true -> :ok
+      false -> {:error, :invalid_plugin_format}
+    end
+  end
+
+  defp check_dependencies(plugin_state, loaded_plugins) do
+    case Enum.all?(plugin_state.dependencies, &Map.has_key?(loaded_plugins, &1)) do
+      true -> :ok
+      false -> {:error, :missing_dependencies}
+    end
+  end
+
+  defp cleanup_plugin(plugin_state) do
+    case plugin_state.type do
+      :theme -> cleanup_theme_plugin(plugin_state)
+      :script -> cleanup_script_plugin(plugin_state)
+      :extension -> cleanup_extension_plugin(plugin_state)
+    end
+  end
+
+  defp validate_plugin_config(config) do
+    case is_map(config) do
+      true -> :ok
+      false -> {:error, :invalid_config_format}
+    end
+  end
+
+  defp execute_function(plugin_state, function, args) do
+    case plugin_state.type do
+      :theme -> execute_theme_function(plugin_state, function, args)
+      :script -> execute_script_function(plugin_state, function, args)
+      :extension -> execute_extension_function(plugin_state, function, args)
+    end
+  end
+
+  defp filter_plugins(plugins, opts) do
+    plugins
+    |> Enum.filter(fn {_id, plugin} ->
+      Enum.all?(opts, fn
+        {:type, type} -> plugin.type == type
+        {:status, status} -> plugin.status == status
+        _ -> true
+      end)
+    end)
+    |> Map.new()
+  end
+
+  defp load_plugins_from_paths(paths) do
+    Enum.each(paths, fn path ->
+      case File.ls(path) do
+        {:ok, files} ->
+          Enum.each(files, fn file ->
+            full_path = Path.join(path, file)
+            case File.dir?(full_path) do
+              true -> load_plugin_from_directory(full_path)
+              false -> load_plugin_from_file(full_path)
+            end
+          end)
+        {:error, reason} ->
+          Logger.error("Failed to list plugin directory #{path}: #{reason}")
+      end
+    end)
+  end
+
+  defp load_plugin_from_directory(path) do
+    # Implementation for loading plugin from directory
+    :ok
+  end
+
+  defp load_plugin_from_file(path) do
+    # Implementation for loading plugin from file
+    :ok
+  end
+
+  # Theme Plugin Functions
+  defp load_theme_plugin(path, opts) do
+    # Implementation for loading theme plugin
+    {:ok, %{}}
+  end
+
+  defp cleanup_theme_plugin(plugin_state) do
+    # Implementation for cleaning up theme plugin
+    :ok
+  end
+
+  defp execute_theme_function(plugin_state, function, args) do
+    # Implementation for executing theme function
+    {:ok, %{}}
+  end
+
+  # Script Plugin Functions
+  defp load_script_plugin(path, opts) do
+    # Implementation for loading script plugin
+    {:ok, %{}}
+  end
+
+  defp cleanup_script_plugin(plugin_state) do
+    # Implementation for cleaning up script plugin
+    :ok
+  end
+
+  defp execute_script_function(plugin_state, function, args) do
+    # Implementation for executing script function
+    {:ok, %{}}
+  end
+
+  # Extension Plugin Functions
+  defp load_extension_plugin(path, opts) do
+    # Implementation for loading extension plugin
+    {:ok, %{}}
+  end
+
+  defp cleanup_extension_plugin(plugin_state) do
+    # Implementation for cleaning up extension plugin
+    :ok
+  end
+
+  defp execute_extension_function(plugin_state, function, args) do
+    # Implementation for executing extension function
+    {:ok, %{}}
+  end
+end

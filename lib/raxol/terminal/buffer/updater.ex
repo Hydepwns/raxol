@@ -20,12 +20,12 @@ defmodule Raxol.Terminal.Buffer.Updater do
           ScreenBuffer.t(),
           list({non_neg_integer(), non_neg_integer(), map()})
         ) :: list({non_neg_integer(), non_neg_integer(), map()})
-  def diff(%ScreenBuffer{} = buffer, changes) when is_list(changes) do
+  def diff(%ScreenBuffer{} = _buffer, changes) when is_list(changes) do
     # Ensure changes are in the expected {x, y, map} format
     if Enum.empty?(changes) or match?([{_, _, _} | _], changes) do
       Enum.filter(changes, fn {x, y, desired_cell_map} ->
         # Use imported get_cell_at
-        current_cell_struct = get_cell_at(buffer, x, y)
+        current_cell_struct = get_cell_at(_buffer, x, y)
         # Convert map for comparison
         desired_cell_struct = Cell.from_map(desired_cell_map)
 

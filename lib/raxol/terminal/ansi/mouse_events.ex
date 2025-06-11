@@ -431,59 +431,57 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   end
 
   defp generate_utf8_report(state) do
-    # UTF-8 mouse reporting (mode 1005)
-    # Format: \e[M<button><utf8-x><utf8-y>
+    # Optimize UTF-8 mouse reporting by using binary concatenation
     {x, y} = state.position
     button_code = button_to_code(state.button_state)
-    "\e[M#{button_code}#{x + 32}#{y + 32}"
+    :erlang.binary_to_list(<<27, "M", button_code, x + 32, y + 32>>)
   end
 
   defp generate_sgr_report(state) do
-    # SGR mouse reporting (mode 1006)
-    # Format: \e[<button>;<x>;<y>M
+    # Optimize SGR mouse reporting by using binary concatenation
     {x, y} = state.position
     button_code = sgr_button_to_code(state.button_state)
-    "\e[<#{button_code};#{x};#{y}M"
+    :erlang.binary_to_list(<<27, "[<", button_code, ";", x, ";", y, "M">>)
   end
 
   defp generate_urxvt_report(state) do
-    # URXVT mouse reporting (mode 1015)
-    # Format: \e[<button>;<x>;<y>M
+    # Reuse SGR report format for URXVT
     generate_sgr_report(state)
   end
 
   defp generate_sgr_pixels_report(state) do
-    # SGR pixels mouse reporting (mode 1016)
-    # Format: \e[<button>;<x>;<y>M
-    # x, y are in pixels
+    # Optimize SGR pixels mouse reporting by using binary concatenation
     {x, y} = state.position
     button_code = sgr_button_to_code(state.button_state)
-    "\e[<#{button_code};#{x};#{y}M"
+    :erlang.binary_to_list(<<27, "[<", button_code, ";", x, ";", y, "M">>)
   end
 
+  # Cache button codes to avoid repeated calculations
+  @button_codes %{
+    none: "0",
+    left: "1",
+    middle: "2",
+    right: "3",
+    release: "0",
+    scroll_up: "64",
+    scroll_down: "65"
+  }
+
+  @sgr_button_codes %{
+    none: "0",
+    left: "0",
+    middle: "1",
+    right: "2",
+    release: "3",
+    scroll_up: "64",
+    scroll_down: "65"
+  }
+
   defp button_to_code(button_state) do
-    case button_state do
-      :none -> "0"
-      :left -> "1"
-      :middle -> "2"
-      :right -> "3"
-      :release -> "0"
-      :scroll_up -> "64"
-      :scroll_down -> "65"
-      _ -> "0"
-    end
+    Map.get(@button_codes, button_state, "0")
   end
 
   defp sgr_button_to_code(button_state) do
-    case button_state do
-      :none -> "0"
-      :left -> "0"
-      :middle -> "1"
-      :right -> "2"
-      :release -> "3"
-      :scroll_up -> "64"
-      :scroll_down -> "65"
-      _ -> "0"
-    end
+    Map.get(@sgr_button_codes, button_state, "0")
   end
 end

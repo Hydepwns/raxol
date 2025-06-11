@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
 
   alias Raxol.Terminal.{
-    Buffer.Manager,
-    Buffer.Scroll,
+    Buffer.UnifiedManager,
+    Scroll.UnifiedScroll,
     Cursor.Manager,
     Integration.State
   }
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
   def write(%State{} = state, text) do
     # Update the buffer manager with the new text
-    {:ok, buffer_manager} = Manager.write(state.buffer_manager, text)
+    {:ok, buffer_manager} = UnifiedManager.write(state.buffer_manager, text)
 
     # Update the cursor position
     cursor_manager = Manager.update_position(state.cursor_manager, text)
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
   def clear(%State{} = state) do
     # Clear the buffer manager
-    {:ok, buffer_manager} = Manager.clear(state.buffer_manager)
+    {:ok, buffer_manager} = UnifiedManager.clear(state.buffer_manager)
 
     # Reset the cursor position
     cursor_manager = Manager.reset_position(state.cursor_manager)
@@ -49,13 +49,13 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
   def scroll(%State{} = state, direction, amount \\ 1) do
     # Update the scroll buffer
-    scroll_buffer = Scroll.scroll(state.scroll_buffer, direction, amount)
+    scroll_buffer = UnifiedScroll.scroll(state.scroll_buffer, direction, amount)
 
     # Update the buffer manager's visible region
     {:ok, buffer_manager} =
-      Manager.update_visible_region(
+      UnifiedManager.update_visible_region(
         state.buffer_manager,
-        Scroll.get_visible_region(scroll_buffer)
+        UnifiedScroll.get_visible_region(scroll_buffer)
       )
 
     # Update the state
@@ -87,28 +87,28 @@ defmodule Raxol.Terminal.Integration.Buffer do
   Gets the current visible content.
   """
   def get_visible_content(%State{} = state) do
-    Manager.get_visible_content(state.buffer_manager)
+    UnifiedManager.get_visible_content(state.buffer_manager)
   end
 
   @doc """
   Gets the current scroll position.
   """
   def get_scroll_position(%State{} = state) do
-    Scroll.get_position(state.scroll_buffer)
+    UnifiedScroll.get_position(state.scroll_buffer)
   end
 
   @doc """
   Gets the total number of lines in the buffer.
   """
   def get_total_lines(%State{} = state) do
-    Manager.get_total_lines(state.buffer_manager)
+    UnifiedManager.get_total_lines(state.buffer_manager)
   end
 
   @doc """
   Gets the number of visible lines.
   """
   def get_visible_lines(%State{} = state) do
-    Manager.get_visible_lines(state.buffer_manager)
+    UnifiedManager.get_visible_lines(state.buffer_manager)
   end
 
   @doc """
@@ -116,10 +116,10 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
   def resize(%State{} = state, width, height) do
     # Resize the buffer manager
-    {:ok, buffer_manager} = Manager.resize(state.buffer_manager, width, height)
+    {:ok, buffer_manager} = UnifiedManager.resize(state.buffer_manager, width, height)
 
     # Update the scroll buffer
-    scroll_buffer = Scroll.resize(state.scroll_buffer, height)
+    scroll_buffer = UnifiedScroll.resize(state.scroll_buffer, height)
 
     # Update the cursor position if needed
     cursor_manager =

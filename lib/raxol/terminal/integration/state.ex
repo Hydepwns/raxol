@@ -4,127 +4,163 @@ defmodule Raxol.Terminal.Integration.State do
   """
 
   alias Raxol.Terminal.{
-    Emulator,
-    Buffer.Manager,
-    Buffer.Scroll,
-    Cursor.Manager,
-    Commands.History,
-    MemoryManager
+    Buffer.UnifiedManager,
+    Scroll.UnifiedScroll,
+    Render.UnifiedRenderer,
+    IO.UnifiedIO,
+    Window.UnifiedWindow,
+    Integration.Config
   }
 
   @type t :: %__MODULE__{
-          emulator: Emulator.t(),
-          buffer_manager: Manager.t(),
-          scroll_buffer: Scroll.t(),
-          cursor_manager: Manager.t(),
-          command_history: History.t(),
-          config: map(),
-          last_cleanup: integer()
-        }
+    buffer_manager: UnifiedManager.t(),
+    scroll_buffer: UnifiedScroll.t(),
+    renderer: UnifiedRenderer.t(),
+    io: UnifiedIO.t(),
+    window_manager: UnifiedWindow.t(),
+    config: Config.t()
+  }
 
-  defstruct [
-    :emulator,
-    :buffer_manager,
-    :scroll_buffer,
-    :cursor_manager,
-    :command_history,
-    :config,
-    :last_cleanup
-  ]
+  defstruct buffer_manager: nil,
+            scroll_buffer: nil,
+            renderer: nil,
+            io: nil,
+            window_manager: nil,
+            config: nil
 
   @doc """
-  Creates a new terminal state with default dimensions (80x24).
+  Creates a new integration state with the given options.
   """
-  def new(config) do
-    new(80, 24, config)
-  end
+  @spec new(map()) :: t()
+  def new(opts \\ %{}) do
+    # Initialize components with default or provided options
+    buffer_manager = UnifiedManager.new()
+    scroll_buffer = UnifiedScroll.new()
+    renderer = UnifiedRenderer.new()
+    io = UnifiedIO.new()
+    window_manager = UnifiedWindow.new()
+    config = Config.new(opts)
 
-  @doc """
-  Creates a new terminal state with the specified dimensions.
-  """
-  def new(width, height, config) do
-    emulator = Emulator.new(width, height)
-
-    {:ok, buffer_manager} =
-      Raxol.Terminal.Buffer.Manager.new(
-        width,
-        height,
-        config.behavior.scrollback_limit,
-        config.memory_limit || 50 * 1024 * 1024
-      )
-
-    scroll_buffer = Scroll.new(config.behavior.scrollback_limit)
-    cursor_manager = Raxol.Terminal.Cursor.Manager.new()
-
-    command_history =
-      History.new((config.behavior.enable_command_history && 1000) || 0)
+    # Create initial window
+    {:ok, window_id} = UnifiedWindow.create_window(%{
+      size: {opts[:width] || 80, opts[:height] || 24},
+      buffer_id: buffer_manager.id,
+      renderer_id: renderer.id
+    })
 
     %__MODULE__{
-      emulator: emulator,
       buffer_manager: buffer_manager,
       scroll_buffer: scroll_buffer,
-      cursor_manager: cursor_manager,
-      command_history: command_history,
-      config: config,
-      last_cleanup: System.system_time(:millisecond)
+      renderer: renderer,
+      io: io,
+      window_manager: window_manager,
+      config: config
     }
   end
 
   @doc """
-  Updates the terminal state with new components.
+  Updates the integration state with new content.
   """
-  def update(%__MODULE__{} = state, updates) do
-    state = struct!(state, updates)
-    MemoryManager.check_and_cleanup(state)
+  @spec update(t(), String.t()) :: t()
+  def update(%__MODULE__{} = state, content) do
+    # Process content through IO system
+    {:ok, commands} = UnifiedIO.process_output(content)
+
+    # Update buffer with processed content
+    updated_buffer = UnifiedManager.update(state.buffer_manager, commands)
+
+    # Update scroll buffer
+    updated_scroll = UnifiedScroll.update(state.scroll_buffer, commands)
+
+    %{state |
+      buffer_manager: updated_buffer,
+      scroll_buffer: updated_scroll
+    }
   end
 
   @doc """
-  Gets the current visible content from the terminal state.
+  Gets the visible content from the current window.
   """
+  @spec get_visible_content(t()) :: list()
   def get_visible_content(%__MODULE__{} = state) do
-    state.buffer_manager
-    |> Raxol.Terminal.Buffer.Manager.get_visible_content()
-    |> Enum.map(&Tuple.to_list/1)
-    |> Enum.map(&Enum.join/1)
-    |> Enum.join("\n")
+    case UnifiedWindow.get_active_window() do
+      nil -> []
+      window_id ->
+        case UnifiedWindow.get_window_state(window_id) do
+          {:ok, window} ->
+            UnifiedManager.get_visible_content(state.buffer_manager, window.buffer_id)
+          _ -> []
+        end
+    end
   end
 
   @doc """
-  Gets the current cursor position from the terminal state.
+  Gets the current scroll position.
   """
-  def get_cursor_position(%__MODULE__{} = state) do
-    state.cursor_manager
-    |> Raxol.Terminal.Cursor.Manager.get_position()
-  end
-
-  @doc """
-  Gets the current scroll position from the terminal state.
-  """
+  @spec get_scroll_position(t()) :: integer()
   def get_scroll_position(%__MODULE__{} = state) do
-    state.scroll_buffer
-    |> Raxol.Terminal.Buffer.Scroll.get_position()
+    UnifiedScroll.get_position(state.scroll_buffer)
   end
 
   @doc """
-  Gets the current command history from the terminal state.
+  Gets the current memory usage.
   """
-  def get_command_history(%__MODULE__{} = state) do
-    state.command_history
-    |> Raxol.Terminal.Commands.History.list()
-  end
-
-  @doc """
-  Gets the current configuration from the terminal state.
-  """
-  def get_config(%__MODULE__{} = state) do
-    state.config
-  end
-
-  @doc """
-  Gets the current memory usage from the terminal state.
-  """
+  @spec get_memory_usage(t()) :: integer()
   def get_memory_usage(%__MODULE__{} = state) do
-    state.buffer_manager
-    |> Raxol.Terminal.Buffer.Manager.get_memory_usage()
+    UnifiedManager.get_memory_usage(state.buffer_manager)
+  end
+
+  @doc """
+  Renders the current state.
+  """
+  @spec render(t()) :: t()
+  def render(%__MODULE__{} = state) do
+    case UnifiedWindow.get_active_window() do
+      nil -> state
+      window_id ->
+        case UnifiedWindow.get_window_state(window_id) do
+          {:ok, window} ->
+            # Render the active window
+            UnifiedRenderer.render(state.renderer, window.renderer_id)
+            state
+          _ -> state
+        end
+    end
+  end
+
+  @doc """
+  Updates the renderer configuration.
+  """
+  @spec update_renderer_config(t(), map()) :: t()
+  def update_renderer_config(%__MODULE__{} = state, config) do
+    UnifiedRenderer.update_config(state.renderer, config)
+    state
+  end
+
+  @doc """
+  Resizes the terminal.
+  """
+  @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def resize(%__MODULE__{} = state, width, height) do
+    case UnifiedWindow.get_active_window() do
+      nil -> state
+      window_id ->
+        # Resize the active window
+        :ok = UnifiedWindow.resize(window_id, width, height)
+        state
+    end
+  end
+
+  @doc """
+  Cleans up resources.
+  """
+  @spec cleanup(t()) :: :ok
+  def cleanup(%__MODULE__{} = state) do
+    UnifiedManager.cleanup(state.buffer_manager)
+    UnifiedScroll.cleanup(state.scroll_buffer)
+    UnifiedRenderer.cleanup(state.renderer)
+    UnifiedIO.cleanup(state.io)
+    UnifiedWindow.cleanup(state.window_manager)
+    :ok
   end
 end

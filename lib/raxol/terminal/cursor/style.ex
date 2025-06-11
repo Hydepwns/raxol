@@ -6,8 +6,11 @@ defmodule Raxol.Terminal.Cursor.Style do
   visibility, and managing cursor blinking.
   """
 
+  @behaviour Raxol.Terminal.Cursor.Style
+
   alias Raxol.Terminal.Cursor.Manager
 
+  @impl true
   @doc """
   Sets the cursor style to block.
 
@@ -23,6 +26,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.set_style(cursor, :block)
   end
 
+  @impl true
   @doc """
   Sets the cursor style to underline.
 
@@ -38,6 +42,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.set_style(cursor, :underline)
   end
 
+  @impl true
   @doc """
   Sets the cursor style to bar.
 
@@ -53,6 +58,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.set_style(cursor, :bar)
   end
 
+  @impl true
   @doc """
   Sets a custom cursor shape.
 
@@ -70,6 +76,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.set_custom_shape(cursor, shape, dimensions)
   end
 
+  @impl true
   @doc """
   Makes the cursor visible.
 
@@ -86,6 +93,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.set_state(cursor, :visible)
   end
 
+  @impl true
   @doc """
   Hides the cursor.
 
@@ -101,6 +109,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.set_state(cursor, :hidden)
   end
 
+  @impl true
   @doc """
   Makes the cursor blink.
 
@@ -116,6 +125,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.set_state(cursor, :blinking)
   end
 
+  @impl true
   @doc """
   Sets the cursor blink rate in milliseconds.
 
@@ -132,6 +142,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | blink_rate: rate}
   end
 
+  @impl true
   @doc """
   Updates the cursor blink state and returns the updated cursor and visibility.
 
@@ -148,6 +159,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     Manager.update_blink(cursor)
   end
 
+  @impl true
   @doc """
   Toggles the cursor visibility.
 
@@ -170,6 +182,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     end
   end
 
+  @impl true
   @doc """
   Toggles the cursor blinking state.
 
@@ -189,5 +202,50 @@ defmodule Raxol.Terminal.Cursor.Style do
       :blinking -> show(cursor)
       _ -> blink(cursor)
     end
+  end
+
+  @impl true
+  @doc """
+  Gets the current cursor style.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> Style.get_style(cursor)
+      :block
+  """
+  def get_style(%Manager{} = cursor) do
+    cursor.style
+  end
+
+  @impl true
+  @doc """
+  Gets the current cursor state.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> Style.get_state(cursor)
+      :visible
+  """
+  def get_state(%Manager{} = cursor) do
+    cursor.state
+  end
+
+  @impl true
+  @doc """
+  Gets the current cursor blink mode.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> Style.get_blink(cursor)
+      :none
+  """
+  def get_blink(%Manager{} = cursor) do
+    cursor.blink
   end
 end

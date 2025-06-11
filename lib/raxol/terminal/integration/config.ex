@@ -1,18 +1,52 @@
 defmodule Raxol.Terminal.Integration.Config do
   @moduledoc """
-  Handles configuration management for the terminal integration.
+  Manages configuration for the terminal integration.
   """
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Config
+  alias Raxol.Terminal.{
+    Config,
+    Buffer.UnifiedManager,
+    Scroll.UnifiedScroll,
+    Render.UnifiedRenderer
+  }
   alias Raxol.Terminal.Integration.State
+  alias Raxol.Terminal.Commands.History
+
+  @type t :: %__MODULE__{
+          behavior: map(),
+          memory_limit: integer(),
+          rendering: map()
+        }
+
+  defstruct [
+    :behavior,
+    :memory_limit,
+    :rendering
+  ]
 
   @doc """
-  Gets the default configuration.
+  Returns the default configuration.
   """
   def default_config do
-    Raxol.Terminal.Config.Defaults.generate_default_config()
+    %__MODULE__{
+      behavior: %{
+        scrollback_limit: 1000,
+        enable_command_history: true
+      },
+      memory_limit: 50 * 1024 * 1024, # 50 MB
+      rendering: %{
+        fps: 60,
+        theme: %{
+          foreground: :white,
+          background: :black
+        },
+        font_settings: %{
+          size: 12
+        }
+      }
+    }
   end
 
   @doc """
@@ -26,10 +60,10 @@ defmodule Raxol.Terminal.Integration.Config do
     updated_config = Config.merge_opts(state.config, opts)
 
     # Validate the updated configuration
-    case Config.validate_config(updated_config) do
-      {:ok, validated_config} ->
+    case validate_config(updated_config) do
+      :ok ->
         # Apply the validated, merged config
-        state = apply_config_changes(state, validated_config)
+        state = apply_config_changes(state, updated_config)
         {:ok, state}
 
       {:error, reason} ->
@@ -64,9 +98,9 @@ defmodule Raxol.Terminal.Integration.Config do
   def set_config_value(%State{} = state, path, value) do
     updated_config = put_in(state.config, path, value)
 
-    case Config.validate_config(updated_config) do
-      {:ok, validated_config} ->
-        state = apply_config_changes(state, validated_config)
+    case validate_config(updated_config) do
+      :ok ->
+        state = apply_config_changes(state, updated_config)
         {:ok, state}
 
       {:error, reason} ->
@@ -74,7 +108,45 @@ defmodule Raxol.Terminal.Integration.Config do
     end
   end
 
-  # Private functions
+  @doc """
+  Updates the buffer manager configuration.
+  """
+  def update_buffer_manager(buffer_manager_state, config) do
+    UnifiedManager.new(
+      buffer_manager_state.width,
+      buffer_manager_state.height,
+      config.behavior.scrollback_limit,
+      config.memory_limit
+    )
+  end
+
+  @doc """
+  Updates the scroll buffer configuration.
+  """
+  def update_scroll_buffer(scroll_buffer_state, config) do
+    UnifiedScroll.set_max_height(scroll_buffer_state, config.behavior.scrollback_limit)
+  end
+
+  @doc """
+  Updates the renderer configuration.
+  """
+  def update_renderer_config(renderer_state, config) do
+    UnifiedRenderer.update_config(config.rendering)
+    renderer_state
+  end
+
+  @doc """
+  Validates the configuration.
+  """
+  def validate_config(config) do
+    with :ok <- validate_behavior(config.behavior),
+         :ok <- validate_memory_limit(config.memory_limit),
+         :ok <- validate_rendering(config.rendering) do
+      :ok
+    end
+  end
+
+  # Private Functions
 
   defp apply_config_changes(%State{} = state, new_config) do
     # Update buffer manager with new limits
@@ -107,29 +179,8 @@ defmodule Raxol.Terminal.Integration.Config do
     })
   end
 
-  defp update_buffer_manager(buffer_manager_state, config) do
-    new_scrollback_limit = config.behavior.scrollback_limit
-    new_memory_limit = config.memory_limit || 50 * 1024 * 1024
-
-    updated_state =
-      buffer_manager_state
-      |> Raxol.Terminal.Buffer.Manager.Scrollback.set_height(
-        new_scrollback_limit
-      )
-      |> Raxol.Terminal.Buffer.Manager.Memory.set_limit(new_memory_limit)
-
-    {:ok, updated_state}
-  end
-
   defp update_emulator(emulator, config) do
     Raxol.Terminal.Emulator.set_colors(emulator, config.ansi.colors)
-  end
-
-  defp update_scroll_buffer(scroll_buffer, config) do
-    Raxol.Terminal.Buffer.Scroll.set_max_height(
-      scroll_buffer,
-      config.behavior.scrollback_limit
-    )
   end
 
   defp update_command_history(command_history, config) do
@@ -137,5 +188,48 @@ defmodule Raxol.Terminal.Integration.Config do
       command_history,
       (config.behavior.enable_command_history && 1000) || 0
     )
+  end
+
+  defp validate_behavior(behavior) do
+    cond do
+      !is_map(behavior) ->
+        {:error, :invalid_behavior_config}
+
+      !is_integer(behavior.scrollback_limit) or behavior.scrollback_limit < 0 ->
+        {:error, :invalid_scrollback_limit}
+
+      !is_boolean(behavior.enable_command_history) ->
+        {:error, :invalid_command_history_setting}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp validate_memory_limit(memory_limit) do
+    if is_integer(memory_limit) and memory_limit > 0 do
+      :ok
+    else
+      {:error, :invalid_memory_limit}
+    end
+  end
+
+  defp validate_rendering(rendering) do
+    cond do
+      !is_map(rendering) ->
+        {:error, :invalid_rendering_config}
+
+      !is_integer(rendering.fps) or rendering.fps < 1 ->
+        {:error, :invalid_fps}
+
+      !is_map(rendering.theme) ->
+        {:error, :invalid_theme}
+
+      !is_map(rendering.font_settings) ->
+        {:error, :invalid_font_settings}
+
+      true ->
+        :ok
+    end
   end
 end

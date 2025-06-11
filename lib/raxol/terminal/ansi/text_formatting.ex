@@ -5,6 +5,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   other advanced text attributes and colors.
   """
 
+  @behaviour Raxol.Terminal.ANSI.TextFormatting
+
   @type color ::
           :black
           | :red
@@ -58,6 +60,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     47 => :white
   }
 
+  @impl true
   @doc """
   Creates a new text style map with default values.
   """
@@ -104,6 +107,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     }
   end
 
+  @impl true
   @doc """
   Sets the foreground color.
   """
@@ -112,6 +116,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | foreground: color}
   end
 
+  @impl true
   @doc """
   Sets the background color.
   """
@@ -120,6 +125,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | background: color}
   end
 
+  @impl true
   @doc """
   Gets the foreground color.
   """
@@ -128,6 +134,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     style.foreground
   end
 
+  @impl true
   @doc """
   Gets the background color.
   """
@@ -136,6 +143,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     style.background
   end
 
+  @impl true
   @doc """
   Sets double-width mode for the current line.
   """
@@ -144,6 +152,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | double_width: true, double_height: :none}
   end
 
+  @impl true
   @doc """
   Sets double-height top half mode for the current line.
   """
@@ -152,6 +161,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | double_width: true, double_height: :top}
   end
 
+  @impl true
   @doc """
   Sets double-height bottom half mode for the current line.
   """
@@ -160,6 +170,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | double_width: true, double_height: :bottom}
   end
 
+  @impl true
   @doc """
   Resets to single-width, single-height mode.
   """
@@ -168,6 +179,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | double_width: false, double_height: :none}
   end
 
+  @impl true
   @doc """
   Applies a text attribute to the style map.
 
@@ -206,6 +218,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     end
   end
 
+  @impl true
   @doc """
   Applies a color attribute to the style map.
 
@@ -229,6 +242,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     end
   end
 
+  @impl true
   @doc """
   Calculates the effective width of a character based on its style.
 
@@ -249,6 +263,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     end
   end
 
+  @impl true
   @doc """
   Determines if the current line needs a paired line (for double-height mode).
   """
@@ -257,6 +272,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     style.double_height != :none
   end
 
+  @impl true
   @doc """
   Gets the paired line type for double-height mode.
   """
@@ -281,6 +297,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   # Converts a standard ANSI 3/4-bit color code to a color name atom.
 
+  @impl true
   @doc """
   Converts a standard ANSI 3/4-bit color code to a color name atom.
 
@@ -299,6 +316,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @spec ansi_code_to_color_name(integer()) :: color() | nil
   def ansi_code_to_color_name(code), do: Map.get(@ansi_color_map, code, nil)
 
+  @impl true
   @doc """
   Resets all text formatting attributes to their default values.
   """
@@ -311,6 +329,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | hyperlink: url}
   end
 
+  @impl true
   @doc """
   Reconstructs the SGR parameter string corresponding to the given style attributes.
   Used primarily for DECRQSS responses.
@@ -369,6 +388,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     end
   end
 
+  @impl true
   @doc """
   Gets the hyperlink URI.
   """
@@ -474,6 +494,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   # -- TEST HOOKS --
 
+  @impl true
   @doc """
   Returns the default text style for the terminal emulator.
   This is an alias for new/0 for compatibility.

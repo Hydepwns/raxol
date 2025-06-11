@@ -5,14 +5,14 @@ defmodule Raxol.Terminal.Integration do
 
   This module manages the interaction between various terminal components:
   - State management
-  - Input processing
+  - Input/output processing (via UnifiedIO)
   - Buffer management
   - Rendering
   - Configuration
   """
 
   alias Raxol.Terminal.Integration.State
-  alias Raxol.Terminal.Integration.Input
+  alias Raxol.Terminal.IO.UnifiedIO
   alias Raxol.Terminal.Integration.Buffer
   alias Raxol.Terminal.Integration.Renderer, as: IntegrationRenderer
   alias Raxol.Terminal.Integration.Config
@@ -44,39 +44,29 @@ defmodule Raxol.Terminal.Integration do
   end
 
   @doc """
-  Processes user input and updates the terminal state.
+  Processes user input and updates the terminal state using UnifiedIO.
   """
-  def handle_input(%State{} = state, input) do
-    # Process input
-    state = Input.handle_input(state, input)
-
-    # Render the updated state
-    render(state)
+  def handle_input(%State{} = state, input_event) do
+    UnifiedIO.process_input(input_event)
+    State.render(state)
   end
 
   @doc """
-  Writes text to the terminal.
+  Writes text to the terminal using UnifiedIO output processing.
   """
   def write(%State{} = state, text) do
-    # Write to buffer
-    state = Buffer.write(state, text)
-
-    # Render the updated state
-    render(state)
+    UnifiedIO.process_output(text)
+    State.render(state)
   end
 
   @doc """
-  Clears the terminal.
+  Clears the terminal (delegates to buffer manager and renderer).
   """
   def clear(%State{} = state) do
-    # Clear buffer
-    state = Buffer.clear(state)
-
-    # Clear screen
-    IntegrationRenderer.clear_screen(state)
-
-    # Render the updated state
-    render(state)
+    # Clear buffer and re-render
+    # (Assumes UnifiedManager and UnifiedRenderer have clear/1 functions)
+    state = State.update(state, buffer_manager: Raxol.Terminal.Buffer.UnifiedManager.clear(state.buffer_manager))
+    State.render(state)
   end
 
   @doc """
@@ -104,17 +94,11 @@ defmodule Raxol.Terminal.Integration do
   end
 
   @doc """
-  Updates the terminal configuration.
+  Updates the configuration.
   """
   def update_config(%State{} = state, config) do
-    # Update configuration
-    state = Config.update_config(state, config)
-
-    # Update renderer configuration
-    state = IntegrationRenderer.update_config(state, config)
-
-    # Render the updated state
-    render(state)
+    UnifiedIO.update_config(config)
+    State.update(state, config: config)
   end
 
   @doc """
@@ -156,14 +140,7 @@ defmodule Raxol.Terminal.Integration do
   Resizes the terminal.
   """
   def resize(%State{} = state, width, height) do
-    # Resize buffer
-    state = Buffer.resize(state, width, height)
-
-    # Resize renderer
-    state = IntegrationRenderer.resize(state, width, height)
-
-    # Render the updated state
-    render(state)
+    State.resize(state, width, height)
   end
 
   @doc """

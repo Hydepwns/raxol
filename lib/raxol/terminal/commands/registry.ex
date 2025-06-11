@@ -1,25 +1,185 @@
 defmodule Raxol.Terminal.Commands.Registry do
   @moduledoc """
-  Registry for terminal commands.
-  Provides functionality to list and manage available commands.
+  Manages terminal commands with advanced features:
+  - Command registration and lookup
+  - Command validation and execution
+  - Command history tracking
+  - Command completion suggestions
   """
+
+  @type command :: %{
+    name: String.t(),
+    description: String.t(),
+    handler: function(),
+    aliases: [String.t()],
+    usage: String.t(),
+    completion: function() | nil
+  }
+
+  @type t :: %__MODULE__{
+    commands: %{String.t() => command()},
+    history: [String.t()],
+    max_history: integer(),
+    metrics: %{
+      registrations: integer(),
+      executions: integer(),
+      completions: integer(),
+      validations: integer()
+    }
+  }
+
+  defstruct [
+    :commands,
+    :history,
+    :max_history,
+    :metrics
+  ]
 
   @doc """
-  Returns a list of available commands.
+  Creates a new command registry with the given options.
   """
-  def list_commands do
-    get_registered_commands()
+  @spec new(keyword()) :: t()
+  def new(opts \\ []) do
+    %__MODULE__{
+      commands: %{},
+      history: [],
+      max_history: Keyword.get(opts, :max_history, 1000),
+      metrics: %{
+        registrations: 0,
+        executions: 0,
+        completions: 0,
+        validations: 0
+      }
+    }
   end
 
-  @doc false
-  defp get_registered_commands do
-    [
-      "clear",
-      "help",
-      "exit",
-      "ls",
-      "cd",
-      "pwd"
-    ]
+  @doc """
+  Registers a new command in the registry.
+  """
+  @spec register_command(t(), command()) :: {:ok, t()} | {:error, term()}
+  def register_command(registry, command) do
+    with :ok <- validate_command(command),
+         :ok <- check_name_conflict(registry, command) do
+      new_commands = Map.put(registry.commands, command.name, command)
+      updated_registry = %{registry |
+        commands: new_commands,
+        metrics: update_metrics(registry.metrics, :registrations)
+      }
+      {:ok, updated_registry}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Executes a command with the given arguments.
+  """
+  @spec execute_command(t(), String.t(), [String.t()]) :: {:ok, t(), term()} | {:error, term()}
+  def execute_command(registry, command_name, args) do
+    with {:ok, command} <- get_command(registry, command_name),
+         :ok <- validate_args(command, args) do
+      result = command.handler.(args)
+      updated_registry = %{registry |
+        history: [command_name | registry.history] |> Enum.take(registry.max_history),
+        metrics: update_metrics(registry.metrics, :executions)
+      }
+      {:ok, updated_registry, result}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Gets command completion suggestions for the given input.
+  """
+  @spec get_completions(t(), String.t()) :: {:ok, t(), [String.t()]} | {:error, term()}
+  def get_completions(registry, input) do
+    suggestions = registry.commands
+    |> Map.values()
+    |> Enum.flat_map(fn command ->
+      [command.name | command.aliases]
+    end)
+    |> Enum.filter(&String.starts_with?(&1, input))
+    |> Enum.uniq()
+    |> Enum.sort()
+
+    updated_registry = %{registry |
+      metrics: update_metrics(registry.metrics, :completions)
+    }
+    {:ok, updated_registry, suggestions}
+  end
+
+  @doc """
+  Gets the command history.
+  """
+  @spec get_history(t()) :: [String.t()]
+  def get_history(registry) do
+    registry.history
+  end
+
+  @doc """
+  Gets the current registry metrics.
+  """
+  @spec get_metrics(t()) :: map()
+  def get_metrics(registry) do
+    registry.metrics
+  end
+
+  @doc """
+  Clears the command history.
+  """
+  @spec clear_history(t()) :: t()
+  def clear_history(registry) do
+    %{registry | history: []}
+  end
+
+  # Private helper functions
+
+  defp validate_command(command) do
+    required_fields = [:name, :description, :handler, :usage]
+    if Enum.all?(required_fields, &Map.has_key?(command, &1)) do
+      :ok
+    else
+      {:error, :invalid_command}
+    end
+  end
+
+  defp check_name_conflict(registry, command) do
+    if Map.has_key?(registry.commands, command.name) do
+      {:error, :command_exists}
+    else
+      :ok
+    end
+  end
+
+  defp get_command(registry, name) do
+    case Map.get(registry.commands, name) do
+      nil -> {:error, :command_not_found}
+      command -> {:ok, command}
+    end
+  end
+
+  defp validate_args(command, args) do
+    if command.completion do
+      case command.completion.(args) do
+        :ok -> :ok
+        {:error, reason} -> {:error, reason}
+      end
+    else
+      :ok
+    end
+  end
+
+  defp update_metrics(metrics, :registrations) do
+    update_in(metrics.registrations, &(&1 + 1))
+  end
+  defp update_metrics(metrics, :executions) do
+    update_in(metrics.executions, &(&1 + 1))
+  end
+  defp update_metrics(metrics, :completions) do
+    update_in(metrics.completions, &(&1 + 1))
+  end
+  defp update_metrics(metrics, :validations) do
+    update_in(metrics.validations, &(&1 + 1))
   end
 end
