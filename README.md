@@ -8,37 +8,22 @@ It offers a powerful component system, a flexible runtime, and a robust plugin a
 
 > **Note:** Raxol is in active development (pre-release).
 > APIs will change as we improve the toolkit.
->
-> <!-- TODO: Add a screenshot or GIF demo here -->
-
-## Architecture
-
-- Terminal: I/O, buffer, cursor, command, style, parser, input.
-- Core: Lifecycle, events, plugins, color, UX.
-- Plugins: Modular/extensible.
-- Style: Color/theming/layout.
-- UI: Components/layout/render.
-- AI: Content gen, perf.
-- Animation: Anim, easing, gestures.
-
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## ✨ Features
 
-- **Component Model:** Build UIs from reusable, stateful components.
-- **Declarative View DSL:** Compose layouts with expressive macros (`panel`, `row`, `column`, `text`, etc.).
-- **Lifecycle Management:** Each component supports a full lifecycle (`init`, `mount`, `update`, `render`, `handle_event`, `unmount`).
-- **Theming & Preferences:** Customizable themes and persistent user settings.
-- **Plugin System:** Extend Raxol with hot-reloadable plugins and robust error handling.
-- **Terminal Handling:** Advanced ANSI/Sixel support, input handling, and double buffering.
-- **Performance & Testing:** Built-in benchmarking, event-based test helpers, and system interaction adapters for reliable, fast tests.
+- **Component Model:** Build UIs from reusable, stateful components with full lifecycle support
+- **Declarative View DSL:** Compose layouts with expressive macros (`panel`, `row`, `column`, `text`, etc.)
+- **Advanced Terminal Features:** Full ANSI/Sixel support, scrollback, and efficient buffer management
+- **Plugin System:** Extend Raxol with hot-reloadable plugins and robust error handling
+- **Performance Optimized:** Event processing < 1ms, screen updates < 2ms, concurrent ops < 5ms
+- **Comprehensive Testing:** 1528 tests with event-based synchronization and performance benchmarks
+- **Modern Architecture:** Layered design with clear separation of concerns and modular subsystems
 
 ## 🚀 Get Started
 
 Add Raxol to your `mix.exs`:
 
 ```elixir
-# mix.exs, check hex.pm/packages/raxol
 def deps do
   [
     {:raxol, "~> 0.4.0"}
@@ -46,32 +31,18 @@ def deps do
 end
 ```
 
-## Common Commands
+## 📚 Documentation
 
-```bash
-# Fetch dependencies
-mix deps.get
-
-# Run tests
-mix test
-mix test.watch
-mix credo
-mix dialyzer
-mix format
-mix compile --warnings-as-errors
-```
-
-## 📦 Static Assets
-
-All static assets (JavaScript, CSS, images, etc.) are located in the `priv/static/@static` directory.
-
-- If you need to add or update frontend assets, use the `@static` folder.
-- The asset pipeline (npm, bundlers, etc.) should be run from `priv/static/@static`.
-- References to static files in templates and code should use the `/@static/` path prefix.
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Component Guide](examples/guides/03_components_and_layout/components/README.md)
+- [Plugin Development](examples/guides/04_extending_raxol/plugin_development.md)
+- [Testing Guide](examples/guides/05_development_and_testing/testing.md)
+- [Migration Guide](docs/MIGRATION_GUIDE.md)
 
 ## 🛠️ Example: A Simple Counter App
 
 ```elixir
+# Starts ExUnit and runs the app
 defmodule ExampleApp do
   use Raxol.Core.Runtime.Application
   import Raxol.View.Elements
@@ -79,13 +50,11 @@ defmodule ExampleApp do
   @impl true
   def init(_), do: {:ok, %{count: 0}}
 
-  # Raxol event handling
   @impl true
   def update(:increment, state), do: {:ok, %{state | count: state.count + 1}, []}
   def update(:decrement, state), do: {:ok, %{state | count: state.count - 1}, []}
   def update(_, state), do: {:ok, state, []}
 
-  # Raxol view DSL
   @impl true
   def view(state) do
     view do
@@ -100,66 +69,33 @@ defmodule ExampleApp do
   end
 end
 
-# Starts ExampleApp
-Raxol.start_link(ExampleApp)
+ExampleApp.start()
 ```
 
-> **Above example uses Raxol view DSL**, which lets you build TUI layouts and UI elements declaratively using Elixir macros.
-> Compose layouts and UI elements with a syntax _similar_ to HTML— but in pure, undiddled, and unopinionated Elixir.
+## 🗂️ Key Links
 
-**How the View DSL works:**
-
-- `panel/1` – Draws a bordered panel with an optional title.
-- `row/1` and `column/1` – Arrange child elements horizontally or vertically.
-- `button/1` – Interactive button with label and event handler.
-- `text/1` – Displays static or dynamic text.
-
-You can nest these macros to create complex layouts.
-All properties (like `title`, `label`, `on_click`, etc.) are passed as keyword lists.
-For more, see the [UI Components & Layout Guide](examples/guides/03_components_and_layout/components/README.md).
-
-## 📚 Resources
-
-- [Accessibility Guide](examples/guides/05_development_and_testing/development/planning/accessibility/accessibility_guide.md)
-- [Architecture Overview](docs/ARCHITECTURE.md)
 - [Changelog](CHANGELOG.md)
-- [Docs Index](docs/README.md)
-- [Plugin Development](examples/guides/04_extending_raxol/plugin_development.md)
-- [Testing Guide](examples/guides/05_development_and_testing/testing.md)
-- [Terminal Details](examples/guides/02_core_concepts/terminal/README.md)
-- [VS Code Extension](examples/guides/04_extending_raxol/vscode_extension.md)
+- [Migration Guide](docs/MIGRATION_GUIDE.md)
+- [Examples](examples/)
+- [Subsystem Docs](docs/README.md)
 
-## Prometheus Metrics and Monitoring
+## 📦 Static Assets
 
-Raxol exposes advanced terminal metrics for Prometheus at the `/metrics` endpoint (enabled by default in the Phoenix router). These include:
+All static assets (JavaScript, CSS, images, etc.) are in `priv/static/@static`.
 
-- Histogram of scroll deltas (`raxol_terminal_scroll_event_delta`)
-- Summary of paste event text lengths (`raxol_terminal_paste_event_length`)
-- Counters for focus, resize, mode, clipboard, selection, paste, and cursor events
+- Use `/@static/` as the path prefix in templates and code.
+- The asset pipeline (npm, bundlers, etc.) should be run from `priv/static/@static`.
 
-To scrape these metrics, add a scrape config to your Prometheus server (see `docs/testing/prometheus.md`).
+## 🚦 Performance Requirements
 
-You can extend or customize metrics in `Raxol.Terminal.TelemetryPrometheus`.
+- **Event processing:** < 1ms average, < 2ms (95th percentile)
+- **Screen updates:** < 2ms average, < 5ms (95th percentile)
+- **Concurrent operations:** < 5ms average, < 10ms (95th percentile)
 
-## Precompiled NIFs
+## 🧭 How to Navigate
 
-`rrex_termbox` now uses the [`NIFPrecompiled`](https://hex.pm/packages/nif_precompiled) loader to provide precompiled NIFs for common platforms (Linux x64, macOS x64/arm64, Windows x64).
+- New to Raxol? Start with the [Getting Started Guide](examples/guides/01_getting_started/).
+- For a high-level overview, see [Architecture](docs/ARCHITECTURE.md).
+- Explore the links above for in-depth guides and references.
 
-- If a precompiled binary is available for your platform, it will be downloaded and loaded automatically at runtime by the loader module (`ExTermbox.NIFLoader`).
-- If not, the library will attempt to build from source (requires a C toolchain and Erlang/OTP headers).
-- No manual NIF loading is needed in your code—everything is handled automatically.
-
-**Supported platforms:**
-
-- Linux x86_64
-- macOS x86_64
-- macOS arm64 (Apple Silicon)
-- Windows x86_64
-
-If you encounter issues, please open an issue or try building from source.
-
-For more details, see the [rrex_termbox v2.0.4 release page](https://github.com/Hydepwns/rrex_termbox/releases/tag/v2.0.4).
-
-## License
-
-MIT © 2024 Raxol Team
+---
