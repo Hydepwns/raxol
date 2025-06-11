@@ -90,8 +90,7 @@ defmodule Raxol.Core.Renderer.Color do
       end
     else
       _ ->
-        # Default foreground
-        "\e[39m"
+        raise ArgumentError, "Invalid color format"
     end
   end
 
@@ -130,8 +129,7 @@ defmodule Raxol.Core.Renderer.Color do
       end
     else
       _ ->
-        # Default background
-        "\e[49m"
+        raise ArgumentError, "Invalid color format"
     end
   end
 
@@ -168,12 +166,17 @@ defmodule Raxol.Core.Renderer.Color do
       colors
       |> Enum.map(fn
         {key, "#" <> _ = hex} -> {key, hex_to_rgb(hex)}
-        {key, value} -> {key, value}
+        {key, value} when is_atom(value) and value in @ansi_16_atoms -> {key, value}
+        {key, {r, g, b}} when r in 0..255 and g in 0..255 and b in 0..255 -> {key, {r, g, b}}
+        {key, value} -> raise ArgumentError, "Invalid color in theme: #{inspect(value)}"
       end)
       |> Map.new()
 
-    Map.merge(default_theme(), processed_colors)
+    default = default_theme()
+    Map.merge(default.colors, processed_colors)
   end
+
+  def create_theme(_), do: raise ArgumentError, "Theme must be a map"
 
   @doc """
   Returns the default color theme.
@@ -229,31 +232,17 @@ defmodule Raxol.Core.Renderer.Color do
 
   defp detect_background_fallback do
     case System.get_env("TERM_PROGRAM") do
-      "Apple_Terminal" -> :light
-      "iTerm.app" -> detect_iterm_background()
-      # Default to dark
-      _ -> :dark
-    end
-  end
-
-  defp detect_iterm_background do
-    case System.get_env("ITERM_PROFILE") do
-      "Light" -> :light
-      "Solarized Light" -> :light
-      _ -> :dark
+      "iTerm.app" -> :black
+      "Apple_Terminal" -> :black
+      _ -> :default
     end
   end
 
   defp parse_colorfgbg(value) do
     case String.split(value, ";") do
-      [_, bg | _] ->
-        case String.to_integer(bg) do
-          n when n <= 6 -> :light
-          _ -> :dark
-        end
-
-      _ ->
-        :dark
+      [_, "0"] -> :black
+      [_, "15"] -> :white
+      _ -> :default
     end
   end
 end

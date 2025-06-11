@@ -25,121 +25,13 @@ defmodule Raxol.Core.UserPreferences do
 
   # --- Client API ---
 
+  @impl true
   def start_link(opts \\ []) do
     # Pass only the test_mode? option to init, defaulting to false.
     init_arg = [test_mode?: Keyword.get(opts, :test_mode?, false)]
     name_opt = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, init_arg, name: name_opt)
   end
-
-  @doc """
-  Gets a user preference value by key path.
-
-  Accepts a single key or a list of keys for nested access.
-
-  ## Examples
-      UserPreferences.get(:theme) #=> "dark"
-      UserPreferences.get([:accessibility, :high_contrast]) #=> true
-      UserPreferences.get(:theme, my_prefs_pid) #=> "dark"
-  """
-  @impl Raxol.Core.UserPreferences.Behaviour
-  def get(key_or_path, pid_or_name \\ __MODULE__) do
-    GenServer.call(pid_or_name, {:get, key_or_path})
-  end
-
-  @doc """
-  Sets a user preference value by key path.
-
-  Accepts a single key or a list of keys for nested access.
-  Triggers an automatic save after a short delay.
-
-  ## Examples
-      UserPreferences.set(:theme, "light")
-      UserPreferences.set([:accessibility, :high_contrast], false)
-      UserPreferences.set(:theme, "light", my_prefs_pid)
-  """
-  @spec set(atom | list(atom), any(), GenServer.server() | atom() | nil) :: :ok
-  @impl Raxol.Core.UserPreferences.Behaviour
-  def set(key_or_path, value, pid_or_name \\ __MODULE__) do
-    GenServer.call(pid_or_name, {:set, key_or_path, value})
-  end
-
-  @doc """
-  Forces an immediate save of the current preferences.
-  """
-  @impl Raxol.Core.UserPreferences.Behaviour
-  def save!(pid_or_name \\ __MODULE__) do
-    GenServer.call(pid_or_name, :save_now)
-  end
-
-  @doc """
-  Retrieves the entire preferences map.
-  Accepts an optional PID or registered name
-  ## Examples
-      UserPreferences.get_all()
-      UserPreferences.get_all(my_prefs_pid)
-  """
-  @impl Raxol.Core.UserPreferences.Behaviour
-  def get_all(pid_or_name \\ __MODULE__) do
-    GenServer.call(pid_or_name, :get_all)
-  end
-
-  @doc """
-  Resets the preferences to their default values for the current test run.
-  This should only be used in test environments.
-  """
-  def reset_to_defaults_for_test!(pid_or_name \\ __MODULE__) do
-    GenServer.call(pid_or_name, :reset_to_defaults_for_test)
-  end
-
-  @doc """
-  Returns the current theme id as an atom, defaulting to :default if not set or invalid.
-  """
-  def get_theme_id(pid_or_name \\ __MODULE__) do
-    theme = get([:theme, :active_id], pid_or_name) || get(:theme, pid_or_name)
-
-    cond do
-      is_atom(theme) ->
-        theme
-
-      is_binary(theme) ->
-        try do
-          String.to_existing_atom(theme)
-        rescue
-          ArgumentError -> :default
-        end
-
-      true ->
-        :default
-    end
-  end
-
-  @doc """
-  Returns the default preferences map.
-  This includes default values for theme, terminal configuration, accessibility settings,
-  and keybindings.
-  """
-  def default_preferences do
-    %{
-      theme: Raxol.UI.Theming.Theme.default_theme().name,
-      terminal: Raxol.Terminal.Config.Defaults.generate_default_config(),
-      accessibility: %{
-        enabled: true,
-        screen_reader: true,
-        high_contrast: false,
-        reduced_motion: false,
-        keyboard_focus: true,
-        large_text: false,
-        silence_announcements: false
-      },
-      keybindings:
-        %{
-          # Add default keybindings here
-        }
-    }
-  end
-
-  # --- Server Callbacks ---
 
   @impl true
   def init(opts) do
@@ -177,38 +69,32 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   @impl true
+  def get(key_or_path, pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, {:get, key_or_path})
+  end
+
+  @impl true
+  def set(key_or_path, value, pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, {:set, key_or_path, value})
+  end
+
+  @impl true
+  def save!(pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, :save_now)
+  end
+
+  @impl true
+  def get_all(pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, :get_all)
+  end
+
+  @impl true
   def handle_call({:get, key_or_path}, _from, state) do
     path = normalize_path(key_or_path)
     value = get_in(state.preferences, path)
     {:reply, value, state}
   end
 
-  @impl true
-  def handle_call(:get_all, _from, state) do
-    {:reply, state.preferences, state}
-  end
-
-  # Handle immediate save request
-  @impl true
-  def handle_call(:save_now, _from, state) do
-    # Cancel any pending delayed save
-    cancel_save_timer(state.save_timer)
-
-    case Persistence.save(state.preferences) do
-      :ok ->
-        Raxol.Core.Runtime.Log.debug("User preferences saved immediately.")
-        {:reply, :ok, %{state | save_timer: nil}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to save preferences immediately: #{inspect(reason)}"
-        )
-
-        {:reply, {:error, reason}, %{state | save_timer: nil}}
-    end
-  end
-
-  # Handle setting a value (now using call)
   @impl true
   def handle_call({:set, key_or_path, value}, _from, state) do
     path = normalize_path(key_or_path)
@@ -227,6 +113,30 @@ defmodule Raxol.Core.UserPreferences do
     else
       # Value didn't change, do nothing, but still reply :ok
       {:reply, :ok, state}
+    end
+  end
+
+  @impl true
+  def handle_call(:get_all, _from, state) do
+    {:reply, state.preferences, state}
+  end
+
+  @impl true
+  def handle_call(:save_now, _from, state) do
+    # Cancel any pending delayed save
+    cancel_save_timer(state.save_timer)
+
+    case Persistence.save(state.preferences) do
+      :ok ->
+        Raxol.Core.Runtime.Log.debug("User preferences saved immediately.")
+        {:reply, :ok, %{state | save_timer: nil}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to save preferences immediately: #{inspect(reason)}"
+        )
+
+        {:reply, {:error, reason}, %{state | save_timer: nil}}
     end
   end
 
@@ -317,5 +227,52 @@ defmodule Raxol.Core.UserPreferences do
 
       # Return empty path on error to avoid crash, get_in/put_in will likely fail gracefully
       []
+  end
+
+  @doc """
+  Returns the current theme id as an atom, defaulting to :default if not set or invalid.
+  """
+  def get_theme_id(pid_or_name \\ __MODULE__) do
+    theme = get([:theme, :active_id], pid_or_name) || get(:theme, pid_or_name)
+
+    cond do
+      is_atom(theme) ->
+        theme
+
+      is_binary(theme) ->
+        try do
+          String.to_existing_atom(theme)
+        rescue
+          ArgumentError -> :default
+        end
+
+      true ->
+        :default
+    end
+  end
+
+  @doc """
+  Returns the default preferences map.
+  This includes default values for theme, terminal configuration, accessibility settings,
+  and keybindings.
+  """
+  def default_preferences do
+    %{
+      theme: Raxol.UI.Theming.Theme.default_theme().name,
+      terminal: Raxol.Terminal.Config.Defaults.generate_default_config(),
+      accessibility: %{
+        enabled: true,
+        screen_reader: true,
+        high_contrast: false,
+        reduced_motion: false,
+        keyboard_focus: true,
+        large_text: false,
+        silence_announcements: false
+      },
+      keybindings:
+        %{
+          # Add default keybindings here
+        }
+    }
   end
 end
