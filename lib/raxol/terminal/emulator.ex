@@ -17,37 +17,34 @@ defmodule Raxol.Terminal.Emulator do
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.CharacterSets
-  alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.ANSI.TerminalState
-  alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.ModeManager
-  alias Raxol.Plugins.Manager.Core
-  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Terminal.ANSI.CharacterSets.StateManager
-  alias Raxol.Terminal.Command.Manager, as: CommandManager
-  alias Raxol.Terminal.Buffer.Operations, as: BufferOps
-  alias Raxol.Terminal.Tab.Manager, as: TabManager
-  alias Raxol.Terminal.Output.Manager, as: OutputManager
-  alias Raxol.Terminal.Window.Manager, as: WindowManager
-  alias Raxol.Terminal.Hyperlink.Manager, as: HyperlinkManager
-  alias Raxol.Terminal.Color.Manager, as: ColorManager
-  alias Raxol.Terminal.History.Manager, as: HistoryManager
-  alias Raxol.Terminal.State.Manager, as: StateManager
-  alias Raxol.Terminal.Scrollback.Manager, as: ScrollbackManager
-  alias Raxol.Terminal.Screen.Manager, as: ScreenManager
-  alias Raxol.Terminal.Parser.StateManager, as: ParserStateManager
-  alias Raxol.Terminal.Plugin.Manager, as: PluginManager
-  alias Raxol.Terminal.Mode.Manager, as: ModeManager
-  alias Raxol.Terminal.Charset.Manager, as: CharsetManager
-  alias Raxol.Terminal.Formatting.Manager, as: FormattingManager
-  alias Raxol.Terminal.TerminalState.Manager, as: TerminalStateManager
-  alias Raxol.Terminal.Buffer.UnifiedManager
-
-  require Raxol.Core.Runtime.Log
-  require Logger
+  alias Raxol.Terminal.{
+    ScreenBuffer,
+    ANSI.CharacterSets,
+    ANSI.TextFormatting,
+    ANSI.TerminalState,
+    Cursor.Manager,
+    ModeManager,
+    Plugins.Manager.Core,
+    Buffer.Manager,
+    Command.Manager,
+    Buffer.Operations,
+    Tab.Manager,
+    Output.Manager,
+    Window.Manager,
+    Hyperlink.Manager,
+    Color.Manager,
+    History.Manager,
+    State.Manager,
+    Scrollback.Manager,
+    Screen.Manager,
+    Parser.StateManager,
+    Plugin.Manager,
+    Charset.Manager,
+    Formatting.Manager,
+    TerminalState.Manager,
+    Buffer.UnifiedManager,
+    Emulator.Struct
+  }
 
   @type cursor_style_type ::
           :blinking_block
@@ -57,128 +54,11 @@ defmodule Raxol.Terminal.Emulator do
           | :blinking_bar
           | :steady_bar
 
-  @type t :: %__MODULE__{
-          main_screen_buffer: ScreenBuffer.t(),
-          alternate_screen_buffer: ScreenBuffer.t(),
-          active_buffer_type: :main | :alternate,
-          cursor: Manager.t(),
-          saved_cursor: Manager.t() | nil,
-          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-          style: TextFormatting.text_style(),
-          memory_limit: non_neg_integer(),
-          charset_state: CharacterSets.charset_state(),
-          mode_manager: ModeManager.t(),
-          plugin_manager: Manager.t(Core),
-          options: map(),
-          current_hyperlink_url: String.t() | nil,
-          window_title: String.t() | nil,
-          icon_name: String.t() | nil,
-          tab_stops: MapSet.t(),
-          output_buffer: String.t(),
-          color_palette: map(),
-          cursor_style: cursor_style_type(),
-          parser_state: map(),
-          command_history: list(),
-          max_command_history: non_neg_integer(),
-          current_command_buffer: String.t(),
-          last_key_event: map() | nil,
-          width: non_neg_integer(),
-          height: non_neg_integer(),
-          state: StateManager.t(),
-          command: CommandManager.t(),
-          # Window state for window manipulation commands
-          window_state: %{
-            title: String.t(),
-            icon_name: String.t(),
-            size: {non_neg_integer(), non_neg_integer()},
-            position: {non_neg_integer(), non_neg_integer()},
-            stacking_order: :normal | :maximized | :iconified,
-            iconified: boolean(),
-            maximized: boolean(),
-            previous_size: {non_neg_integer(), non_neg_integer()} | nil
-          },
-          scrollback_buffer: list(),
-          cwd: String.t() | nil,
-          current_hyperlink: map() | nil,
-          default_palette: map() | nil,
-          scrollback_limit: non_neg_integer(),
-          session_id: String.t() | nil,
-          client_options: map(),
-          # --- Added for Sixel graphics state tracking ---
-          sixel_state: map() | nil
-        }
+  @type t :: Struct.t()
 
   # NOTE: The `:position` field is NOT a top-level field of the Emulator struct.
   # To access the window position, use `emulator.window_state.position`.
   # Do NOT use `emulator.position` -- this will cause a KeyError.
-
-  # Use Manager struct
-  defstruct cursor: Manager.new(),
-            # TODO: This might need updating to save Manager state?
-            saved_cursor: nil,
-            style: TextFormatting.new(),
-            # Manages G0-G3 designation and invocation
-            charset_state: CharacterSets.new(),
-            # Tracks various modes (like DECCKM, DECOM)
-            mode_manager: ModeManager.new(),
-            # Set default tab stops
-            # Initialize tab_stops
-            tab_stops: MapSet.new(),
-            # <--- Change: Store the ScreenBuffer struct here
-            # To be initialized in new/3
-            main_screen_buffer: nil,
-            # To be initialized in new/3
-            alternate_screen_buffer: nil,
-            active_buffer_type: :main,
-            # Stack for DECSC/DECRC like operations
-            state_stack: TerminalState.new(),
-            # Active scroll region {top_line, bottom_line} (1-based), nil for full screen
-            scroll_region: nil,
-            # Default memory limit (e.g., bytes or lines)
-            memory_limit: 1_000_000,
-            # Flag for VT100 line wrapping behavior (DECAWM)
-            last_col_exceeded: false,
-            # Initialize Plugin Manager,
-            plugin_manager: Core.new(),
-            # Add parser state
-            parser_state: %Raxol.Terminal.Parser.State{state: :ground},
-            options: %{},
-            current_hyperlink_url: nil,
-            window_title: nil,
-            icon_name: nil,
-            output_buffer: "",
-            color_palette: %{},
-            cursor_style: :blinking_block,
-            # Command History
-            command_history: [],
-            # Default, overridden in new/3
-            max_command_history: 100,
-            current_command_buffer: "",
-            last_key_event: nil,
-            width: 80,
-            height: 24,
-            state: StateManager.new(),
-            command: CommandManager.new(),
-            # Window state for window manipulation commands
-            window_state: %{
-              title: "",
-              icon_name: "",
-              size: {80, 24},
-              position: {0, 0},
-              stacking_order: :normal,
-              iconified: false,
-              maximized: false,
-              previous_size: nil
-            },
-            scrollback_buffer: [],
-            cwd: nil,
-            current_hyperlink: nil,
-            default_palette: nil,
-            scrollback_limit: 1000,
-            session_id: nil,
-            client_options: %{},
-            # --- Added for Sixel graphics state tracking ---
-            sixel_state: nil
 
   @doc """
   Creates a new terminal emulator instance.
@@ -216,117 +96,54 @@ defmodule Raxol.Terminal.Emulator do
   @impl Raxol.Terminal.EmulatorBehaviour
   def new(width, height, opts)
       when is_integer(width) and is_integer(height) and is_list(opts) do
-    # Get default scrollback from config if not provided in opts
-    config_scrollback_limit =
-      Application.get_env(:raxol, :terminal, [])
-      |> Keyword.get(:scrollback_lines, 1000)
+    opts = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+    scrollback_limit = parse_scrollback_limit(opts)
+    {main_buffer, alt_buffer} = initialize_buffers(width, height)
 
-    # Resolve options, ensuring correct types and defaults
-    actual_width = if is_integer(width) and width > 0, do: width, else: 80
-    actual_height = if is_integer(height) and height > 0, do: height, else: 24
-    scrollback_limit = Keyword.get(opts, :scrollback, config_scrollback_limit)
-    memory_limit = Keyword.get(opts, :memorylimit, 1_000_000)
-    max_command_history_opt = Keyword.get(opts, :max_command_history, 100)
-    session_id = Keyword.get(opts, :session_id)
-    client_options = Keyword.get(opts, :client_options, %{})
+    create_emulator(
+      width,
+      height,
+      scrollback_limit,
+      opts,
+      main_buffer,
+      alt_buffer
+    )
+  end
 
-    # Allow plugin_manager to be passed in via opts
-    plugin_manager_struct =
-      case Keyword.get(opts, :plugin_manager) do
-        nil ->
-          pm_struct = Core.new()
-          pm_struct
+  defp parse_scrollback_limit(opts) do
+    opts[:scrollback] ||
+      Application.get_env(:raxol, :terminal, %{})[:scrollback_lines] ||
+      1000
+  end
 
-        passed_pm_struct
-        when is_struct(passed_pm_struct, Raxol.Plugins.Manager.Core) ->
-          passed_pm_struct
+  defp initialize_buffers(width, height) do
+    main_buffer = ScreenBuffer.new(width, height)
+    alt_buffer = ScreenBuffer.new(width, height)
+    {main_buffer, alt_buffer}
+  end
 
-        _invalid_pm ->
-          # Fallback or raise error if an invalid :plugin_manager was passed
-          Raxol.Core.Runtime.Log.warning(
-            "Invalid :plugin_manager passed to Emulator.new/3, using default."
-          )
-
-          pm_struct = Core.new()
-          pm_struct
-      end
-
-    initial_cursor = Manager.new()
-    initial_mode_manager = ModeManager.new()
-    initial_charset_state = CharacterSets.new()
-    initial_parser_state = %Raxol.Terminal.Parser.State{state: :ground}
-    command_manager = CommandManager.new()
-
-    # Initialize buffers through BufferManager, using actual_width and actual_height
-    {main_buffer, alternate_buffer} =
-      initialize_buffers(
-        actual_width,
-        actual_height,
-        scrollback_limit
-      )
-
-    %__MODULE__{
-      cursor: initial_cursor,
-      saved_cursor: nil,
-      style: TextFormatting.new(),
-      charset_state: initial_charset_state,
-      mode_manager: initial_mode_manager,
+  defp create_emulator(
+         width,
+         height,
+         scrollback_limit,
+         opts,
+         main_buffer,
+         alt_buffer
+       ) do
+    %Struct{
+      width: width,
+      height: height,
       main_screen_buffer: main_buffer,
-      alternate_screen_buffer: alternate_buffer,
+      alternate_screen_buffer: alt_buffer,
       active_buffer_type: :main,
-      state_stack: TerminalState.new(),
-      scroll_region: nil,
-      memory_limit: memory_limit,
-      tab_stops: BufferManager.default_tab_stops(actual_width),
-      last_col_exceeded: false,
-      plugin_manager: plugin_manager_struct,
-      parser_state: initial_parser_state,
-      # Store remaining opts
-      options:
-        Enum.reduce(
-          [
-            :session_id,
-            :client_options,
-            :scrollback,
-            :memorylimit,
-            :max_command_history,
-            :plugin_manager
-          ],
-          opts,
-          fn key, acc -> Keyword.delete(acc, key) end
-        ),
-      current_hyperlink_url: nil,
-      window_title: nil,
-      icon_name: nil,
-      output_buffer: "",
-      color_palette: %{},
-      cursor_style: :blinking_block,
-      command_history: [],
-      max_command_history: max_command_history_opt,
-      current_command_buffer: "",
-      last_key_event: nil,
-      width: actual_width,
-      height: actual_height,
-      state: StateManager.new(),
-      command: command_manager,
-      window_state: %{
-        title: "",
-        icon_name: "",
-        size: {actual_width, actual_height},
-        position: {0, 0},
-        stacking_order: :normal,
-        iconified: false,
-        maximized: false,
-        previous_size: nil
-      },
-      scrollback_buffer: [],
-      cwd: nil,
-      current_hyperlink: nil,
-      default_palette: nil,
       scrollback_limit: scrollback_limit,
-      session_id: session_id,
-      client_options: client_options,
-      sixel_state: nil
+      memory_limit: opts[:memorylimit] || 1_000_000,
+      max_command_history: opts[:max_command_history] || 100,
+      plugin_manager: opts[:plugin_manager] || Core.new(),
+      session_id: opts[:session_id],
+      client_options: opts[:client_options] || %{},
+      state: StateManager.new(),
+      command: CommandManager.new()
     }
   end
 
@@ -339,17 +156,33 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate get_active_buffer(emulator), to: ScreenManager
   defdelegate update_active_buffer(emulator, new_buffer), to: ScreenManager
   defdelegate switch_buffer(emulator), to: ScreenManager
-  defdelegate initialize_buffers(width, height, scrollback_limit), to: ScreenManager
+
+  defdelegate initialize_buffers(width, height, scrollback_limit),
+    to: ScreenManager
+
   defdelegate resize_buffers(emulator, new_width, new_height), to: ScreenManager
   defdelegate get_buffer_type(emulator), to: ScreenManager
   defdelegate set_buffer_type(emulator, type), to: ScreenManager
 
   # Delegate parser state operations to ParserStateManager
   defdelegate get_parser_state(emulator), to: ParserStateManager, as: :get_state
-  defdelegate update_parser_state(emulator, state), to: ParserStateManager, as: :update_state
-  defdelegate get_parser_state_name(emulator), to: ParserStateManager, as: :get_state_name
-  defdelegate set_parser_state_name(emulator, state_name), to: ParserStateManager, as: :set_state_name
-  defdelegate reset_parser_to_ground(emulator), to: ParserStateManager, as: :reset_to_ground
+
+  defdelegate update_parser_state(emulator, state),
+    to: ParserStateManager,
+    as: :update_state
+
+  defdelegate get_parser_state_name(emulator),
+    to: ParserStateManager,
+    as: :get_state_name
+
+  defdelegate set_parser_state_name(emulator, state_name),
+    to: ParserStateManager,
+    as: :set_state_name
+
+  defdelegate reset_parser_to_ground(emulator),
+    to: ParserStateManager,
+    as: :reset_to_ground
+
   defdelegate in_ground_state?(emulator), to: ParserStateManager
   defdelegate in_escape_state?(emulator), to: ParserStateManager
   defdelegate in_control_sequence_state?(emulator), to: ParserStateManager
@@ -360,15 +193,13 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec process_input(t(), String.t()) :: {t(), String.t()}
   @impl Raxol.Terminal.EmulatorBehaviour
-  def process_input(%__MODULE__{} = emulator, input) when is_binary(input) do
+  def process_input(%Struct{} = emulator, input) when is_binary(input) do
     Raxol.Terminal.InputHandler.process_terminal_input(emulator, input)
   end
 
   def process_input(emulator, input) do
-    require Logger
-
-    Logger.error(
-      "Invalid arguments to process_input/2: emulator=#{inspect(emulator)}, input=#{inspect(input)}"
+    Raxol.Core.Runtime.Log.error(
+      "Invalid input to process_input: emulator=#{inspect(emulator)}, input=#{inspect(input)}"
     )
 
     {emulator, "[ERROR: Invalid input to process_input]"}
@@ -383,21 +214,17 @@ defmodule Raxol.Terminal.Emulator do
         ) :: Raxol.Terminal.Emulator.t()
   @impl Raxol.Terminal.EmulatorBehaviour
   def update_active_buffer(
-        %__MODULE__{active_buffer_type: :main} = emulator,
+        %Struct{active_buffer_type: :main} = emulator,
         new_buffer
       ) do
-    IO.inspect(emulator, label: "DEBUG: emulator IN update_active_buffer")
-    IO.inspect(new_buffer, label: "DEBUG: new_buffer IN update_active_buffer")
-
     result =
       %{emulator | main_screen_buffer: new_buffer}
 
-    IO.inspect(result, label: "DEBUG: result FROM update_active_buffer")
     result
   end
 
   def update_active_buffer(
-        %__MODULE__{active_buffer_type: :alternate} = emulator,
+        %Struct{active_buffer_type: :alternate} = emulator,
         new_buffer
       ) do
     %{emulator | alternate_screen_buffer: new_buffer}
@@ -431,8 +258,7 @@ defmodule Raxol.Terminal.Emulator do
           non_neg_integer()
         ) :: Raxol.Terminal.Emulator.t()
   @impl Raxol.Terminal.EmulatorBehaviour
-  def resize(%__MODULE__{} = emulator, new_width, new_height) do
-    # Resize both buffers
+  def resize(%Struct{} = emulator, new_width, new_height) do
     new_main_buffer =
       ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
 
@@ -443,28 +269,10 @@ defmodule Raxol.Terminal.Emulator do
         new_height
       )
 
-    # Update tab stops for the new width
     new_tab_stops = BufferManager.default_tab_stops(new_width)
+    new_cursor = update_cursor_position(emulator, new_width, new_height)
+    new_scroll_region = update_scroll_region_for_resize(emulator, new_height)
 
-    # Clamp cursor position
-    {cur_x, cur_y} = get_cursor_position(emulator)
-    clamped_x = min(max(cur_x, 0), new_width - 1)
-    clamped_y = min(max(cur_y, 0), new_height - 1)
-    new_cursor = %{emulator.cursor | position: {clamped_x, clamped_y}}
-
-    # Clamp or reset scroll region
-    new_scroll_region =
-      case emulator.scroll_region do
-        {top, bottom}
-        when is_integer(top) and is_integer(bottom) and top < bottom and
-               top >= 0 and bottom < new_height ->
-          {top, bottom}
-
-        _ ->
-          nil
-      end
-
-    # Return updated emulator
     %{
       emulator
       | main_screen_buffer: new_main_buffer,
@@ -477,8 +285,27 @@ defmodule Raxol.Terminal.Emulator do
     }
   end
 
+  defp update_cursor_position(emulator, new_width, new_height) do
+    {cur_x, cur_y} = get_cursor_position(emulator)
+    clamped_x = min(max(cur_x, 0), new_width - 1)
+    clamped_y = min(max(cur_y, 0), new_height - 1)
+    %{emulator.cursor | position: {clamped_x, clamped_y}}
+  end
+
+  defp update_scroll_region_for_resize(emulator, new_height) do
+    case emulator.scroll_region do
+      {top, bottom}
+      when is_integer(top) and is_integer(bottom) and top < bottom and
+             top >= 0 and bottom < new_height ->
+        {top, bottom}
+
+      _ ->
+        nil
+    end
+  end
+
   @impl true
-  def get_cursor_visible(%__MODULE__{cursor: cursor}),
+  def get_cursor_visible(%Struct{cursor: cursor}),
     do: CursorManager.is_visible?(cursor)
 
   # --- Private Helpers ---
@@ -489,7 +316,7 @@ defmodule Raxol.Terminal.Emulator do
   Version called with no specific target Y - checks current cursor position.
   """
   @spec maybe_scroll(t()) :: t()
-  def maybe_scroll(%__MODULE__{} = emulator) do
+  def maybe_scroll(%Struct{} = emulator) do
     BufferOps.maybe_scroll(emulator)
   end
 
@@ -505,7 +332,7 @@ defmodule Raxol.Terminal.Emulator do
   Updated emulator with cursor moved down
   """
   @spec index(t()) :: t()
-  def index(%__MODULE__{} = emulator) do
+  def index(%Struct{} = emulator) do
     {x, y} = get_cursor_position(emulator)
     new_y = y + 1
 
@@ -529,9 +356,17 @@ defmodule Raxol.Terminal.Emulator do
   Updated emulator with cursor moved to next line
   """
   @spec next_line(t()) :: t()
-  def next_line(%__MODULE__{} = emulator) do
-    {_x, _y} = get_cursor_position(emulator)
-    # Implementation
+  def next_line(%Struct{} = emulator) do
+    {x, y} = get_cursor_position(emulator)
+    new_y = y + 1
+
+    if new_y >= emulator.height do
+      # If we're at the bottom, scroll up and keep cursor at bottom
+      maybe_scroll(emulator)
+    else
+      # Otherwise just move cursor down
+      set_cursor_position(emulator, {x, new_y}, emulator.width, emulator.height)
+    end
   end
 
   @doc """
@@ -546,7 +381,7 @@ defmodule Raxol.Terminal.Emulator do
   Updated emulator with new tab stop
   """
   @spec set_horizontal_tab(t()) :: t()
-  def set_horizontal_tab(%__MODULE__{} = emulator) do
+  def set_horizontal_tab(%Struct{} = emulator) do
     {x, _y} = get_cursor_position(emulator)
     new_tab_stops = MapSet.put(emulator.tab_stops, x)
     %{emulator | tab_stops: new_tab_stops}
@@ -564,7 +399,7 @@ defmodule Raxol.Terminal.Emulator do
   Updated emulator with cursor moved up
   """
   @spec reverse_index(t()) :: t()
-  def reverse_index(%__MODULE__{} = emulator) do
+  def reverse_index(%Struct{} = emulator) do
     {x, y} = get_cursor_position(emulator)
     new_y = max(0, y - 1)
     set_cursor_position(emulator, {x, new_y}, emulator.width, emulator.height)
@@ -583,14 +418,14 @@ defmodule Raxol.Terminal.Emulator do
   Updated emulator with output enqueued
   """
   @spec enqueue_output(t(), String.t()) :: t()
-  def enqueue_output(%__MODULE__{} = emulator, output) when is_binary(output) do
+  def enqueue_output(%Struct{} = emulator, output) when is_binary(output) do
     new_output_buffer = emulator.output_buffer <> output
     %{emulator | output_buffer: new_output_buffer}
   end
 
   # Delegate cursor operations to CursorManager
   @impl Raxol.Terminal.EmulatorBehaviour
-  def get_cursor_position(%__MODULE__{cursor: cursor}),
+  def get_cursor_position(%Struct{cursor: cursor}),
     do: CursorManager.get_position(cursor)
 
   defdelegate set_cursor_position(emulator, position, width, height),
@@ -642,46 +477,46 @@ defmodule Raxol.Terminal.Emulator do
     to: StateManager,
     as: :update_charset_state
 
-  def get_state_stack(%__MODULE__{state_stack: stack}), do: stack
+  def get_state_stack(%Struct{state_stack: stack}), do: stack
 
-  def update_state_stack(%__MODULE__{} = emulator, state_stack) do
+  def update_state_stack(%Struct{} = emulator, state_stack) do
     %{emulator | state_stack: state_stack}
   end
 
   # scroll_region
-  def get_scroll_region(%__MODULE__{scroll_region: scroll_region}),
+  def get_scroll_region(%Struct{scroll_region: scroll_region}),
     do: scroll_region
 
-  def update_scroll_region(%__MODULE__{} = emulator, scroll_region) do
+  def update_scroll_region(%Struct{} = emulator, scroll_region) do
     %{emulator | scroll_region: scroll_region}
   end
 
   # last_col_exceeded
-  def get_last_col_exceeded(%__MODULE__{last_col_exceeded: last_col_exceeded}),
+  def get_last_col_exceeded(%Struct{last_col_exceeded: last_col_exceeded}),
     do: last_col_exceeded
 
-  def update_last_col_exceeded(%__MODULE__{} = emulator, last_col_exceeded) do
+  def update_last_col_exceeded(%Struct{} = emulator, last_col_exceeded) do
     %{emulator | last_col_exceeded: last_col_exceeded}
   end
 
   # hyperlink_url
-  def get_hyperlink_url(%__MODULE__{current_hyperlink_url: url}), do: url
+  def get_hyperlink_url(%Struct{current_hyperlink_url: url}), do: url
 
-  def update_hyperlink_url(%__MODULE__{} = emulator, url) do
+  def update_hyperlink_url(%Struct{} = emulator, url) do
     %{emulator | current_hyperlink_url: url}
   end
 
   # window_title
-  def get_window_title(%__MODULE__{window_title: title}), do: title
+  def get_window_title(%Struct{window_title: title}), do: title
 
-  def update_window_title(%__MODULE__{} = emulator, title) do
+  def update_window_title(%Struct{} = emulator, title) do
     %{emulator | window_title: title}
   end
 
   # icon_name
-  def get_icon_name(%__MODULE__{icon_name: name}), do: name
+  def get_icon_name(%Struct{icon_name: name}), do: name
 
-  def update_icon_name(%__MODULE__{} = emulator, name) do
+  def update_icon_name(%Struct{} = emulator, name) do
     %{emulator | icon_name: name}
   end
 
@@ -765,7 +600,7 @@ defmodule Raxol.Terminal.Emulator do
     for i <- 0..(width - 1), rem(i, 8) == 0, do: i
   end
 
-  def get_dimensions(%__MODULE__{width: width, height: height}),
+  def get_dimensions(%Struct{width: width, height: height}),
     do: {width, height}
 
   @doc """
@@ -851,7 +686,10 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate get_scroll_region(emulator), to: StateManager
   defdelegate update_scroll_region(emulator, scroll_region), to: StateManager
   defdelegate get_last_col_exceeded(emulator), to: StateManager
-  defdelegate update_last_col_exceeded(emulator, last_col_exceeded), to: StateManager
+
+  defdelegate update_last_col_exceeded(emulator, last_col_exceeded),
+    to: StateManager
+
   defdelegate reset_to_initial_state(emulator), to: StateManager
 
   # Delegate scrollback operations to ScrollbackManager
@@ -860,24 +698,42 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate clear_scrollback(emulator), to: ScrollbackManager
   defdelegate get_scrollback_limit(emulator), to: ScrollbackManager
   defdelegate set_scrollback_limit(emulator, limit), to: ScrollbackManager
-  defdelegate get_scrollback_range(emulator, start, count), to: ScrollbackManager
+
+  defdelegate get_scrollback_range(emulator, start, count),
+    to: ScrollbackManager
+
   defdelegate get_scrollback_size(emulator), to: ScrollbackManager
   defdelegate scrollback_empty?(emulator), to: ScrollbackManager
 
   # Delegate plugin operations to PluginManager
   defdelegate get_plugin_manager(emulator), to: PluginManager, as: :get_manager
-  defdelegate update_plugin_manager(emulator, manager), to: PluginManager, as: :update_manager
-  defdelegate initialize_plugin(emulator, plugin_name, config), to: PluginManager
-  defdelegate call_plugin_hook(emulator, plugin_name, hook_name, args), to: PluginManager, as: :call_hook
+
+  defdelegate update_plugin_manager(emulator, manager),
+    to: PluginManager,
+    as: :update_manager
+
+  defdelegate initialize_plugin(emulator, plugin_name, config),
+    to: PluginManager
+
+  defdelegate call_plugin_hook(emulator, plugin_name, hook_name, args),
+    to: PluginManager,
+    as: :call_hook
+
   defdelegate plugin_loaded?(emulator, plugin_name), to: PluginManager
   defdelegate get_loaded_plugins(emulator), to: PluginManager
   defdelegate unload_plugin(emulator, plugin_name), to: PluginManager
   defdelegate get_plugin_config(emulator, plugin_name), to: PluginManager
-  defdelegate update_plugin_config(emulator, plugin_name, config), to: PluginManager
+
+  defdelegate update_plugin_config(emulator, plugin_name, config),
+    to: PluginManager
 
   # Delegate mode operations to ModeManager
   defdelegate get_mode_manager(emulator), to: ModeManager, as: :get_manager
-  defdelegate update_mode_manager(emulator, manager), to: ModeManager, as: :update_manager
+
+  defdelegate update_mode_manager(emulator, manager),
+    to: ModeManager,
+    as: :update_manager
+
   defdelegate set_mode(emulator, mode), to: ModeManager
   defdelegate reset_mode(emulator, mode), to: ModeManager
   defdelegate mode_set?(emulator, mode), to: ModeManager
@@ -888,12 +744,20 @@ defmodule Raxol.Terminal.Emulator do
 
   # Delegate charset operations to CharsetManager
   defdelegate get_charset_state(emulator), to: CharsetManager, as: :get_state
-  defdelegate update_charset_state(emulator, state), to: CharsetManager, as: :update_state
+
+  defdelegate update_charset_state(emulator, state),
+    to: CharsetManager,
+    as: :update_state
+
   defdelegate designate_charset(emulator, g_set, charset), to: CharsetManager
   defdelegate invoke_g_set(emulator, g_set), to: CharsetManager
   defdelegate get_current_g_set(emulator), to: CharsetManager
   defdelegate get_designated_charset(emulator, g_set), to: CharsetManager
-  defdelegate reset_charset_state(emulator), to: CharsetManager, as: :reset_state
+
+  defdelegate reset_charset_state(emulator),
+    to: CharsetManager,
+    as: :reset_state
+
   defdelegate apply_single_shift(emulator, g_set), to: CharsetManager
   defdelegate get_single_shift(emulator), to: CharsetManager
 
@@ -912,7 +776,10 @@ defmodule Raxol.Terminal.Emulator do
 
   # Delegate terminal state operations to TerminalStateManager
   defdelegate get_state_stack(emulator), to: TerminalStateManager
-  defdelegate update_state_stack(emulator, state_stack), to: TerminalStateManager
+
+  defdelegate update_state_stack(emulator, state_stack),
+    to: TerminalStateManager
+
   defdelegate save_state(emulator), to: TerminalStateManager
   defdelegate restore_state(emulator), to: TerminalStateManager
   defdelegate has_saved_states?(emulator), to: TerminalStateManager
@@ -920,10 +787,4 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate clear_saved_states(emulator), to: TerminalStateManager
   defdelegate get_current_state(emulator), to: TerminalStateManager
   defdelegate update_current_state(emulator, state), to: TerminalStateManager
-
-  defp initialize_buffers(width, height, scrollback_limit) do
-    {:ok, main_buffer} = UnifiedManager.new(width, height, scrollback_limit)
-    {:ok, alt_buffer} = UnifiedManager.new(width, height, scrollback_limit)
-    {main_buffer, alt_buffer}
-  end
 end
