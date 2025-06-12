@@ -217,7 +217,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     format = Keyword.get(opts, :format, state.config.export_format)
     time_range = Keyword.get(opts, :time_range)
 
-    filtered_metrics = filter_metrics_by_time_range(state.metrics, time_range)
+    filtered_metrics = filter_by_time_range(state.metrics, time_range)
     exported = export_metrics_in_format(filtered_metrics, format)
 
     {:reply, {:ok, exported}, state}

@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Color.Manager do
   This module handles color palette management, color setting, and color queries.
   """
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Updates the emulator's color palette with new colors.
@@ -18,8 +18,8 @@ defmodule Raxol.Terminal.Color.Manager do
 
   Updated emulator with new color palette
   """
-  @spec set_colors(Emulator.t(), map()) :: Emulator.t()
-  def set_colors(%Emulator{} = emulator, colors) when is_map(colors) do
+  @spec set_colors(EmulatorStruct.t(), map()) :: EmulatorStruct.t()
+  def set_colors(%EmulatorStruct{} = emulator, colors) when is_map(colors) do
     %{emulator | color_palette: colors}
   end
 
@@ -34,8 +34,8 @@ defmodule Raxol.Terminal.Color.Manager do
 
   The current color palette map
   """
-  @spec get_colors(Emulator.t()) :: map()
-  def get_colors(%Emulator{} = emulator) do
+  @spec get_colors(EmulatorStruct.t()) :: map()
+  def get_colors(%EmulatorStruct{} = emulator) do
     emulator.color_palette
   end
 
@@ -51,8 +51,8 @@ defmodule Raxol.Terminal.Color.Manager do
 
   The color value or nil if not found
   """
-  @spec get_color(Emulator.t(), non_neg_integer()) :: String.t() | nil
-  def get_color(%Emulator{} = emulator, index) when is_integer(index) and index >= 0 do
+  @spec get_color(EmulatorStruct.t(), non_neg_integer()) :: String.t() | nil
+  def get_color(%EmulatorStruct{} = emulator, index) when is_integer(index) and index >= 0 do
     Map.get(emulator.color_palette, index)
   end
 
@@ -69,8 +69,8 @@ defmodule Raxol.Terminal.Color.Manager do
 
   Updated emulator with new color value
   """
-  @spec set_color(Emulator.t(), non_neg_integer(), String.t()) :: Emulator.t()
-  def set_color(%Emulator{} = emulator, index, color)
+  @spec set_color(EmulatorStruct.t(), non_neg_integer(), String.t()) :: EmulatorStruct.t()
+  def set_color(%EmulatorStruct{} = emulator, index, color)
       when is_integer(index) and index >= 0 and is_binary(color) do
     new_palette = Map.put(emulator.color_palette, index, color)
     %{emulator | color_palette: new_palette}
@@ -87,8 +87,8 @@ defmodule Raxol.Terminal.Color.Manager do
 
   Updated emulator with default color palette
   """
-  @spec reset_colors(Emulator.t()) :: Emulator.t()
-  def reset_colors(%Emulator{} = emulator) do
+  @spec reset_colors(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def reset_colors(%EmulatorStruct{} = emulator) do
     %{emulator | color_palette: default_palette()}
   end
 
@@ -133,8 +133,8 @@ defmodule Raxol.Terminal.Color.Manager do
 
   Tuple of {r, g, b} values or nil if color not found
   """
-  @spec color_to_rgb(Emulator.t(), non_neg_integer()) :: {non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
-  def color_to_rgb(%Emulator{} = emulator, index) when is_integer(index) and index >= 0 do
+  @spec color_to_rgb(EmulatorStruct.t(), non_neg_integer()) :: {non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
+  def color_to_rgb(%EmulatorStruct{} = emulator, index) when is_integer(index) and index >= 0 do
     case get_color(emulator, index) do
       nil -> nil
       color -> hex_to_rgb(color)

@@ -235,7 +235,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
       extension ->
         if command in extension.commands do
-          case execute_command(extension, command, args) do
+          case do_execute_command(extension, command, args) do
             {:ok, result} ->
               {:reply, {:ok, result}, state}
 
@@ -389,7 +389,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   defp validate_extension_dependencies(dependencies) when is_list(dependencies), do: :ok
   defp validate_extension_dependencies(_), do: {:error, :invalid_extension_dependencies}
 
-  defp execute_command(extension, command, args) do
+  defp do_execute_command(extension, command, args) do
     # TODO: Implement actual command execution based on extension type
     # This is a placeholder that simulates command execution
     Process.sleep(100)

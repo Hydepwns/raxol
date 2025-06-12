@@ -13,6 +13,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   alias Raxol.Terminal.ScreenManager
   alias Raxol.Terminal.NotificationManager
   alias Raxol.Terminal.MemoryManager
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Processes a single screen update and returns updated state.
@@ -20,7 +21,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   @spec process_update(map(), map()) :: {:ok, map()} | {:error, term()}
   def process_update(update, state) do
     case state.terminal do
-      %Raxol.Terminal.Emulator{} = emulator ->
+      %EmulatorStruct{} = emulator ->
         {new_emulator, _output} = ScreenManager.update_screen(emulator, update)
 
         # Notify runtime process if present
@@ -52,7 +53,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   @spec process_batch_updates([map()], map()) :: {:ok, map()} | {:error, term()}
   def process_batch_updates(updates, state) do
     case state.terminal do
-      %Raxol.Terminal.Emulator{} = emulator ->
+      %EmulatorStruct{} = emulator ->
         {new_emulator, _output} = ScreenManager.batch_update_screen(emulator, updates)
 
         # Notify runtime process if present

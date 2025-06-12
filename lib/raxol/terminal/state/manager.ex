@@ -4,9 +4,35 @@ defmodule Raxol.Terminal.State.Manager do
   This module handles state stack, mode management, and general state operations.
   """
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.ModeManager
+
+  @doc """
+  Creates a new state manager instance.
+
+  ## Returns
+
+  A new state manager instance
+  """
+  @spec new() :: map()
+  def new() do
+    %{
+      state_stack: TerminalState.new(),
+      mode_manager: ModeManager.new(),
+      charset_state: %{},
+      scroll_region: nil,
+      last_col_exceeded: false
+    }
+  end
+
+  # Public helper functions
+  @doc false
+  @spec generate_tab_stops(non_neg_integer()) :: list(non_neg_integer())
+  def generate_tab_stops(width) do
+    # Generate tab stops every 8 columns
+    for i <- 0..(width - 1), rem(i, 8) == 0, do: i
+  end
 
   @doc """
   Gets the current state stack.
@@ -19,8 +45,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   The current state stack
   """
-  @spec get_state_stack(Emulator.t()) :: TerminalState.t()
-  def get_state_stack(%Emulator{} = emulator) do
+  @spec get_state_stack(EmulatorStruct.t()) :: TerminalState.t()
+  def get_state_stack(%EmulatorStruct{} = emulator) do
     emulator.state_stack
   end
 
@@ -36,8 +62,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new state stack
   """
-  @spec update_state_stack(Emulator.t(), TerminalState.t()) :: Emulator.t()
-  def update_state_stack(%Emulator{} = emulator, state_stack) do
+  @spec update_state_stack(EmulatorStruct.t(), TerminalState.t()) :: EmulatorStruct.t()
+  def update_state_stack(%EmulatorStruct{} = emulator, state_stack) do
     %{emulator | state_stack: state_stack}
   end
 
@@ -52,8 +78,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   The current mode manager
   """
-  @spec get_mode_manager(Emulator.t()) :: ModeManager.t()
-  def get_mode_manager(%Emulator{} = emulator) do
+  @spec get_mode_manager(EmulatorStruct.t()) :: ModeManager.t()
+  def get_mode_manager(%EmulatorStruct{} = emulator) do
     emulator.mode_manager
   end
 
@@ -69,8 +95,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new mode manager
   """
-  @spec update_mode_manager(Emulator.t(), ModeManager.t()) :: Emulator.t()
-  def update_mode_manager(%Emulator{} = emulator, mode_manager) do
+  @spec update_mode_manager(EmulatorStruct.t(), ModeManager.t()) :: EmulatorStruct.t()
+  def update_mode_manager(%EmulatorStruct{} = emulator, mode_manager) do
     %{emulator | mode_manager: mode_manager}
   end
 
@@ -85,8 +111,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   The current charset state
   """
-  @spec get_charset_state(Emulator.t()) :: map()
-  def get_charset_state(%Emulator{} = emulator) do
+  @spec get_charset_state(EmulatorStruct.t()) :: map()
+  def get_charset_state(%EmulatorStruct{} = emulator) do
     emulator.charset_state
   end
 
@@ -102,8 +128,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new charset state
   """
-  @spec update_charset_state(Emulator.t(), map()) :: Emulator.t()
-  def update_charset_state(%Emulator{} = emulator, charset_state) do
+  @spec update_charset_state(EmulatorStruct.t(), map()) :: EmulatorStruct.t()
+  def update_charset_state(%EmulatorStruct{} = emulator, charset_state) do
     %{emulator | charset_state: charset_state}
   end
 
@@ -118,8 +144,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   The current scroll region tuple or nil
   """
-  @spec get_scroll_region(Emulator.t()) :: {non_neg_integer(), non_neg_integer()} | nil
-  def get_scroll_region(%Emulator{} = emulator) do
+  @spec get_scroll_region(EmulatorStruct.t()) :: {non_neg_integer(), non_neg_integer()} | nil
+  def get_scroll_region(%EmulatorStruct{} = emulator) do
     emulator.scroll_region
   end
 
@@ -135,8 +161,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new scroll region
   """
-  @spec update_scroll_region(Emulator.t(), {non_neg_integer(), non_neg_integer()} | nil) :: Emulator.t()
-  def update_scroll_region(%Emulator{} = emulator, scroll_region) do
+  @spec update_scroll_region(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()} | nil) :: EmulatorStruct.t()
+  def update_scroll_region(%EmulatorStruct{} = emulator, scroll_region) do
     %{emulator | scroll_region: scroll_region}
   end
 
@@ -151,8 +177,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   The last column exceeded flag
   """
-  @spec get_last_col_exceeded(Emulator.t()) :: boolean()
-  def get_last_col_exceeded(%Emulator{} = emulator) do
+  @spec get_last_col_exceeded(EmulatorStruct.t()) :: boolean()
+  def get_last_col_exceeded(%EmulatorStruct{} = emulator) do
     emulator.last_col_exceeded
   end
 
@@ -168,8 +194,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new last column exceeded flag
   """
-  @spec update_last_col_exceeded(Emulator.t(), boolean()) :: Emulator.t()
-  def update_last_col_exceeded(%Emulator{} = emulator, last_col_exceeded) do
+  @spec update_last_col_exceeded(EmulatorStruct.t(), boolean()) :: EmulatorStruct.t()
+  def update_last_col_exceeded(%EmulatorStruct{} = emulator, last_col_exceeded) do
     %{emulator | last_col_exceeded: last_col_exceeded}
   end
 
@@ -184,13 +210,13 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with reset state
   """
-  @spec reset_to_initial_state(Emulator.t()) :: Emulator.t()
-  def reset_to_initial_state(%Emulator{} = emulator) do
+  @spec reset_to_initial_state(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def reset_to_initial_state(%EmulatorStruct{} = emulator) do
     %{
       emulator
       | cursor: %{x: 0, y: 0},
         scroll_region: {0, emulator.height - 1},
-        tab_stops: default_tab_stops(emulator.width),
+        tab_stops: generate_tab_stops(emulator.width),
         charset_state: %{},
         single_shift: nil,
         final_byte: nil,
@@ -198,12 +224,5 @@ defmodule Raxol.Terminal.State.Manager do
         params_buffer: [],
         payload_buffer: []
     }
-  end
-
-  # Private helper functions
-
-  defp default_tab_stops(width) do
-    # Generate tab stops every 8 columns
-    for i <- 0..(width - 1), rem(i, 8) == 0, do: i
   end
 end

@@ -6,42 +6,43 @@ defmodule Raxol.Terminal.Emulator.Input do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  alias Raxol.Terminal.Commands.{Cursor, Screen}
 
   @doc """
   Processes a key event.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
   """
-  @spec process_key_event(Emulator.t(), map()) ::
-          {:ok, Emulator.t(), list()} | {:error, String.t()}
-  def process_key_event(%Emulator{} = emulator, event) when is_map(event) do
+  @spec process_key_event(EmulatorStruct.t(), map()) ::
+          {:ok, EmulatorStruct.t(), list()} | {:error, String.t()}
+  def process_key_event(%EmulatorStruct{} = emulator, event) when is_map(event) do
     # Store the last key event
-    emulator = %{emulator | last_key_event: event}
+    updated_emulator = %{emulator | last_key_event: event}
 
     # Process the event based on its type
     case event.type do
       :key ->
-        process_key_press(emulator, event)
+        process_key_press(updated_emulator, event)
 
       :mouse ->
-        process_mouse_event(emulator, event)
+        process_mouse_event(updated_emulator, event)
 
       _ ->
         {:error, "Unsupported event type: #{inspect(event.type)}"}
     end
   end
 
-  def process_key_event(%Emulator{} = _emulator, invalid_event) do
-    {:error, "Invalid event: #{inspect(invalid_event)}"}
+  def process_key_event(%EmulatorStruct{} = _emulator, invalid_event) do
+    {:error, "Invalid key event: #{inspect(invalid_event)}"}
   end
 
   @doc """
   Processes a key press event.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
   """
-  @spec process_key_press(Emulator.t(), map()) ::
-          {:ok, Emulator.t(), list()} | {:error, String.t()}
-  def process_key_press(%Emulator{} = emulator, event) do
+  @spec process_key_press(EmulatorStruct.t(), map()) ::
+          {:ok, EmulatorStruct.t(), list()} | {:error, String.t()}
+  def process_key_press(%EmulatorStruct{} = emulator, event) do
     # Update command buffer if in command mode
     case update_command_buffer(emulator, event) do
       {:ok, updated_emulator} ->
@@ -58,9 +59,9 @@ defmodule Raxol.Terminal.Emulator.Input do
   Processes a mouse event.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
   """
-  @spec process_mouse_event(Emulator.t(), map()) ::
-          {:ok, Emulator.t(), list()} | {:error, String.t()}
-  def process_mouse_event(%Emulator{} = emulator, event) do
+  @spec process_mouse_event(EmulatorStruct.t(), map()) ::
+          {:ok, EmulatorStruct.t(), list()} | {:error, String.t()}
+  def process_mouse_event(%EmulatorStruct{} = emulator, event) do
     # Generate appropriate commands based on the mouse event
     commands = generate_mouse_commands(emulator, event)
     {:ok, emulator, commands}
@@ -70,15 +71,15 @@ defmodule Raxol.Terminal.Emulator.Input do
   Updates the command history with a new command.
   Returns {:ok, updated_emulator}.
   """
-  @spec add_to_history(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
-  def add_to_history(%Emulator{} = emulator, command) when is_binary(command) do
+  @spec add_to_history(EmulatorStruct.t(), String.t()) :: {:ok, EmulatorStruct.t()}
+  def add_to_history(%EmulatorStruct{} = emulator, command) when is_binary(command) do
     # Add command to history, respecting the maximum history size
     history = [command | emulator.command_history]
     history = Enum.take(history, emulator.max_command_history)
     {:ok, %{emulator | command_history: history}}
   end
 
-  def add_to_history(%Emulator{} = _emulator, invalid_command) do
+  def add_to_history(%EmulatorStruct{} = _emulator, invalid_command) do
     {:error, "Invalid command: #{inspect(invalid_command)}"}
   end
 
@@ -86,8 +87,8 @@ defmodule Raxol.Terminal.Emulator.Input do
   Clears the command history.
   Returns {:ok, updated_emulator}.
   """
-  @spec clear_history(Emulator.t()) :: {:ok, Emulator.t()}
-  def clear_history(%Emulator{} = emulator) do
+  @spec clear_history(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()}
+  def clear_history(%EmulatorStruct{} = emulator) do
     {:ok, %{emulator | command_history: []}}
   end
 
@@ -95,8 +96,8 @@ defmodule Raxol.Terminal.Emulator.Input do
   Gets the command history.
   Returns the list of commands in history.
   """
-  @spec get_history(Emulator.t()) :: list()
-  def get_history(%Emulator{} = emulator) do
+  @spec get_history(EmulatorStruct.t()) :: list()
+  def get_history(%EmulatorStruct{} = emulator) do
     emulator.command_history
   end
 
@@ -104,8 +105,8 @@ defmodule Raxol.Terminal.Emulator.Input do
   Gets the current command buffer.
   Returns the current command buffer.
   """
-  @spec get_command_buffer(Emulator.t()) :: String.t()
-  def get_command_buffer(%Emulator{} = emulator) do
+  @spec get_command_buffer(EmulatorStruct.t()) :: String.t()
+  def get_command_buffer(%EmulatorStruct{} = emulator) do
     emulator.current_command_buffer
   end
 
@@ -113,13 +114,13 @@ defmodule Raxol.Terminal.Emulator.Input do
   Sets the command buffer.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_command_buffer(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
-  def set_command_buffer(%Emulator{} = emulator, buffer)
+  @spec set_command_buffer(EmulatorStruct.t(), String.t()) :: {:ok, EmulatorStruct.t()}
+  def set_command_buffer(%EmulatorStruct{} = emulator, buffer)
       when is_binary(buffer) do
     {:ok, %{emulator | current_command_buffer: buffer}}
   end
 
-  def set_command_buffer(%Emulator{} = _emulator, invalid_buffer) do
+  def set_command_buffer(%EmulatorStruct{} = _emulator, invalid_buffer) do
     {:error, "Invalid command buffer: #{inspect(invalid_buffer)}"}
   end
 
@@ -127,14 +128,14 @@ defmodule Raxol.Terminal.Emulator.Input do
   Clears the command buffer.
   Returns {:ok, updated_emulator}.
   """
-  @spec clear_command_buffer(Emulator.t()) :: {:ok, Emulator.t()}
-  def clear_command_buffer(%Emulator{} = emulator) do
+  @spec clear_command_buffer(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()}
+  def clear_command_buffer(%EmulatorStruct{} = emulator) do
     {:ok, %{emulator | current_command_buffer: ""}}
   end
 
   # Private helper functions
 
-  defp update_command_buffer(%Emulator{} = emulator, %{key: key}) do
+  defp update_command_buffer(%EmulatorStruct{} = emulator, %{key: key}) do
     case key do
       :enter ->
         # Add command to history and clear buffer
@@ -158,7 +159,7 @@ defmodule Raxol.Terminal.Emulator.Input do
     end
   end
 
-  defp generate_key_commands(%Emulator{} = _emulator, %{key: key}) do
+  defp generate_key_commands(%EmulatorStruct{} = _emulator, %{key: key}) do
     case key do
       :enter -> ["\r\n"]
       :backspace -> ["\b"]
@@ -169,7 +170,7 @@ defmodule Raxol.Terminal.Emulator.Input do
     end
   end
 
-  defp generate_mouse_commands(%Emulator{} = _emulator, %{
+  defp generate_mouse_commands(%EmulatorStruct{} = _emulator, %{
          type: :mouse,
          button: button,
          x: x,

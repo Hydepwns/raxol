@@ -62,9 +62,11 @@ defmodule Raxol.Terminal.Manager do
     SessionHandler
   }
 
+  alias Raxol.Terminal.Emulator
+
   @type t :: %__MODULE__{
           sessions: map(),
-          terminal: Raxol.Terminal.Emulator.t() | nil,
+          terminal: Emulator.t() | nil,
           runtime_pid: pid() | nil,
           callback_module: module() | nil
         }

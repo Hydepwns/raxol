@@ -475,4 +475,77 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
       _ -> ""
     end
   end
+
+  defp handle_escape_sequence(state, key) do
+    # Handle escape sequences
+    case state.escape_buffer <> key do
+      "\e[" <> rest ->
+        case parse_csi_sequence(rest) do
+          {:ok, command} ->
+            new_state = %{state |
+              processing_escape: false,
+              escape_buffer: ""
+            }
+            {:ok, new_state, [command]}
+          :incomplete ->
+            {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
+          :invalid ->
+            {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+        end
+      "\eO" <> rest ->
+        case parse_ss3_sequence(rest) do
+          {:ok, command} ->
+            new_state = %{state |
+              processing_escape: false,
+              escape_buffer: ""
+            }
+            {:ok, new_state, [command]}
+          :incomplete ->
+            {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
+          :invalid ->
+            {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+        end
+      _ ->
+        if String.length(state.escape_buffer) > 10 do
+          # Prevent infinite escape sequence
+          {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+        else
+          {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
+        end
+    end
+  end
+
+  defp process_normal_input(state, key) do
+    # Process normal keyboard input
+    new_state = %{state |
+      buffer: state.buffer <> key,
+      last_input: key
+    }
+    {:ok, new_state, []}
+  end
+
+  defp parse_csi_sequence(sequence) do
+    # Parse CSI (Control Sequence Introducer) sequences
+    case sequence do
+      <<n::binary-size(1), "A">> -> {:ok, {:cursor_up, String.to_integer(n)}}
+      <<n::binary-size(1), "B">> -> {:ok, {:cursor_down, String.to_integer(n)}}
+      <<n::binary-size(1), "C">> -> {:ok, {:cursor_forward, String.to_integer(n)}}
+      <<n::binary-size(1), "D">> -> {:ok, {:cursor_backward, String.to_integer(n)}}
+      <<n::binary-size(1), "H">> -> {:ok, {:cursor_position, String.to_integer(n), 1}}
+      <<n::binary-size(1), "F">> -> {:ok, {:cursor_position, String.to_integer(n), :end}}
+      <<n::binary-size(1), "~">> -> {:ok, {:special_key, String.to_integer(n)}}
+      _ -> :invalid
+    end
+  end
+
+  defp parse_ss3_sequence(sequence) do
+    # Parse SS3 (Single Shift Select of G3 Character Set) sequences
+    case sequence do
+      "P" -> {:ok, :f1}
+      "Q" -> {:ok, :f2}
+      "R" -> {:ok, :f3}
+      "S" -> {:ok, :f4}
+      _ -> :invalid
+    end
+  end
 end

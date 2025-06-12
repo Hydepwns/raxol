@@ -19,10 +19,12 @@ defmodule Raxol.Terminal.Session do
   # alias Raxol.Terminal.{Cell, ScreenBuffer, Input, Emulator, Renderer} # Simplify aliases
   alias Raxol.Terminal.{Emulator, Renderer, ScreenBuffer}
   alias Raxol.Terminal.Session.{Serializer, Storage}
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  alias Raxol.Terminal.Input
 
   @type t :: %__MODULE__{
           id: String.t(),
-          emulator: Raxol.Terminal.Emulator.t(),
+          emulator: EmulatorStruct.t(),
           renderer: Raxol.Terminal.Renderer.t(),
           width: non_neg_integer(),
           height: non_neg_integer(),
@@ -198,7 +200,7 @@ defmodule Raxol.Terminal.Session do
       Application.get_env(:raxol, :terminal, [])
       |> Keyword.get(:scrollback_lines, 1000)
 
-    emulator = Emulator.new(width, height, scrollback: scrollback_limit)
+    emulator = EmulatorStruct.new(width, height, scrollback: scrollback_limit)
 
     # Create a default screen buffer without relying on get_active_buffer
     # Default to main buffer - no need to pattern match since we know new emulators default to :main
@@ -242,9 +244,9 @@ defmodule Raxol.Terminal.Session do
     # Handle process_input with more robust pattern matching
     new_state =
       try do
-        case Emulator.process_input(state.emulator, input) do
+        case EmulatorStruct.process_input(state.emulator, input) do
           {new_emulator, _output}
-          when is_struct(new_emulator, Raxol.Terminal.Emulator) ->
+          when is_struct(new_emulator, EmulatorStruct) ->
             # Access the screen buffer directly without pattern matching that can't succeed
             screen_buffer =
               try do
@@ -372,7 +374,7 @@ defmodule Raxol.Terminal.Session do
       Application.get_env(:raxol, :terminal, [])
       |> Keyword.get(:scrollback_lines, 1000)
 
-    emulator = Emulator.new(width, height, scrollback: scrollback_limit)
+    emulator = EmulatorStruct.new(width, height, scrollback: scrollback_limit)
 
     # Access the screen buffer directly without pattern matching that can't succeed
     # Default to main buffer - no need to pattern match since we know new emulators default to :main

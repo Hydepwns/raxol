@@ -30,8 +30,8 @@ defmodule Raxol.Terminal.Input.Event do
       action: action(),
       x: non_neg_integer(),
       y: non_neg_integer(),
-      modifiers: [modifier()],
-      timestamp: timestamp()
+      modifiers: [Raxol.Terminal.Input.Event.modifier()],
+      timestamp: Raxol.Terminal.Input.Event.timestamp()
     }
   end
 
@@ -48,8 +48,8 @@ defmodule Raxol.Terminal.Input.Event do
 
     @type t :: %__MODULE__{
       key: String.t(),
-      modifiers: [modifier()],
-      timestamp: timestamp()
+      modifiers: [Raxol.Terminal.Input.Event.modifier()],
+      timestamp: Raxol.Terminal.Input.Event.timestamp()
     }
   end
 

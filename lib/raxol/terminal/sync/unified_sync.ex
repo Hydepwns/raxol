@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
 
       {sync_state, config} ->
         strategy = Keyword.get(opts, :strategy, config.conflict_resolution)
-        case resolve_conflicts(conflicts, strategy) do
+        case do_resolve_conflicts(conflicts, strategy) do
           {:ok, resolved_data} ->
             updated_sync_state = %{sync_state |
               data: resolved_data,
@@ -303,7 +303,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     :ok
   end
 
-  defp resolve_conflicts(conflicts, strategy) do
+  defp do_resolve_conflicts(conflicts, strategy) do
     case strategy do
       :last_write_wins ->
         resolve_last_write_wins(conflicts)

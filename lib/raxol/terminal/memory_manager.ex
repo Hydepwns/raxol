@@ -30,6 +30,14 @@ defmodule Raxol.Terminal.MemoryManager do
     end
   end
 
+  # Handle general map types that contain terminal field
+  def check_and_cleanup(%{terminal: terminal} = state) do
+    case check_and_cleanup(terminal) do
+      {:ok, updated_terminal} -> %{state | terminal: updated_terminal}
+      _ -> state
+    end
+  end
+
   @doc """
   Estimates memory usage for a given state.
   """

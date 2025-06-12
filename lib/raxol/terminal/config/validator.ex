@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Config.Validator do
   Validates a configuration update.
   """
   @spec validate_update(Config.t(), map()) :: validation_result()
-  def validate_update(config, updates) when is_map(updates) do
+  def validate_update(_config, updates) when is_map(updates) do
     with :ok <- validate_dimensions(updates),
          :ok <- validate_colors(updates),
          :ok <- validate_styles(updates),
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Config.Validator do
   defp validate_colors(_), do: :ok
 
   defp validate_color_map(colors) do
-    Enum.reduce_while(colors, :ok, fn {key, value}, :ok ->
+    Enum.reduce_while(colors, :ok, fn {_key, value}, :ok ->
       case validate_color_value(value) do
         :ok -> {:cont, :ok}
         error -> {:halt, error}
@@ -84,7 +84,7 @@ defmodule Raxol.Terminal.Config.Validator do
   defp validate_styles(_), do: :ok
 
   defp validate_style_map(styles) do
-    Enum.reduce_while(styles, :ok, fn {key, value}, :ok ->
+    Enum.reduce_while(styles, :ok, fn {_key, value}, :ok ->
       case validate_style_value(value) do
         :ok -> {:cont, :ok}
         error -> {:halt, error}
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Config.Validator do
   defp validate_input(_), do: :ok
 
   defp validate_input_map(input) do
-    Enum.reduce_while(input, :ok, fn {key, value}, :ok ->
+    Enum.reduce_while(input, :ok, fn {_key, value}, :ok ->
       case validate_input_value(value) do
         :ok -> {:cont, :ok}
         error -> {:halt, error}
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.Config.Validator do
   defp validate_performance(_), do: :ok
 
   defp validate_performance_map(perf) do
-    Enum.reduce_while(perf, :ok, fn {key, value}, :ok ->
+    Enum.reduce_while(perf, :ok, fn {_key, value}, :ok ->
       case validate_performance_value(value) do
         :ok -> {:cont, :ok}
         error -> {:halt, error}
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.Config.Validator do
   defp validate_mode(_), do: :ok
 
   defp validate_mode_map(mode) do
-    Enum.reduce_while(mode, :ok, fn {key, value}, :ok ->
+    Enum.reduce_while(mode, :ok, fn {_key, value}, :ok ->
       case validate_mode_value(value) do
         :ok -> {:cont, :ok}
         error -> {:halt, error}

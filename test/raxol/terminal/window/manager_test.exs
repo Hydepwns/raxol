@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Window.ManagerTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.{Window, Window.Manager, Window.Config}
+  alias Raxol.Terminal.{Window, Window.Manager, Config}
 
   setup do
     # Start the window registry

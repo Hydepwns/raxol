@@ -165,10 +165,17 @@ defmodule Raxol.Core.Renderer.Color do
     processed_colors =
       colors
       |> Enum.map(fn
-        {key, "#" <> _ = hex} -> {key, hex_to_rgb(hex)}
-        {key, value} when is_atom(value) and value in @ansi_16_atoms -> {key, value}
-        {key, {r, g, b}} when r in 0..255 and g in 0..255 and b in 0..255 -> {key, {r, g, b}}
-        {key, value} -> raise ArgumentError, "Invalid color in theme: #{inspect(value)}"
+        {key, "#" <> _ = hex} ->
+          {key, hex_to_rgb(hex)}
+
+        {key, value} when is_atom(value) and value in @ansi_16_atoms ->
+          {key, value}
+
+        {key, {r, g, b}} when r in 0..255 and g in 0..255 and b in 0..255 ->
+          {key, {r, g, b}}
+
+        {_key, value} ->
+          raise(ArgumentError, "Invalid color in theme: #{inspect(value)}")
       end)
       |> Map.new()
 
@@ -176,7 +183,7 @@ defmodule Raxol.Core.Renderer.Color do
     Map.merge(default.colors, processed_colors)
   end
 
-  def create_theme(_), do: raise ArgumentError, "Theme must be a map"
+  def create_theme(_), do: raise(ArgumentError, "Theme must be a map")
 
   @doc """
   Returns the default color theme.

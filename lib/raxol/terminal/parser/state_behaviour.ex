@@ -1,15 +1,42 @@
 defmodule Raxol.Terminal.Parser.StateBehaviour do
   @moduledoc """
-  Behaviour for terminal parser states.
+  Defines the behaviour for parser states.
   """
 
-  @type emulator :: Raxol.Terminal.Emulator.t()
-  @type parser_state :: Raxol.Terminal.Parser.State.t()
-  @type result ::
-          {:continue, emulator(), parser_state(), binary()}
-          | {:finished, emulator(), parser_state()}
-          | {:incomplete, emulator(), parser_state()}
-          | {:error, term(), emulator(), parser_state()}
+  alias Raxol.Terminal.Emulator
 
-  @callback handle(emulator(), parser_state(), binary()) :: result()
+  @type emulator :: Emulator.t()
+  @type state :: any()
+
+  @callback handle(emulator(), state(), binary()) ::
+              {:continue, emulator(), state(), binary()}
+              | {:finished, emulator(), state()}
+              | {:incomplete, emulator(), state()}
+
+  @callback handle_byte(byte(), emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_escape(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_control_sequence(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_osc_string(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_dcs_string(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_apc_string(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_pm_string(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_sos_string(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
+
+  @callback handle_unknown(emulator(), state()) ::
+              {:ok, emulator(), state()} | {:error, atom(), emulator(), state()}
 end
