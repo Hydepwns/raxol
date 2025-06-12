@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   alias Raxol.Terminal.Buffer.Updater
   alias Raxol.Terminal.Buffer.State
   alias Raxol.Terminal.Buffer.CharEditor
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   # Needed for scroll functions
   # alias Raxol.Terminal.Buffer.Scrollback
 
@@ -329,8 +329,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   Updated emulator with resized buffers
   """
-  @spec resize(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
-  def resize(%Emulator{} = emulator, new_width, new_height) do
+  @spec resize(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) :: EmulatorStruct.t()
+  def resize(%EmulatorStruct{} = emulator, new_width, new_height) do
     # Resize both buffers
     new_main_buffer =
       ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
@@ -380,8 +380,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Checks if the cursor is below the scroll region and scrolls up if necessary.
   Called after operations like LF, IND, NEL that might move the cursor off-screen.
   """
-  @spec maybe_scroll(Emulator.t()) :: Emulator.t()
-  def maybe_scroll(%Emulator{} = emulator) do
+  @spec maybe_scroll(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def maybe_scroll(%EmulatorStruct{} = emulator) do
     # Implementation will be moved from BufferManager
     emulator
   end
@@ -389,8 +389,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Moves the cursor down one line (index operation).
   """
-  @spec index(Emulator.t()) :: Emulator.t()
-  def index(%Emulator{} = emulator) do
+  @spec index(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def index(%EmulatorStruct{} = emulator) do
     {x, y} = get_cursor_position(emulator)
     new_y = y + 1
 
@@ -405,8 +405,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Moves the cursor to the next line.
   """
-  @spec next_line(Emulator.t()) :: Emulator.t()
-  def next_line(%Emulator{} = emulator) do
+  @spec next_line(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def next_line(%EmulatorStruct{} = emulator) do
     {_x, _y} = get_cursor_position(emulator)
     # Implementation will be moved from emulator.ex
     emulator
@@ -415,8 +415,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Moves the cursor up one line (reverse index operation).
   """
-  @spec reverse_index(Emulator.t()) :: Emulator.t()
-  def reverse_index(%Emulator{} = emulator) do
+  @spec reverse_index(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def reverse_index(%EmulatorStruct{} = emulator) do
     {x, y} = get_cursor_position(emulator)
     new_y = max(0, y - 1)
     set_cursor_position(emulator, {x, new_y}, emulator.width, emulator.height)
@@ -424,7 +424,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   # Private helper functions
 
-  defp get_cursor_position(%Emulator{cursor: cursor}), do: cursor.position
+  defp get_cursor_position(%EmulatorStruct{cursor: cursor}), do: cursor.position
 
   defp set_cursor_position(emulator, position, width, height) do
     # This will be implemented to use CursorManager

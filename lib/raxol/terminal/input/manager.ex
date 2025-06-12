@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.Input.Manager do
   """
 
   alias Raxol.Terminal.Input.{Buffer, Processor}
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @type key_modifier :: :shift | :ctrl | :alt | :meta
   @type key_event :: %{

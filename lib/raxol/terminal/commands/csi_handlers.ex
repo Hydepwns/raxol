@@ -1,445 +1,417 @@
 defmodule Raxol.Terminal.Commands.CSIHandlers do
   @moduledoc """
-  Handles the execution logic for specific CSI commands.
-
-  This module serves as the main entry point for CSI command handling,
-  delegating to specialized handler modules for different types of commands.
+  Handles CSI (Control Sequence Introducer) commands.
   """
 
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  alias Raxol.Terminal.Commands.{Cursor, Screen}
+  alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Window.Manager, as: WindowManager
+  alias Raxol.Terminal.Device.Status, as: DeviceStatus
+  alias Raxol.Terminal.Charset.Manager, as: CharsetManager
+  alias Raxol.Terminal.Cursor.Movement, as: CursorMovement
 
-  alias Raxol.Terminal.Commands.{
-    CursorHandlers,
-    BufferHandlers,
-    EraseHandlers,
-    DeviceHandlers,
-    ModeHandlers,
-    WindowHandlers,
-    ParameterValidation
-  }
+  # Cursor Movement Handlers
+  @doc """
+  CSI A: Cursor Up (CUU)
+  """
+  def handle_A(emulator, [n | _]) when is_integer(n), do: Cursor.move_up(emulator, n)
+  def handle_A(emulator, _), do: Cursor.move_up(emulator, 1)
 
-  alias Raxol.Terminal.ANSI.SGRHandler
-  require Raxol.Core.Runtime.Log
+  @doc """
+  CSI B: Cursor Down (CUD)
+  """
+  def handle_B(emulator, [n | _]) when is_integer(n), do: Cursor.move_down(emulator, n)
+  def handle_B(emulator, _), do: Cursor.move_down(emulator, 1)
 
-  @doc "Handles Select Graphic Rendition (SGR - 'm')"
-  @spec handle_m(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  @doc """
+  CSI C: Cursor Forward (CUF)
+  """
+  def handle_C(emulator, [n | _]) when is_integer(n), do: Cursor.move_right(emulator, n)
+  def handle_C(emulator, _), do: Cursor.move_right(emulator, 1)
+
+  @doc """
+  CSI D: Cursor Back (CUB)
+  """
+  def handle_D(emulator, [n | _]) when is_integer(n), do: Cursor.move_left(emulator, n)
+  def handle_D(emulator, _), do: Cursor.move_left(emulator, 1)
+
+  @doc """
+  CSI E: Cursor Next Line (CNL)
+  """
+  def handle_E(emulator, [n | _]) when is_integer(n), do: Cursor.move_down_and_home(emulator, n)
+  def handle_E(emulator, _), do: Cursor.move_down_and_home(emulator, 1)
+
+  @doc """
+  CSI F: Cursor Previous Line (CPL)
+  """
+  def handle_F(emulator, [n | _]) when is_integer(n), do: Cursor.move_up_and_home(emulator, n)
+  def handle_F(emulator, _), do: Cursor.move_up_and_home(emulator, 1)
+
+  @doc """
+  CSI G: Cursor Horizontal Absolute (CHA)
+  """
+  def handle_G(emulator, [n | _]) when is_integer(n), do: Cursor.move_to_column(emulator, n)
+  def handle_G(emulator, _), do: Cursor.move_to_column(emulator, 1)
+
+  @doc """
+  CSI H: Cursor Position (CUP)
+  """
+  def handle_H(emulator, [row, col | _]), do: Cursor.move_to(emulator, {row, col})
+  def handle_H(emulator, _), do: Cursor.move_to(emulator, {1, 1})
+
+  # Screen Manipulation Handlers
+  @doc """
+  CSI J: Erase in Display (ED)
+  """
+  def handle_J(emulator, [mode | _]), do: Screen.erase_display(emulator, mode)
+  def handle_J(emulator, _), do: Screen.erase_display(emulator, 0)
+
+  @doc """
+  CSI K: Erase in Line (EL)
+  """
+  def handle_K(emulator, [mode | _]), do: Screen.erase_line(emulator, mode)
+  def handle_K(emulator, _), do: Screen.erase_line(emulator, 0)
+
+  @doc """
+  CSI L: Insert Lines (IL)
+  """
+  def handle_L(emulator, [n | _]), do: Screen.insert_lines(emulator, n)
+  def handle_L(emulator, _), do: Screen.insert_lines(emulator, 1)
+
+  @doc """
+  CSI M: Delete Lines (DL)
+  """
+  def handle_M(emulator, [n | _]), do: Screen.delete_lines(emulator, n)
+  def handle_M(emulator, _), do: Screen.delete_lines(emulator, 1)
+
+  @doc """
+  CSI P: Delete Characters (DCH)
+  """
+  def handle_P(emulator, [n | _]), do: Screen.delete_chars(emulator, n)
+  def handle_P(emulator, _), do: Screen.delete_chars(emulator, 1)
+
+  @doc """
+  CSI @: Insert Characters (ICH)
+  """
+  def handle_at(emulator, [n | _]), do: Screen.insert_chars(emulator, n)
+  def handle_at(emulator, _), do: Screen.insert_chars(emulator, 1)
+
+  @doc """
+  CSI X: Erase Characters (ECH)
+  """
+  def handle_X(emulator, [n | _]), do: Screen.erase_chars(emulator, n)
+  def handle_X(emulator, _), do: Screen.erase_chars(emulator, 1)
+
+  # Device Status/Mode Handlers
+  @doc """
+  CSI n: Device Status Report (DSR)
+  """
+  def handle_n(emulator, params), do: DeviceStatus.handle_status_report(emulator, params)
+
+  @doc """
+  CSI h: Set Mode (SM)
+  """
+  def handle_h_or_l(emulator, params, _intermediates, ?h), do: handle_set_mode(emulator, params)
+  @doc """
+  CSI l: Reset Mode (RM)
+  """
+  def handle_h_or_l(emulator, params, _intermediates, ?l), do: handle_reset_mode(emulator, params)
+
+  @doc """
+  CSI s: Save Cursor (SCP)
+  Saves the current cursor position and attributes.
+  """
+  def handle_s(emulator, _params) do
+    # Save current cursor state
+    saved_cursor = %{
+      position: EmulatorStruct.get_cursor_position(emulator),
+      style: emulator.cursor_style,
+      attributes: emulator.style
+    }
+
+    {:ok, %{emulator | saved_cursor: saved_cursor}}
+  end
+
+  @doc """
+  CSI u: Restore Cursor (RCP)
+  Restores the previously saved cursor position and attributes.
+  """
+  def handle_u(emulator, _params) do
+    case emulator.saved_cursor do
+      nil ->
+        # No saved cursor state, do nothing
+        {:ok, emulator}
+
+      saved ->
+        # Restore cursor position and attributes
+        emulator = %{emulator |
+          cursor: Cursor.move_to(emulator.cursor, saved.position),
+          cursor_style: saved.style,
+          style: saved.attributes,
+          saved_cursor: nil  # Clear saved state after restore
+        }
+
+        {:ok, emulator}
+    end
+  end
+
+  @doc """
+  CSI r: Set scroll region
+  Sets the scroll region between top and bottom lines.
+  """
+  def handle_r(emulator, [top, bottom | _]) do
+    # Validate scroll region
+    top = max(1, min(top, emulator.height))
+    bottom = max(top, min(bottom, emulator.height))
+
+    # Set scroll region
+    emulator = %{emulator | scroll_region: {top, bottom}}
+
+    # Move cursor to home position
+    emulator = Cursor.move_to(emulator, {1, 1})
+
+    {:ok, emulator}
+  end
+  def handle_r(emulator, _), do: {:ok, emulator}
+
+  @doc """
+  CSI m: Select Graphic Rendition (SGR)
+  Handles text styling and colors.
+  """
   def handle_m(emulator, params) do
-    Raxol.Core.Runtime.Log.debug(
-      "[SGR Handler] Input Style: #{inspect(emulator.style)}, Params: #{inspect(params)}"
-    )
+    # Default to 0 (reset) if no parameters
+    params = if Enum.empty?(params), do: [0], else: params
 
-    new_style = SGRHandler.apply_sgr_params(params, emulator.style)
+    # Process each SGR parameter
+    {new_style, _} = Enum.reduce(params, {emulator.style, []}, fn param, {style, color_params} ->
+      case {param, color_params} do
+        # Reset all attributes
+        {0, _} -> {TextFormatting.new(), []}
 
-    Raxol.Core.Runtime.Log.debug(
-      "[SGR Handler] Output Style: #{inspect(new_style)}"
-    )
+        # 256-color foreground
+        {38, []} -> {style, [:foreground]}
+        {38, [:foreground, 5, color]} -> {TextFormatting.set_foreground_256(style, color), []}
+        {38, [:foreground, 2, r, g, b]} -> {TextFormatting.set_foreground_rgb(style, {r, g, b}), []}
+
+        # 256-color background
+        {48, []} -> {style, [:background]}
+        {48, [:background, 5, color]} -> {TextFormatting.set_background_256(style, color), []}
+        {48, [:background, 2, r, g, b]} -> {TextFormatting.set_background_rgb(style, {r, g, b}), []}
+
+        # Collect color parameters
+        {p, [:foreground | rest]} -> {style, [:foreground, p | rest]}
+        {p, [:background | rest]} -> {style, [:background, p | rest]}
+
+        # Bold
+        {1, _} -> {TextFormatting.set_bold(style, true), []}
+        {22, _} -> {TextFormatting.set_bold(style, false), []}
+
+        # Italic
+        {3, _} -> {TextFormatting.set_italic(style, true), []}
+        {23, _} -> {TextFormatting.set_italic(style, false), []}
+
+        # Underline
+        {4, _} -> {TextFormatting.set_underline(style, true), []}
+        {24, _} -> {TextFormatting.set_underline(style, false), []}
+
+        # Blink
+        {5, _} -> {TextFormatting.set_blink(style, true), []}
+        {25, _} -> {TextFormatting.set_blink(style, false), []}
+
+        # Reverse video
+        {7, _} -> {TextFormatting.set_reverse(style, true), []}
+        {27, _} -> {TextFormatting.set_reverse(style, false), []}
+
+        # Conceal
+        {8, _} -> {TextFormatting.apply_attribute(style, :conceal), []}
+        {28, _} -> {TextFormatting.apply_attribute(style, :reveal), []}
+
+        # Foreground colors
+        {30, _} -> {TextFormatting.set_foreground(style, :black), []}
+        {31, _} -> {TextFormatting.set_foreground(style, :red), []}
+        {32, _} -> {TextFormatting.set_foreground(style, :green), []}
+        {33, _} -> {TextFormatting.set_foreground(style, :yellow), []}
+        {34, _} -> {TextFormatting.set_foreground(style, :blue), []}
+        {35, _} -> {TextFormatting.set_foreground(style, :magenta), []}
+        {36, _} -> {TextFormatting.set_foreground(style, :cyan), []}
+        {37, _} -> {TextFormatting.set_foreground(style, :white), []}
+        {39, _} -> {TextFormatting.set_foreground(style, :default), []}
+
+        # Background colors
+        {40, _} -> {TextFormatting.set_background(style, :black), []}
+        {41, _} -> {TextFormatting.set_background(style, :red), []}
+        {42, _} -> {TextFormatting.set_background(style, :green), []}
+        {43, _} -> {TextFormatting.set_background(style, :yellow), []}
+        {44, _} -> {TextFormatting.set_background(style, :blue), []}
+        {45, _} -> {TextFormatting.set_background(style, :magenta), []}
+        {46, _} -> {TextFormatting.set_background(style, :cyan), []}
+        {47, _} -> {TextFormatting.set_background(style, :white), []}
+        {49, _} -> {TextFormatting.set_background(style, :default), []}
+
+        # Bright foreground colors
+        {90, _} -> {TextFormatting.set_foreground(style, :bright_black), []}
+        {91, _} -> {TextFormatting.set_foreground(style, :bright_red), []}
+        {92, _} -> {TextFormatting.set_foreground(style, :bright_green), []}
+        {93, _} -> {TextFormatting.set_foreground(style, :bright_yellow), []}
+        {94, _} -> {TextFormatting.set_foreground(style, :bright_blue), []}
+        {95, _} -> {TextFormatting.set_foreground(style, :bright_magenta), []}
+        {96, _} -> {TextFormatting.set_foreground(style, :bright_cyan), []}
+        {97, _} -> {TextFormatting.set_foreground(style, :bright_white), []}
+
+        # Bright background colors
+        {100, _} -> {TextFormatting.set_background(style, :bright_black), []}
+        {101, _} -> {TextFormatting.set_background(style, :bright_red), []}
+        {102, _} -> {TextFormatting.set_background(style, :bright_green), []}
+        {103, _} -> {TextFormatting.set_background(style, :bright_yellow), []}
+        {104, _} -> {TextFormatting.set_background(style, :bright_blue), []}
+        {105, _} -> {TextFormatting.set_background(style, :bright_magenta), []}
+        {106, _} -> {TextFormatting.set_background(style, :bright_cyan), []}
+        {107, _} -> {TextFormatting.set_background(style, :bright_white), []}
+
+        # Unknown parameter, ignore
+        {_, _} -> {style, []}
+      end
+    end)
 
     {:ok, %{emulator | style: new_style}}
   end
 
-  # Delegate cursor movement handlers
-  @spec handle_H(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_H(emulator, params), do: CursorHandlers.handle_H(emulator, params)
+  @doc """
+  CSI t: Window manipulation
+  """
+  def handle_t(emulator, params), do: WindowManager.handle_window_command(emulator, params)
 
-  @spec handle_A(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_A(emulator, params), do: CursorHandlers.handle_A(emulator, params)
+  @doc """
+  CSI c: Device Attributes (DA)
+  """
+  def handle_c(emulator, params, intermediates), do: DeviceStatus.handle_device_attributes(emulator, params, intermediates)
 
-  @spec handle_B(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_B(emulator, params), do: CursorHandlers.handle_B(emulator, params)
-
-  @spec handle_C(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_C(emulator, params), do: CursorHandlers.handle_C(emulator, params)
-
-  @spec handle_D(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_D(emulator, params), do: CursorHandlers.handle_D(emulator, params)
-
-  @spec handle_E(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_E(emulator, params), do: CursorHandlers.handle_E(emulator, params)
-
-  @spec handle_F(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_F(emulator, params), do: CursorHandlers.handle_F(emulator, params)
-
-  @spec handle_G(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_G(emulator, params) do
-    # Default to 0 if no params or param is not an integer
-    param =
-      case params do
-        [p | _] when is_integer(p) -> p
-        _ -> 0
-      end
-
-    case param do
-      0 ->
-        # Clear horizontal tab stop at current position
-        # Get current cursor column
-        {current_col, _current_row} =
-          Raxol.Terminal.Emulator.get_cursor_position(emulator)
-
-        new_tab_stops = MapSet.delete(emulator.tab_stops, current_col)
-        {:ok, %{emulator | tab_stops: new_tab_stops}}
-
-      3 ->
-        # Clear all horizontal tab stops
-        # Reset to default tab stops based on current width
-        new_tab_stops =
-          Raxol.Terminal.Buffer.Manager.default_tab_stops(emulator.width)
-          |> MapSet.new()
-
-        {:ok, %{emulator | tab_stops: new_tab_stops}}
-
-      _ ->
-        # If not 0 or 3, assume it's Cursor Character Absolute (CHA)
-        # and delegate to the original CursorHandlers.handle_G
-        # This ensures existing CHA functionality is preserved.
-        CursorHandlers.handle_G(emulator, params)
-    end
-  end
-
-  @spec handle_d(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_d(emulator, params), do: CursorHandlers.handle_d(emulator, params)
-
-  # Delegate buffer operation handlers
-  @spec handle_L(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_L(emulator, params), do: BufferHandlers.handle_L(emulator, params)
-
-  @spec handle_M(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_M(emulator, params), do: BufferHandlers.handle_M(emulator, params)
-
-  @spec handle_P(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_P(emulator, params), do: BufferHandlers.handle_P(emulator, params)
-
-  @spec handle_at(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_at(emulator, params),
-    do: BufferHandlers.handle_at(emulator, params)
-
-  @spec handle_X(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_X(emulator, params), do: BufferHandlers.handle_X(emulator, params)
-
-  @spec handle_S(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_S(emulator, params), do: BufferHandlers.handle_S(emulator, params)
-
-  @spec handle_T(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_T(emulator, params), do: BufferHandlers.handle_T(emulator, params)
-
-  # Delegate erase handlers
-  @spec handle_J(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_J(emulator, params), do: EraseHandlers.handle_J(emulator, params)
-
-  @spec handle_K(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_K(emulator, params), do: EraseHandlers.handle_K(emulator, params)
-
-  # Delegate device status handlers
-  defdelegate handle_n(emulator, params), to: DeviceHandlers
-
-  defdelegate handle_c(emulator, params, intermediates_buffer),
-    to: DeviceHandlers
-
-  # Delegate mode handlers
-  defdelegate handle_h_or_l(emulator, params, intermediates_buffer, final_byte),
-    to: ModeHandlers
-
-  # Delegate window manipulation handlers
-  defdelegate handle_t(emulator, params), to: WindowHandlers
-
-  @doc "Handles Save Cursor (SCP - 's')"
-  @spec handle_s(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_s(emulator, _params) do
-    {:ok, %{emulator | saved_cursor: emulator.cursor}}
-  end
-
-  @doc "Handles Restore Cursor (RCP - 'u')"
-  @spec handle_u(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_u(emulator, _params) do
-    case emulator.saved_cursor do
-      nil ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "No saved cursor position to restore",
-          %{}
-        )
-
-        {:error, :no_saved_cursor, emulator}
-
-      saved_cursor ->
-        {:ok, %{emulator | cursor: saved_cursor}}
-    end
-  end
-
-  @doc "Handles Set Cursor Style (DECSCUSR - 'q')"
-  @spec handle_q_deccusr(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  @doc """
+  CSI q: Set cursor style (DECSCUSR)
+  Controls the appearance of the cursor.
+  """
   def handle_q_deccusr(emulator, params) do
-    style = ParameterValidation.get_valid_non_neg_param(params, 0, 0)
-    cursor_style = map_cursor_style(style, emulator.cursor.style)
-    {:ok, %{emulator | cursor: %{emulator.cursor | style: cursor_style}}}
-  end
-
-  # Helper function to map cursor style code to style atom
-  @spec map_cursor_style(non_neg_integer(), CursorManager.style()) ::
-          CursorManager.style()
-  defp map_cursor_style(style, current_style) do
-    case style do
-      0 ->
-        :blink_block
-
-      1 ->
-        :blink_block
-
-      2 ->
-        :steady_block
-
-      3 ->
-        :blink_underline
-
-      4 ->
-        :steady_underline
-
-      5 ->
-        :blink_bar
-
-      6 ->
-        :steady_bar
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Unknown cursor style: #{style}",
-          %{}
-        )
-
-        current_style
+    case params do
+      # Blinking block
+      [0] -> {:ok, %{emulator | cursor_style: :blinking_block}}
+      # Steady block
+      [1] -> {:ok, %{emulator | cursor_style: :steady_block}}
+      # Blinking underline
+      [2] -> {:ok, %{emulator | cursor_style: :blinking_underline}}
+      # Steady underline
+      [3] -> {:ok, %{emulator | cursor_style: :steady_underline}}
+      # Blinking bar
+      [4] -> {:ok, %{emulator | cursor_style: :blinking_bar}}
+      # Steady bar
+      [5] -> {:ok, %{emulator | cursor_style: :steady_bar}}
+      # Reset to default
+      [6] -> {:ok, %{emulator | cursor_style: :blinking_block}}
+      # Unknown style, ignore
+      _ -> {:ok, emulator}
     end
   end
 
-  @doc "Handles Designate Character Set (SCS - via non-standard CSI sequences)"
-  @spec handle_scs(Emulator.t(), String.t(), char()) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_scs(emulator, charset_param_str, final_byte)
-      when is_map(emulator) and is_binary(charset_param_str) and
-             is_integer(final_byte) do
-    if not Map.has_key?(emulator, :charset_state) do
-      msg =
-        "SCS: Emulator missing :charset_state key. Emulator: #{inspect(emulator)}"
+  @doc """
+  CSI S: Scroll up
+  """
+  def handle_S(emulator, [n | _]), do: Screen.scroll_up(emulator, n)
+  def handle_S(emulator, _), do: Screen.scroll_up(emulator, 1)
 
-      Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
-      {:error, :missing_charset_state, emulator}
-    else
-      # Parse the charset parameter string
-      case parse_charset_param(charset_param_str) do
-        {:ok, charset_code} ->
-          # Map the final byte to the appropriate G-set
-          gset = map_final_byte_to_gset(final_byte)
+  @doc """
+  CSI T: Scroll down
+  """
+  def handle_T(emulator, [n | _]), do: Screen.scroll_down(emulator, n)
+  def handle_T(emulator, _), do: Screen.scroll_down(emulator, 1)
 
-          if gset do
-            # Map the charset code to the appropriate charset module
-            charset = map_charset_code_to_module(charset_code)
+  @doc """
+  CSI d: Vertical Position Absolute (VPA)
+  """
+  def handle_d(emulator, [row | _]), do: CursorMovement.move_to_line(emulator, row)
+  def handle_d(emulator, _), do: CursorMovement.move_to_line(emulator, 1)
 
-            if charset do
-              # Update the charset state
-              new_charset_state = %{emulator.charset_state | gset => charset}
-              {:ok, %{emulator | charset_state: new_charset_state}}
-            else
-              Raxol.Core.Runtime.Log.warning_with_context(
-                "Unknown charset code: #{charset_code}",
-                %{}
-              )
+  @doc """
+  CSI scs: Set Character Set (SCS)
+  """
+  def handle_scs(emulator, params_buffer, final_byte), do: CharsetManager.handle_set_charset(emulator, params_buffer, final_byte)
 
-              {:error, :unknown_charset_code, emulator}
-            end
-          else
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Invalid final byte for SCS: #{final_byte}",
-              %{}
-            )
+  @doc """
+  Handle set mode command.
+  Sets various terminal modes.
+  """
+  def handle_set_mode(emulator, params) do
+    Enum.reduce(params, {:ok, emulator}, fn param, {:ok, emulator} ->
+      case param do
+        # Cursor Keys Mode (DECCKM)
+        1 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:decckm])}}
 
-            {:error, :invalid_final_byte, emulator}
-          end
+        # ANSI/VT52 Mode (DECANM)
+        2 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:ansi_mode])}}
 
-        :error ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Failed to parse charset parameter: #{charset_param_str}",
-            %{}
-          )
+        # Column Mode (DECCOLM)
+        3 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:deccolm_132])}}
 
-          {:error, :invalid_charset_param, emulator}
+        # Scrolling Mode (DECSCLM)
+        4 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:smooth_scroll])}}
+
+        # Screen Mode (DECSCNM)
+        5 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:decscnm])}}
+
+        # Origin Mode (DECOM)
+        6 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:decom])}}
+
+        # Auto Wrap Mode (DECAWM)
+        7 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:decawm])}}
+
+        # Auto Repeat Mode (DECARM)
+        8 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:decarm])}}
+
+        # Interlace Mode (DECINLM)
+        9 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, [:decinlm])}}
+
+        # Unknown mode, ignore
+        _ -> {:ok, emulator}
       end
-    end
+    end)
   end
 
-  # Helper function to parse charset parameter
-  @spec parse_charset_param(String.t()) :: {:ok, char()} | :error
-  defp parse_charset_param("") do
-    # Default to US ASCII
-    {:ok, ?B}
-  end
+  @doc """
+  Handle reset mode command.
+  Resets various terminal modes.
+  """
+  def handle_reset_mode(emulator, params) do
+    Enum.reduce(params, {:ok, emulator}, fn param, {:ok, emulator} ->
+      case param do
+        # Cursor Keys Mode (DECCKM)
+        1 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :cursor_keys, false)}}
 
-  defp parse_charset_param(<<code::utf8>>) when code >= ?A and code <= ?Z do
-    {:ok, code}
-  end
+        # ANSI/VT52 Mode (DECANM)
+        2 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :ansi_mode, false)}}
 
-  defp parse_charset_param(_) do
-    :error
-  end
+        # Column Mode (DECCOLM)
+        3 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :column_mode, false)}}
 
-  # Helper function to map final byte to G-set
-  @spec map_final_byte_to_gset(char()) :: :g0 | :g1 | :g2 | :g3 | nil
-  defp map_final_byte_to_gset(final_byte) do
-    case final_byte do
-      ?( -> :g0
-      ?) -> :g1
-      ?* -> :g2
-      ?+ -> :g3
-      _ -> nil
-    end
-  end
+        # Scrolling Mode (DECSCLM)
+        4 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :smooth_scroll, false)}}
 
-  # Helper function to map charset code to module
-  @spec map_charset_code_to_module(char()) :: module() | nil
-  defp map_charset_code_to_module(code) do
-    case code do
-      # DEC Special Graphics
-      code when code in [?0, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?<, ?=, ?>, ??] ->
-        Raxol.Terminal.ANSI.CharacterSets.DECSpecialGraphics
+        # Screen Mode (DECSCNM)
+        5 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :reverse_video, false)}}
 
-      # German character set
-      code
-      when code in [?A..?Z, ?a..?z, ?[, ?\\, ?], ?^, ?_, ?`, ?{, ?|, ?}, ?~] ->
-        Raxol.Terminal.ANSI.CharacterSets.German
+        # Origin Mode (DECOM)
+        6 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :origin_mode, false)}}
 
-      # French character set
-      code when code in [?D..?E] ->
-        Raxol.Terminal.ANSI.CharacterSets.French
+        # Auto Wrap Mode (DECAWM)
+        7 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :auto_wrap, false)}}
 
-      _ ->
-        nil
-    end
-  end
+        # Auto Repeat Mode (DECARM)
+        8 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :auto_repeat, false)}}
 
-  @doc "Handles cursor movement sequences"
-  @spec handle_cursor_movement(Emulator.t(), list(char())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_cursor_movement(emulator, [direction | _]) do
-    case direction do
-      # Cursor Up
-      ?A -> handle_A(emulator, [1])
-      # Cursor Down
-      ?B -> handle_B(emulator, [1])
-      # Cursor Forward
-      ?C -> handle_C(emulator, [1])
-      # Cursor Backward
-      ?D -> handle_D(emulator, [1])
-      _ -> {:error, :invalid_direction, emulator}
-    end
-  end
+        # Interlace Mode (DECINLM)
+        9 -> {:ok, %{emulator | mode_manager: ModeManager.set_mode(emulator.mode_manager, :interlace, false)}}
 
-  @doc "Handles cursor positioning sequences"
-  @spec handle_cursor_position(Emulator.t(), list(char())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_cursor_position(emulator, params) do
-    case params do
-      # Default to home position
-      [] -> handle_H(emulator, [1, 1])
-      # Convert ASCII to numbers
-      [row, ?;, col] -> handle_H(emulator, [row - ?0, col - ?0])
-      _ -> {:error, :invalid_params, emulator}
-    end
-  end
-
-  @doc "Handles screen clearing sequences"
-  @spec handle_screen_clear(Emulator.t(), list(char())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_screen_clear(emulator, params) do
-    case params do
-      # Clear from cursor to end of screen
-      [] -> handle_J(emulator, [0])
-      # Clear from cursor to beginning of screen
-      [?1] -> handle_J(emulator, [1])
-      # Clear entire screen
-      [?2] -> handle_J(emulator, [2])
-      _ -> {:error, :invalid_params, emulator}
-    end
-  end
-
-  @doc "Handles line clearing sequences"
-  @spec handle_line_clear(Emulator.t(), list(char())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_line_clear(emulator, params) do
-    case params do
-      # Clear from cursor to end of line
-      [] -> handle_K(emulator, [0])
-      # Clear from cursor to beginning of line
-      [?1] -> handle_K(emulator, [1])
-      # Clear entire line
-      [?2] -> handle_K(emulator, [2])
-      _ -> {:error, :invalid_params, emulator}
-    end
-  end
-
-  @doc "Handles device status sequences"
-  @spec handle_device_status(Emulator.t(), list(char())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_device_status(emulator, params) do
-    case params do
-      # Device Status Report
-      [?6, ?n] -> handle_n(emulator, [6])
-      # Cursor Position Report
-      [?6, ?R] -> handle_n(emulator, [6])
-      _ -> {:error, :invalid_params, emulator}
-    end
-  end
-
-  @doc "Handles save/restore cursor sequences"
-  @spec handle_save_restore_cursor(Emulator.t(), list(char())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_save_restore_cursor(emulator, [action | _]) do
-    case action do
-      # Save Cursor Position
-      ?s -> handle_s(emulator, [])
-      # Restore Cursor Position
-      ?u -> handle_u(emulator, [])
-      _ -> {:error, :invalid_action, emulator}
-    end
-  end
-
-  @doc "Handles Set Scrolling Region (DECSTBM - 'r')"
-  @spec handle_r(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_r(emulator, params) do
-    case params do
-      [] ->
-        # Reset scroll region to full screen
-        {:ok, %{emulator | scroll_region: nil}}
-
-      [top, bottom] when is_integer(top) and is_integer(bottom) ->
-        # Validate and set scroll region
-        if top > 0 and bottom <= emulator.height and top < bottom do
-          {:ok, %{emulator | scroll_region: {top, bottom}}}
-        else
-          {:error, :invalid_scroll_region, emulator}
-        end
-
-      _ ->
-        {:error, :invalid_params, emulator}
-    end
+        # Unknown mode, ignore
+        _ -> {:ok, emulator}
+      end
+    end)
   end
 end

@@ -80,11 +80,12 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   # Server Callbacks
   @impl true
   def init(opts) do
+    opts_map = Map.new(opts)
     state = %{
       plugins: %{},
-      plugin_paths: Map.get(opts, :plugin_paths, []),
-      auto_load: Map.get(opts, :auto_load, true),
-      plugin_config: Map.get(opts, :plugin_config, %{})
+      plugin_paths: Map.get(opts_map, :plugin_paths, []),
+      auto_load: Map.get(opts_map, :auto_load, true),
+      plugin_config: Map.get(opts_map, :plugin_config, %{})
     }
 
     if state.auto_load do

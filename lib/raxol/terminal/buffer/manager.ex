@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
       iex> Process.alive?(pid)
       true
   """
-  @impl true
+  @impl GenServer
   def start_link(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     GenServer.start_link(__MODULE__, opts)
@@ -77,15 +77,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Gets the current state of the buffer manager.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> state = Buffer.Manager.get_state(pid)
-      iex> state.active_buffer.width
-      80
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_state, _from, state) do
     new_state = Map.new(state)
     {:reply, new_state, state}
@@ -93,17 +86,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Sets a cell in the active buffer.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> cell = %Cell{char: "A", fg: :red, bg: :blue}
-      iex> :ok = Buffer.Manager.set_cell(pid, 0, 0, cell)
-      iex> state = Buffer.Manager.get_state(pid)
-      iex> Buffer.get_cell(state, 0, 0)
-      %Cell{char: "A", fg: :red, bg: :blue}
   """
-  @impl true
+  @impl GenServer
   def handle_call({:set_cell, x, y, cell}, _from, state) do
     state = Buffer.set_cell(state, x, y, cell)
     state = Damage.mark_region(state, x, y, 1, 1)
@@ -112,14 +96,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Gets a cell from the active buffer.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> Buffer.Manager.get_cell(pid, 0, 0)
-      %Cell{char: " ", fg: :default, bg: :default}
   """
-  @impl true
+  @impl GenServer
   def handle_call({:get_cell, x, y}, _from, state) do
     cell = Buffer.get_cell(state, x, y)
     {:reply, cell, state}
@@ -127,16 +105,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Sets the cursor position.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> :ok = Buffer.Manager.set_cursor(pid, 10, 5)
-      iex> state = Buffer.Manager.get_state(pid)
-      iex> Cursor.get_position(state)
-      {10, 5}
   """
-  @impl true
+  @impl GenServer
   def handle_call({:set_cursor, x, y}, _from, state) do
     state = Cursor.move_to(state, x, y)
     {:reply, :ok, state}
@@ -144,14 +114,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Gets the current cursor position.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> Buffer.Manager.get_cursor(pid)
-      {0, 0}
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_cursor, _from, state) do
     position = Cursor.get_position(state)
     {:reply, position, state}
@@ -159,14 +123,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Gets the damaged regions in the buffer.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> Buffer.Manager.get_damage(pid)
-      []
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_damage, _from, state) do
     regions = Damage.get_regions(state)
     {:reply, regions, state}
@@ -176,7 +134,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Clears the damage tracking for the buffer.
   Works with both state struct and PID versions.
   """
-  @impl true
+  @impl GenServer
   def handle_call(:clear_damage, _from, state) do
     state = Damage.clear_regions(state)
     {:reply, :ok, state}
@@ -184,14 +142,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Gets the current memory usage.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> Buffer.Manager.get_memory_usage(pid)
-      0
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_memory_usage, _from, state) do
     usage = Memory.get_usage(state)
     {:reply, usage, state}
@@ -199,14 +151,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Gets the number of lines in the scrollback buffer.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> Buffer.Manager.get_scrollback_count(pid)
-      0
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_scrollback_count, _from, state) do
     count = Scrollback.get_line_count(state)
     {:reply, count, state}
@@ -214,18 +160,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Resizes the buffer.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> :ok = Buffer.Manager.resize(pid, 100, 30)
-      iex> state = Buffer.Manager.get_state(pid)
-      iex> state.active_buffer.width
-      100
-      iex> state.active_buffer.height
-      30
   """
-  @impl true
+  @impl GenServer
   def handle_call({:resize, width, height}, _from, state) do
     state = Buffer.resize(state, width, height)
     state = Damage.mark_all(state)
@@ -237,7 +173,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Delegated from Raxol.Terminal.Buffer.
   Coordinates (x1, y1) and (x2, y2) define the top-left and bottom-right of the region.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:fill_region, x1, y1, x2, y2, cell}, _from, state) do
     # x2, y2 are inclusive end coordinates.
     # Raxol.Terminal.Buffer.Manager.Buffer.fill_region expects x, y, width, height
@@ -280,7 +216,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Copies a region from (x1, y1)-(x2, y2) to (dest_x, dest_y) in the active buffer.
   Delegated from Raxol.Terminal.Buffer.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:copy_region, x1, y1, x2, y2, dest_x, dest_y}, _from, state) do
     width = x2 - x1 + 1
     height = y2 - y1 + 1
@@ -323,7 +259,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Scrolls a region (x1, y1)-(x2, y2) by a given amount in the active buffer.
   Delegated from Raxol.Terminal.Buffer.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:scroll_region, x1, y1, x2, y2, amount}, _from, state) do
     width = x2 - x1 + 1
     height = y2 - y1 + 1
@@ -365,7 +301,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Clears the active buffer.
   Delegated from Raxol.Terminal.Buffer.
   """
-  @impl true
+  @impl GenServer
   def handle_call(:clear, _from, state) do
     # Use Raxol.Terminal.Buffer.Manager.Buffer.clear/1 to clear the active buffer
     new_state = Raxol.Terminal.Buffer.Manager.Buffer.clear(state)
@@ -388,7 +324,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Marks a region of the buffer as damaged (needs redraw).
   """
-  @impl true
+  @impl GenServer
   def handle_call({:mark_damaged, x, y, width, height}, _from, state) do
     # Mark the region from (x, y) to (x + width - 1, y + height - 1)
     state = Damage.mark_region(state, x, y, x + width - 1, y + height - 1)
@@ -399,22 +335,22 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Updates the memory usage tracking for the buffer.
   Works with both state struct and PID versions.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:update_memory_usage, state}, _from) do
     updated_state = update_memory_usage(state)
     {:reply, updated_state, state}
   end
 
+  @impl GenServer
   def handle_call({:update_memory_usage, pid}, _from) when is_pid(pid) do
-    get_state(pid)
-    |> update_memory_usage()
-    |> handle_call({:update_memory_usage, _}, _)
+    updated_state = get_state(pid) |> update_memory_usage()
+    {:reply, updated_state, updated_state}
   end
 
   @doc """
   Sets the cursor position in the buffer manager.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:set_cursor_position, x, y}, _from, state) do
     new_state = %{state | cursor: %{state.cursor | x: x, y: y}}
     {:reply, :ok, new_state}
@@ -424,7 +360,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Checks if the buffer needs to scroll (stub implementation).
   Returns the state unchanged for now.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:maybe_scroll, state}, _from) do
     state
   end
@@ -432,7 +368,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Returns all damaged regions in the buffer manager state.
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_damage_regions, _from, state) do
     regions = Damage.get_regions(state)
     {:reply, regions, state}
@@ -441,7 +377,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Returns true if the buffer manager's memory usage is within limits.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:within_memory_limits?, state}, _from) do
     within_memory_limits?(state)
   end
@@ -449,7 +385,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Gets the active buffer (either main or scrollback).
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_active_buffer, _from, state) do
     case state.active_buffer do
       :main -> state.active_buffer
@@ -460,7 +396,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Updates the active buffer with new content.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:update_active_buffer, new_content}, _from, state) do
     case state.active_buffer do
       :main -> %{state | active_buffer: new_content}
@@ -471,7 +407,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Gets the cursor position from the manager state.
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_cursor_position, _from, state) do
     state.cursor_position
   end
@@ -479,7 +415,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Gets the visible content of the buffer.
   """
-  @impl true
+  @impl GenServer
   def handle_call(:get_visible_content, _from, %{active_buffer: buffer, scrollback: scrollback} = _state) do
     # Get scrollback lines (if any)
     scrollback_lines =
@@ -493,8 +429,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
       buffer.cells
       |> Enum.map(fn row ->
         row
-        |> Enum.map(&Raxol.Terminal.Cell.get_char/1)
-        |> Enum.join("")
+        |> Enum.map_join("", &Raxol.Terminal.Cell.get_char/1)
         |> String.trim_trailing()
       end)
 
@@ -505,7 +440,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Creates a copy of the current buffer state.
   Returns a new buffer with the same content and dimensions.
   """
-  @impl true
+  @impl GenServer
   def handle_call(:copy, _from, state) do
     new_state = Map.new(state)
     {:reply, new_state, state}
@@ -515,7 +450,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Gets the differences between two buffers.
   Returns a list of {x, y, cell} tuples where the cells differ.
   """
-  @impl true
+  @impl GenServer
   def handle_call({:get_differences, other_pid}, _from, state) do
     other_state = get_state(other_pid)
     differences = calculate_differences(state, other_state)
@@ -536,7 +471,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
@@ -547,13 +482,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:tick, state) do
     # Handle periodic updates
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def terminate(reason, _state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Terminating (Reason: #{inspect(reason)})",
@@ -561,5 +496,29 @@ defmodule Raxol.Terminal.Buffer.Manager do
     )
 
     :ok
+  end
+
+  defp within_memory_limits?(state) do
+    # Check if the current memory usage is within the defined limits
+    current_usage = state.memory_usage
+    max_usage = state.memory_limit
+    current_usage <= max_usage
+  end
+
+  defp update_memory_usage(state) do
+    # Update the memory usage based on the current state
+    new_usage = calculate_memory_usage(state)
+    %{state | memory_usage: new_usage}
+  end
+
+  defp get_state(pid) do
+    # Retrieve the current state from the process
+    :sys.get_state(pid)
+  end
+
+  defp calculate_memory_usage(state) do
+    # Calculate the memory usage based on the buffer content
+    # This is a placeholder implementation
+    state.buffer_size * 8
   end
 end

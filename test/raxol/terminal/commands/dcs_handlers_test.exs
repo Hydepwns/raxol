@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
   alias Raxol.Terminal.Commands.DCSHandlers
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   # For new_emulator
   alias Raxol.Terminal.ANSI.TextFormatting
   # For new_emulator
@@ -187,7 +188,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
                  ) do
               {:ok, emu} -> emu
               {:error, _reason, emu} -> emu
-              %Emulator{} = emu -> emu
+              %EmulatorStruct{} = emu -> emu
             end
 
           # Ensure emulator state is unchanged for output_buffer
@@ -345,11 +346,11 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
                  ) do
               {:ok, emu} -> emu
               {:error, _reason, emu} -> emu
-              %Emulator{} = emu -> emu
+              %EmulatorStruct{} = emu -> emu
             end
 
           # Check if the returned value is an emulator struct and output buffer is unchanged
-          assert %Emulator{} = updated_emulator
+          assert %EmulatorStruct{} = updated_emulator
           assert updated_emulator.output_buffer == emulator.output_buffer
 
           # More robust check: ensure only expected logging happened, not other side effects

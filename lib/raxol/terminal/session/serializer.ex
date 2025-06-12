@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.Session.Serializer do
   """
 
   alias Raxol.Terminal.{Session, Emulator, Renderer, ScreenBuffer}
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Serializes a session state to a map that can be stored and later restored.
@@ -54,12 +55,12 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   # Private functions for serializing/deserializing components
 
-  defp serialize_emulator(%Emulator{} = emulator) do
+  defp serialize_emulator(%EmulatorStruct{} = emulator) do
     %{
       active_buffer_type: emulator.active_buffer_type,
       main_screen_buffer: serialize_screen_buffer(emulator.main_screen_buffer),
       alternate_screen_buffer: serialize_screen_buffer(emulator.alternate_screen_buffer),
-      scrollback_lines: emulator.scrollback_lines
+      scrollback_limit: emulator.scrollback_limit
     }
   end
 
@@ -83,15 +84,15 @@ defmodule Raxol.Terminal.Session.Serializer do
          active_buffer_type: active_buffer_type,
          main_screen_buffer: main_buffer_data,
          alternate_screen_buffer: alt_buffer_data,
-         scrollback_lines: scrollback_lines
+         scrollback_limit: scrollback_limit
        }) do
     with {:ok, main_buffer} <- deserialize_screen_buffer(main_buffer_data),
          {:ok, alt_buffer} <- deserialize_screen_buffer(alt_buffer_data) do
-      emulator = %Emulator{
+      emulator = %EmulatorStruct{
         active_buffer_type: active_buffer_type,
         main_screen_buffer: main_buffer,
         alternate_screen_buffer: alt_buffer,
-        scrollback_lines: scrollback_lines
+        scrollback_limit: scrollback_limit
       }
 
       {:ok, emulator}
@@ -110,18 +111,24 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp deserialize_screen_buffer(%{
-         width: width,
-         height: height,
          cells: cells,
-         cursor: cursor
+         scrollback: scrollback,
+         scrollback_limit: scrollback_limit,
+         selection: selection,
+         scroll_region: scroll_region,
+         width: width,
+         height: height
        }) do
-    buffer = %ScreenBuffer{
-      width: width,
-      height: height,
+    screen_buffer = %ScreenBuffer{
       cells: cells,
-      cursor: cursor
+      scrollback: scrollback,
+      scrollback_limit: scrollback_limit,
+      selection: selection,
+      scroll_region: scroll_region,
+      width: width,
+      height: height
     }
 
-    {:ok, buffer}
+    {:ok, screen_buffer}
   end
 end

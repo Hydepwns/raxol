@@ -4,7 +4,18 @@ defmodule Raxol.Terminal.Window.Manager do
   This module handles window creation, destruction, switching, and state management.
   """
 
-  alias Raxol.Terminal.{Window, Window.Registry}
+  alias Raxol.Terminal.{Window, Window.Registry, Cursor, Screen}
+
+  @window_commands %{
+    1 => {:handle_deiconify, 0},
+    2 => {:handle_iconify, 0},
+    3 => {:handle_move, 2},
+    4 => {:handle_resize, 2},
+    5 => {:handle_raise, 0},
+    6 => {:handle_lower, 0},
+    7 => {:refresh_window, 0},
+    9 => {:handle_restore_maximize, 1}
+  }
 
   @doc """
   Creates a new window.
@@ -150,5 +161,118 @@ defmodule Raxol.Terminal.Window.Manager do
       nil -> {:error, :no_parent}
       error -> error
     end
+  end
+
+  @doc """
+  Handles window manipulation commands.
+  """
+  def handle_window_command(emulator, params) do
+    case params do
+      [cmd | args] ->
+        case @window_commands[cmd] do
+          {handler, arity} when length(args) == arity ->
+            apply(__MODULE__, handler, [emulator | args])
+          _ -> {:ok, emulator}
+        end
+      _ -> {:ok, emulator}
+    end
+  end
+
+  defp handle_restore_maximize(emulator, 0), do: restore_window(emulator)
+  defp handle_restore_maximize(emulator, 1), do: maximize_window(emulator)
+  defp handle_restore_maximize(emulator, _), do: {:ok, emulator}
+
+  defp handle_deiconify(emulator) do
+    {:ok, %{emulator | window_state: %{emulator.window_state | iconified: false}}}
+  end
+
+  defp handle_iconify(emulator) do
+    {:ok, %{emulator | window_state: %{emulator.window_state | iconified: true}}}
+  end
+
+  defp handle_move(emulator, x, y) do
+    {:ok, %{emulator | window_state: %{emulator.window_state | position: {x, y}}}}
+  end
+
+  defp handle_resize(emulator, width, height) do
+    {:ok, %{emulator |
+      window_state: %{emulator.window_state | size: {width, height}},
+      width: width,
+      height: height
+    }}
+  end
+
+  defp handle_raise(emulator) do
+    {:ok, %{emulator | window_state: %{emulator.window_state | stacking_order: :normal}}}
+  end
+
+  defp handle_lower(emulator) do
+    {:ok, %{emulator | window_state: %{emulator.window_state | stacking_order: :lowered}}}
+  end
+
+  @doc """
+  Refreshes the window by marking the entire screen as damaged and updating cursor state.
+  """
+  def refresh_window(emulator) do
+    # Mark entire screen as damaged for redraw
+    emulator = %{emulator |
+      window_state: %{emulator.window_state |
+        needs_refresh: true,
+        last_refresh: System.monotonic_time()
+      }
+    }
+
+    # Force a full redraw of the screen
+    emulator = case emulator.active_buffer_type do
+      :main ->
+        Screen.mark_damaged(emulator.main_screen_buffer, 0, 0, emulator.width, emulator.height)
+        %{emulator | main_screen_buffer: emulator.main_screen_buffer}
+      :alternate ->
+        Screen.mark_damaged(emulator.alternate_screen_buffer, 0, 0, emulator.width, emulator.height)
+        %{emulator | alternate_screen_buffer: emulator.alternate_screen_buffer}
+    end
+
+    # Update cursor visibility and position
+    emulator = %{emulator |
+      cursor: Cursor.set_visible(emulator.cursor, true),
+      window_state: %{emulator.window_state |
+        cursor_visible: true,
+        cursor_blink: true,
+        cursor_blink_time: System.monotonic_time()
+      }
+    }
+
+    {:ok, emulator}
+  end
+
+  @doc """
+  Restores the window to its previous size.
+  """
+  def restore_window(emulator) do
+    case emulator.window_state.previous_size do
+      nil -> {:ok, emulator}
+      {width, height} ->
+        {:ok, %{emulator |
+          window_state: %{emulator.window_state |
+            size: {width, height},
+            previous_size: nil
+          },
+          width: width,
+          height: height
+        }}
+    end
+  end
+
+  @doc """
+  Maximizes the window and saves the previous size.
+  """
+  def maximize_window(emulator) do
+    {:ok, %{emulator |
+      window_state: %{emulator.window_state |
+        previous_size: emulator.window_state.size,
+        size: {emulator.width, emulator.height},
+        maximized: true
+      }
+    }}
   end
 end

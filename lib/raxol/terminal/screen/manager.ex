@@ -7,11 +7,12 @@ defmodule Raxol.Terminal.Screen.Manager do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Gets the currently active screen buffer.
   """
-  @spec get_active_buffer(Raxol.Terminal.Emulator.t()) :: ScreenBuffer.t()
+  @spec get_active_buffer(EmulatorStruct.t()) :: ScreenBuffer.t()
   def get_active_buffer(%{active_buffer_type: :main} = emulator) do
     emulator.main_screen_buffer
   end
@@ -23,7 +24,7 @@ defmodule Raxol.Terminal.Screen.Manager do
   @doc """
   Updates the currently active screen buffer.
   """
-  @spec update_active_buffer(Raxol.Terminal.Emulator.t(), ScreenBuffer.t()) :: Raxol.Terminal.Emulator.t()
+  @spec update_active_buffer(EmulatorStruct.t(), ScreenBuffer.t()) :: EmulatorStruct.t()
   def update_active_buffer(%{active_buffer_type: :main} = emulator, new_buffer) do
     %{emulator | main_screen_buffer: new_buffer}
   end
@@ -35,7 +36,7 @@ defmodule Raxol.Terminal.Screen.Manager do
   @doc """
   Switches between main and alternate screen buffers.
   """
-  @spec switch_buffer(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec switch_buffer(EmulatorStruct.t()) :: EmulatorStruct.t()
   def switch_buffer(emulator) do
     new_type = if emulator.active_buffer_type == :main, do: :alternate, else: :main
     %{emulator | active_buffer_type: new_type}
@@ -52,7 +53,7 @@ defmodule Raxol.Terminal.Screen.Manager do
   @doc """
   Resizes both screen buffers.
   """
-  @spec resize_buffers(Raxol.Terminal.Emulator.t(), non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.Emulator.t()
+  @spec resize_buffers(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) :: EmulatorStruct.t()
   def resize_buffers(emulator, new_width, new_height) do
     new_main_buffer = ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
     new_alt_buffer = ScreenBuffer.resize(emulator.alternate_screen_buffer, new_width, new_height)
@@ -68,7 +69,7 @@ defmodule Raxol.Terminal.Screen.Manager do
   @doc """
   Gets the current buffer type (main or alternate).
   """
-  @spec get_buffer_type(Raxol.Terminal.Emulator.t()) :: :main | :alternate
+  @spec get_buffer_type(EmulatorStruct.t()) :: :main | :alternate
   def get_buffer_type(emulator) do
     emulator.active_buffer_type
   end
@@ -76,7 +77,7 @@ defmodule Raxol.Terminal.Screen.Manager do
   @doc """
   Sets the buffer type.
   """
-  @spec set_buffer_type(Raxol.Terminal.Emulator.t(), :main | :alternate) :: Raxol.Terminal.Emulator.t()
+  @spec set_buffer_type(EmulatorStruct.t(), :main | :alternate) :: EmulatorStruct.t()
   def set_buffer_type(emulator, type) when type in [:main, :alternate] do
     %{emulator | active_buffer_type: type}
   end

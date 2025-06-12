@@ -121,8 +121,8 @@ defmodule Raxol.Terminal.Sync.Manager do
   # Private Functions
   defp do_sync_state(state, component_id, component_type, new_state, opts) do
     metadata = %{
-      version: System.monotonic_time(),
-      timestamp: System.system_time(),
+      version: Kernel.System.monotonic_time(),
+      timestamp: Kernel.System.system_time(),
       source: Map.get(opts, :source, "unknown")
     }
 
@@ -138,3 +138,4 @@ defmodule Raxol.Terminal.Sync.Manager do
   defp get_consistency_level(:split), do: :strong
   defp get_consistency_level(:window), do: :strong
   defp get_consistency_level(:tab), do: :eventual
+end

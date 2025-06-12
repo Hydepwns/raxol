@@ -271,4 +271,13 @@ defmodule Raxol.Terminal.ModeManager do
       :screen_buffer -> ScreenBufferHandler.handle_mode_change(mode_def.name, true, emulator)
     end
   end
+
+  @doc """
+  Creates a new instance of the ModeManager.
+  """
+  @spec new() :: t()
+  def new do
+    {:ok, pid} = start_link([])
+    pid
+  end
 end

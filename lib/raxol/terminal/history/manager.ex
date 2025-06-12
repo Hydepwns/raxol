@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.History.Manager do
   This module handles command history storage, retrieval, and manipulation.
   """
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Gets the command history.
@@ -17,8 +17,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   List of command history entries
   """
-  @spec get_command_history(Emulator.t()) :: list()
-  def get_command_history(%Emulator{} = emulator) do
+  @spec get_command_history(EmulatorStruct.t()) :: list()
+  def get_command_history(%EmulatorStruct{} = emulator) do
     emulator.command_history
   end
 
@@ -34,8 +34,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   Updated emulator with new command in history
   """
-  @spec add_to_history(Emulator.t(), String.t()) :: Emulator.t()
-  def add_to_history(%Emulator{} = emulator, command) when is_binary(command) do
+  @spec add_to_history(EmulatorStruct.t(), String.t()) :: EmulatorStruct.t()
+  def add_to_history(%EmulatorStruct{} = emulator, command) when is_binary(command) do
     new_history = [command | emulator.command_history]
     # Trim history if it exceeds the limit
     trimmed_history = Enum.take(new_history, emulator.max_command_history)
@@ -53,8 +53,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   Updated emulator with empty command history
   """
-  @spec clear_history(Emulator.t()) :: Emulator.t()
-  def clear_history(%Emulator{} = emulator) do
+  @spec clear_history(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def clear_history(%EmulatorStruct{} = emulator) do
     %{emulator | command_history: []}
   end
 
@@ -70,8 +70,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   The command at the specified index or nil if not found
   """
-  @spec get_history_command(Emulator.t(), non_neg_integer()) :: String.t() | nil
-  def get_history_command(%Emulator{} = emulator, index) when is_integer(index) and index >= 0 do
+  @spec get_history_command(EmulatorStruct.t(), non_neg_integer()) :: String.t() | nil
+  def get_history_command(%EmulatorStruct{} = emulator, index) when is_integer(index) and index >= 0 do
     Enum.at(emulator.command_history, index)
   end
 
@@ -87,8 +87,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   List of matching commands
   """
-  @spec search_history(Emulator.t(), String.t()) :: list()
-  def search_history(%Emulator{} = emulator, prefix) when is_binary(prefix) do
+  @spec search_history(EmulatorStruct.t(), String.t()) :: list()
+  def search_history(%EmulatorStruct{} = emulator, prefix) when is_binary(prefix) do
     emulator.command_history
     |> Enum.filter(&String.starts_with?(&1, prefix))
   end
@@ -104,8 +104,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   The current command buffer
   """
-  @spec get_command_buffer(Emulator.t()) :: String.t()
-  def get_command_buffer(%Emulator{} = emulator) do
+  @spec get_command_buffer(EmulatorStruct.t()) :: String.t()
+  def get_command_buffer(%EmulatorStruct{} = emulator) do
     emulator.current_command_buffer
   end
 
@@ -121,8 +121,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   Updated emulator with new command buffer
   """
-  @spec update_command_buffer(Emulator.t(), String.t()) :: Emulator.t()
-  def update_command_buffer(%Emulator{} = emulator, buffer) when is_binary(buffer) do
+  @spec update_command_buffer(EmulatorStruct.t(), String.t()) :: EmulatorStruct.t()
+  def update_command_buffer(%EmulatorStruct{} = emulator, buffer) when is_binary(buffer) do
     %{emulator | current_command_buffer: buffer}
   end
 
@@ -137,8 +137,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   The maximum number of commands to store in history
   """
-  @spec get_max_history_size(Emulator.t()) :: non_neg_integer()
-  def get_max_history_size(%Emulator{} = emulator) do
+  @spec get_max_history_size(EmulatorStruct.t()) :: non_neg_integer()
+  def get_max_history_size(%EmulatorStruct{} = emulator) do
     emulator.max_command_history
   end
 
@@ -154,8 +154,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   Updated emulator with new maximum history size
   """
-  @spec set_max_history_size(Emulator.t(), non_neg_integer()) :: Emulator.t()
-  def set_max_history_size(%Emulator{} = emulator, size)
+  @spec set_max_history_size(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  def set_max_history_size(%EmulatorStruct{} = emulator, size)
       when is_integer(size) and size > 0 do
     %{emulator | max_command_history: size}
   end
@@ -171,8 +171,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   The last key event map or nil
   """
-  @spec get_last_key_event(Emulator.t()) :: map() | nil
-  def get_last_key_event(%Emulator{} = emulator) do
+  @spec get_last_key_event(EmulatorStruct.t()) :: map() | nil
+  def get_last_key_event(%EmulatorStruct{} = emulator) do
     emulator.last_key_event
   end
 
@@ -188,8 +188,8 @@ defmodule Raxol.Terminal.History.Manager do
 
   Updated emulator with new last key event
   """
-  @spec update_last_key_event(Emulator.t(), map() | nil) :: Emulator.t()
-  def update_last_key_event(%Emulator{} = emulator, event) when is_map(event) or is_nil(event) do
+  @spec update_last_key_event(EmulatorStruct.t(), map() | nil) :: EmulatorStruct.t()
+  def update_last_key_event(%EmulatorStruct{} = emulator, event) when is_map(event) or is_nil(event) do
     %{emulator | last_key_event: event}
   end
 end

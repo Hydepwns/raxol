@@ -4,7 +4,9 @@ defmodule Raxol.Terminal.Input.Processor do
   Handles mouse events, keyboard modifiers, and input sequences.
   """
 
-  alias Raxol.Terminal.Input.{Event, MouseEvent, KeyEvent}
+  alias Raxol.Terminal.Input.Event
+  alias Raxol.Terminal.Input.Event.MouseEvent
+  alias Raxol.Terminal.Input.Event.KeyEvent
 
   @type mouse_button :: :left | :middle | :right | :wheel_up | :wheel_down
   @type mouse_action :: :press | :release | :drag | :move
@@ -100,7 +102,7 @@ defmodule Raxol.Terminal.Input.Processor do
     parse_key_sequence(rest)
   end
 
-  defp parse_mouse_sequence(<<action::binary-size(1), button::binary-size(1), ?;, x::binary, ?;, y::binary, modifiers::binary>>) do
+  defp parse_mouse_sequence(<<action::binary-size(1), button::binary-size(1), ?;, x::binary-size(1), ?;, y::binary-size(1), modifiers::binary>>) do
     with {:ok, action} <- decode_mouse_action(action),
          {:ok, button} <- decode_mouse_button(button),
          {x, ""} <- Integer.parse(x),
@@ -111,7 +113,8 @@ defmodule Raxol.Terminal.Input.Processor do
         button: button,
         x: x,
         y: y,
-        modifiers: modifiers
+        modifiers: modifiers,
+        timestamp: System.monotonic_time()
       }}
     else
       _ -> {:error, :invalid_mouse_sequence}

@@ -14,6 +14,7 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   alias Raxol.Terminal.EventProcessor
   alias Raxol.Terminal.NotificationManager
   alias Raxol.Terminal.MemoryManager
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Processes a terminal event and returns updated state.
@@ -21,7 +22,7 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   @spec process_event(Event.t(), map()) :: {:ok, map()} | {:error, term()}
   def process_event(%Event{type: type, data: data} = event, state) do
     case state.terminal do
-      %Raxol.Terminal.Emulator{} = emulator ->
+      %EmulatorStruct{} = emulator ->
         {new_emulator, _output} = EventProcessor.process_event(event, emulator)
 
         # Notify runtime process if present

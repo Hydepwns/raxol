@@ -66,8 +66,8 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
       UnifiedCache.put("key2", String.duplicate("b", 50))
       UnifiedCache.put("key3", String.duplicate("c", 50))  # Should evict key1
       assert {:error, :not_found} == UnifiedCache.get("key1")
-      assert {:ok, _} == UnifiedCache.get("key2")
-      assert {:ok, _} == UnifiedCache.get("key3")
+      assert {:ok, _value2} = UnifiedCache.get("key2")
+      assert {:ok, _value3} = UnifiedCache.get("key3")
     end
 
     test "LFU eviction" do
@@ -77,9 +77,9 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
       UnifiedCache.get("key1")  # Access key1 twice
       UnifiedCache.get("key1")
       UnifiedCache.put("key3", String.duplicate("c", 50))  # Should evict key2
-      assert {:ok, _} == UnifiedCache.get("key1")
+      assert {:ok, _value1} = UnifiedCache.get("key1")
       assert {:error, :not_found} == UnifiedCache.get("key2")
-      assert {:ok, _} == UnifiedCache.get("key3")
+      assert {:ok, _value3} = UnifiedCache.get("key3")
     end
 
     test "FIFO eviction" do
@@ -88,8 +88,8 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
       UnifiedCache.put("key2", String.duplicate("b", 50))
       UnifiedCache.put("key3", String.duplicate("c", 50))  # Should evict key1
       assert {:error, :not_found} == UnifiedCache.get("key1")
-      assert {:ok, _} == UnifiedCache.get("key2")
-      assert {:ok, _} == UnifiedCache.get("key3")
+      assert {:ok, _value2} = UnifiedCache.get("key2")
+      assert {:ok, _value3} = UnifiedCache.get("key3")
     end
   end
 

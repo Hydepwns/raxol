@@ -1,10 +1,9 @@
 defmodule Raxol.Terminal.Parser.StateManager do
   @moduledoc """
-  Manages parser state operations for the terminal emulator.
-  This module handles the state of the parser, including ground state,
-  escape sequences, and control sequences.
+  Manages parser state transitions.
   """
 
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.Parser.State
 
   @doc """
@@ -18,7 +17,7 @@ defmodule Raxol.Terminal.Parser.StateManager do
   @doc """
   Gets the current parser state.
   """
-  @spec get_state(Raxol.Terminal.Emulator.t()) :: State.t()
+  @spec get_state(EmulatorStruct.t()) :: State.t()
   def get_state(emulator) do
     emulator.parser_state
   end
@@ -26,7 +25,7 @@ defmodule Raxol.Terminal.Parser.StateManager do
   @doc """
   Updates the parser state.
   """
-  @spec update_state(Raxol.Terminal.Emulator.t(), State.t()) :: Raxol.Terminal.Emulator.t()
+  @spec update_state(EmulatorStruct.t(), State.t()) :: EmulatorStruct.t()
   def update_state(emulator, state) do
     %{emulator | parser_state: state}
   end
@@ -34,50 +33,50 @@ defmodule Raxol.Terminal.Parser.StateManager do
   @doc """
   Gets the current state name.
   """
-  @spec get_state_name(Raxol.Terminal.Emulator.t()) :: atom()
+  @spec get_state_name(EmulatorStruct.t()) :: atom()
   def get_state_name(emulator) do
-    emulator.parser_state.state
+    emulator.parser_state.name
   end
 
   @doc """
   Sets the state name.
   """
-  @spec set_state_name(Raxol.Terminal.Emulator.t(), atom()) :: Raxol.Terminal.Emulator.t()
-  def set_state_name(emulator, state_name) do
-    new_state = %{emulator.parser_state | state: state_name}
-    %{emulator | parser_state: new_state}
+  @spec set_state_name(EmulatorStruct.t(), atom()) :: EmulatorStruct.t()
+  def set_state_name(emulator, name) do
+    state = %{emulator.parser_state | name: name}
+    %{emulator | parser_state: state}
   end
 
   @doc """
-  Resets the parser state to ground.
+  Resets to ground state.
   """
-  @spec reset_to_ground(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec reset_to_ground(EmulatorStruct.t()) :: EmulatorStruct.t()
   def reset_to_ground(emulator) do
-    new_state = %{emulator.parser_state | state: :ground}
-    %{emulator | parser_state: new_state}
+    state = %{emulator.parser_state | name: :ground}
+    %{emulator | parser_state: state}
   end
 
   @doc """
-  Checks if the parser is in ground state.
+  Checks if in ground state.
   """
-  @spec in_ground_state?(Raxol.Terminal.Emulator.t()) :: boolean()
+  @spec in_ground_state?(EmulatorStruct.t()) :: boolean()
   def in_ground_state?(emulator) do
-    emulator.parser_state.state == :ground
+    emulator.parser_state.name == :ground
   end
 
   @doc """
-  Checks if the parser is in escape state.
+  Checks if in escape state.
   """
-  @spec in_escape_state?(Raxol.Terminal.Emulator.t()) :: boolean()
+  @spec in_escape_state?(EmulatorStruct.t()) :: boolean()
   def in_escape_state?(emulator) do
-    emulator.parser_state.state == :escape
+    emulator.parser_state.name == :escape
   end
 
   @doc """
-  Checks if the parser is in control sequence state.
+  Checks if in control sequence state.
   """
-  @spec in_control_sequence_state?(Raxol.Terminal.Emulator.t()) :: boolean()
+  @spec in_control_sequence_state?(EmulatorStruct.t()) :: boolean()
   def in_control_sequence_state?(emulator) do
-    emulator.parser_state.state == :control_sequence
+    emulator.parser_state.name == :csi
   end
 end

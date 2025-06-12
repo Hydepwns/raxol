@@ -89,6 +89,11 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   @impl true
+  def reset_to_defaults_for_test!(pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, :reset_to_defaults_for_test)
+  end
+
+  @impl true
   def handle_call({:get, key_or_path}, _from, state) do
     path = normalize_path(key_or_path)
     value = get_in(state.preferences, path)

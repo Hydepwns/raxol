@@ -9,10 +9,10 @@ defmodule Raxol.Terminal.Scroll.Manager do
   - Scroll synchronization across splits
   """
 
-  alias Raxol.Terminal.{
-    Scroll.{Predictor, Optimizer, Sync},
-    Cache.System
-  }
+  alias Raxol.Terminal.Scroll.Predictor
+  alias Raxol.Terminal.Scroll.Optimizer
+  alias Raxol.Terminal.Scroll.Sync
+  alias Raxol.Terminal.Cache.System
 
   @type t :: %__MODULE__{
     predictor: Predictor.t(),
