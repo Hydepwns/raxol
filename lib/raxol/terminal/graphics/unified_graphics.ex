@@ -1,13 +1,11 @@
 defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   @moduledoc """
-  Provides unified graphics functionality for the terminal emulator.
+  Provides unified graphics capabilities for the terminal emulator.
   This module handles graphics rendering, image display, and graphics state management.
   """
 
   use GenServer
   require Logger
-
-  alias Raxol.Terminal.Integration.State
 
   # Types
   @type graphics_id :: non_neg_integer()

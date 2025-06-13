@@ -169,6 +169,17 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     GenServer.call(__MODULE__, {:set_cursor_visibility, visible})
   end
 
+  @doc """
+  Cleans up the I/O manager.
+  """
+  def cleanup(_io) do
+    # Stop the renderer
+    UnifiedRenderer.stop()
+
+    # Reset the state
+    GenServer.call(__MODULE__, :cleanup)
+  end
+
   # Server Callbacks
 
   @impl true
@@ -277,6 +288,50 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     {:reply, :ok, state}
   end
 
+  def handle_call(:get_title, _from, state) do
+    {:reply, {:ok, ""}, state}
+  end
+
+  def handle_call({:set_title, _title}, _from, state) do
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call(:cleanup, _from, state) do
+    # Reset all state to initial values
+    new_state = %__MODULE__{
+      # Input state
+      mode: :normal,
+      history_index: nil,
+      input_history: [],
+      buffer: "",
+      prompt: nil,
+      completion_context: nil,
+      last_event_time: nil,
+      clipboard_content: nil,
+      clipboard_history: [],
+      mouse_enabled: false,
+      mouse_buttons: MapSet.new(),
+      mouse_position: {0, 0},
+      modifier_state: %{},
+      input_queue: [],
+      processing_escape: false,
+      completion_callback: nil,
+      completion_options: [],
+      completion_index: 0,
+
+      # Output state
+      output_buffer: "",
+      output_queue: [],
+      output_processing: false,
+
+      # Configuration
+      config: state.config
+    }
+
+    {:reply, :ok, new_state}
+  end
+
   # Private Functions
 
   defp process_input_event(state, event) do
@@ -343,38 +398,10 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp process_output_buffer(state) do
-    # Process the output buffer in chunks
-    case split_output_buffer(state.output_buffer) do
-      {chunk, rest} ->
-        # Process the chunk
-        case process_output_chunk(state, chunk) do
-          {:ok, new_state, commands} ->
-            # Continue processing the rest
-            process_output_buffer(%{new_state | output_buffer: rest})
-          {:error, reason} ->
-            {:error, reason}
-        end
-      :empty ->
-        {:ok, state, []}
+    case state.output_buffer do
+      "" -> {:ok, state, []}
+      _ -> {:ok, %{state | output_buffer: ""}, []}
     end
-  end
-
-  defp process_output_chunk(state, chunk) do
-    # Update the buffer manager
-    {:ok, new_buffer_manager} = UnifiedManager.write(state.buffer_manager, chunk)
-
-    # Update the scroll buffer
-    new_scroll_buffer = UnifiedScroll.add_line(state.scroll_buffer, chunk)
-
-    # Render the changes
-    UnifiedRenderer.render(new_buffer_manager)
-
-    new_state = %{state |
-      buffer_manager: new_buffer_manager,
-      scroll_buffer: new_scroll_buffer
-    }
-
-    {:ok, new_state, []}
   end
 
   defp update_io_config(state, config) do
@@ -426,14 +453,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     }
   end
 
-  defp split_output_buffer(buffer) do
-    # Split buffer at newlines or after a certain size
-    case String.split(buffer, "\n", parts: 2) do
-      [chunk, rest] -> {chunk <> "\n", rest}
-      [chunk] -> {chunk, ""}
-    end
-  end
-
   defp encode_mouse_event(event) do
     # Encode mouse event as escape sequence
     "\e[M#{event.button + 32}#{event.x + 33}#{event.y + 33}"
@@ -447,71 +466,60 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     end
   end
 
-  defp get_special_key_sequence(key) do
-    # Map special keys to escape sequences
-    case key do
-      :up -> "\e[A"
-      :down -> "\e[B"
-      :right -> "\e[C"
-      :left -> "\e[D"
-      :home -> "\e[H"
-      :end -> "\e[F"
-      :page_up -> "\e[5~"
-      :page_down -> "\e[6~"
-      :insert -> "\e[2~"
-      :delete -> "\e[3~"
-      :f1 -> "\eOP"
-      :f2 -> "\eOQ"
-      :f3 -> "\eOR"
-      :f4 -> "\eOS"
-      :f5 -> "\e[15~"
-      :f6 -> "\e[17~"
-      :f7 -> "\e[18~"
-      :f8 -> "\e[19~"
-      :f9 -> "\e[20~"
-      :f10 -> "\e[21~"
-      :f11 -> "\e[23~"
-      :f12 -> "\e[24~"
-      _ -> ""
+  defp get_special_key_sequence(:up), do: "\e[A"
+  defp get_special_key_sequence(:down), do: "\e[B"
+  defp get_special_key_sequence(:right), do: "\e[C"
+  defp get_special_key_sequence(:left), do: "\e[D"
+  defp get_special_key_sequence(:home), do: "\e[H"
+  defp get_special_key_sequence(:end), do: "\e[F"
+  defp get_special_key_sequence(:page_up), do: "\e[5~"
+  defp get_special_key_sequence(:page_down), do: "\e[6~"
+  defp get_special_key_sequence(:insert), do: "\e[2~"
+  defp get_special_key_sequence(:delete), do: "\e[3~"
+  defp get_special_key_sequence(:f1), do: "\eOP"
+  defp get_special_key_sequence(:f2), do: "\eOQ"
+  defp get_special_key_sequence(:f3), do: "\eOR"
+  defp get_special_key_sequence(:f4), do: "\eOS"
+  defp get_special_key_sequence(:f5), do: "\e[15~"
+  defp get_special_key_sequence(:f6), do: "\e[17~"
+  defp get_special_key_sequence(:f7), do: "\e[18~"
+  defp get_special_key_sequence(:f8), do: "\e[19~"
+  defp get_special_key_sequence(:f9), do: "\e[20~"
+  defp get_special_key_sequence(:f10), do: "\e[21~"
+  defp get_special_key_sequence(:f11), do: "\e[23~"
+  defp get_special_key_sequence(:f12), do: "\e[24~"
+  defp get_special_key_sequence(_), do: ""
+
+  defp handle_escape_sequence(state, key) do
+    sequence = state.escape_buffer <> key
+    case sequence do
+      "\e[" <> rest -> handle_csi_sequence(state, rest)
+      "\eO" <> rest -> handle_ss3_sequence(state, rest)
+      _ -> handle_incomplete_sequence(state, key, sequence)
     end
   end
 
-  defp handle_escape_sequence(state, key) do
-    # Handle escape sequences
-    case state.escape_buffer <> key do
-      "\e[" <> rest ->
-        case parse_csi_sequence(rest) do
-          {:ok, command} ->
-            new_state = %{state |
-              processing_escape: false,
-              escape_buffer: ""
-            }
-            {:ok, new_state, [command]}
-          :incomplete ->
-            {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
-          :invalid ->
-            {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
-        end
-      "\eO" <> rest ->
-        case parse_ss3_sequence(rest) do
-          {:ok, command} ->
-            new_state = %{state |
-              processing_escape: false,
-              escape_buffer: ""
-            }
-            {:ok, new_state, [command]}
-          :incomplete ->
-            {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
-          :invalid ->
-            {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
-        end
-      _ ->
-        if String.length(state.escape_buffer) > 10 do
-          # Prevent infinite escape sequence
-          {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
-        else
-          {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
-        end
+  defp handle_csi_sequence(state, rest) do
+    case parse_csi_sequence(rest) do
+      {:ok, command} -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
+      :incomplete -> {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
+      :invalid -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+    end
+  end
+
+  defp handle_ss3_sequence(state, rest) do
+    case parse_ss3_sequence(rest) do
+      {:ok, command} -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
+      :incomplete -> {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
+      :invalid -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+    end
+  end
+
+  defp handle_incomplete_sequence(state, key, sequence) do
+    if String.length(sequence) > 10 do
+      {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+    else
+      {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
     end
   end
 

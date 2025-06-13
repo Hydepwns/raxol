@@ -1,67 +1,143 @@
 defmodule Raxol.Terminal.MemoryManager do
   @moduledoc """
-  Manages memory usage and cleanup for the terminal system.
+  Manages memory usage and limits for the terminal emulator.
   """
 
-  alias Raxol.Terminal.{
-    Buffer.UnifiedManager,
-    Integration.State
+  use GenServer
+
+  @type t :: %__MODULE__{
+    max_memory: non_neg_integer(),
+    current_memory: non_neg_integer(),
+    memory_limit: non_neg_integer()
   }
 
-  require Raxol.Core.Runtime.Log
+  defstruct [
+    max_memory: 1024 * 1024,  # 1MB default
+    current_memory: 0,
+    memory_limit: 1024 * 1024  # 1MB default
+  ]
+
+  # Client API
 
   @doc """
-  Checks if memory usage is within limits and performs cleanup if necessary.
+  Starts the memory manager process.
   """
-  def check_and_cleanup(%State{} = state) do
-    current_usage = UnifiedManager.get_memory_usage(state.buffer_manager)
-    memory_limit = state.config.memory_limit || 50 * 1024 * 1024
+  def start_link do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
 
-    if current_usage > memory_limit do
-      Raxol.Core.Runtime.Log.warning(
-        "Memory usage (#{current_usage} bytes) exceeds limit (#{memory_limit} bytes). Performing cleanup."
-      )
+  @doc """
+  Gets the current memory usage.
+  """
+  def get_memory_usage(memory_manager) do
+    GenServer.call(memory_manager, :get_memory_usage)
+  end
 
+  @doc """
+  Updates memory usage for the given state.
+  """
+  def update_usage(state) do
+    current_memory = calculate_memory_usage(state)
+    %{state | memory_usage: current_memory}
+  end
+
+  @doc """
+  Checks if the current memory usage is within limits.
+  """
+  def within_limits?(memory_manager, state) do
+    GenServer.call(memory_manager, {:within_limits, state})
+  end
+
+  @doc """
+  Checks if scrolling is needed based on memory usage.
+  """
+  def should_scroll?(memory_manager, state) do
+    GenServer.call(memory_manager, {:should_scroll, state})
+  end
+
+  @doc """
+  Checks and cleans up memory if needed.
+  """
+  def check_and_cleanup(state) do
+    current_memory = calculate_memory_usage(state)
+    if current_memory > state.memory_limit do
       # Perform cleanup
-      state = cleanup(state)
-      state
+      cleanup_memory(state)
     else
       state
     end
   end
 
-  # Handle general map types that contain terminal field
-  def check_and_cleanup(%{terminal: terminal} = state) do
-    case check_and_cleanup(terminal) do
-      {:ok, updated_terminal} -> %{state | terminal: updated_terminal}
-      _ -> state
-    end
+  # Server Callbacks
+
+  @impl true
+  def init(_) do
+    {:ok, %__MODULE__{}}
   end
 
-  @doc """
-  Estimates memory usage for a given state.
-  """
-  def estimate_memory_usage(state) when is_map(state) do
-    case Map.fetch(state, :buffer_manager) do
-      {:ok, bm} -> UnifiedManager.get_memory_usage(bm)
-      :error -> 0
-    end
+  @impl true
+  def handle_call({:within_limits, state}, _from, memory_manager) do
+    current_memory = calculate_memory_usage(state)
+    within_limits = current_memory <= memory_manager.memory_limit
+    {:reply, within_limits, %{memory_manager | current_memory: current_memory}}
+  end
+
+  @impl true
+  def handle_call({:should_scroll, state}, _from, memory_manager) do
+    current_memory = calculate_memory_usage(state)
+    should_scroll = current_memory > memory_manager.memory_limit * 0.8
+    {:reply, should_scroll, %{memory_manager | current_memory: current_memory}}
+  end
+
+  @impl true
+  def handle_call(:get_memory_usage, _from, memory_manager) do
+    {:reply, memory_manager.current_memory, memory_manager}
   end
 
   # Private Functions
 
-  defp cleanup(%State{} = state) do
-    # Clear scrollback buffer
-    scroll_buffer = Raxol.Terminal.Buffer.Scroll.clear(state.scroll_buffer)
+  defp calculate_memory_usage(state) do
+    # Calculate memory usage from various components
+    buffer_usage = calculate_buffer_usage(state)
+    scrollback_usage = calculate_scrollback_usage(state)
+    other_usage = calculate_other_usage(state)
 
-    # Clear command history
-    command_history = Raxol.Terminal.Commands.History.clear(state.command_history)
+    buffer_usage + scrollback_usage + other_usage
+  end
 
-    # Update state
-    %{state |
-      scroll_buffer: scroll_buffer,
-      command_history: command_history,
-      last_cleanup: System.system_time(:millisecond)
-    }
+  defp calculate_buffer_usage(state) do
+    case state do
+      %{buffer: buffer} when not is_nil(buffer) ->
+        Raxol.Terminal.Buffer.MemoryManager.calculate_buffer_usage(buffer)
+      _ -> 0
+    end
+  end
+
+  defp calculate_scrollback_usage(state) do
+    case state do
+      %{scrollback: scrollback} when not is_nil(scrollback) ->
+        Raxol.Terminal.Buffer.MemoryManager.calculate_buffer_usage(scrollback)
+      _ -> 0
+    end
+  end
+
+  defp calculate_other_usage(state) do
+    # Calculate memory usage for other terminal components
+    style_usage = byte_size(term_to_binary(state.style || %{}))
+    charset_usage = byte_size(term_to_binary(state.charset_state || %{}))
+    mode_usage = byte_size(term_to_binary(state.mode_manager || %{}))
+    cursor_usage = byte_size(term_to_binary(state.cursor || %{}))
+
+    style_usage + charset_usage + mode_usage + cursor_usage
+  end
+
+  defp cleanup_memory(state) do
+    # Trim scrollback history to reduce memory usage
+    case state do
+      %{scrollback: scrollback} when not is_nil(scrollback) ->
+        trimmed_scrollback = Raxol.Terminal.Buffer.MemoryManager.trim_scrollback(scrollback)
+        %{state | scrollback: trimmed_scrollback}
+      _ -> state
+    end
   end
 end

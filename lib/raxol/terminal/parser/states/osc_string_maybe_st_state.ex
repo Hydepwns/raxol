@@ -45,6 +45,17 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after_st}
 
+      # Handle CAN, SUB (abort sequence) first
+      <<ignored_byte, rest_after_ignored::binary>>
+      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
+        Raxol.Core.Runtime.Log.debug(
+          "Ignoring CAN/SUB byte during OSC String (after ESC)"
+        )
+
+        # Abort sequence, go to ground
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, emulator, next_parser_state, rest_after_ignored}
+
       # Not ST
       <<_unexpected_byte, rest_after_unexpected::binary>> ->
         msg =
@@ -67,17 +78,6 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
         # Go to ground
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, ""}
-
-      # Ignore CAN, SUB (abort sequence) - Moved for clarity
-      <<ignored_byte, rest_after_ignored::binary>>
-      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
-        Raxol.Core.Runtime.Log.debug(
-          "Ignoring CAN/SUB byte during OSC String (after ESC)"
-        )
-
-        # Abort sequence, go to ground
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_ignored}
     end
   end
 end

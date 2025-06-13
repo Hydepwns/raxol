@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.ScreenManager
+  alias Raxol.Terminal.ScreenUpdater
   alias Raxol.Terminal.NotificationManager
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
@@ -20,30 +20,36 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   """
   @spec process_update(map(), map()) :: {:ok, map()} | {:error, term()}
   def process_update(update, state) do
-    case state.terminal do
-      %EmulatorStruct{} = emulator ->
-        {new_emulator, _output} = ScreenManager.update_screen(emulator, update)
-
-        # Notify runtime process if present
-        if state.runtime_pid do
-          send(state.runtime_pid, {:terminal_screen_updated, [update], new_emulator})
-        end
-
-        # Handle resize notifications if needed
-        handle_resize_notification(update, state)
-
-        # Update state with new emulator
-        new_state = %{state | terminal: new_emulator}
-        updated_state = MemoryManager.check_and_cleanup(new_state)
-
-        {:ok, updated_state}
-
+    case update do
+      {:memory_check, _} ->
+        new_state = MemoryManager.update_usage(state)
+        {:ok, new_state}
       _ ->
-        if state.runtime_pid do
-          send(state.runtime_pid, {:terminal_error, :no_terminal,
-            %{action: :update_screen, update: update}})
+        case state.terminal do
+          %EmulatorStruct{} = emulator ->
+            {new_emulator, _output} = ScreenUpdater.update_screen(emulator, update)
+
+            # Notify runtime process if present
+            if state.runtime_pid do
+              send(state.runtime_pid, {:terminal_screen_updated, [update], new_emulator})
+            end
+
+            # Handle resize notifications if needed
+            handle_resize_notification(update, state)
+
+            # Update state with new emulator
+            new_state = %{state | terminal: new_emulator}
+            updated_state = MemoryManager.check_and_cleanup(new_state)
+
+            {:ok, updated_state}
+
+          _ ->
+            if state.runtime_pid do
+              send(state.runtime_pid, {:terminal_error, :no_terminal,
+                %{action: :update_screen, update: update}})
+            end
+            {:error, :no_terminal}
         end
-        {:error, :no_terminal}
     end
   end
 
@@ -52,30 +58,36 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   """
   @spec process_batch_updates([map()], map()) :: {:ok, map()} | {:error, term()}
   def process_batch_updates(updates, state) do
-    case state.terminal do
-      %EmulatorStruct{} = emulator ->
-        {new_emulator, _output} = ScreenManager.batch_update_screen(emulator, updates)
-
-        # Notify runtime process if present
-        if state.runtime_pid do
-          send(state.runtime_pid, {:terminal_screen_updated, updates, new_emulator})
-        end
-
-        # Handle resize notifications for each update
-        Enum.each(updates, &handle_resize_notification(&1, state))
-
-        # Update state with new emulator
-        new_state = %{state | terminal: new_emulator}
-        updated_state = MemoryManager.check_and_cleanup(new_state)
-
-        {:ok, updated_state}
-
+    case updates do
+      [{:memory_check, _} | _] ->
+        new_state = MemoryManager.update_usage(state)
+        {:ok, new_state}
       _ ->
-        if state.runtime_pid do
-          send(state.runtime_pid, {:terminal_error, :no_terminal,
-            %{action: :batch_update_screen, updates: updates}})
+        case state.terminal do
+          %EmulatorStruct{} = emulator ->
+            {new_emulator, _output} = ScreenUpdater.batch_update_screen(emulator, updates)
+
+            # Notify runtime process if present
+            if state.runtime_pid do
+              send(state.runtime_pid, {:terminal_screen_updated, updates, new_emulator})
+            end
+
+            # Handle resize notifications for each update
+            Enum.each(updates, &handle_resize_notification(&1, state))
+
+            # Update state with new emulator
+            new_state = %{state | terminal: new_emulator}
+            updated_state = MemoryManager.check_and_cleanup(new_state)
+
+            {:ok, updated_state}
+
+          _ ->
+            if state.runtime_pid do
+              send(state.runtime_pid, {:terminal_error, :no_terminal,
+                %{action: :batch_update_screen, updates: updates}})
+            end
+            {:error, :no_terminal}
         end
-        {:error, :no_terminal}
     end
   end
 

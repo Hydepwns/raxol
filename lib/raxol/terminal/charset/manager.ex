@@ -280,6 +280,40 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  defp map_math_operators(char) do
+    case char do
+      # Mathematical operators
+      ?+ -> ?∑  # Summation
+      ?- -> ?∏  # Product
+      ?* -> ?∫  # Integral
+      ?/ -> ?√  # Square root
+      ?= -> ?≈  # Approximately equal
+      ?< -> ?≤  # Less than or equal
+      ?> -> ?≥  # Greater than or equal
+      ?! -> ?≠  # Not equal
+      ?@ -> ?∞  # Infinity
+      ?# -> ?∇  # Nabla
+      ?$ -> ?∂  # Partial derivative
+      ?% -> ?∝  # Proportional to
+      ?& -> ?∧  # Logical AND
+      ?| -> ?∨  # Logical OR
+      ?~ -> ?¬  # Logical NOT
+      ?^ -> ?∩  # Intersection
+      ?_ -> ?∪  # Union
+      ?` -> ?∈  # Element of
+      ?' -> ?∉  # Not element of
+      ?" -> ?⊂  # Subset of
+      ?( -> ?⊃  # Superset of
+      ?) -> ?⊆  # Subset of or equal to
+      ?[ -> ?⊇  # Superset of or equal to
+      ?] -> ?⊄  # Not subset of
+      ?{ -> ?⊅  # Not superset of
+      ?} -> ?⊈  # Not subset of or equal to
+      ?\\ -> ?⊉  # Not superset of or equal to
+      _ -> char
+    end
+  end
+
   defp map_dec_supplemental(char) do
     case char do
       # Box drawing characters
@@ -339,7 +373,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       ?> -> ?◄  # Triangle
       ?/ -> ?◅  # Triangle
       ?\\ -> ?▻  # Triangle
-      _ -> char
+      _ -> map_math_operators(char)
     end
   end
 
@@ -362,36 +396,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       ?J -> ?↔  # Left right arrow
       ?K -> ?↕  # Up down arrow
       ?L -> ?↕  # Up down arrow
-
-      # Mathematical symbols
-      ?+ -> ?∑  # Summation
-      ?- -> ?∏  # Product
-      ?* -> ?∫  # Integral
-      ?/ -> ?√  # Square root
-      ?= -> ?≈  # Approximately equal
-      ?< -> ?≤  # Less than or equal
-      ?> -> ?≥  # Greater than or equal
-      ?! -> ?≠  # Not equal
-      ?@ -> ?∞  # Infinity
-      ?# -> ?∇  # Nabla
-      ?$ -> ?∂  # Partial derivative
-      ?% -> ?∝  # Proportional to
-      ?& -> ?∧  # Logical AND
-      ?| -> ?∨  # Logical OR
-      ?~ -> ?¬  # Logical NOT
-      ?^ -> ?∩  # Intersection
-      ?_ -> ?∪  # Union
-      ?` -> ?∈  # Element of
-      ?' -> ?∉  # Not element of
-      ?" -> ?⊂  # Subset of
-      ?( -> ?⊃  # Superset of
-      ?) -> ?⊆  # Subset of or equal to
-      ?[ -> ?⊇  # Superset of or equal to
-      ?] -> ?⊄  # Not subset of
-      ?{ -> ?⊅  # Not superset of
-      ?} -> ?⊈  # Not subset of or equal to
-      ?\\ -> ?⊉  # Not superset of or equal to
-      _ -> char
+      _ -> map_math_operators(char)
     end
   end
 

@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       nil ->
         {:reply, {:error, :script_not_found}, state}
 
-      script ->
+      _script ->
         new_state = update_in(state.scripts, &Map.delete(&1, script_id))
         {:reply, :ok, new_state}
     end
@@ -337,7 +337,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   defp validate_script_config(config) when is_map(config), do: :ok
   defp validate_script_config(_), do: {:error, :invalid_script_config}
 
-  defp execute_script(script, args, timeout) do
+  defp execute_script(_script, args, _timeout) do
     # TODO: Implement actual script execution based on type
     # This is a placeholder that simulates script execution
     Process.sleep(100)
@@ -375,7 +375,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  defp load_scripts_from_paths(paths) do
+  defp load_scripts_from_paths(_paths) do
     # TODO: Implement actual script loading from paths
     # This is a placeholder that simulates script loading
     :ok

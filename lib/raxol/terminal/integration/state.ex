@@ -18,7 +18,11 @@ defmodule Raxol.Terminal.Integration.State do
     renderer: UnifiedRenderer.t(),
     io: UnifiedIO.t(),
     window_manager: UnifiedWindow.t(),
-    config: Config.t()
+    config: Config.t(),
+    window: any(),
+    buffer: any(),
+    input: any(),
+    output: any()
   }
 
   defstruct buffer_manager: nil,
@@ -26,35 +30,28 @@ defmodule Raxol.Terminal.Integration.State do
             renderer: nil,
             io: nil,
             window_manager: nil,
-            config: nil
+            config: nil,
+            window: nil,
+            buffer: nil,
+            input: nil,
+            output: nil
 
   @doc """
   Creates a new integration state with the given options.
   """
   @spec new(map()) :: t()
-  def new(opts \\ %{}) do
-    # Initialize components with default or provided options
-    buffer_manager = UnifiedManager.new()
-    scroll_buffer = UnifiedScroll.new()
-    renderer = UnifiedRenderer.new()
-    io = UnifiedIO.new()
-    window_manager = UnifiedWindow.new()
-    config = Config.new(opts)
-
-    # Create initial window
-    {:ok, window_id} = UnifiedWindow.create_window(%{
-      size: {opts[:width] || 80, opts[:height] || 24},
-      buffer_id: buffer_manager.id,
-      renderer_id: renderer.id
+  def new(_opts \\ []) do
+    # Create a new integration state
+    {:ok, _window_id} = UnifiedWindow.create_window(%{
+      title: "Raxol Terminal",
+      width: 800,
+      height: 600
     })
-
     %__MODULE__{
-      buffer_manager: buffer_manager,
-      scroll_buffer: scroll_buffer,
-      renderer: renderer,
-      io: io,
-      window_manager: window_manager,
-      config: config
+      window: nil,
+      buffer: nil,
+      input: nil,
+      output: nil
     }
   end
 

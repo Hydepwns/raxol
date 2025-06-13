@@ -217,7 +217,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   @doc """
   Scrolls up by moving lines from the scrollback buffer into the screen buffer.
   """
-  def scroll_up(emulator, count) when is_integer(count) and count > 0 do
+  def scroll_up_screen_command(emulator, count) when is_integer(count) and count > 0 do
     scrollback = emulator.scrollback_buffer || []
     buffer = emulator.main_screen_buffer
     {to_restore, remaining_scrollback} = Enum.split(scrollback, count)
@@ -251,5 +251,15 @@ defmodule Raxol.Terminal.Commands.Screen do
       | scrollback_buffer: new_scrollback,
         main_screen_buffer: new_buffer
     }
+  end
+
+  @doc """
+  Scrolls the screen up by the specified number of lines.
+  """
+  @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def scroll_up(emulator, lines) do
+    buffer = Emulator.get_active_buffer(emulator)
+    {new_buffer, _} = Raxol.Terminal.ScreenBuffer.scroll_up(buffer, lines)
+    Emulator.update_active_buffer(emulator, new_buffer)
   end
 end

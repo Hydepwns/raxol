@@ -1,7 +1,17 @@
 defmodule Raxol.Terminal.Parser.StateManager do
   @moduledoc """
-  Manages parser state transitions.
+  Manages the state for the terminal parser.
   """
+
+  defstruct mode_manager: nil, charset_state: nil, state_stack: [], scroll_region: nil, last_col_exceeded: false
+
+  @type t :: %__MODULE__{
+    mode_manager: map(),
+    charset_state: map(),
+    state_stack: list(),
+    scroll_region: map(),
+    last_col_exceeded: boolean()
+  }
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.Parser.State
@@ -78,5 +88,93 @@ defmodule Raxol.Terminal.Parser.StateManager do
   @spec in_control_sequence_state?(EmulatorStruct.t()) :: boolean()
   def in_control_sequence_state?(emulator) do
     emulator.parser_state.name == :csi
+  end
+
+  @doc """
+  Gets the mode manager from the state.
+  """
+  @spec get_mode_manager(t()) :: map()
+  def get_mode_manager(state) do
+    state.mode_manager
+  end
+
+  @doc """
+  Updates the mode manager in the state.
+  """
+  @spec update_mode_manager(t(), map()) :: t()
+  def update_mode_manager(state, mode_manager) do
+    %{state | mode_manager: mode_manager}
+  end
+
+  @doc """
+  Gets the charset state from the state.
+  """
+  @spec get_charset_state(t()) :: map()
+  def get_charset_state(state) do
+    state.charset_state
+  end
+
+  @doc """
+  Updates the charset state in the state.
+  """
+  @spec update_charset_state(t(), map()) :: t()
+  def update_charset_state(state, charset_state) do
+    %{state | charset_state: charset_state}
+  end
+
+  @doc """
+  Gets the state stack from the state.
+  """
+  @spec get_state_stack(t()) :: list()
+  def get_state_stack(state) do
+    state.state_stack
+  end
+
+  @doc """
+  Updates the state stack in the state.
+  """
+  @spec update_state_stack(t(), list()) :: t()
+  def update_state_stack(state, state_stack) do
+    %{state | state_stack: state_stack}
+  end
+
+  @doc """
+  Gets the scroll region from the state.
+  """
+  @spec get_scroll_region(t()) :: map()
+  def get_scroll_region(state) do
+    state.scroll_region
+  end
+
+  @doc """
+  Updates the scroll region in the state.
+  """
+  @spec update_scroll_region(t(), map()) :: t()
+  def update_scroll_region(state, scroll_region) do
+    %{state | scroll_region: scroll_region}
+  end
+
+  @doc """
+  Gets the last column exceeded flag from the state.
+  """
+  @spec get_last_col_exceeded(t()) :: boolean()
+  def get_last_col_exceeded(state) do
+    state.last_col_exceeded
+  end
+
+  @doc """
+  Updates the last column exceeded flag in the state.
+  """
+  @spec update_last_col_exceeded(t(), boolean()) :: t()
+  def update_last_col_exceeded(state, last_col_exceeded) do
+    %{state | last_col_exceeded: last_col_exceeded}
+  end
+
+  @doc """
+  Resets the state to its initial values.
+  """
+  @spec reset_to_initial_state(t()) :: t()
+  def reset_to_initial_state(state) do
+    %{state | mode_manager: nil, charset_state: nil, state_stack: [], scroll_region: nil, last_col_exceeded: false}
   end
 end

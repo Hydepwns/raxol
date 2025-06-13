@@ -8,6 +8,14 @@ defmodule Raxol.Terminal.State.Manager do
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.ModeManager
 
+  @type t :: %{
+    state_stack: TerminalState.t(),
+    mode_manager: ModeManager.t(),
+    charset_state: map(),
+    scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+    last_col_exceeded: boolean()
+  }
+
   @doc """
   Creates a new state manager instance.
 
@@ -15,7 +23,7 @@ defmodule Raxol.Terminal.State.Manager do
 
   A new state manager instance
   """
-  @spec new() :: map()
+  @spec new() :: t()
   def new() do
     %{
       state_stack: TerminalState.new(),
@@ -30,8 +38,9 @@ defmodule Raxol.Terminal.State.Manager do
   @doc false
   @spec generate_tab_stops(non_neg_integer()) :: list(non_neg_integer())
   def generate_tab_stops(width) do
-    # Generate tab stops every 8 columns
-    for i <- 0..(width - 1), rem(i, 8) == 0, do: i
+    for x <- 0..(width - 1), rem(x, 8) == 0, into: MapSet.new() do
+      x
+    end
   end
 
   @doc """
@@ -213,16 +222,15 @@ defmodule Raxol.Terminal.State.Manager do
   @spec reset_to_initial_state(EmulatorStruct.t()) :: EmulatorStruct.t()
   def reset_to_initial_state(%EmulatorStruct{} = emulator) do
     %{
-      emulator
-      | cursor: %{x: 0, y: 0},
-        scroll_region: {0, emulator.height - 1},
-        tab_stops: generate_tab_stops(emulator.width),
-        charset_state: %{},
-        single_shift: nil,
-        final_byte: nil,
-        intermediates_buffer: [],
-        params_buffer: [],
-        payload_buffer: []
+      emulator |
+      cursor: %{x: 0, y: 0},
+      scroll_region: {0, emulator.height - 1},
+      tab_stops: generate_tab_stops(emulator.width),
+      charset_state: %{},
+      final_byte: nil,
+      intermediates_buffer: [],
+      params_buffer: [],
+      payload_buffer: []
     }
   end
 end

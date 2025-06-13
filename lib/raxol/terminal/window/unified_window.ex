@@ -160,6 +160,14 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     GenServer.call(__MODULE__, {:update_config, config})
   end
 
+  @doc """
+  Cleans up the window manager.
+  """
+  def cleanup(_window_manager) do
+    # TODO: Implementation for cleanup
+    :ok
+  end
+
   # Server Callbacks
 
   @impl true

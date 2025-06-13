@@ -23,6 +23,22 @@
 - See [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) for system overview
 - See module docs for implementation details
 
+## Broader Directory Structure
+
+The Raxol Terminal subsystem is part of the broader Raxol framework, which includes:
+
+- `lib/raxol/` — Core framework modules
+- `lib/raxol/terminal/` — Terminal subsystem
+- `lib/raxol/terminal/ansi/` — ANSI escape sequence handling
+- `lib/raxol/terminal/commands/` — Command processing
+- `lib/raxol/terminal/config/` — Configuration management
+- `lib/raxol/terminal/buffer/` — Buffer management
+- `lib/raxol/terminal/cursor/` — Cursor management
+- `lib/raxol/terminal/state/` — Terminal state management
+- `lib/raxol/terminal/style/` — Text styling and formatting
+- `lib/raxol/terminal/emulator/` — Terminal emulation core
+- `lib/raxol/terminal/integration/` — Integration layer
+
 ## Reorganization Notice
 
 This module is currently undergoing a significant restructuring as part of the Raxol Repository Reorganization Plan. The goal is to break down large monolithic files into smaller, more focused modules for improved maintainability and discoverability.

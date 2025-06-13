@@ -68,6 +68,8 @@ defmodule Raxol.Terminal.Renderer do
     :font_settings
   ]
 
+  require Logger
+
   @doc """
   Creates a new renderer with the given screen buffer.
 
@@ -88,52 +90,36 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   @doc """
-  Renders the screen buffer to a string.
-
-  ## Options
-
-    * `:selection` - A single selection to highlight
-    * `:selections` - Multiple selections to highlight
-    * `:validation` - Validation state to apply
-    * `:theme` - Override the default theme
-    * `:font_settings` - Override the default font settings
-
-  ## Examples
-
-      iex> screen_buffer = ScreenBuffer.new(80, 24)
-      iex> renderer = Renderer.new(screen_buffer)
-      iex> output = Renderer.render(renderer)
-      iex> is_binary(output)
-      true
-
-      iex> screen_buffer = ScreenBuffer.new(80, 24)
-      iex> renderer = Renderer.new(screen_buffer)
-      iex> selection = %{selection: {0, 0, 0, 5}}
-      iex> output = Renderer.render(renderer, selection: selection)
-      iex> output =~ "background-color: #0000FF"
-      true
+  Renders the terminal content without additional options.
   """
-  def render(%__MODULE__{} = renderer, opts \\ []) do
-    selection = Keyword.get(opts, :selection)
-    selections = Keyword.get(opts, :selections, [])
-    validation = Keyword.get(opts, :validation)
-    theme = Keyword.get(opts, :theme, renderer.theme)
-    font_settings = Keyword.get(opts, :font_settings, renderer.font_settings)
-
-    renderer.screen_buffer.cells
-    |> Enum.map(
-      &render_row(
-        &1,
-        renderer,
-        selection,
-        selections,
-        validation,
-        theme,
-        font_settings
-      )
-    )
-    |> Enum.join("\n")
+  def render(%__MODULE__{} = renderer) do
+    render(renderer, %{}, %{})
   end
+
+  @doc """
+  Renders the terminal content.
+  """
+  def render(%__MODULE__{} = renderer, opts) do
+    render(renderer, opts, %{})
+  end
+
+  @doc """
+  Renders the terminal content with additional options.
+  """
+  def render(%__MODULE__{} = renderer, opts, additional_opts) do
+    content = renderer.screen_buffer
+    |> ScreenBuffer.get_content(include_style: true)
+    |> apply_theme(renderer.theme)
+    |> apply_font_settings(renderer.font_settings)
+    |> maybe_apply_cursor(renderer.cursor)
+
+    {:ok, content}
+  end
+
+  defp apply_theme(content, theme), do: content
+  defp apply_font_settings(content, font_settings), do: content
+  defp maybe_apply_cursor(content, nil), do: content
+  defp maybe_apply_cursor(content, cursor), do: {content, cursor}
 
   @doc """
   Sets the cursor position.
@@ -198,126 +184,55 @@ defmodule Raxol.Terminal.Renderer do
     %{renderer | font_settings: settings}
   end
 
-  # Private helper functions
+  @doc """
+  Starts a new renderer process.
+  """
+  def start_link(opts \\ []) do
+    screen_buffer = Keyword.get(opts, :screen_buffer, ScreenBuffer.new(80, 24))
+    theme = Keyword.get(opts, :theme, %{})
+    font_settings = Keyword.get(opts, :font_settings, %{})
 
-  defp render_row(
-         row,
-         renderer,
-         selection,
-         selections,
-         validation,
-         theme,
-         font_settings
-       ) do
-    row
-    |> Enum.map(
-      &render_cell(
-        &1,
-        renderer,
-        selection,
-        selections,
-        validation,
-        theme,
-        font_settings
-      )
-    )
-    |> Enum.join("")
+    renderer = new(screen_buffer, theme, font_settings)
+    {:ok, renderer}
   end
 
-  defp render_cell(
-         cell,
-         renderer,
-         selection,
-         selections,
-         validation,
-         theme,
-         font_settings
-       ) do
-    style =
-      build_style(
-        cell,
-        renderer,
-        selection,
-        selections,
-        validation,
-        theme,
-        font_settings
-      )
-
-    "<span style=\"#{style}\">#{cell.char}</span>"
+  @doc """
+  Stops the renderer process.
+  """
+  def stop(renderer) do
+    # Cleanup any resources if needed
+    :ok
   end
 
-  defp build_style(
-         cell,
-         _renderer,
-         selection,
-         selections,
-         validation,
-         theme,
-         font_settings
-       ) do
-    styles =
-      []
-      |> maybe_add_style(get_foreground_color(cell, theme), &"color: #{&1}")
-      |> maybe_add_style(
-        get_background_color(cell, theme),
-        &"background-color: #{&1}"
-      )
-      |> maybe_add_style(cell.style.bold, fn _ -> "font-weight: bold" end)
-      |> maybe_add_style(cell.style.italic, fn _ -> "font-style: italic" end)
-      |> maybe_add_style(cell.style.underline, fn _ ->
-        "text-decoration: underline"
-      end)
-      |> maybe_add_style(is_selected?(cell, selection, selections), fn _ ->
-        "background-color: #0000FF"
-      end)
-      |> maybe_add_style(validation && validation.error, fn _ ->
-        "color: #FF0000"
-      end)
-      |> maybe_add_style(validation && validation.warning, fn _ ->
-        "color: #FFA500"
-      end)
-      |> maybe_add_style(font_settings[:family], &"font-family: #{&1}")
-      |> maybe_add_style(font_settings[:size], &"font-size: #{&1}px")
+  @doc """
+  Gets the current content of the screen buffer.
 
-    Enum.join(styles, "; ")
+  ## Parameters
+    * `renderer` - The renderer to get content from
+    * `opts` - Options for content retrieval
+      * `:include_style` - Whether to include style information (default: false)
+      * `:include_cursor` - Whether to include cursor position (default: false)
+
+  ## Returns
+    * `{:ok, content}` - The current content
+    * `{:error, reason}` - If content retrieval fails
+
+  ## Examples
+      iex> get_content(renderer)
+      {:ok, "Hello, World!"}
+  """
+  def get_content(%__MODULE__{} = renderer, opts \\ []) do
+    include_style = Keyword.get(opts, :include_style, false)
+    include_cursor = Keyword.get(opts, :include_cursor, false)
+
+    content = renderer.screen_buffer
+    |> ScreenBuffer.get_content(include_style: include_style)
+    |> maybe_add_cursor(renderer.cursor, include_cursor)
+
+    {:ok, content}
   end
 
-  defp maybe_add_style(styles, condition, style_fn) when condition do
-    [style_fn.(condition) | styles]
-  end
-
-  defp maybe_add_style(styles, _condition, _style_fn), do: styles
-
-  defp get_foreground_color(cell, theme) do
-    case cell.style.foreground do
-      nil -> theme[:foreground][:default]
-      color -> theme[:foreground][color]
-    end
-  end
-
-  defp get_background_color(cell, theme) do
-    case cell.style.background do
-      nil -> theme[:background][:default]
-      color -> theme[:background][color]
-    end
-  end
-
-  defp is_selected?(cell, selection, selections) do
-    cond do
-      selection && is_in_selection?(cell, selection) -> true
-      selections && Enum.any?(selections, &is_in_selection?(cell, &1)) -> true
-      true -> false
-    end
-  end
-
-  defp is_in_selection?(cell, selection) do
-    {start_x, start_y} = selection.start
-    {end_x, end_y} = selection.end
-    {cell_x, cell_y} = cell.position
-
-    cell_y >= start_y && cell_y <= end_y &&
-      (cell_y > start_y || cell_x >= start_x) &&
-      (cell_y < end_y || cell_x <= end_x)
-  end
+  defp maybe_add_cursor(content, nil, _include_cursor), do: content
+  defp maybe_add_cursor(content, cursor, true), do: {content, cursor}
+  defp maybe_add_cursor(content, _cursor, false), do: content
 end

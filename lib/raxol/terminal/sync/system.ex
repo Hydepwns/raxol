@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Sync.System do
         new_state = update_sync_entry(state, sync_id, key, value, metadata)
         {:ok, new_state}
       :conflict ->
-        new_state = increment_conflict_count(state, sync_id)
+        _new_state = increment_conflict_count(state, sync_id)
         {:error, :conflict}
     end
   end
@@ -222,5 +222,21 @@ defmodule Raxol.Terminal.Sync.System do
     sync_stats = Map.get(state.stats, sync_id)
     new_sync_stats = %{sync_stats | conflict_count: sync_stats.conflict_count + 1}
     %{state | stats: Map.put(state.stats, sync_id, new_sync_stats)}
+  end
+
+  @doc """
+  Gets the current monotonic time in the specified unit.
+  """
+  @spec monotonic_time(:millisecond | :microsecond | :nanosecond) :: integer()
+  def monotonic_time(unit) do
+    System.monotonic_time(unit)
+  end
+
+  @doc """
+  Gets the current system time in the specified unit.
+  """
+  @spec system_time(:millisecond | :microsecond | :nanosecond) :: integer()
+  def system_time(unit) do
+    System.system_time(unit)
   end
 end

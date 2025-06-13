@@ -12,7 +12,6 @@ defmodule Raxol.Terminal.Integration.Config do
     Render.UnifiedRenderer
   }
   alias Raxol.Terminal.Integration.State
-  alias Raxol.Terminal.Commands.History
 
   @type t :: %__MODULE__{
           behavior: map(),
@@ -146,49 +145,23 @@ defmodule Raxol.Terminal.Integration.Config do
     end
   end
 
+  @doc """
+  Applies configuration changes to the terminal state.
+  """
+  def apply_config_changes(%State{} = state, changes) do
+    # Update other state fields
+    state
+    |> Map.merge(changes)
+  end
+
+  @doc """
+  Gets emulator configuration.
+  """
+  def get_emulator_config(config) do
+    config.emulator
+  end
+
   # Private Functions
-
-  defp apply_config_changes(%State{} = state, new_config) do
-    # Update buffer manager with new limits
-    {:ok, buffer_manager} =
-      state.buffer_manager
-      |> update_buffer_manager(new_config)
-
-    # Update emulator with new colors
-    emulator =
-      state.emulator
-      |> update_emulator(new_config)
-
-    # Update scroll buffer with new size
-    scroll_buffer =
-      state.scroll_buffer
-      |> update_scroll_buffer(new_config)
-
-    # Update command history with new size
-    command_history =
-      state.command_history
-      |> update_command_history(new_config)
-
-    # Update the state with all changes
-    State.update(state, %{
-      buffer_manager: buffer_manager,
-      emulator: emulator,
-      scroll_buffer: scroll_buffer,
-      command_history: command_history,
-      config: new_config
-    })
-  end
-
-  defp update_emulator(emulator, config) do
-    Raxol.Terminal.Emulator.set_colors(emulator, config.ansi.colors)
-  end
-
-  defp update_command_history(command_history, config) do
-    Raxol.Terminal.Commands.History.update_size(
-      command_history,
-      (config.behavior.enable_command_history && 1000) || 0
-    )
-  end
 
   defp validate_behavior(behavior) do
     cond do

@@ -55,8 +55,6 @@ defmodule Raxol.Terminal.Registry do
     GenServer.call(__MODULE__, {:exclude_by_id, pattern})
   end
 
-  # Server callbacks
-
   def handle_call({:register, id, state}, _from, sessions) do
     {:reply, :ok, Map.put(sessions, id, state)}
   end
@@ -126,7 +124,6 @@ defmodule Raxol.Terminal.Registry do
   end
 
   def handle_call(:list_all, _from, state) do
-    # Return the entire state map
     {:reply, {:ok, state}, state}
   end
 end

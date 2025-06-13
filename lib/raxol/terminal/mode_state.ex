@@ -122,28 +122,71 @@ defmodule Raxol.Terminal.ModeState do
   """
   @spec mode_enabled?(t(), atom()) :: boolean()
   def mode_enabled?(state, mode) do
+    cond do
+      basic_mode?(mode) -> check_basic_mode(state, mode)
+      mouse_mode?(mode) -> check_mouse_mode(state, mode)
+      column_mode?(mode) -> check_column_mode(state, mode)
+      alt_screen_mode?(mode) -> check_alt_screen_mode(state, mode)
+      mode == :decckm -> state.cursor_keys_mode == :application
+      true -> false
+    end
+  end
+
+  defp basic_mode?(mode) do
+    mode in [:dectcem, :decawm, :decom, :irm, :lnm, :decscnm, :decarm, :decinlm, :focus_events, :bracketed_paste]
+  end
+
+  defp mouse_mode?(mode) do
+    mode in [:mouse_report_x10, :mouse_report_cell_motion, :mouse_report_sgr]
+  end
+
+  defp column_mode?(mode) do
+    mode in [:deccolm_80, :deccolm_132]
+  end
+
+  defp alt_screen_mode?(mode) do
+    mode in [:alt_screen_buffer, :dec_alt_screen, :dec_alt_screen_save]
+  end
+
+  defp check_basic_mode(state, :dectcem), do: check_cursor_visible(state)
+  defp check_basic_mode(state, :decawm), do: check_auto_wrap(state)
+  defp check_basic_mode(state, :decom), do: check_origin_mode(state)
+  defp check_basic_mode(state, :irm), do: check_insert_mode(state)
+  defp check_basic_mode(state, :lnm), do: check_line_feed_mode(state)
+  defp check_basic_mode(state, :decscnm), do: check_screen_mode(state)
+  defp check_basic_mode(state, :decarm), do: check_auto_repeat_mode(state)
+  defp check_basic_mode(state, :decinlm), do: check_interlacing_mode(state)
+  defp check_basic_mode(state, :focus_events), do: check_focus_events(state)
+  defp check_basic_mode(state, :bracketed_paste), do: check_bracketed_paste(state)
+
+  defp check_cursor_visible(state), do: state.cursor_visible
+  defp check_auto_wrap(state), do: state.auto_wrap
+  defp check_origin_mode(state), do: state.origin_mode
+  defp check_insert_mode(state), do: state.insert_mode
+  defp check_line_feed_mode(state), do: state.line_feed_mode
+  defp check_screen_mode(state), do: state.screen_mode_reverse
+  defp check_auto_repeat_mode(state), do: state.auto_repeat_mode
+  defp check_interlacing_mode(state), do: state.interlacing_mode
+  defp check_focus_events(state), do: state.focus_events_enabled
+  defp check_bracketed_paste(state), do: state.bracketed_paste_mode
+
+  defp check_mouse_mode(state, mode) do
     case mode do
-      :dectcem -> state.cursor_visible
-      :decawm -> state.auto_wrap
-      :decom -> state.origin_mode
-      :irm -> state.insert_mode
-      :lnm -> state.line_feed_mode
-      :decckm -> state.cursor_keys_mode == :application
-      :decscnm -> state.screen_mode_reverse
-      :decarm -> state.auto_repeat_mode
-      :decinlm -> state.interlacing_mode
-      :focus_events -> state.focus_events_enabled
-      :alt_screen_buffer -> state.alternate_buffer_active
-      :dec_alt_screen -> state.alternate_buffer_active
-      :dec_alt_screen_save -> state.alternate_buffer_active
-      :bracketed_paste -> state.bracketed_paste_mode
       :mouse_report_x10 -> state.mouse_report_mode == :x10
       :mouse_report_cell_motion -> state.mouse_report_mode == :cell_motion
       :mouse_report_sgr -> state.mouse_report_mode == :sgr
+    end
+  end
+
+  defp check_column_mode(state, mode) do
+    case mode do
       :deccolm_80 -> state.column_width_mode == :normal
       :deccolm_132 -> state.column_width_mode == :wide
-      _ -> false
     end
+  end
+
+  defp check_alt_screen_mode(state, _mode) do
+    state.alternate_buffer_active
   end
 
   @doc """
@@ -158,24 +201,49 @@ defmodule Raxol.Terminal.ModeState do
   """
   @spec set_mode(t(), atom()) :: t()
   def set_mode(state, mode) do
+    cond do
+      basic_mode?(mode) -> set_basic_mode(state, mode)
+      mouse_mode?(mode) -> set_mouse_mode(state, mode)
+      column_mode?(mode) -> set_column_mode(state, mode)
+      mode == :decckm -> %{state | cursor_keys_mode: :application}
+      true -> state
+    end
+  end
+
+  defp set_basic_mode(state, :dectcem), do: set_cursor_visible(state)
+  defp set_basic_mode(state, :decawm), do: set_auto_wrap(state)
+  defp set_basic_mode(state, :decom), do: set_origin_mode(state)
+  defp set_basic_mode(state, :irm), do: set_insert_mode(state)
+  defp set_basic_mode(state, :lnm), do: set_line_feed_mode(state)
+  defp set_basic_mode(state, :decscnm), do: set_screen_mode(state)
+  defp set_basic_mode(state, :decarm), do: set_auto_repeat_mode(state)
+  defp set_basic_mode(state, :decinlm), do: set_interlacing_mode(state)
+  defp set_basic_mode(state, :focus_events), do: set_focus_events(state)
+  defp set_basic_mode(state, :bracketed_paste), do: set_bracketed_paste(state)
+
+  defp set_cursor_visible(state), do: %{state | cursor_visible: true}
+  defp set_auto_wrap(state), do: %{state | auto_wrap: true}
+  defp set_origin_mode(state), do: %{state | origin_mode: true}
+  defp set_insert_mode(state), do: %{state | insert_mode: true}
+  defp set_line_feed_mode(state), do: %{state | line_feed_mode: true}
+  defp set_screen_mode(state), do: %{state | screen_mode_reverse: true}
+  defp set_auto_repeat_mode(state), do: %{state | auto_repeat_mode: true}
+  defp set_interlacing_mode(state), do: %{state | interlacing_mode: true}
+  defp set_focus_events(state), do: %{state | focus_events_enabled: true}
+  defp set_bracketed_paste(state), do: %{state | bracketed_paste_mode: true}
+
+  defp set_mouse_mode(state, mode) do
     case mode do
-      :dectcem -> %{state | cursor_visible: true}
-      :decawm -> %{state | auto_wrap: true}
-      :decom -> %{state | origin_mode: true}
-      :irm -> %{state | insert_mode: true}
-      :lnm -> %{state | line_feed_mode: true}
-      :decckm -> %{state | cursor_keys_mode: :application}
-      :decscnm -> %{state | screen_mode_reverse: true}
-      :decarm -> %{state | auto_repeat_mode: true}
-      :decinlm -> %{state | interlacing_mode: true}
-      :focus_events -> %{state | focus_events_enabled: true}
-      :bracketed_paste -> %{state | bracketed_paste_mode: true}
       :mouse_report_x10 -> %{state | mouse_report_mode: :x10}
       :mouse_report_cell_motion -> %{state | mouse_report_mode: :cell_motion}
       :mouse_report_sgr -> %{state | mouse_report_mode: :sgr}
+    end
+  end
+
+  defp set_column_mode(state, mode) do
+    case mode do
       :deccolm_132 -> %{state | column_width_mode: :wide}
       :deccolm_80 -> %{state | column_width_mode: :normal}
-      _ -> state
     end
   end
 
@@ -191,26 +259,38 @@ defmodule Raxol.Terminal.ModeState do
   """
   @spec reset_mode(t(), atom()) :: t()
   def reset_mode(state, mode) do
-    case mode do
-      :dectcem -> %{state | cursor_visible: false}
-      :decawm -> %{state | auto_wrap: false}
-      :decom -> %{state | origin_mode: false}
-      :irm -> %{state | insert_mode: false}
-      :lnm -> %{state | line_feed_mode: false}
-      :decckm -> %{state | cursor_keys_mode: :normal}
-      :decscnm -> %{state | screen_mode_reverse: false}
-      :decarm -> %{state | auto_repeat_mode: false}
-      :decinlm -> %{state | interlacing_mode: false}
-      :focus_events -> %{state | focus_events_enabled: false}
-      :bracketed_paste -> %{state | bracketed_paste_mode: false}
-      :mouse_report_x10 -> %{state | mouse_report_mode: :none}
-      :mouse_report_cell_motion -> %{state | mouse_report_mode: :none}
-      :mouse_report_sgr -> %{state | mouse_report_mode: :none}
-      :deccolm_132 -> %{state | column_width_mode: :normal}
-      :deccolm_80 -> %{state | column_width_mode: :normal}
-      _ -> state
+    cond do
+      basic_mode?(mode) -> reset_basic_mode(state, mode)
+      mouse_mode?(mode) -> reset_mouse_mode(state)
+      column_mode?(mode) -> reset_column_mode(state)
+      mode == :decckm -> %{state | cursor_keys_mode: :normal}
+      true -> state
     end
   end
+
+  defp reset_basic_mode(state, :dectcem), do: reset_cursor_visible(state)
+  defp reset_basic_mode(state, :decawm), do: reset_auto_wrap(state)
+  defp reset_basic_mode(state, :decom), do: reset_origin_mode(state)
+  defp reset_basic_mode(state, :irm), do: reset_insert_mode(state)
+  defp reset_basic_mode(state, :lnm), do: reset_line_feed_mode(state)
+  defp reset_basic_mode(state, :decscnm), do: reset_screen_mode(state)
+  defp reset_basic_mode(state, :decarm), do: reset_auto_repeat_mode(state)
+  defp reset_basic_mode(state, :decinlm), do: reset_interlacing_mode(state)
+  defp reset_basic_mode(state, :focus_events), do: reset_focus_events(state)
+  defp reset_basic_mode(state, :bracketed_paste), do: reset_bracketed_paste(state)
+
+  defp reset_cursor_visible(state), do: %{state | cursor_visible: false}
+  defp reset_auto_wrap(state), do: %{state | auto_wrap: false}
+  defp reset_origin_mode(state), do: %{state | origin_mode: false}
+  defp reset_insert_mode(state), do: %{state | insert_mode: false}
+  defp reset_line_feed_mode(state), do: %{state | line_feed_mode: false}
+  defp reset_screen_mode(state), do: %{state | screen_mode_reverse: false}
+  defp reset_auto_repeat_mode(state), do: %{state | auto_repeat_mode: false}
+  defp reset_interlacing_mode(state), do: %{state | interlacing_mode: false}
+  defp reset_focus_events(state), do: %{state | focus_events_enabled: false}
+  defp reset_bracketed_paste(state), do: %{state | bracketed_paste_mode: false}
+  defp reset_mouse_mode(state), do: %{state | mouse_report_mode: :none}
+  defp reset_column_mode(state), do: %{state | column_width_mode: :normal}
 
   @doc """
   Sets the alternate buffer mode.

@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Screen.Manager do
+defmodule Raxol.Terminal.ScreenManager do
   @moduledoc """
   Manages screen buffer operations for the terminal emulator.
   This module handles operations related to the main and alternate screen buffers,
@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Screen.Manager do
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Screen.Manager do
   """
   @spec initialize_buffers(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: {ScreenBuffer.t(), ScreenBuffer.t()}
   def initialize_buffers(width, height, scrollback_limit) do
-    BufferManager.initialize_buffers(width, height, scrollback_limit)
+    Manager.initialize_buffers(width, height, scrollback_limit)
   end
 
   @doc """

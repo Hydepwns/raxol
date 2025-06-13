@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Parser.State.Manager do
+defmodule Raxol.Terminal.Parser.StateManager do
   @moduledoc """
   Manages parser state transitions and state-specific functionality for the terminal emulator.
   This module provides a clean interface for managing the parser's state machine and delegating

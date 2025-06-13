@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.ScreenManager do
+defmodule Raxol.Terminal.ScreenUpdater do
   @moduledoc """
   Manages terminal screen state and updates.
 
