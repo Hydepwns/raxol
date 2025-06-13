@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   end
 
   @doc """
-  Sets the cursor style.
+  Sets the cursor style for the emulator.
   """
   @spec set_style(EmulatorStruct.t(), atom()) :: EmulatorStruct.t()
   def set_style(%EmulatorStruct{} = emulator, style) do
@@ -95,8 +95,8 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   @spec restore_state(EmulatorStruct.t()) :: EmulatorStruct.t()
   def restore_state(%EmulatorStruct{} = emulator) do
     case emulator.saved_cursor do
-      nil -> emulator
-      saved_cursor -> %{emulator | cursor: saved_cursor}
+      nil -> {:error, :no_saved_cursor}
+      saved_cursor -> {:ok, %{emulator | cursor: saved_cursor}}
     end
   end
 

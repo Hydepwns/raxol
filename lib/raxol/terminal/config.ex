@@ -275,7 +275,6 @@ defmodule Raxol.Terminal.Config do
   The updated configuration with merged options.
   """
   def merge_opts(config, opts) when is_map(opts) do
-    # Validate options before merging
     case validate_config(opts) do
       :ok ->
         do_merge_opts(config, opts)
@@ -298,14 +297,12 @@ defmodule Raxol.Terminal.Config do
   `:ok` if the configuration is valid, `{:error, reason}` otherwise.
   """
   def validate_config(config) when is_map(config) do
-    with :ok <- validate_dimensions(config),
-         :ok <- validate_colors(config),
-         :ok <- validate_styles(config),
-         :ok <- validate_input(config),
-         :ok <- validate_performance(config),
-         :ok <- validate_mode(config) do
-      :ok
-    end
+    validate_dimensions(config)
+    validate_colors(config)
+    validate_styles(config)
+    validate_input(config)
+    validate_performance(config)
+    validate_mode(config)
   end
 
   @doc """
@@ -313,9 +310,13 @@ defmodule Raxol.Terminal.Config do
   """
   @spec update(t(), map()) :: {:ok, t()} | {:error, term()}
   def update(config, updates) when is_map(updates) do
-    with :ok <- Validator.validate_update(config, updates) do
-      updated_config = update_config_fields(config, updates)
-      {:ok, updated_config}
+    case Validator.validate_update(config, updates) do
+      :ok ->
+        updated_config = update_config_fields(config, updates)
+        {:ok, updated_config}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -345,8 +346,6 @@ defmodule Raxol.Terminal.Config do
   def list_saved do
     Persistence.list_configs()
   end
-
-  # Private helpers
 
   defp do_merge_opts(config, opts) do
     config
@@ -421,32 +420,22 @@ defmodule Raxol.Terminal.Config do
   end
 
   defp update_config_fields(config, updates) do
-    Enum.reduce(updates, config, fn {key, value}, acc ->
-      case key do
-        :width when is_integer(value) and value > 0 ->
-          %{acc | width: value}
-
-        :height when is_integer(value) and value > 0 ->
-          %{acc | height: value}
-
-        :colors when is_map(value) ->
-          %{acc | colors: Map.merge(acc.colors, value)}
-
-        :styles when is_map(value) ->
-          %{acc | styles: Map.merge(acc.styles, value)}
-
-        :input when is_map(value) ->
-          %{acc | input: Map.merge(acc.input, value)}
-
-        :performance when is_map(value) ->
-          %{acc | performance: Map.merge(acc.performance, value)}
-
-        :mode when is_map(value) ->
-          %{acc | mode: Map.merge(acc.mode, value)}
-
-        _ ->
-          acc
-      end
-    end)
+    Enum.reduce(updates, config, &update_field/2)
   end
+
+  defp update_field({:width, value}, acc) when is_integer(value) and value > 0,
+    do: %{acc | width: value}
+  defp update_field({:height, value}, acc) when is_integer(value) and value > 0,
+    do: %{acc | height: value}
+  defp update_field({:colors, value}, acc) when is_map(value),
+    do: %{acc | colors: Map.merge(acc.colors, value)}
+  defp update_field({:styles, value}, acc) when is_map(value),
+    do: %{acc | styles: Map.merge(acc.styles, value)}
+  defp update_field({:input, value}, acc) when is_map(value),
+    do: %{acc | input: Map.merge(acc.input, value)}
+  defp update_field({:performance, value}, acc) when is_map(value),
+    do: %{acc | performance: Map.merge(acc.performance, value)}
+  defp update_field({:mode, value}, acc) when is_map(value),
+    do: %{acc | mode: Map.merge(acc.mode, value)}
+  defp update_field(_, acc), do: acc
 end

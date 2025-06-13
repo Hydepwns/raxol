@@ -1,120 +1,233 @@
 defmodule Raxol.Terminal.Emulator.Struct do
   @moduledoc """
-  Defines the struct and types for the Terminal Emulator.
-  This module exists to break circular dependencies between the Emulator and other modules.
+  Provides terminal emulator structure and related functionality.
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.CharacterSets
-  alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.ANSI.TerminalState
-  alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.ModeManager
-  alias Raxol.Plugins.Manager.Core
 
-  @type cursor_style_type ::
-          :blinking_block
-          | :steady_block
-          | :blinking_underline
-          | :steady_underline
-          | :blinking_bar
-          | :steady_bar
+  defstruct [
+    :active_buffer,
+    :active_buffer_type,
+    :alternate_screen_buffer,
+    :charset_state,
+    :client_options,
+    :color_palette,
+    :command,
+    :command_history,
+    :current_command_buffer,
+    :current_hyperlink_url,
+    :cursor,
+    :cursor_manager,
+    :cursor_style,
+    :height,
+    :icon_name,
+    :last_col_exceeded,
+    :last_key_event,
+    :main_screen_buffer,
+    :max_command_history,
+    :memory_limit,
+    :mode_manager,
+    :output_buffer,
+    :parser_state,
+    :plugin_manager,
+    :saved_cursor,
+    :scroll_region,
+    :scrollback_buffer,
+    :scrollback_limit,
+    :session_id,
+    :state,
+    :state_stack,
+    :style,
+    :tab_stops,
+    :width,
+    :window_manager,
+    :window_title,
+    :current_hyperlink
+  ]
 
   @type t :: %__MODULE__{
-          main_screen_buffer: ScreenBuffer.t(),
-          alternate_screen_buffer: ScreenBuffer.t(),
-          active_buffer_type: :main | :alternate,
-          cursor: Manager.t(),
-          saved_cursor: Manager.t() | nil,
-          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-          style: TextFormatting.text_style(),
-          memory_limit: non_neg_integer(),
-          charset_state: CharacterSets.charset_state(),
-          mode_manager: ModeManager.t(),
-          plugin_manager: Manager.t(Core),
-          options: map(),
-          current_hyperlink_url: String.t() | nil,
-          window_title: String.t() | nil,
-          icon_name: String.t() | nil,
-          tab_stops: MapSet.t(),
-          output_buffer: String.t(),
-          color_palette: map(),
-          cursor_style: cursor_style_type(),
-          parser_state: map(),
-          command_history: list(),
-          max_command_history: non_neg_integer(),
-          current_command_buffer: String.t(),
-          last_key_event: map() | nil,
-          width: non_neg_integer(),
-          height: non_neg_integer(),
-          state: term(),
-          command: term(),
-          window_state: %{
-            title: String.t(),
-            icon_name: String.t(),
-            size: {non_neg_integer(), non_neg_integer()},
-            position: {non_neg_integer(), non_neg_integer()},
-            stacking_order: :normal | :maximized | :iconified,
-            iconified: boolean(),
-            maximized: boolean(),
-            previous_size: {non_neg_integer(), non_neg_integer()} | nil
-          },
-          scrollback_buffer: list(),
-          cwd: String.t() | nil,
-          current_hyperlink: map() | nil,
-          default_palette: map() | nil,
-          scrollback_limit: non_neg_integer(),
-          session_id: String.t() | nil,
-          client_options: map(),
-          sixel_state: map() | nil
-        }
+    active_buffer_type: :main | :alternate,
+    active_buffer: ScreenBuffer.t(),
+    scrollback_buffer: [ScreenBuffer.t()],
+    cursor_manager: term(),
+    mode_manager: term(),
+    command_history: [String.t()],
+    current_command_buffer: String.t(),
+    style: map(),
+    color_palette: map(),
+    tab_stops: [integer()],
+    cursor: %{
+      position: {integer(), integer()},
+      style: atom(),
+      visible: boolean(),
+      blink_state: boolean()
+    },
+    cursor_style: atom(),
+    saved_cursor: %{
+      position: {integer(), integer()},
+      style: atom(),
+      visible: boolean(),
+      blink_state: boolean()
+    } | nil,
+    charset_state: %{
+      g0: atom(),
+      g1: atom(),
+      g2: atom(),
+      g3: atom(),
+      gl: atom(),
+      gr: atom(),
+      single_shift: atom() | nil
+    },
+    width: non_neg_integer(),
+    height: non_neg_integer(),
+    main_screen_buffer: ScreenBuffer.t(),
+    alternate_screen_buffer: ScreenBuffer.t(),
+    scrollback_limit: non_neg_integer(),
+    memory_limit: non_neg_integer(),
+    max_command_history: non_neg_integer(),
+    plugin_manager: term(),
+    session_id: String.t(),
+    client_options: map(),
+    state: atom(),
+    window_manager: term(),
+    command: term(),
+    window_title: String.t() | nil,
+    state_stack: list(),
+    last_col_exceeded: boolean(),
+    icon_name: String.t() | nil,
+    current_hyperlink_url: String.t() | nil,
+    scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+    last_key_event: term(),
+    output_buffer: String.t(),
+    parser_state: term()
+  }
 
-  defstruct cursor: Manager.new(),
-            saved_cursor: nil,
-            style: TextFormatting.new(),
-            charset_state: CharacterSets.new(),
-            mode_manager: ModeManager.new(),
-            tab_stops: MapSet.new(),
-            main_screen_buffer: nil,
-            alternate_screen_buffer: nil,
-            active_buffer_type: :main,
-            state_stack: TerminalState.new(),
-            scroll_region: nil,
-            memory_limit: 1_000_000,
-            last_col_exceeded: false,
-            plugin_manager: Core.new(),
-            parser_state: %Raxol.Terminal.Parser.State{state: :ground},
-            options: %{},
-            current_hyperlink_url: nil,
-            window_title: nil,
-            icon_name: nil,
-            output_buffer: "",
-            color_palette: %{},
-            cursor_style: :blinking_block,
-            command_history: [],
-            max_command_history: 100,
-            current_command_buffer: "",
-            last_key_event: nil,
-            width: 80,
-            height: 24,
-            state: nil,
-            command: nil,
-            window_state: %{
-              title: "",
-              icon_name: "",
-              size: {80, 24},
-              position: {0, 0},
-              stacking_order: :normal,
-              iconified: false,
-              maximized: false,
-              previous_size: nil
-            },
-            scrollback_buffer: [],
-            cwd: nil,
-            current_hyperlink: nil,
-            default_palette: nil,
-            scrollback_limit: 1000,
-            session_id: nil,
-            client_options: %{},
-            sixel_state: nil
+  @doc """
+  Creates a new terminal emulator with the given options.
+  """
+  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
+  def new(width, height, opts \\ []) do
+    active_buffer = ScreenBuffer.new(width, height)
+    scrollback_buffer = []
+    initialize_emulator(active_buffer, scrollback_buffer, Keyword.put(opts, :width, width))
+  end
+
+  @doc """
+  Gets the active buffer from the emulator.
+  """
+  @spec get_active_buffer(t()) :: ScreenBuffer.t()
+  def get_active_buffer(emulator) do
+    emulator.active_buffer
+  end
+
+  @doc """
+  Checks if scrolling is needed and performs it if necessary.
+  """
+  @spec maybe_scroll(t()) :: t()
+  def maybe_scroll(emulator) do
+    if needs_scroll?(emulator) do
+      perform_scroll(emulator)
+    else
+      emulator
+    end
+  end
+
+  @doc """
+  Gets the cursor position from the emulator.
+  """
+  @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_cursor_position(emulator) do
+    emulator.cursor.position
+  end
+
+  @doc """
+  Processes input for the emulator.
+  """
+  @spec process_input(t(), String.t()) :: {t(), String.t()}
+  def process_input(emulator, input) do
+    # For now, just return the emulator unchanged and the input as output
+    # This is a placeholder implementation
+    {emulator, input}
+  end
+
+  @doc """
+  Updates the active buffer in the emulator.
+  """
+  @spec update_active_buffer(t(), ScreenBuffer.t()) :: t()
+  def update_active_buffer(emulator, buffer) do
+    %{emulator | active_buffer: buffer}
+  end
+
+  # Private helper functions
+
+  defp needs_scroll?(emulator) do
+    emulator.cursor.position |> elem(1) >= emulator.height
+  end
+
+  defp perform_scroll(emulator) do
+    # Implementation
+    emulator
+  end
+
+  defp default_opts(opts) do
+    %{
+      width: Keyword.get(opts, :width, 80),
+      height: Keyword.get(opts, :height, 24),
+      scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000),
+      memory_limit: Keyword.get(opts, :memory_limit, 100_000),
+      max_command_history: Keyword.get(opts, :max_command_history, 100),
+      plugin_manager: Keyword.get(opts, :plugin_manager),
+      session_id: Keyword.get(opts, :session_id, Ecto.UUID.generate()),
+      client_options: Keyword.get(opts, :client_options, %{}),
+      state: Keyword.get(opts, :state, :normal),
+      window_manager: Keyword.get(opts, :window_manager)
+    }
+  end
+
+  defp initialize_emulator(active_buffer, scrollback_buffer, opts) do
+    defaults = default_opts(opts)
+    %__MODULE__{
+      active_buffer: active_buffer,
+      active_buffer_type: :main,
+      scrollback_buffer: scrollback_buffer,
+      cursor_manager: Keyword.get(opts, :cursor_manager),
+      mode_manager: Keyword.get(opts, :mode_manager),
+      command_history: [],
+      current_command_buffer: "",
+      style: %{},
+      color_palette: %{},
+      tab_stops: [],
+      cursor: %{
+        position: {0, 0},
+        style: :block,
+        visible: true,
+        blink_state: true
+      },
+      cursor_style: :block,
+      saved_cursor: nil,
+      charset_state: %{
+        g0: :us_ascii,
+        g1: :us_ascii,
+        g2: :us_ascii,
+        g3: :us_ascii,
+        gl: :g0,
+        gr: :g1,
+        single_shift: nil
+      },
+      width: defaults.width,
+      height: defaults.height,
+      main_screen_buffer: active_buffer,
+      alternate_screen_buffer: ScreenBuffer.new(defaults.width, defaults.height),
+      scrollback_limit: defaults.scrollback_limit,
+      memory_limit: defaults.memory_limit,
+      max_command_history: defaults.max_command_history,
+      plugin_manager: defaults.plugin_manager,
+      session_id: defaults.session_id,
+      client_options: defaults.client_options,
+      state: defaults.state,
+      window_manager: defaults.window_manager,
+      output_buffer: "",
+      parser_state: %{state: :ground}
+    }
+  end
 end

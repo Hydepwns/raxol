@@ -7,7 +7,16 @@ defmodule Raxol.Terminal.Emulator.Input do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  alias Raxol.Terminal.Commands.{Cursor, Screen}
+
+  @doc """
+  Creates a new input handler.
+  """
+  def new do
+    %{
+      buffer: [],
+      state: :normal
+    }
+  end
 
   @doc """
   Processes a key event.

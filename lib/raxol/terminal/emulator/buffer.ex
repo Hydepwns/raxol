@@ -1,15 +1,19 @@
 defmodule Raxol.Terminal.Emulator.Buffer do
   @moduledoc """
-  Handles screen buffer management for the terminal emulator.
-  Provides functions for buffer operations, scroll region handling, and buffer switching.
+  Provides buffer management functionality for the terminal emulator.
   """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
-    Commands.Screen,
-    Emulator.Struct,
-    Buffer
+    # Buffer,
+    # CharacterSets,
+    # Cursor,
+    # Initializer,
+    # Manager,
+    # Operations,
+    # Scroller,
+    # TextFormatting
   }
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
@@ -58,74 +62,50 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   end
 
   @doc """
-  Scrolls the active buffer up by the specified number of lines.
-  Returns {:ok, updated_emulator} or {:error, reason}.
+  Scrolls the buffer up by the specified number of lines.
   """
-  @spec scroll_up(EmulatorStruct.t(), non_neg_integer()) ::
-          {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def scroll_up(%EmulatorStruct{} = emulator, lines) when lines > 0 do
-    updated_emulator = Screen.scroll_up(emulator, lines)
-    {:ok, updated_emulator}
-  end
-
-  def scroll_up(%EmulatorStruct{} = _emulator, lines) do
-    {:error, "Invalid scroll lines: #{inspect(lines)}"}
+  def scroll_up_emulator(emulator, lines) do
+    updated_emulator = ScreenBuffer.scroll_up(emulator, lines)
+    %{updated_emulator | active_buffer: updated_emulator.active_buffer}
   end
 
   @doc """
-  Scrolls the active buffer down by the specified number of lines.
-  Returns {:ok, updated_emulator} or {:error, reason}.
+  Scrolls the buffer down by the specified number of lines.
   """
-  @spec scroll_down(EmulatorStruct.t(), non_neg_integer()) ::
-          {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def scroll_down(%EmulatorStruct{} = emulator, lines) when lines > 0 do
-    updated_emulator = Screen.scroll_down(emulator, lines)
-    {:ok, updated_emulator}
-  end
-
-  def scroll_down(%EmulatorStruct{} = _emulator, lines) do
-    {:error, "Invalid scroll lines: #{inspect(lines)}"}
+  def scroll_down(emulator, lines) do
+    updated_emulator = ScreenBuffer.scroll_down(emulator, lines)
+    %{updated_emulator | active_buffer: updated_emulator.active_buffer}
   end
 
   @doc """
-  Clears the active buffer.
-  Returns {:ok, updated_emulator} or {:error, reason}.
+  Clears the entire buffer.
   """
-  @spec clear_buffer(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def clear_buffer(%EmulatorStruct{} = emulator) do
-    updated_emulator = Screen.clear_screen(emulator, 2)
-    {:ok, updated_emulator}
+  def clear_buffer(emulator) do
+    updated_emulator = ScreenBuffer.clear_screen(emulator)
+    %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0, y: 0}}
   end
 
   @doc """
-  Clears the active buffer from cursor to end of screen.
-  Returns {:ok, updated_emulator} or {:error, reason}.
+  Clears from cursor to end of screen.
   """
-  @spec clear_from_cursor_to_end(EmulatorStruct.t()) ::
-          {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def clear_from_cursor_to_end(%EmulatorStruct{} = emulator) do
-    updated_emulator = Screen.clear_screen(emulator, 0)
-    {:ok, updated_emulator}
+  def clear_from_cursor_to_end(emulator) do
+    updated_emulator = ScreenBuffer.clear_screen(emulator)
+    %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0}}
   end
 
   @doc """
-  Clears the active buffer from cursor to start of screen.
-  Returns {:ok, updated_emulator} or {:error, reason}.
+  Clears from start of screen to cursor.
   """
-  @spec clear_from_cursor_to_start(EmulatorStruct.t()) ::
-          {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def clear_from_cursor_to_start(%EmulatorStruct{} = emulator) do
-    updated_emulator = Screen.clear_screen(emulator, 1)
-    {:ok, updated_emulator}
+  def clear_from_cursor_to_start(emulator) do
+    updated_emulator = ScreenBuffer.clear_screen(emulator)
+    %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0}}
   end
 
   @doc """
-  Clears the current line in the active buffer.
-  Returns {:ok, updated_emulator} or {:error, reason}.
+  Clears the current line.
   """
-  @spec clear_line(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def clear_line(%EmulatorStruct{} = emulator) do
-    updated_emulator = Screen.clear_line(emulator, 2)
-    {:ok, updated_emulator}
+  def clear_line(emulator) do
+    updated_emulator = ScreenBuffer.clear_line(emulator, 2)
+    %{updated_emulator | active_buffer: updated_emulator.active_buffer}
   end
 end
