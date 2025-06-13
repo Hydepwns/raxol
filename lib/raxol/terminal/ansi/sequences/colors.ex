@@ -216,4 +216,231 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
 
   # Return empty string for invalid inputs
   def color_code(_color, _type), do: ""
+
+  @doc """
+  Parse a color string into a Color struct.
+
+  ## Parameters
+
+  * `color_str` - Color string in format "rgb:RRRR/GGGG/BBBB" or "#RRGGBB"
+
+  ## Returns
+
+  Color struct or nil if invalid format
+  """
+  def parse_color(color_str) when is_binary(color_str) do
+    cond do
+      String.starts_with?(color_str, "rgb:") ->
+        parse_rgb_color(color_str)
+      String.starts_with?(color_str, "#") ->
+        parse_hex_color(color_str)
+      true ->
+        nil
+    end
+  end
+
+  defp parse_rgb_color("rgb:" <> rest) do
+    case String.split(rest, "/") do
+      [r, g, b] ->
+        with {r_int, ""} <- Integer.parse(r, 16),
+             {g_int, ""} <- Integer.parse(g, 16),
+             {b_int, ""} <- Integer.parse(b, 16) do
+          Color.from_rgb(r_int, g_int, b_int)
+        else
+          _ -> nil
+        end
+      _ -> nil
+    end
+  end
+
+  defp parse_hex_color("#" <> hex) do
+    case hex do
+      <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> ->
+        with {r_int, ""} <- Integer.parse(r, 16),
+             {g_int, ""} <- Integer.parse(g, 16),
+             {b_int, ""} <- Integer.parse(b, 16) do
+          Color.from_rgb(r_int, g_int, b_int)
+        else
+          _ -> nil
+        end
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Set a color at a specific index in the color palette.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `index` - Color index (0-255)
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_color(colors, index, color) when index >= 0 and index <= 255 do
+    Map.put(colors, index, color)
+  end
+
+  @doc """
+  Set the foreground color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_foreground(colors, color) do
+    Map.put(colors, :foreground, color)
+  end
+
+  @doc """
+  Set the background color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_background(colors, color) do
+    Map.put(colors, :background, color)
+  end
+
+  @doc """
+  Set the cursor color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_cursor_color(colors, color) do
+    Map.put(colors, :cursor, color)
+  end
+
+  @doc """
+  Set the mouse foreground color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_mouse_foreground(colors, color) do
+    Map.put(colors, :mouse_foreground, color)
+  end
+
+  @doc """
+  Set the mouse background color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_mouse_background(colors, color) do
+    Map.put(colors, :mouse_background, color)
+  end
+
+  @doc """
+  Set the highlight foreground color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_highlight_foreground(colors, color) do
+    Map.put(colors, :highlight_foreground, color)
+  end
+
+  @doc """
+  Set the highlight background color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_highlight_background(colors, color) do
+    Map.put(colors, :highlight_background, color)
+  end
+
+  @doc """
+  Set the highlight cursor color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_highlight_cursor(colors, color) do
+    Map.put(colors, :highlight_cursor, color)
+  end
+
+  @doc """
+  Set the highlight mouse foreground color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_highlight_mouse_foreground(colors, color) do
+    Map.put(colors, :highlight_mouse_foreground, color)
+  end
+
+  @doc """
+  Set the highlight mouse background color.
+
+  ## Parameters
+
+  * `colors` - The color palette
+  * `color` - Color struct
+
+  ## Returns
+
+  Updated color palette
+  """
+  def set_highlight_mouse_background(colors, color) do
+    Map.put(colors, :highlight_mouse_background, color)
+  end
 end

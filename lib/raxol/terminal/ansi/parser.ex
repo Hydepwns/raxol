@@ -1,346 +1,78 @@
 defmodule Raxol.Terminal.ANSI.Parser do
   @moduledoc """
-  ANSI escape sequence parser module.
-
-  Provides comprehensive parsing for ANSI escape sequences, determining
-  the type of sequence and extracting its parameters for processing.
-  This is the main entry point for parsing all ANSI sequences.
+  Provides comprehensive parsing for ANSI escape sequences.
+  Determines the type of sequence and extracts its parameters.
   """
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.ANSI.{StateMachine, Monitor}
+
+  @type sequence_type :: :csi | :osc | :sos | :pm | :apc | :esc | :text
+
+  @type sequence :: %{
+          type: sequence_type(),
+          command: String.t(),
+          params: list(String.t()),
+          intermediate: String.t(),
+          final: String.t(),
+          text: String.t()
+  }
 
   @doc """
-  Parse a string containing ANSI escape sequences into tokens.
-
-  This function scans through the input and returns a list of tokens, where each
-  token is either a plain string or a parsed ANSI sequence.
-
-  ## Parameters
-
-  * `input` - The string containing ANSI escape sequences
-
-  ## Returns
-
-  A list of tokens where each token is either:
-    - A binary string (plain text)
-    - A tuple representing a parsed ANSI sequence
-
-  ## Examples
-
-      iex> Raxol.Terminal.ANSI.Parser.parse("Hello\e[31mWorld")
-      ["Hello", {:text_attributes, [{:foreground_basic, 1}]}]
+  Parses a string containing ANSI escape sequences.
+  Returns a list of parsed sequences.
   """
-  def parse(input) when is_binary(input) do
-    # Pattern to match ANSI escape sequences
-    pattern = ~r/\e\[[^\x40-\x7E]*[\x40-\x7E]|\e[\(\)][A-Z0-9]|\e][^\a]*\a/
-
-    # Split the input into a list of tokens
-    Regex.split(pattern, input, include_captures: true, trim: true)
-    |> Enum.map(fn
-      # If the token starts with an escape character, parse it as an ANSI sequence
-      "\e" <> _ = sequence -> parse_sequence(sequence)
-      # Otherwise, keep it as plain text
-      text -> text
-    end)
+  @spec parse(String.t()) :: list(sequence())
+  def parse(input) do
+    try do
+      state = StateMachine.new()
+      {_state, sequences} = StateMachine.process(state, input)
+      Monitor.record_sequence(input)
+      sequences
+    rescue
+      e ->
+        Monitor.record_error(input, "Parse error: #{inspect(e)}", %{
+          stacktrace: Exception.format_stacktrace(__STACKTRACE__)
+        })
+        log_parse_error(e, input)
+        []
+    end
   end
 
   @doc """
-  Parse an ANSI escape sequence and return its type and parameters.
-
-  ## Parameters
-
-  * `sequence` - The ANSI sequence to parse
-
-  ## Returns
-
-  Parsed sequence as a tuple of type and parameters or error
+  Parses a single ANSI escape sequence.
+  Returns a map containing the sequence type and parameters.
   """
-  def parse_sequence(sequence) do
-    cond do
-      # Cursor movement sequences
-      String.match?(sequence, ~r/^\e\[\d*[ABCDHFST]/) ->
-        parse_cursor_sequence(sequence)
-
-      # Color and text attribute sequences
-      String.match?(sequence, ~r/^\e\[\d*(;\d+)*m/) ->
-        parse_sgr_sequence(sequence)
-
-      # Screen manipulation sequences
-      String.match?(sequence, ~r/^\e\[\d*[JKL]/) ->
-        parse_screen_sequence(sequence)
-
-      # Mode setting sequences
-      String.match?(sequence, ~r/^\e\[\?(\d+)(h|l)/) ->
-        parse_mode_sequence(sequence)
-
-      # Device status report sequences
-      String.match?(sequence, ~r/^\e\[\d*n/) ->
-        parse_device_status_sequence(sequence)
-
-      # Character set sequences
-      String.match?(sequence, ~r/^\e[\(\)][A-Z0-9]/) ->
-        parse_charset_sequence(sequence)
-
-      # OSC sequences for window title, etc.
-      String.starts_with?(sequence, "\e]") ->
-        parse_osc_sequence(sequence)
-
-      # Unknown or unsupported sequence
-      true ->
-        {:unknown, sequence}
-    end
-  end
-
-  defp parse_cursor_sequence(sequence) do
-    # Example: \e[nA (cursor up n lines)
-    case Regex.run(~r/^\e\[(\d*)(A|B|C|D|H|F|S|T)/, sequence,
-           capture: :all_but_first
-         ) do
-      [n, "A"] ->
-        n = parse_optional_number(n, 1)
-        {:cursor_up, n}
-
-      [n, "B"] ->
-        n = parse_optional_number(n, 1)
-        {:cursor_down, n}
-
-      [n, "C"] ->
-        n = parse_optional_number(n, 1)
-        {:cursor_forward, n}
-
-      [n, "D"] ->
-        n = parse_optional_number(n, 1)
-        {:cursor_backward, n}
-
-      [coords, "H"] ->
-        {row, col} = parse_coordinates(coords)
-        {:cursor_move, row, col}
-
-      [coords, "F"] ->
-        {row, col} = parse_coordinates(coords)
-        {:cursor_move, row, col}
-
-      ["", "H"] ->
-        # Default to home position (1,1)
-        {:cursor_move, 1, 1}
-
-      [_, "S"] ->
-        {:cursor_save}
-
-      [_, "T"] ->
-        {:cursor_restore}
-
-      _ ->
-        {:error, "Invalid cursor sequence: #{sequence}"}
-    end
-  end
-
-  defp parse_sgr_sequence(sequence) do
-    # Example: \e[31;42;1m (red foreground, green background, bold)
-    case Regex.run(~r/^\e\[([\d;]*)m/, sequence, capture: :all_but_first) do
-      [""] ->
-        # Empty parameter means reset all attributes
-        {:reset_attributes}
-
-      [params] ->
-        params = String.split(params, ";")
-        parse_sgr_params(params, [])
-    end
-  end
-
-  defp parse_sgr_params([], acc), do: {:text_attributes, Enum.reverse(acc)}
-
-  defp parse_sgr_params(["0" | rest], _acc) do
-    # Reset attributes and start over
-    parse_sgr_params(rest, [:reset])
-  end
-
-  defp parse_sgr_params([param | rest], acc) do
-    case param do
-      # Foreground colors 30-37, 90-97
-      color when color >= "30" and color <= "37" ->
-        color_code = String.to_integer(color) - 30
-        parse_sgr_params(rest, [{:foreground_basic, color_code} | acc])
-
-      color when color >= "90" and color <= "97" ->
-        # Bright colors start at 8
-        color_code = String.to_integer(color) - 90 + 8
-        parse_sgr_params(rest, [{:foreground_basic, color_code} | acc])
-
-      # Background colors 40-47, 100-107
-      color when color >= "40" and color <= "47" ->
-        color_code = String.to_integer(color) - 40
-        parse_sgr_params(rest, [{:background_basic, color_code} | acc])
-
-      color when color >= "100" and color <= "107" ->
-        # Bright colors start at 8
-        color_code = String.to_integer(color) - 100 + 8
-        parse_sgr_params(rest, [{:background_basic, color_code} | acc])
-
-      # 256-color and RGB color
-      "38" ->
-        {color_type, remaining} = parse_extended_color(rest)
-        parse_sgr_params(remaining, [color_type | acc])
-
-      "48" ->
-        {color_type, remaining} = parse_extended_color(rest)
-        parse_sgr_params(remaining, [color_type | acc])
-
-      # Text attributes
-      attr ->
-        case parse_text_attribute(attr) do
-          nil ->
-            Raxol.Core.Runtime.Log.debug("Unknown SGR parameter: #{attr}")
-            parse_sgr_params(rest, acc)
-
-          attr_atom ->
-            parse_sgr_params(rest, [attr_atom | acc])
-        end
-    end
-  end
-
-  defp parse_extended_color(["5", index | rest]) do
-    # 256-color mode: \e[38;5;Nm or \e[48;5;Nm
-    index = String.to_integer(index)
-
-    if rest == [],
-      do: {{:foreground_256, index}, []},
-      else: {{:foreground_256, index}, rest}
-  end
-
-  defp parse_extended_color(["2", r, g, b | rest]) do
-    # RGB color mode: \e[38;2;R;G;Bm or \e[48;2;R;G;Bm
-    r = String.to_integer(r)
-    g = String.to_integer(g)
-    b = String.to_integer(b)
-
-    if rest == [],
-      do: {{:foreground_true, r, g, b}, []},
-      else: {{:foreground_true, r, g, b}, rest}
-  end
-
-  defp parse_extended_color(params) do
-    # Invalid format, skip
-    Raxol.Core.Runtime.Log.debug(
-      "Invalid extended color format: #{inspect(params)}"
-    )
-
-    {{:unknown_color, params}, []}
-  end
-
-  defp parse_text_attribute(attr) do
-    case attr do
-      "0" -> :reset
-      "1" -> :bold
-      "2" -> :faint
-      "3" -> :italic
-      "4" -> :underline
-      "5" -> :blink
-      "6" -> :rapid_blink
-      "7" -> :inverse
-      "8" -> :conceal
-      "9" -> :strikethrough
-      "22" -> :normal_intensity
-      "23" -> :no_italic
-      "24" -> :no_underline
-      "25" -> :no_blink
-      "27" -> :no_inverse
-      "28" -> :no_conceal
-      "29" -> :no_strikethrough
+  @spec parse_sequence(String.t()) :: sequence() | nil
+  def parse_sequence(input) do
+    case parse(input) do
+      [sequence] -> sequence
       _ -> nil
     end
   end
 
-  defp parse_screen_sequence(sequence) do
-    # Example: \e[2J (clear screen)
-    case Regex.run(~r/^\e\[(\d*)(J|K|L)/, sequence, capture: :all_but_first) do
-      [n, "J"] ->
-        n = parse_optional_number(n, 0)
-        {:clear_screen, n}
-
-      [n, "K"] ->
-        n = parse_optional_number(n, 0)
-        {:clear_line, n}
-
-      [n, "L"] ->
-        n = parse_optional_number(n, 1)
-        {:insert_line, n}
-
-      _ ->
-        {:error, "Invalid screen sequence: #{sequence}"}
-    end
+  @doc """
+  Determines if a string contains ANSI escape sequences.
+  """
+  @spec contains_ansi?(String.t()) :: boolean()
+  def contains_ansi?(input) do
+    String.contains?(input, "\e")
   end
 
-  defp parse_mode_sequence(sequence) do
-    case Regex.run(~r/^\e\[\?(\d+)(h|l)/, sequence, capture: :all_but_first) do
-      [code, "h"] ->
-        mode =
-          Raxol.Terminal.ModeManager.lookup_private(String.to_integer(code))
-
-        {:set_mode, [mode]}
-
-      [code, "l"] ->
-        mode =
-          Raxol.Terminal.ModeManager.lookup_private(String.to_integer(code))
-
-        {:reset_mode, [mode]}
-
-      _ ->
-        {:error, "Invalid mode sequence: #{sequence}"}
-    end
+  @doc """
+  Strips all ANSI escape sequences from a string.
+  """
+  @spec strip_ansi(String.t()) :: String.t()
+  def strip_ansi(input) do
+    state = StateMachine.new()
+    {_state, sequences} = StateMachine.process(state, input)
+    Enum.map(sequences, & &1.text) |> Enum.join()
   end
 
-  defp parse_device_status_sequence(sequence) do
-    # Example: \e[6n (request cursor position)
-    case Regex.run(~r/^\e\[(\d*)n/, sequence, capture: :all_but_first) do
-      [report_type] ->
-        report_type = parse_optional_number(report_type, 0)
-        {:device_status, report_type}
-
-      _ ->
-        {:error, "Invalid device status sequence: #{sequence}"}
-    end
-  end
-
-  defp parse_charset_sequence(sequence) do
-    # Example: \e(B (set G0 charset to US ASCII)
-    case Regex.run(~r/^\e([\(\)])([A-Z0-9])/, sequence, capture: :all_but_first) do
-      ["(", charset] ->
-        {:designate_charset, 0, charset}
-
-      [")", charset] ->
-        {:designate_charset, 1, charset}
-
-      _ ->
-        {:error, "Invalid charset sequence: #{sequence}"}
-    end
-  end
-
-  defp parse_osc_sequence(sequence) do
-    # Example: \e]0;title\a (set window title)
-    case Regex.run(~r/^\e\](\d+);(.*?)\a/, sequence, capture: :all_but_first) do
-      [cmd, param] ->
-        cmd = String.to_integer(cmd)
-        {:osc, cmd, param}
-
-      _ ->
-        {:error, "Invalid OSC sequence: #{sequence}"}
-    end
-  end
-
-  defp parse_optional_number("", default), do: default
-  defp parse_optional_number(string, _default), do: String.to_integer(string)
-
-  defp parse_coordinates(coords) do
-    case String.split(coords, ";") do
-      [row, col] ->
-        {String.to_integer(row), String.to_integer(col)}
-
-      [row] ->
-        {String.to_integer(row), 1}
-
-      [] ->
-        {1, 1}
-    end
+  defp log_parse_error(reason, input) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "ANSI Parse Error: #{inspect(reason)}",
+      %{input: input}
+    )
   end
 end

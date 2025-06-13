@@ -230,7 +230,6 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec encode(t()) :: binary()
   def encode(_image) do
-    # Implementation details...
     ""
   end
 
@@ -248,7 +247,6 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec decode(binary()) :: t()
   def decode(data) when is_binary(data) do
-    # Implementation details...
     %__MODULE__{}
   end
 
@@ -262,7 +260,6 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec supported?() :: boolean()
   def supported? do
-    # Implementation details...
     false
   end
 

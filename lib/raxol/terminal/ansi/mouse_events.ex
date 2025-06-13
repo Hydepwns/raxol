@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   end
 
   def process_event(state, <<"\e[", rest::binary>>) when state.mode == :sgr do
-    case parse_sgr_event(rest) do
+    case parse_mouse_event(rest) do
       {:ok, event_data} ->
         {update_state(state, event_data), event_data}
 
@@ -167,9 +167,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   end
 
   @doc """
-  Parses an SGR mouse event in the format: <button>;<x>;<y>M
+  Parses a mouse event in the format: <button>;<x>;<y>M
   """
-  @spec parse_sgr_event(binary()) ::
+  @spec parse_mouse_event(binary()) ::
           {:ok,
            %{
              type: :mouse,
@@ -179,7 +179,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
              mode: :sgr
            }}
           | :error
-  def parse_sgr_event(<<button, ";", rest::binary>>) do
+  def parse_mouse_event(<<button, ";", rest::binary>>) do
     case parse_coordinates(rest) do
       {:ok, {x, y}} ->
         {:ok,
@@ -262,18 +262,10 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @spec decode_button(integer()) :: :left | :middle | :right | :release
   def decode_button(button) do
     case button &&& 0x3 do
-      0 ->
-        :release
-
-      1 ->
-        :left
-
-      2 ->
-        :middle
-
-      3 ->
-        :right
-        # _ -> :none # Clause is unreachable as &&& 0x3 covers all cases
+      0 -> :release
+      1 -> :left
+      2 -> :middle
+      3 -> :right
     end
   end
 
@@ -290,7 +282,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
         else: modifiers
 
     modifiers =
-      if (button &&& 0x8) != 0, do: MapSet.put(modifiers, :alt), else: modifiers
+      if (button &&& 0x8) != 0,
+        do: MapSet.put(modifiers, :alt),
+        else: modifiers
 
     modifiers =
       if (button &&& 0x10) != 0,
@@ -306,26 +300,15 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   end
 
   @doc """
-  Decodes button state for URXVT mouse events.
+  Decodes URXVT button state from a mouse event byte.
   """
-  @spec decode_urxvt_button(integer()) ::
-          :left | :middle | :right | :release | :unknown
+  @spec decode_urxvt_button(integer()) :: :left | :middle | :right | :release
   def decode_urxvt_button(button) do
     case button &&& 0x3 do
-      0 ->
-        :release
-
-      1 ->
-        :left
-
-      2 ->
-        :middle
-
-      3 ->
-        :right
-
-        # This clause can't be reached since button &&& 0x3 can only be 0-3
-        # But we keep :unknown in the spec for completeness
+      0 -> :release
+      1 -> :left
+      2 -> :middle
+      3 -> :right
     end
   end
 
@@ -333,14 +316,20 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   Parses coordinates from a mouse event string.
   """
   @spec parse_coordinates(binary()) :: {:ok, {integer(), integer()}} | :error
-  def parse_coordinates(<<x::binary-size(1), ";", y::binary-size(1), "M">>) do
-    # Convert binary chars x and y to integer codepoints before subtracting
-    x_codepoint = String.to_charlist(x) |> hd()
-    y_codepoint = String.to_charlist(y) |> hd()
-    {:ok, {x_codepoint - 32, y_codepoint - 32}}
-  end
+  def parse_coordinates(rest) do
+    case String.split(rest, ";", parts: 2) do
+      [x_str, y_str] ->
+        with {x, ""} <- Integer.parse(x_str),
+             {y, ""} <- Integer.parse(y_str) do
+          {:ok, {x, y}}
+        else
+          _ -> :error
+        end
 
-  def parse_coordinates(_), do: :error
+      _ ->
+        :error
+    end
+  end
 
   @doc """
   Updates the mouse state with new event data.
@@ -375,7 +364,6 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  # Processes a basic mouse event and returns the updated state and event data
   @spec process_basic_event(mouse_state(), integer(), integer(), integer()) ::
           {mouse_state(), map()}
   defp process_basic_event(state, button, x, y) do
@@ -390,10 +378,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     {state, event_data}
   end
 
-  # Private helper functions
-
   defp generate_basic_report(state) do
-    # Basic mouse tracking (mode 1000)
     # Format: \e[M<button><x><y>
     # Button: 0=release, 1=left, 2=middle, 3=right, 64=scroll up, 65=scroll down
     # x, y: 1-based coordinates
@@ -421,7 +406,6 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   end
 
   defp generate_focus_report(state) do
-    # Focus events (mode 1004)
     # Format: \e[I for focus in, \e[O for focus out
     case state.button_state do
       :focus_in -> "\e[I"
@@ -431,14 +415,12 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   end
 
   defp generate_utf8_report(state) do
-    # Optimize UTF-8 mouse reporting by using binary concatenation
     {x, y} = state.position
     button_code = button_to_code(state.button_state)
     :erlang.binary_to_list(<<27, "M", button_code, x + 32, y + 32>>)
   end
 
   defp generate_sgr_report(state) do
-    # Optimize SGR mouse reporting by using binary concatenation
     {x, y} = state.position
     button_code = sgr_button_to_code(state.button_state)
     :erlang.binary_to_list(<<27, "[<", button_code, ";", x, ";", y, "M">>)

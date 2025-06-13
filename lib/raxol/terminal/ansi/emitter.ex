@@ -55,8 +55,8 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   def clear_line, do: "\e[2K"
   def clear_line_from_cursor, do: "\e[0K"
   def clear_line_to_cursor, do: "\e[1K"
-  def scroll_up(n \\ 1), do: "\e[#{n}S"
-  def scroll_down(n \\ 1), do: "\e[#{n}T"
+  def scroll_up_ansi(n \\ 1), do: "\e[#{n}S"
+  def scroll_down_ansi(n \\ 1), do: "\e[#{n}T"
 
   @doc """
   Generates ANSI sequences for text attributes.
