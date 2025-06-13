@@ -13,6 +13,12 @@ defmodule Raxol.Terminal.Commands.Executor do
   alias Raxol.Terminal.Commands.DCSHandlers
   require Raxol.Core.Runtime.Log
 
+  @basic_commands [?m, ?H, ?r, ?J, ?K]
+  @cursor_commands [?A, ?B, ?C, ?D, ?E, ?F, ?G, ?d]
+  @screen_commands [?L, ?M, ?P, ?@, ?S, ?T, ?X]
+  @device_commands [?c, ?n, ?s, ?u, ?t]
+  @scs_commands [?(, ?), ?*, ?+]
+
   @doc """
   Executes a CSI (Control Sequence Introducer) command.
 
@@ -35,125 +41,55 @@ defmodule Raxol.Terminal.Commands.Executor do
       "[Executor.execute_csi_command] BEFORE: scroll_region=#{inspect(emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
     )
 
-    # Parse parameters
     params = Parser.parse_params(params_buffer)
+    result = dispatch_csi_command(emulator, params, intermediates_buffer, final_byte, params_buffer)
+    log_and_return_result(result, final_byte)
+  end
 
-    result =
-      case final_byte do
-        # Delegate to CSIHandlers, passing emulator and parsed params
-        ?m ->
-          CSIHandlers.handle_m(emulator, params)
+  defp dispatch_csi_command(emulator, params, intermediates_buffer, final_byte, params_buffer) do
+    case final_byte do
+      byte when byte in @basic_commands ->
+        CSIHandlers.handle_basic_command(emulator, params, byte)
+      byte when byte in [?h, ?l] ->
+        CSIHandlers.handle_h_or_l(emulator, params, intermediates_buffer, byte)
+      byte when byte in @cursor_commands ->
+        CSIHandlers.handle_cursor_command(emulator, params, byte)
+      byte when byte in @screen_commands ->
+        CSIHandlers.handle_screen_command(emulator, params, byte)
+      byte when byte in @device_commands ->
+        CSIHandlers.handle_device_command(emulator, params, intermediates_buffer, byte)
+      ?q when intermediates_buffer == " " ->
+        CSIHandlers.handle_q_deccusr(emulator, params)
+      byte when byte in @scs_commands ->
+        CSIHandlers.handle_scs(emulator, params_buffer, byte)
+      _ ->
+        log_unknown_csi(final_byte)
+        {:error, :unhandled_csi, emulator}
+    end
+  end
 
-        ?H ->
-          CSIHandlers.handle_H(emulator, params)
-
-        ?r ->
-          CSIHandlers.handle_r(emulator, params)
-
-        final_byte when final_byte in [?h, ?l] ->
-          CSIHandlers.handle_h_or_l(
-            emulator,
-            params,
-            intermediates_buffer,
-            final_byte
-          )
-
-        ?J ->
-          CSIHandlers.handle_J(emulator, params)
-
-        ?K ->
-          CSIHandlers.handle_K(emulator, params)
-
-        ?A ->
-          CSIHandlers.handle_A(emulator, params)
-
-        ?B ->
-          CSIHandlers.handle_B(emulator, params)
-
-        ?C ->
-          CSIHandlers.handle_C(emulator, params)
-
-        ?D ->
-          CSIHandlers.handle_D(emulator, params)
-
-        ?E ->
-          CSIHandlers.handle_E(emulator, params)
-
-        ?F ->
-          CSIHandlers.handle_F(emulator, params)
-
-        ?G ->
-          CSIHandlers.handle_G(emulator, params)
-
-        ?d ->
-          CSIHandlers.handle_d(emulator, params)
-
-        ?L ->
-          CSIHandlers.handle_L(emulator, params)
-
-        ?M ->
-          CSIHandlers.handle_M(emulator, params)
-
-        ?P ->
-          CSIHandlers.handle_P(emulator, params)
-
-        ?@ ->
-          CSIHandlers.handle_at(emulator, params)
-
-        ?S ->
-          CSIHandlers.handle_S(emulator, params)
-
-        ?T ->
-          CSIHandlers.handle_T(emulator, params)
-
-        ?X ->
-          CSIHandlers.handle_X(emulator, params)
-
-        ?c ->
-          CSIHandlers.handle_c(emulator, params, intermediates_buffer)
-
-        ?n ->
-          CSIHandlers.handle_n(emulator, params)
-
-        ?q when intermediates_buffer == " " ->
-          CSIHandlers.handle_q_deccusr(emulator, params)
-
-        ?s ->
-          CSIHandlers.handle_s(emulator, params)
-
-        ?u ->
-          CSIHandlers.handle_u(emulator, params)
-
-        ?t ->
-          CSIHandlers.handle_t(emulator, params)
-
-        final_byte when final_byte in [?(, ?), ?*, ?+] ->
-          CSIHandlers.handle_scs(emulator, params_buffer, final_byte)
-
-        _ ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Unknown CSI command: #{inspect(final_byte)}",
-            %{}
-          )
-
-          {:error, :unhandled_csi, emulator}
-      end
-
+  defp log_and_return_result(result, final_byte) do
     case result do
       {:ok, new_emulator} ->
-        Raxol.Core.Runtime.Log.debug(
-          "[Executor.execute_csi_command] AFTER: scroll_region=#{inspect(new_emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
-        )
-
+        log_after_execution(new_emulator, final_byte)
         new_emulator
-
       {:error, _reason, new_emulator} ->
-        Raxol.Core.Runtime.Log.debug(
-          "[Executor.execute_csi_command] AFTER: scroll_region=#{inspect(new_emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
-        )
-
+        log_after_execution(new_emulator, final_byte)
         new_emulator
     end
+  end
+
+  defp log_unknown_csi(final_byte) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Unknown CSI command: #{inspect(final_byte)}",
+      %{}
+    )
+  end
+
+  defp log_after_execution(emulator, final_byte) do
+    Raxol.Core.Runtime.Log.debug(
+      "[Executor.execute_csi_command] AFTER: scroll_region=#{inspect(emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
+    )
   end
 
   @doc """
@@ -163,76 +99,39 @@ defmodule Raxol.Terminal.Commands.Executor do
   """
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
   def execute_osc_command(emulator, command_string) do
-    Raxol.Core.Runtime.Log.debug(
-      "Executing OSC command: #{inspect(command_string)}"
-    )
+    Raxol.Core.Runtime.Log.debug("Executing OSC command: #{inspect(command_string)}")
+    handle_osc_command(emulator, command_string)
+  end
 
-    result =
-      case String.split(command_string, ";", parts: 2) do
-        # Ps ; Pt format
-        [ps_str, pt] ->
-          case Integer.parse(ps_str) do
-            {ps_code, ""} ->
-              # Dispatch based on Ps parameter code
-              case ps_code do
-                0 ->
-                  OSCHandlers.handle_0_or_2(emulator, pt)
+  defp handle_osc_command(emulator, command_string) do
+    with [ps_str, pt] <- String.split(command_string, ";", parts: 2),
+         {ps_code, ""} <- Integer.parse(ps_str) do
+      dispatch_osc_command(emulator, ps_code, pt)
+    else
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "OSC: Unexpected command format: '#{command_string}'",
+          %{}
+        )
+        {:error, :malformed_osc, emulator}
+    end
+  end
 
-                1 ->
-                  OSCHandlers.handle_1(emulator, pt)
-
-                2 ->
-                  OSCHandlers.handle_0_or_2(emulator, pt)
-
-                4 ->
-                  OSCHandlers.handle_4(emulator, pt)
-
-                7 ->
-                  OSCHandlers.handle_7(emulator, pt)
-
-                8 ->
-                  OSCHandlers.handle_8(emulator, pt)
-
-                52 ->
-                  OSCHandlers.handle_52(emulator, pt)
-
-                _ ->
-                  Raxol.Core.Runtime.Log.warning_with_context(
-                    "Unknown OSC command code: #{ps_code}, String: '#{command_string}'",
-                    %{}
-                  )
-
-                  {:error, :unhandled_osc, emulator}
-              end
-
-            # Failed to parse Ps as integer
-            _ ->
-              Raxol.Core.Runtime.Log.warning_with_context(
-                "Invalid OSC command code: '#{ps_str}', String: '#{command_string}'",
-                %{}
-              )
-
-              {:error, :invalid_osc_code, emulator}
-          end
-
-        # Handle OSC sequences with no parameters (e.g., some color requests)
-        # Or potentially malformed sequences
-        _ ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "OSC: Unexpected command format: '#{command_string}'",
-            %{}
-          )
-
-          {:error, :malformed_osc, emulator}
-      end
-
-    case result do
-      {:ok, new_emulator} ->
-        new_emulator
-
-      {:error, reason, new_emulator} ->
-        Raxol.Core.Runtime.Log.error("OSC handler error: #{inspect(reason)}")
-        new_emulator
+  defp dispatch_osc_command(emulator, ps_code, pt) do
+    case ps_code do
+      0 -> OSCHandlers.handle_0_or_2(emulator, pt)
+      1 -> OSCHandlers.handle_1(emulator, pt)
+      2 -> OSCHandlers.handle_0_or_2(emulator, pt)
+      4 -> OSCHandlers.handle_4(emulator, pt)
+      7 -> OSCHandlers.handle_7(emulator, pt)
+      8 -> OSCHandlers.handle_8(emulator, pt)
+      52 -> OSCHandlers.handle_52(emulator, pt)
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown OSC command code: #{ps_code}, String: '#{pt}'",
+          %{}
+        )
+        {:error, :unhandled_osc, emulator}
     end
   end
 
@@ -245,58 +144,23 @@ defmodule Raxol.Terminal.Commands.Executor do
           Emulator.t(),
           String.t(),
           String.t(),
-          non_neg_integer(),
           String.t()
-        ) ::
-          Emulator.t()
-  def execute_dcs_command(
-        emulator,
-        params_buffer,
-        intermediates_buffer,
-        final_byte,
-        data_string
-      ) do
-    # Parse parameters (similar to CSI)
-    params = Parser.parse_params(params_buffer)
-
-    result =
-      DCSHandlers.handle_dcs(
-        emulator,
-        params,
-        intermediates_buffer,
-        final_byte,
-        data_string
-      )
-
-    case result do
-      {:ok, new_emulator} when is_map(new_emulator) ->
-        new_emulator
-
-      {:error, reason, new_emulator} when is_map(new_emulator) ->
-        Raxol.Core.Runtime.Log.error("DCS handler error: #{inspect(reason)}")
-        new_emulator
-
-      other ->
-        Raxol.Core.Runtime.Log.error(
-          "DCS handler returned unexpected value: #{inspect(other)}"
-        )
-
-        emulator
-    end
+        ) :: Emulator.t()
+  def execute_dcs_command(emulator, params_buffer, intermediates_buffer, data_string) do
+    Raxol.Core.Runtime.Log.debug("Executing DCS command: #{inspect(data_string)}")
+    handle_dcs_command(emulator, params_buffer, intermediates_buffer, data_string)
   end
 
-  # ============================================================================
-  # == Helper Functions
-  # ============================================================================
-
-  # --- DCS Response Helper ---
-
-  # defp send_dcs_response(emulator, parser_state, payload, final_byte) do
-  #   # Implementation
-  # end
-
-  # --- SGR Formatting Helper for DECRQSS ---
-  # defp format_sgr_params(attrs) do
-  #   # Implementation
-  # end
+  defp handle_dcs_command(emulator, params_buffer, intermediates_buffer, data_string) do
+    case intermediates_buffer do
+      "" ->
+        DCSHandlers.handle_dcs(emulator, params_buffer, data_string)
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "DCS: Unhandled intermediate: '#{intermediates_buffer}'",
+          %{}
+        )
+        {:error, :unhandled_dcs, emulator}
+    end
+  end
 end
