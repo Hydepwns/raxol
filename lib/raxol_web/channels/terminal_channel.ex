@@ -87,7 +87,6 @@ defmodule RaxolWeb.TerminalChannel do
   end
 
   @impl Phoenix.Channel
-  @dialyzer {:nowarn_function, handle_in: 3}
   def handle_in("resize", %{"width" => width, "height" => height}, socket) do
     state = socket.assigns.terminal_state
 
