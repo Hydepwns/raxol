@@ -1,8 +1,10 @@
 defmodule Raxol.Terminal.Commands.WindowHandlersTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Raxol.Terminal.Commands.WindowHandlers
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.{Window}
+  alias Raxol.Terminal.Commands.CSIHandlers
 
   # Default char dimensions from WindowHandlers for calculations
   @default_char_width_px WindowHandlers.default_char_width_px()
@@ -11,28 +13,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
   @default_desktop_rows WindowHandlers.default_desktop_rows()
 
   setup do
-    initial_char_width = 80
-    initial_char_height = 24
-
-    emulator = Emulator.new(initial_char_width, initial_char_height)
-    # Only update the fields you need, preserving the rest
-    window_state = emulator.window_state
-
-    window_state =
-      Map.merge(window_state, %{
-        title: "",
-        icon_name: "",
-        size: {initial_char_width, initial_char_height},
-        size_pixels:
-          {initial_char_width * @default_char_width_px,
-           initial_char_height * @default_char_height_px},
-        stacking_order: :normal,
-        iconified: false,
-        maximized: false,
-        previous_size: nil
-      })
-
-    emulator = %{emulator | window_state: window_state, output_buffer: ""}
+    emulator = %Emulator{
+      window_manager: Window.Manager.new(),
+      active_buffer: %{width: 80, height: 24}
+    }
     {:ok, emulator: emulator}
   end
 
@@ -318,6 +302,179 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       assert new_emulator.window_state.size ==
                {div(640, @default_char_width_px),
                 div(384, @default_char_height_px)}
+    end
+  end
+
+  describe "window size reporting" do
+    test "reports window size in characters", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_size_report(emulator)
+      assert result.output_buffer =~ ~r/\x1B\[8;24;80t/
+    end
+
+    test "reports window size in pixels", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_window_size(emulator.window_manager, 800, 600)}
+      result = CSIHandlers.handle_window_size_pixels(emulator)
+      assert result.output_buffer =~ ~r/\x1B\[4;600;800t/
+    end
+
+    test "handles zero dimensions gracefully", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_window_size(emulator.window_manager, 0, 0)}
+      result = CSIHandlers.handle_window_size_report(emulator)
+      assert result.output_buffer =~ ~r/\x1B\[8;0;0t/
+    end
+
+    test "handles negative dimensions gracefully", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_window_size(emulator.window_manager, -100, -100)}
+      result = CSIHandlers.handle_window_size_report(emulator)
+      assert result.output_buffer =~ ~r/\x1B\[8;0;0t/
+    end
+  end
+
+  describe "window stacking" do
+    test "raises window to front", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_raise(emulator)
+      assert result.window_manager.stacking_order == :above
+    end
+
+    test "lowers window to back", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_lower(emulator)
+      assert result.window_manager.stacking_order == :below
+    end
+
+    test "maintains stacking order after multiple operations", %{emulator: emulator} do
+      result = emulator
+        |> CSIHandlers.handle_window_raise()
+        |> CSIHandlers.handle_window_lower()
+        |> CSIHandlers.handle_window_raise()
+      assert result.window_manager.stacking_order == :above
+    end
+  end
+
+  describe "window state" do
+    test "maximizes window", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_maximize(emulator)
+      assert result.window_manager.state == :maximized
+    end
+
+    test "unmaximizes window", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.update_window_state(emulator.window_manager, :maximized)}
+      result = CSIHandlers.handle_window_unmaximize(emulator)
+      assert result.window_manager.state == :normal
+    end
+
+    test "enters fullscreen mode", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_fullscreen(emulator)
+      assert result.window_manager.state == :fullscreen
+    end
+
+    test "exits fullscreen mode", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.update_window_state(emulator.window_manager, :fullscreen)}
+      result = CSIHandlers.handle_window_unfullscreen(emulator)
+      assert result.window_manager.state == :normal
+    end
+
+    test "minimizes window", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_minimize(emulator)
+      assert result.window_manager.state == :minimized
+    end
+
+    test "unminimizes window", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.update_window_state(emulator.window_manager, :minimized)}
+      result = CSIHandlers.handle_window_unminimize(emulator)
+      assert result.window_manager.state == :normal
+    end
+
+    test "iconifies window", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_iconify(emulator)
+      assert result.window_manager.state == :minimized
+    end
+
+    test "deiconifies window", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.update_window_state(emulator.window_manager, :minimized)}
+      result = CSIHandlers.handle_window_deiconify(emulator)
+      assert result.window_manager.state == :normal
+    end
+
+    test "handles state transitions correctly", %{emulator: emulator} do
+      result = emulator
+        |> CSIHandlers.handle_window_maximize()
+        |> CSIHandlers.handle_window_fullscreen()
+        |> CSIHandlers.handle_window_unfullscreen()
+        |> CSIHandlers.handle_window_unmaximize()
+      assert result.window_manager.state == :normal
+    end
+  end
+
+  describe "window title and icon" do
+    test "reports window title", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_window_title(emulator.window_manager, "Test Title")}
+      result = CSIHandlers.handle_window_title(emulator)
+      assert result.output_buffer =~ ~r/\x1B\]0;Test Title\x07/
+    end
+
+    test "reports icon name", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_icon_name(emulator.window_manager, "Test Icon")}
+      result = CSIHandlers.handle_window_icon_name(emulator)
+      assert result.output_buffer =~ ~r/\x1B\]1;Test Icon\x07/
+    end
+
+    test "reports icon title", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_window_title(emulator.window_manager, "Test Title")}
+      result = CSIHandlers.handle_window_icon_title(emulator)
+      assert result.output_buffer =~ ~r/\x1B\]2;Test Title\x07/
+    end
+
+    test "reports icon title and name", %{emulator: emulator} do
+      emulator = %{emulator |
+        window_manager: Window.Manager.set_window_title(emulator.window_manager, "Test Title")
+        |> Window.Manager.set_icon_name("Test Icon")
+      }
+      result = CSIHandlers.handle_window_icon_title_name(emulator)
+      assert result.output_buffer =~ ~r/\x1B\]3;Test Title;Test Icon\x07/
+    end
+
+    test "handles empty titles", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_title(emulator)
+      assert result.output_buffer =~ ~r/\x1B\]0;\x07/
+    end
+
+    test "handles special characters in titles", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_window_title(emulator.window_manager, "Test\nTitle\r")}
+      result = CSIHandlers.handle_window_title(emulator)
+      assert result.output_buffer =~ ~r/\x1B\]0;Test\nTitle\r\x07/
+    end
+  end
+
+  describe "window size saving and restoring" do
+    test "saves window size", %{emulator: emulator} do
+      emulator = %{emulator | window_manager: Window.Manager.set_window_size(emulator.window_manager, 100, 50)}
+      result = CSIHandlers.handle_window_save_title(emulator)
+      assert result.window_manager.saved_size == {100, 50}
+    end
+
+    test "restores window size", %{emulator: emulator} do
+      emulator = %{emulator |
+        window_manager: Window.Manager.set_window_size(emulator.window_manager, 100, 50)
+        |> Window.Manager.save_window_size()
+        |> Window.Manager.set_window_size(200, 100)
+      }
+      result = CSIHandlers.handle_window_restore_title(emulator)
+      assert result.window_manager.size == {100, 50}
+    end
+
+    test "handles restore without saved size", %{emulator: emulator} do
+      result = CSIHandlers.handle_window_restore_title(emulator)
+      assert result.window_manager.size == {80, 24} # Default size
+    end
+
+    test "preserves aspect ratio when restoring", %{emulator: emulator} do
+      emulator = %{emulator |
+        window_manager: Window.Manager.set_window_size(emulator.window_manager, 100, 50)
+        |> Window.Manager.save_window_size()
+        |> Window.Manager.set_window_size(200, 100)
+      }
+      result = CSIHandlers.handle_window_restore_title(emulator)
+      assert result.window_manager.size == {100, 50}
     end
   end
 end

@@ -2,7 +2,7 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.CursorManager
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   test "get_scroll_region/1 returns nil by default" do
     emulator = Emulator.new(80, 24)

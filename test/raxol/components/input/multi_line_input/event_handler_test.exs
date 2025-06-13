@@ -113,7 +113,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
     test "handles end event" do
       state = create_state(["hello"], {0, 1})
-      event = Event.key(:end)
+      event = Event.key_event(:end, :pressed)
       # Update assertion
       assert {:update, {:move_cursor_line_end}, state} ==
                EventHandler.handle_event(event, state)

@@ -131,16 +131,16 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
       # Set different states
       split_state = %{content: "split content"}
       window_state = %{content: "window content"}
-      tab_state = %{content: "tab content"}
+      _tab_state = %{content: "tab content"}
 
       assert :ok == Manager.sync_state("split1", split_state)
       assert :ok == Manager.sync_state("window1", window_state)
-      assert :ok == Manager.sync_state("tab1", tab_state)
+      assert :ok == Manager.sync_state("tab1", _tab_state)
 
       # Verify each component has its own state
       assert {:ok, ^split_state} = Manager.get_state("split1")
       assert {:ok, ^window_state} = Manager.get_state("window1")
-      assert {:ok, ^tab_state} = Manager.get_state("tab1")
+      assert {:ok, ^_tab_state} = Manager.get_state("tab1")
     end
 
     test "handles component cleanup" do

@@ -256,7 +256,7 @@ defmodule Raxol.Test.RendererHelper do
       iex> compare_rendering_modes(buffer, 1000)
       {:ok, %{gpu: %{avg_time: 16}, cpu: %{avg_time: 32}}}
   """
-  def compare_rendering_modes(buffer, iterations, opts \\ []) do
+  def compare_rendering_modes(buffer, iterations, _opts \\ []) do
     with {:ok, gpu_renderer} <- create_test_renderer(mode: :gpu),
          {:ok, cpu_renderer} <- create_test_renderer(mode: :cpu),
          {:ok, gpu_metrics} <- test_render_performance(gpu_renderer, buffer, iterations, mode: :gpu),

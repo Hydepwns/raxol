@@ -19,18 +19,28 @@ defmodule Raxol.AnimationTest do
     assert_receive {:animation_started, ^element_id, ^animation_name}, timeout
   end
 
-  # Helper to setup Accessibility and UserPreferences
-  # setup :configure_env do
-  #   :ok
-  # end
+  setup do
+    # Start UserPreferences with a test-specific name
+    local_user_prefs_name = __MODULE__.UserPreferences
+    user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
-  # Helper to cleanup Accessibility and UserPreferences
-  # setup :reset_settings do
-  #   # # This might be problematic if UserPreferences wasn't started or is shared
-  #   # UserPreferences.reset()
-  #   # Accessibility.disable()
-  #   :ok
-  # end
+    {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
+    Framework.init(%{}, local_user_prefs_name)
+
+    # Reset relevant prefs before each test
+    UserPreferences.set("accessibility.reduced_motion", false, local_user_prefs_name)
+    UserPreferences.set("accessibility.screen_reader", true, local_user_prefs_name)
+    UserPreferences.set("accessibility.silence_announcements", false, local_user_prefs_name)
+
+    # Wait for preferences to be applied
+    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
+
+    on_exit(fn ->
+      Framework.stop()
+    end)
+
+    :ok
+  end
 
   setup_all do
     Process.flag(:trap_exit, true)

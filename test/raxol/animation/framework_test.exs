@@ -20,49 +20,22 @@ defmodule Raxol.Animation.FrameworkTest do
 
   # Start UserPreferences for these tests
   setup do
-    # Use a test-specific name to avoid conflicts
-    # Or a more unique generated name if needed across modules
     local_user_prefs_name = __MODULE__.UserPreferences
-
-    # Start UserPreferences with the specific name and test_mode
     user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
-    {:ok, _pid} =
-      start_supervised({UserPreferences, user_prefs_opts})
-
-    # Initialize required systems for testing, passing the named UserPreferences
+    {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
     Framework.init(%{}, local_user_prefs_name)
-    # Accessibility.enable() -- replaced by with_screen_reader_spy in tests
 
-    # Reset relevant prefs before each test, using the named UserPreferences
-    UserPreferences.set(
-      "accessibility.reduced_motion",
-      false,
-      local_user_prefs_name
-    )
+    # Reset relevant prefs before each test
+    UserPreferences.set("accessibility.reduced_motion", false, local_user_prefs_name)
+    UserPreferences.set("accessibility.screen_reader", true, local_user_prefs_name)
+    UserPreferences.set("accessibility.silence_announcements", false, local_user_prefs_name)
 
-    UserPreferences.set(
-      "accessibility.screen_reader",
-      true,
-      local_user_prefs_name
-    )
-
-    UserPreferences.set(
-      "accessibility.silence_announcements",
-      false,
-      local_user_prefs_name
-    )
-
-    # Accessibility.clear_announcements() -- replaced by with_screen_reader_spy in tests
-
-    # Wait for preferences to be applied (assuming the event might carry the name)
+    # Wait for preferences to be applied
     assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
 
     on_exit(fn ->
-      # Cleanup
-      # Consider if Framework.stop() also needs the prefs name
       Framework.stop()
-      # The supervisor will stop the named UserPreferences instance.
     end)
 
     :ok

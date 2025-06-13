@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.ConfigTest do
   # Aliases for the modules under test
   alias Raxol.Terminal.Config
   alias Raxol.Terminal.Config.{Validation, Defaults, Capabilities, Schema}
-  alias Raxol.System.EnvironmentAdapterBehaviour
+  alias Raxol.Terminal.Config.EnvironmentAdapterBehaviour
 
   # Define the mock for the EnvironmentAdapterBehaviour
   Mox.defmock(EnvironmentAdapterMock, for: EnvironmentAdapterBehaviour)

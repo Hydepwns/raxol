@@ -1,17 +1,11 @@
 defmodule Raxol.Core.Runtime.SupervisorTest do
   use ExUnit.Case, async: false
   require Mox
+  import Raxol.Test.Support.TestHelper
 
   alias Raxol.Core.Runtime.Supervisor
 
   # Mock modules for testing
-  # REMOVED: Mock.StateManager as it's no longer a child
-  # defmodule Mock.StateManager do
-  #   use GenServer
-  #   def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
-  #   def init(_), do: {:ok, nil}
-  # end
-
   defmodule Mock.EventLoop do
     use GenServer
 
@@ -55,22 +49,14 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   # Mox.defmock(Raxol.Terminal.DriverMock, for: Raxol.Terminal.Driver.Behaviour)
 
   setup do
-    # Define mocks here
-    Mox.defmock(Raxol.Core.Runtime.Events.DispatcherMock,
-      for: Raxol.Core.Runtime.Events.Dispatcher.Behaviour
-    )
+    # Set up test environment and mocks
+    {:ok, context} = setup_test_env()
+    setup_common_mocks()
 
-    Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
-      for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
-    )
-
-    Mox.defmock(Raxol.Core.Runtime.Plugins.ManagerMock,
-      for: Raxol.Core.Runtime.Plugins.Manager.Behaviour
-    )
-
-    Mox.defmock(Raxol.Terminal.DriverMock, for: Raxol.Terminal.Driver.Behaviour)
     # Verify on exit
     :verify_on_exit!
+
+    {:ok, context}
   end
 
   describe "supervisor structure" do
@@ -88,16 +74,16 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
 
       # Expectations for child processes using Mox
       # Note: Terminal.Driver isn't started by this supervisor, so no expectation here
-      Mox.expect(Raxol.Core.Runtime.Plugins.ManagerMock, :start_link, fn [_args] ->
+      expect(Raxol.Core.Runtime.Plugins.ManagerMock, :start_link, fn [_args] ->
         {:ok, spawn(fn -> :ok end)}
       end)
 
-      Mox.expect(Raxol.Core.Runtime.Events.DispatcherMock, :start_link, fn _pid,
+      expect(Raxol.Core.Runtime.Events.DispatcherMock, :start_link, fn _pid,
                                                                            _init_arg ->
         {:ok, spawn(fn -> :ok end)}
       end)
 
-      Mox.expect(
+      expect(
         Raxol.Core.Runtime.Rendering.EngineMock,
         :start_link,
         fn _initial_state_map -> {:ok, spawn(fn -> :ok end)} end
@@ -108,9 +94,6 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
 
       # Verify Mox expectations (verify automatically happens on exit due to setup :verify_on_exit!)
       # Explicit verify calls are optional here
-      # Mox.verify!(Raxol.Core.Runtime.Plugins.ManagerMock)
-      # Mox.verify!(Raxol.Core.Runtime.Events.DispatcherMock)
-      # Mox.verify!(Raxol.Core.Runtime.Rendering.EngineMock)
     end
 
     test "uses one_for_all strategy" do

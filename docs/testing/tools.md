@@ -147,22 +147,36 @@ end
 ### 1. Measurement Helpers
 
 ```elixir
-defmodule Raxol.Test.PerformanceHelpers do
-  def measure_execution_time(fun) do
-    start_time = System.monotonic_time()
-    result = fun.()
-    end_time = System.monotonic_time()
+defmodule Raxol.Test.PerformanceHelper do
+  @moduledoc """
+  Utilities for performance testing.
+  """
 
-    execution_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
-    {result, execution_time}
+  def measure_time(operation) do
+    # Measure execution time
+    # Returns {time_in_ms, result}
   end
 
-  def measure_memory_usage(fun) do
-    :erlang.memory(:total)
-    result = fun.()
-    memory_after = :erlang.memory(:total)
+  def measure_average_time(operation, iterations \\ 1000) do
+    # Measure average execution time
+    # Returns average time in milliseconds
+  end
 
-    {result, memory_after}
+  def measure_memory(operation) do
+    # Measure memory usage
+    # Returns {memory_in_bytes, result}
+  end
+
+  def assert_operation_performance(operation, name, threshold \\ 0.001, iterations \\ 1000) do
+    # Assert operation meets performance threshold
+  end
+
+  def assert_concurrent_performance(operations, name, threshold \\ 0.002, iterations \\ 1000) do
+    # Assert concurrent operations meet performance threshold
+  end
+
+  def assert_memory_usage(operation, name, threshold \\ 1_000_000) do
+    # Assert operation meets memory usage threshold
   end
 end
 ```
@@ -173,7 +187,7 @@ end
 defmodule Raxol.Test.BenchmarkHelpers do
   def run_benchmark(fun, iterations \\ 1000) do
     measurements = for _ <- 1..iterations do
-      {_, time} = Raxol.Test.PerformanceHelpers.measure_execution_time(fun)
+      {_, time} = Raxol.Test.PerformanceHelper.measure_execution_time(fun)
       time
     end
 

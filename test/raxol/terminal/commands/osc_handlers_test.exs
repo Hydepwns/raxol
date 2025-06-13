@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Commands.OSCHandlersTest do
   use ExUnit.Case, async: true
 
+  alias Raxol.Terminal.{Emulator, Window}
   alias Raxol.Terminal.Commands.OSCHandlers
-  alias Raxol.Terminal.Emulator
 
   defp unwrap_ok({:ok, value}), do: value
   defp unwrap_ok({:error, _reason, value}), do: value
@@ -11,12 +11,184 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
   defp unwrap_ok(other),
     do: raise("unwrap_ok/1: Unexpected return value: #{inspect(other)}")
 
-  describe "handle_4/2" do
-    setup do
-      emulator = Emulator.new(80, 24)
-      %{emulator: emulator}
+  setup do
+    emulator = %Emulator{
+      window_manager: Window.Manager.new(),
+      active_buffer: %{width: 80, height: 24}
+    }
+    {:ok, emulator: emulator}
+  end
+
+  describe "window title and icon" do
+    test "sets window title", %{emulator: emulator} do
+      result = OSCHandlers.handle_window_title(emulator, "Test Title")
+      assert result.window_manager.title == "Test Title"
     end
 
+    test "sets icon name", %{emulator: emulator} do
+      result = OSCHandlers.handle_icon_name(emulator, "Test Icon")
+      assert result.window_manager.icon_name == "Test Icon"
+    end
+
+    test "sets icon title", %{emulator: emulator} do
+      result = OSCHandlers.handle_icon_title(emulator, "Test Icon Title")
+      assert result.window_manager.icon_title == "Test Icon Title"
+    end
+
+    test "handles empty titles", %{emulator: emulator} do
+      result = OSCHandlers.handle_window_title(emulator, "")
+      assert result.window_manager.title == ""
+    end
+
+    test "handles nil titles", %{emulator: emulator} do
+      result = OSCHandlers.handle_window_title(emulator, nil)
+      assert result.window_manager.title == ""
+    end
+
+    test "handles very long titles", %{emulator: emulator} do
+      long_title = String.duplicate("a", 1000)
+      result = OSCHandlers.handle_window_title(emulator, long_title)
+      assert result.window_manager.title == long_title
+    end
+  end
+
+  describe "color settings" do
+    test "sets color index", %{emulator: emulator} do
+      result = OSCHandlers.handle_osc4_color(emulator, 1, "#FF0000")
+      assert result.color_palette[1] == "#FF0000"
+    end
+
+    test "sets foreground color", %{emulator: emulator} do
+      result = OSCHandlers.handle_foreground_color(emulator, "#FF0000")
+      assert result.text_attributes.foreground == "#FF0000"
+    end
+
+    test "sets background color", %{emulator: emulator} do
+      result = OSCHandlers.handle_background_color(emulator, "#0000FF")
+      assert result.text_attributes.background == "#0000FF"
+    end
+
+    test "sets cursor color", %{emulator: emulator} do
+      result = OSCHandlers.handle_cursor_color(emulator, "#00FF00")
+      assert result.cursor_color == "#00FF00"
+    end
+
+    test "sets mouse foreground color", %{emulator: emulator} do
+      result = OSCHandlers.handle_mouse_foreground_color(emulator, "#FF00FF")
+      assert result.mouse_foreground_color == "#FF00FF"
+    end
+
+    test "sets mouse background color", %{emulator: emulator} do
+      result = OSCHandlers.handle_mouse_background_color(emulator, "#00FFFF")
+      assert result.mouse_background_color == "#00FFFF"
+    end
+
+    test "sets highlight foreground color", %{emulator: emulator} do
+      result = OSCHandlers.handle_highlight_foreground_color(emulator, "#FFFFFF")
+      assert result.highlight_foreground_color == "#FFFFFF"
+    end
+
+    test "sets highlight background color", %{emulator: emulator} do
+      result = OSCHandlers.handle_highlight_background_color(emulator, "#000000")
+      assert result.highlight_background_color == "#000000"
+    end
+
+    test "handles invalid color formats", %{emulator: emulator} do
+      result = OSCHandlers.handle_foreground_color(emulator, "invalid")
+      assert result.text_attributes.foreground == :default
+    end
+
+    test "handles invalid color indices", %{emulator: emulator} do
+      result = OSCHandlers.handle_osc4_color(emulator, 999, "#FF0000")
+      assert result == emulator
+    end
+
+    test "handles nil colors", %{emulator: emulator} do
+      result = OSCHandlers.handle_foreground_color(emulator, nil)
+      assert result.text_attributes.foreground == :default
+    end
+  end
+
+  describe "font settings" do
+    test "sets font", %{emulator: emulator} do
+      result = OSCHandlers.handle_font(emulator, "Monospace")
+      assert result.font == "Monospace"
+    end
+
+    test "handles empty font", %{emulator: emulator} do
+      result = OSCHandlers.handle_font(emulator, "")
+      assert result.font == ""
+    end
+
+    test "handles nil font", %{emulator: emulator} do
+      result = OSCHandlers.handle_font(emulator, nil)
+      assert result.font == ""
+    end
+
+    test "handles very long font names", %{emulator: emulator} do
+      long_font = String.duplicate("a", 1000)
+      result = OSCHandlers.handle_font(emulator, long_font)
+      assert result.font == long_font
+    end
+  end
+
+  describe "clipboard operations" do
+    test "sets clipboard content", %{emulator: emulator} do
+      result = OSCHandlers.handle_clipboard_set(emulator, "Test Content")
+      assert result.clipboard == "Test Content"
+    end
+
+    test "gets clipboard content", %{emulator: emulator} do
+      emulator = %{emulator | clipboard: "Test Content"}
+      result = OSCHandlers.handle_clipboard_get(emulator)
+      assert result.output_buffer =~ ~r/\x1B\]52;c;.*\x07/
+    end
+
+    test "handles empty clipboard", %{emulator: emulator} do
+      result = OSCHandlers.handle_clipboard_set(emulator, "")
+      assert result.clipboard == ""
+    end
+
+    test "handles nil clipboard", %{emulator: emulator} do
+      result = OSCHandlers.handle_clipboard_set(emulator, nil)
+      assert result.clipboard == ""
+    end
+
+    test "handles very large clipboard content", %{emulator: emulator} do
+      large_content = String.duplicate("a", 10000)
+      result = OSCHandlers.handle_clipboard_set(emulator, large_content)
+      assert result.clipboard == large_content
+    end
+
+    test "handles invalid base64 clipboard data", %{emulator: emulator} do
+      result = OSCHandlers.handle_clipboard_set(emulator, "invalid base64")
+      assert result.clipboard == ""
+    end
+  end
+
+  describe "cursor shape" do
+    test "sets cursor shape", %{emulator: emulator} do
+      result = OSCHandlers.handle_cursor_shape(emulator, "block")
+      assert result.cursor_shape == :block
+    end
+
+    test "handles invalid cursor shapes", %{emulator: emulator} do
+      result = OSCHandlers.handle_cursor_shape(emulator, "invalid")
+      assert result.cursor_shape == :block # Default shape
+    end
+
+    test "handles empty cursor shape", %{emulator: emulator} do
+      result = OSCHandlers.handle_cursor_shape(emulator, "")
+      assert result.cursor_shape == :block # Default shape
+    end
+
+    test "handles nil cursor shape", %{emulator: emulator} do
+      result = OSCHandlers.handle_cursor_shape(emulator, nil)
+      assert result.cursor_shape == :block # Default shape
+    end
+  end
+
+  describe "handle_4/2" do
     test "sets color using rgb: format", %{emulator: emulator} do
       # Test setting color index 1 to red using rgb: format
       result = OSCHandlers.handle_4(emulator, "1;rgb:FFFF/0000/0000")

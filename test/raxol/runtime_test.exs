@@ -1,20 +1,25 @@
 defmodule Raxol.RuntimeTest do
   # Use async: false for tests involving process linking/monitoring/receiving
   use ExUnit.Case, async: false
-  # Uncomment this line
   require Raxol.Core.Runtime.Log
+  import Raxol.Test.Support.TestHelper
 
-  # alias Raxol.Core.Runtime.Application # This alias was causing the issue with Application.put_env
   alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
-  # Aliases for supervised processes might be needed for mocking/assertions
   alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   alias Raxol.Terminal.Driver, as: TerminalDriver
 
-  Mox.defmock(NotificationMock, for: Raxol.System.Interaction)
-  # Use correct behaviour
-  Mox.defmock(InteractionMock, for: Raxol.System.Interaction)
+  setup do
+    # Set up test environment and mocks
+    {:ok, context} = setup_test_env()
+    setup_common_mocks()
+
+    # Verify on exit
+    :verify_on_exit!
+
+    {:ok, context}
+  end
 
   # --- Mock Application ---
   defmodule MockApp do

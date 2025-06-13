@@ -229,4 +229,111 @@ defmodule Raxol.Test.MetricsHelper do
       }
     )
   end
+
+  @doc """
+  Creates a mock metrics collector for testing.
+  """
+  def create_mock_collector do
+    %{
+      metrics: %{},
+      start_time: System.monotonic_time(),
+      last_update: System.monotonic_time()
+    }
+  end
+
+  @doc """
+  Records a metric value in the collector.
+  """
+  def record_metric(collector, name, value) do
+    metrics = Map.update(collector.metrics, name, value, fn current ->
+      case is_list(current) do
+        true -> [value | current]
+        false -> [value, current]
+      end
+    end)
+    %{collector | metrics: metrics, last_update: System.monotonic_time()}
+  end
+
+  @doc """
+  Gets a metric value from the collector.
+  """
+  def get_metric(collector, name) do
+    Map.get(collector.metrics, name)
+  end
+
+  @doc """
+  Gets all metrics from the collector.
+  """
+  def get_all_metrics(collector) do
+    collector.metrics
+  end
+
+  @doc """
+  Clears all metrics from the collector.
+  """
+  def clear_metrics(collector) do
+    %{collector | metrics: %{}, last_update: System.monotonic_time()}
+  end
+
+  @doc """
+  Calculates the average of a metric.
+  """
+  def calculate_average(collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.sum(values) / length(values)
+      value -> value
+    end
+  end
+
+  @doc """
+  Calculates the sum of a metric.
+  """
+  def calculate_sum(collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.sum(values)
+      value -> value
+    end
+  end
+
+  @doc """
+  Calculates the minimum value of a metric.
+  """
+  def calculate_min(collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.min(values)
+      value -> value
+    end
+  end
+
+  @doc """
+  Calculates the maximum value of a metric.
+  """
+  def calculate_max(collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.max(values)
+      value -> value
+    end
+  end
+
+  @doc """
+  Gets the time since the last update.
+  """
+  def get_time_since_last_update(collector) do
+    System.monotonic_time() - collector.last_update
+  end
+
+  @doc """
+  Gets the total runtime of the collector.
+  """
+  def get_total_runtime(collector) do
+    System.monotonic_time() - collector.start_time
+  end
 end

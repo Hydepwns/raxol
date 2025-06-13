@@ -131,13 +131,21 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
 
   describe "alerts" do
     test "triggers metric alerts" do
-      assert :ok = UnifiedMetrics.record_metric("response_time", 1500)  # Above threshold
-      # Should log a warning
+      log = capture_log(fn ->
+        assert :ok = UnifiedMetrics.record_metric("response_time", 1500)  # Above threshold
+        Process.sleep(50)  # Give time for alert to be processed
+      end)
+      assert log =~ "response_time"
+      assert log =~ "threshold"
     end
 
     test "triggers error alerts" do
-      assert :ok = UnifiedMetrics.record_error("critical error", severity: :critical)
-      # Should log an error
+      log = capture_log(fn ->
+        assert :ok = UnifiedMetrics.record_error("critical error", severity: :critical)
+        Process.sleep(50)  # Give time for alert to be processed
+      end)
+      assert log =~ "critical error"
+      assert log =~ "critical"
     end
   end
 

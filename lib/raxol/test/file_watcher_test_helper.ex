@@ -1,10 +1,10 @@
 if Mix.env() == :test do
-  defmodule FileWatcherTestHelper do
-    import Mox
-
+  defmodule Raxol.Test.FileWatcherTestHelper do
     @moduledoc """
-    Helper module for file watcher tests that provides common setup functions and utilities.
+    Helper functions for testing file watcher functionality.
     """
+
+    import Raxol.Test.Support.TestHelper
 
     @doc """
     Creates a valid file stat for testing.
@@ -51,7 +51,7 @@ if Mix.env() == :test do
     end
 
     @doc """
-    Creates a basic test state for file watcher tests.
+    Creates a test state with default values.
     """
     def create_test_state(opts \\ %{}) do
       base = %{
@@ -102,12 +102,10 @@ if Mix.env() == :test do
     Sets up common mocks and processes for file watcher tests.
     """
     def setup_mocks do
-      # Set default File mock implementation
-      stub_with(FileMock, FileMock)
-      # Set default FileSystem mock implementation
-      stub_with(FileSystemMock, FileSystemMock)
-      # Set default Manager mock implementation
-      stub_with(ManagerMock, ManagerMock)
+      # Set up test environment and mocks
+      {:ok, _} = setup_test_env()
+      setup_common_mocks()
+
       # Start Manager process
       pid = start_manager()
       pid
@@ -136,9 +134,41 @@ if Mix.env() == :test do
       end
     end
 
-    # Private helper function to generate default plugin content
-    defp default_plugin_content(name) do
-      "defmodule #{name} do\nend"
+    @doc """
+    Provides default plugin content for testing.
+    """
+    def default_plugin_content(name) do
+      """
+      defmodule Raxol.Test.Plugins.#{name} do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin.Behaviour
+
+        def init(config) do
+          {:ok, Map.put(config, :initialized, true)}
+        end
+
+        def handle_event(_event, state) do
+          {:ok, state}
+        end
+
+        def handle_command(_command, _args, state) do
+          {:ok, state}
+        end
+
+        def get_commands do
+          []
+        end
+
+        def get_metadata do
+          %{
+            name: "#{name}",
+            version: "1.0.0",
+            description: "Test plugin #{name}",
+            author: "Test Author",
+            dependencies: []
+          }
+        end
+      end
+      """
     end
   end
 end

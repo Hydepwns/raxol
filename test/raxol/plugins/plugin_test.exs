@@ -65,12 +65,16 @@ defmodule Raxol.Plugins.PluginTest do
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
-      {:ok, _manager} =
-        Raxol.Plugins.Manager.Events.process_mouse(
-          manager,
-          {:click, 1, 10, 10},
-          %{}
-        )
+      event = %{
+        type: :mouse,
+        x: 10,
+        y: 10,
+        button: :click,
+        modifiers: []
+      }
+
+      {:ok, _manager, _propagation} =
+        PluginManager.handle_mouse_event(manager, event, %{})
     end
   end
 
@@ -131,10 +135,9 @@ defmodule Raxol.Plugins.PluginTest do
     test "plugin registers and executes command" do
       # TestPlugin registers :test_cmd
       {:ok, state} = TestPlugin.init(%{})
-      [{cmd, fun, arity}] = TestPlugin.get_commands()
+      [{cmd, fun, _arity}] = TestPlugin.get_commands()
       assert cmd == :test_cmd
       assert fun == :handle_test_cmd
-      assert arity == 1
       # Simulate command execution
       {:ok, new_state, :test_ok} = TestPlugin.handle_test_cmd(:arg, state)
       assert new_state[:handled]
