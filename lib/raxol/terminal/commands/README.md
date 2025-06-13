@@ -12,10 +12,13 @@ The modules in this directory replace the monolithic `Raxol.Terminal.CommandExec
 - `Parser.ex` - Handles parsing of command parameters
 - `Modes.ex` - Handles DEC private modes and ANSI modes
 - `Screen.ex` - Handles screen manipulation commands
+- `Formatting.ex` - Handles text formatting commands
+- `Device.ex` - Handles device status reports and queries
+- `Character.ex` - Handles character set selection and manipulation
 
 ## Integration
 
-These modules are used by the terminal emulator to process command sequences that come from input streams. They transform the emulator state based on the commands received.
+These modules are used by the terminal emulator to process command sequences that come from input streams. They transform the emulator state based on the commands received. The modules are integrated with the broader terminal system, including the ANSI escape sequence handling, cursor operations, and terminal configuration.
 
 ## Backward Compatibility
 
@@ -25,9 +28,9 @@ For backward compatibility, the original `Raxol.Terminal.CommandExecutor` module
 
 Additional modules may be added to this directory as further refactoring is done, such as:
 
-- `Formatting.ex` - For handling text formatting commands
-- `Device.ex` - For handling device status reports and queries
-- `Character.ex` - For handling character set selection and manipulation
+- `Input.ex` - For handling input processing and validation
+- `Output.ex` - For managing output formatting and display
+- `Error.ex` - For handling error reporting and logging
 
 ## Style Guidelines
 
@@ -58,3 +61,5 @@ Raxol.Terminal.Commands.Parser.parse_params("5;10;15")
 - `../ansi/` - Handles ANSI escape sequences
 - `../cursor/` - Manages cursor operations
 - `../config/` - Contains terminal configuration
+- `../input/` - Manages input processing
+- `../output/` - Manages output formatting

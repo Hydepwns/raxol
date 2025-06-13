@@ -7,25 +7,34 @@ defmodule Raxol.Terminal.Commands.Registry do
   - Command completion suggestions
   """
 
+  @type command_name :: String.t()
+  @type command_description :: String.t()
+  @type command_handler :: function()
+  @type command_aliases :: [String.t()]
+  @type command_usage :: String.t()
+  @type command_completion :: function() | nil
+
+  @type command_metrics :: %{
+    registrations: integer(),
+    executions: integer(),
+    completions: integer(),
+    validations: integer()
+  }
+
   @type command :: %{
-    name: String.t(),
-    description: String.t(),
-    handler: function(),
-    aliases: [String.t()],
-    usage: String.t(),
-    completion: function() | nil
+    name: command_name(),
+    description: command_description(),
+    handler: command_handler(),
+    aliases: command_aliases(),
+    usage: command_usage(),
+    completion: command_completion()
   }
 
   @type t :: %__MODULE__{
     commands: %{String.t() => command()},
     history: [String.t()],
     max_history: integer(),
-    metrics: %{
-      registrations: integer(),
-      executions: integer(),
-      completions: integer(),
-      validations: integer()
-    }
+    metrics: command_metrics()
   }
 
   defstruct [

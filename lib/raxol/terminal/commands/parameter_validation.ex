@@ -147,42 +147,33 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   Validates coordinates, clamping to emulator bounds. Defaults to {0, 0} if invalid.
   """
   def validate_coordinates(emulator, params) do
-    # Get actual dimensions first
-    actual_width =
-      if is_map(emulator),
-        do: Map.get(emulator, :width, 10),
-        else: if(is_tuple(emulator), do: elem(emulator, 0), else: 10)
-
-    actual_height =
-      if is_map(emulator),
-        do: Map.get(emulator, :height, 10),
-        else: if(is_tuple(emulator), do: elem(emulator, 1), else: 10)
-
-    # Max valid coordinates are dimension - 1
-    max_x = actual_width - 1
-    max_y = actual_height - 1
-
-    x =
-      case Enum.at(params, 0) do
-        v when is_integer(v) and v < 0 -> 0
-        # Clamp to max_x
-        v when is_integer(v) and v > max_x -> max_x
-        v when is_integer(v) -> v
-        # Default for non-integer or missing
-        _ -> 0
-      end
-
-    y =
-      case Enum.at(params, 1) do
-        v when is_integer(v) and v < 0 -> 0
-        # Clamp to max_y
-        v when is_integer(v) and v > max_y -> max_y
-        v when is_integer(v) -> v
-        # Default for non-integer or missing
-        _ -> 0
-      end
-
+    {max_x, max_y} = get_dimensions(emulator)
+    x = validate_coordinate(Enum.at(params, 0), max_x)
+    y = validate_coordinate(Enum.at(params, 1), max_y)
     {x, y}
+  end
+
+  defp get_dimensions(emulator) do
+    width = get_dimension(emulator, :width, 0)
+    height = get_dimension(emulator, :height, 1)
+    {width - 1, height - 1}
+  end
+
+  defp get_dimension(emulator, key, tuple_index) do
+    cond do
+      is_map(emulator) -> Map.get(emulator, key, 10)
+      is_tuple(emulator) -> elem(emulator, tuple_index)
+      true -> 10
+    end
+  end
+
+  defp validate_coordinate(value, max) do
+    cond do
+      is_integer(value) and value < 0 -> 0
+      is_integer(value) and value > max -> max
+      is_integer(value) -> value
+      true -> 0
+    end
   end
 
   @doc """
@@ -190,18 +181,10 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   """
   def validate_count(_emulator, params) do
     case Enum.at(params, 0) do
-      v when is_integer(v) and v >= 1 and v <= 10 ->
-        v
-
-      _ ->
-        v =
-          case Enum.at(params, 0) do
-            v when is_integer(v) and v < 1 -> 1
-            v when is_integer(v) and v > 10 -> 10
-            _ -> 1
-          end
-
-        v
+      v when is_integer(v) and v >= 1 and v <= 10 -> v
+      v when is_integer(v) and v < 1 -> 1
+      v when is_integer(v) and v > 10 -> 10
+      _ -> 1
     end
   end
 
@@ -230,6 +213,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   @doc """
   Validates boolean, returns true for 1, false for 0. Defaults to true if invalid.
   """
+  @spec validate_boolean(list(integer() | nil)) :: boolean()
   def validate_boolean(params) do
     case Enum.at(params, 0) do
       0 -> false
@@ -241,6 +225,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   @doc """
   Normalizes parameters to expected length, padding with nil or truncating as needed.
   """
+  @spec normalize_parameters(list(integer() | nil), non_neg_integer()) :: list(integer() | nil)
   def normalize_parameters(params, expected_length) do
     params
     |> Enum.take(expected_length)
@@ -252,12 +237,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   @doc """
   Validates a value in params[0], clamping between min and max. Defaults to min if invalid.
   """
+  @spec validate_range(list(integer() | nil), integer(), integer()) :: integer()
   def validate_range(params, min, max) do
-    case Enum.at(params, 0) do
-      v when is_integer(v) and v >= min and v <= max -> v
-      v when is_integer(v) and v < min -> min
-      v when is_integer(v) and v > max -> max
-      _ -> min
-    end
+    value = Enum.at(params, 0)
+    if is_integer(value), do: max(min, min(value, max)), else: min
   end
 end

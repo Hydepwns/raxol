@@ -9,12 +9,18 @@ defmodule Raxol.Terminal.Commands.History do
   - Managing history size limits
   """
 
+  @type command_history :: [String.t()]
+  @type command_history_config :: %{
+    max_size: non_neg_integer(),
+    current_input: String.t()
+  }
+
   @type t :: %__MODULE__{
-          commands: [String.t()],
-          current_index: integer(),
-          max_size: non_neg_integer(),
-          current_input: String.t()
-        }
+    commands: command_history(),
+    current_index: integer(),
+    max_size: non_neg_integer(),
+    current_input: String.t()
+  }
 
   defstruct [
     :commands,
@@ -32,6 +38,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history.max_size
       1000
   """
+  @spec new(non_neg_integer()) :: t()
   def new(max_size) when is_integer(max_size) and max_size > 0 do
     %__MODULE__{
       commands: [],
@@ -51,6 +58,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history.commands
       ["ls -la"]
   """
+  @spec add(t(), String.t()) :: t()
   def add(%__MODULE__{} = history, command) when is_binary(command) do
     commands = [command | history.commands]
     commands = Enum.take(commands, history.max_size)
@@ -69,6 +77,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> History.previous(history)
       {"cd /tmp", %History{...}}
   """
+  @spec previous(t()) :: {String.t() | nil, t()}
   def previous(%__MODULE__{} = history) do
     case history.current_index + 1 < length(history.commands) do
       true ->
@@ -93,6 +102,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> History.next(history)
       {"ls -la", %History{...}}
   """
+  @spec next(t()) :: {String.t() | nil, t()}
   def next(%__MODULE__{} = history) do
     case history.current_index - 1 >= -1 do
       true ->
@@ -120,6 +130,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history.current_input
       "ls -l"
   """
+  @spec save_input(t(), String.t()) :: t()
   def save_input(%__MODULE__{} = history, input) when is_binary(input) do
     %{history | current_input: input}
   end
@@ -135,6 +146,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history.commands
       []
   """
+  @spec clear(t()) :: t()
   def clear(%__MODULE__{} = history) do
     %{history | commands: [], current_index: -1, current_input: ""}
   end
@@ -150,6 +162,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> History.list(history)
       ["cd /tmp", "ls -la"]
   """
+  @spec list(t()) :: command_history()
   def list(%__MODULE__{} = history) do
     history.commands
   end
@@ -159,6 +172,7 @@ defmodule Raxol.Terminal.Commands.History do
   or appends to the current command buffer if it's a printable character.
   Returns the updated emulator struct.
   """
+  @spec maybe_add_to_history(Emulator.t(), integer()) :: Emulator.t()
   def maybe_add_to_history(emulator, 10) do
     # On newline, add the current buffer to history if not empty, then clear buffer
     cmd = String.trim(emulator.current_command_buffer)
@@ -174,6 +188,7 @@ defmodule Raxol.Terminal.Commands.History do
     end
   end
 
+  @spec maybe_add_to_history(Emulator.t(), integer()) :: Emulator.t()
   def maybe_add_to_history(emulator, char)
       when is_integer(char) and char >= 32 and char <= 0x10FFFF do
     # Append printable character to current_command_buffer
@@ -181,11 +196,13 @@ defmodule Raxol.Terminal.Commands.History do
     %{emulator | current_command_buffer: new_buffer}
   end
 
+  @spec maybe_add_to_history(Emulator.t(), any()) :: Emulator.t()
   def maybe_add_to_history(emulator, _), do: emulator
 
   @doc """
   Updates the maximum size of the command history. Truncates the history if needed.
   """
+  @spec update_size(t(), non_neg_integer()) :: t()
   def update_size(%__MODULE__{} = history, new_size)
       when is_integer(new_size) and new_size > 0 do
     commands = Enum.take(history.commands, new_size)
@@ -196,5 +213,13 @@ defmodule Raxol.Terminal.Commands.History do
         max_size: new_size,
         current_index: min(history.current_index, new_size - 1)
     }
+  end
+
+  @doc """
+  Updates the command history configuration.
+  Delegates to update_size/2 for compatibility.
+  """
+  def update_config(%__MODULE__{} = history, config) do
+    update_size(history, config.command_history_limit)
   end
 end
