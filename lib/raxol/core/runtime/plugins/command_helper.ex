@@ -3,16 +3,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Handles plugin command registration and dispatch for the Plugin Manager.
   """
 
+  @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.CommandRegistry
 
-  @doc """
-  Finds the plugin responsible for handling a command.
-
-  Uses the CommandRegistry to look up the command by name and optional namespace.
-  Returns `{:ok, module, function, arity} | :not_found`.
-  """
+  @impl true
   def find_plugin_for_command(command_table, command_name, namespace, _arity) do
     # Normalize command name: trim whitespace and downcase
     processed_command_name =
@@ -53,12 +50,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @doc """
-  Registers the commands exposed by a plugin.
-
-  Calls the plugin's `get_commands/1` or `get_commands/0` callback
-  and registers them in the command table.
-  """
+  @impl true
   def register_plugin_commands(plugin_module, _plugin_state, command_table) do
     # Only support get_commands/0 now
     if function_exported?(plugin_module, :get_commands, 0) do
@@ -138,15 +130,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @doc """
-  Handles the dispatching of a command to the appropriate plugin.
-
-  This function is called by the Manager's `handle_cast`.
-  It finds the plugin, calls its command handler, and returns an updated
-  plugin state map or an error indicator.
-
-  Returns `{:ok, updated_plugin_states_map} | :not_found | {:error, reason}`.
-  """
+  @impl true
   def handle_command(command_table, command_name_str, namespace, args, state) do
     case validate_command_args(args) do
       :ok ->
@@ -263,6 +247,16 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @impl true
+  def unregister_plugin_commands(command_table, plugin_module) do
+    Raxol.Core.Runtime.Log.debug(
+      "Unregistering commands for module: #{inspect(plugin_module)}"
+    )
+
+    # Use correct function name
+    CommandRegistry.unregister_commands_by_module(command_table, plugin_module)
+  end
+
   @doc """
   Finds the plugin ID for a given module.
   """
@@ -310,17 +304,5 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
       :exit, reason ->
         {:error, reason}
     end
-  end
-
-  @doc """
-  Unregisters all commands associated with a specific plugin module.
-  """
-  def unregister_plugin_commands(command_table, plugin_module) do
-    Raxol.Core.Runtime.Log.debug(
-      "Unregistering commands for module: #{inspect(plugin_module)}"
-    )
-
-    # Use correct function name
-    CommandRegistry.unregister_commands_by_module(command_table, plugin_module)
   end
 end

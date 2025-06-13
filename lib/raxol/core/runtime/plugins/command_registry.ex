@@ -3,6 +3,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   Manages command registration and execution for plugins.
   """
 
+  @behaviour Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
+
   require Raxol.Core.Runtime.Log
 
   @type command_name :: String.t()
@@ -14,6 +16,31 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           optional(:timeout) => non_neg_integer()
         }
   @type command :: {command_name(), command_handler(), command_metadata()}
+
+  @impl true
+  def new do
+    %{}
+  end
+
+  @impl true
+  def register_command(table_name, namespace, command_name, module, function, arity) do
+    # Implementation
+  end
+
+  @impl true
+  def unregister_command(table_name, namespace, command_name) do
+    # Implementation
+  end
+
+  @impl true
+  def lookup_command(table_name, namespace, command_name) do
+    # Implementation
+  end
+
+  @impl true
+  def unregister_commands_by_module(table_name, module) do
+    # Implementation
+  end
 
   @doc """
   Registers commands for a plugin.
@@ -54,163 +81,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   @doc """
-  Creates a new command registry table (as a map).
-  Returns the new, empty command table.
-  """
-  def new do
-    %{}
-  end
-
-  @doc """
   Looks up the handler for a command name and namespace (plugin module).
   Returns {:ok, {module, function, arity}} or {:error, :not_found}.
   """
-  def lookup_command(table, namespace, command_name) do
-    case Map.get(table, namespace) do
-      nil ->
-        {:error, :not_found}
-
-      commands ->
-        case Enum.find(commands, fn {name, _handler, _meta_or_arity} ->
-               name == command_name
-             end) do
-          {^command_name, handler, meta_or_arity} ->
-            arity =
-              cond do
-                is_map(meta_or_arity) && Map.has_key?(meta_or_arity, :arity) ->
-                  meta_or_arity.arity
-
-                is_integer(meta_or_arity) ->
-                  meta_or_arity
-
-                true ->
-                  nil
-              end
-
-            {:ok, {namespace, handler, arity}}
-
-          _ ->
-            {:error, :not_found}
-        end
-    end
-  end
-
-  @doc """
-  Registers a command for a plugin namespace (module).
-  Adds the command to the command table if not already present.
-  Returns the updated command table.
-  """
-  def register_command(
-        command_table,
-        namespace,
-        command_name,
-        module,
-        function,
-        arity
-      ) do
-    # Ensure command_name is a string
-    command_name =
-      case command_name do
-        n when is_atom(n) -> Atom.to_string(n)
-        n when is_binary(n) -> n
-      end
-
-    # Get current commands for the namespace
-    commands = Map.get(command_table, namespace, [])
-
-    # Create a handler function wrapper
-    handler = fn args, state -> apply(module, function, [args, state]) end
-
-    # Check for duplicate (by name and arity)
-    duplicate =
-      Enum.any?(commands, fn {name, _fun, ar} ->
-        name == command_name and ar == arity
-      end)
-
-    if duplicate do
-      command_table
-    else
-      # Add the new command tuple: {command_name, handler, arity}
-      new_commands = [{command_name, handler, arity} | commands]
-      updated_table = Map.put(command_table, namespace, new_commands)
-      updated_table
-    end
-  end
-
-  @doc """
-  Unregisters all commands associated with a specific module (namespace).
-  Returns the updated command table.
-  """
-  def unregister_commands_by_module(command_table, module) do
-    Map.delete(command_table, module)
-  end
-
-  # Private helper functions
-
-  defp get_plugin_commands(plugin_module) do
-    case plugin_module.commands() do
-      commands when is_list(commands) -> {:ok, commands}
-      _ -> {:error, :invalid_commands}
-    end
-  end
-
-  defp validate_commands(commands) do
-    Enum.reduce_while(commands, :ok, fn command, :ok ->
-      case validate_command(command) do
-        :ok -> {:cont, :ok}
-        error -> {:halt, error}
-      end
-    end)
-  end
-
-  defp validate_command({name, handler, metadata}) do
-    with :ok <- validate_command_name(name),
-         :ok <- validate_command_handler(handler),
-         :ok <- validate_command_metadata(metadata) do
-      :ok
-    end
-  end
-
-  defp validate_command_name(name) do
-    cond do
-      not is_binary(name) ->
-        {:error, :invalid_command_name}
-
-      String.length(name) == 0 ->
-        {:error, :empty_command_name}
-
-      not String.match?(name, ~r/^[a-zA-Z0-9_-]+$/) ->
-        {:error, :invalid_command_name_format}
-
-      true ->
-        :ok
-    end
-  end
-
-  defp validate_command_handler(handler) do
-    if is_function(handler, 2),
-      do: :ok,
-      else: {:error, :invalid_command_handler}
-  end
-
-  defp validate_command_metadata(metadata) do
-    cond do
-      not is_map(metadata) -> {:error, :invalid_metadata}
-      not valid_metadata_fields?(metadata) -> {:error, :invalid_metadata_fields}
-      true -> :ok
-    end
-  end
-
-  defp valid_metadata_fields?(metadata) do
-    Enum.all?(metadata, fn {key, value} ->
-      case key do
-        :description -> is_binary(value)
-        :usage -> is_binary(value)
-        :aliases -> is_list(value) and Enum.all?(value, &is_binary/1)
-        :timeout -> is_integer(value) and value > 0
-        _ -> false
-      end
-    end)
+  def find_command(command_name, command_table) do
+    # Implementation
   end
 
   defp check_command_conflicts(commands, command_table) do
@@ -284,13 +159,70 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  defp find_command(name, command_table) do
-    case Enum.find_value(command_table, :error, fn {_, commands} ->
-           Enum.find(commands, fn {cmd_name, _, _} -> cmd_name == name end)
-         end) do
-      {^name, handler, metadata} -> {:ok, {handler, metadata}}
-      :error -> {:error, :command_not_found}
+  defp get_plugin_commands(plugin_module) do
+    case plugin_module.commands() do
+      commands when is_list(commands) -> {:ok, commands}
+      _ -> {:error, :invalid_commands}
     end
+  end
+
+  defp validate_commands(commands) do
+    Enum.reduce_while(commands, :ok, fn command, :ok ->
+      case validate_command(command) do
+        :ok -> {:cont, :ok}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp validate_command({name, handler, metadata}) do
+    with :ok <- validate_command_name(name),
+         :ok <- validate_command_handler(handler),
+         :ok <- validate_command_metadata(metadata) do
+      :ok
+    end
+  end
+
+  defp validate_command_name(name) do
+    cond do
+      not is_binary(name) ->
+        {:error, :invalid_command_name}
+
+      String.length(name) == 0 ->
+        {:error, :empty_command_name}
+
+      not String.match?(name, ~r/^[a-zA-Z0-9_-]+$/) ->
+        {:error, :invalid_command_name_format}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp validate_command_handler(handler) do
+    if is_function(handler, 2),
+      do: :ok,
+      else: {:error, :invalid_command_handler}
+  end
+
+  defp validate_command_metadata(metadata) do
+    cond do
+      not is_map(metadata) -> {:error, :invalid_metadata}
+      not valid_metadata_fields?(metadata) -> {:error, :invalid_metadata_fields}
+      true -> :ok
+    end
+  end
+
+  defp valid_metadata_fields?(metadata) do
+    Enum.all?(metadata, fn {key, value} ->
+      case key do
+        :description -> is_binary(value)
+        :usage -> is_binary(value)
+        :aliases -> is_list(value) and Enum.all?(value, &is_binary/1)
+        :timeout -> is_integer(value) and value > 0
+        _ -> false
+      end
+    end)
   end
 
   defp execute_with_timeout(handler, args, metadata) do

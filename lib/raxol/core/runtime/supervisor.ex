@@ -21,7 +21,6 @@ defmodule Raxol.Core.Runtime.Supervisor do
     Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
-  @impl true
   def init(init_arg) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] init called with args: #{inspect(init_arg)}"

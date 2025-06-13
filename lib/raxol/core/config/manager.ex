@@ -221,7 +221,7 @@ defmodule Raxol.Core.Config.Manager do
           {:error, :invalid_config_file}
       end
     else
-      Logger.warn("Config file not found: #{file}")
+      Logger.warning("Config file not found: #{file}")
       {:ok, %{}}
     end
   end

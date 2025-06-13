@@ -137,104 +137,46 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   @impl true
   def handle_call({:update, component_id, message}, _from, state) do
-    component = Map.get(state.components, component_id)
+    case Map.get(state.components, component_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
 
-    if component do
-      # Call component's update function
-      update_result = component.module.update(message, component.state)
+      component ->
+        # Call update callback
+        {new_state, commands} = component.module.update(message, component.state)
 
-      # Handle different return types ({state, commands} or just state)
-      case update_result do
-        {updated_comp_state, commands}
-        when is_map(updated_comp_state) and is_list(commands) ->
-          # Update component struct with new state
-          updated_component = %{component | state: updated_comp_state}
-          # Update the manager's state map
-          state_with_comp_updated =
-            put_in(state.components[component_id], updated_component)
+        # Store updated state
+        state = put_in(state.components[component_id].state, new_state)
 
-          # Add component to render queue
-          state_after_render =
-            update_in(
-              state_with_comp_updated.render_queue,
-              &[component_id | &1]
-            )
+        # Process any commands from update
+        state = process_commands(commands, component_id, state)
 
-          # Send component queued for render event if runtime_pid is set
-          if state_after_render.runtime_pid,
-            do:
-              send(
-                state_after_render.runtime_pid,
-                {:component_queued_for_render, component_id}
-              )
+        # Queue re-render if state changed
+        state =
+          if new_state != component.state do
+            update_in(state.render_queue, &[component_id | &1])
+          else
+            state
+          end
 
-          # Process commands returned by the component
-          final_state =
-            process_commands(commands, component_id, state_after_render)
-
-          # Reply with just the component's updated state, but use the final manager state internally
-          {:reply, {:ok, updated_comp_state}, final_state}
-
-        updated_comp_state when is_map(updated_comp_state) ->
-          # Component returned only state, assume empty commands
-          commands = []
-          # Update component struct with new state
-          updated_component = %{component | state: updated_comp_state}
-          # Update the manager's state map
-          state_with_comp_updated =
-            put_in(state.components[component_id], updated_component)
-
-          # Add component to render queue
-          state_after_render =
-            update_in(
-              state_with_comp_updated.render_queue,
-              &[component_id | &1]
-            )
-
-          # Process empty command list (no-op)
-          final_state =
-            process_commands(commands, component_id, state_after_render)
-
-          # Reply with the component's updated state, use final manager state internally
-          {:reply, {:ok, updated_comp_state}, final_state}
-
-        invalid_return ->
-          # Log error for unexpected return value
-          Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "Component update returned invalid value",
-            invalid_return,
-            nil,
-            %{
-              module: component.module,
-              component_id: component_id,
-              state: state
-            }
-          )
-
-          # Return error, keep original state
-          {:reply, {:error, :invalid_component_return}, state}
-      end
-    else
-      # Component not found
-      {:reply, {:error, :not_found}, state}
+        {:reply, {:ok, new_state}, state}
     end
   end
 
   @impl true
   def handle_call(:get_and_clear_render_queue, _from, state) do
-    # Get unique component IDs from the queue
-    render_list = Enum.uniq(state.render_queue)
-    # Reply with the list and clear the queue in the state
-    {:reply, render_list, %{state | render_queue: []}}
+    # Get current queue and clear it
+    queue = state.render_queue
+    new_state = %{state | render_queue: []}
+    {:reply, queue, new_state}
   end
 
   @impl true
   def handle_call({:get_component, component_id}, _from, state) do
-    component_data = Map.get(state.components, component_id)
-    {:reply, component_data, state}
+    component = Map.get(state.components, component_id)
+    {:reply, component, state}
   end
 
-  # Handle scheduled updates sent via Process.send_after
   @impl true
   def handle_info({:update, component_id, message}, state) do
     case Map.get(state.components, component_id) do

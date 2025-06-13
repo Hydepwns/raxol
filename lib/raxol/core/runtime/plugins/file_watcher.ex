@@ -1,131 +1,162 @@
 defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @moduledoc """
-  Handles file watching functionality for plugins.
-
-  This module provides a public API for monitoring plugin source files and triggering
-  reloads when changes are detected. It delegates to specialized submodules for
-  different aspects of the functionality:
-
-  - `FileWatcher.Core`: Core setup and state management
-  - `FileWatcher.Events`: Event handling and debouncing
-  - `FileWatcher.Reload`: Plugin reloading logic
-  - `FileWatcher.Cleanup`: Resource cleanup
-
-  ## State
-
-  The module maintains state in the following structure:
-
-  ```elixir
-  %{
-    plugin_dirs: [String.t()],           # List of directories to watch
-    plugin_paths: %{String.t() => String.t()},  # Plugin ID to path mapping
-    reverse_plugin_paths: %{String.t() => String.t()},  # Path to plugin ID mapping
-    file_watcher_pid: pid() | nil,       # File system watcher process
-    file_event_timer: reference() | nil,  # Debounce timer reference
-    file_watching_enabled?: boolean()    # File watching status
-  }
-  ```
-
-  ## Usage
-
-  ```elixir
-  # Initialize file watching
-  state = %{
-    plugin_dirs: ["plugins"],
-    plugin_paths: %{"my_plugin" => "plugins/my_plugin.ex"},
-    file_watching_enabled?: false
-  }
-
-  # Setup file watching
-  {pid, enabled?} = FileWatcher.setup_file_watching(state)
-  state = %{state | file_watcher_pid: pid, file_watching_enabled?: enabled?}
-
-  # Update file watcher with new paths
-  state = FileWatcher.update_file_watcher(state)
-
-  # Cleanup on shutdown
-  state = FileWatcher.cleanup_file_watching(state)
-  ```
-
-  For more detailed documentation about the module's architecture and internals,
-  see `docs/file_watcher.md`.
+  Manages file watching operations for plugins.
   """
 
-  alias Raxol.Core.Runtime.Plugins.FileWatcher.{
-    Core,
-    Events,
-    Reload,
-    Cleanup
+  use GenServer
+  require Logger
+
+  defstruct [
+    :watched_files,
+    :event_queue,
+    :debounce_interval,
+    :last_event_time,
+    :callback
+  ]
+
+  @type t :: %__MODULE__{
+    watched_files: map(),
+    event_queue: list(map()),
+    debounce_interval: integer(),
+    last_event_time: integer(),
+    callback: function()
   }
 
-  require Raxol.Core.Runtime.Log
+  # Client API
 
   @doc """
-  Creates a new file watcher state.
+  Starts the file watcher.
   """
-  def new do
-    %{
-      plugin_dirs: [],
-      plugins_dir: "priv/plugins",
-      initialized: false,
-      command_registry_table: nil,
-      loader_module: Raxol.Core.Runtime.Plugins.Loader,
-      lifecycle_helper_module: Raxol.Core.Runtime.Plugins.FileWatcher,
-      plugins: %{},
-      metadata: %{},
-      plugin_states: %{},
-      plugin_paths: %{},
-      reverse_plugin_paths: %{},
-      load_order: [],
-      file_watching_enabled?: false,
-      file_watcher_pid: nil,
-      file_event_timer: nil
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Stops the file watcher.
+  """
+  def stop(pid) do
+    GenServer.stop(pid)
+  end
+
+  @doc """
+  Adds a file to watch.
+  """
+  def watch_file(pid, file_path, callback) when is_binary(file_path) and is_function(callback, 1) do
+    GenServer.call(pid, {:watch_file, file_path, callback})
+  end
+
+  @doc """
+  Removes a file from watching.
+  """
+  def unwatch_file(pid, file_path) when is_binary(file_path) do
+    GenServer.call(pid, {:unwatch_file, file_path})
+  end
+
+  @doc """
+  Gets the list of watched files.
+  """
+  def get_watched_files(pid) do
+    GenServer.call(pid, :get_watched_files)
+  end
+
+  @doc """
+  Sets up file watching for a directory.
+  """
+  def setup_file_watching(pid) do
+    GenServer.call(pid, :setup_file_watching)
+  end
+
+  # Server Callbacks
+
+  @impl true
+  def init(opts) do
+    state = %__MODULE__{
+      watched_files: %{},
+      event_queue: [],
+      debounce_interval: Keyword.get(opts, :debounce_interval, 100),
+      last_event_time: System.monotonic_time(),
+      callback: Keyword.get(opts, :callback, fn _ -> :ok end)
     }
+    {:ok, state}
   end
 
-  @doc """
-  Sets up file watching for plugin source files.
-  Returns the updated state with the file watcher PID.
-  """
-  def setup_file_watching(state) do
-    Core.setup_file_watching(state)
+  @impl true
+  def handle_call({:watch_file, file_path, callback}, _from, state) do
+    case File.exists?(file_path) do
+      true ->
+        new_state = %{state |
+          watched_files: Map.put(state.watched_files, file_path, callback)
+        }
+        {:reply, :ok, new_state}
+      false ->
+        {:reply, {:error, :file_not_found}, state}
+    end
   end
 
-  @doc """
-  Handles file system events.
-  Returns updated state with debounced reload timer if needed.
-  """
-  def handle_file_event(path, state, file_mod \\ File) do
-    Events.handle_file_event(path, state, file_mod)
+  @impl true
+  def handle_call({:unwatch_file, file_path}, _from, state) do
+    new_state = %{state |
+      watched_files: Map.delete(state.watched_files, file_path)
+    }
+    {:reply, :ok, new_state}
   end
 
-  @doc """
-  Handles debounced file events.
-  Returns updated state after processing events.
-  """
-  def handle_debounced_events(plugin_id, path, state) do
-    Events.handle_debounced_events(plugin_id, path, state)
+  @impl true
+  def handle_call(:get_watched_files, _from, state) do
+    {:reply, Map.keys(state.watched_files), state}
   end
 
-  @doc """
-  Updates the reverse path mapping for file watching.
-  """
-  def update_file_watcher(state) do
-    Core.update_file_watcher(state)
+  @impl true
+  def handle_call(:setup_file_watching, _from, state) do
+    # Implementation would depend on the file watching library being used
+    {:reply, :ok, state}
   end
 
-  @doc """
-  Cleans up file watching resources.
-  """
-  def cleanup_file_watching(state) do
-    Cleanup.cleanup_file_watching(state)
+  @impl true
+  def handle_info({:file_event, file_path, event}, state) do
+    new_state = handle_file_event(state, file_path, event)
+    {:noreply, new_state}
   end
 
-  @doc """
-  Reloads a plugin after file changes.
-  Returns :ok on success or {:error, reason} on failure.
-  """
-  def reload_plugin(plugin_id, path) do
-    Reload.reload_plugin(plugin_id, path)
+  @impl true
+  def handle_info(:process_events, state) do
+    new_state = process_events(state)
+    {:noreply, new_state}
+  end
+
+  # Private Functions
+
+  defp handle_file_event(state, file_path, event) do
+    case Map.get(state.watched_files, file_path) do
+      nil ->
+        state
+      _callback ->
+        event_data = %{
+          path: file_path,
+          event: event,
+          timestamp: System.monotonic_time()
+        }
+        new_queue = [event_data | state.event_queue]
+        schedule_event_processing(state.debounce_interval)
+        %{state | event_queue: new_queue}
+    end
+  end
+
+  defp process_events(state) do
+    now = System.monotonic_time()
+    if now - state.last_event_time >= state.debounce_interval do
+      events = Enum.reverse(state.event_queue)
+      state.callback.(events)
+      %{state |
+        event_queue: [],
+        last_event_time: now
+      }
+    else
+      state
+    end
+  end
+
+  defp schedule_event_processing(interval) do
+    Process.send_after(self(), :process_events, interval)
   end
 end

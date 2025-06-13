@@ -35,7 +35,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # --- Loader.Behaviour Callbacks ---
 
-  @impl true
   def discover_plugins(plugin_dirs) when is_list(plugin_dirs) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Discovering plugins in: #{inspect(plugin_dirs)}"
@@ -314,22 +313,10 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   end
 
   @impl true
-  def load_plugin_module(module_atom) when is_atom(module_atom) do
-    if Code.ensure_loaded?(module_atom) do
-      Raxol.Core.Runtime.Log.debug(
-        "[#{__MODULE__}] Module code ensured loaded for: #{inspect(module_atom)}"
-      )
-
-      {:ok, module_atom}
-    else
-      Raxol.Core.Runtime.Log.error_with_stacktrace(
-        "[#{__MODULE__}] Failed to ensure module code is loaded",
-        nil,
-        nil,
-        %{module: __MODULE__, module_atom: module_atom}
-      )
-
-      {:error, :module_not_found}
+  def load_plugin_module(module) when is_atom(module) do
+    case Code.ensure_loaded(module) do
+      {:module, ^module} -> {:ok, module}
+      {:error, :nofile} -> {:error, :module_not_found}
     end
   end
 
@@ -350,9 +337,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   end
 
   # --- Potentially Deprecated or Internal Functions ---
-  @doc false
-  def load_plugin(plugin_id, config \\ %{})
 
+  @doc false
   def load_plugin(plugin_id, config) when is_atom(plugin_id) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Attempting to load plugin (legacy): #{inspect(plugin_id)}"
@@ -380,6 +366,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
+  @doc false
   def load_plugin(plugin_id, _config) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] Invalid plugin ID (legacy)",

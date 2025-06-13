@@ -1,12 +1,11 @@
 defmodule Raxol.Core.UserPreferences do
   @moduledoc """
-  Manages user preferences for the Raxol application.
+  Manages user preferences for the terminal emulator.
 
   Acts as a GenServer holding the preferences state and handles persistence.
   """
 
   use GenServer
-  @behaviour Raxol.Core.UserPreferences.Behaviour
   require Raxol.Core.Runtime.Log
 
   # Use the new Persistence module
@@ -25,12 +24,8 @@ defmodule Raxol.Core.UserPreferences do
 
   # --- Client API ---
 
-  @impl true
   def start_link(opts \\ []) do
-    # Pass only the test_mode? option to init, defaulting to false.
-    init_arg = [test_mode?: Keyword.get(opts, :test_mode?, false)]
-    name_opt = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, init_arg, name: name_opt)
+    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
   end
 
   @impl true
@@ -68,29 +63,24 @@ defmodule Raxol.Core.UserPreferences do
     {:ok, %State{preferences: preferences}}
   end
 
-  @impl true
   def get(key_or_path, pid_or_name \\ __MODULE__) do
     GenServer.call(pid_or_name, {:get, key_or_path})
   end
 
-  @impl true
   def set(key_or_path, value, pid_or_name \\ __MODULE__) do
     GenServer.call(pid_or_name, {:set, key_or_path, value})
   end
 
-  @impl true
   def save!(pid_or_name \\ __MODULE__) do
     GenServer.call(pid_or_name, :save_now)
   end
 
-  @impl true
   def get_all(pid_or_name \\ __MODULE__) do
     GenServer.call(pid_or_name, :get_all)
   end
 
-  @impl true
   def reset_to_defaults_for_test!(pid_or_name \\ __MODULE__) do
-    GenServer.call(pid_or_name, :reset_to_defaults_for_test)
+    GenServer.call(pid_or_name, :reset_to_defaults)
   end
 
   @impl true
@@ -146,7 +136,7 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   @impl true
-  def handle_call(:reset_to_defaults_for_test, _from, state) do
+  def handle_call(:reset_to_defaults, _from, state) do
     Raxol.Core.Runtime.Log.info(
       "UserPreferences resetting to defaults for test."
     )

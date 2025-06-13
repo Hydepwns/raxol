@@ -11,7 +11,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
   """
 
   use GenServer
-  alias Raxol.Core.Metrics.{Config, UnifiedCollector, Aggregator}
+  alias Raxol.Core.Metrics.{UnifiedCollector, Aggregator}
 
   @type alert_condition :: :above | :below | :equals | :not_equals
   @type alert_severity :: :info | :warning | :error | :critical
@@ -284,19 +284,16 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end)
   end
 
-  defp send_email_notification(alert) do
-    # Implementation would use a mail library
-    :ok
+  defp send_email_notification(_alert) do
+    # TODO: Implementation
   end
 
-  defp send_slack_notification(alert) do
-    # Implementation would use Slack's API
-    :ok
+  defp send_slack_notification(_alert) do
+    # TODO: Implementation
   end
 
-  defp send_webhook_notification(alert) do
-    # Implementation would use HTTP client
-    :ok
+  defp send_webhook_notification(_alert) do
+    # TODO: Implementation
   end
 
   defp schedule_check do

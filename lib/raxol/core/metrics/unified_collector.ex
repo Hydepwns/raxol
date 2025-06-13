@@ -1,191 +1,179 @@
 defmodule Raxol.Core.Metrics.UnifiedCollector do
   @moduledoc """
-  Unified metrics collector for the Raxol terminal emulator.
-
-  This module serves as the central point for all metrics collection,
-  supporting various metric types and providing a unified interface
-  for metric recording and retrieval.
+  Manages unified metrics collection across the application.
   """
 
-  use GenServer
-  alias Raxol.Core.Metrics.{Config, Cloud}
-  require Logger
+  defstruct [
+    :metrics,
+    :start_time,
+    :last_update,
+    :collectors
+  ]
 
-  @type metric_type :: :performance | :resource | :operation | :system | :custom
-  @type metric_value :: number() | map()
-  @type metric_tags :: [atom() | String.t()]
-
-  # Client API
+  @type t :: %__MODULE__{
+    metrics: map(),
+    start_time: integer(),
+    last_update: integer(),
+    collectors: map()
+  }
 
   @doc """
-  Starts the metrics collector.
+  Creates a new unified collector.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
-  @doc """
-  Records a performance metric.
-  """
-  def record_performance(name, value, tags \\ []) do
-    GenServer.cast(__MODULE__, {:record, :performance, name, value, tags})
-  end
-
-  @doc """
-  Records a resource metric.
-  """
-  def record_resource(name, value, tags \\ []) do
-    GenServer.cast(__MODULE__, {:record, :resource, name, value, tags})
-  end
-
-  @doc """
-  Records an operation metric.
-  """
-  def record_operation(name, value, tags \\ []) do
-    GenServer.cast(__MODULE__, {:record, :operation, name, value, tags})
-  end
-
-  @doc """
-  Records a system metric.
-  """
-  def record_system(name, value, tags \\ []) do
-    GenServer.cast(__MODULE__, {:record, :system, name, value, tags})
-  end
-
-  @doc """
-  Records a custom metric.
-  """
-  def record_custom(name, value, tags \\ []) do
-    GenServer.cast(__MODULE__, {:record, :custom, name, value, tags})
-  end
-
-  @doc """
-  Gets metrics for the specified type and name.
-  """
-  def get_metrics(type, name) do
-    GenServer.call(__MODULE__, {:get_metrics, type, name})
-  end
-
-  @doc """
-  Gets all metrics of the specified type.
-  """
-  def get_metrics_by_type(type) do
-    GenServer.call(__MODULE__, {:get_metrics_by_type, type})
-  end
-
-  # Server Callbacks
-
-  @impl true
-  def init(opts) do
-    config = Config.default_config()
-    state = %{
+  def new(opts \\ []) do
+    %__MODULE__{
       metrics: %{},
-      config: config,
-      cloud_enabled: Keyword.get(opts, :cloud_enabled, false)
+      start_time: System.monotonic_time(),
+      last_update: System.monotonic_time(),
+      collectors: Keyword.get(opts, :collectors, %{})
     }
-    schedule_metrics_collection()
-    {:ok, state}
   end
 
-  @impl true
-  def handle_cast({:record, type, name, value, tags}, state) do
-    if type in state.config.enabled_metrics do
-      new_metrics = update_metrics(state.metrics, type, name, value, tags)
-
-      if state.cloud_enabled do
-        send_to_cloud(type, name, value, tags)
+  @doc """
+  Records a metric value.
+  """
+  def record_metric(%__MODULE__{} = collector, name, value) do
+    metrics = Map.update(collector.metrics, name, value, fn current ->
+      case is_list(current) do
+        true -> [value | current]
+        false -> [value, current]
       end
+    end)
+    %{collector | metrics: metrics, last_update: System.monotonic_time()}
+  end
 
-      {:noreply, %{state | metrics: new_metrics}}
-    else
-      {:noreply, state}
+  @doc """
+  Gets a metric value.
+  """
+  def get_metric(%__MODULE__{} = collector, name) do
+    Map.get(collector.metrics, name)
+  end
+
+  @doc """
+  Gets all metrics.
+  """
+  def get_all_metrics(%__MODULE__{} = collector) do
+    collector.metrics
+  end
+
+  @doc """
+  Clears all metrics.
+  """
+  def clear_metrics(%__MODULE__{} = collector) do
+    %{collector | metrics: %{}, last_update: System.monotonic_time()}
+  end
+
+  @doc """
+  Adds a collector.
+  """
+  def add_collector(%__MODULE__{} = collector, name, collector_module) do
+    collectors = Map.put(collector.collectors, name, collector_module)
+    %{collector | collectors: collectors}
+  end
+
+  @doc """
+  Removes a collector.
+  """
+  def remove_collector(%__MODULE__{} = collector, name) do
+    collectors = Map.delete(collector.collectors, name)
+    %{collector | collectors: collectors}
+  end
+
+  @doc """
+  Gets a collector.
+  """
+  def get_collector(%__MODULE__{} = collector, name) do
+    Map.get(collector.collectors, name)
+  end
+
+  @doc """
+  Gets all collectors.
+  """
+  def get_collectors(%__MODULE__{} = collector) do
+    collector.collectors
+  end
+
+  @doc """
+  Collects metrics from all registered collectors.
+  """
+  def collect_metrics(%__MODULE__{} = collector) do
+    Enum.reduce(collector.collectors, collector, fn {name, module}, acc ->
+      case module.collect() do
+        {:ok, metrics} ->
+          record_metric(acc, name, metrics)
+        _ ->
+          acc
+      end
+    end)
+  end
+
+  @doc """
+  Calculates the average of a metric.
+  """
+  def calculate_average(%__MODULE__{} = collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.sum(values) / length(values)
+      value -> value
     end
   end
 
-  @impl true
-  def handle_call({:get_metrics, type, name}, _from, state) do
-    metrics = get_metrics_for_name(state.metrics, type, name)
-    {:reply, metrics, state}
-  end
-
-  @impl true
-  def handle_call({:get_metrics_by_type, type}, _from, state) do
-    metrics = get_metrics_by_type(state.metrics, type)
-    {:reply, metrics, state}
-  end
-
-  @impl true
-  def handle_info(:collect_metrics, state) do
-    new_state = collect_system_metrics(state)
-    schedule_metrics_collection()
-    {:noreply, new_state}
-  end
-
-  # Private Functions
-
-  defp update_metrics(metrics, type, name, value, tags) do
-    timestamp = System.system_time(:millisecond)
-    metric_key = {type, name}
-    metric = %{
-      value: value,
-      timestamp: timestamp,
-      tags: tags
-    }
-
-    case metrics do
-      %{^metric_key => existing_metrics} ->
-        updated_metrics = [metric | existing_metrics]
-        |> Enum.sort_by(& &1.timestamp, :desc)
-        |> Enum.take(Config.get(:max_samples))
-        Map.put(metrics, metric_key, updated_metrics)
-
-      _ ->
-        Map.put(metrics, metric_key, [metric])
+  @doc """
+  Calculates the sum of a metric.
+  """
+  def calculate_sum(%__MODULE__{} = collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.sum(values)
+      value -> value
     end
   end
 
-  defp get_metrics_for_name(metrics, type, name) do
-    case metrics do
-      %{{^type, ^name} => metric_list} -> metric_list
-      _ -> []
+  @doc """
+  Calculates the minimum value of a metric.
+  """
+  def calculate_min(%__MODULE__{} = collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.min(values)
+      value -> value
     end
   end
 
-  defp get_metrics_by_type(metrics, type) do
-    metrics
-    |> Enum.filter(fn {{metric_type, _}, _} -> metric_type == type end)
-    |> Map.new()
-  end
-
-  defp collect_system_metrics(state) do
-    if :system in state.config.enabled_metrics do
-      memory = :erlang.memory()
-      process_count = :erlang.system_info(:process_count)
-      runtime = :erlang.statistics(:runtime)
-      gc_stats = :erlang.statistics(:garbage_collection)
-
-      state
-      |> record_system_metric(:memory, memory)
-      |> record_system_metric(:process_count, process_count)
-      |> record_system_metric(:runtime, runtime)
-      |> record_system_metric(:gc_stats, gc_stats)
-    else
-      state
+  @doc """
+  Calculates the maximum value of a metric.
+  """
+  def calculate_max(%__MODULE__{} = collector, name) do
+    case get_metric(collector, name) do
+      nil -> 0
+      values when is_list(values) ->
+        Enum.max(values)
+      value -> value
     end
   end
 
-  defp record_system_metric(state, name, value) do
-    new_metrics = update_metrics(state.metrics, :system, name, value, [])
-    %{state | metrics: new_metrics}
+  @doc """
+  Gets the time since the last update.
+  """
+  def get_time_since_last_update(%__MODULE__{} = collector) do
+    System.monotonic_time() - collector.last_update
   end
 
-  defp schedule_metrics_collection do
-    Process.send_after(self(), :collect_metrics, Config.get(:flush_interval))
+  @doc """
+  Gets the total runtime of the collector.
+  """
+  def get_total_runtime(%__MODULE__{} = collector) do
+    System.monotonic_time() - collector.start_time
   end
 
-  defp send_to_cloud(type, name, value, tags) do
-    if Process.whereis(Cloud) do
-      send(Cloud, {:metrics, type, name, value, tags})
-    end
+  @doc """
+  Gets metrics for a specific metric name and tags.
+  """
+  @spec get_metrics(String.t(), map()) :: {:ok, list(map())} | {:error, term()}
+  def get_metrics(metric_name, tags) do
+    GenServer.call(__MODULE__, {:get_metrics, metric_name, tags})
   end
 end

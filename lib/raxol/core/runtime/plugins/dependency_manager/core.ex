@@ -4,6 +4,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   Provides the main public API for dependency checking and load order resolution.
   """
 
+  @behaviour Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.DependencyManager.{
@@ -21,6 +23,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
              dependency_chain()}
           | {:error, :circular_dependency, [String.t()], dependency_chain()}
 
+  @impl true
   @doc """
   Checks if a plugin's dependencies are satisfied.
 
@@ -223,6 +226,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     end
   end
 
+  @impl true
   @doc """
   Resolves the load order for a set of plugins based on their dependencies.
   Uses Tarjan's algorithm for efficient cycle detection and component identification.

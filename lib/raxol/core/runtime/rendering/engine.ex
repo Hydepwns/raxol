@@ -33,6 +33,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Public API ---
 
   @doc "Starts the Rendering Engine process."
+  @impl true
   def start_link(initial_state_map) when is_map(initial_state_map) do
     GenServer.start_link(__MODULE__, initial_state_map, name: __MODULE__)
   end
@@ -60,7 +61,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     {:ok, new_state}
   end
 
-  @impl GenServer
+  @impl true
   def handle_cast(:render_frame, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine received :render_frame cast. State: #{inspect(state)}"
