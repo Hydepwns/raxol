@@ -14,7 +14,6 @@ defmodule RaxolWeb.TerminalLive do
   use RaxolWeb, :live_view
   alias RaxolWeb.Presence
   alias Phoenix.PubSub
-  alias Raxol.UI.Theming.Theme
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @impl Phoenix.LiveView
@@ -136,30 +135,25 @@ defmodule RaxolWeb.TerminalLive do
 
   @impl Phoenix.LiveView
   def handle_event("scroll_to_bottom", _params, socket) do
-    emulator = socket.assigns.emulator
-    scrollback_size = length(emulator.scrollback_buffer || [])
+    # TODO: Implement scroll to bottom
+    {:noreply, socket}
+  end
 
-    new_emulator =
-      if scrollback_size > 0 do
-        Raxol.Terminal.Commands.Screen.scroll_down(emulator, scrollback_size)
-      else
-        emulator
-      end
+  @impl Phoenix.LiveView
+  def handle_event("scroll_to_top", _params, socket) do
+    # TODO: Implement scroll to top
+    {:noreply, socket}
+  end
 
-    renderer = %{
-      socket.assigns.renderer
-      | screen_buffer: new_emulator.main_screen_buffer
-    }
+  @impl Phoenix.LiveView
+  def handle_event("scroll_up", _params, socket) do
+    # TODO: Implement scroll up
+    {:noreply, socket}
+  end
 
-    terminal_html = Raxol.Terminal.Renderer.render(renderer)
-
-    socket =
-      socket
-      |> assign(:emulator, new_emulator)
-      |> assign(:renderer, renderer)
-      |> assign(:terminal_html, terminal_html)
-      |> assign(:scrollback_size, length(new_emulator.scrollback_buffer || []))
-
+  @impl Phoenix.LiveView
+  def handle_event("scroll_down", _params, socket) do
+    # TODO: Implement scroll down
     {:noreply, socket}
   end
 

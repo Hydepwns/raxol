@@ -21,7 +21,6 @@ defmodule RaxolWeb do
     quote do
       use Phoenix.Router
 
-      # Import common connection and controller functions to use in pipelines
       import Plug.Conn
       import Phoenix.Controller
       import Phoenix.LiveView.Router
@@ -43,7 +42,6 @@ defmodule RaxolWeb do
 
   def view do
     quote do
-      # Include shared imports and aliases for views
       unquote(html_helpers())
     end
   end
@@ -73,16 +71,12 @@ defmodule RaxolWeb do
 
   defp html_helpers do
     quote do
-      # HTML escaping functionality
       import Phoenix.HTML
-      # Core UI components and translation
       import RaxolWeb.CoreComponents
       use Gettext, backend: RaxolWeb.Gettext
 
-      # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
 
-      # Routes generation with the ~p sigil
       unquote(verified_routes())
     end
   end
