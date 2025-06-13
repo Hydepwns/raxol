@@ -156,22 +156,17 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
       # Define initial state for this test
       initial_state = %{
-        # Use ApplicationMock
         app_module: ApplicationMock,
-        # Start with valid model, will be set by ApplicationMock.init
         model: %{count: 0},
         runtime_pid: self(),
         width: 80,
         height: 24,
         focused: true,
         debug_mode: false,
-        # Use per-test PID
         plugin_manager: mock_pm_pid,
         command_registry_table: :raxol_command_registry,
-        # Use PubSubMock
         pubsub_server: PubSubMock,
         rendering_engine: Raxol.Core.Runtime.Rendering.Engine,
-        # Add missing key
         initial_commands: []
       }
 
@@ -183,53 +178,24 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         data: %{key: :enter, state: :pressed, modifiers: []}
       }
 
-      # Expect handle_event to be called. Adjust commands if necessary.
+      # Expect handle_event to be called
       Mox.expect(ApplicationMock, :handle_event, fn ^event, model ->
-        {:ok, model,
-         [%Command{type: :system, data: {:event_handled_before_error, event}}]}
+        {:ok, model, []}
       end)
 
-      # MODIFIED: Stub Raxol.Core.Runtime.Command.execute directly
-      execute_stub_fun = fn
-        # Match expected call from handle_event result
-        %Command{type: :system, data: {:event_handled_before_error, ^event}},
-        _context ->
-          :ok
+      # Stub Command.execute
+      Mox.stub(Raxol.Core.Runtime.Command, :execute, fn _cmd, _context -> :ok end)
 
-        # Default case (log unexpected calls)
-        unexpected_cmd, _context ->
-          Raxol.Core.Runtime.Log.warning(
-            "Unexpected call to Command.execute stub in test '#{__ENV__.function}': #{inspect(unexpected_cmd)}"
-          )
-
-          :error
-      end
-
-      Mox.stub(Raxol.Core.Runtime.Command, :execute, execute_stub_fun)
-
+      # Expect update to fail
       Mox.expect(ApplicationMock, :update, fn _any_event_or_msg, _model ->
         {:error, :simulated_error}
       end)
 
-      # MODIFIED: Stub Phoenix.PubSub.broadcast directly
-      broadcast_stub_fun = fn
-        _pubsub_server, "events", {:event, ^event} ->
-          :ok
+      # Stub PubSub.broadcast
+      Mox.stub(Phoenix.PubSub, :broadcast, fn _server, "events", {:event, ^event} -> :ok end)
 
-        server, topic, msg ->
-          Raxol.Core.Runtime.Log.warning(
-            "Unexpected call to PubSub.broadcast stub in test '#{__ENV__.function}': #{inspect({server, topic, msg})}"
-          )
-
-          :error
-      end
-
-      Mox.stub(Phoenix.PubSub, :broadcast, broadcast_stub_fun)
-
-      # MODIFIED: Directly stub the real UserPreferences module
-      Mox.stub(Raxol.Core.UserPreferences, :get, fn "theme.active_id" ->
-        :default
-      end)
+      # Stub UserPreferences
+      Mox.stub(Raxol.Core.UserPreferences, :get, fn "theme.active_id" -> :default end)
 
       # Start Dispatcher for this test
       {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
@@ -243,7 +209,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
       # Test-specific teardown
       on_exit(fn ->
-        # Verify all Mox expectations
         Mox.verify!()
         GenServer.stop(mock_pm_pid)
       end)

@@ -92,8 +92,10 @@ defmodule Raxol.Terminal.Cache.SystemTest do
 
       # Check that least recently used keys were evicted
       assert {:error, :not_found} == System.get("key3", namespace: :general)
-      assert {:ok, _} == System.get("key1", namespace: :general)
-      assert {:ok, _} == System.get("key2", namespace: :general)
+      assert {:ok, value1} = System.get("key1", namespace: :general)
+      assert {:ok, value2} = System.get("key2", namespace: :general)
+      assert is_binary(value1)
+      assert is_binary(value2)
     end
 
     test "LFU eviction" do
@@ -120,8 +122,10 @@ defmodule Raxol.Terminal.Cache.SystemTest do
 
       # Check that least frequently used keys were evicted
       assert {:error, :not_found} == System.get("key3", namespace: :general)
-      assert {:ok, _} == System.get("key1", namespace: :general)
-      assert {:ok, _} == System.get("key2", namespace: :general)
+      assert {:ok, value1} = System.get("key1", namespace: :general)
+      assert {:ok, value2} = System.get("key2", namespace: :general)
+      assert is_binary(value1)
+      assert is_binary(value2)
     end
 
     test "FIFO eviction" do
@@ -143,8 +147,10 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       # Check that oldest keys were evicted
       assert {:error, :not_found} == System.get("key1", namespace: :general)
       assert {:error, :not_found} == System.get("key2", namespace: :general)
-      assert {:ok, _} == System.get("key9", namespace: :general)
-      assert {:ok, _} == System.get("key10", namespace: :general)
+      assert {:ok, value9} = System.get("key9", namespace: :general)
+      assert {:ok, value10} = System.get("key10", namespace: :general)
+      assert is_binary(value9)
+      assert is_binary(value10)
     end
   end
 

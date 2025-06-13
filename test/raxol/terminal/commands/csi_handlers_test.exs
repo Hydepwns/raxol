@@ -12,11 +12,14 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
   # For setup if needed
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
+  alias Raxol.Terminal.{Window}
 
   setup do
     IO.puts("SETUP RUNNING")
-    # Basic emulator setup for tests
-    emulator = Emulator.new(80, 24)
+    emulator = %Emulator{
+      window_manager: Window.Manager.new(),
+      active_buffer: %{width: 80, height: 24}
+    }
     # Ensure saved_cursor is initially nil as per recent Emulator.ex changes
     emulator = %{emulator | saved_cursor: nil}
     {:ok, emulator: emulator}
@@ -711,6 +714,208 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       state = StateManager.new()
       state = CSIHandlers.handle_save_restore_cursor(state, [?u])
       assert state.cursor_restored == true
+    end
+  end
+
+  describe "cursor movement" do
+    test "moves cursor up", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_up(emulator, 5)
+      assert result.cursor.y == 5
+    end
+
+    test "moves cursor down", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_down(emulator, 5)
+      assert result.cursor.y == 15
+    end
+
+    test "moves cursor forward", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_forward(emulator, 5)
+      assert result.cursor.x == 15
+    end
+
+    test "moves cursor backward", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_backward(emulator, 5)
+      assert result.cursor.x == 5
+    end
+
+    test "moves cursor to column", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_column(emulator, 5)
+      assert result.cursor.x == 5
+    end
+
+    test "moves cursor to position", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_position(emulator, 5, 15)
+      assert result.cursor.x == 5
+      assert result.cursor.y == 15
+    end
+
+    test "clamps cursor to screen boundaries", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_position(emulator, 100, 100)
+      assert result.cursor.x == 79
+      assert result.cursor.y == 23
+    end
+
+    test "handles negative cursor positions", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_position(emulator, -5, -5)
+      assert result.cursor.x == 0
+      assert result.cursor.y == 0
+    end
+
+    test "handles zero movement", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_cursor_up(emulator, 0)
+      assert result.cursor.y == 10
+    end
+  end
+
+  describe "scrolling" do
+    test "scrolls up", %{emulator: emulator} do
+      result = CSIHandlers.handle_scroll_up(emulator, 5)
+      assert result.scroll_offset == 5
+    end
+
+    test "scrolls down", %{emulator: emulator} do
+      emulator = %{emulator | scroll_offset: 10}
+      result = CSIHandlers.handle_scroll_down(emulator, 5)
+      assert result.scroll_offset == 5
+    end
+
+    test "clamps scroll offset to valid range", %{emulator: emulator} do
+      result = CSIHandlers.handle_scroll_up(emulator, 1000)
+      assert result.scroll_offset <= 1000
+    end
+
+    test "handles negative scroll amounts", %{emulator: emulator} do
+      result = CSIHandlers.handle_scroll_up(emulator, -5)
+      assert result.scroll_offset == 0
+    end
+  end
+
+  describe "erasing" do
+    test "erases display from cursor to end", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_erase_display(emulator, 0)
+      assert result.active_buffer.contents[10][10..-1] |> Enum.all?(&(&1 == " "))
+    end
+
+    test "erases display from start to cursor", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_erase_display(emulator, 1)
+      assert result.active_buffer.contents[10][0..10] |> Enum.all?(&(&1 == " "))
+    end
+
+    test "erases entire display", %{emulator: emulator} do
+      result = CSIHandlers.handle_erase_display(emulator, 2)
+      assert result.active_buffer.contents |> Enum.all?(fn row ->
+        row |> Enum.all?(&(&1 == " "))
+      end)
+    end
+
+    test "erases line from cursor to end", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_erase_line(emulator, 0)
+      assert result.active_buffer.contents[10][10..-1] |> Enum.all?(&(&1 == " "))
+    end
+
+    test "erases line from start to cursor", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_erase_line(emulator, 1)
+      assert result.active_buffer.contents[10][0..10] |> Enum.all?(&(&1 == " "))
+    end
+
+    test "erases entire line", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_erase_line(emulator, 2)
+      assert result.active_buffer.contents[10] |> Enum.all?(&(&1 == " "))
+    end
+
+    test "handles invalid erase parameters", %{emulator: emulator} do
+      result = CSIHandlers.handle_erase_display(emulator, 3)
+      assert result == emulator
+    end
+  end
+
+  describe "text attributes" do
+    test "sets text attributes", %{emulator: emulator} do
+      result = CSIHandlers.handle_text_attributes(emulator, [1, 4, 31])
+      assert result.text_attributes.bold == true
+      assert result.text_attributes.underline == true
+      assert result.text_attributes.foreground == :red
+    end
+
+    test "resets text attributes", %{emulator: emulator} do
+      emulator = %{emulator | text_attributes: %{bold: true, underline: true, foreground: :red}}
+      result = CSIHandlers.handle_text_attributes(emulator, [0])
+      assert result.text_attributes.bold == false
+      assert result.text_attributes.underline == false
+      assert result.text_attributes.foreground == :default
+    end
+
+    test "handles multiple attribute changes", %{emulator: emulator} do
+      result = CSIHandlers.handle_text_attributes(emulator, [1, 0, 4, 0, 31, 0])
+      assert result.text_attributes.bold == false
+      assert result.text_attributes.underline == false
+      assert result.text_attributes.foreground == :default
+    end
+
+    test "handles invalid attribute codes", %{emulator: emulator} do
+      result = CSIHandlers.handle_text_attributes(emulator, [999])
+      assert result == emulator
+    end
+  end
+
+  describe "mode changes" do
+    test "sets insert mode", %{emulator: emulator} do
+      result = CSIHandlers.handle_mode_change(emulator, 4, true)
+      assert result.insert_mode == true
+    end
+
+    test "unsets insert mode", %{emulator: emulator} do
+      emulator = %{emulator | insert_mode: true}
+      result = CSIHandlers.handle_mode_change(emulator, 4, false)
+      assert result.insert_mode == false
+    end
+
+    test "sets cursor visibility", %{emulator: emulator} do
+      result = CSIHandlers.handle_mode_change(emulator, 25, true)
+      assert result.cursor_visible == true
+    end
+
+    test "unsets cursor visibility", %{emulator: emulator} do
+      emulator = %{emulator | cursor_visible: true}
+      result = CSIHandlers.handle_mode_change(emulator, 25, false)
+      assert result.cursor_visible == false
+    end
+
+    test "handles invalid mode codes", %{emulator: emulator} do
+      result = CSIHandlers.handle_mode_change(emulator, 999, true)
+      assert result == emulator
+    end
+  end
+
+  describe "device status" do
+    test "reports cursor position", %{emulator: emulator} do
+      emulator = %{emulator | cursor: %{x: 10, y: 10}}
+      result = CSIHandlers.handle_device_status(emulator, 6)
+      assert result.output_buffer =~ ~r/\x1B\[10;10R/
+    end
+
+    test "reports device status", %{emulator: emulator} do
+      result = CSIHandlers.handle_device_status(emulator, 5)
+      assert result.output_buffer =~ ~r/\x1B\[0n/
+    end
+
+    test "handles invalid status codes", %{emulator: emulator} do
+      result = CSIHandlers.handle_device_status(emulator, 999)
+      assert result == emulator
     end
   end
 end

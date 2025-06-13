@@ -3,13 +3,11 @@ defmodule Raxol.Style.Colors.SystemTest do
   # Changed to false to prevent concurrent access to shared state
   use ExUnit.Case, async: false
   import Mox
+  import Raxol.Test.Support.TestHelper
 
   alias Raxol.Style.Colors.{Color, System, Theme}
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.UI.Theming.Theme
-
-  # Define mocks
-  Mox.defmock(EventManagerMock, for: Raxol.Core.Events.Manager.Behaviour)
 
   @color_keys [
     :primary,
@@ -28,19 +26,20 @@ defmodule Raxol.Style.Colors.SystemTest do
   setup :verify_on_exit!
 
   setup do
+    # Set up test environment and mocks
+    {:ok, context} = setup_test_env()
+    setup_common_mocks()
+
     # Clean up any existing theme files
     File.rm_rf!("themes")
     File.rm("preferences.json")
     File.mkdir_p!("themes")
 
     # Initialize system with mocked event manager
-    Application.put_env(:raxol, :event_manager, EventManagerMock)
+    Application.put_env(:raxol, :event_manager, Raxol.Core.Events.ManagerMock)
     System.init()
 
-    # Stub event manager for all tests
-    stub_with(EventManagerMock, EventManager)
-
-    {:ok, %{event_manager: EventManagerMock}}
+    {:ok, context}
   end
 
   describe "theme management" do

@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.SessionTest do
 
   alias Raxol.Terminal.Session
   alias Raxol.Terminal.{Emulator, Input, Renderer}
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   setup do
     # Start the session manager
@@ -40,7 +41,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert state.width == 90
       assert state.height == 30
       assert state.title == "Test Terminal"
-      assert %Emulator{} = state.emulator
+      assert %EmulatorStruct{} = state.emulator
       assert %Input{} = state.input
       assert %Renderer{} = state.renderer
     end

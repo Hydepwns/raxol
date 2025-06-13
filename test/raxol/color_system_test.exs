@@ -10,66 +10,27 @@ defmodule Raxol.ColorSystemTest do
   alias Raxol.Animation.Framework
   require Raxol.Core.Runtime.Log
 
-  # Helper to setup Accessibility and UserPreferences
-  # setup :configure_env do
-  # REMOVE THE GLOBAL START
-  # case Process.whereis(Raxol.Core.UserPreferences) do
-  #   nil -> {:ok, pid} = Raxol.Core.UserPreferences.start_link([])
-  #   _pid -> IO.puts("UserPreferences already running for color_system_test") # Ignore if already started
-  # end
-
-  # Configure Accessibility settings (assuming UserPreferences exists)
-  # UserPreferences.set("accessibility.high_contrast", false)
-  # UserPreferences.set("accessibility.screen_reader", true)
-  # UserPreferences.set("accessibility.silence_announcements", false)
-  # :ok
-  # end
-
-  # Helper to cleanup Accessibility and UserPreferences
-  # setup :reset_settings do
-  # Reset settings
-  # UserPreferences.set(:theme, nil)
-  # UserPreferences.set(:accent_color, nil)
-  # UserPreferences.set("accessibility.high_contrast", nil)
-  # UserPreferences.set("accessibility.screen_reader", nil)
-  # UserPreferences.set("accessibility.silence_announcements", nil)
-  # UserPreferences.set("accessibility.reduced_motion", nil)
-
-  # Ensure preferences file is cleaned up if created
-  # File.rm(UserPreferences.preference_file_path())
-  # :ok
-  # end
-
   setup do
-    # Ensure ColorSystem is initialized (might be done in test_helper, but safer here)
-    ColorSystem.init()
+    # Start UserPreferences with a test-specific name
+    local_user_prefs_name = __MODULE__.UserPreferences
+    user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
-    pref_pid = setup_accessibility_and_prefs()
-    Accessibility.enable([], pref_pid)
+    {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
 
-    # Ensure defaults are set for tests, targeting the specific UserPreferences instance
-    UserPreferences.set([:accessibility, :high_contrast], false, pref_pid)
-    UserPreferences.set([:accessibility, :screen_reader], true, pref_pid)
+    # Reset relevant prefs before each test
+    UserPreferences.set("accessibility.high_contrast", false, local_user_prefs_name)
+    UserPreferences.set("accessibility.screen_reader", true, local_user_prefs_name)
+    UserPreferences.set("accessibility.silence_announcements", false, local_user_prefs_name)
 
-    UserPreferences.set(
-      [:accessibility, :silence_announcements],
-      false,
-      pref_pid
-    )
-
-    # Fixed: Use apply_theme
-    ColorSystem.apply_theme(:default)
-    # Wait for theme change to be applied
-    assert_receive {:theme_changed, :default}, 100
+    # Wait for preferences to be applied
+    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
 
     on_exit(fn ->
-      cleanup_accessibility_and_prefs(pref_pid)
-      Accessibility.disable()
-      # Fixed: Use apply_theme
-      ColorSystem.apply_theme(:default)
+      # Cleanup
+      File.rm(UserPreferences.preference_file_path(local_user_prefs_name))
     end)
 
-    {:ok, pref_pid: pref_pid}
+    :ok
   end
 
   describe "ColorSystem with accessibility integration" do

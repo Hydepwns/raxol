@@ -34,19 +34,16 @@ This guide outlines the performance testing standards and practices for the Raxo
 ```elixir
 defmodule Raxol.Performance.FeatureTest do
   use ExUnit.Case, async: true
-  import Raxol.Test.PerformanceHelpers
+  import Raxol.Test.PerformanceHelper
 
   test "meets performance targets" do
-    measurements = measure_performance(fn ->
+    {time, _} = measure_time(fn ->
       # Code to measure
     end)
 
-    assert_performance_targets(measurements, %{
-      average: 1,
-      p95: 2,
-      p99: 5,
-      max: 10
-    })
+    assert_operation_performance(fn ->
+      # Code to measure
+    end, "operation name", 1.0)
   end
 end
 ```
@@ -55,20 +52,14 @@ end
 
 ```elixir
 test "handles concurrent load" do
-  measurements = measure_concurrent_performance(
-    num_operations: 100,
-    concurrency: 10,
-    fn ->
-      # Operation to measure
+  operations = [
+    fn -> # Operation 1
+    end,
+    fn -> # Operation 2
     end
-  )
+  ]
 
-  assert_concurrent_performance_targets(measurements, %{
-    average: 5,
-    p95: 10,
-    p99: 20,
-    max: 50
-  })
+  assert_concurrent_performance(operations, "concurrent operations", 5.0)
 end
 ```
 
@@ -76,20 +67,13 @@ end
 
 ```elixir
 test "handles stress conditions" do
-  measurements = measure_stress_performance(
-    duration: :timer.seconds(30),
-    load: :high,
-    fn ->
-      # Operation to measure
-    end
-  )
+  {time, _} = measure_time(fn ->
+    # Operation to measure
+  end)
 
-  assert_stress_performance_targets(measurements, %{
-    average: 10,
-    p95: 20,
-    p99: 50,
-    max: 100
-  })
+  assert_operation_performance(fn ->
+    # Operation to measure
+  end, "stress test", 10.0)
 end
 ```
 
@@ -98,25 +82,20 @@ end
 ### 1. Measurement Helpers
 
 ```elixir
-defmodule Raxol.Test.PerformanceHelpers do
-  def measure_performance(fun) do
+defmodule Raxol.Test.PerformanceHelper do
+  def measure_time(operation) do
     # Measure execution time
-    # Calculate statistics
-    # Return measurements
+    # Returns {time_in_ms, result}
   end
 
-  def measure_concurrent_performance(opts, fun) do
-    # Run concurrent operations
-    # Measure execution time
-    # Calculate statistics
-    # Return measurements
+  def measure_average_time(operation, iterations \\ 1000) do
+    # Measure average execution time
+    # Returns average time in milliseconds
   end
 
-  def measure_stress_performance(opts, fun) do
-    # Run stress test
-    # Measure execution time
-    # Calculate statistics
-    # Return measurements
+  def measure_memory(operation) do
+    # Measure memory usage
+    # Returns {memory_in_bytes, result}
   end
 end
 ```
@@ -124,22 +103,17 @@ end
 ### 2. Assertion Helpers
 
 ```elixir
-defmodule Raxol.Test.PerformanceAssertions do
-  def assert_performance_targets(measurements, targets) do
-    assert measurements.average <= targets.average
-    assert measurements.p95 <= targets.p95
-    assert measurements.p99 <= targets.p99
-    assert measurements.max <= targets.max
+defmodule Raxol.Test.PerformanceHelper do
+  def assert_operation_performance(operation, name, threshold \\ 0.001, iterations \\ 1000) do
+    # Assert operation meets performance threshold
   end
 
-  def assert_concurrent_performance_targets(measurements, targets) do
-    assert_performance_targets(measurements, targets)
-    assert measurements.throughput >= targets.throughput
+  def assert_concurrent_performance(operations, name, threshold \\ 0.002, iterations \\ 1000) do
+    # Assert concurrent operations meet performance threshold
   end
 
-  def assert_stress_performance_targets(measurements, targets) do
-    assert_performance_targets(measurements, targets)
-    assert measurements.stability >= targets.stability
+  def assert_memory_usage(operation, name, threshold \\ 1_000_000) do
+    # Assert operation meets memory usage threshold
   end
 end
 ```
@@ -203,12 +177,13 @@ end
 
 ```elixir
 test "maintains performance baseline" do
-  baseline = load_baseline_measurements()
-  current = measure_performance(fn ->
+  {time, _} = measure_time(fn ->
     # Code to measure
   end)
 
-  assert_performance_regression(current, baseline)
+  assert_operation_performance(fn ->
+    # Code to measure
+  end, "baseline comparison", 1.0)
 end
 ```
 
@@ -216,14 +191,13 @@ end
 
 ```elixir
 test "monitors resource usage" do
-  measurements = measure_with_resources(fn ->
+  {memory, _} = measure_memory(fn ->
     # Code to measure
   end)
 
-  assert_resource_usage(measurements, %{
-    cpu: 50,    # percent
-    memory: 100 # MB
-  })
+  assert_memory_usage(fn ->
+    # Code to measure
+  end, "resource monitoring", 1_000_000)
 end
 ```
 
@@ -231,19 +205,13 @@ end
 
 ```elixir
 test "handles increasing load" do
-  measurements = measure_load_scaling(
-    start_load: 10,
-    end_load: 100,
-    step: 10,
-    fn load ->
-      # Operation to measure
+  operations = for i <- 1..10 do
+    fn ->
+      # Operation with load i
     end
-  )
+  end
 
-  assert_load_scaling(measurements, %{
-    linear: true,
-    max_degradation: 20 # percent
-  })
+  assert_concurrent_performance(operations, "load testing", 5.0)
 end
 ```
 

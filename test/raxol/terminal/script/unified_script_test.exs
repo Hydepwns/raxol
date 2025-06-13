@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
       # Load script
       source = """
       def hello(name) do
-        "Hello, #{name}!"
+        "Hello, \#{name}!"
       end
       """
 
@@ -89,13 +89,13 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
         name: "Hello Script"
       )
 
-      # Execute script
+      # Execute script with argument
       assert {:ok, result} = UnifiedScript.execute_script(script_id, ["World"])
-      assert result =~ "Script executed with args:"
+      assert result == "Hello, World!"
 
       # Get script output
       assert {:ok, output} = UnifiedScript.get_script_output(script_id)
-      assert length(output) > 0
+      assert output == "Hello, World!"
     end
 
     test "handles script states" do

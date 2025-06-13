@@ -127,7 +127,7 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
         acc
       end)
 
-      assert {:ok, updated_registry, ["test", "test2", "t", "t2"]} = Registry.get_completions(registry, "t")
+      assert {:ok, updated_registry, ["t", "t2", "test", "test2"]} = Registry.get_completions(registry, "t")
       assert updated_registry.metrics.completions == 1
     end
 

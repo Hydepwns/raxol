@@ -326,10 +326,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
   describe "handle_dcs/5 - DECDLD (Downloadable Character Set)" do
     test "logs warning and does not crash for DECDLD sequence, returns emulator" do
-      # Use the new helper
       emulator = new_emulator()
-      params = [1, 2, 3]
-      intermediates = "|"
       # DECDLD expects codepoint
       final_byte = ?p
       data_string = "some-data"
@@ -339,8 +336,8 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
           updated_emulator =
             case DCSHandlers.handle_dcs(
                    emulator,
-                   params,
-                   intermediates,
+                   [],  # Empty params
+                   "|",  # Fixed intermediate
                    final_byte,
                    data_string
                  ) do
@@ -354,7 +351,6 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
           assert updated_emulator.output_buffer == emulator.output_buffer
 
           # More robust check: ensure only expected logging happened, not other side effects
-          # original emulator but with potentially different log state if that were tracked
           assert updated_emulator == %{
                    emulator
                    | output_buffer: emulator.output_buffer

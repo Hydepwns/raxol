@@ -130,15 +130,16 @@ defmodule Raxol.Plugins.PluginSystemTest do
       {:ok, manager_with_plugin} =
         Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
 
-      {:ok, updated_manager} =
-        EventHandler.handle_mouse_legacy(
+      {:ok, updated_manager, propagation} =
+        EventHandler.handle_mouse_event(
           manager_with_plugin,
-          {:click, 1, 2, 1},
+          %{type: :mouse, x: 1, y: 2, button: :click, modifiers: 1},
           emulator
         )
 
       assert Map.has_key?(updated_manager.plugins, "hyperlink")
       assert updated_manager.plugins["hyperlink"].enabled == true
+      assert propagation in [:propagate, :halt]
     end
   end
 

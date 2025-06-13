@@ -1,13 +1,7 @@
 defmodule Raxol.Terminal.ModeManagerTest do
-  # Explicitly start Mox
-  Application.ensure_all_started(:mox)
   use ExUnit.Case, async: false
   require Mox
-
-  # Define the mock for the TerminalStateBehaviour
-  Mox.defmock(TerminalStateMock,
-    for: Raxol.Terminal.ANSI.TerminalStateBehaviour
-  )
+  import Raxol.Test.Support.TestHelper
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ModeManager
@@ -16,24 +10,24 @@ defmodule Raxol.Terminal.ModeManagerTest do
   alias Raxol.Terminal.ScreenBuffer
   alias MapSet
 
-  # test "it should start the mode manager" do
-  #   assert :ok = Raxol.Terminal.ModeManager.start_link([])
-  # end
+  setup do
+    # Set up test environment and mocks
+    {:ok, context} = setup_test_env()
+    setup_common_mocks()
+
+    # Configure the application to use the mock for this test
+    # This ensures ModeManager uses our TerminalStateMock
+    original_impl = Application.get_env(:raxol, :terminal_state_impl)
+    Application.put_env(:raxol, :terminal_state_impl, Raxol.Terminal.Parser.StateMock)
+
+    on_exit(fn ->
+      Application.put_env(:raxol, :terminal_state_impl, original_impl)
+    end)
+
+    {:ok, context}
+  end
 
   describe "set_mode/2 with state saving" do
-    setup do
-      # Configure the application to use the mock for this test
-      # This ensures ModeManager uses our TerminalStateMock
-      original_impl = Application.get_env(:raxol, :terminal_state_impl)
-      Application.put_env(:raxol, :terminal_state_impl, TerminalStateMock)
-
-      on_exit(fn ->
-        Application.put_env(:raxol, :terminal_state_impl, original_impl)
-      end)
-
-      :ok
-    end
-
     test "save_state is called when setting a mode that saves terminal state" do
       # 1. Arrange: Create an initial emulator state
       main_buffer = ScreenBuffer.new(80, 24, 1000)

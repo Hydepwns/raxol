@@ -3,12 +3,22 @@ defmodule Raxol.Terminal.SessionTest do
   alias Raxol.Terminal.Session
 
   setup do
+    # Start the application
+    Application.start(:raxol)
+
     # Clean up any existing session files
     File.rm_rf!("tmp/sessions")
     File.mkdir_p!("tmp/sessions")
 
     {:ok, pid} = Session.start_link(id: "test_session")
     %{pid: pid}
+  end
+
+  setup_all do
+    # Ensure application is stopped after all tests
+    on_exit(fn ->
+      Application.stop(:raxol)
+    end)
   end
 
   describe "session persistence" do
