@@ -33,15 +33,12 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
           icon_name: String.t() | nil,
           tab_stops: MapSet.t(),
           output_buffer: String.t(),
-          # Assuming atom type based on emulator.ex
           cursor_style: atom(),
           parser_state: map(),
           command_history: list(),
           max_command_history: non_neg_integer(),
           current_command_buffer: String.t(),
-          # Include other fields from defstruct as needed for completeness
           saved_cursor: {non_neg_integer(), non_neg_integer()},
-          # Replace 'any' with the actual type if known (e.g., TerminalState.t())
           state_stack: any(),
           last_col_exceeded: boolean()
         }
@@ -77,7 +74,6 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
             ) :: t()
 
   @doc "Processes input data (e.g., user typing, escape sequences)."
-  # Assuming {new_emulator, output}
   @callback process_input(emulator :: t(), input :: String.t()) ::
               {t(), String.t()}
 

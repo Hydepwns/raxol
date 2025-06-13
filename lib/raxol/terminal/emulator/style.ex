@@ -8,28 +8,30 @@ defmodule Raxol.Terminal.Emulator.Style do
 
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  @behaviour Raxol.Terminal.Emulator.Style.Behaviour
 
-  @behaviour Raxol.Terminal.Emulator.Style
+  @type color :: {0..255, 0..255, 0..255} | :default
+  @type decoration :: :none | :underline | :double_underline | :overline | :strikethrough
+  @type intensity :: :normal | :bold | :faint
+  @type blink :: :none | :slow | :rapid
 
   @impl true
   @doc """
-  Sets the text style attributes.
-  Returns {:ok, updated_emulator} or {:error, reason}.
+  Sets multiple style attributes at once.
   """
   @spec set_attributes(EmulatorStruct.t(), list()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def set_attributes(%EmulatorStruct{} = emulator, attributes)
-      when is_list(attributes) do
-    updated_style =
-      Enum.reduce(attributes, emulator.style, fn attr, style ->
-        TextFormatting.apply_attribute(style, attr)
-      end)
-
-    {:ok, %{emulator | style: updated_style}}
-  end
-
-  def set_attributes(%EmulatorStruct{} = _emulator, invalid_attributes) do
-    {:error, "Invalid attributes: #{inspect(invalid_attributes)}"}
+  def set_attributes(%EmulatorStruct{} = emulator, attributes) do
+    Enum.reduce(attributes, emulator, fn {key, value}, acc ->
+      case key do
+        :foreground -> set_foreground(acc, value)
+        :background -> set_background(acc, value)
+        :intensity -> set_intensity(acc, value)
+        :decoration -> set_decoration(acc, value)
+        :blink -> set_blink(acc, value)
+        _ -> acc
+      end
+    end)
   end
 
   @impl true
@@ -63,7 +65,7 @@ defmodule Raxol.Terminal.Emulator.Style do
   """
   @spec reset_attributes(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()}
   def reset_attributes(%EmulatorStruct{} = emulator) do
-    updated_style = TextFormatting.reset(emulator.style)
+    updated_style = TextFormatting.reset_attributes(emulator.style)
     {:ok, %{emulator | style: updated_style}}
   end
 
@@ -102,7 +104,7 @@ defmodule Raxol.Terminal.Emulator.Style do
   """
   @spec set_decoration(EmulatorStruct.t(), atom()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def set_decoration(%EmulatorStruct{} = emulator, decoration) do
+  def set_decoration(%EmulatorStruct{} = emulator, decoration) when decoration in [:none, :underline, :double_underline, :overline, :strikethrough] do
     updated_style = TextFormatting.apply_attribute(emulator.style, decoration)
     {:ok, %{emulator | style: updated_style}}
   end
@@ -119,8 +121,13 @@ defmodule Raxol.Terminal.Emulator.Style do
     {:ok, %{emulator | style: updated_style}}
   end
 
-  def set_blink(%EmulatorStruct{} = emulator, _blink) do
-    updated_style = TextFormatting.apply_attribute(emulator.style, :blink)
+  def set_blink(%EmulatorStruct{} = emulator, :slow) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :slow_blink)
+    {:ok, %{emulator | style: updated_style}}
+  end
+
+  def set_blink(%EmulatorStruct{} = emulator, :rapid) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :rapid_blink)
     {:ok, %{emulator | style: updated_style}}
   end
 

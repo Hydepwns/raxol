@@ -10,78 +10,52 @@ defmodule Raxol.Terminal.Emulator.Output do
   alias Raxol.Terminal.Parser
 
   @doc """
-  Processes output data.
-  Returns {:ok, updated_emulator, commands} or {:error, reason}.
+  Processes output data and updates the emulator state.
   """
-  @spec process_output(EmulatorStruct.t(), String.t()) ::
-          {:ok, EmulatorStruct.t(), list()} | {:error, String.t()}
-  def process_output(%EmulatorStruct{} = emulator, data) when is_binary(data) do
-    # Add data to output buffer
+  def process_output(%EmulatorStruct{} = emulator, data) do
     updated_emulator = %{
-      emulator
-      | output_buffer: emulator.output_buffer <> data
+      emulator |
+      output_buffer: <<emulator.output_buffer::binary, data::binary>>
     }
-
-    # Process the output buffer
-    case process_buffer(updated_emulator) do
-      {:ok, final_emulator, commands} ->
-        {:ok, final_emulator, commands}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  def process_output(%EmulatorStruct{} = _emulator, invalid_data) do
-    {:error, "Invalid output data: #{inspect(invalid_data)}"}
+    {:ok, updated_emulator}
   end
 
   @doc """
-  Gets the current output buffer.
-  Returns the current output buffer.
+  Gets the current output buffer content.
   """
-  @spec get_output_buffer(EmulatorStruct.t()) :: String.t()
   def get_output_buffer(%EmulatorStruct{} = emulator) do
     emulator.output_buffer
   end
 
   @doc """
   Clears the output buffer.
-  Returns {:ok, updated_emulator}.
   """
-  @spec clear_output_buffer(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()}
   def clear_output_buffer(%EmulatorStruct{} = emulator) do
     {:ok, %{emulator | output_buffer: ""}}
   end
 
   @doc """
-  Flushes the output buffer.
-  Returns {:ok, updated_emulator, commands} or {:error, reason}.
-  """
-  @spec flush_output_buffer(EmulatorStruct.t()) ::
-          {:ok, EmulatorStruct.t(), list()} | {:error, String.t()}
-  def flush_output_buffer(%EmulatorStruct{} = emulator) do
-    case process_buffer(emulator) do
-      {:ok, updated_emulator, commands} ->
-        # Clear the buffer after processing
-        {:ok, %{updated_emulator | output_buffer: ""}, commands}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  @doc """
   Writes data to the output buffer.
-  Returns {:ok, updated_emulator}.
   """
-  @spec write(EmulatorStruct.t(), String.t()) :: {:ok, EmulatorStruct.t()}
-  def write(%EmulatorStruct{} = emulator, data) when is_binary(data) do
+  def write(%EmulatorStruct{} = emulator, data) do
     {:ok, %{emulator | output_buffer: emulator.output_buffer <> data}}
   end
 
-  def write(%EmulatorStruct{} = _emulator, invalid_data) do
-    {:error, "Invalid write data: #{inspect(invalid_data)}"}
+  @doc """
+  Processes the output buffer and updates the emulator state.
+  """
+  def process_buffer(%EmulatorStruct{} = emulator) do
+    case Parser.parse(emulator.parser_state, emulator.output_buffer) do
+      {:ok, new_state, commands} ->
+        updated_emulator = %{
+          emulator |
+          parser_state: new_state,
+          output_buffer: ""
+        }
+        {:ok, updated_emulator, commands}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -122,18 +96,5 @@ defmodule Raxol.Terminal.Emulator.Output do
 
   def write_escape(%EmulatorStruct{} = _emulator, invalid_sequence) do
     {:error, "Invalid escape sequence: #{inspect(invalid_sequence)}"}
-  end
-
-  # Private helper functions
-
-  defp process_buffer(%EmulatorStruct{} = emulator) do
-    # Process the output buffer using the parser
-    case Parser.parse(emulator.parser_state, emulator.output_buffer) do
-      {:ok, updated_state, commands} ->
-        {:ok, %{emulator | parser_state: updated_state}, commands}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
   end
 end

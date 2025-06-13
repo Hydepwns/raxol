@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   @doc """
   Detects terminal dimensions using a multi-layered approach:
   1. Uses `:io.columns` and `:io.rows` (preferred)
-  2. Falls back to rrex_termbox v2.0.1 NIF if `:io` methods fail
+  2. Falls back to termbox2 NIF if `:io` methods fail
   3. Falls back to `stty size` system command if needed
   4. Finally uses hardcoded default dimensions if all else fails
 
@@ -21,7 +21,6 @@ defmodule Raxol.Terminal.TerminalUtils do
     default_width = 80
     default_height = 24
 
-    # Try to detect dimensions (multiple methods with fallbacks)
     {width, height} =
       with {:error, _} <- detect_with_io(:io),
            {:error, _} <-
@@ -91,7 +90,6 @@ defmodule Raxol.Terminal.TerminalUtils do
   @spec cursor_position ::
           {:ok, {pos_integer(), pos_integer()}} | {:error, term()}
   def cursor_position do
-    # This is a stub implementation - real implementation might use ANSI escape sequences
     {:error, :not_implemented}
   end
 

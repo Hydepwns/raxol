@@ -210,57 +210,50 @@ defmodule Raxol.Terminal.Driver do
   # --- Private Helpers ---
 
   defp get_terminal_size do
-    if Mix.env() == :test do
-      {:ok, 80, 24}
-    else
-      if real_tty?() do
-        Raxol.Core.Runtime.Log.debug(
-          "[TerminalDriver] TTY detected, calling Termbox2Nif.tb_width/tb_height..."
-        )
-
+    cond do
+      Mix.env() == :test ->
+        {:ok, 80, 24}
+      not real_tty?() ->
+        stty_size_fallback()
+      true ->
         width = Termbox2Nif.tb_width()
         height = Termbox2Nif.tb_height()
-
-        if is_integer(width) and is_integer(height) and width > 0 and height > 0 do
-          {:ok, width, height}
-        else
-          stty_size_fallback()
-        end
-      else
-        stty_size_fallback()
-      end
+        if valid_dimensions?(width, height), do: {:ok, width, height}, else: stty_size_fallback()
     end
+  end
+
+  defp valid_dimensions?(width, height) do
+    is_integer(width) and is_integer(height) and width > 0 and height > 0
   end
 
   defp stty_size_fallback do
     try do
       {output, 0} = System.cmd("stty", ["size"])
-      output = String.trim(output)
-
-      case String.split(output) do
-        [rows, cols] ->
-          {:ok, String.to_integer(cols), String.to_integer(rows)}
-
-        _ ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Unexpected output from 'stty size': #{inspect(output)}",
-            %{}
-          )
-
-          {:error, :invalid_format}
-      end
+      parse_stty_output(String.trim(output))
     catch
       type, reason ->
-        Raxol.Core.Runtime.Log.error(
-          "Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}"
-        )
-
-        Raxol.Core.Runtime.Log.error(
-          Exception.format_stacktrace(__STACKTRACE__)
-        )
-
+        log_stty_error(type, reason)
         {:error, reason}
     end
+  end
+
+  defp parse_stty_output(output) do
+    case String.split(output) do
+      [rows, cols] -> {:ok, String.to_integer(cols), String.to_integer(rows)}
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unexpected output from 'stty size': #{inspect(output)}",
+          %{}
+        )
+        {:error, :invalid_format}
+    end
+  end
+
+  defp log_stty_error(type, reason) do
+    Raxol.Core.Runtime.Log.error(
+      "Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}"
+    )
+    Raxol.Core.Runtime.Log.error(Exception.format_stacktrace(__STACKTRACE__))
   end
 
   defp send_initial_resize_event(dispatcher_pid) do
