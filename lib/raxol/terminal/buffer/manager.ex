@@ -1,524 +1,361 @@
 defmodule Raxol.Terminal.Buffer.Manager do
   @moduledoc """
-  Manages terminal buffers and their operations.
-  Coordinates between different buffer-related modules.
+  Manages terminal buffer operations and state.
   """
-
-  alias Raxol.Terminal.{
-    ScreenBuffer,
-    Buffer.Manager.State,
-    Buffer.Manager.Buffer,
-    Buffer.Manager.Cursor,
-    Buffer.Manager.Damage,
-    Buffer.Manager.Memory,
-    Buffer.Manager.Scrollback
-  }
-
-  @type t :: State.t()
 
   use GenServer
   require Raxol.Core.Runtime.Log
 
+  alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour}
+  alias Raxol.Terminal.Buffer.{Operations, DamageTracker, ScrollbackManager}
+  alias Raxol.Terminal.{MemoryManager, ScreenBuffer}
+  alias Raxol.Terminal.Integration.Renderer
+
+  @behaviour Behaviour
+
+  defstruct [
+    :buffer,
+    :damage_tracker,
+    :memory_manager,
+    :metrics,
+    :renderer,
+    :scrollback_manager,
+    :cursor_position
+  ]
+
+  @type t :: %__MODULE__{
+    buffer: BufferImpl.t(),
+    damage_tracker: term(),
+    memory_manager: term(),
+    metrics: term(),
+    renderer: term(),
+    scrollback_manager: term(),
+    cursor_position: {non_neg_integer(), non_neg_integer()} | nil
+  }
+
   # Client API
 
-  @doc """
-  Creates a new buffer manager with the specified dimensions.
-
-  ## Examples
-
-      iex> {:ok, manager} = Manager.new(80, 24)
-      iex> manager.active_buffer.width
-      80
-      iex> manager.active_buffer.height
-      24
-  """
-  def new(width, height, scrollback_limit \\ 1000, memory_limit \\ 10_000_000) do
-    State.new(width, height, scrollback_limit, memory_limit)
-  end
-
-  @doc """
-  Initializes main and alternate screen buffers with the specified dimensions.
-
-  ## Examples
-
-      iex> {main_buffer, alt_buffer} = Manager.initialize_buffers(80, 24, 1000)
-      iex> main_buffer.width
-      80
-      iex> alt_buffer.height
-      24
-  """
-  def initialize_buffers(width, height, scrollback_limit) do
-    main_buffer = ScreenBuffer.new(width, height, scrollback_limit)
-    alt_buffer = ScreenBuffer.new(width, height, scrollback_limit)
-    {main_buffer, alt_buffer}
-  end
-
-  @doc """
-  Starts a new buffer manager process.
-
-  ## Options
-
-    * `:width` - The width of the buffer (default: 80)
-    * `:height` - The height of the buffer (default: 24)
-    * `:scrollback_height` - The maximum number of scrollback lines (default: 1000)
-    * `:memory_limit` - The maximum memory usage in bytes (default: 10_000_000)
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link(width: 100, height: 30)
-      iex> Process.alive?(pid)
-      true
-  """
-  @impl GenServer
   def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
-    GenServer.start_link(__MODULE__, opts)
+    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
   end
 
-  @doc """
-  Gets the current state of the buffer manager.
-  """
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
-    new_state = Map.new(state)
-    {:reply, new_state, state}
-  end
-
-  @doc """
-  Sets a cell in the active buffer.
-  """
-  @impl GenServer
-  def handle_call({:set_cell, x, y, cell}, _from, state) do
-    state = Buffer.set_cell(state, x, y, cell)
-    state = Damage.mark_region(state, x, y, 1, 1)
-    {:reply, :ok, state}
-  end
-
-  @doc """
-  Gets a cell from the active buffer.
-  """
-  @impl GenServer
-  def handle_call({:get_cell, x, y}, _from, state) do
-    cell = Buffer.get_cell(state, x, y)
-    {:reply, cell, state}
-  end
-
-  @doc """
-  Sets the cursor position.
-  """
-  @impl GenServer
-  def handle_call({:set_cursor, x, y}, _from, state) do
-    state = Cursor.move_to(state, x, y)
-    {:reply, :ok, state}
-  end
-
-  @doc """
-  Gets the current cursor position.
-  """
-  @impl GenServer
-  def handle_call(:get_cursor, _from, state) do
-    position = Cursor.get_position(state)
-    {:reply, position, state}
-  end
-
-  @doc """
-  Gets the damaged regions in the buffer.
-  """
-  @impl GenServer
-  def handle_call(:get_damage, _from, state) do
-    regions = Damage.get_regions(state)
-    {:reply, regions, state}
-  end
-
-  @doc """
-  Clears the damage tracking for the buffer.
-  Works with both state struct and PID versions.
-  """
-  @impl GenServer
-  def handle_call(:clear_damage, _from, state) do
-    state = Damage.clear_regions(state)
-    {:reply, :ok, state}
-  end
-
-  @doc """
-  Gets the current memory usage.
-  """
-  @impl GenServer
-  def handle_call(:get_memory_usage, _from, state) do
-    usage = Memory.get_usage(state)
-    {:reply, usage, state}
-  end
-
-  @doc """
-  Gets the number of lines in the scrollback buffer.
-  """
-  @impl GenServer
-  def handle_call(:get_scrollback_count, _from, state) do
-    count = Scrollback.get_line_count(state)
-    {:reply, count, state}
-  end
-
-  @doc """
-  Resizes the buffer.
-  """
-  @impl GenServer
-  def handle_call({:resize, width, height}, _from, state) do
-    state = Buffer.resize(state, width, height)
-    state = Damage.mark_all(state)
-    {:reply, :ok, state}
-  end
-
-  @doc """
-  Fills a region in the active buffer with a cell.
-  Delegated from Raxol.Terminal.Buffer.
-  Coordinates (x1, y1) and (x2, y2) define the top-left and bottom-right of the region.
-  """
-  @impl GenServer
-  def handle_call({:fill_region, x1, y1, x2, y2, cell}, _from, state) do
-    # x2, y2 are inclusive end coordinates.
-    # Raxol.Terminal.Buffer.Manager.Buffer.fill_region expects x, y, width, height
-    width = x2 - x1 + 1
-    height = y2 - y1 + 1
-
-    if width <= 0 or height <= 0 do
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "[BufferManager] fill_region called with non-positive width/height.",
-        %{x1: x1, y1: y1, x2: x2, y2: y2, width: width, height: height}
-      )
-
-      {:reply, {:error, :invalid_region}, state}
-    else
-      new_state =
-        Raxol.Terminal.Buffer.Manager.Buffer.fill_region(
-          state,
-          x1,
-          y1,
-          width,
-          height,
-          cell
-        )
-
-      # Mark damage using the original x1,y1,x2,y2
-      new_state_damaged =
-        Raxol.Terminal.Buffer.Manager.Damage.mark_region(
-          new_state,
-          x1,
-          y1,
-          x2,
-          y2
-        )
-
-      {:reply, :ok, new_state_damaged}
-    end
-  end
-
-  @doc """
-  Copies a region from (x1, y1)-(x2, y2) to (dest_x, dest_y) in the active buffer.
-  Delegated from Raxol.Terminal.Buffer.
-  """
-  @impl GenServer
-  def handle_call({:copy_region, x1, y1, x2, y2, dest_x, dest_y}, _from, state) do
-    width = x2 - x1 + 1
-    height = y2 - y1 + 1
-
-    if width <= 0 or height <= 0 do
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "[BufferManager] copy_region called with non-positive width/height for source.",
-        %{x1: x1, y1: y1, x2: x2, y2: y2, width: width, height: height}
-      )
-
-      {:reply, {:error, :invalid_source_region}, state}
-    else
-      # Assuming Raxol.Terminal.Buffer.Manager.Buffer.copy_region(state, src_x, src_y, dst_x, dst_y, width, height)
-      new_state =
-        Raxol.Terminal.Buffer.Manager.Buffer.copy_region(
-          state,
-          x1,
-          y1,
-          dest_x,
-          dest_y,
-          width,
-          height
-        )
-
-      # Mark damage at destination
-      new_state_damaged =
-        Raxol.Terminal.Buffer.Manager.Damage.mark_region(
-          new_state,
-          dest_x,
-          dest_y,
-          dest_x + width - 1,
-          dest_y + height - 1
-        )
-
-      {:reply, :ok, new_state_damaged}
-    end
-  end
-
-  @doc """
-  Scrolls a region (x1, y1)-(x2, y2) by a given amount in the active buffer.
-  Delegated from Raxol.Terminal.Buffer.
-  """
-  @impl GenServer
-  def handle_call({:scroll_region, x1, y1, x2, y2, amount}, _from, state) do
-    width = x2 - x1 + 1
-    height = y2 - y1 + 1
-
-    if width <= 0 or height <= 0 do
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "[BufferManager] scroll_region called with non-positive width/height.",
-        %{x1: x1, y1: y1, x2: x2, y2: y2, width: width, height: height}
-      )
-
-      {:reply, {:error, :invalid_region}, state}
-    else
-      # Assuming Raxol.Terminal.Buffer.Manager.Buffer.scroll_region(state, x, y, width, height, lines)
-      new_state =
-        Raxol.Terminal.Buffer.Manager.Buffer.scroll_region(
-          state,
-          x1,
-          y1,
-          width,
-          height,
-          amount
-        )
-
-      # Mark scrolled region as damaged
-      new_state_damaged =
-        Raxol.Terminal.Buffer.Manager.Damage.mark_region(
-          new_state,
-          x1,
-          y1,
-          x2,
-          y2
-        )
-
-      {:reply, :ok, new_state_damaged}
-    end
-  end
-
-  @doc """
-  Clears the active buffer.
-  Delegated from Raxol.Terminal.Buffer.
-  """
-  @impl GenServer
-  def handle_call(:clear, _from, state) do
-    # Use Raxol.Terminal.Buffer.Manager.Buffer.clear/1 to clear the active buffer
-    new_state = Raxol.Terminal.Buffer.Manager.Buffer.clear(state)
-    {:reply, :ok, new_state}
-  end
-
-  @doc """
-  Returns the default tab stop positions for a given width.
-
-  ## Examples
-
-      iex> Manager.default_tab_stops(8)
-      [0, 8, 16, 24, 32, 40, 48, 56]
-  """
-  def default_tab_stops(width) when is_integer(width) and width > 0 do
-    # Standard tab stops every 8 columns, up to the given width
-    Enum.take_every(0..(width - 1), 8) |> Enum.to_list()
-  end
-
-  @doc """
-  Marks a region of the buffer as damaged (needs redraw).
-  """
-  @impl GenServer
-  def handle_call({:mark_damaged, x, y, width, height}, _from, state) do
-    # Mark the region from (x, y) to (x + width - 1, y + height - 1)
-    state = Damage.mark_region(state, x, y, x + width - 1, y + height - 1)
-    {:reply, :ok, state}
-  end
-
-  @doc """
-  Updates the memory usage tracking for the buffer.
-  Works with both state struct and PID versions.
-  """
-  @impl GenServer
-  def handle_call({:update_memory_usage, state}, _from) do
-    updated_state = update_memory_usage(state)
-    {:reply, updated_state, state}
-  end
-
-  @impl GenServer
-  def handle_call({:update_memory_usage, pid}, _from) when is_pid(pid) do
-    updated_state = get_state(pid) |> update_memory_usage()
-    {:reply, updated_state, updated_state}
-  end
-
-  @doc """
-  Sets the cursor position in the buffer manager.
-  """
-  @impl GenServer
-  def handle_call({:set_cursor_position, x, y}, _from, state) do
-    new_state = %{state | cursor: %{state.cursor | x: x, y: y}}
-    {:reply, :ok, new_state}
-  end
-
-  @doc """
-  Checks if the buffer needs to scroll (stub implementation).
-  Returns the state unchanged for now.
-  """
-  @impl GenServer
-  def handle_call({:maybe_scroll, state}, _from) do
-    state
-  end
-
-  @doc """
-  Returns all damaged regions in the buffer manager state.
-  """
-  @impl GenServer
-  def handle_call(:get_damage_regions, _from, state) do
-    regions = Damage.get_regions(state)
-    {:reply, regions, state}
-  end
-
-  @doc """
-  Returns true if the buffer manager's memory usage is within limits.
-  """
-  @impl GenServer
-  def handle_call({:within_memory_limits?, state}, _from) do
-    within_memory_limits?(state)
-  end
-
-  @doc """
-  Gets the active buffer (either main or scrollback).
-  """
-  @impl GenServer
-  def handle_call(:get_active_buffer, _from, state) do
-    case state.active_buffer do
-      :main -> state.active_buffer
-      :scrollback -> state.scrollback
-    end
-  end
-
-  @doc """
-  Updates the active buffer with new content.
-  """
-  @impl GenServer
-  def handle_call({:update_active_buffer, new_content}, _from, state) do
-    case state.active_buffer do
-      :main -> %{state | active_buffer: new_content}
-      :scrollback -> %{state | scrollback: new_content}
-    end
-  end
-
-  @doc """
-  Gets the cursor position from the manager state.
-  """
-  @impl GenServer
-  def handle_call(:get_cursor_position, _from, state) do
-    state.cursor_position
-  end
-
-  @doc """
-  Gets the visible content of the buffer.
-  """
-  @impl GenServer
-  def handle_call(:get_visible_content, _from, %{active_buffer: buffer, scrollback: scrollback} = _state) do
-    # Get scrollback lines (if any)
-    scrollback_lines =
-      case scrollback do
-        %{lines: lines} when is_list(lines) -> lines
-        _ -> []
-      end
-
-    # Get visible buffer lines as strings
-    buffer_lines =
-      buffer.cells
-      |> Enum.map(fn row ->
-        row
-        |> Enum.map_join("", &Raxol.Terminal.Cell.get_char/1)
-        |> String.trim_trailing()
-      end)
-
-    scrollback_lines ++ buffer_lines
-  end
-
-  @doc """
-  Creates a copy of the current buffer state.
-  Returns a new buffer with the same content and dimensions.
-  """
-  @impl GenServer
-  def handle_call(:copy, _from, state) do
-    new_state = Map.new(state)
-    {:reply, new_state, state}
-  end
-
-  @doc """
-  Gets the differences between two buffers.
-  Returns a list of {x, y, cell} tuples where the cells differ.
-  """
-  @impl GenServer
-  def handle_call({:get_differences, other_pid}, _from, state) do
-    other_state = get_state(other_pid)
-    differences = calculate_differences(state, other_state)
-    {:reply, differences, state}
-  end
-
-  defp calculate_differences(state, other_state) do
-    # Compare each field and return a map of differences
-    Map.keys(state)
-    |> Enum.reduce(%{}, fn key, acc ->
-      if Map.get(state, key) != Map.get(other_state, key) do
-        Map.put(acc, key, {Map.get(state, key), Map.get(other_state, key)})
-      else
-        acc
-      end
-    end)
-  end
-
-  # Server Callbacks
-
-  @impl GenServer
+  @impl true
   def init(opts) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
-    scrollback_limit = Keyword.get(opts, :scrollback_height, 1000)
-    memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
+    {:ok, memory_manager} = MemoryManager.start_link()
 
-    state = new(width, height, scrollback_limit, memory_limit)
+    state = %__MODULE__{
+      buffer: Operations.new(opts),
+      memory_manager: memory_manager,
+      damage_tracker: DamageTracker.new(),
+      scrollback_manager: ScrollbackManager.new(),
+      renderer: Renderer.new(ScreenBuffer.new(80, 24)),
+      metrics: %{
+        writes: 0,
+        reads: 0,
+        scrolls: 0,
+        memory_usage: 0
+      }
+    }
+
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_info(:tick, state) do
-    # Handle periodic updates
-    {:noreply, state}
+  @impl true
+  def initialize_buffers(width, height, opts \\ []) do
+    GenServer.call(__MODULE__, {:initialize_buffers, width, height, opts})
   end
 
-  @impl GenServer
-  def terminate(reason, _state) do
-    Raxol.Core.Runtime.Log.info(
-      "[#{__MODULE__}] Terminating (Reason: #{inspect(reason)})",
-      %{module: __MODULE__, reason: reason}
-    )
-
-    :ok
+  @impl true
+  def write(data, opts \\ []) do
+    GenServer.call(__MODULE__, {:write, data, opts})
   end
 
-  defp within_memory_limits?(state) do
-    # Check if the current memory usage is within the defined limits
-    current_usage = state.memory_usage
-    max_usage = state.memory_limit
-    current_usage <= max_usage
+  @impl true
+  def read(opts \\ []) do
+    GenServer.call(__MODULE__, {:read, opts})
   end
 
-  defp update_memory_usage(state) do
-    # Update the memory usage based on the current state
-    new_usage = calculate_memory_usage(state)
-    %{state | memory_usage: new_usage}
+  @impl true
+  def resize(size, opts \\ []) do
+    GenServer.call(__MODULE__, {:resize, size, opts})
   end
 
-  defp get_state(pid) do
-    # Retrieve the current state from the process
-    :sys.get_state(pid)
+  @impl true
+  def scroll(lines) do
+    GenServer.call(__MODULE__, {:scroll, lines})
   end
 
-  defp calculate_memory_usage(state) do
-    # Calculate the memory usage based on the buffer content
-    # This is a placeholder implementation
-    state.buffer_size * 8
+  @impl true
+  def set_cell(x, y, cell) do
+    GenServer.call(__MODULE__, {:set_cell, x, y, cell})
+  end
+
+  @impl true
+  def get_cell(x, y) do
+    GenServer.call(__MODULE__, {:get_cell, x, y})
+  end
+
+  def get_line(y) do
+    GenServer.call(__MODULE__, {:get_line, y})
+  end
+
+  def set_line(y, line) do
+    GenServer.call(__MODULE__, {:set_line, y, line})
+  end
+
+  def clear do
+    GenServer.call(__MODULE__, :clear)
+  end
+
+  def get_size do
+    GenServer.call(__MODULE__, :get_size)
+  end
+
+  def get_cursor do
+    GenServer.call(__MODULE__, :get_cursor)
+  end
+
+  def set_cursor(cursor) do
+    GenServer.call(__MODULE__, {:set_cursor, cursor})
+  end
+
+  def get_attributes do
+    GenServer.call(__MODULE__, :get_attributes)
+  end
+
+  def set_attributes(attributes) do
+    GenServer.call(__MODULE__, {:set_attributes, attributes})
+  end
+
+  def get_mode do
+    GenServer.call(__MODULE__, :get_mode)
+  end
+
+  def set_mode(mode) do
+    GenServer.call(__MODULE__, {:set_mode, mode})
+  end
+
+  def get_title do
+    GenServer.call(__MODULE__, :get_title)
+  end
+
+  def set_title(title) do
+    GenServer.call(__MODULE__, {:set_title, title})
+  end
+
+  def get_icon_name do
+    GenServer.call(__MODULE__, :get_icon_name)
+  end
+
+  def set_icon_name(icon_name) do
+    GenServer.call(__MODULE__, {:set_icon_name, icon_name})
+  end
+
+  def get_icon_title do
+    GenServer.call(__MODULE__, :get_icon_title)
+  end
+
+  @impl true
+  def get_memory_usage do
+    GenServer.call(__MODULE__, :get_memory_usage)
+  end
+
+  @impl true
+  def get_scrollback_count do
+    GenServer.call(__MODULE__, :get_scrollback_count)
+  end
+
+  @impl true
+  def get_metrics do
+    GenServer.call(__MODULE__, :get_metrics)
+  end
+
+  def get_active_buffer(%__MODULE__{} = state) do
+    {:ok, state.buffer}
+  end
+
+  def default_tab_stops(%__MODULE__{}) do
+    {:ok, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]}
+  end
+
+  def set_cursor(%__MODULE__{} = manager, {x, y}) when is_integer(x) and is_integer(y) do
+    %{manager | cursor_position: {x, y}}
+  end
+
+  @impl true
+  def clear_damage do
+    GenServer.call(__MODULE__, :clear_damage)
+  end
+
+  # Server callbacks
+
+  @impl true
+  def handle_call({:initialize_buffers, width, height, _opts}, _from, state) do
+    new_buffer = BufferImpl.new(width, height)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, new_state, new_state}
+  end
+
+  @impl true
+  def handle_call({:write, data, opts}, _from, state) do
+    new_buffer = Operations.write(state.buffer, data, opts)
+    new_state = update_metrics(%{state | buffer: new_buffer}, :writes)
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:read, opts}, _from, state) do
+    {data, new_buffer} = Operations.read(state.buffer, opts)
+    new_state = update_metrics(%{state | buffer: new_buffer}, :reads)
+    {:reply, data, new_state}
+  end
+
+  @impl true
+  def handle_call({:resize, size, opts}, _from, state) do
+    new_buffer = Operations.resize(state.buffer, size, opts)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:scroll, lines}, _from, state) do
+    new_buffer = Operations.scroll(state.buffer, lines)
+    new_state = update_metrics(%{state | buffer: new_buffer}, :scrolls)
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:set_cell, x, y, cell}, _from, state) do
+    new_buffer = BufferImpl.set_cell(state.buffer, x, y, cell)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:get_cell, x, y}, _from, state) do
+    cell = BufferImpl.get_cell(state.buffer, x, y)
+    {:reply, cell, state}
+  end
+
+  @impl true
+  def handle_call({:get_line, y}, _from, state) do
+    line = BufferImpl.get_line(state.buffer, y)
+    {:reply, line, state}
+  end
+
+  @impl true
+  def handle_call({:set_line, y, line}, _from, state) do
+    new_buffer = BufferImpl.set_line(state.buffer, y, line)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:clear, _from, state) do
+    new_buffer = BufferImpl.clear(state.buffer)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_size, _from, state) do
+    size = BufferImpl.get_size(state.buffer)
+    {:reply, size, state}
+  end
+
+  @impl true
+  def handle_call(:get_cursor, _from, state) do
+    cursor = BufferImpl.get_cursor(state.buffer)
+    {:reply, cursor, state}
+  end
+
+  @impl true
+  def handle_call({:set_cursor, cursor}, _from, state) do
+    new_buffer = BufferImpl.set_cursor(state.buffer, cursor)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_attributes, _from, state) do
+    attributes = BufferImpl.get_attributes(state.buffer)
+    {:reply, attributes, state}
+  end
+
+  @impl true
+  def handle_call({:set_attributes, attributes}, _from, state) do
+    new_buffer = BufferImpl.set_attributes(state.buffer, attributes)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_mode, _from, state) do
+    mode = BufferImpl.get_mode(state.buffer)
+    {:reply, mode, state}
+  end
+
+  @impl true
+  def handle_call({:set_mode, mode}, _from, state) do
+    new_buffer = BufferImpl.set_mode(state.buffer, mode)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_title, _from, state) do
+    title = BufferImpl.get_title(state.buffer)
+    {:reply, title, state}
+  end
+
+  @impl true
+  def handle_call({:set_title, title}, _from, state) do
+    new_buffer = BufferImpl.set_title(state.buffer, title)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_icon_name, _from, state) do
+    icon_name = BufferImpl.get_icon_name(state.buffer)
+    {:reply, icon_name, state}
+  end
+
+  @impl true
+  def handle_call({:set_icon_name, icon_name}, _from, state) do
+    new_buffer = BufferImpl.set_icon_name(state.buffer, icon_name)
+    new_state = %{state | buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:clear_damage, _from, state) do
+    new_damage_tracker = DamageTracker.clear_regions(state.damage_tracker)
+    new_state = %{state | damage_tracker: new_damage_tracker}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_memory_usage, _from, state) do
+    usage = MemoryManager.get_memory_usage(state.memory_manager)
+    {:reply, usage, state}
+  end
+
+  @impl true
+  def handle_call(:get_scrollback_count, _from, state) do
+    count = ScrollbackManager.get_scrollback_count(state.scrollback_manager)
+    {:reply, count, state}
+  end
+
+  @impl true
+  def handle_call(:get_metrics, _from, state) do
+    {:reply, state.metrics, state}
+  end
+
+  # Private functions
+
+  defp update_metrics(state, metric) do
+    metrics = Map.update!(state.metrics, metric, &(&1 + 1))
+    %{state | metrics: metrics}
   end
 end

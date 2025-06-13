@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Buffer.LineEditor do
   @moduledoc """
-  Handles insertion and deletion of lines within the Raxol.Terminal.ScreenBuffer.
+  Provides functionality for line editing operations in the terminal buffer.
   """
 
   alias Raxol.Terminal.ScreenBuffer

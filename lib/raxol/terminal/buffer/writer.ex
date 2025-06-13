@@ -26,44 +26,39 @@ defmodule Raxol.Terminal.Buffer.Writer do
     if y < buffer.height and x < buffer.width do
       codepoint = hd(String.to_charlist(char))
       width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
-
-      cell_style =
-        case style do
-          nil ->
-            TextFormatting.new()
-
-          s when is_map(s) ->
-            Map.merge(TextFormatting.new(), s)
-
-          _ ->
-            TextFormatting.new()
-        end
-
-      # Debug output for style
-      require Raxol.Core.Runtime.Log
-
-      Raxol.Core.Runtime.Log.debug(
-        "[Buffer.Writer] Writing char '#{char}' at {#{x}, #{y}} with style: #{inspect(cell_style)}"
-      )
-
-      cells =
-        List.update_at(buffer.cells, y, fn row ->
-          new_cell = Cell.new(char, cell_style)
-
-          if width == 2 and x + 1 < buffer.width do
-            row
-            |> List.update_at(x, fn _ -> new_cell end)
-            |> List.update_at(x + 1, fn _ ->
-              Cell.new_wide_placeholder(cell_style)
-            end)
-          else
-            List.update_at(row, x, fn _ -> new_cell end)
-          end
-        end)
-
+      cell_style = create_cell_style(style)
+      log_char_write(char, x, y, cell_style)
+      cells = update_cells(buffer, x, y, char, cell_style, width)
       %{buffer | cells: cells}
     else
       buffer
+    end
+  end
+
+  defp create_cell_style(nil), do: TextFormatting.new()
+  defp create_cell_style(style) when is_map(style), do: Map.merge(TextFormatting.new(), style)
+  defp create_cell_style(_), do: TextFormatting.new()
+
+  defp log_char_write(char, x, y, cell_style) do
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.debug(
+      "[Buffer.Writer] Writing char '#{char}' at {#{x}, #{y}} with style: #{inspect(cell_style)}"
+    )
+  end
+
+  defp update_cells(buffer, x, y, char, cell_style, width) do
+    List.update_at(buffer.cells, y, &update_row(&1, x, char, cell_style, width, buffer.width))
+  end
+
+  defp update_row(row, x, char, cell_style, width, buffer_width) do
+    new_cell = Cell.new(char, cell_style)
+
+    if width == 2 and x + 1 < buffer_width do
+      row
+      |> List.update_at(x, fn _ -> new_cell end)
+      |> List.update_at(x + 1, fn _ -> Cell.new_wide_placeholder(cell_style) end)
+    else
+      List.update_at(row, x, fn _ -> new_cell end)
     end
   end
 
@@ -84,16 +79,12 @@ defmodule Raxol.Terminal.Buffer.Writer do
 
     Enum.reduce(segments, {buffer, x}, fn {_type, segment},
                                           {acc_buffer, acc_x} ->
-      # Call the public write_segment function within this module
       {new_buffer, new_x} = write_segment(acc_buffer, acc_x, y, segment)
       {new_buffer, new_x}
     end)
     |> elem(0)
   end
 
-  # Private helper, now public within this module scope
-  @doc false
-  # Silence potential spurious no_return warning
   @dialyzer {:nowarn_function, write_segment: 4}
   @spec write_segment(
           ScreenBuffer.t(),
@@ -103,18 +94,10 @@ defmodule Raxol.Terminal.Buffer.Writer do
         ) ::
           {ScreenBuffer.t(), non_neg_integer()}
   def write_segment(buffer, x, y, segment) do
-    Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,
-                                                           {acc_buffer, acc_x} ->
-      # Convert char binary to integer codepoint before calling get_char_width
+    Enum.reduce(String.graphemes(segment), {buffer, x}, fn char, {acc_buffer, acc_x} ->
       codepoint = hd(String.to_charlist(char))
       width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
-
-      if acc_x + width <= acc_buffer.width do
-        # Call write_char from this module
-        {write_char(acc_buffer, acc_x, y, char), acc_x + width}
-      else
-        {acc_buffer, acc_x}
-      end
+      {write_char(acc_buffer, acc_x, y, char), acc_x + width}
     end)
   end
 end

@@ -1,24 +1,34 @@
 defmodule Raxol.Terminal.Buffer.Scroller do
+  alias Raxol.Terminal.ScreenBuffer
   @moduledoc """
   Handles scrolling operations (up and down) within the Raxol.Terminal.ScreenBuffer,
   considering scroll regions.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
-  import Raxol.Terminal.Buffer.Operations, only: [replace_region_content: 4]
+  import Raxol.Terminal.Buffer.ScrollRegion, only: [replace_region_content: 4]
+
+  defstruct [:cells, :width, :height]
+
+  @type t :: %__MODULE__{
+    cells: list(list(Raxol.Terminal.Buffer.Cell.t())),
+    width: non_neg_integer(),
+    height: non_neg_integer()
+  }
+
+  @type scroll_region :: {non_neg_integer(), non_neg_integer()}
 
   @doc """
   Scrolls the buffer up by the specified number of lines, optionally within a specified scroll region.
   Handles cell manipulation.
   Returns `{updated_buffer, scrolled_off_lines}`.
   """
-  @spec scroll_up(
+  @spec scroll_up_scroller(
           ScreenBuffer.t(),
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: {ScreenBuffer.t(), list(list(Cell.t()))}
-  def scroll_up(%ScreenBuffer{} = buffer, lines, scroll_region_arg \\ nil)
+  def scroll_up_scroller(%ScreenBuffer{} = buffer, lines, scroll_region_arg \\ nil)
       when lines > 0 do
     # Determine effective scroll region boundaries
     {scroll_start, scroll_end} =
@@ -200,5 +210,37 @@ defmodule Raxol.Terminal.Buffer.Scroller do
         %{buffer | cells: updated_cells}
       end
     end
+  end
+
+  @doc """
+  Scrolls the buffer up by the specified number of lines within the scroll region.
+  """
+  @spec scroll_up(t(), non_neg_integer(), scroll_region()) :: {t(), list(list(Cell.t()))}
+  def scroll_up(buffer, lines, scroll_region) do
+    {top, bottom} = scroll_region
+    scroll_amount = min(lines, bottom - top + 1)
+
+    # Get the lines to be scrolled
+    lines_to_scroll = Enum.slice(buffer.cells, top, bottom - top + 1)
+
+    # Create empty lines for the bottom
+    empty_lines = Enum.map(1..scroll_amount, fn _ ->
+      Enum.map(1..buffer.width, fn _ -> Cell.new() end)
+    end)
+
+    # Create new lines for the top
+    new_lines = Enum.map(1..scroll_amount, fn _ ->
+      Enum.map(1..buffer.width, fn _ -> Cell.new() end)
+    end)
+
+    # Update the buffer cells
+    new_cells = buffer.cells
+      |> List.replace_slice(top, top + scroll_amount - 1, new_lines)
+      |> List.replace_slice(bottom - scroll_amount + 1, bottom, empty_lines)
+
+    # Update the buffer
+    new_buffer = %{buffer | cells: new_cells}
+
+    {new_buffer, lines_to_scroll}
   end
 end

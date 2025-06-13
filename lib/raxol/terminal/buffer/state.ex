@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Buffer.State do
   """
   @spec resize(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
-  def resize(%{__struct__: _} = buffer, new_width, new_height)
+  def resize(%ScreenBuffer{} = buffer, new_width, new_height)
       when is_integer(new_width) and new_width > 0 and is_integer(new_height) and
              new_height > 0 do
     old_width = buffer.width
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Buffer.State do
     copy_width = min(old_width, new_width)
 
     # Create a new empty grid of the correct size, initialize with non-dirty cells
-    default_padding_cell = Cell.new(" ", TextFormatting.new(), false)
+    default_padding_cell = Cell.new(" ", TextFormatting.new())
 
     new_grid =
       List.duplicate(
@@ -75,7 +75,7 @@ defmodule Raxol.Terminal.Buffer.State do
     buffer.width
   end
 
-  def get_width(buffer) when is_tuple(buffer) do
+  def get_width(_buffer) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -88,7 +88,7 @@ defmodule Raxol.Terminal.Buffer.State do
     buffer.height
   end
 
-  def get_height(buffer) when is_tuple(buffer) do
+  def get_height(_buffer) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Buffer.State do
     Enum.at(buffer.cells, line_index)
   end
 
-  def get_line(buffer, _line_index) when is_tuple(buffer) do
+  def get_line(_buffer, _line_index) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -127,7 +127,7 @@ defmodule Raxol.Terminal.Buffer.State do
     buffer.cells |> Enum.at(y) |> Enum.at(x)
   end
 
-  def get_cell(buffer, _x, _y) when is_tuple(buffer) do
+  def get_cell(_buffer, _x, _y) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -140,7 +140,7 @@ defmodule Raxol.Terminal.Buffer.State do
           Cell.t() | nil
   def get_cell_at(%{__struct__: _} = buffer, x, y), do: get_cell(buffer, x, y)
 
-  def get_cell_at(buffer, _x, _y) when is_tuple(buffer) do
+  def get_cell_at(_buffer, _x, _y) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.Buffer.State do
     %{buffer | scroll_region: {start_line, end_line}}
   end
 
-  def set_scroll_region(buffer, _start_line, _end_line) when is_tuple(buffer) do
+  def set_scroll_region(_buffer, _start_line, _end_line) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -171,7 +171,7 @@ defmodule Raxol.Terminal.Buffer.State do
     %{buffer | scroll_region: nil}
   end
 
-  def clear_scroll_region(buffer) when is_tuple(buffer) do
+  def clear_scroll_region(_buffer) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.Buffer.State do
     end
   end
 
-  def get_scroll_region_boundaries(buffer) when is_tuple(buffer) do
+  def get_scroll_region_boundaries(_buffer) when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
