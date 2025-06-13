@@ -11,7 +11,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
   """
 
   use GenServer
-  alias Raxol.Core.Metrics.{Config, UnifiedCollector}
+  alias Raxol.Core.Metrics.UnifiedCollector
 
   @type aggregation_type :: :sum | :mean | :median | :min | :max | :percentile
   @type time_window :: :minute | :hour | :day | :week | :month
@@ -65,6 +65,17 @@ defmodule Raxol.Core.Metrics.Aggregator do
   def get_rules do
     GenServer.call(__MODULE__, :get_rules)
   end
+
+  @doc """
+  Calculates an aggregation of values using the specified method.
+  """
+  @spec calculate_aggregation(list(number()), atom()) :: number()
+  def calculate_aggregation(values, :mean) do
+    Enum.sum(values) / length(values)
+  end
+  def calculate_aggregation(values, :sum), do: Enum.sum(values)
+  def calculate_aggregation(values, :min), do: Enum.min(values)
+  def calculate_aggregation(values, :max), do: Enum.max(values)
 
   @impl GenServer
   def init(opts) do
@@ -165,19 +176,6 @@ defmodule Raxol.Core.Metrics.Aggregator do
       |> Enum.map(&Map.get(metric.tags, &1))
       |> Enum.join(":")
     end)
-  end
-
-  defp calculate_aggregation(metrics, type) do
-    values = Enum.map(metrics, & &1.value)
-
-    case type do
-      :sum -> Enum.sum(values)
-      :mean -> Enum.sum(values) / length(values)
-      :median -> calculate_median(values)
-      :min -> Enum.min(values)
-      :max -> Enum.max(values)
-      :percentile -> calculate_percentile(values, 95)
-    end
   end
 
   defp calculate_median(values) do

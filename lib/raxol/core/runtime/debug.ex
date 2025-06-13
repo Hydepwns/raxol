@@ -1,9 +1,14 @@
 defmodule Raxol.Core.Runtime.Debug do
   @moduledoc """
-  Simple logging wrapper for the runtime.
+  Debug logging functionality for the Raxol runtime.
   """
 
-  @behaviour Raxol.Core.Runtime.Debug
+  @callback debug(message :: String.t()) :: :ok
+  @callback info(message :: String.t()) :: :ok
+  @callback warn(message :: String.t()) :: :ok
+  @callback error(message :: String.t()) :: :ok
+
+  @behaviour __MODULE__
 
   require Raxol.Core.Runtime.Log
 

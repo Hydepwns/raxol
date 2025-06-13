@@ -9,8 +9,6 @@ defmodule Raxol.Core.Renderer.Element do
   * Optional children forming a tree structure
   """
 
-  @behaviour Raxol.Core.Renderer.Element
-
   @type t :: %__MODULE__{
           tag: atom(),
           attributes: [{atom(), term()}],
@@ -27,7 +25,6 @@ defmodule Raxol.Core.Renderer.Element do
             content: nil,
             style: %{}
 
-  @impl true
   @doc """
   Creates a new element with the given tag and attributes.
   """
@@ -50,7 +47,6 @@ defmodule Raxol.Core.Renderer.Element do
     }
   end
 
-  @impl true
   @doc """
   Updates an element's attributes while preserving its structure.
   """
@@ -58,7 +54,6 @@ defmodule Raxol.Core.Renderer.Element do
     %{element | attributes: attrs}
   end
 
-  @impl true
   @doc """
   Adds children to an existing element.
   """
@@ -66,7 +61,6 @@ defmodule Raxol.Core.Renderer.Element do
     %{element | children: element.children ++ children}
   end
 
-  @impl true
   @doc """
   Validates that an element tree follows the component rules.
   """

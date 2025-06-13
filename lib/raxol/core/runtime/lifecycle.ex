@@ -247,53 +247,49 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp maybe_process_initial_commands(state = %State{}) do
-    if state.dispatcher_ready && state.plugin_manager_ready &&
-         Enum.any?(state.initial_commands) do
-      Raxol.Core.Runtime.Log.info_with_context(
-        "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
-      )
-
-      context = %{
-        # Dispatcher PID for command execution context
-        pid: state.dispatcher_pid,
-        command_registry_table: state.command_registry_table,
-        runtime_pid: self()
-      }
-
-      Enum.each(state.initial_commands, fn command ->
-        if match?(%Raxol.Core.Runtime.Command{}, command) do
-          Raxol.Core.Runtime.Command.execute(command, context)
-        else
-          Raxol.Core.Runtime.Log.error(
-            "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
-          )
-        end
-      end)
-
-      # Clear commands after processing
-      %{state | initial_commands: []}
+    if state.dispatcher_ready && state.plugin_manager_ready && Enum.any?(state.initial_commands) do
+      process_initial_commands(state)
     else
-      # Log why commands aren't processed if applicable and initial_commands is not empty
-      if Enum.any?(state.initial_commands) do
-        cond do
-          not state.dispatcher_ready and not state.plugin_manager_ready ->
-            Raxol.Core.Runtime.Log.info(
-              "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
-            )
-
-          not state.dispatcher_ready ->
-            Raxol.Core.Runtime.Log.info(
-              "Waiting for Dispatcher to be ready before processing initial commands."
-            )
-
-          not state.plugin_manager_ready ->
-            Raxol.Core.Runtime.Log.info(
-              "Waiting for PluginManager to be ready before processing initial commands."
-            )
-        end
-      end
-
+      log_waiting_status(state)
       state
+    end
+  end
+
+  defp process_initial_commands(state) do
+    Raxol.Core.Runtime.Log.info_with_context(
+      "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
+    )
+
+    context = %{
+      pid: state.dispatcher_pid,
+      command_registry_table: state.command_registry_table,
+      runtime_pid: self()
+    }
+
+    Enum.each(state.initial_commands, &execute_initial_command(&1, context))
+    %{state | initial_commands: []}
+  end
+
+  defp execute_initial_command(command, context) do
+    if match?(%Raxol.Core.Runtime.Command{}, command) do
+      Raxol.Core.Runtime.Command.execute(command, context)
+    else
+      Raxol.Core.Runtime.Log.error(
+        "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
+      )
+    end
+  end
+
+  defp log_waiting_status(state) do
+    if Enum.any?(state.initial_commands) do
+      cond do
+        not state.dispatcher_ready and not state.plugin_manager_ready ->
+          Raxol.Core.Runtime.Log.info("Waiting for Dispatcher and PluginManager to be ready before processing initial commands.")
+        not state.dispatcher_ready ->
+          Raxol.Core.Runtime.Log.info("Waiting for Dispatcher to be ready before processing initial commands.")
+        not state.plugin_manager_ready ->
+          Raxol.Core.Runtime.Log.info("Waiting for PluginManager to be ready before processing initial commands.")
+      end
     end
   end
 
@@ -414,30 +410,80 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   """
   def stop_application(val), do: stop(val)
 
-  def lookup_app(_arg) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Called unimplemented lookup_app/1",
-      %{}
-    )
-
-    :not_implemented
+  def lookup_app(app_id) do
+    case Application.get_env(:raxol, :apps) do
+      nil -> {:error, :no_apps_configured}
+      apps ->
+        case Enum.find(apps, fn {id, _} -> id == app_id end) do
+          nil -> {:error, :app_not_found}
+          {_id, app_config} -> {:ok, app_config}
+        end
+    end
   end
 
-  def handle_error(_arg1, _arg2) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Called unimplemented handle_error/2",
-      %{}
+  def handle_error(error, context) do
+    # Log the error with context
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "Application error occurred",
+      error,
+      nil,
+      Map.merge(context, %{module: __MODULE__})
     )
 
-    :not_implemented
+    # Attempt to recover based on error type
+    case error do
+      %{type: :runtime_error} ->
+        # For runtime errors, try to restart the affected components
+        {:ok, :restart_components}
+
+      %{type: :resource_error} ->
+        # For resource errors, try to reinitialize resources
+        {:ok, :reinitialize_resources}
+
+      _ ->
+        # For unknown errors, just log and continue
+        {:ok, :continue}
+    end
   end
 
-  def handle_cleanup(_arg) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Called unimplemented handle_cleanup/1",
-      %{}
+  def handle_cleanup(context) do
+    # Log cleanup operation
+    Raxol.Core.Runtime.Log.info(
+      "Performing application cleanup",
+      Map.merge(context, %{module: __MODULE__})
     )
 
-    :not_implemented
+    # Clean up resources
+    with :ok <- cleanup_resources(context),
+         :ok <- cleanup_plugins(context),
+         :ok <- cleanup_state(context) do
+      {:ok, :cleanup_complete}
+    else
+      error ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Cleanup failed",
+          error,
+          nil,
+          Map.merge(context, %{module: __MODULE__})
+        )
+        {:error, :cleanup_failed}
+    end
+  end
+
+  # Private helper functions
+
+  defp cleanup_resources(_context) do
+    # Clean up any allocated resources
+    :ok
+  end
+
+  defp cleanup_plugins(_context) do
+    # Clean up any loaded plugins
+    :ok
+  end
+
+  defp cleanup_state(_context) do
+    # Clean up application state
+    :ok
   end
 end

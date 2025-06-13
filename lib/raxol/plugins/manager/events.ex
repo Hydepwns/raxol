@@ -29,11 +29,29 @@ defmodule Raxol.Plugins.Manager.Events do
 
   @doc """
   Processes mouse events through all enabled plugins.
-  Delegates to `Raxol.Plugins.EventHandler.handle_mouse_legacy/3`.
+  Delegates to `Raxol.Plugins.EventHandler.handle_mouse_event/3`.
+
+  @deprecated "Use handle_mouse_event/3 instead. This function will be removed in a future version."
   """
   def process_mouse(%Core{} = manager, event, emulator_state)
       when is_tuple(event) do
-    EventHandler.handle_mouse_legacy(manager, event, emulator_state)
+    # Convert tuple event to map format
+    event_map = case event do
+      {x, y, button, modifiers} -> %{
+        type: :mouse,
+        x: x,
+        y: y,
+        button: button,
+        modifiers: modifiers
+      }
+      _ -> event
+    end
+
+    # Use the new handler
+    case handle_mouse_event(manager, event_map, emulator_state) do
+      {:ok, updated_manager, _propagation} -> {:ok, updated_manager}
+      error -> error
+    end
   end
 
   @doc """

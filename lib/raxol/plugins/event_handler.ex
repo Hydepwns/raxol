@@ -44,17 +44,29 @@ defmodule Raxol.Plugins.EventHandler do
   @doc """
   Dispatches a 'mouse' event (older format) to all enabled plugins implementing `handle_mouse/3`.
   This corresponds to the previous plugin manager's process_mouse/3 function.
+
+  @deprecated "Use handle_mouse_event/3 instead. The new function provides better event propagation control and cell context."
   """
   @spec handle_mouse_legacy(Core.t(), tuple(), map()) ::
           {:ok, Core.t()} | {:error, any()}
   def handle_mouse_legacy(%Core{} = manager, event, emulator_state) do
-    dispatch_event(
-      manager,
-      :handle_mouse,
-      [event, emulator_state],
-      {:ok, manager},
-      &handle_simple_update/4
-    )
+    # Convert legacy tuple event to map format
+    event_map = case event do
+      {x, y, button, modifiers} -> %{
+        type: :mouse,
+        x: x,
+        y: y,
+        button: button,
+        modifiers: modifiers
+      }
+      _ -> event
+    end
+
+    # Delegate to the new handler
+    case handle_mouse_event(manager, event_map, emulator_state) do
+      {:ok, updated_manager, _propagation} -> {:ok, updated_manager}
+      error -> error
+    end
   end
 
   @doc """

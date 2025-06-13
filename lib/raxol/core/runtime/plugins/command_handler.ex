@@ -11,10 +11,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
   alias Raxol.Core.Runtime.Plugins.CommandHelper
   require Raxol.Core.Runtime.Log
 
+  @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
+
   @doc """
   Handles a command request by delegating to the appropriate plugin.
   Returns an updated state and any necessary side effects.
   """
+  @impl true
   def handle_command(command_atom, namespace, data, dispatcher_pid, state) do
     command_name_str = Atom.to_string(command_atom)
 
@@ -94,6 +97,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
   Processes a command by delegating to the appropriate handler.
   Returns an updated state and any necessary side effects.
   """
+  @impl true
   def process_command(command, state) do
     case command do
       {command_atom, namespace, data} ->
@@ -116,5 +120,28 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
   def handle_clipboard_result(pid, content) do
     send(pid, {:command_result, {:clipboard_content, content}})
     :ok
+  end
+
+  @impl true
+  def handle_command_result(command_atom, result, dispatcher_pid, state) do
+    send(dispatcher_pid, {:command_result, {command_atom, result}})
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_command_error(command_atom, error, dispatcher_pid, state) do
+    send(dispatcher_pid, {:command_result, {command_atom, {:error, error}}})
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_command_timeout(command_atom, dispatcher_pid, state) do
+    send(dispatcher_pid, {:command_result, {command_atom, {:error, :timeout}}})
+    {:ok, state}
+  end
+
+  @impl true
+  def update_command_state(state, new_state) do
+    Map.merge(state, new_state)
   end
 end

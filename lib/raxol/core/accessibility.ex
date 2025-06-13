@@ -839,4 +839,24 @@ defmodule Raxol.Core.Accessibility do
       false
     )
   end
+
+  @doc """
+  Get the current list of announcements.
+
+  ## Returns
+
+  * List of announcements in chronological order (oldest first)
+
+  ## Examples
+
+      iex> Accessibility.announce("Hello")
+      :ok
+      iex> Accessibility.announce("World")
+      :ok
+      iex> Accessibility.get_announcements()
+      ["Hello", "World"]
+  """
+  def get_announcements do
+    Process.get(:accessibility_announcements, [])
+  end
 end

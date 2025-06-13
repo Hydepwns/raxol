@@ -744,4 +744,46 @@ defmodule Raxol.Core.Renderer.View do
       children: Keyword.get(opts, :children, [])
     }
   end
+
+  @doc """
+  Calculates flex layout dimensions based on the given constraints.
+  Returns a map with calculated width and height.
+  """
+  @spec flex(map()) :: %{width: integer(), height: integer()}
+  def flex(constraints) do
+    %{
+      width: calculate_flex_width(constraints),
+      height: calculate_flex_height(constraints)
+    }
+  end
+
+  # Private helper functions
+
+  defp calculate_flex_width(constraints) do
+    case constraints do
+      %{width: :auto, flex: flex} when flex > 0 ->
+        # Calculate width based on flex grow
+        trunc(constraints.available_width * (flex / constraints.total_flex))
+      %{width: width} when is_integer(width) ->
+        # Fixed width
+        width
+      _ ->
+        # Default to available width
+        constraints.available_width
+    end
+  end
+
+  defp calculate_flex_height(constraints) do
+    case constraints do
+      %{height: :auto, flex: flex} when flex > 0 ->
+        # Calculate height based on flex grow
+        trunc(constraints.available_height * (flex / constraints.total_flex))
+      %{height: height} when is_integer(height) ->
+        # Fixed height
+        height
+      _ ->
+        # Default to available height
+        constraints.available_height
+    end
+  end
 end
