@@ -60,4 +60,49 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
         {:continue, emulator, parser_state, rest_after_ignored}
     end
   end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_byte(_byte, emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_escape(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_control_sequence(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_osc_string(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_dcs_string(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_apc_string(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_pm_string(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_sos_string(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_unknown(emulator, state) do
+    {:ok, emulator, state}
+  end
 end

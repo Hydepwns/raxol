@@ -5,199 +5,159 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
+  require Raxol.Core.Runtime.Log
 
   @behaviour Raxol.Terminal.Parser.StateBehaviour
 
   @impl Raxol.Terminal.Parser.StateBehaviour
 
   @doc """
-  Handles input when the parser is in the Escape state.
-  ESC C: RIS (Reset to Initial State)
-  ESC D: IND (Index)
-  ESC E: NEL (Next Line)
-  ESC H: HTS (Horizontal Tabulation Set)
-  ESC M: RI (Reverse Index)
-  ESC N: SS2 (Single Shift Two)
-  ESC O: SS3 (Single Shift Three)
-  ESC P: DCS (Device Control String)
-  ESC Z: DECID (Return Terminal ID)
-  ESC [: CSI (Control Sequence Introducer)
-  ESC ]: OSC (Operating System Command)
-  ESC ^: PM (Privacy Message)
-  ESC _: APC (Application Program Command)
-  ESC (: Designate G0 Character Set
-  ESC ): Designate G1 Character Set
-  ESC *: Designate G2 Character Set
-  ESC +: Designate G3 Character Set
+  Processes input when the parser is in the :escape state.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
-          | {:finished, Emulator.t(), State.t()}
-          | {:incomplete, Emulator.t(), State.t()}
+          | {:handled, Emulator.t()}
   def handle(emulator, %State{state: :escape} = parser_state, input) do
     case input do
-      # Incomplete sequence
-      <<>> ->
-        {:incomplete, emulator, parser_state}
+      # Handle CAN/SUB bytes first (abort sequence)
+      <<ignored_byte, rest_after_ignored::binary>>
+      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
+        Raxol.Core.Runtime.Log.debug(
+          "Ignoring CAN/SUB byte during Escape state"
+        )
 
-      # CSI (Control Sequence Introducer)
-      # Moves to CSI_ENTRY state
-      <<91, rest_after_csi::binary>> ->
-        # Clear buffers for the new sequence
-        next_parser_state = %{
-          parser_state
-          | state: :csi_entry,
-            params_buffer: "",
-            intermediates_buffer: ""
-        }
+        # Abort sequence, go to ground
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, emulator, next_parser_state, rest_after_ignored}
 
+      # Handle CSI sequence
+      <<"[", rest_after_csi::binary>> ->
+        next_parser_state = %{parser_state | state: :csi_entry}
         {:continue, emulator, next_parser_state, rest_after_csi}
 
-      # OSC (Operating System Command)
-      # Moves to OSC_STRING state
-      <<93, rest_after_osc::binary>> ->
-        next_parser_state = %{
-          parser_state
-          | state: :osc_string,
-            payload_buffer: ""
-        }
-
-        {:continue, emulator, next_parser_state, rest_after_osc}
-
-      # DCS (Device Control String)
-      # Moves to DCS_INTRO state
-      <<80, rest_after_dcs::binary>> ->
-        next_parser_state = %{
-          parser_state
-          | state: :dcs_intro,
-            params_buffer: "",
-            intermediates_buffer: "",
-            payload_buffer: ""
-        }
-
+      # Handle DCS sequence
+      <<"P", rest_after_dcs::binary>> ->
+        next_parser_state = %{parser_state | state: :dcs_entry}
         {:continue, emulator, next_parser_state, rest_after_dcs}
 
-      # Character set designation G0-G3
-      <<?(, char, rest::binary>> ->
-        updated_emulator = Emulator.designate_charset(emulator, :g0, char)
+      # Handle OSC sequence
+      <<"]", rest_after_osc::binary>> ->
+        next_parser_state = %{parser_state | state: :osc_string}
+        {:continue, emulator, next_parser_state, rest_after_osc}
+
+      # Handle PM sequence
+      <<"^", rest_after_pm::binary>> ->
         next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
+        {:continue, emulator, next_parser_state, rest_after_pm}
 
-      <<?), char, rest::binary>> ->
-        updated_emulator = Emulator.designate_charset(emulator, :g1, char)
+      # Handle APC sequence
+      <<"_", rest_after_apc::binary>> ->
         next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
+        {:continue, emulator, next_parser_state, rest_after_apc}
 
-      <<?*, char, rest::binary>> ->
-        updated_emulator = Emulator.designate_charset(emulator, :g2, char)
+      # Handle SS3 sequence
+      <<"O", rest_after_ss3::binary>> ->
         next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
+        {:continue, emulator, next_parser_state, rest_after_ss3}
 
-      <<?+, char, rest::binary>> ->
-        updated_emulator = Emulator.designate_charset(emulator, :g3, char)
+      # Handle unhandled escape sequence bytes
+      <<unhandled_byte, rest_after_unhandled::binary>> ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unhandled escape sequence byte: #{inspect(unhandled_byte)}",
+          %{}
+        )
+
+        # Go to ground state
         next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
+        {:continue, emulator, next_parser_state, rest_after_unhandled}
 
-      # Other escape sequences
-      # RIS - Reset to Initial State
-      <<?c, rest::binary>> ->
-        updated_emulator = Emulator.reset_to_initial_state(emulator)
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
+      # Handle incomplete sequence
+      <<>> ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Incomplete escape sequence",
+          %{}
+        )
 
-      # IND - Index
-      <<?D, rest::binary>> ->
-        updated_emulator = Emulator.index(emulator)
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
-
-      # NEL - Next Line
-      <<?E, rest::binary>> ->
-        updated_emulator = Emulator.next_line(emulator)
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
-
-      # HTS - Horizontal Tabulation Set
-      <<?H, rest::binary>> ->
-        updated_emulator = Emulator.set_horizontal_tab(emulator)
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
-
-      # RI - Reverse Index
-      <<?M, rest::binary>> ->
-        updated_emulator = Emulator.reverse_index(emulator)
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
-
-      # SS2 - Single Shift Two
-      <<?N, rest::binary>> ->
-        # TODO: Implement SS2 logic if needed
-        # This might involve setting a temporary charset for the next char
-        next_parser_state = %{parser_state | state: :ground, single_shift: :g2}
-        {:continue, emulator, next_parser_state, rest}
-
-      # SS3 - Single Shift Three
-      <<?O, rest::binary>> ->
-        # TODO: Implement SS3 logic if needed
-        next_parser_state = %{parser_state | state: :ground, single_shift: :g3}
-        {:continue, emulator, next_parser_state, rest}
-
-      # DECID - Return Terminal ID (DEC private)
-      <<?Z, rest::binary>> ->
-        # Example: Sending back primary device attributes "\e[?6c"
-        # A common response for VT102
-        output = "\e[?6c"
-        updated_emulator = Emulator.enqueue_output(emulator, output)
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, updated_emulator, next_parser_state, rest}
-
-      # PM - Privacy Message, APC - Application Program Command
-      # Typically, these just transition to ground state after consuming their respective introducers
-      # The actual content of PM, APC might be handled by dedicated states if complex, or ignored.
-      # PM (Privacy Message) - Often ignored or handled simply
-      <<?^, _rest::binary>> ->
-        # For now, transition to ground. A real PM parser would go to a PM_STRING state.
-        next_parser_state = %{parser_state | state: :ground}
-        # TODO: decide if we consume one char or go to a dedicated state
-        # For now, consume the first char of rest for simplicity if it's part of PM content.
-        # Or, if PM is like OSC/DCS, it would have a delimiter or a fixed length.
-        # Let's assume it's just an indicator and we go back to ground.
-        # The actual rest of the PM string would be parsed in ground state if not specially handled.
-        {:continue, emulator, next_parser_state, input}
-
-      # APC (Application Program Command) - Similar to PM
-      <<?_, _rest::binary>> ->
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, input}
-
-      # Unhandled escape sequence character - Execute C0/C1 and transition to ground
-      # This is a fallback for any byte following ESC that isn't part of a recognized sequence.
-      # The VT500 manual, for example, says that an ESC followed by a C0 or C1 control character
-      # (other than CAN, SUB, ESC which are special) has no effect and the C0/C1 character is ignored.
-      # For other characters, it's often an error or undefined behavior.
-      # A robust approach might be to execute the character if it's a C0/C1 control,
-      # or simply transition to ground state, effectively ignoring the ESC.
-      <<char_val, rest::binary>> ->
-        # Check if char_val is a C0 or C1 control character (excluding ESC, CAN, SUB)
-        # This is a simplification. A full implementation would check ranges.
-        if char_val in [0..31, 128..159] and char_val not in [24, 26, 27] do
-          # Execute the control character (this might involve calling a handler)
-          # For now, let's assume most are handled by Emulator.execute_control_character or similar
-          # or simply ignored if not directly actionable.
-          # Transitioning to ground state is a safe default.
-          updated_emulator =
-            Raxol.Terminal.ControlCodes.handle_c0(emulator, char_val)
-
-          next_parser_state = %{parser_state | state: :ground}
-          {:continue, updated_emulator, next_parser_state, rest}
-        else
-          # If not a recognized control or part of another sequence, treat as an error or ignore.
-          # Transition to ground state is a common recovery mechanism.
-          # Optionally log an error or unexpected sequence.
-          # For now, just go to ground state.
-          next_parser_state = %{parser_state | state: :ground}
-          {:continue, emulator, next_parser_state, rest}
-        end
+        # Stay in escape state
+        {:incomplete, emulator, parser_state}
     end
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_byte(byte, emulator, state) do
+    case byte do
+      # CAN/SUB bytes
+      0x18..0x1A ->
+        {:ok, emulator, %{state | state: :ground}}
+      # CSI sequence
+      ?[ ->
+        {:ok, emulator, %{state | state: :csi_entry}}
+      # DCS sequence
+      ?P ->
+        {:ok, emulator, %{state | state: :dcs_entry}}
+      # OSC sequence
+      ?] ->
+        {:ok, emulator, %{state | state: :osc_string}}
+      # PM sequence
+      ?^ ->
+        {:ok, emulator, %{state | state: :ground}}
+      # APC sequence
+      ?_ ->
+        {:ok, emulator, %{state | state: :ground}}
+      # SS3 sequence
+      ?O ->
+        {:ok, emulator, %{state | state: :ground}}
+      # Other bytes
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unhandled escape sequence byte: #{inspect(byte)}",
+          %{}
+        )
+        {:ok, emulator, %{state | state: :ground}}
+    end
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_escape(emulator, state) do
+    {:ok, emulator, state}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_control_sequence(emulator, state) do
+    {:ok, emulator, %{state | state: :control_sequence}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_osc_string(emulator, state) do
+    {:ok, emulator, %{state | state: :osc_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_dcs_string(emulator, state) do
+    {:ok, emulator, %{state | state: :dcs_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_apc_string(emulator, state) do
+    {:ok, emulator, %{state | state: :apc_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_pm_string(emulator, state) do
+    {:ok, emulator, %{state | state: :pm_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_sos_string(emulator, state) do
+    {:ok, emulator, %{state | state: :sos_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_unknown(emulator, state) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "EscapeState received unknown command",
+      %{emulator: emulator, state: state}
+    )
+    {:ok, emulator, %{state | state: :ground}}
   end
 end

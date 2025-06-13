@@ -75,34 +75,15 @@ defmodule Raxol.Terminal.Scroll.Manager do
       * `:sync` - Whether to sync across splits (default: true)
   """
   @spec scroll(t(), :up | :down, non_neg_integer(), keyword()) :: {:ok, t()} | {:error, term()}
-  def scroll(manager, direction, lines, opts \\ []) do
-    predict = Keyword.get(opts, :predict, true)
-    optimize = Keyword.get(opts, :optimize, true)
-    sync = Keyword.get(opts, :sync, true)
+  def scroll(manager, direction, amount, opts \\ []) do
+    case get_cached_scroll(manager, direction, amount) do
+      {:hit, cached_result} ->
+        _manager = update_metrics(manager, :cache_hit)
+        cached_result
 
-    # Try to get from cache first
-    cache_key = {direction, lines}
-    case System.get(cache_key, namespace: :scroll) do
-      {:ok, cached_result} ->
-        manager = update_metrics(manager, :cache_hit)
-        {:ok, cached_result}
-
-      {:error, _} ->
-        with {:ok, predictor} <- maybe_predict(manager.predictor, direction, lines, predict),
-             {:ok, optimizer} <- maybe_optimize(manager.optimizer, direction, lines, optimize),
-             {:ok, sync} <- maybe_sync(manager.sync, direction, lines, sync) do
-          manager = %{manager |
-            predictor: predictor,
-            optimizer: optimizer,
-            sync: sync,
-            metrics: update_metrics(manager.metrics, :scrolls)
-          }
-
-          # Cache the result
-          System.put(cache_key, manager, namespace: :scroll)
-          manager = update_metrics(manager, :cache_miss)
-          {:ok, manager}
-        end
+      {:miss, _} ->
+        _manager = update_metrics(manager, :cache_miss)
+        perform_scroll(manager, direction, amount, opts)
     end
   end
 
@@ -115,7 +96,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
       * `:limit` - Maximum number of entries to return (default: all)
   """
   @spec get_history(t(), keyword()) :: [map()]
-  def get_history(manager, opts \\ []) do
+  def get_history(_manager, opts \\ []) do
     limit = Keyword.get(opts, :limit)
     case System.get(:history, namespace: :scroll) do
       {:ok, history} ->
@@ -158,34 +139,24 @@ defmodule Raxol.Terminal.Scroll.Manager do
 
   # Private helper functions
 
-  defp maybe_predict(predictor, direction, lines, true) when not is_nil(predictor) do
-    {:ok, Predictor.predict(predictor, direction, lines)}
+  defp get_cached_scroll(manager, direction, amount) do
+    cache_key = {direction, amount}
+    case :sys.get_state(manager.cache, cache_key) do
+      {:ok, result} -> {:hit, result}
+      :error -> {:miss, nil}
+    end
   end
-  defp maybe_predict(predictor, _direction, _lines, _predict), do: {:ok, predictor}
 
-  defp maybe_optimize(optimizer, direction, lines, true) when not is_nil(optimizer) do
-    {:ok, Optimizer.optimize(optimizer, direction, lines)}
+  defp perform_scroll(manager, _direction, _amount, _opts) do
+    # TODO: Implementation
+    {:ok, manager}
   end
-  defp maybe_optimize(optimizer, _direction, _lines, _optimize), do: {:ok, optimizer}
-
-  defp maybe_sync(sync, direction, lines, true) when not is_nil(sync) do
-    {:ok, Sync.sync(sync, direction, lines)}
-  end
-  defp maybe_sync(sync, _direction, _lines, _sync), do: {:ok, sync}
 
   defp update_metrics(manager, :cache_hit) do
-    update_in(manager.metrics.cache_hits, &(&1 + 1))
+    %{manager | metrics: %{manager.metrics | cache_hits: manager.metrics.cache_hits + 1}}
   end
 
   defp update_metrics(manager, :cache_miss) do
-    update_in(manager.metrics.cache_misses, &(&1 + 1))
-  end
-
-  defp update_metrics(manager, :prediction) do
-    update_in(manager.metrics.predictions, &(&1 + 1))
-  end
-
-  defp update_metrics(manager, :scroll_op) do
-    update_in(manager.metrics.scroll_ops, &(&1 + 1))
+    %{manager | metrics: %{manager.metrics | cache_misses: manager.metrics.cache_misses + 1}}
   end
 end

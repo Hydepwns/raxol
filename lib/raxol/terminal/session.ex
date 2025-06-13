@@ -17,10 +17,9 @@ defmodule Raxol.Terminal.Session do
   # alias Raxol.Core.Runtime.EventLoop # Unused
   # alias Raxol.Core.I18n # Unused
   # alias Raxol.Terminal.{Cell, ScreenBuffer, Input, Emulator, Renderer} # Simplify aliases
-  alias Raxol.Terminal.{Emulator, Renderer, ScreenBuffer}
-  alias Raxol.Terminal.Session.{Serializer, Storage}
+  alias Raxol.Terminal.{Renderer, ScreenBuffer}
+  alias Raxol.Terminal.Session.Storage
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  alias Raxol.Terminal.Input
 
   @type t :: %__MODULE__{
           id: String.t(),
@@ -245,64 +244,14 @@ defmodule Raxol.Terminal.Session do
     new_state =
       try do
         case EmulatorStruct.process_input(state.emulator, input) do
-          {new_emulator, _output}
-          when is_struct(new_emulator, EmulatorStruct) ->
-            # Access the screen buffer directly without pattern matching that can't succeed
-            screen_buffer =
-              try do
-                # Use a fallback approach instead of pattern matching
-                buffer =
-                  cond do
-                    # Check for main buffer active
-                    new_emulator.active_buffer_type == :main &&
-                        is_struct(new_emulator.main_screen_buffer, ScreenBuffer) ->
-                      new_emulator.main_screen_buffer
-
-                    # Check for alternate buffer active
-                    new_emulator.active_buffer_type == :alternate &&
-                        is_struct(
-                          new_emulator.alternate_screen_buffer,
-                          ScreenBuffer
-                        ) ->
-                      new_emulator.alternate_screen_buffer
-
-                    # Default fallback
-                    true ->
-                      state.renderer.screen_buffer
-                  end
-
-                # Extra safety check
-                if is_struct(buffer, ScreenBuffer) do
-                  buffer
-                else
-                  state.renderer.screen_buffer
-                end
-              rescue
-                _ -> state.renderer.screen_buffer
-              end
-
-            # Update renderer with new screen buffer
-            new_renderer = %{state.renderer | screen_buffer: screen_buffer}
-            %{state | emulator: new_emulator, renderer: new_renderer}
-
-          # Broader pattern matching for error cases
-          error_result ->
-            Raxol.Core.Runtime.Log.error(
-              "Unexpected result from Emulator.process_input: #{inspect(error_result)}"
-            )
-
+          {new_emulator, _output} when is_struct(new_emulator, EmulatorStruct) ->
+            %{state | emulator: new_emulator}
+          _ ->
             state
         end
       rescue
-        e ->
-          Raxol.Core.Runtime.Log.error("Error in process_input: #{inspect(e)}")
-          state
+        _ -> state
       end
-
-    # Auto-save if enabled
-    if state.auto_save do
-      Task.start(fn -> Storage.save_session(new_state) end)
-    end
 
     {:noreply, new_state}
   end
@@ -315,25 +264,13 @@ defmodule Raxol.Terminal.Session do
   @impl true
   def handle_call({:update_config, config}, _from, state) do
     new_state = update_state_from_config(state, config)
-    # Handle potential errors from the Registry
-    try do
-      Raxol.Terminal.Registry.register(state.id, new_state)
-    rescue
-      e ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to register updated session state: #{inspect(e)}"
-        )
-    end
-
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_call(:save_session, _from, state) do
-    case Storage.save_session(state) do
-      :ok -> {:reply, :ok, state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
+    result = Storage.save_session(state)
+    {:reply, result, state}
   end
 
   @impl true
@@ -356,47 +293,12 @@ defmodule Raxol.Terminal.Session do
   # Private functions
 
   defp update_state_from_config(state, config) do
-    width =
-      if is_map(config),
-        do: Map.get(config, :width, state.width),
-        else: if(is_tuple(config), do: elem(config, 0), else: state.width)
-
-    height =
-      if is_map(config),
-        do: Map.get(config, :height, state.height),
-        else: if(is_tuple(config), do: elem(config, 1), else: state.height)
-
-    title = Map.get(config, :title, state.title)
-    theme = Map.get(config, :theme, state.theme)
-
-    # Create emulator with explicit dimensions
-    scrollback_limit =
-      Application.get_env(:raxol, :terminal, [])
-      |> Keyword.get(:scrollback_lines, 1000)
-
-    emulator = EmulatorStruct.new(width, height, scrollback: scrollback_limit)
-
-    # Access the screen buffer directly without pattern matching that can't succeed
-    # Default to main buffer - no need to pattern match since we know new emulators default to :main
-    screen_buffer =
-      try do
-        # Access main buffer directly since we know new emulators default to main buffer
-        emulator.main_screen_buffer
-      rescue
-        _ -> ScreenBuffer.new(width, height)
-      end
-
-    # Create renderer with screen buffer
-    renderer = Renderer.new(screen_buffer, theme)
-
-    %{
-      state
-      | emulator: emulator,
-        renderer: renderer,
-        width: width,
-        height: height,
-        title: title,
-        theme: theme
+    %{state |
+      width: Map.get(config, :width, state.width),
+      height: Map.get(config, :height, state.height),
+      title: Map.get(config, :title, state.title),
+      theme: Map.get(config, :theme, state.theme),
+      auto_save: Map.get(config, :auto_save, state.auto_save)
     }
   end
 end

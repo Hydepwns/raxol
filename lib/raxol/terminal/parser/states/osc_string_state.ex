@@ -55,19 +55,24 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
         {:continue, emulator, next_parser_state, rest_after_abort}
 
       # Standard printable ASCII
-      <<byte, rest_after_byte::binary>> when byte >= 32 and byte <= 126 ->
+      <<char, rest::binary>> when char >= 32 and char <= 126 ->
+        # Append to payload buffer
         next_parser_state = %{
           parser_state
-          | payload_buffer: parser_state.payload_buffer <> <<byte>>
+          | payload_buffer: parser_state.payload_buffer <> <<char>>
         }
+        {:continue, emulator, next_parser_state, rest}
 
-        {:continue, emulator, next_parser_state, rest_after_byte}
+      # Unhandled byte
+      <<unhandled_byte, rest_after_unhandled::binary>> ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unhandled byte in OSC String state: #{inspect(unhandled_byte)}",
+          %{}
+        )
 
-      # Ignore C0/DEL bytes within OSC string
-      <<_ignored_byte, rest_after_ignored::binary>> ->
-        Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte in OSC String")
-        # Stay in state, ignore byte
-        {:continue, emulator, parser_state, rest_after_ignored}
+        # Go to ground state
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, emulator, next_parser_state, rest_after_unhandled}
     end
   end
 end

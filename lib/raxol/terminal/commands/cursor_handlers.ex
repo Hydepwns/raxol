@@ -31,9 +31,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   @doc "Handles Cursor Position (CUP - 'H')"
-  @spec handle_H(Emulator.t(), list(integer())) ::
+  @spec handle_cup(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_H(emulator, params) do
+  def handle_cup(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
     col = get_valid_pos_param(params, 1, 1)
     active_buffer = Emulator.get_active_buffer(emulator)
@@ -47,41 +47,41 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   @doc "Handles Cursor Up (CUU - 'A')"
-  @spec handle_A(Emulator.t(), list(integer())) ::
+  @spec handle_a(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_A(emulator, params) do
+  def handle_a(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_up/4, amount)
   end
 
   @doc "Handles Cursor Down (CUD - 'B')"
-  @spec handle_B(Emulator.t(), list(integer())) ::
+  @spec handle_b(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_B(emulator, params) do
+  def handle_b(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_down/4, amount)
   end
 
   @doc "Handles Cursor Forward (CUF - 'C')"
-  @spec handle_C(Emulator.t(), list(integer())) ::
+  @spec handle_c(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_C(emulator, params) do
+  def handle_c(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_right/4, amount)
   end
 
   @doc "Handles Cursor Backward (CUB - 'D')"
-  @spec handle_D(Emulator.t(), list(integer())) ::
+  @spec handle_d(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_D(emulator, params) do
+  def handle_d(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_left/4, amount)
   end
 
   @doc "Handles Cursor Next Line (CNL - 'E')"
-  @spec handle_E(Emulator.t(), list(integer())) ::
+  @spec handle_e(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_E(emulator, params) do
+  def handle_e(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
 
     emulator
@@ -92,9 +92,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   @doc "Handles Cursor Previous Line (CPL - 'F')"
-  @spec handle_F(Emulator.t(), list(integer())) ::
+  @spec handle_f(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_F(emulator, params) do
+  def handle_f(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
 
     emulator
@@ -105,9 +105,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   @doc "Handles Cursor Horizontal Absolute (CHA - 'G')"
-  @spec handle_G(Emulator.t(), list(integer())) ::
+  @spec handle_g(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_G(emulator, params) do
+  def handle_g(emulator, params) do
     column = get_valid_pos_param(params, 0, 1)
 
     handle_cursor_movement(
@@ -118,9 +118,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   @doc "Handles Cursor Vertical Absolute (VPA - 'd')"
-  @spec handle_d(Emulator.t(), list(integer() | nil)) ::
+  @spec handle_decvpa(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_d(emulator, params) do
+  def handle_decvpa(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
     active_buffer = Emulator.get_active_buffer(emulator)
     height = ScreenBuffer.get_height(active_buffer)

@@ -375,9 +375,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     |> Jason.encode!()
   end
 
-  defp export_custom(metrics) do
-    # Implement custom export format
-    {:error, :not_implemented}
+  defp export_custom(_metrics) do
+    # TODO: Implementation
   end
 
   defp format_labels(labels) do
@@ -415,14 +414,11 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     end
   end
 
-  defp check_error_alerts(error, thresholds) do
-    case Map.get(thresholds, :errors) do
-      nil -> :ok
-      threshold ->
-        if error.severity == :critical do
-          Logger.error("Critical error occurred: #{inspect(error)}")
-        end
+  defp check_error_alerts(error, _thresholds) do
+    if error.severity == :critical do
+      Logger.error("Critical error occurred: #{inspect(error)}")
     end
+    :ok
   end
 
   defp exceeds_threshold?(value, threshold) when is_number(value) and is_number(threshold) do

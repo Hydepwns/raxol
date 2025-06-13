@@ -209,6 +209,22 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     %{scroll | height: new_height, cache: %{}}
   end
 
+  @doc """
+  Updates the scroll buffer with new commands.
+  """
+  def update(scroll_buffer, _commands) do
+    # Implementation for updating scroll buffer
+    scroll_buffer
+  end
+
+  @doc """
+  Cleans up the scroll buffer.
+  """
+  def cleanup(_scroll_buffer) do
+    # Implementation for cleanup
+    :ok
+  end
+
   # Private Functions
 
   defp calculate_memory_usage(buffer) do

@@ -316,61 +316,238 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end)
   end
 
-  defp load_plugin_from_directory(path) do
-    # Implementation for loading plugin from directory
-    :ok
+  defp load_plugin_from_directory(_path) do
+    # TODO: Implement plugin loading from directory
+    {:error, :not_implemented}
   end
 
-  defp load_plugin_from_file(path) do
-    # Implementation for loading plugin from file
-    :ok
+  defp load_plugin_from_file(_path) do
+    # TODO: Implement plugin loading from file
+    {:error, :not_implemented}
   end
 
   # Theme Plugin Functions
   defp load_theme_plugin(path, opts) do
-    # Implementation for loading theme plugin
-    {:ok, %{}}
+    with {:ok, theme_config} <- load_theme_config(path),
+         {:ok, theme_module} <- load_theme_module(path) do
+      theme_state = %{
+        id: generate_plugin_id(path),
+        type: :theme,
+        name: Keyword.get(opts, :name, "Unnamed Theme"),
+        version: Keyword.get(opts, :version, "1.0.0"),
+        description: Keyword.get(opts, :description, ""),
+        author: Keyword.get(opts, :author, "Unknown"),
+        dependencies: Keyword.get(opts, :dependencies, []),
+        config: theme_config,
+        status: :active,
+        error: nil,
+        module: theme_module,
+        path: path
+      }
+      {:ok, theme_state}
+    else
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp cleanup_theme_plugin(plugin_state) do
-    # Implementation for cleaning up theme plugin
-    :ok
+    case plugin_state.module do
+      nil -> :ok
+      module ->
+        try do
+          if function_exported?(module, :cleanup, 1) do
+            module.cleanup(plugin_state.config)
+          end
+          :ok
+        rescue
+          e ->
+            Logger.error("Failed to cleanup theme plugin: #{inspect(e)}")
+            {:error, :cleanup_failed}
+        end
+    end
   end
 
   defp execute_theme_function(plugin_state, function, args) do
-    # Implementation for executing theme function
-    {:ok, %{}}
+    case plugin_state.module do
+      nil -> {:error, :module_not_loaded}
+      module ->
+        try do
+          if function_exported?(module, function, length(args) + 1) do
+            result = apply(module, function, [plugin_state.config | args])
+            {:ok, result}
+          else
+            {:error, :function_not_exported}
+          end
+        rescue
+          e ->
+            Logger.error("Failed to execute theme function: #{inspect(e)}")
+            {:error, :execution_failed}
+        end
+    end
   end
 
   # Script Plugin Functions
   defp load_script_plugin(path, opts) do
-    # Implementation for loading script plugin
-    {:ok, %{}}
+    with {:ok, script_content} <- File.read(path),
+         {:ok, script_module} <- compile_script(script_content) do
+      script_state = %{
+        id: generate_plugin_id(path),
+        type: :script,
+        name: Keyword.get(opts, :name, "Unnamed Script"),
+        version: Keyword.get(opts, :version, "1.0.0"),
+        description: Keyword.get(opts, :description, ""),
+        author: Keyword.get(opts, :author, "Unknown"),
+        dependencies: Keyword.get(opts, :dependencies, []),
+        config: Keyword.get(opts, :config, %{}),
+        status: :active,
+        error: nil,
+        module: script_module,
+        path: path
+      }
+      {:ok, script_state}
+    else
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp cleanup_script_plugin(plugin_state) do
-    # Implementation for cleaning up script plugin
-    :ok
+    case plugin_state.module do
+      nil -> :ok
+      module ->
+        try do
+          if function_exported?(module, :cleanup, 1) do
+            module.cleanup(plugin_state.config)
+          end
+          :ok
+        rescue
+          e ->
+            Logger.error("Failed to cleanup script plugin: #{inspect(e)}")
+            {:error, :cleanup_failed}
+        end
+    end
   end
 
   defp execute_script_function(plugin_state, function, args) do
-    # Implementation for executing script function
-    {:ok, %{}}
+    case plugin_state.module do
+      nil -> {:error, :module_not_loaded}
+      module ->
+        try do
+          if function_exported?(module, function, length(args) + 1) do
+            result = apply(module, function, [plugin_state.config | args])
+            {:ok, result}
+          else
+            {:error, :function_not_exported}
+          end
+        rescue
+          e ->
+            Logger.error("Failed to execute script function: #{inspect(e)}")
+            {:error, :execution_failed}
+        end
+    end
   end
 
   # Extension Plugin Functions
   defp load_extension_plugin(path, opts) do
-    # Implementation for loading extension plugin
-    {:ok, %{}}
+    with {:ok, extension_config} <- load_extension_config(path),
+         {:ok, extension_module} <- load_extension_module(path) do
+      extension_state = %{
+        id: generate_plugin_id(path),
+        type: :extension,
+        name: Keyword.get(opts, :name, "Unnamed Extension"),
+        version: Keyword.get(opts, :version, "1.0.0"),
+        description: Keyword.get(opts, :description, ""),
+        author: Keyword.get(opts, :author, "Unknown"),
+        dependencies: Keyword.get(opts, :dependencies, []),
+        config: extension_config,
+        status: :active,
+        error: nil,
+        module: extension_module,
+        path: path
+      }
+      {:ok, extension_state}
+    else
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp cleanup_extension_plugin(plugin_state) do
-    # Implementation for cleaning up extension plugin
-    :ok
+    case plugin_state.module do
+      nil -> :ok
+      module ->
+        try do
+          if function_exported?(module, :cleanup, 1) do
+            module.cleanup(plugin_state.config)
+          end
+          :ok
+        rescue
+          e ->
+            Logger.error("Failed to cleanup extension plugin: #{inspect(e)}")
+            {:error, :cleanup_failed}
+        end
+    end
   end
 
   defp execute_extension_function(plugin_state, function, args) do
-    # Implementation for executing extension function
-    {:ok, %{}}
+    case plugin_state.module do
+      nil -> {:error, :module_not_loaded}
+      module ->
+        try do
+          if function_exported?(module, function, length(args) + 1) do
+            result = apply(module, function, [plugin_state.config | args])
+            {:ok, result}
+          else
+            {:error, :function_not_exported}
+          end
+        rescue
+          e ->
+            Logger.error("Failed to execute extension function: #{inspect(e)}")
+            {:error, :execution_failed}
+        end
+    end
+  end
+
+  # Helper Functions
+  defp load_theme_config(path) do
+    config_path = Path.join(path, "theme.exs")
+    case File.exists?(config_path) do
+      true -> Code.eval_file(config_path)
+      false -> {:ok, %{}}
+    end
+  end
+
+  defp load_theme_module(path) do
+    module_path = Path.join(path, "theme.ex")
+    case File.exists?(module_path) do
+      true -> Code.compile_file(module_path)
+      false -> {:error, :module_not_found}
+    end
+  end
+
+  defp compile_script(content) do
+    try do
+      {:ok, ast} = Code.string_to_quoted(content)
+      {:ok, module} = Code.compile_quoted(ast)
+      {:ok, module}
+    rescue
+      e ->
+        Logger.error("Failed to compile script: #{inspect(e)}")
+        {:error, :compilation_failed}
+    end
+  end
+
+  defp load_extension_config(path) do
+    config_path = Path.join(path, "config.exs")
+    case File.exists?(config_path) do
+      true -> Code.eval_file(config_path)
+      false -> {:ok, %{}}
+    end
+  end
+
+  defp load_extension_module(path) do
+    module_path = Path.join(path, "extension.ex")
+    case File.exists?(module_path) do
+      true -> Code.compile_file(module_path)
+      false -> {:error, :module_not_found}
+    end
   end
 end

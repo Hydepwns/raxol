@@ -119,6 +119,15 @@ defmodule Raxol.Terminal.Cache.System do
     GenServer.call(__MODULE__, {:clear, namespace})
   end
 
+  @doc """
+  Returns the current monotonic time in milliseconds.
+  This is used for cache expiration and timing operations.
+  """
+  @spec monotonic_time() :: integer()
+  def monotonic_time do
+    System.monotonic_time(:millisecond)
+  end
+
   # Server Callbacks
 
   @impl true

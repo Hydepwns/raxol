@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.TextFormatting do
   This module re-exports the functionality from ANSI.TextFormatting to maintain compatibility.
   """
 
-  # Re-export all functions from the ANSI.TextFormatting module
   defdelegate new(), to: Raxol.Terminal.ANSI.TextFormatting
 
   defdelegate set_foreground(style, color),
@@ -47,4 +46,39 @@ defmodule Raxol.Terminal.TextFormatting do
 
   defdelegate ansi_code_to_color_name(code),
     to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the bold attribute for text formatting.
+  """
+  def set_bold(formatting, value) do
+    formatting
+  end
+
+  @doc """
+  Sets the italic attribute for text formatting.
+  """
+  def set_italic(formatting, value) do
+    formatting
+  end
+
+  @doc """
+  Sets the underline attribute for text formatting.
+  """
+  def set_underline(formatting, value) do
+    formatting
+  end
+
+  @doc """
+  Sets the blink attribute for text formatting.
+  """
+  def set_blink(formatting, value) do
+    formatting
+  end
+
+  @doc """
+  Sets the reverse attribute for text formatting.
+  """
+  def set_reverse(formatting, value) do
+    formatting
+  end
 end

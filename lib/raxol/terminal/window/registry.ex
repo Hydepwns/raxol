@@ -77,6 +77,14 @@ defmodule Raxol.Terminal.Window.Registry do
     GenServer.call(__MODULE__, {:set_active_window, window_id})
   end
 
+  @doc """
+  Updates a window's properties.
+  """
+  @spec update_window(String.t(), map()) :: :ok | {:error, term()}
+  def update_window(window_id, properties) do
+    GenServer.call(__MODULE__, {:update_window, window_id, properties})
+  end
+
   # Server Callbacks
 
   @impl true
@@ -172,6 +180,19 @@ defmodule Raxol.Terminal.Window.Registry do
           windows: Map.put(state.windows, window_id, %{window | state: :active})
         }
 
+        {:reply, :ok, new_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:update_window, window_id, properties}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      window ->
+        updated_window = Map.merge(window, properties)
+        new_state = put_in(state.windows[window_id], updated_window)
         {:reply, :ok, new_state}
     end
   end

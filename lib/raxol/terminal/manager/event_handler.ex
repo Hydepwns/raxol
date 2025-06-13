@@ -11,94 +11,24 @@ defmodule Raxol.Terminal.Manager.EventHandler do
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Events.Event
-  alias Raxol.Terminal.EventProcessor
   alias Raxol.Terminal.NotificationManager
   alias Raxol.Terminal.MemoryManager
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """
   Processes a terminal event and returns updated state.
   """
   @spec process_event(Event.t(), map()) :: {:ok, map()} | {:error, term()}
-  def process_event(%Event{type: type, data: data} = event, state) do
-    case state.terminal do
-      %EmulatorStruct{} = emulator ->
-        {new_emulator, _output} = EventProcessor.process_event(event, emulator)
-
-        # Notify runtime process if present
-        if state.runtime_pid do
-          send(state.runtime_pid, {:terminal_event_processed, event, new_emulator})
-        end
-
-        # Update state with new emulator
-        new_state = %{state | terminal: new_emulator}
-        updated_state = MemoryManager.check_and_cleanup(new_state)
-
-        # Handle specific event types
-        handle_event_type(type, data, updated_state)
-
+  def process_event(event, state) do
+    case event do
+      {:memory_check, _} ->
+        new_state = MemoryManager.update_usage(state)
+        {:ok, new_state}
       _ ->
-        if state.runtime_pid do
-          send(state.runtime_pid, {:terminal_error, :no_terminal,
-            %{action: :process_event, event: event}})
-        end
-        {:error, :no_terminal}
+        {:ok, state}
     end
   end
 
   # --- Private Event Type Handlers ---
-
-  defp handle_event_type(:window, data, state) do
-    case data do
-      %{action: :resize, width: w, height: h} when is_integer(w) and is_integer(h) ->
-        NotificationManager.notify_resized(state.runtime_pid, state.callback_module, w, h)
-        {:ok, state}
-
-      %{action: :focus, focused: focused?} ->
-        NotificationManager.notify_focus_changed(state.runtime_pid, state.callback_module, focused?)
-        {:ok, state}
-
-      %{action: :blur} ->
-        NotificationManager.notify_focus_changed(state.runtime_pid, state.callback_module, false)
-        {:ok, state}
-
-      _ ->
-        {:ok, state}
-    end
-  end
-
-  defp handle_event_type(:mode, data, state) do
-    case data do
-      %{mode: new_mode} ->
-        NotificationManager.notify_mode_changed(state.runtime_pid, state.callback_module, new_mode)
-        {:ok, state}
-
-      _ ->
-        {:ok, state}
-    end
-  end
-
-  defp handle_event_type(:focus, data, state) do
-    case data do
-      %{focused: focused?} ->
-        NotificationManager.notify_focus_changed(state.runtime_pid, state.callback_module, focused?)
-        {:ok, state}
-
-      _ ->
-        {:ok, state}
-    end
-  end
-
-  defp handle_event_type(:clipboard, data, state) do
-    case data do
-      %{op: op, content: content} ->
-        NotificationManager.notify_clipboard_event(state.runtime_pid, state.callback_module, op, content)
-        {:ok, state}
-
-      _ ->
-        {:ok, state}
-    end
-  end
 
   defp handle_event_type(:selection, data, state) do
     case data do

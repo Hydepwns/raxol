@@ -1,147 +1,219 @@
 defmodule Raxol.Terminal.Command.Manager do
   @moduledoc """
-  Manages terminal command history and processing, including command buffer,
-  history, and command execution.
+  Manages terminal command execution and state.
+  Handles command history, execution, and command-related operations.
   """
 
-  require Raxol.Core.Runtime.Log
+  use GenServer
+  require Logger
+
+  # Types
+  @type command :: String.t()
+  @type command_history :: [command()]
+  @type command_state :: :idle | :running | :completed | :error
+  @type key_event :: term()
 
   @type t :: %__MODULE__{
-          command_history: list(String.t()),
-          max_command_history: non_neg_integer(),
-          current_command_buffer: String.t(),
-          last_key_event: map() | nil
-        }
+    command_buffer: String.t(),
+    command_history: command_history(),
+    last_key_event: key_event() | nil,
+    current_command: command() | nil,
+    status: command_state(),
+    max_history_size: non_neg_integer()
+  }
 
-  defstruct command_history: [],
-            max_command_history: 100,
-            current_command_buffer: "",
-            last_key_event: nil
+  defstruct [
+    command_buffer: "",
+    command_history: [],
+    last_key_event: nil,
+    current_command: nil,
+    status: :idle,
+    max_history_size: 1000
+  ]
 
   @doc """
-  Creates a new command manager with default values.
+  Creates a new command manager instance with the given options.
   """
+  @spec new(keyword()) :: t()
   def new(opts \\ []) do
-    max_history = Keyword.get(opts, :max_command_history, 100)
-    %__MODULE__{max_command_history: max_history}
+    %__MODULE__{
+      max_history_size: Keyword.get(opts, :max_history_size, 1000)
+    }
+  end
+
+  # Client API
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
   Gets the current command buffer.
   """
-  def get_command_buffer(%__MODULE__{} = manager) do
-    manager.current_command_buffer
+  def get_command_buffer do
+    GenServer.call(__MODULE__, :get_command_buffer)
   end
 
   @doc """
-  Updates the current command buffer.
+  Updates the command buffer.
   """
-  def update_command_buffer(%__MODULE__{} = manager, buffer)
-      when is_binary(buffer) do
-    %{manager | current_command_buffer: buffer}
+  def update_command_buffer(buffer) when is_binary(buffer) do
+    GenServer.call(__MODULE__, {:update_command_buffer, buffer})
   end
 
   @doc """
   Gets the command history.
   """
-  def get_command_history(%__MODULE__{} = manager) do
-    manager.command_history
+  def get_command_history do
+    GenServer.call(__MODULE__, :get_command_history)
   end
 
   @doc """
-  Adds a command to the history, maintaining the maximum history size.
+  Adds a command to the history.
   """
-  def add_to_history(%__MODULE__{} = manager, command)
-      when is_binary(command) do
-    new_history = [command | manager.command_history]
-    limited_history = Enum.take(new_history, manager.max_command_history)
-    %{manager | command_history: limited_history}
+  def add_to_history(command) when is_binary(command) do
+    GenServer.call(__MODULE__, {:add_to_history, command})
   end
 
   @doc """
   Clears the command history.
   """
-  def clear_history(%__MODULE__{} = manager) do
-    %{manager | command_history: []}
+  def clear_history do
+    GenServer.call(__MODULE__, :clear_history)
   end
 
   @doc """
   Gets the last key event.
   """
-  def get_last_key_event(%__MODULE__{} = manager) do
-    manager.last_key_event
+  def get_last_key_event do
+    GenServer.call(__MODULE__, :get_last_key_event)
   end
 
   @doc """
   Updates the last key event.
   """
-  def update_last_key_event(%__MODULE__{} = manager, event) do
-    %{manager | last_key_event: event}
+  def update_last_key_event(event) do
+    GenServer.call(__MODULE__, {:update_last_key_event, event})
   end
 
   @doc """
-  Processes a key event and updates the command buffer accordingly.
-  Returns {new_manager, command_to_execute} where command_to_execute is nil
-  if no command should be executed.
+  Processes a key event.
   """
-  def process_key_event(%__MODULE__{} = manager, key_event) do
-    case key_event do
-      # Enter key - execute command
-      %{key: :enter} ->
-        command = manager.current_command_buffer
-
-        if String.trim(command) != "" do
-          new_manager =
-            manager
-            |> add_to_history(command)
-            |> update_command_buffer("")
-
-          {new_manager, command}
-        else
-          {manager, nil}
-        end
-
-      # Backspace key - remove last character
-      %{key: :backspace} ->
-        new_buffer = String.slice(manager.current_command_buffer, 0..-2//-1)
-        {update_command_buffer(manager, new_buffer), nil}
-
-      # Regular character - append to buffer
-      %{key: :char, char: char} ->
-        new_buffer = manager.current_command_buffer <> char
-        {update_command_buffer(manager, new_buffer), nil}
-
-      # Other keys - just update last key event
-      _ ->
-        {update_last_key_event(manager, key_event), nil}
-    end
+  def process_key_event(event) do
+    GenServer.call(__MODULE__, {:process_key_event, event})
   end
 
   @doc """
-  Gets a command from history by index (0-based).
-  Returns nil if index is out of bounds.
+  Gets a command from history by index.
   """
-  def get_history_command(%__MODULE__{} = manager, index)
-      when is_integer(index) and index >= 0 do
-    Enum.at(manager.command_history, index)
+  def get_history_command(index) when is_integer(index) do
+    GenServer.call(__MODULE__, {:get_history_command, index})
   end
 
   @doc """
-  Searches command history for commands matching the given prefix.
-  Returns a list of matching commands.
+  Searches the command history for a substring.
   """
-  def search_history(%__MODULE__{} = manager, prefix) when is_binary(prefix) do
-    manager.command_history
-    |> Enum.filter(&String.starts_with?(&1, prefix))
+  def search_history(prefix) when is_binary(prefix) do
+    GenServer.call(__MODULE__, {:search_history, prefix})
   end
 
   @doc """
-  Updates the maximum command history size.
-  If the new size is smaller than the current history, older commands are removed.
+  Executes a command.
   """
-  def update_max_history(%__MODULE__{} = manager, new_size)
-      when is_integer(new_size) and new_size > 0 do
-    limited_history = Enum.take(manager.command_history, new_size)
-    %{manager | max_command_history: new_size, command_history: limited_history}
+  def execute_command(command) when is_binary(command) do
+    GenServer.call(__MODULE__, {:execute_command, command})
+  end
+
+  @doc """
+  Gets the current command status.
+  """
+  def get_command_status do
+    GenServer.call(__MODULE__, :get_command_status)
+  end
+
+  # Server Callbacks
+  @impl true
+  def init(opts) do
+    state = %__MODULE__{
+      max_history_size: Keyword.get(opts, :max_history_size, 1000)
+    }
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call(:get_command_buffer, _from, state) do
+    {:reply, state.command_buffer, state}
+  end
+
+  @impl true
+  def handle_call({:update_command_buffer, buffer}, _from, state) do
+    {:reply, :ok, %{state | command_buffer: buffer}}
+  end
+
+  @impl true
+  def handle_call(:get_command_history, _from, state) do
+    {:reply, state.command_history, state}
+  end
+
+  @impl true
+  def handle_call({:add_to_history, command}, _from, state) do
+    new_history = [command | state.command_history] |> Enum.take(state.max_history_size)
+    {:reply, :ok, %{state | command_history: new_history}}
+  end
+
+  @impl true
+  def handle_call(:clear_history, _from, state) do
+    {:reply, :ok, %{state | command_history: []}}
+  end
+
+  @impl true
+  def handle_call(:get_last_key_event, _from, state) do
+    {:reply, state.last_key_event, state}
+  end
+
+  @impl true
+  def handle_call({:update_last_key_event, event}, _from, state) do
+    {:reply, :ok, %{state | last_key_event: event}}
+  end
+
+  @impl true
+  def handle_call({:process_key_event, event}, _from, state) do
+    # Here you would implement actual key event processing logic
+    # For now, we'll just update the last key event
+    {:reply, :ok, %{state | last_key_event: event}}
+  end
+
+  @impl true
+  def handle_call({:get_history_command, index}, _from, state) do
+    result = Enum.at(state.command_history, index)
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call({:search_history, prefix}, _from, state) do
+    matches = Enum.filter(state.command_history, &String.starts_with?(&1, prefix))
+    {:reply, matches, state}
+  end
+
+  @impl true
+  def handle_call({:execute_command, command}, _from, state) do
+    # Here you would implement actual command execution
+    # For now, we'll just update the state
+    new_state = %{state |
+      current_command: command,
+      status: :running,
+      command_history: [command | state.command_history] |> Enum.take(state.max_history_size)
+    }
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_command_status, _from, state) do
+    {:reply, state.status, state}
+  end
+
+  @impl true
+  def handle_call(request, _from, state) do
+    Logger.warning("Unhandled call: #{inspect(request)}")
+    {:reply, {:error, :unknown_call}, state}
   end
 end

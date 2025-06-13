@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.TelemetryMetrics do
       def start(_type, _args) do
         children = [
           {TelemetryMetricsStatsd, metrics: Raxol.Terminal.TelemetryMetrics.metrics(), formatter: :datadog}
-          # ...other children
         ]
         Supervisor.start_link(children, strategy: :one_for_one)
       end
@@ -46,11 +45,9 @@ defmodule Raxol.Terminal.TelemetryMetrics do
     ]
   end
 
-  # Extract mode from measurements or metadata for tagging
   def mode_tag(%{mode: mode}), do: %{mode: mode}
   def mode_tag(_), do: %{}
 
-  # Extract direction from measurements or metadata for tagging scroll events
   def scroll_tags(%{direction: dir}), do: %{direction: dir}
   def scroll_tags(_), do: %{}
 end

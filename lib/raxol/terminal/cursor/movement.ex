@@ -155,18 +155,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
   end
 
   @doc """
-  Moves the cursor to the specified position.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
-      iex> cursor = Manager.new()
-      iex> cursor = Movement.move_to_position(cursor, 10, 5)
-      iex> cursor.position
-      {10, 5}
+  Moves the cursor to a specific position in the terminal.
   """
-  def move_to_position(cursor, column, line) do
-    Manager.move_to(cursor, {column, line})
+  def move_to_position(cursor, row, col) do
+    Manager.move_to(cursor, row, col)
   end
 
   @doc """
@@ -181,8 +173,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 0}
   """
-  def move_home(cursor) do
-    Manager.move_to(cursor, {0, 0})
+  def move_home(cursor, width, height) do
+    Manager.move_to(cursor, 0, 0, width, height)
   end
 
   @doc """
@@ -196,10 +188,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {8, 0}
   """
-  def move_to_next_tab(cursor, tab_width) do
+  def move_to_next_tab(cursor, tab_stops, width, height) do
     {x, y} = Manager.get_position(cursor)
-    next_tab = div(x + tab_width, tab_width) * tab_width
-    Manager.move_to(cursor, {next_tab, y})
+    next_tab = find_next_tab(x, tab_stops, width)
+    Manager.move_to(cursor, next_tab, y, width, height)
   end
 
   @doc """
@@ -214,9 +206,25 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {8, 0}
   """
-  def move_to_prev_tab(cursor, tab_width) do
+  def move_to_prev_tab(cursor, tab_stops, width, height) do
     {x, y} = Manager.get_position(cursor)
-    prev_tab = max(0, div(x - 1, tab_width) * tab_width)
-    Manager.move_to(cursor, {prev_tab, y})
+    prev_tab = find_previous_tab(x, tab_stops)
+    Manager.move_to(cursor, prev_tab, y, width, height)
+  end
+
+  # Helper functions
+
+  defp find_next_tab(current_x, tab_stops, width) do
+    case Enum.find(tab_stops, fn stop -> stop > current_x end) do
+      nil -> width - 1
+      stop -> stop
+    end
+  end
+
+  defp find_previous_tab(current_x, tab_stops) do
+    case Enum.find(Enum.reverse(tab_stops), fn stop -> stop < current_x end) do
+      nil -> 0
+      stop -> stop
+    end
   end
 end

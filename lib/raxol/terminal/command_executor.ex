@@ -8,18 +8,16 @@ defmodule Raxol.Terminal.CommandExecutor do
   Existing functions are kept temporarily for backward compatibility or as
   placeholders during refactoring, but they primarily log warnings and delegate
   to the new modules where possible.
+
+  For mode handling, use `Raxol.Terminal.Commands.ModeHandlers` instead.
   """
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.Parser
   alias Raxol.Terminal.Commands.Executor
-  alias Raxol.Terminal.ModeManager
 
-  # Display a compile-time deprecation warning
   @deprecated "This module is deprecated. Use Raxol.Terminal.Commands.* modules instead."
-
-  # --- Sequence Executors ---
 
   @doc """
   Executes a CSI (Control Sequence Introducer) command.
@@ -83,36 +81,6 @@ defmodule Raxol.Terminal.CommandExecutor do
     )
 
     Parser.get_param(params, index, default)
-  end
-
-  @doc """
-  Handles DEC Private Mode Set (CSI ? Pn h) and Reset (CSI ? Pn l).
-  """
-  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) ::
-          Emulator.t()
-  def handle_dec_private_mode(emulator, params, action) do
-    modes =
-      Enum.map(params, &ModeManager.lookup_private/1) |> Enum.reject(&is_nil/1)
-
-    case action do
-      :set -> ModeManager.set_mode(emulator, modes)
-      :reset -> ModeManager.reset_mode(emulator, modes)
-    end
-  end
-
-  @doc """
-  Handles Standard Mode Set (CSI Pn h) and Reset (CSI Pn l).
-  """
-  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) ::
-          Emulator.t()
-  def handle_ansi_mode(emulator, params, action) do
-    modes =
-      Enum.map(params, &ModeManager.lookup_standard/1) |> Enum.reject(&is_nil/1)
-
-    case action do
-      :set -> ModeManager.set_mode(emulator, modes)
-      :reset -> ModeManager.reset_mode(emulator, modes)
-    end
   end
 
   @doc """

@@ -9,15 +9,9 @@ defmodule Raxol.Terminal.TelemetryPrometheus do
       def start(_type, _args) do
         children = [
           {TelemetryMetricsPrometheus, metrics: Raxol.Terminal.TelemetryPrometheus.metrics()}
-          # ...other children
         ]
         Supervisor.start_link(children, strategy: :one_for_one)
       end
-
-  ## Advanced Metrics Example
-
-  - `distribution/2` for scroll delta with custom buckets (e.g., [-20, -10, 0, 10, 20, 50, 100])
-  - `summary/2` for paste event text length
 
   """
   import Telemetry.Metrics

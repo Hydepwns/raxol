@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   """
 
   alias Raxol.Terminal.Integration.State
-  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   require Logger
 
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Returns :ok or {:error, reason}.
   """
   def render(%State{} = state) do
-    active_buffer = BufferManager.get_active_buffer(state.buffer_manager)
+    active_buffer = Manager.get_active_buffer(state.buffer_manager)
 
     # Draw content to the back buffer by iterating over cells
     if active_buffer && active_buffer.cells do

@@ -1,322 +1,203 @@
 defmodule Raxol.Terminal.Render.UnifiedRenderer do
   @moduledoc """
-  Unified renderer module that consolidates all terminal rendering functionality.
-
-  This module provides a single interface for:
-  - Terminal output rendering
-  - Character cell management
-  - Text styling and formatting
-  - Cursor rendering
-  - Performance optimizations
-  - Integration with Termbox2
+  Provides a unified interface for terminal rendering operations.
   """
 
   use GenServer
 
   alias Raxol.Terminal.{
-    ScreenBuffer,
-    Buffer.UnifiedManager,
-    Cursor.Manager,
-    Integration.State
+    Buffer,
+    Style
   }
 
-  require Logger
-
-  # Types
+  defstruct [
+    :buffer,
+    :screen,
+    :style,
+    :cursor_visible,
+    :title
+  ]
 
   @type t :: %__MODULE__{
-          screen_buffer: ScreenBuffer.t(),
-          cursor: {non_neg_integer(), non_neg_integer()} | nil,
-          theme: map(),
-          font_settings: map(),
-          termbox_initialized: boolean(),
-          fps: non_neg_integer(),
-          last_render_time: integer() | nil,
-          render_queue: list(),
-          cache: map()
-        }
-
-  defstruct [
-    :screen_buffer,
-    :cursor,
-    :theme,
-    :font_settings,
-    termbox_initialized: false,
-    fps: 60,
-    last_render_time: nil,
-    render_queue: [],
-    cache: %{}
-  ]
+    buffer: Buffer.t(),
+    screen: Screen.t(),
+    style: Style.t(),
+    cursor_visible: boolean(),
+    title: String.t()
+  }
 
   # Client API
 
   @doc """
-  Starts the unified renderer process.
+  Starts the renderer.
   """
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
-  Initializes the terminal system.
-  Must be called before other rendering functions.
+  Renders the current state.
   """
-  def init_terminal do
-    GenServer.call(__MODULE__, :init_terminal)
+  @spec render(t()) :: :ok
+  def render(state) do
+    GenServer.call(__MODULE__, {:render, state})
   end
 
   @doc """
-  Shuts down the terminal system.
-  Must be called to restore terminal state.
+  Renders the current state with a specific renderer ID.
   """
-  def shutdown_terminal do
-    GenServer.call(__MODULE__, :shutdown_terminal)
-  end
-
-  @doc """
-  Renders the current terminal state to the screen.
-  """
-  def render(%State{} = state) do
+  @spec render(t(), String.t()) :: :ok
+  def render(state, _renderer_id) do
     GenServer.call(__MODULE__, {:render, state})
   end
 
   @doc """
   Updates the renderer configuration.
   """
+  @spec update_config(t(), map()) :: :ok
+  def update_config(state, config) do
+    GenServer.call(__MODULE__, {:update_config, state, config})
+  end
+
+  @doc """
+  Updates the renderer configuration with a single argument.
+  """
+  @spec update_config(map()) :: :ok
   def update_config(config) do
-    GenServer.call(__MODULE__, {:update_config, config})
+    GenServer.call(__MODULE__, {:update_config, nil, config})
   end
 
   @doc """
-  Sets a specific configuration value.
+  Cleans up resources.
   """
-  def set_config_value(key, value) do
-    GenServer.call(__MODULE__, {:set_config_value, key, value})
+  @spec cleanup(t()) :: :ok
+  def cleanup(state) do
+    GenServer.call(__MODULE__, {:cleanup, state})
   end
 
   @doc """
-  Resets the renderer configuration to defaults.
+  Resizes the renderer.
   """
-  def reset_config do
-    GenServer.call(__MODULE__, :reset_config)
-  end
-
-  @doc """
-  Resizes the renderer to the given dimensions.
-  """
+  @spec resize(non_neg_integer(), non_neg_integer()) :: :ok
   def resize(width, height) do
     GenServer.call(__MODULE__, {:resize, width, height})
   end
 
   @doc """
-  Sets the cursor visibility.
+  Sets cursor visibility.
   """
+  @spec set_cursor_visibility(boolean()) :: :ok
   def set_cursor_visibility(visible) do
     GenServer.call(__MODULE__, {:set_cursor_visibility, visible})
   end
 
   @doc """
-  Sets the terminal title.
+  Sets the window title.
   """
+  @spec set_title(String.t()) :: :ok
   def set_title(title) do
     GenServer.call(__MODULE__, {:set_title, title})
-  end
-
-  @doc """
-  Gets the terminal title.
-  """
-  def get_title do
-    GenServer.call(__MODULE__, :get_title)
   end
 
   # Server Callbacks
 
   @impl true
   def init(opts) do
-    fps = Keyword.get(opts, :fps, 60)
-    theme = Keyword.get(opts, :theme, %{})
-    font_settings = Keyword.get(opts, :font_settings, %{})
+    buffer = Keyword.get(opts, :buffer)
+    screen = Keyword.get(opts, :screen)
+    style = Keyword.get(opts, :style)
+    cursor_visible = Keyword.get(opts, :cursor_visible, true)
+    title = Keyword.get(opts, :title, "")
 
-    {:ok,
-     %__MODULE__{
-       fps: fps,
-       theme: theme,
-       font_settings: font_settings,
-       cache: %{}
-     }}
-  end
-
-  @impl true
-  def handle_call(:init_terminal, _from, state) do
-    case :termbox2_nif.tb_init() do
-      0 ->
-        {:reply, :ok, %{state | termbox_initialized: true}}
-
-      error_code ->
-        Logger.error("Failed to initialize terminal: #{inspect(error_code)}")
-        {:reply, {:error, error_code}, state}
-    end
-  end
-
-  @impl true
-  def handle_call(:shutdown_terminal, _from, state) do
-    case :termbox2_nif.tb_shutdown() do
-      0 ->
-        {:reply, :ok, %{state | termbox_initialized: false}}
-
-      error_code ->
-        Logger.error("Failed to shutdown terminal: #{inspect(error_code)}")
-        {:reply, {:error, error_code}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:render, %State{} = state}, _from, renderer_state) do
-    if renderer_state.termbox_initialized do
-      active_buffer = UnifiedManager.get_active_buffer(state.buffer_manager)
-
-      if active_buffer && active_buffer.cells do
-        # Draw content to the back buffer
-        case render_cells(active_buffer.cells) do
-          :ok ->
-            # Set cursor position
-            {cursor_x, cursor_y} = Manager.get_position(state.cursor_manager)
-
-            case :termbox2_nif.tb_set_cursor(cursor_x, cursor_y) do
-              0 ->
-                # Present the back buffer
-                case :termbox2_nif.tb_present() do
-                  0 -> {:reply, :ok, renderer_state}
-                  error_code -> {:reply, {:error, {:present_failed, error_code}}, renderer_state}
-                end
-
-              error_code ->
-                {:reply, {:error, {:set_cursor_failed, error_code}}, renderer_state}
-            end
-
-          error ->
-            {:reply, error, renderer_state}
-        end
-      else
-        {:reply, :ok, renderer_state}
-      end
-    else
-      {:reply, {:error, :not_initialized}, renderer_state}
-    end
-  end
-
-  @impl true
-  def handle_call({:update_config, config}, _from, state) do
-    new_state = update_renderer_config(state, config)
-    {:reply, :ok, new_state}
-  end
-
-  @impl true
-  def handle_call({:set_config_value, key, value}, _from, state) do
-    new_state = set_renderer_config_value(state, key, value)
-    {:reply, :ok, new_state}
-  end
-
-  @impl true
-  def handle_call(:reset_config, _from, state) do
-    new_state = reset_renderer_config(state)
-    {:reply, :ok, new_state}
-  end
-
-  @impl true
-  def handle_call({:resize, width, height}, _from, state) do
-    new_state = resize_renderer(state, width, height)
-    {:reply, :ok, new_state}
-  end
-
-  @impl true
-  def handle_call({:set_cursor_visibility, visible}, _from, state) do
-    case :termbox2_nif.tb_set_cursor_visibility(visible) do
-      0 -> {:reply, :ok, state}
-      error_code -> {:reply, {:error, error_code}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:set_title, title}, _from, state) do
-    case :termbox2_nif.tb_set_title(title) do
-      0 -> {:reply, :ok, state}
-      error_code -> {:reply, {:error, error_code}, state}
-    end
-  end
-
-  @impl true
-  def handle_call(:get_title, _from, state) do
-    case :termbox2_nif.tb_get_title() do
-      {:ok, title} -> {:reply, title, state}
-      error -> {:reply, {:error, error}, state}
-    end
-  end
-
-  # Private Functions
-
-  defp render_cells(cells) do
-    cells
-    |> Enum.reduce_while(:ok, fn {row_of_cells, y_offset}, _acc ->
-      row_of_cells
-      |> Enum.reduce_while(:ok, fn {cell, x_offset}, _inner_acc ->
-        char_s = cell.char
-
-        codepoint =
-          cond do
-            is_nil(char_s) or char_s == "" -> ?\s
-            true -> hd(String.to_charlist(char_s))
-          end
-
-        fg_color = cell.fg
-        bg_color = cell.bg
-
-        case :termbox2_nif.tb_set_cell(x_offset, y_offset, codepoint, fg_color, bg_color) do
-          0 -> {:cont, :ok}
-          error_code -> {:halt, {:error, {:set_cell_failed, {x_offset, y_offset, error_code}}}}
-        end
-      end)
-      |> case do
-        :ok -> {:cont, :ok}
-        error -> {:halt, error}
-      end
-    end)
-  end
-
-  defp update_renderer_config(state, config) do
-    # Update FPS if provided
-    fps = Map.get(config, :fps, state.fps)
-
-    # Update theme if provided
-    theme = Map.get(config, :theme, state.theme)
-
-    # Update font settings if provided
-    font_settings = Map.get(config, :font_settings, state.font_settings)
-
-    %{state | fps: fps, theme: theme, font_settings: font_settings}
-  end
-
-  defp set_renderer_config_value(state, key, value) do
-    case key do
-      :fps -> %{state | fps: value}
-      :theme -> %{state | theme: value}
-      :font_settings -> %{state | font_settings: value}
-      _ -> state
-    end
-  end
-
-  defp reset_renderer_config(state) do
-    %{state |
-      fps: 60,
-      theme: %{},
-      font_settings: %{}
+    state = %__MODULE__{
+      buffer: buffer,
+      screen: screen,
+      style: style,
+      cursor_visible: cursor_visible,
+      title: title
     }
+
+    {:ok, state}
   end
 
-  defp resize_renderer(state, width, height) do
-    case :termbox2_nif.tb_resize(width, height) do
-      0 -> %{state | screen_buffer: ScreenBuffer.new(width, height)}
-      _ -> state
+  @impl true
+  def handle_call({:render, state}, _from, renderer) do
+    # Initialize termbox if not already initialized
+    :termbox2_nif.tb_init()
+
+    # Clear the screen
+    :termbox2_nif.tb_clear()
+
+    # Render each cell
+    Enum.each(state.buffer.cells, fn {row, cells} ->
+      Enum.each(cells, fn {col, cell} ->
+        render_cell(col, row, cell)
+      end)
+    end)
+
+    # Set cursor position if visible
+    if state.cursor_visible do
+      {x, y} = Buffer.get_cursor_position(state.buffer)
+      :termbox2_nif.tb_set_cursor(x, y)
+    else
+      :termbox2_nif.tb_set_cursor(-1, -1)
     end
+
+    # Present the changes
+    :termbox2_nif.tb_present()
+
+    {:reply, :ok, renderer}
+  end
+
+  @impl true
+  def handle_call({:update_config, _state, config}, _from, renderer) do
+    new_state = %{renderer |
+      style: Map.merge(renderer.style, config.style || %{}),
+      cursor_visible: Map.get(config, :cursor_visible, renderer.cursor_visible)
+    }
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:cleanup, _state}, _from, renderer) do
+    # Cleanup termbox
+    :termbox2_nif.tb_shutdown()
+    {:reply, :ok, renderer}
+  end
+
+  @impl true
+  def handle_call({:resize, width, height}, _from, renderer) do
+    # Resize termbox
+    :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+    :termbox2_nif.tb_set_cell(width - 1, height - 1, 0, 0, 0)
+
+    {:reply, :ok, renderer}
+  end
+
+  @impl true
+  def handle_call({:set_cursor_visibility, visible}, _from, renderer) do
+    if visible do
+      {x, y} = Buffer.get_cursor_position(renderer.buffer)
+      :termbox2_nif.tb_set_cursor(x, y)
+    else
+      :termbox2_nif.tb_set_cursor(-1, -1)
+    end
+
+    {:reply, :ok, %{renderer | cursor_visible: visible}}
+  end
+
+  @impl true
+  def handle_call({:set_title, title}, _from, renderer) do
+    # Set window title
+    :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+
+    {:reply, :ok, %{renderer | title: title}}
+  end
+
+  # Private functions
+
+  defp render_cell(col, row, cell) do
+    :termbox2_nif.tb_set_cell(col, row, cell.char, cell.style.fg, cell.style.bg)
   end
 end

@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
     end
   end
 
-  defp handle_valid_conflict(message, current_state) do
+  defp handle_valid_conflict(message, _current_state) do
     case resolve_conflict(message.states.current, message.states.incoming) do
       :accept ->
         {:ok, message.states.incoming}

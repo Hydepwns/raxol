@@ -12,6 +12,10 @@ defmodule Raxol.Terminal.Window do
   @type t :: %__MODULE__{
           id: String.t() | nil,
           title: String.t(),
+          icon_name: String.t(),
+          font: String.t(),
+          cursor_shape: String.t(),
+          clipboard: String.t(),
           emulator: Emulator.t(),
           config: Config.t(),
           state: window_state(),
@@ -25,6 +29,10 @@ defmodule Raxol.Terminal.Window do
   defstruct [
     :id,
     title: "Terminal",
+    icon_name: "Terminal",
+    font: "monospace",
+    cursor_shape: "block",
+    clipboard: "",
     emulator: nil,
     config: nil,
     state: :inactive,
@@ -81,10 +89,8 @@ defmodule Raxol.Terminal.Window do
   @spec set_size(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_size(%__MODULE__{} = window, width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
-    # Save current size before updating
     previous_size = window.size
 
-    # Update emulator with new size
     emulator = Emulator.resize(window.emulator, width, height)
 
     %{window |
@@ -175,5 +181,69 @@ defmodule Raxol.Terminal.Window do
   @spec get_parent(t()) :: String.t() | nil
   def get_parent(%__MODULE__{} = window) do
     window.parent
+  end
+
+  @doc """
+  Updates the window's icon name.
+  """
+  @spec set_icon_name(t(), String.t()) :: t()
+  def set_icon_name(%__MODULE__{} = window, name) when is_binary(name) do
+    %{window | icon_name: name}
+  end
+
+  @doc """
+  Updates the window's font.
+  """
+  @spec set_font(t(), String.t()) :: t()
+  def set_font(%__MODULE__{} = window, font) when is_binary(font) do
+    %{window | font: font}
+  end
+
+  @doc """
+  Updates the window's cursor shape.
+  """
+  @spec set_cursor_shape(t(), String.t()) :: t()
+  def set_cursor_shape(%__MODULE__{} = window, shape) when is_binary(shape) do
+    %{window | cursor_shape: shape}
+  end
+
+  @doc """
+  Updates the window's clipboard content.
+  """
+  @spec set_clipboard(t(), String.t()) :: t()
+  def set_clipboard(%__MODULE__{} = window, content) when is_binary(content) do
+    %{window | clipboard: content}
+  end
+
+  @doc """
+  Gets the window's clipboard content.
+  """
+  @spec get_clipboard(t()) :: String.t()
+  def get_clipboard(%__MODULE__{} = window) do
+    window.clipboard
+  end
+
+  @doc """
+  Gets the window's icon name.
+  """
+  @spec get_icon_name(t()) :: String.t()
+  def get_icon_name(%__MODULE__{} = window) do
+    window.icon_name
+  end
+
+  @doc """
+  Gets the window's font.
+  """
+  @spec get_font(t()) :: String.t()
+  def get_font(%__MODULE__{} = window) do
+    window.font
+  end
+
+  @doc """
+  Gets the window's cursor shape.
+  """
+  @spec get_cursor_shape(t()) :: String.t()
+  def get_cursor_shape(%__MODULE__{} = window) do
+    window.cursor_shape
   end
 end

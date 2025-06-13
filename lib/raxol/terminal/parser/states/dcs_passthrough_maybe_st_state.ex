@@ -36,6 +36,17 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after_st}
 
+      # Handle CAN, SUB (abort sequence)
+      <<ignored_byte, rest_after_ignored::binary>>
+      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
+        Raxol.Core.Runtime.Log.debug(
+          "Ignoring CAN/SUB byte during DCS Passthrough (after ESC)"
+        )
+
+        # Abort sequence, go to ground
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, emulator, next_parser_state, rest_after_ignored}
+
       # Not ST
       <<_unexpected_byte, rest_after_unexpected::binary>> ->
         msg =

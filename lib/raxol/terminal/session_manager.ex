@@ -1,152 +1,113 @@
 defmodule Raxol.Terminal.SessionManager do
   @moduledoc """
-  Manages terminal sessions, including:
-  - Session creation
-  - Session destruction
-  - Session listing
-  - Session monitoring
-  - Session state management
+  Session management module for handling terminal sessions.
+
+  This module provides functionality for:
+  - Session creation and management
+  - Session authentication
+  - Session state tracking
+  - Session cleanup
   """
 
-  require Raxol.Core.Runtime.Log
-  require Logger
+  use GenServer
+  alias Raxol.Terminal.Emulator
 
-  alias Raxol.Terminal.Session
+  # Client API
 
-  @doc """
-  Creates a new terminal session with the given options.
-  Returns {:ok, session_id} or an error tuple.
-  """
-  @spec create_session(map(), pid() | nil) :: {:ok, String.t()} | {:error, any()}
-  def create_session(opts, runtime_pid \\ nil) do
-    case Session.start_link(opts) do
-      {:ok, pid} ->
-        session_id = UUID.uuid4()
+  def start_link(_) do
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  end
 
-        if runtime_pid,
-          do:
-            send(
-              runtime_pid,
-              {:terminal_session_created, session_id, pid}
-            )
+  def create_session(user_id) do
+    GenServer.call(__MODULE__, {:create_session, user_id})
+  end
 
-        {:ok, session_id}
+  def get_session(session_id) do
+    GenServer.call(__MODULE__, {:get_session, session_id})
+  end
 
-      error ->
-        if runtime_pid,
-          do:
-            send(
-              runtime_pid,
-              {:terminal_error, error, %{action: :create_session, opts: opts}}
-            )
+  def authenticate_session(session_id, token) do
+    GenServer.call(__MODULE__, {:authenticate, session_id, token})
+  end
 
-        error
+  def cleanup_session(session_id) do
+    GenServer.call(__MODULE__, {:cleanup, session_id})
+  end
+
+  # Server Callbacks
+
+  @impl true
+  def init(_) do
+    {:ok, %{}}
+  end
+
+  @impl true
+  def handle_call({:create_session, user_id}, _from, sessions) do
+    session_id = generate_session_id()
+    token = generate_token()
+
+    scrollback_limit =
+      Application.get_env(:raxol, :terminal, [])
+      |> Keyword.get(:scrollback_lines, 1000)
+
+    session = %{
+      id: session_id,
+      user_id: user_id,
+      token: token,
+      emulator: Emulator.new(80, 24, scrollback: scrollback_limit),
+      created_at: DateTime.utc_now(),
+      last_active: DateTime.utc_now()
+    }
+
+    sessions = Map.put(sessions, session_id, session)
+    {:reply, {:ok, session}, sessions}
+  end
+
+  @impl true
+  def handle_call({:get_session, session_id}, _from, sessions) do
+    case Map.get(sessions, session_id) do
+      nil -> {:reply, {:error, :not_found}, sessions}
+      session -> {:reply, {:ok, session}, sessions}
     end
   end
 
-  @doc """
-  Destroys a terminal session by ID.
-  Returns :ok or {:error, :not_found}.
-  """
-  @spec destroy_session(String.t(), map(), pid() | nil) :: :ok | {:error, :not_found}
-  def destroy_session(session_id, sessions, runtime_pid \\ nil) do
+  @impl true
+  def handle_call({:authenticate, session_id, token}, _from, sessions) do
     case Map.get(sessions, session_id) do
       nil ->
-        if runtime_pid,
-          do:
-            send(
-              runtime_pid,
-              {:terminal_error, :not_found,
-               %{action: :destroy_session, session_id: session_id}}
-            )
+        {:reply, {:error, :not_found}, sessions}
 
-        {:error, :not_found}
-
-      pid ->
-        Session.stop(pid)
-        if runtime_pid, do: send(runtime_pid, {:terminal_session_destroyed, session_id})
-        :ok
+      session ->
+        if session.token == token do
+          session = Map.put(session, :last_active, DateTime.utc_now())
+          sessions = Map.put(sessions, session_id, session)
+          {:reply, {:ok, session}, sessions}
+        else
+          {:reply, {:error, :invalid_token}, sessions}
+        end
     end
   end
 
-  @doc """
-  Gets a terminal session by ID.
-  Returns {:ok, session_state} or {:error, :not_found}.
-  """
-  @spec get_session(String.t(), map(), pid() | nil) ::
-          {:ok, map()} | {:error, :not_found}
-  def get_session(session_id, sessions, runtime_pid \\ nil) do
-    case Map.get(sessions, session_id) do
-      nil ->
-        if runtime_pid,
-          do:
-            send(
-              runtime_pid,
-              {:terminal_error, :not_found,
-               %{action: :get_session, session_id: session_id}}
-            )
-
-        {:error, :not_found}
-
-      pid ->
-        session_state = Session.get_state(pid)
-        {:ok, session_state}
-    end
+  @impl true
+  def handle_call({:cleanup, session_id}, _from, sessions) do
+    sessions = Map.delete(sessions, session_id)
+    {:reply, :ok, sessions}
   end
 
-  @doc """
-  Lists all terminal sessions.
-  Returns a map of session IDs to session states.
-  """
-  @spec list_sessions(map()) :: map()
-  def list_sessions(sessions) do
-    sessions
-    |> Enum.map(fn {id, pid} ->
-      {id, Session.get_state(pid)}
-    end)
-    |> Map.new()
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
   end
 
-  @doc """
-  Gets the count of terminal sessions.
-  """
-  @spec count_sessions(map()) :: non_neg_integer()
-  def count_sessions(sessions) do
-    map_size(sessions)
+  # Private functions
+
+  defp generate_session_id do
+    :crypto.strong_rand_bytes(16)
+    |> Base.encode16(case: :lower)
   end
 
-  @doc """
-  Monitors a terminal session.
-  Returns :ok or {:error, :not_found}.
-  """
-  @spec monitor_session(String.t(), map()) :: :ok | {:error, :not_found}
-  def monitor_session(session_id, sessions) do
-    case Map.get(sessions, session_id) do
-      nil -> {:error, :not_found}
-      pid -> Process.monitor(pid) && :ok
-    end
-  end
-
-  @doc """
-  Unmonitors a terminal session.
-  Returns :ok or {:error, :not_found}.
-  """
-  @spec unmonitor_session(String.t(), map()) :: :ok | {:error, :not_found}
-  def unmonitor_session(session_id, sessions) do
-    case Map.get(sessions, session_id) do
-      nil -> {:error, :not_found}
-      pid -> Process.demonitor(pid) && :ok
-    end
-  end
-
-  @doc """
-  Handles a session process DOWN message.
-  Returns the updated sessions map with the terminated session removed.
-  """
-  @spec handle_session_down(pid(), map()) :: map()
-  def handle_session_down(pid, sessions) do
-    sessions
-    |> Enum.reject(fn {_id, p} -> p == pid end)
-    |> Map.new()
+  defp generate_token do
+    :crypto.strong_rand_bytes(32)
+    |> Base.encode64()
   end
 end

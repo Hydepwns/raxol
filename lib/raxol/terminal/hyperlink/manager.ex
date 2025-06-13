@@ -1,125 +1,111 @@
 defmodule Raxol.Terminal.Hyperlink.Manager do
   @moduledoc """
-  Manages hyperlink operations for the terminal emulator.
-  This module handles hyperlink creation, modification, and state tracking.
+  Manages terminal hyperlinks and their states.
   """
 
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  defstruct [
+    :url,
+    :state,
+    :id,
+    :params
+  ]
+
+  @type hyperlink_state :: :active | :inactive | :hover
+  @type hyperlink_params :: %{
+    optional(String.t()) => String.t()
+  }
+
+  @type t :: %__MODULE__{
+    url: String.t(),
+    state: hyperlink_state(),
+    id: String.t(),
+    params: hyperlink_params()
+  }
 
   @doc """
-  Gets the current hyperlink URL.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  The current hyperlink URL or nil if none exists
+  Creates a new hyperlink manager with default settings.
   """
-  @spec get_hyperlink_url(EmulatorStruct.t()) :: String.t() | nil
-  def get_hyperlink_url(%EmulatorStruct{} = emulator) do
-    emulator.current_hyperlink_url
+  def new(opts \\ []) do
+    %__MODULE__{
+      url: Keyword.get(opts, :url, ""),
+      state: Keyword.get(opts, :state, :inactive),
+      id: Keyword.get(opts, :id, generate_id()),
+      params: Keyword.get(opts, :params, %{})
+    }
   end
 
   @doc """
-  Updates the current hyperlink URL.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `url` - The new hyperlink URL
-
-  ## Returns
-
-  Updated emulator with new hyperlink URL
+  Gets the hyperlink URL.
   """
-  @spec update_hyperlink_url(EmulatorStruct.t(), String.t() | nil) :: EmulatorStruct.t()
-  def update_hyperlink_url(%EmulatorStruct{} = emulator, url) when is_binary(url) or is_nil(url) do
-    %{emulator | current_hyperlink_url: url}
+  def get_hyperlink_url(%__MODULE__{} = manager) do
+    manager.url
+  end
+
+  @doc """
+  Updates the hyperlink URL.
+  """
+  def update_hyperlink_url(%__MODULE__{} = manager, url) do
+    %{manager | url: url}
   end
 
   @doc """
   Gets the current hyperlink state.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  The current hyperlink state map or nil if none exists
   """
-  @spec get_hyperlink_state(EmulatorStruct.t()) :: map() | nil
-  def get_hyperlink_state(%EmulatorStruct{} = emulator) do
-    emulator.current_hyperlink
+  def get_hyperlink_state(%__MODULE__{} = manager) do
+    manager.state
   end
 
   @doc """
-  Updates the current hyperlink state.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `state` - The new hyperlink state map
-
-  ## Returns
-
-  Updated emulator with new hyperlink state
+  Updates the hyperlink state.
   """
-  @spec update_hyperlink_state(EmulatorStruct.t(), map() | nil) :: EmulatorStruct.t()
-  def update_hyperlink_state(%EmulatorStruct{} = emulator, state) when is_map(state) or is_nil(state) do
-    %{emulator | current_hyperlink: state}
+  def update_hyperlink_state(%__MODULE__{} = manager, state) when state in [:active, :inactive, :hover] do
+    %{manager | state: state}
   end
 
   @doc """
-  Clears the current hyperlink state.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  Updated emulator with cleared hyperlink state
+  Clears the hyperlink state.
   """
-  @spec clear_hyperlink_state(EmulatorStruct.t()) :: EmulatorStruct.t()
-  def clear_hyperlink_state(%EmulatorStruct{} = emulator) do
-    %{
-      emulator
-      | current_hyperlink_url: nil,
-        current_hyperlink: nil
-    }
+  def clear_hyperlink_state(%__MODULE__{} = manager) do
+    %{manager | state: :inactive}
   end
 
   @doc """
-  Creates a new hyperlink state.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `url` - The hyperlink URL
-  * `id` - Optional hyperlink ID
-  * `params` - Optional hyperlink parameters
-
-  ## Returns
-
-  Updated emulator with new hyperlink state
+  Creates a new hyperlink with the given parameters.
   """
-  @spec create_hyperlink(EmulatorStruct.t(), String.t(), String.t() | nil, map() | nil) :: EmulatorStruct.t()
-  def create_hyperlink(%EmulatorStruct{} = emulator, url, id \\ nil, params \\ %{})
-      when is_binary(url) and (is_binary(id) or is_nil(id)) and (is_map(params) or is_nil(params)) do
-    state = %{
+  def create_hyperlink(%__MODULE__{} = manager, url, id \\ nil, params \\ %{}) do
+    %{manager |
       url: url,
-      id: id,
-      params: params || %{},
-      created_at: System.system_time(:millisecond)
+      id: id || generate_id(),
+      params: params,
+      state: :inactive
     }
+  end
 
-    %{
-      emulator
-      | current_hyperlink_url: url,
-        current_hyperlink: state
-    }
+  @doc """
+  Gets the hyperlink parameters.
+  """
+  def get_hyperlink_params(%__MODULE__{} = manager) do
+    manager.params
+  end
+
+  @doc """
+  Updates the hyperlink parameters.
+  """
+  def update_hyperlink_params(%__MODULE__{} = manager, params) do
+    %{manager | params: params}
+  end
+
+  @doc """
+  Gets the hyperlink ID.
+  """
+  def get_hyperlink_id(%__MODULE__{} = manager) do
+    manager.id
+  end
+
+  # Private Functions
+
+  defp generate_id do
+    :crypto.strong_rand_bytes(16)
+    |> Base.encode16(case: :lower)
   end
 end

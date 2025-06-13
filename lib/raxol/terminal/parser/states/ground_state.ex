@@ -14,23 +14,68 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
     handle_input(input, emulator, parser_state)
   end
 
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_byte(byte, emulator, state) do
+    case byte do
+      # ESC (C0 Code)
+      27 ->
+        {:ok, emulator, %{state | state: :escape}}
+      # Other bytes are handled by the main handle/3 function
+      _ ->
+        {:ok, emulator, state}
+    end
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_escape(emulator, state) do
+    {:ok, emulator, %{state | state: :escape}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_control_sequence(emulator, state) do
+    {:ok, emulator, %{state | state: :control_sequence}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_osc_string(emulator, state) do
+    {:ok, emulator, %{state | state: :osc_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_dcs_string(emulator, state) do
+    {:ok, emulator, %{state | state: :dcs_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_apc_string(emulator, state) do
+    {:ok, emulator, %{state | state: :apc_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_pm_string(emulator, state) do
+    {:ok, emulator, %{state | state: :pm_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_sos_string(emulator, state) do
+    {:ok, emulator, %{state | state: :sos_string}}
+  end
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
+  def handle_unknown(emulator, state) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "GroundState received unknown command",
+      %{emulator: emulator, state: state}
+    )
+    {:ok, emulator, state}
+  end
+
   defp handle_input(data, emulator, parser_state) do
     Raxol.Core.Runtime.Log.debug(
       "GroundState handling input: #{inspect(data)}, current parser state: #{inspect(parser_state)}"
     )
 
     case data do
-      # Printable character (ASCII)
-      <<char, rest::binary>> when char >= 0x20 and char <= 0x7E ->
-        Raxol.Core.Runtime.Log.debug(
-          "[GroundState] Before printable: style=#{inspect(emulator.style)}, state=#{inspect(parser_state.state)}"
-        )
-
-        updated_emulator =
-          Raxol.Terminal.InputHandler.process_character(emulator, char)
-
-        {:continue, updated_emulator, parser_state, rest}
-
       # ESC (C0 Code) - Transition to EscapeState
       <<27, rest_after_esc::binary>> ->
         Raxol.Core.Runtime.Log.debug(

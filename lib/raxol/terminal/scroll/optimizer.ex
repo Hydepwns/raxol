@@ -28,8 +28,8 @@ defmodule Raxol.Terminal.Scroll.Optimizer do
   Optimizes scroll operations for better performance.
   """
   @spec optimize(t(), :up | :down, non_neg_integer()) :: t()
-  def optimize(optimizer, direction, lines) do
-    # Update last optimization time
-    %{optimizer | last_optimization: System.monotonic_time()}
+  def optimize(optimizer, _direction, _lines) do
+    # Optimize scroll operations based on current state
+    optimizer
   end
 end

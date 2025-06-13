@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Cell do
 
   @type t :: %__MODULE__{
           char: String.t() | nil,
-          style: TextFormatting.text_style(),
+          style: TextFormatting.text_style() | nil,
           dirty: boolean(),
           is_wide_placeholder: boolean()
         }
@@ -49,11 +49,12 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_style(cell)
       %{foreground: :red}
   """
-  def new(char \\ " ", style \\ TextFormatting.new(), dirty \\ true) do
+  @spec new(String.t() | nil, TextFormatting.text_style() | nil) :: t()
+  def new(char \\ "", style \\ nil) do
     %__MODULE__{
-      char: char,
+      char: char || "",
       style: style,
-      dirty: dirty,
+      dirty: true,
       is_wide_placeholder: false
     }
   end
@@ -87,6 +88,7 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_style(cell)
       %{foreground: :red}
   """
+  @spec get_style(t()) :: TextFormatting.text_style() | nil
   def get_style(%__MODULE__{style: style}), do: style
 
   @doc """
@@ -99,6 +101,7 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_char(cell)
       "A"
   """
+  @spec set_char(t(), String.t()) :: t()
   def set_char(%__MODULE__{} = cell, char) do
     %{cell | char: char}
   end
@@ -113,6 +116,7 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_style(cell)
       %{foreground: :red}
   """
+  @spec set_style(t(), TextFormatting.text_style() | nil) :: t()
   def set_style(%__MODULE__{} = cell, style) do
     %{cell | style: style}
   end
@@ -221,7 +225,8 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.is_empty?(cell)
       false
   """
-  def is_empty?(%__MODULE__{char: char, style: style}) do
+  @spec empty?(t()) :: boolean()
+  def empty?(%__MODULE__{char: char, style: style}) do
     char == " " and style == TextFormatting.new()
   end
 
@@ -359,4 +364,10 @@ defmodule Raxol.Terminal.Cell do
     # Log warning or handle error? For now, return nil.
     nil
   end
+
+  @doc """
+  Creates an empty cell.
+  """
+  @spec empty() :: t()
+  def empty, do: new()
 end
