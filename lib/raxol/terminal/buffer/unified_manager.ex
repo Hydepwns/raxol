@@ -184,6 +184,120 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     GenServer.call(state, {:resize, width, height})
   end
 
+  @doc """
+  Gets the active buffer.
+  """
+  def get_active_buffer(%__MODULE__{} = state) do
+    {:ok, state.active_buffer}
+  end
+
+  @doc """
+  Updates the buffer with new commands.
+  """
+  def update(%__MODULE__{} = state, commands) when is_list(commands) do
+    # Process each command in sequence
+    Enum.reduce(commands, {:ok, state}, fn command, {:ok, current_state} ->
+      case process_command(current_state, command) do
+        {:ok, new_state} -> {:ok, new_state}
+        error -> error
+      end
+    end)
+  end
+
+  @doc """
+  Updates the buffer manager configuration.
+  Delegates to update/2 for compatibility.
+  """
+  def update_config(buffer_manager, config) do
+    update(buffer_manager, [config])
+  end
+
+  @doc """
+  Gets the visible content of the buffer.
+  """
+  def get_visible_content(%__MODULE__{} = state) do
+    # Return the visible portion of the active buffer
+    {:ok, ScreenBuffer.get_visible_content(state.active_buffer)}
+  end
+
+  @doc """
+  Updates the visible region of the buffer.
+  """
+  def update_visible_region(%__MODULE__{} = state, region) do
+    GenServer.call(state, {:update_visible_region, region})
+  end
+
+  @doc """
+  Gets the total number of lines in the buffer.
+  """
+  def get_total_lines(%__MODULE__{} = state) do
+    {:ok, state.height + Scroll.get_size(state.scrollback_buffer)}
+  end
+
+  @doc """
+  Gets the number of visible lines in the buffer.
+  """
+  def get_visible_lines(%__MODULE__{} = state) do
+    {:ok, state.height}
+  end
+
+  @doc """
+  Writes data to the buffer.
+  """
+  def write(%__MODULE__{} = state, data) do
+    GenServer.call(state, {:write, data})
+  end
+
+  @doc """
+  Gets the memory usage of the buffer.
+  """
+  def get_memory_usage(%__MODULE__{} = state) do
+    # Calculate total memory usage from all buffers
+    active_usage = ScreenBuffer.get_memory_usage(state.active_buffer)
+    back_usage = ScreenBuffer.get_memory_usage(state.back_buffer)
+    scrollback_usage = Scroll.get_memory_usage(state.scrollback_buffer)
+
+    total_usage = active_usage + back_usage + scrollback_usage
+    {:ok, total_usage}
+  end
+
+  @doc """
+  Gets the buffer manager state.
+  """
+  def get_buffer_manager(%__MODULE__{} = state) do
+    {:ok, state}
+  end
+
+  @doc """
+  Cleans up the buffer manager.
+  """
+  def cleanup(%__MODULE__{} = state) do
+    # Clean up all buffers
+    ScreenBuffer.cleanup(state.active_buffer)
+    ScreenBuffer.cleanup(state.back_buffer)
+    Scroll.cleanup(state.scrollback_buffer)
+
+    # Reset metrics
+    new_state = %{state | metrics: %{
+      operations: %{},
+      memory: %{},
+      performance: %{}
+    }}
+
+    {:ok, new_state}
+  end
+
+  @doc """
+  Gets the visible content for a specific buffer.
+  """
+  @spec get_visible_content(t(), String.t()) :: {:ok, list(list(Cell.t()))} | {:error, term()}
+  def get_visible_content(manager, buffer_id) do
+    case Map.get(manager.buffers, buffer_id) do
+      nil -> {:error, :buffer_not_found}
+      buffer -> {:ok, buffer.cells}
+    end
+  end
+
   # Server Callbacks
 
   @impl true
@@ -374,6 +488,23 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     for i <- x..(x + width - 1),
         j <- y..(y + height - 1) do
       System.invalidate({i, j, 1, 1}, namespace: :buffer)
+    end
+  end
+
+  defp process_command(state, command) do
+    case command do
+      {:set_cell, x, y, cell} ->
+        set_cell(state, x, y, cell)
+      {:fill_region, x, y, width, height, cell} ->
+        fill_region(state, x, y, width, height, cell)
+      {:scroll_region, x, y, width, height, amount} ->
+        scroll_region(state, x, y, width, height, amount)
+      :clear ->
+        clear(state)
+      {:resize, width, height} ->
+        resize(state, width, height)
+      _ ->
+        {:error, :unknown_command}
     end
   end
 end

@@ -1,104 +1,109 @@
 defmodule Raxol.Terminal.Buffer.Manager.State do
   @moduledoc """
-  Handles state management for the terminal buffer manager.
-  Provides functionality for initializing and managing buffer state.
+  Defines the state structure and operations for the buffer manager.
+  This module handles the core state management for the terminal buffer,
+  including active buffer, back buffer, scrollback, damage tracking, and memory management.
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.DamageTracker
   alias Raxol.Terminal.Buffer.Scrollback
-
-  @type t :: %__MODULE__{
-          active_buffer: ScreenBuffer.t(),
-          back_buffer: ScreenBuffer.t(),
-          damage_tracker: DamageTracker.t(),
-          memory_limit: non_neg_integer(),
-          memory_usage: non_neg_integer(),
-          cursor_position: {non_neg_integer(), non_neg_integer()},
-          scrollback: Scrollback.t()
-        }
+  alias Raxol.Terminal.Buffer.DamageTracker
+  alias Raxol.Terminal.Buffer.MemoryManager
 
   defstruct [
     :active_buffer,
     :back_buffer,
+    :scrollback,
     :damage_tracker,
-    :memory_limit,
     :memory_usage,
-    :cursor_position,
-    :scrollback
+    :memory_limit,
+    :metrics
   ]
 
-  @doc """
-  Creates a new buffer manager state with the given dimensions.
-
-  ## Examples
-
-      iex> {:ok, state} = State.new(80, 24)
-      iex> state.active_buffer.width
-      80
-      iex> state.active_buffer.height
-      24
-  """
-  def new(width, height, scrollback_height \\ 1000, memory_limit \\ 10_000_000) do
-    active_buffer = ScreenBuffer.new(width, height, scrollback_height)
-    back_buffer = ScreenBuffer.new(width, height, scrollback_height)
-
-    {:ok,
-     %__MODULE__{
-       active_buffer: active_buffer,
-       back_buffer: back_buffer,
-       damage_tracker: DamageTracker.new(),
-       memory_limit: memory_limit,
-       memory_usage: 0,
-       cursor_position: {0, 0},
-       scrollback: Scrollback.new(scrollback_height)
-     }}
-  end
+  @type t :: %__MODULE__{
+    active_buffer: ScreenBuffer.t(),
+    back_buffer: ScreenBuffer.t(),
+    scrollback: Scrollback.t(),
+    damage_tracker: DamageTracker.t(),
+    memory_usage: non_neg_integer(),
+    memory_limit: non_neg_integer(),
+    metrics: map()
+  }
 
   @doc """
-  Switches the active and back buffers.
-
-  ## Examples
-
-      iex> state = State.new(80, 24)
-      iex> state = State.switch_buffers(state)
-      iex> state.active_buffer == state.back_buffer
-      false
+  Creates a new state with the specified dimensions.
   """
-  def switch_buffers(%__MODULE__{} = state) do
-    %{
-      state
-      | active_buffer: state.back_buffer,
-        back_buffer: state.active_buffer,
-        damage_tracker: DamageTracker.clear_regions(state.damage_tracker)
+  def new(width, height) do
+    %__MODULE__{
+      active_buffer: ScreenBuffer.new(width, height),
+      back_buffer: ScreenBuffer.new(width, height),
+      scrollback: Scrollback.new(),
+      damage_tracker: DamageTracker.new(),
+      memory_usage: 0,
+      memory_limit: 10_000_000,
+      metrics: %{
+        writes: 0,
+        reads: 0,
+        scrolls: 0,
+        memory_usage: 0
+      }
     }
   end
 
   @doc """
-  Updates the active buffer in the state.
-  """
-  def update_active_buffer(%__MODULE__{} = state, new_buffer) do
-    %{state | active_buffer: new_buffer}
-  end
-
-  @doc """
-  Updates the back buffer in the state.
-  """
-  def update_back_buffer(%__MODULE__{} = state, new_buffer) do
-    %{state | back_buffer: new_buffer}
-  end
-
-  @doc """
-  Gets the current dimensions of the buffer.
+  Gets the dimensions of the active buffer.
   """
   def get_dimensions(%__MODULE__{} = state) do
     {state.active_buffer.width, state.active_buffer.height}
   end
 
   @doc """
-  Gets the scrollback height.
+  Gets the width of the active buffer.
   """
-  def get_scrollback_height(%__MODULE__{} = state) do
-    state.scrollback.height
+  def get_width(%__MODULE__{} = state) do
+    state.active_buffer.width
+  end
+
+  @doc """
+  Gets the height of the active buffer.
+  """
+  def get_height(%__MODULE__{} = state) do
+    state.active_buffer.height
+  end
+
+  @doc """
+  Gets a line from the active buffer.
+  """
+  def get_line(%__MODULE__{} = state, line_index) do
+    ScreenBuffer.get_line(state.active_buffer, line_index)
+  end
+
+  @doc """
+  Gets a cell from the active buffer.
+  """
+  def get_cell(%__MODULE__{} = state, x, y) do
+    ScreenBuffer.get_cell(state.active_buffer, x, y)
+  end
+
+  @doc """
+  Gets the content of the active buffer.
+  """
+  def get_content(%__MODULE__{} = state) do
+    ScreenBuffer.get_content(state.active_buffer)
+  end
+
+  @doc """
+  Gets a cell from the active buffer at the specified coordinates.
+  """
+  def get_cell_at(%__MODULE__{} = state, x, y) do
+    ScreenBuffer.get_cell_at(state.active_buffer, x, y)
+  end
+
+  @doc """
+  Updates a line in the active buffer.
+  """
+  def put_line(%__MODULE__{} = state, line_index, new_cells) do
+    new_active_buffer = ScreenBuffer.put_line(state.active_buffer, line_index, new_cells)
+    %{state | active_buffer: new_active_buffer}
   end
 end

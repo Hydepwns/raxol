@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Buffer.MemoryManager do
+  alias Raxol.Terminal.ScreenBuffer
+
   @moduledoc """
   Handles calculation and checking of terminal buffer memory usage.
   """
-
-  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
   Calculates the approximate memory usage of a single screen buffer.

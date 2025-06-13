@@ -281,9 +281,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     :error
   end
 
-  defp add_to_pool(pool, buffer) do
-    # Add a buffer to the pool
-    # Implementation details...
+  defp add_to_pool(pool, _buffer) do
     pool
   end
 
@@ -299,9 +297,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     }
   end
 
-  defp apply_optimizations(state, metrics) do
-    # Apply optimizations based on performance metrics
-    # Implementation details...
+  defp apply_optimizations(state, _metrics) do
     state
   end
 end

@@ -1,316 +1,231 @@
 defmodule Raxol.Terminal.Buffer.Eraser do
   @moduledoc """
-  Handles erasing parts of the Raxol.Terminal.ScreenBuffer.
-  Includes functions for erasing lines, screen regions, and characters.
+  Provides screen clearing operations for the screen buffer.
+  This module handles operations like clearing the screen, lines, and regions.
   """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Buffer.LineOperations
   require Raxol.Core.Runtime.Log
 
   @doc """
-  Clears a rectangular region of the buffer by replacing cells with blank cells
-  using the provided default_style.
-  Returns the updated buffer state.
+  Clears the entire screen with the specified style.
   """
-  @spec clear_region(
-          ScreenBuffer.t(),
-          integer(),
-          integer(),
-          integer(),
-          integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
-  def clear_region(
-        %{__struct__: _} = buffer,
-        top,
-        left,
-        bottom,
-        right,
-        default_style
-      ) do
-    # Clamp coordinates to buffer dimensions
-    clamped_top = max(0, min(top, buffer.height - 1))
-    clamped_left = max(0, min(left, buffer.width - 1))
-    clamped_bottom = max(0, min(bottom, buffer.height - 1))
-    clamped_right = max(0, min(right, buffer.width - 1))
-
-    Raxol.Core.Runtime.Log.debug(
-      "[Eraser.clear_region] Called with: top=#{top}, left=#{left}, bottom=#{bottom}, right=#{right}"
-    )
-
-    Raxol.Core.Runtime.Log.debug(
-      "[Eraser.clear_region] Clamped to: top=#{clamped_top}, left=#{clamped_left}, bottom=#{clamped_bottom}, right=#{clamped_right}"
-    )
-
-    Raxol.Core.Runtime.Log.debug(
-      "[Eraser.clear_region] Buffer dimensions: width=#{buffer.width}, height=#{buffer.height}"
-    )
-
-    if clamped_top > clamped_bottom or clamped_left > clamped_right do
-      Raxol.Core.Runtime.Log.debug(
-        "[Eraser.clear_region] Invalid region (clamped_top > clamped_bottom or clamped_left > clamped_right), no-op."
-      )
-
-      # No-op if region is invalid
-      buffer
-    else
-      # REMOVED condition: Log the exact clamped values for EVERY call that reaches here
-      Raxol.Core.Runtime.Log.debug(
-        "[Eraser.clear_region PARAMS] top_arg: #{top}, left_arg: #{left}, bottom_arg: #{bottom}, right_arg: #{right} --- clamped_top: #{clamped_top}, clamped_left: #{clamped_left}, clamped_bottom: #{clamped_bottom}, clamped_right: #{clamped_right}"
-      )
-
-      blank_cell = %Cell{char: " ", style: default_style, dirty: true}
-      region_width = clamped_right - clamped_left + 1
-      blank_row_segment = List.duplicate(blank_cell, region_width)
-
-      new_cells =
-        buffer.cells
-        |> Enum.with_index()
-        |> Enum.map(fn {line, row_idx} ->
-          condition_result =
-            row_idx >= clamped_top and row_idx <= clamped_bottom
-
-          # ADDED: Log row_idx and condition_result if we are in the call for LINE 2
-          # Check if this is the call originating from clear_line(2)
-          if top == 2 and bottom == 2 and left == 0 do
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region CALL FOR LINE 2] row_idx: #{row_idx}, condition_eval: (top=#{clamped_top}, bot=#{clamped_bottom}), condition_result: #{condition_result}"
-            )
-          end
-
-          if condition_result do
-            # This row is in the vertical range, modify the horizontal segment
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] Processing row_idx: #{row_idx}"
-            )
-
-            # Log the captured values of clamped_left and clamped_right for this iteration
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] Inside map for row #{row_idx}: effective_left=#{clamped_left}, effective_right=#{clamped_right}"
-            )
-
-            prefix_cells = Enum.take(line, clamped_left)
-
-            # The segment to be replaced is from clamped_left to clamped_right inclusive
-            # The suffix starts after clamped_right
-            suffix_cells = Enum.drop(line, clamped_right + 1)
-
-            # Detailed logging for chars
-            original_line_chars_map = Enum.map(line, & &1.char)
-            prefix_chars_map = Enum.map(prefix_cells, & &1.char)
-            suffix_chars_map = Enum.map(suffix_cells, & &1.char)
-            blank_segment_chars_map = Enum.map(blank_row_segment, & &1.char)
-
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] row_idx: #{row_idx} - Original line chars: #{inspect(original_line_chars_map)}"
-            )
-
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] row_idx: #{row_idx} - Splitting at left: #{clamped_left}, right_plus_1_for_drop: #{clamped_right + 1}"
-            )
-
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] row_idx: #{row_idx} - Prefix chars: #{inspect(prefix_chars_map)} (count: #{length(prefix_cells)})"
-            )
-
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] row_idx: #{row_idx} - Suffix chars: #{inspect(suffix_chars_map)} (count: #{length(suffix_cells)})"
-            )
-
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] row_idx: #{row_idx} - Blank segment to insert: #{inspect(blank_segment_chars_map)} (count: #{length(blank_row_segment)})"
-            )
-
-            new_line_cells = prefix_cells ++ blank_row_segment ++ suffix_cells
-            new_line_chars_map = Enum.map(new_line_cells, & &1.char)
-
-            Raxol.Core.Runtime.Log.debug(
-              "[Eraser.clear_region] row_idx: #{row_idx} - New line chars: #{inspect(new_line_chars_map)}"
-            )
-
-            new_line_cells
-          else
-            # Return unchanged line
-            line
-          end
-        end)
-
-      %{buffer | cells: new_cells}
-    end
-  end
-
-  def clear_region(buffer, _top, _left, _bottom, _right, _default_style)
-      when is_tuple(buffer) do
-    raise ArgumentError,
-          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  @spec clear(ScreenBuffer.t(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def clear(buffer, style \\ nil) do
+    empty_line = create_empty_line(buffer.width, style || buffer.default_style)
+    new_cells = List.duplicate(empty_line, buffer.height)
+    %{buffer | cells: new_cells}
   end
 
   @doc """
-  Clears from the given position to the end of the line using the provided default_style.
+  Clears a specific line with the specified style.
+  """
+  @spec clear_line(ScreenBuffer.t(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def clear_line(buffer, line_index, style \\ nil) do
+    LineOperations.clear_line(buffer, line_index, style)
+  end
+
+  @doc """
+  Clears a region of the screen with the specified style.
+  """
+  @spec clear_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def clear_region(buffer, x, y, width, height, style \\ nil) do
+    empty_cell = Cell.new("", style || buffer.default_style)
+
+    new_cells = Enum.reduce(y..(y + height - 1), buffer.cells, fn row, cells ->
+      if row < buffer.height do
+        List.update_at(cells, row, fn line ->
+          Enum.reduce(x..(x + width - 1), line, fn col, acc ->
+            if col < buffer.width do
+              List.update_at(acc, col, fn _ -> empty_cell end)
+            else
+              acc
+            end
+          end)
+        end)
+      else
+        cells
+      end
+    end)
+
+    %{buffer | cells: new_cells}
+  end
+
+  @doc """
+  Erases from cursor to end of screen.
+  """
+  @spec erase_from_cursor_to_end(ScreenBuffer.t()) :: ScreenBuffer.t()
+  def erase_from_cursor_to_end(buffer) do
+    {x, y} = buffer.cursor_position
+    clear_region(buffer, x, y, buffer.width - x, buffer.height - y)
+  end
+
+  @doc """
+  Erases from start of screen to cursor.
+  """
+  @spec erase_from_start_to_cursor(ScreenBuffer.t()) :: ScreenBuffer.t()
+  def erase_from_start_to_cursor(buffer) do
+    {x, y} = buffer.cursor_position
+    clear_region(buffer, 0, 0, x + 1, y + 1)
+  end
+
+  @doc """
+  Erases the entire screen.
+  """
+  @spec erase_all(ScreenBuffer.t()) :: ScreenBuffer.t()
+  def erase_all(buffer) do
+    clear(buffer)
+  end
+
+  @doc """
+  Erases from cursor to end of display.
+  """
+  @spec erase_display_segment(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def erase_display_segment(buffer, x, y, style \\ nil)
+  def erase_display_segment(buffer, x, y, style) do
+    style = style || TextFormatting.new()
+    cells = buffer.cells
+    empty_cell = Cell.new(" ", style)
+
+    cells = Enum.with_index(cells)
+    |> Enum.map(fn {line, row} ->
+      if row > y or (row == y and x > 0) do
+        Enum.with_index(line)
+        |> Enum.map(fn {cell, col} ->
+          if row > y or (row == y and col >= x) do
+            empty_cell
+          else
+            cell
+          end
+        end)
+      else
+        line
+      end
+    end)
+
+    %{buffer | cells: cells}
+  end
+
+  @doc """
+  Erases from cursor to end of line.
+  """
+  @spec erase_line_segment(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def erase_line_segment(buffer, x, y, style \\ nil)
+  def erase_line_segment(buffer, x, y, style) do
+    style = style || TextFormatting.new()
+    cells = buffer.cells
+    empty_cell = Cell.new(" ", style)
+
+    cells = Enum.with_index(cells)
+    |> Enum.map(fn {line, row} ->
+      if row == y do
+        Enum.with_index(line)
+        |> Enum.map(fn {cell, col} ->
+          if col >= x do
+            empty_cell
+          else
+            cell
+          end
+        end)
+      else
+        line
+      end
+    end)
+
+    %{buffer | cells: cells}
+  end
+
+  @doc """
+  Clears from the given position to the end of the line using the provided style.
   Returns the updated buffer state.
   """
   @spec clear_line_from(
           ScreenBuffer.t(),
           integer(),
           integer(),
-          TextFormatting.text_style()
+          TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def clear_line_from(%ScreenBuffer{} = buffer, row, col, default_style) do
-    # Ensure row is valid
-    if row >= 0 and row < buffer.height do
-      clear_region(buffer, row, col, row, buffer.width - 1, default_style)
-    else
-      buffer
-    end
+  def clear_line_from(buffer, y, x, style \\ nil)
+  def clear_line_from(%ScreenBuffer{} = buffer, row, col, style) do
+    style = style || TextFormatting.new()
+    clear_region(buffer, row, col, row, buffer.width - 1, style)
+  end
+  def clear_line_from(buffer, _row, _col, _style) do
+    buffer
   end
 
   @doc """
-  Clears from the beginning of the line to the given position using the provided default_style.
+  Clears from the beginning of the line to the given position using the provided style.
   Returns the updated buffer state.
   """
   @spec clear_line_to(
           ScreenBuffer.t(),
           integer(),
           integer(),
-          TextFormatting.text_style()
+          TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def clear_line_to(%ScreenBuffer{} = buffer, row, col, default_style) do
-    # Ensure row is valid
-    if row >= 0 and row < buffer.height do
-      clear_region(buffer, row, 0, row, col, default_style)
+  def clear_line_to(buffer, y, x, style \\ nil)
+  def clear_line_to(%ScreenBuffer{} = buffer, row, col, style) do
+    style = style || TextFormatting.new()
+    clear_region(buffer, row, 0, row, col, style)
+  end
+  def clear_line_to(buffer, _row, _col, _style) do
+    buffer
+  end
+
+  @doc """
+  Clears the screen from cursor position to end.
+  """
+  @spec clear_screen_from(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def clear_screen_from(buffer, y, x, style \\ nil) do
+    style = style || TextFormatting.new()
+    # Clear from cursor to end of line
+    buffer = clear_region(buffer, x, y, buffer.width - x, 1, style)
+    # Clear all lines below
+    if y + 1 < buffer.height do
+      clear_region(buffer, 0, y + 1, buffer.width, buffer.height - (y + 1), style)
     else
       buffer
     end
   end
 
   @doc """
-  Clears the entire line using the provided default_style.
-  Returns the updated buffer state.
+  Clears the screen from start to cursor position.
   """
-  @spec clear_line(ScreenBuffer.t(), integer(), TextFormatting.text_style()) ::
-          ScreenBuffer.t()
-  def clear_line(%ScreenBuffer{} = buffer, row, default_style) do
-    Raxol.Core.Runtime.Log.debug(
-      "[Eraser.clear_line] CALLED with row: #{row}, buffer_height: #{buffer.height}"
-    )
-
-    # Ensure row is valid
-    if row >= 0 and row < buffer.height do
-      Raxol.Core.Runtime.Log.debug(
-        "[Eraser.clear_line] Condition TRUE, calling clear_region for row: #{row}"
-      )
-
-      clear_region(buffer, row, 0, row, buffer.width - 1, default_style)
+  @spec clear_screen_to(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def clear_screen_to(buffer, y, x, style \\ nil) do
+    style = style || TextFormatting.new()
+    # Clear from start of line to cursor
+    buffer = clear_region(buffer, 0, y, x + 1, 1, style)
+    # Clear all lines above
+    if y > 0 do
+      clear_region(buffer, 0, 0, buffer.width, y, style)
     else
-      Raxol.Core.Runtime.Log.debug(
-        "[Eraser.clear_line] Condition FALSE for row: #{row}, returning original buffer"
-      )
-
       buffer
     end
   end
 
   @doc """
-  Clears the screen from the given position down using the provided default_style.
+  Clears the entire screen (main buffer grid) using the provided style.
   Returns the updated buffer state.
   """
-  @spec clear_screen_from(
-          ScreenBuffer.t(),
-          integer(),
-          integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
-  def clear_screen_from(%ScreenBuffer{} = buffer, row, col, default_style) do
-    # Clamp coordinates
-    eff_row = max(0, min(row, buffer.height - 1))
-    eff_col = max(0, min(col, buffer.width - 1))
-
-    # Clear remainder of the current line
-    buffer_step1 = clear_line_from(buffer, eff_row, eff_col, default_style)
-
-    # Clear lines below, if any
-    if eff_row < buffer.height - 1 do
-      clear_region(
-        buffer_step1,
-        eff_row + 1,
-        0,
-        buffer.height - 1,
-        buffer.width - 1,
-        default_style
-      )
-    else
-      buffer_step1
-    end
-  end
-
-  @doc """
-  Clears the screen from the beginning up to the given position using the provided default_style.
-  Returns the updated buffer state.
-  """
-  @spec clear_screen_to(
-          ScreenBuffer.t(),
-          integer(),
-          integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
-  def clear_screen_to(%ScreenBuffer{} = buffer, row, col, default_style) do
-    # Clamp coordinates
-    eff_row = max(0, min(row, buffer.height - 1))
-    eff_col = max(0, min(col, buffer.width - 1))
-
-    # Clear the current line up to the cursor
-    buffer_step1 = clear_line_to(buffer, eff_row, eff_col, default_style)
-
-    Raxol.Core.Runtime.Log.debug(
-      "[clear_screen_to] After clear_line_to, buffer_step1.width: #{buffer_step1.width}, eff_row: #{eff_row}"
-    )
-
-    # Clear lines above, if any
-    if eff_row > 0 do
-      arg_top = 0
-      arg_left = 0
-      arg_bottom = eff_row - 1
-      # Assuming width is correct here
-      arg_right = buffer_step1.width - 1
-
-      Raxol.Core.Runtime.Log.debug(
-        "[clear_screen_to] PRE-CALL clear_region for lines ABOVE: top=#{arg_top}, left=#{arg_left}, bottom=#{arg_bottom}, right=#{arg_right}, eff_row_val=#{eff_row}, buf_width_val=#{buffer_step1.width}"
-      )
-
-      # Use explicit vars
-      clear_region(
-        buffer_step1,
-        arg_top,
-        arg_left,
-        arg_bottom,
-        arg_right,
-        default_style
-      )
-    else
-      buffer_step1
-    end
-  end
-
-  @doc """
-  Clears the entire screen (main buffer grid) using the provided default_style.
-  Returns the updated buffer state.
-  """
-  @spec clear_screen(ScreenBuffer.t(), TextFormatting.text_style()) ::
-          ScreenBuffer.t()
-  def clear_screen(%ScreenBuffer{} = buffer, default_style) do
+  @spec clear_screen(ScreenBuffer.t(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  def clear_screen(buffer, style \\ nil)
+  def clear_screen(%ScreenBuffer{} = buffer, style) do
+    style = style || TextFormatting.new()
     clear_region(
       buffer,
       0,
       0,
       buffer.height - 1,
       buffer.width - 1,
-      default_style
+      style
     )
   end
-
-  def clear_screen(buffer, _default_style) when is_tuple(buffer) do
+  def clear_screen(buffer, _style) when is_tuple(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -325,29 +240,31 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           ScreenBuffer.t(),
           {non_neg_integer(), non_neg_integer()},
           :to_end | :to_beginning | :all,
-          TextFormatting.text_style()
+          TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def erase_in_line(%{__struct__: _} = buffer, {col, row}, type, default_style) do
-    case type do
-      :to_end ->
-        clear_line_from(buffer, row, col, default_style)
-
-      :to_beginning ->
-        clear_line_to(buffer, row, col, default_style)
-
-      :all ->
-        clear_line(buffer, row, default_style)
-
-      _ ->
-        # Should not happen if called correctly from CSI handler
-        buffer
+  def erase_in_line(buffer, cursor_pos, type, style \\ nil) do
+    style = style || TextFormatting.new()
+    case buffer do
+      %{__struct__: _} = buffer ->
+        case cursor_pos do
+          {col, row} ->
+            case type do
+              :to_end ->
+                clear_line_from(buffer, row, col, style)
+              :to_beginning ->
+                clear_line_to(buffer, row, col, style)
+              :all ->
+                clear_line(buffer, row, style)
+              _ ->
+                buffer
+            end
+          _ ->
+            buffer
+        end
+      _ when is_tuple(buffer) ->
+        raise ArgumentError,
+              "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
     end
-  end
-
-  def erase_in_line(buffer, _cursor_pos, _type, _default_style)
-      when is_tuple(buffer) do
-    raise ArgumentError,
-          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
@@ -361,33 +278,38 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           ScreenBuffer.t(),
           {non_neg_integer(), non_neg_integer()},
           :to_end | :to_beginning | :all,
-          TextFormatting.text_style()
+          TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def erase_in_display(
-        %{__struct__: _} = buffer,
-        {col, row},
-        type,
-        default_style
-      ) do
-    case type do
-      :to_end ->
-        clear_screen_from(buffer, row, col, default_style)
-
-      :to_beginning ->
-        clear_screen_to(buffer, row, col, default_style)
-
-      :all ->
-        clear_screen(buffer, default_style)
-
-      _ ->
-        # Ignore other types (like :scrollback which is handled elsewhere)
-        buffer
+  def erase_in_display(buffer, cursor_pos, type, style \\ nil) do
+    style = style || TextFormatting.new()
+    case buffer do
+      %{__struct__: _} = buffer ->
+        case cursor_pos do
+          {col, row} ->
+            case type do
+              :to_end ->
+                clear_screen_from(buffer, row, col, style)
+              :to_beginning ->
+                clear_screen_to(buffer, row, col, style)
+              :all ->
+                clear_screen(buffer, style)
+              _ ->
+                buffer
+            end
+          _ ->
+            buffer
+        end
+      _ when is_tuple(buffer) ->
+        raise ArgumentError,
+              "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
     end
   end
 
-  def erase_in_display(buffer, _cursor_pos, _type, _default_style)
-      when is_tuple(buffer) do
-    raise ArgumentError,
-          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  # Private helper functions
+
+  defp create_empty_line(width, style) do
+    for _ <- 1..width do
+      Cell.new("", style)
+    end
   end
 end

@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
   """
 
   alias Raxol.Terminal.Buffer.Manager.State
-  alias Raxol.Terminal.Buffer.Scrollback
+  alias Raxol.Terminal.Buffer.Scrollback, as: BufferScrollback
 
   @doc """
   Adds a line to the scrollback buffer.
@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       "Hello, World!"
   """
   def add_line(%State{} = state, line) do
-    new_scrollback = Scrollback.add_lines(state.scrollback, [line])
+    new_scrollback = BufferScrollback.add_lines(state.scrollback, [line])
     %{state | scrollback: new_scrollback}
   end
 
@@ -33,7 +33,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       "Hello, World!"
   """
   def get_line(%State{} = state, index) do
-    Scrollback.get_line(state.scrollback, index)
+    BufferScrollback.get_line(state.scrollback, index)
   end
 
   @doc """
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       1
   """
   def get_line_count(%State{} = state) do
-    Scrollback.size(state.scrollback)
+    BufferScrollback.size(state.scrollback)
   end
 
   @doc """
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       0
   """
   def clear(%State{} = state) do
-    new_scrollback = Scrollback.clear(state.scrollback)
+    new_scrollback = BufferScrollback.clear(state.scrollback)
     %{state | scrollback: new_scrollback}
   end
 
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       1000
   """
   def get_height(%State{} = state) do
-    Scrollback.get_limit(state.scrollback)
+    BufferScrollback.get_limit(state.scrollback)
   end
 
   @doc """
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
   """
   def set_height(%State{} = state, new_height)
       when is_integer(new_height) and new_height > 0 do
-    new_scrollback = Scrollback.set_limit(state.scrollback, new_height)
+    new_scrollback = BufferScrollback.set_limit(state.scrollback, new_height)
     %{state | scrollback: new_scrollback}
   end
 
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       ["Line 1", "Line 2"]
   """
   def get_lines(%State{} = state, start, count) do
-    Scrollback.get_lines(state.scrollback, start, count)
+    BufferScrollback.get_lines(state.scrollback, start, count)
   end
 
   @doc """
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       false
   """
   def is_full?(%State{} = state) do
-    Scrollback.is_full?(state.scrollback)
+    BufferScrollback.is_full?(state.scrollback)
   end
 
   @doc """
@@ -134,7 +134,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       "Oldest line"
   """
   def get_oldest_line(%State{} = state) do
-    Scrollback.get_oldest_line(state.scrollback)
+    BufferScrollback.get_oldest_line(state.scrollback)
   end
 
   @doc """
@@ -148,6 +148,6 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       "Newest line"
   """
   def get_newest_line(%State{} = state) do
-    Scrollback.get_newest_line(state.scrollback)
+    BufferScrollback.get_newest_line(state.scrollback)
   end
 end
