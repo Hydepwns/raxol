@@ -49,23 +49,18 @@ defmodule Raxol.Terminal.ANSI.SequenceParser do
   @spec parse_sequence(binary(), function()) ::
           {:ok, atom(), list(integer())} | :error
   def parse_sequence(sequence, operation_decoder) do
-    # Regex to capture parameters (numbers separated by ;) and the final command character
     case Regex.run(~r/^([0-9;]*)([a-zA-Z])$/, sequence, capture: :all_but_first) do
       [param_string, command_char] ->
-        # Ensure command_char is a single character string
         if String.length(command_char) == 1 do
           case parse_params(param_string) do
             {:ok, parsed_params} ->
-              # Convert the command char string to its integer code point
               operation_code = :binary.first(command_char)
               {:ok, operation_decoder.(operation_code), parsed_params}
 
             :error ->
-              # Parameter parsing failed
               :error
           end
         else
-          # Invalid command format (more than one char)
           :error
         end
 

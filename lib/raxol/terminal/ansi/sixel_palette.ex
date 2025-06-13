@@ -11,39 +11,22 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   """
   @spec initialize_palette() :: map()
   def initialize_palette do
-    # Standard 16 colors
     base_palette = %{
-      # Black
       0 => {0, 0, 0},
-      # Red
       1 => {205, 0, 0},
-      # Green
       2 => {0, 205, 0},
-      # Yellow
       3 => {205, 205, 0},
-      # Blue
       4 => {0, 0, 238},
-      # Magenta
       5 => {205, 0, 205},
-      # Cyan
       6 => {0, 205, 205},
-      # White
       7 => {229, 229, 229},
-      # Bright Black
       8 => {127, 127, 127},
-      # Bright Red
       9 => {255, 0, 0},
-      # Bright Green
       10 => {0, 255, 0},
-      # Bright Yellow
       11 => {255, 255, 0},
-      # Bright Blue
       12 => {92, 92, 255},
-      # Bright Magenta
       13 => {255, 0, 255},
-      # Bright Cyan
       14 => {0, 255, 255},
-      # Bright White
       15 => {255, 255, 255}
     }
 

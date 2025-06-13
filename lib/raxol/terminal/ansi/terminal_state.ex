@@ -1,155 +1,169 @@
 defmodule Raxol.Terminal.ANSI.TerminalState do
   @moduledoc """
-  Manages the terminal state including cursor position, attributes, and modes.
-  Handles saving and restoring terminal state, including cursor position,
-  attributes, character sets, and screen modes.
+  Manages terminal state operations for ANSI escape sequences.
   """
 
-  @behaviour Raxol.Terminal.ANSI.TerminalStateBehaviour
+  defstruct [
+    :state_stack,
+    :current_state,
+    :saved_states,
+    :max_saved_states
+  ]
 
-  require Raxol.Core.Runtime.Log
-
-  @type saved_state :: %{
-          cursor: {non_neg_integer(), non_neg_integer()},
-          attributes: map(),
-          style: map(),
-          charset_state: CharacterSets.charset_state(),
-          mode_manager: Raxol.Terminal.ModeManager.t(),
-          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-          cursor_style: atom()
-        }
-
-  @type state_stack :: [saved_state()]
+  @type t :: %__MODULE__{
+    state_stack: list(map()),
+    current_state: map(),
+    saved_states: list(map()),
+    max_saved_states: integer()
+  }
 
   @doc """
-  Creates a new terminal state stack.
+  Creates a new terminal state with default settings.
   """
-  @spec new() :: state_stack()
-  def new do
-    []
-  end
-
-  @doc """
-  Saves the current terminal state to the stack.
-  """
-  @spec save_state(state_stack(), map()) :: state_stack()
-  @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
-  def save_state(stack, state) do
-    saved_state = %{
-      cursor: Map.get(state, :cursor),
-      style: Map.get(state, :style),
-      charset_state: Map.get(state, :charset_state),
-      mode_manager: Map.get(state, :mode_manager),
-      scroll_region: Map.get(state, :scroll_region),
-      cursor_style: Map.get(state, :cursor_style)
+  def new(opts \\ []) do
+    %__MODULE__{
+      state_stack: [],
+      current_state: default_state(),
+      saved_states: [],
+      max_saved_states: Keyword.get(opts, :max_saved_states, 10)
     }
-
-    [saved_state | stack]
   end
 
   @doc """
-  Restores the most recently saved terminal state from the stack.
-  Returns the updated stack and the restored state.
+  Gets the current state stack.
   """
-  @spec restore_state(state_stack()) :: {state_stack(), map() | nil}
-  @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
-  def restore_state([]) do
-    {[], nil}
-  end
-
-  def restore_state([state | rest]) do
-    {rest, state}
+  def get_state_stack(%__MODULE__{} = state) do
+    state.state_stack
   end
 
   @doc """
-  Clears the terminal state stack.
+  Updates the state stack.
   """
-  @spec clear_state(state_stack()) :: state_stack()
-  def clear_state(_stack) do
-    []
+  def update_state_stack(%__MODULE__{} = state, new_stack) when is_list(new_stack) do
+    %{state | state_stack: new_stack}
   end
 
   @doc """
-  Gets the current terminal state stack.
+  Saves the current state.
   """
-  @spec get_state_stack(state_stack()) :: state_stack()
-  def get_state_stack(stack) do
-    stack
+  def save(%__MODULE__{} = state) do
+    saved_states = [state.current_state | state.saved_states]
+    saved_states = if length(saved_states) > state.max_saved_states do
+      Enum.take(saved_states, state.max_saved_states)
+    else
+      saved_states
+    end
+    %{state | saved_states: saved_states}
   end
 
   @doc """
-  Checks if the terminal state stack is empty.
+  Restores the most recently saved state.
   """
-  @spec empty?(state_stack()) :: boolean()
-  def empty?(stack) do
-    stack == []
+  def restore(%__MODULE__{} = state) do
+    case state.saved_states do
+      [saved_state | remaining_states] ->
+        %{state | current_state: saved_state, saved_states: remaining_states}
+      [] ->
+        state
+    end
   end
 
   @doc """
-  Gets the number of saved states in the stack.
+  Checks if there are any saved states.
   """
-  @spec count(state_stack()) :: non_neg_integer()
-  def count(stack) do
-    length(stack)
+  def has_saved_states?(%__MODULE__{} = state) do
+    length(state.saved_states) > 0
   end
 
   @doc """
-  Applies specified fields from restored data onto the current emulator state.
+  Gets the number of saved states.
   """
-  @spec apply_restored_data(map(), map() | nil, list(atom())) :: map()
-  @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
-  def apply_restored_data(emulator, nil, _fields_to_restore) do
-    # No data to restore, return emulator unchanged
-    Raxol.Core.Runtime.Log.debug("[ApplyRestore] No data to restore.")
-    emulator
-  end
-
-  def apply_restored_data(emulator, restored_data, fields_to_restore) do
-    Raxol.Core.Runtime.Log.debug(
-      "[ApplyRestore] Restoring fields: #{inspect(fields_to_restore)} from data: #{inspect(restored_data)}"
-    )
-
-    Enum.reduce(fields_to_restore, emulator, fn field, acc_emulator ->
-      if Map.has_key?(restored_data, field) do
-        Raxol.Core.Runtime.Log.debug(
-          "[ApplyRestore] Applying field: #{field} with value: #{inspect(Map.get(restored_data, field))}"
-        )
-
-        Map.put(acc_emulator, field, Map.get(restored_data, field))
-      else
-        acc_emulator
-      end
-    end)
+  def get_saved_states_count(%__MODULE__{} = state) do
+    length(state.saved_states)
   end
 
   @doc """
-  Pushes a state onto the stack.
-  Returns {:ok, updated_stack} or {:error, reason}.
+  Clears all saved states.
   """
-  @spec push(state_stack()) :: {:ok, state_stack()} | {:error, String.t()}
-  def push(stack) do
-    {:ok, stack}
+  def clear(%__MODULE__{} = state) do
+    %{state | saved_states: []}
   end
 
   @doc """
-  Pops a state from the stack.
-  Returns {:ok, {updated_stack, state}} or {:error, reason}.
+  Gets the current state.
   """
-  @spec pop(state_stack()) ::
-          {:ok, {state_stack(), saved_state()}} | {:error, String.t()}
-  def pop([]) do
-    {:error, "Stack is empty"}
-  end
-
-  def pop([state | rest]) do
-    {:ok, {rest, state}}
+  def get_current_state(%__MODULE__{} = state) do
+    state.current_state
   end
 
   @doc """
-  Gets the current state from the stack.
-  Returns the current state or nil if stack is empty.
+  Updates the current state.
   """
-  @spec current(state_stack()) :: saved_state() | nil
-  def current([]), do: nil
-  def current([state | _]), do: state
+  def update_current_state(%__MODULE__{} = state, new_state) when is_map(new_state) do
+    %{state | current_state: new_state}
+  end
+
+  @doc """
+  Pushes the current state onto the state stack.
+  """
+  def push(%__MODULE__{} = state) do
+    new_stack = [state.current_state | state.state_stack]
+    %{state | state_stack: new_stack}
+  end
+
+  @doc """
+  Pops a state from the state stack.
+  """
+  def pop(%__MODULE__{} = state) do
+    case state.state_stack do
+      [popped_state | remaining_stack] ->
+        {:ok, %{state | current_state: popped_state, state_stack: remaining_stack}}
+      [] ->
+        {:error, :empty_stack}
+    end
+  end
+
+  @doc """
+  Gets the current state from the state stack.
+  """
+  def current(%__MODULE__{} = state) do
+    case state.state_stack do
+      [current | _] -> current
+      [] -> nil
+    end
+  end
+
+  @doc """
+  Saves the current terminal state to the state stack.
+  """
+  def save_state(stack, state) do
+    [state | stack]
+  end
+
+  @doc """
+  Restores the most recently saved terminal state from the state stack.
+  Returns the restored state and the updated stack.
+  """
+  def restore_state([state | stack]), do: {state, stack}
+  def restore_state([]), do: {nil, []}
+
+  defp default_state do
+    %{
+      cursor_visible: true,
+      cursor_style: :block,
+      cursor_blink: true,
+      cursor_position: {0, 0},
+      scroll_region: nil,
+      origin_mode: false,
+      auto_wrap: true,
+      insert_mode: false,
+      line_feed_mode: false,
+      reverse_video: false,
+      attributes: %{},
+      colors: %{
+        foreground: 7,
+        background: 0
+      }
+    }
+  end
 end
