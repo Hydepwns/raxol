@@ -22,9 +22,7 @@ defmodule Raxol.Style do
             decorations: []
 
   alias Raxol.Style.{Layout, Borders}
-  # Alias the parent module
   alias Raxol.Style.Colors
-  alias Raxol.UI.Theming.Theme
 
   @ansi_codes %{
     underline: 4,

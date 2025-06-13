@@ -56,6 +56,8 @@ defmodule Raxol.MixProject do
       mod: {Raxol.Application, []},
       extra_applications:
         [
+          :kernel,
+          :stdlib,
           :phoenix,
           :phoenix_html,
           :phoenix_live_view,
