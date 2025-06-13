@@ -178,7 +178,6 @@ defmodule Raxol do
   ```
   """
   def version do
-    # Update this with each release
     "1.0.0"
   end
 
@@ -204,9 +203,6 @@ defmodule Raxol do
   ```
   """
   def terminal_info do
-    # Assuming capabilities are now handled differently, maybe via Driver or Config?
-    # Platform.get_terminal_capabilities()
-    # Placeholder
     %{width: 80, height: 24, colors: 256}
   end
 
@@ -248,7 +244,6 @@ defmodule Raxol do
   ```
   """
   def current_theme do
-    # Update to use new Theme module path and function
     Application.get_env(:raxol, :theme, Raxol.UI.Theming.Theme.default_theme())
   end
 
@@ -273,19 +268,12 @@ defmodule Raxol do
   ```
   """
   def set_accessibility(opts \\ []) do
-    # Update theme setting based on opts (e.g., high_contrast: true)
     if opts[:high_contrast] do
-      # Find the high contrast theme or use a default if not directly available
-      # Needs review based on how high_contrast themes are managed
-      # For now, assume a dark theme provides contrast
       set_theme(Raxol.UI.Theming.Theme.dark_theme())
-      # Old call: set_theme(Theme.high_contrast())
     else
       set_theme(Raxol.UI.Theming.Theme.default_theme())
     end
 
-    # Persist accessibility settings
-    # Application.put_env(:raxol, :accessibility, opts) # Comment out undefined function
     :ok
   end
 

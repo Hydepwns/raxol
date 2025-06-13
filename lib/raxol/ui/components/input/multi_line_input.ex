@@ -121,10 +121,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   @impl true
   def unmount(state), do: state
 
-  @doc """
-  Updates the MultiLineInput component state in response to messages or prop changes.
-  """
-  @spec update(term(), __MODULE__.t()) :: {:noreply, __MODULE__.t(), any()} | {:noreply, __MODULE__.t()} | any()
+  @impl true
   def update({:update_props, new_props}, state) do
     new_state = Map.merge(state, new_props)
     new_state = ensure_cursor_visible(new_state)
