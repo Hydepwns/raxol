@@ -6,8 +6,8 @@
 **Raxol** is a modern toolkit for building interactive terminal (TUI) applications in Elixir.
 It offers a powerful component system, a flexible runtime, and a robust plugin architecture—making it easy to create beautiful, responsive terminal UIs.
 
-> **Note:** Raxol is in active development (pre-release).
-> APIs will change as we improve the toolkit.
+> **Warning:** Raxol is in active development (pre-release). APIs will change as we improve the toolkit.
+> **Full release:** 1.0.0 <-- Current: 0.4.2
 
 ## ✨ Features
 
