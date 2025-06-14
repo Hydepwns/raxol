@@ -30,6 +30,7 @@ Raxol uses a layered architecture with clear separation of concerns:
 ### Detailed Architecture Diagram
 
 ```mermaid
+%%{init: { 'theme': 'dark', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'Inter, Arial, sans-serif', 'primaryColor': '#22223b', 'primaryTextColor': '#f8f8f2', 'primaryBorderColor': '#f8f8f2', 'lineColor': '#f8f8f2', 'edgeLabelBackground':'#22223b', 'clusterBkg':'#2a2a40', 'clusterBorder':'#f8f8f2' } } }%%
 graph TB
     subgraph Application["Application Layer"]
         App[Application]
@@ -86,8 +87,8 @@ graph TB
     IO --> Buffer
 
     %% Style
-    classDef layer fill:#f9f,stroke:#333,stroke-width:2px
-    classDef component fill:#bbf,stroke:#333,stroke-width:1px
+    classDef layer fill:#22223b,stroke:#f8f8f2,stroke-width:3px,color:#f8f8f2,font-size:20px,padding:16px;
+    classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:18px,padding:12px;
     class Application,Components,Runtime,Terminal layer
     class App,View,State,Basic,Input,Layout,Advanced,Events,Plugins,Render,Lifecycle,Buffer,Cursor,Command,IO component
 ```
@@ -130,15 +131,8 @@ graph TB
 
 ### Plugin System
 
-- **Purpose:** Extensibility and modularity
-- **Features:**
-  - Hot-reloadable plugins
-  - Dependency resolution (Tarjan's algorithm)
-  - Lifecycle management
-  - Event handling
-  - Error recovery
-
 ```mermaid
+%%{init: { 'theme': 'dark', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'Inter, Arial, sans-serif', 'primaryColor': '#22223b', 'primaryTextColor': '#f8f8f2', 'primaryBorderColor': '#f8f8f2', 'lineColor': '#f8f8f2', 'edgeLabelBackground':'#22223b', 'clusterBkg':'#2a2a40', 'clusterBorder':'#f8f8f2' } } }%%
 graph TB
     subgraph PluginSystem["Plugin System"]
         Registry[Plugin Registry]
@@ -172,9 +166,9 @@ graph TB
     P3 --> D2
 
     %% Style
-    classDef system fill:#f9f,stroke:#333,stroke-width:2px
-    classDef plugin fill:#bbf,stroke:#333,stroke-width:1px
-    classDef dep fill:#bfb,stroke:#333,stroke-width:1px
+    classDef system fill:#22223b,stroke:#f8f8f2,stroke-width:3px,color:#f8f8f2,font-size:20px,padding:16px;
+    classDef plugin fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:18px,padding:12px;
+    classDef dep fill:#bfb,stroke:#f8f8f2,stroke-width:2px,color:#22223b,font-size:18px,padding:12px;
     class PluginSystem system
     class P1,P2,P3 plugin
     class D1,D2 dep
@@ -183,6 +177,7 @@ graph TB
 ### Component Lifecycle
 
 ```mermaid
+%%{init: { 'theme': 'dark', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'Inter, Arial, sans-serif', 'primaryColor': '#22223b', 'primaryTextColor': '#f8f8f2', 'primaryBorderColor': '#f8f8f2', 'lineColor': '#f8f8f2', 'edgeLabelBackground':'#22223b', 'clusterBkg':'#2a2a40', 'clusterBorder':'#f8f8f2' } } }%%
 stateDiagram-v2
     [*] --> init
     init --> mount
@@ -230,6 +225,7 @@ stateDiagram-v2
 ### Pipeline Flow Diagram
 
 ```mermaid
+%%{init: { 'theme': 'dark', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'Inter, Arial, sans-serif', 'primaryColor': '#22223b', 'primaryTextColor': '#f8f8f2', 'primaryBorderColor': '#f8f8f2', 'lineColor': '#f8f8f2', 'edgeLabelBackground':'#22223b', 'clusterBkg':'#2a2a40', 'clusterBorder':'#f8f8f2' } } }%%
 sequenceDiagram
     participant TI as Terminal Input
     participant TD as Terminal Driver
@@ -267,6 +263,7 @@ sequenceDiagram
 - **Comprehensive coverage:** 1528 tests, 49 doctests
 
 ```mermaid
+%%{init: { 'theme': 'dark', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'Inter, Arial, sans-serif', 'primaryColor': '#22223b', 'primaryTextColor': '#f8f8f2', 'primaryBorderColor': '#f8f8f2', 'lineColor': '#f8f8f2', 'edgeLabelBackground':'#22223b', 'clusterBkg':'#2a2a40', 'clusterBorder':'#f8f8f2' } } }%%
 graph TB
     subgraph TestInfra["Testing Infrastructure"]
         Unit[Unit Tests]
@@ -307,34 +304,18 @@ graph TB
     Concurrent --> Performance
 
     %% Style
-    classDef infra fill:#f9f,stroke:#333,stroke-width:2px
-    classDef coverage fill:#bbf,stroke:#333,stroke-width:1px
-    classDef metrics fill:#bfb,stroke:#333,stroke-width:1px
+    classDef infra fill:#22223b,stroke:#f8f8f2,stroke-width:3px,color:#f8f8f2,font-size:20px,padding:16px;
+    classDef coverage fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:18px,padding:12px;
+    classDef metrics fill:#bfb,stroke:#f8f8f2,stroke-width:2px,color:#22223b,font-size:18px,padding:12px;
     class TestInfra infra
     class Components,Plugins,Terminal,Runtime coverage
     class Events,Screen,Concurrent metrics
 ```
 
-## Current Status (2025-05-10)
-
-- **Test Suite:** 49 doctests, 1528 tests, 279 failures, 17 invalid, 21 skipped
-- **Terminal subsystem refactoring complete**
-- **Plugin system modularization complete**
-- **Color system refactoring complete**
-- **Performance infrastructure in place**
-
-## Next Steps
-
-1. Address remaining test failures
-2. Complete OSC 4 handler implementation
-3. Implement robust anchor checking
-4. Document test writing guide
-5. Continue code quality improvements
-
 ## Design Principles
 
 - **Elm-style update/view separation**
-- **NIF terminal I/O** (`rrex_termbox`)
+- **NIF terminal I/O** (`termbox2_nif`)
 - **Reusable, stateful components**
 - **Modular, extensible plugins**
 - **Adapter pattern for system/test**
