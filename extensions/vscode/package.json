@@ -17,12 +17,6 @@
     "onLanguage:javascript",
     "onLanguage:typescript",
     "onLanguage:elixir",
-    "onCommand:raxol.newComponent",
-    "onCommand:raxol.analyze",
-    "onCommand:raxol.previewComponent",
-    "onCommand:raxol.previewComponentFromExplorer",
-    "onCommand:raxol.openStateInspector",
-    "onCommand:raxol.showTerminal",
     "onView:raxolExplorer"
   ],
   "main": "./dist/extension.js",
