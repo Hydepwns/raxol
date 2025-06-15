@@ -30,7 +30,7 @@ defmodule Raxol.DataCase do
       raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
     end
 
-    unless tags[:async] do
+    if !tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
     end
 
@@ -58,7 +58,7 @@ defmodule Raxol.DataCase do
       raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
     end
 
-    unless tags[:async] do
+    if !tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
     end
 

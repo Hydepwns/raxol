@@ -22,6 +22,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
         color: "#FF0000",
         state: :active
       }
+
       assert {:ok, tab_id} = UnifiedTab.create_tab(config)
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
       assert tab_state.config.name == "Custom Tab"
@@ -68,11 +69,13 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
   describe "tab configuration" do
     test "updates tab configuration" do
       assert {:ok, tab_id} = UnifiedTab.create_tab()
+
       new_config = %{
         name: "Updated Tab",
         icon: "🔄",
         color: "#00FF00"
       }
+
       assert :ok = UnifiedTab.update_tab_config(tab_id, new_config)
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
       assert tab_state.config.name == "Updated Tab"
@@ -88,6 +91,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
         tab_spacing: 4,
         tab_style: :detailed
       }
+
       assert :ok = UnifiedTab.update_config(config)
     end
   end

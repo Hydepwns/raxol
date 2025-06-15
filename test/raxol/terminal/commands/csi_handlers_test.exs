@@ -16,10 +16,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   setup do
     IO.puts("SETUP RUNNING")
+
     emulator = %Emulator{
       window_manager: Window.Manager.new(),
       active_buffer: %{width: 80, height: 24}
     }
+
     # Ensure saved_cursor is initially nil as per recent Emulator.ex changes
     emulator = %{emulator | saved_cursor: nil}
     {:ok, emulator: emulator}
@@ -803,7 +805,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     test "erases display from cursor to end", %{emulator: emulator} do
       emulator = %{emulator | cursor: %{x: 10, y: 10}}
       result = CSIHandlers.handle_erase_display(emulator, 0)
-      assert result.active_buffer.contents[10][10..-1] |> Enum.all?(&(&1 == " "))
+
+      assert result.active_buffer.contents[10][10..-1]
+             |> Enum.all?(&(&1 == " "))
     end
 
     test "erases display from start to cursor", %{emulator: emulator} do
@@ -814,15 +818,19 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
     test "erases entire display", %{emulator: emulator} do
       result = CSIHandlers.handle_erase_display(emulator, 2)
-      assert result.active_buffer.contents |> Enum.all?(fn row ->
-        row |> Enum.all?(&(&1 == " "))
-      end)
+
+      assert result.active_buffer.contents
+             |> Enum.all?(fn row ->
+               row |> Enum.all?(&(&1 == " "))
+             end)
     end
 
     test "erases line from cursor to end", %{emulator: emulator} do
       emulator = %{emulator | cursor: %{x: 10, y: 10}}
       result = CSIHandlers.handle_erase_line(emulator, 0)
-      assert result.active_buffer.contents[10][10..-1] |> Enum.all?(&(&1 == " "))
+
+      assert result.active_buffer.contents[10][10..-1]
+             |> Enum.all?(&(&1 == " "))
     end
 
     test "erases line from start to cursor", %{emulator: emulator} do
@@ -852,7 +860,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     end
 
     test "resets text attributes", %{emulator: emulator} do
-      emulator = %{emulator | text_attributes: %{bold: true, underline: true, foreground: :red}}
+      emulator = %{
+        emulator
+        | text_attributes: %{bold: true, underline: true, foreground: :red}
+      }
+
       result = CSIHandlers.handle_text_attributes(emulator, [0])
       assert result.text_attributes.bold == false
       assert result.text_attributes.underline == false

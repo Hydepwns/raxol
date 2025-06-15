@@ -3,15 +3,17 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
   alias Raxol.Terminal.Metrics.UnifiedMetrics
 
   setup do
-    {:ok, _pid} = UnifiedMetrics.start_link(
-      retention_period: 1000,
-      aggregation_interval: 100,
-      alert_thresholds: %{
-        "response_time" => 1000,
-        "errors" => %{critical: true}
-      },
-      export_format: :prometheus
-    )
+    {:ok, _pid} =
+      UnifiedMetrics.start_link(
+        retention_period: 1000,
+        aggregation_interval: 100,
+        alert_thresholds: %{
+          "response_time" => 1000,
+          "errors" => %{critical: true}
+        },
+        export_format: :prometheus
+      )
+
     :ok
   end
 
@@ -33,9 +35,15 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
       assert {:ok, 20} = UnifiedMetrics.get_metric("gauge")
 
       # Histogram
-      assert :ok = UnifiedMetrics.record_metric("histogram", 1, type: :histogram)
-      assert :ok = UnifiedMetrics.record_metric("histogram", 2, type: :histogram)
-      assert :ok = UnifiedMetrics.record_metric("histogram", 3, type: :histogram)
+      assert :ok =
+               UnifiedMetrics.record_metric("histogram", 1, type: :histogram)
+
+      assert :ok =
+               UnifiedMetrics.record_metric("histogram", 2, type: :histogram)
+
+      assert :ok =
+               UnifiedMetrics.record_metric("histogram", 3, type: :histogram)
+
       assert {:ok, stats} = UnifiedMetrics.get_metric("histogram")
       assert stats.count == 3
       assert stats.sum == 6
@@ -58,11 +66,21 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
 
   describe "labels and filtering" do
     test "handles metric labels" do
-      assert :ok = UnifiedMetrics.record_metric("labeled", 1, labels: %{service: "test"})
-      assert :ok = UnifiedMetrics.record_metric("labeled", 2, labels: %{service: "other"})
+      assert :ok =
+               UnifiedMetrics.record_metric("labeled", 1,
+                 labels: %{service: "test"}
+               )
 
-      assert {:ok, 1} = UnifiedMetrics.get_metric("labeled", labels: %{service: "test"})
-      assert {:ok, 2} = UnifiedMetrics.get_metric("labeled", labels: %{service: "other"})
+      assert :ok =
+               UnifiedMetrics.record_metric("labeled", 2,
+                 labels: %{service: "other"}
+               )
+
+      assert {:ok, 1} =
+               UnifiedMetrics.get_metric("labeled", labels: %{service: "test"})
+
+      assert {:ok, 2} =
+               UnifiedMetrics.get_metric("labeled", labels: %{service: "other"})
     end
 
     test "filters by time range" do
@@ -71,14 +89,21 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
       Process.sleep(100)
       assert :ok = UnifiedMetrics.record_metric("time_filtered", 2)
 
-      assert {:ok, 2} = UnifiedMetrics.get_metric("time_filtered", time_range: {now, now + 200})
+      assert {:ok, 2} =
+               UnifiedMetrics.get_metric("time_filtered",
+                 time_range: {now, now + 200}
+               )
     end
   end
 
   describe "error tracking" do
     test "records and retrieves errors" do
       assert :ok = UnifiedMetrics.record_error("test error")
-      assert :ok = UnifiedMetrics.record_error("critical error", severity: :critical)
+
+      assert :ok =
+               UnifiedMetrics.record_error("critical error",
+                 severity: :critical
+               )
 
       assert {:ok, stats} = UnifiedMetrics.get_error_stats()
       assert stats.total == 2
@@ -89,7 +114,11 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
 
     test "filters errors by severity" do
       assert :ok = UnifiedMetrics.record_error("test error")
-      assert :ok = UnifiedMetrics.record_error("critical error", severity: :critical)
+
+      assert :ok =
+               UnifiedMetrics.record_error("critical error",
+                 severity: :critical
+               )
 
       assert {:ok, stats} = UnifiedMetrics.get_error_stats(severity: :critical)
       assert stats.total == 1
@@ -99,13 +128,23 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
 
   describe "export formats" do
     test "exports in Prometheus format" do
-      assert :ok = UnifiedMetrics.record_metric("export_test", 42, labels: %{service: "test"})
-      assert {:ok, exported} = UnifiedMetrics.export_metrics(format: :prometheus)
+      assert :ok =
+               UnifiedMetrics.record_metric("export_test", 42,
+                 labels: %{service: "test"}
+               )
+
+      assert {:ok, exported} =
+               UnifiedMetrics.export_metrics(format: :prometheus)
+
       assert String.contains?(exported, "export_test{service=\"test\"} 42")
     end
 
     test "exports in JSON format" do
-      assert :ok = UnifiedMetrics.record_metric("export_test", 42, labels: %{service: "test"})
+      assert :ok =
+               UnifiedMetrics.record_metric("export_test", 42,
+                 labels: %{service: "test"}
+               )
+
       assert {:ok, exported} = UnifiedMetrics.export_metrics(format: :json)
       assert String.contains?(exported, "\"name\":\"export_test\"")
       assert String.contains?(exported, "\"value\":42")
@@ -115,14 +154,18 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
   describe "cleanup" do
     test "cleans up old metrics" do
       assert :ok = UnifiedMetrics.record_metric("cleanup_test", 1)
-      Process.sleep(1100)  # Wait for retention period
+      # Wait for retention period
+      Process.sleep(1100)
       assert :ok = UnifiedMetrics.cleanup_metrics()
-      assert {:error, :metric_not_found} = UnifiedMetrics.get_metric("cleanup_test")
+
+      assert {:error, :metric_not_found} =
+               UnifiedMetrics.get_metric("cleanup_test")
     end
 
     test "cleans up old errors" do
       assert :ok = UnifiedMetrics.record_error("old error")
-      Process.sleep(1100)  # Wait for retention period
+      # Wait for retention period
+      Process.sleep(1100)
       assert :ok = UnifiedMetrics.cleanup_metrics()
       assert {:ok, stats} = UnifiedMetrics.get_error_stats()
       assert stats.total == 0
@@ -131,19 +174,30 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
 
   describe "alerts" do
     test "triggers metric alerts" do
-      log = capture_log(fn ->
-        assert :ok = UnifiedMetrics.record_metric("response_time", 1500)  # Above threshold
-        Process.sleep(50)  # Give time for alert to be processed
-      end)
+      log =
+        capture_log(fn ->
+          # Above threshold
+          assert :ok = UnifiedMetrics.record_metric("response_time", 1500)
+          # Give time for alert to be processed
+          Process.sleep(50)
+        end)
+
       assert log =~ "response_time"
       assert log =~ "threshold"
     end
 
     test "triggers error alerts" do
-      log = capture_log(fn ->
-        assert :ok = UnifiedMetrics.record_error("critical error", severity: :critical)
-        Process.sleep(50)  # Give time for alert to be processed
-      end)
+      log =
+        capture_log(fn ->
+          assert :ok =
+                   UnifiedMetrics.record_error("critical error",
+                     severity: :critical
+                   )
+
+          # Give time for alert to be processed
+          Process.sleep(50)
+        end)
+
       assert log =~ "critical error"
       assert log =~ "critical"
     end
@@ -155,7 +209,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
       assert :ok = UnifiedMetrics.record_metric("aggregation_test", 2)
       assert :ok = UnifiedMetrics.record_metric("aggregation_test", 3)
 
-      Process.sleep(150)  # Wait for aggregation
+      # Wait for aggregation
+      Process.sleep(150)
       assert {:ok, aggregated} = UnifiedMetrics.get_metric("aggregation_test")
       assert is_number(aggregated)
     end

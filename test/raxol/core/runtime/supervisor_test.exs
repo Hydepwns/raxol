@@ -79,7 +79,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
       end)
 
       expect(Raxol.Core.Runtime.Events.DispatcherMock, :start_link, fn _pid,
-                                                                           _init_arg ->
+                                                                       _init_arg ->
         {:ok, spawn(fn -> :ok end)}
       end)
 

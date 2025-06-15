@@ -29,7 +29,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
         MatchError -> false
       end
 
-    unless match_success do
+    if !match_success do
     end
 
     assert match_success, "Expected a 2-tuple, but got: #{inspect(result)}"

@@ -86,7 +86,9 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
     test "gets line at valid position", %{buffer: buffer} do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       line = LineOperations.get_line(buffer, 2)
-      assert line |> Enum.map(&Raxol.Terminal.Cell.get_char/1) |> Enum.join() == "KLMNO"
+
+      assert line |> Enum.map(&Raxol.Terminal.Cell.get_char/1) |> Enum.join() ==
+               "KLMNO"
     end
 
     test "returns empty list for invalid position", %{buffer: buffer} do

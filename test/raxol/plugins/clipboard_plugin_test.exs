@@ -75,7 +75,11 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       error_reason = {:os_error, "cmd failed"}
 
       # Mock the behaviour call failure using Mox with the configured mock
-      expect_clipboard_copy(@clipboard_mock, test_content, {:error, error_reason})
+      expect_clipboard_copy(
+        @clipboard_mock,
+        test_content,
+        {:error, error_reason}
+      )
 
       # Call the plugin's registered handler (arity 2 for write)
       assert match?(

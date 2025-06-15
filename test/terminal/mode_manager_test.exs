@@ -18,7 +18,12 @@ defmodule Raxol.Terminal.ModeManagerTest do
     # Configure the application to use the mock for this test
     # This ensures ModeManager uses our TerminalStateMock
     original_impl = Application.get_env(:raxol, :terminal_state_impl)
-    Application.put_env(:raxol, :terminal_state_impl, Raxol.Terminal.Parser.StateMock)
+
+    Application.put_env(
+      :raxol,
+      :terminal_state_impl,
+      Raxol.Terminal.Parser.StateMock
+    )
 
     on_exit(fn ->
       Application.put_env(:raxol, :terminal_state_impl, original_impl)

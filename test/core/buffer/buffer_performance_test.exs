@@ -13,23 +13,27 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   describe "Buffer Fill Performance" do
     test "measures performance of filling large buffers" do
       sizes = [
-        {80, 24},    # Standard terminal
-        {200, 100},  # Large terminal
-        {500, 500}   # Very large buffer
+        # Standard terminal
+        {80, 24},
+        # Large terminal
+        {200, 100},
+        # Very large buffer
+        {500, 500}
       ]
 
       Enum.each(sizes, fn {width, height} ->
         buffer = Buffer.new({width, height})
 
         # Measure fill performance
-        {time, _} = :timer.tc(fn ->
-          Enum.reduce(0..(height - 1), buffer, fn y, acc ->
-            Enum.reduce(0..(width - 1), acc, fn x, acc ->
-              cell = Cell.new("X", TextFormatting.new(fg: :red))
-              Buffer.set_cell(acc, x, y, cell)
+        {time, _} =
+          :timer.tc(fn ->
+            Enum.reduce(0..(height - 1), buffer, fn y, acc ->
+              Enum.reduce(0..(width - 1), acc, fn x, acc ->
+                cell = Cell.new("X", TextFormatting.new(fg: :red))
+                Buffer.set_cell(acc, x, y, cell)
+              end)
             end)
           end)
-        end)
 
         # Convert to milliseconds
         time_ms = time / 1000
@@ -38,8 +42,11 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
         IO.puts("Fill performance for #{width}x#{height}: #{time_ms}ms")
 
         # Assert reasonable performance
-        max_time = width * height * 0.1  # 0.1ms per cell
-        assert time_ms < max_time, "Fill operation too slow: #{time_ms}ms (max: #{max_time}ms)"
+        # 0.1ms per cell
+        max_time = width * height * 0.1
+
+        assert time_ms < max_time,
+               "Fill operation too slow: #{time_ms}ms (max: #{max_time}ms)"
       end)
     end
 
@@ -48,26 +55,35 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
 
       # Test different update patterns
       patterns = [
-        {10, 10},    # Small region
-        {50, 50},    # Medium region
-        {100, 100}   # Large region
+        # Small region
+        {10, 10},
+        # Medium region
+        {50, 50},
+        # Large region
+        {100, 100}
       ]
 
       Enum.each(patterns, fn {width, height} ->
-        {time, _} = :timer.tc(fn ->
-          Enum.reduce(0..(height - 1), buffer, fn y, acc ->
-            Enum.reduce(0..(width - 1), acc, fn x, acc ->
-              cell = Cell.new("X", TextFormatting.new(fg: :blue))
-              Buffer.set_cell(acc, x, y, cell)
+        {time, _} =
+          :timer.tc(fn ->
+            Enum.reduce(0..(height - 1), buffer, fn y, acc ->
+              Enum.reduce(0..(width - 1), acc, fn x, acc ->
+                cell = Cell.new("X", TextFormatting.new(fg: :blue))
+                Buffer.set_cell(acc, x, y, cell)
+              end)
             end)
           end)
-        end)
 
         time_ms = time / 1000
-        IO.puts("Partial update performance for #{width}x#{height}: #{time_ms}ms")
+
+        IO.puts(
+          "Partial update performance for #{width}x#{height}: #{time_ms}ms"
+        )
 
         max_time = width * height * 0.1
-        assert time_ms < max_time, "Partial update too slow: #{time_ms}ms (max: #{max_time}ms)"
+
+        assert time_ms < max_time,
+               "Partial update too slow: #{time_ms}ms (max: #{max_time}ms)"
       end)
     end
   end
@@ -77,27 +93,32 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       buffer = Buffer.new({200, 100})
 
       # Fill buffer with data
-      buffer = Enum.reduce(0..99, buffer, fn y, acc ->
-        Enum.reduce(0..199, acc, fn x, acc ->
-          cell = Cell.new("X", TextFormatting.new(fg: :green))
-          Buffer.set_cell(acc, x, y, cell)
-        end)
-      end)
-
-      # Measure read performance
-      {time, _} = :timer.tc(fn ->
-        Enum.each(0..99, fn y ->
-          Enum.each(0..199, fn x ->
-            Buffer.get_cell(buffer, x, y)
+      buffer =
+        Enum.reduce(0..99, buffer, fn y, acc ->
+          Enum.reduce(0..199, acc, fn x, acc ->
+            cell = Cell.new("X", TextFormatting.new(fg: :green))
+            Buffer.set_cell(acc, x, y, cell)
           end)
         end)
-      end)
+
+      # Measure read performance
+      {time, _} =
+        :timer.tc(fn ->
+          Enum.each(0..99, fn y ->
+            Enum.each(0..199, fn x ->
+              Buffer.get_cell(buffer, x, y)
+            end)
+          end)
+        end)
 
       time_ms = time / 1000
       IO.puts("Read performance for 200x100: #{time_ms}ms")
 
-      max_time = 200 * 100 * 0.05  # 0.05ms per cell
-      assert time_ms < max_time, "Read operation too slow: #{time_ms}ms (max: #{max_time}ms)"
+      # 0.05ms per cell
+      max_time = 200 * 100 * 0.05
+
+      assert time_ms < max_time,
+             "Read operation too slow: #{time_ms}ms (max: #{max_time}ms)"
     end
   end
 
@@ -106,26 +127,31 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       buffer = Buffer.new({80, 24})
 
       # Fill buffer with data
-      buffer = Enum.reduce(0..23, buffer, fn y, acc ->
-        Enum.reduce(0..79, acc, fn x, acc ->
-          cell = Cell.new("X", TextFormatting.new(fg: :yellow))
-          Buffer.set_cell(acc, x, y, cell)
+      buffer =
+        Enum.reduce(0..23, buffer, fn y, acc ->
+          Enum.reduce(0..79, acc, fn x, acc ->
+            cell = Cell.new("X", TextFormatting.new(fg: :yellow))
+            Buffer.set_cell(acc, x, y, cell)
+          end)
         end)
-      end)
 
       # Test different scroll amounts
       scroll_amounts = [1, 5, 10, 20]
 
       Enum.each(scroll_amounts, fn amount ->
-        {time, _} = :timer.tc(fn ->
-          Buffer.scroll(buffer, amount)
-        end)
+        {time, _} =
+          :timer.tc(fn ->
+            Buffer.scroll(buffer, amount)
+          end)
 
         time_ms = time / 1000
         IO.puts("Scroll performance for #{amount} lines: #{time_ms}ms")
 
-        max_time = amount * 0.5  # 0.5ms per line
-        assert time_ms < max_time, "Scroll operation too slow: #{time_ms}ms (max: #{max_time}ms)"
+        # 0.5ms per line
+        max_time = amount * 0.5
+
+        assert time_ms < max_time,
+               "Scroll operation too slow: #{time_ms}ms (max: #{max_time}ms)"
       end)
     end
   end
@@ -133,9 +159,12 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   describe "Memory Usage" do
     test "measures memory usage of buffer operations" do
       sizes = [
-        {80, 24},    # Standard terminal
-        {200, 100},  # Large terminal
-        {500, 500}   # Very large buffer
+        # Standard terminal
+        {80, 24},
+        # Large terminal
+        {200, 100},
+        # Very large buffer
+        {500, 500}
       ]
 
       Enum.each(sizes, fn {width, height} ->
@@ -145,12 +174,14 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
 
         # Create and fill buffer
         buffer = Buffer.new({width, height})
-        buffer = Enum.reduce(0..(height - 1), buffer, fn y, acc ->
-          Enum.reduce(0..(width - 1), acc, fn x, acc ->
-            cell = Cell.new("X", TextFormatting.new(fg: :red))
-            Buffer.set_cell(acc, x, y, cell)
+
+        buffer =
+          Enum.reduce(0..(height - 1), buffer, fn y, acc ->
+            Enum.reduce(0..(width - 1), acc, fn x, acc ->
+              cell = Cell.new("X", TextFormatting.new(fg: :red))
+              Buffer.set_cell(acc, x, y, cell)
+            end)
           end)
-        end)
 
         # Measure memory after
         :erlang.garbage_collect()
@@ -160,12 +191,16 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
         memory_usage = after_ - before
         memory_per_cell = memory_usage / (width * height)
 
-        IO.puts("Memory usage for #{width}x#{height}: #{memory_usage} bytes (#{memory_per_cell} bytes per cell)")
+        IO.puts(
+          "Memory usage for #{width}x#{height}: #{memory_usage} bytes (#{memory_per_cell} bytes per cell)"
+        )
 
         # Assert reasonable memory usage
-        max_memory_per_cell = 100  # 100 bytes per cell
+        # 100 bytes per cell
+        max_memory_per_cell = 100
+
         assert memory_per_cell < max_memory_per_cell,
-          "Memory usage too high: #{memory_per_cell} bytes per cell (max: #{max_memory_per_cell})"
+               "Memory usage too high: #{memory_per_cell} bytes per cell (max: #{max_memory_per_cell})"
       end)
     end
   end

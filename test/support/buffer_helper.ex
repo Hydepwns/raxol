@@ -18,31 +18,34 @@ defmodule Raxol.Test.BufferHelper do
   """
   def setup_buffer_test(opts \\ []) do
     # Start buffer manager
-    {:ok, manager} = Raxol.Terminal.Buffer.Manager.start_link(
-      Keyword.get(opts, :manager_opts, [
-        max_buffers: 10,
-        default_size: {80, 24},
-        default_scrollback: 1000
-      ])
-    )
+    {:ok, manager} =
+      Raxol.Terminal.Buffer.Manager.start_link(
+        Keyword.get(opts, :manager_opts,
+          max_buffers: 10,
+          default_size: {80, 24},
+          default_scrollback: 1000
+        )
+      )
 
     # Create test buffer
-    {:ok, buffer} = Raxol.Terminal.Buffer.Manager.initialize_buffers(
-      80,
-      24,
-      Keyword.get(opts, :buffer_opts, [
-        type: :standard,
-        size: {80, 24},
-        scrollback: 1000
-      ])
-    )
+    {:ok, buffer} =
+      Raxol.Terminal.Buffer.Manager.initialize_buffers(
+        80,
+        24,
+        Keyword.get(opts, :buffer_opts,
+          type: :standard,
+          size: {80, 24},
+          scrollback: 1000
+        )
+      )
 
     # Setup metrics if enabled
-    metrics_state = if Keyword.get(opts, :enable_metrics, true) do
-      Raxol.Test.MetricsHelper.setup_metrics_test(
-        Keyword.get(opts, :metrics_opts, [])
-      )
-    end
+    metrics_state =
+      if Keyword.get(opts, :enable_metrics, true) do
+        Raxol.Test.MetricsHelper.setup_metrics_test(
+          Keyword.get(opts, :metrics_opts, [])
+        )
+      end
 
     %{
       manager: manager,
@@ -59,6 +62,7 @@ defmodule Raxol.Test.BufferHelper do
   """
   def cleanup_buffer_test(state) do
     GenServer.stop(state.manager)
+
     if state.metrics do
       Raxol.Test.MetricsHelper.cleanup_metrics_test(state.metrics)
     end
@@ -83,11 +87,11 @@ defmodule Raxol.Test.BufferHelper do
     Raxol.Terminal.Buffer.Manager.initialize_buffers(
       80,
       24,
-      Keyword.get(opts, :buffer_opts, [
+      Keyword.get(opts, :buffer_opts,
         type: :standard,
         size: {80, 24},
         scrollback: 1000
-      ])
+      )
     )
   end
 
@@ -172,9 +176,17 @@ defmodule Raxol.Test.BufferHelper do
   """
   def perform_test_operation(_buffer, operation, opts \\ []) do
     case operation do
-      :clear -> Raxol.Terminal.Buffer.Manager.clear_damage()
-      :resize -> Raxol.Terminal.Buffer.Manager.resize(Keyword.get(opts, :size, {80, 24}), opts)
-      _ -> {:error, :invalid_operation}
+      :clear ->
+        Raxol.Terminal.Buffer.Manager.clear_damage()
+
+      :resize ->
+        Raxol.Terminal.Buffer.Manager.resize(
+          Keyword.get(opts, :size, {80, 24}),
+          opts
+        )
+
+      _ ->
+        {:error, :invalid_operation}
     end
   end
 end

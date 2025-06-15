@@ -6,21 +6,23 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
   setup do
     # Start the cache system
-    {:ok, _pid} = System.start_link(
-      max_size: 1024 * 1024,
-      default_ttl: 3600,
-      eviction_policy: :lru,
-      namespace_configs: %{
-        buffer: %{max_size: 512 * 1024}
-      }
-    )
+    {:ok, _pid} =
+      System.start_link(
+        max_size: 1024 * 1024,
+        default_ttl: 3600,
+        eviction_policy: :lru,
+        namespace_configs: %{
+          buffer: %{max_size: 512 * 1024}
+        }
+      )
 
     # Start the buffer manager
-    {:ok, pid} = UnifiedManager.start_link(
-      width: 80,
-      height: 24,
-      scrollback_limit: 1000
-    )
+    {:ok, pid} =
+      UnifiedManager.start_link(
+        width: 80,
+        height: 24,
+        scrollback_limit: 1000
+      )
 
     %{pid: pid}
   end
@@ -276,9 +278,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       # Verify scrollback content is cached
       {:ok, history} = UnifiedManager.get_history(pid, 0, 10)
       assert length(history) == 10
+
       assert Enum.all?(history, fn line ->
-        Enum.all?(line, fn cell -> cell.char == "A" && cell.attrs.fg == :red end)
-      end)
+               Enum.all?(line, fn cell ->
+                 cell.char == "A" && cell.attrs.fg == :red
+               end)
+             end)
     end
 
     test "scrollback cache is updated on new content", %{pid: pid} do
@@ -294,9 +299,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       # Verify scrollback still has old content
       {:ok, history} = UnifiedManager.get_history(pid, 0, 10)
       assert length(history) == 10
+
       assert Enum.all?(history, fn line ->
-        Enum.all?(line, fn cell -> cell.char == "A" && cell.attrs.fg == :red end)
-      end)
+               Enum.all?(line, fn cell ->
+                 cell.char == "A" && cell.attrs.fg == :red
+               end)
+             end)
 
       # Verify new content
       {:ok, cell} = UnifiedManager.get_cell(pid, 0, 0)

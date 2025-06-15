@@ -1,5 +1,11 @@
 defmodule Raxol.Plugins.PluginConfigTest do
   use ExUnit.Case
+
+  @moduledoc """
+  Tests for plugin configuration functionality including loading, saving,
+  and managing plugin settings.
+  """
+
   alias Raxol.Plugins.PluginConfig
 
   describe "plugin configuration" do

@@ -35,7 +35,9 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
         completion: nil
       }
 
-      assert {:ok, updated_registry} = Registry.register_command(registry, command)
+      assert {:ok, updated_registry} =
+               Registry.register_command(registry, command)
+
       assert updated_registry.commands["test"] == command
       assert updated_registry.metrics.registrations == 1
     end
@@ -47,7 +49,8 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
         # Missing handler and usage
       }
 
-      assert {:error, :invalid_command} = Registry.register_command(registry, command)
+      assert {:error, :invalid_command} =
+               Registry.register_command(registry, command)
     end
 
     test "rejects duplicate command name", %{registry: registry} do
@@ -61,7 +64,9 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
       }
 
       {:ok, registry} = Registry.register_command(registry, command)
-      assert {:error, :command_exists} = Registry.register_command(registry, command)
+
+      assert {:error, :command_exists} =
+               Registry.register_command(registry, command)
     end
   end
 
@@ -77,13 +82,17 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
       }
 
       {:ok, registry} = Registry.register_command(registry, command)
-      assert {:ok, updated_registry, {:ok, ["arg1"]}} = Registry.execute_command(registry, "test", ["arg1"])
+
+      assert {:ok, updated_registry, {:ok, ["arg1"]}} =
+               Registry.execute_command(registry, "test", ["arg1"])
+
       assert updated_registry.metrics.executions == 1
       assert hd(updated_registry.history) == "test"
     end
 
     test "rejects execution of non-existent command", %{registry: registry} do
-      assert {:error, :command_not_found} = Registry.execute_command(registry, "nonexistent", [])
+      assert {:error, :command_not_found} =
+               Registry.execute_command(registry, "nonexistent", [])
     end
 
     test "validates command arguments", %{registry: registry} do
@@ -93,11 +102,15 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
         handler: fn args -> {:ok, args} end,
         aliases: ["t"],
         usage: "test [args]",
-        completion: fn args -> if length(args) > 0, do: :ok, else: {:error, :missing_args} end
+        completion: fn args ->
+          if length(args) > 0, do: :ok, else: {:error, :missing_args}
+        end
       }
 
       {:ok, registry} = Registry.register_command(registry, command)
-      assert {:error, :missing_args} = Registry.execute_command(registry, "test", [])
+
+      assert {:error, :missing_args} =
+               Registry.execute_command(registry, "test", [])
     end
   end
 
@@ -122,17 +135,22 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
         }
       ]
 
-      registry = Enum.reduce(commands, registry, fn cmd, acc ->
-        {:ok, acc} = Registry.register_command(acc, cmd)
-        acc
-      end)
+      registry =
+        Enum.reduce(commands, registry, fn cmd, acc ->
+          {:ok, acc} = Registry.register_command(acc, cmd)
+          acc
+        end)
 
-      assert {:ok, updated_registry, ["t", "t2", "test", "test2"]} = Registry.get_completions(registry, "t")
+      assert {:ok, updated_registry, ["t", "t2", "test", "test2"]} =
+               Registry.get_completions(registry, "t")
+
       assert updated_registry.metrics.completions == 1
     end
 
     test "returns empty list for no matches", %{registry: registry} do
-      assert {:ok, updated_registry, []} = Registry.get_completions(registry, "nonexistent")
+      assert {:ok, updated_registry, []} =
+               Registry.get_completions(registry, "nonexistent")
+
       assert updated_registry.metrics.completions == 1
     end
   end

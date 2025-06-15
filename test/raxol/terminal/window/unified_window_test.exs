@@ -30,6 +30,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
         buffer_id: "buffer_1",
         renderer_id: "renderer_1"
       }
+
       {:ok, window_id} = UnifiedWindow.create_window(opts)
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.title == "Test Window"
@@ -66,7 +67,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
     end
 
     test "fails to split non-existent window", %{pid: pid} do
-      assert {:error, "Window not found"} = UnifiedWindow.split_window("nonexistent", :horizontal)
+      assert {:error, "Window not found"} =
+               UnifiedWindow.split_window("nonexistent", :horizontal)
     end
   end
 
@@ -114,7 +116,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
       assert :ok = UnifiedWindow.set_maximized(window_id, true)
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.maximized == true
-      assert window.size == {200, 50}  # max_size from config
+      # max_size from config
+      assert window.size == {200, 50}
       assert window.previous_size == original_size
 
       # Restore
@@ -134,7 +137,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
     end
 
     test "fails to set active window for non-existent window", %{pid: pid} do
-      assert {:error, "Window not found"} = UnifiedWindow.set_active_window("nonexistent")
+      assert {:error, "Window not found"} =
+               UnifiedWindow.set_active_window("nonexistent")
     end
   end
 
@@ -151,13 +155,19 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
       assert :ok = UnifiedWindow.close_window(parent_id)
 
       # Verify all windows are closed
-      assert {:error, "Window not found"} = UnifiedWindow.get_window_state(parent_id)
-      assert {:error, "Window not found"} = UnifiedWindow.get_window_state(child1_id)
-      assert {:error, "Window not found"} = UnifiedWindow.get_window_state(child2_id)
+      assert {:error, "Window not found"} =
+               UnifiedWindow.get_window_state(parent_id)
+
+      assert {:error, "Window not found"} =
+               UnifiedWindow.get_window_state(child1_id)
+
+      assert {:error, "Window not found"} =
+               UnifiedWindow.get_window_state(child2_id)
     end
 
     test "fails to close non-existent window", %{pid: pid} do
-      assert {:error, "Window not found"} = UnifiedWindow.close_window("nonexistent")
+      assert {:error, "Window not found"} =
+               UnifiedWindow.close_window("nonexistent")
     end
   end
 
@@ -178,7 +188,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
       # Create new window to verify config changes
       {:ok, window_id} = UnifiedWindow.create_window()
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
-      assert window.size == {100, 30}  # new default_size
+      # new default_size
+      assert window.size == {100, 30}
     end
   end
 end

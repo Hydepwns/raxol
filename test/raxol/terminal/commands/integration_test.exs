@@ -14,12 +14,14 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       insert_mode: false,
       cursor_visible: true
     }
+
     {:ok, emulator: emulator}
   end
 
   describe "combined operations" do
     test "window resize with cursor position", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_cursor_position(10, 10)
         |> OSCHandlers.handle_window_size(100, 50)
         |> CSIHandlers.handle_cursor_position(20, 20)
@@ -29,7 +31,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "color changes with text attributes", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> OSCHandlers.handle_foreground_color("#FF0000")
         |> CSIHandlers.handle_text_attributes([1, 4])
         |> OSCHandlers.handle_background_color("#0000FF")
@@ -41,7 +44,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "window state with cursor visibility", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_mode_change(25, false)
         |> OSCHandlers.handle_window_maximize()
         |> CSIHandlers.handle_mode_change(25, true)
@@ -52,8 +56,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
   end
 
   describe "state persistence" do
-    test "preserves cursor position after window operations", %{emulator: emulator} do
-      result = emulator
+    test "preserves cursor position after window operations", %{
+      emulator: emulator
+    } do
+      result =
+        emulator
         |> CSIHandlers.handle_cursor_position(10, 10)
         |> OSCHandlers.handle_window_title("Test")
         |> OSCHandlers.handle_window_size(100, 50)
@@ -62,7 +69,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "preserves text attributes after mode changes", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_text_attributes([1, 4, 31])
         |> CSIHandlers.handle_mode_change(4, true)
         |> CSIHandlers.handle_mode_change(25, false)
@@ -73,7 +81,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "preserves window state after cursor operations", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> OSCHandlers.handle_window_maximize()
         |> CSIHandlers.handle_cursor_position(10, 10)
         |> CSIHandlers.handle_cursor_up(5)
@@ -84,7 +93,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
 
   describe "buffer interactions" do
     test "scroll with cursor position", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_cursor_position(10, 10)
         |> CSIHandlers.handle_scroll_up(5)
         |> CSIHandlers.handle_cursor_position(20, 20)
@@ -94,7 +104,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "erase with text attributes", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_text_attributes([1, 4])
         |> CSIHandlers.handle_erase_display(0)
         |> CSIHandlers.handle_text_attributes([0])
@@ -104,7 +115,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "scroll with window size", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> OSCHandlers.handle_window_size(100, 50)
         |> CSIHandlers.handle_scroll_up(10)
         |> CSIHandlers.handle_scroll_down(5)
@@ -116,7 +128,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
 
   describe "terminal mode interactions" do
     test "insert mode with cursor position", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_mode_change(4, true)
         |> CSIHandlers.handle_cursor_position(10, 10)
         |> CSIHandlers.handle_mode_change(4, false)
@@ -126,7 +139,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "cursor visibility with window state", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_mode_change(25, false)
         |> OSCHandlers.handle_window_fullscreen()
         |> CSIHandlers.handle_mode_change(25, true)
@@ -136,7 +150,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "multiple mode changes", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_mode_change(4, true)
         |> CSIHandlers.handle_mode_change(25, false)
         |> CSIHandlers.handle_mode_change(4, false)
@@ -149,7 +164,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
 
   describe "error recovery" do
     test "recovers from invalid window size", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> OSCHandlers.handle_window_size(-100, -50)
         |> OSCHandlers.handle_window_size(100, 50)
 
@@ -157,7 +173,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "recovers from invalid cursor position", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> CSIHandlers.handle_cursor_position(-10, -10)
         |> CSIHandlers.handle_cursor_position(10, 10)
 
@@ -165,7 +182,8 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     end
 
     test "recovers from invalid color settings", %{emulator: emulator} do
-      result = emulator
+      result =
+        emulator
         |> OSCHandlers.handle_foreground_color("invalid")
         |> OSCHandlers.handle_foreground_color("#FF0000")
 

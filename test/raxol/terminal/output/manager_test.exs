@@ -8,7 +8,9 @@ defmodule Raxol.Terminal.Output.ManagerTest do
   end
 
   describe "new/1" do
-    test "creates a new output manager with default options", %{manager: manager} do
+    test "creates a new output manager with default options", %{
+      manager: manager
+    } do
       assert manager.buffer != nil
       assert length(manager.format_rules) == 3
       assert manager.style_map["default"] != nil
@@ -87,14 +89,15 @@ defmodule Raxol.Terminal.Output.ManagerTest do
     end
 
     test "rejects batch exceeding size limit", %{manager: manager} do
-      events = Enum.map(1..101, fn i ->
-        %{
-          content: "Event #{i}",
-          style: "default",
-          timestamp: System.system_time(:millisecond),
-          priority: i
-        }
-      end)
+      events =
+        Enum.map(1..101, fn i ->
+          %{
+            content: "Event #{i}",
+            style: "default",
+            timestamp: System.system_time(:millisecond),
+            priority: i
+          }
+        end)
 
       assert {:error, :invalid_event} = Manager.process_batch(manager, events)
     end
@@ -123,6 +126,7 @@ defmodule Raxol.Terminal.Output.ManagerTest do
         italic: false,
         underline: false
       }
+
       manager = Manager.add_style(manager, "error", style)
 
       event = %{
@@ -179,6 +183,7 @@ defmodule Raxol.Terminal.Output.ManagerTest do
         timestamp: System.system_time(:millisecond),
         priority: 1
       }
+
       {:ok, manager} = Manager.process_output(manager, event)
 
       updated_manager = Manager.flush_buffer(manager)

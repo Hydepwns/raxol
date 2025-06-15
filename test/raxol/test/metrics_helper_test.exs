@@ -16,11 +16,13 @@ defmodule Raxol.Test.MetricsHelperTest do
     end
 
     test "starts metrics collector with custom options" do
-      context = MetricsHelper.setup_metrics_test(
-        retention_period: 120,
-        max_samples: 200,
-        flush_interval: 2000
-      )
+      context =
+        MetricsHelper.setup_metrics_test(
+          retention_period: 120,
+          max_samples: 200,
+          flush_interval: 2000
+        )
+
       assert Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
       MetricsHelper.cleanup_metrics_test(context)
     end
@@ -54,8 +56,15 @@ defmodule Raxol.Test.MetricsHelperTest do
     end
 
     test "records metrics with tags" do
-      :ok = MetricsHelper.record_test_metric(:performance, :frame_time, 16, tags: [:test, :ui])
-      assert :ok == MetricsHelper.verify_metric(:performance, :frame_time, 16, tags: [:test, :ui])
+      :ok =
+        MetricsHelper.record_test_metric(:performance, :frame_time, 16,
+          tags: [:test, :ui]
+        )
+
+      assert :ok ==
+               MetricsHelper.verify_metric(:performance, :frame_time, 16,
+                 tags: [:test, :ui]
+               )
     end
   end
 
@@ -72,19 +81,33 @@ defmodule Raxol.Test.MetricsHelperTest do
 
     test "returns error for unexpected value" do
       :ok = MetricsHelper.record_test_metric(:performance, :frame_time, 16)
+
       assert {:error, {:unexpected_value, 16, 32}} ==
                MetricsHelper.verify_metric(:performance, :frame_time, 32)
     end
 
     test "verifies metric tags" do
-      :ok = MetricsHelper.record_test_metric(:performance, :frame_time, 16, tags: [:test, :ui])
-      assert :ok == MetricsHelper.verify_metric(:performance, :frame_time, 16, tags: [:test, :ui])
+      :ok =
+        MetricsHelper.record_test_metric(:performance, :frame_time, 16,
+          tags: [:test, :ui]
+        )
+
+      assert :ok ==
+               MetricsHelper.verify_metric(:performance, :frame_time, 16,
+                 tags: [:test, :ui]
+               )
     end
 
     test "returns error for unexpected tags" do
-      :ok = MetricsHelper.record_test_metric(:performance, :frame_time, 16, tags: [:test])
+      :ok =
+        MetricsHelper.record_test_metric(:performance, :frame_time, 16,
+          tags: [:test]
+        )
+
       assert {:error, {:unexpected_tags, [:test], [:test, :ui]}} ==
-               MetricsHelper.verify_metric(:performance, :frame_time, 16, tags: [:test, :ui])
+               MetricsHelper.verify_metric(:performance, :frame_time, 16,
+                 tags: [:test, :ui]
+               )
     end
   end
 
@@ -100,13 +123,18 @@ defmodule Raxol.Test.MetricsHelperTest do
 
     test "times out waiting for metric" do
       assert {:error, :timeout} ==
-               MetricsHelper.wait_for_metric(:performance, :frame_time, 16, timeout: 100)
+               MetricsHelper.wait_for_metric(:performance, :frame_time, 16,
+                 timeout: 100
+               )
     end
 
     test "waits for metric with tags" do
       spawn(fn ->
         Process.sleep(100)
-        MetricsHelper.record_test_metric(:performance, :frame_time, 16, tags: [:test])
+
+        MetricsHelper.record_test_metric(:performance, :frame_time, 16,
+          tags: [:test]
+        )
       end)
 
       assert :ok ==

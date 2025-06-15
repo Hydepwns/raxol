@@ -17,22 +17,24 @@ defmodule Raxol.Test.RendererHelper do
   """
   def setup_renderer_test(opts \\ []) do
     # Start renderer
-    {:ok, renderer} = Raxol.Terminal.Renderer.start_link(
-      Keyword.get(opts, :renderer_opts, [
-        mode: :gpu,
-        double_buffering: true,
-        vsync: true,
-        batch_size: 1000,
-        cache_size: 100
-      ])
-    )
+    {:ok, renderer} =
+      Raxol.Terminal.Renderer.start_link(
+        Keyword.get(opts, :renderer_opts,
+          mode: :gpu,
+          double_buffering: true,
+          vsync: true,
+          batch_size: 1000,
+          cache_size: 100
+        )
+      )
 
     # Setup metrics if enabled
-    metrics_state = if Keyword.get(opts, :enable_metrics, true) do
-      Raxol.Test.MetricsHelper.setup_metrics_test(
-        Keyword.get(opts, :metrics_opts, [])
-      )
-    end
+    metrics_state =
+      if Keyword.get(opts, :enable_metrics, true) do
+        Raxol.Test.MetricsHelper.setup_metrics_test(
+          Keyword.get(opts, :metrics_opts, [])
+        )
+      end
 
     %{
       renderer: renderer,
@@ -48,6 +50,7 @@ defmodule Raxol.Test.RendererHelper do
   """
   def cleanup_renderer_test(state) do
     Raxol.Terminal.Renderer.stop(state.renderer)
+
     if state.metrics do
       Raxol.Test.MetricsHelper.cleanup_metrics_test(state.metrics)
     end
@@ -69,13 +72,16 @@ defmodule Raxol.Test.RendererHelper do
   """
   def create_test_renderer(opts \\ []) do
     Raxol.Terminal.Renderer.start_link(
-      Keyword.merge([
-        mode: :gpu,
-        double_buffering: true,
-        vsync: true,
-        batch_size: 1000,
-        cache_size: 100
-      ], opts)
+      Keyword.merge(
+        [
+          mode: :gpu,
+          double_buffering: true,
+          vsync: true,
+          batch_size: 1000,
+          cache_size: 100
+        ],
+        opts
+      )
     )
   end
 
@@ -146,6 +152,7 @@ defmodule Raxol.Test.RendererHelper do
 
     if result == :ok do
       duration = System.monotonic_time(:millisecond) - start_time
+
       Raxol.Test.MetricsHelper.record_test_metric(
         "render_operation",
         :performance,
@@ -175,11 +182,12 @@ defmodule Raxol.Test.RendererHelper do
       {:ok, %{avg_time: 16, min_time: 15, max_time: 18}}
   """
   def test_render_performance(renderer, buffer, iterations, opts \\ []) do
-    times = for _ <- 1..iterations do
-      start_time = System.monotonic_time(:millisecond)
-      :ok = render_test_content(renderer, buffer, opts)
-      System.monotonic_time(:millisecond) - start_time
-    end
+    times =
+      for _ <- 1..iterations do
+        start_time = System.monotonic_time(:millisecond)
+        :ok = render_test_content(renderer, buffer, opts)
+        System.monotonic_time(:millisecond) - start_time
+      end
 
     metrics = %{
       avg_time: Enum.sum(times) / iterations,
@@ -224,18 +232,39 @@ defmodule Raxol.Test.RendererHelper do
     start_time = System.monotonic_time(:millisecond)
     end_time = start_time + timeout
 
-    wait_for_rendered_content_loop(renderer, expected_content, opts, check_interval, end_time)
+    wait_for_rendered_content_loop(
+      renderer,
+      expected_content,
+      opts,
+      check_interval,
+      end_time
+    )
   end
 
-  defp wait_for_rendered_content_loop(renderer, expected_content, opts, check_interval, end_time) do
+  defp wait_for_rendered_content_loop(
+         renderer,
+         expected_content,
+         opts,
+         check_interval,
+         end_time
+       ) do
     case verify_rendered_content(renderer, expected_content, opts) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, _} ->
         if System.monotonic_time(:millisecond) >= end_time do
           {:error, :timeout}
         else
           Process.sleep(check_interval)
-          wait_for_rendered_content_loop(renderer, expected_content, opts, check_interval, end_time)
+
+          wait_for_rendered_content_loop(
+            renderer,
+            expected_content,
+            opts,
+            check_interval,
+            end_time
+          )
         end
     end
   end
@@ -259,8 +288,10 @@ defmodule Raxol.Test.RendererHelper do
   def compare_rendering_modes(buffer, iterations, _opts \\ []) do
     with {:ok, gpu_renderer} <- create_test_renderer(mode: :gpu),
          {:ok, cpu_renderer} <- create_test_renderer(mode: :cpu),
-         {:ok, gpu_metrics} <- test_render_performance(gpu_renderer, buffer, iterations, mode: :gpu),
-         {:ok, cpu_metrics} <- test_render_performance(cpu_renderer, buffer, iterations, mode: :cpu) do
+         {:ok, gpu_metrics} <-
+           test_render_performance(gpu_renderer, buffer, iterations, mode: :gpu),
+         {:ok, cpu_metrics} <-
+           test_render_performance(cpu_renderer, buffer, iterations, mode: :cpu) do
       Raxol.Terminal.Renderer.stop(gpu_renderer)
       Raxol.Terminal.Renderer.stop(cpu_renderer)
       {:ok, %{gpu: gpu_metrics, cpu: cpu_metrics}}

@@ -12,10 +12,11 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
     do: raise("unwrap_ok/1: Unexpected return value: #{inspect(other)}")
 
   setup do
-    emulator = %Emulator{
+    emulator = %Raxol.Terminal.Emulator.Struct{
       window_manager: Window.Manager.new(),
       active_buffer: %{width: 80, height: 24}
     }
+
     {:ok, emulator: emulator}
   end
 
@@ -84,12 +85,16 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
     end
 
     test "sets highlight foreground color", %{emulator: emulator} do
-      result = OSCHandlers.handle_highlight_foreground_color(emulator, "#FFFFFF")
+      result =
+        OSCHandlers.handle_highlight_foreground_color(emulator, "#FFFFFF")
+
       assert result.highlight_foreground_color == "#FFFFFF"
     end
 
     test "sets highlight background color", %{emulator: emulator} do
-      result = OSCHandlers.handle_highlight_background_color(emulator, "#000000")
+      result =
+        OSCHandlers.handle_highlight_background_color(emulator, "#000000")
+
       assert result.highlight_background_color == "#000000"
     end
 
@@ -174,17 +179,20 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
 
     test "handles invalid cursor shapes", %{emulator: emulator} do
       result = OSCHandlers.handle_cursor_shape(emulator, "invalid")
-      assert result.cursor_shape == :block # Default shape
+      # Default shape
+      assert result.cursor_shape == :block
     end
 
     test "handles empty cursor shape", %{emulator: emulator} do
       result = OSCHandlers.handle_cursor_shape(emulator, "")
-      assert result.cursor_shape == :block # Default shape
+      # Default shape
+      assert result.cursor_shape == :block
     end
 
     test "handles nil cursor shape", %{emulator: emulator} do
       result = OSCHandlers.handle_cursor_shape(emulator, nil)
-      assert result.cursor_shape == :block # Default shape
+      # Default shape
+      assert result.cursor_shape == :block
     end
   end
 

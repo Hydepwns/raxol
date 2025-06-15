@@ -184,7 +184,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       end)
 
       # Stub Command.execute
-      Mox.stub(Raxol.Core.Runtime.Command, :execute, fn _cmd, _context -> :ok end)
+      Mox.stub(Raxol.Core.Runtime.Command, :execute, fn _cmd, _context ->
+        :ok
+      end)
 
       # Expect update to fail
       Mox.expect(ApplicationMock, :update, fn _any_event_or_msg, _model ->
@@ -192,10 +194,16 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       end)
 
       # Stub PubSub.broadcast
-      Mox.stub(Phoenix.PubSub, :broadcast, fn _server, "events", {:event, ^event} -> :ok end)
+      Mox.stub(Phoenix.PubSub, :broadcast, fn _server,
+                                              "events",
+                                              {:event, ^event} ->
+        :ok
+      end)
 
       # Stub UserPreferences
-      Mox.stub(Raxol.Core.UserPreferences, :get, fn "theme.active_id" -> :default end)
+      Mox.stub(Raxol.Core.UserPreferences, :get, fn "theme.active_id" ->
+        :default
+      end)
 
       # Start Dispatcher for this test
       {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)

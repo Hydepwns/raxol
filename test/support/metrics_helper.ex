@@ -19,39 +19,43 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def setup_metrics_test(opts \\ []) do
     # Start metrics collector
-    {:ok, collector} = Raxol.Core.Metrics.UnifiedCollector.start_link(
-      Keyword.get(opts, :collector_opts, [
-        retention_period: :timer.minutes(5),
-        max_samples: 100,
-        flush_interval: :timer.seconds(1),
-        cloud_enabled: false
-      ])
-    )
+    {:ok, collector} =
+      Raxol.Core.Metrics.UnifiedCollector.start_link(
+        Keyword.get(opts, :collector_opts,
+          retention_period: :timer.minutes(5),
+          max_samples: 100,
+          flush_interval: :timer.seconds(1),
+          cloud_enabled: false
+        )
+      )
 
     # Start metrics aggregator
-    {:ok, aggregator} = Raxol.Core.Metrics.Aggregator.start_link(
-      Keyword.get(opts, :aggregator_opts, [
-        update_interval: :timer.seconds(1),
-        max_rules: 10
-      ])
-    )
+    {:ok, aggregator} =
+      Raxol.Core.Metrics.Aggregator.start_link(
+        Keyword.get(opts, :aggregator_opts,
+          update_interval: :timer.seconds(1),
+          max_rules: 10
+        )
+      )
 
     # Start metrics visualizer
-    {:ok, visualizer} = Raxol.Core.Metrics.Visualizer.start_link(
-      Keyword.get(opts, :visualizer_opts, [
-        max_charts: 10,
-        default_time_range: :timer.minutes(5)
-      ])
-    )
+    {:ok, visualizer} =
+      Raxol.Core.Metrics.Visualizer.start_link(
+        Keyword.get(opts, :visualizer_opts,
+          max_charts: 10,
+          default_time_range: :timer.minutes(5)
+        )
+      )
 
     # Start alert manager
-    {:ok, alert_manager} = Raxol.Core.Metrics.AlertManager.start_link(
-      Keyword.get(opts, :alert_manager_opts, [
-        check_interval: :timer.seconds(1),
-        max_rules: 10,
-        default_cooldown: :timer.seconds(5)
-      ])
-    )
+    {:ok, alert_manager} =
+      Raxol.Core.Metrics.AlertManager.start_link(
+        Keyword.get(opts, :alert_manager_opts,
+          check_interval: :timer.seconds(1),
+          max_rules: 10,
+          default_cooldown: :timer.seconds(5)
+        )
+      )
 
     %{
       collector: collector,
@@ -110,9 +114,14 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def verify_metric(name, type, expected_value, opts \\ []) do
     case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, opts) do
-      {:ok, %{value: ^expected_value}} -> :ok
-      {:ok, %{value: actual_value}} -> {:error, {:unexpected_value, actual_value}}
-      {:error, reason} -> {:error, reason}
+      {:ok, %{value: ^expected_value}} ->
+        :ok
+
+      {:ok, %{value: actual_value}} ->
+        {:error, {:unexpected_value, actual_value}}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -143,18 +152,42 @@ defmodule Raxol.Test.MetricsHelper do
     start_time = System.monotonic_time(:millisecond)
     end_time = start_time + timeout
 
-    wait_for_metric_loop(name, type, expected_value, opts, check_interval, end_time)
+    wait_for_metric_loop(
+      name,
+      type,
+      expected_value,
+      opts,
+      check_interval,
+      end_time
+    )
   end
 
-  defp wait_for_metric_loop(name, type, expected_value, opts, check_interval, end_time) do
+  defp wait_for_metric_loop(
+         name,
+         type,
+         expected_value,
+         opts,
+         check_interval,
+         end_time
+       ) do
     case verify_metric(name, type, expected_value, opts) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, _} ->
         if System.monotonic_time(:millisecond) >= end_time do
           {:error, :timeout}
         else
           Process.sleep(check_interval)
-          wait_for_metric_loop(name, type, expected_value, opts, check_interval, end_time)
+
+          wait_for_metric_loop(
+            name,
+            type,
+            expected_value,
+            opts,
+            check_interval,
+            end_time
+          )
         end
     end
   end
@@ -245,12 +278,14 @@ defmodule Raxol.Test.MetricsHelper do
   Records a metric value in the collector.
   """
   def record_metric(collector, name, value) do
-    metrics = Map.update(collector.metrics, name, value, fn current ->
-      case is_list(current) do
-        true -> [value | current]
-        false -> [value, current]
-      end
-    end)
+    metrics =
+      Map.update(collector.metrics, name, value, fn current ->
+        case is_list(current) do
+          true -> [value | current]
+          false -> [value, current]
+        end
+      end)
+
     %{collector | metrics: metrics, last_update: System.monotonic_time()}
   end
 
@@ -280,10 +315,14 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def calculate_average(collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.sum(values) / length(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 
@@ -292,10 +331,14 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def calculate_sum(collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.sum(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 
@@ -304,10 +347,14 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def calculate_min(collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.min(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 
@@ -316,10 +363,14 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def calculate_max(collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.max(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 

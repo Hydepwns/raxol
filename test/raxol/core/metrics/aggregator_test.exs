@@ -47,20 +47,36 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         tags: %{service: "test"},
         group_by: ["service"]
       }
+
       {:ok, rule_id} = Aggregator.add_rule(rule)
       %{rule_id: rule_id}
     end
 
     test "aggregates metrics by mean", %{rule_id: rule_id} do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 30, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 30,
+          tags: %{service: "test"}
+        }
       ]
 
       # Mock UnifiedCollector.get_metrics to return our test metrics
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(rule_id)
       assert length(aggregated) == 1
@@ -77,16 +93,32 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         tags: %{service: "test"},
         group_by: ["service"]
       }
+
       {:ok, median_rule_id} = Aggregator.add_rule(rule)
 
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 30, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 30,
+          tags: %{service: "test"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(median_rule_id)
       assert length(aggregated) == 1
@@ -103,16 +135,32 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         tags: %{service: "test"},
         group_by: ["service", "region"]
       }
+
       {:ok, group_rule_id} = Aggregator.add_rule(rule)
 
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10, tags: %{service: "test", region: "us"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20, tags: %{service: "test", region: "eu"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 30, tags: %{service: "test", region: "us"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10,
+          tags: %{service: "test", region: "us"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20,
+          tags: %{service: "test", region: "eu"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 30,
+          tags: %{service: "test", region: "us"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(group_rule_id)
       assert length(aggregated) == 2
@@ -142,17 +190,37 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         metric_name: "test_metric",
         tags: %{service: "test"}
       }
+
       {:ok, rule_id} = Aggregator.add_rule(rule)
 
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 30, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 40, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 30,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 40,
+          tags: %{service: "test"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(rule_id)
       assert length(aggregated) == 1
@@ -168,18 +236,42 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         metric_name: "test_metric",
         tags: %{service: "test"}
       }
+
       {:ok, rule_id} = Aggregator.add_rule(rule)
 
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 30, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 40, tags: %{service: "test"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 50, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 30,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 40,
+          tags: %{service: "test"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 50,
+          tags: %{service: "test"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(rule_id)
       assert length(aggregated) == 1

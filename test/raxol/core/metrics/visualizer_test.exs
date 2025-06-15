@@ -10,20 +10,34 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   describe "chart creation" do
     test "creates a line chart with default options" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20
+        }
       ]
 
       assert {:ok, chart_id, chart_data} = Visualizer.create_chart(metrics)
       assert chart_data.type == "line"
       assert length(chart_data.data.datasets) == 1
-      assert chart_data.data.datasets |> List.first() |> Map.get(:label) == "Metrics Visualization"
+
+      assert chart_data.data.datasets |> List.first() |> Map.get(:label) ==
+               "Metrics Visualization"
     end
 
     test "creates a bar chart with custom options" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20
+        }
       ]
 
       options = %{
@@ -32,15 +46,25 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
         color: "#FF0000"
       }
 
-      assert {:ok, chart_id, chart_data} = Visualizer.create_chart(metrics, options)
+      assert {:ok, chart_id, chart_data} =
+               Visualizer.create_chart(metrics, options)
+
       assert chart_data.type == "bar"
-      assert chart_data.data.datasets |> List.first() |> Map.get(:label) == "Custom Bar Chart"
-      assert chart_data.data.datasets |> List.first() |> Map.get(:backgroundColor) == "#FF0000"
+
+      assert chart_data.data.datasets |> List.first() |> Map.get(:label) ==
+               "Custom Bar Chart"
+
+      assert chart_data.data.datasets
+             |> List.first()
+             |> Map.get(:backgroundColor) == "#FF0000"
     end
 
     test "creates a gauge chart" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 75}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 75
+        }
       ]
 
       options = %{
@@ -48,16 +72,27 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
         title: "Gauge Chart"
       }
 
-      assert {:ok, chart_id, chart_data} = Visualizer.create_chart(metrics, options)
+      assert {:ok, chart_id, chart_data} =
+               Visualizer.create_chart(metrics, options)
+
       assert chart_data.type == "gauge"
       assert chart_data.data.datasets |> List.first() |> Map.get(:value) == 75
     end
 
     test "creates a histogram chart" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 30}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 30
+        }
       ]
 
       options = %{
@@ -65,26 +100,39 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
         title: "Histogram Chart"
       }
 
-      assert {:ok, chart_id, chart_data} = Visualizer.create_chart(metrics, options)
+      assert {:ok, chart_id, chart_data} =
+               Visualizer.create_chart(metrics, options)
+
       assert chart_data.type == "bar"
-      assert length(chart_data.data.labels) == 10 # 10 buckets
+      # 10 buckets
+      assert length(chart_data.data.labels) == 10
     end
   end
 
   describe "chart updates" do
     test "updates an existing chart" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        }
       ]
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
 
       new_metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 20}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 20
+        }
       ]
 
-      assert {:ok, updated_data} = Visualizer.update_chart(chart_id, new_metrics)
-      assert updated_data.data.datasets |> List.first() |> Map.get(:data) == [20]
+      assert {:ok, updated_data} =
+               Visualizer.update_chart(chart_id, new_metrics)
+
+      assert updated_data.data.datasets |> List.first() |> Map.get(:data) == [
+               20
+             ]
     end
 
     test "returns error for non-existent chart" do
@@ -95,7 +143,10 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   describe "chart retrieval" do
     test "gets an existing chart" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        }
       ]
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
@@ -111,7 +162,10 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   describe "chart export" do
     test "exports chart to JSON" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        }
       ]
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
@@ -122,7 +176,10 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
 
     test "exports chart to CSV" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        }
       ]
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
@@ -133,11 +190,16 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
 
     test "returns error for PNG export (not implemented)" do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 10}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 10
+        }
       ]
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
-      assert {:ok, {:error, :not_implemented}} = Visualizer.export_chart(chart_id, :png)
+
+      assert {:ok, {:error, :not_implemented}} =
+               Visualizer.export_chart(chart_id, :png)
     end
   end
 
@@ -157,7 +219,9 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
         time_range: {one_hour_ago, now}
       }
 
-      assert {:ok, chart_id, chart_data} = Visualizer.create_chart(metrics, options)
+      assert {:ok, chart_id, chart_data} =
+               Visualizer.create_chart(metrics, options)
+
       values = chart_data.data.datasets |> List.first() |> Map.get(:data)
       assert length(values) == 2
       assert 30 in values

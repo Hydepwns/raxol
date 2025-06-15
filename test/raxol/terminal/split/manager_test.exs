@@ -21,6 +21,7 @@ defmodule Raxol.Terminal.Split.ManagerTest do
         dimensions: %{width: 100, height: 30},
         position: %{x: 10, y: 10}
       }
+
       assert {:ok, split} = Manager.create_split(opts)
       assert split.dimensions == %{width: 100, height: 30}
       assert split.position == %{x: 10, y: 10}
@@ -31,12 +32,16 @@ defmodule Raxol.Terminal.Split.ManagerTest do
     test "resizes an existing split", %{pid: pid} do
       {:ok, split} = Manager.create_split()
       new_dimensions = %{width: 120, height: 40}
-      assert {:ok, updated_split} = Manager.resize_split(split.id, new_dimensions)
+
+      assert {:ok, updated_split} =
+               Manager.resize_split(split.id, new_dimensions)
+
       assert updated_split.dimensions == new_dimensions
     end
 
     test "returns error for non-existent split", %{pid: pid} do
-      assert {:error, :not_found} = Manager.resize_split(999, %{width: 100, height: 30})
+      assert {:error, :not_found} =
+               Manager.resize_split(999, %{width: 100, height: 30})
     end
   end
 

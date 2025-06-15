@@ -48,7 +48,8 @@ defmodule Raxol.Terminal.Plugin.ManagerTest do
         version: "1.0.0"
       }
 
-      assert {:error, :invalid_plugin} = Manager.load_plugin(manager, invalid_plugin)
+      assert {:error, :invalid_plugin} =
+               Manager.load_plugin(manager, invalid_plugin)
     end
 
     test "returns error for duplicate plugin", %{manager: manager} do
@@ -63,7 +64,9 @@ defmodule Raxol.Terminal.Plugin.ManagerTest do
       }
 
       {:ok, manager} = Manager.load_plugin(manager, plugin)
-      assert {:error, :plugin_already_loaded} = Manager.load_plugin(manager, plugin)
+
+      assert {:error, :plugin_already_loaded} =
+               Manager.load_plugin(manager, plugin)
     end
   end
 
@@ -80,13 +83,17 @@ defmodule Raxol.Terminal.Plugin.ManagerTest do
       }
 
       {:ok, manager} = Manager.load_plugin(manager, plugin)
-      assert {:ok, updated_manager} = Manager.unload_plugin(manager, "test_plugin")
+
+      assert {:ok, updated_manager} =
+               Manager.unload_plugin(manager, "test_plugin")
+
       assert map_size(updated_manager.plugins) == 0
       assert updated_manager.metrics.plugin_unloads == 1
     end
 
     test "returns error for non-existent plugin", %{manager: manager} do
-      assert {:error, :plugin_not_found} = Manager.unload_plugin(manager, "non_existent")
+      assert {:error, :plugin_not_found} =
+               Manager.unload_plugin(manager, "non_existent")
     end
   end
 
@@ -103,13 +110,17 @@ defmodule Raxol.Terminal.Plugin.ManagerTest do
       }
 
       {:ok, manager} = Manager.load_plugin(manager, plugin)
-      assert {:ok, results, updated_manager} = Manager.call_hook(manager, "test_hook", ["arg1"])
+
+      assert {:ok, results, updated_manager} =
+               Manager.call_hook(manager, "test_hook", ["arg1"])
+
       assert length(results) == 1
       assert updated_manager.metrics.hook_calls == 1
     end
 
     test "returns error for non-existent hook", %{manager: manager} do
-      assert {:error, :hook_not_found} = Manager.call_hook(manager, "non_existent")
+      assert {:error, :hook_not_found} =
+               Manager.call_hook(manager, "non_existent")
     end
   end
 
@@ -127,13 +138,17 @@ defmodule Raxol.Terminal.Plugin.ManagerTest do
 
       {:ok, manager} = Manager.load_plugin(manager, plugin)
       new_config = %{option: "value"}
-      assert {:ok, updated_manager} = Manager.update_plugin_config(manager, "test_plugin", new_config)
+
+      assert {:ok, updated_manager} =
+               Manager.update_plugin_config(manager, "test_plugin", new_config)
+
       assert updated_manager.plugins["test_plugin"].config.option == "value"
       assert updated_manager.metrics.config_updates == 1
     end
 
     test "returns error for non-existent plugin", %{manager: manager} do
-      assert {:error, :plugin_not_found} = Manager.update_plugin_config(manager, "non_existent", %{})
+      assert {:error, :plugin_not_found} =
+               Manager.update_plugin_config(manager, "non_existent", %{})
     end
   end
 

@@ -15,9 +15,10 @@ defmodule Raxol.Terminal.Split.SyncTest do
       payload = %{data: "test"}
 
       # Subscribe to events
-      :ok = Sync.subscribe_to_events(split_id, fn event ->
-        send(test_pid, {:event_received, event})
-      end)
+      :ok =
+        Sync.subscribe_to_events(split_id, fn event ->
+          send(test_pid, {:event_received, event})
+        end)
 
       # Broadcast event
       :ok = Sync.broadcast_event(split_id, event_type, payload)
@@ -37,12 +38,15 @@ defmodule Raxol.Terminal.Split.SyncTest do
       payload = %{data: "test"}
 
       # Subscribe multiple times
-      :ok = Sync.subscribe_to_events(split_id, fn event ->
-        send(test_pid, {:event_received_1, event})
-      end)
-      :ok = Sync.subscribe_to_events(split_id, fn event ->
-        send(test_pid, {:event_received_2, event})
-      end)
+      :ok =
+        Sync.subscribe_to_events(split_id, fn event ->
+          send(test_pid, {:event_received_1, event})
+        end)
+
+      :ok =
+        Sync.subscribe_to_events(split_id, fn event ->
+          send(test_pid, {:event_received_2, event})
+        end)
 
       # Broadcast event
       :ok = Sync.broadcast_event(split_id, event_type, payload)
@@ -86,9 +90,10 @@ defmodule Raxol.Terminal.Split.SyncTest do
       split_id = 1
 
       # Subscribe
-      :ok = Sync.subscribe_to_events(split_id, fn event ->
-        send(test_pid, {:event_received, event})
-      end)
+      :ok =
+        Sync.subscribe_to_events(split_id, fn event ->
+          send(test_pid, {:event_received, event})
+        end)
 
       # Unsubscribe
       :ok = Sync.unsubscribe_from_events(split_id)

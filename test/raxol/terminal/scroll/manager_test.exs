@@ -9,7 +9,9 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
   end
 
   describe "new/1" do
-    test "creates a new scroll manager with default options", %{manager: manager} do
+    test "creates a new scroll manager with default options", %{
+      manager: manager
+    } do
       assert manager.metrics.scrolls == 0
       assert manager.metrics.predictions == 0
       assert manager.metrics.cache_hits == 0
@@ -18,12 +20,13 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
     end
 
     test "creates a new scroll manager with custom options" do
-      manager = Manager.new(
-        cache_size: 50,
-        prediction_enabled: false,
-        optimization_enabled: false,
-        sync_enabled: false
-      )
+      manager =
+        Manager.new(
+          cache_size: 50,
+          prediction_enabled: false,
+          optimization_enabled: false,
+          sync_enabled: false
+        )
 
       assert manager.predictor == nil
       assert manager.optimizer == nil
@@ -44,19 +47,28 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
 
     test "scrolls with prediction disabled", %{manager: manager} do
       manager = %{manager | predictor: nil}
-      assert {:ok, updated_manager} = Manager.scroll(manager, :up, 10, predict: false)
+
+      assert {:ok, updated_manager} =
+               Manager.scroll(manager, :up, 10, predict: false)
+
       assert updated_manager.metrics.scrolls == 1
     end
 
     test "scrolls with optimization disabled", %{manager: manager} do
       manager = %{manager | optimizer: nil}
-      assert {:ok, updated_manager} = Manager.scroll(manager, :up, 10, optimize: false)
+
+      assert {:ok, updated_manager} =
+               Manager.scroll(manager, :up, 10, optimize: false)
+
       assert updated_manager.metrics.scrolls == 1
     end
 
     test "scrolls with sync disabled", %{manager: manager} do
       manager = %{manager | sync: nil}
-      assert {:ok, updated_manager} = Manager.scroll(manager, :up, 10, sync: false)
+
+      assert {:ok, updated_manager} =
+               Manager.scroll(manager, :up, 10, sync: false)
+
       assert updated_manager.metrics.scrolls == 1
     end
   end

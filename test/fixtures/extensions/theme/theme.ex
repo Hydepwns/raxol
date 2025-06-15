@@ -57,12 +57,13 @@ defmodule Raxol.Terminal.Extension.Theme do
     theme = Map.merge(get_theme_info(), config)
 
     # Apply theme settings
-    {:ok, %{
-      colors: theme.colors,
-      font: theme.font,
-      cursor: theme.cursor,
-      padding: theme.padding
-    }}
+    {:ok,
+     %{
+       colors: theme.colors,
+       font: theme.font,
+       cursor: theme.cursor,
+       padding: theme.padding
+     }}
   end
 
   def update_theme(config) do

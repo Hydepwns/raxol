@@ -91,7 +91,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       background = palette.background
 
       for {name, color} <- palette do
-        unless name == :background do
+        if name != :background do
           assert {:ok, _} = Accessibility.check_contrast(color, background)
         end
       end
@@ -102,7 +102,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       background = palette.background
 
       for {name, color} <- palette do
-        unless name == :background do
+        if name != :background do
           assert {:ok, _} = Accessibility.check_contrast(color, background)
         end
       end

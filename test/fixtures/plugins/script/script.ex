@@ -56,19 +56,23 @@ defmodule Raxol.Terminal.Plugin.Script do
     # In a real implementation, this would execute the actual script
     case script_name do
       "test_script" ->
-        {:ok, %{
-          script: script_name,
-          args: args,
-          config: config,
-          result: "Test script executed successfully"
-        }}
+        {:ok,
+         %{
+           script: script_name,
+           args: args,
+           config: config,
+           result: "Test script executed successfully"
+         }}
+
       "another_script" ->
-        {:ok, %{
-          script: script_name,
-          args: args,
-          config: config,
-          result: "Another script executed successfully"
-        }}
+        {:ok,
+         %{
+           script: script_name,
+           args: args,
+           config: config,
+           result: "Another script executed successfully"
+         }}
+
       _ ->
         {:error, :script_not_found}
     end

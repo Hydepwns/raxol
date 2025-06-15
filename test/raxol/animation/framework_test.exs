@@ -27,9 +27,23 @@ defmodule Raxol.Animation.FrameworkTest do
     Framework.init(%{}, local_user_prefs_name)
 
     # Reset relevant prefs before each test
-    UserPreferences.set("accessibility.reduced_motion", false, local_user_prefs_name)
-    UserPreferences.set("accessibility.screen_reader", true, local_user_prefs_name)
-    UserPreferences.set("accessibility.silence_announcements", false, local_user_prefs_name)
+    UserPreferences.set(
+      "accessibility.reduced_motion",
+      false,
+      local_user_prefs_name
+    )
+
+    UserPreferences.set(
+      "accessibility.screen_reader",
+      true,
+      local_user_prefs_name
+    )
+
+    UserPreferences.set(
+      "accessibility.silence_announcements",
+      false,
+      local_user_prefs_name
+    )
 
     # Wait for preferences to be applied
     assert_receive {:preferences_applied, ^local_user_prefs_name}, 100

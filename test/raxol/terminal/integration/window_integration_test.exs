@@ -18,11 +18,13 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
     end
 
     test "creates window with custom size", %{state: state} do
-      {:ok, window_id} = UnifiedWindow.create_window(%{
-        size: {100, 50},
-        buffer_id: state.buffer_manager.id,
-        renderer_id: state.renderer.id
-      })
+      {:ok, window_id} =
+        UnifiedWindow.create_window(%{
+          size: {100, 50},
+          buffer_id: state.buffer_manager.id,
+          renderer_id: state.renderer.id
+        })
+
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.size == {100, 50}
     end
@@ -55,7 +57,9 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
 
     test "handles invalid split direction", %{state: state} do
       {:ok, parent_id} = UnifiedWindow.get_active_window()
-      assert {:error, :invalid_direction} = UnifiedWindow.split_window(parent_id, :invalid)
+
+      assert {:error, :invalid_direction} =
+               UnifiedWindow.split_window(parent_id, :invalid)
     end
   end
 
@@ -116,7 +120,8 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
     end
 
     test "handles non-existent window", %{state: state} do
-      assert {:error, :window_not_found} = UnifiedWindow.set_active_window(:invalid_id)
+      assert {:error, :window_not_found} =
+               UnifiedWindow.set_active_window(:invalid_id)
     end
   end
 
@@ -127,12 +132,16 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
 
       :ok = UnifiedWindow.close_window(parent_id)
 
-      assert {:error, :window_not_found} = UnifiedWindow.get_window_state(parent_id)
-      assert {:error, :window_not_found} = UnifiedWindow.get_window_state(child_id)
+      assert {:error, :window_not_found} =
+               UnifiedWindow.get_window_state(parent_id)
+
+      assert {:error, :window_not_found} =
+               UnifiedWindow.get_window_state(child_id)
     end
 
     test "handles closing non-existent window", %{state: state} do
-      assert {:error, :window_not_found} = UnifiedWindow.close_window(:invalid_id)
+      assert {:error, :window_not_found} =
+               UnifiedWindow.close_window(:invalid_id)
     end
   end
 

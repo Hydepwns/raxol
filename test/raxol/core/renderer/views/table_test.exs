@@ -143,7 +143,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
             key: :amount,
             width: 10,
             align: :right,
-            format: &"$" <> Integer.to_string(&1)
+            format: &("$" <> Integer.to_string(&1))
           }
         ],
         data: [%{amount: 1000}],
@@ -153,6 +153,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
 
       state = Table.init(props)
       assert length(state.columns) == 1
+
       # Further assertions could check the formatter's output in the rendered view
     end
 
