@@ -1,0 +1,40 @@
+<div class="playground-container">
+  <div class="playground-header">
+    <h1>Code Playground</h1>
+    <div class="language-selector">
+      <select phx-change="change_language" name="language">
+        <option value="elixir" selected={@language == "elixir"}>Elixir</option>
+        <option value="javascript" selected={@language == "javascript"}>JavaScript</option>
+        <option value="python" selected={@language == "python"}>Python</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="playground-content">
+    <div class="editor-section">
+      <textarea
+        phx-change="update_code"
+        name="code"
+        placeholder="Write your code here..."
+        class="code-editor"
+      ><%= @code %></textarea>
+      <button phx-click="run_code" class="run-button">Run Code</button>
+    </div>
+
+    <div class="output-section">
+      <%= if @error do %>
+        <div class="error-output">
+          <h3>Error:</h3>
+          <pre><%= @error %></pre>
+        </div>
+      <% end %>
+
+      <%= if @output do %>
+        <div class="success-output">
+          <h3>Output:</h3>
+          <pre><%= @output %></pre>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
