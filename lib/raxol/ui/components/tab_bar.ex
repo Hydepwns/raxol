@@ -168,7 +168,7 @@ defmodule Raxol.UI.Components.TabBar do
     content_style = Keyword.get(opts, :content_style, %{})
 
     Raxol.View.Elements.row style: style, id: focus_key do
-      tab_bar =
+      _tab_bar =
         Raxol.View.Elements.row style: tab_bar_style do
           tab_bar_result =
             render(tabs, active_tab, on_change,
@@ -182,7 +182,7 @@ defmodule Raxol.UI.Components.TabBar do
           tab_bar_result
         end
 
-      content =
+      _content =
         Raxol.View.Elements.row style: content_style do
           # Find and render the content for the active tab
           active_tab_content =
@@ -202,7 +202,7 @@ defmodule Raxol.UI.Components.TabBar do
         end
 
       # Return tab bar and content in a list
-      [tab_bar, content]
+      [tab_bar_result, active_tab_content]
     end
   end
 end

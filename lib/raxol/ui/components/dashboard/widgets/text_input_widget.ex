@@ -8,7 +8,11 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.TextInputWidget do
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
 
-  defstruct input_id: :text_widget_input, value: "", placeholder: "Enter text...", title: "Text Input", id: :text_widget
+  defstruct input_id: :text_widget_input,
+            value: "",
+            placeholder: "Enter text...",
+            title: "Text Input",
+            id: :text_widget
 
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
@@ -28,14 +32,20 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.TextInputWidget do
   end
 
   def update(msg, state) do
-    Raxol.Core.Runtime.Log.debug("TextInputWidget received message: #{inspect msg}")
+    Raxol.Core.Runtime.Log.debug(
+      "TextInputWidget received message: #{inspect(msg)}"
+    )
+
     {state, []}
   end
 
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, _props, state) do
     # Placeholder - handle events if needed
-    Raxol.Core.Runtime.Log.debug("TextInputWidget received event: #{inspect event}")
+    Raxol.Core.Runtime.Log.debug(
+      "TextInputWidget received event: #{inspect(event)}"
+    )
+
     {state, []}
   end
 
@@ -53,7 +63,8 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.TextInputWidget do
         id: state.input_id,
         value: state.value,
         placeholder: state.placeholder,
-        on_change: :input # Send simple :input message to self
+        # Send simple :input message to self
+        on_change: :input
       )
     end
   end

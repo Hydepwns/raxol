@@ -83,35 +83,23 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
   @impl Raxol.Plugins.Plugin
   def handle_mouse(%__MODULE__{} = plugin_state, event, rendered_cells) do
-    # Only handle left clicks for now
     case event do
       %{type: :mouse, button: :left, x: click_x, y: click_y, modifiers: []} ->
-        # Look up cell data using the passed rendered_cells map
-        case Map.get(rendered_cells, {click_x, click_y}) do
-          %{style: %{hyperlink: url}} when is_binary(url) and url != "" ->
-            Raxol.Core.Runtime.Log.debug(
-              "[HyperlinkPlugin] Clicked on hyperlink: #{url}"
-            )
-
-            # Attempt to open the URL
-            case open_url(url) do
-              :ok ->
-                # URL opened successfully, halt event propagation
-                {:ok, plugin_state}
-
-              {:error, _reason} ->
-                # Failed to open, propagate event (maybe app wants to handle it?)
-                {:ok, plugin_state}
-            end
-
-          _ ->
-            # Click was not on a cell with a hyperlink style
-            {:ok, plugin_state}
-        end
-
+        handle_left_click(plugin_state, click_x, click_y, rendered_cells)
       _ ->
-        # Ignore other mouse events (right click, wheel, etc.)
         {:ok, plugin_state}
+    end
+  end
+
+  defp handle_left_click(plugin_state, x, y, rendered_cells) do
+    case Map.get(rendered_cells, {x, y}) do
+      %{style: %{hyperlink: url}} when is_binary(url) and url != "" ->
+        Raxol.Core.Runtime.Log.debug("[HyperlinkPlugin] Clicked on hyperlink: #{url}")
+        case open_url(url) do
+          :ok -> {:ok, plugin_state}
+          {:error, _reason} -> {:ok, plugin_state}
+        end
+      _ -> {:ok, plugin_state}
     end
   end
 

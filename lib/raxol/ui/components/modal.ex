@@ -19,16 +19,16 @@ defmodule Raxol.UI.Components.Modal do
   - :form_state - state for prompt/form fields
   """
   @type t :: %__MODULE__{
-    id: any(),
-    visible: boolean(),
-    title: String.t(),
-    content: any(),
-    buttons: list(),
-    type: atom(),
-    width: non_neg_integer(),
-    style: map(),
-    form_state: map()
-  }
+          id: any(),
+          visible: boolean(),
+          title: String.t(),
+          content: any(),
+          buttons: list(),
+          type: atom(),
+          width: non_neg_integer(),
+          style: map(),
+          form_state: map()
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component

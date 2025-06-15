@@ -9,8 +9,8 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   }
 
   @type emulator_state :: %{
-    state: State.t()
-  }
+          state: State.t()
+        }
 
   @doc """
   Initializes a new terminal emulator component state.
@@ -22,11 +22,12 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
     height = Map.get(opts, :height)
 
     # Initialize the integration state
-    state = State.new(%{
-      width: width,
-      height: height,
-      config: Map.get(opts, :config, %{})
-    })
+    state =
+      State.new(%{
+        width: width,
+        height: height,
+        config: Map.get(opts, :config, %{})
+      })
 
     %{
       state: state
@@ -54,7 +55,8 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   This ensures that the terminal's internal buffers and state are correctly
   adjusted while preserving existing content and history where possible.
   """
-  @spec handle_resize({integer(), integer()}, emulator_state()) :: emulator_state()
+  @spec handle_resize({integer(), integer()}, emulator_state()) ::
+          emulator_state()
   def handle_resize({width, height}, %{state: current_state} = state) do
     # Delegate resize to State
     updated_state = State.resize(current_state, width, height)

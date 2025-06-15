@@ -324,7 +324,9 @@ defmodule Raxol.UI.Components.Display.Progress do
       # Insert animation character at the transition point
       # Instead of String.slice(empty_part, 1..-1//-1), use String.slice(empty_part, 1, String.length(empty_part) - 1)
       trail =
-        if empty_width > 0, do: String.slice(empty_part, 1, String.length(empty_part) - 1), else: ""
+        if empty_width > 0,
+          do: String.slice(empty_part, 1, String.length(empty_part) - 1),
+          else: ""
 
       filled_part <> animation_char <> trail
     else
@@ -339,6 +341,7 @@ defmodule Raxol.UI.Components.Display.Progress do
       if is_map(v1) and is_map(v2), do: deep_merge(v1, v2), else: v2
     end)
   end
+
   defp deep_merge(_map1, map2), do: map2
 
   # Optional callbacks provided by `use Component` if not defined:

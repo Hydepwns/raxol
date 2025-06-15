@@ -4,10 +4,8 @@ defmodule Raxol.Plugins.SearchPlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
-  # alias Raxol.Plugins.Plugin # Unused
 
   @type t :: %__MODULE__{
-          # Plugin behaviour fields
           name: String.t(),
           version: String.t(),
           description: String.t(),
@@ -15,15 +13,12 @@ defmodule Raxol.Plugins.SearchPlugin do
           config: map(),
           dependencies: list(map()),
           api_version: String.t(),
-          # Plugin specific state
           search_term: String.t() | nil,
-          # TODO: Define a proper result type
           search_results: list(any()),
           current_result_index: integer()
         }
 
   defstruct [
-    # Plugin behaviour fields
     name: "search",
     version: "0.1.0",
     description: "Provides text search functionality within the terminal.",
@@ -31,7 +26,6 @@ defmodule Raxol.Plugins.SearchPlugin do
     config: %{},
     dependencies: [],
     api_version: "1.0.0",
-    # Plugin specific state
     search_term: nil,
     search_results: [],
     current_result_index: 0
@@ -39,7 +33,6 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   @impl true
   def init(config \\ %{}) do
-    # Merges config with defaults in struct
     plugin_state = struct(__MODULE__, config)
     {:ok, plugin_state}
   end
@@ -47,37 +40,33 @@ defmodule Raxol.Plugins.SearchPlugin do
   @impl true
   def handle_input(%__MODULE__{} = plugin, input) do
     case input do
-      # Correctly match the /search command and extract the term
       "/search " <> search_term ->
         start_search(plugin, search_term)
 
-      # Existing clauses for next/prev/clear - ensure they match correctly too
-      # Might need adjustment based on actual UI/interaction design
       "/n" when plugin.search_term != nil ->
         next_result(plugin)
 
       "/N" when plugin.search_term != nil ->
         prev_result(plugin)
 
-      # Assuming a /clear command exists
       "/clear" ->
         clear_search(plugin)
 
-      # Escape key might be handled differently (e.g., as a key event)
-      # "\e" ->
-      #   clear_search(plugin)
-
-      # Return the full plugin state if no command matched
       _ ->
         {:ok, plugin}
     end
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(%__MODULE__{} = plugin, _event, _emulator_state) do
-    # This plugin might handle clicks within its search results display
-    # TODO: Implement mouse handling for search interaction
-    {:ok, plugin}
+  def handle_mouse(%__MODULE__{} = plugin, event, _emulator_state) do
+    case event do
+      %{type: :click, y: y} when plugin.search_term != nil ->
+        # Convert click position to result index
+        result_index = max(0, min(y - 1, length(plugin.search_results) - 1))
+        {:ok, %{plugin | current_result_index: result_index}}
+      _ ->
+        {:ok, plugin}
+    end
   end
 
   @impl Raxol.Plugins.Plugin
@@ -85,8 +74,6 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   @impl Raxol.Plugins.Plugin
   def handle_resize(%__MODULE__{} = plugin, _width, _height) do
-    # This plugin might need to adjust layout on resize
-    # TODO: Implement resize handling if needed
     {:ok, plugin}
   end
 
@@ -111,17 +98,24 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   defp start_search(%__MODULE__{} = plugin, search_term) do
     if search_term == "" do
-      {:ok,
-       %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
+      {:ok, %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
     else
-      # TODO: Implement actual search functionality
-      {:ok,
-       %{
-         plugin
-         | search_term: search_term,
-           search_results: [],
-           current_result_index: 0
-       }}
+      # Search through the current terminal buffer
+      results = search_terminal_buffer(search_term)
+      {:ok, %{plugin | search_term: search_term, search_results: results, current_result_index: 0}}
+    end
+  end
+
+  defp search_terminal_buffer(search_term) do
+    # Get the current terminal buffer and search for matches
+    case Process.get(:terminal_buffer) do
+      nil -> []
+      buffer ->
+        buffer
+        |> String.split("\n")
+        |> Enum.with_index(1)
+        |> Enum.filter(fn {line, _} -> String.contains?(line, search_term) end)
+        |> Enum.map(fn {line, line_num} -> %{line: line, line_number: line_num} end)
     end
   end
 

@@ -102,11 +102,13 @@ defmodule Raxol.UI.Theming.Colors do
       iex> lighten(:red, 0.5)
       "#FF8080"
   """
-  def lighten(color, amount) when is_integer(amount) and amount >= 0 and amount <= 100 do
+  def lighten(color, amount)
+      when is_integer(amount) and amount >= 0 and amount <= 100 do
     lighten(color, amount / 100)
   end
 
-  def lighten(color, amount) when is_float(amount) and amount >= 0 and amount <= 1 do
+  def lighten(color, amount)
+      when is_float(amount) and amount >= 0 and amount <= 1 do
     hex = to_hex(color)
 
     case hex_to_rgb(hex) do
@@ -132,11 +134,13 @@ defmodule Raxol.UI.Theming.Colors do
       iex> darken(:red, 0.5)
       "#800000"
   """
-  def darken(color, amount) when is_integer(amount) and amount >= 0 and amount <= 100 do
+  def darken(color, amount)
+      when is_integer(amount) and amount >= 0 and amount <= 100 do
     darken(color, amount / 100)
   end
 
-  def darken(color, amount) when is_float(amount) and amount >= 0 and amount <= 1 do
+  def darken(color, amount)
+      when is_float(amount) and amount >= 0 and amount <= 1 do
     hex = to_hex(color)
 
     case hex_to_rgb(hex) do

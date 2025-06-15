@@ -49,21 +49,25 @@ defmodule Raxol.Plugins.EventHandler do
   """
   @spec handle_mouse_legacy(Core.t(), tuple(), map()) ::
           {:ok, Core.t()} | {:error, any()}
-  def handle_mouse_legacy(%Core{} = manager, event, emulator_state) do
+  def handle_mouse_legacy(%Core{} = manager, event, _emulator_state) do
     # Convert legacy tuple event to map format
-    event_map = case event do
-      {x, y, button, modifiers} -> %{
-        type: :mouse,
-        x: x,
-        y: y,
-        button: button,
-        modifiers: modifiers
-      }
-      _ -> event
-    end
+    event_map =
+      case event do
+        {x, y, button, modifiers} ->
+          %{
+            type: :mouse,
+            x: x,
+            y: y,
+            button: button,
+            modifiers: modifiers
+          }
+
+        _ ->
+          event
+      end
 
     # Delegate to the new handler
-    case handle_mouse_event(manager, event_map, emulator_state) do
+    case handle_mouse_event(manager, event_map, _emulator_state) do
       {:ok, updated_manager, _propagation} -> {:ok, updated_manager}
       error -> error
     end
@@ -93,14 +97,14 @@ defmodule Raxol.Plugins.EventHandler do
   """
   @spec handle_mouse_event(Core.t(), map(), map()) ::
           {:ok, Core.t(), :propagate | :halt} | {:error, any()}
-  def handle_mouse_event(%Core{} = manager, event, rendered_cells) do
+  def handle_mouse_event(%Core{} = manager, event, _emulator_state) do
     # Initial accumulator includes the propagation state
     initial_acc = {:ok, manager, :propagate}
 
     dispatch_event(
       manager,
       :handle_mouse,
-      [event, rendered_cells],
+      [event, _emulator_state],
       initial_acc,
       &handle_mouse_update/4
     )
@@ -162,72 +166,82 @@ defmodule Raxol.Plugins.EventHandler do
     Enum.reduce_while(manager.plugins, initial_accumulator, fn {_plugin_name,
                                                                 plugin},
                                                                acc ->
-      # Ensure accumulator is not an error before proceeding
       case acc do
-        # Stop if previous step resulted in error
         {:error, _reason} ->
           {:halt, acc}
 
-        # Proceed if accumulator is ok
         _ ->
-          if plugin.enabled do
-            module = plugin.__struct__
-
-            if function_exported?(module, callback_name, required_arity) do
-              # Ensure acc_manager can be extracted (may vary based on accumulator structure)
-              acc_manager = extract_manager_from_acc(acc)
-              current_plugin_state = Map.get(acc_manager.plugins, plugin.name)
-
-              # Prepend the plugin state to the arguments for the callback
-              callback_args = [current_plugin_state | event_args]
-
-              try do
-                # Call the plugin's callback function
-                result = apply(module, callback_name, callback_args)
-                # Process the result using the provided handler function
-                handle_result_fun.(acc, plugin, callback_name, result)
-              rescue
-                e ->
-                  Raxol.Core.Runtime.Log.error_with_stacktrace(
-                    "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an exception during #{callback_name} event handling",
-                    e,
-                    nil,
-                    %{
-                      plugin: plugin.name,
-                      callback: callback_name,
-                      module: __MODULE__
-                    }
-                  )
-
-                  exception = Exception.normalize(:error, e, __STACKTRACE__)
-                  {:halt, {:error, {exception, __STACKTRACE__}}}
-              catch
-                kind, value ->
-                  Raxol.Core.Runtime.Log.error_with_stacktrace(
-                    "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an error during #{callback_name} event handling",
-                    value,
-                    nil,
-                    %{
-                      plugin: plugin.name,
-                      callback: callback_name,
-                      kind: kind,
-                      module: __MODULE__
-                    }
-                  )
-
-                  _ = Exception.normalize(:error, value, __STACKTRACE__)
-                  {:halt, {:error, {kind, value, __STACKTRACE__}}}
-              end
-            else
-              # Plugin enabled but doesn't implement the required callback, continue
-              {:cont, acc}
-            end
-          else
-            # Plugin disabled, continue
-            {:cont, acc}
-          end
+          handle_plugin_event(
+            plugin,
+            callback_name,
+            event_args,
+            required_arity,
+            acc,
+            handle_result_fun
+          )
       end
     end)
+  end
+
+  defp handle_plugin_event(
+         plugin,
+         callback_name,
+         event_args,
+         required_arity,
+         acc,
+         handle_result_fun
+       ) do
+    if plugin.enabled do
+      module = plugin.__struct__
+
+      if function_exported?(module, callback_name, required_arity) do
+        acc_manager = extract_manager_from_acc(acc)
+        current_plugin_state = Map.get(acc_manager.plugins, plugin.name)
+        callback_args = [current_plugin_state | event_args]
+
+        try do
+          result = apply(module, callback_name, callback_args)
+          handle_result_fun.(acc, plugin, callback_name, result)
+        rescue
+          e ->
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an exception during #{callback_name} event handling",
+              e,
+              nil,
+              %{
+                plugin: plugin.name,
+                callback: callback_name,
+                module: __MODULE__
+              }
+            )
+
+            exception = Exception.normalize(:error, e, __STACKTRACE__)
+            {:halt, {:error, {exception, __STACKTRACE__}}}
+        catch
+          kind, value ->
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an error during #{callback_name} event handling",
+              value,
+              nil,
+              %{
+                plugin: plugin.name,
+                callback: callback_name,
+                kind: kind,
+                module: __MODULE__
+              }
+            )
+
+            _ = Exception.normalize(:error, value, __STACKTRACE__)
+            {:halt, {:error, {kind, value, __STACKTRACE__}}}
+        end
+      else
+        # Plugin enabled but doesn't implement the required callback, continue
+        {:cont, acc}
+      end
+    else
+      # Plugin disabled, continue
+      {:cont, acc}
+    end
   end
 
   # Helper to safely extract the manager from different accumulator structures
@@ -284,7 +298,7 @@ defmodule Raxol.Plugins.EventHandler do
 
   # Handle cases where acc might already be an error
   defp handle_simple_update(
-         error_acc = {:error, _},
+         {:error, _} = error_acc,
          _plugin,
          _callback_name,
          _plugin_result
@@ -342,7 +356,7 @@ defmodule Raxol.Plugins.EventHandler do
   end
 
   defp handle_output_update(
-         error_acc = {:error, _},
+         {:error, _} = error_acc,
          _plugin,
          _callback_name,
          _plugin_result
@@ -352,126 +366,51 @@ defmodule Raxol.Plugins.EventHandler do
   # Handles results for handle_mouse_event, managing :halt propagation.
   @spec handle_mouse_update(accumulator(), map(), callback_name(), term()) ::
           handler_result
-  defp handle_mouse_update(
-         {:ok, acc_manager, _propagation_state},
-         plugin,
-         _callback_name,
-         plugin_result
-       ) do
-    case plugin_result do
-      # Plugin handled, continue propagation
-      {:ok, updated_plugin_state, :propagate} ->
-        new_manager_state = %{
-          acc_manager
-          | plugins:
-              Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)
-        }
-
-        {:cont, {:ok, new_manager_state, :propagate}}
-
-      # Plugin handled, halt propagation
-      {:ok, updated_plugin_state, :halt} ->
-        new_manager_state = %{
-          acc_manager
-          | plugins:
-              Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)
-        }
-
-        # Halt the Enum.reduce_while
-        {:halt, {:ok, new_manager_state, :halt}}
-
+  defp handle_mouse_update(acc, plugin, _callback_name, result) do
+    case result do
+      {:ok, updated_plugin, :propagate} ->
+        acc_manager = extract_manager_from_acc(acc)
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:cont, {:ok, updated_manager, :propagate}}
+      {:ok, updated_plugin, :halt} ->
+        acc_manager = extract_manager_from_acc(acc)
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:halt, {:ok, updated_manager, :halt}}
+      {:ok, updated_plugin} ->
+        acc_manager = extract_manager_from_acc(acc)
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:cont, {:ok, updated_manager, :propagate}}
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Error from plugin #{plugin.name} in handle_mouse",
-          reason,
-          nil,
-          %{plugin: plugin.name, module: __MODULE__}
-        )
-
         {:halt, {:error, reason}}
-
-      other ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Invalid return from #{plugin.name}.handle_mouse/3. Propagating.",
-          %{plugin: plugin.name, value: other, module: __MODULE__}
-        )
-
-        # Continue propagating if plugin returns invalid value
-        {:cont, {:ok, acc_manager, :propagate}}
+      _ ->
+        {:cont, acc}
     end
   end
-
-  defp handle_mouse_update(
-         error_acc = {:error, _},
-         _plugin,
-         _callback_name,
-         _plugin_result
-       ),
-       do: {:halt, error_acc}
 
   # Handles results for handle_key_event, managing commands and propagation.
   @spec handle_key_update(accumulator(), map(), callback_name(), term()) ::
           handler_result
-  defp handle_key_update(
-         {:ok, acc_manager, acc_commands, _propagation_state},
-         plugin,
-         _callback_name,
-         plugin_result
-       ) do
-    case plugin_result do
-      # Plugin returns {:ok, state, command} - Assume propagation continues unless halted
-      {:ok, updated_plugin_state, {:command, command_data}} ->
-        new_manager_state = %{
-          acc_manager
-          | plugins:
-              Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)
-        }
-
-        # Continue processing, add command, maintain propagate state
-        {:cont,
-         {:ok, new_manager_state, [command_data | acc_commands], :propagate}}
-
-      # Plugin returns {:ok, state} (no command) - Assume propagation continues
-      {:ok, updated_plugin_state} ->
-        new_manager_state = %{
-          acc_manager
-          | plugins:
-              Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)
-        }
-
-        # Continue processing, no command added
-        {:cont, {:ok, new_manager_state, acc_commands, :propagate}}
-
-      # TODO: Add explicit :halt handling if needed in Plugin behaviour
-      # {:ok, updated_plugin_state, :halt} -> ...
-      # {:ok, updated_plugin_state, {:command, cmd}, :halt} -> ...
-
+  defp handle_key_update(acc, plugin, _callback_name, result) do
+    case result do
+      {:ok, updated_plugin, :propagate} ->
+        acc_manager = extract_manager_from_acc(acc)
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:cont, {:ok, updated_manager, :propagate}}
+      {:ok, updated_plugin, :halt} ->
+        acc_manager = extract_manager_from_acc(acc)
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:halt, {:ok, updated_manager, :halt}}
+      {:ok, updated_plugin} ->
+        acc_manager = extract_manager_from_acc(acc)
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:cont, {:ok, updated_manager, :propagate}}
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Error from plugin #{plugin.name} in handle_input (key event)",
-          reason,
-          nil,
-          %{plugin: plugin.name, module: __MODULE__}
-        )
-
         {:halt, {:error, reason}}
-
-      other ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Invalid return from #{plugin.name}.handle_input/2 (key event). Propagating.",
-          %{plugin: plugin.name, value: other, module: __MODULE__}
-        )
-
-        # Continue, assuming propagate
-        {:cont, {:ok, acc_manager, acc_commands, :propagate}}
+      _ ->
+        {:cont, acc}
     end
   end
 
-  defp handle_key_update(
-         error_acc = {:error, _},
-         _plugin,
-         _callback_name,
-         _plugin_result
-       ),
-       do: {:halt, error_acc}
+  defp handle_key_update({:error, _} = error_acc, _plugin, _callback_name, _result),
+    do: {:halt, error_acc}
 end

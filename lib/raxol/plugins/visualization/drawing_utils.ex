@@ -32,45 +32,47 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
 
     Enum.reduce(y..max_y, grid, fn current_y, acc_grid ->
       Enum.reduce(x..max_x, acc_grid, fn current_x, inner_acc_grid ->
-        char =
-          cond do
-            # Corners
-            current_y == y and current_x == x ->
-              "┌"
-
-            current_y == y and current_x == max_x ->
-              "┐"
-
-            current_y == max_y and current_x == x ->
-              "└"
-
-            current_y == max_y and current_x == max_x ->
-              "┘"
-
-            # Edges
-            current_y == y or current_y == max_y ->
-              "─"
-
-            current_x == x or current_x == max_x ->
-              "│"
-
-            # Inside (should not happen with this loop structure)
-            true ->
-              elem(get_cell(inner_acc_grid, current_y, current_x), 0) || " "
-          end
-
-        # Only draw border characters
-        if char != " " do
-          put_cell(inner_acc_grid, current_y, current_x, %{
-            Cell.new(char)
-            | style: style
-          })
-        else
-          # Shouldn't be reached for borders
-          inner_acc_grid
-        end
+        draw_border_char(inner_acc_grid, current_y, current_x, y, x, max_y, max_x, style)
       end)
     end)
+  end
+
+  defp draw_border_char(grid, current_y, current_x, y, x, max_y, max_x, style) do
+    char = get_border_char(current_y, current_x, y, x, max_y, max_x, grid)
+    if char != " " do
+      put_cell(grid, current_y, current_x, %{Cell.new(char) | style: style})
+    else
+      grid
+    end
+  end
+
+  defp get_border_char(current_y, current_x, y, x, max_y, max_x, grid) do
+    cond do
+      corner?(current_y, current_x, y, x, max_y, max_x) -> get_corner_char(current_y, current_x, y, x)
+      edge?(current_y, current_x, y, x, max_y, max_x) -> get_edge_char(current_y, current_x, y, x)
+      true -> elem(get_cell(grid, current_y, current_x), 0) || " "
+    end
+  end
+
+  defp corner?(current_y, current_x, y, x, max_y, max_x) do
+    (current_y in [y, max_y]) and (current_x in [x, max_x])
+  end
+
+  defp get_corner_char(current_y, current_x, y, x) do
+    case {current_y == y, current_x == x} do
+      {true, true} -> "┌"
+      {true, false} -> "┐"
+      {false, true} -> "└"
+      {false, false} -> "┘"
+    end
+  end
+
+  defp edge?(current_y, current_x, y, x, max_y, max_x) do
+    current_y in [y, max_y] or current_x in [x, max_x]
+  end
+
+  defp get_edge_char(current_y, current_x, y, _x) do
+    if current_y == y, do: "─", else: "│"
   end
 
   @doc """
@@ -99,40 +101,31 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   Uses optional style.
   """
   def draw_text(grid, y, x, text, style \\ Style.new()) do
-    # Prefix unused text_length
     _text_length = String.length(text)
     grid_height = length(grid)
     grid_width = length(List.first(grid))
-    # Prefix unused available_width
     _available_width = grid_width - x
 
-    # Ensure coordinates are within bounds
     if y >= 0 and y < grid_height and x >= 0 and x < grid_width do
       chars = String.to_charlist(text)
-
-      Enum.reduce(Enum.with_index(chars), grid, fn {char_code, index},
-                                                   acc_grid ->
-        current_x = x + index
-        # Stop if we go past the grid width
-        if current_x < grid_width do
-          put_cell(acc_grid, y, current_x, %{
-            Cell.new(<<char_code::utf8>>)
-            | style: style
-          })
-        else
-          # Halt the reduction early if out of bounds
-          {:halt, acc_grid}
-        end
-      end)
-      |> case do
-        # Result when halted
-        {:halt, final_grid} -> final_grid
-        # Result when reduction completes normally
-        final_grid -> final_grid
-      end
+      draw_chars(grid, chars, y, x, grid_width, style)
     else
-      # Start position out of bounds
       grid
+    end
+  end
+
+  defp draw_chars(grid, chars, y, x, grid_width, style) do
+    Enum.reduce(Enum.with_index(chars), grid, fn {char_code, index}, acc_grid ->
+      current_x = x + index
+      if current_x < grid_width do
+        put_cell(acc_grid, y, current_x, %{Cell.new(<<char_code::utf8>>) | style: style})
+      else
+        {:halt, acc_grid}
+      end
+    end)
+    |> case do
+      {:halt, final_grid} -> final_grid
+      final_grid -> final_grid
     end
   end
 
@@ -142,22 +135,23 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   """
   def put_cell(grid, y, x, cell) when is_list(grid) and y >= 0 and x >= 0 do
     if y < length(grid) do
-      row = Enum.at(grid, y)
-
-      if is_list(row) and x < length(row) do
-        List.update_at(grid, y, fn _ -> List.replace_at(row, x, cell) end)
-      else
-        # x out of bounds
-        grid
-      end
+      update_row(grid, y, x, cell)
     else
-      # y out of bounds
       grid
     end
   end
 
   # Catch non-grids or negative coords
   def put_cell(grid, _y, _x, _cell), do: grid
+
+  defp update_row(grid, y, x, cell) do
+    row = Enum.at(grid, y)
+    if is_list(row) and x < length(row) do
+      List.update_at(grid, y, fn _ -> List.replace_at(row, x, cell) end)
+    else
+      grid
+    end
+  end
 
   @doc """
   Safely gets a cell from the grid.

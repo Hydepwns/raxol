@@ -13,12 +13,12 @@ defmodule Raxol.UI.Components.Terminal do
   - :style - style map
   """
   @type t :: %__MODULE__{
-    id: any(),
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    buffer: [String.t()],
-    style: map()
-  }
+          id: any(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          buffer: [String.t()],
+          style: map()
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -132,5 +132,4 @@ defmodule Raxol.UI.Components.Terminal do
     # Return the final element structure
     box_element
   end
-
 end

@@ -18,17 +18,17 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   - :list_state - state of the nested list
   """
   @type t :: %__MODULE__{
-    id: any(),
-    options: list(),
-    selected_option: any(),
-    expanded: boolean(),
-    width: non_neg_integer(),
-    list_height: non_neg_integer(),
-    style: map(),
-    focused: boolean(),
-    on_change: (any() -> any()) | nil,
-    list_state: any()
-  }
+          id: any(),
+          options: list(),
+          selected_option: any(),
+          expanded: boolean(),
+          width: non_neg_integer(),
+          list_height: non_neg_integer(),
+          style: map(),
+          focused: boolean(),
+          on_change: (any() -> any()) | nil,
+          list_state: any()
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -95,7 +95,9 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages and messages from nested list
-    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Dropdown #{state.id} received message: #{inspect(msg)}"
+    )
 
     case msg do
       :toggle_expand ->
@@ -139,7 +141,10 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @doc "Handles key events for the Dropdown component, including toggling expansion and forwarding to the list."
   @impl Raxol.UI.Components.Base.Component
   def handle_event(%{type: :key, data: key_data} = event, %{} = _props, state) do
-    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Dropdown #{state.id} received event: #{inspect(event)}"
+    )
+
     # Handle keys to toggle expansion, or forward to list if expanded
     case key_data.key do
       "Enter" when not state.expanded ->
@@ -165,7 +170,9 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @spec handle_event(map(), map(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
-    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received event: #{inspect(event.type)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Dropdown #{state.id} received event: #{inspect(event.type)}"
+    )
 
     case event do
       %{type: :mouse, data: %{button: :left, action: :press}} ->

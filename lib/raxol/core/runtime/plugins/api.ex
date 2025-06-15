@@ -76,12 +76,24 @@ defmodule Raxol.Core.Runtime.Plugins.API do
     EventManager.dispatch({event_type, payload})
   end
 
-  # TODO: Refactor plugin buffer creation. The Core.Runtime.Rendering.Buffer module
-  # does not exist. Buffer creation is likely handled by Terminal.ScreenBuffer.
-  # def create_buffer(width, height, options \\ []) do
-  #   Raxol.Core.Runtime.Log.debug("Plugin API: create_buffer(#{width}, #{height}, #{inspect(options)})")
-  #   Raxol.Core.Runtime.Rendering.Buffer.create(width, height, options)
-  # end
+  @doc """
+  Creates a new screen buffer with the specified dimensions.
+
+  ## Parameters
+    * `width` - The width of the buffer
+    * `height` - The height of the buffer
+    * `options` - Additional options for buffer creation
+
+  ## Returns
+    A new screen buffer instance
+  """
+  def create_buffer(width, height, options \\ []) do
+    Raxol.Core.Runtime.Log.debug(
+      "Plugin API: create_buffer(#{width}, #{height}, #{inspect(options)})"
+    )
+
+    Raxol.Terminal.ScreenBuffer.new(width, height)
+  end
 
   @doc """
   Get the current application configuration.

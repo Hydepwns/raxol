@@ -21,112 +21,82 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec load_plugin(Core.t(), atom(), map()) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def load_plugin(%Core{} = manager, module, config \\ %{})
-      when is_atom(module) do
-    # Get plugin name for config lookup
-    plugin_name =
-      Atom.to_string(module)
-      |> String.split(".")
-      |> List.last()
-      |> Macro.underscore()
-
-    # Fetch default_config from plugin metadata (if available)
-    default_config =
-      case function_exported?(module, :get_metadata, 0) do
-        true ->
-          meta = module.get_metadata()
-
-          case meta do
-            %{default_config: dc} when is_map(dc) -> dc
-            _ -> %{}
-          end
-
-        false ->
-          %{}
-      end
-
-    persisted_config =
-      PluginConfig.get_plugin_config(manager.config, plugin_name)
-
-    # Merge order: default_config < persisted_config < provided config
-    merged_config =
-      default_config
-      |> Map.merge(persisted_config)
-      |> Map.merge(config)
+  def load_plugin(%Core{} = manager, module, config \\ %{}) when is_atom(module) do
+    plugin_name = get_plugin_name(module)
+    merged_config = get_merged_config(manager, plugin_name, module, config)
 
     with {:ok, plugin} <- module.init(merged_config),
-         :ok <-
-           PluginDependency.check_api_compatibility(
-             plugin.api_version,
-             manager.api_version
-           ),
-         :ok <-
-           DependencyManager.check_dependencies(
-             plugin.name,
-             plugin,
-             Core.list_plugins(manager),
-             []
-           ) do
-      # Update plugin config with merged config
-      updated_config =
-        PluginConfig.update_plugin_config(
-          manager.config,
-          plugin_name,
-          merged_config
-        )
-
-      # Attempt to save updated config
-      save_result = PluginConfig.save(updated_config)
-
-      # Determine final config (saved or original if save failed)
-      final_config =
-        case save_result do
-          # Correctly use the data from save
-          {:ok, saved_config_data} ->
-            saved_config_data
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Failed to save config for plugin #{plugin_name}: #{inspect(reason)}. Proceeding without saved config.",
-              %{}
-            )
-
-            # Use the config state *before* the failed save attempt
-            manager.config
-        end
-
-      {:ok,
-       %{
-         manager
-         | plugins: Map.put(manager.plugins, plugin.name, plugin),
-           config: final_config
-       }}
+         :ok <- check_api_compatibility(plugin, manager),
+         :ok <- check_dependencies(plugin, manager) do
+      handle_successful_load(manager, plugin, plugin_name, merged_config)
     else
-      # Error handling for the with statement
-      # Pass through existing error messages
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
-
-      {:error, :api_incompatible} ->
-        {:error, "API version mismatch for plugin #{module}"}
-
-      {:error, :dependency_missing, missing} ->
-        {:error, "Missing dependency #{missing} for plugin #{module}"}
-
-      {:error, :dependency_cycle, cycle} ->
-        {:error, "Dependency cycle detected: #{inspect(cycle)}"}
-
-      {:error, init_reason} ->
-        {:error,
-         "Failed to initialize plugin #{module}: #{inspect(init_reason)}"}
-
-      {:error, :missing_version, missing, _chain} ->
-        {:error,
-         "Missing version for dependency(ies): #{Enum.join(missing, ", ")} for plugin #{module}"}
-
-        # Catch potential config save error if not handled by the case above (shouldn't happen with {:ok_or_error, ...})
-        # _ -> {:error, "Unknown error loading plugin #{module}"} # Consider a more specific error
+      error -> handle_load_error(error, module)
     end
+  end
+
+  defp get_plugin_name(module) do
+    Atom.to_string(module)
+    |> String.split(".")
+    |> List.last()
+    |> Macro.underscore()
+  end
+
+  defp get_merged_config(manager, plugin_name, module, config) do
+    default_config = get_default_config(module)
+    persisted_config = PluginConfig.get_plugin_config(manager.config, plugin_name)
+
+    default_config
+    |> Map.merge(persisted_config)
+    |> Map.merge(config)
+  end
+
+  defp get_default_config(module) do
+    if function_exported?(module, :get_metadata, 0) do
+      case module.get_metadata() do
+        %{default_config: dc} when is_map(dc) -> dc
+        _ -> %{}
+      end
+    else
+      %{}
+    end
+  end
+
+  defp check_api_compatibility(plugin, manager) do
+    PluginDependency.check_api_compatibility(plugin.api_version, manager.api_version)
+  end
+
+  defp check_dependencies(plugin, manager) do
+    DependencyManager.check_dependencies(
+      plugin.name,
+      plugin,
+      Core.list_plugins(manager),
+      []
+    )
+  end
+
+  defp handle_successful_load(manager, plugin, plugin_name, merged_config) do
+    updated_config = PluginConfig.update_plugin_config(manager.config, plugin_name, merged_config)
+
+    case PluginConfig.save(updated_config) do
+      {:ok, saved_config} ->
+        {:ok, %{manager | plugins: Map.put(manager.plugins, plugin.name, plugin), config: saved_config}}
+      {:error, reason} ->
+        log_config_save_error(plugin_name, reason)
+        {:ok, %{manager | plugins: Map.put(manager.plugins, plugin.name, plugin), config: manager.config}}
+    end
+  end
+
+  defp handle_load_error({:error, :api_incompatible}, module), do: {:error, "API version mismatch for plugin #{module}"}
+  defp handle_load_error({:error, :dependency_missing, missing}, module), do: {:error, "Missing dependency #{missing} for plugin #{module}"}
+  defp handle_load_error({:error, :dependency_cycle, cycle}, _module), do: {:error, "Dependency cycle detected: #{inspect(cycle)}"}
+  defp handle_load_error({:error, reason}, module), do: {:error, "Failed to initialize plugin #{module}: #{inspect(reason)}"}
+  defp handle_load_error({:error, :missing_version, missing, _chain}, module), do: {:error, "Missing version for dependency(ies): #{Enum.join(missing, ", ")} for plugin #{module}"}
+
+  defp log_config_save_error(plugin_name, reason) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Failed to save config for plugin #{plugin_name}: #{inspect(reason)}. Proceeding without saved config.",
+      %{}
+    )
   end
 
   @doc """
@@ -140,34 +110,30 @@ defmodule Raxol.Plugins.Lifecycle do
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugins(%Core{} = manager, modules) when is_list(modules) do
     with {:ok, initialized_plugins} <- initialize_all_plugins(manager, modules),
-         {:ok, sorted_plugin_names} <-
-           DependencyManager.resolve_load_order(
-             for plugin <- initialized_plugins,
-                 into: %{},
-                 do: {plugin.name, plugin}
-           ),
-         {:ok, final_manager} <-
-           load_plugins_in_order(
-             manager,
-             initialized_plugins,
-             sorted_plugin_names
-           ) do
+         {:ok, sorted_plugin_names} <- resolve_plugin_order(initialized_plugins),
+         {:ok, final_manager} <- load_plugins_in_order(manager, initialized_plugins, sorted_plugin_names) do
       {:ok, final_manager}
     else
-      {:error, :init_failed, module, reason} ->
-        {:error, "Failed to initialize plugin #{module}: #{inspect(reason)}"}
-
-      {:error, :resolve_failed, reason} ->
-        {:error, "Failed to resolve plugin dependencies: #{inspect(reason)}"}
-
-      {:error, :load_failed, name, reason} ->
-        {:error, "Failed to load plugin #{name}: #{inspect(reason)}"}
-
-      # Catch other potential errors from `with`
-      {:error, reason} ->
-        {:error, "Failed to load plugins: #{inspect(reason)}"}
+      error -> handle_load_plugins_error(error)
     end
   end
+
+  defp resolve_plugin_order(initialized_plugins) do
+    DependencyManager.resolve_load_order(
+      for plugin <- initialized_plugins,
+          into: %{},
+          do: {plugin.name, plugin}
+    )
+  end
+
+  defp handle_load_plugins_error({:error, :init_failed, module, reason}),
+    do: {:error, "Failed to initialize plugin #{module}: #{inspect(reason)}"}
+  defp handle_load_plugins_error({:error, :resolve_failed, reason}),
+    do: {:error, "Failed to resolve plugin dependencies: #{inspect(reason)}"}
+  defp handle_load_plugins_error({:error, :load_failed, name, reason}),
+    do: {:error, "Failed to load plugin #{name}: #{inspect(reason)}"}
+  defp handle_load_plugins_error({:error, reason}),
+    do: {:error, "Failed to load plugins: #{inspect(reason)}"}
 
   @doc """
   Unloads a plugin by name.
@@ -233,64 +199,51 @@ defmodule Raxol.Plugins.Lifecycle do
   @spec enable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def enable_plugin(%Core{} = manager, name) when is_binary(name) do
-    case Map.get(manager.plugins, name) do
-      nil ->
-        {:error, "Plugin #{name} not found"}
-
-      plugin ->
-        with :ok <-
-               DependencyManager.check_dependencies(
-                 plugin.name,
-                 plugin,
-                 Core.list_plugins(manager),
-                 []
-               ),
-             # Update config to enable plugin
-             updated_config = PluginConfig.enable_plugin(manager.config, name),
-             # Attempt to save updated config
-             {:ok_or_error, saved_or_original_config} <-
-               {:ok_or_error, PluginConfig.save(updated_config)} do
-          final_config =
-            case saved_or_original_config do
-              {:ok, saved_config} ->
-                saved_config
-
-              {:error, reason} ->
-                Raxol.Core.Runtime.Log.warning_with_context(
-                  "Failed to save config after enabling plugin #{name}: #{inspect(reason)}. Proceeding anyway.",
-                  %{}
-                )
-
-                manager.config
-            end
-
-          {:ok,
-           %{
-             manager
-             | plugins:
-                 Map.put(manager.plugins, plugin.name, %{plugin | enabled: true}),
-               config: final_config
-           }}
-        else
-          {:error, :dependency_missing, missing} ->
-            {:error,
-             "Cannot enable plugin #{name}: Missing dependency #{missing}"}
-
-          {:error, :dependency_cycle, cycle} ->
-            {:error,
-             "Cannot enable plugin #{name}: Dependency cycle detected #{inspect(cycle)}"}
-
-          {:error, :missing_version, missing, _chain} ->
-            {:error,
-             "Cannot enable plugin #{name}: Missing version for dependency(ies): #{Enum.join(missing, ", ")}"}
-
-          {:error, reason} ->
-            # Catch-all for other check_dependencies errors
-            {:error, "Cannot enable plugin #{name}: #{inspect(reason)}"}
-
-            # _ -> {:error, "Unknown error enabling plugin #{name}"} # Consider more specific errors
-        end
+    with {:ok, plugin} <- get_plugin(manager, name),
+         :ok <- check_plugin_dependencies(plugin, manager),
+         {:ok, updated_config} <- update_and_save_config(manager, name, :enable) do
+      {:ok, update_manager_state(manager, plugin, updated_config, true)}
+    else
+      {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp get_plugin(manager, name) do
+    case Map.get(manager.plugins, name) do
+      nil -> {:error, "Plugin #{name} not found"}
+      plugin -> {:ok, plugin}
+    end
+  end
+
+  defp check_plugin_dependencies(plugin, manager) do
+    DependencyManager.check_dependencies(
+      plugin.name,
+      plugin,
+      Core.list_plugins(manager),
+      []
+    )
+  end
+
+  defp update_and_save_config(manager, name, action) do
+    updated_config =
+      case action do
+        :enable -> PluginConfig.enable_plugin(manager.config, name)
+        :disable -> PluginConfig.disable_plugin(manager.config, name)
+      end
+
+    case PluginConfig.save(updated_config) do
+      {:ok, saved_config} -> {:ok, saved_config}
+      {:error, reason} ->
+        log_config_save_error(name, reason)
+        {:ok, manager.config}
+    end
+  end
+
+  defp update_manager_state(manager, plugin, config, enabled) do
+    %{manager |
+      plugins: Map.put(manager.plugins, plugin.name, %{plugin | enabled: enabled}),
+      config: config
+    }
   end
 
   @doc """
@@ -303,46 +256,11 @@ defmodule Raxol.Plugins.Lifecycle do
   @spec disable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def disable_plugin(%Core{} = manager, name) when is_binary(name) do
-    case Map.get(manager.plugins, name) do
-      nil ->
-        {:error, "Plugin #{name} not found"}
-
-      plugin ->
-        # Update config to disable plugin
-        updated_config = PluginConfig.disable_plugin(manager.config, name)
-
-        # Save updated config
-        case PluginConfig.save(updated_config) do
-          {:ok, saved_config} ->
-            {:ok,
-             %{
-               manager
-               | plugins:
-                   Map.put(manager.plugins, plugin.name, %{
-                     plugin
-                     | enabled: false
-                   }),
-                 config: saved_config
-             }}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Failed to save config after disabling plugin #{name}: #{inspect(reason)}. Proceeding anyway.",
-              %{}
-            )
-
-            # Continue even if save fails, but use the manager state before the save attempt
-            {:ok,
-             %{
-               manager
-               | plugins:
-                   Map.put(manager.plugins, plugin.name, %{
-                     plugin
-                     | enabled: false
-                   })
-                 # config remains manager.config
-             }}
-        end
+    with {:ok, plugin} <- get_plugin(manager, name),
+         {:ok, updated_config} <- update_and_save_config(manager, name, :disable) do
+      {:ok, update_manager_state(manager, plugin, updated_config, false)}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -379,43 +297,31 @@ defmodule Raxol.Plugins.Lifecycle do
     Enum.reduce_while(
       sorted_plugin_names,
       {:ok, manager},
-      fn plugin_name, {:ok, acc_manager} ->
-        # Find the pre-initialized plugin struct
-        case Enum.find(initialized_plugins, &(&1.name == plugin_name)) do
-          nil ->
-            # This should technically not happen if resolve_dependencies is correct
-            Raxol.Core.Runtime.Log.error(
-              "Plugin #{plugin_name} found in sorted list but not in initialized list."
-            )
-
-            {:halt,
-             {:error, :load_failed, plugin_name,
-              "Not found in initialized list"}}
-
-          _plugin ->
-            # Load the plugin using its module name
-            # We assume the module name can be derived from the plugin name
-            # This might need adjustment if plugin names don't map directly
-            # Example derivation, adjust if needed:
-            module_name_parts =
-              String.split(plugin_name, "_") |> Enum.map(&String.capitalize/1)
-
-            # Adjust namespace if needed
-            module_str =
-              "Elixir.Raxol.Plugins." <> Enum.join(module_name_parts, "")
-
-            plugin_module = String.to_existing_atom(module_str)
-
-            # Call the single load_plugin function (now in this module)
-            case load_plugin(acc_manager, plugin_module) do
-              {:ok, updated_manager} ->
-                {:cont, {:ok, updated_manager}}
-
-              {:error, reason} ->
-                {:halt, {:error, :load_failed, plugin_name, reason}}
-            end
-        end
-      end
+      &load_single_plugin(&1, &2, initialized_plugins)
     )
+  end
+
+  defp load_single_plugin(plugin_name, {:ok, acc_manager}, initialized_plugins) do
+    case find_and_load_plugin(plugin_name, acc_manager, initialized_plugins) do
+      {:ok, updated_manager} -> {:cont, {:ok, updated_manager}}
+      error -> {:halt, error}
+    end
+  end
+
+  defp find_and_load_plugin(plugin_name, acc_manager, initialized_plugins) do
+    with plugin when not is_nil(plugin) <- Enum.find(initialized_plugins, &(&1.name == plugin_name)),
+         plugin_module <- get_plugin_module(plugin_name) do
+      load_plugin(acc_manager, plugin_module)
+    else
+      nil ->
+        Raxol.Core.Runtime.Log.error("Plugin #{plugin_name} found in sorted list but not in initialized list.")
+        {:error, :load_failed, plugin_name, "Not found in initialized list"}
+    end
+  end
+
+  defp get_plugin_module(plugin_name) do
+    module_str = "Elixir.Raxol.Plugins." <>
+      Enum.map_join(String.split(plugin_name, "_"), "", &String.capitalize/1)
+    String.to_existing_atom(module_str)
   end
 end

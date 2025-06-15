@@ -142,46 +142,45 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   defp get_selected_text(%__MODULE__{} = state) do
-    case state do
-      %{
-        selection_start: start_pos,
-        selection_end: end_pos,
-        last_cells_at_selection: cells
-      }
-      when is_tuple(start_pos) and tuple_size(start_pos) == 2 and
-             is_tuple(end_pos) and tuple_size(end_pos) == 2 and
-             is_map(cells) ->
-        # Determine top-left and bottom-right corners
-        {sx, sy} = start_pos
-        {ex, ey} = end_pos
-        {min_x, max_x} = {min(sx, ex), max(sx, ex)}
-        {min_y, max_y} = {min(sy, ey), max(sy, ey)}
-
-        selected_lines =
-          for y <- min_y..max_y do
-            line_cells =
-              for x <- min_x..max_x do
-                cell = Map.get(cells, {x, y})
-
-                cond do
-                  is_nil(cell) -> nil
-                  not is_integer(cell.char) -> nil
-                  true -> <<cell.char::utf8>>
-                end
-              end
-
-            # Filter out nils and join the characters for the line
-            line_cells |> Enum.reject(&is_nil/1) |> Enum.join()
-          end
-
-        # Join all selected lines with newline
-        {:ok, Enum.join(selected_lines, "\n")}
-
-      _ ->
-        # Catch-all if selection or cells are not ready
+    with %{selection_start: start_pos, selection_end: end_pos, last_cells_at_selection: cells} <- state do
+      if valid_selection?(start_pos, end_pos, cells) do
+        {min_x, max_x, min_y, max_y} = get_selection_bounds(start_pos, end_pos)
+        {:ok, build_selected_text(cells, min_x, max_x, min_y, max_y)}
+      else
         {:error, :no_selection}
+      end
+    else
+      _ -> {:error, :no_selection}
     end
   end
+
+  defp valid_selection?(start_pos, end_pos, cells) do
+    is_tuple(start_pos) and tuple_size(start_pos) == 2 and
+      is_tuple(end_pos) and tuple_size(end_pos) == 2 and
+      is_map(cells)
+  end
+
+  defp get_selection_bounds({sx, sy}, {ex, ey}) do
+    {min(sx, ex), max(sx, ex), min(sy, ey), max(sy, ey)}
+  end
+
+  defp build_selected_text(cells, min_x, max_x, min_y, max_y) do
+    for y <- min_y..max_y do
+      process_line(cells, y, min_x, max_x)
+    end
+    |> Enum.join("\n")
+  end
+
+  defp process_line(cells, y, min_x, max_x) do
+    for x <- min_x..max_x do
+      process_cell(Map.get(cells, {x, y}))
+    end
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join()
+  end
+
+  defp process_cell(%{char: char}) when is_integer(char), do: <<char::utf8>>
+  defp process_cell(_), do: nil
 
   defp clear_selection(state) do
     %{state | selection_active: false, selection_start: nil, selection_end: nil}

@@ -16,15 +16,15 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   - :on_submit - callback for submit action
   """
   @type t :: %__MODULE__{
-    id: any(),
-    value: String.t(),
-    placeholder: String.t(),
-    style: map(),
-    focused: boolean(),
-    cursor_pos: non_neg_integer(),
-    on_change: (String.t() -> any()) | nil,
-    on_submit: (() -> any()) | nil
-  }
+          id: any(),
+          value: String.t(),
+          placeholder: String.t(),
+          style: map(),
+          focused: boolean(),
+          cursor_pos: non_neg_integer(),
+          on_change: (String.t() -> any()) | nil,
+          on_submit: (-> any()) | nil
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component

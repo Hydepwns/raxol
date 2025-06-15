@@ -404,6 +404,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     if state.on_submit do
       _ = state.on_submit.()
     end
+
     {:noreply, state, nil}
   end
 end

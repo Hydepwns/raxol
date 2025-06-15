@@ -51,27 +51,27 @@ defmodule Raxol.Plugins.ThemePlugin do
   @impl true
   def handle_input(plugin, input) do
     case input do
-      {:command, command} ->
-        case String.slice(command, 0..6//1) do
-          "theme: " ->
-            theme_name = String.slice(command, 7..-1//1)
+      {:command, command} -> handle_theme_command(plugin, command)
+      _ -> plugin
+    end
+  end
 
-            case Theme.get(theme_name) do
-              nil -> plugin
-              theme -> %{plugin | current_theme: theme}
-            end
+  defp handle_theme_command(plugin, command) do
+    case String.slice(command, 0..6//1) do
+      "theme: " -> apply_theme(plugin, String.slice(command, 7..-1//1))
+      _ -> plugin
+    end
+  end
 
-          _ ->
-            plugin
-        end
-
-      _ ->
-        plugin
+  defp apply_theme(plugin, theme_name) do
+    case Theme.get(theme_name) do
+      nil -> plugin
+      theme -> %{plugin | current_theme: theme}
     end
   end
 
   def get_name(plugin), do: plugin.name
-  def is_enabled?(plugin), do: plugin.enabled
+  def enabled?(plugin), do: plugin.enabled
   def enable(plugin), do: %{plugin | enabled: true}
   def disable(plugin), do: %{plugin | enabled: false}
 

@@ -73,51 +73,38 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
 
     # Base case: Leaf node or area too small
     if Enum.empty?(children) or bw < 1 or bh < 1 do
-      if bw > 0 and bh > 0 do
-        [
-          %{
-            x: bx,
-            y: by,
-            width: bw,
-            height: bh,
-            name: Map.get(node, :name, "Unknown"),
-            value: Map.get(node, :value, 0),
-            depth: depth
-          }
-        ]
-      else
-        # Skip nodes with zero area
-        []
-      end
+      create_leaf_node(node, bounds, depth)
     else
-      # Ensure children have positive values for layout
-      valid_children =
-        Enum.filter(children, fn c -> Map.get(c, :value, 0) > 0 end)
+      handle_parent_node(node, children, bounds, depth)
+    end
+  end
 
-      children_total_value =
-        Enum.sum(Enum.map(valid_children, &Map.get(&1, :value, 0)))
+  defp create_leaf_node(node, %{x: bx, y: by, width: bw, height: bh}, depth) do
+    if bw > 0 and bh > 0 do
+      [
+        %{
+          x: bx,
+          y: by,
+          width: bw,
+          height: bh,
+          name: Map.get(node, :name, "Unknown"),
+          value: Map.get(node, :value, 0),
+          depth: depth
+        }
+      ]
+    else
+      []
+    end
+  end
 
-      if children_total_value <= 0 do
-        # If no valid children, treat as leaf node
-        if bw > 0 and bh > 0 do
-          [
-            %{
-              x: bx,
-              y: by,
-              width: bw,
-              height: bh,
-              name: node.name <> " (No Child Values)",
-              value: node.value,
-              depth: depth
-            }
-          ]
-        else
-          []
-        end
-      else
-        # Use squarified layout algorithm
-        squarify(valid_children, children_total_value, bounds, depth + 1, [])
-      end
+  defp handle_parent_node(node, children, bounds, depth) do
+    valid_children = Enum.filter(children, fn c -> Map.get(c, :value, 0) > 0 end)
+    children_total_value = Enum.sum(Enum.map(valid_children, &Map.get(&1, :value, 0)))
+
+    if children_total_value <= 0 do
+      create_leaf_node(%{node | name: node.name <> " (No Child Values)"}, bounds, depth)
+    else
+      squarify(valid_children, children_total_value, bounds, depth + 1, [])
     end
   end
 
@@ -132,67 +119,43 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
          acc_rects
        ) do
     if bw < 1 or bh < 1 do
-      # Stop if remaining area is too small
       acc_rects
     else
-      # Determine split direction (lay out along the shorter side)
       horizontal = bw >= bh
       fixed_dimension = if horizontal, do: bh, else: bw
-
-      # Find the best row of children to lay out
-      {row, rest_children} =
-        find_best_row(children, total_value, fixed_dimension)
-
+      {row, rest_children} = find_best_row(children, total_value, fixed_dimension)
       row_value = Enum.sum(Enum.map(row, &Map.get(&1, :value, 0)))
       row_proportion = row_value / total_value
 
-      # Calculate bounds for the current row and the remaining area
-      if horizontal do
-        # Lay out horizontally (split width)
-        row_width = max(1, round(bw * row_proportion))
-        row_bounds = %{bounds | width: row_width}
+      layout_params = %{
+        row: row,
+        row_value: row_value,
+        row_proportion: row_proportion,
+        rest_children: rest_children,
+        remaining_value: total_value - row_value,
+        bounds: bounds,
+        depth: depth,
+        acc_rects: acc_rects
+      }
 
-        remaining_bounds = %{
-          bounds
-          | x: bounds.x + row_width,
-            width: max(0, bw - row_width)
-        }
-
-        # Layout the row and recurse on the rest
-        # Split vertically within the row
-        new_rects = layout_row(row, row_value, row_bounds, depth, false)
-
-        squarify(
-          rest_children,
-          total_value - row_value,
-          remaining_bounds,
-          depth,
-          acc_rects ++ new_rects
-        )
-      else
-        # Lay out vertically (split height)
-        row_height = max(1, round(bh * row_proportion))
-        row_bounds = %{bounds | height: row_height}
-
-        remaining_bounds = %{
-          bounds
-          | y: bounds.y + row_height,
-            height: max(0, bh - row_height)
-        }
-
-        # Layout the row and recurse on the rest
-        # Split horizontally within the row
-        new_rects = layout_row(row, row_value, row_bounds, depth, true)
-
-        squarify(
-          rest_children,
-          total_value - row_value,
-          remaining_bounds,
-          depth,
-          acc_rects ++ new_rects
-        )
-      end
+      layout_direction(layout_params, horizontal)
     end
+  end
+
+  defp layout_direction(%{row: row, row_value: row_value, row_proportion: row_proportion, rest_children: rest_children, remaining_value: remaining_value, bounds: bounds, depth: depth, acc_rects: acc_rects}, true) do
+    row_width = max(1, round(bounds.width * row_proportion))
+    row_bounds = %{bounds | width: row_width}
+    remaining_bounds = %{bounds | x: bounds.x + row_width, width: max(0, bounds.width - row_width)}
+    new_rects = layout_row(row, row_value, row_bounds, depth, false)
+    squarify(rest_children, remaining_value, remaining_bounds, depth, acc_rects ++ new_rects)
+  end
+
+  defp layout_direction(%{row: row, row_value: row_value, row_proportion: row_proportion, rest_children: rest_children, remaining_value: remaining_value, bounds: bounds, depth: depth, acc_rects: acc_rects}, false) do
+    row_height = max(1, round(bounds.height * row_proportion))
+    row_bounds = %{bounds | height: row_height}
+    remaining_bounds = %{bounds | y: bounds.y + row_height, height: max(0, bounds.height - row_height)}
+    new_rects = layout_row(row, row_value, row_bounds, depth, true)
+    squarify(rest_children, remaining_value, remaining_bounds, depth, acc_rects ++ new_rects)
   end
 
   # Finds the row of children that minimizes the maximum aspect ratio
@@ -227,39 +190,6 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
   end
 
   defp find_best_row_recursive(
-         [_head | tail] = children,
-         total,
-         fixed_dim,
-         best_row,
-         min_ratio,
-         index
-       ) do
-    current_row = Enum.slice(children, 0..index)
-    _current_row_sum = Enum.sum(Enum.map(current_row, & &1.value))
-
-    # Calculate aspect ratio for the current row
-    ratio = calculate_max_aspect_ratio(current_row, total, fixed_dim)
-
-    # If current ratio is worse than the best found so far, the previous row was best
-    if ratio < min_ratio do
-      # Return the best row found and the remaining children
-      {best_row, children}
-    else
-      # Current row is potentially better, continue recursion
-      find_best_row_recursive(
-        tail,
-        total,
-        fixed_dim,
-        current_row,
-        ratio,
-        index + 1
-      )
-    end
-  end
-
-  # Handle case when index exceeds length (should be covered by first clause, but added for clarity)
-  # Rename _children to children where used
-  defp find_best_row_recursive(
          children,
          _total,
          _fixed_dim,
@@ -269,6 +199,27 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
        )
        when index >= length(children),
        do: {best_row, Enum.slice(children, index..-1)}
+
+  defp find_best_row_recursive(
+         [_head | tail] = children,
+         total,
+         fixed_dim,
+         best_row,
+         min_ratio,
+         index
+       ) do
+    current_row = Enum.slice(children, 0..index)
+    compare_and_continue(current_row, children, tail, total, fixed_dim, best_row, min_ratio, index)
+  end
+
+  defp compare_and_continue(current_row, children, tail, total, fixed_dim, best_row, min_ratio, index) do
+    ratio = calculate_max_aspect_ratio(current_row, total, fixed_dim)
+    if ratio < min_ratio do
+      {best_row, children}
+    else
+      find_best_row_recursive(tail, total, fixed_dim, current_row, ratio, index + 1)
+    end
+  end
 
   # Calculates the maximum aspect ratio for a given row of children
   defp calculate_max_aspect_ratio(row, total_value, fixed_dimension) do
@@ -296,56 +247,42 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
          depth,
          split_vertically
        ) do
+    layout_child_and_continue(child, rest, row_value, current_bounds, depth, split_vertically)
+  end
+
+  defp layout_child_and_continue(child, rest, row_value, current_bounds, depth, split_vertically) do
     child_value = Map.get(child, :value, 0)
 
     if child_value <= 0 do
-      # Skip zero-value children
       layout_row(rest, row_value, current_bounds, depth, split_vertically)
     else
-      proportion = child_value / row_value
-
-      if split_vertically do
-        # Calculate height, width is fixed
-        child_height = max(1, round(current_bounds.height * proportion))
-        child_bounds = %{current_bounds | height: child_height}
-
-        next_bounds = %{
-          current_bounds
-          | y: current_bounds.y + child_height,
-            height: max(0, current_bounds.height - child_height)
-        }
-
-        # Layout this child and recurse
-        layout_treemap_nodes(child, child_bounds, depth, child_value) ++
-          layout_row(
-            rest,
-            row_value - child_value,
-            next_bounds,
-            depth,
-            split_vertically
-          )
-      else
-        # Calculate width, height is fixed
-        child_width = max(1, round(current_bounds.width * proportion))
-        child_bounds = %{current_bounds | width: child_width}
-
-        next_bounds = %{
-          current_bounds
-          | x: current_bounds.x + child_width,
-            width: max(0, current_bounds.width - child_width)
-        }
-
-        # Layout this child and recurse
-        layout_treemap_nodes(child, child_bounds, depth, child_value) ++
-          layout_row(
-            rest,
-            row_value - child_value,
-            next_bounds,
-            depth,
-            split_vertically
-          )
-      end
+      {child_bounds, next_bounds} = calculate_child_bounds(current_bounds, child_value, row_value, split_vertically)
+      layout_child_with_rest(child, rest, row_value, child_value, child_bounds, next_bounds, depth, split_vertically)
     end
+  end
+
+  defp calculate_child_bounds(current_bounds, child_value, row_value, split_vertically) do
+    proportion = child_value / row_value
+    calculate_bounds(current_bounds, proportion, split_vertically)
+  end
+
+  defp layout_child_with_rest(child, rest, row_value, child_value, child_bounds, next_bounds, depth, split_vertically) do
+    layout_treemap_nodes(child, child_bounds, depth, child_value) ++
+      layout_row(rest, row_value - child_value, next_bounds, depth, split_vertically)
+  end
+
+  defp calculate_bounds(current_bounds, proportion, true) do
+    child_height = max(1, round(current_bounds.height * proportion))
+    child_bounds = %{current_bounds | height: child_height}
+    next_bounds = %{current_bounds | y: current_bounds.y + child_height, height: max(0, current_bounds.height - child_height)}
+    {child_bounds, next_bounds}
+  end
+
+  defp calculate_bounds(current_bounds, proportion, false) do
+    child_width = max(1, round(current_bounds.width * proportion))
+    child_bounds = %{current_bounds | width: child_width}
+    next_bounds = %{current_bounds | x: current_bounds.x + child_width, width: max(0, current_bounds.width - child_width)}
+    {child_bounds, next_bounds}
   end
 
   # --- Private Treemap Drawing ---
@@ -357,66 +294,38 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
          title,
          %{width: width, height: height} = _bounds
        ) do
-    # Base case: no nodes to draw
     if Enum.empty?(node_rects), do: []
 
-    # Create base grid
     grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
     grid_with_title = DrawingUtils.draw_text_centered(grid, 0, title)
-
-    # Define a color palette (adjust as needed)
     color_palette = [:red, :green, :yellow, :blue, :magenta, :cyan, :white]
     num_colors = length(color_palette)
 
-    # Draw each node rectangle onto the grid
     Enum.reduce(node_rects, grid_with_title, fn node_rect, acc_grid ->
-      %{
-        x: nx,
-        y: ny,
-        width: nw,
-        height: nh,
-        name: name,
-        value: _value,
-        depth: depth
-      } = node_rect
-
-      # Choose color based on depth
-      color = Enum.at(color_palette, rem(depth - 1, num_colors))
-      # TODO: Add border style based on focus/selection?
-      style = Style.new(bg: color)
-
-      # Draw filled rectangle using put_cell
-      grid_with_rect = draw_filled_rectangle(acc_grid, nx, ny, nw, nh, style)
-
-      # Add label if space allows
-      label = to_string(name)
-      label_len = String.length(label)
-
-      if nw >= label_len and nh >= 1 do
-        # Calculate center position like draw_text_centered/3
-        text_len = String.length(label)
-
-        # Assuming acc_grid dimensions are still valid for nx, nw. This might be fragile.
-        # If grid dimensions change, this needs recalculation.
-        # Need grid width to calculate centering. Let's assume nw is sufficient proxy.
-        start_x = nx + max(0, div(nw - text_len, 2))
-        # Truncate text to fit remaining width
-        truncated_text = String.slice(label, 0, max(0, nx + nw - start_x))
-
-        text_style = Style.new(fg: :black, bg: color)
-
-        # Call draw_text/4 directly with calculated position and style
-        DrawingUtils.draw_text(
-          grid_with_rect,
-          ny + div(nh, 2),
-          start_x,
-          truncated_text,
-          text_style
-        )
-      else
-        grid_with_rect
-      end
+      draw_treemap_node(node_rect, acc_grid, color_palette, num_colors)
     end)
+  end
+
+  defp draw_treemap_node(%{x: nx, y: ny, width: nw, height: nh, name: name, depth: depth}, grid, color_palette, num_colors) do
+    color = Enum.at(color_palette, rem(depth - 1, num_colors))
+    style = Style.new(bg: color, border: :single)
+    grid_with_rect = draw_filled_rectangle(grid, nx, ny, nw, nh, style)
+    draw_node_label(grid_with_rect, nx, ny, nw, nh, name, color)
+  end
+
+  defp draw_node_label(grid, nx, ny, nw, nh, name, color) do
+    label = to_string(name)
+    label_len = String.length(label)
+
+    if nw >= label_len and nh >= 1 do
+      text_len = String.length(label)
+      start_x = nx + max(0, div(nw - text_len, 2))
+      truncated_text = String.slice(label, 0, max(0, nx + nw - start_x))
+      text_style = Style.new(fg: :black, bg: color)
+      DrawingUtils.draw_text(grid, ny + div(nh, 2), start_x, truncated_text, text_style)
+    else
+      grid
+    end
   end
 
   # Helper to draw a filled rectangle

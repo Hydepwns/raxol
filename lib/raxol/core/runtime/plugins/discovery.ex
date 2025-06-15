@@ -92,79 +92,82 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
 
   defp discover_plugins_in_dir_helper(dir, state) do
     case File.dir?(dir) do
-      true ->
-        # Get all .ex files in the directory
-        plugins =
-          dir
-          |> File.ls!()
-          |> Enum.filter(&String.ends_with?(&1, ".ex"))
-          |> Enum.map(&Path.join(dir, &1))
-
-        # Load each plugin
-        Enum.reduce_while(plugins, {:ok, state}, fn plugin_path,
-                                                    {:ok, acc_state} ->
-          case load_discovered_plugin(plugin_path, acc_state) do
-            {:ok, new_state} -> {:cont, {:ok, new_state}}
-            {:error, reason} -> {:halt, {:error, reason}}
-          end
-        end)
-
-      false ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[#{__MODULE__}] Plugin directory not found: #{dir}",
-          %{}
-        )
-
-        {:ok, state}
+      true -> load_plugins_in_dir(dir, state)
+      false -> handle_missing_dir(dir, state)
     end
   end
 
-  defp load_discovered_plugin(plugin_path, state) do
-    # Extract plugin ID from path
-    plugin_id = Path.basename(plugin_path, ".ex")
+  defp load_plugins_in_dir(dir, state) do
+    plugins = dir
+      |> File.ls!()
+      |> Enum.filter(&String.ends_with?(&1, ".ex"))
+      |> Enum.map(&Path.join(dir, &1))
 
-    # Load the plugin
-    case state.loader_module.load_plugin(plugin_id, %{}) do
-      {:ok, plugin, metadata} ->
-        # Initialize the plugin
-        case state.lifecycle_helper_module.initialize_plugin(plugin, %{}) do
-          {:ok, initial_state} ->
-            # Update state with new plugin
-            updated_state = %{
-              state
-              | plugins: Map.put(state.plugins, plugin_id, plugin),
-                metadata: Map.put(state.metadata, plugin_id, metadata),
-                plugin_states:
-                  Map.put(state.plugin_states, plugin_id, initial_state),
-                plugin_paths:
-                  Map.put(state.plugin_paths, plugin_id, plugin_path),
-                reverse_plugin_paths:
-                  Map.put(state.reverse_plugin_paths, plugin_path, plugin_id),
-                load_order: [plugin_id | state.load_order]
-            }
+    Enum.reduce_while(plugins, {:ok, state}, &load_plugin_with_reduce/2)
+  end
 
-            {:ok, updated_state}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Failed to initialize discovered plugin",
-              reason,
-              nil,
-              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
-            )
-
-            {:error, reason}
-        end
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Failed to load discovered plugin",
-          reason,
-          nil,
-          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
-        )
-
-        {:error, reason}
+  defp load_plugin_with_reduce(plugin_path, {:ok, acc_state}) do
+    case load_discovered_plugin(plugin_path, acc_state) do
+      {:ok, new_state} -> {:cont, {:ok, new_state}}
+      {:error, reason} -> {:halt, {:error, reason}}
     end
+  end
+
+  defp handle_missing_dir(dir, state) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[#{__MODULE__}] Plugin directory not found: #{dir}",
+      %{}
+    )
+    {:ok, state}
+  end
+
+  defp load_discovered_plugin(plugin_path, state) do
+    plugin_id = Path.basename(plugin_path, ".ex")
+    load_and_initialize_plugin(plugin_id, plugin_path, state)
+  end
+
+  defp load_and_initialize_plugin(plugin_id, plugin_path, state) do
+    case state.loader_module.load_plugin(plugin_id, %{}) do
+      {:ok, plugin, metadata} -> initialize_plugin(plugin_id, plugin, metadata, plugin_path, state)
+      {:error, reason} -> handle_load_error(reason, plugin_id)
+    end
+  end
+
+  defp initialize_plugin(plugin_id, plugin, metadata, plugin_path, state) do
+    case state.lifecycle_helper_module.initialize_plugin(plugin, %{}) do
+      {:ok, initial_state} -> {:ok, update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state, plugin_path)}
+      {:error, reason} -> handle_init_error(reason, plugin_id)
+    end
+  end
+
+  defp update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state, plugin_path) do
+    %{state |
+      plugins: Map.put(state.plugins, plugin_id, plugin),
+      metadata: Map.put(state.metadata, plugin_id, metadata),
+      plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
+      plugin_paths: Map.put(state.plugin_paths, plugin_id, plugin_path),
+      reverse_plugin_paths: Map.put(state.reverse_plugin_paths, plugin_path, plugin_id),
+      load_order: [plugin_id | state.load_order]
+    }
+  end
+
+  defp handle_load_error(reason, plugin_id) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Failed to load discovered plugin",
+      reason,
+      nil,
+      %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+    )
+    {:error, reason}
+  end
+
+  defp handle_init_error(reason, plugin_id) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Failed to initialize discovered plugin",
+      reason,
+      nil,
+      %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+    )
+    {:error, reason}
   end
 end

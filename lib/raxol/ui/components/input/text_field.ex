@@ -25,18 +25,18 @@ defmodule Raxol.UI.Components.Input.TextField do
   - :width - visible width of the field (not in defstruct, but added in init)
   """
   @type t :: %__MODULE__{
-    id: any(),
-    value: String.t(),
-    placeholder: String.t(),
-    style: map(),
-    theme: map(),
-    disabled: boolean(),
-    secret: boolean(),
-    focused: boolean(),
-    cursor_pos: non_neg_integer(),
-    scroll_offset: non_neg_integer(),
-    width: non_neg_integer()
-  }
+          id: any(),
+          value: String.t(),
+          placeholder: String.t(),
+          style: map(),
+          theme: map(),
+          disabled: boolean(),
+          secret: boolean(),
+          focused: boolean(),
+          cursor_pos: non_neg_integer(),
+          scroll_offset: non_neg_integer(),
+          width: non_neg_integer()
+        }
 
   defstruct id: nil,
             value: "",
@@ -115,10 +115,12 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Handles events for the TextField component, such as keypresses, focus, and blur.
   """
-  @spec handle_event(map(), term(), map()) :: {:noreply, map()} | {:noreply, map(), any()}
+  @spec handle_event(map(), term(), map()) ::
+          {:noreply, map()} | {:noreply, map(), any()}
   @impl true
   def handle_event(state, {:keypress, key, modifiers}, context) do
     _context = context
+
     if state.disabled do
       {:noreply, state}
     else
