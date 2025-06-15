@@ -11,11 +11,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   ]
 
   @type t :: %__MODULE__{
-    metrics: map(),
-    start_time: integer(),
-    last_update: integer(),
-    collectors: map()
-  }
+          metrics: map(),
+          start_time: integer(),
+          last_update: integer(),
+          collectors: map()
+        }
 
   @doc """
   Creates a new unified collector.
@@ -33,12 +33,14 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   Records a metric value.
   """
   def record_metric(%__MODULE__{} = collector, name, value) do
-    metrics = Map.update(collector.metrics, name, value, fn current ->
-      case is_list(current) do
-        true -> [value | current]
-        false -> [value, current]
-      end
-    end)
+    metrics =
+      Map.update(collector.metrics, name, value, fn current ->
+        case is_list(current) do
+          true -> [value | current]
+          false -> [value, current]
+        end
+      end)
+
     %{collector | metrics: metrics, last_update: System.monotonic_time()}
   end
 
@@ -101,6 +103,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
       case module.collect() do
         {:ok, metrics} ->
           record_metric(acc, name, metrics)
+
         _ ->
           acc
       end
@@ -112,10 +115,14 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   """
   def calculate_average(%__MODULE__{} = collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.sum(values) / length(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 
@@ -124,10 +131,14 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   """
   def calculate_sum(%__MODULE__{} = collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.sum(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 
@@ -136,10 +147,14 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   """
   def calculate_min(%__MODULE__{} = collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.min(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 
@@ -148,10 +163,14 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   """
   def calculate_max(%__MODULE__{} = collector, name) do
     case get_metric(collector, name) do
-      nil -> 0
+      nil ->
+        0
+
       values when is_list(values) ->
         Enum.max(values)
-      value -> value
+
+      value ->
+        value
     end
   end
 

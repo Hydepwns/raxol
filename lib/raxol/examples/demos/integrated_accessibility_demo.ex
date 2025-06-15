@@ -15,12 +15,13 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
 
   @impl true
   def init(_opts) do
-    {:ok,
-     %{
-       message: "Welcome to the Accessibility Demo",
-       button_clicks: 0,
-       checkbox_checked: false
-     }}
+    model = %{
+      message: "Welcome to the Accessibility Demo",
+      button_clicks: 0,
+      checkbox_checked: false
+    }
+
+    {:ok, {model, []}}
   end
 
   @impl true

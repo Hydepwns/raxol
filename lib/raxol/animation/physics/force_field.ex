@@ -125,7 +125,7 @@ defmodule Raxol.Animation.Physics.ForceField do
       radius: :infinity,
       properties: %{
         scale: Keyword.get(opts, :scale, 0.1),
-        seed: Keyword.get(opts, :seed, :rand.uniform(10000))
+        seed: Keyword.get(opts, :seed, :rand.uniform(10_000))
       }
     }
   end
@@ -165,45 +165,43 @@ defmodule Raxol.Animation.Physics.ForceField do
   # Private functions
 
   defp calculate_point_force(%__MODULE__{type: :point} = field, object) do
-    # Vector from field center to object
     direction = Vector.subtract(object.position, field.position)
     distance = Vector.magnitude(direction)
 
-    # Check if object is within radius
     if field.radius != :infinity and distance > field.radius do
       %Vector{}
     else
-      # Normalize direction
-      direction =
-        if distance > 0 do
-          Vector.scale(direction, 1 / distance)
-        else
-          # Random direction if at exact center
-          theta = :rand.uniform() * 2 * :math.pi()
-          phi = :rand.uniform() * :math.pi()
-          Vector.from_spherical(1, theta, phi)
-        end
-
-      # Calculate force magnitude based on falloff
-      force_magnitude =
-        case field.falloff do
-          :none ->
-            field.strength
-
-          :linear ->
-            field.strength * (1 - distance / field.radius)
-
-          :quadratic ->
-            field.strength *
-              (1 - distance / field.radius * (distance / field.radius))
-        end
-
-      # Ensure magnitude is positive
-      force_magnitude = max(0, force_magnitude)
-
-      # Calculate final force vector
+      direction = normalize_direction(direction, distance)
+      force_magnitude = calculate_force_magnitude(field, distance)
       Vector.scale(direction, force_magnitude)
     end
+  end
+
+  defp normalize_direction(direction, distance) do
+    if distance > 0 do
+      Vector.scale(direction, 1 / distance)
+    else
+      theta = :rand.uniform() * 2 * :math.pi()
+      phi = :rand.uniform() * :math.pi()
+      Vector.from_spherical(1, theta, phi)
+    end
+  end
+
+  defp calculate_force_magnitude(field, distance) do
+    magnitude =
+      case field.falloff do
+        :none ->
+          field.strength
+
+        :linear ->
+          field.strength * (1 - distance / field.radius)
+
+        :quadratic ->
+          field.strength *
+            (1 - distance / field.radius * (distance / field.radius))
+      end
+
+    max(0, magnitude)
   end
 
   defp calculate_directional_force(
@@ -215,79 +213,62 @@ defmodule Raxol.Animation.Physics.ForceField do
   end
 
   defp calculate_vortex_force(%__MODULE__{type: :vortex} = field, object) do
-    # Vector from field center to object
     to_object = Vector.subtract(object.position, field.position)
     distance = Vector.magnitude(to_object)
 
-    # Check if object is within radius
     if field.radius != :infinity and distance > field.radius do
       %Vector{}
     else
-      # Project the point onto the axis
-      axis_projection =
-        Vector.scale(field.direction, Vector.dot(to_object, field.direction))
+      calculate_vortex_force_at_point(field, to_object, distance)
+    end
+  end
 
-      # Get the perpendicular component
-      perpendicular = Vector.subtract(to_object, axis_projection)
-      perp_distance = Vector.magnitude(perpendicular)
+  defp calculate_vortex_force_at_point(field, to_object, distance) do
+    axis_projection =
+      Vector.scale(field.direction, Vector.dot(to_object, field.direction))
 
-      if perp_distance > 0 do
-        # Normalize the perpendicular component
-        perp_normalized = Vector.scale(perpendicular, 1 / perp_distance)
+    perpendicular = Vector.subtract(to_object, axis_projection)
+    perp_distance = Vector.magnitude(perpendicular)
 
-        # Calculate the tangent direction (cross product with axis)
-        tangent = Vector.cross(field.direction, perp_normalized)
-
-        # Calculate force magnitude based on falloff
-        force_magnitude =
-          case field.falloff do
-            :none ->
-              field.strength
-
-            :linear ->
-              field.strength * (1 - distance / field.radius)
-
-            :quadratic ->
-              field.strength *
-                (1 - distance / field.radius * (distance / field.radius))
-          end
-
-        # Ensure magnitude is positive
-        force_magnitude = max(0, force_magnitude)
-
-        # The force is tangential to the circle around the axis
-        Vector.scale(tangent, force_magnitude)
-      else
-        # If point is on the axis, no force
-        %Vector{}
-      end
+    if perp_distance > 0 do
+      perp_normalized = Vector.scale(perpendicular, 1 / perp_distance)
+      tangent = Vector.cross(field.direction, perp_normalized)
+      force_magnitude = calculate_force_magnitude(field, distance)
+      Vector.scale(tangent, force_magnitude)
+    else
+      %Vector{}
     end
   end
 
   defp calculate_noise_force(%__MODULE__{type: :noise} = field, object) do
-    # This is a simplified Perlin-like noise
-    # In a real implementation, you'd use a proper noise function
-
     scale = field.properties.scale
     seed = field.properties.seed
+    scaled_pos = scale_position(object.position, scale, seed)
+    noise_vector = calculate_noise_vector(scaled_pos)
+    Vector.scale(noise_vector, field.strength)
+  end
 
-    # Scale the position and add the seed
-    x = object.position.x * scale + seed
-    y = object.position.y * scale + seed * 2
-    z = object.position.z * scale + seed * 3
-
-    # Generate pseudo-random values based on position
-    # These are simplified noise functions
-    noise_x = :math.sin(x) * :math.cos(y + 0.2) * :math.sin(z + 0.5)
-    noise_y = :math.cos(x + 0.1) * :math.sin(y) * :math.cos(z + 0.3)
-    noise_z = :math.sin(x + 0.3) * :math.cos(y + 0.4) * :math.sin(z)
-
-    # Create force vector and scale by strength
+  defp scale_position(position, scale, seed) do
     %Vector{
-      x: noise_x * field.strength,
-      y: noise_y * field.strength,
-      z: noise_z * field.strength
+      x: position.x * scale + seed,
+      y: position.y * scale + seed * 2,
+      z: position.z * scale + seed * 3
     }
+  end
+
+  defp calculate_noise_vector(%Vector{x: x, y: y, z: z}) do
+    offsets = [{0.2, 0.5}, {0.1, 0.3}, {0.3, 0.4}]
+
+    [x_val, y_val, z_val] =
+      Enum.map(offsets, fn {y_off, z_off} ->
+        calculate_noise_component(x, y, z, y_off, z_off)
+      end)
+
+    %Vector{x: x_val, y: y_val, z: z_val}
+  end
+
+  defp calculate_noise_component(x, y, z, y_offset, z_offset) do
+    :math.sin(x) * :math.cos(y + y_offset) * :math.sin(z + z_offset)
   end
 
   defp calculate_custom_force(%__MODULE__{type: :custom} = field, object) do

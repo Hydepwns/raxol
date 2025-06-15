@@ -11,19 +11,18 @@ defmodule Raxol.Core.Metrics.Visualizer do
   """
 
   use GenServer
-  alias Raxol.Core.Metrics.{Config, UnifiedCollector}
 
   @type chart_type :: :line | :bar | :gauge | :histogram
   @type chart_options :: %{
-    type: chart_type(),
-    title: String.t(),
-    width: pos_integer(),
-    height: pos_integer(),
-    color: String.t(),
-    show_legend: boolean(),
-    show_grid: boolean(),
-    time_range: {DateTime.t(), DateTime.t()}
-  }
+          type: chart_type(),
+          title: String.t(),
+          width: pos_integer(),
+          height: pos_integer(),
+          color: String.t(),
+          show_legend: boolean(),
+          show_grid: boolean(),
+          time_range: {DateTime.t(), DateTime.t()}
+        }
 
   @default_options %{
     type: :line,
@@ -78,6 +77,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
       next_chart_id: 1,
       options: Map.merge(@default_options, Map.new(opts))
     }
+
     {:ok, state}
   end
 
@@ -87,13 +87,15 @@ defmodule Raxol.Core.Metrics.Visualizer do
     chart_options = Map.merge(state.options, options)
     chart_data = prepare_chart_data(metrics, chart_options)
 
-    new_state = %{state |
-      charts: Map.put(state.charts, chart_id, %{
-        data: chart_data,
-        options: chart_options,
-        created_at: DateTime.utc_now()
-      }),
-      next_chart_id: chart_id + 1
+    new_state = %{
+      state
+      | charts:
+          Map.put(state.charts, chart_id, %{
+            data: chart_data,
+            options: chart_options,
+            created_at: DateTime.utc_now()
+          }),
+        next_chart_id: chart_id + 1
     }
 
     {:reply, {:ok, chart_id, chart_data}, new_state}
@@ -109,12 +111,14 @@ defmodule Raxol.Core.Metrics.Visualizer do
         chart_options = chart.options
         chart_data = prepare_chart_data(metrics, chart_options)
 
-        new_state = %{state |
-          charts: Map.put(state.charts, chart_id, %{
-            chart |
-            data: chart_data,
-            updated_at: DateTime.utc_now()
-          })
+        new_state = %{
+          state
+          | charts:
+              Map.put(state.charts, chart_id, %{
+                chart
+                | data: chart_data,
+                  updated_at: DateTime.utc_now()
+              })
         }
 
         {:reply, {:ok, chart_data}, new_state}
@@ -332,7 +336,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
 
     0..9
     |> Enum.map(fn i ->
-      bucket_start = min + (i * bucket_size)
+      bucket_start = min + i * bucket_size
       bucket_end = bucket_start + bucket_size
       count = Enum.count(values, &(&1 >= bucket_start and &1 < bucket_end))
       %{start: bucket_start, end: bucket_end, count: count}
@@ -340,8 +344,12 @@ defmodule Raxol.Core.Metrics.Visualizer do
   end
 
   defp filter_by_time_range(timestamps, nil), do: timestamps
+
   defp filter_by_time_range(timestamps, {start, end_}) do
-    Enum.filter(timestamps, &(DateTime.compare(&1, start) != :lt and DateTime.compare(&1, end_) != :gt))
+    Enum.filter(
+      timestamps,
+      &(DateTime.compare(&1, start) != :lt and DateTime.compare(&1, end_) != :gt)
+    )
   end
 
   defp format_time_label(datetime) do
@@ -366,9 +374,11 @@ defmodule Raxol.Core.Metrics.Visualizer do
 
   defp export_to_csv(chart) do
     headers = ["Timestamp", "Value"]
-    rows = Enum.map(chart.data, fn point ->
-      [format_time_label(point.timestamp), point.value]
-    end)
+
+    rows =
+      Enum.map(chart.data, fn point ->
+        [format_time_label(point.timestamp), point.value]
+      end)
 
     [headers | rows]
     |> Enum.map(&Enum.join(&1, ","))

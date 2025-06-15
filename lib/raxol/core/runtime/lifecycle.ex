@@ -69,101 +69,94 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
     )
 
-    width = Keyword.get(options, :width, 80)
-    height = Keyword.get(options, :height, 24)
+    case initialize_components(app_module, options) do
+      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid} ->
+        state = build_initial_state(app_module, options, pm_pid, registry_table, dispatcher_pid, initialized_model)
+        log_successful_init(app_module, dispatcher_pid)
+        {:ok, state}
+      {:error, reason, cleanup_fun} ->
+        cleanup_fun.()
+        {:stop, reason}
+    end
+  end
 
-    debug_mode =
-      Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false))
+  defp initialize_components(app_module, options) do
+    with {:ok, registry_table} <- initialize_registry_table(app_module),
+         {:ok, pm_pid} <- start_plugin_manager(options),
+         {:ok, initialized_model} <- initialize_app_model(app_module, get_initial_model_args(options)),
+         {:ok, dispatcher_pid} <- start_dispatcher(app_module, initialized_model, options, pm_pid, registry_table) do
+      {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid}
+    end
+  end
 
-    registry_table_name =
-      Module.concat(CommandRegistryTable, Atom.to_string(app_module))
+  defp build_initial_state(app_module, options, pm_pid, registry_table, dispatcher_pid, initialized_model) do
+    %State{
+      app_module: app_module,
+      options: options,
+      app_name: get_app_name(app_module, options),
+      width: Keyword.get(options, :width, 80),
+      height: Keyword.get(options, :height, 24),
+      debug_mode: Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
+      plugin_manager: pm_pid,
+      command_registry_table: registry_table,
+      initial_commands: Keyword.get(options, :initial_commands, []),
+      dispatcher_pid: dispatcher_pid,
+      model: initialized_model,
+      dispatcher_ready: false,
+      plugin_manager_ready: false
+    }
+  end
 
-    _command_registry_table =
-      :ets.new(registry_table_name, [
-        :set,
-        :protected,
-        :named_table,
-        read_concurrency: true
-      ])
+  defp log_successful_init(app_module, dispatcher_pid) do
+    Raxol.Core.Runtime.Log.info_with_context(
+      "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
+    )
+  end
 
-    initial_commands = Keyword.get(options, :initial_commands, [])
-    app_name = get_app_name(app_module, options)
+  defp initialize_registry_table(app_module) do
+    registry_table_name = Module.concat(CommandRegistryTable, Atom.to_string(app_module))
+    case :ets.new(registry_table_name, [:set, :protected, :named_table, read_concurrency: true]) do
+      ^registry_table_name -> {:ok, registry_table_name}
+      _ -> {:error, :registry_table_creation_failed, fn -> :ets.delete(registry_table_name) end}
+    end
+  end
 
-    # Start PluginManager
-    # PluginManager is expected to send `{:plugin_manager_ready, self()}` to its parent (Lifecycle)
+  defp start_plugin_manager(options) do
     plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
-
     case Manager.start_link(plugin_manager_opts) do
       {:ok, pm_pid} ->
         Raxol.Core.Runtime.Log.info_with_context(
           "[#{__MODULE__}] PluginManager started with PID: #{inspect(pm_pid)}"
         )
-
-        initial_model_args = %{width: width, height: height, options: options}
-        initialized_model = initialize_app_model(app_module, initial_model_args)
-
-        dispatcher_initial_state = %{
-          app_module: app_module,
-          model: initialized_model,
-          width: width,
-          height: height,
-          debug_mode: debug_mode,
-          # Pass PluginManager PID to Dispatcher
-          plugin_manager: pm_pid,
-          command_registry_table: registry_table_name
-        }
-
-        case Dispatcher.start_link(self(), dispatcher_initial_state) do
-          {:ok, dispatcher_pid} ->
-            state = %State{
-              app_module: app_module,
-              options: options,
-              app_name: app_name,
-              width: width,
-              height: height,
-              debug_mode: debug_mode,
-              plugin_manager: pm_pid,
-              command_registry_table: registry_table_name,
-              initial_commands: initial_commands,
-              dispatcher_pid: dispatcher_pid,
-              model: initialized_model,
-              # Will be set to true by :runtime_initialized
-              dispatcher_ready: false,
-              # Will be set to true by :plugin_manager_ready
-              plugin_manager_ready: false
-            }
-
-            Raxol.Core.Runtime.Log.info_with_context(
-              "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
-            )
-
-            {:ok, state}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Failed to start Dispatcher.",
-              reason,
-              nil,
-              %{module: __MODULE__, app_module: app_module, reason: reason}
-            )
-
-            # Stop PluginManager if Dispatcher fails
-            Manager.stop(pm_pid)
-            :ets.delete(registry_table_name)
-            {:stop, {:dispatcher_start_failed, reason}}
-        end
-
+        {:ok, pm_pid}
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Failed to start PluginManager.",
-          reason,
-          nil,
-          %{module: __MODULE__, app_module: app_module, reason: reason}
-        )
+        {:error, {:plugin_manager_start_failed, reason}, fn -> :ok end}
+    end
+  end
 
-        # Ensure ETS table is cleaned up
-        :ets.delete(registry_table_name)
-        {:stop, {:plugin_manager_start_failed, reason}}
+  defp get_initial_model_args(options) do
+    %{
+      width: Keyword.get(options, :width, 80),
+      height: Keyword.get(options, :height, 24),
+      options: options
+    }
+  end
+
+  defp start_dispatcher(app_module, initialized_model, options, pm_pid, registry_table) do
+    dispatcher_initial_state = %{
+      app_module: app_module,
+      model: initialized_model,
+      width: Keyword.get(options, :width, 80),
+      height: Keyword.get(options, :height, 24),
+      debug_mode: Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
+      plugin_manager: pm_pid,
+      command_registry_table: registry_table
+    }
+
+    case Dispatcher.start_link(self(), dispatcher_initial_state) do
+      {:ok, dispatcher_pid} -> {:ok, dispatcher_pid}
+      {:error, reason} ->
+        {:error, {:dispatcher_start_failed, reason}, fn -> Manager.stop(pm_pid) end}
     end
   end
 
@@ -247,7 +240,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp maybe_process_initial_commands(state = %State{}) do
-    if state.dispatcher_ready && state.plugin_manager_ready && Enum.any?(state.initial_commands) do
+    if state.dispatcher_ready && state.plugin_manager_ready &&
+         Enum.any?(state.initial_commands) do
       process_initial_commands(state)
     else
       log_waiting_status(state)
@@ -284,11 +278,19 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     if Enum.any?(state.initial_commands) do
       cond do
         not state.dispatcher_ready and not state.plugin_manager_ready ->
-          Raxol.Core.Runtime.Log.info("Waiting for Dispatcher and PluginManager to be ready before processing initial commands.")
+          Raxol.Core.Runtime.Log.info(
+            "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
+          )
+
         not state.dispatcher_ready ->
-          Raxol.Core.Runtime.Log.info("Waiting for Dispatcher to be ready before processing initial commands.")
+          Raxol.Core.Runtime.Log.info(
+            "Waiting for Dispatcher to be ready before processing initial commands."
+          )
+
         not state.plugin_manager_ready ->
-          Raxol.Core.Runtime.Log.info("Waiting for PluginManager to be ready before processing initial commands.")
+          Raxol.Core.Runtime.Log.info(
+            "Waiting for PluginManager to be ready before processing initial commands."
+          )
       end
     end
   end
@@ -413,11 +415,14 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   def lookup_app(app_id) do
     case Application.get_env(:raxol, :apps) do
       nil -> {:error, :no_apps_configured}
-      apps ->
-        case Enum.find(apps, fn {id, _} -> id == app_id end) do
-          nil -> {:error, :app_not_found}
-          {_id, app_config} -> {:ok, app_config}
-        end
+      apps -> find_app_by_id(apps, app_id)
+    end
+  end
+
+  defp find_app_by_id(apps, app_id) do
+    case Enum.find(apps, fn {id, _} -> id == app_id end) do
+      nil -> {:error, :app_not_found}
+      {_id, app_config} -> {:ok, app_config}
     end
   end
 
@@ -453,37 +458,31 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       Map.merge(context, %{module: __MODULE__})
     )
 
-    # Clean up resources
-    with :ok <- cleanup_resources(context),
-         :ok <- cleanup_plugins(context),
-         :ok <- cleanup_state(context) do
-      {:ok, :cleanup_complete}
-    else
-      error ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Cleanup failed",
-          error,
-          nil,
-          Map.merge(context, %{module: __MODULE__})
-        )
-        {:error, :cleanup_failed}
-    end
+    # Cleanup is handled by individual components
+    {:ok, :cleanup_complete}
+  rescue
+    error ->
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "Cleanup failed",
+        error,
+        nil,
+        Map.merge(context, %{module: __MODULE__})
+      )
+
+      {:error, :cleanup_failed}
   end
 
   # Private helper functions
 
+  defp cleanup_state(_context) do
+    :ok
+  end
+
   defp cleanup_resources(_context) do
-    # Clean up any allocated resources
     :ok
   end
 
   defp cleanup_plugins(_context) do
-    # Clean up any loaded plugins
-    :ok
-  end
-
-  defp cleanup_state(_context) do
-    # Clean up application state
     :ok
   end
 end

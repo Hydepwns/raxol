@@ -143,7 +143,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
       component ->
         # Call update callback
-        {new_state, commands} = component.module.update(message, component.state)
+        {new_state, commands} =
+          component.module.update(message, component.state)
 
         # Store updated state
         state = put_in(state.components[component_id].state, new_state)

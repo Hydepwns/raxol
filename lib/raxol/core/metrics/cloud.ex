@@ -13,13 +13,13 @@ defmodule Raxol.Core.Metrics.Cloud do
 
   @type cloud_service :: :datadog | :prometheus | :cloudwatch
   @type cloud_config :: %{
-    service: cloud_service(),
-    endpoint: String.t(),
-    api_key: String.t(),
-    batch_size: pos_integer(),
-    flush_interval: pos_integer(),
-    compression: boolean()
-  }
+          service: cloud_service(),
+          endpoint: String.t(),
+          api_key: String.t(),
+          batch_size: pos_integer(),
+          flush_interval: pos_integer(),
+          compression: boolean()
+        }
 
   @default_config %{
     service: :datadog,
@@ -60,11 +60,13 @@ defmodule Raxol.Core.Metrics.Cloud do
   @impl GenServer
   def init(opts) do
     config = Map.merge(@default_config, Map.new(opts))
+
     state = %{
       config: config,
       metrics_buffer: [],
       last_flush: System.system_time(:millisecond)
     }
+
     schedule_flush()
     {:ok, state}
   end
@@ -75,6 +77,7 @@ defmodule Raxol.Core.Metrics.Cloud do
       :ok ->
         new_state = %{state | config: Map.merge(state.config, new_config)}
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -107,10 +110,13 @@ defmodule Raxol.Core.Metrics.Cloud do
       tags: tags,
       timestamp: System.system_time(:second)
     }
+
     new_buffer = [metric | state.metrics_buffer]
 
     if length(new_buffer) >= state.config.batch_size do
-      {new_state, _result} = flush_metrics_to_cloud(%{state | metrics_buffer: new_buffer})
+      {new_state, _result} =
+        flush_metrics_to_cloud(%{state | metrics_buffer: new_buffer})
+
       {:noreply, new_state}
     else
       {:noreply, %{state | metrics_buffer: new_buffer}}
@@ -123,10 +129,13 @@ defmodule Raxol.Core.Metrics.Cloud do
     else
       metrics = prepare_metrics_for_cloud(state.metrics_buffer)
       result = send_metrics_to_cloud(metrics, state.config)
-      new_state = %{state |
-        metrics_buffer: [],
-        last_flush: System.system_time(:millisecond)
+
+      new_state = %{
+        state
+        | metrics_buffer: [],
+          last_flush: System.system_time(:millisecond)
       }
+
       {new_state, result}
     end
   end
@@ -178,19 +187,29 @@ defmodule Raxol.Core.Metrics.Cloud do
     end
   end
 
-  defp validate_service(service) when service in [:datadog, :prometheus, :cloudwatch], do: :ok
+  defp validate_service(service)
+       when service in [:datadog, :prometheus, :cloudwatch],
+       do: :ok
+
   defp validate_service(_), do: {:error, :invalid_service}
 
-  defp validate_endpoint(endpoint) when is_binary(endpoint) and endpoint != "", do: :ok
+  defp validate_endpoint(endpoint) when is_binary(endpoint) and endpoint != "",
+    do: :ok
+
   defp validate_endpoint(_), do: {:error, :invalid_endpoint}
 
-  defp validate_api_key(api_key) when is_binary(api_key) and api_key != "", do: :ok
+  defp validate_api_key(api_key) when is_binary(api_key) and api_key != "",
+    do: :ok
+
   defp validate_api_key(_), do: {:error, :invalid_api_key}
 
   defp validate_batch_size(size) when is_integer(size) and size > 0, do: :ok
   defp validate_batch_size(_), do: {:error, :invalid_batch_size}
 
-  defp validate_flush_interval(interval) when is_integer(interval) and interval > 0, do: :ok
+  defp validate_flush_interval(interval)
+       when is_integer(interval) and interval > 0,
+       do: :ok
+
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
   defp schedule_flush do

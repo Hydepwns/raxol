@@ -5,7 +5,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   """
 
   use GenServer
-  @behaviour Raxol.Core.Runtime.Events.Dispatcher.Behaviour
+  @behaviour Raxol.Core.Runtime.Events.DispatcherBehaviour
 
   require Raxol.Core.Runtime.Log
   require Raxol.Core.Events.Event
@@ -17,14 +17,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Events.Event
   alias Raxol.Core.UserPreferences
 
-  # Define the Registry name
   @registry_name :raxol_event_subscriptions
 
-  # Internal state
   defmodule State do
     @moduledoc false
     defstruct [
-      # PID of the main Runtime process
       runtime_pid: nil,
       app_module: nil,
       model: nil,
@@ -32,18 +29,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       height: 0,
       focused: true,
       debug_mode: false,
-      # Reference or PID?
       plugin_manager: nil,
-      # ETS table name
       command_registry_table: nil,
-      # Add current theme ID
-      # Fetched from UserPreferences on init
-      # Will be overwritten in init
       current_theme_id: :default
     ]
   end
-
-  # --- Public API ---
 
   @impl true
   def start_link(runtime_pid, initial_state) do
@@ -54,7 +44,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def init({runtime_pid, initial_state}) do
-    # Initialize state
     state = %State{
       runtime_pid: runtime_pid,
       app_module: initial_state.app_module,
@@ -68,13 +57,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       current_theme_id: UserPreferences.get_theme_id()
     }
 
-    # Send runtime initialized event
     send(runtime_pid, {:runtime_initialized, self()})
 
-    # Send plugin manager ready event
     send(runtime_pid, {:plugin_manager_ready, initial_state.plugin_manager})
 
-    # Send dispatcher ready event in test environment
     if Mix.env() == :test do
       send(self(), {:dispatcher_ready, self()})
     end
@@ -84,9 +70,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @doc """
   Dispatches an event to the appropriate handler based on event type and target.
-
-  Returns `{:ok, updated_state}` if the event was successfully handled,
-  or `{:error, reason, state}` if something went wrong.
   """
   def dispatch_event(event, state) do
     try do
@@ -106,128 +89,110 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @doc """
   Handles an application-level event and updates the application state.
-
-  This is typically used for user interaction events like keyboard or mouse input.
   """
   def handle_event(event, %State{} = state) do
-    app_module = state.app_module
-    current_model = state.model
-    current_theme_id = state.current_theme_id
-
-    # Convert event to message for app update
     message = default_event_to_message(event)
+    process_app_update(state, message, event)
+  end
 
-    # Delegate event processing to the application module
-    case Application.delegate_update(
-           app_module,
-           message,
-           current_model
-         ) do
-      {updated_model, commands}
-      when is_map(updated_model) and is_list(commands) ->
-        # Execute commands using the Command module
-        context = %{
-          pid: self(),
-          command_registry_table: state.command_registry_table,
-          runtime_pid: state.runtime_pid
-        }
-
-        process_commands(commands, context)
-
-        # Check if theme ID changed in the model
-        new_theme_id =
-          Map.get(updated_model, :current_theme_id, current_theme_id)
-
-        updated_state =
-          if new_theme_id != current_theme_id do
-            Raxol.Core.Runtime.Log.debug(
-              "Theme changed in model: #{current_theme_id} -> #{new_theme_id}. Updating preferences."
-            )
-
-            # Save the new theme preference
-            :ok = UserPreferences.set("theme.active_id", new_theme_id)
-            %{state | model: updated_model, current_theme_id: new_theme_id}
-          else
-            %{state | model: updated_model}
-          end
-
-        # Inform RenderingEngine about the state change
-        Raxol.Core.Runtime.Log.debug(
-          "State changed, sending :render_needed to Runtime"
-        )
-
-        send(state.runtime_pid, :render_needed)
-
-        # Return tuple indicating success, the new state, and commands
-        {:ok, updated_state, commands}
-
+  defp process_app_update(state, message, event) do
+    case Application.delegate_update(state.app_module, message, state.model) do
+      {updated_model, commands} when is_map(updated_model) and is_list(commands) ->
+        process_successful_update(state, updated_model, commands)
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Application update failed",
-          reason,
-          nil,
-          %{
-            module: __MODULE__,
-            app_module: app_module,
-            message: message,
-            current_model: current_model,
-            event: event
-          }
-        )
-
-        {:error, reason}
-
+        log_update_error(state, message, event, reason)
       other ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Unexpected return from #{app_module}.update",
-          %{
-            module: __MODULE__,
-            app_module: app_module,
-            message: message,
-            current_model: current_model,
-            event: event,
-            other: other
-          }
-        )
-
-        {:error, {:unexpected_return, other}}
+        log_unexpected_return(state, message, event, other)
     end
   end
 
-  @doc """
-  Processes a system-level event that affects the runtime itself rather than
-  the application logic.
+  defp process_successful_update(state, updated_model, commands) do
+    context = build_command_context(state)
+    process_commands(commands, context)
 
-  Examples include terminal resize events, focus events, or quit requests.
+    updated_state = handle_theme_update(state, updated_model)
+    send(state.runtime_pid, :render_needed)
+    {:ok, updated_state, commands}
+  end
+
+  defp build_command_context(state) do
+    %{
+      pid: self(),
+      command_registry_table: state.command_registry_table,
+      runtime_pid: state.runtime_pid
+    }
+  end
+
+  defp handle_theme_update(state, updated_model) do
+    new_theme_id = Map.get(updated_model, :current_theme_id, state.current_theme_id)
+    if new_theme_id != state.current_theme_id do
+      :ok = UserPreferences.set("theme.active_id", new_theme_id)
+      %{state | model: updated_model, current_theme_id: new_theme_id}
+    else
+      %{state | model: updated_model}
+    end
+  end
+
+  defp log_update_error(state, message, event, reason) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "Application update failed",
+      reason,
+      nil,
+      %{
+        module: __MODULE__,
+        app_module: state.app_module,
+        message: message,
+        current_model: state.model,
+        event: event
+      }
+    )
+    {:error, reason}
+  end
+
+  defp log_unexpected_return(state, message, event, other) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Unexpected return from #{state.app_module}.update",
+      %{
+        module: __MODULE__,
+        app_module: state.app_module,
+        message: message,
+        current_model: state.model,
+        event: event,
+        other: other
+      }
+    )
+    {:error, {:unexpected_return, other}}
+  end
+
+  @doc """
+  Processes a system-level event that affects the runtime itself rather than the application logic.
   """
   def process_system_event(event, state) do
     case event do
-      %Event{type: :resize, data: %{width: width, height: height}} ->
-        # Handle terminal resize event
-        {:ok, %{state | width: width, height: height}}
-
-      %Event{type: :quit} ->
-        # Handle quit request
-        {:quit, state}
-
-      %Event{type: :focus, data: %{focused: focused}} ->
-        # Handle focus change
-        {:ok, %{state | focused: focused}}
-
-      %Event{type: :error, data: %{error: error}} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "System error event",
-          error,
-          nil,
-          %{module: __MODULE__, event: event, state: state}
-        )
-
-        {:error, error, state}
-
-      _ ->
-        # Unknown system event, just pass through
-        {:ok, state}
+      %Event{type: :resize, data: data} -> handle_resize_event(data, state)
+      %Event{type: :quit} -> {:quit, state}
+      %Event{type: :focus, data: data} -> handle_focus_event(data, state)
+      %Event{type: :error, data: data} -> handle_error_event(data, state)
+      _ -> {:ok, state}
     end
+  end
+
+  defp handle_resize_event(%{width: width, height: height}, state) do
+    {:ok, %{state | width: width, height: height}}
+  end
+
+  defp handle_focus_event(%{focused: focused}, state) do
+    {:ok, %{state | focused: focused}}
+  end
+
+  defp handle_error_event(%{error: error}, state) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "System error event",
+      error,
+      nil,
+      %{module: __MODULE__, error: error, state: state}
+    )
+    {:error, error, state}
   end
 
   # --- Public API for PubSub ---
@@ -343,69 +308,58 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl GenServer
   def handle_info({:command_result, msg}, %State{} = state) do
-    # A command executed via Command.execute (e.g., a Task or Delay) has finished
-    # We need to feed this message back into the application's update loop
-    # Construct the full message tuple
     full_message = {:command_result, msg}
+    process_command_result(state, full_message)
+  end
 
-    Raxol.Core.Runtime.Log.debug(
-      "[#{__MODULE__}] Received command result, forwarding to app: #{inspect(full_message)}"
-    )
-
-    # Call Application.update with the received message
-    case Application.delegate_update(
-           state.app_module,
-           full_message,
-           state.model
-         ) do
-      {updated_model, commands}
-      when is_map(updated_model) and is_list(commands) ->
-        # Execute any new commands generated by the update
-        context = %{
-          pid: self(),
-          command_registry_table: state.command_registry_table,
-          runtime_pid: state.runtime_pid
-        }
-
-        # Wrap process_commands to prevent crashes here from losing state update
-        try do
-          process_commands(commands, context)
-        rescue
-          error ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[Dispatcher] Error processing commands from command result",
-              error,
-              nil,
-              %{module: __MODULE__, msg: msg}
-            )
-        end
-
-        {:noreply, %{state | model: updated_model}}
-
-      # Handle cases where delegate_update itself might fail
+  defp process_command_result(state, message) do
+    case Application.delegate_update(state.app_module, message, state.model) do
+      {updated_model, commands} when is_map(updated_model) and is_list(commands) ->
+        process_command_commands(state, updated_model, commands)
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[Dispatcher] Error calling delegate_update in handle_info",
-          reason,
-          nil,
-          %{module: __MODULE__, msg: msg, state: state}
-        )
-
-        # Keep old state
-        {:noreply, state}
-
+        log_command_error(state, message, reason)
       other ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[Dispatcher] Unexpected return from delegate_update in handle_info",
-          %{module: __MODULE__, msg: msg, state: state, other: other}
-        )
-
-        # Keep old state
-        {:noreply, state}
+        log_command_unexpected(state, message, other)
     end
   end
 
-  # Catch-all for other messages
+  defp process_command_commands(state, updated_model, commands) do
+    context = build_command_context(state)
+    try do
+      process_commands(commands, context)
+    rescue
+      error -> log_command_process_error(error)
+    end
+    {:noreply, %{state | model: updated_model}}
+  end
+
+  defp log_command_error(state, message, reason) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[Dispatcher] Error calling delegate_update in handle_info",
+      reason,
+      nil,
+      %{module: __MODULE__, msg: message, state: state}
+    )
+    {:noreply, state}
+  end
+
+  defp log_command_unexpected(state, message, other) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Dispatcher] Unexpected return from delegate_update in handle_info",
+      %{module: __MODULE__, msg: message, state: state, other: other}
+    )
+    {:noreply, state}
+  end
+
+  defp log_command_process_error(error) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[Dispatcher] Error processing commands from command result",
+      error,
+      nil,
+      %{module: __MODULE__}
+    )
+  end
+
   def handle_info(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled info message",
@@ -444,28 +398,19 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       "Event Dispatcher terminating. Reason: #{inspect(reason)}"
     )
 
-    # The linked Registry process (named @registry_name) should be automatically
-    # terminated by OTP when this Dispatcher process exits, due to the link
-    # established in init/1. No explicit stop is needed here for the registry.
     :ok
   end
 
-  # Private functions
-
   defp do_dispatch_event(event, state) do
-    # Log the event if in debug mode
     if state.debug_mode do
       Raxol.Core.Runtime.Log.debug("Dispatching event: #{inspect(event)}")
     end
 
-    # Determine if this is a system event or application event
     if system_event?(event) do
       process_system_event(event, state)
     else
-      # Process plugin event filters if any
       filtered_event = apply_plugin_filters(event, state)
 
-      # Skip completely filtered events
       if is_nil(filtered_event) do
         {:ok, state}
       else
@@ -481,16 +426,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp system_event?(_), do: false
 
   defp apply_plugin_filters(event, state) do
-    # Allow plugins to filter/modify the event before processing
-    # TODO: Ensure state.plugin_manager is correctly passed/set
-    # Assuming named process if nil
-    manager_pid = state.plugin_manager || Raxol.Core.Runtime.Plugins.Manager
-    # Assuming Manager implements handle_call for :filter_event
+    manager_pid = Raxol.Core.Runtime.Plugins.Manager
     case GenServer.call(manager_pid, {:filter_event, event}) do
       {:ok, filtered_event} -> filtered_event
-      # Event processing halted by a plugin
       :halt -> nil
-      # No filtering applied
       _ -> event
     end
   end
@@ -514,7 +453,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp default_event_to_message(event) do
-    # For other events, just pass through the whole event
     {:event, event}
   end
 
@@ -526,10 +464,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     )
 
     Enum.each(commands, fn command ->
-      # Use the Command module's execution logic
-      # Add error handling around execute if needed
-      # Note: Command.execute handles different command types (:task, :batch, :broadcast, etc.)
-      # It needs context, including the PID to send results back to.
       case command do
         %Command{} = cmd ->
           Command.execute(cmd, context)

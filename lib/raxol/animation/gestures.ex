@@ -151,53 +151,16 @@ defmodule Raxol.Animation.Gestures do
   def touch_up(position, time \\ System.monotonic_time(:millisecond)) do
     with_state(fn state ->
       if state.is_active do
-        # Final position and gesture type
         gesture_type = detect_gesture_type(state, :up)
-
-        # Prepare gesture data
-        {start_x, start_y} = state.touch_start
-        {end_x, end_y} = position
-        dx = end_x - start_x
-        dy = end_y - start_y
-        distance = :math.sqrt(dx * dx + dy * dy)
-        duration = time - state.start_time
-
-        # Determine direction for swipes
-        direction =
-          cond do
-            abs(dx) > abs(dy) and dx > 0 -> :right
-            abs(dx) > abs(dy) and dx < 0 -> :left
-            abs(dy) >= abs(dx) and dy > 0 -> :down
-            abs(dy) >= abs(dx) and dy < 0 -> :up
-            true -> :none
-          end
-
-        # Create gesture data
-        gesture_data = %{
-          type: gesture_type,
-          start_position: state.touch_start,
-          end_position: position,
-          distance: distance,
-          direction: direction,
-          duration: duration,
-          velocity: state.velocity
-        }
-
-        # Call appropriate handlers
+        gesture_data = prepare_gesture_data(state, position, time)
         call_handlers(gesture_type, gesture_data)
 
-        # Start physics animation if applicable
         active_animations =
-          case gesture_type do
-            :swipe ->
-              start_swipe_animation(gesture_data, state.active_animations)
-
-            :drag ->
-              start_drag_animation(gesture_data, state.active_animations)
-
-            _ ->
-              state.active_animations
-          end
+          handle_gesture_animation(
+            gesture_type,
+            gesture_data,
+            state.active_animations
+          )
 
         # Reset state but keep handlers and animations
         %{
@@ -218,6 +181,44 @@ defmodule Raxol.Animation.Gestures do
     end)
 
     :ok
+  end
+
+  defp prepare_gesture_data(state, position, time) do
+    {start_x, start_y} = state.touch_start
+    {end_x, end_y} = position
+    dx = end_x - start_x
+    dy = end_y - start_y
+    distance = :math.sqrt(dx * dx + dy * dy)
+    duration = time - state.start_time
+    direction = calculate_direction(dx, dy)
+
+    %{
+      type: detect_gesture_type(state, :up),
+      start_position: state.touch_start,
+      end_position: position,
+      distance: distance,
+      direction: direction,
+      duration: duration,
+      velocity: state.velocity
+    }
+  end
+
+  defp calculate_direction(dx, dy) do
+    cond do
+      abs(dx) > abs(dy) and dx > 0 -> :right
+      abs(dx) > abs(dy) and dx < 0 -> :left
+      abs(dy) >= abs(dx) and dy > 0 -> :down
+      abs(dy) >= abs(dx) and dy < 0 -> :up
+      true -> :none
+    end
+  end
+
+  defp handle_gesture_animation(gesture_type, gesture_data, active_animations) do
+    case gesture_type do
+      :swipe -> start_swipe_animation(gesture_data, active_animations)
+      :drag -> start_drag_animation(gesture_data, active_animations)
+      _ -> active_animations
+    end
   end
 
   @doc """
@@ -251,14 +252,16 @@ defmodule Raxol.Animation.Gestures do
   """
   def get_animation_objects do
     with_state(fn state ->
-      objects =
-        Enum.flat_map(state.active_animations, fn anim ->
-          Enum.map(anim.world.objects, fn {_id, object} ->
-            Map.put(object, :animation_id, anim.id)
-          end)
-        end)
-
+      objects = map_animation_objects(state.active_animations)
       {state, objects}
+    end)
+  end
+
+  defp map_animation_objects(animations) do
+    Enum.flat_map(animations, fn anim ->
+      Enum.map(anim.world.objects, fn {_id, object} ->
+        Map.put(object, :animation_id, anim.id)
+      end)
     end)
   end
 
@@ -279,39 +282,56 @@ defmodule Raxol.Animation.Gestures do
   end
 
   defp detect_gesture_type(state, phase) do
-    duration = state.current_time - state.start_time
+    {distance, velocity_magnitude, duration} = calculate_movement_metrics(state)
 
+    case phase do
+      :move -> detect_move_gesture(distance, velocity_magnitude, duration)
+      :up -> detect_up_gesture(distance, velocity_magnitude, duration)
+      _ -> nil
+    end
+  end
+
+  defp calculate_movement_metrics(state) do
+    duration = state.current_time - state.start_time
     {start_x, start_y} = state.touch_start
     {current_x, current_y} = state.touch_current
     dx = current_x - start_x
     dy = current_y - start_y
     distance = :math.sqrt(dx * dx + dy * dy)
-
     velocity_magnitude = Vector.magnitude(state.velocity)
+    {distance, velocity_magnitude, duration}
+  end
 
-    cond do
-      # On move phase, detect drag or potential swipe
-      phase == :move ->
-        cond do
-          distance > 5 and velocity_magnitude > 200 -> :swipe
-          distance > 5 -> :drag
-          duration > 500 -> :long_press
-          true -> nil
-        end
-
-      # On up phase, finalize gesture type
-      phase == :up ->
-        cond do
-          duration < 200 and distance < 5 -> :tap
-          duration > 500 and distance < 5 -> :long_press
-          velocity_magnitude > 200 -> :swipe
-          distance > 5 -> :drag
-          true -> :tap
-        end
-
-      true ->
-        nil
+  defp detect_move_gesture(distance, velocity_magnitude, duration) do
+    if distance > 5 do
+      detect_active_movement(velocity_magnitude)
+    else
+      detect_stationary_gesture(duration)
     end
+  end
+
+  defp detect_active_movement(velocity_magnitude) do
+    if velocity_magnitude > 200, do: :swipe, else: :drag
+  end
+
+  defp detect_stationary_gesture(duration) do
+    if duration > 500, do: :long_press, else: nil
+  end
+
+  defp detect_up_gesture(distance, velocity_magnitude, duration) do
+    if distance < 5 do
+      detect_tap_gesture(duration)
+    else
+      detect_movement_gesture(distance, velocity_magnitude)
+    end
+  end
+
+  defp detect_tap_gesture(duration) do
+    if duration < 200, do: :tap, else: :long_press
+  end
+
+  defp detect_movement_gesture(_distance, velocity_magnitude) do
+    if velocity_magnitude > 200, do: :swipe, else: :drag
   end
 
   defp call_handlers(gesture_type, gesture_data) do

@@ -206,7 +206,9 @@ defmodule Raxol.Core.Config.Manager do
         else
           {:ok, %{state | config: config}}
         end
-      {:error, reason} -> {:error, reason}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -229,7 +231,9 @@ defmodule Raxol.Core.Config.Manager do
   defp validate_config(config) do
     # Validate required fields
     required_fields = [:terminal, :buffer, :renderer]
-    missing_fields = Enum.filter(required_fields, &(not Map.has_key?(config, &1)))
+
+    missing_fields =
+      Enum.filter(required_fields, &(not Map.has_key?(config, &1)))
 
     if Enum.empty?(missing_fields) do
       # Validate each section
@@ -239,7 +243,8 @@ defmodule Raxol.Core.Config.Manager do
         :ok
       end
     else
-      {:error, "Missing required configuration fields: #{Enum.join(missing_fields, ", ")}"}
+      {:error,
+       "Missing required configuration fields: #{Enum.join(missing_fields, ", ")}"}
     end
   end
 
@@ -264,35 +269,56 @@ defmodule Raxol.Core.Config.Manager do
     if Enum.empty?(missing_fields) do
       :ok
     else
-      {:error, "Missing required #{section} configuration fields: #{Enum.join(missing_fields, ", ")}"}
+      {:error,
+       "Missing required #{section} configuration fields: #{Enum.join(missing_fields, ", ")}"}
     end
   end
 
   defp maybe_validate(_key, _value, %{validate: false}), do: :ok
-  defp maybe_validate(key, value, state) do
+
+  defp maybe_validate(key, value, _state) do
     case validate_value(key, value) do
       :ok -> :ok
       {:error, reason} -> {:error, "Invalid value for #{key}: #{reason}"}
     end
   end
 
-  defp validate_value(:terminal_width, value) when is_integer(value) and value > 0, do: :ok
-  defp validate_value(:terminal_height, value) when is_integer(value) and value > 0, do: :ok
-  defp validate_value(:terminal_mode, value) when value in [:normal, :raw], do: :ok
-  defp validate_value(:buffer_max_size, value) when is_integer(value) and value > 0, do: :ok
-  defp validate_value(:buffer_scrollback, value) when is_integer(value) and value >= 0, do: :ok
+  defp validate_value(:terminal_width, value)
+       when is_integer(value) and value > 0,
+       do: :ok
+
+  defp validate_value(:terminal_height, value)
+       when is_integer(value) and value > 0,
+       do: :ok
+
+  defp validate_value(:terminal_mode, value) when value in [:normal, :raw],
+    do: :ok
+
+  defp validate_value(:buffer_max_size, value)
+       when is_integer(value) and value > 0,
+       do: :ok
+
+  defp validate_value(:buffer_scrollback, value)
+       when is_integer(value) and value >= 0,
+       do: :ok
+
   defp validate_value(:renderer_mode, value) when value in [:gpu, :cpu], do: :ok
-  defp validate_value(:renderer_double_buffering, value) when is_boolean(value), do: :ok
+
+  defp validate_value(:renderer_double_buffering, value) when is_boolean(value),
+    do: :ok
+
   defp validate_value(_key, _value), do: {:error, "Invalid value"}
 
   defp maybe_persist(_key, _value, %{persist: false}), do: :ok
-  defp maybe_persist(key, value, _opts) do
+
+  defp maybe_persist(_key, _value, _opts) do
     # TODO: Implement configuration persistence
     :ok
   end
 
   defp maybe_persist_delete(_key, %{persist: false}), do: :ok
-  defp maybe_persist_delete(key, _opts) do
+
+  defp maybe_persist_delete(_key, _opts) do
     # TODO: Implement configuration persistence
     :ok
   end

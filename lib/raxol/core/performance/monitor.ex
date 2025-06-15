@@ -161,6 +161,7 @@ defmodule Raxol.Core.Performance.Monitor do
 
     # Record FPS
     fps = 1000 / frame_time
+
     Raxol.Core.Metrics.UnifiedCollector.record_performance(
       :fps,
       fps,
@@ -188,34 +189,42 @@ defmodule Raxol.Core.Performance.Monitor do
   @impl true
   def handle_call(:get_metrics, _from, state) do
     # Get metrics from unified collector
-    performance_metrics = Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:performance)
-    resource_metrics = Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:resource)
+    performance_metrics =
+      Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:performance)
+
+    resource_metrics =
+      Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:resource)
 
     # Calculate metrics
-    fps = case performance_metrics.frame_time do
-      [%{value: frame_time} | _] -> 1000 / frame_time
-      _ -> 0.0
-    end
+    fps =
+      case performance_metrics.frame_time do
+        [%{value: frame_time} | _] -> 1000 / frame_time
+        _ -> 0.0
+      end
 
-    avg_frame_time = case performance_metrics.frame_time do
-      [%{value: frame_time} | _] -> frame_time
-      _ -> 0.0
-    end
+    avg_frame_time =
+      case performance_metrics.frame_time do
+        [%{value: frame_time} | _] -> frame_time
+        _ -> 0.0
+      end
 
-    jank_count = case performance_metrics.jank do
-      janks when is_list(janks) -> length(janks)
-      _ -> 0
-    end
+    jank_count =
+      case performance_metrics.jank do
+        janks when is_list(janks) -> length(janks)
+        _ -> 0
+      end
 
-    memory_usage = case resource_metrics.memory_usage do
-      [%{value: memory} | _] -> memory
-      _ -> 0
-    end
+    memory_usage =
+      case resource_metrics.memory_usage do
+        [%{value: memory} | _] -> memory
+        _ -> 0
+      end
 
-    gc_stats = case resource_metrics.gc_stats do
-      [%{value: stats} | _] -> stats
-      _ -> %{}
-    end
+    gc_stats =
+      case resource_metrics.gc_stats do
+        [%{value: stats} | _] -> stats
+        _ -> %{}
+      end
 
     metrics = %{
       fps: fps,

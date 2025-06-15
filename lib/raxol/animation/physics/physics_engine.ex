@@ -215,44 +215,47 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
       fade: Keyword.get(opts, :fade, true)
     }
 
-    # Create the particles
     Enum.reduce(1..count, world, fn i, acc_world ->
-      # Create random velocity
-      {min_v, max_v} = params.velocity_range
-
-      velocity = %Vector{
-        x: :rand.uniform() * (max_v - min_v) + min_v,
-        y: :rand.uniform() * (max_v - min_v) + min_v,
-        z: :rand.uniform() * (max_v - min_v) + min_v
-      }
-
-      # Create random lifetime
-      {min_l, max_l} = params.lifetime_range
-      lifetime = :rand.uniform() * (max_l - min_l) + min_l
-
-      # Create random size
-      {min_s, max_s} = params.size_range
-      size = :rand.uniform() * (max_s - min_s) + min_s
-
-      # Create the particle
-      particle =
-        new_object("particle_#{world.iteration}_#{i}",
-          position: position,
-          velocity: velocity,
-          mass: size * 0.1,
-          properties: %{
-            lifetime: lifetime,
-            max_lifetime: lifetime,
-            size: size,
-            color: params.color,
-            fade: params.fade,
-            type: :particle
-          }
-        )
-
-      # Add to world
+      particle = create_particle(position, params, world.iteration, i)
       add_object(acc_world, particle)
     end)
+  end
+
+  defp create_particle(position, params, iteration, index) do
+    particle_props = create_particle_properties(params)
+
+    new_object("particle_#{iteration}_#{index}",
+      position: position,
+      velocity: particle_props.velocity,
+      mass: particle_props.size * 0.1,
+      properties: particle_props
+    )
+  end
+
+  defp create_particle_properties(params) do
+    lifetime = generate_random_value(params.lifetime_range)
+
+    %{
+      velocity: generate_random_velocity(params.velocity_range),
+      lifetime: lifetime,
+      max_lifetime: lifetime,
+      size: generate_random_value(params.size_range),
+      color: params.color,
+      fade: params.fade,
+      type: :particle
+    }
+  end
+
+  defp generate_random_velocity({min_v, max_v}) do
+    %Vector{
+      x: :rand.uniform() * (max_v - min_v) + min_v,
+      y: :rand.uniform() * (max_v - min_v) + min_v,
+      z: :rand.uniform() * (max_v - min_v) + min_v
+    }
+  end
+
+  defp generate_random_value({min, max}) do
+    :rand.uniform() * (max - min) + min
   end
 
   @doc """
@@ -340,36 +343,37 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
   end
 
   defp handle_collisions(objects, _world) do
-    # This is a simplified collision detection algorithm
-    # For a real implementation, you'd use a more efficient spatial partitioning
-
-    # Get list of objects
     object_list = Map.values(objects)
 
-    # Check all pairs of objects for collisions
-    Enum.reduce(object_list, objects, fn obj1, acc_objects ->
-      Enum.reduce(object_list, acc_objects, fn obj2, inner_acc ->
-        if obj1.id != obj2.id do
-          # Check for collision
-          obj1_updated = Map.get(inner_acc, obj1.id)
-          obj2_updated = Map.get(inner_acc, obj2.id)
+    Enum.reduce(
+      object_list,
+      objects,
+      &process_object_collisions(&1, object_list, &2)
+    )
+  end
 
-          if check_collision(obj1_updated, obj2_updated) do
-            # Handle collision and update objects
-            {obj1_after, obj2_after} =
-              resolve_collision(obj1_updated, obj2_updated)
-
-            inner_acc
-            |> Map.put(obj1.id, obj1_after)
-            |> Map.put(obj2.id, obj2_after)
-          else
-            inner_acc
-          end
-        else
-          inner_acc
-        end
-      end)
+  defp process_object_collisions(obj1, object_list, acc_objects) do
+    Enum.reduce(object_list, acc_objects, fn obj2, inner_acc ->
+      if obj1.id != obj2.id do
+        obj1_updated = Map.get(inner_acc, obj1.id)
+        obj2_updated = Map.get(inner_acc, obj2.id)
+        handle_single_collision(obj1_updated, obj2_updated, inner_acc)
+      else
+        inner_acc
+      end
     end)
+  end
+
+  defp handle_single_collision(obj1, obj2, acc_objects) do
+    if check_collision(obj1, obj2) do
+      {obj1_after, obj2_after} = resolve_collision(obj1, obj2)
+
+      acc_objects
+      |> Map.put(obj1.id, obj1_after)
+      |> Map.put(obj2.id, obj2_after)
+    else
+      acc_objects
+    end
   end
 
   defp check_collision(obj1, obj2) do
@@ -428,97 +432,60 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
 
   defp apply_boundaries(objects, boundaries) do
     Enum.map(objects, fn {id, obj} ->
-      updated_obj = obj
-
-      # Apply X boundaries
-      updated_obj =
-        if boundaries.min_x != nil and obj.position.x < boundaries.min_x do
-          %{
-            updated_obj
-            | position: %{updated_obj.position | x: boundaries.min_x},
-              velocity: %{
-                updated_obj.velocity
-                | x: -updated_obj.velocity.x * 0.8
-              }
-          }
-        else
-          updated_obj
-        end
-
-      updated_obj =
-        if boundaries.max_x != nil and obj.position.x > boundaries.max_x do
-          %{
-            updated_obj
-            | position: %{updated_obj.position | x: boundaries.max_x},
-              velocity: %{
-                updated_obj.velocity
-                | x: -updated_obj.velocity.x * 0.8
-              }
-          }
-        else
-          updated_obj
-        end
-
-      # Apply Y boundaries
-      updated_obj =
-        if boundaries.min_y != nil and obj.position.y < boundaries.min_y do
-          %{
-            updated_obj
-            | position: %{updated_obj.position | y: boundaries.min_y},
-              velocity: %{
-                updated_obj.velocity
-                | y: -updated_obj.velocity.y * 0.8
-              }
-          }
-        else
-          updated_obj
-        end
-
-      updated_obj =
-        if boundaries.max_y != nil and obj.position.y > boundaries.max_y do
-          %{
-            updated_obj
-            | position: %{updated_obj.position | y: boundaries.max_y},
-              velocity: %{
-                updated_obj.velocity
-                | y: -updated_obj.velocity.y * 0.8
-              }
-          }
-        else
-          updated_obj
-        end
-
-      # Apply Z boundaries
-      updated_obj =
-        if boundaries.min_z != nil and obj.position.z < boundaries.min_z do
-          %{
-            updated_obj
-            | position: %{updated_obj.position | z: boundaries.min_z},
-              velocity: %{
-                updated_obj.velocity
-                | z: -updated_obj.velocity.z * 0.8
-              }
-          }
-        else
-          updated_obj
-        end
-
-      updated_obj =
-        if boundaries.max_z != nil and obj.position.z > boundaries.max_z do
-          %{
-            updated_obj
-            | position: %{updated_obj.position | z: boundaries.max_z},
-              velocity: %{
-                updated_obj.velocity
-                | z: -updated_obj.velocity.z * 0.8
-              }
-          }
-        else
-          updated_obj
-        end
-
-      {id, updated_obj}
+      {id, apply_all_boundaries(obj, boundaries)}
     end)
     |> Map.new()
+  end
+
+  defp apply_all_boundaries(obj, boundaries) do
+    obj
+    |> apply_axis_boundary(:x, boundaries)
+    |> apply_axis_boundary(:y, boundaries)
+    |> apply_axis_boundary(:z, boundaries)
+  end
+
+  defp apply_axis_boundary(obj, axis, boundaries) do
+    min_key = :"min_#{axis}"
+    max_key = :"max_#{axis}"
+    pos_key = axis
+    vel_key = axis
+
+    obj
+    |> apply_min_boundary(pos_key, vel_key, Map.get(boundaries, min_key))
+    |> apply_max_boundary(pos_key, vel_key, Map.get(boundaries, max_key))
+  end
+
+  defp apply_min_boundary(obj, pos_key, vel_key, min_value) do
+    if min_value != nil and Map.get(obj.position, pos_key) < min_value do
+      %{
+        obj
+        | position: Map.put(obj.position, pos_key, min_value),
+          velocity:
+            Map.put(
+              obj.velocity,
+              vel_key,
+              -Map.get(obj.velocity, vel_key) * 0.8
+            )
+      }
+    else
+      obj
+    end
+  end
+
+  defp apply_max_boundary(obj, pos_key, vel_key, max_value) do
+    if max_value != nil and Map.get(obj.position, pos_key) > max_value do
+      %{
+        obj
+        | position: Map.put(obj.position, pos_key, max_value),
+          velocity:
+            Map.put(
+              obj.velocity,
+              vel_key,
+              -Map.get(obj.velocity, vel_key) * 0.8
+            )
+      }
+    else
+      obj
+    end
   end
 end
