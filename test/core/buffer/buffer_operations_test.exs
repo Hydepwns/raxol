@@ -78,18 +78,22 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       start_time = System.monotonic_time()
 
       # Fill buffer with data
-      buffer = Enum.reduce(0..99, buffer, fn y, acc ->
-        Enum.reduce(0..199, acc, fn x, acc ->
-          cell = Cell.new("X", TextFormatting.new(fg: :red))
-          Buffer.set_cell(acc, x, y, cell)
+      buffer =
+        Enum.reduce(0..99, buffer, fn y, acc ->
+          Enum.reduce(0..199, acc, fn x, acc ->
+            cell = Cell.new("X", TextFormatting.new(fg: :red))
+            Buffer.set_cell(acc, x, y, cell)
+          end)
         end)
-      end)
 
       end_time = System.monotonic_time()
-      execution_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      execution_time =
+        System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
       # Assert reasonable performance (adjust threshold as needed)
-      assert execution_time < 1000, "Buffer fill operation took too long: #{execution_time}ms"
+      assert execution_time < 1000,
+             "Buffer fill operation took too long: #{execution_time}ms"
     end
 
     test "handles rapid buffer updates efficiently" do
@@ -99,18 +103,22 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       start_time = System.monotonic_time()
 
       # Perform 1000 rapid updates
-      buffer = Enum.reduce(1..1000, buffer, fn i, acc ->
-        x = rem(i, 80)
-        y = div(i, 80)
-        cell = Cell.new("X", TextFormatting.new(fg: :blue))
-        Buffer.set_cell(acc, x, y, cell)
-      end)
+      buffer =
+        Enum.reduce(1..1000, buffer, fn i, acc ->
+          x = rem(i, 80)
+          y = div(i, 80)
+          cell = Cell.new("X", TextFormatting.new(fg: :blue))
+          Buffer.set_cell(acc, x, y, cell)
+        end)
 
       end_time = System.monotonic_time()
-      execution_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      execution_time =
+        System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
       # Assert reasonable performance
-      assert execution_time < 500, "Rapid updates took too long: #{execution_time}ms"
+      assert execution_time < 500,
+             "Rapid updates took too long: #{execution_time}ms"
     end
   end
 
@@ -119,51 +127,54 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       buffer = Buffer.new({80, 24})
 
       # Create multiple processes that access the buffer
-      processes = Enum.map(1..10, fn _ ->
-        Task.async(fn ->
-          # Each process performs multiple operations
-          Enum.reduce(1..100, buffer, fn i, acc ->
-            x = rem(i, 80)
-            y = div(i, 80)
-            cell = Cell.new("X", TextFormatting.new(fg: :green))
-            Buffer.set_cell(acc, x, y, cell)
+      processes =
+        Enum.map(1..10, fn _ ->
+          Task.async(fn ->
+            # Each process performs multiple operations
+            Enum.reduce(1..100, buffer, fn i, acc ->
+              x = rem(i, 80)
+              y = div(i, 80)
+              cell = Cell.new("X", TextFormatting.new(fg: :green))
+              Buffer.set_cell(acc, x, y, cell)
+            end)
           end)
         end)
-      end)
 
       # Wait for all processes to complete
       results = Task.await_many(processes, 5000)
 
       # Verify all processes completed successfully
       assert Enum.all?(results, fn result ->
-        case result do
-          {:ok, _} -> true
-          _ -> false
-        end
-      end)
+               case result do
+                 {:ok, _} -> true
+                 _ -> false
+               end
+             end)
     end
 
     test "handles concurrent read/write operations" do
       buffer = Buffer.new({80, 24})
 
       # Create reader and writer processes
-      reader = Task.async(fn ->
-        Enum.reduce(1..1000, buffer, fn _, acc ->
-          x = :rand.uniform(80) - 1
-          y = :rand.uniform(24) - 1
-          Buffer.get_cell(acc, x, y)
-          acc
+      reader =
+        Task.async(fn ->
+          Enum.reduce(1..1000, buffer, fn _, acc ->
+            x = :rand.uniform(80) - 1
+            y = :rand.uniform(24) - 1
+            Buffer.get_cell(acc, x, y)
+            acc
+          end)
         end)
-      end)
 
-      writer = Task.async(fn ->
-        Enum.reduce(1..1000, buffer, fn i, acc ->
-          x = :rand.uniform(80) - 1
-          y = :rand.uniform(24) - 1
-          cell = Cell.new("X", TextFormatting.new(fg: :yellow))
-          Buffer.set_cell(acc, x, y, cell)
+      writer =
+        Task.async(fn ->
+          Enum.reduce(1..1000, buffer, fn i, acc ->
+            x = :rand.uniform(80) - 1
+            y = :rand.uniform(24) - 1
+            cell = Cell.new("X", TextFormatting.new(fg: :yellow))
+            Buffer.set_cell(acc, x, y, cell)
+          end)
         end)
-      end)
 
       # Wait for both processes to complete
       {:ok, _} = Task.await(reader, 5000)

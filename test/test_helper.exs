@@ -2,6 +2,52 @@
 IO.puts("[TestHelper] Starting Mox...")
 Application.ensure_started(:mox, :permanent)
 
+# Core runtime mocks
+Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock,
+  for: Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock,
+  for: Raxol.Core.Runtime.Plugins.LoaderBehaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
+  for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.PluginEventFilterMock,
+  for: Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.PluginReloaderMock,
+  for: Raxol.Core.Runtime.Plugins.PluginReloader.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock,
+  for: Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.TimerManagerMock,
+  for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
+  for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
+)
+
+# System and UI mocks
+Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
+  for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour
+)
+
+Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
+  for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
+)
+
+Mox.defmock(Raxol.Terminal.ClipboardMock,
+  for: Raxol.Terminal.ClipboardBehaviour
+)
+
 # Start ExUnit
 IO.puts("[TestHelper] Starting ExUnit...")
 ExUnit.start()
@@ -37,7 +83,6 @@ if System.get_env("RAXOL_SKIP_TERMINAL_INIT") != "true" and
      ) do
   IO.puts("[TestHelper] Initializing terminal...")
   init_result = Raxol.Terminal.Integration.Renderer.init_terminal()
-  IO.inspect(init_result, label: "Terminal Initialization Result")
 
   if init_result != :ok do
     raise "Terminal failed to initialize in test_helper.exs: #{inspect(init_result)}"

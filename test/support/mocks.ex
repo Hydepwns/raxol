@@ -8,8 +8,11 @@ defmodule Raxol.Test.Support.Mocks do
   import Mox
 
   # Core mocks
-  defmock(FileWatcherMock, for: Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour)
-  defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
+  defmock(FileWatcherMock,
+    for: Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
+  )
+
+  defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.LoaderBehaviour)
   defmock(AccessibilityMock, for: Raxol.Core.Accessibility.Behaviour)
   defmock(ClipboardMock, for: Raxol.Core.Clipboard.Behaviour)
 
@@ -19,7 +22,7 @@ defmodule Raxol.Test.Support.Mocks do
   )
 
   defmock(Raxol.Core.Runtime.Plugins.LoaderMock,
-    for: Raxol.Core.Runtime.Plugins.Loader.Behaviour
+    for: Raxol.Core.Runtime.Plugins.LoaderBehaviour
   )
 
   defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
@@ -137,55 +140,175 @@ defmodule Raxol.Test.Support.Mocks do
   def setup_mocks do
     # Set up default implementations for all mocks
     # Core mocks
-    stub_with(FileWatcherMock, Raxol.Test.Support.MockImplementations.FileWatcherMock)
+    stub_with(
+      FileWatcherMock,
+      Raxol.Test.Support.MockImplementations.FileWatcherMock
+    )
+
     stub_with(LoaderMock, Raxol.Test.Support.MockImplementations.LoaderMock)
-    stub_with(AccessibilityMock, Raxol.Test.Support.MockImplementations.AccessibilityMock)
-    stub_with(ClipboardMock, Raxol.Test.Support.MockImplementations.ClipboardMock)
+
+    stub_with(
+      AccessibilityMock,
+      Raxol.Test.Support.MockImplementations.AccessibilityMock
+    )
+
+    stub_with(
+      ClipboardMock,
+      Raxol.Test.Support.MockImplementations.ClipboardMock
+    )
 
     # Runtime plugin mocks
-    stub_with(Raxol.Core.Runtime.Plugins.FileWatcherMock, Raxol.Test.Support.MockImplementations.FileWatcherMock)
-    stub_with(Raxol.Core.Runtime.Plugins.LoaderMock, Raxol.Test.Support.MockImplementations.LoaderMock)
-    stub_with(Raxol.Core.Runtime.Plugins.LifecycleHelperMock, Raxol.Test.Support.MockImplementations.LifecycleHelperMock)
-    stub_with(Raxol.Core.Runtime.Plugins.EdgeCasesLifecycleHelperMock, Raxol.Test.Support.MockImplementations.LifecycleHelperMock)
+    stub_with(
+      Raxol.Core.Runtime.Plugins.FileWatcherMock,
+      Raxol.Test.Support.MockImplementations.FileWatcherMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.LoaderMock,
+      Raxol.Test.Support.MockImplementations.LoaderMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
+      Raxol.Test.Support.MockImplementations.LifecycleHelperMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.EdgeCasesLifecycleHelperMock,
+      Raxol.Test.Support.MockImplementations.LifecycleHelperMock
+    )
 
     # System mocks
-    stub_with(Raxol.System.DeltaUpdaterSystemAdapterMock, Raxol.Test.Support.MockImplementations.DeltaUpdaterSystemAdapterMock)
-    stub_with(Raxol.Terminal.Config.EnvironmentAdapterMock, Raxol.Test.Support.MockImplementations.EnvironmentAdapterMock)
-    stub_with(FileSystemMock, Raxol.Test.Support.MockImplementations.FileSystemMock)
-    stub_with(SystemInteractionMock, Raxol.Test.Support.MockImplementations.SystemInteractionMock)
+    stub_with(
+      Raxol.System.DeltaUpdaterSystemAdapterMock,
+      Raxol.Test.Support.MockImplementations.DeltaUpdaterSystemAdapterMock
+    )
+
+    stub_with(
+      Raxol.Terminal.Config.EnvironmentAdapterMock,
+      Raxol.Test.Support.MockImplementations.EnvironmentAdapterMock
+    )
+
+    stub_with(
+      FileSystemMock,
+      Raxol.Test.Support.MockImplementations.FileSystemMock
+    )
+
+    stub_with(
+      SystemInteractionMock,
+      Raxol.Test.Support.MockImplementations.SystemInteractionMock
+    )
 
     # Feature mocks
-    stub_with(Raxol.Mocks.KeyboardShortcutsMock, Raxol.Test.Support.MockImplementations.KeyboardShortcutsMock)
-    stub_with(Raxol.Mocks.AccessibilityMock, Raxol.Test.Support.MockImplementations.AccessibilityMock)
-    stub_with(Raxol.Mocks.ClipboardMock, Raxol.Test.Support.MockImplementations.ClipboardMock)
+    stub_with(
+      Raxol.Mocks.KeyboardShortcutsMock,
+      Raxol.Test.Support.MockImplementations.KeyboardShortcutsMock
+    )
+
+    stub_with(
+      Raxol.Mocks.AccessibilityMock,
+      Raxol.Test.Support.MockImplementations.AccessibilityMock
+    )
+
+    stub_with(
+      Raxol.Mocks.ClipboardMock,
+      Raxol.Test.Support.MockImplementations.ClipboardMock
+    )
 
     # Terminal mocks
-    stub_with(Raxol.Terminal.ANSI.SixelGraphicsMock, Raxol.Test.Support.MockImplementations.SixelGraphicsMock)
-    stub_with(Raxol.Terminal.Parser.StateMock, Raxol.Test.Support.MockImplementations.StateMock)
-    stub_with(Raxol.Terminal.ScreenBufferMock, Raxol.Test.Support.MockImplementations.ScreenBufferMock)
-    stub_with(Raxol.Terminal.EmulatorMock, Raxol.Test.Support.MockImplementations.EmulatorMock)
+    stub_with(
+      Raxol.Terminal.ANSI.SixelGraphicsMock,
+      Raxol.Test.Support.MockImplementations.SixelGraphicsMock
+    )
+
+    stub_with(
+      Raxol.Terminal.Parser.StateMock,
+      Raxol.Test.Support.MockImplementations.StateMock
+    )
+
+    stub_with(
+      Raxol.Terminal.ScreenBufferMock,
+      Raxol.Test.Support.MockImplementations.ScreenBufferMock
+    )
+
+    stub_with(
+      Raxol.Terminal.EmulatorMock,
+      Raxol.Test.Support.MockImplementations.EmulatorMock
+    )
 
     # Plugin mocks
-    stub_with(Raxol.Core.Plugins.Core.ClipboardPluginMock, Raxol.Test.Support.MockImplementations.ClipboardPluginMock)
-    stub_with(Raxol.Core.Runtime.Plugins.PluginEventFilterMock, Raxol.Test.Support.MockImplementations.PluginEventFilterMock)
-    stub_with(Raxol.Core.Runtime.Plugins.PluginCommandDispatcherMock, Raxol.Test.Support.MockImplementations.PluginCommandDispatcherMock)
-    stub_with(Raxol.Core.Runtime.Plugins.PluginReloaderMock, Raxol.Test.Support.MockImplementations.PluginReloaderMock)
-    stub_with(Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock, Raxol.Test.Support.MockImplementations.PluginCommandHandlerMock)
-    stub_with(Raxol.Core.Runtime.Plugins.TimerManagerMock, Raxol.Test.Support.MockImplementations.TimerManagerMock)
+    stub_with(
+      Raxol.Core.Plugins.Core.ClipboardPluginMock,
+      Raxol.Test.Support.MockImplementations.ClipboardPluginMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.PluginEventFilterMock,
+      Raxol.Test.Support.MockImplementations.PluginEventFilterMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.PluginCommandDispatcherMock,
+      Raxol.Test.Support.MockImplementations.PluginCommandDispatcherMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.PluginReloaderMock,
+      Raxol.Test.Support.MockImplementations.PluginReloaderMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock,
+      Raxol.Test.Support.MockImplementations.PluginCommandHandlerMock
+    )
+
+    stub_with(
+      Raxol.Core.Runtime.Plugins.TimerManagerMock,
+      Raxol.Test.Support.MockImplementations.TimerManagerMock
+    )
 
     # Rendering mocks
-    stub_with(Raxol.Core.Runtime.Rendering.EngineMock, Raxol.Test.Support.MockImplementations.EngineMock)
+    stub_with(
+      Raxol.Core.Runtime.Rendering.EngineMock,
+      Raxol.Test.Support.MockImplementations.EngineMock
+    )
 
     # Event mocks
-    stub_with(Raxol.Core.Events.ManagerMock, Raxol.Test.Support.MockImplementations.EventManagerMock)
+    stub_with(
+      Raxol.Core.Events.ManagerMock,
+      Raxol.Test.Support.MockImplementations.EventManagerMock
+    )
 
     # Terminal buffer mocks
-    stub_with(Raxol.Terminal.Buffer.ManagerMock, Raxol.Test.Support.MockImplementations.BufferManagerMock)
-    stub_with(Raxol.Terminal.Buffer.ScrollbackMock, Raxol.Test.Support.MockImplementations.BufferScrollbackMock)
-    stub_with(Raxol.Terminal.Buffer.ScrollRegionMock, Raxol.Test.Support.MockImplementations.BufferScrollRegionMock)
-    stub_with(Raxol.Terminal.Buffer.SelectionMock, Raxol.Test.Support.MockImplementations.BufferSelectionMock)
-    stub_with(Raxol.Terminal.Buffer.QueriesMock, Raxol.Test.Support.MockImplementations.BufferQueriesMock)
-    stub_with(Raxol.Terminal.Buffer.LineOperationsMock, Raxol.Test.Support.MockImplementations.BufferLineOperationsMock)
+    stub_with(
+      Raxol.Terminal.Buffer.ManagerMock,
+      Raxol.Test.Support.MockImplementations.BufferManagerMock
+    )
+
+    stub_with(
+      Raxol.Terminal.Buffer.ScrollbackMock,
+      Raxol.Test.Support.MockImplementations.BufferScrollbackMock
+    )
+
+    stub_with(
+      Raxol.Terminal.Buffer.ScrollRegionMock,
+      Raxol.Test.Support.MockImplementations.BufferScrollRegionMock
+    )
+
+    stub_with(
+      Raxol.Terminal.Buffer.SelectionMock,
+      Raxol.Test.Support.MockImplementations.BufferSelectionMock
+    )
+
+    stub_with(
+      Raxol.Terminal.Buffer.QueriesMock,
+      Raxol.Test.Support.MockImplementations.BufferQueriesMock
+    )
+
+    stub_with(
+      Raxol.Terminal.Buffer.LineOperationsMock,
+      Raxol.Test.Support.MockImplementations.BufferLineOperationsMock
+    )
 
     :ok
   end

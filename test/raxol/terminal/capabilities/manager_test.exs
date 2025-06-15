@@ -25,7 +25,8 @@ defmodule Raxol.Terminal.Capabilities.ManagerTest do
     end
 
     test "returns error when enabling unsupported capability", %{pid: pid} do
-      assert {:error, :unsupported} = Manager.enable_capability(:nonexistent_cap)
+      assert {:error, :unsupported} =
+               Manager.enable_capability(:nonexistent_cap)
     end
   end
 

@@ -237,6 +237,7 @@ defmodule Raxol.Terminal.ConfigTest do
         background: {0, 0, 0},
         foreground: {255, 255, 255}
       }
+
       assert {:ok, updated} = Config.update(config, %{colors: valid_colors})
       assert updated.colors == valid_colors
 
@@ -245,6 +246,7 @@ defmodule Raxol.Terminal.ConfigTest do
         background: {300, 0, 0},
         foreground: {0, 0, 300}
       }
+
       assert {:error, _} = Config.update(config, %{colors: invalid_colors})
     end
 
@@ -255,6 +257,7 @@ defmodule Raxol.Terminal.ConfigTest do
         italic: false,
         underline: :single
       }
+
       assert {:ok, updated} = Config.update(config, %{styles: valid_styles})
       assert updated.styles == valid_styles
 
@@ -263,6 +266,7 @@ defmodule Raxol.Terminal.ConfigTest do
         bold: "true",
         italic: 1
       }
+
       assert {:error, _} = Config.update(config, %{styles: invalid_styles})
     end
   end

@@ -4,13 +4,14 @@ defmodule Raxol.Terminal.Sync.SystemTest do
 
   setup do
     # Start the sync system with test configuration
-    {:ok, _pid} = System.start_link(
-      consistency_levels: %{
-        split: :strong,
-        window: :strong,
-        tab: :eventual
-      }
-    )
+    {:ok, _pid} =
+      System.start_link(
+        consistency_levels: %{
+          split: :strong,
+          window: :strong,
+          tab: :eventual
+        }
+      )
 
     :ok
   end
@@ -83,7 +84,8 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       System.sync("tab", "test_key", "value1", consistency: :eventual)
 
       # Second sync with same version
-      assert {:error, :conflict} == System.sync("tab", "test_key", "value2", consistency: :eventual)
+      assert {:error, :conflict} ==
+               System.sync("tab", "test_key", "value2", consistency: :eventual)
     end
   end
 

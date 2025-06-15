@@ -4,27 +4,33 @@ defmodule Raxol.Terminal.ANSI.WindowEventsTest do
 
   describe "process_sequence/2" do
     test "handles window close event" do
-      assert WindowEvents.process_sequence("c", []) == {:window_event, :close, %{}}
+      assert WindowEvents.process_sequence("c", []) ==
+               {:window_event, :close, %{}}
     end
 
     test "handles window minimize event" do
-      assert WindowEvents.process_sequence("m", []) == {:window_event, :minimize, %{}}
+      assert WindowEvents.process_sequence("m", []) ==
+               {:window_event, :minimize, %{}}
     end
 
     test "handles window maximize event" do
-      assert WindowEvents.process_sequence("M", []) == {:window_event, :maximize, %{}}
+      assert WindowEvents.process_sequence("M", []) ==
+               {:window_event, :maximize, %{}}
     end
 
     test "handles window restore event" do
-      assert WindowEvents.process_sequence("r", []) == {:window_event, :restore, %{}}
+      assert WindowEvents.process_sequence("r", []) ==
+               {:window_event, :restore, %{}}
     end
 
     test "handles window focus event" do
-      assert WindowEvents.process_sequence("f", []) == {:window_event, :focus, %{}}
+      assert WindowEvents.process_sequence("f", []) ==
+               {:window_event, :focus, %{}}
     end
 
     test "handles window blur event" do
-      assert WindowEvents.process_sequence("b", []) == {:window_event, :blur, %{}}
+      assert WindowEvents.process_sequence("b", []) ==
+               {:window_event, :blur, %{}}
     end
 
     test "handles window move event" do
@@ -43,19 +49,23 @@ defmodule Raxol.Terminal.ANSI.WindowEventsTest do
     end
 
     test "handles window show event" do
-      assert WindowEvents.process_sequence("w", []) == {:window_event, :show, %{}}
+      assert WindowEvents.process_sequence("w", []) ==
+               {:window_event, :show, %{}}
     end
 
     test "handles window hide event" do
-      assert WindowEvents.process_sequence("h", []) == {:window_event, :hide, %{}}
+      assert WindowEvents.process_sequence("h", []) ==
+               {:window_event, :hide, %{}}
     end
 
     test "handles window activate event" do
-      assert WindowEvents.process_sequence("a", []) == {:window_event, :activate, %{}}
+      assert WindowEvents.process_sequence("a", []) ==
+               {:window_event, :activate, %{}}
     end
 
     test "handles window deactivate event" do
-      assert WindowEvents.process_sequence("d", []) == {:window_event, :deactivate, %{}}
+      assert WindowEvents.process_sequence("d", []) ==
+               {:window_event, :deactivate, %{}}
     end
 
     test "handles window drag start event" do
@@ -89,15 +99,18 @@ defmodule Raxol.Terminal.ANSI.WindowEventsTest do
     end
 
     test "formats window minimize event" do
-      assert WindowEvents.format_event({:window_event, :minimize, %{}}) == "\e[?m"
+      assert WindowEvents.format_event({:window_event, :minimize, %{}}) ==
+               "\e[?m"
     end
 
     test "formats window maximize event" do
-      assert WindowEvents.format_event({:window_event, :maximize, %{}}) == "\e[?M"
+      assert WindowEvents.format_event({:window_event, :maximize, %{}}) ==
+               "\e[?M"
     end
 
     test "formats window restore event" do
-      assert WindowEvents.format_event({:window_event, :restore, %{}}) == "\e[?r"
+      assert WindowEvents.format_event({:window_event, :restore, %{}}) ==
+               "\e[?r"
     end
 
     test "formats window focus event" do
@@ -109,17 +122,23 @@ defmodule Raxol.Terminal.ANSI.WindowEventsTest do
     end
 
     test "formats window move event" do
-      assert WindowEvents.format_event({:window_event, :move, %{x: 100, y: 200}}) ==
+      assert WindowEvents.format_event(
+               {:window_event, :move, %{x: 100, y: 200}}
+             ) ==
                "\e[?v;100;200"
     end
 
     test "formats window resize event" do
-      assert WindowEvents.format_event({:window_event, :resize, %{width: 800, height: 600}}) ==
+      assert WindowEvents.format_event(
+               {:window_event, :resize, %{width: 800, height: 600}}
+             ) ==
                "\e[?z;800;600"
     end
 
     test "formats window state change event" do
-      assert WindowEvents.format_event({:window_event, :state_change, %{state: "maximized"}}) ==
+      assert WindowEvents.format_event(
+               {:window_event, :state_change, %{state: "maximized"}}
+             ) ==
                "\e[?s;maximized"
     end
 
@@ -132,25 +151,33 @@ defmodule Raxol.Terminal.ANSI.WindowEventsTest do
     end
 
     test "formats window activate event" do
-      assert WindowEvents.format_event({:window_event, :activate, %{}}) == "\e[?a"
+      assert WindowEvents.format_event({:window_event, :activate, %{}}) ==
+               "\e[?a"
     end
 
     test "formats window deactivate event" do
-      assert WindowEvents.format_event({:window_event, :deactivate, %{}}) == "\e[?d"
+      assert WindowEvents.format_event({:window_event, :deactivate, %{}}) ==
+               "\e[?d"
     end
 
     test "formats window drag start event" do
-      assert WindowEvents.format_event({:window_event, :drag_start, %{x: 100, y: 200}}) ==
+      assert WindowEvents.format_event(
+               {:window_event, :drag_start, %{x: 100, y: 200}}
+             ) ==
                "\e[?D;100;200"
     end
 
     test "formats window drag end event" do
-      assert WindowEvents.format_event({:window_event, :drag_end, %{x: 100, y: 200}}) ==
+      assert WindowEvents.format_event(
+               {:window_event, :drag_end, %{x: 100, y: 200}}
+             ) ==
                "\e[?E;100;200"
     end
 
     test "formats window drop event" do
-      assert WindowEvents.format_event({:window_event, :drop, %{x: 100, y: 200}}) ==
+      assert WindowEvents.format_event(
+               {:window_event, :drop, %{x: 100, y: 200}}
+             ) ==
                "\e[?p;100;200"
     end
 

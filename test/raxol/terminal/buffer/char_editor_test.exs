@@ -128,6 +128,7 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       style = TextFormatting.new(foreground: :red)
       buffer = CharEditor.erase_chars(buffer, 2, 1, 2, style)
       assert get_line_text(buffer, 1) == "FG  HIJ"
+
       # Note: We can't easily test the style here without exposing internal cell details
     end
 
@@ -165,6 +166,7 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       style = TextFormatting.new(foreground: :red)
       buffer = CharEditor.replace_chars(buffer, 2, 1, "XX", style)
       assert get_line_text(buffer, 1) == "FGXXIJ"
+
       # Note: We can't easily test the style here without exposing internal cell details
     end
 

@@ -35,13 +35,14 @@ defmodule Raxol.Terminal.Extension.Custom do
 
   def get_custom_state do
     # Return current custom extension state
-    {:ok, %{
-      status: "idle",
-      active_features: [],
-      last_error: nil,
-      start_time: nil,
-      end_time: nil
-    }}
+    {:ok,
+     %{
+       status: "idle",
+       active_features: [],
+       last_error: nil,
+       start_time: nil,
+       end_time: nil
+     }}
   end
 
   def update_custom_config(config) do

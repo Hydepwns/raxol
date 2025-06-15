@@ -118,6 +118,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
         tab_width: 100,
         tab_height: 30
       }
+
       assert :ok = UnifiedTab.update_config(config)
 
       assert {:ok, tab_id} = UnifiedTab.create_tab()
@@ -134,6 +135,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
         icon: "🔄",
         color: "#00FF00"
       }
+
       assert :ok = UnifiedTab.update_tab_config(tab_id, new_config)
 
       # Verify window state is still accessible

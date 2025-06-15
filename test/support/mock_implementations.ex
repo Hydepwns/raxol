@@ -7,23 +7,32 @@ defmodule Raxol.Test.Support.MockImplementations do
 
   # Core mock implementations
   defmodule FileWatcherMock do
-    def setup_file_watching(state), do: {:ok, Map.put(state, :file_watcher_pid, self())}
-    def stop_file_watching(state), do: {:ok, Map.delete(state, :file_watcher_pid)}
+    def setup_file_watching(state),
+      do: {:ok, Map.put(state, :file_watcher_pid, self())}
+
+    def stop_file_watching(state),
+      do: {:ok, Map.delete(state, :file_watcher_pid)}
+
     def handle_file_event(_event, state), do: {:ok, state}
   end
 
   defmodule LoaderMock do
     def load_plugin_module(module), do: {:ok, module}
-    def initialize_plugin(_module, config), do: {:ok, Map.put(config, :initialized, true)}
+
+    def initialize_plugin(_module, config),
+      do: {:ok, Map.put(config, :initialized, true)}
+
     def behaviour_implemented?(_module, _behaviour), do: true
+
     def load_plugin_metadata(_module) do
-      {:ok, %{
-        name: "test_plugin",
-        version: "1.0.0",
-        description: "Test plugin",
-        author: "Test Author",
-        dependencies: []
-      }}
+      {:ok,
+       %{
+         name: "test_plugin",
+         version: "1.0.0",
+         description: "Test plugin",
+         author: "Test Author",
+         dependencies: []
+       }}
     end
   end
 
@@ -40,7 +49,9 @@ defmodule Raxol.Test.Support.MockImplementations do
 
   # Runtime plugin mock implementations
   defmodule LifecycleHelperMock do
-    def initialize_plugin(_module, config), do: {:ok, Map.put(config, :initialized, true)}
+    def initialize_plugin(_module, config),
+      do: {:ok, Map.put(config, :initialized, true)}
+
     def handle_plugin_event(_event, state), do: {:ok, state}
     def cleanup_plugin(_module, state), do: {:ok, state}
   end

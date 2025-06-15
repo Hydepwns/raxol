@@ -24,6 +24,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
         urxvt_mode: true,
         pixel_mode: true
       }
+
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse(config)
       assert {:ok, mouse_state} = UnifiedMouse.get_mouse_state(mouse_id)
       assert mouse_state.config.tracking == :button
@@ -70,6 +71,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
   describe "mouse operations" do
     test "processes mouse event" do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
+
       event = %{
         button: :left,
         action: :press,
@@ -77,6 +79,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
         x: 100,
         y: 200
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
       assert {:ok, mouse_state} = UnifiedMouse.get_mouse_state(mouse_id)
       assert mouse_state.position == {100, 200}
@@ -86,6 +89,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
 
     test "gets mouse position" do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
+
       event = %{
         button: :left,
         action: :press,
@@ -93,12 +97,14 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
         x: 150,
         y: 250
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
       assert {:ok, {150, 250}} = UnifiedMouse.get_mouse_position(mouse_id)
     end
 
     test "gets mouse button state" do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
+
       event = %{
         button: :right,
         action: :press,
@@ -106,6 +112,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
         x: 100,
         y: 200
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
       assert {:ok, button_state} = UnifiedMouse.get_mouse_button_state(mouse_id)
       assert button_state == %{right: :pressed}
@@ -131,11 +138,13 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
   describe "mouse configuration" do
     test "updates mouse configuration" do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
+
       new_config = %{
         tracking: :drag,
         sgr_mode: false,
         urxvt_mode: true
       }
+
       assert :ok = UnifiedMouse.update_mouse_config(mouse_id, new_config)
       assert {:ok, mouse_state} = UnifiedMouse.get_mouse_state(mouse_id)
       assert mouse_state.config.tracking == :drag
@@ -151,6 +160,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
         default_urxvt_mode: true,
         default_pixel_mode: true
       }
+
       assert :ok = UnifiedMouse.update_config(config)
     end
   end
@@ -170,11 +180,19 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
     test "handles invalid mouse operations" do
       assert {:error, :mouse_not_found} = UnifiedMouse.set_active_mouse(999)
       assert {:error, :mouse_not_found} = UnifiedMouse.get_mouse_state(999)
-      assert {:error, :mouse_not_found} = UnifiedMouse.update_mouse_config(999, %{})
+
+      assert {:error, :mouse_not_found} =
+               UnifiedMouse.update_mouse_config(999, %{})
+
       assert {:error, :mouse_not_found} = UnifiedMouse.close_mouse(999)
-      assert {:error, :mouse_not_found} = UnifiedMouse.process_mouse_event(999, %{})
+
+      assert {:error, :mouse_not_found} =
+               UnifiedMouse.process_mouse_event(999, %{})
+
       assert {:error, :mouse_not_found} = UnifiedMouse.get_mouse_position(999)
-      assert {:error, :mouse_not_found} = UnifiedMouse.get_mouse_button_state(999)
+
+      assert {:error, :mouse_not_found} =
+               UnifiedMouse.get_mouse_button_state(999)
     end
   end
 end

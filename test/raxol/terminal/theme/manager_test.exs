@@ -31,7 +31,8 @@ defmodule Raxol.Terminal.Theme.ManagerTest do
     end
 
     test "returns error for non-existent theme", %{manager: manager} do
-      assert {:error, :theme_not_found} = Manager.load_theme(manager, "non_existent")
+      assert {:error, :theme_not_found} =
+               Manager.load_theme(manager, "non_existent")
     end
   end
 
@@ -45,7 +46,9 @@ defmodule Raxol.Terminal.Theme.ManagerTest do
         underline: false
       }
 
-      assert {:ok, updated_manager} = Manager.add_custom_style(manager, "custom_style", style)
+      assert {:ok, updated_manager} =
+               Manager.add_custom_style(manager, "custom_style", style)
+
       assert map_size(updated_manager.custom_styles) == 1
       assert updated_manager.metrics.customizations == 1
     end
@@ -56,13 +59,16 @@ defmodule Raxol.Terminal.Theme.ManagerTest do
         background: %{r: 0, g: 0, b: 0, a: 1.0}
       }
 
-      assert {:error, :invalid_style} = Manager.add_custom_style(manager, "invalid_style", invalid_style)
+      assert {:error, :invalid_style} =
+               Manager.add_custom_style(manager, "invalid_style", invalid_style)
     end
   end
 
   describe "get_style/2" do
     test "gets a style from current theme", %{manager: manager} do
-      assert {:ok, style, updated_manager} = Manager.get_style(manager, "normal")
+      assert {:ok, style, updated_manager} =
+               Manager.get_style(manager, "normal")
+
       assert style.foreground.r == 255
       assert style.foreground.g == 255
       assert style.foreground.b == 255
@@ -82,12 +88,16 @@ defmodule Raxol.Terminal.Theme.ManagerTest do
       }
 
       {:ok, manager} = Manager.add_custom_style(manager, "custom_style", style)
-      assert {:ok, ^style, updated_manager} = Manager.get_style(manager, "custom_style")
+
+      assert {:ok, ^style, updated_manager} =
+               Manager.get_style(manager, "custom_style")
+
       assert updated_manager.metrics.style_applications == 1
     end
 
     test "returns error for non-existent style", %{manager: manager} do
-      assert {:error, :style_not_found} = Manager.get_style(manager, "non_existent")
+      assert {:error, :style_not_found} =
+               Manager.get_style(manager, "non_existent")
     end
   end
 

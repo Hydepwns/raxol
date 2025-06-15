@@ -87,10 +87,27 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
 
     test "handles multiple sequences" do
       state = StateMachine.new()
-      {new_state, sequences} = StateMachine.process(state, "Hello\e[1mWorld\e[0m")
+
+      {new_state, sequences} =
+        StateMachine.process(state, "Hello\e[1mWorld\e[0m")
+
       assert new_state.state == :ground
       assert length(sequences) == 12
-      assert Enum.map(sequences, & &1.type) == [:text, :text, :text, :text, :text, :csi, :text, :text, :text, :text, :text, :csi]
+
+      assert Enum.map(sequences, & &1.type) == [
+               :text,
+               :text,
+               :text,
+               :text,
+               :text,
+               :csi,
+               :text,
+               :text,
+               :text,
+               :text,
+               :text,
+               :csi
+             ]
     end
   end
 end

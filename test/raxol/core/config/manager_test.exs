@@ -3,10 +3,12 @@ defmodule Raxol.Core.Config.ManagerTest do
   alias Raxol.Core.Config.Manager
 
   setup do
-    {:ok, _pid} = Manager.start_link(
-      config_file: "test/fixtures/config.exs",
-      validate: true
-    )
+    {:ok, _pid} =
+      Manager.start_link(
+        config_file: "test/fixtures/config.exs",
+        validate: true
+      )
+
     on_exit(fn -> :ok = Manager.delete(:all) end)
     :ok
   end
@@ -18,18 +20,22 @@ defmodule Raxol.Core.Config.ManagerTest do
     end
 
     test "handles missing configuration file" do
-      {:ok, _} = Manager.start_link(
-        config_file: "nonexistent.exs",
-        validate: false
-      )
+      {:ok, _} =
+        Manager.start_link(
+          config_file: "nonexistent.exs",
+          validate: false
+        )
+
       assert %{} = Manager.get_all()
     end
 
     test "validates required configuration fields" do
-      {:ok, _} = Manager.start_link(
-        config_file: "test/fixtures/invalid_config.exs",
-        validate: true
-      )
+      {:ok, _} =
+        Manager.start_link(
+          config_file: "test/fixtures/invalid_config.exs",
+          validate: true
+        )
+
       assert {:error, _} = Manager.reload()
     end
   end
@@ -118,10 +124,12 @@ defmodule Raxol.Core.Config.ManagerTest do
 
   describe "error handling" do
     test "handles invalid configuration file" do
-      {:ok, _} = Manager.start_link(
-        config_file: "test/fixtures/invalid_syntax.exs",
-        validate: false
-      )
+      {:ok, _} =
+        Manager.start_link(
+          config_file: "test/fixtures/invalid_syntax.exs",
+          validate: false
+        )
+
       assert {:error, _} = Manager.reload()
     end
 
@@ -132,7 +140,8 @@ defmodule Raxol.Core.Config.ManagerTest do
     end
 
     test "handles invalid update function" do
-      assert {:error, _} = Manager.update(:terminal_width, fn _ -> "invalid" end)
+      assert {:error, _} =
+               Manager.update(:terminal_width, fn _ -> "invalid" end)
     end
   end
 end

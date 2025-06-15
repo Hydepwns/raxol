@@ -85,6 +85,7 @@ defmodule Raxol.Core.Metrics.CloudTest do
         batch_size: 2,
         flush_interval: 1000
       }
+
       :ok = Cloud.configure(config)
       :ok
     end
@@ -108,16 +109,17 @@ defmodule Raxol.Core.Metrics.CloudTest do
       Process.sleep(100)
 
       # Verify metrics were formatted correctly
-      assert_receive {:metrics_formatted, %{
-        series: [
-          %{
-            metric: "frame_time",
-            points: [[_, 16.5]],
-            type: "gauge",
-            tags: [:test]
-          }
-        ]
-      }}
+      assert_receive {:metrics_formatted,
+                      %{
+                        series: [
+                          %{
+                            metric: "frame_time",
+                            points: [[_, 16.5]],
+                            type: "gauge",
+                            tags: [:test]
+                          }
+                        ]
+                      }}
     end
 
     test "formats metrics correctly for Prometheus" do
@@ -128,6 +130,7 @@ defmodule Raxol.Core.Metrics.CloudTest do
         batch_size: 2,
         flush_interval: 1000
       }
+
       :ok = Cloud.configure(config)
 
       send(Cloud, {:metrics, :performance, :frame_time, 16, [:test]})
@@ -148,6 +151,7 @@ defmodule Raxol.Core.Metrics.CloudTest do
         batch_size: 2,
         flush_interval: 1000
       }
+
       :ok = Cloud.configure(config)
 
       send(Cloud, {:metrics, :performance, :frame_time, 16, [:test]})
@@ -157,17 +161,18 @@ defmodule Raxol.Core.Metrics.CloudTest do
       Process.sleep(100)
 
       # Verify metrics were formatted correctly
-      assert_receive {:metrics_formatted, %{
-        MetricData: [
-          %{
-            MetricName: "frame_time",
-            Value: 16.5,
-            Unit: "Count",
-            Timestamp: _,
-            Dimensions: [%{Name: "test", Value: "true"}]
-          }
-        ]
-      }}
+      assert_receive {:metrics_formatted,
+                      %{
+                        MetricData: [
+                          %{
+                            MetricName: "frame_time",
+                            Value: 16.5,
+                            Unit: "Count",
+                            Timestamp: _,
+                            Dimensions: [%{Name: "test", Value: "true"}]
+                          }
+                        ]
+                      }}
     end
   end
 

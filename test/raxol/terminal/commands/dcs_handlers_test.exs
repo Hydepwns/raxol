@@ -336,8 +336,10 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
           updated_emulator =
             case DCSHandlers.handle_dcs(
                    emulator,
-                   [],  # Empty params
-                   "|",  # Fixed intermediate
+                   # Empty params
+                   [],
+                   # Fixed intermediate
+                   "|",
                    final_byte,
                    data_string
                  ) do

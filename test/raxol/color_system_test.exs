@@ -18,9 +18,23 @@ defmodule Raxol.ColorSystemTest do
     {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
 
     # Reset relevant prefs before each test
-    UserPreferences.set("accessibility.high_contrast", false, local_user_prefs_name)
-    UserPreferences.set("accessibility.screen_reader", true, local_user_prefs_name)
-    UserPreferences.set("accessibility.silence_announcements", false, local_user_prefs_name)
+    UserPreferences.set(
+      "accessibility.high_contrast",
+      false,
+      local_user_prefs_name
+    )
+
+    UserPreferences.set(
+      "accessibility.screen_reader",
+      true,
+      local_user_prefs_name
+    )
+
+    UserPreferences.set(
+      "accessibility.silence_announcements",
+      false,
+      local_user_prefs_name
+    )
 
     # Wait for preferences to be applied
     assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
@@ -63,10 +77,11 @@ defmodule Raxol.ColorSystemTest do
       # Raxol.Core.Runtime.Log.info("[Test Log] Background (post high-contrast): #{inspect(background)}")
 
       # Ensure Raxol.Style.Colors.Utilities is available or use the test helper's path
-      _ratio = Raxol.Style.Colors.Utilities.contrast_ratio(
-        high_contrast_primary,
-        background
-      )
+      _ratio =
+        Raxol.Style.Colors.Utilities.contrast_ratio(
+          high_contrast_primary,
+          background
+        )
 
       # Raxol.Core.Runtime.Log.info("[Test Log] Calculated contrast ratio for high_contrast_primary vs background: #{inspect(ratio_for_log)}")
 

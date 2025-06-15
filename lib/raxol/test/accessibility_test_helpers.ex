@@ -209,7 +209,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    unless ratio >= min_ratio do
+    if not (ratio >= min_ratio) do
       flunk(
         "Insufficient contrast ratio: got #{ratio}, need #{min_ratio} for #{level}/#{size}.\nForeground: #{foreground}, Background: #{background}\n#{context}"
       )
@@ -290,7 +290,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    unless current == expected do
+    if current != expected do
       flunk(
         "Expected focus on \"#{expected}\", but it's on \"#{current}\"\n#{context}"
       )

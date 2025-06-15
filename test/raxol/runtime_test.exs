@@ -499,7 +499,7 @@ defmodule Raxol.RuntimeTest do
       end)
 
     # ADDED CHECK FOR NIL
-    unless new_dispatcher_info do
+    if !new_dispatcher_info do
       Raxol.Core.Runtime.Log.warning(
         "[TEST supervisor restart] Supervisor children: #{inspect(Supervisor.which_children(supervisor_pid))}"
       )

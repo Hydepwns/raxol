@@ -38,11 +38,12 @@ defmodule Raxol.Terminal.Input.BufferTest do
 
       Buffer.feed_input(pid, "a\e[0;0;10;20Mb")
       assert_receive {:DOWN, _, :process, ^pid, :normal}
+
       assert [
-        %KeyEvent{key: "b", modifiers: []},
-        %MouseEvent{button: :left, action: :press, x: 10, y: 20},
-        %KeyEvent{key: "a", modifiers: []}
-      ] = events
+               %KeyEvent{key: "b", modifiers: []},
+               %MouseEvent{button: :left, action: :press, x: 10, y: 20},
+               %KeyEvent{key: "a", modifiers: []}
+             ] = events
     end
   end
 
@@ -53,11 +54,12 @@ defmodule Raxol.Terminal.Input.BufferTest do
 
       Buffer.feed_input(pid, "abc")
       assert_receive {:DOWN, _, :process, ^pid, :normal}
+
       assert [
-        %KeyEvent{key: "c", modifiers: []},
-        %KeyEvent{key: "b", modifiers: []},
-        %KeyEvent{key: "a", modifiers: []}
-      ] = events
+               %KeyEvent{key: "c", modifiers: []},
+               %KeyEvent{key: "b", modifiers: []},
+               %KeyEvent{key: "a", modifiers: []}
+             ] = events
     end
 
     test "handles callback errors gracefully", %{pid: pid} do

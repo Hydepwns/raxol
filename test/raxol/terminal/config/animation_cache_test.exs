@@ -5,14 +5,15 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
   setup do
     # Start the cache system
-    {:ok, _pid} = System.start_link(
-      max_size: 1024 * 1024,
-      default_ttl: 3600,
-      eviction_policy: :lru,
-      namespace_configs: %{
-        animation: %{max_size: 256 * 1024}
-      }
-    )
+    {:ok, _pid} =
+      System.start_link(
+        max_size: 1024 * 1024,
+        default_ttl: 3600,
+        eviction_policy: :lru,
+        namespace_configs: %{
+          animation: %{max_size: 256 * 1024}
+        }
+      )
 
     # Create test animation data
     animation_data = %{
@@ -47,7 +48,8 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
     test "handles cache misses", %{animation_data: animation_data} do
       # Try to get non-existent animation
-      assert {:error, :not_found} == AnimationCache.get_cached_animation("nonexistent")
+      assert {:error, :not_found} ==
+               AnimationCache.get_cached_animation("nonexistent")
 
       # Cache animation
       :ok = AnimationCache.cache_animation("test_anim", animation_data)
@@ -62,7 +64,11 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       :ok = AnimationCache.cache_animation("test_anim", animation_data)
 
       # Update animation
-      updated_data = %{animation_data | frames: [%{content: "New Frame", duration: 200}]}
+      updated_data = %{
+        animation_data
+        | frames: [%{content: "New Frame", duration: 200}]
+      }
+
       :ok = AnimationCache.cache_animation("test_anim", updated_data)
 
       # Verify update
@@ -81,15 +87,22 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       :ok = AnimationCache.clear_animation_cache()
 
       # Verify cache is empty
-      assert {:error, :not_found} == AnimationCache.get_cached_animation("anim1")
-      assert {:error, :not_found} == AnimationCache.get_cached_animation("anim2")
+      assert {:error, :not_found} ==
+               AnimationCache.get_cached_animation("anim1")
+
+      assert {:error, :not_found} ==
+               AnimationCache.get_cached_animation("anim2")
     end
 
     test "handles cache size limits", %{animation_data: animation_data} do
       # Create large animation data
-      large_data = %{animation_data | frames: Enum.map(1..100, fn i ->
-        %{content: String.duplicate("Frame #{i}", 1000), duration: 100}
-      end)}
+      large_data = %{
+        animation_data
+        | frames:
+            Enum.map(1..100, fn i ->
+              %{content: String.duplicate("Frame #{i}", 1000), duration: 100}
+            end)
+      }
 
       # Cache large animation
       :ok = AnimationCache.cache_animation("large_anim", large_data)
@@ -115,13 +128,15 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       for _ <- 1..5 do
         AnimationCache.get_cached_animation("anim1")
       end
+
       for _ <- 1..3 do
         AnimationCache.get_cached_animation("anim2")
       end
 
       # Get cache stats
       {:ok, stats} = AnimationCache.get_animation_cache_stats()
-      assert stats.hit_count == 8  # 5 + 3 hits
+      # 5 + 3 hits
+      assert stats.hit_count == 8
       assert stats.miss_count == 0
       assert stats.hit_ratio == 1.0
     end
@@ -161,11 +176,15 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       :ok = AnimationCache.cache_animation("test_anim", animation_data)
 
       # Update with new metadata
-      updated_data = %{animation_data | metadata: %{
-        name: "updated_animation",
-        type: :graphics,
-        size: 200
-      }}
+      updated_data = %{
+        animation_data
+        | metadata: %{
+            name: "updated_animation",
+            type: :graphics,
+            size: 200
+          }
+      }
+
       :ok = AnimationCache.cache_animation("test_anim", updated_data)
 
       # Verify metadata update

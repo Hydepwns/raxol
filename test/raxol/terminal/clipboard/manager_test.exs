@@ -9,7 +9,9 @@ defmodule Raxol.Terminal.Clipboard.ManagerTest do
   end
 
   describe "new/1" do
-    test "creates a new clipboard manager with default options", %{manager: manager} do
+    test "creates a new clipboard manager with default options", %{
+      manager: manager
+    } do
       assert manager.formats == [:text, :html]
       assert manager.filters == []
       assert manager.metrics.operations == 0
@@ -19,12 +21,13 @@ defmodule Raxol.Terminal.Clipboard.ManagerTest do
     end
 
     test "creates a new clipboard manager with custom options" do
-      manager = Manager.new(
-        history_size: 50,
-        formats: [:text, :rtf],
-        filters: [:strip_whitespace],
-        sync_enabled: false
-      )
+      manager =
+        Manager.new(
+          history_size: 50,
+          formats: [:text, :rtf],
+          filters: [:strip_whitespace],
+          sync_enabled: false
+        )
 
       assert manager.formats == [:text, :rtf]
       assert manager.filters == [:strip_whitespace]
@@ -41,13 +44,18 @@ defmodule Raxol.Terminal.Clipboard.ManagerTest do
 
     test "copies content with custom format", %{manager: manager} do
       content = "<p>test content</p>"
-      assert {:ok, updated_manager} = Manager.copy(manager, content, format: :html)
+
+      assert {:ok, updated_manager} =
+               Manager.copy(manager, content, format: :html)
+
       assert updated_manager.metrics.operations == 1
     end
 
     test "returns error for unsupported format", %{manager: manager} do
       content = "test content"
-      assert {:error, :unsupported_format} = Manager.copy(manager, content, format: :rtf)
+
+      assert {:error, :unsupported_format} =
+               Manager.copy(manager, content, format: :rtf)
     end
 
     test "applies filters to content", %{manager: manager} do
@@ -83,7 +91,9 @@ defmodule Raxol.Terminal.Clipboard.ManagerTest do
     test "returns error for unsupported format", %{manager: manager} do
       content = "test content"
       {:ok, manager} = Manager.copy(manager, content)
-      assert {:error, :unsupported_format} = Manager.paste(manager, format: :rtf)
+
+      assert {:error, :unsupported_format} =
+               Manager.paste(manager, format: :rtf)
     end
   end
 
@@ -96,7 +106,10 @@ defmodule Raxol.Terminal.Clipboard.ManagerTest do
 
     test "cuts content with custom format", %{manager: manager} do
       content = "<p>test content</p>"
-      assert {:ok, updated_manager} = Manager.cut(manager, content, format: :html)
+
+      assert {:ok, updated_manager} =
+               Manager.cut(manager, content, format: :html)
+
       assert updated_manager.metrics.operations == 1
     end
   end

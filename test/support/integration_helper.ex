@@ -21,32 +21,41 @@ defmodule Raxol.Test.IntegrationHelper do
     components = Keyword.get(opts, :components, [:metrics, :buffer, :renderer])
     state = %{}
 
-    state = if :metrics in components do
-      metrics_state = Raxol.Test.MetricsHelper.setup_metrics_test(
-        Keyword.get(opts, :metrics_opts, [])
-      )
-      Map.put(state, :metrics, metrics_state)
-    else
-      state
-    end
+    state =
+      if :metrics in components do
+        metrics_state =
+          Raxol.Test.MetricsHelper.setup_metrics_test(
+            Keyword.get(opts, :metrics_opts, [])
+          )
 
-    state = if :buffer in components do
-      buffer_state = Raxol.Test.BufferHelper.setup_buffer_test(
-        Keyword.get(opts, :buffer_opts, [])
-      )
-      Map.put(state, :buffer, buffer_state)
-    else
-      state
-    end
+        Map.put(state, :metrics, metrics_state)
+      else
+        state
+      end
 
-    state = if :renderer in components do
-      renderer_state = Raxol.Test.RendererHelper.setup_renderer_test(
-        Keyword.get(opts, :renderer_opts, [])
-      )
-      Map.put(state, :renderer, renderer_state)
-    else
-      state
-    end
+    state =
+      if :buffer in components do
+        buffer_state =
+          Raxol.Test.BufferHelper.setup_buffer_test(
+            Keyword.get(opts, :buffer_opts, [])
+          )
+
+        Map.put(state, :buffer, buffer_state)
+      else
+        state
+      end
+
+    state =
+      if :renderer in components do
+        renderer_state =
+          Raxol.Test.RendererHelper.setup_renderer_test(
+            Keyword.get(opts, :renderer_opts, [])
+          )
+
+        Map.put(state, :renderer, renderer_state)
+      else
+        state
+      end
 
     {:ok, state}
   end
@@ -88,13 +97,34 @@ defmodule Raxol.Test.IntegrationHelper do
       {:ok, %{write_time: 5, render_time: 16}}
   """
   def perform_end_to_end_test(state, test_data, opts \\ []) do
-    with {:ok, _} <- Raxol.Test.BufferHelper.write_test_data(state.buffer.buffer, test_data),
-         :ok <- Raxol.Test.RendererHelper.render_test_content(state.renderer.renderer, state.buffer.buffer),
-         :ok <- Raxol.Test.RendererHelper.verify_rendered_content(state.renderer.renderer, test_data) do
+    with {:ok, _} <-
+           Raxol.Test.BufferHelper.write_test_data(
+             state.buffer.buffer,
+             test_data
+           ),
+         :ok <-
+           Raxol.Test.RendererHelper.render_test_content(
+             state.renderer.renderer,
+             state.buffer.buffer
+           ),
+         :ok <-
+           Raxol.Test.RendererHelper.verify_rendered_content(
+             state.renderer.renderer,
+             test_data
+           ) do
       metrics = %{
-        write_time: Raxol.Test.MetricsHelper.get_metric_value(state.metrics, "buffer_write_time"),
-        render_time: Raxol.Test.MetricsHelper.get_metric_value(state.metrics, "render_operation")
+        write_time:
+          Raxol.Test.MetricsHelper.get_metric_value(
+            state.metrics,
+            "buffer_write_time"
+          ),
+        render_time:
+          Raxol.Test.MetricsHelper.get_metric_value(
+            state.metrics,
+            "render_operation"
+          )
       }
+
       {:ok, metrics}
     end
   end
@@ -116,21 +146,25 @@ defmodule Raxol.Test.IntegrationHelper do
       {:ok, %{buffer_metrics: %{}, renderer_metrics: %{}}}
   """
   def test_buffer_renderer_interaction(state, test_data, opts \\ []) do
-    with {:ok, buffer_metrics} <- Raxol.Test.BufferHelper.perform_test_operation(
-           state.buffer.buffer,
-           :write,
-           test_data
-         ),
-         :ok <- Raxol.Test.RendererHelper.render_test_content(
-           state.renderer.renderer,
-           state.buffer.buffer
-         ),
-         {:ok, renderer_metrics} <- Raxol.Test.RendererHelper.test_render_performance(
-           state.renderer.renderer,
-           state.buffer.buffer,
-           Keyword.get(opts, :iterations, 1)
-         ) do
-      {:ok, %{buffer_metrics: buffer_metrics, renderer_metrics: renderer_metrics}}
+    with {:ok, buffer_metrics} <-
+           Raxol.Test.BufferHelper.perform_test_operation(
+             state.buffer.buffer,
+             :write,
+             test_data
+           ),
+         :ok <-
+           Raxol.Test.RendererHelper.render_test_content(
+             state.renderer.renderer,
+             state.buffer.buffer
+           ),
+         {:ok, renderer_metrics} <-
+           Raxol.Test.RendererHelper.test_render_performance(
+             state.renderer.renderer,
+             state.buffer.buffer,
+             Keyword.get(opts, :iterations, 1)
+           ) do
+      {:ok,
+       %{buffer_metrics: buffer_metrics, renderer_metrics: renderer_metrics}}
     end
   end
 
@@ -151,14 +185,16 @@ defmodule Raxol.Test.IntegrationHelper do
       {:ok, %{buffer_write: 5, render: 16}}
   """
   def test_metrics_interaction(state, operations, opts \\ []) do
-    metrics = Enum.reduce_while(operations, %{}, fn operation, acc ->
-      case perform_operation(state, operation, opts) do
-        {:ok, operation_metrics} ->
-          {:cont, Map.put(acc, operation, operation_metrics)}
-        {:error, reason} ->
-          {:halt, {:error, reason}}
-      end
-    end)
+    metrics =
+      Enum.reduce_while(operations, %{}, fn operation, acc ->
+        case perform_operation(state, operation, opts) do
+          {:ok, operation_metrics} ->
+            {:cont, Map.put(acc, operation, operation_metrics)}
+
+          {:error, reason} ->
+            {:halt, {:error, reason}}
+        end
+      end)
 
     case metrics do
       {:error, reason} -> {:error, reason}
@@ -193,15 +229,30 @@ defmodule Raxol.Test.IntegrationHelper do
     wait_for_components_loop(state, conditions, opts, check_interval, end_time)
   end
 
-  defp wait_for_components_loop(state, conditions, opts, check_interval, end_time) do
+  defp wait_for_components_loop(
+         state,
+         conditions,
+         opts,
+         check_interval,
+         end_time
+       ) do
     case check_conditions(state, conditions) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, _} ->
         if System.monotonic_time(:millisecond) >= end_time do
           {:error, :timeout}
         else
           Process.sleep(check_interval)
-          wait_for_components_loop(state, conditions, opts, check_interval, end_time)
+
+          wait_for_components_loop(
+            state,
+            conditions,
+            opts,
+            check_interval,
+            end_time
+          )
         end
     end
   end
@@ -216,15 +267,24 @@ defmodule Raxol.Test.IntegrationHelper do
   end
 
   defp check_component_condition(state, :buffer, expected_content) do
-    Raxol.Test.BufferHelper.verify_buffer_content(state.buffer.buffer, expected_content)
+    Raxol.Test.BufferHelper.verify_buffer_content(
+      state.buffer.buffer,
+      expected_content
+    )
   end
 
   defp check_component_condition(state, :renderer, expected_content) do
-    Raxol.Test.RendererHelper.verify_rendered_content(state.renderer.renderer, expected_content)
+    Raxol.Test.RendererHelper.verify_rendered_content(
+      state.renderer.renderer,
+      expected_content
+    )
   end
 
   defp check_component_condition(state, :metrics, expected_metrics) do
-    case Raxol.Test.MetricsHelper.verify_metrics(state.metrics, expected_metrics) do
+    case Raxol.Test.MetricsHelper.verify_metrics(
+           state.metrics,
+           expected_metrics
+         ) do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
     end

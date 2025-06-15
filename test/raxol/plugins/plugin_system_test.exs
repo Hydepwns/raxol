@@ -1,6 +1,11 @@
 defmodule Raxol.Plugins.PluginSystemTest do
   use ExUnit.Case
 
+  @moduledoc """
+  Tests for the plugin system functionality including plugin loading, configuration,
+  and lifecycle management.
+  """
+
   alias Raxol.Plugins.HyperlinkPlugin
   alias Raxol.Plugins.ImagePlugin
   alias Raxol.Plugins.SearchPlugin
@@ -32,8 +37,55 @@ defmodule Raxol.Plugins.PluginSystemTest do
     #   assert updated_manager.plugins["hyperlink"].enabled == true
     # end
 
-    # TODO: Test loading plugin with specific config
-    # TODO: Test loading plugin with dependencies
+    test "loads plugin with dependencies" do
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+
+      # Create a test plugin that depends on HyperlinkPlugin
+      defmodule TestDependentPlugin do
+        use Raxol.Plugins.Plugin
+        @dependencies ["hyperlink"]
+
+        @moduledoc """
+        Test plugin that depends on HyperlinkPlugin for testing dependency loading.
+        """
+
+        def init(_opts \\ %{}) do
+          {:ok, %{name: "test_dependent", enabled: true}}
+        end
+      end
+
+      # First load the dependency
+      {:ok, manager_with_dep} = Lifecycle.load_plugin(manager, HyperlinkPlugin)
+
+      # Then load the dependent plugin
+      {:ok, final_manager} = Lifecycle.load_plugin(manager_with_dep, TestDependentPlugin)
+
+      assert Map.has_key?(final_manager.plugins, "hyperlink")
+      assert Map.has_key?(final_manager.plugins, "test_dependent")
+    end
+
+    test "loads plugin with specific config" do
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
+
+      # Create a test plugin that accepts config
+      defmodule TestConfigPlugin do
+        use Raxol.Plugins.Plugin
+
+        @moduledoc """
+        Test plugin that accepts configuration options for testing config loading.
+        """
+
+        def init(opts \\ %{}) do
+          {:ok, %{name: "test_config", enabled: true, custom_setting: opts[:custom_setting]}}
+        end
+      end
+
+      # Load plugin with specific config
+      {:ok, updated_manager} = Lifecycle.load_plugin(manager, TestConfigPlugin, %{custom_setting: "test_value"})
+
+      assert Map.has_key?(updated_manager.plugins, "test_config")
+      assert updated_manager.plugins["test_config"].custom_setting == "test_value"
+    end
 
     test "unloads a plugin" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()

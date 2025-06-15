@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Integration.IOIntegrationTest do
   use ExUnit.Case
+
   alias Raxol.Terminal.{
     IO.UnifiedIO,
     Integration.State,
@@ -59,6 +60,7 @@ defmodule Raxol.Terminal.Integration.IOIntegrationTest do
           enable_command_history: true
         }
       }
+
       assert :ok = Main.update_config(pid, config)
 
       # Verify config is updated

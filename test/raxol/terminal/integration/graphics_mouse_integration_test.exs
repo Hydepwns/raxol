@@ -14,7 +14,9 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
-      assert {:ok, graphics_state} = UnifiedGraphics.get_graphics_state(graphics_id)
+      assert {:ok, graphics_state} =
+               UnifiedGraphics.get_graphics_state(graphics_id)
+
       assert {:ok, mouse_state} = UnifiedMouse.get_mouse_state(mouse_id)
 
       assert graphics_state.config.width == 800
@@ -38,10 +40,13 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
         x: 100,
         y: 200
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
 
       # Verify states
-      assert {:ok, graphics_state} = UnifiedGraphics.get_graphics_state(graphics_id)
+      assert {:ok, graphics_state} =
+               UnifiedGraphics.get_graphics_state(graphics_id)
+
       assert {:ok, mouse_state} = UnifiedMouse.get_mouse_state(mouse_id)
 
       assert graphics_state.buffer == data
@@ -61,15 +66,20 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
         x: 150,
         y: 250
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
 
       # Update graphics at mouse position
-      data = <<255, 0, 0, 255>>  # Red pixel
+      # Red pixel
+      data = <<255, 0, 0, 255>>
       assert :ok = UnifiedGraphics.render_graphics(graphics_id, data)
 
       # Verify states
       assert {:ok, {150, 250}} = UnifiedMouse.get_mouse_position(mouse_id)
-      assert {:ok, graphics_state} = UnifiedGraphics.get_graphics_state(graphics_id)
+
+      assert {:ok, graphics_state} =
+               UnifiedGraphics.get_graphics_state(graphics_id)
+
       assert graphics_state.buffer == data
     end
 
@@ -85,6 +95,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
         x: 100,
         y: 100
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, start_event)
 
       # Drag
@@ -95,6 +106,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
         x: 200,
         y: 200
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, drag_event)
 
       # End drag
@@ -105,6 +117,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
         x: 200,
         y: 200
       }
+
       assert :ok = UnifiedMouse.process_mouse_event(mouse_id, end_event)
 
       # Verify states
@@ -127,11 +140,16 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
 
   describe "error handling" do
     test "handles invalid graphics and mouse operations" do
-      assert {:error, :graphics_not_found} = UnifiedGraphics.get_graphics_state(999)
+      assert {:error, :graphics_not_found} =
+               UnifiedGraphics.get_graphics_state(999)
+
       assert {:error, :mouse_not_found} = UnifiedMouse.get_mouse_state(999)
 
-      assert {:error, :graphics_not_found} = UnifiedGraphics.render_graphics(999, <<>>)
-      assert {:error, :mouse_not_found} = UnifiedMouse.process_mouse_event(999, %{})
+      assert {:error, :graphics_not_found} =
+               UnifiedGraphics.render_graphics(999, <<>>)
+
+      assert {:error, :mouse_not_found} =
+               UnifiedMouse.process_mouse_event(999, %{})
     end
   end
 
@@ -141,22 +159,24 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
       # Generate a sequence of mouse events
-      events = for i <- 1..1000 do
-        %{
-          button: :left,
-          action: :move,
-          modifiers: [],
-          x: i,
-          y: i
-        }
-      end
+      events =
+        for i <- 1..1000 do
+          %{
+            button: :left,
+            action: :move,
+            modifiers: [],
+            x: i,
+            y: i
+          }
+        end
 
       # Measure processing time
-      {time, _} = :timer.tc(fn ->
-        Enum.each(events, fn event ->
-          assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
+      {time, _} =
+        :timer.tc(fn ->
+          Enum.each(events, fn event ->
+            assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
+          end)
         end)
-      end)
 
       # Assert performance requirements (1ms per event)
       assert time < 1_000_000
@@ -166,16 +186,18 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
 
       # Generate a sequence of graphics updates
-      updates = for i <- 1..100 do
-        <<i, i, i, 255>>
-      end
+      updates =
+        for i <- 1..100 do
+          <<i, i, i, 255>>
+        end
 
       # Measure processing time
-      {time, _} = :timer.tc(fn ->
-        Enum.each(updates, fn data ->
-          assert :ok = UnifiedGraphics.render_graphics(graphics_id, data)
+      {time, _} =
+        :timer.tc(fn ->
+          Enum.each(updates, fn data ->
+            assert :ok = UnifiedGraphics.render_graphics(graphics_id, data)
+          end)
         end)
-      end)
 
       # Assert performance requirements (10ms per update)
       assert time < 1_000_000
@@ -186,32 +208,35 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
       # Generate concurrent operations
-      mouse_events = for i <- 1..500 do
-        %{
-          button: :left,
-          action: :move,
-          modifiers: [],
-          x: i,
-          y: i
-        }
-      end
+      mouse_events =
+        for i <- 1..500 do
+          %{
+            button: :left,
+            action: :move,
+            modifiers: [],
+            x: i,
+            y: i
+          }
+        end
 
-      graphics_updates = for i <- 1..500 do
-        <<i, i, i, 255>>
-      end
+      graphics_updates =
+        for i <- 1..500 do
+          <<i, i, i, 255>>
+        end
 
       # Measure processing time
-      {time, _} = :timer.tc(fn ->
-        Task.async_stream(
-          Enum.zip(mouse_events, graphics_updates),
-          fn {event, data} ->
-            assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
-            assert :ok = UnifiedGraphics.render_graphics(graphics_id, data)
-          end,
-          max_concurrency: 4
-        )
-        |> Stream.run()
-      end)
+      {time, _} =
+        :timer.tc(fn ->
+          Task.async_stream(
+            Enum.zip(mouse_events, graphics_updates),
+            fn {event, data} ->
+              assert :ok = UnifiedMouse.process_mouse_event(mouse_id, event)
+              assert :ok = UnifiedGraphics.render_graphics(graphics_id, data)
+            end,
+            max_concurrency: 4
+          )
+          |> Stream.run()
+        end)
 
       # Assert performance requirements (20ms per pair of operations)
       assert time < 10_000_000

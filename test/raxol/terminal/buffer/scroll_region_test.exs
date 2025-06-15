@@ -15,13 +15,16 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
     end
 
     test "ignores invalid scroll region", %{buffer: buffer} do
-      buffer = ScrollRegion.set_region(buffer, 3, 1) # top > bottom
+      # top > bottom
+      buffer = ScrollRegion.set_region(buffer, 3, 1)
       assert ScrollRegion.get_region(buffer) == nil
 
-      buffer = ScrollRegion.set_region(buffer, -1, 3) # negative top
+      # negative top
+      buffer = ScrollRegion.set_region(buffer, -1, 3)
       assert ScrollRegion.get_region(buffer) == nil
 
-      buffer = ScrollRegion.set_region(buffer, 1, 5) # bottom >= height
+      # bottom >= height
+      buffer = ScrollRegion.set_region(buffer, 1, 5)
       assert ScrollRegion.get_region(buffer) == nil
     end
   end

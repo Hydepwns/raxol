@@ -11,21 +11,22 @@ defmodule Raxol.Terminal.IO.UnifiedIOTest do
 
   describe "initialization" do
     test "initializes with default values", %{pid: pid} do
-      assert :ok = UnifiedIO.init_terminal(80, 24, %{
-        scrollback_limit: 1000,
-        memory_limit: 50 * 1024 * 1024,
-        command_history_limit: 1000,
-        rendering: %{
-          fps: 60,
-          theme: %{
-            foreground: :white,
-            background: :black
-          },
-          font_settings: %{
-            size: 12
-          }
-        }
-      })
+      assert :ok =
+               UnifiedIO.init_terminal(80, 24, %{
+                 scrollback_limit: 1000,
+                 memory_limit: 50 * 1024 * 1024,
+                 command_history_limit: 1000,
+                 rendering: %{
+                   fps: 60,
+                   theme: %{
+                     foreground: :white,
+                     background: :black
+                   },
+                   font_settings: %{
+                     size: 12
+                   }
+                 }
+               })
     end
 
     test "initializes with custom config", %{pid: pid} do
@@ -55,9 +56,14 @@ defmodule Raxol.Terminal.IO.UnifiedIOTest do
     end
 
     test "processes special keys", %{pid: pid} do
-      assert {:ok, []} = UnifiedIO.process_input(%{type: :special_key, key: :up})
-      assert {:ok, []} = UnifiedIO.process_input(%{type: :special_key, key: :down})
-      assert {:ok, []} = UnifiedIO.process_input(%{type: :special_key, key: :enter})
+      assert {:ok, []} =
+               UnifiedIO.process_input(%{type: :special_key, key: :up})
+
+      assert {:ok, []} =
+               UnifiedIO.process_input(%{type: :special_key, key: :down})
+
+      assert {:ok, []} =
+               UnifiedIO.process_input(%{type: :special_key, key: :enter})
     end
 
     test "processes mouse events", %{pid: pid} do
@@ -74,7 +80,7 @@ defmodule Raxol.Terminal.IO.UnifiedIOTest do
 
     test "handles invalid input events", %{pid: pid} do
       assert {:error, "Invalid event type: :invalid"} =
-        UnifiedIO.process_input(%{type: :invalid})
+               UnifiedIO.process_input(%{type: :invalid})
     end
   end
 
@@ -138,16 +144,18 @@ defmodule Raxol.Terminal.IO.UnifiedIOTest do
   describe "performance" do
     test "handles rapid input events efficiently", %{pid: pid} do
       # Generate a sequence of input events
-      events = for i <- 1..1000 do
-        %{type: :key, key: "a#{i}"}
-      end
+      events =
+        for i <- 1..1000 do
+          %{type: :key, key: "a#{i}"}
+        end
 
       # Measure processing time
-      {time, _} = :timer.tc(fn ->
-        Enum.each(events, fn event ->
-          {:ok, _} = UnifiedIO.process_input(event)
+      {time, _} =
+        :timer.tc(fn ->
+          Enum.each(events, fn event ->
+            {:ok, _} = UnifiedIO.process_input(event)
+          end)
         end)
-      end)
 
       # Assert performance requirements (1ms per event)
       assert time < 1_000_000
@@ -158,9 +166,10 @@ defmodule Raxol.Terminal.IO.UnifiedIOTest do
       large_output = String.duplicate("Hello, World!\n", 1000)
 
       # Measure processing time
-      {time, _} = :timer.tc(fn ->
-        {:ok, _} = UnifiedIO.process_output(large_output)
-      end)
+      {time, _} =
+        :timer.tc(fn ->
+          {:ok, _} = UnifiedIO.process_output(large_output)
+        end)
 
       # Assert performance requirements (10ms for 1000 lines)
       assert time < 10_000_000

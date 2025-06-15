@@ -26,12 +26,13 @@ defmodule Raxol.Terminal.Extension.Script do
 
   def execute_command("status", _args) do
     # Simulate getting script status
-    {:ok, %{
-      status: "running",
-      uptime: 3600,
-      memory_usage: "10MB",
-      cpu_usage: "5%"
-    }}
+    {:ok,
+     %{
+       status: "running",
+       uptime: 3600,
+       memory_usage: "10MB",
+       cpu_usage: "5%"
+     }}
   end
 
   def execute_command(command, _args) do
@@ -40,13 +41,14 @@ defmodule Raxol.Terminal.Extension.Script do
 
   def get_script_state do
     # Return current script state
-    {:ok, %{
-      status: "idle",
-      last_command: nil,
-      last_error: nil,
-      start_time: nil,
-      end_time: nil
-    }}
+    {:ok,
+     %{
+       status: "idle",
+       last_command: nil,
+       last_error: nil,
+       start_time: nil,
+       end_time: nil
+     }}
   end
 
   def update_script_config(config) do

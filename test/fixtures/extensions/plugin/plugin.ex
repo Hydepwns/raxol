@@ -88,16 +88,17 @@ defmodule Raxol.Terminal.Extension.Plugin do
 
   def get_plugin_state do
     # Return current plugin state
-    {:ok, %{
-      status: "idle",
-      hooks: %{
-        "init" => [],
-        "cleanup" => [],
-        "update" => [],
-        "error" => []
-      },
-      last_error: nil
-    }}
+    {:ok,
+     %{
+       status: "idle",
+       hooks: %{
+         "init" => [],
+         "cleanup" => [],
+         "update" => [],
+         "error" => []
+       },
+       last_error: nil
+     }}
   end
 
   def update_plugin_config(config) do

@@ -17,13 +17,17 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
 
     test "prevents duplicate registration" do
       assert :ok == Manager.register_component("test_component", :split)
-      assert {:error, :already_registered} == Manager.register_component("test_component", :split)
+
+      assert {:error, :already_registered} ==
+               Manager.register_component("test_component", :split)
     end
 
     test "unregisters a component" do
       assert :ok == Manager.register_component("test_component", :split)
       assert :ok == Manager.unregister_component("test_component")
-      assert {:error, :not_found} == Manager.unregister_component("test_component")
+
+      assert {:error, :not_found} ==
+               Manager.unregister_component("test_component")
     end
   end
 
@@ -153,7 +157,9 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
 
       # Verify component is gone
       assert {:error, :not_found} == Manager.get_state("test_component")
-      assert {:error, :not_found} == Manager.get_component_stats("test_component")
+
+      assert {:error, :not_found} ==
+               Manager.get_component_stats("test_component")
     end
   end
 end

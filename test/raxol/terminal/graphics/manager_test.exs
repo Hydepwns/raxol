@@ -9,7 +9,9 @@ defmodule Raxol.Terminal.Graphics.ManagerTest do
   end
 
   describe "new/1" do
-    test "creates a new graphics manager with default state", %{manager: manager} do
+    test "creates a new graphics manager with default state", %{
+      manager: manager
+    } do
       assert map_size(manager.images) == 0
       assert map_size(manager.sixel_cache) == 0
       assert length(manager.pipeline) == 4
@@ -38,7 +40,9 @@ defmodule Raxol.Terminal.Graphics.ManagerTest do
         cache: true
       }
 
-      assert {:ok, sixel_data, updated_manager} = Manager.render_image(manager, image, opts)
+      assert {:ok, sixel_data, updated_manager} =
+               Manager.render_image(manager, image, opts)
+
       assert sixel_data.width == 100
       assert sixel_data.height == 100
       assert is_list(sixel_data.colors)
@@ -60,7 +64,8 @@ defmodule Raxol.Terminal.Graphics.ManagerTest do
         cache: true
       }
 
-      assert {:error, :invalid_image} = Manager.render_image(manager, invalid_image, opts)
+      assert {:error, :invalid_image} =
+               Manager.render_image(manager, invalid_image, opts)
     end
 
     test "returns error for invalid options", %{manager: manager} do
@@ -76,7 +81,8 @@ defmodule Raxol.Terminal.Graphics.ManagerTest do
         scale: 1.0
       }
 
-      assert {:error, :invalid_opts} = Manager.render_image(manager, image, invalid_opts)
+      assert {:error, :invalid_opts} =
+               Manager.render_image(manager, image, invalid_opts)
     end
 
     test "uses cached result for same image and options", %{manager: manager} do
@@ -100,7 +106,9 @@ defmodule Raxol.Terminal.Graphics.ManagerTest do
       assert manager.metrics.cache_misses == 1
 
       # Second render with same image and options
-      {:ok, cached_data, updated_manager} = Manager.render_image(manager, image, opts)
+      {:ok, cached_data, updated_manager} =
+        Manager.render_image(manager, image, opts)
+
       assert cached_data == sixel_data
       assert updated_manager.metrics.cache_hits == 1
     end
@@ -119,7 +127,9 @@ defmodule Raxol.Terminal.Graphics.ManagerTest do
         data: <<0, 1, 2>>
       }
 
-      assert {:ok, image, updated_manager} = Manager.process_sixel(manager, sixel_data)
+      assert {:ok, image, updated_manager} =
+               Manager.process_sixel(manager, sixel_data)
+
       assert image.width == 100
       assert image.height == 100
       assert image.format == :sixel
@@ -132,7 +142,8 @@ defmodule Raxol.Terminal.Graphics.ManagerTest do
         height: 100
       }
 
-      assert {:error, :invalid_sixel_data} = Manager.process_sixel(manager, invalid_sixel_data)
+      assert {:error, :invalid_sixel_data} =
+               Manager.process_sixel(manager, invalid_sixel_data)
     end
   end
 

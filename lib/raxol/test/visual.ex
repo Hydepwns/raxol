@@ -49,8 +49,8 @@ defmodule Raxol.Test.Visual do
     {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module, props)
 
     # Defensive check: ensure component is a map with :module and :state
-    unless is_map(component) and Map.has_key?(component, :module) and
-             Map.has_key?(component, :state) do
+    if !(is_map(component) and Map.has_key?(component, :module) and
+           Map.has_key?(component, :state)) do
       raise ArgumentError,
             "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
     end
@@ -359,8 +359,8 @@ defmodule Raxol.Test.Visual do
   Accepts an optional context map.
   """
   def render_component(component_map, context \\ default_render_context()) do
-    unless is_map(component_map) and Map.has_key?(component_map, :module) and
-             Map.has_key?(component_map, :state) do
+    if !(is_map(component_map) and Map.has_key?(component_map, :module) and
+           Map.has_key?(component_map, :state)) do
       raise ArgumentError,
             "render_component/2 expected a map with :module and :state keys, got: #{inspect(component_map)}"
     end

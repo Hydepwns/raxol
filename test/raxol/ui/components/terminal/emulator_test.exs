@@ -22,6 +22,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
           enable_command_history: true
         }
       }
+
       state = Emulator.init(%{config: config})
       assert %{state: state} = state
       assert is_map(state)
@@ -47,7 +48,9 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     end
 
     test "processes mouse events", %{state: state} do
-      {updated_state, commands} = Emulator.process_input({:mouse, {1, 1, :left}}, state)
+      {updated_state, commands} =
+        Emulator.process_input({:mouse, {1, 1, :left}}, state)
+
       assert is_map(updated_state)
       assert is_list(commands)
     end

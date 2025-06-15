@@ -58,19 +58,23 @@ defmodule Raxol.Terminal.Plugin.Extension do
     # In a real implementation, this would execute the actual extension
     case extension_name do
       "test_extension" ->
-        {:ok, %{
-          extension: extension_name,
-          args: args,
-          config: config,
-          result: "Test extension executed successfully"
-        }}
+        {:ok,
+         %{
+           extension: extension_name,
+           args: args,
+           config: config,
+           result: "Test extension executed successfully"
+         }}
+
       "another_extension" ->
-        {:ok, %{
-          extension: extension_name,
-          args: args,
-          config: config,
-          result: "Another extension executed successfully"
-        }}
+        {:ok,
+         %{
+           extension: extension_name,
+           args: args,
+           config: config,
+           result: "Another extension executed successfully"
+         }}
+
       _ ->
         {:error, :extension_not_found}
     end

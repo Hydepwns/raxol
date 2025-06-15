@@ -44,7 +44,9 @@ defmodule Raxol.Terminal.Input.ManagerTest do
         timestamp: System.system_time(:millisecond)
       }
 
-      assert {:error, :validation_failed} = Manager.process_key_event(manager, event)
+      assert {:error, :validation_failed} =
+               Manager.process_key_event(manager, event)
+
       assert manager.metrics.validation_failures == 1
     end
 
@@ -55,7 +57,9 @@ defmodule Raxol.Terminal.Input.ManagerTest do
         timestamp: System.system_time(:millisecond)
       }
 
-      assert {:error, :validation_failed} = Manager.process_key_event(manager, event)
+      assert {:error, :validation_failed} =
+               Manager.process_key_event(manager, event)
+
       assert manager.metrics.validation_failures == 1
     end
 
@@ -66,7 +70,9 @@ defmodule Raxol.Terminal.Input.ManagerTest do
         timestamp: -1
       }
 
-      assert {:error, :validation_failed} = Manager.process_key_event(manager, event)
+      assert {:error, :validation_failed} =
+               Manager.process_key_event(manager, event)
+
       assert manager.metrics.validation_failures == 1
     end
   end
@@ -80,6 +86,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
 
     test "applies key mapping during processing", %{manager: manager} do
       manager = Manager.add_key_mapping(manager, "a", "b")
+
       event = %{
         key: "a",
         modifiers: [:shift],
@@ -87,7 +94,9 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       }
 
       {:ok, updated_manager} = Manager.process_key_event(manager, event)
-      assert updated_manager.buffer.events |> List.first() |> Map.get(:key) == "b"
+
+      assert updated_manager.buffer.events |> List.first() |> Map.get(:key) ==
+               "b"
     end
   end
 
@@ -107,6 +116,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
         modifiers: [:shift],
         timestamp: System.system_time(:millisecond)
       }
+
       assert {:ok, _} = Manager.process_key_event(manager, event)
 
       event = %{
@@ -114,7 +124,9 @@ defmodule Raxol.Terminal.Input.ManagerTest do
         modifiers: [:shift],
         timestamp: System.system_time(:millisecond)
       }
-      assert {:error, :validation_failed} = Manager.process_key_event(manager, event)
+
+      assert {:error, :validation_failed} =
+               Manager.process_key_event(manager, event)
     end
   end
 
@@ -135,6 +147,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
         modifiers: [:shift],
         timestamp: System.system_time(:millisecond)
       }
+
       {:ok, manager} = Manager.process_key_event(manager, event)
 
       updated_manager = Manager.flush_buffer(manager)

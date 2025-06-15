@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.Tab.ManagerTest do
   use ExUnit.Case, async: true
   alias Raxol.Terminal.Tab.Manager
+  import File, only: [cwd!: 0]
 
   describe "new/0" do
     test "creates a new tab manager instance" do
@@ -23,7 +24,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
 
       {:ok, config} = Manager.get_tab_config(updated_manager, tab_id)
       assert config.title == "Tab #{tab_id}"
-      assert config.working_directory == System.cwd!()
+      assert config.working_directory == File.cwd!()
       assert config.command == nil
       assert config.state == :inactive
       assert config.window_id == nil
@@ -31,6 +32,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
 
     test "creates a new tab with custom configuration" do
       manager = Manager.new()
+
       custom_config = %{
         title: "Custom Tab",
         working_directory: "/tmp",
@@ -39,7 +41,8 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
         window_id: "win_1"
       }
 
-      {:ok, tab_id, updated_manager} = Manager.create_tab(manager, custom_config)
+      {:ok, tab_id, updated_manager} =
+        Manager.create_tab(manager, custom_config)
 
       {:ok, config} = Manager.get_tab_config(updated_manager, tab_id)
       assert config.title == "Custom Tab"
@@ -57,12 +60,16 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       {:ok, updated_manager} = Manager.delete_tab(manager, tab_id)
 
       assert map_size(updated_manager.tabs) == 0
-      assert {:error, :tab_not_found} == Manager.get_tab_config(updated_manager, tab_id)
+
+      assert {:error, :tab_not_found} ==
+               Manager.get_tab_config(updated_manager, tab_id)
     end
 
     test "returns error when deleting non-existent tab" do
       manager = Manager.new()
-      assert {:error, :tab_not_found} == Manager.delete_tab(manager, "non_existent")
+
+      assert {:error, :tab_not_found} ==
+               Manager.delete_tab(manager, "non_existent")
     end
 
     test "clears active tab when deleting active tab" do
@@ -86,7 +93,9 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
 
     test "returns error when switching to non-existent tab" do
       manager = Manager.new()
-      assert {:error, :tab_not_found} == Manager.switch_tab(manager, "non_existent")
+
+      assert {:error, :tab_not_found} ==
+               Manager.switch_tab(manager, "non_existent")
     end
   end
 
@@ -97,12 +106,14 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       {:ok, config} = Manager.get_tab_config(manager, tab_id)
 
       assert config.title == "Tab #{tab_id}"
-      assert config.working_directory == System.cwd!()
+      assert config.working_directory == File.cwd!()
     end
 
     test "returns error for non-existent tab" do
       manager = Manager.new()
-      assert {:error, :tab_not_found} == Manager.get_tab_config(manager, "non_existent")
+
+      assert {:error, :tab_not_found} ==
+               Manager.get_tab_config(manager, "non_existent")
     end
   end
 
@@ -112,17 +123,22 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       {:ok, tab_id, manager} = Manager.create_tab(manager)
       updates = %{title: "Updated Title", state: :active}
 
-      {:ok, updated_manager} = Manager.update_tab_config(manager, tab_id, updates)
+      {:ok, updated_manager} =
+        Manager.update_tab_config(manager, tab_id, updates)
+
       {:ok, config} = Manager.get_tab_config(updated_manager, tab_id)
 
       assert config.title == "Updated Title"
       assert config.state == :active
-      assert config.working_directory == System.cwd!() # unchanged
+      # unchanged
+      assert config.working_directory == File.cwd!()
     end
 
     test "returns error when updating non-existent tab" do
       manager = Manager.new()
-      assert {:error, :tab_not_found} == Manager.update_tab_config(manager, "non_existent", %{})
+
+      assert {:error, :tab_not_found} ==
+               Manager.update_tab_config(manager, "non_existent", %{})
     end
   end
 

@@ -73,7 +73,9 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
       state = :sys.get_state(pid)
       assert state.fps == 30
 
-      assert UnifiedRenderer.set_config_value(:theme, %{foreground: :white}) == :ok
+      assert UnifiedRenderer.set_config_value(:theme, %{foreground: :white}) ==
+               :ok
+
       state = :sys.get_state(pid)
       assert state.theme == %{foreground: :white}
     end
@@ -104,6 +106,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
       # Create a test state
       buffer_manager = UnifiedManager.new(80, 24)
       cursor_manager = Manager.new(0, 0)
+
       state = %State{
         buffer_manager: buffer_manager,
         cursor_manager: cursor_manager
@@ -118,7 +121,9 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
 
     test "renders buffer with content", %{pid: pid, state: state} do
       # Add some content to the buffer
-      {:ok, buffer_manager} = UnifiedManager.write(state.buffer_manager, "Hello, World!")
+      {:ok, buffer_manager} =
+        UnifiedManager.write(state.buffer_manager, "Hello, World!")
+
       state = %{state | buffer_manager: buffer_manager}
 
       assert UnifiedRenderer.render(state) == :ok

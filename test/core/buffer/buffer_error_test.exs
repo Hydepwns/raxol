@@ -95,17 +95,20 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
 
       # Test corrupted cells
       corrupted_buffer = %{buffer | cells: nil}
+
       assert_raise RuntimeError, fn ->
         Buffer.get_cell(corrupted_buffer, 0, 0)
       end
 
       # Test corrupted dimensions
       corrupted_buffer = %{buffer | width: nil}
+
       assert_raise RuntimeError, fn ->
         Buffer.get_cell(corrupted_buffer, 0, 0)
       end
 
       corrupted_buffer = %{buffer | height: nil}
+
       assert_raise RuntimeError, fn ->
         Buffer.get_cell(corrupted_buffer, 0, 0)
       end
@@ -143,7 +146,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
     test "handles memory allocation errors" do
       # Test with extremely large buffer
       assert_raise RuntimeError, fn ->
-        Buffer.new({1000000, 1000000})
+        Buffer.new({1_000_000, 1_000_000})
       end
     end
 
@@ -184,12 +187,13 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
       buffer = Buffer.new({80, 24})
 
       # Fill buffer with known content
-      buffer = Enum.reduce(0..23, buffer, fn y, acc ->
-        Enum.reduce(0..79, acc, fn x, acc ->
-          cell = Cell.new("X", TextFormatting.new(fg: :red))
-          Buffer.set_cell(acc, x, y, cell)
+      buffer =
+        Enum.reduce(0..23, buffer, fn y, acc ->
+          Enum.reduce(0..79, acc, fn x, acc ->
+            cell = Cell.new("X", TextFormatting.new(fg: :red))
+            Buffer.set_cell(acc, x, y, cell)
+          end)
         end)
-      end)
 
       # Attempt invalid operation
       assert_raise ArgumentError, fn ->

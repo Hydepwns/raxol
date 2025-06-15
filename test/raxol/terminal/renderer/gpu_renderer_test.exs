@@ -34,7 +34,9 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
       assert is_binary(output)
     end
 
-    test "updates performance metrics after rendering", %{gpu_renderer: gpu_renderer} do
+    test "updates performance metrics after rendering", %{
+      gpu_renderer: gpu_renderer
+    } do
       output = GPURenderer.render(gpu_renderer)
       metrics = GPURenderer.get_performance_metrics(gpu_renderer)
 
@@ -124,7 +126,9 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
       assert Map.has_key?(pool, :staging_buffers)
     end
 
-    test "allocates and updates buffers during rendering", %{gpu_renderer: gpu_renderer} do
+    test "allocates and updates buffers during rendering", %{
+      gpu_renderer: gpu_renderer
+    } do
       output = GPURenderer.render(gpu_renderer)
       assert is_binary(output)
 
@@ -135,7 +139,9 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
   end
 
   describe "Render pipeline" do
-    test "creates pipeline with all required stages", %{gpu_renderer: gpu_renderer} do
+    test "creates pipeline with all required stages", %{
+      gpu_renderer: gpu_renderer
+    } do
       pipeline = gpu_renderer.render_pipeline
       stages = pipeline.stages
 
@@ -145,7 +151,9 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
       assert Keyword.has_key?(stages, :output_merging)
     end
 
-    test "executes all pipeline stages during rendering", %{gpu_renderer: gpu_renderer} do
+    test "executes all pipeline stages during rendering", %{
+      gpu_renderer: gpu_renderer
+    } do
       output = GPURenderer.render(gpu_renderer)
       assert is_binary(output)
 

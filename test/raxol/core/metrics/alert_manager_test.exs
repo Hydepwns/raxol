@@ -57,17 +57,25 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         severity: :warning,
         tags: %{service: "test"}
       }
+
       {:ok, rule_id} = AlertManager.add_rule(rule)
       %{rule_id: rule_id}
     end
 
     test "triggers alert when condition is met", %{rule_id: rule_id} do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 60, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 60,
+          tags: %{service: "test"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       # Force alert check
       Process.send(AlertManager, :check_alerts, [])
@@ -84,11 +92,18 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
     test "does not trigger alert when condition is not met", %{rule_id: rule_id} do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 40, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 40,
+          tags: %{service: "test"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       # Force alert check
       Process.send(AlertManager, :check_alerts, [])
@@ -105,11 +120,18 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
     test "respects cooldown period", %{rule_id: rule_id} do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 60, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 60,
+          tags: %{service: "test"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       # Force first alert check
       Process.send(AlertManager, :check_alerts, [])
@@ -124,7 +146,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
       # Check alert history
       assert {:ok, history} = AlertManager.get_alert_history(rule_id)
-      assert length(history) == 1 # Only one alert should be recorded due to cooldown
+      # Only one alert should be recorded due to cooldown
+      assert length(history) == 1
 
       :meck.unload(UnifiedCollector)
     end
@@ -140,17 +163,25 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         severity: :warning,
         tags: %{service: "test"}
       }
+
       {:ok, rule_id} = AlertManager.add_rule(rule)
       %{rule_id: rule_id}
     end
 
     test "acknowledges an active alert", %{rule_id: rule_id} do
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 60, tags: %{service: "test"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 60,
+          tags: %{service: "test"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       # Force alert check
       Process.send(AlertManager, :check_alerts, [])
@@ -175,15 +206,27 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         tags: %{service: "test"},
         group_by: ["service", "region"]
       }
+
       {:ok, rule_id} = AlertManager.add_rule(rule)
 
       metrics = [
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 60, tags: %{service: "test", region: "us"}},
-        %{timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond), value: 40, tags: %{service: "test", region: "eu"}}
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 60,
+          tags: %{service: "test", region: "us"}
+        },
+        %{
+          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+          value: 40,
+          tags: %{service: "test", region: "eu"}
+        }
       ]
 
       :meck.new(UnifiedCollector, [:passthrough])
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags -> metrics end)
+
+      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+        metrics
+      end)
 
       # Force alert check
       Process.send(AlertManager, :check_alerts, [])
