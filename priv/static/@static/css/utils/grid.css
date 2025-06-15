@@ -1,9 +1,8 @@
-/* Grid Container */
+/* Grid utilities */
 .grid {
   display: grid;
 }
 
-/* Grid Template Columns */
 .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
@@ -28,65 +27,26 @@
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-/* Grid Template Rows */
-.grid-rows-1 {
-  grid-template-rows: repeat(1, minmax(0, 1fr));
+.gap-xs {
+  gap: var(--spacing-xs);
 }
 
-.grid-rows-2 {
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+.gap-sm {
+  gap: var(--spacing-sm);
 }
 
-.grid-rows-3 {
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+.gap-md {
+  gap: var(--spacing-md);
 }
 
-.grid-rows-4 {
-  grid-template-rows: repeat(4, minmax(0, 1fr));
+.gap-lg {
+  gap: var(--spacing-lg);
 }
 
-/* Gap */
-.gap-x-xs {
-  column-gap: var(--spacing-xs);
+.gap-xl {
+  gap: var(--spacing-xl);
 }
 
-.gap-x-sm {
-  column-gap: var(--spacing-sm);
-}
-
-.gap-x-md {
-  column-gap: var(--spacing-md);
-}
-
-.gap-x-lg {
-  column-gap: var(--spacing-lg);
-}
-
-.gap-x-xl {
-  column-gap: var(--spacing-xl);
-}
-
-.gap-y-xs {
-  row-gap: var(--spacing-xs);
-}
-
-.gap-y-sm {
-  row-gap: var(--spacing-sm);
-}
-
-.gap-y-md {
-  row-gap: var(--spacing-md);
-}
-
-.gap-y-lg {
-  row-gap: var(--spacing-lg);
-}
-
-.gap-y-xl {
-  row-gap: var(--spacing-xl);
-}
-
-/* Grid Column Span */
 .col-span-1 {
   grid-column: span 1 / span 1;
 }
@@ -111,19 +71,31 @@
   grid-column: span 6 / span 6;
 }
 
-/* Grid Row Span */
-.row-span-1 {
-  grid-row: span 1 / span 1;
+.col-span-full {
+  grid-column: 1 / -1;
 }
 
-.row-span-2 {
-  grid-row: span 2 / span 2;
+/* Responsive grid */
+@media (min-width: 640px) {
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.row-span-3 {
-  grid-row: span 3 / span 3;
+@media (min-width: 768px) {
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
-.row-span-4 {
-  grid-row: span 4 / span 4;
-} 
+@media (min-width: 1024px) {
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .xl\:grid-cols-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

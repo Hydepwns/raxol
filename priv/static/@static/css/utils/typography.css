@@ -1,64 +1,74 @@
-/* Typography Utilities */
+/* Typography utilities */
 .text-xs {
-  font-size: var(--font-size-sm);
+  font-size: 0.75rem;
+  line-height: 1rem;
 }
 
 .text-sm {
-  font-size: var(--font-size-base);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
 }
 
 .text-lg {
-  font-size: var(--font-size-lg);
+  font-size: 1.125rem;
+  line-height: 1.75rem;
 }
 
 .text-xl {
-  font-size: calc(var(--font-size-lg) * 1.25);
+  font-size: 1.25rem;
+  line-height: 1.75rem;
 }
 
 .text-2xl {
-  font-size: calc(var(--font-size-lg) * 1.5);
+  font-size: 1.5rem;
+  line-height: 2rem;
 }
 
-.text-3xl {
-  font-size: calc(var(--font-size-lg) * 2);
+.font-sans {
+  font-family: var(--font-sans);
 }
 
-.font-light {
-  font-weight: 300;
-}
-
-.font-normal {
-  font-weight: 400;
-}
-
-.font-medium {
-  font-weight: 500;
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 .font-bold {
   font-weight: 700;
 }
 
-.text-center {
-  text-align: center;
+.font-semibold {
+  font-weight: 600;
 }
 
-.text-right {
-  text-align: right;
+.font-medium {
+  font-weight: 500;
+}
+
+.font-normal {
+  font-weight: 400;
+}
+
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-center {
+  text-align: center;
 }
 
 .text-left {
   text-align: left;
 }
 
-.leading-tight {
-  line-height: 1.25;
+.text-right {
+  text-align: right;
 }
-
-.leading-normal {
-  line-height: var(--line-height);
-}
-
-.leading-loose {
-  line-height: 2;
-} 
