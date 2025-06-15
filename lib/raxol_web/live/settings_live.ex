@@ -19,18 +19,18 @@ defmodule RaxolWeb.SettingsLive do
     case user_id && Accounts.get_user(user_id) do
       user when not is_nil(user) ->
         # Get user preferences
-        preferences = UserPreferences.get_preferences()
+        preferences = UserPreferences.default_preferences()
 
         # Get update settings
-        {:ok, update_settings} = Updater.get_update_settings()
+        {:ok, update_settings} = Updater.default_update_settings()
 
         # Get cloud config
-        cloud_config = Config.get_config()
+        cloud_config = Config.default_config()
 
         socket = assign(socket, :current_user, user)
         socket = assign(socket, :changeset, %{})
         socket = assign(socket, :page_title, "Account Settings")
-        socket = assign(socket, :theme, Theme.current_theme())
+        socket = assign(socket, :theme, Theme.current())
         socket = assign(socket, :preferences, preferences)
         socket = assign(socket, :update_settings, update_settings)
         socket = assign(socket, :cloud_config, cloud_config)
@@ -73,46 +73,87 @@ defmodule RaxolWeb.SettingsLive do
     new_password = params["user"]["password"]
     password_confirmation = params["user"]["password_confirmation"]
 
-    cond do
-      is_nil(current_password) or String.length(current_password) == 0 ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Current password is required.")
-         |> assign(:changeset, %{errors: [current_password: {"Current password is required", []}]})}
-
-      is_nil(new_password) or String.length(new_password) < 6 ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "New password must be at least 6 characters.")
-         |> assign(:changeset, %{errors: [password: {"Password must be at least 6 characters", []}]})}
-
-      new_password != password_confirmation ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Passwords do not match.")
-         |> assign(:changeset, %{errors: [password_confirmation: {"Passwords do not match", []}]})}
-
-      true ->
-        case Accounts.update_password(user.id, current_password, new_password) do
-          :ok ->
-            {:noreply,
-             socket
-             |> put_flash(:info, "Password updated successfully")
-             |> assign(:changeset, %{})}
-
-          {:error, :invalid_current_password} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, "Current password is incorrect.")
-             |> assign(:changeset, %{errors: [current_password: {"Invalid current password", []}]})}
-
-          {:error, reason} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, "Failed to update password.")
-             |> assign(:changeset, %{errors: [password: {"Failed to update password: #{inspect(reason)}", []}]})}
-        end
+    with {:ok, _} <- validate_current_password(current_password),
+         {:ok, _} <- validate_new_password(new_password),
+         {:ok, _} <-
+           validate_password_confirmation(new_password, password_confirmation) do
+      update_user_password(socket, user.id, current_password, new_password)
+    else
+      {:error, field, message, error_text} ->
+        {:noreply, create_error_response(socket, field, message, error_text)}
     end
+  end
+
+  # Extracted validation functions
+  defp validate_current_password(nil),
+    do:
+      {:error, :current_password, "Current password is required.",
+       "Current password is required"}
+
+  defp validate_current_password(""),
+    do:
+      {:error, :current_password, "Current password is required.",
+       "Current password is required"}
+
+  defp validate_current_password(_password), do: {:ok, :valid}
+
+  defp validate_new_password(nil),
+    do:
+      {:error, :password, "New password must be at least 6 characters.",
+       "Password must be at least 6 characters"}
+
+  defp validate_new_password(password) when byte_size(password) < 6,
+    do:
+      {:error, :password, "New password must be at least 6 characters.",
+       "Password must be at least 6 characters"}
+
+  defp validate_new_password(_password), do: {:ok, :valid}
+
+  defp validate_password_confirmation(password, confirmation)
+       when password != confirmation,
+       do:
+         {:error, :password_confirmation, "Passwords do not match.",
+          "Passwords do not match"}
+
+  defp validate_password_confirmation(_password, _confirmation),
+    do: {:ok, :valid}
+
+  # Handle password update logic
+  defp update_user_password(socket, user_id, current_password, new_password) do
+    case Accounts.update_password(user_id, current_password, new_password) do
+      :ok ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Password updated successfully")
+         |> assign(:changeset, %{})}
+
+      {:error, :invalid_current_password} ->
+        {:noreply,
+         create_error_response(
+           socket,
+           :current_password,
+           "Current password is incorrect.",
+           "Invalid current password"
+         )}
+
+      {:error, reason} ->
+        {:noreply,
+         create_error_response(
+           socket,
+           :password,
+           "Failed to update password.",
+           "Failed to update password: #{inspect(reason)}"
+         )}
+    end
+  end
+
+  # Common error response builder
+  defp create_error_response(socket, field, flash_message, error_message) do
+    socket
+    |> put_flash(:error, flash_message)
+    |> assign(:changeset, %{
+      errors: [{field, {error_message, []}}]
+    })
   end
 
   @impl true
@@ -125,7 +166,11 @@ defmodule RaxolWeb.SettingsLive do
   @impl true
   def handle_event("toggle_theme", _params, socket) do
     current_theme = socket.assigns.theme
-    new_theme = if current_theme.id == :dark, do: Theme.light_theme(), else: Theme.dark_theme()
+
+    new_theme =
+      if current_theme.id == :dark,
+        do: Theme.default_theme(),
+        else: Theme.dark_theme()
 
     {:noreply,
      socket
@@ -138,21 +183,22 @@ defmodule RaxolWeb.SettingsLive do
     preferences = socket.assigns.preferences
 
     # Update preferences based on form data
-    updated_preferences = Map.merge(preferences, %{
-      "terminal" => %{
-        "font_size" => String.to_integer(params["font_size"]),
-        "font_family" => params["font_family"],
-        "line_height" => String.to_float(params["line_height"]),
-        "cursor_style" => params["cursor_style"],
-        "scrollback_size" => String.to_integer(params["scrollback_size"])
-      },
-      "editor" => %{
-        "tab_size" => String.to_integer(params["tab_size"]),
-        "insert_spaces" => params["insert_spaces"] == "true",
-        "word_wrap" => params["word_wrap"] == "true",
-        "line_numbers" => params["line_numbers"] == "true"
-      }
-    })
+    updated_preferences =
+      Map.merge(preferences, %{
+        "terminal" => %{
+          "font_size" => String.to_integer(params["font_size"]),
+          "font_family" => params["font_family"],
+          "line_height" => String.to_float(params["line_height"]),
+          "cursor_style" => params["cursor_style"],
+          "scrollback_size" => String.to_integer(params["scrollback_size"])
+        },
+        "editor" => %{
+          "tab_size" => String.to_integer(params["tab_size"]),
+          "insert_spaces" => params["insert_spaces"] == "true",
+          "word_wrap" => params["word_wrap"] == "true",
+          "line_numbers" => params["line_numbers"] == "true"
+        }
+      })
 
     # Save preferences
     UserPreferences.set_preferences(updated_preferences)
@@ -170,7 +216,10 @@ defmodule RaxolWeb.SettingsLive do
 
     {:noreply,
      socket
-     |> assign(:update_settings, Map.put(socket.assigns.update_settings, "auto_check", enabled))
+     |> assign(
+       :update_settings,
+       Map.put(socket.assigns.update_settings, "auto_check", enabled)
+     )
      |> put_flash(:info, "Auto-update settings updated successfully.")}
   end
 
@@ -179,12 +228,13 @@ defmodule RaxolWeb.SettingsLive do
     cloud_config = socket.assigns.cloud_config
 
     # Update cloud config based on form data
-    updated_config = Map.merge(cloud_config, %{
-      "auto_sync" => params["auto_sync"] == "true",
-      "sync_interval" => String.to_integer(params["sync_interval"]),
-      "notifications" => params["notifications"] == "true",
-      "error_reporting" => params["error_reporting"] == "true"
-    })
+    updated_config =
+      Map.merge(cloud_config, %{
+        "auto_sync" => params["auto_sync"] == "true",
+        "sync_interval" => String.to_integer(params["sync_interval"]),
+        "notifications" => params["notifications"] == "true",
+        "error_reporting" => params["error_reporting"] == "true"
+      })
 
     # Save cloud config
     Config.set_config(updated_config)
