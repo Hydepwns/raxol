@@ -11,16 +11,16 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   @type script_id :: String.t()
   @type script_type :: :lua | :python | :javascript | :elixir
   @type script_state :: %{
-    id: script_id,
-    name: String.t(),
-    type: script_type,
-    source: String.t(),
-    config: map(),
-    status: :idle | :running | :paused | :error,
-    error: String.t() | nil,
-    output: [String.t()],
-    metadata: map()
-  }
+          id: script_id,
+          name: String.t(),
+          type: script_type,
+          source: String.t(),
+          config: map(),
+          status: :idle | :running | :paused | :error,
+          error: String.t() | nil,
+          output: [String.t()],
+          metadata: map()
+        }
 
   # Client API
   def start_link(opts \\ []) do
@@ -189,7 +189,12 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       script ->
         case execute_script(script, args, state.script_timeout) do
           {:ok, result} ->
-            new_script = %{script | status: :running, output: [result | script.output]}
+            new_script = %{
+              script
+              | status: :running,
+                output: [result | script.output]
+            }
+
             new_state = put_in(state.scripts[script_id], new_script)
             {:reply, {:ok, result}, new_state}
 
@@ -328,10 +333,16 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  defp validate_script_type(type) when type in [:lua, :python, :javascript, :elixir], do: :ok
+  defp validate_script_type(type)
+       when type in [:lua, :python, :javascript, :elixir],
+       do: :ok
+
   defp validate_script_type(_), do: {:error, :invalid_script_type}
 
-  defp validate_script_source(source) when is_binary(source) and byte_size(source) > 0, do: :ok
+  defp validate_script_source(source)
+       when is_binary(source) and byte_size(source) > 0,
+       do: :ok
+
   defp validate_script_source(_), do: {:error, :invalid_script_source}
 
   defp validate_script_config(config) when is_map(config), do: :ok

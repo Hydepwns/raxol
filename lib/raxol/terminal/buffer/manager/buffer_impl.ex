@@ -7,29 +7,27 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
 
   alias Raxol.Terminal.Buffer.Cell
 
-  defstruct [
-    width: 0,
-    height: 0,
-    cells: %{},
-    cursor_position: {0, 0},
-    attributes: %{},
-    mode: :normal,
-    title: "",
-    icon_name: "",
-    icon_title: ""
-  ]
+  defstruct width: 0,
+            height: 0,
+            cells: %{},
+            cursor_position: {0, 0},
+            attributes: %{},
+            mode: :normal,
+            title: "",
+            icon_name: "",
+            icon_title: ""
 
   @type t :: %__MODULE__{
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    cells: %{non_neg_integer() => Cell.t()},
-    cursor_position: {non_neg_integer(), non_neg_integer()},
-    attributes: map(),
-    mode: atom(),
-    title: String.t(),
-    icon_name: String.t(),
-    icon_title: String.t()
-  }
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          cells: %{non_neg_integer() => Cell.t()},
+          cursor_position: {non_neg_integer(), non_neg_integer()},
+          attributes: map(),
+          mode: atom(),
+          title: String.t(),
+          icon_name: String.t(),
+          icon_title: String.t()
+        }
 
   def new(width, height) do
     %__MODULE__{width: width, height: height}
@@ -80,59 +78,43 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
 
   def scroll_region(buffer, x, y, width, height, lines) do
     if lines > 0 do
-      # Scroll up
-      cells = buffer.cells
-
-      cells =
-        for i <- x..(x + width - 1),
-            j <- y..(y + height - lines - 1),
-            reduce: cells do
-          acc ->
-            src_key = cell_key(i, j + lines)
-            dst_key = cell_key(i, j)
-            cell = Map.get(acc, src_key, Cell.new())
-            Map.put(acc, dst_key, cell)
-        end
-
-      # Clear the scrolled-out area
-      cells =
-        for i <- x..(x + width - 1),
-            j <- (y + height - lines)..(y + height - 1),
-            reduce: cells do
-          acc ->
-            key = cell_key(i, j)
-            Map.put(acc, key, Cell.new())
-        end
-
-      %{buffer | cells: cells}
+      scroll_up(buffer, x, y, width, height, lines)
     else
-      # Scroll down
-      lines = abs(lines)
-      cells = buffer.cells
-
-      cells =
-        for i <- x..(x + width - 1),
-            j <- (y + height - 1)..y,
-            reduce: cells do
-          acc ->
-            src_key = cell_key(i, j - lines)
-            dst_key = cell_key(i, j)
-            cell = Map.get(acc, src_key, Cell.new())
-            Map.put(acc, dst_key, cell)
-        end
-
-      # Clear the scrolled-out area
-      cells =
-        for i <- x..(x + width - 1),
-            j <- y..(y + lines - 1),
-            reduce: cells do
-          acc ->
-            key = cell_key(i, j)
-            Map.put(acc, key, Cell.new())
-        end
-
-      %{buffer | cells: cells}
+      scroll_down(buffer, x, y, width, height, abs(lines))
     end
+  end
+
+  defp scroll_up(buffer, x, y, width, height, lines) do
+    cells = move_cells(buffer.cells, x, y, width, height - lines, 0, lines)
+    cells = clear_region(cells, x, y + height - lines, width, lines)
+    %{buffer | cells: cells}
+  end
+
+  defp scroll_down(buffer, x, y, width, height, lines) do
+    cells = move_cells(buffer.cells, x, y + lines, width, height - lines, 0, -lines)
+    cells = clear_region(cells, x, y, width, lines)
+    %{buffer | cells: cells}
+  end
+
+  defp move_cells(cells, x, y, width, height, x_offset, y_offset) do
+    coords = for i <- x..(x + width - 1), j <- y..(y + height - 1), do: {i, j}
+    Enum.reduce(coords, cells, &move_cell(&1, &2, x_offset, y_offset))
+  end
+
+  defp move_cell({i, j}, cells, x_offset, y_offset) do
+    src_key = cell_key(i + x_offset, j + y_offset)
+    dst_key = cell_key(i, j)
+    cell = Map.get(cells, src_key, Cell.new())
+    Map.put(cells, dst_key, cell)
+  end
+
+  defp clear_region(cells, x, y, width, height) do
+    coords = for i <- x..(x + width - 1), j <- y..(y + height - 1), do: {i, j}
+    Enum.reduce(coords, cells, &clear_cell(&1, &2))
+  end
+
+  defp clear_cell({i, j}, cells) do
+    Map.put(cells, cell_key(i, j), Cell.new())
   end
 
   def copy(buffer) do
@@ -296,6 +278,7 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
       |> Enum.with_index()
       |> Enum.reduce(cells, fn {char, offset}, acc ->
         pos_x = x + offset
+
         if pos_x < buffer.width do
           key = cell_key(pos_x, y)
           cell = Cell.new(char)
@@ -308,13 +291,11 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
     %{buffer | cells: cells, cursor_position: {x + String.length(content), y}}
   end
 
-  # Private helper functions
-
-  defp cell_key(x, y), do: y * 10000 + x
+  defp cell_key(x, y), do: y * 10_000 + x
 
   defp key_to_coords(key) do
-    y = div(key, 10000)
-    x = rem(key, 10000)
+    y = div(key, 10_000)
+    x = rem(key, 10_000)
     {x, y}
   end
 end

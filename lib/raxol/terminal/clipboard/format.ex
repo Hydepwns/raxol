@@ -6,7 +6,8 @@ defmodule Raxol.Terminal.Clipboard.Format do
   @doc """
   Applies a filter to clipboard content.
   """
-  @spec apply_filter(String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, :invalid_filter}
+  @spec apply_filter(String.t(), String.t(), String.t()) ::
+          {:ok, String.t()} | {:error, :invalid_filter}
   def apply_filter(filter, content, format) do
     case filter do
       "plain" -> {:ok, strip_formatting(content)}

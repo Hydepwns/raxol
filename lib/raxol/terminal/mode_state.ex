@@ -133,7 +133,18 @@ defmodule Raxol.Terminal.ModeState do
   end
 
   defp basic_mode?(mode) do
-    mode in [:dectcem, :decawm, :decom, :irm, :lnm, :decscnm, :decarm, :decinlm, :focus_events, :bracketed_paste]
+    mode in [
+      :dectcem,
+      :decawm,
+      :decom,
+      :irm,
+      :lnm,
+      :decscnm,
+      :decarm,
+      :decinlm,
+      :focus_events,
+      :bracketed_paste
+    ]
   end
 
   defp mouse_mode?(mode) do
@@ -157,7 +168,9 @@ defmodule Raxol.Terminal.ModeState do
   defp check_basic_mode(state, :decarm), do: check_auto_repeat_mode(state)
   defp check_basic_mode(state, :decinlm), do: check_interlacing_mode(state)
   defp check_basic_mode(state, :focus_events), do: check_focus_events(state)
-  defp check_basic_mode(state, :bracketed_paste), do: check_bracketed_paste(state)
+
+  defp check_basic_mode(state, :bracketed_paste),
+    do: check_bracketed_paste(state)
 
   defp check_cursor_visible(state), do: state.cursor_visible
   defp check_auto_wrap(state), do: state.auto_wrap
@@ -277,7 +290,9 @@ defmodule Raxol.Terminal.ModeState do
   defp reset_basic_mode(state, :decarm), do: reset_auto_repeat_mode(state)
   defp reset_basic_mode(state, :decinlm), do: reset_interlacing_mode(state)
   defp reset_basic_mode(state, :focus_events), do: reset_focus_events(state)
-  defp reset_basic_mode(state, :bracketed_paste), do: reset_bracketed_paste(state)
+
+  defp reset_basic_mode(state, :bracketed_paste),
+    do: reset_bracketed_paste(state)
 
   defp reset_cursor_visible(state), do: %{state | cursor_visible: false}
   defp reset_auto_wrap(state), do: %{state | auto_wrap: false}

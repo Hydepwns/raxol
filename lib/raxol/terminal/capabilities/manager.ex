@@ -4,13 +4,10 @@ defmodule Raxol.Terminal.Capabilities.Manager do
   """
 
   use GenServer
-  require Logger
 
   alias Raxol.Terminal.Capabilities.Types
 
   @type state :: Types.t()
-
-  # Client API
 
   @doc """
   Starts the capabilities manager.
@@ -44,8 +41,6 @@ defmodule Raxol.Terminal.Capabilities.Manager do
     GenServer.call(__MODULE__, {:enable_capability, capability})
   end
 
-  # Server Callbacks
-
   @impl true
   def init(_opts) do
     state = %Types{}
@@ -54,7 +49,11 @@ defmodule Raxol.Terminal.Capabilities.Manager do
 
   @impl true
   def handle_call({:detect_capability, capability, value}, _from, state) do
-    new_state = %{state | supported: Map.put(state.supported, capability, value)}
+    new_state = %{
+      state
+      | supported: Map.put(state.supported, capability, value)
+    }
+
     {:reply, :ok, new_state}
   end
 
@@ -71,8 +70,13 @@ defmodule Raxol.Terminal.Capabilities.Manager do
     case Map.get(state.supported, capability) do
       nil ->
         {:reply, {:error, :unsupported}, state}
+
       value ->
-        new_state = %{state | enabled: Map.put(state.enabled, capability, value)}
+        new_state = %{
+          state
+          | enabled: Map.put(state.enabled, capability, value)
+        }
+
         {:reply, :ok, new_state}
     end
   end

@@ -12,22 +12,22 @@ defmodule Raxol.Terminal.Sync.System do
   @type sync_key :: String.t()
   @type sync_value :: term()
   @type sync_metadata :: %{
-    version: non_neg_integer(),
-    timestamp: non_neg_integer(),
-    source: String.t(),
-    consistency: :strong | :eventual | :causal
-  }
+          version: non_neg_integer(),
+          timestamp: non_neg_integer(),
+          source: String.t(),
+          consistency: :strong | :eventual | :causal
+        }
   @type sync_entry :: %{
-    key: sync_key(),
-    value: sync_value(),
-    metadata: sync_metadata()
-  }
+          key: sync_key(),
+          value: sync_value(),
+          metadata: sync_metadata()
+        }
   @type sync_stats :: %{
-    sync_count: non_neg_integer(),
-    conflict_count: non_neg_integer(),
-    last_sync: non_neg_integer(),
-    consistency_levels: %{atom() => non_neg_integer()}
-  }
+          sync_count: non_neg_integer(),
+          conflict_count: non_neg_integer(),
+          last_sync: non_neg_integer(),
+          consistency_levels: %{atom() => non_neg_integer()}
+        }
 
   # Client API
   def start_link(opts \\ []) do
@@ -62,20 +62,30 @@ defmodule Raxol.Terminal.Sync.System do
   @impl true
   def init(opts) do
     state = %{
-      syncs: %{},  # sync_id => %{key => sync_entry}
-      stats: %{},  # sync_id => sync_stats
-      consistency_levels: Map.get(opts, :consistency_levels, %{
-        split: :strong,
-        window: :strong,
-        tab: :eventual
-      })
+      # sync_id => %{key => sync_entry}
+      syncs: %{},
+      # sync_id => sync_stats
+      stats: %{},
+      consistency_levels:
+        Map.get(opts, :consistency_levels, %{
+          split: :strong,
+          window: :strong,
+          tab: :eventual
+        })
     }
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:sync, sync_id, key, value, opts}, _from, state) do
-    consistency = Map.get(opts, :consistency, Map.get(state.consistency_levels, sync_id, :eventual))
+    consistency =
+      Map.get(
+        opts,
+        :consistency,
+        Map.get(state.consistency_levels, sync_id, :eventual)
+      )
+
     metadata = %{
       version: System.monotonic_time(),
       timestamp: System.system_time(),
@@ -86,6 +96,7 @@ defmodule Raxol.Terminal.Sync.System do
     case do_sync(state, sync_id, key, value, metadata) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -131,19 +142,36 @@ defmodule Raxol.Terminal.Sync.System do
   defp do_sync(state, sync_id, key, value, metadata) do
     case get_sync_entry(state, sync_id, key) do
       {:ok, existing_entry} ->
-        handle_existing_sync(state, sync_id, key, value, metadata, existing_entry)
+        handle_existing_sync(
+          state,
+          sync_id,
+          key,
+          value,
+          metadata,
+          existing_entry
+        )
+
       {:error, :not_found} ->
         handle_new_sync(state, sync_id, key, value, metadata)
     end
   end
 
-  defp handle_existing_sync(state, sync_id, key, value, metadata, existing_entry) do
+  defp handle_existing_sync(
+         state,
+         sync_id,
+         key,
+         value,
+         metadata,
+         existing_entry
+       ) do
     case resolve_conflict(metadata, existing_entry.metadata) do
       :keep_existing ->
         {:ok, state}
+
       :use_new ->
         new_state = update_sync_entry(state, sync_id, key, value, metadata)
         {:ok, new_state}
+
       :conflict ->
         _new_state = increment_conflict_count(state, sync_id)
         {:error, :conflict}
@@ -157,14 +185,22 @@ defmodule Raxol.Terminal.Sync.System do
 
   defp resolve_conflict(new_metadata, existing_metadata) do
     cond do
-      new_metadata.consistency == :strong and existing_metadata.consistency == :strong ->
-        if new_metadata.version > existing_metadata.version, do: :use_new, else: :keep_existing
+      new_metadata.consistency == :strong and
+          existing_metadata.consistency == :strong ->
+        if new_metadata.version > existing_metadata.version,
+          do: :use_new,
+          else: :keep_existing
+
       new_metadata.consistency == :strong ->
         :use_new
+
       existing_metadata.consistency == :strong ->
         :keep_existing
+
       true ->
-        if new_metadata.version > existing_metadata.version, do: :use_new, else: :conflict
+        if new_metadata.version > existing_metadata.version,
+          do: :use_new,
+          else: :conflict
     end
   end
 
@@ -186,7 +222,9 @@ defmodule Raxol.Terminal.Sync.System do
 
   defp delete_sync_entry(state, sync_id, key) do
     case Map.get(state.syncs, sync_id) do
-      nil -> state
+      nil ->
+        state
+
       sync_data ->
         new_sync_data = Map.delete(sync_data, key)
         new_syncs = Map.put(state.syncs, sync_id, new_sync_data)
@@ -201,18 +239,20 @@ defmodule Raxol.Terminal.Sync.System do
   end
 
   defp update_sync_stats(stats, sync_id, consistency) do
-    sync_stats = Map.get(stats, sync_id, %{
-      sync_count: 0,
-      conflict_count: 0,
-      last_sync: 0,
-      consistency_levels: %{strong: 0, eventual: 0, causal: 0}
-    })
+    sync_stats =
+      Map.get(stats, sync_id, %{
+        sync_count: 0,
+        conflict_count: 0,
+        last_sync: 0,
+        consistency_levels: %{strong: 0, eventual: 0, causal: 0}
+      })
 
     new_sync_stats = %{
-      sync_stats |
-      sync_count: sync_stats.sync_count + 1,
-      last_sync: System.monotonic_time(),
-      consistency_levels: Map.update(sync_stats.consistency_levels, consistency, 1, &(&1 + 1))
+      sync_stats
+      | sync_count: sync_stats.sync_count + 1,
+        last_sync: System.monotonic_time(),
+        consistency_levels:
+          Map.update(sync_stats.consistency_levels, consistency, 1, &(&1 + 1))
     }
 
     Map.put(stats, sync_id, new_sync_stats)
@@ -220,7 +260,12 @@ defmodule Raxol.Terminal.Sync.System do
 
   defp increment_conflict_count(state, sync_id) do
     sync_stats = Map.get(state.stats, sync_id)
-    new_sync_stats = %{sync_stats | conflict_count: sync_stats.conflict_count + 1}
+
+    new_sync_stats = %{
+      sync_stats
+      | conflict_count: sync_stats.conflict_count + 1
+    }
+
     %{state | stats: Map.put(state.stats, sync_id, new_sync_stats)}
   end
 

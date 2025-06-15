@@ -6,10 +6,10 @@ defmodule Raxol.Terminal.Clipboard.Store do
   defstruct [:content, :format, :timestamp]
 
   @type t :: %__MODULE__{
-    content: String.t(),
-    format: String.t(),
-    timestamp: integer()
-  }
+          content: String.t(),
+          format: String.t(),
+          timestamp: integer()
+        }
 
   @doc """
   Creates a new clipboard store entry.

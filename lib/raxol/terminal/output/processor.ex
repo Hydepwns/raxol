@@ -11,6 +11,7 @@ defmodule Raxol.Terminal.Output.Processor do
       %{type: :text, content: content, style: style} ->
         styled_content = apply_style(content, style)
         {:ok, %{event | content: styled_content}}
+
       _ ->
         {:error, :unknown_event_type}
     end
@@ -26,16 +27,19 @@ defmodule Raxol.Terminal.Output.Processor do
   end
 
   defp apply_foreground(content, nil), do: content
+
   defp apply_foreground(content, color) do
     "\e[38;5;#{color}m#{content}\e[39m"
   end
 
   defp apply_background(content, nil), do: content
+
   defp apply_background(content, color) do
     "\e[48;5;#{color}m#{content}\e[49m"
   end
 
   defp apply_attributes(content, []), do: content
+
   defp apply_attributes(content, attributes) do
     codes = Enum.map(attributes, &attribute_to_code/1)
     "\e[#{Enum.join(codes, ";")}m#{content}\e[0m"

@@ -61,9 +61,9 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
         {:continue, emulator, next_parser_state, rest_after_ss3}
 
       # Handle unhandled escape sequence bytes
-      <<unhandled_byte, rest_after_unhandled::binary>> ->
+      <<_unhandled_byte, rest_after_unhandled::binary>> ->
         Raxol.Core.Runtime.Log.warning_with_context(
-          "Unhandled escape sequence byte: #{inspect(unhandled_byte)}",
+          "Unhandled escape sequence byte: #{inspect(_unhandled_byte)}",
           %{}
         )
 
@@ -89,30 +89,38 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       # CAN/SUB bytes
       0x18..0x1A ->
         {:ok, emulator, %{state | state: :ground}}
+
       # CSI sequence
       ?[ ->
         {:ok, emulator, %{state | state: :csi_entry}}
+
       # DCS sequence
       ?P ->
         {:ok, emulator, %{state | state: :dcs_entry}}
+
       # OSC sequence
       ?] ->
         {:ok, emulator, %{state | state: :osc_string}}
+
       # PM sequence
       ?^ ->
         {:ok, emulator, %{state | state: :ground}}
+
       # APC sequence
       ?_ ->
         {:ok, emulator, %{state | state: :ground}}
+
       # SS3 sequence
       ?O ->
         {:ok, emulator, %{state | state: :ground}}
+
       # Other bytes
       _ ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Unhandled escape sequence byte: #{inspect(byte)}",
           %{}
         )
+
         {:ok, emulator, %{state | state: :ground}}
     end
   end
@@ -158,6 +166,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       "EscapeState received unknown command",
       %{emulator: emulator, state: state}
     )
+
     {:ok, emulator, %{state | state: :ground}}
   end
 end

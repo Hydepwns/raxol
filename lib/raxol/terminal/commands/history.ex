@@ -11,16 +11,16 @@ defmodule Raxol.Terminal.Commands.History do
 
   @type command_history :: [String.t()]
   @type command_history_config :: %{
-    max_size: non_neg_integer(),
-    current_input: String.t()
-  }
+          max_size: non_neg_integer(),
+          current_input: String.t()
+        }
 
   @type t :: %__MODULE__{
-    commands: command_history(),
-    current_index: integer(),
-    max_size: non_neg_integer(),
-    current_input: String.t()
-  }
+          commands: command_history(),
+          current_index: integer(),
+          max_size: non_neg_integer(),
+          current_input: String.t()
+        }
 
   defstruct [
     :commands,

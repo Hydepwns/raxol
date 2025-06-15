@@ -12,15 +12,15 @@ defmodule Raxol.Terminal.Hyperlink.Manager do
 
   @type hyperlink_state :: :active | :inactive | :hover
   @type hyperlink_params :: %{
-    optional(String.t()) => String.t()
-  }
+          optional(String.t()) => String.t()
+        }
 
   @type t :: %__MODULE__{
-    url: String.t(),
-    state: hyperlink_state(),
-    id: String.t(),
-    params: hyperlink_params()
-  }
+          url: String.t(),
+          state: hyperlink_state(),
+          id: String.t(),
+          params: hyperlink_params()
+        }
 
   @doc """
   Creates a new hyperlink manager with default settings.
@@ -58,7 +58,8 @@ defmodule Raxol.Terminal.Hyperlink.Manager do
   @doc """
   Updates the hyperlink state.
   """
-  def update_hyperlink_state(%__MODULE__{} = manager, state) when state in [:active, :inactive, :hover] do
+  def update_hyperlink_state(%__MODULE__{} = manager, state)
+      when state in [:active, :inactive, :hover] do
     %{manager | state: state}
   end
 
@@ -73,11 +74,12 @@ defmodule Raxol.Terminal.Hyperlink.Manager do
   Creates a new hyperlink with the given parameters.
   """
   def create_hyperlink(%__MODULE__{} = manager, url, id \\ nil, params \\ %{}) do
-    %{manager |
-      url: url,
-      id: id || generate_id(),
-      params: params,
-      state: :inactive
+    %{
+      manager
+      | url: url,
+        id: id || generate_id(),
+        params: params,
+        state: :inactive
     }
   end
 

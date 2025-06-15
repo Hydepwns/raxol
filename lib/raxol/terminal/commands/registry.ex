@@ -15,27 +15,27 @@ defmodule Raxol.Terminal.Commands.Registry do
   @type command_completion :: function() | nil
 
   @type command_metrics :: %{
-    registrations: integer(),
-    executions: integer(),
-    completions: integer(),
-    validations: integer()
-  }
+          registrations: integer(),
+          executions: integer(),
+          completions: integer(),
+          validations: integer()
+        }
 
   @type command :: %{
-    name: command_name(),
-    description: command_description(),
-    handler: command_handler(),
-    aliases: command_aliases(),
-    usage: command_usage(),
-    completion: command_completion()
-  }
+          name: command_name(),
+          description: command_description(),
+          handler: command_handler(),
+          aliases: command_aliases(),
+          usage: command_usage(),
+          completion: command_completion()
+        }
 
   @type t :: %__MODULE__{
-    commands: %{String.t() => command()},
-    history: [String.t()],
-    max_history: integer(),
-    metrics: command_metrics()
-  }
+          commands: %{String.t() => command()},
+          history: [String.t()],
+          max_history: integer(),
+          metrics: command_metrics()
+        }
 
   defstruct [
     :commands,
@@ -70,10 +70,13 @@ defmodule Raxol.Terminal.Commands.Registry do
     with :ok <- validate_command(command),
          :ok <- check_name_conflict(registry, command) do
       new_commands = Map.put(registry.commands, command.name, command)
-      updated_registry = %{registry |
-        commands: new_commands,
-        metrics: update_metrics(registry.metrics, :registrations)
+
+      updated_registry = %{
+        registry
+        | commands: new_commands,
+          metrics: update_metrics(registry.metrics, :registrations)
       }
+
       {:ok, updated_registry}
     else
       {:error, reason} -> {:error, reason}
@@ -83,15 +86,20 @@ defmodule Raxol.Terminal.Commands.Registry do
   @doc """
   Executes a command with the given arguments.
   """
-  @spec execute_command(t(), String.t(), [String.t()]) :: {:ok, t(), term()} | {:error, term()}
+  @spec execute_command(t(), String.t(), [String.t()]) ::
+          {:ok, t(), term()} | {:error, term()}
   def execute_command(registry, command_name, args) do
     with {:ok, command} <- get_command(registry, command_name),
          :ok <- validate_args(command, args) do
       result = command.handler.(args)
-      updated_registry = %{registry |
-        history: [command_name | registry.history] |> Enum.take(registry.max_history),
-        metrics: update_metrics(registry.metrics, :executions)
+
+      updated_registry = %{
+        registry
+        | history:
+            [command_name | registry.history] |> Enum.take(registry.max_history),
+          metrics: update_metrics(registry.metrics, :executions)
       }
+
       {:ok, updated_registry, result}
     else
       {:error, reason} -> {:error, reason}
@@ -101,20 +109,24 @@ defmodule Raxol.Terminal.Commands.Registry do
   @doc """
   Gets command completion suggestions for the given input.
   """
-  @spec get_completions(t(), String.t()) :: {:ok, t(), [String.t()]} | {:error, term()}
+  @spec get_completions(t(), String.t()) ::
+          {:ok, t(), [String.t()]} | {:error, term()}
   def get_completions(registry, input) do
-    suggestions = registry.commands
-    |> Map.values()
-    |> Enum.flat_map(fn command ->
-      [command.name | command.aliases]
-    end)
-    |> Enum.filter(&String.starts_with?(&1, input))
-    |> Enum.uniq()
-    |> Enum.sort()
+    suggestions =
+      registry.commands
+      |> Map.values()
+      |> Enum.flat_map(fn command ->
+        [command.name | command.aliases]
+      end)
+      |> Enum.filter(&String.starts_with?(&1, input))
+      |> Enum.uniq()
+      |> Enum.sort()
 
-    updated_registry = %{registry |
-      metrics: update_metrics(registry.metrics, :completions)
+    updated_registry = %{
+      registry
+      | metrics: update_metrics(registry.metrics, :completions)
     }
+
     {:ok, updated_registry, suggestions}
   end
 
@@ -146,6 +158,7 @@ defmodule Raxol.Terminal.Commands.Registry do
 
   defp validate_command(command) do
     required_fields = [:name, :description, :handler, :usage]
+
     if Enum.all?(required_fields, &Map.has_key?(command, &1)) do
       :ok
     else
@@ -182,12 +195,15 @@ defmodule Raxol.Terminal.Commands.Registry do
   defp update_metrics(metrics, :registrations) do
     update_in(metrics.registrations, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :executions) do
     update_in(metrics.executions, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :completions) do
     update_in(metrics.completions, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :validations) do
     update_in(metrics.validations, &(&1 + 1))
   end

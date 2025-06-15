@@ -10,32 +10,32 @@ defmodule Raxol.Terminal.Plugin.Manager do
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @type plugin :: %{
-    name: String.t(),
-    version: String.t(),
-    description: String.t(),
-    author: String.t(),
-    hooks: [String.t()],
-    config: map(),
-    state: map()
-  }
+          name: String.t(),
+          version: String.t(),
+          description: String.t(),
+          author: String.t(),
+          hooks: [String.t()],
+          config: map(),
+          state: map()
+        }
 
   @type hook :: %{
-    name: String.t(),
-    callback: function(),
-    priority: integer()
-  }
+          name: String.t(),
+          callback: function(),
+          priority: integer()
+        }
 
   @type t :: %__MODULE__{
-    plugins: %{String.t() => plugin()},
-    hooks: %{String.t() => [hook()]},
-    config: map(),
-    metrics: %{
-      plugin_loads: integer(),
-      plugin_unloads: integer(),
-      hook_calls: integer(),
-      config_updates: integer()
-    }
-  }
+          plugins: %{String.t() => plugin()},
+          hooks: %{String.t() => [hook()]},
+          config: map(),
+          metrics: %{
+            plugin_loads: integer(),
+            plugin_unloads: integer(),
+            hook_calls: integer(),
+            config_updates: integer()
+          }
+        }
 
   defstruct [
     :plugins,
@@ -72,11 +72,13 @@ defmodule Raxol.Terminal.Plugin.Manager do
       updated_plugins = Map.put(manager.plugins, plugin.name, plugin)
       updated_hooks = register_plugin_hooks(manager.hooks, plugin)
 
-      updated_manager = %{manager |
-        plugins: updated_plugins,
-        hooks: updated_hooks,
-        metrics: update_metrics(manager.metrics, :plugin_loads)
+      updated_manager = %{
+        manager
+        | plugins: updated_plugins,
+          hooks: updated_hooks,
+          metrics: update_metrics(manager.metrics, :plugin_loads)
       }
+
       {:ok, updated_manager}
     else
       {:error, reason} -> {:error, reason}
@@ -89,16 +91,20 @@ defmodule Raxol.Terminal.Plugin.Manager do
   @spec unload_plugin(t(), String.t()) :: {:ok, t()} | {:error, term()}
   def unload_plugin(manager, plugin_name) do
     case Map.get(manager.plugins, plugin_name) do
-      nil -> {:error, :plugin_not_found}
+      nil ->
+        {:error, :plugin_not_found}
+
       plugin ->
         updated_plugins = Map.delete(manager.plugins, plugin_name)
         updated_hooks = unregister_plugin_hooks(manager.hooks, plugin)
 
-        updated_manager = %{manager |
-          plugins: updated_plugins,
-          hooks: updated_hooks,
-          metrics: update_metrics(manager.metrics, :plugin_unloads)
+        updated_manager = %{
+          manager
+          | plugins: updated_plugins,
+            hooks: updated_hooks,
+            metrics: update_metrics(manager.metrics, :plugin_unloads)
         }
+
         {:ok, updated_manager}
     end
   end
@@ -106,18 +112,24 @@ defmodule Raxol.Terminal.Plugin.Manager do
   @doc """
   Calls a hook with the given arguments.
   """
-  @spec call_hook(t(), String.t(), [term()]) :: {:ok, [term()], t()} | {:error, term()}
+  @spec call_hook(t(), String.t(), [term()]) ::
+          {:ok, [term()], t()} | {:error, term()}
   def call_hook(manager, hook_name, args \\ []) do
     case Map.get(manager.hooks, hook_name) do
-      nil -> {:error, :hook_not_found}
-      hooks ->
-        results = Enum.map(hooks, fn hook ->
-          apply_hook(hook, args)
-        end)
+      nil ->
+        {:error, :hook_not_found}
 
-        updated_manager = %{manager |
-          metrics: update_metrics(manager.metrics, :hook_calls)
+      hooks ->
+        results =
+          Enum.map(hooks, fn hook ->
+            apply_hook(hook, args)
+          end)
+
+        updated_manager = %{
+          manager
+          | metrics: update_metrics(manager.metrics, :hook_calls)
         }
+
         {:ok, results, updated_manager}
     end
   end
@@ -125,18 +137,23 @@ defmodule Raxol.Terminal.Plugin.Manager do
   @doc """
   Updates the configuration for a plugin.
   """
-  @spec update_plugin_config(t(), String.t(), map()) :: {:ok, t()} | {:error, term()}
+  @spec update_plugin_config(t(), String.t(), map()) ::
+          {:ok, t()} | {:error, term()}
   def update_plugin_config(manager, plugin_name, config) do
     case Map.get(manager.plugins, plugin_name) do
-      nil -> {:error, :plugin_not_found}
+      nil ->
+        {:error, :plugin_not_found}
+
       plugin ->
         updated_plugin = %{plugin | config: Map.merge(plugin.config, config)}
         updated_plugins = Map.put(manager.plugins, plugin_name, updated_plugin)
 
-        updated_manager = %{manager |
-          plugins: updated_plugins,
-          metrics: update_metrics(manager.metrics, :config_updates)
+        updated_manager = %{
+          manager
+          | plugins: updated_plugins,
+            metrics: update_metrics(manager.metrics, :config_updates)
         }
+
         {:ok, updated_manager}
     end
   end
@@ -152,7 +169,16 @@ defmodule Raxol.Terminal.Plugin.Manager do
   # Private helper functions
 
   defp validate_plugin(plugin) do
-    required_fields = [:name, :version, :description, :author, :hooks, :config, :state]
+    required_fields = [
+      :name,
+      :version,
+      :description,
+      :author,
+      :hooks,
+      :config,
+      :state
+    ]
+
     if Enum.all?(required_fields, &Map.has_key?(plugin, &1)) do
       :ok
     else
@@ -175,13 +201,19 @@ defmodule Raxol.Terminal.Plugin.Manager do
         callback: &apply_hook/2,
         priority: 0
       }
+
       Map.update(acc, hook_name, [hook], &[hook | &1])
     end)
   end
 
   defp unregister_plugin_hooks(hooks, plugin) do
     Enum.reduce(plugin.hooks, hooks, fn hook_name, acc ->
-      Map.update(acc, hook_name, [], &Enum.reject(&1, fn h -> h.name == plugin.name end))
+      Map.update(
+        acc,
+        hook_name,
+        [],
+        &Enum.reject(&1, fn h -> h.name == plugin.name end)
+      )
     end)
   end
 
@@ -196,12 +228,15 @@ defmodule Raxol.Terminal.Plugin.Manager do
   defp update_metrics(metrics, :plugin_loads) do
     update_in(metrics.plugin_loads, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :plugin_unloads) do
     update_in(metrics.plugin_unloads, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :hook_calls) do
     update_in(metrics.hook_calls, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :config_updates) do
     update_in(metrics.config_updates, &(&1 + 1))
   end

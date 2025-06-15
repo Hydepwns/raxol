@@ -14,7 +14,10 @@ defmodule Raxol.Terminal.Split.Sync do
   end
 
   def broadcast_event(split_id, event_type, payload) do
-    GenServer.cast(__MODULE__, {:broadcast_event, split_id, event_type, payload})
+    GenServer.cast(
+      __MODULE__,
+      {:broadcast_event, split_id, event_type, payload}
+    )
   end
 
   def subscribe_to_events(split_id, callback) do
@@ -42,6 +45,7 @@ defmodule Raxol.Terminal.Split.Sync do
       shared_states: %{},
       event_history: []
     }
+
     {:ok, state}
   end
 

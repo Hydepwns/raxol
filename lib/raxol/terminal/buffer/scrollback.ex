@@ -17,6 +17,7 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
     scrollback = trim_scrollback(scrollback, buffer.scrollback_limit)
     %{buffer | scrollback: scrollback}
   end
+
   def add_line(buffer, _), do: buffer
 
   @doc """
@@ -28,6 +29,7 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
     scrollback = trim_scrollback(scrollback, buffer.scrollback_limit)
     %{buffer | scrollback: scrollback}
   end
+
   def add_lines(buffer, _), do: buffer
 
   @doc """
@@ -39,17 +41,20 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
     |> Enum.reverse()
     |> Enum.at(index)
   end
+
   def get_line(_, _), do: nil
 
   @doc """
   Gets lines from the scrollback buffer.
   """
-  @spec get_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: list(list(Cell.t()))
+  @spec get_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          list(list(Cell.t()))
   def get_lines(buffer, start, count) when start >= 0 and count > 0 do
     buffer.scrollback
     |> Enum.reverse()
     |> Enum.slice(start, count)
   end
+
   def get_lines(_, _, _), do: []
 
   @doc """
@@ -76,6 +81,7 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
     scrollback = trim_scrollback(buffer.scrollback, limit)
     %{buffer | scrollback: scrollback, scrollback_limit: limit}
   end
+
   def set_limit(buffer, _), do: buffer
 
   @doc """
@@ -89,8 +95,8 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @doc """
   Checks if the scrollback buffer is full.
   """
-  @spec is_full?(ScreenBuffer.t()) :: boolean()
-  def is_full?(buffer) do
+  @spec full?(ScreenBuffer.t()) :: boolean()
+  def full?(buffer) do
     length(buffer.scrollback) >= buffer.scrollback_limit
   end
 
@@ -124,9 +130,9 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   defstruct lines: [], limit: 1000
 
   @type t :: %__MODULE__{
-    lines: list(),
-    limit: integer()
-  }
+          lines: list(),
+          limit: integer()
+        }
 
   @doc """
   Returns a new scrollback buffer with default settings.

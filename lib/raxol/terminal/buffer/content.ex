@@ -13,18 +13,21 @@ defmodule Raxol.Terminal.Buffer.Content do
   Writes a character at the specified position with optional styling.
   """
   @spec write_char(
-    ScreenBuffer.t(),
-    non_neg_integer(),
-    non_neg_integer(),
-    String.t(),
-    TextFormatting.text_style() | nil
-  ) :: ScreenBuffer.t()
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          TextFormatting.text_style() | nil
+        ) :: ScreenBuffer.t()
   def write_char(buffer, x, y, char, style \\ nil) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       cell = Cell.new(char, style)
-      cells = List.update_at(buffer.cells, y, fn line ->
-        List.update_at(line, x, fn _ -> cell end)
-      end)
+
+      cells =
+        List.update_at(buffer.cells, y, fn line ->
+          List.update_at(line, x, fn _ -> cell end)
+        end)
+
       %{buffer | cells: cells}
     else
       buffer
@@ -35,12 +38,12 @@ defmodule Raxol.Terminal.Buffer.Content do
   Writes a string starting at the specified position.
   """
   @spec write_string(
-    ScreenBuffer.t(),
-    non_neg_integer(),
-    non_neg_integer(),
-    String.t(),
-    TextFormatting.text_style() | nil
-  ) :: ScreenBuffer.t()
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          TextFormatting.text_style() | nil
+        ) :: ScreenBuffer.t()
   def write_string(buffer, x, y, string, style \\ nil) when x >= 0 and y >= 0 do
     string
     |> String.graphemes()
@@ -57,7 +60,8 @@ defmodule Raxol.Terminal.Buffer.Content do
   @doc """
   Gets a character at the specified position.
   """
-  @spec get_char(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: String.t()
+  @spec get_char(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          String.t()
   def get_char(buffer, x, y) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       buffer.cells
@@ -72,7 +76,8 @@ defmodule Raxol.Terminal.Buffer.Content do
   @doc """
   Gets a cell at the specified position.
   """
-  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
+  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       buffer.cells
@@ -100,7 +105,8 @@ defmodule Raxol.Terminal.Buffer.Content do
   @doc """
   Updates a line in the buffer with new cells.
   """
-  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
+  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
+          ScreenBuffer.t()
   def put_line(%ScreenBuffer{cells: cells} = buffer, line_index, new_cells)
       when line_index >= 0 and line_index < length(cells) do
     new_cells = List.duplicate(new_cells, 1)
@@ -111,7 +117,10 @@ defmodule Raxol.Terminal.Buffer.Content do
   @doc """
   Calculates the difference between the current buffer state and a list of changes.
   """
-  @spec diff(ScreenBuffer.t(), list({non_neg_integer(), non_neg_integer(), map()})) ::
+  @spec diff(
+          ScreenBuffer.t(),
+          list({non_neg_integer(), non_neg_integer(), map()})
+        ) ::
           list({non_neg_integer(), non_neg_integer(), map()})
   def diff(%ScreenBuffer{cells: cells}, changes) do
     Enum.filter(changes, fn {y, x, _} ->
@@ -132,7 +141,11 @@ defmodule Raxol.Terminal.Buffer.Content do
   def update(%ScreenBuffer{cells: cells} = buffer, changes) do
     new_cells =
       Enum.reduce(changes, cells, fn {y, x, cell_or_map}, acc_cells ->
-        cell = if is_map(cell_or_map), do: struct(Cell, cell_or_map), else: cell_or_map
+        cell =
+          if is_map(cell_or_map),
+            do: struct(Cell, cell_or_map),
+            else: cell_or_map
+
         put_in(acc_cells, [y, x], cell)
       end)
 

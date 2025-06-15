@@ -22,7 +22,8 @@ defmodule Raxol.Terminal.Session.Storage do
   @doc """
   Loads a session state from persistent storage.
   """
-  @spec load_session(String.t()) :: {:ok, Raxol.Terminal.Session.t()} | {:error, term()}
+  @spec load_session(String.t()) ::
+          {:ok, Raxol.Terminal.Session.t()} | {:error, term()}
   def load_session(session_id) do
     storage_path = get_storage_path(session_id)
 

@@ -14,12 +14,14 @@ defmodule Raxol.Terminal.ModeManager do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.ModeStateManager
+
   alias Raxol.Terminal.Modes.Handlers.{
     DECPrivateHandler,
     StandardHandler,
     MouseHandler,
     ScreenBufferHandler
   }
+
   alias Raxol.Terminal.Modes.Types.ModeTypes
   alias Raxol.Terminal.ModeManager.{SavedState}
 
@@ -160,7 +162,8 @@ defmodule Raxol.Terminal.ModeManager do
   Sets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
   """
-  @spec set_mode(Emulator.t(), [mode()]) :: {:ok, Emulator.t()} | {:error, term()}
+  @spec set_mode(Emulator.t(), [mode()]) ::
+          {:ok, Emulator.t()} | {:error, term()}
   def set_mode(emulator, modes) when is_list(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
       case do_set_mode(mode, emu) do
@@ -174,7 +177,8 @@ defmodule Raxol.Terminal.ModeManager do
   Resets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
   """
-  @spec reset_mode(Emulator.t(), [mode()]) :: {:ok, Emulator.t()} | {:error, term()}
+  @spec reset_mode(Emulator.t(), [mode()]) ::
+          {:ok, Emulator.t()} | {:error, term()}
   def reset_mode(emulator, modes) when is_list(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
       case do_reset_mode(mode, emu) do
@@ -212,7 +216,8 @@ defmodule Raxol.Terminal.ModeManager do
 
   defp do_set_mode(mode_name, emulator) do
     with {:ok, mode_def} <- find_mode_definition(mode_name),
-         {:ok, new_state} <- ModeStateManager.set_mode(emulator.mode_manager, mode_name, true),
+         {:ok, new_state} <-
+           ModeStateManager.set_mode(emulator.mode_manager, mode_name, true),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator) do
       {:ok, %{new_emu | mode_manager: new_state}}
     end
@@ -220,7 +225,8 @@ defmodule Raxol.Terminal.ModeManager do
 
   defp do_reset_mode(mode_name, emulator) do
     with {:ok, mode_def} <- find_mode_definition(mode_name),
-         {:ok, new_state} <- ModeStateManager.reset_mode(emulator.mode_manager, mode_name),
+         {:ok, new_state} <-
+           ModeStateManager.reset_mode(emulator.mode_manager, mode_name),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator) do
       {:ok, %{new_emu | mode_manager: new_state}}
     end
@@ -237,10 +243,17 @@ defmodule Raxol.Terminal.ModeManager do
 
   defp apply_mode_effects(mode_def, emulator) do
     case mode_def.category do
-      :dec_private -> DECPrivateHandler.handle_mode_change(mode_def.name, true, emulator)
-      :standard -> StandardHandler.handle_mode_change(mode_def.name, true, emulator)
-      :mouse -> MouseHandler.handle_mode_change(mode_def.name, true, emulator)
-      :screen_buffer -> ScreenBufferHandler.handle_mode_change(mode_def.name, true, emulator)
+      :dec_private ->
+        DECPrivateHandler.handle_mode_change(mode_def.name, true, emulator)
+
+      :standard ->
+        StandardHandler.handle_mode_change(mode_def.name, true, emulator)
+
+      :mouse ->
+        MouseHandler.handle_mode_change(mode_def.name, true, emulator)
+
+      :screen_buffer ->
+        ScreenBufferHandler.handle_mode_change(mode_def.name, true, emulator)
     end
   end
 
@@ -312,7 +325,8 @@ defmodule Raxol.Terminal.ModeManager do
   @doc """
   Sets a mode with a value and private flag.
   """
-  @spec set_mode(Emulator.t(), mode(), boolean(), boolean()) :: {:ok, Emulator.t()} | {:error, term()}
+  @spec set_mode(Emulator.t(), mode(), boolean(), boolean()) ::
+          {:ok, Emulator.t()} | {:error, term()}
   def set_mode(emulator, mode, value, private) do
     case private do
       true -> set_private_mode(emulator, mode, value)
@@ -323,7 +337,8 @@ defmodule Raxol.Terminal.ModeManager do
   @doc """
   Sets a private mode with a value.
   """
-  @spec set_private_mode(Emulator.t(), mode(), boolean()) :: {:ok, Emulator.t()} | {:error, term()}
+  @spec set_private_mode(Emulator.t(), mode(), boolean()) ::
+          {:ok, Emulator.t()} | {:error, term()}
   def set_private_mode(emulator, mode, value) do
     case DECPrivateHandler.handle_mode(emulator, mode, value) do
       {:ok, new_emu} -> {:ok, new_emu}
@@ -334,7 +349,8 @@ defmodule Raxol.Terminal.ModeManager do
   @doc """
   Sets a standard mode with a value.
   """
-  @spec set_standard_mode(Emulator.t(), mode(), boolean()) :: {:ok, Emulator.t()} | {:error, term()}
+  @spec set_standard_mode(Emulator.t(), mode(), boolean()) ::
+          {:ok, Emulator.t()} | {:error, term()}
   def set_standard_mode(emulator, mode, value) do
     case StandardHandler.handle_mode(emulator, mode, value) do
       {:ok, new_emu} -> {:ok, new_emu}

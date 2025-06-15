@@ -3,9 +3,7 @@ defmodule Raxol.Terminal.BufferManager do
   Manages buffer operations and tab stops for the terminal.
   """
 
-  defstruct [
-    tab_stops: MapSet.new()
-  ]
+  defstruct tab_stops: MapSet.new()
 
   @type t :: %__MODULE__{
           tab_stops: MapSet.t()

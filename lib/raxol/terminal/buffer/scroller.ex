@@ -1,246 +1,89 @@
 defmodule Raxol.Terminal.Buffer.Scroller do
-  alias Raxol.Terminal.ScreenBuffer
   @moduledoc """
-  Handles scrolling operations (up and down) within the Raxol.Terminal.ScreenBuffer,
-  considering scroll regions.
+  Handles scrolling operations for the terminal buffer.
   """
 
-  alias Raxol.Terminal.Cell
-  import Raxol.Terminal.Buffer.ScrollRegion, only: [replace_region_content: 4]
+  require Raxol.Core.Runtime.Log
 
-  defstruct [:cells, :width, :height]
-
-  @type t :: %__MODULE__{
-    cells: list(list(Raxol.Terminal.Buffer.Cell.t())),
-    width: non_neg_integer(),
-    height: non_neg_integer()
-  }
-
-  @type scroll_region :: {non_neg_integer(), non_neg_integer()}
+  alias Raxol.Terminal.ScreenBuffer
 
   @doc """
-  Scrolls the buffer up by the specified number of lines, optionally within a specified scroll region.
-  Handles cell manipulation.
-  Returns `{updated_buffer, scrolled_off_lines}`.
+  Scrolls the buffer up by the specified number of lines.
   """
-  @spec scroll_up_scroller(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          {non_neg_integer(), non_neg_integer()} | nil
-        ) :: {ScreenBuffer.t(), list(list(Cell.t()))}
-  def scroll_up_scroller(%ScreenBuffer{} = buffer, lines, scroll_region_arg \\ nil)
-      when lines > 0 do
-    # Determine effective scroll region boundaries
-    {scroll_start, scroll_end} =
-      case scroll_region_arg do
-        # 1. Use valid argument directly
-        {start, ending}
-        when is_integer(start) and start >= 0 and is_integer(ending) and
-               ending >= start ->
-          # Clamp end to buffer height
-          {start, min(buffer.height - 1, ending)}
-
-        # 2. If arg is nil or invalid, use buffer.scroll_region if set and valid
-        _ when is_tuple(buffer.scroll_region) ->
-          {start, ending} = buffer.scroll_region
-
-          if is_integer(start) and start >= 0 and is_integer(ending) and
-               ending >= start do
-            # Clamp end to buffer height
-            {start, min(buffer.height - 1, ending)}
-          else
-            # Buffer region invalid, use full height
-            {0, buffer.height - 1}
-          end
-
-        # 3. Otherwise (arg and buffer region are nil/invalid), use full height
-        _ ->
-          {0, buffer.height - 1}
-      end
-
-    visible_lines = scroll_end - scroll_start + 1
-
-    if lines >= visible_lines do
-      # If scrolling more than region size, clear region and return all old lines
-      scrolled_off_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
-
-      empty_region_cells =
-        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-
-      # Use imported helper
-      updated_cells =
-        replace_region_content(
-          buffer.cells,
-          scroll_start,
-          scroll_end,
-          empty_region_cells
-        )
-
-      # Return the updated buffer struct and scrolled lines
-      {%{buffer | cells: updated_cells}, scrolled_off_lines}
-    else
-      scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
-      {scrolled_lines, remaining_lines} = Enum.split(scroll_region_lines, lines)
-
-      empty_lines =
-        List.duplicate(List.duplicate(Cell.new(), buffer.width), lines)
-
-      new_region_content = remaining_lines ++ empty_lines
-
-      # Return updated buffer struct and the lines scrolled off
-      # Use imported helper
-      updated_cells =
-        replace_region_content(
-          buffer.cells,
-          scroll_start,
-          scroll_end,
-          new_region_content
-        )
-
-      # Return the updated buffer struct and scrolled lines
-      {%{buffer | cells: updated_cells}, scrolled_lines}
-    end
+  def scroll_up(buffer, count) do
+    do_scroll_up(buffer, count)
   end
 
   @doc """
-  Scrolls the buffer down by the specified number of lines, optionally within a specified scroll region.
-  Handles cell manipulation using provided lines from scrollback.
-  Expects `lines_to_insert` from the caller (e.g., Buffer.Manager via Buffer.Scrollback).
+  Scrolls the buffer down by the specified number of lines.
   """
-  @spec scroll_down(
-          ScreenBuffer.t(),
-          list(list(Cell.t())),
-          non_neg_integer(),
-          {non_neg_integer(), non_neg_integer()} | nil
-        ) :: ScreenBuffer.t()
-  def scroll_down(
-        %ScreenBuffer{} = buffer,
-        lines_to_insert,
-        lines,
-        # Changed name from scroll_region
-        scroll_region_arg \\ nil
-      )
-      when lines > 0 do
-    # Determine effective scroll region boundaries (Same logic as scroll_up)
-    {scroll_start, scroll_end} =
-      case scroll_region_arg do
-        # 1. Use valid argument directly
-        {start, ending}
-        when is_integer(start) and start >= 0 and is_integer(ending) and
-               ending >= start ->
-          # Clamp end to buffer height
-          {start, min(buffer.height - 1, ending)}
-
-        # 2. If arg is nil or invalid, use buffer.scroll_region if set and valid
-        _ when is_tuple(buffer.scroll_region) ->
-          {start, ending} = buffer.scroll_region
-
-          if is_integer(start) and start >= 0 and is_integer(ending) and
-               ending >= start do
-            # Clamp end to buffer height
-            {start, min(buffer.height - 1, ending)}
-          else
-            # Buffer region invalid, use full height
-            {0, buffer.height - 1}
-          end
-
-        # 3. Otherwise (arg and buffer region are nil/invalid), use full height
-        _ ->
-          {0, buffer.height - 1}
-      end
-
-    visible_lines = scroll_end - scroll_start + 1
-
-    if lines >= visible_lines do
-      # If scrolling more than region size, clear region (no lines inserted)
-      empty_region_cells =
-        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-
-      # Use imported helper
-      updated_cells =
-        replace_region_content(
-          buffer.cells,
-          scroll_start,
-          scroll_end,
-          empty_region_cells
-        )
-
-      %{buffer | cells: updated_cells}
-    else
-      # Handle scrollback and non-scrollback cases
-      if lines_to_insert != [] do
-        # Insert lines FROM scrollback
-        actual_lines_to_insert = Enum.take(lines_to_insert, lines)
-        scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
-
-        shifted_lines =
-          Enum.drop(scroll_region_lines, -length(actual_lines_to_insert))
-
-        new_region_content = actual_lines_to_insert ++ shifted_lines
-
-        # Use imported helper
-        updated_cells =
-          replace_region_content(
-            buffer.cells,
-            scroll_start,
-            scroll_end,
-            new_region_content
-          )
-
-        %{buffer | cells: updated_cells}
-      else
-        # Insert BLANK lines (no scrollback)
-        blank_line = List.duplicate(Cell.new(), buffer.width)
-        blank_lines_to_insert = List.duplicate(blank_line, lines)
-
-        scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
-        # Keep lines from the start, dropping lines from the end to make space
-        shifted_lines = Enum.take(scroll_region_lines, visible_lines - lines)
-        new_region_content = blank_lines_to_insert ++ shifted_lines
-
-        # Use imported helper
-        updated_cells =
-          replace_region_content(
-            buffer.cells,
-            scroll_start,
-            scroll_end,
-            new_region_content
-          )
-
-        %{buffer | cells: updated_cells}
-      end
-    end
+  def scroll_down(buffer, count) do
+    do_scroll_down(buffer, count)
   end
 
   @doc """
-  Scrolls the buffer up by the specified number of lines within the scroll region.
+  Gets the scroll top position.
   """
-  @spec scroll_up(t(), non_neg_integer(), scroll_region()) :: {t(), list(list(Cell.t()))}
-  def scroll_up(buffer, lines, scroll_region) do
-    {top, bottom} = scroll_region
-    scroll_amount = min(lines, bottom - top + 1)
+  def get_scroll_top(_buffer, scroll_margins) do
+    scroll_margins.top
+  end
 
-    # Get the lines to be scrolled
-    lines_to_scroll = Enum.slice(buffer.cells, top, bottom - top + 1)
+  @doc """
+  Gets the scroll bottom position.
+  """
+  def get_scroll_bottom(_buffer, scroll_margins) do
+    scroll_margins.bottom
+  end
 
-    # Create empty lines for the bottom
-    empty_lines = Enum.map(1..scroll_amount, fn _ ->
-      Enum.map(1..buffer.width, fn _ -> Cell.new() end)
-    end)
+  # Private helper functions
 
-    # Create new lines for the top
-    new_lines = Enum.map(1..scroll_amount, fn _ ->
-      Enum.map(1..buffer.width, fn _ -> Cell.new() end)
-    end)
+  defp do_scroll_up(buffer, count) do
+    case buffer.scroll_region do
+      nil ->
+        scroll_entire_buffer_up(buffer, count)
+      region ->
+        scroll_region_up(buffer, count, region.top, region.bottom)
+    end
+  end
 
-    # Update the buffer cells
-    new_cells = buffer.cells
-      |> List.replace_slice(top, top + scroll_amount - 1, new_lines)
-      |> List.replace_slice(bottom - scroll_amount + 1, bottom, empty_lines)
+  defp do_scroll_down(buffer, count) do
+    case buffer.scroll_region do
+      nil ->
+        scroll_entire_buffer_down(buffer, count)
+      region ->
+        scroll_region_down(buffer, count, region.top, region.bottom)
+    end
+  end
 
-    # Update the buffer
-    new_buffer = %{buffer | cells: new_cells}
+  defp scroll_region_up(buffer, count, top, bottom) do
+    region_lines = Enum.slice(buffer.content, top..bottom)
+    {_to_scroll, remaining} = Enum.split(region_lines, count)
+    empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
+    new_region = remaining ++ empty_lines
+    new_content = List.replace_at(buffer.content, top, new_region)
+    {:ok, %{buffer | content: new_content}}
+  end
 
-    {new_buffer, lines_to_scroll}
+  defp scroll_region_down(buffer, count, top, bottom) do
+    region_lines = Enum.slice(buffer.content, top..bottom)
+    {remaining, _to_scroll} = Enum.split(region_lines, -count)
+    empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
+    new_region = empty_lines ++ remaining
+    new_content = List.replace_at(buffer.content, top, new_region)
+    {:ok, %{buffer | content: new_content}}
+  end
+
+  defp scroll_entire_buffer_up(buffer, count) do
+    {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
+    empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
+    new_content = empty_lines ++ new_buffer.content
+    {:ok, %{new_buffer | content: new_content}}
+  end
+
+  defp scroll_entire_buffer_down(buffer, count) do
+    {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
+    empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
+    new_content = new_buffer.content ++ empty_lines
+    {:ok, %{new_buffer | content: new_content}}
   end
 end

@@ -28,7 +28,8 @@ defmodule Raxol.Terminal.Escape.Parsers.BaseParser do
   @doc """
   Gets a parameter value at the specified index, returning the default if not found.
   """
-  @spec param_at([integer() | nil], non_neg_integer(), integer() | nil) :: integer() | nil
+  @spec param_at([integer() | nil], non_neg_integer(), integer() | nil) ::
+          integer() | nil
   def param_at(params, index, default) do
     case Enum.at(params, index) do
       # Covers both out-of-bounds and explicitly parsed nil ("")
@@ -50,9 +51,7 @@ defmodule Raxol.Terminal.Escape.Parsers.BaseParser do
   """
   @spec log_unknown_sequence(String.t(), String.t()) :: :ok
   def log_unknown_sequence(prefix, data) do
-    Raxol.Core.Runtime.Log.debug(
-      "Unknown #{prefix} sequence: #{inspect(data)}"
-    )
+    Raxol.Core.Runtime.Log.debug("Unknown #{prefix} sequence: #{inspect(data)}")
   end
 
   @doc """

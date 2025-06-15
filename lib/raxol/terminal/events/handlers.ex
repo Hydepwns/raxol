@@ -1,68 +1,210 @@
 defmodule Raxol.Terminal.Events.Handlers do
   @moduledoc """
-  Contains handlers for different types of terminal events.
+  Handles terminal events and dispatches them to appropriate handlers.
   """
 
-  alias Raxol.Terminal.Emulator
+  require Raxol.Core.Runtime.Log
+  alias Raxol.Terminal.ANSI.WindowManipulation
 
-  def handle_window_event(%{action: :resize, width: w, height: h}, emulator)
-      when is_integer(w) and is_integer(h) do
-    {emulator, nil}
+  @doc """
+  Handles window-related events.
+  """
+  def handle_window_event(emulator_state, event) do
+    case event do
+      {:resize, w, h} ->
+        handle_resize(emulator_state, w, h)
+
+      {:title, title} ->
+        handle_title_change(emulator_state, title)
+
+      {:icon_name, name} ->
+        handle_icon_name_change(emulator_state, name)
+
+      _ ->
+        {:error, "Unknown window event: #{inspect(event)}"}
+    end
   end
 
-  def handle_window_event(%{action: :focus, focused: focused?}, emulator) do
-    {emulator, nil}
+  @doc """
+  Handles mode change events.
+  """
+  def handle_mode_event(emulator_state, event) do
+    case event do
+      {:change, new_mode} ->
+        handle_mode_change(emulator_state, new_mode)
+
+      _ ->
+        {:error, "Unknown mode event: #{inspect(event)}"}
+    end
   end
 
-  def handle_window_event(%{action: :blur}, emulator) do
-    {emulator, nil}
+  @doc """
+  Handles mouse events.
+  """
+  def handle_mouse_event(emulator_state, event) do
+    case event do
+      {:click, button, x, y} ->
+        handle_mouse_click(emulator_state, button, x, y)
+
+      {:drag, button, x, y} ->
+        handle_mouse_drag(emulator_state, button, x, y)
+
+      {:release, button, x, y} ->
+        handle_mouse_release(emulator_state, button, x, y)
+
+      _ ->
+        {:error, "Unknown mouse event: #{inspect(event)}"}
+    end
   end
 
-  def handle_window_event(_, emulator), do: {emulator, nil}
+  @doc """
+  Handles keyboard events.
+  """
+  def handle_keyboard_event(emulator_state, event) do
+    case event do
+      {:press, key} ->
+        handle_key_press(emulator_state, key)
 
-  def handle_mode_event(%{mode: new_mode}, emulator) do
-    {emulator, nil}
+      {:release, key} ->
+        handle_key_release(emulator_state, key)
+
+      _ ->
+        {:error, "Unknown keyboard event: #{inspect(event)}"}
+    end
   end
 
-  def handle_mode_event(_, emulator), do: {emulator, nil}
+  @doc """
+  Handles focus events.
+  """
+  def handle_focus_event(emulator_state, event) do
+    case event do
+      {:gain} ->
+        handle_focus_gain(emulator_state)
 
-  def handle_focus_event(%{focused: focused?}, emulator) do
-    {emulator, nil}
+      {:loss} ->
+        handle_focus_loss(emulator_state)
+
+      _ ->
+        {:error, "Unknown focus event: #{inspect(event)}"}
+    end
   end
 
-  def handle_focus_event(_, emulator), do: {emulator, nil}
+  @doc """
+  Generic event handler that dispatches to appropriate handlers.
+  """
+  def handle_event(emulator_state, event) do
+    case event do
+      {:window, window_event} ->
+        handle_window_event(emulator_state, window_event)
 
-  def handle_clipboard_event(%{op: op, content: content}, emulator) do
-    {emulator, nil}
+      {:mode, mode_event} ->
+        handle_mode_event(emulator_state, mode_event)
+
+      {:mouse, mouse_event} ->
+        handle_mouse_event(emulator_state, mouse_event)
+
+      {:keyboard, keyboard_event} ->
+        handle_keyboard_event(emulator_state, keyboard_event)
+
+      {:focus, focus_event} ->
+        handle_focus_event(emulator_state, focus_event)
+
+      _ ->
+        {:error, "Unknown event type: #{inspect(event)}"}
+    end
   end
 
-  def handle_clipboard_event(_, emulator), do: {emulator, nil}
+  # Private helper functions
 
-  def handle_selection_event(%{start_pos: _, end_pos: _, text: _} = selection, emulator) do
-    {emulator, nil}
+  defp handle_resize(emulator_state, w, h) do
+    # Update terminal dimensions
+    updated_state = %{emulator_state | width: w, height: h}
+
+    # Clear screen and reset cursor position
+    commands = [
+      WindowManipulation.clear_screen(),
+      WindowManipulation.move_cursor(1, 1)
+    ]
+
+    {:ok, updated_state, commands}
   end
 
-  def handle_selection_event(%{selection: selection}, emulator) do
-    {emulator, nil}
+  defp handle_title_change(emulator_state, title) do
+    # Update window title
+    updated_state = %{emulator_state | title: title}
+
+    # Send title change command
+    commands = [WindowManipulation.set_title(title)]
+
+    {:ok, updated_state, commands}
   end
 
-  def handle_selection_event(_, emulator), do: {emulator, nil}
+  defp handle_icon_name_change(emulator_state, name) do
+    # Update icon name
+    updated_state = %{emulator_state | icon_name: name}
 
-  def handle_paste_event(%{text: text, position: pos}, emulator) do
-    {emulator, nil}
+    # Send icon name change command
+    commands = [WindowManipulation.set_icon_name(name)]
+
+    {:ok, updated_state, commands}
   end
 
-  def handle_paste_event(_, emulator), do: {emulator, nil}
+  defp handle_mode_change(emulator_state, new_mode) do
+    # Update terminal mode
+    updated_state = %{emulator_state | mode: new_mode}
 
-  def handle_cursor_event(%{visible: _, style: _, blink: _, position: _} = cursor, emulator) do
-    {emulator, nil}
+    # Send mode change command
+    commands = [WindowManipulation.set_mode(new_mode)]
+
+    {:ok, updated_state, commands}
   end
 
-  def handle_cursor_event(_, emulator), do: {emulator, nil}
+  defp handle_mouse_click(emulator_state, button, x, y) do
+    # Handle mouse click
+    commands = [WindowManipulation.mouse_click(button, x, y)]
 
-  def handle_scroll_event(%{direction: dir, delta: delta, position: pos}, emulator) do
-    {emulator, nil}
+    {:ok, emulator_state, commands}
   end
 
-  def handle_scroll_event(_, emulator), do: {emulator, nil}
+  defp handle_mouse_drag(emulator_state, button, x, y) do
+    # Handle mouse drag
+    commands = [WindowManipulation.mouse_drag(button, x, y)]
+
+    {:ok, emulator_state, commands}
+  end
+
+  defp handle_mouse_release(emulator_state, button, x, y) do
+    # Handle mouse release
+    commands = [WindowManipulation.mouse_release(button, x, y)]
+
+    {:ok, emulator_state, commands}
+  end
+
+  defp handle_key_press(emulator_state, key) do
+    # Handle key press
+    commands = [WindowManipulation.key_press(key)]
+
+    {:ok, emulator_state, commands}
+  end
+
+  defp handle_key_release(emulator_state, key) do
+    # Handle key release
+    commands = [WindowManipulation.key_release(key)]
+
+    {:ok, emulator_state, commands}
+  end
+
+  defp handle_focus_gain(emulator_state) do
+    # Handle focus gain
+    commands = [WindowManipulation.focus_gain()]
+
+    {:ok, emulator_state, commands}
+  end
+
+  defp handle_focus_loss(emulator_state) do
+    # Handle focus loss
+    commands = [WindowManipulation.focus_loss()]
+
+    {:ok, emulator_state, commands}
+  end
 end

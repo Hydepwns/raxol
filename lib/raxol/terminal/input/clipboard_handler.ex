@@ -9,11 +9,14 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
   @doc """
   Handles clipboard paste operation.
   """
-  @spec handle_paste(CoreHandler.t()) :: {:ok, CoreHandler.t()} | {:error, any()}
+  @spec handle_paste(CoreHandler.t()) ::
+          {:ok, CoreHandler.t()} | {:error, any()}
   def handle_paste(%CoreHandler{} = handler) do
     case Clipboard.paste() do
       {:ok, text} ->
-        new_buffer = CoreHandler.insert_text(handler.buffer, handler.cursor_position, text)
+        new_buffer =
+          CoreHandler.insert_text(handler.buffer, handler.cursor_position, text)
+
         new_position = handler.cursor_position + String.length(text)
         {:ok, %{handler | buffer: new_buffer, cursor_position: new_position}}
 

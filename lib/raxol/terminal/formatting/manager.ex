@@ -34,7 +34,8 @@ defmodule Raxol.Terminal.Formatting.Manager do
   @doc """
   Updates the text style.
   """
-  @spec update_style(EmulatorStruct.t(), TextFormatting.text_style()) :: EmulatorStruct.t()
+  @spec update_style(EmulatorStruct.t(), TextFormatting.text_style()) ::
+          EmulatorStruct.t()
   def update_style(emulator, style) do
     %{emulator | style: style}
   end
@@ -62,7 +63,8 @@ defmodule Raxol.Terminal.Formatting.Manager do
   @doc """
   Sets the foreground color.
   """
-  @spec set_foreground(EmulatorStruct.t(), TextFormatting.color()) :: EmulatorStruct.t()
+  @spec set_foreground(EmulatorStruct.t(), TextFormatting.color()) ::
+          EmulatorStruct.t()
   def set_foreground(emulator, color) do
     style = %{emulator.style | foreground: color}
     %{emulator | style: style}
@@ -71,7 +73,8 @@ defmodule Raxol.Terminal.Formatting.Manager do
   @doc """
   Sets the background color.
   """
-  @spec set_background(EmulatorStruct.t(), TextFormatting.color()) :: EmulatorStruct.t()
+  @spec set_background(EmulatorStruct.t(), TextFormatting.color()) ::
+          EmulatorStruct.t()
   def set_background(emulator, color) do
     style = %{emulator.style | background: color}
     %{emulator | style: style}
@@ -82,11 +85,13 @@ defmodule Raxol.Terminal.Formatting.Manager do
   """
   @spec reset_all_attributes(EmulatorStruct.t()) :: EmulatorStruct.t()
   def reset_all_attributes(emulator) do
-    style = %{emulator.style |
-      attributes: [],
-      foreground: :default,
-      background: :default
+    style = %{
+      emulator.style
+      | attributes: [],
+        foreground: :default,
+        background: :default
     }
+
     %{emulator | style: style}
   end
 

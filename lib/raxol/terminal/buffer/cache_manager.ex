@@ -4,27 +4,27 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
   Provides efficient caching mechanisms for frequently accessed buffer regions.
   """
 
-  @type cache_key :: {non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()}
+  @type cache_key ::
+          {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+           non_neg_integer()}
   @type cache_entry :: %{
-    data: term(),
-    last_access: integer(),
-    access_count: non_neg_integer()
-  }
+          data: term(),
+          last_access: integer(),
+          access_count: non_neg_integer()
+        }
   @type t :: %__MODULE__{
-    cache: %{cache_key() => cache_entry()},
-    max_size: non_neg_integer(),
-    current_size: non_neg_integer(),
-    hit_count: non_neg_integer(),
-    miss_count: non_neg_integer()
-  }
+          cache: %{cache_key() => cache_entry()},
+          max_size: non_neg_integer(),
+          current_size: non_neg_integer(),
+          hit_count: non_neg_integer(),
+          miss_count: non_neg_integer()
+        }
 
-  defstruct [
-    cache: %{},
-    max_size: 1000,
-    current_size: 0,
-    hit_count: 0,
-    miss_count: 0
-  ]
+  defstruct cache: %{},
+            max_size: 1000,
+            current_size: 0,
+            hit_count: 0,
+            miss_count: 0
 
   @doc """
   Creates a new cache manager with the specified maximum size.
@@ -56,14 +56,18 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
         %{cache | miss_count: cache.miss_count + 1}
 
       entry ->
-        updated_entry = %{entry |
-          last_access: System.monotonic_time(),
-          access_count: entry.access_count + 1
+        updated_entry = %{
+          entry
+          | last_access: System.monotonic_time(),
+            access_count: entry.access_count + 1
         }
-        updated_cache = %{cache |
-          cache: Map.put(cache.cache, key, updated_entry),
-          hit_count: cache.hit_count + 1
+
+        updated_cache = %{
+          cache
+          | cache: Map.put(cache.cache, key, updated_entry),
+            hit_count: cache.hit_count + 1
         }
+
         {:ok, entry.data, updated_cache}
     end
   end
@@ -91,9 +95,10 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
       access_count: 1
     }
 
-    %{cache |
-      cache: Map.put(cache.cache, key, entry),
-      current_size: cache.current_size + 1
+    %{
+      cache
+      | cache: Map.put(cache.cache, key, entry),
+        current_size: cache.current_size + 1
     }
   end
 
@@ -109,12 +114,11 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
   """
   def invalidate(%__MODULE__{} = cache, key) do
     case Map.pop(cache.cache, key) do
-      {nil, _} -> cache
+      {nil, _} ->
+        cache
+
       {_, new_cache} ->
-        %{cache |
-          cache: new_cache,
-          current_size: cache.current_size - 1
-        }
+        %{cache | cache: new_cache, current_size: cache.current_size - 1}
     end
   end
 

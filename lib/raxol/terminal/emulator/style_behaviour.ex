@@ -7,7 +7,8 @@ defmodule Raxol.Terminal.Emulator.Style.Behaviour do
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @type color :: {0..255, 0..255, 0..255} | :default
-  @type decoration :: :none | :underline | :double_underline | :overline | :strikethrough
+  @type decoration ::
+          :none | :underline | :double_underline | :overline | :strikethrough
   @type intensity :: :normal | :bold | :faint
   @type blink :: :none | :slow | :rapid
 

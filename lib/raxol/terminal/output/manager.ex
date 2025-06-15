@@ -37,12 +37,14 @@ defmodule Raxol.Terminal.Output.Manager do
 
   @impl true
   def init(_opts) do
-    {:ok, %{
-      output_buffer: [],
-      control_sequences: [],
-      buffer_size: 0,
-      max_buffer_size: 1024 * 1024  # 1MB default buffer size
-    }}
+    {:ok,
+     %{
+       output_buffer: [],
+       control_sequences: [],
+       buffer_size: 0,
+       # 1MB default buffer size
+       max_buffer_size: 1024 * 1024
+     }}
   end
 
   @impl true
@@ -59,9 +61,10 @@ defmodule Raxol.Terminal.Output.Manager do
 
   @impl true
   def handle_call(:flush_output, _from, state) do
-    output = state.output_buffer
-             |> Enum.reverse()
-             |> Enum.join()
+    output =
+      state.output_buffer
+      |> Enum.reverse()
+      |> Enum.join()
 
     {:reply, {:ok, output}, %{state | output_buffer: [], buffer_size: 0}}
   end
@@ -73,9 +76,10 @@ defmodule Raxol.Terminal.Output.Manager do
 
   @impl true
   def handle_call(:get_output_buffer, _from, state) do
-    output = state.output_buffer
-             |> Enum.reverse()
-             |> Enum.join()
+    output =
+      state.output_buffer
+      |> Enum.reverse()
+      |> Enum.join()
 
     {:reply, output, state}
   end

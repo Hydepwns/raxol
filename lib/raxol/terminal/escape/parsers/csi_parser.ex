@@ -65,7 +65,9 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
           | {:incomplete, String.t()}
           | {:error, atom(), String.t()}
   def parse_standard_csi(data) do
-    case Regex.run(~r/^([\d;]*)((?:[@A-Z]|[\\[\\^_`a-z{}~]))/, data, capture: :all_but_first) do
+    case Regex.run(~r/^([\d;]*)((?:[@A-Z]|[\\[\\^_`a-z{}~]))/, data,
+           capture: :all_but_first
+         ) do
       [params_str, final_byte] when final_byte != "" ->
         params = BaseParser.parse_params(params_str)
         prefix_len = String.length(params_str) + String.length(final_byte)

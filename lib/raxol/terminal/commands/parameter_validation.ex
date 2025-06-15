@@ -225,7 +225,8 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   @doc """
   Normalizes parameters to expected length, padding with nil or truncating as needed.
   """
-  @spec normalize_parameters(list(integer() | nil), non_neg_integer()) :: list(integer() | nil)
+  @spec normalize_parameters(list(integer() | nil), non_neg_integer()) ::
+          list(integer() | nil)
   def normalize_parameters(params, expected_length) do
     params
     |> Enum.take(expected_length)

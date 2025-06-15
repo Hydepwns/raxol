@@ -232,8 +232,10 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
     cond do
       String.starts_with?(color_str, "rgb:") ->
         parse_rgb_color(color_str)
+
       String.starts_with?(color_str, "#") ->
         parse_hex_color(color_str)
+
       true ->
         nil
     end
@@ -249,7 +251,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
         else
           _ -> nil
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -263,7 +267,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
         else
           _ -> nil
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 

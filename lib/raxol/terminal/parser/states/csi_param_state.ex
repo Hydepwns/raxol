@@ -92,7 +92,8 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
 
       # Other ignored bytes (0-1F excluding CAN/SUB, 7F)
       <<ignored_byte, rest_after_ignored::binary>>
-      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and ignored_byte != 0x1A) or
+      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and
+              ignored_byte != 0x1A) or
              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
         Raxol.Core.Runtime.Log.debug(
           "Ignoring C0/DEL byte #{ignored_byte} in CSI Param"

@@ -15,7 +15,8 @@ defmodule Raxol.Terminal.Buffer.Queries.Behaviour do
   @callback get_cell(term(), non_neg_integer(), non_neg_integer()) :: Cell.t()
   @callback get_text(term()) :: String.t()
   @callback get_line_text(term(), non_neg_integer()) :: String.t()
-  @callback in_bounds?(term(), non_neg_integer(), non_neg_integer()) :: boolean()
+  @callback in_bounds?(term(), non_neg_integer(), non_neg_integer()) ::
+              boolean()
   @callback is_empty?(term()) :: boolean()
   @callback get_char(term(), non_neg_integer(), non_neg_integer()) :: String.t()
 end

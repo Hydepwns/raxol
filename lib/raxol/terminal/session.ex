@@ -244,8 +244,10 @@ defmodule Raxol.Terminal.Session do
     new_state =
       try do
         case EmulatorStruct.process_input(state.emulator, input) do
-          {new_emulator, _output} when is_struct(new_emulator, EmulatorStruct) ->
+          {new_emulator, output}
+          when is_struct(new_emulator, EmulatorStruct) ->
             %{state | emulator: new_emulator}
+
           _ ->
             state
         end
@@ -293,12 +295,13 @@ defmodule Raxol.Terminal.Session do
   # Private functions
 
   defp update_state_from_config(state, config) do
-    %{state |
-      width: Map.get(config, :width, state.width),
-      height: Map.get(config, :height, state.height),
-      title: Map.get(config, :title, state.title),
-      theme: Map.get(config, :theme, state.theme),
-      auto_save: Map.get(config, :auto_save, state.auto_save)
+    %{
+      state
+      | width: Map.get(config, :width, state.width),
+        height: Map.get(config, :height, state.height),
+        title: Map.get(config, :title, state.title),
+        theme: Map.get(config, :theme, state.theme),
+        auto_save: Map.get(config, :auto_save, state.auto_save)
     }
   end
 end

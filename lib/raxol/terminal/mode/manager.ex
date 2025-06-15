@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.Mode.Manager do
   defstruct [:modes]
 
   @type t :: %__MODULE__{
-    modes: %{atom() => boolean()}
-  }
+          modes: %{atom() => boolean()}
+        }
 
   @doc """
   Creates a new mode manager.
@@ -30,7 +30,8 @@ defmodule Raxol.Terminal.Mode.Manager do
   @doc """
   Updates the mode manager in an emulator.
   """
-  @spec update_manager(Raxol.Terminal.Emulator.t(), t()) :: Raxol.Terminal.Emulator.t()
+  @spec update_manager(Raxol.Terminal.Emulator.t(), t()) ::
+          Raxol.Terminal.Emulator.t()
   def update_manager(emulator, manager) do
     %{emulator | mode_manager: manager}
   end

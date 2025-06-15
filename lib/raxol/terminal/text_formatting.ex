@@ -50,35 +50,101 @@ defmodule Raxol.Terminal.TextFormatting do
   @doc """
   Sets the bold attribute for text formatting.
   """
-  def set_bold(formatting, value) do
-    formatting
-  end
+  defdelegate set_bold(style), to: Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
   Sets the italic attribute for text formatting.
   """
-  def set_italic(formatting, value) do
-    formatting
-  end
+  defdelegate set_italic(style), to: Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
   Sets the underline attribute for text formatting.
   """
-  def set_underline(formatting, value) do
-    formatting
-  end
+  defdelegate set_underline(style), to: Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
   Sets the blink attribute for text formatting.
   """
-  def set_blink(formatting, value) do
-    formatting
-  end
+  defdelegate set_blink(style), to: Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
   Sets the reverse attribute for text formatting.
   """
-  def set_reverse(formatting, value) do
-    formatting
-  end
+  defdelegate set_reverse(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the faint attribute for text formatting.
+  """
+  defdelegate set_faint(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the conceal attribute for text formatting.
+  """
+  defdelegate set_conceal(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the strikethrough attribute for text formatting.
+  """
+  defdelegate set_strikethrough(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the fraktur attribute for text formatting.
+  """
+  defdelegate set_fraktur(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the double underline attribute for text formatting.
+  """
+  defdelegate set_double_underline(style),
+    to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the framed attribute for text formatting.
+  """
+  defdelegate set_framed(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the encircled attribute for text formatting.
+  """
+  defdelegate set_encircled(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Sets the overlined attribute for text formatting.
+  """
+  defdelegate set_overlined(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Resets the bold attribute for text formatting.
+  """
+  defdelegate reset_bold(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Resets the italic attribute for text formatting.
+  """
+  defdelegate reset_italic(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Resets the underline attribute for text formatting.
+  """
+  defdelegate reset_underline(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Resets the blink attribute for text formatting.
+  """
+  defdelegate reset_blink(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Resets the reverse attribute for text formatting.
+  """
+  defdelegate reset_reverse(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Gets the hyperlink from a style.
+  """
+  defdelegate get_hyperlink(style), to: Raxol.Terminal.ANSI.TextFormatting
+
+  @doc """
+  Formats a style into SGR parameters.
+  """
+  defdelegate format_sgr_params(style), to: Raxol.Terminal.ANSI.TextFormatting
 end

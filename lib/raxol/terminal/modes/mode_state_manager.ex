@@ -36,7 +36,8 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   @doc """
   Sets a mode to a specific value.
   """
-  @spec set_mode(t(), atom(), ModeTypes.mode_value()) :: {:ok, t()} | {:error, term()}
+  @spec set_mode(t(), atom(), ModeTypes.mode_value()) ::
+          {:ok, t()} | {:error, term()}
   def set_mode(state, mode_name, value) do
     with {:ok, mode_def} <- validate_mode(mode_name),
          :ok <- validate_dependencies(state, mode_def),
@@ -132,6 +133,7 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   end
 
   defp check_dependencies(_state, []), do: :ok
+
   defp check_dependencies(state, [dep | rest]) do
     if mode_enabled?(state, dep) do
       check_dependencies(state, rest)
@@ -148,6 +150,7 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   end
 
   defp check_conflicts(_state, []), do: :ok
+
   defp check_conflicts(state, [conflict | rest]) do
     if mode_enabled?(state, conflict) do
       {:error, [conflict]}

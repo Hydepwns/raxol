@@ -21,14 +21,14 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
   ]
 
   @type t :: %__MODULE__{
-    active_buffer: ScreenBuffer.t(),
-    back_buffer: ScreenBuffer.t(),
-    scrollback: Scrollback.t(),
-    damage_tracker: DamageTracker.t(),
-    memory_usage: non_neg_integer(),
-    memory_limit: non_neg_integer(),
-    metrics: map()
-  }
+          active_buffer: ScreenBuffer.t(),
+          back_buffer: ScreenBuffer.t(),
+          scrollback: Scrollback.t(),
+          damage_tracker: DamageTracker.t(),
+          memory_usage: non_neg_integer(),
+          memory_limit: non_neg_integer(),
+          metrics: map()
+        }
 
   @doc """
   Creates a new state with the specified dimensions.
@@ -103,7 +103,9 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
   Updates a line in the active buffer.
   """
   def put_line(%__MODULE__{} = state, line_index, new_cells) do
-    new_active_buffer = ScreenBuffer.put_line(state.active_buffer, line_index, new_cells)
+    new_active_buffer =
+      ScreenBuffer.put_line(state.active_buffer, line_index, new_cells)
+
     %{state | active_buffer: new_active_buffer}
   end
 end

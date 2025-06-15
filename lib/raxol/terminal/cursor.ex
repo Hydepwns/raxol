@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Cursor do
   defstruct [:position, :shape, :visible]
 
   @type t :: %__MODULE__{
-    position: {non_neg_integer(), non_neg_integer()},
-    shape: atom(),
-    visible: boolean()
-  }
+          position: {non_neg_integer(), non_neg_integer()},
+          shape: atom(),
+          visible: boolean()
+        }
 
   @doc """
   Moves the cursor up by the specified number of lines.
@@ -58,7 +58,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor down and to the beginning of the line.
   """
-  @spec move_down_and_home(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_down_and_home(EmulatorStruct.t(), non_neg_integer()) ::
+          EmulatorStruct.t()
   def move_down_and_home(emulator, lines) do
     emulator
     |> move_down(lines)
@@ -68,7 +69,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor up and to the beginning of the line.
   """
-  @spec move_up_and_home(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_up_and_home(EmulatorStruct.t(), non_neg_integer()) ::
+          EmulatorStruct.t()
   def move_up_and_home(emulator, lines) do
     emulator
     |> move_up(lines)
@@ -78,7 +80,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified column.
   """
-  @spec move_to_column(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_to_column(EmulatorStruct.t(), non_neg_integer()) ::
+          EmulatorStruct.t()
   def move_to_column(emulator, col) do
     {_, y} = emulator.cursor.position
     new_x = max(0, min(emulator.width - 1, col))
@@ -88,7 +91,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified position.
   """
-  @spec move_to(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) :: EmulatorStruct.t()
+  @spec move_to(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) ::
+          EmulatorStruct.t()
   def move_to(emulator, {row, col}) do
     new_x = max(0, min(emulator.width - 1, col))
     new_y = max(0, min(emulator.height - 1, row))
@@ -106,7 +110,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor forward by the specified number of columns.
   """
-  @spec move_forward(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_forward(EmulatorStruct.t(), non_neg_integer()) ::
+          EmulatorStruct.t()
   def move_forward(emulator, cols) do
     move_right(emulator, cols)
   end
@@ -114,7 +119,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor backward by the specified number of columns.
   """
-  @spec move_backward(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_backward(EmulatorStruct.t(), non_neg_integer()) ::
+          EmulatorStruct.t()
   def move_backward(emulator, cols) do
     move_left(emulator, cols)
   end
@@ -122,7 +128,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified row and column.
   """
-  @spec move_to(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec move_to(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) ::
+          EmulatorStruct.t()
   def move_to(emulator, row, col) do
     move_to(emulator, {row, col})
   end
@@ -130,7 +137,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Gets the current cursor position.
   """
-  @spec get_position(EmulatorStruct.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_position(EmulatorStruct.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_position(emulator) do
     emulator.cursor.position
   end
@@ -146,7 +154,12 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Moves the cursor to the specified position, taking into account the screen width and height.
   """
-  @spec move_to(t(), {non_neg_integer(), non_neg_integer()}, non_neg_integer(), non_neg_integer()) :: t()
+  @spec move_to(
+          t(),
+          {non_neg_integer(), non_neg_integer()},
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: t()
   def move_to(cursor, {x, y}, width, height) do
     x = max(0, min(x, width - 1))
     y = max(0, min(y, height - 1))

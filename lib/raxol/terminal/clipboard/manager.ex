@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   defstruct [:history, :store, :sync]
 
   @type t :: %__MODULE__{
-    history: History.t(),
-    store: Store.t(),
-    sync: Sync.t()
-  }
+          history: History.t(),
+          store: Store.t(),
+          sync: Sync.t()
+        }
 
   # Client API
 
@@ -53,7 +53,8 @@ defmodule Raxol.Terminal.Clipboard.Manager do
 
   @impl true
   def init(opts) do
-    _max_age = Keyword.get(opts, :max_age, 3_600_000) # 1 hour in milliseconds
+    # 1 hour in milliseconds
+    _max_age = Keyword.get(opts, :max_age, 3_600_000)
     history_size = Keyword.get(opts, :history_size, 10)
 
     state = %__MODULE__{
@@ -85,7 +86,9 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   @impl true
   def handle_call({:paste, format}, _from, state) do
     case Store.get_content(state.store) do
-      "" -> {:reply, {:error, :empty_clipboard}, state}
+      "" ->
+        {:reply, {:error, :empty_clipboard}, state}
+
       content ->
         case Format.apply_filter(format, content, Store.get_format(state.store)) do
           {:ok, formatted_content} -> {:reply, {:ok, formatted_content}, state}

@@ -5,7 +5,8 @@ defmodule Raxol.Terminal.Input.CoreHandler do
   """
 
   alias Raxol.Terminal.ModeManager
-  alias Raxol.Terminal.Input.{CharacterProcessor, ControlSequenceHandler}
+  alias Raxol.Terminal.Parser
+  alias Raxol.Terminal.Emulator
 
   @type t :: %__MODULE__{
           buffer: String.t(),
@@ -54,14 +55,15 @@ defmodule Raxol.Terminal.Input.CoreHandler do
   Processes a raw input string for the terminal, parsing control sequences and printable characters.
   This function drives the terminal command parser.
   """
-  @spec process_terminal_input(Emulator.t(), String.t()) :: {Emulator.t(), String.t()}
+  @spec process_terminal_input(Emulator.t(), String.t()) ::
+          {Emulator.t(), String.t()}
   def process_terminal_input(emulator, input) when is_binary(input) do
     current_parser_state = emulator.parser_state
 
     {parsed_emulator, parsed_parser_state, remaining_input_chunk} =
       Parser.parse_chunk(emulator, current_parser_state, input)
 
-    unless remaining_input_chunk == "" do
+    if remaining_input_chunk != "" do
       Raxol.Core.Runtime.Log.debug(
         "[InputHandler] Parser.parse_chunk returned remaining input: #{inspect(remaining_input_chunk)}"
       )

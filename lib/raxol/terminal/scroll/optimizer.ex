@@ -4,9 +4,9 @@ defmodule Raxol.Terminal.Scroll.Optimizer do
   """
 
   @type t :: %__MODULE__{
-    batch_size: non_neg_integer(),
-    last_optimization: non_neg_integer()
-  }
+          batch_size: non_neg_integer(),
+          last_optimization: non_neg_integer()
+        }
 
   defstruct [
     :batch_size,

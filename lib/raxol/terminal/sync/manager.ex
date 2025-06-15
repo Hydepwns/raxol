@@ -15,23 +15,23 @@ defmodule Raxol.Terminal.Sync.Manager do
   ]
 
   @type t :: %__MODULE__{
-    components: %{String.t() => Component.t()},
-    sync_id: String.t()
-  }
+          components: %{String.t() => Component.t()},
+          sync_id: String.t()
+        }
 
   # Types
   @type component_id :: String.t()
   @type component_type :: :split | :window | :tab
   @type sync_state :: %{
-    component_id: component_id(),
-    component_type: component_type(),
-    state: term(),
-    metadata: %{
-      version: non_neg_integer(),
-      timestamp: non_neg_integer(),
-      source: String.t()
-    }
-  }
+          component_id: component_id(),
+          component_type: component_type(),
+          state: term(),
+          metadata: %{
+            version: non_neg_integer(),
+            timestamp: non_neg_integer(),
+            source: String.t()
+          }
+        }
 
   # Client API
   @doc """
@@ -43,7 +43,10 @@ defmodule Raxol.Terminal.Sync.Manager do
   end
 
   def register_component(component_id, component_type, initial_state \\ %{}) do
-    GenServer.call(__MODULE__, {:register_component, component_id, component_type, initial_state})
+    GenServer.call(
+      __MODULE__,
+      {:register_component, component_id, component_type, initial_state}
+    )
   end
 
   def unregister_component(component_id) do
@@ -55,7 +58,10 @@ defmodule Raxol.Terminal.Sync.Manager do
   """
   @spec sync_state(String.t(), String.t(), term(), keyword()) :: :ok
   def sync_state(component_id, component_type, new_state, opts \\ []) do
-    GenServer.call(__MODULE__, {:sync_state, component_id, component_type, new_state, opts})
+    GenServer.call(
+      __MODULE__,
+      {:sync_state, component_id, component_type, new_state, opts}
+    )
   end
 
   def get_state(component_id) do
@@ -78,14 +84,24 @@ defmodule Raxol.Terminal.Sync.Manager do
   end
 
   @impl true
-  def handle_call({:register_component, component_id, component_type, initial_state}, _from, state) do
+  def handle_call(
+        {:register_component, component_id, component_type, initial_state},
+        _from,
+        state
+      ) do
     case Map.get(state.components, component_id) do
       nil ->
-        new_state = %{state | components: Map.put(state.components, component_id, %{
-          type: component_type,
-          state: initial_state
-        })}
+        new_state = %{
+          state
+          | components:
+              Map.put(state.components, component_id, %{
+                type: component_type,
+                state: initial_state
+              })
+        }
+
         {:reply, :ok, new_state}
+
       _existing ->
         {:reply, {:error, :already_registered}, state}
     end
@@ -96,15 +112,24 @@ defmodule Raxol.Terminal.Sync.Manager do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       _component ->
-        new_state = %{state | components: Map.delete(state.components, component_id)}
+        new_state = %{
+          state
+          | components: Map.delete(state.components, component_id)
+        }
+
         System.clear(component_id)
         {:reply, :ok, new_state}
     end
   end
 
   @impl true
-  def handle_call({:sync_state, component_id, component_type, new_state, opts}, _from, state) do
+  def handle_call(
+        {:sync_state, component_id, component_type, new_state, opts},
+        _from,
+        state
+      ) do
     case do_sync_state(state, component_id, component_type, new_state, opts) do
       {:ok, new_component} ->
         new_components = Map.put(state.components, component_id, new_component)

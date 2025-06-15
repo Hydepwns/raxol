@@ -10,18 +10,18 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   # Types
   @type theme_id :: String.t()
   @type theme_state :: %{
-    id: theme_id(),
-    name: String.t(),
-    version: String.t(),
-    description: String.t(),
-    author: String.t(),
-    colors: map(),
-    font: map(),
-    cursor: map(),
-    padding: map(),
-    status: :active | :inactive | :error,
-    error: String.t() | nil
-  }
+          id: theme_id(),
+          name: String.t(),
+          version: String.t(),
+          description: String.t(),
+          author: String.t(),
+          colors: map(),
+          font: map(),
+          cursor: map(),
+          padding: map(),
+          status: :active | :inactive | :error,
+          error: String.t() | nil
+        }
 
   # Client API
   def start_link(opts \\ []) do
@@ -116,6 +116,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
       {:ok, theme_id, theme_state} ->
         new_state = put_in(state.themes[theme_id], theme_state)
         {:reply, {:ok, theme_id}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -126,6 +127,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case do_unload_theme(theme_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -150,6 +152,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case do_update_theme_config(theme_id, config, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -160,6 +163,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case do_apply_theme(theme_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -170,6 +174,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case do_preview_theme(theme_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -180,6 +185,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case do_export_theme(theme_id, path, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -190,6 +196,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case do_import_theme(path, state) do
       {:ok, theme_id, new_state} ->
         {:reply, {:ok, theme_id}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -210,11 +217,13 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case Map.get(state.themes, theme_id) do
       nil ->
         {:error, :theme_not_found}
+
       theme_state ->
         case cleanup_theme(theme_state) do
           :ok ->
             new_state = update_in(state.themes, &Map.delete(&1, theme_id))
             {:ok, new_state}
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -225,12 +234,14 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case Map.get(state.themes, theme_id) do
       nil ->
         {:error, :theme_not_found}
+
       theme_state ->
         case validate_theme_config(config) do
           :ok ->
             new_theme_state = put_in(theme_state.config, config)
             new_state = put_in(state.themes[theme_id], new_theme_state)
             {:ok, new_state}
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -241,13 +252,16 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case Map.get(state.themes, theme_id) do
       nil ->
         {:error, :theme_not_found}
+
       theme_state ->
         case theme_state.status do
           :active ->
             new_state = %{state | current_theme: theme_id}
             {:ok, new_state}
+
           :inactive ->
             {:error, :theme_inactive}
+
           :error ->
             {:error, :theme_error}
         end
@@ -258,13 +272,16 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case Map.get(state.themes, theme_id) do
       nil ->
         {:error, :theme_not_found}
+
       theme_state ->
         case theme_state.status do
           :active ->
             new_state = %{state | preview_theme: theme_id}
             {:ok, new_state}
+
           :inactive ->
             {:error, :theme_inactive}
+
           :error ->
             {:error, :theme_error}
         end
@@ -275,6 +292,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     case Map.get(state.themes, theme_id) do
       nil ->
         {:error, :theme_not_found}
+
       theme_state ->
         case export_theme_to_file(theme_state, path) do
           :ok -> {:ok, state}
@@ -289,6 +307,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
         theme_id = generate_theme_id(path)
         new_state = put_in(state.themes[theme_id], theme_state)
         {:ok, theme_id, new_state}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -304,7 +323,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
         case Jason.decode(content) do
           {:ok, theme_data} ->
             theme_state = %{
-              id: nil,  # Will be set by generate_theme_id
+              # Will be set by generate_theme_id
+              id: nil,
               name: theme_data["name"],
               version: theme_data["version"],
               description: theme_data["description"],
@@ -316,17 +336,31 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
               status: :active,
               error: nil
             }
+
             {:ok, theme_state}
+
           {:error, reason} ->
             {:error, {:invalid_theme_format, reason}}
         end
+
       {:error, reason} ->
         {:error, {:file_read_error, reason}}
     end
   end
 
   defp validate_theme(theme_state) do
-    required_fields = [:id, :name, :version, :description, :author, :colors, :font, :cursor, :padding]
+    required_fields = [
+      :id,
+      :name,
+      :version,
+      :description,
+      :author,
+      :colors,
+      :font,
+      :cursor,
+      :padding
+    ]
+
     case Enum.all?(required_fields, &Map.has_key?(theme_state, &1)) do
       true -> :ok
       false -> {:error, :invalid_theme_format}
@@ -362,11 +396,13 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
         {:ok, files} ->
           Enum.each(files, fn file ->
             full_path = Path.join(path, file)
+
             case File.dir?(full_path) do
               true -> load_theme_from_directory(full_path)
               false -> load_theme_from_file(full_path)
             end
           end)
+
         {:error, reason} ->
           Logger.error("Failed to list theme directory #{path}: #{reason}")
       end
@@ -390,6 +426,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
           :ok -> :ok
           {:error, reason} -> {:error, {:file_write_error, reason}}
         end
+
       {:error, reason} ->
         {:error, {:json_encode_error, reason}}
     end
@@ -401,7 +438,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
         case Jason.decode(content) do
           {:ok, theme_data} ->
             theme_state = %{
-              id: nil,  # Will be set by generate_theme_id
+              # Will be set by generate_theme_id
+              id: nil,
               name: theme_data["name"],
               version: theme_data["version"],
               description: theme_data["description"],
@@ -413,10 +451,13 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
               status: :active,
               error: nil
             }
+
             {:ok, theme_state}
+
           {:error, reason} ->
             {:error, {:invalid_theme_format, reason}}
         end
+
       {:error, reason} ->
         {:error, {:file_read_error, reason}}
     end

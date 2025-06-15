@@ -6,15 +6,17 @@ defmodule Raxol.Terminal.MemoryManager do
   use GenServer
 
   @type t :: %__MODULE__{
-    max_memory: non_neg_integer(),
-    current_memory: non_neg_integer(),
-    memory_limit: non_neg_integer()
-  }
+          max_memory: non_neg_integer(),
+          current_memory: non_neg_integer(),
+          memory_limit: non_neg_integer()
+        }
 
   defstruct [
-    max_memory: 1024 * 1024,  # 1MB default
+    # 1MB default
+    max_memory: 1024 * 1024,
     current_memory: 0,
-    memory_limit: 1024 * 1024  # 1MB default
+    # 1MB default
+    memory_limit: 1024 * 1024
   ]
 
   # Client API
@@ -60,6 +62,7 @@ defmodule Raxol.Terminal.MemoryManager do
   """
   def check_and_cleanup(state) do
     current_memory = calculate_memory_usage(state)
+
     if current_memory > state.memory_limit do
       # Perform cleanup
       cleanup_memory(state)
@@ -109,7 +112,9 @@ defmodule Raxol.Terminal.MemoryManager do
     case state do
       %{buffer: buffer} when not is_nil(buffer) ->
         Raxol.Terminal.Buffer.MemoryManager.calculate_buffer_usage(buffer)
-      _ -> 0
+
+      _ ->
+        0
     end
   end
 
@@ -117,16 +122,21 @@ defmodule Raxol.Terminal.MemoryManager do
     case state do
       %{scrollback: scrollback} when not is_nil(scrollback) ->
         Raxol.Terminal.Buffer.MemoryManager.calculate_buffer_usage(scrollback)
-      _ -> 0
+
+      _ ->
+        0
     end
   end
 
   defp calculate_other_usage(state) do
     # Calculate memory usage for other terminal components
-    style_usage = byte_size(term_to_binary(state.style || %{}))
-    charset_usage = byte_size(term_to_binary(state.charset_state || %{}))
-    mode_usage = byte_size(term_to_binary(state.mode_manager || %{}))
-    cursor_usage = byte_size(term_to_binary(state.cursor || %{}))
+    style_usage = byte_size(:erlang.term_to_binary(state.style || %{}))
+
+    charset_usage =
+      byte_size(:erlang.term_to_binary(state.charset_state || %{}))
+
+    mode_usage = byte_size(:erlang.term_to_binary(state.mode_manager || %{}))
+    cursor_usage = byte_size(:erlang.term_to_binary(state.cursor || %{}))
 
     style_usage + charset_usage + mode_usage + cursor_usage
   end
@@ -135,9 +145,13 @@ defmodule Raxol.Terminal.MemoryManager do
     # Trim scrollback history to reduce memory usage
     case state do
       %{scrollback: scrollback} when not is_nil(scrollback) ->
-        trimmed_scrollback = Raxol.Terminal.Buffer.MemoryManager.trim_scrollback(scrollback)
+        trimmed_scrollback =
+          Raxol.Terminal.Buffer.MemoryManager.trim_scrollback(scrollback)
+
         %{state | scrollback: trimmed_scrollback}
-      _ -> state
+
+      _ ->
+        state
     end
   end
 end

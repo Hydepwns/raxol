@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     {:ok, %{emulator | cursor: new_cursor}}
   end
 
-  @doc "Handles Cursor Position (CUP - 'H')"
+  @doc "Handles Cursor Position (CUP - \"H\")"
   @spec handle_cup(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cup(emulator, params) do
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     {:ok, %{emulator | cursor: new_cursor}}
   end
 
-  @doc "Handles Cursor Up (CUU - 'A')"
+  @doc "Handles Cursor Up (CUU - \"A\")"
   @spec handle_a(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_a(emulator, params) do
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     handle_cursor_movement(emulator, &CursorManager.move_up/4, amount)
   end
 
-  @doc "Handles Cursor Down (CUD - 'B')"
+  @doc "Handles Cursor Down (CUD - \"B\")"
   @spec handle_b(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_b(emulator, params) do
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     handle_cursor_movement(emulator, &CursorManager.move_down/4, amount)
   end
 
-  @doc "Handles Cursor Forward (CUF - 'C')"
+  @doc "Handles Cursor Forward (CUF - \"C\")"
   @spec handle_c(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_c(emulator, params) do
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     handle_cursor_movement(emulator, &CursorManager.move_right/4, amount)
   end
 
-  @doc "Handles Cursor Backward (CUB - 'D')"
+  @doc "Handles Cursor Backward (CUB - \"D\")"
   @spec handle_d(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_d(emulator, params) do
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     handle_cursor_movement(emulator, &CursorManager.move_left/4, amount)
   end
 
-  @doc "Handles Cursor Next Line (CNL - 'E')"
+  @doc "Handles Cursor Next Line (CNL - \"E\")"
   @spec handle_e(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_e(emulator, params) do
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         end).()
   end
 
-  @doc "Handles Cursor Previous Line (CPL - 'F')"
+  @doc "Handles Cursor Previous Line (CPL - \"F\")"
   @spec handle_f(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_f(emulator, params) do
@@ -104,7 +104,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         end).()
   end
 
-  @doc "Handles Cursor Horizontal Absolute (CHA - 'G')"
+  @doc "Handles Cursor Horizontal Absolute (CHA - \"G\")"
   @spec handle_g(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g(emulator, params) do
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     )
   end
 
-  @doc "Handles Cursor Vertical Absolute (VPA - 'd')"
+  @doc "Handles Cursor Vertical Absolute (VPA - \"d\")"
   @spec handle_decvpa(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_decvpa(emulator, params) do

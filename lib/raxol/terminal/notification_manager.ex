@@ -102,7 +102,8 @@ defmodule Raxol.Terminal.NotificationManager do
     * `type` - The clipboard operation type
     * `data` - The clipboard data
   """
-  @spec notify_clipboard_event(pid() | nil, module() | nil, atom(), any()) :: :ok
+  @spec notify_clipboard_event(pid() | nil, module() | nil, atom(), any()) ::
+          :ok
   def notify_clipboard_event(runtime_pid, callback_module, type, data) do
     if runtime_pid,
       do: send(runtime_pid, {:terminal_clipboard_event, type, data})
@@ -161,7 +162,12 @@ defmodule Raxol.Terminal.NotificationManager do
     * `text` - The pasted text
     * `pos` - The paste position
   """
-  @spec notify_paste_event(pid() | nil, module() | nil, String.t(), {integer(), integer()}) :: :ok
+  @spec notify_paste_event(
+          pid() | nil,
+          module() | nil,
+          String.t(),
+          {integer(), integer()}
+        ) :: :ok
   def notify_paste_event(runtime_pid, callback_module, text, pos) do
     if runtime_pid,
       do: send(runtime_pid, {:terminal_paste_event, text, pos})
@@ -226,7 +232,13 @@ defmodule Raxol.Terminal.NotificationManager do
     * `delta` - The scroll delta
     * `pos` - The scroll position
   """
-  @spec notify_scroll_event(pid() | nil, module() | nil, atom(), integer(), {integer(), integer()}) :: :ok
+  @spec notify_scroll_event(
+          pid() | nil,
+          module() | nil,
+          atom(),
+          integer(),
+          {integer(), integer()}
+        ) :: :ok
   def notify_scroll_event(runtime_pid, callback_module, dir, delta, pos) do
     if runtime_pid,
       do: send(runtime_pid, {:terminal_scroll_event, dir, delta, pos})

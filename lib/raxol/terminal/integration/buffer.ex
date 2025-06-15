@@ -116,7 +116,8 @@ defmodule Raxol.Terminal.Integration.Buffer do
   """
   def resize(%State{} = state, width, height) do
     # Resize the buffer manager
-    {:ok, buffer_manager} = UnifiedManager.resize(state.buffer_manager, width, height)
+    {:ok, buffer_manager} =
+      UnifiedManager.resize(state.buffer_manager, width, height)
 
     # Update the scroll buffer
     scroll_buffer = UnifiedScroll.resize(state.scroll_buffer, height)

@@ -32,6 +32,7 @@ defmodule Raxol.Terminal.Config.Persistence do
       {:ok, binary} ->
         try do
           config = :erlang.binary_to_term(binary)
+
           with :ok <- Validator.validate_config(config) do
             {:ok, config}
           end
@@ -96,7 +97,9 @@ defmodule Raxol.Terminal.Config.Persistence do
     Map.get(config, :version, 1)
   end
 
-  defp validate_version(version) when is_integer(version) and version > 0, do: :ok
+  defp validate_version(version) when is_integer(version) and version > 0,
+    do: :ok
+
   defp validate_version(_), do: {:error, :invalid_version}
 
   defp apply_migrations(config, current_version) do
@@ -104,12 +107,16 @@ defmodule Raxol.Terminal.Config.Persistence do
 
     if current_version < latest_version do
       # Apply migrations in sequence
-      Enum.reduce_while(current_version..(latest_version - 1), {:ok, config}, fn version, {:ok, current_config} ->
-        case apply_migration(current_config, version) do
-          {:ok, migrated_config} -> {:cont, {:ok, migrated_config}}
-          error -> {:halt, error}
+      Enum.reduce_while(
+        current_version..(latest_version - 1),
+        {:ok, config},
+        fn version, {:ok, current_config} ->
+          case apply_migration(current_config, version) do
+            {:ok, migrated_config} -> {:cont, {:ok, migrated_config}}
+            error -> {:halt, error}
+          end
         end
-      end)
+      )
     else
       {:ok, config}
     end
@@ -128,9 +135,9 @@ defmodule Raxol.Terminal.Config.Persistence do
   defp migrate_v1_to_v2(config) do
     # Example migration: Add new fields with default values
     migrated_config = %{
-      config |
-      version: 2,
-      performance: Map.put_new(config.performance, :render_buffer_size, 1024)
+      config
+      | version: 2,
+        performance: Map.put_new(config.performance, :render_buffer_size, 1024)
     }
 
     {:ok, migrated_config}
@@ -139,9 +146,9 @@ defmodule Raxol.Terminal.Config.Persistence do
   defp migrate_v2_to_v3(config) do
     # Example migration: Restructure existing fields
     migrated_config = %{
-      config |
-      version: 3,
-      input: Map.put_new(config.input, :keyboard_layout, :us)
+      config
+      | version: 3,
+        input: Map.put_new(config.input, :keyboard_layout, :us)
     }
 
     {:ok, migrated_config}

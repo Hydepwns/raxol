@@ -24,6 +24,7 @@ defmodule Raxol.Terminal.Emulator.State do
     case Raxol.Terminal.ModeManager.set_mode(emulator.mode_manager, [mode]) do
       {:ok, updated_mode_manager} ->
         {:ok, %{emulator | mode_manager: updated_mode_manager}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -56,6 +57,7 @@ defmodule Raxol.Terminal.Emulator.State do
     case validate_state(emulator) do
       :ok ->
         {:ok, %{emulator | charset_state: charset_state}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -74,13 +76,16 @@ defmodule Raxol.Terminal.Emulator.State do
   Pushes a new state onto the state stack.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec push_state(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()} | {:error, String.t()}
+  @spec push_state(EmulatorStruct.t()) ::
+          {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def push_state(%EmulatorStruct{} = emulator) do
     case Raxol.Terminal.ANSI.TerminalState.push(emulator.state) do
       {:ok, updated_state} ->
         {:ok, %{emulator | state: updated_state}}
+
       updated_state when is_map(updated_state) ->
         {:ok, %{emulator | state: updated_state}}
+
       _ ->
         {:error, "Failed to push state"}
     end
@@ -90,11 +95,13 @@ defmodule Raxol.Terminal.Emulator.State do
   Pops a state from the state stack.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec pop_state(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()} | {:error, String.t()}
+  @spec pop_state(EmulatorStruct.t()) ::
+          {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def pop_state(%EmulatorStruct{} = emulator) do
     case Raxol.Terminal.ANSI.TerminalState.pop(emulator.state) do
       {:ok, updated_state} ->
         {:ok, %{emulator | state: updated_state}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -137,7 +144,8 @@ defmodule Raxol.Terminal.Emulator.State do
   Sets the current hyperlink URL.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_hyperlink_url(EmulatorStruct.t(), String.t() | nil) :: {:ok, EmulatorStruct.t()}
+  @spec set_hyperlink_url(EmulatorStruct.t(), String.t() | nil) ::
+          {:ok, EmulatorStruct.t()}
   def set_hyperlink_url(%EmulatorStruct{} = emulator, url)
       when is_binary(url) or is_nil(url) do
     {:ok, %{emulator | current_hyperlink_url: url}}
@@ -160,8 +168,10 @@ defmodule Raxol.Terminal.Emulator.State do
   Sets the tab stops for the terminal.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_tab_stops(EmulatorStruct.t(), MapSet.t()) :: {:ok, EmulatorStruct.t()}
-  def set_tab_stops(%EmulatorStruct{} = emulator, tab_stops) when is_map(tab_stops) do
+  @spec set_tab_stops(EmulatorStruct.t(), MapSet.t()) ::
+          {:ok, EmulatorStruct.t()}
+  def set_tab_stops(%EmulatorStruct{} = emulator, tab_stops)
+      when is_map(tab_stops) do
     {:ok, %{emulator | tab_stops: tab_stops}}
   end
 

@@ -4,7 +4,8 @@ defmodule Raxol.Terminal.ANSI.Colors do
   Handles color parsing, setting, and management for terminal text.
   """
 
-  @type color :: :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white
+  @type color ::
+          :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white
   @type color_mode :: :normal | :bright | :dim
   @type rgb :: {0..255, 0..255, 0..255}
 
@@ -26,7 +27,8 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  def parse_color({r, g, b}) when is_integer(r) and is_integer(g) and is_integer(b) do
+  def parse_color({r, g, b})
+      when is_integer(r) and is_integer(g) and is_integer(b) do
     if r in 0..255 and g in 0..255 and b in 0..255 do
       {:ok, {r, g, b}}
     else
@@ -73,10 +75,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_cursor_color(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]12;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]12;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]12;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]12;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]12;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]12;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end
@@ -87,10 +98,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_mouse_foreground(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]13;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]13;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]13;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]13;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]13;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]13;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end
@@ -101,10 +121,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_mouse_background(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]14;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]14;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]14;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]14;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]14;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]14;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end
@@ -115,10 +144,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_highlight_foreground(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]19;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]19;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]19;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]19;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]19;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]19;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end
@@ -129,10 +167,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_highlight_background(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]20;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]20;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]20;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]20;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]20;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]20;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end
@@ -143,10 +190,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_highlight_cursor(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]21;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]21;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]21;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]21;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]21;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]21;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end
@@ -157,10 +213,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_highlight_mouse_foreground(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]22;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]22;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]22;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]22;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]22;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]22;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end
@@ -171,10 +236,19 @@ defmodule Raxol.Terminal.ANSI.Colors do
   def set_highlight_mouse_background(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
-        :normal -> {:ok, "\e]23;rgb:#{r}/#{g}/#{b}\e\\"}
-        :bright -> {:ok, "\e]23;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
-        :dim -> {:ok, "\e]23;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
-        _ -> {:error, :invalid_mode}
+        :normal ->
+          {:ok, "\e]23;rgb:#{r}/#{g}/#{b}\e\\"}
+
+        :bright ->
+          {:ok,
+           "\e]23;rgb:#{min(r + 40, 255)}/#{min(g + 40, 255)}/#{min(b + 40, 255)}\e\\"}
+
+        :dim ->
+          {:ok,
+           "\e]23;rgb:#{max(r - 40, 0)}/#{max(g - 40, 0)}/#{max(b - 40, 0)}\e\\"}
+
+        _ ->
+          {:error, :invalid_mode}
       end
     end
   end

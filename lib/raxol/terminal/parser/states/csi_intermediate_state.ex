@@ -91,7 +91,8 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
 
       # Other ignored bytes (0-1F excluding CAN/SUB, 7F)
       <<ignored_byte, rest_after_ignored::binary>>
-      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and ignored_byte != 0x1A) or
+      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and
+              ignored_byte != 0x1A) or
              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
         Raxol.Core.Runtime.Log.debug(
           "Ignoring C0/DEL byte #{ignored_byte} in CSI Intermediate"
@@ -101,9 +102,9 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
         {:continue, emulator, parser_state, rest_after_ignored}
 
       # Unhandled byte (including 0x30-0x3F which VTTest ignores here) - go to ground
-      <<unhandled_byte, rest_after_unhandled::binary>> ->
+      <<_unhandled_byte, rest_after_unhandled::binary>> ->
         Raxol.Core.Runtime.Log.warning_with_context(
-          "Unhandled byte #{unhandled_byte} in CSI Intermediate state, returning to ground.",
+          "Unhandled byte #{_unhandled_byte} in CSI Intermediate state, returning to ground.",
           %{}
         )
 

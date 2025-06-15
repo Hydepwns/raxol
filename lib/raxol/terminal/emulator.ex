@@ -161,17 +161,33 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate get_active_buffer(emulator), to: ScreenManager
   defdelegate update_active_buffer(emulator, new_buffer), to: ScreenManager
   defdelegate switch_buffer(emulator), to: ScreenManager
-  defdelegate initialize_buffers(width, height, scrollback_limit), to: ScreenManager
+
+  defdelegate initialize_buffers(width, height, scrollback_limit),
+    to: ScreenManager
+
   defdelegate resize_buffers(emulator, new_width, new_height), to: ScreenManager
   defdelegate get_buffer_type(emulator), to: ScreenManager
   defdelegate set_buffer_type(emulator, type), to: ScreenManager
 
   # Delegate parser state operations to ParserStateManager
   defdelegate get_parser_state(emulator), to: ParserStateManager, as: :get_state
-  defdelegate update_parser_state(emulator, state), to: ParserStateManager, as: :update_state
-  defdelegate get_parser_state_name(emulator), to: ParserStateManager, as: :get_state_name
-  defdelegate set_parser_state_name(emulator, state_name), to: ParserStateManager, as: :set_state_name
-  defdelegate reset_parser_to_ground(emulator), to: ParserStateManager, as: :reset_to_ground
+
+  defdelegate update_parser_state(emulator, state),
+    to: ParserStateManager,
+    as: :update_state
+
+  defdelegate get_parser_state_name(emulator),
+    to: ParserStateManager,
+    as: :get_state_name
+
+  defdelegate set_parser_state_name(emulator, state_name),
+    to: ParserStateManager,
+    as: :set_state_name
+
+  defdelegate reset_parser_to_ground(emulator),
+    to: ParserStateManager,
+    as: :reset_to_ground
+
   defdelegate in_ground_state?(emulator), to: ParserStateManager
   defdelegate in_escape_state?(emulator), to: ParserStateManager
   defdelegate in_control_sequence_state?(emulator), to: ParserStateManager
@@ -304,40 +320,116 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate reverse_index(emulator), to: BufferOps
 
   # Delegate cursor operations to Raxol.Terminal.Cursor.Manager
-  defdelegate get_cursor_position(emulator), to: Raxol.Terminal.Cursor.Manager, as: :get_position
-  defdelegate set_cursor_position(emulator, position, width, height), to: Raxol.Terminal.Cursor.Manager, as: :move_to
-  defdelegate move_cursor_up(emulator, lines \\ 1, width, height), to: Raxol.Terminal.Cursor.Manager, as: :move_up
-  defdelegate move_cursor_down(emulator, lines \\ 1, width, height), to: Raxol.Terminal.Cursor.Manager, as: :move_down
-  defdelegate move_cursor_left(emulator, columns \\ 1, width, height), to: Raxol.Terminal.Cursor.Manager, as: :move_left
-  defdelegate move_cursor_right(emulator, columns \\ 1, width, height), to: Raxol.Terminal.Cursor.Manager, as: :move_right
-  defdelegate move_cursor_to_line_start(emulator), to: Raxol.Terminal.Cursor.Manager, as: :move_to_line_start
-  defdelegate move_cursor_to_column(emulator, column, width, height), to: Raxol.Terminal.Cursor.Manager, as: :move_to
-  defdelegate move_cursor_to(emulator, position, width, height), to: Raxol.Terminal.Cursor.Manager, as: :move_to
+  defdelegate get_cursor_position(emulator),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :get_position
+
+  defdelegate set_cursor_position(emulator, position, width, height),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_to
+
+  defdelegate move_cursor_up(emulator, lines \\ 1, width, height),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_up
+
+  defdelegate move_cursor_down(emulator, lines \\ 1, width, height),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_down
+
+  defdelegate move_cursor_left(emulator, columns \\ 1, width, height),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_left
+
+  defdelegate move_cursor_right(emulator, columns \\ 1, width, height),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_right
+
+  defdelegate move_cursor_to_line_start(emulator),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_to_line_start
+
+  defdelegate move_cursor_to_column(emulator, column, width, height),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_to
+
+  defdelegate move_cursor_to(emulator, position, width, height),
+    to: Raxol.Terminal.Cursor.Manager,
+    as: :move_to
 
   # Delegate state management operations to Raxol.Terminal.State.Manager
-  defdelegate get_mode_manager(emulator), to: Raxol.Terminal.State.Manager, as: :get_mode_manager
-  defdelegate update_mode_manager(emulator, mode_manager), to: Raxol.Terminal.State.Manager, as: :update_mode_manager
-  defdelegate get_charset_state(emulator), to: Raxol.Terminal.State.Manager, as: :get_charset_state
-  defdelegate update_charset_state(emulator, charset_state), to: Raxol.Terminal.State.Manager, as: :update_charset_state
+  defdelegate get_mode_manager(emulator),
+    to: Raxol.Terminal.State.Manager,
+    as: :get_mode_manager
+
+  defdelegate update_mode_manager(emulator, mode_manager),
+    to: Raxol.Terminal.State.Manager,
+    as: :update_mode_manager
+
+  defdelegate get_charset_state(emulator),
+    to: Raxol.Terminal.State.Manager,
+    as: :get_charset_state
+
+  defdelegate update_charset_state(emulator, charset_state),
+    to: Raxol.Terminal.State.Manager,
+    as: :update_charset_state
+
   defdelegate get_state_stack(emulator), to: Raxol.Terminal.State.Manager
-  defdelegate update_state_stack(emulator, state_stack), to: Raxol.Terminal.State.Manager
+
+  defdelegate update_state_stack(emulator, state_stack),
+    to: Raxol.Terminal.State.Manager
+
   defdelegate get_scroll_region(emulator), to: Raxol.Terminal.State.Manager
-  defdelegate update_scroll_region(emulator, scroll_region), to: Raxol.Terminal.State.Manager
+
+  defdelegate update_scroll_region(emulator, scroll_region),
+    to: Raxol.Terminal.State.Manager
+
   defdelegate get_last_col_exceeded(emulator), to: Raxol.Terminal.State.Manager
-  defdelegate update_last_col_exceeded(emulator, last_col_exceeded), to: Raxol.Terminal.State.Manager
+
+  defdelegate update_last_col_exceeded(emulator, last_col_exceeded),
+    to: Raxol.Terminal.State.Manager
+
   defdelegate reset_to_initial_state(emulator), to: Raxol.Terminal.State.Manager
 
   # Delegate command management operations to Raxol.Terminal.Command.Manager
-  defdelegate get_command_buffer(emulator), to: Raxol.Terminal.Command.Manager, as: :get_command_buffer
-  defdelegate update_command_buffer(emulator, buffer), to: Raxol.Terminal.Command.Manager, as: :update_command_buffer
-  defdelegate get_command_history(emulator), to: Raxol.Terminal.Command.Manager, as: :get_command_history
-  defdelegate add_to_history(emulator, command), to: Raxol.Terminal.Command.Manager, as: :add_to_history
-  defdelegate clear_history(emulator), to: Raxol.Terminal.Command.Manager, as: :clear_history
-  defdelegate get_last_key_event(emulator), to: Raxol.Terminal.Command.Manager, as: :get_last_key_event
-  defdelegate update_last_key_event(emulator, event), to: Raxol.Terminal.Command.Manager, as: :update_last_key_event
-  defdelegate process_key_event(emulator, key_event), to: Raxol.Terminal.Command.Manager, as: :process_key_event
-  defdelegate get_history_command(emulator, index), to: Raxol.Terminal.Command.Manager, as: :get_history_command
-  defdelegate search_history(emulator, prefix), to: Raxol.Terminal.Command.Manager, as: :search_history
+  defdelegate get_command_buffer(emulator),
+    to: Raxol.Terminal.Command.Manager,
+    as: :get_command_buffer
+
+  defdelegate update_command_buffer(emulator, buffer),
+    to: Raxol.Terminal.Command.Manager,
+    as: :update_command_buffer
+
+  defdelegate get_command_history(emulator),
+    to: Raxol.Terminal.Command.Manager,
+    as: :get_command_history
+
+  defdelegate add_to_history(emulator, command),
+    to: Raxol.Terminal.Command.Manager,
+    as: :add_to_history
+
+  defdelegate clear_history(emulator),
+    to: Raxol.Terminal.Command.Manager,
+    as: :clear_history
+
+  defdelegate get_last_key_event(emulator),
+    to: Raxol.Terminal.Command.Manager,
+    as: :get_last_key_event
+
+  defdelegate update_last_key_event(emulator, event),
+    to: Raxol.Terminal.Command.Manager,
+    as: :update_last_key_event
+
+  defdelegate process_key_event(emulator, key_event),
+    to: Raxol.Terminal.Command.Manager,
+    as: :process_key_event
+
+  defdelegate get_history_command(emulator, index),
+    to: Raxol.Terminal.Command.Manager,
+    as: :get_history_command
+
+  defdelegate search_history(emulator, prefix),
+    to: Raxol.Terminal.Command.Manager,
+    as: :search_history
 
   # Delegate tab operations to Tab.Manager
   defdelegate set_horizontal_tab(emulator), to: Tab.Manager
@@ -384,24 +476,51 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate clear_scrollback(emulator), to: ScrollbackManager
   defdelegate get_scrollback_limit(emulator), to: ScrollbackManager
   defdelegate set_scrollback_limit(emulator, limit), to: ScrollbackManager
-  defdelegate get_scrollback_range(emulator, start, count), to: ScrollbackManager
+
+  defdelegate get_scrollback_range(emulator, start, count),
+    to: ScrollbackManager
+
   defdelegate get_scrollback_size(emulator), to: ScrollbackManager
   defdelegate scrollback_empty?(emulator), to: ScrollbackManager
 
   # Delegate plugin operations to PluginManager
-  defdelegate get_plugin_manager(emulator), to: Raxol.Core.Runtime.Plugins.Manager, as: :get_manager
-  defdelegate update_plugin_manager(emulator, manager), to: Raxol.Core.Runtime.Plugins.Manager, as: :update_manager
-  defdelegate initialize_plugin(emulator, plugin_name, config), to: Raxol.Core.Runtime.Plugins.Manager
-  defdelegate call_plugin_hook(emulator, plugin_name, hook_name, args), to: Raxol.Core.Runtime.Plugins.Manager, as: :call_hook
-  defdelegate plugin_loaded?(emulator, plugin_name), to: Raxol.Core.Runtime.Plugins.Manager
-  defdelegate get_loaded_plugins(emulator), to: Raxol.Core.Runtime.Plugins.Manager
-  defdelegate unload_plugin(emulator, plugin_name), to: Raxol.Core.Runtime.Plugins.Manager
-  defdelegate get_plugin_config(emulator, plugin_name), to: Raxol.Core.Runtime.Plugins.Manager
-  defdelegate update_plugin_config(emulator, plugin_name, config), to: Raxol.Core.Runtime.Plugins.Manager
+  defdelegate get_plugin_manager(emulator),
+    to: Raxol.Core.Runtime.Plugins.Manager,
+    as: :get_manager
+
+  defdelegate update_plugin_manager(emulator, manager),
+    to: Raxol.Core.Runtime.Plugins.Manager,
+    as: :update_manager
+
+  defdelegate initialize_plugin(emulator, plugin_name, config),
+    to: Raxol.Core.Runtime.Plugins.Manager
+
+  defdelegate call_plugin_hook(emulator, plugin_name, hook_name, args),
+    to: Raxol.Core.Runtime.Plugins.Manager,
+    as: :call_hook
+
+  defdelegate plugin_loaded?(emulator, plugin_name),
+    to: Raxol.Core.Runtime.Plugins.Manager
+
+  defdelegate get_loaded_plugins(emulator),
+    to: Raxol.Core.Runtime.Plugins.Manager
+
+  defdelegate unload_plugin(emulator, plugin_name),
+    to: Raxol.Core.Runtime.Plugins.Manager
+
+  defdelegate get_plugin_config(emulator, plugin_name),
+    to: Raxol.Core.Runtime.Plugins.Manager
+
+  defdelegate update_plugin_config(emulator, plugin_name, config),
+    to: Raxol.Core.Runtime.Plugins.Manager
 
   # Delegate mode operations to ModeManager
   defdelegate get_mode_manager(emulator), to: ModeManager, as: :get_manager
-  defdelegate update_mode_manager(emulator, manager), to: ModeManager, as: :update_manager
+
+  defdelegate update_mode_manager(emulator, manager),
+    to: ModeManager,
+    as: :update_manager
+
   defdelegate set_mode(emulator, mode), to: ModeManager
   defdelegate reset_mode(emulator, mode), to: ModeManager
   defdelegate mode_set?(emulator, mode), to: ModeManager
@@ -412,14 +531,33 @@ defmodule Raxol.Terminal.Emulator do
 
   # Delegate charset operations to CharsetManager
   defdelegate get_charset_state(emulator), to: CharsetManager, as: :get_state
-  defdelegate update_charset_state(emulator, state), to: CharsetManager, as: :update_state
+
+  defdelegate update_charset_state(emulator, state),
+    to: CharsetManager,
+    as: :update_state
+
   defdelegate designate_charset(emulator, g_set, charset), to: CharsetManager
   defdelegate invoke_g_set(emulator, g_set), to: CharsetManager
   defdelegate get_current_g_set(emulator), to: CharsetManager
   defdelegate get_designated_charset(emulator, g_set), to: CharsetManager
-  defdelegate reset_charset_state(emulator), to: CharsetManager, as: :reset_state
+
+  defdelegate reset_charset_state(emulator),
+    to: CharsetManager,
+    as: :reset_state
+
   defdelegate apply_single_shift(emulator, g_set), to: CharsetManager
   defdelegate get_single_shift(emulator), to: CharsetManager
+
+  @doc """
+  Sets the character set for the specified G-set.
+  Returns {:ok, updated_emulator} or {:error, reason}.
+  """
+  def set_charset(emulator, charset) do
+    case CharsetManager.designate_charset(emulator, :g0, charset) do
+      {:ok, updated_emulator} -> {:ok, updated_emulator}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   # Delegate formatting operations to FormattingManager
   defdelegate get_style(emulator), to: FormattingManager
@@ -436,7 +574,10 @@ defmodule Raxol.Terminal.Emulator do
 
   # Delegate terminal state operations to TerminalStateManager
   defdelegate get_state_stack(emulator), to: TerminalStateManager
-  defdelegate update_state_stack(emulator, state_stack), to: TerminalStateManager
+
+  defdelegate update_state_stack(emulator, state_stack),
+    to: TerminalStateManager
+
   defdelegate save_state(emulator), to: TerminalStateManager
   defdelegate restore_state(emulator), to: TerminalStateManager
   defdelegate has_saved_states?(emulator), to: TerminalStateManager
@@ -451,5 +592,14 @@ defmodule Raxol.Terminal.Emulator do
   @spec write(t(), String.t()) :: t()
   def write(emulator, data) do
     Output.Manager.write(emulator, data)
+  end
+
+  @doc """
+  Writes output to the terminal.
+  """
+  @spec write_to_output(t(), String.t()) :: t()
+  def write_to_output(%Struct{} = emulator, output) when is_binary(output) do
+    {new_emulator, _} = process_input(emulator, output)
+    new_emulator
   end
 end

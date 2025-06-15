@@ -32,30 +32,27 @@ defmodule Raxol.Terminal.Commands.Parser do
   def parse_params(params_string) do
     params_string
     |> String.split(";")
-    |> Enum.map(fn param ->
-      cond do
-        # Handle empty parameter
-        param == "" ->
-          nil
-
-        # Handle parameter with sub-parameters
-        String.contains?(param, ":") ->
-          param
-          |> String.split(":")
-          |> Enum.map(fn subparam ->
-            if subparam == "" do
-              nil
-            else
-              parse_int(subparam)
-            end
-          end)
-
-        # Handle regular parameter
-        true ->
-          parse_int(param)
-      end
-    end)
+    |> Enum.map(&parse_single_param/1)
   end
+
+  defp parse_single_param(""), do: nil
+
+  defp parse_single_param(param) when is_binary(param) do
+    case String.split(param, ":", parts: 2) do
+      [param] ->
+        parse_int(param)
+
+      [param, _] ->
+        param
+        |> String.split(":")
+        |> Enum.map(&parse_subparam/1)
+    end
+  end
+
+  defp parse_single_param(param), do: parse_int(param)
+
+  defp parse_subparam(""), do: nil
+  defp parse_subparam(subparam), do: parse_int(subparam)
 
   @doc """
   Gets a parameter at a specific index from the params list.

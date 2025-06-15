@@ -22,10 +22,11 @@ defmodule Raxol.Terminal.Input.Buffer do
       {:error, :buffer_full}
     else
       new_buffer = %{
-        buffer |
-        buffer: buffer.buffer ++ [event],
-        current_size: buffer.current_size + 1
+        buffer
+        | buffer: buffer.buffer ++ [event],
+          current_size: buffer.current_size + 1
       }
+
       {:ok, new_buffer}
     end
   end

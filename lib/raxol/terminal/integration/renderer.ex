@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
         end)
 
       # If cell rendering failed, return the error early
-      unless cell_render_result == :ok do
+      if cell_render_result != :ok do
         # Implicit return
         cell_render_result
       else

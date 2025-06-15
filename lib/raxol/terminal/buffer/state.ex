@@ -18,39 +18,9 @@ defmodule Raxol.Terminal.Buffer.State do
   def resize(%ScreenBuffer{} = buffer, new_width, new_height)
       when is_integer(new_width) and new_width > 0 and is_integer(new_height) and
              new_height > 0 do
-    old_width = buffer.width
-    old_height = buffer.height
-
-    # Calculate dimensions for copying
-    copy_height = min(old_height, new_height)
-    copy_width = min(old_width, new_width)
-
-    # Create a new empty grid of the correct size, initialize with non-dirty cells
-    default_padding_cell = Cell.new(" ", TextFormatting.new())
-
-    new_grid =
-      List.duplicate(
-        List.duplicate(default_padding_cell, new_width),
-        new_height
-      )
-
-    # Efficiently copy the relevant part of the old grid
-    updated_grid =
-      Enum.reduce(0..(copy_height - 1), new_grid, fn y, current_grid ->
-        # Get the corresponding row slice from the old grid (preserving original cells)
-        old_row_slice_to_copy =
-          buffer.cells |> Enum.at(y) |> Enum.slice(0, copy_width)
-
-        # Update the new row, replacing the beginning part with the copied slice
-        List.update_at(current_grid, y, fn _row_placeholder ->
-          # Calculate needed padding size
-          padding_size = max(0, new_width - copy_width)
-          # Create padding with non-dirty default cells
-          padding = List.duplicate(default_padding_cell, padding_size)
-          # Combine the copied slice and the padding
-          old_row_slice_to_copy ++ padding
-        end)
-      end)
+    {copy_width, copy_height} = calculate_copy_dimensions(buffer, new_width, new_height)
+    new_grid = create_empty_grid(new_width, new_height)
+    updated_grid = copy_old_content(buffer, new_grid, copy_width, copy_height)
 
     %{
       buffer
@@ -60,6 +30,23 @@ defmodule Raxol.Terminal.Buffer.State do
         scroll_region: nil,
         selection: nil
     }
+  end
+
+  defp calculate_copy_dimensions(buffer, new_width, new_height) do
+    {min(buffer.width, new_width), min(buffer.height, new_height)}
+  end
+
+  defp create_empty_grid(width, height) do
+    default_cell = Cell.new(" ", TextFormatting.new())
+    List.duplicate(List.duplicate(default_cell, width), height)
+  end
+
+  defp copy_old_content(buffer, new_grid, copy_width, copy_height) do
+    Enum.reduce(0..(copy_height - 1), new_grid, fn y, current_grid ->
+      old_row_slice = buffer.cells |> Enum.at(y) |> Enum.slice(0, copy_width)
+      padding = List.duplicate(Cell.new(" ", TextFormatting.new()), max(0, new_grid.width - copy_width))
+      List.update_at(current_grid, y, fn _ -> old_row_slice ++ padding end)
+    end)
   end
 
   def resize(buffer, _new_width, _new_height) when is_tuple(buffer) do
@@ -158,7 +145,8 @@ defmodule Raxol.Terminal.Buffer.State do
     %{buffer | scroll_region: {start_line, end_line}}
   end
 
-  def set_scroll_region(_buffer, _start_line, _end_line) when is_tuple(_buffer) do
+  def set_scroll_region(_buffer, _start_line, _end_line)
+      when is_tuple(_buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end

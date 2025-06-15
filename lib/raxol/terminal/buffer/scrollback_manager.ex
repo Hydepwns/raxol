@@ -6,14 +6,15 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
   use GenServer
 
   @type t :: %__MODULE__{
-    max_lines: non_neg_integer(),
-    current_lines: non_neg_integer(),
-    lines: list(list(Raxol.Terminal.Buffer.Cell.t())),
-    limit: non_neg_integer()
-  }
+          max_lines: non_neg_integer(),
+          current_lines: non_neg_integer(),
+          lines: list(list(Raxol.Terminal.Buffer.Cell.t())),
+          limit: non_neg_integer()
+        }
 
   defstruct [
-    max_lines: 1000,  # Default max scrollback lines
+    # Default max scrollback lines
+    max_lines: 1000,
     current_lines: 0,
     lines: [],
     limit: 1000
@@ -85,18 +86,23 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
   def handle_call({:add_line, line}, _from, state) do
     new_lines = [line | state.lines]
     new_count = min(state.current_lines + 1, state.max_lines)
-    new_state = %{state |
-      lines: Enum.take(new_lines, state.max_lines),
-      current_lines: new_count
+
+    new_state = %{
+      state
+      | lines: Enum.take(new_lines, state.max_lines),
+        current_lines: new_count
     }
+
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_call({:get_lines, start_line, count}, _from, state) do
-    lines = state.lines
+    lines =
+      state.lines
       |> Enum.drop(start_line)
       |> Enum.take(count)
+
     {:reply, lines, state}
   end
 

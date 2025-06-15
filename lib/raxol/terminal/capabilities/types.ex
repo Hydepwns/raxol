@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Capabilities.Types do
   @type capability_response :: {:ok, capability_value()} | {:error, term()}
 
   @type t :: %__MODULE__{
-    supported: capability_map(),
-    enabled: capability_map(),
-    cached: capability_map()
-  }
+          supported: capability_map(),
+          enabled: capability_map(),
+          cached: capability_map()
+        }
 
   defstruct supported: %{},
             enabled: %{},

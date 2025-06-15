@@ -9,60 +9,116 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
-  Inserts lines at the current cursor position.
+  Inserts a specified number of blank lines at the current cursor position.
+  Lines below the cursor are shifted down, and lines shifted off the bottom are discarded.
   """
   @spec insert_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
-  def insert_lines(buffer, count) do
-    {_, y} = buffer.cursor_position
-    {before_cursor, after_cursor} = Enum.split(buffer.cells, y)
+  def insert_lines(buffer, count) when is_integer(count) and count > 0 do
+    {_, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    {top, bottom} = Raxol.Terminal.ScreenBuffer.ScrollRegion.get_boundaries(buffer.scroll_state)
 
-    # Create new empty lines
-    new_lines = create_empty_lines(buffer.width, count)
+    # Only insert lines within the scroll region
+    if y >= top and y <= bottom do
+      do_insert_lines(buffer, y, count, bottom)
+    else
+      buffer
+    end
+  end
+
+  # Helper function to handle the line insertion logic
+  defp do_insert_lines(buffer, cursor_y, count, bottom) do
+    # Split the content at the cursor position
+    {before_cursor, after_cursor} = Enum.split(buffer.cells, cursor_y)
+
+    # Create blank lines
+    blank_lines = create_empty_lines(buffer.width, count)
+
+    # Calculate how many lines to keep from after_cursor
+    lines_to_keep = max(0, bottom - cursor_y - count + 1)
+    kept_lines = Enum.take(after_cursor, lines_to_keep)
 
     # Combine the parts
-    new_cells = before_cursor ++ new_lines ++ after_cursor
+    new_cells = before_cursor ++ blank_lines ++ kept_lines
 
-    # Remove excess lines from bottom
-    new_cells = Enum.take(new_cells, buffer.height)
+    # Ensure the buffer maintains its correct size
+    final_cells =
+      if length(new_cells) < length(buffer.cells) do
+        # Add any additional blank lines needed
+        additional_lines = create_empty_lines(buffer.width, length(buffer.cells) - length(new_cells))
+        new_cells ++ additional_lines
+      else
+        # Truncate if necessary
+        Enum.take(new_cells, length(buffer.cells))
+      end
 
-    %{buffer | cells: new_cells}
+    %{buffer | cells: final_cells}
   end
 
   @doc """
-  Deletes lines at the current cursor position.
+  Deletes a specified number of lines starting from the current cursor position.
+  Lines below the deleted lines are shifted up, and blank lines are added at the bottom.
   """
   @spec delete_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
-  def delete_lines(buffer, count) do
-    {_, y} = buffer.cursor_position
-    {before_cursor, after_cursor} = Enum.split(buffer.cells, y)
+  def delete_lines(buffer, count) when is_integer(count) and count > 0 do
+    {_x, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    {top, bottom} = Raxol.Terminal.ScreenBuffer.ScrollRegion.get_boundaries(buffer.scroll_state)
 
-    # Remove lines after cursor
-    new_after_cursor = Enum.drop(after_cursor, count)
+    # Only delete lines within the scroll region
+    if y >= top and y <= bottom do
+      # Split the content at the cursor position
+      {before, after_cursor} = Enum.split(buffer.cells, y)
 
-    # Add empty lines at the bottom
-    empty_lines = create_empty_lines(buffer.width, count)
-    new_cells = before_cursor ++ new_after_cursor ++ empty_lines
+      # Remove the specified number of lines and shift remaining lines up
+      remaining_lines = Enum.drop(after_cursor, count)
 
-    %{buffer | cells: new_cells}
+      # Add blank lines at the bottom
+      blank_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
+      new_cells = before ++ remaining_lines ++ blank_lines
+
+      %{buffer | cells: new_cells}
+    else
+      buffer
+    end
   end
 
   @doc """
-  Prepends lines to the top of the buffer.
+  Prepends lines to the top of the screen buffer, shifting existing content down.
+  Lines shifted off the bottom are moved to the scrollback buffer.
   """
-  @spec prepend_lines(ScreenBuffer.t(), list(list(Cell.t()))) :: ScreenBuffer.t()
+  @spec prepend_lines(ScreenBuffer.t(), list(list(Cell.t()))) ::
+          ScreenBuffer.t()
   def prepend_lines(buffer, lines) do
-    new_cells = lines ++ buffer.cells
+    # Calculate how many lines will be shifted to scrollback
+    overflow = max(0, length(lines) - buffer.height)
 
-    # Remove excess lines from bottom
-    new_cells = Enum.take(new_cells, buffer.height)
+    # Split lines into those that fit and those that go to scrollback
+    {visible_lines, scrollback_lines} = Enum.split(lines, buffer.height)
 
-    %{buffer | cells: new_cells}
+    # Shift existing content down
+    {shifted_content, new_scrollback} =
+      if overflow > 0 do
+        # Some existing content will be moved to scrollback
+        {existing_visible, existing_scrollback} = Enum.split(buffer.cells, buffer.height - length(visible_lines))
+        {visible_lines ++ existing_visible, existing_scrollback ++ buffer.scrollback}
+      else
+        # All existing content stays visible
+        {visible_lines ++ Enum.take(buffer.cells, buffer.height - length(visible_lines)), buffer.scrollback}
+      end
+
+    # Update scrollback buffer, respecting the limit
+    final_scrollback = Enum.take(scrollback_lines ++ new_scrollback, buffer.scrollback_limit)
+
+    %{buffer |
+      cells: shifted_content,
+      scrollback: final_scrollback
+    }
   end
 
   @doc """
   Removes lines from the top of the buffer.
   """
-  @spec pop_top_lines(ScreenBuffer.t(), non_neg_integer()) :: {list(list(Cell.t())), ScreenBuffer.t()}
+  @spec pop_top_lines(ScreenBuffer.t(), non_neg_integer()) ::
+          {list(list(Cell.t())), ScreenBuffer.t()}
   def pop_top_lines(buffer, count) do
     {popped_lines, remaining_cells} = Enum.split(buffer.cells, count)
 
@@ -84,7 +140,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Updates a line in the buffer.
   """
-  @spec update_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
+  @spec update_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
+          ScreenBuffer.t()
   def update_line(buffer, line_index, new_line) do
     new_cells = List.update_at(buffer.cells, line_index, fn _ -> new_line end)
     %{buffer | cells: new_cells}
@@ -93,7 +150,11 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Clears a line in the buffer.
   """
-  @spec clear_line(ScreenBuffer.t(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
+  @spec clear_line(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          TextFormatting.text_style() | nil
+        ) :: ScreenBuffer.t()
   def clear_line(buffer, line_index, style \\ nil) do
     empty_line = create_empty_line(buffer.width, style || buffer.default_style)
     update_line(buffer, line_index, empty_line)

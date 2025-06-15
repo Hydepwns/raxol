@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.ANSI.Parser do
           intermediate: String.t(),
           final: String.t(),
           text: String.t()
-  }
+        }
 
   @doc """
   Parses a string containing ANSI escape sequences.
@@ -34,6 +34,7 @@ defmodule Raxol.Terminal.ANSI.Parser do
         Monitor.record_error(input, "Parse error: #{inspect(e)}", %{
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
+
         log_parse_error(e, input)
         []
     end

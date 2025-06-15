@@ -51,12 +51,14 @@ defmodule Raxol.Terminal.Config.AnimationCache do
         }
 
         case System.put(animation_path, compressed_data,
-          namespace: :animation,
-          metadata: metadata
-        ) do
+               namespace: :animation,
+               metadata: metadata
+             ) do
           :ok ->
             if original_size > 0 do
-              compression_ratio = round((1 - compressed_size / original_size) * 100)
+              compression_ratio =
+                round((1 - compressed_size / original_size) * 100)
+
               IO.puts(
                 "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
               )
@@ -65,6 +67,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
                 "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
               )
             end
+
             :ok
 
           error ->
@@ -143,11 +146,18 @@ defmodule Raxol.Terminal.Config.AnimationCache do
         %{
           count: stats.size,
           total_size: stats.size,
-          total_original_size: stats.size,  # We don't track original size in unified cache
-          average_size: if(stats.size > 0, do: div(stats.size, stats.size), else: 0),
-          compression_ratio: 0,  # We don't track compression ratio in unified cache
+          # We don't track original size in unified cache
+          total_original_size: stats.size,
+          average_size:
+            if(stats.size > 0, do: div(stats.size, stats.size), else: 0),
+          # We don't track compression ratio in unified cache
+          compression_ratio: 0,
           max_size: stats.max_size,
-          used_percent: if(stats.max_size > 0, do: round(stats.size / stats.max_size * 100), else: 0)
+          used_percent:
+            if(stats.max_size > 0,
+              do: round(stats.size / stats.max_size * 100),
+              else: 0
+            )
         }
 
       _ ->

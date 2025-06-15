@@ -6,19 +6,20 @@ defmodule Raxol.Terminal.Sync.Protocol do
 
   # Types
   @type sync_message :: %{
-    type: :sync | :ack | :conflict | :resolve,
-    component_id: String.t(),
-    component_type: :split | :window | :tab,
-    state: term(),
-    metadata: %{
-      version: non_neg_integer(),
-      timestamp: non_neg_integer(),
-      source: String.t(),
-      consistency: :strong | :eventual | :causal
-    }
-  }
+          type: :sync | :ack | :conflict | :resolve,
+          component_id: String.t(),
+          component_type: :split | :window | :tab,
+          state: term(),
+          metadata: %{
+            version: non_neg_integer(),
+            timestamp: non_neg_integer(),
+            source: String.t(),
+            consistency: :strong | :eventual | :causal
+          }
+        }
 
-  @type sync_result :: :ok | {:error, :conflict | :version_mismatch | :invalid_state}
+  @type sync_result ::
+          :ok | {:error, :conflict | :version_mismatch | :invalid_state}
 
   # Message Types
   @sync_type :sync
@@ -37,7 +38,8 @@ defmodule Raxol.Terminal.Sync.Protocol do
         version: System.monotonic_time(),
         timestamp: System.system_time(),
         source: Map.get(opts, :source, "unknown"),
-        consistency: Map.get(opts, :consistency, get_default_consistency(component_type))
+        consistency:
+          Map.get(opts, :consistency, get_default_consistency(component_type))
       }
     }
   end
@@ -54,7 +56,12 @@ defmodule Raxol.Terminal.Sync.Protocol do
     }
   end
 
-  def create_conflict_message(component_id, component_type, current_state, incoming_state) do
+  def create_conflict_message(
+        component_id,
+        component_type,
+        current_state,
+        incoming_state
+      ) do
     %{
       type: @conflict_type,
       component_id: component_id,
@@ -69,7 +76,12 @@ defmodule Raxol.Terminal.Sync.Protocol do
     }
   end
 
-  def create_resolve_message(component_id, component_type, resolved_state, version) do
+  def create_resolve_message(
+        component_id,
+        component_type,
+        resolved_state,
+        version
+      ) do
     %{
       type: @resolve_type,
       component_id: component_id,
@@ -87,6 +99,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
     case validate_message(message) do
       :ok ->
         handle_valid_sync(message, current_state)
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -96,6 +109,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
     case validate_message(message) do
       :ok ->
         handle_valid_ack(message, current_state)
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -105,6 +119,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
     case validate_message(message) do
       :ok ->
         handle_valid_conflict(message, current_state)
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -114,6 +129,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
     case validate_message(message) do
       :ok ->
         handle_valid_resolve(message, current_state)
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -122,12 +138,23 @@ defmodule Raxol.Terminal.Sync.Protocol do
   # Private Functions
   defp validate_message(message) do
     cond do
-      !is_map(message) -> {:error, :invalid_message}
-      !Map.has_key?(message, :type) -> {:error, :missing_type}
-      !Map.has_key?(message, :component_id) -> {:error, :missing_component_id}
-      !Map.has_key?(message, :component_type) -> {:error, :missing_component_type}
-      !Map.has_key?(message, :metadata) -> {:error, :missing_metadata}
-      true -> :ok
+      !is_map(message) ->
+        {:error, :invalid_message}
+
+      !Map.has_key?(message, :type) ->
+        {:error, :missing_type}
+
+      !Map.has_key?(message, :component_id) ->
+        {:error, :missing_component_id}
+
+      !Map.has_key?(message, :component_type) ->
+        {:error, :missing_component_type}
+
+      !Map.has_key?(message, :metadata) ->
+        {:error, :missing_metadata}
+
+      true ->
+        :ok
     end
   end
 
@@ -135,8 +162,10 @@ defmodule Raxol.Terminal.Sync.Protocol do
     case resolve_conflict(message, current_state) do
       :accept ->
         {:ok, message.state, message.metadata.version}
+
       :reject ->
         {:error, :version_mismatch}
+
       :conflict ->
         {:error, :conflict}
     end
@@ -154,8 +183,10 @@ defmodule Raxol.Terminal.Sync.Protocol do
     case resolve_conflict(message.states.current, message.states.incoming) do
       :accept ->
         {:ok, message.states.incoming}
+
       :reject ->
         {:ok, message.states.current}
+
       :conflict ->
         {:error, :unresolved_conflict}
     end
@@ -177,10 +208,13 @@ defmodule Raxol.Terminal.Sync.Protocol do
         else
           :reject
         end
+
       {:strong, _} ->
         :accept
+
       {_, :strong} ->
         :reject
+
       _ ->
         if message.metadata.version > current_state.metadata.version do
           :accept

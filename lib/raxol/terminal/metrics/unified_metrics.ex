@@ -16,19 +16,19 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   @type metric_value :: number() | map() | list()
   @type metric_type :: :counter | :gauge | :histogram | :summary
   @type metric_state :: %{
-    id: metric_id(),
-    type: metric_type(),
-    value: metric_value(),
-    timestamp: integer(),
-    labels: map(),
-    metadata: map()
-  }
+          id: metric_id(),
+          type: metric_type(),
+          value: metric_value(),
+          timestamp: integer(),
+          labels: map(),
+          metadata: map()
+        }
   @type metric_config :: %{
-    retention_period: non_neg_integer(),
-    aggregation_interval: non_neg_integer(),
-    alert_thresholds: map(),
-    export_format: :prometheus | :json | :custom
-  }
+          retention_period: non_neg_integer(),
+          aggregation_interval: non_neg_integer(),
+          alert_thresholds: map(),
+          export_format: :prometheus | :json | :custom
+        }
 
   # Client API
 
@@ -126,8 +126,10 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   @impl true
   def init(opts) do
-    retention_period = Keyword.get(opts, :retention_period, 24 * 60 * 60 * 1000)  # 24 hours
-    aggregation_interval = Keyword.get(opts, :aggregation_interval, 60 * 1000)  # 1 minute
+    # 24 hours
+    retention_period = Keyword.get(opts, :retention_period, 24 * 60 * 60 * 1000)
+    # 1 minute
+    aggregation_interval = Keyword.get(opts, :aggregation_interval, 60 * 1000)
     alert_thresholds = Keyword.get(opts, :alert_thresholds, %{})
     export_format = Keyword.get(opts, :export_format, :prometheus)
 
@@ -225,7 +227,13 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   @impl true
   def handle_call({:cleanup_metrics, opts}, _from, state) do
-    before = Keyword.get(opts, :before, System.system_time(:millisecond) - state.config.retention_period)
+    before =
+      Keyword.get(
+        opts,
+        :before,
+        System.system_time(:millisecond) - state.config.retention_period
+      )
+
     updated_metrics = cleanup_old_metrics(state.metrics, before)
     updated_errors = cleanup_old_errors(state.errors, before)
     updated_state = %{state | metrics: updated_metrics, errors: updated_errors}
@@ -235,10 +243,13 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   @impl true
   def handle_info(:aggregate_metrics, state) do
     updated_metrics = aggregate_all_metrics(state.metrics)
-    updated_state = %{state |
-      metrics: updated_metrics,
-      last_aggregation: System.system_time(:millisecond)
+
+    updated_state = %{
+      state
+      | metrics: updated_metrics,
+        last_aggregation: System.system_time(:millisecond)
     }
+
     schedule_aggregation(state.config.aggregation_interval)
     {:noreply, updated_state}
   end
@@ -260,6 +271,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   end
 
   defp filter_by_labels(metrics, nil), do: metrics
+
   defp filter_by_labels(metrics, labels) do
     Enum.filter(metrics, fn metric ->
       Enum.all?(labels, fn {key, value} ->
@@ -269,6 +281,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   end
 
   defp filter_by_time_range(metrics, nil), do: metrics
+
   defp filter_by_time_range(metrics, {start, finish}) do
     Enum.filter(metrics, fn metric ->
       metric.timestamp >= start and metric.timestamp <= finish
@@ -277,8 +290,12 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   defp aggregate_metrics(metrics) do
     case metrics do
-      [] -> nil
-      [metric] -> metric.value
+      [] ->
+        nil
+
+      [metric] ->
+        metric.value
+
       metrics ->
         case hd(metrics).type do
           :counter -> Enum.sum(Enum.map(metrics, & &1.value))
@@ -291,6 +308,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   defp calculate_histogram_stats(metrics) do
     values = Enum.map(metrics, & &1.value)
+
     %{
       count: length(values),
       sum: Enum.sum(values),
@@ -326,6 +344,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   end
 
   defp filter_by_severity(errors, nil), do: errors
+
   defp filter_by_severity(errors, severity) do
     Enum.filter(errors, &(&1.severity == severity))
   end
@@ -386,7 +405,9 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
         |> Enum.map(fn {key, value} -> "#{key}=\"#{value}\"" end)
         |> Enum.join(",")
         |> then(&"{#{&1}}")
-      _ -> ""
+
+      _ ->
+        ""
     end
   end
 
@@ -406,10 +427,14 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   defp check_alerts(name, metric, thresholds) do
     case Map.get(thresholds, name) do
-      nil -> :ok
+      nil ->
+        :ok
+
       threshold ->
         if exceeds_threshold?(metric.value, threshold) do
-          Logger.warning("Metric #{name} exceeded threshold: #{inspect(metric)}")
+          Logger.warning(
+            "Metric #{name} exceeded threshold: #{inspect(metric)}"
+          )
         end
     end
   end
@@ -418,26 +443,33 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     if error.severity == :critical do
       Logger.error("Critical error occurred: #{inspect(error)}")
     end
+
     :ok
   end
 
-  defp exceeds_threshold?(value, threshold) when is_number(value) and is_number(threshold) do
+  defp exceeds_threshold?(value, threshold)
+       when is_number(value) and is_number(threshold) do
     value > threshold
   end
+
   defp exceeds_threshold?(_, _), do: false
 
   defp aggregate_all_metrics(metrics) do
     metrics
     |> Enum.map(fn {name, values} ->
       aggregated = aggregate_metrics(values)
-      {name, [%{
-        id: generate_metric_id(),
-        type: hd(values).type,
-        value: aggregated,
-        timestamp: System.system_time(:millisecond),
-        labels: hd(values).labels,
-        metadata: hd(values).metadata
-      }]}
+
+      {name,
+       [
+         %{
+           id: generate_metric_id(),
+           type: hd(values).type,
+           value: aggregated,
+           timestamp: System.system_time(:millisecond),
+           labels: hd(values).labels,
+           metadata: hd(values).metadata
+         }
+       ]}
     end)
     |> Map.new()
   end

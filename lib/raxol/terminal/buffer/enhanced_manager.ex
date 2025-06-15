@@ -19,12 +19,12 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   alias Raxol.Terminal.{Buffer, ScreenBuffer}
 
   @type t :: %__MODULE__{
-    buffer: ScreenBuffer.t(),
-    update_queue: :queue.queue(),
-    compression_state: map(),
-    pool: map(),
-    performance_metrics: map()
-  }
+          buffer: ScreenBuffer.t(),
+          update_queue: :queue.queue(),
+          compression_state: map(),
+          pool: map(),
+          performance_metrics: map()
+        }
 
   defstruct [
     :buffer,
@@ -102,12 +102,19 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
       |> process_update(manager.buffer, manager.update_queue)
 
     end_time = System.monotonic_time()
-    updated_metrics = update_performance_metrics(manager.performance_metrics, start_time, end_time)
 
-    %{manager |
-      buffer: updated_buffer,
-      update_queue: updated_queue,
-      performance_metrics: updated_metrics
+    updated_metrics =
+      update_performance_metrics(
+        manager.performance_metrics,
+        start_time,
+        end_time
+      )
+
+    %{
+      manager
+      | buffer: updated_buffer,
+        update_queue: updated_queue,
+        performance_metrics: updated_metrics
     }
   end
 
@@ -127,16 +134,27 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   def compress_buffer(manager, opts \\ []) do
     start_time = System.monotonic_time()
 
-    compressed_buffer = apply_compression(manager.buffer, manager.compression_state, opts)
-    updated_state = update_compression_state(manager.compression_state, compressed_buffer)
+    compressed_buffer =
+      apply_compression(manager.buffer, manager.compression_state, opts)
+
+    updated_state =
+      update_compression_state(manager.compression_state, compressed_buffer)
 
     end_time = System.monotonic_time()
-    updated_metrics = update_performance_metrics(manager.performance_metrics, start_time, end_time)
 
-    %{manager |
-      buffer: compressed_buffer,
-      compression_state: updated_state,
-      performance_metrics: updated_metrics
+    updated_metrics =
+      update_performance_metrics(
+        manager.performance_metrics,
+        start_time,
+        end_time,
+        :compression
+      )
+
+    %{
+      manager
+      | buffer: compressed_buffer,
+        compression_state: updated_state,
+        performance_metrics: updated_metrics
     }
   end
 
@@ -153,11 +171,13 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
 
   `{buffer, updated_manager}`
   """
-  @spec get_buffer(t(), non_neg_integer(), non_neg_integer()) :: {ScreenBuffer.t(), t()}
+  @spec get_buffer(t(), non_neg_integer(), non_neg_integer()) ::
+          {ScreenBuffer.t(), t()}
   def get_buffer(manager, width, height) do
     case get_from_pool(manager.pool, width, height) do
       {:ok, buffer, updated_pool} ->
         {buffer, %{manager | pool: updated_pool}}
+
       :error ->
         buffer = ScreenBuffer.new(width, height)
         {buffer, manager}
@@ -285,16 +305,44 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     pool
   end
 
-  defp update_performance_metrics(metrics, start_time, end_time) do
+  defp update_performance_metrics(
+         metrics,
+         start_time,
+         end_time,
+         operation_type \\ :update
+       ) do
     # Update performance metrics with timing information
-    operation_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+    operation_time =
+      System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
-    %{metrics |
-      update_times: [operation_time | Enum.take(metrics.update_times, 59)],
-      operation_counts: %{metrics.operation_counts |
-        updates: metrics.operation_counts.updates + 1
-      }
+    metrics = %{
+      metrics
+      | operation_counts: %{
+          metrics.operation_counts
+          | updates:
+              metrics.operation_counts.updates +
+                if(operation_type == :update, do: 1, else: 0),
+            compressions:
+              metrics.operation_counts.compressions +
+                if(operation_type == :compression, do: 1, else: 0)
+        }
     }
+
+    case operation_type do
+      :update ->
+        %{
+          metrics
+          | update_times: [operation_time | Enum.take(metrics.update_times, 59)]
+        }
+
+      :compression ->
+        %{
+          metrics
+          | compression_times: [
+              operation_time | Enum.take(metrics.compression_times, 59)
+            ]
+        }
+    end
   end
 
   defp apply_optimizations(state, _metrics) do

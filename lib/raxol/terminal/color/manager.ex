@@ -14,10 +14,10 @@ defmodule Raxol.Terminal.Color.Manager do
   @type color_map :: %{integer() => color()}
 
   @type t :: %__MODULE__{
-    colors: color_map(),
-    default_colors: color_map(),
-    color_mode: color_mode()
-  }
+          colors: color_map(),
+          default_colors: color_map(),
+          color_mode: color_mode()
+        }
 
   @doc """
   Creates a new color manager with default settings.
@@ -54,7 +54,8 @@ defmodule Raxol.Terminal.Color.Manager do
   @doc """
   Sets a specific color by index.
   """
-  def set_color(%__MODULE__{} = manager, index, color) when is_tuple(color) and tuple_size(color) == 3 do
+  def set_color(%__MODULE__{} = manager, index, color)
+      when is_tuple(color) and tuple_size(color) == 3 do
     %{manager | colors: Map.put(manager.colors, index, color)}
   end
 
@@ -78,7 +79,8 @@ defmodule Raxol.Terminal.Color.Manager do
   @doc """
   Sets the color mode.
   """
-  def set_color_mode(%__MODULE__{} = manager, mode) when mode in [:rgb, :indexed] do
+  def set_color_mode(%__MODULE__{} = manager, mode)
+      when mode in [:rgb, :indexed] do
     %{manager | color_mode: mode}
   end
 
@@ -93,22 +95,38 @@ defmodule Raxol.Terminal.Color.Manager do
 
   defp default_colors do
     %{
-      0 => {0, 0, 0},        # Black
-      1 => {170, 0, 0},      # Red
-      2 => {0, 170, 0},      # Green
-      3 => {170, 85, 0},     # Yellow
-      4 => {0, 0, 170},      # Blue
-      5 => {170, 0, 170},    # Magenta
-      6 => {0, 170, 170},    # Cyan
-      7 => {170, 170, 170},  # White
-      8 => {85, 85, 85},     # Bright Black
-      9 => {255, 85, 85},    # Bright Red
-      10 => {85, 255, 85},   # Bright Green
-      11 => {255, 255, 85},  # Bright Yellow
-      12 => {85, 85, 255},   # Bright Blue
-      13 => {255, 85, 255},  # Bright Magenta
-      14 => {85, 255, 255},  # Bright Cyan
-      15 => {255, 255, 255}  # Bright White
+      # Black
+      0 => {0, 0, 0},
+      # Red
+      1 => {170, 0, 0},
+      # Green
+      2 => {0, 170, 0},
+      # Yellow
+      3 => {170, 85, 0},
+      # Blue
+      4 => {0, 0, 170},
+      # Magenta
+      5 => {170, 0, 170},
+      # Cyan
+      6 => {0, 170, 170},
+      # White
+      7 => {170, 170, 170},
+      # Bright Black
+      8 => {85, 85, 85},
+      # Bright Red
+      9 => {255, 85, 85},
+      # Bright Green
+      10 => {85, 255, 85},
+      # Bright Yellow
+      11 => {255, 255, 85},
+      # Bright Blue
+      12 => {85, 85, 255},
+      # Bright Magenta
+      13 => {255, 85, 255},
+      # Bright Cyan
+      14 => {85, 255, 255},
+      # Bright White
+      15 => {255, 255, 255}
     }
   end
 end

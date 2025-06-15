@@ -10,28 +10,28 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   # Types
   @type window_id :: String.t()
   @type window_state :: %{
-    id: window_id(),
-    title: String.t(),
-    icon_name: String.t(),
-    size: {non_neg_integer(), non_neg_integer()},
-    position: {non_neg_integer(), non_neg_integer()},
-    stacking_order: :normal | :above | :below,
-    iconified: boolean(),
-    maximized: boolean(),
-    previous_size: {non_neg_integer(), non_neg_integer()} | nil,
-    split_type: :none | :horizontal | :vertical,
-    parent_id: window_id() | nil,
-    children: [window_id()],
-    buffer_id: String.t(),
-    renderer_id: String.t()
-  }
+          id: window_id(),
+          title: String.t(),
+          icon_name: String.t(),
+          size: {non_neg_integer(), non_neg_integer()},
+          position: {non_neg_integer(), non_neg_integer()},
+          stacking_order: :normal | :above | :below,
+          iconified: boolean(),
+          maximized: boolean(),
+          previous_size: {non_neg_integer(), non_neg_integer()} | nil,
+          split_type: :none | :horizontal | :vertical,
+          parent_id: window_id() | nil,
+          children: [window_id()],
+          buffer_id: String.t(),
+          renderer_id: String.t()
+        }
 
   @type t :: %__MODULE__{
-    windows: %{window_id() => window_state()},
-    active_window: window_id() | nil,
-    next_id: non_neg_integer(),
-    config: map()
-  }
+          windows: %{window_id() => window_state()},
+          active_window: window_id() | nil,
+          next_id: non_neg_integer(),
+          config: map()
+        }
 
   defstruct windows: %{},
             active_window: nil,
@@ -53,7 +53,9 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
-    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
+    GenServer.start_link(__MODULE__, opts,
+      name: Keyword.get(opts, :name, __MODULE__)
+    )
   end
 
   @doc """
@@ -67,7 +69,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @doc """
   Splits an existing window in the specified direction.
   """
-  @spec split_window(window_id(), :horizontal | :vertical) :: {:ok, window_id()} | {:error, String.t()}
+  @spec split_window(window_id(), :horizontal | :vertical) ::
+          {:ok, window_id()} | {:error, String.t()}
   def split_window(window_id, direction) do
     GenServer.call(__MODULE__, {:split_window, window_id, direction})
   end
@@ -99,7 +102,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @doc """
   Resizes a window to the specified dimensions.
   """
-  @spec resize(window_id(), non_neg_integer(), non_neg_integer()) :: :ok | {:error, String.t()}
+  @spec resize(window_id(), non_neg_integer(), non_neg_integer()) ::
+          :ok | {:error, String.t()}
   def resize(window_id, width, height) do
     GenServer.call(__MODULE__, {:resize, window_id, width, height})
   end
@@ -107,7 +111,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @doc """
   Moves a window to the specified position.
   """
-  @spec move(window_id(), non_neg_integer(), non_neg_integer()) :: :ok | {:error, String.t()}
+  @spec move(window_id(), non_neg_integer(), non_neg_integer()) ::
+          :ok | {:error, String.t()}
   def move(window_id, x, y) do
     GenServer.call(__MODULE__, {:move, window_id, x, y})
   end
@@ -115,7 +120,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @doc """
   Sets the window's stacking order.
   """
-  @spec set_stacking_order(window_id(), :normal | :above | :below) :: :ok | {:error, String.t()}
+  @spec set_stacking_order(window_id(), :normal | :above | :below) ::
+          :ok | {:error, String.t()}
   def set_stacking_order(window_id, order) do
     GenServer.call(__MODULE__, {:set_stacking_order, window_id, order})
   end
@@ -139,7 +145,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @doc """
   Gets the state of a window.
   """
-  @spec get_window_state(window_id()) :: {:ok, window_state()} | {:error, String.t()}
+  @spec get_window_state(window_id()) ::
+          {:ok, window_state()} | {:error, String.t()}
   def get_window_state(window_id) do
     GenServer.call(__MODULE__, {:get_window_state, window_id})
   end
@@ -179,6 +186,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @impl true
   def handle_call({:create_window, opts}, _from, state) do
     window_id = "window_#{state.next_id}"
+
     window_state = %{
       id: window_id,
       title: Map.get(opts, :title, ""),
@@ -196,10 +204,15 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
       renderer_id: Map.get(opts, :renderer_id)
     }
 
-    new_state = %{state |
-      windows: Map.put(state.windows, window_id, window_state),
-      next_id: state.next_id + 1,
-      active_window: if(state.active_window == nil, do: window_id, else: state.active_window)
+    new_state = %{
+      state
+      | windows: Map.put(state.windows, window_id, window_state),
+        next_id: state.next_id + 1,
+        active_window:
+          if(state.active_window == nil,
+            do: window_id,
+            else: state.active_window
+          )
     }
 
     {:reply, {:ok, window_id}, new_state}
@@ -213,29 +226,31 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
       window ->
         # Create new window for split
-        {:ok, new_window_id} = create_window(%{
-          size: window.size,
-          position: window.position,
-          buffer_id: Map.get(state.config, :default_buffer_id),
-          renderer_id: Map.get(state.config, :default_renderer_id)
-        })
+        {:ok, new_window_id} =
+          create_window(%{
+            size: window.size,
+            position: window.position,
+            buffer_id: Map.get(state.config, :default_buffer_id),
+            renderer_id: Map.get(state.config, :default_renderer_id)
+          })
 
         # Update parent window
-        updated_window = %{window |
-          split_type: direction,
-          children: [new_window_id | window.children]
+        updated_window = %{
+          window
+          | split_type: direction,
+            children: [new_window_id | window.children]
         }
 
         # Update new window
         new_window = Map.get(state.windows, new_window_id)
-        updated_new_window = %{new_window |
-          parent_id: window_id
-        }
+        updated_new_window = %{new_window | parent_id: window_id}
 
-        new_state = %{state |
-          windows: state.windows
-            |> Map.put(window_id, updated_window)
-            |> Map.put(new_window_id, updated_new_window)
+        new_state = %{
+          state
+          | windows:
+              state.windows
+              |> Map.put(window_id, updated_window)
+              |> Map.put(new_window_id, updated_new_window)
         }
 
         {:reply, {:ok, new_window_id}, new_state}
@@ -253,18 +268,33 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
         Enum.each(window.children, &close_window/1)
 
         # Remove window from parent's children list
-        new_state = if window.parent_id do
-          parent = Map.get(state.windows, window.parent_id)
-          updated_parent = %{parent | children: List.delete(parent.children, window_id)}
-          %{state | windows: Map.put(state.windows, window.parent_id, updated_parent)}
-        else
-          state
-        end
+        new_state =
+          if window.parent_id do
+            parent = Map.get(state.windows, window.parent_id)
+
+            updated_parent = %{
+              parent
+              | children: List.delete(parent.children, window_id)
+            }
+
+            %{
+              state
+              | windows:
+                  Map.put(state.windows, window.parent_id, updated_parent)
+            }
+          else
+            state
+          end
 
         # Remove window from windows map
-        new_state = %{new_state |
-          windows: Map.delete(new_state.windows, window_id),
-          active_window: if(new_state.active_window == window_id, do: nil, else: new_state.active_window)
+        new_state = %{
+          new_state
+          | windows: Map.delete(new_state.windows, window_id),
+            active_window:
+              if(new_state.active_window == window_id,
+                do: nil,
+                else: new_state.active_window
+              )
         }
 
         {:reply, :ok, new_state}
@@ -279,7 +309,12 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
       window ->
         updated_window = %{window | title: title}
-        new_state = %{state | windows: Map.put(state.windows, window_id, updated_window)}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -292,7 +327,12 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
       window ->
         updated_window = %{window | icon_name: name}
-        new_state = %{state | windows: Map.put(state.windows, window_id, updated_window)}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -305,14 +345,20 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
       window ->
         # Store current size if maximizing
-        previous_size = if window.maximized, do: window.size, else: window.previous_size
+        previous_size =
+          if window.maximized, do: window.size, else: window.previous_size
 
-        updated_window = %{window |
-          size: {width, height},
-          previous_size: previous_size
+        updated_window = %{
+          window
+          | size: {width, height},
+            previous_size: previous_size
         }
 
-        new_state = %{state | windows: Map.put(state.windows, window_id, updated_window)}
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -325,7 +371,12 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
       window ->
         updated_window = %{window | position: {x, y}}
-        new_state = %{state | windows: Map.put(state.windows, window_id, updated_window)}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -338,7 +389,12 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
       window ->
         updated_window = %{window | stacking_order: order}
-        new_state = %{state | windows: Map.put(state.windows, window_id, updated_window)}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -350,19 +406,25 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
         {:reply, {:error, "Window not found"}, state}
 
       window ->
-        {size, previous_size} = if maximized do
-          {state.config.max_size, window.size}
-        else
-          {window.previous_size || state.config.default_size, nil}
-        end
+        {size, previous_size} =
+          if maximized do
+            {state.config.max_size, window.size}
+          else
+            {window.previous_size || state.config.default_size, nil}
+          end
 
-        updated_window = %{window |
-          maximized: maximized,
-          size: size,
-          previous_size: previous_size
+        updated_window = %{
+          window
+          | maximized: maximized,
+            size: size,
+            previous_size: previous_size
         }
 
-        new_state = %{state | windows: Map.put(state.windows, window_id, updated_window)}
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
         {:reply, :ok, new_state}
     end
   end

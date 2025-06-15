@@ -245,14 +245,14 @@ defmodule Raxol.Terminal.Buffer.Scroll do
       buffer
       |> Enum.map(fn line ->
         line
-        |> Enum.chunk_by(&Cell.is_empty?/1)
+        |> Enum.chunk_by(&Cell.empty?/1)
         |> Enum.map(fn
           [cell] ->
             cell
 
           cells ->
             # If all cells are empty, just keep one
-            if Enum.all?(cells, &Cell.is_empty?/1) do
+            if Enum.all?(cells, &Cell.empty?/1) do
               List.first(cells)
             else
               # Otherwise, keep all cells but with minimal attributes

@@ -40,7 +40,8 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Deletes a string of characters.
   """
-  def delete_string(%Cell{} = cell, length) when is_integer(length) and length > 0 do
+  def delete_string(%Cell{} = cell, length)
+      when is_integer(length) and length > 0 do
     case length do
       1 -> delete_char(cell)
       _ -> %{cell | char: " ", width: 1}
@@ -121,35 +122,25 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def insert_characters(buffer, row, col, count, default_style)
       when row >= 0 and col >= 0 and count > 0 do
-    # Ensure row and col are within bounds
     if row >= buffer.height or col >= buffer.width do
       buffer
     else
-      # Get the current line
-      line = Enum.at(buffer.cells, row)
-
-      # Split the line at the insertion point
-      {left_part, right_part} = Enum.split(line, col)
-
-      # Create blank cells with the default style
-      blank_cell = %Cell{
-        char: " ",
-        foreground: default_style.foreground,
-        background: default_style.background,
-        attributes: default_style.attributes
-      }
-      blank_cells = List.duplicate(blank_cell, count)
-
-      # Take only the characters that will fit after insertion
-      kept_right_part = Enum.take(right_part, buffer.width - col - count)
-
-      # Combine the parts
-      new_line = left_part ++ blank_cells ++ kept_right_part
-
-      # Update the buffer
-      cells = List.replace_at(buffer.cells, row, new_line)
+      cells = List.replace_at(buffer.cells, row, insert_into_line(Enum.at(buffer.cells, row), col, count, default_style))
       %{buffer | cells: cells}
     end
+  end
+
+  defp insert_into_line(line, col, count, default_style) do
+    {left_part, right_part} = Enum.split(line, col)
+    blank_cell = %Cell{
+      char: " ",
+      foreground: default_style.foreground,
+      background: default_style.background,
+      attributes: default_style.attributes
+    }
+    blank_cells = List.duplicate(blank_cell, count)
+    kept_right_part = Enum.take(right_part, length(line) - col - count)
+    left_part ++ blank_cells ++ kept_right_part
   end
 
   @doc """
@@ -186,6 +177,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         background: default_style.background,
         attributes: default_style.attributes
       }
+
       blank_cells = List.duplicate(blank_cell, count)
 
       # Combine the parts

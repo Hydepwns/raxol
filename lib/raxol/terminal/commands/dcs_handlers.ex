@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
   Handles DCS commands.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  def handle_dcs(emulator, params, data_string, _intermediates, _final) do
+  def handle_dcs(emulator, params, data_string) do
     case params do
       # DECRQSS - Request Status String
       [0] ->
@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
         handle_decdld(emulator, data_string)
 
       _ ->
-        {:error, :unknown_dcs}
+        {:error, :unknown_dcs, emulator}
     end
   end
 

@@ -11,7 +11,12 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   """
   @spec initialize_palette() :: map()
   def initialize_palette do
-    base_palette = %{
+    base_palette = initialize_base_palette()
+    add_rgb_cube_colors(base_palette)
+  end
+
+  defp initialize_base_palette do
+    %{
       0 => {0, 0, 0},
       1 => {205, 0, 0},
       2 => {0, 205, 0},
@@ -29,28 +34,28 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
       14 => {0, 255, 255},
       15 => {255, 255, 255}
     }
+  end
 
-    # Add 240 additional colors (16-255)
-    Enum.reduce(16..255, base_palette, fn i, acc ->
+  defp add_rgb_cube_colors(palette) do
+    Enum.reduce(16..255, palette, fn i, acc ->
       case i do
-        # RGB cube (16-231)
-        n when n <= 231 ->
-          code = n - 16
-          # Scale values from 0-5 range to 0-255 range (approximately)
-          # Using 51 which is 255 / 5
-          r = div(code, 36) * 51
-          g = rem(div(code, 6), 6) * 51
-          b = rem(code, 6) * 51
-          Map.put(acc, i, {r, g, b})
-
-        # Grayscale (232-255)
-        n ->
-          # Scale values from 0-23 range to 0-255 range (approximately)
-          # Using 10 which is roughly 255 / 24, plus a base of 8
-          value = (n - 232) * 10 + 8
-          Map.put(acc, i, {value, value, value})
+        n when n <= 231 -> Map.put(acc, i, calculate_rgb_cube_color(n))
+        n -> Map.put(acc, i, calculate_grayscale_color(n))
       end
     end)
+  end
+
+  defp calculate_rgb_cube_color(n) do
+    code = n - 16
+    r = div(code, 36) * 51
+    g = rem(div(code, 6), 6) * 51
+    b = rem(code, 6) * 51
+    {r, g, b}
+  end
+
+  defp calculate_grayscale_color(n) do
+    value = (n - 232) * 10 + 8
+    {value, value, value}
   end
 
   @doc """
@@ -150,32 +155,42 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
       grey = round(l * 255)
       {:ok, {grey, grey, grey}}
     else
-      c = (1.0 - abs(2.0 * l - 1.0)) * s
-      h_prime = h / 60.0
-      x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
-      m = l - c / 2.0
-
-      {r1, g1, b1} =
-        cond do
-          h_prime >= 0 and h_prime < 1 -> {c, x, 0.0}
-          h_prime >= 1 and h_prime < 2 -> {x, c, 0.0}
-          h_prime >= 2 and h_prime < 3 -> {0.0, c, x}
-          h_prime >= 3 and h_prime < 4 -> {0.0, x, c}
-          h_prime >= 4 and h_prime < 5 -> {x, 0.0, c}
-          # Fix: Allow h_prime == 6 (Hue 360)
-          h_prime >= 5 and h_prime <= 6 -> {c, 0.0, x}
-          # Should not happen with clamping
-          true -> {0.0, 0.0, 0.0}
-        end
-
-      r = round((r1 + m) * 255)
-      g = round((g1 + m) * 255)
-      b = round((b1 + m) * 255)
-      # Ensure values are within 0-255 after rounding
-      r = max(0, min(255, r))
-      g = max(0, min(255, g))
-      b = max(0, min(255, b))
+      {r1, g1, b1} = calculate_rgb_components(h, l, s)
+      {r, g, b} = scale_and_clamp_rgb(r1, g1, b1, l)
       {:ok, {r, g, b}}
     end
+  end
+
+  defp calculate_rgb_components(h, l, s) do
+    c = (1.0 - abs(2.0 * l - 1.0)) * s
+    h_prime = h / 60.0
+    x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
+    m = l - c / 2.0
+
+    {r1, g1, b1} = get_rgb_from_hue(h_prime, c, x)
+    {r1 + m, g1 + m, b1 + m}
+  end
+
+  defp get_hue_segments do
+    %{
+      0 => fn c, x -> {c, x, 0.0} end,
+      1 => fn c, x -> {x, c, 0.0} end,
+      2 => fn c, x -> {0.0, c, x} end,
+      3 => fn c, x -> {0.0, x, c} end,
+      4 => fn c, x -> {x, 0.0, c} end,
+      5 => fn c, x -> {c, 0.0, x} end
+    }
+  end
+
+  defp get_rgb_from_hue(h_prime, c, x) do
+    segment = trunc(h_prime)
+    Map.get(get_hue_segments(), segment, fn _, _ -> {0.0, 0.0, 0.0} end).(c, x)
+  end
+
+  defp scale_and_clamp_rgb(r1, g1, b1, m) do
+    r = max(0, min(255, round((r1 + m) * 255)))
+    g = max(0, min(255, round((g1 + m) * 255)))
+    b = max(0, min(255, round((b1 + m) * 255)))
+    {r, g, b}
   end
 end

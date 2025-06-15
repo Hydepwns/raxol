@@ -107,11 +107,12 @@ defmodule Raxol.Terminal.Renderer do
   Renders the terminal content with additional options.
   """
   def render(%__MODULE__{} = renderer, opts, additional_opts) do
-    content = renderer.screen_buffer
-    |> ScreenBuffer.get_content(include_style: true)
-    |> apply_theme(renderer.theme)
-    |> apply_font_settings(renderer.font_settings)
-    |> maybe_apply_cursor(renderer.cursor)
+    content =
+      renderer.screen_buffer
+      |> ScreenBuffer.get_content(include_style: true)
+      |> apply_theme(renderer.theme)
+      |> apply_font_settings(renderer.font_settings)
+      |> maybe_apply_cursor(renderer.cursor)
 
     {:ok, content}
   end
@@ -225,9 +226,10 @@ defmodule Raxol.Terminal.Renderer do
     include_style = Keyword.get(opts, :include_style, false)
     include_cursor = Keyword.get(opts, :include_cursor, false)
 
-    content = renderer.screen_buffer
-    |> ScreenBuffer.get_content(include_style: include_style)
-    |> maybe_add_cursor(renderer.cursor, include_cursor)
+    content =
+      renderer.screen_buffer
+      |> ScreenBuffer.get_content(include_style: include_style)
+      |> maybe_add_cursor(renderer.cursor, include_cursor)
 
     {:ok, content}
   end

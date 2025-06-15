@@ -13,19 +13,19 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   # Types
   @type sync_id :: term()
   @type sync_state :: %{
-    id: sync_id(),
-    type: :state | :event | :resource,
-    data: term(),
-    version: non_neg_integer(),
-    timestamp: integer(),
-    metadata: map()
-  }
+          id: sync_id(),
+          type: :state | :event | :resource,
+          data: term(),
+          version: non_neg_integer(),
+          timestamp: integer(),
+          metadata: map()
+        }
   @type sync_config :: %{
-    consistency: :strong | :eventual,
-    conflict_resolution: :last_write_wins | :version_based | :custom,
-    timeout: non_neg_integer(),
-    retry_count: non_neg_integer()
-  }
+          consistency: :strong | :eventual,
+          conflict_resolution: :last_write_wins | :version_based | :custom,
+          timeout: non_neg_integer(),
+          retry_count: non_neg_integer()
+        }
 
   # Client API
 
@@ -109,7 +109,10 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   @impl true
   def init(opts) do
     consistency = Keyword.get(opts, :consistency, :strong)
-    conflict_resolution = Keyword.get(opts, :conflict_resolution, :last_write_wins)
+
+    conflict_resolution =
+      Keyword.get(opts, :conflict_resolution, :last_write_wins)
+
     timeout = Keyword.get(opts, :timeout, 5000)
     retry_count = Keyword.get(opts, :retry_count, 3)
 
@@ -140,8 +143,9 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
       metadata: %{}
     }
 
-    updated_state = %{state |
-      syncs: Map.put(state.syncs, sync_id, {sync_state, config})
+    updated_state = %{
+      state
+      | syncs: Map.put(state.syncs, sync_id, {sync_state, config})
     }
 
     {:reply, {:ok, sync_id}, updated_state}
@@ -159,9 +163,12 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
 
         case do_sync(sync_state, data, version, metadata, config) do
           {:ok, updated_sync_state} ->
-            updated_state = %{state |
-              syncs: Map.put(state.syncs, sync_id, {updated_sync_state, config})
+            updated_state = %{
+              state
+              | syncs:
+                  Map.put(state.syncs, sync_id, {updated_sync_state, config})
             }
+
             {:reply, :ok, updated_state}
 
           {:error, reason} ->
@@ -189,16 +196,22 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
 
       {sync_state, config} ->
         strategy = Keyword.get(opts, :strategy, config.conflict_resolution)
+
         case do_resolve_conflicts(conflicts, strategy) do
           {:ok, resolved_data} ->
-            updated_sync_state = %{sync_state |
-              data: resolved_data,
-              version: sync_state.version + 1,
-              timestamp: System.system_time(:millisecond)
+            updated_sync_state = %{
+              sync_state
+              | data: resolved_data,
+                version: sync_state.version + 1,
+                timestamp: System.system_time(:millisecond)
             }
-            updated_state = %{state |
-              syncs: Map.put(state.syncs, sync_id, {updated_sync_state, config})
+
+            updated_state = %{
+              state
+              | syncs:
+                  Map.put(state.syncs, sync_id, {updated_sync_state, config})
             }
+
             {:reply, {:ok, resolved_data}, updated_state}
 
           {:error, reason} ->
@@ -214,9 +227,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
         {:reply, {:error, :sync_not_found}, state}
 
       _ ->
-        updated_state = %{state |
-          syncs: Map.delete(state.syncs, sync_id)
-        }
+        updated_state = %{state | syncs: Map.delete(state.syncs, sync_id)}
         {:reply, :ok, updated_state}
     end
   end
@@ -230,7 +241,12 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   defp build_sync_config(opts, default_config) do
     %{
       consistency: Keyword.get(opts, :consistency, default_config.consistency),
-      conflict_resolution: Keyword.get(opts, :conflict_resolution, default_config.conflict_resolution),
+      conflict_resolution:
+        Keyword.get(
+          opts,
+          :conflict_resolution,
+          default_config.conflict_resolution
+        ),
       timeout: Keyword.get(opts, :timeout, default_config.timeout),
       retry_count: Keyword.get(opts, :retry_count, default_config.retry_count)
     }
@@ -243,6 +259,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
       case config.consistency do
         :strong ->
           do_strong_sync(sync_state, data, version, metadata, config)
+
         :eventual ->
           do_eventual_sync(sync_state, data, version, metadata, config)
       end
@@ -256,10 +273,12 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
         case commit(prepared_state, config) do
           {:ok, committed_state} ->
             {:ok, committed_state}
+
           {:error, reason} ->
             rollback(prepared_state)
             {:error, reason}
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -267,23 +286,27 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
 
   defp do_eventual_sync(sync_state, data, version, metadata, _config) do
     # For eventual consistency, we can update immediately
-    updated_state = %{sync_state |
-      data: data,
-      version: version + 1,
-      timestamp: System.system_time(:millisecond),
-      metadata: Map.merge(sync_state.metadata, metadata)
+    updated_state = %{
+      sync_state
+      | data: data,
+        version: version + 1,
+        timestamp: System.system_time(:millisecond),
+        metadata: Map.merge(sync_state.metadata, metadata)
     }
+
     {:ok, updated_state}
   end
 
   defp prepare_commit(sync_state, data, version, metadata) do
     # Simulate prepare phase
-    {:ok, %{sync_state |
-      data: data,
-      version: version + 1,
-      timestamp: System.system_time(:millisecond),
-      metadata: Map.merge(sync_state.metadata, metadata)
-    }}
+    {:ok,
+     %{
+       sync_state
+       | data: data,
+         version: version + 1,
+         timestamp: System.system_time(:millisecond),
+         metadata: Map.merge(sync_state.metadata, metadata)
+     }}
   end
 
   defp commit(state, config) do
@@ -292,9 +315,11 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   end
 
   defp do_commit(state, 0, _timeout), do: {:error, :commit_failed}
+
   defp do_commit(state, retries, timeout) do
     # Simulate commit operation
-    Process.sleep(100)  # Simulate network delay
+    # Simulate network delay
+    Process.sleep(100)
     {:ok, state}
   end
 
@@ -307,8 +332,10 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     case strategy do
       :last_write_wins ->
         resolve_last_write_wins(conflicts)
+
       :version_based ->
         resolve_version_based(conflicts)
+
       :custom ->
         resolve_custom(conflicts)
     end

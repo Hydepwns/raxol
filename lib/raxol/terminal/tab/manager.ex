@@ -14,26 +14,24 @@ defmodule Raxol.Terminal.Tab.Manager do
   @type tab_id :: String.t()
   @type tab_state :: :active | :inactive | :hidden
   @type tab_config :: %{
-    title: String.t(),
-    working_directory: String.t(),
-    command: String.t() | nil,
-    state: tab_state,
-    window_id: String.t() | nil
-  }
+          title: String.t(),
+          working_directory: String.t(),
+          command: String.t() | nil,
+          state: tab_state,
+          window_id: String.t() | nil
+        }
 
   @type t :: %__MODULE__{
-    tabs: %{tab_id() => tab_config()},
-    active_tab: tab_id() | nil,
-    next_tab_id: non_neg_integer(),
-    tab_stops: MapSet.t()
-  }
+          tabs: %{tab_id() => tab_config()},
+          active_tab: tab_id() | nil,
+          next_tab_id: non_neg_integer(),
+          tab_stops: MapSet.t()
+        }
 
-  defstruct [
-    tabs: %{},
-    active_tab: nil,
-    next_tab_id: 1,
-    tab_stops: MapSet.new()
-  ]
+  defstruct tabs: %{},
+            active_tab: nil,
+            next_tab_id: 1,
+            tab_stops: MapSet.new()
 
   # Client API
   def start_link(opts \\ []) do
@@ -61,9 +59,11 @@ defmodule Raxol.Terminal.Tab.Manager do
   `{:ok, tab_id, updated_manager}` on success
   `{:error, reason}` on failure
   """
-  @spec create_tab(t(), tab_config() | nil) :: {:ok, tab_id(), t()} | {:error, term()}
+  @spec create_tab(t(), tab_config() | nil) ::
+          {:ok, tab_id(), t()} | {:error, term()}
   def create_tab(manager, config \\ %{}) do
     tab_id = generate_tab_id(manager)
+
     default_config = %{
       title: "Tab #{tab_id}",
       working_directory: File.cwd!(),
@@ -74,9 +74,10 @@ defmodule Raxol.Terminal.Tab.Manager do
 
     config = Map.merge(default_config, config)
 
-    updated_manager = %{manager |
-      tabs: Map.put(manager.tabs, tab_id, config),
-      next_tab_id: manager.next_tab_id + 1
+    updated_manager = %{
+      manager
+      | tabs: Map.put(manager.tabs, tab_id, config),
+        next_tab_id: manager.next_tab_id + 1
     }
 
     {:ok, tab_id, updated_manager}
@@ -98,12 +99,20 @@ defmodule Raxol.Terminal.Tab.Manager do
   @spec delete_tab(t(), tab_id()) :: {:ok, t()} | {:error, :tab_not_found}
   def delete_tab(manager, tab_id) do
     case Map.get(manager.tabs, tab_id) do
-      nil -> {:error, :tab_not_found}
-      _tab ->
-        updated_manager = %{manager |
-          tabs: Map.delete(manager.tabs, tab_id),
-          active_tab: if(manager.active_tab == tab_id, do: nil, else: manager.active_tab)
+      nil ->
+        {:error, :tab_not_found}
+
+      __tab ->
+        updated_manager = %{
+          manager
+          | tabs: Map.delete(manager.tabs, tab_id),
+            active_tab:
+              if(manager.active_tab == tab_id,
+                do: nil,
+                else: manager.active_tab
+              )
         }
+
         {:ok, updated_manager}
     end
   end
@@ -124,12 +133,16 @@ defmodule Raxol.Terminal.Tab.Manager do
   @spec switch_tab(t(), tab_id()) :: {:ok, t()} | {:error, :tab_not_found}
   def switch_tab(manager, tab_id) do
     case Map.get(manager.tabs, tab_id) do
-      nil -> {:error, :tab_not_found}
+      nil ->
+        {:error, :tab_not_found}
+
       tab ->
-        updated_manager = %{manager |
-          active_tab: tab_id,
-          tabs: Map.put(manager.tabs, tab_id, %{tab | state: :active})
+        updated_manager = %{
+          manager
+          | active_tab: tab_id,
+            tabs: Map.put(manager.tabs, tab_id, %{tab | state: :active})
         }
+
         {:ok, updated_manager}
     end
   end
@@ -147,7 +160,8 @@ defmodule Raxol.Terminal.Tab.Manager do
   `{:ok, config}` on success
   `{:error, :tab_not_found}` if the tab doesn't exist
   """
-  @spec get_tab_config(t(), tab_id()) :: {:ok, tab_config()} | {:error, :tab_not_found}
+  @spec get_tab_config(t(), tab_id()) ::
+          {:ok, tab_config()} | {:error, :tab_not_found}
   def get_tab_config(manager, tab_id) do
     case Map.get(manager.tabs, tab_id) do
       nil -> {:error, :tab_not_found}
@@ -169,14 +183,19 @@ defmodule Raxol.Terminal.Tab.Manager do
   `{:ok, updated_manager}` on success
   `{:error, :tab_not_found}` if the tab doesn't exist
   """
-  @spec update_tab_config(t(), tab_id(), tab_config()) :: {:ok, t()} | {:error, :tab_not_found}
+  @spec update_tab_config(t(), tab_id(), tab_config()) ::
+          {:ok, t()} | {:error, :tab_not_found}
   def update_tab_config(manager, tab_id, config) do
     case Map.get(manager.tabs, tab_id) do
-      nil -> {:error, :tab_not_found}
+      nil ->
+        {:error, :tab_not_found}
+
       _tab ->
-        updated_manager = %{manager |
-          tabs: Map.put(manager.tabs, tab_id, config)
+        updated_manager = %{
+          manager
+          | tabs: Map.put(manager.tabs, tab_id, config)
         }
+
         {:ok, updated_manager}
     end
   end
@@ -257,8 +276,9 @@ defmodule Raxol.Terminal.Tab.Manager do
   end
 
   @impl true
-  def handle_call({:create_tab, config}, _from, state) do
+  def handle_call({:create_tab, _config}, _from, state) do
     tab_id = generate_tab_id(state)
+
     default_config = %{
       title: "Tab #{tab_id}",
       working_directory: File.cwd!(),
@@ -267,11 +287,12 @@ defmodule Raxol.Terminal.Tab.Manager do
       window_id: nil
     }
 
-    config = Map.merge(default_config, config)
+    config = Map.merge(default_config, _config)
 
-    updated_state = %{state |
-      tabs: Map.put(state.tabs, tab_id, config),
-      next_tab_id: state.next_tab_id + 1
+    updated_state = %{
+      state
+      | tabs: Map.put(state.tabs, tab_id, config),
+        next_tab_id: state.next_tab_id + 1
     }
 
     {:reply, {:ok, tab_id}, updated_state}
@@ -281,11 +302,15 @@ defmodule Raxol.Terminal.Tab.Manager do
   def handle_call({:delete_tab, tab_id}, _from, state) do
     case Map.has_key?(state.tabs, tab_id) do
       true ->
-        updated_state = %{state |
-          tabs: Map.delete(state.tabs, tab_id),
-          active_tab: if(state.active_tab == tab_id, do: nil, else: state.active_tab)
+        updated_state = %{
+          state
+          | tabs: Map.delete(state.tabs, tab_id),
+            active_tab:
+              if(state.active_tab == tab_id, do: nil, else: state.active_tab)
         }
+
         {:reply, {:ok, updated_state}, updated_state}
+
       false ->
         {:reply, {:error, :tab_not_found}, state}
     end
@@ -297,6 +322,7 @@ defmodule Raxol.Terminal.Tab.Manager do
       true ->
         updated_state = %{state | active_tab: tab_id}
         {:reply, {:ok, updated_state}, updated_state}
+
       false ->
         {:reply, {:error, :tab_not_found}, state}
     end
@@ -315,11 +341,15 @@ defmodule Raxol.Terminal.Tab.Manager do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
+
       current_config ->
         updated_config = Map.merge(current_config, config_updates)
-        updated_state = %{state |
-          tabs: Map.put(state.tabs, tab_id, updated_config)
+
+        updated_state = %{
+          state
+          | tabs: Map.put(state.tabs, tab_id, updated_config)
         }
+
         {:reply, {:ok, updated_state}, updated_state}
     end
   end
@@ -367,7 +397,8 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   defp find_next_tab_stop(current_position, tab_stops) do
     case Enum.find(tab_stops, fn stop -> stop > current_position end) do
-      nil -> current_position + 8  # Default tab width
+      # Default tab width
+      nil -> current_position + 8
       stop -> stop
     end
   end

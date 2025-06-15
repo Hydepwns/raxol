@@ -11,6 +11,7 @@ defmodule Raxol.Terminal.Integration.Config do
     Scroll.UnifiedScroll,
     Render.UnifiedRenderer
   }
+
   alias Raxol.Terminal.Integration.State
 
   @type t :: %__MODULE__{
@@ -34,7 +35,8 @@ defmodule Raxol.Terminal.Integration.Config do
         scrollback_limit: 1000,
         enable_command_history: true
       },
-      memory_limit: 50 * 1024 * 1024, # 50 MB
+      # 50 MB
+      memory_limit: 50 * 1024 * 1024,
       rendering: %{
         fps: 60,
         theme: %{
@@ -123,7 +125,10 @@ defmodule Raxol.Terminal.Integration.Config do
   Updates the scroll buffer configuration.
   """
   def update_scroll_buffer(scroll_buffer_state, config) do
-    UnifiedScroll.set_max_height(scroll_buffer_state, config.behavior.scrollback_limit)
+    UnifiedScroll.set_max_height(
+      scroll_buffer_state,
+      config.behavior.scrollback_limit
+    )
   end
 
   @doc """

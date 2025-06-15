@@ -44,39 +44,89 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
         ) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_erase(emulator, type, erase_param, {row, col}) do
     {active_buffer, _, default_style} = get_buffer_state(emulator)
-    new_buffer = apply_erase_operation(active_buffer, type, erase_param, row, col, default_style)
+
+    new_buffer =
+      apply_erase_operation(
+        active_buffer,
+        type,
+        erase_param,
+        row,
+        col,
+        default_style
+      )
+
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
-  defp apply_erase_operation(active_buffer, type, erase_param, row, col, default_style) do
+  defp apply_erase_operation(
+         active_buffer,
+         type,
+         erase_param,
+         row,
+         col,
+         default_style
+       ) do
     case {type, erase_param} do
-      {:screen, 0} -> Eraser.clear_screen_from(active_buffer, row, col, default_style)
-      {:screen, 1} -> Eraser.clear_screen_to(active_buffer, row, col, default_style)
-      {:screen, 2} -> Eraser.clear_screen(active_buffer, default_style)
-      {:screen, 3} -> clear_scrollback(active_buffer, default_style)
-      {:line, 0} -> Eraser.clear_line_from(active_buffer, row, col, default_style)
-      {:line, 1} -> Eraser.clear_line_to(active_buffer, row, col, default_style)
-      {:line, 2} -> Eraser.clear_line(active_buffer, row, default_style)
-      _ -> active_buffer
+      {:screen, 0} ->
+        Eraser.clear_screen_from(active_buffer, row, col, default_style)
+
+      {:screen, 1} ->
+        Eraser.clear_screen_to(active_buffer, row, col, default_style)
+
+      {:screen, 2} ->
+        Eraser.clear_screen(active_buffer, default_style)
+
+      {:screen, 3} ->
+        clear_scrollback(active_buffer, default_style)
+
+      {:line, 0} ->
+        Eraser.clear_line_from(active_buffer, row, col, default_style)
+
+      {:line, 1} ->
+        Eraser.clear_line_to(active_buffer, row, col, default_style)
+
+      {:line, 2} ->
+        Eraser.clear_line(active_buffer, row, default_style)
+
+      _ ->
+        active_buffer
     end
   end
 
-  @doc "Handles Erase in Display (ED - 'J')"
+  @doc "Handles Erase in Display (ED - \"J\")"
   @spec handle_j(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_j(emulator, params) do
-    erase_param = get_valid_param(params, 0, 0, 0, 3)
-    {_, cursor_pos, _} = get_buffer_state(emulator)
-    handle_erase(emulator, :screen, erase_param, cursor_pos)
+    mode = get_valid_non_neg_param(params, 0, 0)
+    active_buffer = Emulator.get_active_buffer(emulator)
+    {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    new_buffer =
+      Raxol.Terminal.Buffer.Operations.erase_in_display(
+        active_buffer,
+        {x, y},
+        mode
+      )
+
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
-  @doc "Handles Erase in Line (EL - 'K')"
+  @doc "Handles Erase in Line (EL - \"K\")"
   @spec handle_k(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_k(emulator, params) do
-    erase_param = get_valid_param(params, 0, 0, 0, 2)
-    {_, cursor_pos, _} = get_buffer_state(emulator)
-    handle_erase(emulator, :line, erase_param, cursor_pos)
+    mode = get_valid_non_neg_param(params, 0, 0)
+    active_buffer = Emulator.get_active_buffer(emulator)
+    {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    new_buffer =
+      Raxol.Terminal.Buffer.Operations.erase_in_line(
+        active_buffer,
+        {x, y},
+        mode
+      )
+
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   # Helper function to clear scrollback buffer
@@ -122,6 +172,26 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   defp get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
       value when is_integer(value) and value >= min and value <= max ->
+        value
+
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid parameter value at index #{index}, using default #{default}",
+          %{}
+        )
+
+        default
+    end
+  end
+
+  @spec get_valid_non_neg_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          integer()
+        ) :: integer()
+  defp get_valid_non_neg_param(params, index, default) do
+    case Enum.at(params, index, default) do
+      value when is_integer(value) and value >= 0 ->
         value
 
       _ ->

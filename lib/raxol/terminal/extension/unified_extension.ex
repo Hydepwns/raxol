@@ -11,21 +11,21 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   @type extension_id :: String.t()
   @type extension_type :: :theme | :script | :plugin | :custom
   @type extension_state :: %{
-    id: extension_id,
-    name: String.t(),
-    type: extension_type,
-    version: String.t(),
-    description: String.t(),
-    author: String.t(),
-    license: String.t(),
-    config: map(),
-    status: :idle | :active | :error,
-    error: String.t() | nil,
-    metadata: map(),
-    dependencies: [String.t()],
-    hooks: [String.t()],
-    commands: [String.t()]
-  }
+          id: extension_id,
+          name: String.t(),
+          type: extension_type,
+          version: String.t(),
+          description: String.t(),
+          author: String.t(),
+          license: String.t(),
+          config: map(),
+          status: :idle | :active | :error,
+          error: String.t() | nil,
+          metadata: map(),
+          dependencies: [String.t()],
+          hooks: [String.t()],
+          commands: [String.t()]
+        }
 
   # Client API
   def start_link(opts \\ []) do
@@ -106,7 +106,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   Registers a hook for an extension.
   """
   def register_hook(extension_id, hook_name, callback) do
-    GenServer.call(__MODULE__, {:register_hook, extension_id, hook_name, callback})
+    GenServer.call(
+      __MODULE__,
+      {:register_hook, extension_id, hook_name, callback}
+    )
   end
 
   @doc """
@@ -181,7 +184,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   @impl true
-  def handle_call({:update_extension_config, extension_id, config}, _from, state) do
+  def handle_call(
+        {:update_extension_config, extension_id, config},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
@@ -287,14 +294,20 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   @impl true
-  def handle_call({:register_hook, extension_id, hook_name, callback}, _from, state) do
+  def handle_call(
+        {:register_hook, extension_id, hook_name, callback},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
 
       extension ->
         if hook_name in extension.hooks do
-          new_hooks = Map.update(state.hooks, hook_name, [callback], &[callback | &1])
+          new_hooks =
+            Map.update(state.hooks, hook_name, [callback], &[callback | &1])
+
           new_state = %{state | hooks: new_hooks}
           {:reply, :ok, new_state}
         else
@@ -311,9 +324,16 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
       extension ->
         if hook_name in extension.hooks do
-          new_hooks = Map.update(state.hooks, hook_name, [], &Enum.reject(&1, fn callback ->
-            callback.extension_id == extension_id
-          end))
+          new_hooks =
+            Map.update(
+              state.hooks,
+              hook_name,
+              [],
+              &Enum.reject(&1, fn callback ->
+                callback.extension_id == extension_id
+              end)
+            )
+
           new_state = %{state | hooks: new_hooks}
           {:reply, :ok, new_state}
         else
@@ -329,18 +349,19 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         {:reply, :ok, state}
 
       callbacks ->
-        results = Enum.map(callbacks, fn callback ->
-          Task.async(fn ->
-            try do
-              callback.fun.(args)
-            rescue
-              e ->
-                Logger.error("Hook execution failed: #{inspect(e)}")
-                {:error, :hook_execution_failed}
-            end
+        results =
+          Enum.map(callbacks, fn callback ->
+            Task.async(fn ->
+              try do
+                callback.fun.(args)
+              rescue
+                e ->
+                  Logger.error("Hook execution failed: #{inspect(e)}")
+                  {:error, :hook_execution_failed}
+              end
+            end)
           end)
-        end)
-        |> Enum.map(&Task.await(&1, 5000))
+          |> Enum.map(&Task.await(&1, 5000))
 
         {:reply, {:ok, results}, state}
     end
@@ -380,14 +401,20 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  defp validate_extension_type(type) when type in [:theme, :script, :plugin, :custom], do: :ok
+  defp validate_extension_type(type)
+       when type in [:theme, :script, :plugin, :custom],
+       do: :ok
+
   defp validate_extension_type(_), do: {:error, :invalid_extension_type}
 
   defp validate_extension_config(config) when is_map(config), do: :ok
   defp validate_extension_config(_), do: {:error, :invalid_extension_config}
 
-  defp validate_extension_dependencies(dependencies) when is_list(dependencies), do: :ok
-  defp validate_extension_dependencies(_), do: {:error, :invalid_extension_dependencies}
+  defp validate_extension_dependencies(dependencies) when is_list(dependencies),
+    do: :ok
+
+  defp validate_extension_dependencies(_),
+    do: {:error, :invalid_extension_dependencies}
 
   defp do_execute_command(extension, command, args) do
     # TODO: Implement actual command execution based on extension type

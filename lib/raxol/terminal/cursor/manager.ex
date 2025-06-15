@@ -76,7 +76,15 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Moves the cursor to a specific position with bounds checking for both row and column.
   """
-  def move_to(%__MODULE__{} = cursor, row, col, min_row, max_row, min_col, max_col) do
+  def move_to(
+        %__MODULE__{} = cursor,
+        row,
+        col,
+        min_row,
+        max_row,
+        min_col,
+        max_col
+      ) do
     new_row = max(min_row, min(max_row, row))
     new_col = max(min_col, min(max_col, col))
     %{cursor | position: {new_row, new_col}}
@@ -138,7 +146,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Constrains the cursor position within the given bounds.
   """
-  def constrain_position(%__MODULE__{} = cursor, {min_row, min_col}, {max_row, max_col}) do
+  def constrain_position(
+        %__MODULE__{} = cursor,
+        {min_row, min_col},
+        {max_row, max_col}
+      ) do
     {row, col} = cursor.position
     new_row = max(min_row, min(max_row, row))
     new_col = max(min_col, min(max_col, col))
@@ -163,7 +175,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Sets a custom cursor shape and dimensions.
   """
   def set_custom_shape(%__MODULE__{} = cursor, shape, dimensions) do
-    %{cursor | style: :custom, custom_shape: shape, custom_dimensions: dimensions}
+    %{
+      cursor
+      | style: :custom,
+        custom_shape: shape,
+        custom_dimensions: dimensions
+    }
   end
 
   @doc """
@@ -174,21 +191,22 @@ defmodule Raxol.Terminal.Cursor.Manager do
       :blinking ->
         visible = !cursor.visible
         {%{cursor | visible: visible}, visible}
+
       _ ->
         {cursor, cursor.visible}
     end
   end
 
   # GenServer API functions
-  def is_visible?(pid \\ __MODULE__) do
+  def visible?(pid \\ __MODULE__) do
     GenServer.call(pid, :is_visible?)
   end
 
-  def get_style(pid \\ __MODULE__) do
+  def style(pid \\ __MODULE__) do
     GenServer.call(pid, :get_style)
   end
 
-  def is_blinking?(pid \\ __MODULE__) do
+  def blinking?(pid \\ __MODULE__) do
     GenServer.call(pid, :is_blinking?)
   end
 
@@ -212,43 +230,66 @@ defmodule Raxol.Terminal.Cursor.Manager do
     GenServer.call(pid, {:set_blink, blinking})
   end
 
-  def move_to(pid \\ __MODULE__, row, col) do
+  def move_to(pid \\ __MODULE__, row, col)
+
+  def move_to(pid, row, col) do
     GenServer.call(pid, {:move_to, row, col})
   end
 
-  def move_to(pid \\ __MODULE__, row, col, min_row, max_row) do
+  def move_to(pid \\ __MODULE__, row, col, min_row, max_row)
+
+  def move_to(pid, row, col, min_row, max_row) do
     GenServer.call(pid, {:move_to, row, col, min_row, max_row})
   end
 
-  def move_to(pid \\ __MODULE__, row, col, min_row, max_row, min_col, max_col) do
-    GenServer.call(pid, {:move_to, row, col, min_row, max_row, min_col, max_col})
+  def move_to(pid \\ __MODULE__, row, col, min_row, max_row, min_col, max_col)
+
+  def move_to(pid, row, col, min_row, max_row, min_col, max_col) do
+    GenServer.call(
+      pid,
+      {:move_to, row, col, min_row, max_row, min_col, max_col}
+    )
   end
 
-  def move_up(pid \\ __MODULE__, lines, min_row, max_row) do
+  def move_up(pid \\ __MODULE__, lines, min_row, max_row)
+
+  def move_up(pid, lines, min_row, max_row) do
     GenServer.call(pid, {:move_up, lines, min_row, max_row})
   end
 
-  def move_down(pid \\ __MODULE__, lines, min_row, max_row) do
+  def move_down(pid \\ __MODULE__, lines, min_row, max_row)
+
+  def move_down(pid, lines, min_row, max_row) do
     GenServer.call(pid, {:move_down, lines, min_row, max_row})
   end
 
-  def move_left(pid \\ __MODULE__, cols, min_col, max_col) do
+  def move_left(pid \\ __MODULE__, cols, min_col, max_col)
+
+  def move_left(pid, cols, min_col, max_col) do
     GenServer.call(pid, {:move_left, cols, min_col, max_col})
   end
 
-  def move_right(pid \\ __MODULE__, cols, min_col, max_col) do
+  def move_right(pid \\ __MODULE__, cols, min_col, max_col)
+
+  def move_right(pid, cols, min_col, max_col) do
     GenServer.call(pid, {:move_right, cols, min_col, max_col})
   end
 
-  def move_to_column(pid \\ __MODULE__, col, min_col, max_col) do
+  def move_to_column(pid \\ __MODULE__, col, min_col, max_col)
+
+  def move_to_column(pid, col, min_col, max_col) do
     GenServer.call(pid, {:move_to_column, col, min_col, max_col})
   end
 
-  def move_to_line_start(pid \\ __MODULE__) do
+  def move_to_line_start(pid \\ __MODULE__)
+
+  def move_to_line_start(pid) do
     GenServer.call(pid, :move_to_line_start)
   end
 
-  def constrain_position(pid \\ __MODULE__, min_bounds, max_bounds) do
+  def constrain_position(pid \\ __MODULE__, min_bounds, max_bounds)
+
+  def constrain_position(pid, min_bounds, max_bounds) do
     GenServer.call(pid, {:constrain_position, min_bounds, max_bounds})
   end
 
@@ -256,20 +297,21 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl true
   def init(_opts) do
-    {:ok, %{
-      position: {0, 0},
-      visible: true,
-      style: :block,
-      blinking: true,
-      state: :visible,
-      blink_rate: 500,
-      custom_shape: nil,
-      custom_dimensions: nil
-    }}
+    {:ok,
+     %{
+       position: {0, 0},
+       visible: true,
+       style: :block,
+       blinking: true,
+       state: :visible,
+       blink_rate: 500,
+       custom_shape: nil,
+       custom_dimensions: nil
+     }}
   end
 
   @impl true
-  def handle_call(:is_visible?, _from, state) do
+  def handle_call(:visible?, _from, state) do
     {:reply, state.visible, state}
   end
 
@@ -279,7 +321,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl true
-  def handle_call(:is_blinking?, _from, state) do
+  def handle_call(:blinking?, _from, state) do
     {:reply, state.blinking, state}
   end
 
@@ -315,50 +357,54 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl true
   def handle_call({:move_to, row, col, min_row, max_row}, _from, state) do
+    {_, current_col} = state.position
     new_row = max(min_row, min(max_row, row))
-    {:reply, :ok, %{state | position: {new_row, col}}}
+    {:reply, :ok, %{state | position: {new_row, current_col}}}
   end
 
   @impl true
-  def handle_call({:move_to, row, col, min_row, max_row, min_col, max_col}, _from, state) do
+  def handle_call(
+        {:move_to, row, col, min_row, max_row, min_col, max_col},
+        _from,
+        state
+      ) do
     new_row = max(min_row, min(max_row, row))
     new_col = max(min_col, min(max_col, col))
     {:reply, :ok, %{state | position: {new_row, new_col}}}
   end
 
   @impl true
-  def handle_call({:move_up, lines, min_row, max_row}, _from, state) do
+  def handle_call({:move_up, lines, _min_row, _max_row}, _from, state) do
     {row, col} = state.position
-    new_row = max(min_row, row - lines)
+    new_row = max(0, row - lines)
     {:reply, :ok, %{state | position: {new_row, col}}}
   end
 
   @impl true
-  def handle_call({:move_down, lines, min_row, max_row}, _from, state) do
+  def handle_call({:move_down, lines, _min_row, _max_row}, _from, state) do
     {row, col} = state.position
-    new_row = min(max_row, row + lines)
+    new_row = row + lines
     {:reply, :ok, %{state | position: {new_row, col}}}
   end
 
   @impl true
-  def handle_call({:move_left, cols, min_col, max_col}, _from, state) do
+  def handle_call({:move_left, cols, _min_col, _max_col}, _from, state) do
     {row, col} = state.position
-    new_col = max(min_col, col - cols)
+    new_col = max(0, col - cols)
     {:reply, :ok, %{state | position: {row, new_col}}}
   end
 
   @impl true
-  def handle_call({:move_right, cols, min_col, max_col}, _from, state) do
+  def handle_call({:move_right, cols, _min_col, _max_col}, _from, state) do
     {row, col} = state.position
-    new_col = min(max_col, col + cols)
+    new_col = col + cols
     {:reply, :ok, %{state | position: {row, new_col}}}
   end
 
   @impl true
-  def handle_call({:move_to_column, col, min_col, max_col}, _from, state) do
+  def handle_call({:move_to_column, col, _min_col, _max_col}, _from, state) do
     {row, _} = state.position
-    new_col = max(min_col, min(max_col, col))
-    {:reply, :ok, %{state | position: {row, new_col}}}
+    {:reply, :ok, %{state | position: {row, col}}}
   end
 
   @impl true
@@ -368,7 +414,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl true
-  def handle_call({:constrain_position, {min_row, min_col}, {max_row, max_col}}, _from, state) do
+  def handle_call(
+        {:constrain_position, {min_row, min_col}, {max_row, max_col}},
+        _from,
+        state
+      ) do
     {row, col} = state.position
     new_row = max(min_row, min(max_row, row))
     new_col = max(min_col, min(max_col, col))

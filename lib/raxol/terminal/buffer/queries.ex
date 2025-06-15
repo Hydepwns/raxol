@@ -11,7 +11,8 @@ defmodule Raxol.Terminal.Buffer.Queries do
   @doc """
   Gets the dimensions of the buffer.
   """
-  @spec get_dimensions(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_dimensions(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_dimensions(buffer) do
     {buffer.width, buffer.height}
   end
@@ -47,12 +48,14 @@ defmodule Raxol.Terminal.Buffer.Queries do
   def get_line(buffer, y) when y >= 0 and y < buffer.height do
     Enum.at(buffer.cells, y)
   end
+
   def get_line(_, _), do: []
 
   @doc """
   Gets a specific cell from the buffer.
   """
-  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
+  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       buffer.cells
@@ -62,6 +65,7 @@ defmodule Raxol.Terminal.Buffer.Queries do
       Cell.new()
     end
   end
+
   def get_cell(_, _, _), do: Cell.new()
 
   @doc """
@@ -70,12 +74,10 @@ defmodule Raxol.Terminal.Buffer.Queries do
   @spec get_text(ScreenBuffer.t()) :: String.t()
   def get_text(buffer) do
     buffer.cells
-    |> Enum.map(fn line ->
+    |> Enum.map_join("\n", fn line ->
       line
-      |> Enum.map(&Cell.get_char/1)
-      |> Enum.join()
+      |> Enum.map_join("", &Cell.get_char/1)
     end)
-    |> Enum.join("\n")
   end
 
   @doc """
@@ -85,25 +87,27 @@ defmodule Raxol.Terminal.Buffer.Queries do
   def get_line_text(buffer, y) when y >= 0 and y < buffer.height do
     buffer.cells
     |> Enum.at(y)
-    |> Enum.map(&Cell.get_char/1)
-    |> Enum.join()
+    |> Enum.map_join("", &Cell.get_char/1)
   end
+
   def get_line_text(_, _), do: ""
 
   @doc """
   Checks if a position is within the buffer bounds.
   """
-  @spec in_bounds?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  @spec in_bounds?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          boolean()
   def in_bounds?(buffer, x, y) when x >= 0 and y >= 0 do
     x < buffer.width and y < buffer.height
   end
+
   def in_bounds?(_, _, _), do: false
 
   @doc """
   Checks if the buffer is empty.
   """
-  @spec is_empty?(map()) :: boolean()
-  def is_empty?(_buffer) do
+  @spec empty?(map()) :: boolean()
+  def empty?(_buffer) do
     true
   end
 

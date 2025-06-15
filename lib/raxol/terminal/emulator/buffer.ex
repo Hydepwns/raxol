@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
+    ScreenBuffer
     # Buffer,
     # CharacterSets,
     # Cursor,
@@ -40,7 +41,11 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Sets the scroll region for the active buffer.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_scroll_region(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) ::
+  @spec set_scroll_region(
+          EmulatorStruct.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def set_scroll_region(%EmulatorStruct{} = emulator, top, bottom)
       when top < bottom do
@@ -81,7 +86,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Clears the entire buffer.
   """
   def clear_buffer(emulator) do
-    updated_emulator = ScreenBuffer.clear_screen(emulator)
+    updated_emulator = ScreenBuffer.clear(emulator)
     %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0, y: 0}}
   end
 
@@ -89,7 +94,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Clears from cursor to end of screen.
   """
   def clear_from_cursor_to_end(emulator) do
-    updated_emulator = ScreenBuffer.clear_screen(emulator)
+    updated_emulator = ScreenBuffer.clear(emulator)
     %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0}}
   end
 
@@ -97,7 +102,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Clears from start of screen to cursor.
   """
   def clear_from_cursor_to_start(emulator) do
-    updated_emulator = ScreenBuffer.clear_screen(emulator)
+    updated_emulator = ScreenBuffer.clear(emulator)
     %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0}}
   end
 

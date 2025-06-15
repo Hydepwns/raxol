@@ -24,12 +24,16 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Updates the currently active screen buffer.
   """
-  @spec update_active_buffer(EmulatorStruct.t(), ScreenBuffer.t()) :: EmulatorStruct.t()
+  @spec update_active_buffer(EmulatorStruct.t(), ScreenBuffer.t()) ::
+          EmulatorStruct.t()
   def update_active_buffer(%{active_buffer_type: :main} = emulator, new_buffer) do
     %{emulator | main_screen_buffer: new_buffer}
   end
 
-  def update_active_buffer(%{active_buffer_type: :alternate} = emulator, new_buffer) do
+  def update_active_buffer(
+        %{active_buffer_type: :alternate} = emulator,
+        new_buffer
+      ) do
     %{emulator | alternate_screen_buffer: new_buffer}
   end
 
@@ -38,14 +42,20 @@ defmodule Raxol.Terminal.ScreenManager do
   """
   @spec switch_buffer(EmulatorStruct.t()) :: EmulatorStruct.t()
   def switch_buffer(emulator) do
-    new_type = if emulator.active_buffer_type == :main, do: :alternate, else: :main
+    new_type =
+      if emulator.active_buffer_type == :main, do: :alternate, else: :main
+
     %{emulator | active_buffer_type: new_type}
   end
 
   @doc """
   Initializes both main and alternate screen buffers.
   """
-  @spec initialize_buffers(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: {ScreenBuffer.t(), ScreenBuffer.t()}
+  @spec initialize_buffers(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: {ScreenBuffer.t(), ScreenBuffer.t()}
   def initialize_buffers(width, height, scrollback_limit) do
     Manager.initialize_buffers(width, height, scrollback_limit)
   end
@@ -53,16 +63,25 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Resizes both screen buffers.
   """
-  @spec resize_buffers(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec resize_buffers(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) ::
+          EmulatorStruct.t()
   def resize_buffers(emulator, new_width, new_height) do
-    new_main_buffer = ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
-    new_alt_buffer = ScreenBuffer.resize(emulator.alternate_screen_buffer, new_width, new_height)
+    new_main_buffer =
+      ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
 
-    %{emulator |
-      main_screen_buffer: new_main_buffer,
-      alternate_screen_buffer: new_alt_buffer,
-      width: new_width,
-      height: new_height
+    new_alt_buffer =
+      ScreenBuffer.resize(
+        emulator.alternate_screen_buffer,
+        new_width,
+        new_height
+      )
+
+    %{
+      emulator
+      | main_screen_buffer: new_main_buffer,
+        alternate_screen_buffer: new_alt_buffer,
+        width: new_width,
+        height: new_height
     }
   end
 
@@ -77,7 +96,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Sets the buffer type.
   """
-  @spec set_buffer_type(EmulatorStruct.t(), :main | :alternate) :: EmulatorStruct.t()
+  @spec set_buffer_type(EmulatorStruct.t(), :main | :alternate) ::
+          EmulatorStruct.t()
   def set_buffer_type(emulator, type) when type in [:main, :alternate] do
     %{emulator | active_buffer_type: type}
   end

@@ -24,19 +24,21 @@ defmodule Raxol.Terminal.Buffer.Manager do
   ]
 
   @type t :: %__MODULE__{
-    buffer: BufferImpl.t(),
-    damage_tracker: term(),
-    memory_manager: term(),
-    metrics: term(),
-    renderer: term(),
-    scrollback_manager: term(),
-    cursor_position: {non_neg_integer(), non_neg_integer()} | nil
-  }
+          buffer: BufferImpl.t(),
+          damage_tracker: term(),
+          memory_manager: term(),
+          metrics: term(),
+          renderer: term(),
+          scrollback_manager: term(),
+          cursor_position: {non_neg_integer(), non_neg_integer()} | nil
+        }
 
   # Client API
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
+    GenServer.start_link(__MODULE__, opts,
+      name: Keyword.get(opts, :name, __MODULE__)
+    )
   end
 
   @impl true
@@ -178,7 +180,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:ok, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]}
   end
 
-  def set_cursor(%__MODULE__{} = manager, {x, y}) when is_integer(x) and is_integer(y) do
+  def set_cursor(%__MODULE__{} = manager, {x, y})
+      when is_integer(x) and is_integer(y) do
     %{manager | cursor_position: {x, y}}
   end
 

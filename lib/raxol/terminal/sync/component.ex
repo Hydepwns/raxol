@@ -13,11 +13,11 @@ defmodule Raxol.Terminal.Sync.Component do
   ]
 
   @type t :: %__MODULE__{
-    id: String.t(),
-    type: String.t(),
-    state: term(),
-    version: integer(),
-    timestamp: integer(),
-    metadata: map()
-  }
+          id: String.t(),
+          type: String.t(),
+          state: term(),
+          version: integer(),
+          timestamp: integer(),
+          metadata: map()
+        }
 end

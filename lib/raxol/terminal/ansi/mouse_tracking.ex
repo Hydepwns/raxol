@@ -41,8 +41,14 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   def enable_mouse_tracking(mode) do
     case Map.get(@mouse_modes, mode) do
       nil ->
-        Monitor.record_error("", "Invalid mouse tracking mode: #{inspect(mode)}", %{mode: mode})
+        Monitor.record_error(
+          "",
+          "Invalid mouse tracking mode: #{inspect(mode)}",
+          %{mode: mode}
+        )
+
         ""
+
       code ->
         "\e[?#{code}h"
     end
@@ -55,8 +61,14 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   def disable_mouse_tracking(mode) do
     case Map.get(@mouse_modes, mode) do
       nil ->
-        Monitor.record_error("", "Invalid mouse tracking mode: #{inspect(mode)}", %{mode: mode})
+        Monitor.record_error(
+          "",
+          "Invalid mouse tracking mode: #{inspect(mode)}",
+          %{mode: mode}
+        )
+
         ""
+
       code ->
         "\e[?#{code}l"
     end
@@ -71,8 +83,10 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
       case sequence do
         <<"\e[M", button, x, y>> ->
           parse_mouse_event(button, x - 32, y - 32)
+
         <<"\e[<", rest::binary>> ->
           parse_sgr_mouse_event(rest)
+
         _ ->
           nil
       end
@@ -82,6 +96,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
           sequence: sequence,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
+
         nil
     end
   end
@@ -103,6 +118,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
           sequence: sequence,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
+
         nil
     end
   end
@@ -137,21 +153,27 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
         x = String.to_integer(x)
         y = String.to_integer(y)
         parse_mouse_event(button, x, y)
+
       [button, x, y, "m" | _] ->
         button = String.to_integer(button)
         x = String.to_integer(x)
         y = String.to_integer(y)
         parse_mouse_event(button, x, y)
+
       _ ->
         nil
     end
   end
 
   defp get_button_code(button) do
-    Enum.find_value(@mouse_buttons, 0, fn {code, b} -> if b == button, do: code end)
+    Enum.find_value(@mouse_buttons, 0, fn {code, b} ->
+      if b == button, do: code
+    end)
   end
 
   defp get_action_code(action) do
-    Enum.find_value(@mouse_actions, 0, fn {code, a} -> if a == action, do: code end)
+    Enum.find_value(@mouse_actions, 0, fn {code, a} ->
+      if a == action, do: code
+    end)
   end
 end

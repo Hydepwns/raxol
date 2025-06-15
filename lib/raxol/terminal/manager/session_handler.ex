@@ -23,6 +23,7 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
           state
           | sessions: Map.put(state.sessions, session_id, pid)
         }
+
         {:ok, session_id, new_state}
 
       error ->
@@ -35,7 +36,11 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
   """
   @spec destroy_session(binary(), map()) :: :ok | {:error, term()}
   def destroy_session(session_id, state) do
-    case SessionManager.destroy_session(session_id, state.sessions, state.runtime_pid) do
+    case SessionManager.destroy_session(
+           session_id,
+           state.sessions,
+           state.runtime_pid
+         ) do
       :ok ->
         new_state = %{state | sessions: Map.delete(state.sessions, session_id)}
         {:ok, new_state}

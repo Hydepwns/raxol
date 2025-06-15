@@ -11,7 +11,8 @@ defmodule Raxol.Terminal.Emulator.Style do
   @behaviour Raxol.Terminal.Emulator.Style.Behaviour
 
   @type color :: {0..255, 0..255, 0..255} | :default
-  @type decoration :: :none | :underline | :double_underline | :overline | :strikethrough
+  @type decoration ::
+          :none | :underline | :double_underline | :overline | :strikethrough
   @type intensity :: :normal | :bold | :faint
   @type blink :: :none | :slow | :rapid
 
@@ -104,7 +105,14 @@ defmodule Raxol.Terminal.Emulator.Style do
   """
   @spec set_decoration(EmulatorStruct.t(), atom()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
-  def set_decoration(%EmulatorStruct{} = emulator, decoration) when decoration in [:none, :underline, :double_underline, :overline, :strikethrough] do
+  def set_decoration(%EmulatorStruct{} = emulator, decoration)
+      when decoration in [
+             :none,
+             :underline,
+             :double_underline,
+             :overline,
+             :strikethrough
+           ] do
     updated_style = TextFormatting.apply_attribute(emulator.style, decoration)
     {:ok, %{emulator | style: updated_style}}
   end

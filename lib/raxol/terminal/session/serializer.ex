@@ -101,7 +101,8 @@ defmodule Raxol.Terminal.Session.Serializer do
          charset_state: charset_state
        }) do
     with {:ok, active_buffer} <- deserialize_screen_buffer(active_buffer_data),
-         {:ok, scrollback_buffer} <- deserialize_screen_buffer(scrollback_buffer_data) do
+         {:ok, scrollback_buffer} <-
+           deserialize_screen_buffer(scrollback_buffer_data) do
       emulator = %EmulatorStruct{
         active_buffer: active_buffer,
         scrollback_buffer: scrollback_buffer,

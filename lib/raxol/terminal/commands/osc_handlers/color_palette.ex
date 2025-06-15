@@ -1,0 +1,232 @@
+defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
+  @moduledoc """
+  Handles OSC 4 (Color Palette Set/Query) commands.
+
+  This handler manages the terminal's color palette, allowing dynamic
+  modification of colors during runtime.
+
+  ## Color Formats Supported
+
+  - rgb:RRRR/GGGG/BBBB (hex, 1-4 digits per component)
+  - #RRGGBB (hex, 2 digits per component)
+  - #RGB (hex, 1 digit per component)
+  - rgb(r,g,b) (decimal, 0-255)
+  - rgb(r%,g%,b%) (percentage, 0-100%)
+  """
+
+  alias Raxol.Terminal.Emulator
+  require Raxol.Core.Runtime.Log
+
+  @doc """
+  Handles OSC 4 commands for color palette management.
+
+  ## Commands
+
+  - `4;c;spec` - Set color c to spec
+  - `4;c;?` - Query color c
+
+  Where:
+  - c is the color index (0-255)
+  - spec is the color specification
+  """
+  @spec handle_4(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+  def handle_4(emulator, data) do
+    case parse_command(data) do
+      {:set, index, spec} ->
+        case parse_color_spec(spec) do
+          {:ok, color} ->
+            new_palette = Map.put(emulator.colors.palette, index, color)
+            new_colors = %{emulator.colors | palette: new_palette}
+            {:ok, %{emulator | colors: new_colors}}
+
+          {:error, reason} ->
+            Raxol.Core.Runtime.Log.warning(
+              "Invalid color specification: #{inspect(spec)}"
+            )
+
+            {:error, {:invalid_color, reason}, emulator}
+        end
+
+      {:query, index} ->
+        case get_palette_color(emulator.colors.palette, index) do
+          {:ok, color} ->
+            response = format_color_response(index, color)
+            {:ok, %{emulator | output_buffer: response}}
+
+          {:error, _} ->
+            Raxol.Core.Runtime.Log.warning(
+              "Invalid color index: #{inspect(index)}"
+            )
+
+            {:error, {:invalid_index, index}, emulator}
+        end
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Invalid OSC 4 command: #{inspect(data)}"
+        )
+
+        {:error, reason, emulator}
+    end
+  end
+
+  # Private Helpers
+
+  defp parse_command(data) do
+    case String.split(data, ";", parts: 2) do
+      [index_str, spec] ->
+        case Integer.parse(index_str) do
+          {index, ""} when index >= 0 and index <= 255 ->
+            if spec == "?" do
+              {:query, index}
+            else
+              {:set, index, spec}
+            end
+
+          _ ->
+            {:error, {:invalid_index, index_str}}
+        end
+
+      _ ->
+        {:error, :invalid_format}
+    end
+  end
+
+  defp parse_color_spec(spec) do
+    cond do
+      String.starts_with?(spec, "rgb:") ->
+        parse_rgb_hex(spec)
+
+      String.starts_with?(spec, "#") ->
+        parse_hex_color(spec)
+
+      String.starts_with?(spec, "rgb(") ->
+        parse_rgb_decimal(spec)
+
+      true ->
+        {:error, :unsupported_format}
+    end
+  end
+
+  defp parse_rgb_hex("rgb:" <> rest) do
+    case String.split(rest, "/") do
+      [r, g, b] ->
+        with {:ok, r_val} <- parse_hex_component(r),
+             {:ok, g_val} <- parse_hex_component(g),
+             {:ok, b_val} <- parse_hex_component(b) do
+          {:ok, {r_val, g_val, b_val}}
+        else
+          _ -> {:error, :invalid_hex_component}
+        end
+
+      _ ->
+        {:error, :invalid_format}
+    end
+  end
+
+  defp parse_hex_color("#" <> hex) do
+    case String.length(hex) do
+      3 -> parse_short_hex(hex)
+      6 -> parse_long_hex(hex)
+      _ -> {:error, :invalid_hex_length}
+    end
+  end
+
+  defp parse_short_hex(hex) do
+    with [r, g, b] <- String.graphemes(hex),
+         {:ok, r_val} <- parse_hex_component(r),
+         {:ok, g_val} <- parse_hex_component(g),
+         {:ok, b_val} <- parse_hex_component(b) do
+      {:ok, {r_val, g_val, b_val}}
+    else
+      _ -> {:error, :invalid_hex_component}
+    end
+  end
+
+  defp parse_long_hex(hex) do
+    with [r, g, b] <- String.split(hex, "", parts: 3),
+         {:ok, r_val} <- parse_hex_component(r),
+         {:ok, g_val} <- parse_hex_component(g),
+         {:ok, b_val} <- parse_hex_component(b) do
+      {:ok, {r_val, g_val, b_val}}
+    else
+      _ -> {:error, :invalid_hex_component}
+    end
+  end
+
+  defp parse_rgb_decimal("rgb(" <> rest) do
+    case String.trim_trailing(rest, ")") do
+      rest when is_binary(rest) ->
+        case String.split(rest, ",") do
+          [r, g, b] ->
+            with {r_val, ""} <- Integer.parse(String.trim(r)),
+                 {g_val, ""} <- Integer.parse(String.trim(g)),
+                 {b_val, ""} <- Integer.parse(String.trim(b)),
+                 true <- r_val >= 0 and r_val <= 255,
+                 true <- g_val >= 0 and g_val <= 255,
+                 true <- b_val >= 0 and b_val <= 255 do
+              {:ok, {r_val, g_val, b_val}}
+            else
+              _ -> {:error, :invalid_decimal_component}
+            end
+
+          _ ->
+            {:error, :invalid_format}
+        end
+
+      _ ->
+        {:error, :invalid_format}
+    end
+  end
+
+  defp parse_hex_component(hex_str) do
+    len = byte_size(hex_str)
+
+    if len >= 1 and len <= 4 do
+      case Integer.parse(hex_str, 16) do
+        {val, ""} ->
+          scaled_val =
+            case len do
+              1 -> round(val * 255 / 15)
+              2 -> val
+              3 -> round(val * 255 / 4095)
+              4 -> round(val * 255 / 65_535)
+            end
+
+          {:ok, max(0, min(255, scaled_val))}
+
+        _ ->
+          :error
+      end
+    else
+      :error
+    end
+  end
+
+  defp format_color_response(index, {r, g, b}) do
+    # Format: OSC 4;index;rgb:r/g/b
+    # Scale up to 16-bit range (0-65535)
+    r_scaled =
+      Integer.to_string(div(r * 65_535, 255), 16) |> String.pad_leading(4, "0")
+
+    g_scaled =
+      Integer.to_string(div(g * 65_535, 255), 16) |> String.pad_leading(4, "0")
+
+    b_scaled =
+      Integer.to_string(div(b * 65_535, 255), 16) |> String.pad_leading(4, "0")
+
+    "\e]4;#{index};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}\e\\"
+  end
+
+  # Helper for safe palette access
+  defp get_palette_color(palette, index)
+       when is_integer(index) and index >= 0 and index <= 255 do
+    case Map.get(palette, index) do
+      nil -> {:error, :invalid_color_index}
+      color -> {:ok, color}
+    end
+  end
+
+  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
+end

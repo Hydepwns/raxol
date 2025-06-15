@@ -14,16 +14,16 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @type t :: %__MODULE__{
-    buffer: list(list(Cell.t())),
-    position: non_neg_integer(),
-    height: non_neg_integer(),
-    max_height: non_neg_integer(),
-    scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-    compression_ratio: float(),
-    memory_limit: non_neg_integer(),
-    memory_usage: non_neg_integer(),
-    cache: map()
-  }
+          buffer: list(list(Cell.t())),
+          position: non_neg_integer(),
+          height: non_neg_integer(),
+          max_height: non_neg_integer(),
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+          compression_ratio: float(),
+          memory_limit: non_neg_integer(),
+          memory_usage: non_neg_integer(),
+          cache: map()
+        }
 
   defstruct [
     :buffer,
@@ -100,6 +100,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
         view = Enum.slice(scroll.buffer, scroll.position, view_height)
         new_cache = Map.put(scroll.cache, cache_key, view)
         {view, %{scroll | cache: new_cache}}
+
       cached_view ->
         {cached_view, scroll}
     end
@@ -229,25 +230,29 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
 
   defp calculate_memory_usage(buffer) do
     Enum.reduce(buffer, 0, fn line, acc ->
-      line_size = Enum.reduce(line, 0, fn cell, cell_acc ->
-        cell_acc + byte_size(cell.content)
-      end)
+      line_size =
+        Enum.reduce(line, 0, fn cell, cell_acc ->
+          cell_acc + byte_size(cell.content)
+        end)
+
       acc + line_size
     end)
   end
 
   defp compress_buffer(buffer) do
     # Simple compression: remove empty cells and combine adjacent identical cells
-    compressed = Enum.map(buffer, fn line ->
-      Enum.chunk_by(line, &(&1.content == ""))
-      |> Enum.map(fn chunk ->
-        case chunk do
-          [cell | _] -> cell
-          [] -> Cell.new("")
-        end
+    compressed =
+      Enum.map(buffer, fn line ->
+        Enum.chunk_by(line, &(&1.content == ""))
+        |> Enum.map(fn chunk ->
+          case chunk do
+            [cell | _] -> cell
+            [] -> Cell.new("")
+          end
+        end)
       end)
-    end)
 
-    {compressed, 0.5} # Assume 50% compression ratio
+    # Assume 50% compression ratio
+    {compressed, 0.5}
   end
 end

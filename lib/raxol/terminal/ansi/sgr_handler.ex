@@ -68,13 +68,13 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
   end
 
   @param_range_handlers %{
-    1..9 => &handle_basic_attributes/2,
-    20..29 => &handle_text_style_attributes/2,
-    30..39 => &handle_foreground_colors/2,
-    40..49 => &handle_background_colors/2,
-    51..55 => &handle_decoration_attributes/2,
-    90..97 => &handle_bright_foreground/2,
-    100..107 => &handle_bright_background/2
+    (1..9) => &__MODULE__.handle_basic_attributes/2,
+    (20..29) => &__MODULE__.handle_text_style_attributes/2,
+    (30..39) => &__MODULE__.handle_foreground_colors/2,
+    (40..49) => &__MODULE__.handle_background_colors/2,
+    (51..55) => &__MODULE__.handle_decoration_attributes/2,
+    (90..97) => &__MODULE__.handle_bright_foreground_colors/2,
+    (100..107) => &__MODULE__.handle_bright_background_colors/2
   }
 
   defp handle_param_range(param, style) do
@@ -178,6 +178,7 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
 
   defp handle_bright_foreground(param, style) do
     color_attr = index_to_basic_color_attr(param - 90)
+
     TextFormatting.apply_attribute(style, color_attr)
     |> TextFormatting.apply_attribute(:bold)
   end

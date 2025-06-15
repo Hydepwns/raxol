@@ -45,20 +45,28 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
           fun()
         ) :: Emulator.t()
   defp handle_dec_private_mode(emulator, params, apply_mode_func) do
-    Enum.reduce(params, emulator, fn param_code, acc_emulator ->
-      mode_atom = ModeManager.lookup_private(param_code)
+    Enum.reduce(
+      params,
+      emulator,
+      &handle_dec_private_mode_param(&1, &2, apply_mode_func)
+    )
+  end
 
-      if mode_atom do
-        apply_mode_func.(acc_emulator, [mode_atom])
-      else
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Unknown DEC private mode code: ?#{param_code}",
-          %{}
-        )
+  @spec handle_dec_private_mode_param(integer(), Emulator.t(), fun()) ::
+          Emulator.t()
+  defp handle_dec_private_mode_param(param_code, emulator, apply_mode_func) do
+    mode_atom = ModeManager.lookup_private(param_code)
 
-        acc_emulator
-      end
-    end)
+    if mode_atom do
+      apply_mode_func.(emulator, [mode_atom])
+    else
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "Unknown DEC private mode code: ?#{param_code}",
+        %{}
+      )
+
+      emulator
+    end
   end
 
   # Helper function to handle standard ANSI modes
@@ -68,49 +76,52 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
           fun()
         ) :: Emulator.t()
   defp handle_standard_mode(emulator, params, apply_mode_func) do
-    Enum.reduce(params, emulator, fn param_code, acc_emulator ->
-      mode_atom = ModeManager.lookup_standard(param_code)
+    Enum.reduce(
+      params,
+      emulator,
+      &handle_standard_mode_param(&1, &2, apply_mode_func)
+    )
+  end
 
-      if mode_atom do
-        apply_mode_func.(acc_emulator, [mode_atom])
-      else
-        # Fallback for codes not directly in ModeManager.@standard_modes but might be aliases
-        # This section is to maintain previous explicit mappings if they are not in ModeManager's tables
-        # but were handled by ModeManager.do_set_mode/do_reset_mode via different atoms.
-        # Ideally, ModeManager's tables should be comprehensive.
-        case param_code do
-          # Keyboard Action Mode (KAM) - ModeManager does not list, but might handle :keyboard_action
-          2 ->
-            # Assuming ModeManager might handle a generic :keyboard_action if sent
-            # This is speculative and depends on ModeManager's internal handling.
-            # For now, we'll log if not in ModeManager's map.
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Standard mode code 2 (KAM) not directly in ModeManager's map. Effect depends on ModeManager internals.",
-              %{}
-            )
+  @spec handle_standard_mode_param(integer(), Emulator.t(), fun()) ::
+          Emulator.t()
+  defp handle_standard_mode_param(param_code, emulator, apply_mode_func) do
+    mode_atom = ModeManager.lookup_standard(param_code)
 
-            # Or attempt apply_mode_func.(acc_emulator, [:keyboard_action]) if confident
-            acc_emulator
+    if mode_atom do
+      apply_mode_func.(emulator, [mode_atom])
+    else
+      handle_unknown_standard_mode(param_code, emulator)
+    end
+  end
 
-          # Send/Receive Mode (SRM) - ModeManager does not list
-          12 ->
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Standard mode code 12 (SRM) not directly in ModeManager's map. Effect depends on ModeManager internals.",
-              %{}
-            )
+  @spec handle_unknown_standard_mode(integer(), Emulator.t()) :: Emulator.t()
+  defp handle_unknown_standard_mode(param_code, emulator) do
+    case param_code do
+      2 ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Standard mode code 2 (KAM) not directly in ModeManager's map. Effect depends on ModeManager internals.",
+          %{}
+        )
 
-            acc_emulator
+        emulator
 
-          _ ->
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Unknown standard mode code: #{param_code}",
-              %{}
-            )
+      12 ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Standard mode code 12 (SRM) not directly in ModeManager's map. Effect depends on ModeManager internals.",
+          %{}
+        )
 
-            acc_emulator
-        end
-      end
-    end)
+        emulator
+
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown standard mode code: #{param_code}",
+          %{}
+        )
+
+        emulator
+    end
   end
 
   @doc """

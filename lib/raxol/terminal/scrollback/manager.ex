@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   ]
 
   @type t :: %__MODULE__{
-    buffer: list(String.t()),
-    limit: integer(),
-    metrics: map()
-  }
+          buffer: list(String.t()),
+          limit: integer(),
+          metrics: map()
+        }
 
   @doc """
   Creates a new scrollback manager with default settings.
@@ -42,11 +42,14 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   """
   def add_to_scrollback(%__MODULE__{} = manager, line) do
     buffer = [line | manager.buffer]
-    buffer = if length(buffer) > manager.limit do
-      Enum.take(buffer, manager.limit)
-    else
-      buffer
-    end
+
+    buffer =
+      if length(buffer) > manager.limit do
+        Enum.take(buffer, manager.limit)
+      else
+        buffer
+      end
+
     metrics = update_metrics(manager.metrics, :lines_added)
     %{manager | buffer: buffer, metrics: metrics}
   end
@@ -55,7 +58,9 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   Clears the scrollback buffer.
   """
   def clear_scrollback(%__MODULE__{} = manager) do
-    metrics = update_metrics(manager.metrics, :lines_removed, length(manager.buffer))
+    metrics =
+      update_metrics(manager.metrics, :lines_removed, length(manager.buffer))
+
     %{manager | buffer: [], metrics: metrics}
   end
 
@@ -69,19 +74,23 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   @doc """
   Sets the scrollback limit.
   """
-  def set_scrollback_limit(%__MODULE__{} = manager, limit) when is_integer(limit) and limit > 0 do
-    buffer = if length(manager.buffer) > limit do
-      Enum.take(manager.buffer, limit)
-    else
-      manager.buffer
-    end
+  def set_scrollback_limit(%__MODULE__{} = manager, limit)
+      when is_integer(limit) and limit > 0 do
+    buffer =
+      if length(manager.buffer) > limit do
+        Enum.take(manager.buffer, limit)
+      else
+        manager.buffer
+      end
+
     %{manager | limit: limit, buffer: buffer}
   end
 
   @doc """
   Gets a range of lines from the scrollback buffer.
   """
-  def get_scrollback_range(%__MODULE__{} = manager, start, count) when is_integer(start) and is_integer(count) do
+  def get_scrollback_range(%__MODULE__{} = manager, start, count)
+      when is_integer(start) and is_integer(count) do
     case Enum.slice(manager.buffer, start, count) do
       [] -> {:error, :invalid_range}
       lines -> {:ok, lines}

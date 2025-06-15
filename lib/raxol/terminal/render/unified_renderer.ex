@@ -19,12 +19,12 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   ]
 
   @type t :: %__MODULE__{
-    buffer: Buffer.t(),
-    screen: Screen.t(),
-    style: Style.t(),
-    cursor_visible: boolean(),
-    title: String.t()
-  }
+          buffer: Buffer.t(),
+          screen: Screen.t(),
+          style: Style.t(),
+          cursor_visible: boolean(),
+          title: String.t()
+        }
 
   # Client API
 
@@ -152,10 +152,13 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   @impl true
   def handle_call({:update_config, _state, config}, _from, renderer) do
-    new_state = %{renderer |
-      style: Map.merge(renderer.style, config.style || %{}),
-      cursor_visible: Map.get(config, :cursor_visible, renderer.cursor_visible)
+    new_state = %{
+      renderer
+      | style: Map.merge(renderer.style, config.style || %{}),
+        cursor_visible:
+          Map.get(config, :cursor_visible, renderer.cursor_visible)
     }
+
     {:reply, :ok, new_state}
   end
 

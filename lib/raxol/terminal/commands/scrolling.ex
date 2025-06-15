@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Buffer.Operations
   require Raxol.Core.Runtime.Log
 
   @spec scroll_up(
@@ -28,16 +29,25 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   # Main scrolling logic for scroll_up
   def scroll_up(%{__struct__: _} = buffer, count, scroll_region, blank_style)
       when count > 0 do
-    {effective_top, effective_bottom, region_height} = get_scroll_region(buffer, scroll_region)
+    {effective_top, effective_bottom} = get_scroll_region(buffer, scroll_region)
+    region_height = effective_bottom - effective_top + 1
 
-    if validate_scroll_params(effective_top, effective_bottom, count, region_height) do
+    if count > 0 and region_height > 0 do
       actual_scroll_count = min(count, region_height)
       preserved_lines_source_start = effective_top + actual_scroll_count
       preserved_lines_count = region_height - actual_scroll_count
 
       buffer
-      |> shift_lines_up(effective_top, preserved_lines_source_start, preserved_lines_count)
-      |> fill_blank_lines(effective_top + preserved_lines_count, actual_scroll_count, blank_style)
+      |> shift_lines_up(
+        effective_top,
+        preserved_lines_source_start,
+        preserved_lines_count
+      )
+      |> fill_blank_lines(
+        effective_top + preserved_lines_count,
+        actual_scroll_count,
+        blank_style
+      )
     else
       buffer
     end
@@ -53,22 +63,18 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   def scroll_up(buffer, count, _scroll_region, _blank_style) when count <= 0,
     do: buffer
 
-  def execute_scroll_up(buffer, count, region, blank_style) do
-    {effective_top, effective_bottom, region_height} = get_scroll_region(buffer, region)
+  @doc """
+  Scrolls the buffer down by the specified number of lines.
 
-    if validate_scroll_params(effective_top, effective_bottom, count, region_height) do
-      actual_scroll_count = min(count, region_height)
-      preserved_lines_source_start = effective_top + actual_scroll_count
-      preserved_lines_count = region_height - actual_scroll_count
+  ## Parameters
+    * `buffer` - The screen buffer to modify
+    * `count` - The number of lines to scroll down
+    * `scroll_region` - Optional scroll region override {top, bottom}
+    * `blank_style` - Style to apply to blank lines
 
-      buffer
-      |> shift_lines_up(effective_top, preserved_lines_source_start, preserved_lines_count)
-      |> fill_blank_lines(effective_top + preserved_lines_count, actual_scroll_count, blank_style)
-    else
-      buffer
-    end
-  end
-
+  ## Returns
+    Updated screen buffer
+  """
   @spec scroll_down(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -89,25 +95,19 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   def scroll_down(%{__struct__: _} = buffer, count, scroll_region, blank_style)
       when count > 0 do
-    {top_limit, bottom_limit} =
-      case scroll_region do
-        {rt, rb} -> {rt, rb}
-        nil -> {0, buffer.height - 1}
-      end
+    case Operations.scroll_down(buffer, count,
+           scroll_region: scroll_region,
+           blank_style: blank_style
+         ) do
+      {:ok, new_buffer} ->
+        new_buffer
 
-    effective_top = max(0, top_limit)
-    effective_bottom = min(buffer.height - 1, bottom_limit)
-    region_height = effective_bottom - effective_top + 1
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to scroll down: #{inspect(reason)}"
+        )
 
-    if validate_scroll_down_params(effective_top, effective_bottom, count, region_height) do
-      actual_scroll_count = min(count, region_height)
-      preserved_lines_count = region_height - actual_scroll_count
-
-      buffer
-      |> shift_lines_down(effective_top, preserved_lines_count, actual_scroll_count)
-      |> fill_blank_lines(effective_top, actual_scroll_count, blank_style)
-    else
-      buffer
+        buffer
     end
   end
 
@@ -122,75 +122,41 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     do: buffer
 
   # Private helper functions
-  defp shift_lines_up(buffer, _effective_top, _preserved_lines_source_start, preserved_lines_count)
-       when preserved_lines_count <= 0, do: buffer
 
-  defp shift_lines_up(buffer, effective_top, preserved_lines_source_start, preserved_lines_count) do
-    Enum.reduce(0..(preserved_lines_count - 1), buffer, fn i, acc_buffer ->
-      source_row = preserved_lines_source_start + i
-      target_row = effective_top + i
-      case ScreenBuffer.get_line(acc_buffer, source_row) do
-        cells when is_list(cells) -> ScreenBuffer.put_line(acc_buffer, target_row, cells)
-        _ -> acc_buffer
-      end
-    end)
-  end
+  defp get_scroll_region(buffer, scroll_region) do
+    case scroll_region do
+      {top, bottom}
+      when is_integer(top) and is_integer(bottom) and top >= 0 and
+             bottom < buffer.height ->
+        {top, bottom}
 
-  defp shift_lines_down(buffer, _effective_top, preserved_lines_count, _actual_scroll_count)
-       when preserved_lines_count <= 0, do: buffer
-
-  defp shift_lines_down(buffer, effective_top, preserved_lines_count, actual_scroll_count) do
-    0..(preserved_lines_count - 1)
-    |> Enum.reverse()
-    |> Enum.reduce(buffer, fn i, acc_buffer ->
-      source_row = effective_top + i
-      target_row = effective_top + actual_scroll_count + i
-      case ScreenBuffer.get_line(acc_buffer, source_row) do
-        cells when is_list(cells) -> ScreenBuffer.put_line(acc_buffer, target_row, cells)
-        _ -> acc_buffer
-      end
-    end)
-  end
-
-  defp get_scroll_region(buffer, {region_top, region_bottom}) do
-    {top_limit, bottom_limit} =
-      case {region_top, region_bottom} do
-        {rt, rb} -> {rt, rb}
-        _ -> {0, buffer.height - 1}
-      end
-
-    effective_top = max(0, top_limit)
-    effective_bottom = min(buffer.height - 1, bottom_limit)
-    region_height = effective_bottom - effective_top + 1
-    {effective_top, effective_bottom, region_height}
-  end
-
-  defp fill_blank_lines(buffer, start_row, count, blank_style) do
-    blank_line_cells = List.duplicate(Cell.new(" ", blank_style), buffer.width)
-    Enum.reduce(0..(count - 1), buffer, fn i, acc_buffer ->
-      ScreenBuffer.put_line(acc_buffer, start_row + i, blank_line_cells)
-    end)
-  end
-
-  defp validate_scroll_params(effective_top, effective_bottom, count, region_height) do
-    if region_height <= 0 or count <= 0 or count > region_height do
-      Raxol.Core.Runtime.Log.debug(
-        "scroll_up_command: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}"
-      )
-      false
-    else
-      true
+      _ ->
+        {0, buffer.height - 1}
     end
   end
 
-  defp validate_scroll_down_params(effective_top, effective_bottom, count, region_height) do
-    if region_height <= 0 or count <= 0 or count > region_height do
-      Raxol.Core.Runtime.Log.debug(
-        "Scroll Down: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}"
-      )
-      false
-    else
-      true
-    end
+  defp shift_lines_up(buffer, target_start, source_start, count) do
+    shift_lines(buffer, target_start, source_start, count)
+  end
+
+  defp shift_lines_down(buffer, target_start, source_start, count) do
+    shift_lines(buffer, target_start, source_start, count)
+  end
+
+  defp shift_lines(buffer, target_start, source_start, count) do
+    {before, _region} = Enum.split(buffer.cells, target_start)
+    {_region, after_part} = Enum.split(_region, count)
+    {_, source_region} = Enum.split(buffer.cells, source_start)
+    {source_region, _} = Enum.split(source_region, count)
+    updated_cells = before ++ source_region ++ after_part
+    %{buffer | cells: updated_cells}
+  end
+
+  defp fill_blank_lines(buffer, start_line, count, style) do
+    empty_line = List.duplicate(Cell.new(style), buffer.width)
+    empty_lines = List.duplicate(empty_line, count)
+    {before, after_part} = Enum.split(buffer.cells, start_line)
+    updated_cells = before ++ empty_lines ++ after_part
+    %{buffer | cells: updated_cells}
   end
 end

@@ -10,7 +10,10 @@ defmodule Raxol.Terminal.Split.Supervisor do
   end
 
   def start_split_manager(opts \\ []) do
-    DynamicSupervisor.start_child(__MODULE__, {Raxol.Terminal.Split.Manager, opts})
+    DynamicSupervisor.start_child(
+      __MODULE__,
+      {Raxol.Terminal.Split.Manager, opts}
+    )
   end
 
   @impl true

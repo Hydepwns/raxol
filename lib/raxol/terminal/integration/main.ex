@@ -65,7 +65,12 @@ defmodule Raxol.Terminal.Integration do
   def clear(%State{} = state) do
     # Clear buffer and re-render
     # (Assumes UnifiedManager and UnifiedRenderer have clear/1 functions)
-    state = State.update(state, buffer_manager: Raxol.Terminal.Buffer.UnifiedManager.clear(state.buffer_manager))
+    state =
+      State.update(state,
+        buffer_manager:
+          Raxol.Terminal.Buffer.UnifiedManager.clear(state.buffer_manager)
+      )
+
     State.render(state)
   end
 
