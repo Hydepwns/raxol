@@ -20,6 +20,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       # ESC (C0 Code)
       27 ->
         {:ok, emulator, %{state | state: :escape}}
+
       # Other bytes are handled by the main handle/3 function
       _ ->
         {:ok, emulator, state}
@@ -67,6 +68,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       "GroundState received unknown command",
       %{emulator: emulator, state: state}
     )
+
     {:ok, emulator, state}
   end
 

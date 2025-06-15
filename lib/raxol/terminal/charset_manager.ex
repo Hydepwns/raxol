@@ -6,10 +6,10 @@ defmodule Raxol.Terminal.CharsetManager do
   defstruct state: %{}, g_set: :g0, designated_charsets: %{}
 
   @type t :: %__MODULE__{
-    state: map(),
-    g_set: atom(),
-    designated_charsets: map()
-  }
+          state: map(),
+          g_set: atom(),
+          designated_charsets: map()
+        }
 
   @doc """
   Gets the current state.
@@ -32,7 +32,10 @@ defmodule Raxol.Terminal.CharsetManager do
   """
   @spec designate_charset(t(), atom(), atom()) :: t()
   def designate_charset(state, g_set, charset) do
-    %{state | designated_charsets: Map.put(state.designated_charsets, g_set, charset)}
+    %{
+      state
+      | designated_charsets: Map.put(state.designated_charsets, g_set, charset)
+    }
   end
 
   @doc """

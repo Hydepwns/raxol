@@ -15,11 +15,27 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   # --- Types ---
 
   @type color :: {0..255, 0..255, 0..255} | 0..255
-  @type attribute :: :bold | :faint | :italic | :underline | :blink | :rapid_blink |
-                    :inverse | :conceal | :strikethrough | :normal_intensity |
-                    :no_italic | :no_underline | :no_blink | :no_inverse |
-                    :no_conceal | :no_strikethrough | :foreground | :background |
-                    :foreground_basic | :background_basic
+  @type attribute ::
+          :bold
+          | :faint
+          | :italic
+          | :underline
+          | :blink
+          | :rapid_blink
+          | :inverse
+          | :conceal
+          | :strikethrough
+          | :normal_intensity
+          | :no_italic
+          | :no_underline
+          | :no_blink
+          | :no_inverse
+          | :no_conceal
+          | :no_strikethrough
+          | :foreground
+          | :background
+          | :foreground_basic
+          | :background_basic
 
   # --- Public API ---
 
@@ -30,7 +46,8 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   - True color (24-bit RGB)
   - Additional attributes
   """
-  @spec process_extended_sgr(list(String.t()), ScreenBuffer.t()) :: ScreenBuffer.t()
+  @spec process_extended_sgr(list(String.t()), ScreenBuffer.t()) ::
+          ScreenBuffer.t()
   def process_extended_sgr(params, buffer) do
     try do
       Enum.reduce(params, buffer, &process_sgr_param/2)
@@ -40,6 +57,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           params: params,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
+
         buffer
     end
   end
@@ -47,15 +65,19 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   @doc """
   Processes true color sequences (24-bit RGB).
   """
-  @spec process_true_color(String.t(), String.t(), ScreenBuffer.t()) :: ScreenBuffer.t()
+  @spec process_true_color(String.t(), String.t(), ScreenBuffer.t()) ::
+          ScreenBuffer.t()
   def process_true_color(type, color_str, buffer) do
     try do
       {r, g, b} = parse_true_color(color_str)
-      style = case type do
-        "38" -> %{buffer.default_style | foreground: {r, g, b}}
-        "48" -> %{buffer.default_style | background: {r, g, b}}
-        _ -> buffer.default_style
-      end
+
+      style =
+        case type do
+          "38" -> %{buffer.default_style | foreground: {r, g, b}}
+          "48" -> %{buffer.default_style | background: {r, g, b}}
+          _ -> buffer.default_style
+        end
+
       %{buffer | default_style: style}
     rescue
       e ->
@@ -64,6 +86,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           color: color_str,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
+
         buffer
     end
   end
@@ -87,6 +110,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           char: char,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
+
         buffer
     end
   end
@@ -112,51 +136,83 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           state: state,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
+
         buffer
     end
   end
 
   # --- Private Implementation ---
 
+  @attribute_map %{
+    "1" => {:bold, true},
+    "2" => {:faint, true},
+    "3" => {:italic, true},
+    "4" => {:underline, true},
+    "5" => {:blink, true},
+    "6" => {:rapid_blink, true},
+    "7" => {:inverse, true},
+    "8" => {:conceal, true},
+    "9" => {:strikethrough, true},
+    "22" => {[:bold, :faint], false},
+    "23" => {:italic, false},
+    "24" => {:underline, false},
+    "25" => {[:blink, :rapid_blink], false},
+    "27" => {:inverse, false},
+    "28" => {:conceal, false},
+    "29" => {:strikethrough, false},
+    "39" => {:foreground, nil},
+    "49" => {:background, nil}
+  }
+
   defp process_sgr_param(param, buffer) do
-    case param do
-      # Extended foreground colors (90-97)
-      color when color >= "90" and color <= "97" ->
-        style = %{buffer.default_style | foreground: String.to_integer(color) - 90 + 8}
-        %{buffer | default_style: style}
-
-      # Extended background colors (100-107)
-      color when color >= "100" and color <= "107" ->
-        style = %{buffer.default_style | background: String.to_integer(color) - 100 + 8}
-        %{buffer | default_style: style}
-
-      # True color sequences
-      "38;2;" <> rest ->
-        process_true_color("38", rest, buffer)
-      "48;2;" <> rest ->
-        process_true_color("48", rest, buffer)
-
-      # Additional attributes
-      "1" -> %{buffer | default_style: %{buffer.default_style | bold: true}}
-      "2" -> %{buffer | default_style: %{buffer.default_style | faint: true}}
-      "3" -> %{buffer | default_style: %{buffer.default_style | italic: true}}
-      "4" -> %{buffer | default_style: %{buffer.default_style | underline: true}}
-      "5" -> %{buffer | default_style: %{buffer.default_style | blink: true}}
-      "6" -> %{buffer | default_style: %{buffer.default_style | rapid_blink: true}}
-      "7" -> %{buffer | default_style: %{buffer.default_style | inverse: true}}
-      "8" -> %{buffer | default_style: %{buffer.default_style | conceal: true}}
-      "9" -> %{buffer | default_style: %{buffer.default_style | strikethrough: true}}
-      "22" -> %{buffer | default_style: %{buffer.default_style | bold: false, faint: false}}
-      "23" -> %{buffer | default_style: %{buffer.default_style | italic: false}}
-      "24" -> %{buffer | default_style: %{buffer.default_style | underline: false}}
-      "25" -> %{buffer | default_style: %{buffer.default_style | blink: false, rapid_blink: false}}
-      "27" -> %{buffer | default_style: %{buffer.default_style | inverse: false}}
-      "28" -> %{buffer | default_style: %{buffer.default_style | conceal: false}}
-      "29" -> %{buffer | default_style: %{buffer.default_style | strikethrough: false}}
-      "39" -> %{buffer | default_style: %{buffer.default_style | foreground: nil}}
-      "49" -> %{buffer | default_style: %{buffer.default_style | background: nil}}
-      _ -> buffer
+    cond do
+      extended_color?(param) -> process_extended_color(param, buffer)
+      true_color?(param) -> process_true_color_param(param, buffer)
+      true -> process_attribute(param, buffer)
     end
+  end
+
+  defp extended_color?(param) do
+    (param >= "90" and param <= "97") or (param >= "100" and param <= "107")
+  end
+
+  defp true_color?(param) do
+    String.starts_with?(param, ["38;2;", "48;2;"])
+  end
+
+  defp process_extended_color(param, buffer) do
+    color = String.to_integer(param)
+    {type, value} = calculate_extended_color(color)
+    style = Map.put(buffer.default_style, type, value)
+    %{buffer | default_style: style}
+  end
+
+  defp calculate_extended_color(color) when color >= 100 do
+    {:background, color - 100 + 8}
+  end
+  defp calculate_extended_color(color) do
+    {:foreground, color - 90 + 8}
+  end
+
+  defp process_true_color_param(param, buffer) do
+    [type | rest] = String.split(param, ";")
+    process_true_color(type, Enum.join(rest, ";"), buffer)
+  end
+
+  defp process_attribute(param, buffer) do
+    case Map.get(@attribute_map, param) do
+      {attr, value} -> update_style(buffer, attr, value)
+      nil -> buffer
+    end
+  end
+
+  defp update_style(buffer, attr, value) when is_atom(attr) do
+    %{buffer | default_style: Map.put(buffer.default_style, attr, value)}
+  end
+
+  defp update_style(buffer, attrs, value) when is_list(attrs) do
+    style = Enum.reduce(attrs, buffer.default_style, &Map.put(&2, &1, value))
+    %{buffer | default_style: style}
   end
 
   defp parse_true_color(color_str) do

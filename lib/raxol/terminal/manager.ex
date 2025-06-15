@@ -212,7 +212,11 @@ defmodule Raxol.Terminal.Manager do
 
   @impl true
   def init(state) do
-    {:ok, Map.merge(%{sessions: %{}, terminal: nil, runtime_pid: nil, callback_module: nil}, state)}
+    {:ok,
+     Map.merge(
+       %{sessions: %{}, terminal: nil, runtime_pid: nil, callback_module: nil},
+       state
+     )}
   end
 
   @impl true
@@ -296,6 +300,7 @@ defmodule Raxol.Terminal.Manager do
     if state.runtime_pid do
       send(state.runtime_pid, {:terminal_state_queried, state.terminal})
     end
+
     {:reply, state.terminal, state}
   end
 
@@ -311,11 +316,22 @@ defmodule Raxol.Terminal.Manager.Callback do
   Behaviour for terminal manager event callbacks. Implement this behaviour to receive notifications for terminal events.
   """
   @callback focus_changed(focused :: boolean(), state :: map()) :: any()
-  @callback resized(width :: integer(), height :: integer(), state :: map()) :: any()
+  @callback resized(width :: integer(), height :: integer(), state :: map()) ::
+              any()
   @callback mode_changed(mode :: atom(), state :: map()) :: any()
-  @callback clipboard_event(op :: atom(), content :: any(), state :: map()) :: any()
+  @callback clipboard_event(op :: atom(), content :: any(), state :: map()) ::
+              any()
   @callback selection_changed(selection :: map(), state :: map()) :: any()
-  @callback paste_event(text :: String.t(), pos :: {integer(), integer()}, state :: map()) :: any()
+  @callback paste_event(
+              text :: String.t(),
+              pos :: {integer(), integer()},
+              state :: map()
+            ) :: any()
   @callback cursor_event(cursor :: map(), state :: map()) :: any()
-  @callback scroll_event(dir :: atom(), delta :: integer(), pos :: {integer(), integer()}, state :: map()) :: any()
+  @callback scroll_event(
+              dir :: atom(),
+              delta :: integer(),
+              pos :: {integer(), integer()},
+              state :: map()
+            ) :: any()
 end

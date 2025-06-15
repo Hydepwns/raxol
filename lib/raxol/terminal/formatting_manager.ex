@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.FormattingManager do
   defstruct style: %{}
 
   @type t :: %__MODULE__{
-    style: map()
-  }
+          style: map()
+        }
 
   @doc """
   Gets the current style.

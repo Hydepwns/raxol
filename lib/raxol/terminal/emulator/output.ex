@@ -14,9 +14,10 @@ defmodule Raxol.Terminal.Emulator.Output do
   """
   def process_output(%EmulatorStruct{} = emulator, data) do
     updated_emulator = %{
-      emulator |
-      output_buffer: <<emulator.output_buffer::binary, data::binary>>
+      emulator
+      | output_buffer: <<emulator.output_buffer::binary, data::binary>>
     }
+
     {:ok, updated_emulator}
   end
 
@@ -48,11 +49,13 @@ defmodule Raxol.Terminal.Emulator.Output do
     case Parser.parse(emulator.parser_state, emulator.output_buffer) do
       {:ok, new_state, commands} ->
         updated_emulator = %{
-          emulator |
-          parser_state: new_state,
-          output_buffer: ""
+          emulator
+          | parser_state: new_state,
+            output_buffer: ""
         }
+
         {:ok, updated_emulator, commands}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -89,8 +92,10 @@ defmodule Raxol.Terminal.Emulator.Output do
   Writes an escape sequence to the output buffer.
   Returns {:ok, updated_emulator}.
   """
-  @spec write_escape(EmulatorStruct.t(), String.t()) :: {:ok, EmulatorStruct.t()}
-  def write_escape(%EmulatorStruct{} = emulator, sequence) when is_binary(sequence) do
+  @spec write_escape(EmulatorStruct.t(), String.t()) ::
+          {:ok, EmulatorStruct.t()}
+  def write_escape(%EmulatorStruct{} = emulator, sequence)
+      when is_binary(sequence) do
     write(emulator, "\e" <> sequence)
   end
 

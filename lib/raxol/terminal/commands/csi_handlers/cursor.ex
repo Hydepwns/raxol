@@ -1,0 +1,165 @@
+defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
+  @moduledoc """
+  Handles CSI cursor control sequences.
+  """
+
+  alias Raxol.Terminal.Emulator, as: Emulator
+  alias Raxol.Terminal.ScreenBuffer
+
+  @command_map %{
+    ?A => {__MODULE__, :handle_cuu},
+    ?B => {__MODULE__, :handle_cud},
+    ?C => {__MODULE__, :handle_cuf},
+    ?D => {__MODULE__, :handle_cub},
+    ?E => {__MODULE__, :handle_cnl},
+    ?F => {__MODULE__, :handle_cpl},
+    ?G => {__MODULE__, :handle_cha},
+    ?d => {__MODULE__, :handle_vpa},
+    ?H => {__MODULE__, :handle_cup},
+    ?f => {__MODULE__, :handle_hvp},
+    ?` => {__MODULE__, :handle_hpa},
+    ?' => {__MODULE__, :handle_vpr},
+    ?$ => {__MODULE__, :handle_hpr}
+  }
+
+  @doc """
+  Handles cursor movement commands.
+  """
+  def handle_command(emulator, params, byte) do
+    case Map.get(@command_map, byte) do
+      {module, function} -> apply(module, function, [emulator, params])
+      nil -> {:ok, emulator}
+    end
+  end
+
+  @doc "Handles Cursor Up (CUU - 'A')"
+  @spec handle_cuu(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cuu(emulator, params) do
+    lines = get_valid_non_neg_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_up(emulator, lines, width, height)
+  end
+
+  @doc "Handles Cursor Down (CUD - 'B')"
+  @spec handle_cud(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cud(emulator, params) do
+    lines = get_valid_non_neg_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_down(emulator, lines, width, height)
+  end
+
+  @doc "Handles Cursor Forward (CUF - 'C')"
+  @spec handle_cuf(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cuf(emulator, params) do
+    cols = get_valid_non_neg_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_right(emulator, cols, width, height)
+  end
+
+  @doc "Handles Cursor Backward (CUB - 'D')"
+  @spec handle_cub(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cub(emulator, params) do
+    cols = get_valid_non_neg_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_left(emulator, cols, width, height)
+  end
+
+  @doc "Handles Cursor Next Line (CNL - 'E')"
+  @spec handle_cnl(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cnl(emulator, params) do
+    lines = get_valid_non_neg_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_down(emulator, lines, width, height)
+    Emulator.move_cursor_to_line_start(emulator)
+  end
+
+  @doc "Handles Cursor Previous Line (CPL - 'F')"
+  @spec handle_cpl(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cpl(emulator, params) do
+    lines = get_valid_non_neg_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_up(emulator, lines, width, height)
+    Emulator.move_cursor_to_line_start(emulator)
+  end
+
+  @doc "Handles Cursor Horizontal Absolute (CHA - 'G')"
+  @spec handle_cha(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cha(emulator, params) do
+    col = get_valid_pos_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_to_column(emulator, col - 1, width, height)
+  end
+
+  @doc "Handles Cursor Position (CUP - 'H')"
+  @spec handle_cup(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cup(emulator, params) do
+    row = get_valid_pos_param(params, 0, 1)
+    col = get_valid_pos_param(params, 1, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_to(emulator, {col - 1, row - 1}, width, height)
+  end
+
+  @doc "Handles Horizontal Position Absolute (HPA - '`')"
+  @spec handle_hpa(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_hpa(emulator, params) do
+    col = get_valid_pos_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_to_column(emulator, col - 1, width, height)
+  end
+
+  @doc "Handles Vertical Position Absolute (VPA - 'd')"
+  @spec handle_vpa(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_vpa(emulator, params) do
+    row = get_valid_pos_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    {current_x, _} = Emulator.get_cursor_position(emulator)
+    Emulator.move_cursor_to(emulator, {current_x, row - 1}, width, height)
+  end
+
+  @doc "Handles Horizontal Position Relative (HPR - 'a')"
+  @spec handle_hpr(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_hpr(emulator, params) do
+    cols = get_valid_non_neg_param(params, 0, 1)
+    width = ScreenBuffer.get_width(emulator.active_buffer)
+    height = ScreenBuffer.get_height(emulator.active_buffer)
+    Emulator.move_cursor_right(emulator, cols, width, height)
+  end
+
+  # Private helper functions
+  defp get_valid_non_neg_param(params, index, default) do
+    case Enum.at(params, index) do
+      nil -> default
+      value when is_integer(value) and value >= 0 -> value
+      _ -> default
+    end
+  end
+
+  defp get_valid_pos_param(params, index, default) do
+    case Enum.at(params, index) do
+      nil -> default
+      value when is_integer(value) and value > 0 -> value
+      _ -> default
+    end
+  end
+end

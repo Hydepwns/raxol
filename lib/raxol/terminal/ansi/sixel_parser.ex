@@ -60,12 +60,23 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
 
   defp handle_command(data, state) do
     case data do
-      <<"\"", rest::binary>> -> handle_raster_attributes(rest, state)
-      <<"#", rest::binary>> -> handle_color_definition(rest, state)
-      <<"!", rest::binary>> -> handle_repeat_command(rest, state)
-      <<"$", rest::binary>> -> handle_carriage_return(rest, state)
-      <<"-", rest::binary>> -> handle_new_line(rest, state)
-      <<char_byte, remaining_data::binary>> -> handle_data_character(char_byte, remaining_data, state)
+      <<"\"", rest::binary>> ->
+        handle_raster_attributes(rest, state)
+
+      <<"#", rest::binary>> ->
+        handle_color_definition(rest, state)
+
+      <<"!", rest::binary>> ->
+        handle_repeat_command(rest, state)
+
+      <<"$", rest::binary>> ->
+        handle_carriage_return(rest, state)
+
+      <<"-", rest::binary>> ->
+        handle_new_line(rest, state)
+
+      <<char_byte, remaining_data::binary>> ->
+        handle_data_character(char_byte, remaining_data, state)
     end
   end
 
@@ -80,22 +91,26 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           "Sixel Parser: Error parsing Raster Attributes: #{inspect(reason)}. Skipping.",
           %{}
         )
+
         parse(rest, state)
     end
   end
 
-  defp create_raster_attrs([pan, pad, ph, pv]), do: %{
-    aspect_num: pan || 1,
-    aspect_den: pad || 1,
-    width: ph,
-    height: pv
-  }
-  defp create_raster_attrs(params), do: %{
-    aspect_num: Enum.at(params, 0) || 1,
-    aspect_den: Enum.at(params, 1) || 1,
-    width: Enum.at(params, 2),
-    height: Enum.at(params, 3)
-  }
+  defp create_raster_attrs([pan, pad, ph, pv]),
+    do: %{
+      aspect_num: pan || 1,
+      aspect_den: pad || 1,
+      width: ph,
+      height: pv
+    }
+
+  defp create_raster_attrs(params),
+    do: %{
+      aspect_num: Enum.at(params, 0) || 1,
+      aspect_den: Enum.at(params, 1) || 1,
+      width: Enum.at(params, 2),
+      height: Enum.at(params, 3)
+    }
 
   defp handle_color_definition(rest, state) do
     case consume_integer_params(rest) do
@@ -110,6 +125,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           "Sixel Parser: Error parsing Color Definition: #{inspect(reason)}. Skipping.",
           %{}
         )
+
         parse(rest, state)
     end
   end
@@ -124,6 +140,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
       case SixelPalette.convert_color(color_space, px, py, pz) do
         {:ok, {r, g, b}} ->
           new_palette = Map.put(state.palette, pc, {r, g, b})
+
           parse(remaining_data, %{state | palette: new_palette, color_index: pc})
 
         {:error, reason} ->
@@ -131,6 +148,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             "Sixel Parser: Invalid color definition ##{pc}: #{inspect(reason)}. Skipping.",
             %{}
           )
+
           parse(remaining_data, state)
       end
     else
@@ -138,13 +156,16 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
         "Sixel Parser: Invalid color index ##{pc}. Skipping.",
         %{}
       )
+
       parse(remaining_data, state)
     end
   end
 
   defp handle_color_selection(params, remaining_data, state) do
+    max_colors = SixelPalette.max_colors()
+
     case params do
-      [pc] when pc >= 0 and pc <= SixelPalette.max_colors() ->
+      [pc] when pc >= 0 and pc <= max_colors ->
         parse(remaining_data, %{state | color_index: pc})
 
       [] ->
@@ -155,6 +176,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           "Sixel Parser: Unexpected params for Color Definition: #{inspect(params)}. Skipping.",
           %{}
         )
+
         parse(remaining_data, state)
     end
   end
@@ -169,6 +191,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           "Sixel Parser: Invalid repeat count found (!#{pn}). Skipping repeat command.",
           %{}
         )
+
         parse(remaining_data, state)
 
       {:ok, [], remaining_data} ->
@@ -179,6 +202,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           "Sixel Parser: Error parsing Repeat Command: #{inspect(reason)}. Skipping.",
           %{}
         )
+
         parse(rest, state)
     end
   end
@@ -186,15 +210,22 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   defp handle_carriage_return(rest, state) do
     case SixelPatternMap.get_pattern(?$) do
       pattern_int when is_integer(pattern_int) ->
-        {new_pixels, new_max_x, new_max_y} = generate_pixels_for_pattern(pattern_int, state.x, state.y, state.color_index)
+        {new_pixels, new_max_x, new_max_y} =
+          generate_pixels_for_pattern(
+            pattern_int,
+            state.x,
+            state.y,
+            state.color_index
+          )
+
         updated_buffer = Map.merge(state.pixel_buffer, new_pixels)
 
         parse(rest, %{
-          state |
-          x: 0,
-          pixel_buffer: updated_buffer,
-          max_x: new_max_x,
-          max_y: new_max_y
+          state
+          | x: 0,
+            pixel_buffer: updated_buffer,
+            max_x: new_max_x,
+            max_y: new_max_y
         })
 
       nil ->
@@ -204,34 +235,36 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
 
   defp handle_new_line(rest, state) do
     new_y = state.y + 6
+
     parse(rest, %{
-      state |
-      x: 0,
-      y: new_y,
-      max_y: max(state.max_y, new_y + 5)
+      state
+      | x: 0,
+        y: new_y,
+        max_y: max(state.max_y, new_y + 5)
     })
   end
 
   defp handle_data_character(char_byte, remaining_data, state) do
     case SixelPatternMap.get_pattern(char_byte) do
       pattern_int when is_integer(pattern_int) ->
-        {final_buffer, final_x, final_max_x} = generate_repeated_pixels(
-          pattern_int,
-          state.x,
-          state.y,
-          state.color_index,
-          state.repeat_count,
-          state.pixel_buffer,
-          state.max_x
-        )
+        {final_buffer, final_x, final_max_x} =
+          generate_repeated_pixels(
+            pattern_int,
+            state.x,
+            state.y,
+            state.color_index,
+            state.repeat_count,
+            state.pixel_buffer,
+            state.max_x
+          )
 
         parse(remaining_data, %{
-          state |
-          x: final_x,
-          repeat_count: 1,
-          pixel_buffer: final_buffer,
-          max_x: final_max_x,
-          max_y: max(state.max_y, state.y + 5)
+          state
+          | x: final_x,
+            repeat_count: 1,
+            pixel_buffer: final_buffer,
+            max_x: final_max_x,
+            max_y: max(state.max_y, state.y + 5)
         })
 
       nil ->
@@ -239,22 +272,37 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           "Sixel Parser: Invalid sixel character byte #{char_byte}. Stopping parsing.",
           %{}
         )
+
         {:error, :invalid_sixel_char}
     end
   end
 
   defp generate_pixels_for_pattern(pattern_int, x, y, color) do
-    pixels = Enum.reduce(0..5, %{}, fn bit_index, acc ->
-      is_set = Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) != 0
-      if is_set, do: Map.put(acc, {x, y + bit_index}, color), else: acc
-    end)
+    pixels =
+      Enum.reduce(0..5, %{}, fn bit_index, acc ->
+        is_set = Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) != 0
+        if is_set, do: Map.put(acc, {x, y + bit_index}, color), else: acc
+      end)
 
     {pixels, x, y + 5}
   end
 
-  defp generate_repeated_pixels(pattern_int, start_x, y, color, repeat, buffer, max_x) do
-    Enum.reduce(0..(repeat - 1), {buffer, start_x, max_x}, fn _i, {current_buffer, current_x, current_max_x} ->
-      {pixels, _, _} = generate_pixels_for_pattern(pattern_int, current_x, y, color)
+  defp generate_repeated_pixels(
+         pattern_int,
+         start_x,
+         y,
+         color,
+         repeat,
+         buffer,
+         max_x
+       ) do
+    Enum.reduce(0..(repeat - 1), {buffer, start_x, max_x}, fn _i,
+                                                              {current_buffer,
+                                                               current_x,
+                                                               current_max_x} ->
+      {pixels, _, _} =
+        generate_pixels_for_pattern(pattern_int, current_x, y, color)
+
       merged_buffer = Map.merge(current_buffer, pixels)
       {merged_buffer, current_x + 1, max(current_max_x, current_x)}
     end)
@@ -285,13 +333,5 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
       nil ->
         {:ok, [], input_binary}
     end
-  end
-
-  def
-    %{
-      p1: Enum.at(params_list, 0),
-      p2: Enum.at(params_list, 1),
-      p3: Enum.at(params_list, 2)
-    }
   end
 end

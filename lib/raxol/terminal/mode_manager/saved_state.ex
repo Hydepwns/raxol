@@ -46,7 +46,9 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
 
     # Update terminal state
     new_terminal_state = TerminalState.save(emulator.terminal_state)
-    new_terminal_state = TerminalState.update_current_state(new_terminal_state, saved_state)
+
+    new_terminal_state =
+      TerminalState.update_current_state(new_terminal_state, saved_state)
 
     %{emulator | terminal_state: new_terminal_state}
   end
@@ -94,9 +96,13 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
   end
 
   defp restore_mode_state(emulator, mode_state) do
-    %{emulator | mode_manager: %{emulator.mode_manager |
-      modes: mode_state.modes,
-      active_buffer_type: mode_state.active_buffer_type
-    }}
+    %{
+      emulator
+      | mode_manager: %{
+          emulator.mode_manager
+          | modes: mode_state.modes,
+            active_buffer_type: mode_state.active_buffer_type
+        }
+    }
   end
 end

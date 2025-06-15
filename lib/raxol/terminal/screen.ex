@@ -11,7 +11,8 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Resizes the screen buffer to new dimensions.
   """
-  @spec resize(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec resize(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def resize(buffer, width, height) do
     ScreenBuffer.resize(buffer, width, height)
   end
@@ -19,9 +20,15 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Marks a region of the screen as damaged.
   """
-  @spec mark_damaged(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec mark_damaged(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def mark_damaged(buffer, x, y, width, height) do
-    ScreenBuffer.mark_damaged(buffer, x, y, width, height)
+    ScreenBuffer.mark_damaged(buffer, x, y, width, height, nil)
   end
 
   @doc """
@@ -83,7 +90,8 @@ defmodule Raxol.Terminal.Screen do
   @doc """
   Scrolls the screen up by the specified number of lines.
   """
-  @spec scroll_up_screen(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec scroll_up_screen(ScreenBuffer.t(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def scroll_up_screen(buffer, lines) do
     ScreenBuffer.scroll_up(buffer, lines)
   end
@@ -107,12 +115,14 @@ defmodule Raxol.Terminal.Screen do
   """
   @spec erase_display(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_display(buffer, mode) do
+    {x, y} = ScreenBuffer.get_cursor_position(buffer)
+    {width, height} = ScreenBuffer.get_dimensions(buffer)
+
     case mode do
-      0 -> ScreenBuffer.erase_from_cursor_to_end(buffer)
-      1 -> ScreenBuffer.erase_from_start_to_cursor(buffer)
+      0 -> ScreenBuffer.erase_from_cursor_to_end(buffer, x, y, width, height)
+      1 -> ScreenBuffer.erase_from_start_to_cursor(buffer, x, y, width, height)
       2 -> clear_screen(buffer)
       3 -> ScreenBuffer.erase_all(buffer)
-      _ -> buffer
     end
   end
 end

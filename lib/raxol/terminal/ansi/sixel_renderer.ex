@@ -23,18 +23,29 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
       {pan, pad, ph, pv} = get_raster_attributes(attrs, width, height)
       dcs_start = create_dcs_start(pan, pad, ph, pv)
       color_definitions = create_color_definitions(palette, used_colors)
-      sixel_pixel_data = generate_pixel_data(pixel_buffer, width, height, used_colors)
+
+      sixel_pixel_data =
+        generate_pixel_data(pixel_buffer, width, height, used_colors)
+
       dcs_end = "\e\\"
 
-      {:ok, IO.iodata_to_binary([dcs_start, color_definitions, sixel_pixel_data, dcs_end])}
+      {:ok,
+       IO.iodata_to_binary([
+         dcs_start,
+         color_definitions,
+         sixel_pixel_data,
+         dcs_end
+       ])}
     end
   end
 
   defp calculate_dimensions(pixel_buffer) do
     {max_x, max_y, used_colors} =
       Enum.reduce(pixel_buffer, {0, 0, MapSet.new()}, fn {{x, y}, color_index},
-                                                         {acc_max_x, acc_max_y, acc_colors} ->
-        {max(x, acc_max_x), max(y, acc_max_y), MapSet.put(acc_colors, color_index)}
+                                                         {acc_max_x, acc_max_y,
+                                                          acc_colors} ->
+        {max(x, acc_max_x), max(y, acc_max_y),
+         MapSet.put(acc_colors, color_index)}
       end)
 
     {max_x + 1, max_y + 1, used_colors}
@@ -58,8 +69,8 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
 
   defp create_dcs_start(pan, pad, ph, pv) do
     <<"\eP", Integer.to_string(pan)::binary, ";",
-      Integer.to_string(pad)::binary, ";", Integer.to_string(ph)::binary,
-      ";", Integer.to_string(pv)::binary, "q">>
+      Integer.to_string(pad)::binary, ";", Integer.to_string(ph)::binary, ";",
+      Integer.to_string(pv)::binary, "q">>
   end
 
   defp create_color_definitions(palette, used_colors) do
@@ -74,6 +85,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
         sixel_r = round(r * 100 / 255)
         sixel_g = round(g * 100 / 255)
         sixel_b = round(b * 100 / 255)
+
         <<"#", Integer.to_string(color_index)::binary, ";2;",
           Integer.to_string(sixel_r)::binary, ";",
           Integer.to_string(sixel_g)::binary, ";",
@@ -84,6 +96,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
           "Sixel Render: Color index #{color_index} not found in palette.",
           %{}
         )
+
         ""
     end
   end
@@ -97,31 +110,60 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   defp generate_sixel_bands(pixel_buffer, width, height) do
     for band_y <- 0..(height - 1)//6 do
       current_band_height = min(6, height - band_y * 6)
-      {final_band_commands, _final_last_color, final_last_char, final_repeat_count} =
+
+      {final_band_commands, _final_last_color, final_last_char,
+       final_repeat_count} =
         process_band_columns(pixel_buffer, width, band_y, current_band_height)
-      final_output = format_band_output(final_last_char, final_repeat_count, final_band_commands)
+
+      final_output =
+        format_band_output(
+          final_last_char,
+          final_repeat_count,
+          final_band_commands
+        )
+
       [IO.iodata_to_binary(final_output), "$"]
     end
   end
 
   defp process_band_columns(pixel_buffer, width, band_y, current_band_height) do
     initial_acc = {[], nil, nil, 0}
+
     for x <- 0..(width - 1), reduce: initial_acc do
       acc -> process_column(pixel_buffer, x, band_y, current_band_height, acc)
     end
   end
 
-  defp process_column(pixel_buffer, x, band_y, current_band_height, {acc_commands, last_color, last_char, repeat_count}) do
-    column_pixels = collect_column_pixels(pixel_buffer, x, band_y, current_band_height)
-    handle_column_rle(column_pixels, acc_commands, last_color, last_char, repeat_count)
+  defp process_column(
+         pixel_buffer,
+         x,
+         band_y,
+         current_band_height,
+         {acc_commands, last_color, last_char, repeat_count}
+       ) do
+    column_pixels =
+      collect_column_pixels(pixel_buffer, x, band_y, current_band_height)
+
+    handle_column_rle(
+      column_pixels,
+      acc_commands,
+      last_color,
+      last_char,
+      repeat_count
+    )
   end
 
   defp collect_column_pixels(pixel_buffer, x, band_y, current_band_height) do
     (band_y * 6)..(band_y * 6 + current_band_height - 1)
     |> Enum.reduce(%{}, fn y, acc ->
       case Map.get(pixel_buffer, {x, y}) do
-        nil -> acc
-        color_index -> Map.update(acc, color_index, [{y, 1}], fn existing -> [{y, 1} | existing] end)
+        nil ->
+          acc
+
+        color_index ->
+          Map.update(acc, color_index, [{y, 1}], fn existing ->
+            [{y, 1} | existing]
+          end)
       end
     end)
     |> Map.new(fn {color_index, y_coords} ->
@@ -137,16 +179,27 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
     end)
   end
 
-  defp handle_column_rle(column_pixels, acc_commands, last_color, last_char, repeat_count) do
+  defp handle_column_rle(
+         column_pixels,
+         acc_commands,
+         last_color,
+         last_char,
+         repeat_count
+       ) do
     is_simple_column = map_size(column_pixels) == 1
-    {current_color, current_char} = get_column_values(column_pixels, is_simple_column)
 
-    if is_simple_column and current_color == last_color and current_char == last_char do
+    {current_color, current_char} =
+      get_column_values(column_pixels, is_simple_column)
+
+    if is_simple_column and current_color == last_color and
+         current_char == last_char do
       {acc_commands, last_color, last_char, repeat_count + 1}
     else
       output_commands = format_output_commands(repeat_count, last_char)
       current_commands = format_current_commands(column_pixels)
-      {acc_commands ++ output_commands ++ current_commands, current_color, current_char, 1}
+
+      {acc_commands ++ output_commands ++ current_commands, current_color,
+       current_char, 1}
     end
   end
 
@@ -161,18 +214,24 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
 
   defp format_output_commands(0, _), do: []
   defp format_output_commands(1, char), do: [char]
-  defp format_output_commands(count, char), do: [<<"!", Integer.to_string(count)::binary>>, char]
+
+  defp format_output_commands(count, char),
+    do: [<<"!", Integer.to_string(count)::binary>>, char]
 
   defp format_current_commands(column_pixels) do
-    commands = Enum.flat_map(column_pixels, fn {color_index, bitmask} ->
-      [<<"#", Integer.to_string(color_index)::binary>>, <<bitmask + 63>>]
-    end)
+    commands =
+      Enum.flat_map(column_pixels, fn {color_index, bitmask} ->
+        [<<"#", Integer.to_string(color_index)::binary>>, <<bitmask + 63>>]
+      end)
+
     if map_size(column_pixels) > 1, do: commands ++ ["-"], else: commands
   end
 
   defp format_band_output(nil, _, commands), do: commands
   defp format_band_output(char, 1, commands), do: commands ++ [char]
-  defp format_band_output(char, count, commands), do: commands ++ [<<"!", Integer.to_string(count)::binary>>, char]
+
+  defp format_band_output(char, count, commands),
+    do: commands ++ [<<"!", Integer.to_string(count)::binary>>, char]
 
   defp remove_trailing_dollar(sixel_bands) do
     case List.last(sixel_bands) do

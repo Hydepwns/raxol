@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.Parser.States.OSCStringState do
   @moduledoc """
-  Handles the :osc_string state of the terminal parser.
+  Handles the OSC String state in the terminal parser.
+  This state is entered when an OSC sequence is initiated.
   """
 
   alias Raxol.Terminal.Emulator
@@ -61,6 +62,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
           parser_state
           | payload_buffer: parser_state.payload_buffer <> <<char>>
         }
+
         {:continue, emulator, next_parser_state, rest}
 
       # Unhandled byte

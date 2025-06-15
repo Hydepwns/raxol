@@ -13,17 +13,17 @@ defmodule Raxol.Terminal.Integration.State do
   }
 
   @type t :: %__MODULE__{
-    buffer_manager: UnifiedManager.t(),
-    scroll_buffer: UnifiedScroll.t(),
-    renderer: UnifiedRenderer.t(),
-    io: UnifiedIO.t(),
-    window_manager: UnifiedWindow.t(),
-    config: Config.t(),
-    window: any(),
-    buffer: any(),
-    input: any(),
-    output: any()
-  }
+          buffer_manager: UnifiedManager.t(),
+          scroll_buffer: UnifiedScroll.t(),
+          renderer: UnifiedRenderer.t(),
+          io: UnifiedIO.t(),
+          window_manager: UnifiedWindow.t(),
+          config: Config.t(),
+          window: any(),
+          buffer: any(),
+          input: any(),
+          output: any()
+        }
 
   defstruct buffer_manager: nil,
             scroll_buffer: nil,
@@ -42,11 +42,13 @@ defmodule Raxol.Terminal.Integration.State do
   @spec new(map()) :: t()
   def new(_opts \\ []) do
     # Create a new integration state
-    {:ok, _window_id} = UnifiedWindow.create_window(%{
-      title: "Raxol Terminal",
-      width: 800,
-      height: 600
-    })
+    {:ok, _window_id} =
+      UnifiedWindow.create_window(%{
+        title: "Raxol Terminal",
+        width: 800,
+        height: 600
+      })
+
     %__MODULE__{
       window: nil,
       buffer: nil,
@@ -69,10 +71,7 @@ defmodule Raxol.Terminal.Integration.State do
     # Update scroll buffer
     updated_scroll = UnifiedScroll.update(state.scroll_buffer, commands)
 
-    %{state |
-      buffer_manager: updated_buffer,
-      scroll_buffer: updated_scroll
-    }
+    %{state | buffer_manager: updated_buffer, scroll_buffer: updated_scroll}
   end
 
   @doc """
@@ -81,12 +80,19 @@ defmodule Raxol.Terminal.Integration.State do
   @spec get_visible_content(t()) :: list()
   def get_visible_content(%__MODULE__{} = state) do
     case UnifiedWindow.get_active_window() do
-      nil -> []
+      nil ->
+        []
+
       window_id ->
         case UnifiedWindow.get_window_state(window_id) do
           {:ok, window} ->
-            UnifiedManager.get_visible_content(state.buffer_manager, window.buffer_id)
-          _ -> []
+            UnifiedManager.get_visible_content(
+              state.buffer_manager,
+              window.buffer_id
+            )
+
+          _ ->
+            []
         end
     end
   end
@@ -113,14 +119,18 @@ defmodule Raxol.Terminal.Integration.State do
   @spec render(t()) :: t()
   def render(%__MODULE__{} = state) do
     case UnifiedWindow.get_active_window() do
-      nil -> state
+      nil ->
+        state
+
       window_id ->
         case UnifiedWindow.get_window_state(window_id) do
           {:ok, window} ->
             # Render the active window
             UnifiedRenderer.render(state.renderer, window.renderer_id)
             state
-          _ -> state
+
+          _ ->
+            state
         end
     end
   end
@@ -140,7 +150,9 @@ defmodule Raxol.Terminal.Integration.State do
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(%__MODULE__{} = state, width, height) do
     case UnifiedWindow.get_active_window() do
-      nil -> state
+      nil ->
+        state
+
       window_id ->
         # Resize the active window
         :ok = UnifiedWindow.resize(window_id, width, height)

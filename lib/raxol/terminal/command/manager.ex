@@ -14,22 +14,20 @@ defmodule Raxol.Terminal.Command.Manager do
   @type key_event :: term()
 
   @type t :: %__MODULE__{
-    command_buffer: String.t(),
-    command_history: command_history(),
-    last_key_event: key_event() | nil,
-    current_command: command() | nil,
-    status: command_state(),
-    max_history_size: non_neg_integer()
-  }
+          command_buffer: String.t(),
+          command_history: command_history(),
+          last_key_event: key_event() | nil,
+          current_command: command() | nil,
+          status: command_state(),
+          max_history_size: non_neg_integer()
+        }
 
-  defstruct [
-    command_buffer: "",
-    command_history: [],
-    last_key_event: nil,
-    current_command: nil,
-    status: :idle,
-    max_history_size: 1000
-  ]
+  defstruct command_buffer: "",
+            command_history: [],
+            last_key_event: nil,
+            current_command: nil,
+            status: :idle,
+            max_history_size: 1000
 
   @doc """
   Creates a new command manager instance with the given options.
@@ -136,6 +134,7 @@ defmodule Raxol.Terminal.Command.Manager do
     state = %__MODULE__{
       max_history_size: Keyword.get(opts, :max_history_size, 1000)
     }
+
     {:ok, state}
   end
 
@@ -156,7 +155,9 @@ defmodule Raxol.Terminal.Command.Manager do
 
   @impl true
   def handle_call({:add_to_history, command}, _from, state) do
-    new_history = [command | state.command_history] |> Enum.take(state.max_history_size)
+    new_history =
+      [command | state.command_history] |> Enum.take(state.max_history_size)
+
     {:reply, :ok, %{state | command_history: new_history}}
   end
 
@@ -190,7 +191,9 @@ defmodule Raxol.Terminal.Command.Manager do
 
   @impl true
   def handle_call({:search_history, prefix}, _from, state) do
-    matches = Enum.filter(state.command_history, &String.starts_with?(&1, prefix))
+    matches =
+      Enum.filter(state.command_history, &String.starts_with?(&1, prefix))
+
     {:reply, matches, state}
   end
 
@@ -198,11 +201,14 @@ defmodule Raxol.Terminal.Command.Manager do
   def handle_call({:execute_command, command}, _from, state) do
     # Here you would implement actual command execution
     # For now, we'll just update the state
-    new_state = %{state |
-      current_command: command,
-      status: :running,
-      command_history: [command | state.command_history] |> Enum.take(state.max_history_size)
+    new_state = %{
+      state
+      | current_command: command,
+        status: :running,
+        command_history:
+          [command | state.command_history] |> Enum.take(state.max_history_size)
     }
+
     {:reply, :ok, new_state}
   end
 

@@ -56,7 +56,8 @@ defmodule Raxol.Terminal.Window.Registry do
   @doc """
   Updates a window's state.
   """
-  @spec update_window_state(window_id(), window_state()) :: :ok | {:error, term()}
+  @spec update_window_state(window_id(), window_state()) ::
+          :ok | {:error, term()}
   def update_window_state(window_id, state) do
     GenServer.call(__MODULE__, {:update_window_state, window_id, state})
   end
@@ -100,10 +101,11 @@ defmodule Raxol.Terminal.Window.Registry do
   @impl true
   def handle_call({:register_window, window}, _from, state) do
     window_id = UUID.uuid4()
+
     new_state = %{
-      state |
-      windows: Map.put(state.windows, window_id, %{window | id: window_id}),
-      active_window: window_id
+      state
+      | windows: Map.put(state.windows, window_id, %{window | id: window_id}),
+        active_window: window_id
     }
 
     {:reply, {:ok, window_id}, new_state}
@@ -117,9 +119,13 @@ defmodule Raxol.Terminal.Window.Registry do
 
       _window ->
         new_state = %{
-          state |
-          windows: Map.delete(state.windows, window_id),
-          active_window: if(state.active_window == window_id, do: nil, else: state.active_window)
+          state
+          | windows: Map.delete(state.windows, window_id),
+            active_window:
+              if(state.active_window == window_id,
+                do: nil,
+                else: state.active_window
+              )
         }
 
         {:reply, :ok, new_state}
@@ -148,7 +154,12 @@ defmodule Raxol.Terminal.Window.Registry do
 
       window ->
         updated_window = %{window | state: new_state}
-        new_state = %{state | windows: Map.put(state.windows, window_id, updated_window)}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -175,9 +186,10 @@ defmodule Raxol.Terminal.Window.Registry do
 
       window ->
         new_state = %{
-          state |
-          active_window: window_id,
-          windows: Map.put(state.windows, window_id, %{window | state: :active})
+          state
+          | active_window: window_id,
+            windows:
+              Map.put(state.windows, window_id, %{window | state: :active})
         }
 
         {:reply, :ok, new_state}

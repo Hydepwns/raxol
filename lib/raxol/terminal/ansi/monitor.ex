@@ -11,16 +11,16 @@ defmodule Raxol.Terminal.ANSI.Monitor do
   # --- Types ---
 
   @type metrics :: %{
-    total_sequences: non_neg_integer(),
-    total_bytes: non_neg_integer(),
-    sequence_types: %{atom() => non_neg_integer()},
-    errors: list({DateTime.t(), String.t(), map()}),
-    performance: %{
-      parse_time_ms: float(),
-      process_time_ms: float(),
-      total_time_ms: float()
-    }
-  }
+          total_sequences: non_neg_integer(),
+          total_bytes: non_neg_integer(),
+          sequence_types: %{atom() => non_neg_integer()},
+          errors: list({DateTime.t(), String.t(), map()}),
+          performance: %{
+            parse_time_ms: float(),
+            process_time_ms: float(),
+            total_time_ms: float()
+          }
+        }
 
   # --- Client API ---
 
@@ -76,7 +76,8 @@ defmodule Raxol.Terminal.ANSI.Monitor do
     {parse_time, parsed} = :timer.tc(Parser, :parse, [input])
     {process_time, _} = :timer.tc(Processor, :process_sequences, [parsed])
 
-    new_state = state
+    new_state =
+      state
       |> update_sequence_count(parsed)
       |> update_byte_count(input)
       |> update_sequence_types(parsed)
@@ -127,19 +128,23 @@ defmodule Raxol.Terminal.ANSI.Monitor do
   end
 
   defp update_sequence_types(state, sequences) do
-    new_types = Enum.reduce(sequences, state.sequence_types, fn seq, types ->
-      Map.update(types, seq.type, 1, &(&1 + 1))
-    end)
+    new_types =
+      Enum.reduce(sequences, state.sequence_types, fn seq, types ->
+        Map.update(types, seq.type, 1, &(&1 + 1))
+      end)
+
     %{state | sequence_types: new_types}
   end
 
   defp update_performance(state, parse_time, process_time) do
     total_time = parse_time + process_time
+
     new_performance = %{
       parse_time_ms: state.performance.parse_time_ms + parse_time / 1000,
       process_time_ms: state.performance.process_time_ms + process_time / 1000,
       total_time_ms: state.performance.total_time_ms + total_time / 1000
     }
+
     %{state | performance: new_performance}
   end
 end

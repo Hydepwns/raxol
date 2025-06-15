@@ -19,70 +19,29 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.Monitor
+  alias Raxol.Terminal.ANSI.WindowManipulation
 
-  @type window_event_type :: :close | :minimize | :maximize | :restore |
-                           :focus | :blur | :move | :resize | :state_change |
-                           :show | :hide | :activate | :deactivate |
-                           :drag_start | :drag_end | :drop
+  @type window_event_type ::
+          :close
+          | :minimize
+          | :maximize
+          | :restore
+          | :focus
+          | :blur
+          | :move
+          | :resize
+          | :state_change
+          | :show
+          | :hide
+          | :activate
+          | :deactivate
+          | :drag_start
+          | :drag_end
+          | :drop
 
   @type window_event :: {:window_event, window_event_type(), map()}
 
-  @event_types %{
-    "close" => :close,
-    "minimize" => :minimize,
-    "maximize" => :maximize,
-    "restore" => :restore,
-    "focus" => :focus,
-    "blur" => :blur,
-    "move" => :move,
-    "resize" => :resize,
-    "state_change" => :state_change,
-    "show" => :show,
-    "hide" => :hide,
-    "activate" => :activate,
-    "deactivate" => :deactivate,
-    "drag_start" => :drag_start,
-    "drag_end" => :drag_end,
-    "drop" => :drop
-  }
-
-  @sequence_handlers %{
-    "c" => fn [] -> {:window_event, :close, %{}} end,
-    "m" => fn [] -> {:window_event, :minimize, %{}} end,
-    "M" => fn [] -> {:window_event, :maximize, %{}} end,
-    "r" => fn [] -> {:window_event, :restore, %{}} end,
-    "f" => fn [] -> {:window_event, :focus, %{}} end,
-    "b" => fn [] -> {:window_event, :blur, %{}} end,
-    "v" => fn [x, y] -> {:window_event, :move, %{x: parse_number(x), y: parse_number(y)}} end,
-    "z" => fn [width, height] -> {:window_event, :resize, %{width: parse_number(width), height: parse_number(height)}} end,
-    "s" => fn [state] -> {:window_event, :state_change, %{state: state}} end,
-    "w" => fn [] -> {:window_event, :show, %{}} end,
-    "h" => fn [] -> {:window_event, :hide, %{}} end,
-    "a" => fn [] -> {:window_event, :activate, %{}} end,
-    "d" => fn [] -> {:window_event, :deactivate, %{}} end,
-    "D" => fn [x, y] -> {:window_event, :drag_start, %{x: parse_number(x), y: parse_number(y)}} end,
-    "E" => fn [x, y] -> {:window_event, :drag_end, %{x: parse_number(x), y: parse_number(y)}} end,
-    "p" => fn [x, y] -> {:window_event, :drop, %{x: parse_number(x), y: parse_number(y)}} end
-  }
-
-  @event_formatters %{
-    close: fn _ -> "\e[?c" end,
-    minimize: fn _ -> "\e[?m" end,
-    maximize: fn _ -> "\e[?M" end,
-    restore: fn _ -> "\e[?r" end,
-    focus: fn _ -> "\e[?f" end,
-    blur: fn _ -> "\e[?b" end,
-    move: fn %{x: x, y: y} -> "\e[?v;#{x};#{y}" end,
-    resize: fn %{width: width, height: height} -> "\e[?z;#{width};#{height}" end,
-    state_change: fn %{state: state} -> "\e[?s;#{state}" end,
-    show: fn _ -> "\e[?w" end,
-    hide: fn _ -> "\e[?h" end,
-    activate: fn _ -> "\e[?a" end,
-    deactivate: fn _ -> "\e[?d" end,
-    drag_start: fn %{x: x, y: y} -> "\e[?D;#{x};#{y}" end,
-    drag_end: fn %{x: x, y: y} -> "\e[?E;#{x};#{y}" end,
-    drop: fn %{x: x, y: y} -> "\e[?p;#{x};#{y}" end
-  }
+  @current_event nil
 
   @doc """
   Processes a window event sequence and returns the corresponding event.
@@ -90,31 +49,90 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
     try do
-      case Map.get(@sequence_handlers, sequence) do
+      case get_sequence_handler(sequence) do
         nil -> nil
         handler -> handler.(params)
       end
     rescue
       e ->
-        Monitor.record_error(sequence, "Window event error: #{inspect(e)}", %{
+        handle_sequence_error(sequence, params, e, __STACKTRACE__)
+    end
+  end
+
+  defp get_sequence_handler(sequence) do
+    Map.get(sequence_handlers(), sequence)
+  end
+
+  defp handle_sequence_error(sequence, params, error, stacktrace) do
+    try do
+      Monitor.record_error(sequence, "Window event error: #{inspect(error)}", %{
+        params: params,
+        stacktrace: Exception.format_stacktrace(stacktrace)
+      })
+    rescue
+      e ->
+        Monitor.record_error(sequence, "Error recording window event error: #{inspect(e)}", %{
+          original_error: inspect(error),
           params: params,
-          stacktrace: Exception.format_stacktrace(__STACKTRACE__)
+          stacktrace: Exception.format_stacktrace(stacktrace)
         })
+    end
+    nil
+  end
+
+  @doc """
+  Formats a window event into an ANSI escape sequence.
+  """
+  def format_event(event) do
+    case event do
+      {:window_event, type, params} ->
+        case get_event_formatter(type) do
+          nil -> nil
+          formatter -> formatter.(params)
+        end
+
+      _ ->
         nil
     end
   end
 
-  @doc """
-  Formats a window event into an ANSI sequence.
-  """
-  @spec format_event(window_event()) :: String.t()
-  def format_event({:window_event, type, params}) do
-    case Map.get(@event_formatters, type) do
-      nil -> ""
-      formatter -> formatter.(params)
+  defp get_event_formatter(type) do
+    case type do
+      type when type in [:close, :minimize, :maximize, :restore, :focus, :blur, :show, :hide, :activate, :deactivate] ->
+        fn _ -> "\e[1;#{get_event_code(type)}" end
+      :move -> &format_position_event/1
+      :resize -> &format_resize_event/1
+      :state_change -> &format_state_event/1
+      type when type in [:drag_start, :drag_end, :drop] -> &format_position_event/1
+      _ -> nil
     end
   end
-  def format_event(_), do: ""
+
+  defp format_position_event(%{x: x, y: y}) do
+    event_code = get_event_code(@current_event)
+    "\e[1;#{event_code};#{x};#{y}"
+  end
+
+  defp format_resize_event(%{width: width, height: height}), do: "\e[1;z;#{width};#{height}"
+  defp format_state_event(%{state: state}), do: "\e[1;s;#{state}"
+
+  defp get_event_code(type) do
+    %{
+      close: "c",
+      minimize: "m",
+      maximize: "M",
+      restore: "r",
+      focus: "f",
+      blur: "b",
+      show: "w",
+      hide: "h",
+      activate: "a",
+      deactivate: "d",
+      drag_start: "D",
+      drag_end: "E",
+      drop: "p"
+    }[type]
+  end
 
   @doc """
   Enables window event reporting.
@@ -132,10 +150,84 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     "\e[?63l"
   end
 
-  defp parse_number(string, default \\ 0) do
+  defp parse_number(string), do: parse_number(string, 0)
+
+  defp parse_number(string, default) do
     case Integer.parse(string) do
       {number, _} -> number
       :error -> default
     end
+  end
+
+  defp sequence_handlers do
+    Map.merge(
+      basic_window_handlers(),
+      position_based_handlers()
+    )
+  end
+
+  defp basic_window_handlers do
+    %{
+      "c" => fn [] -> {:window_event, :close, %{}} end,
+      "m" => fn [] -> {:window_event, :minimize, %{}} end,
+      "M" => fn [] -> {:window_event, :maximize, %{}} end,
+      "r" => fn [] -> {:window_event, :restore, %{}} end,
+      "f" => fn [] -> {:window_event, :focus, %{}} end,
+      "b" => fn [] -> {:window_event, :blur, %{}} end,
+      "s" => fn [state] -> {:window_event, :state_change, %{state: state}} end,
+      "w" => fn [] -> {:window_event, :show, %{}} end,
+      "h" => fn [] -> {:window_event, :hide, %{}} end,
+      "a" => fn [] -> {:window_event, :activate, %{}} end,
+      "d" => fn [] -> {:window_event, :deactivate, %{}} end
+    }
+  end
+
+  defp position_based_handlers do
+    %{
+      "v" => fn [x, y] -> {:window_event, :move, parse_position(x, y)} end,
+      "z" => fn [width, height] -> {:window_event, :resize, parse_position(width, height)} end,
+      "D" => fn [x, y] -> {:window_event, :drag_start, parse_position(x, y)} end,
+      "E" => fn [x, y] -> {:window_event, :drag_end, parse_position(x, y)} end,
+      "p" => fn [x, y] -> {:window_event, :drop, parse_position(x, y)} end
+    }
+  end
+
+  defp parse_position(x, y) do
+    %{x: parse_number(x), y: parse_number(y)}
+  end
+
+  @doc """
+  Processes window-related ANSI escape sequences.
+  Returns updated emulator state and any commands that need to be executed.
+  """
+  def process_window_event(emulator_state, event) do
+    case event do
+      {:resize, w, h} -> handle_resize(emulator_state, w, h)
+      {:title, title} -> handle_title_change(emulator_state, title)
+      {:icon_name, _name} -> {:ok, emulator_state, []}
+      {:position, x, y} -> handle_position_change(emulator_state, x, y)
+      _ -> {:error, "Unknown window event: #{inspect(event)}"}
+    end
+  end
+
+  defp handle_resize(emulator_state, w, h) do
+    updated_state = %{emulator_state | width: w, height: h}
+    commands = [
+      WindowManipulation.clear_screen(),
+      WindowManipulation.move_cursor(1, 1)
+    ]
+    {:ok, updated_state, commands}
+  end
+
+  defp handle_title_change(emulator_state, title) do
+    updated_state = %{emulator_state | title: title}
+    commands = [WindowManipulation.set_title(title)]
+    {:ok, updated_state, commands}
+  end
+
+  defp handle_position_change(emulator_state, x, y) do
+    updated_state = %{emulator_state | position: {x, y}}
+    commands = [WindowManipulation.set_position(x, y)]
+    {:ok, updated_state, commands}
   end
 end

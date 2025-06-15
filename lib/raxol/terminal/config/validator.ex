@@ -27,7 +27,8 @@ defmodule Raxol.Terminal.Config.Validator do
   """
   @spec validate_config(Config.t()) :: validation_result()
   def validate_config(%Config{} = config) do
-    with :ok <- validate_dimensions(%{width: config.width, height: config.height}),
+    with :ok <-
+           validate_dimensions(%{width: config.width, height: config.height}),
          :ok <- validate_colors(config.colors),
          :ok <- validate_styles(config.styles),
          :ok <- validate_input(config.input),
@@ -40,7 +41,8 @@ defmodule Raxol.Terminal.Config.Validator do
   # Private validation functions
 
   defp validate_dimensions(%{width: width, height: height})
-       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
+       when is_integer(width) and is_integer(height) and width > 0 and
+              height > 0 do
     :ok
   end
 
@@ -94,7 +96,9 @@ defmodule Raxol.Terminal.Config.Validator do
 
   defp validate_style_value(value) when is_boolean(value), do: :ok
   defp validate_style_value(value) when is_atom(value), do: :ok
-  defp validate_style_value(value), do: {:error, "Invalid style value: #{inspect(value)}"}
+
+  defp validate_style_value(value),
+    do: {:error, "Invalid style value: #{inspect(value)}"}
 
   defp validate_input(%{input: input}) when is_map(input) do
     validate_input_map(input)
@@ -113,7 +117,9 @@ defmodule Raxol.Terminal.Config.Validator do
 
   defp validate_input_value(value) when is_boolean(value), do: :ok
   defp validate_input_value(value) when is_atom(value), do: :ok
-  defp validate_input_value(value), do: {:error, "Invalid input value: #{inspect(value)}"}
+
+  defp validate_input_value(value),
+    do: {:error, "Invalid input value: #{inspect(value)}"}
 
   defp validate_performance(%{performance: perf}) when is_map(perf) do
     validate_performance_map(perf)
@@ -130,9 +136,13 @@ defmodule Raxol.Terminal.Config.Validator do
     end)
   end
 
-  defp validate_performance_value(value) when is_integer(value) and value > 0, do: :ok
+  defp validate_performance_value(value) when is_integer(value) and value > 0,
+    do: :ok
+
   defp validate_performance_value(value) when is_boolean(value), do: :ok
-  defp validate_performance_value(value), do: {:error, "Invalid performance value: #{inspect(value)}"}
+
+  defp validate_performance_value(value),
+    do: {:error, "Invalid performance value: #{inspect(value)}"}
 
   defp validate_mode(%{mode: mode}) when is_map(mode) do
     validate_mode_map(mode)
@@ -151,5 +161,7 @@ defmodule Raxol.Terminal.Config.Validator do
 
   defp validate_mode_value(value) when is_boolean(value), do: :ok
   defp validate_mode_value(value) when is_atom(value), do: :ok
-  defp validate_mode_value(value), do: {:error, "Invalid mode value: #{inspect(value)}"}
+
+  defp validate_mode_value(value),
+    do: {:error, "Invalid mode value: #{inspect(value)}"}
 end

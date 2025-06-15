@@ -12,15 +12,16 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   # Types
   @type mouse_id :: non_neg_integer()
   @type mouse_button :: :left | :middle | :right | :wheel_up | :wheel_down
-  @type mouse_event :: :press | :release | :move | :drag | :click | :double_click
+  @type mouse_event ::
+          :press | :release | :move | :drag | :click | :double_click
   @type mouse_modifier :: :shift | :ctrl | :alt | :meta
   @type mouse_config :: %{
-    optional(:tracking) => boolean(),
-    optional(:reporting) => boolean(),
-    optional(:sgr_mode) => boolean(),
-    optional(:urxvt_mode) => boolean(),
-    optional(:pixel_mode) => boolean()
-  }
+          optional(:tracking) => boolean(),
+          optional(:reporting) => boolean(),
+          optional(:sgr_mode) => boolean(),
+          optional(:urxvt_mode) => boolean(),
+          optional(:pixel_mode) => boolean()
+        }
 
   # Client API
   @doc """
@@ -74,7 +75,8 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   @doc """
   Updates the configuration of a specific mouse context.
   """
-  @spec update_mouse_config(mouse_id(), mouse_config()) :: :ok | {:error, term()}
+  @spec update_mouse_config(mouse_id(), mouse_config()) ::
+          :ok | {:error, term()}
   def update_mouse_config(mouse_id, config) do
     GenServer.call(__MODULE__, {:update_mouse_config, mouse_id, config})
   end
@@ -82,15 +84,25 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   @doc """
   Processes a mouse event.
   """
-  @spec process_mouse_event(mouse_id(), mouse_event(), mouse_button(), {integer(), integer()}, list(mouse_modifier())) :: :ok | {:error, term()}
+  @spec process_mouse_event(
+          mouse_id(),
+          mouse_event(),
+          mouse_button(),
+          {integer(), integer()},
+          list(mouse_modifier())
+        ) :: :ok | {:error, term()}
   def process_mouse_event(mouse_id, event, button, position, modifiers) do
-    GenServer.call(__MODULE__, {:process_mouse_event, mouse_id, event, button, position, modifiers})
+    GenServer.call(
+      __MODULE__,
+      {:process_mouse_event, mouse_id, event, button, position, modifiers}
+    )
   end
 
   @doc """
   Gets the current mouse position.
   """
-  @spec get_mouse_position(mouse_id()) :: {:ok, {integer(), integer()}} | {:error, term()}
+  @spec get_mouse_position(mouse_id()) ::
+          {:ok, {integer(), integer()}} | {:error, term()}
   def get_mouse_position(mouse_id) do
     GenServer.call(__MODULE__, {:get_mouse_position, mouse_id})
   end
@@ -98,7 +110,8 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   @doc """
   Gets the current mouse button state.
   """
-  @spec get_mouse_button_state(mouse_id()) :: {:ok, list(mouse_button())} | {:error, term()}
+  @spec get_mouse_button_state(mouse_id()) ::
+          {:ok, list(mouse_button())} | {:error, term()}
   def get_mouse_button_state(mouse_id) do
     GenServer.call(__MODULE__, {:get_mouse_button_state, mouse_id})
   end
@@ -136,12 +149,14 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
       next_id: 1,
       config: Map.merge(default_config(), opts)
     }
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:create_mouse, config}, _from, state) do
     mouse_id = state.next_id
+
     mouse_state = %{
       id: mouse_id,
       config: Map.merge(default_mouse_config(), config),
@@ -151,17 +166,19 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
       created_at: System.system_time(:millisecond)
     }
 
-    new_state = %{state |
-      mice: Map.put(state.mice, mouse_id, mouse_state),
-      next_id: mouse_id + 1
+    new_state = %{
+      state
+      | mice: Map.put(state.mice, mouse_id, mouse_state),
+        next_id: mouse_id + 1
     }
 
     # If this is the first mouse context, make it active
-    new_state = if state.active_mouse == nil do
-      %{new_state | active_mouse: mouse_id}
-    else
-      new_state
-    end
+    new_state =
+      if state.active_mouse == nil do
+        %{new_state | active_mouse: mouse_id}
+      else
+        new_state
+      end
 
     {:reply, {:ok, mouse_id}, new_state}
   end
@@ -184,6 +201,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}
+
       _mouse ->
         new_state = %{state | active_mouse: mouse_id}
         {:reply, :ok, new_state}
@@ -203,22 +221,39 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}
+
       mouse_state ->
         new_config = Map.merge(mouse_state.config, config)
         new_mouse_state = %{mouse_state | config: new_config}
-        new_state = %{state | mice: Map.put(state.mice, mouse_id, new_mouse_state)}
+
+        new_state = %{
+          state
+          | mice: Map.put(state.mice, mouse_id, new_mouse_state)
+        }
+
         {:reply, :ok, new_state}
     end
   end
 
   @impl true
-  def handle_call({:process_mouse_event, mouse_id, event, button, position, modifiers}, _from, state) do
+  def handle_call(
+        {:process_mouse_event, mouse_id, event, button, position, modifiers},
+        _from,
+        state
+      ) do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}
+
       mouse_state ->
-        new_mouse_state = process_event(mouse_state, event, button, position, modifiers)
-        new_state = %{state | mice: Map.put(state.mice, mouse_id, new_mouse_state)}
+        new_mouse_state =
+          process_event(mouse_state, event, button, position, modifiers)
+
+        new_state = %{
+          state
+          | mice: Map.put(state.mice, mouse_id, new_mouse_state)
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -244,24 +279,23 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}
+
       _mouse ->
         # Remove mouse context
         new_mice = Map.delete(state.mice, mouse_id)
 
         # Update active mouse if needed
-        new_active_mouse = if state.active_mouse == mouse_id do
-          case Map.keys(new_mice) do
-            [] -> nil
-            [first_mouse | _] -> first_mouse
+        new_active_mouse =
+          if state.active_mouse == mouse_id do
+            case Map.keys(new_mice) do
+              [] -> nil
+              [first_mouse | _] -> first_mouse
+            end
+          else
+            state.active_mouse
           end
-        else
-          state.active_mouse
-        end
 
-        new_state = %{state |
-          mice: new_mice,
-          active_mouse: new_active_mouse
-        }
+        new_state = %{state | mice: new_mice, active_mouse: new_active_mouse}
 
         {:reply, :ok, new_state}
     end
@@ -287,54 +321,63 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
       :press ->
         # Only update state if button state actually changes
         if button not in mouse_state.buttons do
-          %{mouse_state |
-            position: position,
-            buttons: [button | mouse_state.buttons],
-            modifiers: modifiers,
-            last_update: System.system_time(:millisecond)
+          %{
+            mouse_state
+            | position: position,
+              buttons: [button | mouse_state.buttons],
+              modifiers: modifiers,
+              last_update: System.system_time(:millisecond)
           }
         else
           mouse_state
         end
+
       :release ->
         # Only update state if button state actually changes
         if button in mouse_state.buttons do
-          %{mouse_state |
-            position: position,
-            buttons: List.delete(mouse_state.buttons, button),
-            modifiers: modifiers,
-            last_update: System.system_time(:millisecond)
+          %{
+            mouse_state
+            | position: position,
+              buttons: List.delete(mouse_state.buttons, button),
+              modifiers: modifiers,
+              last_update: System.system_time(:millisecond)
           }
         else
           mouse_state
         end
+
       :move ->
         # Only update position if it actually changed
         if position != mouse_state.position do
-          %{mouse_state |
-            position: position,
-            modifiers: modifiers,
-            last_update: System.system_time(:millisecond)
+          %{
+            mouse_state
+            | position: position,
+              modifiers: modifiers,
+              last_update: System.system_time(:millisecond)
           }
         else
           mouse_state
         end
+
       :drag ->
         # Only update position if it actually changed
         if position != mouse_state.position do
-          %{mouse_state |
-            position: position,
-            modifiers: modifiers,
-            last_update: System.system_time(:millisecond)
+          %{
+            mouse_state
+            | position: position,
+              modifiers: modifiers,
+              last_update: System.system_time(:millisecond)
           }
         else
           mouse_state
         end
+
       _ ->
-        %{mouse_state |
-          position: position,
-          modifiers: modifiers,
-          last_update: System.system_time(:millisecond)
+        %{
+          mouse_state
+          | position: position,
+            modifiers: modifiers,
+            last_update: System.system_time(:millisecond)
         }
     end
   end

@@ -14,20 +14,20 @@ defmodule Raxol.Terminal.Input.Manager do
 
   @type key_modifier :: :shift | :ctrl | :alt | :meta
   @type key_event :: %{
-    key: String.t(),
-    modifiers: [key_modifier()],
-    timestamp: integer()
-  }
+          key: String.t(),
+          modifiers: [key_modifier()],
+          timestamp: integer()
+        }
 
   @type t :: %__MODULE__{
-    buffer: Buffer.t(),
-    processor: Processor.t(),
-    metrics: %{
-      processed_events: integer(),
-      validation_failures: integer(),
-      buffer_overflows: integer()
-    }
-  }
+          buffer: Buffer.t(),
+          processor: Processor.t(),
+          metrics: %{
+            processed_events: integer(),
+            validation_failures: integer(),
+            buffer_overflows: integer()
+          }
+        }
 
   defstruct [
     :buffer,

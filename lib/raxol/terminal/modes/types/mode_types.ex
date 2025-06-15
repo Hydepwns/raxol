@@ -15,13 +15,13 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
 
   # Mode definition
   @type mode :: %{
-    category: mode_category(),
-    code: integer(),
-    name: atom(),
-    default_value: mode_value(),
-    dependencies: [mode()],
-    conflicts: [mode()]
-  }
+          category: mode_category(),
+          code: integer(),
+          name: atom(),
+          default_value: mode_value(),
+          dependencies: [mode()],
+          conflicts: [mode()]
+        }
 
   # DEC Private Mode codes and their corresponding mode atoms
   @dec_private_modes %{

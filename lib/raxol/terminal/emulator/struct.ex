@@ -46,61 +46,63 @@ defmodule Raxol.Terminal.Emulator.Struct do
   ]
 
   @type t :: %__MODULE__{
-    active_buffer_type: :main | :alternate,
-    active_buffer: ScreenBuffer.t(),
-    scrollback_buffer: [ScreenBuffer.t()],
-    cursor_manager: term(),
-    mode_manager: term(),
-    command_history: [String.t()],
-    current_command_buffer: String.t(),
-    style: map(),
-    color_palette: map(),
-    tab_stops: [integer()],
-    cursor: %{
-      position: {integer(), integer()},
-      style: atom(),
-      visible: boolean(),
-      blink_state: boolean()
-    },
-    cursor_style: atom(),
-    saved_cursor: %{
-      position: {integer(), integer()},
-      style: atom(),
-      visible: boolean(),
-      blink_state: boolean()
-    } | nil,
-    charset_state: %{
-      g0: atom(),
-      g1: atom(),
-      g2: atom(),
-      g3: atom(),
-      gl: atom(),
-      gr: atom(),
-      single_shift: atom() | nil
-    },
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    main_screen_buffer: ScreenBuffer.t(),
-    alternate_screen_buffer: ScreenBuffer.t(),
-    scrollback_limit: non_neg_integer(),
-    memory_limit: non_neg_integer(),
-    max_command_history: non_neg_integer(),
-    plugin_manager: term(),
-    session_id: String.t(),
-    client_options: map(),
-    state: atom(),
-    window_manager: term(),
-    command: term(),
-    window_title: String.t() | nil,
-    state_stack: list(),
-    last_col_exceeded: boolean(),
-    icon_name: String.t() | nil,
-    current_hyperlink_url: String.t() | nil,
-    scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-    last_key_event: term(),
-    output_buffer: String.t(),
-    parser_state: term()
-  }
+          active_buffer_type: :main | :alternate,
+          active_buffer: ScreenBuffer.t(),
+          scrollback_buffer: [ScreenBuffer.t()],
+          cursor_manager: term(),
+          mode_manager: term(),
+          command_history: [String.t()],
+          current_command_buffer: String.t(),
+          style: map(),
+          color_palette: map(),
+          tab_stops: [integer()],
+          cursor: %{
+            position: {integer(), integer()},
+            style: atom(),
+            visible: boolean(),
+            blink_state: boolean()
+          },
+          cursor_style: atom(),
+          saved_cursor:
+            %{
+              position: {integer(), integer()},
+              style: atom(),
+              visible: boolean(),
+              blink_state: boolean()
+            }
+            | nil,
+          charset_state: %{
+            g0: atom(),
+            g1: atom(),
+            g2: atom(),
+            g3: atom(),
+            gl: atom(),
+            gr: atom(),
+            single_shift: atom() | nil
+          },
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          main_screen_buffer: ScreenBuffer.t(),
+          alternate_screen_buffer: ScreenBuffer.t(),
+          scrollback_limit: non_neg_integer(),
+          memory_limit: non_neg_integer(),
+          max_command_history: non_neg_integer(),
+          plugin_manager: term(),
+          session_id: String.t(),
+          client_options: map(),
+          state: atom(),
+          window_manager: term(),
+          command: term(),
+          window_title: String.t() | nil,
+          state_stack: list(),
+          last_col_exceeded: boolean(),
+          icon_name: String.t() | nil,
+          current_hyperlink_url: String.t() | nil,
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+          last_key_event: term(),
+          output_buffer: String.t(),
+          parser_state: term()
+        }
 
   @doc """
   Creates a new terminal emulator with the given options.
@@ -109,7 +111,12 @@ defmodule Raxol.Terminal.Emulator.Struct do
   def new(width, height, opts \\ []) do
     active_buffer = ScreenBuffer.new(width, height)
     scrollback_buffer = []
-    initialize_emulator(active_buffer, scrollback_buffer, Keyword.put(opts, :width, width))
+
+    initialize_emulator(
+      active_buffer,
+      scrollback_buffer,
+      Keyword.put(opts, :width, width)
+    )
   end
 
   @doc """
@@ -186,6 +193,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
 
   defp initialize_emulator(active_buffer, scrollback_buffer, opts) do
     defaults = default_opts(opts)
+
     %__MODULE__{
       active_buffer: active_buffer,
       active_buffer_type: :main,
@@ -217,7 +225,8 @@ defmodule Raxol.Terminal.Emulator.Struct do
       width: defaults.width,
       height: defaults.height,
       main_screen_buffer: active_buffer,
-      alternate_screen_buffer: ScreenBuffer.new(defaults.width, defaults.height),
+      alternate_screen_buffer:
+        ScreenBuffer.new(defaults.width, defaults.height),
       scrollback_limit: defaults.scrollback_limit,
       memory_limit: defaults.memory_limit,
       max_command_history: defaults.max_command_history,

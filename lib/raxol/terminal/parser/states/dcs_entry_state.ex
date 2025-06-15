@@ -77,7 +77,8 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
 
       # Other ignored bytes (0-1F excluding CAN/SUB, 7F)
       <<ignored_byte, rest_after_ignored::binary>>
-      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and ignored_byte != 0x1A) or
+      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and
+              ignored_byte != 0x1A) or
              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
         Raxol.Core.Runtime.Log.debug(
           "Ignoring C0/DEL byte #{ignored_byte} in DCS Entry"
@@ -87,9 +88,9 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
         {:continue, emulator, parser_state, rest_after_ignored}
 
       # Unhandled byte - go to ground
-      <<unhandled_byte, rest_after_unhandled::binary>> ->
+      <<_unhandled_byte, rest_after_unhandled::binary>> ->
         msg =
-          "Unhandled byte #{unhandled_byte} in DCS Entry state, returning to ground."
+          "Unhandled byte #{_unhandled_byte} in DCS Entry state, returning to ground."
 
         Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 

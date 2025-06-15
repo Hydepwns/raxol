@@ -11,7 +11,12 @@ defmodule Raxol.Terminal.State do
   @doc """
   Creates a new terminal state with the specified dimensions and limits.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec new(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: map()
   def new(width, height, scrollback_limit, memory_limit) do
     %{
       width: width,
@@ -41,6 +46,7 @@ defmodule Raxol.Terminal.State do
       style: state.style,
       scroll_region: state.scroll_region
     }
+
     %{state | saved_states: [saved_state | state.saved_states]}
   end
 
@@ -51,13 +57,16 @@ defmodule Raxol.Terminal.State do
   def restore_state(state) do
     case state.saved_states do
       [saved_state | rest] ->
-        new_state = %{state |
-          cursor: saved_state.cursor,
-          style: saved_state.style,
-          scroll_region: saved_state.scroll_region,
-          saved_states: rest
+        new_state = %{
+          state
+          | cursor: saved_state.cursor,
+            style: saved_state.style,
+            scroll_region: saved_state.scroll_region,
+            saved_states: rest
         }
+
         {:ok, new_state}
+
       [] ->
         {:error, :no_saved_state}
     end
@@ -74,7 +83,8 @@ defmodule Raxol.Terminal.State do
   @doc """
   Sets the cursor position.
   """
-  @spec set_cursor_position(map(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec set_cursor_position(map(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def set_cursor_position(state, x, y) do
     new_cursor = %{state.cursor | position: {x, y}}
     %{state | cursor: new_cursor}

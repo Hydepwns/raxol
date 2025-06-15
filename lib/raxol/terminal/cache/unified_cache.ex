@@ -6,30 +6,27 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
   """
 
   use GenServer
-  require Logger
+  alias Raxol.Terminal.Cache.EvictionHelpers
 
-  # Types
   @type cache_key :: term()
   @type cache_value :: term()
   @type cache_entry :: %{
-    value: cache_value(),
-    size: non_neg_integer(),
-    created_at: integer(),
-    last_access: integer(),
-    access_count: non_neg_integer(),
-    ttl: integer() | nil,
-    metadata: map()
-  }
+          value: cache_value(),
+          size: non_neg_integer(),
+          created_at: integer(),
+          last_access: integer(),
+          access_count: non_neg_integer(),
+          ttl: integer() | nil,
+          metadata: map()
+        }
   @type cache_stats :: %{
-    size: non_neg_integer(),
-    max_size: non_neg_integer(),
-    hit_count: non_neg_integer(),
-    miss_count: non_neg_integer(),
-    hit_ratio: float(),
-    eviction_count: non_neg_integer()
-  }
-
-  # Client API
+          size: non_neg_integer(),
+          max_size: non_neg_integer(),
+          hit_count: non_neg_integer(),
+          miss_count: non_neg_integer(),
+          hit_ratio: float(),
+          eviction_count: non_neg_integer()
+        }
 
   @doc """
   Starts the unified cache manager.
@@ -112,12 +109,10 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
     GenServer.call(__MODULE__, {:clear, namespace})
   end
 
-  # Server Callbacks
-
   @impl true
   def init(opts) do
-    max_size = Keyword.get(opts, :max_size, 100 * 1024 * 1024)  # 100MB
-    default_ttl = Keyword.get(opts, :default_ttl, 3600)  # 1 hour
+    max_size = Keyword.get(opts, :max_size, 100 * 1024 * 1024)
+    default_ttl = Keyword.get(opts, :default_ttl, 3600)
     eviction_policy = Keyword.get(opts, :eviction_policy, :lru)
     compression_enabled = Keyword.get(opts, :compression_enabled, true)
 
@@ -147,40 +142,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
         {:reply, {:error, :namespace_not_found}, state}
 
       namespace_state ->
-        case Map.get(namespace_state.cache, key) do
-          nil ->
-            updated_state = update_namespace(state, namespace, %{
-              namespace_state | miss_count: namespace_state.miss_count + 1
-            })
-            {:reply, {:error, :not_found}, updated_state}
-
-          entry ->
-            if is_expired?(entry) do
-              # Entry expired, remove it
-              updated_cache = Map.delete(namespace_state.cache, key)
-              updated_size = namespace_state.size - entry.size
-              updated_state = update_namespace(state, namespace, %{
-                namespace_state |
-                cache: updated_cache,
-                size: updated_size,
-                miss_count: namespace_state.miss_count + 1
-              })
-              {:reply, {:error, :expired}, updated_state}
-            else
-              # Update access statistics
-              updated_entry = %{entry |
-                last_access: System.system_time(:second),
-                access_count: entry.access_count + 1
-              }
-              updated_cache = Map.put(namespace_state.cache, key, updated_entry)
-              updated_state = update_namespace(state, namespace, %{
-                namespace_state |
-                cache: updated_cache,
-                hit_count: namespace_state.hit_count + 1
-              })
-              {:reply, {:ok, entry.value}, updated_state}
-            end
-        end
+        handle_cache_entry(namespace_state, key, state, namespace)
     end
   end
 
@@ -191,17 +153,20 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
         {:reply, {:error, :namespace_not_found}, state}
 
       namespace_state ->
-        # Calculate entry size
         entry_size = calculate_size(value)
 
-        # Check if we need to evict entries
-        {updated_cache, updated_size} = if namespace_state.size + entry_size > namespace_state.max_size do
-          evict_entries(namespace_state.cache, namespace_state.size, entry_size, state.eviction_policy)
-        else
-          {namespace_state.cache, namespace_state.size}
-        end
+        {updated_cache, updated_size} =
+          if namespace_state.size + entry_size > namespace_state.max_size do
+            evict_entries(
+              namespace_state.cache,
+              namespace_state.size,
+              entry_size,
+              state.eviction_policy
+            )
+          else
+            {namespace_state.cache, namespace_state.size}
+          end
 
-        # Create new entry
         entry = %{
           value: value,
           size: entry_size,
@@ -212,15 +177,14 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
           metadata: metadata
         }
 
-        # Update cache
         updated_cache = Map.put(updated_cache, key, entry)
         updated_size = updated_size + entry_size
 
-        updated_state = update_namespace(state, namespace, %{
-          namespace_state |
-          cache: updated_cache,
-          size: updated_size
-        })
+        updated_state =
+          update_namespace_state(state, namespace, namespace_state, %{
+            cache: updated_cache,
+            size: updated_size
+          })
 
         {:reply, :ok, updated_state}
     end
@@ -239,11 +203,13 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
 
           {entry, updated_cache} ->
             updated_size = namespace_state.size - entry.size
-            updated_state = update_namespace(state, namespace, %{
-              namespace_state |
-              cache: updated_cache,
-              size: updated_size
-            })
+
+            updated_state =
+              update_namespace_state(state, namespace, namespace_state, %{
+                cache: updated_cache,
+                size: updated_size
+              })
+
             {:reply, :ok, updated_state}
         end
     end
@@ -264,6 +230,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
           hit_ratio: calculate_hit_ratio(namespace_state),
           eviction_count: namespace_state.eviction_count
         }
+
         {:reply, {:ok, stats}, state}
     end
   end
@@ -275,16 +242,71 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
         {:reply, {:error, :namespace_not_found}, state}
 
       namespace_state ->
-        updated_state = update_namespace(state, namespace, %{
-          namespace_state |
-          cache: %{},
-          size: 0
-        })
+        updated_state =
+          update_namespace_state(state, namespace, namespace_state, %{
+            cache: %{},
+            size: 0
+          })
+
         {:reply, :ok, updated_state}
     end
   end
 
-  # Private Functions
+  defp handle_cache_entry(namespace_state, key, state, namespace) do
+    case Map.get(namespace_state.cache, key) do
+      nil ->
+        updated_state =
+          update_namespace_state(state, namespace, namespace_state, %{
+            miss_count: namespace_state.miss_count + 1
+          })
+
+        {:reply, {:error, :not_found}, updated_state}
+
+      entry ->
+        if expired?(entry) do
+          handle_expired_entry(entry, namespace_state, state, namespace, key)
+        else
+          handle_valid_entry(entry, namespace_state, state, namespace, key)
+        end
+    end
+  end
+
+  defp handle_expired_entry(entry, namespace_state, state, namespace, key) do
+    {updated_cache, updated_size} = remove_expired_entry(namespace_state.cache, entry, namespace_state, key)
+    updated_state = update_namespace_state(state, namespace, namespace_state, %{
+      cache: updated_cache,
+      size: updated_size,
+      miss_count: namespace_state.miss_count + 1
+    })
+    {:reply, {:error, :expired}, updated_state}
+  end
+
+  defp remove_expired_entry(cache, entry, namespace_state, key) do
+    updated_cache = Map.delete(cache, key)
+    updated_size = namespace_state.size - entry.size
+    {updated_cache, updated_size}
+  end
+
+  defp handle_valid_entry(entry, namespace_state, state, namespace, key) do
+    updated_entry = update_entry_access(entry)
+    updated_cache = update_cache_with_entry(namespace_state.cache, key, updated_entry)
+    updated_state = update_namespace_state(state, namespace, namespace_state, %{
+      cache: updated_cache,
+      hit_count: namespace_state.hit_count + 1
+    })
+    {:reply, {:ok, entry.value}, updated_state}
+  end
+
+  defp update_entry_access(entry) do
+    %{entry |
+      last_access: System.system_time(:second),
+      access_count: entry.access_count + 1
+    }
+  end
+
+  defp update_cache_with_entry(cache, key, entry) do
+    Map.put(cache, key, entry)
+  end
 
   defp get_namespace(state, namespace) do
     Map.get(state.namespaces, namespace)
@@ -294,7 +316,11 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
     %{state | namespaces: Map.put(state.namespaces, namespace, namespace_state)}
   end
 
-  defp is_expired?(entry) do
+  defp update_namespace_state(state, namespace, namespace_state, updates) do
+    update_namespace(state, namespace, Map.merge(namespace_state, updates))
+  end
+
+  defp expired?(entry) do
     case entry.ttl do
       nil -> false
       ttl -> System.system_time(:second) - entry.created_at > ttl
@@ -312,54 +338,9 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
 
   defp evict_entries(cache, current_size, needed_size, policy) do
     case policy do
-      :lru ->
-        evict_lru(cache, current_size, needed_size)
-      :lfu ->
-        evict_lfu(cache, current_size, needed_size)
-      :fifo ->
-        evict_fifo(cache, current_size, needed_size)
+      :lru -> EvictionHelpers.evict_lru(cache, current_size, needed_size)
+      :lfu -> EvictionHelpers.evict_lfu(cache, current_size, needed_size)
+      :fifo -> EvictionHelpers.evict_fifo(cache, current_size, needed_size)
     end
-  end
-
-  defp evict_lru(cache, current_size, needed_size) do
-    cache
-    |> Enum.sort_by(fn {_, entry} -> entry.last_access end)
-    |> Enum.reduce_while({cache, current_size}, fn {key, entry}, {acc_cache, acc_size} ->
-      if acc_size + needed_size <= current_size do
-        {:halt, {acc_cache, acc_size}}
-      else
-        new_cache = Map.delete(acc_cache, key)
-        new_size = acc_size - entry.size
-        {:cont, {new_cache, new_size}}
-      end
-    end)
-  end
-
-  defp evict_lfu(cache, current_size, needed_size) do
-    cache
-    |> Enum.sort_by(fn {_, entry} -> entry.access_count end)
-    |> Enum.reduce_while({cache, current_size}, fn {key, entry}, {acc_cache, acc_size} ->
-      if acc_size + needed_size <= current_size do
-        {:halt, {acc_cache, acc_size}}
-      else
-        new_cache = Map.delete(acc_cache, key)
-        new_size = acc_size - entry.size
-        {:cont, {new_cache, new_size}}
-      end
-    end)
-  end
-
-  defp evict_fifo(cache, current_size, needed_size) do
-    cache
-    |> Enum.sort_by(fn {_, entry} -> entry.created_at end)
-    |> Enum.reduce_while({cache, current_size}, fn {key, entry}, {acc_cache, acc_size} ->
-      if acc_size + needed_size <= current_size do
-        {:halt, {acc_cache, acc_size}}
-      else
-        new_cache = Map.delete(acc_cache, key)
-        new_size = acc_size - entry.size
-        {:cont, {new_cache, new_size}}
-      end
-    end)
   end
 end

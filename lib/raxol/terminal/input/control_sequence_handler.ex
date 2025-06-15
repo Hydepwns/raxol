@@ -12,7 +12,8 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles a CSI (Control Sequence Introducer) sequence.
   """
-  @spec handle_csi_sequence(Emulator.t(), String.t(), list(String.t())) :: Emulator.t()
+  @spec handle_csi_sequence(Emulator.t(), String.t(), list(String.t())) ::
+          Emulator.t()
   def handle_csi_sequence(emulator, command, params) do
     CSIHandlers.handle_csi_sequence(emulator, command, params)
   end
@@ -20,7 +21,8 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles an OSC (Operating System Command) sequence.
   """
-  @spec handle_osc_sequence(Emulator.t(), String.t(), String.t()) :: Emulator.t()
+  @spec handle_osc_sequence(Emulator.t(), String.t(), String.t()) ::
+          Emulator.t()
   def handle_osc_sequence(emulator, command, data) do
     OSCHandlers.handle_osc_sequence(emulator, command, data)
   end
@@ -28,16 +30,24 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @doc """
   Handles a DCS (Device Control String) sequence.
   """
-  @spec handle_dcs_sequence(Emulator.t(), String.t(), String.t()) :: Emulator.t()
+  @spec handle_dcs_sequence(Emulator.t(), String.t(), String.t()) ::
+          Emulator.t()
   def handle_dcs_sequence(emulator, command, data) do
     case command do
       # Sixel graphics
-      "q" -> handle_sixel_graphics(emulator, data)
+      "q" ->
+        handle_sixel_graphics(emulator, data)
+
       # DECRQSS (Request Status String)
-      "r" -> handle_status_string_request(emulator, data)
+      "r" ->
+        handle_status_string_request(emulator, data)
+
       # Unknown DCS command
       _ ->
-        Raxol.Core.Runtime.Log.debug("Unhandled DCS command: #{command} with data: #{inspect(data)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Unhandled DCS command: #{command} with data: #{inspect(data)}"
+        )
+
         emulator
     end
   end
@@ -48,17 +58,24 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @spec handle_pm_sequence(Emulator.t(), String.t(), String.t()) :: Emulator.t()
   def handle_pm_sequence(emulator, command, data) do
     # PM sequences are typically ignored by terminals
-    Raxol.Core.Runtime.Log.debug("Ignoring PM sequence: #{command} with data: #{inspect(data)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Ignoring PM sequence: #{command} with data: #{inspect(data)}"
+    )
+
     emulator
   end
 
   @doc """
   Handles an APC (Application Program Command) sequence.
   """
-  @spec handle_apc_sequence(Emulator.t(), String.t(), String.t()) :: Emulator.t()
+  @spec handle_apc_sequence(Emulator.t(), String.t(), String.t()) ::
+          Emulator.t()
   def handle_apc_sequence(emulator, command, data) do
     # APC sequences are typically ignored by terminals
-    Raxol.Core.Runtime.Log.debug("Ignoring APC sequence: #{command} with data: #{inspect(data)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Ignoring APC sequence: #{command} with data: #{inspect(data)}"
+    )
+
     emulator
   end
 
@@ -67,21 +84,29 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   defp handle_sixel_graphics(emulator, data) do
     # Basic Sixel graphics handling - currently just logs and returns
     # Full implementation will be added in a future update
-    Raxol.Core.Runtime.Log.info("Sixel graphics received: #{byte_size(data)} bytes")
+    Raxol.Core.Runtime.Log.info(
+      "Sixel graphics received: #{byte_size(data)} bytes"
+    )
+
     emulator
   end
 
   defp handle_status_string_request(emulator, data) do
     # Handle DECRQSS (Request Status String) command
     case data do
-      "m" -> # SGR (Select Graphic Rendition)
+      # SGR (Select Graphic Rendition)
+      "m" ->
         response = "\eP1$r#{emulator.style}\e\\"
         %{emulator | output_buffer: emulator.output_buffer <> response}
-      "r" -> # DECSTBM (Set Top and Bottom Margins)
+
+      # DECSTBM (Set Top and Bottom Margins)
+      "r" ->
         {top, bottom} = emulator.scroll_region
         response = "\eP1$r#{top};#{bottom}r\e\\"
         %{emulator | output_buffer: emulator.output_buffer <> response}
-      _ -> emulator
+
+      _ ->
+        emulator
     end
   end
 end

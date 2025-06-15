@@ -8,68 +8,68 @@ defmodule Raxol.Terminal.Theme.Manager do
   """
 
   @type color :: %{
-    r: integer(),
-    g: integer(),
-    b: integer(),
-    a: float()
-  }
+          r: integer(),
+          g: integer(),
+          b: integer(),
+          a: float()
+        }
 
   @type style :: %{
-    foreground: color(),
-    background: color(),
-    bold: boolean(),
-    italic: boolean(),
-    underline: boolean()
-  }
+          foreground: color(),
+          background: color(),
+          bold: boolean(),
+          italic: boolean(),
+          underline: boolean()
+        }
 
   @type theme :: %{
-    name: String.t(),
-    description: String.t(),
-    author: String.t(),
-    version: String.t(),
-    colors: %{
-      background: color(),
-      foreground: color(),
-      cursor: color(),
-      selection: color(),
-      black: color(),
-      red: color(),
-      green: color(),
-      yellow: color(),
-      blue: color(),
-      magenta: color(),
-      cyan: color(),
-      white: color(),
-      bright_black: color(),
-      bright_red: color(),
-      bright_green: color(),
-      bright_yellow: color(),
-      bright_blue: color(),
-      bright_magenta: color(),
-      bright_cyan: color(),
-      bright_white: color()
-    },
-    styles: %{
-      normal: style(),
-      bold: style(),
-      italic: style(),
-      underline: style(),
-      cursor: style(),
-      selection: style()
-    }
-  }
+          name: String.t(),
+          description: String.t(),
+          author: String.t(),
+          version: String.t(),
+          colors: %{
+            background: color(),
+            foreground: color(),
+            cursor: color(),
+            selection: color(),
+            black: color(),
+            red: color(),
+            green: color(),
+            yellow: color(),
+            blue: color(),
+            magenta: color(),
+            cyan: color(),
+            white: color(),
+            bright_black: color(),
+            bright_red: color(),
+            bright_green: color(),
+            bright_yellow: color(),
+            bright_blue: color(),
+            bright_magenta: color(),
+            bright_cyan: color(),
+            bright_white: color()
+          },
+          styles: %{
+            normal: style(),
+            bold: style(),
+            italic: style(),
+            underline: style(),
+            cursor: style(),
+            selection: style()
+          }
+        }
 
   @type t :: %__MODULE__{
-    current_theme: theme(),
-    themes: %{String.t() => theme()},
-    custom_styles: %{String.t() => style()},
-    metrics: %{
-      theme_switches: integer(),
-      style_applications: integer(),
-      customizations: integer(),
-      load_operations: integer()
-    }
-  }
+          current_theme: theme(),
+          themes: %{String.t() => theme()},
+          custom_styles: %{String.t() => style()},
+          metrics: %{
+            theme_switches: integer(),
+            style_applications: integer(),
+            customizations: integer(),
+            load_operations: integer()
+          }
+        }
 
   defstruct [
     :current_theme,
@@ -175,12 +175,16 @@ defmodule Raxol.Terminal.Theme.Manager do
   @spec load_theme(t(), String.t()) :: {:ok, t()} | {:error, term()}
   def load_theme(manager, theme_name) do
     case Map.get(manager.themes, theme_name) do
-      nil -> {:error, :theme_not_found}
+      nil ->
+        {:error, :theme_not_found}
+
       theme ->
-        updated_manager = %{manager |
-          current_theme: theme,
-          metrics: update_metrics(manager.metrics, :theme_switches)
+        updated_manager = %{
+          manager
+          | current_theme: theme,
+            metrics: update_metrics(manager.metrics, :theme_switches)
         }
+
         {:ok, updated_manager}
     end
   end
@@ -188,14 +192,18 @@ defmodule Raxol.Terminal.Theme.Manager do
   @doc """
   Adds a custom style to the current theme.
   """
-  @spec add_custom_style(t(), String.t(), style()) :: {:ok, t()} | {:error, term()}
+  @spec add_custom_style(t(), String.t(), style()) ::
+          {:ok, t()} | {:error, term()}
   def add_custom_style(manager, name, style) do
     with :ok <- validate_style(style) do
       new_styles = Map.put(manager.custom_styles, name, style)
-      updated_manager = %{manager |
-        custom_styles: new_styles,
-        metrics: update_metrics(manager.metrics, :customizations)
+
+      updated_manager = %{
+        manager
+        | custom_styles: new_styles,
+          metrics: update_metrics(manager.metrics, :customizations)
       }
+
       {:ok, updated_manager}
     else
       {:error, reason} -> {:error, reason}
@@ -210,17 +218,24 @@ defmodule Raxol.Terminal.Theme.Manager do
     case Map.get(manager.current_theme.styles, style_name) do
       nil ->
         case Map.get(manager.custom_styles, style_name) do
-          nil -> {:error, :style_not_found}
+          nil ->
+            {:error, :style_not_found}
+
           style ->
-            updated_manager = %{manager |
-              metrics: update_metrics(manager.metrics, :style_applications)
+            updated_manager = %{
+              manager
+              | metrics: update_metrics(manager.metrics, :style_applications)
             }
+
             {:ok, style, updated_manager}
         end
+
       style ->
-        updated_manager = %{manager |
-          metrics: update_metrics(manager.metrics, :style_applications)
+        updated_manager = %{
+          manager
+          | metrics: update_metrics(manager.metrics, :style_applications)
         }
+
         {:ok, style, updated_manager}
     end
   end
@@ -242,6 +257,7 @@ defmodule Raxol.Terminal.Theme.Manager do
       current_theme: manager.current_theme.name,
       custom_styles: manager.custom_styles
     }
+
     {:ok, state}
   end
 
@@ -251,10 +267,12 @@ defmodule Raxol.Terminal.Theme.Manager do
   @spec restore_theme_state(t(), map()) :: {:ok, t()} | {:error, term()}
   def restore_theme_state(manager, state) do
     with {:ok, manager} <- load_theme(manager, state.current_theme) do
-      updated_manager = %{manager |
-        custom_styles: state.custom_styles,
-        metrics: update_metrics(manager.metrics, :load_operations)
+      updated_manager = %{
+        manager
+        | custom_styles: state.custom_styles,
+          metrics: update_metrics(manager.metrics, :load_operations)
       }
+
       {:ok, updated_manager}
     end
   end
@@ -263,6 +281,7 @@ defmodule Raxol.Terminal.Theme.Manager do
 
   defp validate_style(style) do
     required_fields = [:foreground, :background, :bold, :italic, :underline]
+
     if Enum.all?(required_fields, &Map.has_key?(style, &1)) do
       :ok
     else
@@ -273,12 +292,15 @@ defmodule Raxol.Terminal.Theme.Manager do
   defp update_metrics(metrics, :theme_switches) do
     update_in(metrics.theme_switches, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :style_applications) do
     update_in(metrics.style_applications, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :customizations) do
     update_in(metrics.customizations, &(&1 + 1))
   end
+
   defp update_metrics(metrics, :load_operations) do
     update_in(metrics.load_operations, &(&1 + 1))
   end

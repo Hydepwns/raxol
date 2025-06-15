@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.ANSI.{Parser, Processor, StateMachine}
+  alias Raxol.Terminal.ANSI.{Parser, StateMachine}
 
   @doc """
   Runs a benchmark suite on the ANSI handling system.
@@ -30,7 +30,9 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
 
     {parse_time, _} =
       :timer.tc(fn ->
-        Enum.each(1..iterations, &process_parsing_iteration(sequences))
+        Enum.each(1..iterations, fn _ ->
+          process_parsing_iteration(sequences)
+        end)
       end)
 
     %{
@@ -57,7 +59,7 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
 
     {process_time, _} =
       :timer.tc(fn ->
-        Enum.each(1..iterations, &process_iteration(sequences))
+        Enum.each(1..iterations, fn _ -> process_iteration(sequences) end)
       end)
 
     %{
@@ -71,12 +73,14 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   end
 
   defp process_iteration(sequences) do
-    Enum.each(sequences, &process_sequence/1)
-  end
+    parser = Parser.new()
 
-  defp process_sequence(seq) do
-    parsed = Parser.parse(seq)
-    Processor.process_sequences(parsed)
+    Enum.each(sequences, fn seq ->
+      parser
+      |> Parser.parse(seq)
+      |> Tuple.to_list()
+      |> Enum.each(&Executor.execute/1)
+    end)
   end
 
   @doc """
@@ -89,7 +93,9 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
 
     {state_machine_time, _} =
       :timer.tc(fn ->
-        Enum.each(1..iterations, &process_state_machine_iteration(inputs))
+        Enum.each(1..iterations, fn _ ->
+          process_state_machine_iteration(inputs)
+        end)
       end)
 
     %{

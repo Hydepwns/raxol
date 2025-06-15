@@ -127,7 +127,12 @@ defmodule Raxol.Terminal.ControlCodes do
     if emulator.last_col_exceeded do
       {_cx, cy} = Manager.get_position(emulator.cursor)
       wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
-      EmulatorStruct.maybe_scroll(%{emulator | cursor: wrapped_cursor, last_col_exceeded: false})
+
+      EmulatorStruct.maybe_scroll(%{
+        emulator
+        | cursor: wrapped_cursor,
+          last_col_exceeded: false
+      })
     else
       EmulatorStruct.maybe_scroll(emulator)
     end
@@ -152,12 +157,18 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   defp clamp_to_scroll_region(emulator) do
-    %{emulator | cursor: clamp_cursor_to_scroll_region(emulator, emulator.cursor)}
+    %{
+      emulator
+      | cursor: clamp_cursor_to_scroll_region(emulator, emulator.cursor)
+    }
   end
 
   defp clamp_cursor_to_scroll_region(emulator, cursor) do
     active_buffer = EmulatorStruct.get_active_buffer(emulator)
-    {scroll_top, scroll_bottom} = get_scroll_region_bounds(emulator, active_buffer)
+
+    {scroll_top, scroll_bottom} =
+      get_scroll_region_bounds(emulator, active_buffer)
+
     {x, y} = cursor.position
     clamped_y = max(scroll_top, min(y, scroll_bottom))
 
@@ -179,10 +190,14 @@ defmodule Raxol.Terminal.ControlCodes do
 
   defp get_scroll_region_bounds(emulator, active_buffer) do
     buffer_height = ScreenBuffer.get_height(active_buffer)
+
     case emulator.scroll_region do
-      {top, bottom} when is_integer(top) and top >= 0 and is_integer(bottom) and bottom > top ->
+      {top, bottom}
+      when is_integer(top) and top >= 0 and is_integer(bottom) and bottom > top ->
         {top, min(bottom, buffer_height - 1)}
-      _ -> {0, buffer_height - 1}
+
+      _ ->
+        {0, buffer_height - 1}
     end
   end
 

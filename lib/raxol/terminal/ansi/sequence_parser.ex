@@ -49,24 +49,13 @@ defmodule Raxol.Terminal.ANSI.SequenceParser do
   @spec parse_sequence(binary(), function()) ::
           {:ok, atom(), list(integer())} | :error
   def parse_sequence(sequence, operation_decoder) do
-    case Regex.run(~r/^([0-9;]*)([a-zA-Z])$/, sequence, capture: :all_but_first) do
-      [param_string, command_char] ->
-        if String.length(command_char) == 1 do
-          case parse_params(param_string) do
-            {:ok, parsed_params} ->
-              operation_code = :binary.first(command_char)
-              {:ok, operation_decoder.(operation_code), parsed_params}
-
-            :error ->
-              :error
-          end
-        else
-          :error
-        end
-
-      _ ->
-        # Sequence doesn't match the expected format (params + command)
-        :error
+    with [param_string, command_char] <- Regex.run(~r/^([0-9;]*)([a-zA-Z])$/, sequence, capture: :all_but_first),
+         true <- String.length(command_char) == 1,
+         {:ok, parsed_params} <- parse_params(param_string) do
+      operation_code = :binary.first(command_char)
+      {:ok, operation_decoder.(operation_code), parsed_params}
+    else
+      _ -> :error
     end
   end
 end

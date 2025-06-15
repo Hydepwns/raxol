@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.Clipboard.Sync do
   defstruct [:subscribers]
 
   @type t :: %__MODULE__{
-    subscribers: list(pid())
-  }
+          subscribers: list(pid())
+        }
 
   @doc """
   Creates a new clipboard sync instance.

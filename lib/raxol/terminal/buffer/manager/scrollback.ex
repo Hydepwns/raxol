@@ -116,10 +116,10 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
   ## Examples
 
       iex> state = State.new(80, 24)
-      iex> Scrollback.is_full?(state)
+      iex> Scrollback.full?(state)
       false
   """
-  def is_full?(%State{} = state) do
+  def full?(%State{} = state) do
     BufferScrollback.is_full?(state.scrollback)
   end
 

@@ -18,6 +18,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
     case find_mode_definition(mode_name) do
       %{category: :standard} = mode_def ->
         apply_mode_effects(mode_def, value, emulator)
+
       _ ->
         {:error, :invalid_mode}
     end
@@ -35,8 +36,10 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
     case mode_def.name do
       :irm ->
         handle_insert_mode(value, emulator)
+
       :lnm ->
         handle_line_feed_mode(value, emulator)
+
       _ ->
         {:error, :unsupported_mode}
     end

@@ -138,8 +138,6 @@ defmodule Raxol.Terminal.Buffer.TextFormatting do
     %{cell | attributes: %{}}
   end
 
-  # Private Functions
-
   defp update_attributes(%Cell{} = cell, key, value) do
     attributes = Map.put(cell.attributes, key, value)
     %{cell | attributes: attributes}

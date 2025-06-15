@@ -26,13 +26,13 @@ defmodule Raxol.Terminal.Input.Event do
     ]
 
     @type t :: %__MODULE__{
-      button: button(),
-      action: action(),
-      x: non_neg_integer(),
-      y: non_neg_integer(),
-      modifiers: [Raxol.Terminal.Input.Event.modifier()],
-      timestamp: Raxol.Terminal.Input.Event.timestamp()
-    }
+            button: button(),
+            action: action(),
+            x: non_neg_integer(),
+            y: non_neg_integer(),
+            modifiers: [Raxol.Terminal.Input.Event.modifier()],
+            timestamp: Raxol.Terminal.Input.Event.timestamp()
+          }
   end
 
   defmodule KeyEvent do
@@ -47,10 +47,10 @@ defmodule Raxol.Terminal.Input.Event do
     ]
 
     @type t :: %__MODULE__{
-      key: String.t(),
-      modifiers: [Raxol.Terminal.Input.Event.modifier()],
-      timestamp: Raxol.Terminal.Input.Event.timestamp()
-    }
+            key: String.t(),
+            modifiers: [Raxol.Terminal.Input.Event.modifier()],
+            timestamp: Raxol.Terminal.Input.Event.timestamp()
+          }
   end
 
   @type t :: MouseEvent.t() | KeyEvent.t()

@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Buffer.Updater do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.CharacterHandling
-  # Import State to access helper functions now moved there
+
   import Raxol.Terminal.Buffer.State, only: [get_cell_at: 3]
 
   @doc """
@@ -21,31 +21,33 @@ defmodule Raxol.Terminal.Buffer.Updater do
           list({non_neg_integer(), non_neg_integer(), map()})
         ) :: list({non_neg_integer(), non_neg_integer(), map()})
   def diff(%ScreenBuffer{} = _buffer, changes) when is_list(changes) do
-    # Ensure changes are in the expected {x, y, map} format
-    if Enum.empty?(changes) or match?([{_, _, _} | _], changes) do
-      Enum.filter(changes, fn {x, y, desired_cell_map} ->
-        # Use imported get_cell_at
-        current_cell_struct = get_cell_at(_buffer, x, y)
-        # Convert map for comparison
-        desired_cell_struct = Cell.from_map(desired_cell_map)
-
-        case {desired_cell_struct, current_cell_struct} do
-          # Invalid desired cell map
-          {nil, _} -> false
-          # Current cell doesn't exist (e.g., outside buffer), needs update if desired is valid
-          {_, nil} -> true
-          {desired, current} -> not Cell.equals?(current, desired)
-        end
-      end)
+    if valid_changes_format?(changes) do
+      Enum.filter(changes, &needs_update?(_buffer, &1))
     else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "Invalid format passed to ScreenBuffer.Updater.diff/2. Expected list of {x, y, map}. Got: #{inspect(changes)}",
-        %{}
-      )
-
-      # Return empty list for invalid input format
+      log_invalid_changes_format(changes)
       []
     end
+  end
+
+  defp valid_changes_format?(changes) do
+    Enum.empty?(changes) or match?([{_, _, _} | _], changes)
+  end
+
+  defp needs_update?(_buffer, {x, y, desired_cell_map}) do
+    current_cell_struct = get_cell_at(_buffer, x, y)
+    desired_cell_struct = Cell.from_map(desired_cell_map)
+    cells_differ?(desired_cell_struct, current_cell_struct)
+  end
+
+  defp cells_differ?(nil, _), do: false
+  defp cells_differ?(_, nil), do: true
+  defp cells_differ?(desired, current), do: not Cell.equals?(current, desired)
+
+  defp log_invalid_changes_format(changes) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Invalid format passed to ScreenBuffer.Updater.diff/2. Expected list of {x, y, map}. Got: #{inspect(changes)}",
+      %{}
+    )
   end
 
   @doc """
@@ -58,81 +60,99 @@ defmodule Raxol.Terminal.Buffer.Updater do
           list({non_neg_integer(), non_neg_integer(), Cell.t() | map()})
         ) :: ScreenBuffer.t()
   def update(%ScreenBuffer{} = buffer, changes) when is_list(changes) do
-    Enum.reduce(changes, buffer, fn
-      {x, y, %Cell{} = cell}, acc_buffer when is_integer(x) and is_integer(y) ->
-        apply_cell_update(acc_buffer, x, y, cell)
+    Enum.reduce(changes, buffer, &process_change/2)
+  end
 
-      {x, y, cell_map}, acc_buffer
-      when is_integer(x) and is_integer(y) and is_map(cell_map) ->
-        case Cell.from_map(cell_map) do
-          nil ->
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "[ScreenBuffer.Updater.update] Failed to convert cell map: #{inspect(cell_map)} at (#{x}, #{y})",
-              %{}
-            )
+  defp process_change({x, y, %Cell{} = cell}, buffer)
+       when is_integer(x) and is_integer(y) do
+    apply_cell_update(buffer, x, y, cell)
+  end
 
-            acc_buffer
+  defp process_change({x, y, cell_map}, buffer)
+       when is_integer(x) and is_integer(y) and is_map(cell_map) do
+    case Cell.from_map(cell_map) do
+      nil ->
+        log_invalid_cell_map(x, y, cell_map)
+        buffer
 
-          cell_struct ->
-            apply_cell_update(acc_buffer, x, y, cell_struct)
-        end
+      cell_struct ->
+        apply_cell_update(buffer, x, y, cell_struct)
+    end
+  end
 
-      invalid_change, acc_buffer ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[ScreenBuffer.Updater.update] Invalid change format: #{inspect(invalid_change)}",
-          %{}
-        )
+  defp process_change(invalid_change, buffer) do
+    log_invalid_change(invalid_change)
+    buffer
+  end
 
-        acc_buffer
-    end)
+  defp log_invalid_cell_map(x, y, cell_map) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[ScreenBuffer.Updater.update] Failed to convert cell map: #{inspect(cell_map)} at (#{x}, #{y})",
+      %{}
+    )
+  end
+
+  defp log_invalid_change(invalid_change) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[ScreenBuffer.Updater.update] Invalid change format: #{inspect(invalid_change)}",
+      %{}
+    )
   end
 
   # Applies a single cell update, handling wide characters.
   # Internal helper for update/2.
   defp apply_cell_update(%ScreenBuffer{} = buffer, x, y, %Cell{} = cell) do
-    if y >= 0 and y < buffer.height and x >= 0 and x < buffer.width do
-      # Ensure cell.char is a non-empty string before getting codepoint
-      codepoint =
-        if is_binary(cell.char) and byte_size(cell.char) > 0 do
-          # Convert char string to integer codepoint
-          hd(String.to_charlist(cell.char))
-        else
-          # Handle cases like nil, empty string, or non-binary char if they occur
-          # Defaulting to width 1 for space might be reasonable
-          # Or log a warning and assume width 1
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Cell char is not a valid string: #{inspect(cell.char)}, assuming width 1",
-            %{}
-          )
-
-          # Codepoint for space
-          32
-        end
-
-      # Use the integer codepoint for width calculation
-      is_wide =
-        CharacterHandling.get_char_width(codepoint) == 2 and
-          not cell.is_wide_placeholder
-
-      new_cells =
-        List.update_at(buffer.cells, y, fn row ->
-          row_with_primary = List.replace_at(row, x, cell)
-
-          if is_wide and x + 1 < buffer.width do
-            List.replace_at(
-              row_with_primary,
-              x + 1,
-              Cell.new_wide_placeholder(cell.style)
-            )
-          else
-            row_with_primary
-          end
-        end)
-
-      %{buffer | cells: new_cells}
+    if in_bounds?(buffer, x, y) do
+      update_cell_in_bounds(buffer, x, y, cell)
     else
-      # Ignore updates outside bounds
       buffer
+    end
+  end
+
+  defp in_bounds?(%ScreenBuffer{width: width, height: height}, x, y) do
+    y >= 0 and y < height and x >= 0 and x < width
+  end
+
+  defp update_cell_in_bounds(buffer, x, y, cell) do
+    codepoint = get_codepoint(cell)
+
+    is_wide =
+      CharacterHandling.get_char_width(codepoint) == 2 and
+        not cell.is_wide_placeholder
+
+    new_cells =
+      List.update_at(buffer.cells, y, fn row ->
+        update_row_with_wide_char(row, x, cell, is_wide, buffer.width)
+      end)
+
+    %{buffer | cells: new_cells}
+  end
+
+  defp get_codepoint(%Cell{char: char})
+       when is_binary(char) and byte_size(char) > 0 do
+    hd(String.to_charlist(char))
+  end
+
+  defp get_codepoint(%Cell{} = cell) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Cell char is not a valid string: #{inspect(cell.char)}, assuming width 1",
+      %{}
+    )
+
+    32
+  end
+
+  defp update_row_with_wide_char(row, x, cell, is_wide, width) do
+    row_with_primary = List.replace_at(row, x, cell)
+
+    if is_wide and x + 1 < width do
+      List.replace_at(
+        row_with_primary,
+        x + 1,
+        Cell.new_wide_placeholder(cell.style)
+      )
+    else
+      row_with_primary
     end
   end
 end

@@ -15,17 +15,17 @@ defmodule Raxol.Terminal.Scroll.Manager do
   alias Raxol.Terminal.Cache.System
 
   @type t :: %__MODULE__{
-    predictor: Predictor.t(),
-    optimizer: Optimizer.t(),
-    sync: Sync.t(),
-    metrics: %{
-      scrolls: non_neg_integer(),
-      predictions: non_neg_integer(),
-      cache_hits: non_neg_integer(),
-      cache_misses: non_neg_integer(),
-      optimizations: non_neg_integer()
-    }
-  }
+          predictor: Predictor.t(),
+          optimizer: Optimizer.t(),
+          sync: Sync.t(),
+          metrics: %{
+            scrolls: non_neg_integer(),
+            predictions: non_neg_integer(),
+            cache_hits: non_neg_integer(),
+            cache_misses: non_neg_integer(),
+            optimizations: non_neg_integer()
+          }
+        }
 
   defstruct [
     :predictor,
@@ -74,7 +74,8 @@ defmodule Raxol.Terminal.Scroll.Manager do
       * `:optimize` - Whether to optimize the scroll (default: true)
       * `:sync` - Whether to sync across splits (default: true)
   """
-  @spec scroll(t(), :up | :down, non_neg_integer(), keyword()) :: {:ok, t()} | {:error, term()}
+  @spec scroll(t(), :up | :down, non_neg_integer(), keyword()) ::
+          {:ok, t()} | {:error, term()}
   def scroll(manager, direction, amount, opts \\ []) do
     case get_cached_scroll(manager, direction, amount) do
       {:hit, cached_result} ->
@@ -98,10 +99,13 @@ defmodule Raxol.Terminal.Scroll.Manager do
   @spec get_history(t(), keyword()) :: [map()]
   def get_history(_manager, opts \\ []) do
     limit = Keyword.get(opts, :limit)
+
     case System.get(:history, namespace: :scroll) do
       {:ok, history} ->
         if limit, do: Enum.take(history, limit), else: history
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
@@ -124,15 +128,18 @@ defmodule Raxol.Terminal.Scroll.Manager do
         if stats.size > stats.max_size * 0.8 do
           System.clear(namespace: :scroll)
         end
-      _ -> :ok
+
+      _ ->
+        :ok
     end
 
     # Adjust prediction window based on prediction accuracy
-    new_window = if manager.metrics.predictions > 100 do
-      max(5, min(20, manager.prediction_window))
-    else
-      manager.prediction_window
-    end
+    new_window =
+      if manager.metrics.predictions > 100 do
+        max(5, min(20, manager.prediction_window))
+      else
+        manager.prediction_window
+      end
 
     %{manager | prediction_window: new_window}
   end
@@ -141,6 +148,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
 
   defp get_cached_scroll(manager, direction, amount) do
     cache_key = {direction, amount}
+
     case :sys.get_state(manager.cache, cache_key) do
       {:ok, result} -> {:hit, result}
       :error -> {:miss, nil}
@@ -153,10 +161,19 @@ defmodule Raxol.Terminal.Scroll.Manager do
   end
 
   defp update_metrics(manager, :cache_hit) do
-    %{manager | metrics: %{manager.metrics | cache_hits: manager.metrics.cache_hits + 1}}
+    %{
+      manager
+      | metrics: %{manager.metrics | cache_hits: manager.metrics.cache_hits + 1}
+    }
   end
 
   defp update_metrics(manager, :cache_miss) do
-    %{manager | metrics: %{manager.metrics | cache_misses: manager.metrics.cache_misses + 1}}
+    %{
+      manager
+      | metrics: %{
+          manager.metrics
+          | cache_misses: manager.metrics.cache_misses + 1
+        }
+    }
   end
 end

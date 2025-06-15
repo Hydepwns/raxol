@@ -201,10 +201,34 @@ defmodule Raxol.Terminal.Driver do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
     # Only attempt shutdown if not in test environment
     if Mix.env() != :test do
-      _ = Termbox2Nif.tb_shutdown()
+      if real_tty?() do
+        _ = Termbox2Nif.tb_shutdown()
+      end
     end
 
     :ok
+  end
+
+  @doc """
+  Processes a terminal title change event.
+  """
+  @impl true
+  def process_title_change(title, state) when is_binary(title) do
+    if Mix.env() != :test and real_tty?() do
+      _ = Termbox2Nif.tb_set_title(title)
+    end
+    {:noreply, state}
+  end
+
+  @doc """
+  Processes a terminal position change event.
+  """
+  @impl true
+  def process_position_change(x, y, state) when is_integer(x) and is_integer(y) do
+    if Mix.env() != :test and real_tty?() do
+      _ = Termbox2Nif.tb_set_position(x, y)
+    end
+    {:noreply, state}
   end
 
   # --- Private Helpers ---
@@ -213,12 +237,17 @@ defmodule Raxol.Terminal.Driver do
     cond do
       Mix.env() == :test ->
         {:ok, 80, 24}
+
       not real_tty?() ->
         stty_size_fallback()
+
       true ->
         width = Termbox2Nif.tb_width()
         height = Termbox2Nif.tb_height()
-        if valid_dimensions?(width, height), do: {:ok, width, height}, else: stty_size_fallback()
+
+        if valid_dimensions?(width, height),
+          do: {:ok, width, height},
+          else: stty_size_fallback()
     end
   end
 
@@ -239,12 +268,15 @@ defmodule Raxol.Terminal.Driver do
 
   defp parse_stty_output(output) do
     case String.split(output) do
-      [rows, cols] -> {:ok, String.to_integer(cols), String.to_integer(rows)}
+      [rows, cols] ->
+        {:ok, String.to_integer(cols), String.to_integer(rows)}
+
       _ ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Unexpected output from 'stty size': #{inspect(output)}",
           %{}
         )
+
         {:error, :invalid_format}
     end
   end
@@ -253,7 +285,6 @@ defmodule Raxol.Terminal.Driver do
     Raxol.Core.Runtime.Log.error(
       "Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}"
     )
-    Raxol.Core.Runtime.Log.error(Exception.format_stacktrace(__STACKTRACE__))
   end
 
   defp send_initial_resize_event(dispatcher_pid) do
@@ -475,6 +506,35 @@ defmodule Raxol.Terminal.Driver do
 
         # Return a generic event or handle error as appropriate
         %Event{type: :unknown_test_input, data: %{raw: input_data}}
+    end
+  end
+
+  defp process_window_resize(emulator_state, w, h) do
+    # Update terminal dimensions
+    updated_state = %{emulator_state | width: w, height: h}
+
+    # Clear screen and reset cursor position
+    commands = [
+      {:clear_screen, 1},
+      {:move_cursor, 1, 1}
+    ]
+
+    {:ok, updated_state, commands}
+  end
+
+  defp handle_window_event(emulator_state, window_event) do
+    case window_event do
+      {:resize, w, h} ->
+        process_window_resize(emulator_state, w, h)
+
+      {:title, title} ->
+        process_title_change(title, emulator_state)
+
+      {:position, x, y} ->
+        process_position_change(x, y, emulator_state)
+
+      _ ->
+        {:error, "Unknown window event: #{inspect(window_event)}"}
     end
   end
 end

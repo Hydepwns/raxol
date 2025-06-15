@@ -49,14 +49,15 @@ defmodule Raxol.Terminal.Window.Manager do
 
   @impl true
   def init(_opts) do
-    {:ok, %{
-      title: "Terminal",
-      icon_name: "Terminal",
-      size: {80, 24},
-      position: {0, 0},
-      stacking_order: :normal,
-      saved_size: nil
-    }}
+    {:ok,
+     %{
+       title: "Terminal",
+       icon_name: "Terminal",
+       size: {80, 24},
+       position: {0, 0},
+       stacking_order: :normal,
+       saved_size: nil
+     }}
   end
 
   @impl true

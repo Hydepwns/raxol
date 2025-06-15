@@ -41,32 +41,42 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           hyperlink: String.t() | nil
         }
 
-  defstruct [:attributes, :foreground, :background]
+  defstruct bold: false,
+            italic: false,
+            underline: false,
+            blink: false,
+            reverse: false,
+            foreground: nil,
+            background: nil
 
   @type t :: %__MODULE__{
-    attributes: MapSet.t(atom()),
-    foreground: atom(),
-    background: atom()
-  }
+          bold: boolean(),
+          italic: boolean(),
+          underline: boolean(),
+          blink: boolean(),
+          reverse: boolean(),
+          foreground: Raxol.Terminal.ANSI.TextFormatting.color(),
+          background: Raxol.Terminal.ANSI.TextFormatting.color()
+        }
 
   @attribute_handlers %{
-    reset: &new/0,
-    double_width: &set_double_width/1,
-    double_height_top: &set_double_height_top/1,
-    double_height_bottom: &set_double_height_bottom/1,
-    bold: &set_bold/1,
-    faint: &set_faint/1,
-    italic: &set_italic/1,
-    underline: &set_underline/1,
-    blink: &set_blink/1,
-    reverse: &set_reverse/1,
-    conceal: &set_conceal/1,
-    strikethrough: &set_strikethrough/1,
-    fraktur: &set_fraktur/1,
-    double_underline: &set_double_underline/1,
-    framed: &set_framed/1,
-    encircled: &set_encircled/1,
-    overlined: &set_overlined/1
+    reset: &Raxol.Terminal.ANSI.TextFormatting.new/0,
+    double_width: &__MODULE__.set_double_width/1,
+    double_height_top: &__MODULE__.set_double_height_top/1,
+    double_height_bottom: &__MODULE__.set_double_height_bottom/1,
+    bold: &__MODULE__.set_bold/1,
+    faint: &__MODULE__.set_faint/1,
+    italic: &__MODULE__.set_italic/1,
+    underline: &__MODULE__.set_underline/1,
+    blink: &__MODULE__.set_blink/1,
+    reverse: &__MODULE__.set_reverse/1,
+    conceal: &__MODULE__.set_conceal/1,
+    strikethrough: &__MODULE__.set_strikethrough/1,
+    fraktur: &__MODULE__.set_fraktur/1,
+    double_underline: &__MODULE__.set_double_underline/1,
+    framed: &__MODULE__.set_framed/1,
+    encircled: &__MODULE__.set_encircled/1,
+    overlined: &__MODULE__.set_overlined/1
   }
 
   @sgr_style_map %{
@@ -81,48 +91,17 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   @doc """
-  Creates a new text style map with default values.
+  Creates a new text formatting struct with default values.
   """
-  @spec new() :: %{
-          double_width: false,
-          double_height: :none,
-          bold: false,
-          faint: false,
-          italic: false,
-          underline: false,
-          blink: false,
-          reverse: false,
-          conceal: false,
-          strikethrough: false,
-          fraktur: false,
-          double_underline: false,
-          framed: false,
-          encircled: false,
-          overlined: false,
-          foreground: nil,
-          background: nil,
-          hyperlink: nil
-        }
   def new do
-    %{
-      double_width: false,
-      double_height: :none,
+    %__MODULE__{
       bold: false,
-      faint: false,
       italic: false,
       underline: false,
       blink: false,
       reverse: false,
-      conceal: false,
-      strikethrough: false,
-      fraktur: false,
-      double_underline: false,
-      framed: false,
-      encircled: false,
-      overlined: false,
       foreground: nil,
-      background: nil,
-      hyperlink: nil
+      background: nil
     }
   end
 

@@ -14,12 +14,12 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
   @type tab_id :: non_neg_integer()
   @type tab_state :: :active | :inactive | :hidden
   @type tab_config :: %{
-    optional(:name) => String.t(),
-    optional(:icon) => String.t(),
-    optional(:color) => String.t(),
-    optional(:position) => non_neg_integer(),
-    optional(:state) => tab_state()
-  }
+          optional(:name) => String.t(),
+          optional(:icon) => String.t(),
+          optional(:color) => String.t(),
+          optional(:position) => non_neg_integer(),
+          optional(:state) => tab_state()
+        }
 
   # Client API
   @doc """
@@ -119,6 +119,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
       next_id: 1,
       config: Map.merge(default_config(), opts)
     }
+
     {:ok, state}
   end
 
@@ -134,17 +135,19 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
       created_at: System.system_time(:millisecond)
     }
 
-    new_state = %{state |
-      tabs: Map.put(state.tabs, tab_id, tab_state),
-      next_id: tab_id + 1
+    new_state = %{
+      state
+      | tabs: Map.put(state.tabs, tab_id, tab_state),
+        next_id: tab_id + 1
     }
 
     # If this is the first tab, make it active
-    new_state = if state.active_tab == nil do
-      %{new_state | active_tab: tab_id}
-    else
-      new_state
-    end
+    new_state =
+      if state.active_tab == nil do
+        %{new_state | active_tab: tab_id}
+      else
+        new_state
+      end
 
     {:reply, {:ok, tab_id}, new_state}
   end
@@ -167,6 +170,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
+
       _tab ->
         new_state = %{state | active_tab: tab_id}
         {:reply, :ok, new_state}
@@ -186,6 +190,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
+
       tab_state ->
         new_config = Map.merge(tab_state.config, config)
         new_tab_state = %{tab_state | config: new_config}
@@ -199,6 +204,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
+
       tab_state ->
         # Clean up window state
         State.cleanup(tab_state.window_state)
@@ -207,19 +213,17 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
         new_tabs = Map.delete(state.tabs, tab_id)
 
         # Update active tab if needed
-        new_active_tab = if state.active_tab == tab_id do
-          case Map.keys(new_tabs) do
-            [] -> nil
-            [first_tab | _] -> first_tab
+        new_active_tab =
+          if state.active_tab == tab_id do
+            case Map.keys(new_tabs) do
+              [] -> nil
+              [first_tab | _] -> first_tab
+            end
+          else
+            state.active_tab
           end
-        else
-          state.active_tab
-        end
 
-        new_state = %{state |
-          tabs: new_tabs,
-          active_tab: new_active_tab
-        }
+        new_state = %{state | tabs: new_tabs, active_tab: new_active_tab}
 
         {:reply, :ok, new_state}
     end
@@ -230,15 +234,19 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
+
       tab_state ->
         # Get current tab order
         tab_order = Map.keys(state.tabs)
-        new_order = tab_order
+
+        new_order =
+          tab_order
           |> List.delete(tab_id)
           |> List.insert_at(position, tab_id)
 
         # Rebuild tabs map in new order
-        new_tabs = new_order
+        new_tabs =
+          new_order
           |> Enum.with_index()
           |> Enum.map(fn {id, index} ->
             tab = Map.get(state.tabs, id)

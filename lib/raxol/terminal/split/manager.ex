@@ -38,12 +38,14 @@ defmodule Raxol.Terminal.Split.Manager do
       active_split: nil,
       next_id: 1
     }
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:create_split, opts}, _from, state) do
     split_id = state.next_id
+
     split = %{
       id: split_id,
       dimensions: opts[:dimensions] || %{width: 80, height: 24},
@@ -52,10 +54,11 @@ defmodule Raxol.Terminal.Split.Manager do
       created_at: DateTime.utc_now()
     }
 
-    new_state = %{state |
-      splits: Map.put(state.splits, split_id, split),
-      next_id: split_id + 1,
-      active_split: split_id
+    new_state = %{
+      state
+      | splits: Map.put(state.splits, split_id, split),
+        next_id: split_id + 1,
+        active_split: split_id
     }
 
     {:reply, {:ok, split}, new_state}
@@ -66,11 +69,15 @@ defmodule Raxol.Terminal.Split.Manager do
     case Map.get(state.splits, split_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       split ->
         updated_split = %{split | dimensions: dimensions}
-        new_state = %{state |
-          splits: Map.put(state.splits, split_id, updated_split)
+
+        new_state = %{
+          state
+          | splits: Map.put(state.splits, split_id, updated_split)
         }
+
         {:reply, {:ok, updated_split}, new_state}
     end
   end
@@ -80,6 +87,7 @@ defmodule Raxol.Terminal.Split.Manager do
     case Map.get(state.splits, split_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       split ->
         new_state = %{state | active_split: split_id}
         {:reply, {:ok, split}, new_state}

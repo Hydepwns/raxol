@@ -25,48 +25,74 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   # Types
   @type mouse_button :: 0 | 1 | 2 | 3 | 4
   @type mouse_event_type :: :press | :release | :move | :scroll
-  @type mouse_event :: {mouse_event_type(), mouse_button(), non_neg_integer(), non_neg_integer()}
-  @type special_key :: :up | :down | :left | :right | :home | :end | :page_up | :page_down |
-                      :insert | :delete | :escape | :tab | :enter | :backspace |
-                      :f1 | :f2 | :f3 | :f4 | :f5 | :f6 | :f7 | :f8 | :f9 | :f10 | :f11 | :f12
+  @type mouse_event ::
+          {mouse_event_type(), mouse_button(), non_neg_integer(),
+           non_neg_integer()}
+  @type special_key ::
+          :up
+          | :down
+          | :left
+          | :right
+          | :home
+          | :end
+          | :page_up
+          | :page_down
+          | :insert
+          | :delete
+          | :escape
+          | :tab
+          | :enter
+          | :backspace
+          | :f1
+          | :f2
+          | :f3
+          | :f4
+          | :f5
+          | :f6
+          | :f7
+          | :f8
+          | :f9
+          | :f10
+          | :f11
+          | :f12
   @type input_mode :: :normal | :insert | :replace | :command
   @type completion_callback :: (String.t() -> list(String.t()))
 
   @type t :: %__MODULE__{
-    # Input state
-    mode: input_mode(),
-    history_index: integer() | nil,
-    input_history: [String.t()],
-    buffer: String.t(),
-    prompt: String.t() | nil,
-    completion_context: map() | nil,
-    last_event_time: integer() | nil,
-    clipboard_content: String.t() | nil,
-    clipboard_history: [String.t()],
-    mouse_enabled: boolean(),
-    mouse_buttons: MapSet.t(mouse_button()),
-    mouse_position: {non_neg_integer(), non_neg_integer()},
-    modifier_state: map(),
-    input_queue: list(String.t()),
-    processing_escape: boolean(),
-    completion_callback: completion_callback() | nil,
-    completion_options: list(String.t()),
-    completion_index: non_neg_integer(),
+          # Input state
+          mode: input_mode(),
+          history_index: integer() | nil,
+          input_history: [String.t()],
+          buffer: String.t(),
+          prompt: String.t() | nil,
+          completion_context: map() | nil,
+          last_event_time: integer() | nil,
+          clipboard_content: String.t() | nil,
+          clipboard_history: [String.t()],
+          mouse_enabled: boolean(),
+          mouse_buttons: MapSet.t(mouse_button()),
+          mouse_position: {non_neg_integer(), non_neg_integer()},
+          modifier_state: map(),
+          input_queue: list(String.t()),
+          processing_escape: boolean(),
+          completion_callback: completion_callback() | nil,
+          completion_options: list(String.t()),
+          completion_index: non_neg_integer(),
 
-    # Output state
-    output_buffer: String.t(),
-    output_queue: list(String.t()),
-    output_processing: boolean(),
+          # Output state
+          output_buffer: String.t(),
+          output_queue: list(String.t()),
+          output_processing: boolean(),
 
-    # Component references
-    buffer_manager: UnifiedManager.t(),
-    scroll_buffer: UnifiedScroll.t(),
-    renderer: UnifiedRenderer.t(),
-    command_history: History.t(),
+          # Component references
+          buffer_manager: UnifiedManager.t(),
+          scroll_buffer: UnifiedScroll.t(),
+          renderer: UnifiedRenderer.t(),
+          command_history: History.t(),
 
-    # Configuration
-    config: map()
-  }
+          # Configuration
+          config: map()
+        }
 
   defstruct [
     # Input state
@@ -220,17 +246,25 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   @impl true
   def handle_call({:init_terminal, width, height, config}, _from, state) do
     # Initialize components
-    {:ok, buffer_manager} = UnifiedManager.new(width, height, config.scrollback_limit, config.memory_limit)
+    {:ok, buffer_manager} =
+      UnifiedManager.new(
+        width,
+        height,
+        config.scrollback_limit,
+        config.memory_limit
+      )
+
     scroll_buffer = UnifiedScroll.new(config.scrollback_limit)
     {:ok, renderer} = UnifiedRenderer.start_link(config.rendering)
     command_history = History.new(config.command_history_limit)
 
-    new_state = %{state |
-      buffer_manager: buffer_manager,
-      scroll_buffer: scroll_buffer,
-      renderer: renderer,
-      command_history: command_history,
-      config: config
+    new_state = %{
+      state
+      | buffer_manager: buffer_manager,
+        scroll_buffer: scroll_buffer,
+        renderer: renderer,
+        command_history: command_history,
+        config: config
     }
 
     {:reply, :ok, new_state}
@@ -241,6 +275,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     case process_input_event(state, event) do
       {:ok, new_state, commands} ->
         {:reply, {:ok, commands}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -251,6 +286,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     case process_output_data(state, data) do
       {:ok, new_state, commands} ->
         {:reply, {:ok, commands}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -368,11 +404,14 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   defp process_mouse_input(state, event) do
     if state.mouse_enabled do
       mouse_sequence = encode_mouse_event(event)
-      new_state = %{state |
-        buffer: state.buffer <> mouse_sequence,
-        mouse_buttons: update_mouse_buttons(state.mouse_buttons, event),
-        mouse_position: {event.x, event.y}
+
+      new_state = %{
+        state
+        | buffer: state.buffer <> mouse_sequence,
+          mouse_buttons: update_mouse_buttons(state.mouse_buttons, event),
+          mouse_position: {event.x, event.y}
       }
+
       {:ok, new_state, []}
     else
       {:ok, state, []}
@@ -392,6 +431,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     case process_output_buffer(new_state) do
       {:ok, final_state, commands} ->
         {:ok, final_state, commands}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -406,10 +446,12 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp update_io_config(state, config) do
     # Update buffer manager
-    {:ok, new_buffer_manager} = UnifiedManager.update_config(state.buffer_manager, config)
+    {:ok, new_buffer_manager} =
+      UnifiedManager.update_config(state.buffer_manager, config)
 
     # Update scroll buffer
-    new_scroll_buffer = UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
+    new_scroll_buffer =
+      UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
 
     # Update renderer
     UnifiedRenderer.update_config(config.rendering)
@@ -417,17 +459,19 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     # Update command history
     new_command_history = History.update_config(state.command_history, config)
 
-    %{state |
-      buffer_manager: new_buffer_manager,
-      scroll_buffer: new_scroll_buffer,
-      command_history: new_command_history,
-      config: config
+    %{
+      state
+      | buffer_manager: new_buffer_manager,
+        scroll_buffer: new_scroll_buffer,
+        command_history: new_command_history,
+        config: config
     }
   end
 
   defp handle_resize(state, width, height) do
     # Update buffer manager
-    {:ok, new_buffer_manager} = UnifiedManager.resize(state.buffer_manager, width, height)
+    {:ok, new_buffer_manager} =
+      UnifiedManager.resize(state.buffer_manager, width, height)
 
     # Update renderer
     UnifiedRenderer.resize(width, height)
@@ -438,7 +482,8 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   defp get_default_config do
     %{
       scrollback_limit: 1000,
-      memory_limit: 50 * 1024 * 1024, # 50 MB
+      # 50 MB
+      memory_limit: 50 * 1024 * 1024,
       command_history_limit: 1000,
       rendering: %{
         fps: 60,
@@ -492,6 +537,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp handle_escape_sequence(state, key) do
     sequence = state.escape_buffer <> key
+
     case sequence do
       "\e[" <> rest -> handle_csi_sequence(state, rest)
       "\eO" <> rest -> handle_ss3_sequence(state, rest)
@@ -501,17 +547,27 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp handle_csi_sequence(state, rest) do
     case parse_csi_sequence(rest) do
-      {:ok, command} -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
-      :incomplete -> {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
-      :invalid -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+      {:ok, command} ->
+        {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
+
+      :incomplete ->
+        {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
+
+      :invalid ->
+        {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
     end
   end
 
   defp handle_ss3_sequence(state, rest) do
     case parse_ss3_sequence(rest) do
-      {:ok, command} -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
-      :incomplete -> {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
-      :invalid -> {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+      {:ok, command} ->
+        {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
+
+      :incomplete ->
+        {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
+
+      :invalid ->
+        {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
     end
   end
 
@@ -525,24 +581,36 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp process_normal_input(state, key) do
     # Process normal keyboard input
-    new_state = %{state |
-      buffer: state.buffer <> key,
-      last_input: key
-    }
+    new_state = %{state | buffer: state.buffer <> key, last_input: key}
     {:ok, new_state, []}
   end
 
   defp parse_csi_sequence(sequence) do
     # Parse CSI (Control Sequence Introducer) sequences
     case sequence do
-      <<n::binary-size(1), "A">> -> {:ok, {:cursor_up, String.to_integer(n)}}
-      <<n::binary-size(1), "B">> -> {:ok, {:cursor_down, String.to_integer(n)}}
-      <<n::binary-size(1), "C">> -> {:ok, {:cursor_forward, String.to_integer(n)}}
-      <<n::binary-size(1), "D">> -> {:ok, {:cursor_backward, String.to_integer(n)}}
-      <<n::binary-size(1), "H">> -> {:ok, {:cursor_position, String.to_integer(n), 1}}
-      <<n::binary-size(1), "F">> -> {:ok, {:cursor_position, String.to_integer(n), :end}}
-      <<n::binary-size(1), "~">> -> {:ok, {:special_key, String.to_integer(n)}}
-      _ -> :invalid
+      <<n::binary-size(1), "A">> ->
+        {:ok, {:cursor_up, String.to_integer(n)}}
+
+      <<n::binary-size(1), "B">> ->
+        {:ok, {:cursor_down, String.to_integer(n)}}
+
+      <<n::binary-size(1), "C">> ->
+        {:ok, {:cursor_forward, String.to_integer(n)}}
+
+      <<n::binary-size(1), "D">> ->
+        {:ok, {:cursor_backward, String.to_integer(n)}}
+
+      <<n::binary-size(1), "H">> ->
+        {:ok, {:cursor_position, String.to_integer(n), 1}}
+
+      <<n::binary-size(1), "F">> ->
+        {:ok, {:cursor_position, String.to_integer(n), :end}}
+
+      <<n::binary-size(1), "~">> ->
+        {:ok, {:special_key, String.to_integer(n)}}
+
+      _ ->
+        :invalid
     end
   end
 

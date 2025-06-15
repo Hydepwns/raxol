@@ -4,9 +4,9 @@ defmodule Raxol.Terminal.Scroll.Sync do
   """
 
   @type t :: %__MODULE__{
-    sync_enabled: boolean(),
-    last_sync: non_neg_integer()
-  }
+          sync_enabled: boolean(),
+          last_sync: non_neg_integer()
+        }
 
   defstruct [
     :sync_enabled,

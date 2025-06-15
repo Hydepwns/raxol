@@ -9,12 +9,12 @@ defmodule Raxol.Terminal.State.Manager do
   alias Raxol.Terminal.ModeManager
 
   @type t :: %{
-    state_stack: TerminalState.t(),
-    mode_manager: ModeManager.t(),
-    charset_state: map(),
-    scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-    last_col_exceeded: boolean()
-  }
+          state_stack: TerminalState.t(),
+          mode_manager: ModeManager.t(),
+          charset_state: map(),
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+          last_col_exceeded: boolean()
+        }
 
   @doc """
   Creates a new state manager instance.
@@ -71,7 +71,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new state stack
   """
-  @spec update_state_stack(EmulatorStruct.t(), TerminalState.t()) :: EmulatorStruct.t()
+  @spec update_state_stack(EmulatorStruct.t(), TerminalState.t()) ::
+          EmulatorStruct.t()
   def update_state_stack(%EmulatorStruct{} = emulator, state_stack) do
     %{emulator | state_stack: state_stack}
   end
@@ -104,7 +105,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new mode manager
   """
-  @spec update_mode_manager(EmulatorStruct.t(), ModeManager.t()) :: EmulatorStruct.t()
+  @spec update_mode_manager(EmulatorStruct.t(), ModeManager.t()) ::
+          EmulatorStruct.t()
   def update_mode_manager(%EmulatorStruct{} = emulator, mode_manager) do
     %{emulator | mode_manager: mode_manager}
   end
@@ -153,7 +155,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   The current scroll region tuple or nil
   """
-  @spec get_scroll_region(EmulatorStruct.t()) :: {non_neg_integer(), non_neg_integer()} | nil
+  @spec get_scroll_region(EmulatorStruct.t()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_scroll_region(%EmulatorStruct{} = emulator) do
     emulator.scroll_region
   end
@@ -170,7 +173,10 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new scroll region
   """
-  @spec update_scroll_region(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()} | nil) :: EmulatorStruct.t()
+  @spec update_scroll_region(
+          EmulatorStruct.t(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: EmulatorStruct.t()
   def update_scroll_region(%EmulatorStruct{} = emulator, scroll_region) do
     %{emulator | scroll_region: scroll_region}
   end
@@ -203,7 +209,8 @@ defmodule Raxol.Terminal.State.Manager do
 
   Updated emulator with new last column exceeded flag
   """
-  @spec update_last_col_exceeded(EmulatorStruct.t(), boolean()) :: EmulatorStruct.t()
+  @spec update_last_col_exceeded(EmulatorStruct.t(), boolean()) ::
+          EmulatorStruct.t()
   def update_last_col_exceeded(%EmulatorStruct{} = emulator, last_col_exceeded) do
     %{emulator | last_col_exceeded: last_col_exceeded}
   end
@@ -222,15 +229,15 @@ defmodule Raxol.Terminal.State.Manager do
   @spec reset_to_initial_state(EmulatorStruct.t()) :: EmulatorStruct.t()
   def reset_to_initial_state(%EmulatorStruct{} = emulator) do
     %{
-      emulator |
-      cursor: %{x: 0, y: 0},
-      scroll_region: {0, emulator.height - 1},
-      tab_stops: generate_tab_stops(emulator.width),
-      charset_state: %{},
-      final_byte: nil,
-      intermediates_buffer: [],
-      params_buffer: [],
-      payload_buffer: []
+      emulator
+      | cursor: %{x: 0, y: 0},
+        scroll_region: {0, emulator.height - 1},
+        tab_stops: generate_tab_stops(emulator.width),
+        charset_state: %{},
+        final_byte: nil,
+        intermediates_buffer: [],
+        params_buffer: [],
+        payload_buffer: []
     }
   end
 end

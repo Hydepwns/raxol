@@ -15,17 +15,17 @@ defmodule Raxol.Terminal.Graphics.Manager do
   ]
 
   @type t :: %__MODULE__{
-    images: %{String.t() => map()},
-    sixel_cache: %{String.t() => map()},
-    pipeline: [function()],
-    metrics: %{
-      images_rendered: integer(),
-      sixels_processed: integer(),
-      cache_hits: integer(),
-      cache_misses: integer(),
-      pipeline_optimizations: integer()
-    }
-  }
+          images: %{String.t() => map()},
+          sixel_cache: %{String.t() => map()},
+          pipeline: [function()],
+          metrics: %{
+            images_rendered: integer(),
+            sixels_processed: integer(),
+            cache_hits: integer(),
+            cache_misses: integer(),
+            pipeline_optimizations: integer()
+          }
+        }
 
   @doc """
   Creates a new graphics manager with default state.
@@ -64,17 +64,26 @@ defmodule Raxol.Terminal.Graphics.Manager do
         nil ->
           # Cache miss - render image
           {:ok, sixel_data} = process_image(image, opts, manager.pipeline)
-          updated_manager = %{manager |
-            sixel_cache: Map.put(manager.sixel_cache, cache_key, sixel_data),
-            metrics: update_metrics(manager.metrics, [:images_rendered, :cache_misses])
+
+          updated_manager = %{
+            manager
+            | sixel_cache: Map.put(manager.sixel_cache, cache_key, sixel_data),
+              metrics:
+                update_metrics(manager.metrics, [
+                  :images_rendered,
+                  :cache_misses
+                ])
           }
+
           {:ok, sixel_data, updated_manager}
 
         cached_data ->
           # Cache hit
-          updated_manager = %{manager |
-            metrics: update_metrics(manager.metrics, [:cache_hits])
+          updated_manager = %{
+            manager
+            | metrics: update_metrics(manager.metrics, [:cache_hits])
           }
+
           {:ok, cached_data, updated_manager}
       end
     else
@@ -96,9 +105,11 @@ defmodule Raxol.Terminal.Graphics.Manager do
         metadata: %{}
       }
 
-      updated_manager = %{manager |
-        metrics: update_metrics(manager.metrics, [:sixels_processed])
+      updated_manager = %{
+        manager
+        | metrics: update_metrics(manager.metrics, [:sixels_processed])
       }
+
       {:ok, image, updated_manager}
     else
       {:error, reason} -> {:error, reason}
@@ -111,9 +122,11 @@ defmodule Raxol.Terminal.Graphics.Manager do
   @spec optimize_pipeline(t()) :: {:ok, t()}
   def optimize_pipeline(manager) do
     # For now, just increment the optimization counter
-    updated_manager = %{manager |
-      metrics: update_metrics(manager.metrics, [:pipeline_optimizations])
+    updated_manager = %{
+      manager
+      | metrics: update_metrics(manager.metrics, [:pipeline_optimizations])
     }
+
     {:ok, updated_manager}
   end
 
@@ -129,6 +142,7 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   defp validate_image(image) do
     required_fields = [:width, :height, :pixels, :format]
+
     if Enum.all?(required_fields, &Map.has_key?(image, &1)) do
       :ok
     else
@@ -138,6 +152,7 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   defp validate_opts(opts) do
     required_fields = [:scale, :dither, :optimize, :cache]
+
     if Enum.all?(required_fields, &Map.has_key?(opts, &1)) do
       :ok
     else
@@ -147,6 +162,7 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   defp validate_sixel_data(sixel_data) do
     required_fields = [:width, :height, :colors, :data]
+
     if Enum.all?(required_fields, &Map.has_key?(sixel_data, &1)) do
       :ok
     else

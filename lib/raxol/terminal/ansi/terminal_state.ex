@@ -11,11 +11,11 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   ]
 
   @type t :: %__MODULE__{
-    state_stack: list(map()),
-    current_state: map(),
-    saved_states: list(map()),
-    max_saved_states: integer()
-  }
+          state_stack: list(map()),
+          current_state: map(),
+          saved_states: list(map()),
+          max_saved_states: integer()
+        }
 
   @doc """
   Creates a new terminal state with default settings.
@@ -39,7 +39,8 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @doc """
   Updates the state stack.
   """
-  def update_state_stack(%__MODULE__{} = state, new_stack) when is_list(new_stack) do
+  def update_state_stack(%__MODULE__{} = state, new_stack)
+      when is_list(new_stack) do
     %{state | state_stack: new_stack}
   end
 
@@ -48,11 +49,14 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   """
   def save(%__MODULE__{} = state) do
     saved_states = [state.current_state | state.saved_states]
-    saved_states = if length(saved_states) > state.max_saved_states do
-      Enum.take(saved_states, state.max_saved_states)
-    else
-      saved_states
-    end
+
+    saved_states =
+      if length(saved_states) > state.max_saved_states do
+        Enum.take(saved_states, state.max_saved_states)
+      else
+        saved_states
+      end
+
     %{state | saved_states: saved_states}
   end
 
@@ -63,6 +67,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     case state.saved_states do
       [saved_state | remaining_states] ->
         %{state | current_state: saved_state, saved_states: remaining_states}
+
       [] ->
         state
     end
@@ -99,7 +104,8 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @doc """
   Updates the current state.
   """
-  def update_current_state(%__MODULE__{} = state, new_state) when is_map(new_state) do
+  def update_current_state(%__MODULE__{} = state, new_state)
+      when is_map(new_state) do
     %{state | current_state: new_state}
   end
 
@@ -117,7 +123,9 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   def pop(%__MODULE__{} = state) do
     case state.state_stack do
       [popped_state | remaining_stack] ->
-        {:ok, %{state | current_state: popped_state, state_stack: remaining_stack}}
+        {:ok,
+         %{state | current_state: popped_state, state_stack: remaining_stack}}
+
       [] ->
         {:error, :empty_stack}
     end

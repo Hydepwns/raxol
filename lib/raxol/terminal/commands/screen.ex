@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Eraser
+  alias Raxol.Terminal.Buffer.Operations
 
   require Raxol.Core.Runtime.Log
 
@@ -31,52 +32,19 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
     buffer = Emulator.get_active_buffer(emulator)
+    {x, y} = Emulator.get_cursor_position(emulator)
+    {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
-    {cursor_x, cursor_y} =
-      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    new_buffer =
+      case mode do
+        0 -> ScreenBuffer.erase_from_cursor_to_end(buffer, x, y, top, bottom)
+        1 -> ScreenBuffer.erase_from_start_to_cursor(buffer, x, y, top, bottom)
+        2 -> ScreenBuffer.clear(buffer)
+        3 -> ScreenBuffer.erase_all(buffer)
+        _ -> buffer
+      end
 
-    default_style = emulator.style
-
-    Raxol.Core.Runtime.Log.debug(
-      "[Screen.clear_screen] default_style for mode: #{mode}"
-    )
-
-    case mode do
-      # Clear from cursor to end of screen
-      0 ->
-        new_buffer =
-          Eraser.clear_screen_from(buffer, cursor_y, cursor_x, default_style)
-
-        Emulator.update_active_buffer(emulator, new_buffer)
-
-      # Clear from beginning of screen to cursor
-      1 ->
-        new_buffer =
-          Eraser.clear_screen_to(buffer, cursor_y, cursor_x, default_style)
-
-        Emulator.update_active_buffer(emulator, new_buffer)
-
-      # Clear entire screen
-      2 ->
-        new_buffer = Eraser.clear_screen(buffer, default_style)
-        Emulator.update_active_buffer(emulator, new_buffer)
-
-      # Clear entire screen including scrollback
-      3 ->
-        new_buffer = Eraser.clear_screen(buffer, default_style)
-        # Clear scrollback as well
-        Emulator.clear_scrollback(emulator)
-        Emulator.update_active_buffer(emulator, new_buffer)
-
-      # Unknown mode, do nothing
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Unknown clear screen mode: #{mode}",
-          %{}
-        )
-
-        emulator
-    end
+    Emulator.update_active_buffer(emulator, new_buffer)
   end
 
   @doc """
@@ -215,18 +183,16 @@ defmodule Raxol.Terminal.Commands.Screen do
   end
 
   @doc """
-  Scrolls up by moving lines from the scrollback buffer into the screen buffer.
+  Scrolls the screen up by moving lines from the scrollback buffer to the screen buffer.
   """
+  @spec scroll_up_screen_command(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_up_screen_command(emulator, count) when is_integer(count) and count > 0 do
     scrollback = emulator.scrollback_buffer || []
     buffer = emulator.main_screen_buffer
     {to_restore, remaining_scrollback} = Enum.split(scrollback, count)
+
     # Move lines from scrollback to the top of the screen buffer
-    new_buffer =
-      Raxol.Terminal.ScreenBuffer.prepend_lines(
-        buffer,
-        Enum.reverse(to_restore)
-      )
+    new_buffer = ScreenBuffer.prepend_lines(buffer, Enum.reverse(to_restore))
 
     %{
       emulator
@@ -238,28 +204,42 @@ defmodule Raxol.Terminal.Commands.Screen do
   @doc """
   Scrolls down by moving lines from the screen buffer into the scrollback buffer.
   """
+  @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_down(emulator, count) when is_integer(count) and count > 0 do
-    buffer = emulator.main_screen_buffer
+    buffer = Emulator.get_active_buffer(emulator)
+    {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
-    {to_scrollback, new_buffer} =
-      Raxol.Terminal.ScreenBuffer.pop_top_lines(buffer, count)
+    case Operations.scroll_down(buffer, count, top, bottom) do
+      {:ok, new_buffer} ->
+        Emulator.update_active_buffer(emulator, new_buffer)
 
-    new_scrollback = (emulator.scrollback_buffer || []) ++ to_scrollback
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to scroll down: #{inspect(reason)}"
+        )
 
-    %{
-      emulator
-      | scrollback_buffer: new_scrollback,
-        main_screen_buffer: new_buffer
-    }
+        emulator
+    end
   end
 
   @doc """
   Scrolls the screen up by the specified number of lines.
   """
   @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
-  def scroll_up(emulator, lines) do
+  def scroll_up(emulator, lines) when is_integer(lines) and lines > 0 do
     buffer = Emulator.get_active_buffer(emulator)
-    {new_buffer, _} = Raxol.Terminal.ScreenBuffer.scroll_up(buffer, lines)
-    Emulator.update_active_buffer(emulator, new_buffer)
+    {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
+
+    case Operations.scroll_up(buffer, lines, top, bottom) do
+      {:ok, new_buffer} ->
+        Emulator.update_active_buffer(emulator, new_buffer)
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to scroll up: #{inspect(reason)}"
+        )
+
+        emulator
+    end
   end
 end

@@ -25,7 +25,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Updates the state stack.
   """
-  @spec update_state_stack(Raxol.Terminal.Emulator.t(), TerminalState.t()) :: Raxol.Terminal.Emulator.t()
+  @spec update_state_stack(Raxol.Terminal.Emulator.t(), TerminalState.t()) ::
+          Raxol.Terminal.Emulator.t()
   def update_state_stack(emulator, state_stack) do
     %{emulator | state_stack: state_stack}
   end
@@ -42,7 +43,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Restores the last saved state.
   """
-  @spec restore_state(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec restore_state(Raxol.Terminal.Emulator.t()) ::
+          Raxol.Terminal.Emulator.t()
   def restore_state(emulator) do
     new_stack = TerminalState.restore(emulator.state_stack)
     update_state_stack(emulator, new_stack)
@@ -67,7 +69,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Clears all saved states.
   """
-  @spec clear_saved_states(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec clear_saved_states(Raxol.Terminal.Emulator.t()) ::
+          Raxol.Terminal.Emulator.t()
   def clear_saved_states(emulator) do
     new_stack = TerminalState.clear(emulator.state_stack)
     update_state_stack(emulator, new_stack)
@@ -84,7 +87,8 @@ defmodule Raxol.Terminal.TerminalState.Manager do
   @doc """
   Updates the current state.
   """
-  @spec update_current_state(Raxol.Terminal.Emulator.t(), map()) :: Raxol.Terminal.Emulator.t()
+  @spec update_current_state(Raxol.Terminal.Emulator.t(), map()) ::
+          Raxol.Terminal.Emulator.t()
   def update_current_state(emulator, state) do
     new_stack = TerminalState.update_current_state(emulator.state_stack, state)
     update_state_stack(emulator, new_stack)

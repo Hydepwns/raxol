@@ -14,7 +14,8 @@ defmodule Raxol.Terminal.Buffer.Initializer do
   Creates a new screen buffer with the specified dimensions.
   Validates and normalizes the input dimensions to ensure they are valid.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def new(width, height, scrollback_limit \\ 1000) do
     width = validate_dimension(width, 80)
     height = validate_dimension(height, 24)
@@ -35,15 +36,18 @@ defmodule Raxol.Terminal.Buffer.Initializer do
   Validates a dimension value, returning a default if invalid.
   """
   @spec validate_dimension(integer(), non_neg_integer()) :: non_neg_integer()
-  def validate_dimension(dimension, _default) when is_integer(dimension) and dimension > 0 do
+  def validate_dimension(dimension, _default)
+      when is_integer(dimension) and dimension > 0 do
     dimension
   end
+
   def validate_dimension(_, default), do: default
 
   @doc """
   Creates an empty grid of cells with the specified dimensions.
   """
-  @spec create_empty_grid(non_neg_integer(), non_neg_integer()) :: list(list(Cell.t()))
+  @spec create_empty_grid(non_neg_integer(), non_neg_integer()) ::
+          list(list(Cell.t()))
   defp create_empty_grid(width, height) do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do

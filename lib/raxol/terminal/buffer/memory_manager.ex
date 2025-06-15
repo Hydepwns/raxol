@@ -56,4 +56,14 @@ defmodule Raxol.Terminal.Buffer.MemoryManager do
     scrollback_usage = width * scrollback_height * cell_size
     main_buffer_usage + scrollback_usage
   end
+
+  @doc """
+  Trims the scrollback buffer to the specified limit.
+  """
+  @spec trim_scrollback(list(list(Raxol.Terminal.Cell.t()))) ::
+          list(list(Raxol.Terminal.Cell.t()))
+  def trim_scrollback(scrollback) do
+    # Keep only the most recent entries
+    Enum.take(scrollback, -1000)
+  end
 end

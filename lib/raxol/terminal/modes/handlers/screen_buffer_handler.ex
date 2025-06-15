@@ -25,6 +25,7 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     case find_mode_definition(mode_name) do
       %{category: :screen_buffer} = mode_def ->
         apply_mode_effects(mode_def, value, emulator)
+
       _ ->
         {:error, :invalid_mode}
     end
@@ -42,10 +43,13 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     case mode_def.name do
       :dec_alt_screen ->
         handle_simple_alt_screen(value, emulator)
+
       :dec_alt_screen_save ->
         handle_alt_screen_with_save(value, emulator)
+
       :alt_screen_buffer ->
         handle_alt_screen_with_clear(value, emulator)
+
       _ ->
         {:error, :unsupported_mode}
     end
@@ -54,10 +58,12 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
   defp handle_simple_alt_screen(true, emulator) do
     # Mode 47: Simple alternate screen buffer
     with {:ok, alt_buffer} <- create_or_get_alt_buffer(emulator) do
-      {:ok, %{emulator |
-        alternate_screen_buffer: alt_buffer,
-        active_buffer_type: :alternate
-      }}
+      {:ok,
+       %{
+         emulator
+         | alternate_screen_buffer: alt_buffer,
+           active_buffer_type: :alternate
+       }}
     end
   end
 
@@ -70,10 +76,12 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     # Mode 1047: Alt screen with save/restore
     with {:ok, alt_buffer} <- create_or_get_alt_buffer(emulator),
          {:ok, emulator_with_saved_state} <- save_terminal_state(emulator) do
-      {:ok, %{emulator_with_saved_state |
-        alternate_screen_buffer: alt_buffer,
-        active_buffer_type: :alternate
-      }}
+      {:ok,
+       %{
+         emulator_with_saved_state
+         | alternate_screen_buffer: alt_buffer,
+           active_buffer_type: :alternate
+       }}
     end
   end
 
@@ -89,15 +97,18 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     with {:ok, alt_buffer} <- create_or_get_alt_buffer(emulator),
          {:ok, emulator_with_saved_state} <- save_terminal_state(emulator) do
       # Clear the alternate buffer
-      cleared_alt_buffer = @screen_buffer_module.clear(
-        alt_buffer,
-        TextFormatting.new()
-      )
+      cleared_alt_buffer =
+        @screen_buffer_module.clear(
+          alt_buffer,
+          TextFormatting.new()
+        )
 
-      {:ok, %{emulator_with_saved_state |
-        alternate_screen_buffer: cleared_alt_buffer,
-        active_buffer_type: :alternate
-      }}
+      {:ok,
+       %{
+         emulator_with_saved_state
+         | alternate_screen_buffer: cleared_alt_buffer,
+           active_buffer_type: :alternate
+       }}
     end
   end
 
@@ -106,15 +117,18 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     with {:ok, emulator_with_restored_state} <- restore_terminal_state(emulator) do
       # Clear the alternate buffer before switching away
       if alt_buf = emulator_with_restored_state.alternate_screen_buffer do
-        cleared_alt_buf = @screen_buffer_module.clear(
-          alt_buf,
-          TextFormatting.new()
-        )
+        cleared_alt_buf =
+          @screen_buffer_module.clear(
+            alt_buf,
+            TextFormatting.new()
+          )
 
-        {:ok, %{emulator_with_restored_state |
-          alternate_screen_buffer: cleared_alt_buf,
-          active_buffer_type: :main
-        }}
+        {:ok,
+         %{
+           emulator_with_restored_state
+           | alternate_screen_buffer: cleared_alt_buf,
+             active_buffer_type: :main
+         }}
       else
         {:ok, %{emulator_with_restored_state | active_buffer_type: :main}}
       end
@@ -125,18 +139,21 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     if alt_buffer = emulator.alternate_screen_buffer do
       {:ok, alt_buffer}
     else
-      {width, height} = @screen_buffer_module.get_dimensions(emulator.main_screen_buffer)
+      {width, height} =
+        @screen_buffer_module.get_dimensions(emulator.main_screen_buffer)
+
       {:ok, @screen_buffer_module.new(width, height)}
     end
   end
 
   defp save_terminal_state(emulator) do
     # Get the terminal state implementation
-    terminal_state_module = Application.get_env(
-      :raxol,
-      :terminal_state_impl,
-      Raxol.Terminal.ANSI.TerminalState
-    )
+    terminal_state_module =
+      Application.get_env(
+        :raxol,
+        :terminal_state_impl,
+        Raxol.Terminal.ANSI.TerminalState
+      )
 
     # Save the current state
     new_stack = terminal_state_module.save_state(emulator.state_stack, emulator)
@@ -145,22 +162,32 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
 
   defp restore_terminal_state(emulator) do
     # Get the terminal state implementation
-    terminal_state_module = Application.get_env(
-      :raxol,
-      :terminal_state_impl,
-      Raxol.Terminal.ANSI.TerminalState
-    )
+    terminal_state_module =
+      Application.get_env(
+        :raxol,
+        :terminal_state_impl,
+        Raxol.Terminal.ANSI.TerminalState
+      )
 
     # Restore the previous state
-    {new_stack, restored_state} = terminal_state_module.restore_state(emulator.state_stack)
+    {new_stack, restored_state} =
+      terminal_state_module.restore_state(emulator.state_stack)
 
     if restored_state do
       # Apply the restored state
-      emulator_with_restored_state = terminal_state_module.apply_restored_data(
-        emulator,
-        restored_state,
-        [:cursor, :style, :charset_state, :mode_manager, :scroll_region, :cursor_style]
-      )
+      emulator_with_restored_state =
+        terminal_state_module.apply_restored_data(
+          emulator,
+          restored_state,
+          [
+            :cursor,
+            :style,
+            :charset_state,
+            :mode_manager,
+            :scroll_region,
+            :cursor_style
+          ]
+        )
 
       {:ok, %{emulator_with_restored_state | state_stack: new_stack}}
     else

@@ -18,6 +18,7 @@ defmodule Raxol.Terminal.Modes.Handlers.MouseHandler do
     case find_mode_definition(mode_name) do
       %{category: :mouse} = mode_def ->
         apply_mode_effects(mode_def, value, emulator)
+
       _ ->
         {:error, :invalid_mode}
     end
@@ -35,10 +36,13 @@ defmodule Raxol.Terminal.Modes.Handlers.MouseHandler do
     case mode_def.name do
       :mouse_report_x10 ->
         handle_x10_mode(value, emulator)
+
       :mouse_report_cell_motion ->
         handle_cell_motion_mode(value, emulator)
+
       :mouse_report_sgr ->
         handle_sgr_mode(value, emulator)
+
       _ ->
         {:error, :unsupported_mode}
     end

@@ -38,7 +38,8 @@ defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
   @doc """
   Maps a designator character to its corresponding G-set.
   """
-  @spec designate_char_to_gset(char()) :: {:ok, :g0 | :g1 | :g2 | :g3} | {:error, :invalid_designator}
+  @spec designate_char_to_gset(char()) ::
+          {:ok, :g0 | :g1 | :g2 | :g3} | {:error, :invalid_designator}
   def designate_char_to_gset(?() do
     {:ok, :g0}
   end
@@ -63,7 +64,8 @@ defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
   Maps a character code byte to its corresponding charset atom.
   Reference: https://vt100.net/docs/vt510-rm/SCS.html
   """
-  @spec charset_code_to_atom(char()) :: {:ok, atom()} | {:error, :invalid_charset}
+  @spec charset_code_to_atom(char()) ::
+          {:ok, atom()} | {:error, :invalid_charset}
   def charset_code_to_atom(?B) do
     {:ok, :us_ascii}
   end

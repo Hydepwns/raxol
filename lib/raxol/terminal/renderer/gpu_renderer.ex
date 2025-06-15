@@ -22,12 +22,12 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   alias Raxol.Terminal.{ScreenBuffer, Renderer}
 
   @type t :: %__MODULE__{
-    renderer: Renderer.t(),
-    gpu_context: map(),
-    render_pipeline: map(),
-    buffer_pool: map(),
-    performance_metrics: map()
-  }
+          renderer: Renderer.t(),
+          gpu_context: map(),
+          render_pipeline: map(),
+          buffer_pool: map(),
+          performance_metrics: map()
+        }
 
   defstruct [
     :renderer,
@@ -111,7 +111,9 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   """
   @spec update_pipeline(t(), map()) :: t()
   def update_pipeline(gpu_renderer, config) do
-    updated_pipeline = update_render_pipeline(gpu_renderer.render_pipeline, config)
+    updated_pipeline =
+      update_render_pipeline(gpu_renderer.render_pipeline, config)
+
     %{gpu_renderer | render_pipeline: updated_pipeline}
   end
 
@@ -145,7 +147,10 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   @spec optimize_pipeline(t()) :: t()
   def optimize_pipeline(gpu_renderer) do
     metrics = gpu_renderer.performance_metrics
-    optimized_pipeline = apply_optimizations(gpu_renderer.render_pipeline, metrics)
+
+    optimized_pipeline =
+      apply_optimizations(gpu_renderer.render_pipeline, metrics)
+
     %{gpu_renderer | render_pipeline: optimized_pipeline}
   end
 
@@ -154,7 +159,8 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   defp initialize_gpu_context(opts) do
     # Initialize GPU context with provided options
     %{
-      device: nil,  # Will be set by GPU driver
+      # Will be set by GPU driver
+      device: nil,
       capabilities: detect_gpu_capabilities(),
       settings: Map.new(opts)
     }
@@ -221,12 +227,15 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
 
   defp update_performance_metrics(gpu_renderer, start_time, end_time) do
     # Update performance metrics with timing information
-    frame_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+    frame_time =
+      System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
     metrics = gpu_renderer.performance_metrics
-    updated_metrics = %{metrics |
-      frame_times: [frame_time | Enum.take(metrics.frame_times, 59)],
-      render_calls: metrics.render_calls + 1
+
+    updated_metrics = %{
+      metrics
+      | frame_times: [frame_time | Enum.take(metrics.frame_times, 59)],
+        render_calls: metrics.render_calls + 1
     }
 
     %{gpu_renderer | performance_metrics: updated_metrics}
@@ -244,7 +253,8 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   defp create_vertex_stage do
     # Create vertex processing stage
     %{
-      shader: nil,  # Will be set by GPU driver
+      # Will be set by GPU driver
+      shader: nil,
       input_layout: %{},
       vertex_buffers: %{}
     }
@@ -253,7 +263,8 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   defp create_fragment_stage do
     # Create fragment processing stage
     %{
-      shader: nil,  # Will be set by GPU driver
+      # Will be set by GPU driver
+      shader: nil,
       render_targets: %{},
       depth_stencil: %{}
     }
@@ -271,68 +282,68 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   defp allocate_vertex_buffer(gpu_renderer) do
     # Allocate vertex buffer from pool
     pool = gpu_renderer.buffer_pool
-    # Implementation details...
+    # TODO: Implementation details...
     %{id: :vertex_buffer, data: []}
   end
 
   defp allocate_index_buffer(gpu_renderer) do
     # Allocate index buffer from pool
     pool = gpu_renderer.buffer_pool
-    # Implementation details...
+    # TODO: Implementation details...
     %{id: :index_buffer, data: []}
   end
 
   defp update_vertex_buffer(gpu_renderer, buffer) do
     # Update vertex buffer with new data
-    # Implementation details...
+    # TODO: Implementation details...
     buffer
   end
 
   defp update_index_buffer(gpu_renderer, buffer) do
     # Update index buffer with new data
-    # Implementation details...
+    # TODO: Implementation details...
     buffer
   end
 
   defp execute_stage({stage_name, stage}, gpu_renderer, opts) do
     # Execute a single pipeline stage
-    # Implementation details...
+    # TODO: Implementation details...
     gpu_renderer
   end
 
   defp finalize_rendering(gpu_renderer) do
     # Finalize the rendering process
-    # Implementation details...
+    # TODO: Implementation details...
     "Rendered output"
   end
 
   defp detect_shader_model do
     # Detect available shader model
-    # Implementation details...
+    # TODO: Implementation details...
     "5.0"
   end
 
   defp detect_max_texture_size do
     # Detect maximum texture size
-    # Implementation details...
+    # TODO: Implementation details...
     16384
   end
 
   defp detect_compute_capability do
     # Detect compute capability
-    # Implementation details...
+    # TODO: Implementation details...
     "7.5"
   end
 
   defp update_render_pipeline(pipeline, config) do
     # Update pipeline configuration
-    # Implementation details...
+    # TODO: Implementation details...
     pipeline
   end
 
   defp apply_optimizations(pipeline, metrics) do
     # Apply optimizations based on performance metrics
-    # Implementation details...
+    # TODO: Implementation details...
     pipeline
   end
 end

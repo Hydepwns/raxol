@@ -7,15 +7,19 @@ defmodule Raxol.Terminal.Buffer do
   alias Raxol.Terminal.Buffer.{Cell, TextFormatting, Operations}
 
   @type t :: %__MODULE__{
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    cells: list(list(Cell.t())),
-    cursor_x: non_neg_integer(),
-    cursor_y: non_neg_integer(),
-    scroll_region_top: non_neg_integer(),
-    scroll_region_bottom: non_neg_integer(),
-    damage_regions: list({non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()})
-  }
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          cells: list(list(Cell.t())),
+          cursor_x: non_neg_integer(),
+          cursor_y: non_neg_integer(),
+          scroll_region_top: non_neg_integer(),
+          scroll_region_bottom: non_neg_integer(),
+          damage_regions:
+            list(
+              {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+               non_neg_integer()}
+            )
+        }
 
   defstruct [
     :width,
@@ -51,7 +55,15 @@ defmodule Raxol.Terminal.Buffer do
   @spec write(t(), String.t(), keyword()) :: t()
   def write(buffer, data, _opts \\ []) do
     screen_buffer = to_screen_buffer(buffer)
-    updated_screen_buffer = Operations.write_string(screen_buffer, buffer.cursor_x, buffer.cursor_y, data)
+
+    updated_screen_buffer =
+      Operations.write_string(
+        screen_buffer,
+        buffer.cursor_x,
+        buffer.cursor_y,
+        data
+      )
+
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
@@ -99,7 +111,10 @@ defmodule Raxol.Terminal.Buffer do
   @spec set_scroll_region(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_scroll_region(buffer, top, bottom) do
     screen_buffer = to_screen_buffer(buffer)
-    updated_screen_buffer = Operations.set_scroll_region(screen_buffer, top, bottom)
+
+    updated_screen_buffer =
+      Operations.set_scroll_region(screen_buffer, top, bottom)
+
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
@@ -116,17 +131,29 @@ defmodule Raxol.Terminal.Buffer do
   @doc """
   Marks a region of the buffer as damaged.
   """
-  @spec mark_damaged(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
+  @spec mark_damaged(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: t()
   def mark_damaged(buffer, x, y, width, height) do
     screen_buffer = to_screen_buffer(buffer)
-    updated_screen_buffer = Operations.mark_damaged(screen_buffer, x, y, width, height)
+
+    updated_screen_buffer =
+      Operations.mark_damaged(screen_buffer, x, y, width, height)
+
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
   @doc """
   Gets all damaged regions in the buffer.
   """
-  @spec get_damage_regions(t()) :: [{non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()}]
+  @spec get_damage_regions(t()) :: [
+          {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+           non_neg_integer()}
+        ]
   def get_damage_regions(buffer) do
     screen_buffer = to_screen_buffer(buffer)
     Operations.get_damage_regions(screen_buffer)
@@ -171,13 +198,15 @@ defmodule Raxol.Terminal.Buffer do
 
   defp from_screen_buffer(screen_buffer, original_buffer) do
     {cursor_x, cursor_y} = screen_buffer.cursor_position
-    %{original_buffer |
-      cells: screen_buffer.cells,
-      cursor_x: cursor_x,
-      cursor_y: cursor_y,
-      scroll_region_top: elem(screen_buffer.scroll_region, 0),
-      scroll_region_bottom: elem(screen_buffer.scroll_region, 1),
-      damage_regions: screen_buffer.damage_regions
+
+    %{
+      original_buffer
+      | cells: screen_buffer.cells,
+        cursor_x: cursor_x,
+        cursor_y: cursor_y,
+        scroll_region_top: elem(screen_buffer.scroll_region, 0),
+        scroll_region_bottom: elem(screen_buffer.scroll_region, 1),
+        damage_regions: screen_buffer.damage_regions
     }
   end
 end

@@ -97,47 +97,98 @@ defmodule Raxol.Terminal.Modes do
       iex> Modes.active?(modes, :alternate_screen)
       true
   """
-  def process_escape(%{} = modes, "?1049h"), do: handle_alternate_screen(modes, "?1049h")
-  def process_escape(%{} = modes, "?1049l"), do: handle_alternate_screen(modes, "?1049l")
+  def process_escape(%{} = modes, "?1049h"),
+    do: handle_alternate_screen(modes, "?1049h")
+
+  def process_escape(%{} = modes, "?1049l"),
+    do: handle_alternate_screen(modes, "?1049l")
+
   def process_escape(%{} = modes, "?7h"), do: handle_line_wrap(modes, "?7h")
   def process_escape(%{} = modes, "?7l"), do: handle_line_wrap(modes, "?7l")
   def process_escape(%{} = modes, "?8h"), do: handle_auto_repeat(modes, "?8h")
   def process_escape(%{} = modes, "?8l"), do: handle_auto_repeat(modes, "?8l")
-  def process_escape(%{} = modes, "?25h"), do: handle_cursor_visibility(modes, "?25h")
-  def process_escape(%{} = modes, "?25l"), do: handle_cursor_visibility(modes, "?25l")
+
+  def process_escape(%{} = modes, "?25h"),
+    do: handle_cursor_visibility(modes, "?25h")
+
+  def process_escape(%{} = modes, "?25l"),
+    do: handle_cursor_visibility(modes, "?25l")
+
   def process_escape(%{} = modes, "4h"), do: handle_insert_mode(modes, "4h")
   def process_escape(%{} = modes, "4l"), do: handle_insert_mode(modes, "4l")
-  def process_escape(%{} = modes, "?1000h"), do: handle_visual_mode(modes, "?1000h")
-  def process_escape(%{} = modes, "?1000l"), do: handle_visual_mode(modes, "?1000l")
-  def process_escape(%{} = modes, "?1001h"), do: handle_command_mode(modes, "?1001h")
-  def process_escape(%{} = modes, "?1001l"), do: handle_command_mode(modes, "?1001l")
-  def process_escape(%{} = modes, "?1002h"), do: handle_normal_mode(modes, "?1002h")
-  def process_escape(%{} = modes, "?1002l"), do: handle_normal_mode(modes, "?1002l")
-  def process_escape(%{} = modes, sequence), do: {modes, "Unknown escape sequence: #{sequence}"}
 
-  defp handle_alternate_screen(modes, "?1049h"), do: {Map.put(modes, :alternate_screen, true), "Switched to alternate screen buffer"}
-  defp handle_alternate_screen(modes, "?1049l"), do: {Map.put(modes, :alternate_screen, false), "Switched to main screen buffer"}
+  def process_escape(%{} = modes, "?1000h"),
+    do: handle_visual_mode(modes, "?1000h")
 
-  defp handle_line_wrap(modes, "?7h"), do: {Map.put(modes, :line_wrap, true), "Line wrapping enabled"}
-  defp handle_line_wrap(modes, "?7l"), do: {Map.put(modes, :line_wrap, false), "Line wrapping disabled"}
+  def process_escape(%{} = modes, "?1000l"),
+    do: handle_visual_mode(modes, "?1000l")
 
-  defp handle_auto_repeat(modes, "?8h"), do: {Map.put(modes, :auto_repeat, true), "Auto-repeat enabled"}
-  defp handle_auto_repeat(modes, "?8l"), do: {Map.put(modes, :auto_repeat, false), "Auto-repeat disabled"}
+  def process_escape(%{} = modes, "?1001h"),
+    do: handle_command_mode(modes, "?1001h")
 
-  defp handle_cursor_visibility(modes, "?25h"), do: {Map.put(modes, :cursor_visible, true), "Cursor visible"}
-  defp handle_cursor_visibility(modes, "?25l"), do: {Map.put(modes, :cursor_visible, false), "Cursor hidden"}
+  def process_escape(%{} = modes, "?1001l"),
+    do: handle_command_mode(modes, "?1001l")
 
-  defp handle_insert_mode(modes, "4h"), do: {set_mode(modes, :insert), "Insert mode enabled"}
-  defp handle_insert_mode(modes, "4l"), do: {set_mode(modes, :replace), "Replace mode enabled"}
+  def process_escape(%{} = modes, "?1002h"),
+    do: handle_normal_mode(modes, "?1002h")
 
-  defp handle_visual_mode(modes, "?1000h"), do: {Map.put(modes, :visual, true), "Visual mode enabled"}
-  defp handle_visual_mode(modes, "?1000l"), do: {Map.put(modes, :visual, false), "Visual mode disabled"}
+  def process_escape(%{} = modes, "?1002l"),
+    do: handle_normal_mode(modes, "?1002l")
 
-  defp handle_command_mode(modes, "?1001h"), do: {Map.put(modes, :command, true), "Command mode enabled"}
-  defp handle_command_mode(modes, "?1001l"), do: {Map.put(modes, :command, false), "Command mode disabled"}
+  def process_escape(%{} = modes, sequence),
+    do: {modes, "Unknown escape sequence: #{sequence}"}
 
-  defp handle_normal_mode(modes, "?1002h"), do: {set_mode(modes, :normal), "Normal mode enabled"}
-  defp handle_normal_mode(modes, "?1002l"), do: {set_mode(modes, :normal), "Normal mode disabled"}
+  defp handle_alternate_screen(modes, "?1049h"),
+    do:
+      {Map.put(modes, :alternate_screen, true),
+       "Switched to alternate screen buffer"}
+
+  defp handle_alternate_screen(modes, "?1049l"),
+    do:
+      {Map.put(modes, :alternate_screen, false),
+       "Switched to main screen buffer"}
+
+  defp handle_line_wrap(modes, "?7h"),
+    do: {Map.put(modes, :line_wrap, true), "Line wrapping enabled"}
+
+  defp handle_line_wrap(modes, "?7l"),
+    do: {Map.put(modes, :line_wrap, false), "Line wrapping disabled"}
+
+  defp handle_auto_repeat(modes, "?8h"),
+    do: {Map.put(modes, :auto_repeat, true), "Auto-repeat enabled"}
+
+  defp handle_auto_repeat(modes, "?8l"),
+    do: {Map.put(modes, :auto_repeat, false), "Auto-repeat disabled"}
+
+  defp handle_cursor_visibility(modes, "?25h"),
+    do: {Map.put(modes, :cursor_visible, true), "Cursor visible"}
+
+  defp handle_cursor_visibility(modes, "?25l"),
+    do: {Map.put(modes, :cursor_visible, false), "Cursor hidden"}
+
+  defp handle_insert_mode(modes, "4h"),
+    do: {set_mode(modes, :insert), "Insert mode enabled"}
+
+  defp handle_insert_mode(modes, "4l"),
+    do: {set_mode(modes, :replace), "Replace mode enabled"}
+
+  defp handle_visual_mode(modes, "?1000h"),
+    do: {Map.put(modes, :visual, true), "Visual mode enabled"}
+
+  defp handle_visual_mode(modes, "?1000l"),
+    do: {Map.put(modes, :visual, false), "Visual mode disabled"}
+
+  defp handle_command_mode(modes, "?1001h"),
+    do: {Map.put(modes, :command, true), "Command mode enabled"}
+
+  defp handle_command_mode(modes, "?1001l"),
+    do: {Map.put(modes, :command, false), "Command mode disabled"}
+
+  defp handle_normal_mode(modes, "?1002h"),
+    do: {set_mode(modes, :normal), "Normal mode enabled"}
+
+  defp handle_normal_mode(modes, "?1002l"),
+    do: {set_mode(modes, :normal), "Normal mode disabled"}
 
   @doc """
   Saves the current terminal mode state.

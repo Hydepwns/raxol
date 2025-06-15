@@ -425,17 +425,24 @@ defmodule Raxol.Terminal.Config do
 
   defp update_field({:width, value}, acc) when is_integer(value) and value > 0,
     do: %{acc | width: value}
+
   defp update_field({:height, value}, acc) when is_integer(value) and value > 0,
     do: %{acc | height: value}
+
   defp update_field({:colors, value}, acc) when is_map(value),
     do: %{acc | colors: Map.merge(acc.colors, value)}
+
   defp update_field({:styles, value}, acc) when is_map(value),
     do: %{acc | styles: Map.merge(acc.styles, value)}
+
   defp update_field({:input, value}, acc) when is_map(value),
     do: %{acc | input: Map.merge(acc.input, value)}
+
   defp update_field({:performance, value}, acc) when is_map(value),
     do: %{acc | performance: Map.merge(acc.performance, value)}
+
   defp update_field({:mode, value}, acc) when is_map(value),
     do: %{acc | mode: Map.merge(acc.mode, value)}
+
   defp update_field(_, acc), do: acc
 end
