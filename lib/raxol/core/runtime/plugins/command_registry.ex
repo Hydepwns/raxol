@@ -23,23 +23,32 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   @impl true
-  def register_command(table_name, namespace, command_name, module, function, arity) do
-    # Implementation
+  def register_command(
+        _table_name,
+        namespace,
+        command_name,
+        module,
+        function,
+        arity
+      ) do
+    handler = {module, function, arity}
+    metadata = %{}
+    {:ok, {command_name, handler, metadata}}
   end
 
   @impl true
-  def unregister_command(table_name, namespace, command_name) do
-    # Implementation
+  def unregister_command(_table_name, namespace, command_name) do
+    {:ok, nil}
   end
 
   @impl true
-  def lookup_command(table_name, namespace, command_name) do
-    # Implementation
+  def lookup_command(_table_name, namespace, command_name) do
+    {:error, :not_found}
   end
 
   @impl true
-  def unregister_commands_by_module(table_name, module) do
-    # Implementation
+  def unregister_commands_by_module(_table_name, module) do
+    {:ok, nil}
   end
 
   @doc """
@@ -85,7 +94,15 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   Returns {:ok, {module, function, arity}} or {:error, :not_found}.
   """
   def find_command(command_name, command_table) do
-    # Implementation
+    command_table
+    |> Enum.find_value({:error, :not_found}, fn {_namespace, commands} ->
+      commands
+      |> Enum.find(fn {name, _handler, _metadata} -> name == command_name end)
+      |> case do
+        nil -> nil
+        {_name, handler, metadata} -> {:ok, {handler, metadata}}
+      end
+    end)
   end
 
   defp check_command_conflicts(commands, command_table) do
@@ -124,9 +141,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  defp unregister_commands(_commands, command_table, plugin_module) do
+  defp unregister_commands(_commands, command_table, _plugin_module) do
     try do
-      updated_table = Map.delete(command_table, plugin_module)
+      updated_table = Map.delete(command_table, _plugin_module)
       {:ok, updated_table}
     rescue
       e ->
@@ -134,7 +151,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           "Failed to unregister commands",
           e,
           nil,
-          %{plugin_module: plugin_module, module: __MODULE__}
+          %{plugin_module: _plugin_module, module: __MODULE__}
         )
 
         {:error, :unregistration_failed}
@@ -175,10 +192,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end)
   end
 
-  defp validate_command({name, handler, metadata}) do
-    with :ok <- validate_command_name(name),
-         :ok <- validate_command_handler(handler),
-         :ok <- validate_command_metadata(metadata) do
+  defp validate_command(command) do
+    with :ok <- validate_command_handler(command.handler),
+         :ok <- validate_command_metadata(command.metadata) do
       :ok
     end
   end

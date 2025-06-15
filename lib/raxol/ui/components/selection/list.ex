@@ -18,17 +18,17 @@ defmodule Raxol.UI.Components.Selection.List do
   - :item_renderer - function to render items
   """
   @type t :: %__MODULE__{
-    id: any(),
-    items: list(),
-    selected_index: non_neg_integer(),
-    scroll_offset: non_neg_integer(),
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    style: map(),
-    focused: boolean(),
-    on_select: (any() -> any()) | nil,
-    item_renderer: (any() -> any()) | nil
-  }
+          id: any(),
+          items: list(),
+          selected_index: non_neg_integer(),
+          scroll_offset: non_neg_integer(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          style: map(),
+          focused: boolean(),
+          on_select: (any() -> any()) | nil,
+          item_renderer: (any() -> any()) | nil
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -78,7 +78,9 @@ defmodule Raxol.UI.Components.Selection.List do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages (selection, scrolling)
-    Raxol.Core.Runtime.Log.debug("List #{state.id} received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "List #{state.id} received message: #{inspect(msg)}"
+    )
 
     case msg do
       :select_next -> select_item(state.selected_index + 1, state)
@@ -96,7 +98,9 @@ defmodule Raxol.UI.Components.Selection.List do
   # Correct arity
   def handle_event(event, %{} = _props, state) do
     # Handle keyboard (up/down/enter), mouse clicks
-    Raxol.Core.Runtime.Log.debug("List #{state.id} received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug(
+      "List #{state.id} received event: #{inspect(event)}"
+    )
 
     case event do
       %{type: :key, data: %{key: "Up"}} ->
@@ -221,6 +225,9 @@ defmodule Raxol.UI.Components.Selection.List do
 
   # Access behaviour for struct (for list[:key] and Access.fetch/2)
   def fetch(struct, key) when is_atom(key), do: Map.fetch(struct, key)
-  def get_and_update(struct, key, fun) when is_atom(key), do: Map.get_and_update(struct, key, fun)
+
+  def get_and_update(struct, key, fun) when is_atom(key),
+    do: Map.get_and_update(struct, key, fun)
+
   def pop(struct, key) when is_atom(key), do: Map.pop(struct, key)
 end

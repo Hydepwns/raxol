@@ -98,7 +98,12 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     end
   end
 
-  @spec calculate_widget_bounds(map(), any()) :: %{x: integer(), y: integer(), width: integer(), height: integer()}
+  @spec calculate_widget_bounds(map(), any()) :: %{
+          x: integer(),
+          y: integer(),
+          width: integer(),
+          height: integer()
+        }
   @doc """
   Calculates the absolute bounds for a widget within a grid layout.
 

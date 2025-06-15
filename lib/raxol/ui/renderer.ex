@@ -510,29 +510,18 @@ defmodule Raxol.UI.Renderer do
   end
 
   # Clause to handle nil theme (fallback to defaults)
-  defp resolve_styles(attrs, _component_type, nil) do
+  defp resolve_styles(attrs, _component_type, nil) when is_map(attrs) do
     fg_color = Map.get(attrs, :fg, @default_fg)
     bg_color = Map.get(attrs, :bg, @default_bg)
     style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
     {fg_color, bg_color, style_attrs}
   end
 
-  # Clause to handle when attrs is a map with style attributes
-  defp resolve_styles(%{fg: fg, bg: bg, style: style}, _component_type, theme) do
-    resolve_styles(%{fg: fg, bg: bg, style: style}, nil, theme)
-  end
-
-  # Clause to handle when attrs is a map with just fg and bg
-  defp resolve_styles(%{fg: fg, bg: bg}, _component_type, theme) do
-    resolve_styles(%{fg: fg, bg: bg, style: []}, nil, theme)
-  end
-
-  # Clause to handle when attrs is a map with just style
-  defp resolve_styles(%{style: style}, _component_type, theme) do
-    resolve_styles(
-      %{fg: @default_fg, bg: @default_bg, style: style},
-      nil,
-      theme
-    )
+  # Catch-all clause for other cases
+  defp resolve_styles(attrs, _component_type, _theme) when is_map(attrs) do
+    fg_color = Map.get(attrs, :fg, @default_fg)
+    bg_color = Map.get(attrs, :bg, @default_bg)
+    style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
+    {fg_color, bg_color, style_attrs}
   end
 end

@@ -22,7 +22,6 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
     plugin_meta = struct(__MODULE__, config)
-    # Return plugin metadata and initial internal state
     {:ok, plugin_meta, %{cache: %{}}}
   end
 
@@ -43,7 +42,6 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   end
 
   def handle_event(_event, _plugin_meta, plugin_state) do
-    # This plugin likely doesn't need to handle general events
     {:noreply, plugin_state}
   end
 
@@ -76,7 +74,6 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     end
   end
 
-  # Decline placeholders we don't handle
   def handle_placeholder(_placeholder, _plugin_meta, plugin_state) do
     {:cont, plugin_state}
   end

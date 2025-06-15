@@ -16,11 +16,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
         plugin_id,
         plugin_module,
         plugin_state,
-        plugins,
+        _plugins,
         metadata,
-        plugin_states,
-        load_order,
-        command_table
+        _plugin_states,
+        _load_order,
+        _command_table
       ) do
     try do
       # Reload the module with proper error handling
@@ -35,11 +35,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
             last_reload: System.system_time()
           })
 
-        {:ok, %{
-          module: plugin_module,
-          state: updated_state,
-          metadata: updated_metadata
-        }}
+        {:ok,
+         %{
+           module: plugin_module,
+           state: updated_state,
+           metadata: updated_metadata
+         }}
       else
         {:error, reason} ->
           Raxol.Core.Runtime.Log.error_with_stacktrace(
@@ -65,7 +66,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   end
 
   @impl true
-  def can_reload?(plugin_id, plugins, metadata) do
+  def can_reload?(plugin_id, plugins, _metadata) do
     case Map.get(plugins, plugin_id) do
       nil -> false
       _plugin -> true
@@ -73,7 +74,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   end
 
   @impl true
-  def get_reload_state(plugin_id, plugins, metadata) do
+  def get_reload_state(plugin_id, _plugins, metadata) do
     case Map.get(metadata, plugin_id) do
       nil -> {:error, :plugin_not_found}
       plugin_metadata -> {:ok, plugin_metadata}
@@ -81,7 +82,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   end
 
   @impl true
-  def handle_reload_error(plugin_id, error, plugins, metadata, plugin_states) do
+  def handle_reload_error(plugin_id, error, _plugins, _metadata, _plugin_states) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "Plugin reload error",
       error,
@@ -93,7 +94,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   end
 
   @impl true
-  def coordinate_reload(plugin_id, plugins, metadata, plugin_states, load_order, command_table) do
+  def coordinate_reload(
+        plugin_id,
+        plugins,
+        metadata,
+        plugin_states,
+        load_order,
+        command_table
+      ) do
     case reload_plugin_from_disk(
            plugin_id,
            Map.get(plugins, plugin_id),
@@ -112,7 +120,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
     end
   end
 
-  @impl true
   def reload_plugin(plugin_id, state) do
     if !state.initialized do
       {:error, :not_initialized, state}
@@ -170,7 +177,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
     end
   end
 
-  @impl true
   def reload_plugin_by_id(plugin_id_string, state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Received request to reload plugin by string ID: #{plugin_id_string}"
@@ -199,75 +205,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
             nil,
             %{
               module: __MODULE__,
-              plugin_id: plugin_id_atom,
+              plugin_id_atom: plugin_id_atom,
               plugin_id_string: plugin_id_string
             }
           )
 
-          {:error, :path_not_found, state}
+          {:error, :plugin_path_not_found, state}
         else
-          case state.lifecycle_helper_module.reload_plugin_from_disk(
-                 plugin_id_atom,
-                 state.plugins,
-                 state.metadata,
-                 state.plugin_states,
-                 state.load_order,
-                 state.command_registry_table,
-                 state.plugin_config,
-                 state.plugin_paths
-               ) do
-            {:ok, updated_plugin_info} ->
-              new_plugins =
-                Map.put(
-                  state.plugins,
-                  plugin_id_atom,
-                  updated_plugin_info.module
-                )
-
-              new_plugin_states =
-                Map.put(
-                  state.plugin_states,
-                  plugin_id_atom,
-                  updated_plugin_info.state
-                )
-
-              new_plugin_config =
-                Map.put(
-                  state.plugin_config,
-                  plugin_id_atom,
-                  updated_plugin_info.config
-                )
-
-              new_metadata =
-                Map.put(
-                  state.metadata,
-                  plugin_id_atom,
-                  updated_plugin_info.metadata
-                )
-
-              Raxol.Core.Runtime.Log.info(
-                "[#{__MODULE__}] Plugin atom :#{plugin_id_atom} reloaded successfully."
-              )
-
-              {:ok,
-               %{
-                 state
-                 | plugins: new_plugins,
-                   plugin_states: new_plugin_states,
-                   plugin_config: new_plugin_config,
-                   metadata: new_metadata
-               }}
-
-            {:error, reason} ->
-              Raxol.Core.Runtime.Log.error_with_stacktrace(
-                "[#{__MODULE__}] Failed to reload plugin atom :#{plugin_id_atom}",
-                reason,
-                nil,
-                %{module: __MODULE__, plugin_id: plugin_id_atom, reason: reason}
-              )
-
-              {:error, reason, state}
-          end
+          reload_plugin(plugin_id_atom, state)
         end
     end
   end

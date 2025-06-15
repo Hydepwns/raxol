@@ -132,10 +132,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
           # Node is root of strongly connected component
           {component, new_stack} = extract_component(node, stk)
 
-          unless is_list(component) and Enum.all?(component, &is_binary/1),
+          if !(is_list(component) and Enum.all?(component, &is_binary/1)),
             do: raise("Component must be a list of strings")
 
-          unless is_struct(on_stk, MapSet), do: raise("on_stk must be a MapSet")
+          if not is_struct(on_stk, MapSet), do: raise("on_stk must be a MapSet")
 
           if length(component) > 1 do
             # Check if there is an edge within the component (true cycle)
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
 
               new_on_stack =
                 Enum.reduce(component, on_stk, fn elem, acc ->
-                  unless is_struct(acc, MapSet),
+                  if not is_struct(acc, MapSet),
                     do: raise("Accumulator must be a MapSet")
 
                   MapSet.delete(acc, elem)

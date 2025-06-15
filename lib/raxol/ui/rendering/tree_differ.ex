@@ -88,7 +88,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   end
 
   defp validate_child_has_key!(child, list_name) do
-    unless Map.has_key?(child, :key) do
+    if !Map.has_key?(child, :key) do
       Raxol.Core.Runtime.Log.error(
         "Child in #{list_name} is missing :key for keyed diffing: #{inspect(child)}"
       )
@@ -157,28 +157,32 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     _ops = []
 
     ops =
-      Enum.reduce(Enum.with_index(new_children_list || []), [], fn {new_child_node, _new_idx}, acc ->
-        key = new_child_node[:key]
+      Enum.reduce(
+        Enum.with_index(new_children_list || []),
+        [],
+        fn {new_child_node, _new_idx}, acc ->
+          key = new_child_node[:key]
 
-        if MapSet.member?(old_keys_set, key) do
-          old_child_node = old_children_map_by_key[key]
-          # Diff children relative to themselves, so path is [].
-          # Any paths *inside* child_diff will be relative to the child.
-          child_diff = do_diff_trees(old_child_node, new_child_node, [])
+          if MapSet.member?(old_keys_set, key) do
+            old_child_node = old_children_map_by_key[key]
+            # Diff children relative to themselves, so path is [].
+            # Any paths *inside* child_diff will be relative to the child.
+            child_diff = do_diff_trees(old_child_node, new_child_node, [])
 
-          if child_diff != :no_change do
-            [{:key_update, key, child_diff} | acc]
+            if child_diff != :no_change do
+              [{:key_update, key, child_diff} | acc]
+            else
+              acc
+            end
           else
-            acc
+            [{:key_add, key, new_child_node} | acc]
           end
-        else
-          [{:key_add, key, new_child_node} | acc]
         end
-      end)
+      )
 
     ops =
       Enum.reduce(MapSet.to_list(old_keys_set), ops, fn old_key, acc ->
-        unless MapSet.member?(new_keys_set, old_key) do
+        if !MapSet.member?(new_keys_set, old_key) do
           [{:key_remove, old_key} | acc]
         else
           acc

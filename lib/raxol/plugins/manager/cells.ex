@@ -15,10 +15,10 @@ defmodule Raxol.Plugins.Manager.Cells do
 
   Returns `{:ok, updated_manager, processed_cells, collected_commands}`.
   """
-  def handle_cells(%Core{} = manager, cells, emulator_state)
+  def handle_cells(%Core{} = manager, cells, _emulator_state)
       when is_list(cells) do
     # Delegate to the CellProcessor module
-    CellProcessor.process(manager, cells, emulator_state)
+    CellProcessor.process(manager, cells, _emulator_state)
   end
 
   @doc """
@@ -26,38 +26,30 @@ defmodule Raxol.Plugins.Manager.Cells do
   Returns {:ok, updated_manager, processed_cell} or {:error, reason}.
   """
   def process_cell(%Core{} = manager, cell, emulator_state) do
-    Enum.reduce_while(manager.plugins, {:ok, manager, cell}, fn {_name, plugin},
-                                                                {:ok,
-                                                                 acc_manager,
-                                                                 acc_cell} ->
-      if plugin.enabled do
-        # Get the module from the struct
-        module = plugin.__struct__
+    Enum.reduce_while(manager.plugins, {:ok, manager, cell}, &process_plugin_cell(&1, &2, emulator_state))
+  end
 
-        # Check if module implements process_cell
-        if function_exported?(module, :process_cell, 3) do
-          case module.process_cell(plugin, acc_cell, emulator_state) do
-            {:ok, updated_plugin, processed_cell} ->
-              updated_manager =
-                Core.update_plugins(
-                  acc_manager,
-                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-                )
-
-              {:cont, {:ok, updated_manager, processed_cell}}
-
-            {:error, reason} ->
-              {:halt, {:error, reason}}
-          end
-        else
-          # Plugin doesn't implement cell processing
-          {:cont, {:ok, acc_manager, acc_cell}}
-        end
+  defp process_plugin_cell({_name, plugin}, {:ok, acc_manager, acc_cell}, emulator_state) do
+    if plugin.enabled do
+      module = plugin.__struct__
+      if function_exported?(module, :process_cell, 3) do
+        handle_plugin_cell(module, plugin, acc_cell, acc_manager, emulator_state)
       else
-        # Plugin disabled
         {:cont, {:ok, acc_manager, acc_cell}}
       end
-    end)
+    else
+      {:cont, {:ok, acc_manager, acc_cell}}
+    end
+  end
+
+  defp handle_plugin_cell(module, plugin, acc_cell, acc_manager, emulator_state) do
+    case module.process_cell(plugin, acc_cell, emulator_state) do
+      {:ok, updated_plugin, processed_cell} ->
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:cont, {:ok, updated_manager, processed_cell}}
+      {:error, reason} ->
+        {:halt, {:error, reason}}
+    end
   end
 
   @doc """
@@ -65,47 +57,32 @@ defmodule Raxol.Plugins.Manager.Cells do
   Returns {:ok, updated_manager, commands}.
   """
   def collect_cell_commands(%Core{} = manager) do
-    Enum.reduce(manager.plugins, {:ok, manager, []}, fn {_name, plugin},
-                                                        {:ok, acc_manager,
-                                                         acc_commands} ->
-      if plugin.enabled do
-        # Get the module from the struct
-        module = plugin.__struct__
+    Enum.reduce(manager.plugins, {:ok, manager, []}, &collect_plugin_commands/2)
+  end
 
-        # Check if module implements get_cell_commands
-        if function_exported?(module, :get_cell_commands, 1) do
-          case module.get_cell_commands(plugin) do
-            {:ok, updated_plugin, commands} ->
-              updated_manager =
-                Core.update_plugins(
-                  acc_manager,
-                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-                )
-
-              {:ok, updated_manager, commands ++ acc_commands}
-
-            # No commands returned
-            {:ok, updated_plugin} ->
-              updated_manager =
-                Core.update_plugins(
-                  acc_manager,
-                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-                )
-
-              {:ok, updated_manager, acc_commands}
-
-            # Allow plugins to just return commands if state doesn't change
-            commands when is_list(commands) ->
-              {:ok, acc_manager, commands ++ acc_commands}
-          end
-        else
-          # Plugin doesn't implement command collection
-          {:ok, acc_manager, acc_commands}
-        end
+  defp collect_plugin_commands({_name, plugin}, {:ok, acc_manager, acc_commands}) do
+    if plugin.enabled do
+      module = plugin.__struct__
+      if function_exported?(module, :get_cell_commands, 1) do
+        handle_plugin_commands(module, plugin, acc_manager, acc_commands)
       else
-        # Plugin disabled
         {:ok, acc_manager, acc_commands}
       end
-    end)
+    else
+      {:ok, acc_manager, acc_commands}
+    end
+  end
+
+  defp handle_plugin_commands(module, plugin, acc_manager, acc_commands) do
+    case module.get_cell_commands(plugin) do
+      {:ok, updated_plugin, commands} ->
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:ok, updated_manager, commands ++ acc_commands}
+      {:ok, updated_plugin} ->
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:ok, updated_manager, acc_commands}
+      commands when is_list(commands) ->
+        {:ok, acc_manager, commands ++ acc_commands}
+    end
   end
 end

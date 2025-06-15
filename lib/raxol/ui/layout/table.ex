@@ -140,11 +140,14 @@ defmodule Raxol.UI.Layout.Table do
     col_widths = calculate_column_widths(columns, data)
 
     # Calculate total width including separators
-    separator_width = if length(col_widths) > 1, do: (length(col_widths) - 1) * 3, else: 0
+    separator_width =
+      if length(col_widths) > 1, do: (length(col_widths) - 1) * 3, else: 0
+
     total_width = Enum.sum(col_widths) + separator_width
 
     # Calculate height (header + separator + data rows)
-    header_height = if headers != [], do: 2, else: 0  # Header + separator line
+    # Header + separator line
+    header_height = if headers != [], do: 2, else: 0
     data_height = length(data)
     total_height = header_height + data_height
 
@@ -169,7 +172,8 @@ defmodule Raxol.UI.Layout.Table do
     header_width = String.length(Map.get(column, :header, ""))
 
     # Calculate max width from data
-    data_width = data
+    data_width =
+      data
       |> Enum.map(fn row ->
         value = get_column_value(row, column)
         String.length(to_string(value))
@@ -180,7 +184,11 @@ defmodule Raxol.UI.Layout.Table do
     max(header_width, data_width) + 2
   end
 
-  defp get_column_value(row, %{key: key}) when is_function(key, 1), do: key.(row)
-  defp get_column_value(row, %{key: key}) when is_atom(key), do: Map.get(row, key)
+  defp get_column_value(row, %{key: key}) when is_function(key, 1),
+    do: key.(row)
+
+  defp get_column_value(row, %{key: key}) when is_atom(key),
+    do: Map.get(row, key)
+
   defp get_column_value(row, _), do: ""
 end

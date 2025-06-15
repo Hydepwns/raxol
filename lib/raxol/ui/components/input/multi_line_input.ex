@@ -33,7 +33,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           shift_held: boolean(),
           focused: boolean(),
           on_change: (String.t() -> any()) | nil,
-          on_submit: (() -> any()) | nil,
+          on_submit: (-> any()) | nil,
           aria_label: String.t() | nil,
           tooltip: String.t() | nil,
           lines: [String.t()]
@@ -481,7 +481,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def update(msg, state) do
-    Raxol.Core.Runtime.Log.warning("[MultiLineInput] Unhandled update message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.warning(
+      "[MultiLineInput] Unhandled update message: #{inspect(msg)}"
+    )
+
     {:noreply, state, nil}
   end
 
@@ -546,7 +549,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           single_cmd -> [change_event_cmd, single_cmd]
         end
 
-      Raxol.Core.Runtime.Log.debug("Value changed for #{new_state.id}, queueing :change event.")
+      Raxol.Core.Runtime.Log.debug(
+        "Value changed for #{new_state.id}, queueing :change event."
+      )
+
       {:noreply, new_state, new_cmd}
     else
       {:noreply, new_state, existing_cmd}

@@ -31,7 +31,18 @@ defmodule RaxolWeb.TerminalLive do
       users = Map.keys(presences)
       cursors = %{user_id => %{x: 0, y: 0, visible: true}}
 
-      socket = initialize_socket(socket, session_id, emulator, renderer, topic, user_id, users, cursors)
+      socket =
+        initialize_socket(
+          socket,
+          session_id,
+          emulator,
+          renderer,
+          topic,
+          user_id,
+          users,
+          cursors
+        )
+
       {:ok, socket, temporary_assigns: [terminal_html: ""]}
     else
       {:ok, assign(socket, :connected, false)}
@@ -54,7 +65,6 @@ defmodule RaxolWeb.TerminalLive do
 
   @impl Phoenix.LiveView
   def handle_event("disconnect", _params, socket) do
-    # Save scrollback to session (not possible in LiveView)
     _scrollback = socket.assigns.emulator.scrollback_buffer || []
 
     {
@@ -72,6 +82,7 @@ defmodule RaxolWeb.TerminalLive do
       modifiers: Enum.map(modifiers, &String.to_atom/1),
       timestamp: System.monotonic_time()
     }
+
     process_input_event(socket, key_event)
   end
 
@@ -89,6 +100,7 @@ defmodule RaxolWeb.TerminalLive do
       modifiers: [],
       timestamp: System.monotonic_time()
     }
+
     process_input_event(socket, mouse_event)
   end
 
@@ -102,7 +114,9 @@ defmodule RaxolWeb.TerminalLive do
 
   @impl Phoenix.LiveView
   def handle_event("scroll", %{"offset" => offset}, socket) do
-    offset = if is_integer(offset), do: offset, else: String.to_integer("#{offset}")
+    offset =
+      if is_integer(offset), do: offset, else: String.to_integer("#{offset}")
+
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
 
@@ -114,16 +128,23 @@ defmodule RaxolWeb.TerminalLive do
 
   defp handle_scroll_update(socket, offset) do
     emulator = socket.assigns.emulator
-    new_emulator = if offset < 0,
-      do: Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset)),
-      else: Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
 
-    renderer = %{socket.assigns.renderer | screen_buffer: new_emulator.main_screen_buffer}
+    new_emulator =
+      if offset < 0,
+        do: Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset)),
+        else: Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
+
+    renderer = %{
+      socket.assigns.renderer
+      | screen_buffer: new_emulator.main_screen_buffer
+    }
+
     terminal_html = Raxol.Terminal.Renderer.render(renderer)
     new_scrollback_size = length(new_emulator.scrollback_buffer || [])
     at_bottom = new_scrollback_size == 0
 
-    socket = socket
+    socket =
+      socket
       |> assign(:emulator, new_emulator)
       |> assign(:renderer, renderer)
       |> assign(:terminal_html, terminal_html)
@@ -135,26 +156,42 @@ defmodule RaxolWeb.TerminalLive do
 
   @impl Phoenix.LiveView
   def handle_event("scroll_to_bottom", _params, socket) do
-    # TODO: Implement scroll to bottom
-    {:noreply, socket}
+    emulator = socket.assigns.emulator
+    scrollback_size = length(emulator.scrollback_buffer || [])
+
+    if scrollback_size > 0 do
+      handle_scroll_update(socket, scrollback_size)
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl Phoenix.LiveView
   def handle_event("scroll_to_top", _params, socket) do
-    # TODO: Implement scroll to top
-    {:noreply, socket}
+    emulator = socket.assigns.emulator
+    scrollback_size = length(emulator.scrollback_buffer || [])
+
+    if scrollback_size > 0 do
+      handle_scroll_update(socket, -scrollback_size)
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl Phoenix.LiveView
   def handle_event("scroll_up", _params, socket) do
-    # TODO: Implement scroll up
-    {:noreply, socket}
+    emulator = socket.assigns.emulator
+    page_size = emulator.height
+
+    handle_scroll_update(socket, -page_size)
   end
 
   @impl Phoenix.LiveView
   def handle_event("scroll_down", _params, socket) do
-    # TODO: Implement scroll down
-    {:noreply, socket}
+    emulator = socket.assigns.emulator
+    page_size = emulator.height
+
+    handle_scroll_update(socket, page_size)
   end
 
   @impl Phoenix.LiveView
@@ -298,7 +335,8 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   defp initialize_emulator(session) do
-    scrollback_limit = Application.get_env(:raxol, :terminal, [])
+    scrollback_limit =
+      Application.get_env(:raxol, :terminal, [])
       |> Keyword.get(:scrollback_lines, 1000)
 
     saved_scrollback = Map.get(session, "scrollback_buffer", [])
@@ -308,43 +346,64 @@ defmodule RaxolWeb.TerminalLive do
 
   defp setup_presence(topic, user_id) do
     PubSub.subscribe(Raxol.PubSub, topic)
-    {:ok, _} = Presence.track(self(), topic, user_id, %{
-      joined_at: System.system_time(:second)
-    })
+
+    {:ok, _} =
+      Presence.track(self(), topic, user_id, %{
+        joined_at: System.system_time(:second)
+      })
   end
 
-  defp initialize_socket(socket, session_id, emulator, renderer, topic, user_id, users, cursors) do
+  defp initialize_socket(
+         socket,
+         session_id,
+         emulator,
+         renderer,
+         topic,
+         user_id,
+         users,
+         cursors
+       ) do
     socket
-      |> assign(:session_id, session_id)
-      |> assign(:terminal_html, Raxol.Terminal.Renderer.render(renderer))
-      |> assign(:cursor, %{x: 0, y: 0, visible: true})
-      |> assign(:dimensions, %{width: 80, height: 24})
-      |> assign(:scroll_offset, 0)
-      |> assign(:theme, Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.current()))
-      |> assign(:connected, false)
-      |> assign(:emulator, emulator)
-      |> assign(:renderer, renderer)
-      |> assign(:scrollback_size, length(emulator.scrollback_buffer))
-      |> assign(:scrollback_limit, emulator.scrollback_limit)
-      |> assign(:users, users)
-      |> assign(:presence_topic, topic)
-      |> assign(:user_id, user_id)
-      |> assign(:cursors, cursors)
+    |> assign(:session_id, session_id)
+    |> assign(:terminal_html, Raxol.Terminal.Renderer.render(renderer))
+    |> assign(:cursor, %{x: 0, y: 0, visible: true})
+    |> assign(:dimensions, %{width: 80, height: 24})
+    |> assign(:scroll_offset, 0)
+    |> assign(
+      :theme,
+      Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.current())
+    )
+    |> assign(:connected, false)
+    |> assign(:emulator, emulator)
+    |> assign(:renderer, renderer)
+    |> assign(:scrollback_size, length(emulator.scrollback_buffer))
+    |> assign(:scrollback_limit, emulator.scrollback_limit)
+    |> assign(:users, users)
+    |> assign(:presence_topic, topic)
+    |> assign(:user_id, user_id)
+    |> assign(:cursors, cursors)
   end
 
   # Helper functions
   defp process_input_event(socket, event) do
     emulator = socket.assigns.emulator
-    {updated_emulator, _output} = Raxol.Terminal.Emulator.process_input(emulator, event)
+
+    {updated_emulator, _output} =
+      Raxol.Terminal.Emulator.process_input(emulator, event)
 
     {terminal_html, cursor} = update_terminal_state(socket, updated_emulator)
     broadcast_terminal_update(socket, terminal_html, cursor)
 
-    {:noreply, update_socket_assigns(socket, updated_emulator, terminal_html, cursor)}
+    {:noreply,
+     update_socket_assigns(socket, updated_emulator, terminal_html, cursor)}
   end
 
   defp update_terminal_state(socket, emulator) do
-    renderer = %{socket.assigns.renderer | screen_buffer: emulator.main_screen_buffer}
+    renderer = %{
+      socket.assigns.renderer
+      | screen_buffer: emulator.main_screen_buffer
+    }
+
     terminal_html = Raxol.Terminal.Renderer.render(renderer)
     {cursor_x, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     cursor_visible = Raxol.Terminal.Emulator.get_cursor_visible(emulator)
@@ -355,14 +414,18 @@ defmodule RaxolWeb.TerminalLive do
     PubSub.broadcast(
       Raxol.PubSub,
       socket.assigns.presence_topic,
-      {:collab_input, %{"html" => terminal_html, "cursor" => cursor}, socket.assigns.session_id}
+      {:collab_input, %{"html" => terminal_html, "cursor" => cursor},
+       socket.assigns.session_id}
     )
   end
 
   defp update_socket_assigns(socket, emulator, terminal_html, cursor) do
     socket
     |> assign(:emulator, emulator)
-    |> assign(:renderer, %{socket.assigns.renderer | screen_buffer: emulator.main_screen_buffer})
+    |> assign(:renderer, %{
+      socket.assigns.renderer
+      | screen_buffer: emulator.main_screen_buffer
+    })
     |> assign(:terminal_html, terminal_html)
     |> assign(:cursor, cursor)
   end

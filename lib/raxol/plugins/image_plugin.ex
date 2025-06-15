@@ -78,20 +78,17 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
-    # TODO: Potentially adjust image display based on new dimensions
-    {:ok, plugin}
+  def handle_resize(%__MODULE__{} = plugin, width, height) do
+    {:ok, %{plugin | config: Map.put(plugin.config, :dimensions, %{width: width, height: height})}}
   end
 
   @impl true
   def cleanup(%__MODULE__{} = _plugin) do
-    # No cleanup needed for this plugin
     :ok
   end
 
   @impl true
   def get_dependencies do
-    # This plugin has no dependencies
     []
   end
 
@@ -109,110 +106,85 @@ defmodule Raxol.Plugins.ImagePlugin do
     case placeholder_cell do
       %{type: :placeholder, value: :image} = cell
       when is_map_key(cell, :type) and is_map_key(cell, :value) ->
-        Raxol.Core.Runtime.Log.debug(
-          "[ImagePlugin.handle_cells] Matched :image placeholder. sequence_just_generated: #{inspect(plugin.sequence_just_generated)}"
-        )
-
-        # If we just generated the sequence in the *last* call for *this same placeholder*,
-        # reset the flag and return {:cont, state} to avoid re-generating/re-sending.
-        if plugin.sequence_just_generated do
-          Raxol.Core.Runtime.Log.debug(
-            "[ImagePlugin.handle_cells] sequence_just_generated=true. Resetting flag and declining."
-          )
-
-          {:cont, %{plugin | sequence_just_generated: false}}
-        else
-          # Attempt to generate the sequence
-          Raxol.Core.Runtime.Log.debug(
-            "[ImagePlugin.handle_cells] sequence_just_generated=false. BEFORE generate_sequence_from_path for path: @static/static/images/logo.png"
-          )
-
-          case generate_sequence_from_path("@static/static/images/logo.png") do
-            {:ok, sequence} ->
-              Raxol.Core.Runtime.Log.debug(
-                "[ImagePlugin.handle_cells] Sequence generated successfully."
-              )
-
-              # Return {:ok, state_with_flag_set, cells_to_render, command_to_send}
-              # Cells to render is empty because the command handles the display.
-              # Mark sequence_just_generated as true for the *next* call.
-              # Wrap command in a list as expected by plugin manager
-              {:ok, %{plugin | sequence_just_generated: true}, [],
-               [{:direct_output, sequence}]}
-
-            {:error, reason} ->
-              Raxol.Core.Runtime.Log.error(
-                "[ImagePlugin.handle_cells] Failed to generate sequence for @static/static/images/logo.png: #{inspect(reason)}"
-              )
-
-              # Failed to generate, decline to handle the placeholder
-              # Return original state
-              {:cont, plugin}
-          end
-        end
-
+        handle_image_placeholder(plugin)
       _ ->
-        # Not an image placeholder, decline
         {:cont, plugin}
     end
   end
 
-  # Restore helper functions
-  defp generate_sequence_from_path(image_path) do
-    case File.read(image_path) do
-      {:ok, content} ->
-        base64_data = Base.encode64(content)
-        params = %{width: 0, height: 0, preserve_aspect: true}
-        sequence = generate_image_escape_sequence(base64_data, params)
-
-        if sequence != "" do
-          {:ok, sequence}
-        else
-          {:error, :base64_decode_failed}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
+  defp handle_image_placeholder(plugin) do
+    if plugin.sequence_just_generated do
+      Raxol.Core.Runtime.Log.debug(
+        "[ImagePlugin.handle_cells] sequence_just_generated=true. Resetting flag and declining."
+      )
+      {:cont, %{plugin | sequence_just_generated: false}}
+    else
+      generate_and_return_sequence(plugin)
     end
   end
+
+  defp generate_and_return_sequence(plugin) do
+    Raxol.Core.Runtime.Log.debug(
+      "[ImagePlugin.handle_cells] sequence_just_generated=false. BEFORE generate_sequence_from_path for path: @static/static/images/logo.png"
+    )
+
+    case generate_sequence_from_path("@static/static/images/logo.png") do
+      {:ok, sequence} ->
+        Raxol.Core.Runtime.Log.debug(
+          "[ImagePlugin.handle_cells] Sequence generated successfully."
+        )
+        {:ok, %{plugin | sequence_just_generated: true}, [], [{:direct_output, sequence}]}
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "[ImagePlugin.handle_cells] Failed to generate sequence for @static/static/images/logo.png: #{inspect(reason)}"
+        )
+        {:cont, plugin}
+    end
+  end
+
+  defp generate_sequence_from_path(image_path) do
+    with {:ok, content} <- File.read(image_path),
+         base64_data = Base.encode64(content),
+         sequence = generate_image_escape_sequence(base64_data, default_params()),
+         true <- sequence != "" do
+      {:ok, sequence}
+    else
+      {:error, reason} -> {:error, reason}
+      _ -> {:error, :base64_decode_failed}
+    end
+  end
+
+  defp default_params, do: %{width: 0, height: 0, preserve_aspect: true}
 
   defp generate_image_escape_sequence(base64_data, params) do
-    width =
-      if is_map(params),
-        do: Map.get(params, :width, 0),
-        else: if(is_tuple(params), do: elem(params, 0), else: 0)
-
-    height =
-      if is_map(params),
-        do: Map.get(params, :height, 0),
-        else: if(is_tuple(params), do: elem(params, 1), else: 0)
-
+    width = get_dimension(params, :width)
+    height = get_dimension(params, :height)
     width_param = if width == 0, do: "auto", else: "#{width}"
     height_param = if height == 0, do: "auto", else: "#{height}"
+    preserve_aspect_flag = get_preserve_aspect_flag(params)
 
-    # Fix: Use a conditional instead of Map.get with a default that might trigger guard failures
-    preserve_aspect_flag =
-      case Map.get(params, :preserve_aspect) do
-        # Default to true when nil
-        nil -> "1"
-        true -> "1"
-        false -> "0"
-      end
-
-    decoded_result = Base.decode64(base64_data)
-
-    case decoded_result do
+    case Base.decode64(base64_data) do
       {:ok, decoded_data} ->
         size = byte_size(decoded_data)
-
         "\e]1337;File=inline=1;width=#{width_param};height=#{height_param};preserveAspectRatio=#{preserve_aspect_flag};size=#{size};name=image.png;base64,#{base64_data}\a"
-
-      :error ->
-        ""
+      :error -> ""
     end
   end
 
-  # Comment out unused helpers
-  # defp find_image_at_position(_plugin, _x, _y) do ... end
-  # defp handle_image_click(%__MODULE__{} = plugin, _image, _x, _y) do ... end
+  defp get_dimension(params, dimension) do
+    cond do
+      is_map(params) -> Map.get(params, dimension, 0)
+      is_tuple(params) -> elem(params, if(dimension == :width, do: 0, else: 1))
+      true -> 0
+    end
+  end
+
+  defp get_preserve_aspect_flag(params) do
+    case Map.get(params, :preserve_aspect) do
+      nil -> "1"
+      true -> "1"
+      false -> "0"
+    end
+  end
+
 end

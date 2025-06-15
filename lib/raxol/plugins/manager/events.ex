@@ -36,16 +36,20 @@ defmodule Raxol.Plugins.Manager.Events do
   def process_mouse(%Core{} = manager, event, emulator_state)
       when is_tuple(event) do
     # Convert tuple event to map format
-    event_map = case event do
-      {x, y, button, modifiers} -> %{
-        type: :mouse,
-        x: x,
-        y: y,
-        button: button,
-        modifiers: modifiers
-      }
-      _ -> event
-    end
+    event_map =
+      case event do
+        {x, y, button, modifiers} ->
+          %{
+            type: :mouse,
+            x: x,
+            y: y,
+            button: button,
+            modifiers: modifiers
+          }
+
+        _ ->
+          event
+      end
 
     # Use the new handler
     case handle_mouse_event(manager, event_map, emulator_state) do
@@ -79,36 +83,30 @@ defmodule Raxol.Plugins.Manager.Events do
   Returns {:ok, updated_manager} or {:error, reason}.
   """
   def broadcast_event(%Core{} = manager, event) do
-    Enum.reduce_while(manager.plugins, {:ok, manager}, fn {_name, plugin},
-                                                          {:ok, acc_manager} ->
-      if plugin.enabled do
-        # Get the module from the struct
-        module = plugin.__struct__
+    Enum.reduce_while(manager.plugins, {:ok, manager}, &broadcast_plugin_event(&1, &2, event))
+  end
 
-        # Check if module implements handle_event
-        if function_exported?(module, :handle_event, 2) do
-          case module.handle_event(plugin, event) do
-            {:ok, updated_plugin} ->
-              updated_manager =
-                Core.update_plugins(
-                  acc_manager,
-                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-                )
-
-              {:cont, {:ok, updated_manager}}
-
-            {:error, reason} ->
-              {:halt, {:error, reason}}
-          end
-        else
-          # Plugin doesn't implement event handling
-          {:cont, {:ok, acc_manager}}
-        end
+  defp broadcast_plugin_event({_name, plugin}, {:ok, acc_manager}, event) do
+    if plugin.enabled do
+      module = plugin.__struct__
+      if function_exported?(module, :handle_event, 2) do
+        handle_plugin_event(module, plugin, event, acc_manager)
       else
-        # Plugin disabled
         {:cont, {:ok, acc_manager}}
       end
-    end)
+    else
+      {:cont, {:ok, acc_manager}}
+    end
+  end
+
+  defp handle_plugin_event(module, plugin, event, acc_manager) do
+    case module.handle_event(plugin, event) do
+      {:ok, updated_plugin} ->
+        updated_manager = Core.update_plugins(acc_manager, Map.put(acc_manager.plugins, plugin.name, updated_plugin))
+        {:cont, {:ok, updated_manager}}
+      {:error, reason} ->
+        {:halt, {:error, reason}}
+    end
   end
 
   @doc """

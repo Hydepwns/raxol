@@ -337,7 +337,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
       key in ["Backspace", :backspace] ->
         if state.is_search_focused and state.search_buffer != "" do
-          new_buffer = String.slice(state.search_buffer, 0, String.length(state.search_buffer) - 1)
+          new_buffer =
+            String.slice(
+              state.search_buffer,
+              0,
+              String.length(state.search_buffer) - 1
+            )
+
           {new_state, _} = update({:search, new_buffer}, state)
           {new_state, nil}
         else
@@ -451,18 +457,18 @@ defmodule Raxol.UI.Components.Input.SelectList do
         is_tuple(option) and tuple_size(option) == 2 ->
           {label, _value} = option
 
-          unless is_binary(label) do
+          if not is_binary(label) do
             raise ArgumentError, "SelectList option labels must be strings"
           end
 
         is_tuple(option) and tuple_size(option) == 3 ->
           {label, _value, style} = option
 
-          unless is_binary(label) do
+          if not is_binary(label) do
             raise ArgumentError, "SelectList option labels must be strings"
           end
 
-          unless is_map(style) do
+          if not is_map(style) do
             raise ArgumentError,
                   "SelectList option style (third element) must be a map"
           end

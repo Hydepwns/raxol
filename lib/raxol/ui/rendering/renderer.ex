@@ -164,7 +164,11 @@ defmodule Raxol.UI.Rendering.Renderer do
     {new_state, _} = do_partial_render([], data, data, state)
     if state.test_pid, do: send(state.test_pid, {:renderer_rendered, data})
     require Raxol.Core.Runtime.Log
-    Raxol.Core.Runtime.Log.info("Renderer received render: #{inspect(data)} (buffer updated)")
+
+    Raxol.Core.Runtime.Log.info(
+      "Renderer received render: #{inspect(data)} (buffer updated)"
+    )
+
     {:noreply, %{new_state | last_render: data}}
   end
 
@@ -183,7 +187,11 @@ defmodule Raxol.UI.Rendering.Renderer do
     # Full replacement
     if state.test_pid, do: send(state.test_pid, {:renderer_rendered, new_tree})
     require Raxol.Core.Runtime.Log
-    Raxol.Core.Runtime.Log.info("Renderer received full replacement diff: #{inspect(new_tree)}")
+
+    Raxol.Core.Runtime.Log.info(
+      "Renderer received full replacement diff: #{inspect(new_tree)}"
+    )
+
     {:noreply, %{state | last_render: new_tree}}
   end
 

@@ -103,6 +103,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
                     {missing_acc, miss_ver_acc, inv_ver_fmt_acc, inv_req_acc,
                      mismatch_acc, opt_missing_acc}
 
+                  {:error, :version_mismatch} ->
+                    {missing_acc, miss_ver_acc, inv_ver_fmt_acc, inv_req_acc,
+                     mismatch_acc ++ [dep_id], opt_missing_acc}
+
                   {:error, :invalid_version_format} ->
                     {missing_acc, miss_ver_acc, inv_ver_fmt_acc ++ [dep_id],
                      inv_req_acc, mismatch_acc, opt_missing_acc}
@@ -110,20 +114,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
                   {:error, :invalid_requirement_format} ->
                     {missing_acc, miss_ver_acc, inv_ver_fmt_acc,
                      inv_req_acc ++ [dep_id], mismatch_acc, opt_missing_acc}
-
-                  {:error, :invalid_version_requirement} ->
-                    {missing_acc, miss_ver_acc, inv_ver_fmt_acc,
-                     inv_req_acc ++ [dep_id], mismatch_acc, opt_missing_acc}
-
-                  # Ignore version mismatch for optional
-                  {:error, _reason} ->
-                    {missing_acc, miss_ver_acc, inv_ver_fmt_acc, inv_req_acc,
-                     mismatch_acc, opt_missing_acc}
                 end
-
-              _ ->
-                {missing_acc, miss_ver_acc, inv_ver_fmt_acc, inv_req_acc,
-                 mismatch_acc, opt_missing_acc}
             end
 
           # Handle tuple format {dep_id, version_req}

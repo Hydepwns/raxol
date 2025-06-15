@@ -33,70 +33,45 @@ defmodule Raxol.Plugins.CellProcessor do
           {:ok, Core.t(), list(map()), list(binary())}
           # In case of error during processing
           | {:error, any()}
-  def process(%Core{} = manager, cells, emulator_state)
-      when is_list(cells) do
-    Raxol.Core.Runtime.Log.debug(
-      "[CellProcessor.process] Processing #{length(cells)} cells..."
-    )
-
-    # Accumulator: {updated_manager, processed_cells_list_reversed, collected_commands_list}
-    initial_acc = {manager, [], []}
-
-    {final_manager, final_cells_rev, final_commands} =
-      Enum.reduce(cells, initial_acc, fn cell,
-                                         {acc_manager, processed_cells_rev,
-                                          acc_commands} ->
-        # Check if the cell is a placeholder potentially handled by a plugin
-        case cell do
-          %{type: :placeholder, value: placeholder_value} = placeholder_cell ->
-            Raxol.Core.Runtime.Log.debug(
-              "[CellProcessor.process] Found placeholder: #{inspect(placeholder_value)}"
-            )
-
-            # Determine the responsible plugin name based on the placeholder type
-            plugin_name = determine_plugin_for_placeholder(placeholder_value)
-
-            # Delegate to a helper function to handle the placeholder with the specific plugin
-            {manager_after_processing, replacement_cells, new_commands} =
-              if plugin_name do
-                handle_placeholder_with_plugin(
-                  acc_manager,
-                  plugin_name,
-                  placeholder_cell,
-                  emulator_state
-                )
-              else
-                Raxol.Core.Runtime.Log.warning_with_context(
-                  "[CellProcessor.process] Unknown placeholder value: #{placeholder_value}. Skipping.",
-                  %{placeholder_value: placeholder_value}
-                )
-
-                # Return the accumulator state unchanged if no plugin is found
-                {acc_manager, [], []}
-              end
-
-            # Combine results for the next iteration
-            # Use the manager state resulting from the inner processing.
-            {manager_after_processing, replacement_cells ++ processed_cells_rev,
-             acc_commands ++ new_commands}
-
-          # Original cell was not a placeholder, keep it
-          valid_cell ->
-            # Prepend to the reversed list, pass original acc_manager forward
-            {acc_manager, [valid_cell | processed_cells_rev], acc_commands}
-        end
-      end)
-
-    # End of Enum.reduce
-
+  def process(%Core{} = manager, cells, emulator_state) when is_list(cells) do
+    Raxol.Core.Runtime.Log.debug("[CellProcessor.process] Processing #{length(cells)} cells...")
+    {final_manager, final_cells_rev, final_commands} = process_cells(manager, cells, emulator_state)
     final_cells = Enum.reverse(final_cells_rev)
 
     Raxol.Core.Runtime.Log.debug(
       "[CellProcessor.process] Finished. Final Cells: #{length(final_cells)}, Commands: #{length(final_commands)}"
     )
-
-    # Return the final manager state accumulated through the process
     {:ok, final_manager, final_cells, final_commands}
+  end
+
+  defp process_cells(manager, cells, emulator_state) do
+    Enum.reduce(cells, {manager, [], []}, fn cell, {acc_manager, processed_cells_rev, acc_commands} ->
+      process_single_cell(cell, acc_manager, processed_cells_rev, acc_commands, emulator_state)
+    end)
+  end
+
+  defp process_single_cell(%{type: :placeholder, value: placeholder_value} = placeholder_cell,
+                         acc_manager, processed_cells_rev, acc_commands, emulator_state) do
+    plugin_name = determine_plugin_for_placeholder(placeholder_value)
+    {manager_after_processing, replacement_cells, new_commands} =
+      if plugin_name do
+        handle_placeholder_with_plugin(acc_manager, plugin_name, placeholder_cell, emulator_state)
+      else
+        log_unknown_placeholder(placeholder_value)
+        {acc_manager, [], []}
+      end
+    {manager_after_processing, replacement_cells ++ processed_cells_rev, acc_commands ++ new_commands}
+  end
+
+  defp process_single_cell(valid_cell, acc_manager, processed_cells_rev, acc_commands, _emulator_state) do
+    {acc_manager, [valid_cell | processed_cells_rev], acc_commands}
+  end
+
+  defp log_unknown_placeholder(placeholder_value) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[CellProcessor.process] Unknown placeholder value: #{placeholder_value}. Skipping.",
+      %{placeholder_value: placeholder_value}
+    )
   end
 
   # --- Private Helper Functions ---
@@ -117,63 +92,46 @@ defmodule Raxol.Plugins.CellProcessor do
           map()
         ) ::
           {Core.t(), list(map()), list(binary())}
-  defp handle_placeholder_with_plugin(
-         manager,
-         plugin_name,
-         placeholder_cell,
-         emulator_state
-       ) do
+  defp handle_placeholder_with_plugin(manager, plugin_name, placeholder_cell, emulator_state) do
     case Map.get(manager.plugins, plugin_name) do
-      nil ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[CellProcessor.process] Plugin '#{plugin_name}' not loaded for placeholder '#{Map.get(placeholder_cell, :value)}'. Skipping.",
-          []
+      nil -> handle_missing_plugin(manager, plugin_name, placeholder_cell)
+      plugin -> handle_plugin_call(manager, plugin_name, plugin, placeholder_cell, emulator_state)
+    end
+  end
+
+  defp handle_missing_plugin(manager, plugin_name, placeholder_cell) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[CellProcessor.process] Plugin '#{plugin_name}' not loaded for placeholder '#{Map.get(placeholder_cell, :value)}'. Skipping.",
+      []
+    )
+    {manager, [], []}
+  end
+
+  defp handle_plugin_call(manager, plugin_name, plugin, placeholder_cell, emulator_state) do
+    if plugin.enabled and function_exported?(plugin.__struct__, :handle_cells, 3) do
+      log_plugin_call_details(plugin_name, plugin, placeholder_cell)
+      call_plugin_handle_cells(manager, plugin_name, plugin, placeholder_cell, emulator_state)
+    else
+      Raxol.Core.Runtime.Log.debug(
+        "[CellProcessor.process] Plugin '#{plugin_name}' disabled or does not implement handle_cells/3. Skipping."
+      )
+      {manager, [], []}
+    end
+  end
+
+  defp call_plugin_handle_cells(manager, plugin_name, plugin, placeholder_cell, emulator_state) do
+    try do
+      handle_cells_result = plugin.__struct__.handle_cells(placeholder_cell, emulator_state, plugin)
+      process_plugin_handle_cells_result(manager, plugin_name, handle_cells_result)
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[CellProcessor.process] RESCUED Error calling #{plugin_name}.handle_cells: #{inspect(e)}. Placeholder was: #{inspect(placeholder_cell)}",
+          e,
+          nil,
+          %{plugin_name: plugin_name, placeholder_cell: placeholder_cell}
         )
-
-        # Return default accumulator if plugin not found
         {manager, [], []}
-
-      plugin ->
-        # Call only the relevant plugin's handle_cells
-        if plugin.enabled and
-             function_exported?(plugin.__struct__, :handle_cells, 3) do
-          log_plugin_call_details(plugin_name, plugin, placeholder_cell)
-
-          try do
-            # Call the plugin's handle_cells function
-            handle_cells_result =
-              plugin.__struct__.handle_cells(
-                placeholder_cell,
-                emulator_state,
-                plugin
-              )
-
-            # Process the result from the plugin
-            process_plugin_handle_cells_result(
-              manager,
-              plugin_name,
-              handle_cells_result
-            )
-          rescue
-            e ->
-              Raxol.Core.Runtime.Log.error_with_stacktrace(
-                "[CellProcessor.process] RESCUED Error calling #{plugin_name}.handle_cells: #{inspect(e)}. Placeholder was: #{inspect(placeholder_cell)}",
-                e,
-                nil,
-                %{plugin_name: plugin_name, placeholder_cell: placeholder_cell}
-              )
-
-              # Return default accumulator on error
-              {manager, [], []}
-          end
-        else
-          # Plugin exists but is disabled or doesn't implement handle_cells
-          Raxol.Core.Runtime.Log.debug(
-            "[CellProcessor.process] Plugin '#{plugin_name}' disabled or does not implement handle_cells/3. Skipping."
-          )
-
-          {manager, [], []}
-        end
     end
   end
 
@@ -201,72 +159,55 @@ CELL DATA: #{inspect(placeholder_cell)}"
   # Returns {updated_manager, replacement_cells, new_commands}
   @spec process_plugin_handle_cells_result(Core.t(), String.t(), any()) ::
           {Core.t(), list(map()), list(binary())}
-  defp process_plugin_handle_cells_result(
-         manager,
-         plugin_name,
-         handle_cells_result
-       ) do
+  defp process_plugin_handle_cells_result(manager, plugin_name, handle_cells_result) do
     case handle_cells_result do
-      # Plugin handled it, returning cells and commands
-      {:ok, updated_plugin_state, plugin_cells, plugin_commands}
-      when is_list(plugin_cells) ->
-        log_plugin_handled_details(
-          plugin_name,
-          updated_plugin_state,
-          plugin_cells,
-          plugin_commands
-        )
-
-        # Update manager state
-        updated_manager = %{
-          manager
-          | plugins: Map.put(manager.plugins, plugin_name, updated_plugin_state)
-        }
-
-        # Return the result (handled = true)
-        {updated_manager, plugin_cells, plugin_commands}
-
-      # Plugin declined or returned unexpected success format (invalid cells)
+      {:ok, updated_plugin_state, plugin_cells, plugin_commands} when is_list(plugin_cells) ->
+        handle_successful_result(manager, plugin_name, updated_plugin_state, plugin_cells, plugin_commands)
       {:ok, updated_plugin_state, invalid_cells_param, plugin_commands} ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[CellProcessor.process] Plugin #{plugin_name} handled placeholder but returned invalid cell format. Treating as decline.",
-          %{
-            plugin_name: plugin_name,
-            invalid_cells: invalid_cells_param,
-            plugin_commands: plugin_commands
-          }
-        )
-
-        updated_manager = %{
-          manager
-          | plugins: Map.put(manager.plugins, plugin_name, updated_plugin_state)
-        }
-
-        # Return default accumulator (handled = false), but with updated manager and commands
-        {updated_manager, [], plugin_commands}
-
-      # Handle cases where plugin declines (:cont)
+        handle_invalid_cells(manager, plugin_name, updated_plugin_state, invalid_cells_param, plugin_commands)
       {:cont, updated_plugin_state} ->
-        log_plugin_declined_details(plugin_name, updated_plugin_state)
-
-        updated_manager = %{
-          manager
-          | plugins: Map.put(manager.plugins, plugin_name, updated_plugin_state)
-        }
-
-        # Return default accumulator (handled = false), but with updated manager
-        {updated_manager, [], []}
-
-      # {:error, _} or other unexpected return
+        handle_declined_result(manager, plugin_name, updated_plugin_state)
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[CellProcessor.process] Plugin #{plugin_name} returned unexpected value from handle_cells. Skipping.",
-          %{plugin_name: plugin_name, handle_cells_result: handle_cells_result}
-        )
-
-        # Return default accumulator
-        {manager, [], []}
+        handle_unexpected_result(manager, plugin_name, handle_cells_result)
     end
+  end
+
+  defp handle_successful_result(manager, plugin_name, plugin_state, cells, commands) do
+    log_plugin_handled_details(plugin_name, plugin_state, cells, commands)
+    {update_manager_state(manager, plugin_name, plugin_state), cells, commands}
+  end
+
+  defp handle_invalid_cells(manager, plugin_name, plugin_state, invalid_cells, commands) do
+    log_invalid_cells(plugin_name, invalid_cells, commands)
+    {update_manager_state(manager, plugin_name, plugin_state), [], commands}
+  end
+
+  defp handle_declined_result(manager, plugin_name, plugin_state) do
+    log_plugin_declined_details(plugin_name, plugin_state)
+    {update_manager_state(manager, plugin_name, plugin_state), [], []}
+  end
+
+  defp handle_unexpected_result(manager, plugin_name, result) do
+    log_unexpected_result(plugin_name, result)
+    {manager, [], []}
+  end
+
+  defp update_manager_state(manager, plugin_name, plugin_state) do
+    %{manager | plugins: Map.put(manager.plugins, plugin_name, plugin_state)}
+  end
+
+  defp log_invalid_cells(plugin_name, invalid_cells_param, plugin_commands) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[CellProcessor.process] Plugin #{plugin_name} handled placeholder but returned invalid cell format. Treating as decline.",
+      %{plugin_name: plugin_name, invalid_cells: invalid_cells_param, plugin_commands: plugin_commands}
+    )
+  end
+
+  defp log_unexpected_result(plugin_name, handle_cells_result) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[CellProcessor.process] Plugin #{plugin_name} returned unexpected value from handle_cells. Skipping.",
+      %{plugin_name: plugin_name, handle_cells_result: handle_cells_result}
+    )
   end
 
   # Logs details when a plugin successfully handles a placeholder

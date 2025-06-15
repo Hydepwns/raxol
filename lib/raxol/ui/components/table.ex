@@ -253,7 +253,9 @@ defmodule Raxol.UI.Components.Table do
   end
 
   def handle_event({:key, {:page_down, _}}, _context, state) do
-    new_index = min(state.selected_row + state.page_size, length(state.data) - 1)
+    new_index =
+      min(state.selected_row + state.page_size, length(state.data) - 1)
+
     {:ok, %{state | selected_row: new_index}}
   end
 
@@ -302,7 +304,9 @@ defmodule Raxol.UI.Components.Table do
 
   def handle_event({:mouse, {:click, {_x, y}}}, _context, state) do
     # Calculate row index based on y position
-    row_index = div(y - 1, 1)  # Assuming each row is 1 unit high
+    # Assuming each row is 1 unit high
+    row_index = div(y - 1, 1)
+
     if row_index >= 0 and row_index < length(state.data) do
       {:ok, %{state | selected_row: row_index}}
     else

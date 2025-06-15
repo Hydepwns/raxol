@@ -50,7 +50,8 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
     }
   end
 
-  @spec init_from_saved_layout(list(), map()) :: {:ok, Model.t()} | {:error, any()}
+  @spec init_from_saved_layout(list(), map()) ::
+          {:ok, Model.t()} | {:error, any()}
   @doc """
   Initializes the Dashboard state from a saved layout.
   If no saved layout exists, returns default widgets with the given grid configuration.
@@ -155,7 +156,10 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
         end
 
       _ ->
-        Raxol.Core.Runtime.Log.debug("Dashboard received message: #{inspect(msg)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Dashboard received message: #{inspect(msg)}"
+        )
+
         {state, []}
     end
   end

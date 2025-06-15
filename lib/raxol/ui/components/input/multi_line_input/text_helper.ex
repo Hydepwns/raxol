@@ -108,7 +108,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
     # Text Before: Slice up to the start index
     text_before = String.slice(joined_text, 0, clamped_start)
-    Raxol.Core.Runtime.Log.debug("replace_text_range: text_before=#{inspect(text_before)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "replace_text_range: text_before=#{inspect(text_before)}"
+    )
 
     # Text After: Needs to start AT the index for insertion, AFTER for deletion/replace
     is_insertion = start_pos_tuple == end_pos_tuple and replacement != ""
@@ -133,7 +136,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         max(0, joined_text_len - slice_after_start_index)
       )
 
-    Raxol.Core.Runtime.Log.debug("replace_text_range: text_after=#{inspect(text_after)}")
+    Raxol.Core.Runtime.Log.debug(
+      "replace_text_range: text_after=#{inspect(text_after)}"
+    )
 
     # Replaced Text Calculation - uses exclusive end index logic
     replaced_length =
@@ -155,7 +160,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
     # Construct new text
     new_full_text = text_before <> replacement <> text_after
-    Raxol.Core.Runtime.Log.debug("replace_text_range: new_full_text=#{inspect(new_full_text)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "replace_text_range: new_full_text=#{inspect(new_full_text)}"
+    )
+
     {new_full_text, replaced_text}
   end
 

@@ -45,7 +45,9 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update value
-    Raxol.Core.Runtime.Log.debug("ProgressBar #{state.id} received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "ProgressBar #{state.id} received message: #{inspect(msg)}"
+    )
 
     case msg do
       {:set_value, value} when is_number(value) ->
@@ -60,7 +62,10 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Handle events if needed
-    Raxol.Core.Runtime.Log.debug("ProgressBar #{state.id} received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug(
+      "ProgressBar #{state.id} received event: #{inspect(event)}"
+    )
+
     {state, []}
   end
 

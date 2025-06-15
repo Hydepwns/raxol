@@ -97,36 +97,23 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Reloading plugin: #{plugin_id}",
           %{}
         )
+        do_reload_plugin(plugin_id, state)
+    end
+  end
 
-        # First disable the plugin
-        case disable_plugin(plugin_id, state) do
-          {:ok, state_after_disable} ->
-            # Then re-enable it
-            case enable_plugin(plugin_id, state_after_disable) do
-              {:ok, state_after_enable} ->
-                {:ok, state_after_enable}
-
-              {:error, reason} ->
-                Raxol.Core.Runtime.Log.error_with_stacktrace(
-                  "[#{__MODULE__}] Error re-enabling plugin after reload",
-                  reason,
-                  nil,
-                  %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
-                )
-
-                {:error, reason}
-            end
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Error disabling plugin for reload",
-              reason,
-              nil,
-              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
-            )
-
-            {:error, reason}
-        end
+  defp do_reload_plugin(plugin_id, state) do
+    with {:ok, state_after_disable} <- disable_plugin(plugin_id, state),
+         {:ok, state_after_enable} <- enable_plugin(plugin_id, state_after_disable) do
+      {:ok, state_after_enable}
+    else
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Error during plugin reload",
+          reason,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+        )
+        {:error, reason}
     end
   end
 
@@ -134,48 +121,47 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   Loads a plugin with the given configuration.
   """
   def load_plugin(plugin_id, config, state) do
+    log_plugin_loading(plugin_id)
+    load_and_initialize_plugin(plugin_id, config, state)
+  end
+
+  defp log_plugin_loading(plugin_id) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Loading plugin: #{plugin_id}",
       %{}
     )
+  end
 
+  defp load_and_initialize_plugin(plugin_id, config, state) do
     case state.loader_module.load_plugin(plugin_id, config) do
-      {:ok, plugin, metadata} ->
-        # Initialize the plugin
-        case state.lifecycle_helper_module.initialize_plugin(plugin, config) do
-          {:ok, initial_state} ->
-            # Update state with new plugin
-            updated_state = %{
-              state
-              | plugins: Map.put(state.plugins, plugin_id, plugin),
-                metadata: Map.put(state.metadata, plugin_id, metadata),
-                plugin_states:
-                  Map.put(state.plugin_states, plugin_id, initial_state),
-                load_order: [plugin_id | state.load_order]
-            }
-
-            {:ok, updated_state}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Error loading plugin",
-              reason,
-              nil,
-              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
-            )
-
-            {:error, reason}
-        end
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Error loading plugin",
-          reason,
-          nil,
-          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
-        )
-
-        {:error, reason}
+      {:ok, plugin, metadata} -> initialize_and_update_state(plugin_id, plugin, metadata, config, state)
+      {:error, reason} -> handle_load_error(reason, plugin_id)
     end
+  end
+
+  defp initialize_and_update_state(plugin_id, plugin, metadata, config, state) do
+    case state.lifecycle_helper_module.initialize_plugin(plugin, config) do
+      {:ok, initial_state} -> {:ok, update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state)}
+      {:error, reason} -> handle_load_error(reason, plugin_id)
+    end
+  end
+
+  defp update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state) do
+    %{state |
+      plugins: Map.put(state.plugins, plugin_id, plugin),
+      metadata: Map.put(state.metadata, plugin_id, metadata),
+      plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
+      load_order: [plugin_id | state.load_order]
+    }
+  end
+
+  defp handle_load_error(reason, plugin_id) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Error loading plugin",
+      reason,
+      nil,
+      %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+    )
+    {:error, reason}
   end
 end

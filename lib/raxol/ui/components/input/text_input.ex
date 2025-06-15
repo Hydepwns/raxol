@@ -238,7 +238,10 @@ defmodule Raxol.UI.Components.Input.TextInput do
   @impl true
   @spec update(term(), map()) :: map()
   def update(message, state) do
-    Raxol.Core.Runtime.Log.debug("[TextInput] Received unhandled message: #{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug(
+      "[TextInput] Received unhandled message: #{inspect(message)}"
+    )
+
     state
   end
 

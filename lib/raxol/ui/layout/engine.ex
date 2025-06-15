@@ -199,6 +199,7 @@ defmodule Raxol.UI.Layout.Engine do
       "LayoutEngine: Received non-element data: #{inspect(other)}",
       %{}
     )
+
     acc
   end
 
@@ -233,9 +234,6 @@ defmodule Raxol.UI.Layout.Engine do
   """
   def measure_element(element, available_space \\ %{})
 
-  # The clauses below starting from the one matching %{type: type, attrs: attrs} are the main implementation
-  # --- Measurement Logic ---
-
   # Handles valid elements (maps with :type and :attrs)
   def measure_element(%{type: type, attrs: attrs} = element, available_space)
       when is_atom(type) do
@@ -244,24 +242,49 @@ defmodule Raxol.UI.Layout.Engine do
     measure_element_by_type(type, element, attrs_map, available_space)
   end
 
+  # Catch-all for unknown element types
+  def measure_element(other, _available_space) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "LayoutEngine: Cannot measure unknown element type: #{inspect(other)}",
+      %{}
+    )
+
+    %{width: 0, height: 0}
+  end
+
   defp measure_element_by_type(type, element, attrs_map, available_space) do
     case type do
       type when type in [:text, :label, :box, :checkbox] ->
         Elements.measure(type, attrs_map)
+
       type when type in [:button, :text_input] ->
         Inputs.measure(type, attrs_map, available_space)
+
       type when type in [:row, :column, :panel, :grid, :view] ->
         measure_container_element(type, element, available_space)
-      :table -> Table.measure(attrs_map, available_space)
-      _ -> handle_unknown_element(type)
+
+      :table ->
+        Table.measure(attrs_map, available_space)
+
+      _ ->
+        handle_unknown_element(type)
     end
   end
 
-  defp measure_container_element(:row, element, available_space), do: Containers.measure_row(element, available_space)
-  defp measure_container_element(:column, element, available_space), do: Containers.measure_column(element, available_space)
-  defp measure_container_element(:panel, element, available_space), do: Panels.measure_panel(element, available_space)
-  defp measure_container_element(:grid, element, available_space), do: Grid.measure_grid(element, available_space)
-  defp measure_container_element(:view, element, available_space), do: measure_view(element, available_space)
+  defp measure_container_element(:row, element, available_space),
+    do: Containers.measure_row(element, available_space)
+
+  defp measure_container_element(:column, element, available_space),
+    do: Containers.measure_column(element, available_space)
+
+  defp measure_container_element(:panel, element, available_space),
+    do: Panels.measure_panel(element, available_space)
+
+  defp measure_container_element(:grid, element, available_space),
+    do: Grid.measure_grid(element, available_space)
+
+  defp measure_container_element(:view, element, available_space),
+    do: measure_view(element, available_space)
 
   defp measure_view(element, available_space) do
     %{type: :column, children: Map.get(element, :children, [])}
@@ -271,15 +294,6 @@ defmodule Raxol.UI.Layout.Engine do
   defp handle_unknown_element(type) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "LayoutEngine: Cannot measure element type: #{inspect(type)}",
-      %{}
-    )
-    %{width: 0, height: 0}
-  end
-
-  # Catch-all for non-element data or invalid elements
-  def measure_element(other, _available_space) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "LayoutEngine: Cannot measure non-element or invalid element: #{inspect(other)}",
       %{}
     )
 

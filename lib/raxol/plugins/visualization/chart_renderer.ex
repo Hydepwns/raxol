@@ -59,128 +59,102 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   # Draws a simple text-based bar chart within the given bounds.
   # Assumes data is a list of {label, value} tuples or maps with :label and :value keys.
   defp draw_tui_bar_chart(data, title, %{width: width, height: height} = bounds) do
-    # Basic validation
-    unless is_list(data) and width > 4 and height > 4 do
+    if is_list(data) and width > 4 and height > 4 do
+      {max_value, min_value} = calculate_value_bounds(data)
+      {chart_height, chart_width} = calculate_chart_dimensions(width, height)
+      grid = initialize_grid(width, height, title, max_value, min_value)
+      draw_chart_content(grid, data, max_value, min_value, chart_height, chart_width, height, width)
+    else
       DrawingUtils.draw_box_with_text(
         if(data == [], do: "[No Data]", else: "!"),
         bounds
       )
-    else
-      # Extract values for scaling
-      values =
-        Enum.map(data, fn item ->
-          case item do
-            {_label, value} -> value
-            %{value: value} -> value
-            # Default for invalid items
-            _ -> 0
-          end
-        end)
-
-      max_value = Enum.max_by(data, &elem(&1, 1), fn -> {nil, 0} end) |> elem(1)
-      # Ensure min_value is at most 0
-      min_value = Enum.min([0 | values])
-
-      # Calculate chart area (leave space for title, axes/labels)
-      # Top title, bottom labels
-      chart_height = max(1, height - 2)
-      # Left axis, right padding
-      chart_width = max(1, width - 4)
-
-      # Create empty grid (rows of columns)
-      grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
-
-      # Draw Title
-      grid = DrawingUtils.draw_text_centered(grid, 0, title)
-
-      # Draw Y-axis (simple min/max for now)
-      grid = DrawingUtils.draw_text(grid, 1, 0, Integer.to_string(max_value))
-
-      grid =
-        DrawingUtils.draw_text(
-          grid,
-          height - 2,
-          0,
-          Integer.to_string(min_value)
-        )
-
-      # Draw simple Y-axis line
-      grid =
-        Enum.reduce(1..(height - 2), grid, fn y, acc_grid ->
-          axis_style = Style.new(fg: :dark_gray)
-
-          DrawingUtils.put_cell(acc_grid, y, 3, %{
-            Cell.new("|")
-            | style: axis_style
-          })
-        end)
-
-      # Determine bar width and spacing
-      num_bars = Enum.count(data)
-
-      # Calculate widths, accounting for spacing
-      # Subtract potential spacing. Fixed typo.
-      total_bar_area_width = max(1, chart_width - (num_bars - 1))
-      bar_width = max(1, div(total_bar_area_width, num_bars))
-
-      # spacing = if num_bars > 1, do: max(0, div(chart_width - bar_width * num_bars, num_bars - 1)), else: 0
-      # Simplified spacing
-      spacing = if num_bars > 1, do: 1, else: 0
-
-      # Draw Bars and X-axis labels
-      Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, _index},
-                                                       {acc_grid, current_x} ->
-        # Normalize value to chart height
-        bar_height =
-          if max_value == 0 do
-            # Avoid division by zero
-            0
-          else
-            round(
-              chart_height * (value - min_value) / max(1, max_value - min_value)
-            )
-          end
-
-        bar_start_y = height - 2 - bar_height
-
-        # Draw the bar
-        new_grid =
-          Enum.reduce(0..(bar_width - 1), acc_grid, fn w_offset, inner_grid ->
-            Enum.reduce(bar_start_y..(height - 2), inner_grid, fn y,
-                                                                  innermost_grid ->
-              # Use correct Style module
-              style = Style.new(bg: :blue, fg: :blue)
-              # Use block character
-              cell = %{Cell.new("█") | style: style}
-
-              DrawingUtils.put_cell(
-                innermost_grid,
-                y,
-                current_x + w_offset,
-                cell
-              )
-            end)
-          end)
-
-        # Draw X-axis label (truncated)
-        label_str =
-          case label do
-            l when is_binary(l) -> l
-            l -> inspect(l)
-          end
-          |> String.slice(0, bar_width)
-
-        final_grid =
-          DrawingUtils.draw_text(new_grid, height - 1, current_x, label_str)
-
-        # Calculate next bar's starting position
-        next_x = current_x + bar_width + spacing
-
-        {final_grid, next_x}
-      end)
-      # Return just the final grid
-      |> elem(0)
     end
+  end
+
+  defp calculate_value_bounds(data) do
+    values = Enum.map(data, fn
+      {_label, value} -> value
+      %{value: value} -> value
+      _ -> 0
+    end)
+    max_value = Enum.max_by(data, &elem(&1, 1), fn -> {nil, 0} end) |> elem(1)
+    min_value = Enum.min([0 | values])
+    {max_value, min_value}
+  end
+
+  defp calculate_chart_dimensions(width, height) do
+    chart_height = max(1, height - 2)
+    chart_width = max(1, width - 4)
+    {chart_height, chart_width}
+  end
+
+  defp initialize_grid(width, height, title, max_value, min_value) do
+    grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
+    grid = DrawingUtils.draw_text_centered(grid, 0, title)
+    grid = DrawingUtils.draw_text(grid, 1, 0, Integer.to_string(max_value))
+    grid = DrawingUtils.draw_text(grid, height - 2, 0, Integer.to_string(min_value))
+    draw_y_axis(grid, height)
+  end
+
+  defp draw_y_axis(grid, height) do
+    Enum.reduce(1..(height - 2), grid, fn y, acc_grid ->
+      axis_style = Style.new(fg: :dark_gray)
+      DrawingUtils.put_cell(acc_grid, y, 3, %{Cell.new("|") | style: axis_style})
+    end)
+  end
+
+  defp draw_chart_content(grid, data, max_value, min_value, chart_height, chart_width, height, width) do
+    num_bars = Enum.count(data)
+    total_bar_area_width = max(1, chart_width - (num_bars - 1))
+    bar_width = max(1, div(total_bar_area_width, num_bars))
+    spacing = if num_bars > 1, do: 1, else: 0
+
+    Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, _index},
+                                                     {acc_grid, current_x} ->
+      bar_height = calculate_bar_height(value, max_value, min_value, chart_height)
+      bar_start_y = height - 2 - bar_height
+      new_grid = draw_bar(acc_grid, bar_width, bar_start_y, height, current_x)
+      draw_label_and_advance(new_grid, label, bar_width, height, current_x, spacing)
+    end)
+    |> elem(0)
+  end
+
+  defp calculate_bar_height(value, max_value, min_value, chart_height) do
+    if max_value == 0 do
+      0
+    else
+      round(chart_height * (value - min_value) / max(1, max_value - min_value))
+    end
+  end
+
+  defp draw_bar(grid, bar_width, bar_start_y, height, current_x) do
+    Enum.reduce(0..(bar_width - 1), grid, fn w_offset, inner_grid ->
+      draw_bar_column(inner_grid, bar_start_y, height, current_x + w_offset)
+    end)
+  end
+
+  defp draw_bar_column(grid, bar_start_y, height, x) do
+    Enum.reduce(bar_start_y..(height - 2), grid, fn y, acc_grid ->
+      style = Style.new(bg: :blue, fg: :blue)
+      cell = %{Cell.new("█") | style: style}
+      DrawingUtils.put_cell(acc_grid, y, x, cell)
+    end)
+  end
+
+  defp draw_label_and_advance(grid, label, bar_width, height, current_x, spacing) do
+    label_str = format_label(label, bar_width)
+    final_grid = DrawingUtils.draw_text(grid, height - 1, current_x, label_str)
+    next_x = current_x + bar_width + spacing
+    {final_grid, next_x}
+  end
+
+  defp format_label(label, bar_width) do
+    case label do
+      l when is_binary(l) -> l
+      l -> inspect(l)
+    end
+    |> String.slice(0, bar_width)
   end
 
   # --- Private Data Handling ---
