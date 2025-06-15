@@ -7,6 +7,16 @@
 # The directory Mix downloads your dependencies sources to.
 /deps/
 
+# Ignore specific priv directories and files
+/priv/plts/
+/priv/static/cache_manifest.json
+/priv/static/assets/
+/priv/static/js/
+/priv/static/favicon.ico
+/priv/static/images/
+/priv/static/fonts/
+/priv/static/robots.txt
+
 # Where third-party dependencies like ExDoc output generated docs.
 /doc/
 
