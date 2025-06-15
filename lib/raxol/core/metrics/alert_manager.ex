@@ -16,22 +16,25 @@ defmodule Raxol.Core.Metrics.AlertManager do
   @type alert_condition :: :above | :below | :equals | :not_equals
   @type alert_severity :: :info | :warning | :error | :critical
   @type alert_rule :: %{
-    name: String.t(),
-    description: String.t(),
-    metric_name: String.t(),
-    condition: alert_condition(),
-    threshold: number(),
-    severity: alert_severity(),
-    tags: map(),
-    group_by: [String.t()],
-    cooldown: pos_integer(), # seconds
-    notification_channels: [String.t()]
-  }
+          name: String.t(),
+          description: String.t(),
+          metric_name: String.t(),
+          condition: alert_condition(),
+          threshold: number(),
+          severity: alert_severity(),
+          tags: map(),
+          group_by: [String.t()],
+          # seconds
+          cooldown: pos_integer(),
+          notification_channels: [String.t()]
+        }
 
   @default_options %{
-    check_interval: 60, # 1 minute in seconds
+    # 1 minute in seconds
+    check_interval: 60,
     history_size: 1000,
-    default_cooldown: 300, # 5 minutes in seconds
+    # 5 minutes in seconds
+    default_cooldown: 300,
     default_severity: :warning
   }
 
@@ -86,6 +89,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
       alert_history: %{},
       options: Map.merge(@default_options, Map.new(opts))
     }
+
     schedule_check()
     {:ok, state}
   end
@@ -95,16 +99,18 @@ defmodule Raxol.Core.Metrics.AlertManager do
     rule_id = state.next_rule_id
     validated_rule = validate_rule(rule)
 
-    new_state = %{state |
-      rules: Map.put(state.rules, rule_id, validated_rule),
-      alert_states: Map.put(state.alert_states, rule_id, %{
-        active: false,
-        last_triggered: nil,
-        acknowledged: false,
-        current_value: nil
-      }),
-      alert_history: Map.put(state.alert_history, rule_id, []),
-      next_rule_id: rule_id + 1
+    new_state = %{
+      state
+      | rules: Map.put(state.rules, rule_id, validated_rule),
+        alert_states:
+          Map.put(state.alert_states, rule_id, %{
+            active: false,
+            last_triggered: nil,
+            acknowledged: false,
+            current_value: nil
+          }),
+        alert_history: Map.put(state.alert_history, rule_id, []),
+        next_rule_id: rule_id + 1
     }
 
     {:reply, {:ok, rule_id}, new_state}
@@ -139,9 +145,12 @@ defmodule Raxol.Core.Metrics.AlertManager do
 
       alert_state ->
         new_alert_state = %{alert_state | acknowledged: true}
-        new_state = %{state |
-          alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
+
+        new_state = %{
+          state
+          | alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
         }
+
         {:reply, {:ok, new_alert_state}, new_state}
     end
   end
@@ -179,17 +188,19 @@ defmodule Raxol.Core.Metrics.AlertManager do
     current_value = get_current_value(metrics, rule)
     alert_state = state.alert_states[rule_id]
 
-    {new_alert_state, should_trigger} = evaluate_alert(
-      current_value,
-      rule,
-      alert_state
-    )
+    {new_alert_state, should_trigger} =
+      evaluate_alert(
+        current_value,
+        rule,
+        alert_state
+      )
 
     if should_trigger do
       trigger_alert(rule_id, rule, current_value, state)
     else
-      %{state |
-        alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
+      %{
+        state
+        | alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
       }
     end
   end
@@ -217,23 +228,29 @@ defmodule Raxol.Core.Metrics.AlertManager do
 
   defp evaluate_alert(current_value, rule, alert_state) do
     now = DateTime.utc_now()
-    in_cooldown = case alert_state.last_triggered do
-      nil -> false
-      last_triggered ->
-        DateTime.diff(now, last_triggered) < rule.cooldown
-    end
 
-    should_trigger = case {rule.condition, current_value, rule.threshold} do
-      {:above, value, threshold} when value > threshold -> true
-      {:below, value, threshold} when value < threshold -> true
-      {:equals, value, threshold} when value == threshold -> true
-      {:not_equals, value, threshold} when value != threshold -> true
-      _ -> false
-    end
+    in_cooldown =
+      case alert_state.last_triggered do
+        nil ->
+          false
 
-    new_alert_state = %{alert_state |
-      current_value: current_value,
-      active: should_trigger and not in_cooldown
+        last_triggered ->
+          DateTime.diff(now, last_triggered) < rule.cooldown
+      end
+
+    should_trigger =
+      case {rule.condition, current_value, rule.threshold} do
+        {:above, value, threshold} when value > threshold -> true
+        {:below, value, threshold} when value < threshold -> true
+        {:equals, value, threshold} when value == threshold -> true
+        {:not_equals, value, threshold} when value != threshold -> true
+        _ -> false
+      end
+
+    new_alert_state = %{
+      alert_state
+      | current_value: current_value,
+        active: should_trigger and not in_cooldown
     }
 
     {new_alert_state, should_trigger and not in_cooldown}
@@ -241,6 +258,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
 
   defp trigger_alert(rule_id, rule, current_value, state) do
     now = DateTime.utc_now()
+
     alert = %{
       rule_id: rule_id,
       rule_name: rule.name,
@@ -267,9 +285,10 @@ defmodule Raxol.Core.Metrics.AlertManager do
     # Send notifications
     send_notifications(alert, rule.notification_channels)
 
-    %{state |
-      alert_states: Map.put(state.alert_states, rule_id, new_alert_state),
-      alert_history: Map.put(state.alert_history, rule_id, history)
+    %{
+      state
+      | alert_states: Map.put(state.alert_states, rule_id, new_alert_state),
+        alert_history: Map.put(state.alert_history, rule_id, history)
     }
   end
 
@@ -297,6 +316,10 @@ defmodule Raxol.Core.Metrics.AlertManager do
   end
 
   defp schedule_check do
-    Process.send_after(self(), :check_alerts, @default_options.check_interval * 1000)
+    Process.send_after(
+      self(),
+      :check_alerts,
+      @default_options.check_interval * 1000
+    )
   end
 end

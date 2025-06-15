@@ -16,19 +16,21 @@ defmodule Raxol.Core.Metrics.Aggregator do
   @type aggregation_type :: :sum | :mean | :median | :min | :max | :percentile
   @type time_window :: :minute | :hour | :day | :week | :month
   @type aggregation_rule :: %{
-    type: aggregation_type(),
-    window: time_window(),
-    metric_name: String.t(),
-    tags: map(),
-    group_by: [String.t()]
-  }
+          type: aggregation_type(),
+          window: time_window(),
+          metric_name: String.t(),
+          tags: map(),
+          group_by: [String.t()]
+        }
 
   @default_options %{
     window_size: :hour,
     aggregation_types: [:mean, :max, :min],
     group_by: [],
-    retention_period: 7 * 24 * 60 * 60, # 7 days in seconds
-    update_interval: 60 # 1 minute in seconds
+    # 7 days in seconds
+    retention_period: 7 * 24 * 60 * 60,
+    # 1 minute in seconds
+    update_interval: 60
   }
 
   @doc """
@@ -73,6 +75,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
   def calculate_aggregation(values, :mean) do
     Enum.sum(values) / length(values)
   end
+
   def calculate_aggregation(values, :sum), do: Enum.sum(values)
   def calculate_aggregation(values, :min), do: Enum.min(values)
   def calculate_aggregation(values, :max), do: Enum.max(values)
@@ -85,6 +88,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
       aggregations: %{},
       options: Map.merge(@default_options, Map.new(opts))
     }
+
     schedule_update()
     {:ok, state}
   end
@@ -94,10 +98,11 @@ defmodule Raxol.Core.Metrics.Aggregator do
     rule_id = state.next_rule_id
     validated_rule = validate_rule(rule)
 
-    new_state = %{state |
-      rules: Map.put(state.rules, rule_id, validated_rule),
-      aggregations: Map.put(state.aggregations, rule_id, []),
-      next_rule_id: rule_id + 1
+    new_state = %{
+      state
+      | rules: Map.put(state.rules, rule_id, validated_rule),
+        aggregations: Map.put(state.aggregations, rule_id, []),
+        next_rule_id: rule_id + 1
     }
 
     {:reply, {:ok, rule_id}, new_state}
@@ -121,8 +126,9 @@ defmodule Raxol.Core.Metrics.Aggregator do
         metrics = UnifiedCollector.get_metrics(rule.metric_name, rule.tags)
         aggregated = aggregate_metrics(metrics, rule)
 
-        new_state = %{state |
-          aggregations: Map.put(state.aggregations, rule_id, aggregated)
+        new_state = %{
+          state
+          | aggregations: Map.put(state.aggregations, rule_id, aggregated)
         }
 
         {:reply, {:ok, aggregated}, new_state}
@@ -156,6 +162,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
     |> group_metrics(rule.group_by)
     |> Enum.map(fn {group, group_metrics} ->
       aggregated_value = calculate_aggregation(group_metrics, rule.type)
+
       %{
         timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
         value: aggregated_value,
@@ -169,6 +176,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
   defp group_metrics(metrics, []) do
     [{"all", metrics}]
   end
+
   defp group_metrics(metrics, group_by) do
     metrics
     |> Enum.group_by(fn metric ->
@@ -178,36 +186,23 @@ defmodule Raxol.Core.Metrics.Aggregator do
     end)
   end
 
-  defp calculate_median(values) do
-    sorted = Enum.sort(values)
-    len = length(sorted)
-    mid = div(len, 2)
-
-    if rem(len, 2) == 0 do
-      (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
-    else
-      Enum.at(sorted, mid)
-    end
-  end
-
-  defp calculate_percentile(values, percentile) do
-    sorted = Enum.sort(values)
-    index = round(length(sorted) * percentile / 100)
-    Enum.at(sorted, index)
-  end
-
   defp update_all_aggregations(state) do
     Enum.reduce(state.rules, state, fn {rule_id, rule}, acc_state ->
       metrics = UnifiedCollector.get_metrics(rule.metric_name, rule.tags)
       aggregated = aggregate_metrics(metrics, rule)
 
-      %{acc_state |
-        aggregations: Map.put(acc_state.aggregations, rule_id, aggregated)
+      %{
+        acc_state
+        | aggregations: Map.put(acc_state.aggregations, rule_id, aggregated)
       }
     end)
   end
 
   defp schedule_update do
-    Process.send_after(self(), :update_aggregations, @default_options.update_interval * 1000)
+    Process.send_after(
+      self(),
+      :update_aggregations,
+      @default_options.update_interval * 1000
+    )
   end
 end

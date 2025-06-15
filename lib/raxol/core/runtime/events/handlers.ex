@@ -12,21 +12,8 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
 
   @doc """
   Registers a new event handler for the specified event types.
-
-  ## Parameters
-  - `handler_id`: Unique identifier for the handler
-  - `event_types`: List of event types the handler should receive
-  - `handler_fun`: Function to call when an event occurs
-  - `options`: Additional options for handler registration
-    - `:priority` - Handler priority (default: 100, lower numbers run first)
-    - `:filter` - Optional filter function to determine if events should be handled
-
-  ## Returns
-  `{:ok, handler_id}` if registration succeeded,
-  `{:error, reason}` otherwise.
   """
   def register_handler(handler_id, event_types, handler_fun, options \\ []) do
-    # Default options
     priority = Keyword.get(options, :priority, 100)
     filter = Keyword.get(options, :filter, fn _event -> true end)
 
@@ -38,8 +25,6 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
       filter: filter
     }
 
-    # Store the handler in the process dictionary or ETS table
-    # This is a placeholder - in the real implementation, we'd use a more robust storage
     put_handler(handler_id, handler)
 
     {:ok, handler_id}
@@ -50,10 +35,6 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
 
   ## Parameters
   - `handler_id`: ID of the handler to remove
-
-  ## Returns
-  `:ok` if the handler was removed,
-  `{:error, :not_found}` if the handler wasn't registered.
   """
   def unregister_handler(handler_id) do
     case get_handler(handler_id) do
@@ -68,97 +49,79 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
 
   @doc """
   Executes all registered handlers for the given event.
-
   Handlers are executed in priority order (lowest to highest).
   Each handler can transform the event for the next handler.
-
-  ## Parameters
-  - `event`: The event to handle
-  - `state`: The current application state
-
-  ## Returns
-  `{:ok, updated_event, updated_state}` if all handlers executed successfully,
-  `{:error, reason, state}` if a handler failed.
   """
   def execute_handlers(event, state) do
-    # Get all handlers for this event type
-    handlers =
-      get_all_handlers()
-      |> Enum.filter(fn handler ->
-        event.type in handler.event_types and handler.filter.(event)
-      end)
-      |> Enum.sort_by(fn handler -> handler.priority end)
+    handlers = get_relevant_handlers(event)
+    execute_handlers_in_order(handlers, event, state)
+  end
 
-    # Execute handlers in priority order
+  defp get_relevant_handlers(event) do
+    get_all_handlers()
+    |> Enum.filter(fn handler ->
+      event.type in handler.event_types and handler.filter.(event)
+    end)
+    |> Enum.sort_by(fn handler -> handler.priority end)
+  end
+
+  defp execute_handlers_in_order(handlers, event, state) do
     try do
-      Enum.reduce_while(handlers, {event, state}, fn handler,
-                                                     {current_event,
-                                                      current_state} ->
-        case handler.handler_fun.(current_event, current_state) do
-          {:ok, new_event, new_state} ->
-            {:cont, {new_event, new_state}}
-
-          {:stop, new_event, new_state} ->
-            {:halt, {new_event, new_state}}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "Handler error",
-              reason,
-              nil,
-              %{module: __MODULE__, event: event, state: state}
-            )
-
-            {:halt, {:error, reason, current_state}}
-        end
-      end)
+      Enum.reduce_while(handlers, {event, state}, &execute_single_handler/2)
       |> case do
-        {updated_event, updated_state} ->
-          {:ok, updated_event, updated_state}
-
-        {:error, reason, state} ->
-          {:error, reason, state}
+        {updated_event, updated_state} -> {:ok, updated_event, updated_state}
+        {:error, reason, state} -> {:error, reason, state}
       end
     rescue
       error ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Error executing handlers",
-          error,
-          __STACKTRACE__,
-          %{module: __MODULE__, event: event, state: state}
-        )
-
+        log_handler_error(error, event, state, __STACKTRACE__)
         {:error, {:handler_error, error}, state}
     end
   end
 
-  # Private storage functions
-  # In a real implementation, these would use ETS or another storage mechanism
+  defp execute_single_handler(handler, {current_event, current_state}) do
+    case handler.handler_fun.(current_event, current_state) do
+      {:ok, new_event, new_state} -> {:cont, {new_event, new_state}}
+      {:stop, new_event, new_state} -> {:halt, {new_event, new_state}}
+      {:error, reason} ->
+        log_handler_error(reason, current_event, current_state, [])
+        {:halt, {:error, reason, current_state}}
+    end
+  end
+
+  defp log_handler_error(error, event, state, stacktrace) do
+    try do
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "Handler error",
+        error,
+        stacktrace,
+        %{module: __MODULE__, event: event, state: state}
+      )
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to log handler error: #{inspect(e)}",
+          %{module: __MODULE__, event: event, state: state}
+        )
+    end
+  end
 
   defp put_handler(id, handler) do
-    # This is a placeholder implementation
-    # In a real system, this would store in ETS or another global store
     Process.put({:handler, id}, handler)
   end
 
   defp get_handler(id) do
-    # This is a placeholder implementation
     Process.get({:handler, id})
   end
 
   defp remove_handler(id) do
-    # This is a placeholder implementation
     Process.delete({:handler, id})
   end
 
   defp get_all_handlers do
-    # This is a placeholder implementation
-    # In a real system, we'd query ETS or another storage
     Process.get()
     |> Enum.filter(fn
-      # Only match keys that are specifically {:handler, _}
       {{:handler, _id}, _value} -> true
-      # Ignore all other keys (atoms, different tuples, etc.)
       _ -> false
     end)
     |> Enum.map(fn {{_, _}, handler} -> handler end)

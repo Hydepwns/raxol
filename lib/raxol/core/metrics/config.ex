@@ -12,12 +12,16 @@ defmodule Raxol.Core.Metrics.Config do
   use GenServer
 
   @type metric_type :: :performance | :resource | :operation | :system | :custom
-  @type config_key :: :retention_period | :max_samples | :flush_interval | :enabled_metrics
+  @type config_key ::
+          :retention_period | :max_samples | :flush_interval | :enabled_metrics
 
   @default_config %{
-    retention_period: 3600,  # 1 hour in seconds
-    max_samples: 1000,       # Maximum samples per metric
-    flush_interval: 1000,    # 1 second in milliseconds
+    # 1 hour in seconds
+    retention_period: 3600,
+    # Maximum samples per metric
+    max_samples: 1000,
+    # 1 second in milliseconds
+    flush_interval: 1000,
     enabled_metrics: [:performance, :resource, :operation, :system],
     environment: :prod
   }
@@ -32,7 +36,13 @@ defmodule Raxol.Core.Metrics.Config do
   @doc """
   Gets the current configuration value for the given key.
   """
-  def get(key, default \\ nil) when key in [:retention_period, :max_samples, :flush_interval, :enabled_metrics] do
+  def get(key, default \\ nil)
+      when key in [
+             :retention_period,
+             :max_samples,
+             :flush_interval,
+             :enabled_metrics
+           ] do
     GenServer.call(__MODULE__, {:get, key, default})
   end
 
@@ -118,21 +128,32 @@ defmodule Raxol.Core.Metrics.Config do
     end
   end
 
-  defp validate_retention_period(period) when is_integer(period) and period > 0, do: :ok
+  defp validate_retention_period(period) when is_integer(period) and period > 0,
+    do: :ok
+
   defp validate_retention_period(_), do: {:error, :invalid_retention_period}
 
-  defp validate_max_samples(samples) when is_integer(samples) and samples > 0, do: :ok
+  defp validate_max_samples(samples) when is_integer(samples) and samples > 0,
+    do: :ok
+
   defp validate_max_samples(_), do: {:error, :invalid_max_samples}
 
-  defp validate_flush_interval(interval) when is_integer(interval) and interval > 0, do: :ok
+  defp validate_flush_interval(interval)
+       when is_integer(interval) and interval > 0,
+       do: :ok
+
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
   defp validate_enabled_metrics(metrics) when is_list(metrics) do
-    if Enum.all?(metrics, &(&1 in [:performance, :resource, :operation, :system, :custom])) do
+    if Enum.all?(
+         metrics,
+         &(&1 in [:performance, :resource, :operation, :system, :custom])
+       ) do
       :ok
     else
       {:error, :invalid_enabled_metrics}
     end
   end
+
   defp validate_enabled_metrics(_), do: {:error, :invalid_enabled_metrics}
 end

@@ -224,51 +224,7 @@ defmodule Raxol.Animation.Framework do
 
     if animation_def do
       # Generalize target_path: if it's a single property, prepend [:elements, element_id]
-      animation_def =
-        case Map.get(animation_def, :target_path) do
-          [^element_id | _] ->
-            # Already starts with element_id (rare, but just in case)
-            animation_def
-
-          [:elements, ^element_id | _] ->
-            # Already fully qualified
-            animation_def
-
-          [property] when is_atom(property) or is_binary(property) ->
-            Map.put(animation_def, :target_path, [
-              :elements,
-              to_string(element_id),
-              property
-            ])
-
-          path when is_list(path) ->
-            # If already a list but not qualified, check if it starts with :elements
-            case path do
-              [:elements, id | _] ->
-                id_str = if is_binary(id), do: id, else: to_string(id)
-                elem_id_str = to_string(element_id)
-
-                if id == element_id or id_str == elem_id_str do
-                  animation_def
-                else
-                  Map.put(
-                    animation_def,
-                    :target_path,
-                    [:elements, elem_id_str] ++ path
-                  )
-                end
-
-              _ ->
-                Map.put(
-                  animation_def,
-                  :target_path,
-                  [:elements, to_string(element_id)] ++ path
-                )
-            end
-
-          _ ->
-            animation_def
-        end
+      animation_def = update_animation_path(animation_def, element_id)
 
       # Check accessibility settings via StateManager
       settings = StateManager.get_settings()
@@ -300,35 +256,83 @@ defmodule Raxol.Animation.Framework do
         instance
       )
 
-      # Announce to screen reader if needed
-      should_announce =
-        Map.get(adapted_animation, :announce_to_screen_reader, false) and
-          not (reduce_motion? and
-                 Map.get(adapted_animation, :disabled, false) == true)
-
-      if should_announce do
-        description = Map.get(adapted_animation, :description)
-
-        message =
-          if description,
-            do: "#{description} started",
-            else: "Animation started"
-
-        Accessibility.announce(message, user_preferences_pid)
-      end
+      # Handle screen reader announcement
+      maybe_announce_animation(
+        adapted_animation,
+        reduce_motion?,
+        user_preferences_pid
+      )
 
       # Always send animation_started message for test synchronization
       send(self(), {:animation_started, element_id, animation_def.name})
-
-      # If reduced motion, do NOT remove the animation here. Let apply_animations_to_state/2 handle it.
-      # if reduce_motion? do
-      #   # Remove from active animations and send completion
-      #   StateManager.remove_active_animation(element_id, animation_def.name)
-      #   send(self(), {:animation_completed, element_id, animation_def.name})
-      # end
       :ok
     else
       {:error, :animation_not_found}
+    end
+  end
+
+  defp maybe_announce_animation(animation, reduce_motion?, user_preferences_pid) do
+    should_announce =
+      Map.get(animation, :announce_to_screen_reader, false) and
+        not (reduce_motion? and Map.get(animation, :disabled, false) == true)
+
+    if should_announce do
+      description = Map.get(animation, :description)
+
+      message =
+        if description, do: "#{description} started", else: "Animation started"
+
+      Accessibility.announce(message, user_preferences_pid)
+    end
+  end
+
+  defp update_animation_path(animation_def, element_id) do
+    case Map.get(animation_def, :target_path) do
+      [^element_id | _] ->
+        # Already starts with element_id (rare, but just in case)
+        animation_def
+
+      [:elements, ^element_id | _] ->
+        # Already fully qualified
+        animation_def
+
+      [property] when is_atom(property) or is_binary(property) ->
+        Map.put(animation_def, :target_path, [
+          :elements,
+          to_string(element_id),
+          property
+        ])
+
+      path when is_list(path) ->
+        qualify_path(animation_def, path, element_id)
+
+      _ ->
+        animation_def
+    end
+  end
+
+  defp qualify_path(animation_def, path, element_id) do
+    case path do
+      [:elements, id | _] ->
+        id_str = if is_binary(id), do: id, else: to_string(id)
+        elem_id_str = to_string(element_id)
+
+        if id == element_id or id_str == elem_id_str do
+          animation_def
+        else
+          Map.put(
+            animation_def,
+            :target_path,
+            [:elements, elem_id_str] ++ path
+          )
+        end
+
+      _ ->
+        Map.put(
+          animation_def,
+          :target_path,
+          [:elements, to_string(element_id)] ++ path
+        )
     end
   end
 
@@ -346,48 +350,60 @@ defmodule Raxol.Animation.Framework do
   """
   def apply_animations_to_state(state, user_preferences_pid \\ nil) do
     now = System.monotonic_time(:millisecond)
-    # Get active animations via StateManager
     active_animations = StateManager.get_active_animations()
 
-    # Process animations, collecting new state and completed animations
     {new_state, completed} =
       Enum.reduce(active_animations, {state, []}, fn {element_id,
                                                       element_animations},
                                                      {current_state,
                                                       completed_list} ->
-        Enum.reduce(
+        process_element_animations(
           element_animations,
-          {current_state, completed_list},
-          fn {animation_name, instance}, {elem_state, elem_completed} ->
-            # Call the modified apply_animation_to_state_internal/7 which returns status
-            case apply_animation_to_state_internal(
-                   elem_state,
-                   element_id,
-                   animation_name,
-                   instance,
-                   now,
-                   user_preferences_pid
-                 ) do
-              {:ok, updated_elem_state} ->
-                # Continue with updated state
-                {updated_elem_state, elem_completed}
-
-              {:completed, updated_elem_state} ->
-                # Add to completed list and continue with updated state
-                {updated_elem_state,
-                 [{element_id, animation_name} | elem_completed]}
-            end
-          end
+          element_id,
+          current_state,
+          completed_list,
+          now,
+          user_preferences_pid
         )
       end)
 
-    # Remove completed animations from state manager and send completion messages
     Enum.each(completed, fn {element_id, animation_name} ->
       StateManager.remove_active_animation(element_id, animation_name)
       send(self(), {:animation_completed, element_id, animation_name})
     end)
 
     new_state
+  end
+
+  defp process_element_animations(
+         element_animations,
+         element_id,
+         current_state,
+         completed_list,
+         now,
+         user_preferences_pid
+       ) do
+    Enum.reduce(
+      element_animations,
+      {current_state, completed_list},
+      fn {animation_name, instance}, {elem_state, elem_completed} ->
+        case apply_animation_to_state_internal(
+               elem_state,
+               element_id,
+               animation_name,
+               instance,
+               now,
+               user_preferences_pid
+             ) do
+          {:ok, updated_elem_state} ->
+            {updated_elem_state, elem_completed}
+
+          {:completed, updated_elem_state} ->
+            {updated_elem_state,
+             [{element_id, animation_name} | elem_completed]}
+        end
+      end
+    )
   end
 
   defp apply_animation_to_state_internal(
@@ -408,89 +424,110 @@ defmodule Raxol.Animation.Framework do
       # Animation complete
       # Apply final value
       final_value = animation.to
-      # Ensure target_path exists in the animation map
-      path = Map.get(animation, :target_path)
-
-      IO.inspect(
-        %{
-          animation: animation,
-          state_before: state,
-          path: path,
-          final_value: final_value
-        },
-        label: "DEBUG: Animation state update (completion)"
-      )
 
       updated_state =
-        if path do
-          set_in_state(state, path, final_value)
-        else
-          Raxol.Core.Runtime.Log.error(
-            "Animation #{animation_name} for element #{element_id} is missing :target_path."
-          )
+        update_state_with_path(
+          state,
+          animation,
+          final_value,
+          element_id,
+          animation_name
+        )
 
-          # Return original state if path is missing
-          state
-        end
-
-      # Announce completion if needed
-      if Map.get(animation, :announce_to_screen_reader, false) do
-        description = Map.get(animation, :description)
-
-        message =
-          if description,
-            do: "#{description} completed",
-            else: "Animation completed"
-
-        Accessibility.announce(message, [], user_preferences_pid)
-      end
-
-      # Call on_complete callback if provided
-      if instance.on_complete do
-        try do
-          instance.on_complete.(%{
-            element_id: element_id,
-            animation_name: animation_name,
-            context: instance.context
-          })
-        rescue
-          e ->
-            Raxol.Core.Runtime.Log.error(
-              "Error in on_complete callback for animation #{animation_name}: #{inspect(e)}"
-            )
-        end
-      end
+      handle_animation_completion(
+        animation,
+        element_id,
+        animation_name,
+        instance,
+        user_preferences_pid
+      )
 
       {:completed, updated_state}
     else
-      # Animation in progress
-      progress = if duration <= 0, do: 1.0, else: min(1.0, elapsed / duration)
+      case calculate_animation_progress(animation, elapsed, duration) do
+        {:ok, current_value} ->
+          updated_state =
+            update_state_with_path(
+              state,
+              animation,
+              current_value,
+              element_id,
+              animation_name
+            )
 
-      eased_progress =
-        Raxol.Animation.Easing.calculate_value(animation.easing, progress)
+          {:ok, updated_state}
+      end
+    end
+  end
 
-      current_value =
-        Raxol.Animation.Interpolate.value(
-          animation.from,
-          animation.to,
-          eased_progress
-        )
+  defp update_state_with_path(
+         state,
+         animation,
+         value,
+         element_id,
+         animation_name
+       ) do
+    path = Map.get(animation, :target_path)
 
-      # Ensure target_path exists in the animation map
-      path = Map.get(animation, :target_path)
+    if path do
+      set_in_state(state, path, value)
+    else
+      Raxol.Core.Runtime.Log.error(
+        "Animation #{animation_name} for element #{element_id} is missing :target_path."
+      )
 
-      unless path do
-        Raxol.Core.Runtime.Log.error(
-          "Animation #{animation_name} for element #{element_id} is missing :target_path."
-        )
+      state
+    end
+  end
 
-        # Skip update
-        # Indicate normal progress
-        {:ok, state}
-      else
-        updated_state = set_in_state(state, path, current_value)
-        # Indicate normal progress
-        {:ok, updated_state}
+  defp calculate_animation_progress(animation, elapsed, duration) do
+    progress = if duration <= 0, do: 1.0, else: min(1.0, elapsed / duration)
+
+    eased_progress =
+      Raxol.Animation.Easing.calculate_value(animation.easing, progress)
+
+    current_value =
+      Raxol.Animation.Interpolate.value(
+        animation.from,
+        animation.to,
+        eased_progress
+      )
+
+    {:ok, current_value}
+  end
+
+  defp handle_animation_completion(
+         animation,
+         element_id,
+         animation_name,
+         instance,
+         user_preferences_pid
+       ) do
+    # Announce completion if needed
+    if Map.get(animation, :announce_to_screen_reader, false) do
+      description = Map.get(animation, :description)
+
+      message =
+        if description,
+          do: "#{description} completed",
+          else: "Animation completed"
+
+      Accessibility.announce(message, [], user_preferences_pid)
+    end
+
+    # Call on_complete callback if provided
+    if instance.on_complete do
+      try do
+        instance.on_complete.(%{
+          element_id: element_id,
+          animation_name: animation_name,
+          context: instance.context
+        })
+      rescue
+        e ->
+          Raxol.Core.Runtime.Log.error(
+            "Error in on_complete callback for animation #{animation_name}: #{inspect(e)}"
+          )
       end
     end
   end
@@ -551,9 +588,6 @@ defmodule Raxol.Animation.Framework do
         animation = instance.animation
         duration = animation.duration
 
-        # TODO: The check for animation[:disabled] might need refinement depending on how
-        #       disabled state is handled (e.g., preventing start vs. instant completion).
-        #       Assuming adapt_for_reduced_motion handles the main case for now.
         if duration <= 0 or elapsed >= duration do
           # Animation is done (or instant)
           {animation.to, true}

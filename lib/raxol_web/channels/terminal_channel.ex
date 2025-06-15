@@ -26,7 +26,14 @@ defmodule RaxolWeb.TerminalChannel do
           scrollback_limit: non_neg_integer()
         }
 
-  defstruct [:emulator, :input, :renderer, :session_id, :user_id, :scrollback_limit]
+  defstruct [
+    :emulator,
+    :input,
+    :renderer,
+    :session_id,
+    :user_id,
+    :scrollback_limit
+  ]
 
   @impl Phoenix.Channel
   @dialyzer {:nowarn_function, join: 3}

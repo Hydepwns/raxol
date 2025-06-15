@@ -31,11 +31,11 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
     cond do
       # Check for quit key combination
-      is_quit_key?(key, modifiers, state.quit_keys) ->
+      quit_key?(key, modifiers, state.quit_keys) ->
         {:system, :quit, state}
 
       # Check for debug toggle key combination
-      is_debug_toggle?(key, modifiers) ->
+      debug_toggle_key?(key, modifiers) ->
         new_debug_mode = not state.debug_mode
 
         Raxol.Core.Runtime.Log.info(
@@ -96,7 +96,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     # Check each shortcut for a match
     shortcuts
     |> Enum.find(fn {_action, shortcut} ->
-      match_shortcut?(key, modifiers, shortcut)
+      shortcut_match?(key, modifiers, shortcut)
     end)
     |> case do
       {action, _shortcut} -> {:ok, action}
@@ -106,26 +106,22 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   # Private functions
 
-  defp is_quit_key?(key, modifiers, quit_keys) do
+  defp quit_key?(key, modifiers, quit_keys) do
     Enum.any?(quit_keys, fn quit_key ->
       case quit_key do
         # Simple key, no modifiers
         key_val when is_atom(key_val) or is_integer(key_val) ->
           key == key_val
 
-        # Key with modifiers
         {key_val, mods} when is_list(mods) ->
-          key == key_val and all_modifiers_match?(modifiers, mods)
+          key == key_val and modifiers_match?(modifiers, mods)
 
-        # Ctrl+C special case
         :ctrl_c ->
           key == ?c and Keyword.get(modifiers, :ctrl, false)
 
-        # Ctrl+Q special case
         :ctrl_q ->
           key == ?q and Keyword.get(modifiers, :ctrl, false)
 
-        # Unrecognized quit key format
         {:unrecognized, other} ->
           Raxol.Core.Runtime.Log.warning_with_context(
             "Unknown quit key format: #{inspect(other)}",
@@ -137,29 +133,26 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     end)
   end
 
-  defp is_debug_toggle?(key, modifiers) do
+  defp debug_toggle_key?(key, modifiers) do
     # Default debug toggle is Ctrl+D
     key == ?d and Keyword.get(modifiers, :ctrl, false)
   end
 
-  defp match_shortcut?(key, modifiers, shortcut) do
+  defp shortcut_match?(key, modifiers, shortcut) do
     case shortcut do
-      # Simple key, no modifiers
       key_val when is_atom(key_val) or is_integer(key_val) ->
         key == key_val and
           Enum.all?(modifiers, fn {_, active} -> not active end)
 
-      # Key with modifiers
       {key_val, mods} when is_list(mods) ->
-        key == key_val and all_modifiers_match?(modifiers, mods)
+        key == key_val and modifiers_match?(modifiers, mods)
 
-      # Unknown format
       _ ->
         false
     end
   end
 
-  defp all_modifiers_match?(actual_mods, expected_mods) do
+  defp modifiers_match?(actual_mods, expected_mods) do
     Enum.all?(expected_mods, fn expected_mod ->
       Keyword.get(actual_mods, expected_mod, false)
     end)
@@ -175,19 +168,16 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   defp get_key_name(key) do
     case key do
-      # ASCII control characters
       1 -> :ctrl_a
       2 -> :ctrl_b
       3 -> :ctrl_c
       4 -> :ctrl_d
       5 -> :ctrl_e
-      # ... other control characters ...
       13 -> :enter
       27 -> :escape
       9 -> :tab
       32 -> :space
       127 -> :backspace
-      # Default case
       _ -> key
     end
   end

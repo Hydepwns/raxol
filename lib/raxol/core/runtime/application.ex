@@ -174,68 +174,86 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
+  @doc """
+  Delegates initialization to the provided application module.
+
+  Attempts to call the `init/1` callback on the given module, handles the result,
+  and returns a standardized tuple of `{model, commands}` or an error.
+
+  ## Parameters
+    - app_module: The module that implements the Application behavior
+    - context: The initialization context containing runtime information
+
+  ## Returns
+    - `{model, commands}` tuple when successful
+    - `{:error, reason}` tuple when initialization fails
+  """
   @spec delegate_init(module(), context()) ::
-          {model(), list(Command.t())} | {:error, term()}
+            {model(), list(Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
-    Raxol.Core.Runtime.Log.info(
-      "[#{__MODULE__}] Delegating init to #{inspect(app_module)}..."
-    )
+    alias Raxol.Core.Runtime.Log
+    require Logger
 
-    if function_exported?(app_module, :init, 1) do
-      try do
-        result = app_module.init(context)
+    Log.info("[#{__MODULE__}] Delegating init to #{inspect(app_module)}...")
 
-        Raxol.Core.Runtime.Log.debug(
-          "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
-        )
-
-        case result do
-          {model, commands} when is_map(model) and is_list(commands) ->
-            {model, commands}
-
-          model when is_map(model) ->
-            # If only model is returned, default to no commands
-            {model, []}
-
-          invalid_return ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned invalid value: #{inspect(invalid_return)}. Expected map() or {map(), list()}. Falling back to empty model with no commands.",
-              nil,
-              nil,
-              %{
-                module: __MODULE__,
-                app_module: app_module,
-                context: context,
-                invalid_return: invalid_return
-              }
-            )
-
-            {%{}, []}
-        end
-      rescue
-        error ->
-          Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "[#{__MODULE__}] Error executing #{inspect(app_module)}.init/1",
-            error,
-            nil,
-            %{module: __MODULE__, app_module: app_module, context: context}
-          )
-
-          {:error, {:init_failed, error}}
-      end
+    with true <- function_exported?(app_module, :init, 1),
+         {:ok, result} <- safely_call_init(app_module, context),
+         {:ok, {model, commands}} <- normalize_init_result(app_module, result) do
+      {model, commands}
     else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "[#{__MODULE__}] Application module #{inspect(app_module)} does not export init/1. Using default empty state.",
-        %{
-          module: __MODULE__,
-          app_module: app_module,
-          context: context,
-          warning: :no_init_exported
-        }
+      false ->
+        Log.warning_with_context(
+          "[#{__MODULE__}] Module #{inspect(app_module)} does not export init/1. Using default empty state.",
+          %{module: __MODULE__, app_module: app_module, warning: :no_init_exported}
+        )
+        {%{}, []}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # Private helper functions for delegate_init
+
+  defp safely_call_init(app_module, context) do
+    try do
+      result = app_module.init(context)
+
+      Raxol.Core.Runtime.Log.debug(
+        "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
       )
 
-      # Default if init/1 is not exported
-      {%{}, []}
+      {:ok, result}
+    rescue
+      error ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Error executing #{inspect(app_module)}.init/1",
+          error,
+          nil,
+          %{module: __MODULE__, app_module: app_module}
+        )
+        {:error, {:init_failed, error}}
+    end
+  end
+
+  defp normalize_init_result(app_module, result) do
+    case result do
+      {model, commands} when is_map(model) and is_list(commands) ->
+        {:ok, {model, commands}}
+
+      model when is_map(model) ->
+        # If only model is returned, default to no commands
+        {:ok, {model, []}}
+
+      invalid_return ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned invalid value: #{inspect(invalid_return)}. Expected map() or {map(), list()}.",
+          nil,
+          nil,
+          %{invalid_return: invalid_return, app_module: app_module}
+        )
+        # Return empty model with no commands as fallback
+        {:ok, {%{}, []}}
     end
   end
 
@@ -243,65 +261,87 @@ defmodule Raxol.Core.Runtime.Application do
           {model(), list(Command.t())} | {:error, term()}
   def delegate_update(app_module, message, current_model)
       when is_atom(app_module) do
-    if function_exported?(app_module, :update, 2) do
-      try do
-        # Call the application's update callback
-        case app_module.update(message, current_model) do
-          {new_model, commands} when is_map(new_model) and is_list(commands) ->
-            {new_model, commands}
-
-          invalid_return ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] #{inspect(app_module)}.update/2 returned invalid value: #{inspect(invalid_return)}. Expected {map(), list()}. Falling back to previous model with no commands.",
-              nil,
-              nil,
-              %{
-                module: __MODULE__,
-                app_module: app_module,
-                message: message,
-                current_model: current_model,
-                invalid_return: invalid_return
-              }
-            )
-
-            {current_model, []}
-        end
-      rescue
-        error ->
-          Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2",
-            error,
-            nil,
-            %{
-              module: __MODULE__,
-              app_module: app_module,
-              message: message,
-              current_model: current_model
-            }
-          )
-
-          {:error, {:update_failed, error}}
-      end
+    with true <- function_exported?(app_module, :update, 2),
+         {:ok, result} <- safely_call_update(app_module, message, current_model),
+         {:ok, {new_model, commands}} <- normalize_update_result(app_module, result, message, current_model) do
+      {new_model, commands}
     else
-      Raxol.Core.Runtime.Log.error_with_stacktrace(
-        "[#{__MODULE__}] Application module #{inspect(app_module)} does not implement update/2 callback.",
-        nil,
-        nil,
-        %{
-          module: __MODULE__,
-          app_module: app_module,
-          message: message,
-          current_model: current_model,
-          error: :update_callback_not_implemented
-        }
-      )
-
-      {:error, :update_callback_not_implemented}
+      false ->
+        log_missing_update_callback(app_module, message, current_model)
+        {:error, :update_callback_not_implemented}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
+  defp safely_call_update(app_module, message, current_model) do
+    try do
+      result = app_module.update(message, current_model)
+      {:ok, result}
+    rescue
+      error ->
+        log_update_error(app_module, error, message, current_model)
+        {:error, {:update_failed, error}}
+    end
+  end
+
+  defp normalize_update_result(app_module, result, message, current_model) do
+    case result do
+      {new_model, commands} when is_map(new_model) and is_list(commands) ->
+        {:ok, {new_model, commands}}
+      invalid_return ->
+        log_invalid_update_result(app_module, invalid_return, message, current_model)
+        {:error, :invalid_update_result}
+    end
+  end
+
+  defp log_missing_update_callback(app_module, message, current_model) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Application module #{inspect(app_module)} does not implement update/2 callback.",
+      nil,
+      nil,
+      %{
+        module: __MODULE__,
+        app_module: app_module,
+        message: message,
+        current_model: current_model,
+        error: :update_callback_not_implemented
+      }
+    )
+  end
+
+  defp log_update_error(app_module, error, message, current_model) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2",
+      error,
+      nil,
+      %{
+        module: __MODULE__,
+        app_module: app_module,
+        message: message,
+        current_model: current_model,
+        error: :update_failed
+      }
+    )
+  end
+
+  defp log_invalid_update_result(app_module, invalid_return, message, current_model) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] #{inspect(app_module)}.update/2 returned invalid value: #{inspect(invalid_return)}. Expected {map(), list()}. Falling back to previous model with no commands.",
+      nil,
+      nil,
+      %{
+        module: __MODULE__,
+        app_module: app_module,
+        message: message,
+        current_model: current_model,
+        invalid_return: invalid_return
+      }
+    )
+  end
+
   @doc """
-  Placeholder for getting environment configuration.
+  Gets environment configuration for the application.
   """
   @spec get_env(atom(), atom(), any()) :: any()
   def get_env(app, key, default \\ nil) do
@@ -309,7 +349,6 @@ defmodule Raxol.Core.Runtime.Application do
       "[#{__MODULE__}] get_env called for: #{app}.#{key}"
     )
 
-    # TODO: Implement actual config fetching (e.g., from Application env)
     Application.get_env(app, key, default)
   end
 
@@ -351,18 +390,20 @@ defmodule Raxol.Core.Runtime.Application do
   - Initial state: `state()`
   - State and commands: `{state(), [command()]}`
   """
+  @doc """
+  Initializes the application state.
+
+  A simpler version of delegate_init that provides fallbacks for different return types
+  from application modules.
+
+  ## Returns
+    - `{model, commands}` tuple when successful
+    - `{:error, reason}` tuple when initialization fails
+  """
   def init(app_module, context) do
-    if function_exported?(app_module, :init, 1) do
-      case app_module.init(context) do
-        {model, commands} when is_list(commands) -> {model, commands}
-        {model, command} -> {model, [command]}
-        model when is_map(model) -> {model, []}
-        {:error, _} = error -> error
-        _ -> {:error, :invalid_init_return}
-      end
-    else
-      # Default implementation if init/1 is not defined
-      {%{}, []}
+    case delegate_init(app_module, context) do
+      {model, commands} -> {model, commands}
+      {:error, _} = error -> error
     end
   end
 

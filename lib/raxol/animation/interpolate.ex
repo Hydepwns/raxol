@@ -13,35 +13,31 @@ defmodule Raxol.Animation.Interpolate do
     from + (to - from) * t
   end
 
-  def value({f1, f2} = from_tuple, {t1, t2} = to_tuple, t)
-      when is_tuple(from_tuple) and tuple_size(from_tuple) == 2 and
-             is_tuple(to_tuple) and tuple_size(to_tuple) == 2 and
-             is_number(f1) and is_number(f2) and is_number(t1) and is_number(t2) do
-    {value(f1, t1, t), value(f2, t2, t)}
-  end
+  # Handle tuples of size 2 and 3 with a simpler implementation
+  def value(from_tuple, to_tuple, t)
+      when is_tuple(from_tuple) and is_tuple(to_tuple) do
+    if tuple_size(from_tuple) == tuple_size(to_tuple) and
+         numeric_tuple?(from_tuple) and numeric_tuple?(to_tuple) do
+      values =
+        for i <- 0..(tuple_size(from_tuple) - 1) do
+          from_val = elem(from_tuple, i)
+          to_val = elem(to_tuple, i)
+          value(from_val, to_val, t)
+        end
 
-  def value({f1, f2, f3} = from_tuple, {t1, t2, t3} = to_tuple, t)
-      when is_tuple(from_tuple) and tuple_size(from_tuple) == 3 and
-             is_tuple(to_tuple) and tuple_size(to_tuple) == 3 and
-             is_number(f1) and is_number(f2) and is_number(f3) and
-             is_number(t1) and is_number(t2) and is_number(t3) do
-    {value(f1, t1, t), value(f2, t2, t), value(f3, t3, t)}
+      List.to_tuple(values)
+    else
+      from_tuple
+    end
   end
 
   def value(from_list, to_list, t)
       when is_list(from_list) and is_list(to_list) and
              length(from_list) == length(to_list) do
-    # Check if all elements are numbers before attempting to zip and map
-    # This is a bit verbose; a more functional check might be cleaner but this is explicit
-    all_from_numbers = Enum.all?(from_list, &is_number/1)
-    all_to_numbers = Enum.all?(to_list, &is_number/1)
-
-    if all_from_numbers and all_to_numbers do
+    if valid_number_lists?(from_list, to_list) do
       Enum.zip(from_list, to_list)
       |> Enum.map(fn {f, v} -> value(f, v, t) end)
     else
-      # Fallback for lists not containing all numbers or if one is empty when the other isn't (caught by length check)
-      # Based on the main fallback, return 'from' if types don't match for interpolation before t=1.0
       from_list
     end
   end
@@ -50,72 +46,22 @@ defmodule Raxol.Animation.Interpolate do
     {h1, s1, l1} = HSL.rgb_to_hsl(from_color.r, from_color.g, from_color.b)
     {h2, s2, l2} = HSL.rgb_to_hsl(to_color.r, to_color.g, to_color.b)
 
-    # Interpolate Hue (shortest path)
-    diff = h2 - h1
-
-    h_interpolated_raw =
-      cond do
-        abs(diff) <= 180 ->
-          h1 + diff * t
-
-        diff > 180 ->
-          # Interpolate taking the shorter path across the 0/360 boundary
-          h1 + (diff - 360) * t
-
-        # This covers diff < -180
-        true ->
-          # Interpolate taking the shorter path across the 0/360 boundary
-          h1 + (diff + 360) * t
-      end
-
-    # Normalize hue to be within [0, 360) and rounded.
-    # We need a float-safe modulo operation.
-    mod_val = h_interpolated_raw - Float.floor(h_interpolated_raw / 360) * 360
-    h_positive = if mod_val < 0, do: mod_val + 360, else: mod_val
-    h_normalized = round(h_positive) |> then(&if(&1 == 360, do: 0, else: &1))
-
-    # Interpolate Saturation and Lightness (linear)
-    # Use existing numeric interpolation
-    s_interpolated = value(s1, s2, t)
-    l_interpolated = value(l1, l2, t)
-
-    # Clamp S and L to valid ranges (0.0-1.0) as HSL functions expect
-    s_final = max(0.0, min(1.0, s_interpolated))
-    l_final = max(0.0, min(1.0, l_interpolated))
-
-    {r_new, g_new, b_new} = HSL.hsl_to_rgb(h_normalized, s_final, l_final)
-
-    # Use Color.from_rgb/3 to construct the new Color struct,
-    # assuming it correctly sets r, g, b and any other derived fields like :hex.
-    Color.from_rgb(r_new, g_new, b_new)
+    {h, s, l} = interpolate_hsl({h1, s1, l1}, {h2, s2, l2}, t)
+    {r, g, b} = HSL.hsl_to_rgb(h, s, l)
+    Color.from_rgb(r, g, b)
   end
 
   def value(from_map, to_map, t) when is_map(from_map) and is_map(to_map) do
-    # Iterate over the keys of the 'from_map'. For each key,
-    # if it also exists in 'to_map', interpolate their values.
-    # Keys present in 'from_map' but not in 'to_map' will be carried over from 'from_map'.
-    # Keys present only in 'to_map' will be ignored for interpolation but will appear in the final
-    # result if t >= 1.0 because the top-level 'to_map' is returned then.
-    # This approach prioritizes 'from_map' structure for t < 1.0.
-
     Map.new(from_map, fn {key, from_value} ->
       case Map.fetch(to_map, key) do
         {:ok, to_value} ->
-          # Recursively call value/3 for interpolation
           {key, value(from_value, to_value, t)}
 
         :error ->
-          # Key not in to_map, carry over from_value
           {key, from_value}
       end
     end)
   end
-
-  # TODO: Implement interpolation for other types:
-  # - Colors (RGB, HSL) - Basic interpolation via 3-tuple logic is in place.
-  #   Advanced color space interpolation (e.g., HSL hue shortest path for %Color{} structs) is now implemented.
-  # - Tuples (e.g., {x, y} coordinates) - Done for 2-tuples and 3-tuples.
-  # - Lists/Maps? - Done for lists of numbers and maps with interpolatable values.
 
   # Ensure final value is returned when t >= 1.0
   def value(_from, to, t) when is_float(t) and t >= 1.0 do
@@ -125,5 +71,38 @@ defmodule Raxol.Animation.Interpolate do
   # Default fallback for unknown types or t < 1.0
   def value(from, _to, _t) do
     from
+  end
+
+  defp valid_number_lists?(from_list, to_list) do
+    Enum.all?(from_list, &is_number/1) and Enum.all?(to_list, &is_number/1)
+  end
+
+  # Helper function to check if all elements in a tuple are numbers
+  defp numeric_tuple?(tuple) do
+    tuple
+    |> Tuple.to_list()
+    |> Enum.all?(&is_number/1)
+  end
+
+  defp interpolate_hsl({h1, s1, l1}, {h2, s2, l2}, t) do
+    h = interpolate_hue(h1, h2, t)
+    s = value(s1, s2, t) |> max(0.0) |> min(1.0)
+    l = value(l1, l2, t) |> max(0.0) |> min(1.0)
+    {h, s, l}
+  end
+
+  defp interpolate_hue(h1, h2, t) do
+    diff = h2 - h1
+
+    h_interpolated_raw =
+      cond do
+        abs(diff) <= 180 -> h1 + diff * t
+        diff > 180 -> h1 + (diff - 360) * t
+        true -> h1 + (diff + 360) * t
+      end
+
+    mod_val = h_interpolated_raw - Float.floor(h_interpolated_raw / 360) * 360
+    h_positive = if mod_val < 0, do: mod_val + 360, else: mod_val
+    round(h_positive) |> then(&if(&1 == 360, do: 0, else: &1))
   end
 end

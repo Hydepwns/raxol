@@ -57,13 +57,13 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   # Catch-all for incorrect args if a command somehow gets routed here
   # with a different signature than what get_commands implies.
-  def handle_command(command_name, args, state) do
+  def handle_command(_command_name, args, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
-      "NotificationPlugin :handle_command received unexpected command '#{command_name}' with args format: #{inspect(args)}",
+      "NotificationPlugin :handle_command received unexpected command '#{_command_name}' with args format: #{inspect(args)}",
       %{}
     )
 
-    {:error, {:unexpected_command_args, command_name, args}, state}
+    {:error, {:unexpected_command_args, _command_name, args}, state}
   end
 
   # Internal handler for :notify

@@ -98,7 +98,7 @@ defmodule Raxol.Core.Renderer.View do
   def box(opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.box macro expects a keyword list as the first argument, got: #{inspect(opts)}"
     end
@@ -110,7 +110,7 @@ defmodule Raxol.Core.Renderer.View do
     quote do
       require Keyword
 
-      unless Keyword.keyword?(unquote(opts)) do
+      if !Keyword.keyword?(unquote(opts)) do
         raise ArgumentError,
               "View.box macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
       end
@@ -144,7 +144,7 @@ defmodule Raxol.Core.Renderer.View do
   def row(opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.row macro expects a keyword list as the first argument, got: #{inspect(opts)}"
     end
@@ -172,7 +172,7 @@ defmodule Raxol.Core.Renderer.View do
     quote do
       require Keyword
 
-      unless Keyword.keyword?(unquote(opts)) do
+      if !Keyword.keyword?(unquote(opts)) do
         raise ArgumentError,
               "View.flex macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
       end
@@ -205,7 +205,7 @@ defmodule Raxol.Core.Renderer.View do
     quote do
       require Keyword
 
-      unless Keyword.keyword?(unquote(opts)) do
+      if !Keyword.keyword?(unquote(opts)) do
         raise ArgumentError,
               "View.grid macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
       end
@@ -225,7 +225,7 @@ defmodule Raxol.Core.Renderer.View do
     quote do
       require Keyword
 
-      unless Keyword.keyword?(unquote(opts)) do
+      if !Keyword.keyword?(unquote(opts)) do
         raise ArgumentError,
               "View.grid macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
       end
@@ -251,7 +251,7 @@ defmodule Raxol.Core.Renderer.View do
   def border(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.border macro expects a keyword list as the first argument, got: #{inspect(opts)}"
     end
@@ -277,7 +277,7 @@ defmodule Raxol.Core.Renderer.View do
   def scroll(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.scroll macro expects a keyword list as the first argument, got: #{inspect(opts)}"
     end
@@ -292,7 +292,7 @@ defmodule Raxol.Core.Renderer.View do
   def layout(view, dimensions) do
     require Keyword
 
-    unless Keyword.keyword?(dimensions) do
+    if !Keyword.keyword?(dimensions) do
       raise ArgumentError,
             "View.layout macro expects a keyword list as the second argument, got: #{inspect(dimensions)}"
     end
@@ -313,7 +313,7 @@ defmodule Raxol.Core.Renderer.View do
     quote do
       require Keyword
 
-      unless Keyword.keyword?(unquote(opts)) do
+      if !Keyword.keyword?(unquote(opts)) do
         raise ArgumentError,
               "View.row macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
       end
@@ -345,7 +345,7 @@ defmodule Raxol.Core.Renderer.View do
       require Keyword
       opts = [style: unquote(style)]
 
-      unless Keyword.keyword?(opts) do
+      if !Keyword.keyword?(opts) do
         raise ArgumentError,
               "View.border_wrap macro expects a keyword list as the first argument, got: #{inspect(opts)}"
       end
@@ -379,7 +379,7 @@ defmodule Raxol.Core.Renderer.View do
     quote do
       require Keyword
 
-      unless Keyword.keyword?(unquote(opts)) do
+      if !Keyword.keyword?(unquote(opts)) do
         raise ArgumentError,
               "View.scroll_wrap macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
       end
@@ -409,7 +409,7 @@ defmodule Raxol.Core.Renderer.View do
   def wrap_with_border(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.wrap_with_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
     end
@@ -434,7 +434,7 @@ defmodule Raxol.Core.Renderer.View do
   def block_border(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.block_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
     end
@@ -459,7 +459,7 @@ defmodule Raxol.Core.Renderer.View do
   def double_border(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.double_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
     end
@@ -484,7 +484,7 @@ defmodule Raxol.Core.Renderer.View do
   def rounded_border(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.rounded_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
     end
@@ -509,7 +509,7 @@ defmodule Raxol.Core.Renderer.View do
   def bold_border(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.bold_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
     end
@@ -534,7 +534,7 @@ defmodule Raxol.Core.Renderer.View do
   def simple_border(view, opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.simple_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
     end
@@ -563,7 +563,7 @@ defmodule Raxol.Core.Renderer.View do
   def panel(opts \\ []) do
     require Keyword
 
-    unless Keyword.keyword?(opts) do
+    if !Keyword.keyword?(opts) do
       raise ArgumentError,
             "View.panel macro expects a keyword list as the first argument, got: #{inspect(opts)}"
     end
@@ -764,9 +764,11 @@ defmodule Raxol.Core.Renderer.View do
       %{width: :auto, flex: flex} when flex > 0 ->
         # Calculate width based on flex grow
         trunc(constraints.available_width * (flex / constraints.total_flex))
+
       %{width: width} when is_integer(width) ->
         # Fixed width
         width
+
       _ ->
         # Default to available width
         constraints.available_width
@@ -778,9 +780,11 @@ defmodule Raxol.Core.Renderer.View do
       %{height: :auto, flex: flex} when flex > 0 ->
         # Calculate height based on flex grow
         trunc(constraints.available_height * (flex / constraints.total_flex))
+
       %{height: height} when is_integer(height) ->
         # Fixed height
         height
+
       _ ->
         # Default to available height
         constraints.available_height

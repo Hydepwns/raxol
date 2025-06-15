@@ -3,8 +3,6 @@ defmodule Raxol.Animation.Animation do
   Delegates animation API calls to Raxol.Animation.Framework for test and compatibility purposes.
   """
 
-  defdelegate init(), to: Raxol.Animation.Framework
-  defdelegate init(opts), to: Raxol.Animation.Framework
   defdelegate stop(), to: Raxol.Animation.Framework
   defdelegate create_animation(name, params), to: Raxol.Animation.Framework
   defdelegate start_animation(name, id), to: Raxol.Animation.Framework
