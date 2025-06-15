@@ -11,10 +11,11 @@ defmodule RaxolWeb.SettingsLiveTest do
   describe "Settings page" do
     setup do
       # Create a test user
-      {:ok, user} = Accounts.register_user(%{
-        email: "test@example.com",
-        password: "password123"
-      })
+      {:ok, user} =
+        Accounts.register_user(%{
+          email: "test@example.com",
+          password: "password123"
+        })
 
       # Log in the user
       conn = build_conn()
