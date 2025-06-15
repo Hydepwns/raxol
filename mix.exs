@@ -93,35 +93,35 @@ defmodule Raxol.MixProject do
 
       # --- Added for Tutorial Loading ---
       # Markdown parser
-      {:earmark, "~> 1.4"},
+      {:earmark, "~> 1.4.47"},
       # YAML parser for frontmatter
-      {:yaml_elixir, "~> 2.9"},
+      {:yaml_elixir, "~> 2.11"},
       # ---------------------------------
 
       # --- Added for Syntax Highlighting ---
-      {:makeup, "~> 1.1"},
-      {:makeup_elixir, "~> 0.8"},
+      {:makeup, "~> 1.2"},
+      {:makeup_elixir, "~> 0.16"},
       # -----------------------------------
 
-      {:phoenix, "~> 1.7.20"},
+      {:phoenix, "~> 1.7.21"},
       {:phoenix_ecto, "~> 4.4"},
-      {:phoenix_live_view, "~> 1.0.0"},
-      {:surface, "~> 0.12"},
-      {:phoenix_live_dashboard, "~> 0.8.0"},
-      {:jason, "~> 1.4"},
+      {:phoenix_live_view, "~> 1.0.17"},
+      {:surface, "~> 0.12.1"},
+      {:phoenix_live_dashboard, "~> 0.8.7"},
+      {:jason, "~> 1.4.4"},
 
       # Database and persistence
-      {:ecto_sql, "~> 3.11"},
+      {:ecto_sql, "~> 3.12"},
       {:postgrex, "~> 0.20.0", runtime: false},
       # For password hashing
-      {:bcrypt_elixir, "~> 3.0"},
+      {:bcrypt_elixir, "~> 3.3"},
 
       # Visualization
       # For charts and plots
       {:contex, "~> 0.5.0"},
 
       # Email
-      {:swoosh, "~> 1.17"},
+      {:swoosh, "~> 1.19"},
 
       # Web interface
       {:plug_cowboy, "~> 2.7"},
@@ -131,37 +131,37 @@ defmodule Raxol.MixProject do
       # Core Plugins Dependencies
       # System clipboard access
       {:clipboard, "~> 0.2.1"},
-      {:circular_buffer, "~> 0.2"},
+      {:circular_buffer, "~> 0.4"},
 
       # Optional Plugin Reloading
       {:file_system, "~> 0.2", only: [:dev, :test]},
 
       # Development tools
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
+      {:phoenix_live_reload, "~> 1.6", only: :dev},
+      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:dart_sass, "~> 0.7", runtime: Mix.env() == :dev},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
 
       # Testing
-      {:mox, "~> 1.2.0", only: :test},
-      {:meck, "~> 0.9.2", only: :test},
-      {:elixir_make, "~> 0.6", runtime: false},
-      {:floki, ">= 0.30.0", only: :test},
-      {:briefly, "~> 0.3", only: :test},
+      {:mox, "~> 1.2", only: :test},
+      {:meck, "~> 0.9", only: :test},
+      {:elixir_make, "~> 0.9", runtime: false},
+      {:floki, "~> 0.37", only: :test},
+      {:briefly, "~> 0.5", only: :test},
 
       # Utilities
       {:uuid, "~> 1.1"},
-      {:inflex, "~> 2.0"},
-      {:telemetry_metrics, "~> 1.0"},
-      {:telemetry_poller, "~> 1.0"},
-      {:telemetry_metrics_prometheus, "~> 1.0"},
+      {:telemetry_metrics, "~> 1.1"},
+      {:telemetry_poller, "~> 1.2"},
+      {:telemetry_metrics_prometheus, "~> 1.1"},
       {:gettext, "~> 0.26"},
-      {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"},
+      {:dns_cluster, "~> 0.1"},
+      {:bandit, "~> 1.7"},
       {:excoveralls, "~> 0.18", only: :test},
-      {:hackney, "~> 1.9"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:toml, "~> 0.6"}
+      {:hackney, "~> 1.24"},
+      {:ex_doc, "~> 0.38", only: :dev, runtime: false},
+      {:toml, "~> 0.7"},
+      {:mimerl, "~> 1.4"}
     ]
   end
 
