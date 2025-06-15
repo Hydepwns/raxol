@@ -1,4 +1,4 @@
-/* Flex Container */
+/* Flexbox utilities */
 .flex {
   display: flex;
 }
@@ -19,7 +19,22 @@
   flex-wrap: nowrap;
 }
 
-/* Justify Content */
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.flex-auto {
+  flex: 1 1 auto;
+}
+
+.flex-initial {
+  flex: 0 1 auto;
+}
+
+.flex-none {
+  flex: none;
+}
+
 .justify-start {
   justify-content: flex-start;
 }
@@ -40,11 +55,6 @@
   justify-content: space-around;
 }
 
-.justify-evenly {
-  justify-content: space-evenly;
-}
-
-/* Align Items */
 .items-start {
   align-items: flex-start;
 }
@@ -65,41 +75,6 @@
   align-items: stretch;
 }
 
-/* Align Self */
-.self-auto {
-  align-self: auto;
-}
-
-.self-start {
-  align-self: flex-start;
-}
-
-.self-end {
-  align-self: flex-end;
-}
-
-.self-center {
-  align-self: center;
-}
-
-.self-stretch {
-  align-self: stretch;
-}
-
-/* Flex Grow/Shrink */
-.flex-grow {
-  flex-grow: 1;
-}
-
-.flex-shrink {
-  flex-shrink: 1;
-}
-
-.flex-none {
-  flex: none;
-}
-
-/* Gap */
 .gap-xs {
   gap: var(--spacing-xs);
 }
@@ -118,4 +93,4 @@
 
 .gap-xl {
   gap: var(--spacing-xl);
-} 
+}

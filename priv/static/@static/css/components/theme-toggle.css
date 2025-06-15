@@ -1,47 +1,36 @@
+/* Theme toggle component */
 .theme-toggle {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: var(--background-color);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   cursor: pointer;
-  transition: all var(--transition-normal) ease;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease;
 }
 
 .theme-toggle:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--bg-primary);
 }
 
-.theme-toggle svg {
-  width: 20px;
-  height: 20px;
-  fill: var(--text-color);
-  transition: all var(--transition-normal) ease;
+.theme-toggle-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--text-secondary);
 }
 
-.theme-toggle[data-theme="dark"] svg {
-  transform: rotate(180deg);
+.theme-toggle-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
-/* Animation for theme switch */
-@keyframes themeSwitch {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.8);
-  }
-  100% {
-    transform: scale(1);
-  }
+/* Dark mode specific styles */
+[data-theme="dark"] .theme-toggle {
+  background-color: var(--bg-primary);
 }
 
-.theme-toggle.animating {
-  animation: themeSwitch var(--transition-normal) ease;
-} 
+[data-theme="dark"] .theme-toggle:hover {
+  background-color: var(--bg-secondary);
+}
