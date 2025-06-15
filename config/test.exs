@@ -1,9 +1,5 @@
 import Config
 
-# Configure Mox
-# Set the mock implementation for the Clipboard Behaviour
-config :raxol, :mocks, ClipboardBehaviour: ClipboardMock
-
 # Configure your database
 config :raxol, Raxol.Repo,
   username: "postgres",
@@ -14,11 +10,10 @@ config :raxol, Raxol.Repo,
   pool_size: 20
 
 # Override Repo adapter and pool for tests
-# config :raxol, Raxol.Repo, # Commenting out this MockDB override
-#   adapter: Raxol.Test.MockDB,
-#   pool: Ecto.Adapters.SQL.Sandbox,
-#   # Ensure it's disabled unless explicitly used in specific tests
-#   enabled: true
+config :raxol, Raxol.Repo,
+  adapter: Raxol.Test.MockDB,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  enabled: true
 
 # Configure database settings
 # Global flag to disable database
@@ -89,6 +84,38 @@ config :swoosh,
 
 # Configure Mox for testing behaviours
 config :mox, :exclude_compilation, false
+
+# Configure all mock implementations
+config :raxol, :mocks, %{
+  # Core runtime mocks
+  :"Raxol.Core.Runtime.Plugins.FileWatcher" =>
+    :"Raxol.Core.Runtime.Plugins.FileWatcherMock",
+  :"Raxol.Core.Runtime.Plugins.Loader" =>
+    :"Raxol.Core.Runtime.Plugins.LoaderMock",
+  :"Raxol.Core.Runtime.Plugins.LifecycleHelper" =>
+    :"Raxol.Core.Runtime.Plugins.LifecycleHelperMock",
+  :"Raxol.Core.Runtime.Plugins.EdgeCasesLifecycleHelper" =>
+    :"Raxol.Core.Runtime.Plugins.EdgeCasesLifecycleHelperMock",
+  :"Raxol.Core.Runtime.Plugins.PluginEventFilter" =>
+    :"Raxol.Core.Runtime.Plugins.PluginEventFilterMock",
+  :"Raxol.Core.Runtime.Plugins.PluginCommandDispatcher" =>
+    :"Raxol.Core.Runtime.Plugins.PluginCommandDispatcherMock",
+  :"Raxol.Core.Runtime.Plugins.PluginReloader" =>
+    :"Raxol.Core.Runtime.Plugins.PluginReloaderMock",
+  :"Raxol.Core.Runtime.Plugins.PluginCommandHandler" =>
+    :"Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock",
+  :"Raxol.Core.Runtime.Plugins.TimerManager" =>
+    :"Raxol.Core.Runtime.Plugins.TimerManagerMock",
+  :"Raxol.Core.Runtime.Rendering.Engine" =>
+    :"Raxol.Core.Runtime.Rendering.EngineMock",
+
+  # System and UI mocks
+  :"Raxol.System.DeltaUpdaterSystemAdapter" =>
+    :"Raxol.System.DeltaUpdaterSystemAdapterMock",
+  :"Raxol.Terminal.Config.EnvironmentAdapter" =>
+    :"Raxol.Terminal.Config.EnvironmentAdapterMock",
+  :"Raxol.Terminal.ClipboardBehaviour" => :"Raxol.Terminal.ClipboardMock"
+}
 
 # Configure the KeyboardShortcuts module to use for testing
 config :raxol, :keyboard_shortcuts_module, Raxol.Mocks.KeyboardShortcutsMock
