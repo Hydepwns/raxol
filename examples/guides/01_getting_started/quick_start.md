@@ -30,7 +30,7 @@ First, add `raxol` to your project's dependencies. Open your `mix.exs` file and 
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.1.0"}
+    {:raxol, "~> 0.4.2"}
     # Or {:raxol, github: "Hydepwns/raxol"} for the latest code
   ]
 end
