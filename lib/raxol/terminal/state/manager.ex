@@ -1,243 +1,286 @@
 defmodule Raxol.Terminal.State.Manager do
   @moduledoc """
-  Manages terminal state operations for the terminal emulator.
-  This module handles state stack, mode management, and general state operations.
+  Manages the overall state of the terminal, including mode settings,
+  cursor state, and terminal dimensions.
   """
 
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  alias Raxol.Terminal.ANSI.TerminalState
-  alias Raxol.Terminal.ModeManager
+  defstruct [
+    # Terminal dimensions
+    rows: 24,
+    cols: 80,
+    scrollback_size: 1000,
 
-  @type t :: %{
-          state_stack: TerminalState.t(),
-          mode_manager: ModeManager.t(),
-          charset_state: map(),
-          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-          last_col_exceeded: boolean()
-        }
+    # Cursor state
+    cursor_x: 0,
+    cursor_y: 0,
+    cursor_visible: true,
+    cursor_style: :block,
+
+    # Terminal modes
+    modes: %{
+      insert: false,
+      replace: false,
+      origin: false,
+      auto_wrap: true,
+      auto_repeat: true,
+      interlacing: false,
+      new_line: false,
+      cursor_visible: true,
+      cursor_blink: true,
+      reverse_video: false,
+      screen: true,
+      scroll: true,
+      keyboard: true,
+      mouse: false,
+      mouse_protocol: :normal,
+      mouse_protocol_encoding: :utf8,
+      mouse_protocol_buttons: :all,
+      mouse_protocol_motion: :all,
+      mouse_protocol_sgr: false,
+      mouse_protocol_urxvt: false,
+      mouse_protocol_pixels: false,
+      mouse_protocol_utf8: false,
+      mouse_protocol_sgr_pixels: false,
+      mouse_protocol_urxvt_pixels: false,
+      mouse_protocol_sgr_utf8: false,
+      mouse_protocol_urxvt_utf8: false,
+      mouse_protocol_sgr_pixels_utf8: false,
+      mouse_protocol_urxvt_pixels_utf8: false
+    },
+
+    # Saved cursor state
+    saved_cursor: nil,
+
+    # Terminal state
+    title: "",
+    icon_name: "",
+    bell_enabled: true,
+    bell_volume: 100,
+    bell_pitch: 440,
+    bell_duration: 200,
+    bell_style: :normal,
+    bell_visible: true,
+    bell_audible: true,
+    bell_urgent: false,
+    bell_urgent_style: :normal,
+    bell_urgent_visible: true,
+    bell_urgent_audible: true,
+    bell_urgent_duration: 200,
+    bell_urgent_pitch: 440,
+    bell_urgent_volume: 100,
+    bell_urgent_count: 0,
+    bell_urgent_max: 3,
+    bell_urgent_timeout: 1000,
+    bell_urgent_last: nil,
+    bell_urgent_active: false
+  ]
+
+  @type mode :: atom()
+  @type mode_value :: boolean()
+  @type cursor_style :: :block | :underline | :bar
+  @type bell_style :: :normal | :visible | :audible | :urgent
+  @type bell_urgent_style :: :normal | :visible | :audible | :urgent
+
+  @type t :: %__MODULE__{
+    rows: non_neg_integer(),
+    cols: non_neg_integer(),
+    scrollback_size: non_neg_integer(),
+    cursor_x: non_neg_integer(),
+    cursor_y: non_neg_integer(),
+    cursor_visible: boolean(),
+    cursor_style: cursor_style(),
+    modes: %{mode() => mode_value()},
+    saved_cursor: {non_neg_integer(), non_neg_integer()} | nil,
+    title: String.t(),
+    icon_name: String.t(),
+    bell_enabled: boolean(),
+    bell_volume: non_neg_integer(),
+    bell_pitch: non_neg_integer(),
+    bell_duration: non_neg_integer(),
+    bell_style: bell_style(),
+    bell_visible: boolean(),
+    bell_audible: boolean(),
+    bell_urgent: boolean(),
+    bell_urgent_style: bell_urgent_style(),
+    bell_urgent_visible: boolean(),
+    bell_urgent_audible: boolean(),
+    bell_urgent_duration: non_neg_integer(),
+    bell_urgent_pitch: non_neg_integer(),
+    bell_urgent_volume: non_neg_integer(),
+    bell_urgent_count: non_neg_integer(),
+    bell_urgent_max: non_neg_integer(),
+    bell_urgent_timeout: non_neg_integer(),
+    bell_urgent_last: DateTime.t() | nil,
+    bell_urgent_active: boolean()
+  }
 
   @doc """
-  Creates a new state manager instance.
-
-  ## Returns
-
-  A new state manager instance
+  Creates a new terminal state manager instance.
   """
-  @spec new() :: t()
-  def new() do
-    %{
-      state_stack: TerminalState.new(),
-      mode_manager: ModeManager.new(),
-      charset_state: %{},
-      scroll_region: nil,
-      last_col_exceeded: false
-    }
+  def new(opts \\ []) do
+    struct!(__MODULE__, opts)
   end
 
-  # Public helper functions
-  @doc false
-  @spec generate_tab_stops(non_neg_integer()) :: list(non_neg_integer())
-  def generate_tab_stops(width) do
-    for x <- 0..(width - 1), rem(x, 8) == 0, into: MapSet.new() do
-      x
+  @doc """
+  Gets the current terminal dimensions.
+  """
+  def get_dimensions(%__MODULE__{} = state) do
+    {state.rows, state.cols}
+  end
+
+  @doc """
+  Sets the terminal dimensions.
+  """
+  def set_dimensions(%__MODULE__{} = state, rows, cols)
+      when is_integer(rows) and rows > 0
+      and is_integer(cols) and cols > 0 do
+    %{state | rows: rows, cols: cols}
+  end
+
+  @doc """
+  Gets the current cursor position.
+  """
+  def get_cursor_position(%__MODULE__{} = state) do
+    {state.cursor_x, state.cursor_y}
+  end
+
+  @doc """
+  Sets the cursor position.
+  """
+  def set_cursor_position(%__MODULE__{} = state, x, y)
+      when is_integer(x) and x >= 0
+      and is_integer(y) and y >= 0 do
+    %{state | cursor_x: x, cursor_y: y}
+  end
+
+  @doc """
+  Gets the cursor visibility state.
+  """
+  def get_cursor_visibility(%__MODULE__{} = state) do
+    state.cursor_visible
+  end
+
+  @doc """
+  Sets the cursor visibility.
+  """
+  def set_cursor_visibility(%__MODULE__{} = state, visible) when is_boolean(visible) do
+    %{state | cursor_visible: visible}
+  end
+
+  @doc """
+  Gets the cursor style.
+  """
+  def get_cursor_style(%__MODULE__{} = state) do
+    state.cursor_style
+  end
+
+  @doc """
+  Sets the cursor style.
+  """
+  def set_cursor_style(%__MODULE__{} = state, style) when style in [:block, :underline, :bar] do
+    %{state | cursor_style: style}
+  end
+
+  @doc """
+  Gets the value of a terminal mode.
+  """
+  def get_mode(%__MODULE__{} = state, mode) when is_atom(mode) do
+    Map.get(state.modes, mode)
+  end
+
+  @doc """
+  Sets a terminal mode value.
+  """
+  def set_mode(%__MODULE__{} = state, mode, value)
+      when is_atom(mode) and is_boolean(value) do
+    %{state | modes: Map.put(state.modes, mode, value)}
+  end
+
+  @doc """
+  Saves the current cursor state.
+  """
+  def save_cursor(%__MODULE__{} = state) do
+    %{state | saved_cursor: {state.cursor_x, state.cursor_y}}
+  end
+
+  @doc """
+  Restores the saved cursor state.
+  """
+  def restore_cursor(%__MODULE__{} = state) do
+    case state.saved_cursor do
+      nil -> state
+      {x, y} -> %{state | cursor_x: x, cursor_y: y}
     end
   end
 
   @doc """
-  Gets the current state stack.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  The current state stack
+  Gets the terminal title.
   """
-  @spec get_state_stack(EmulatorStruct.t()) :: TerminalState.t()
-  def get_state_stack(%EmulatorStruct{} = emulator) do
-    emulator.state_stack
+  def get_title(%__MODULE__{} = state) do
+    state.title
   end
 
   @doc """
-  Updates the state stack.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `state_stack` - The new state stack
-
-  ## Returns
-
-  Updated emulator with new state stack
+  Sets the terminal title.
   """
-  @spec update_state_stack(EmulatorStruct.t(), TerminalState.t()) ::
-          EmulatorStruct.t()
-  def update_state_stack(%EmulatorStruct{} = emulator, state_stack) do
-    %{emulator | state_stack: state_stack}
+  def set_title(%__MODULE__{} = state, title) when is_binary(title) do
+    %{state | title: title}
   end
 
   @doc """
-  Gets the current mode manager.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  The current mode manager
+  Gets the terminal icon name.
   """
-  @spec get_mode_manager(EmulatorStruct.t()) :: ModeManager.t()
-  def get_mode_manager(%EmulatorStruct{} = emulator) do
-    emulator.mode_manager
+  def get_icon_name(%__MODULE__{} = state) do
+    state.icon_name
   end
 
   @doc """
-  Updates the mode manager.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `mode_manager` - The new mode manager
-
-  ## Returns
-
-  Updated emulator with new mode manager
+  Sets the terminal icon name.
   """
-  @spec update_mode_manager(EmulatorStruct.t(), ModeManager.t()) ::
-          EmulatorStruct.t()
-  def update_mode_manager(%EmulatorStruct{} = emulator, mode_manager) do
-    %{emulator | mode_manager: mode_manager}
+  def set_icon_name(%__MODULE__{} = state, name) when is_binary(name) do
+    %{state | icon_name: name}
   end
 
   @doc """
-  Gets the current charset state.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  The current charset state
+  Triggers the terminal bell.
   """
-  @spec get_charset_state(EmulatorStruct.t()) :: map()
-  def get_charset_state(%EmulatorStruct{} = emulator) do
-    emulator.charset_state
+  def trigger_bell(%__MODULE__{} = state) do
+    if state.bell_enabled do
+      # Handle bell triggering logic here
+      state
+    else
+      state
+    end
   end
 
   @doc """
-  Updates the charset state.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `charset_state` - The new charset state
-
-  ## Returns
-
-  Updated emulator with new charset state
+  Resets the terminal state to default values.
   """
-  @spec update_charset_state(EmulatorStruct.t(), map()) :: EmulatorStruct.t()
-  def update_charset_state(%EmulatorStruct{} = emulator, charset_state) do
-    %{emulator | charset_state: charset_state}
-  end
-
-  @doc """
-  Gets the current scroll region.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  The current scroll region tuple or nil
-  """
-  @spec get_scroll_region(EmulatorStruct.t()) ::
-          {non_neg_integer(), non_neg_integer()} | nil
-  def get_scroll_region(%EmulatorStruct{} = emulator) do
-    emulator.scroll_region
-  end
-
-  @doc """
-  Updates the scroll region.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `scroll_region` - The new scroll region tuple or nil
-
-  ## Returns
-
-  Updated emulator with new scroll region
-  """
-  @spec update_scroll_region(
-          EmulatorStruct.t(),
-          {non_neg_integer(), non_neg_integer()} | nil
-        ) :: EmulatorStruct.t()
-  def update_scroll_region(%EmulatorStruct{} = emulator, scroll_region) do
-    %{emulator | scroll_region: scroll_region}
-  end
-
-  @doc """
-  Gets the last column exceeded flag.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  The last column exceeded flag
-  """
-  @spec get_last_col_exceeded(EmulatorStruct.t()) :: boolean()
-  def get_last_col_exceeded(%EmulatorStruct{} = emulator) do
-    emulator.last_col_exceeded
-  end
-
-  @doc """
-  Updates the last column exceeded flag.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-  * `last_col_exceeded` - The new last column exceeded flag
-
-  ## Returns
-
-  Updated emulator with new last column exceeded flag
-  """
-  @spec update_last_col_exceeded(EmulatorStruct.t(), boolean()) ::
-          EmulatorStruct.t()
-  def update_last_col_exceeded(%EmulatorStruct{} = emulator, last_col_exceeded) do
-    %{emulator | last_col_exceeded: last_col_exceeded}
-  end
-
-  @doc """
-  Resets the emulator to its initial state.
-
-  ## Parameters
-
-  * `emulator` - The emulator instance
-
-  ## Returns
-
-  Updated emulator with reset state
-  """
-  @spec reset_to_initial_state(EmulatorStruct.t()) :: EmulatorStruct.t()
-  def reset_to_initial_state(%EmulatorStruct{} = emulator) do
-    %{
-      emulator
-      | cursor: %{x: 0, y: 0},
-        scroll_region: {0, emulator.height - 1},
-        tab_stops: generate_tab_stops(emulator.width),
-        charset_state: %{},
-        final_byte: nil,
-        intermediates_buffer: [],
-        params_buffer: [],
-        payload_buffer: []
+  def reset(%__MODULE__{} = state) do
+    %{state |
+      cursor_x: 0,
+      cursor_y: 0,
+      cursor_visible: true,
+      cursor_style: :block,
+      modes: %{
+        insert: false,
+        replace: false,
+        origin: false,
+        auto_wrap: true,
+        auto_repeat: true,
+        interlacing: false,
+        new_line: false,
+        cursor_visible: true,
+        cursor_blink: true,
+        reverse_video: false,
+        screen: true,
+        scroll: true,
+        keyboard: true,
+        mouse: false
+      },
+      saved_cursor: nil,
+      title: "",
+      icon_name: ""
     }
   end
 end

@@ -1,98 +1,128 @@
 defmodule Raxol.Terminal.Output.Manager do
   @moduledoc """
-  Manages terminal output and control sequences.
-  Handles buffering, flushing, and processing of output data.
+  Manages terminal output buffering and control sequences.
   """
 
-  use GenServer
-  require Logger
+  defstruct [
+    output_buffer: "",
+    control_sequences: [],
+    buffer_size: 0,
+    max_buffer_size: 1024 * 1024  # 1MB default buffer size
+  ]
 
-  # Client API
+  @type t :: %__MODULE__{
+    output_buffer: String.t(),
+    control_sequences: [String.t()],
+    buffer_size: non_neg_integer(),
+    max_buffer_size: pos_integer()
+  }
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  @doc """
+  Creates a new output manager instance.
+  """
+  def new(opts \\ []) do
+    %__MODULE__{
+      max_buffer_size: Keyword.get(opts, :max_buffer_size, 1024 * 1024)
+    }
   end
 
-  def enqueue_output(pid \\ __MODULE__, data) do
-    GenServer.call(pid, {:enqueue_output, data})
-  end
-
-  def flush_output(pid \\ __MODULE__) do
-    GenServer.call(pid, :flush_output)
-  end
-
-  def clear_output_buffer(pid \\ __MODULE__) do
-    GenServer.call(pid, :clear_output_buffer)
-  end
-
-  def get_output_buffer(pid \\ __MODULE__) do
-    GenServer.call(pid, :get_output_buffer)
-  end
-
-  def enqueue_control_sequence(pid \\ __MODULE__, sequence) do
-    GenServer.call(pid, {:enqueue_control_sequence, sequence})
-  end
-
-  # Server Callbacks
-
-  @impl true
-  def init(_opts) do
-    {:ok,
-     %{
-       output_buffer: [],
-       control_sequences: [],
-       buffer_size: 0,
-       # 1MB default buffer size
-       max_buffer_size: 1024 * 1024
-     }}
-  end
-
-  @impl true
-  def handle_call({:enqueue_output, data}, _from, state) do
-    new_buffer = [data | state.output_buffer]
-    new_size = state.buffer_size + byte_size(data)
+  @doc """
+  Enqueues output to the buffer.
+  """
+  def enqueue_output(%__MODULE__{} = state, output) when is_binary(output) do
+    new_size = state.buffer_size + byte_size(output)
 
     if new_size > state.max_buffer_size do
-      {:reply, {:error, :buffer_full}, state}
+      # If buffer would exceed max size, truncate the output
+      truncated_size = state.max_buffer_size - state.buffer_size
+      truncated_output = binary_part(output, 0, truncated_size)
+      %{state |
+        output_buffer: state.output_buffer <> truncated_output,
+        buffer_size: state.max_buffer_size
+      }
     else
-      {:reply, :ok, %{state | output_buffer: new_buffer, buffer_size: new_size}}
+      %{state |
+        output_buffer: state.output_buffer <> output,
+        buffer_size: new_size
+      }
     end
   end
 
-  @impl true
-  def handle_call(:flush_output, _from, state) do
-    output =
-      state.output_buffer
-      |> Enum.reverse()
-      |> Enum.join()
-
-    {:reply, {:ok, output}, %{state | output_buffer: [], buffer_size: 0}}
+  @doc """
+  Flushes the output buffer and returns the content.
+  """
+  def flush_output(%__MODULE__{} = state) do
+    output = state.output_buffer
+    new_state = %{state |
+      output_buffer: "",
+      buffer_size: 0
+    }
+    {output, new_state}
   end
 
-  @impl true
-  def handle_call(:clear_output_buffer, _from, state) do
-    {:reply, :ok, %{state | output_buffer: [], buffer_size: 0}}
+  @doc """
+  Clears the output buffer.
+  """
+  def clear_output_buffer(%__MODULE__{} = state) do
+    %{state |
+      output_buffer: "",
+      buffer_size: 0
+    }
   end
 
-  @impl true
-  def handle_call(:get_output_buffer, _from, state) do
-    output =
-      state.output_buffer
-      |> Enum.reverse()
-      |> Enum.join()
-
-    {:reply, output, state}
+  @doc """
+  Gets the current output buffer content.
+  """
+  def get_output_buffer(%__MODULE__{} = state) do
+    state.output_buffer
   end
 
-  @impl true
-  def handle_call({:enqueue_control_sequence, sequence}, _from, state) do
-    new_sequences = [sequence | state.control_sequences]
-    {:reply, :ok, %{state | control_sequences: new_sequences}}
+  @doc """
+  Enqueues a control sequence to be processed.
+  """
+  def enqueue_control_sequence(%__MODULE__{} = state, sequence) when is_binary(sequence) do
+    %{state |
+      control_sequences: [sequence | state.control_sequences]
+    }
   end
 
-  @impl true
-  def handle_call(request, _from, state) do
-    Logger.warning("Unhandled call: #{inspect(request)}")
-    {:reply, {:error, :unknown_call}, state}
+  @doc """
+  Gets the next control sequence from the queue.
+  """
+  def get_next_control_sequence(%__MODULE__{} = state) do
+    case state.control_sequences do
+      [sequence | rest] ->
+        {sequence, %{state | control_sequences: rest}}
+      [] ->
+        {nil, state}
+    end
+  end
+
+  @doc """
+  Gets all pending control sequences.
+  """
+  def get_pending_control_sequences(%__MODULE__{} = state) do
+    state.control_sequences
+  end
+
+  @doc """
+  Clears all pending control sequences.
+  """
+  def clear_control_sequences(%__MODULE__{} = state) do
+    %{state | control_sequences: []}
+  end
+
+  @doc """
+  Gets the current buffer size.
+  """
+  def get_buffer_size(%__MODULE__{} = state) do
+    state.buffer_size
+  end
+
+  @doc """
+  Sets the maximum buffer size.
+  """
+  def set_max_buffer_size(%__MODULE__{} = state, size) when is_integer(size) and size > 0 do
+    %{state | max_buffer_size: size}
   end
 end

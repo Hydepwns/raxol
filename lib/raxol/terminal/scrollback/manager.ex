@@ -4,94 +4,90 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   """
 
   defstruct [
-    :buffer,
-    :limit,
-    :metrics
+    scrollback_buffer: [],
+    scrollback_limit: 1000,  # Default limit of 1000 lines
+    current_position: 0
   ]
 
+  @type scrollback_line :: String.t()
+  @type scrollback_buffer :: [scrollback_line()]
+
   @type t :: %__MODULE__{
-          buffer: list(String.t()),
-          limit: integer(),
-          metrics: map()
-        }
+    scrollback_buffer: scrollback_buffer(),
+    scrollback_limit: pos_integer(),
+    current_position: non_neg_integer()
+  }
 
   @doc """
-  Creates a new scrollback manager with default settings.
+  Creates a new scrollback manager instance.
   """
   def new(opts \\ []) do
     %__MODULE__{
-      buffer: [],
-      limit: Keyword.get(opts, :limit, 1000),
-      metrics: %{
-        lines_added: 0,
-        lines_removed: 0,
-        buffer_size: 0
-      }
+      scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000)
     }
   end
 
   @doc """
-  Gets the scrollback buffer.
+  Gets the current scrollback buffer.
   """
-  def get_scrollback_buffer(%__MODULE__{} = manager) do
-    manager.buffer
+  def get_scrollback_buffer(%__MODULE__{} = state) do
+    state.scrollback_buffer
   end
 
   @doc """
   Adds a line to the scrollback buffer.
   """
-  def add_to_scrollback(%__MODULE__{} = manager, line) do
-    buffer = [line | manager.buffer]
+  def add_to_scrollback(%__MODULE__{} = state, line) when is_binary(line) do
+    new_buffer = [line | state.scrollback_buffer]
 
-    buffer =
-      if length(buffer) > manager.limit do
-        Enum.take(buffer, manager.limit)
-      else
-        buffer
-      end
+    # Trim buffer if it exceeds the limit
+    trimmed_buffer = if length(new_buffer) > state.scrollback_limit do
+      Enum.take(new_buffer, state.scrollback_limit)
+    else
+      new_buffer
+    end
 
-    metrics = update_metrics(manager.metrics, :lines_added)
-    %{manager | buffer: buffer, metrics: metrics}
+    %{state | scrollback_buffer: trimmed_buffer}
   end
 
   @doc """
   Clears the scrollback buffer.
   """
-  def clear_scrollback(%__MODULE__{} = manager) do
-    metrics =
-      update_metrics(manager.metrics, :lines_removed, length(manager.buffer))
-
-    %{manager | buffer: [], metrics: metrics}
+  def clear_scrollback(%__MODULE__{} = state) do
+    %{state |
+      scrollback_buffer: [],
+      current_position: 0
+    }
   end
 
   @doc """
   Gets the scrollback limit.
   """
-  def get_scrollback_limit(%__MODULE__{} = manager) do
-    manager.limit
+  def get_scrollback_limit(%__MODULE__{} = state) do
+    state.scrollback_limit
   end
 
   @doc """
   Sets the scrollback limit.
   """
-  def set_scrollback_limit(%__MODULE__{} = manager, limit)
-      when is_integer(limit) and limit > 0 do
-    buffer =
-      if length(manager.buffer) > limit do
-        Enum.take(manager.buffer, limit)
-      else
-        manager.buffer
-      end
+  def set_scrollback_limit(%__MODULE__{} = state, limit) when is_integer(limit) and limit > 0 do
+    new_state = %{state | scrollback_limit: limit}
 
-    %{manager | limit: limit, buffer: buffer}
+    # Trim buffer if it exceeds the new limit
+    if length(new_state.scrollback_buffer) > limit do
+      %{new_state | scrollback_buffer: Enum.take(new_state.scrollback_buffer, limit)}
+    else
+      new_state
+    end
   end
 
   @doc """
   Gets a range of lines from the scrollback buffer.
   """
-  def get_scrollback_range(%__MODULE__{} = manager, start, count)
-      when is_integer(start) and is_integer(count) do
-    case Enum.slice(manager.buffer, start, count) do
+  def get_scrollback_range(%__MODULE__{} = state, start_line, end_line)
+      when is_integer(start_line) and is_integer(end_line)
+      and start_line >= 0 and end_line >= start_line do
+    case Enum.slice(state.scrollback_buffer, start_line..end_line) do
       [] -> {:error, :invalid_range}
       lines -> {:ok, lines}
     end
@@ -100,33 +96,57 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   @doc """
   Gets the current size of the scrollback buffer.
   """
-  def get_scrollback_size(%__MODULE__{} = manager) do
-    length(manager.buffer)
+  def get_scrollback_size(%__MODULE__{} = state) do
+    length(state.scrollback_buffer)
   end
 
   @doc """
   Checks if the scrollback buffer is empty.
   """
-  def scrollback_empty?(%__MODULE__{} = manager) do
-    Enum.empty?(manager.buffer)
+  def scrollback_empty?(%__MODULE__{} = state) do
+    state.scrollback_buffer == []
   end
 
   @doc """
-  Gets the current metrics.
+  Gets the current scrollback position.
   """
-  def get_metrics(%__MODULE__{} = manager) do
-    manager.metrics
+  def get_current_position(%__MODULE__{} = state) do
+    state.current_position
   end
 
-  # Private Functions
-
-  defp update_metrics(metrics, :lines_added) do
-    Map.update!(metrics, :lines_added, &(&1 + 1))
-    |> Map.update!(:buffer_size, &(&1 + 1))
+  @doc """
+  Sets the current scrollback position.
+  """
+  def set_current_position(%__MODULE__{} = state, position)
+      when is_integer(position) and position >= 0 do
+    max_position = length(state.scrollback_buffer) - 1
+    new_position = min(position, max_position)
+    %{state | current_position: new_position}
   end
 
-  defp update_metrics(metrics, :lines_removed, count) do
-    Map.update!(metrics, :lines_removed, &(&1 + count))
-    |> Map.update!(:buffer_size, &(&1 - count))
+  @doc """
+  Scrolls up in the scrollback buffer.
+  """
+  def scroll_up(%__MODULE__{} = state, lines \\ 1) when is_integer(lines) and lines > 0 do
+    new_position = min(state.current_position + lines, length(state.scrollback_buffer) - 1)
+    %{state | current_position: new_position}
+  end
+
+  @doc """
+  Scrolls down in the scrollback buffer.
+  """
+  def scroll_down(%__MODULE__{} = state, lines \\ 1) when is_integer(lines) and lines > 0 do
+    new_position = max(state.current_position - lines, 0)
+    %{state | current_position: new_position}
+  end
+
+  @doc """
+  Gets the current line from the scrollback buffer.
+  """
+  def get_current_line(%__MODULE__{} = state) do
+    case Enum.at(state.scrollback_buffer, state.current_position) do
+      nil -> {:error, :invalid_position}
+      line -> {:ok, line}
+    end
   end
 end

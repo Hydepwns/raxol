@@ -4,110 +4,122 @@ defmodule Raxol.Terminal.Hyperlink.Manager do
   """
 
   defstruct [
-    :url,
-    :state,
-    :id,
-    :params
+    hyperlink_url: nil,
+    hyperlink_state: :inactive,  # :inactive, :active, :hover
+    hyperlink_id: nil,
+    hyperlink_params: %{}
   ]
 
-  @type hyperlink_state :: :active | :inactive | :hover
-  @type hyperlink_params :: %{
-          optional(String.t()) => String.t()
-        }
+  @type hyperlink_state :: :inactive | :active | :hover
+  @type hyperlink_params :: %{String.t() => String.t()}
 
   @type t :: %__MODULE__{
-          url: String.t(),
-          state: hyperlink_state(),
-          id: String.t(),
-          params: hyperlink_params()
-        }
+    hyperlink_url: String.t() | nil,
+    hyperlink_state: hyperlink_state(),
+    hyperlink_id: String.t() | nil,
+    hyperlink_params: hyperlink_params()
+  }
 
   @doc """
-  Creates a new hyperlink manager with default settings.
+  Creates a new hyperlink manager instance.
   """
-  def new(opts \\ []) do
-    %__MODULE__{
-      url: Keyword.get(opts, :url, ""),
-      state: Keyword.get(opts, :state, :inactive),
-      id: Keyword.get(opts, :id, generate_id()),
-      params: Keyword.get(opts, :params, %{})
-    }
+  def new do
+    %__MODULE__{}
   end
 
   @doc """
-  Gets the hyperlink URL.
+  Gets the current hyperlink URL.
   """
-  def get_hyperlink_url(%__MODULE__{} = manager) do
-    manager.url
+  def get_hyperlink_url(%__MODULE__{} = state) do
+    state.hyperlink_url
   end
 
   @doc """
   Updates the hyperlink URL.
   """
-  def update_hyperlink_url(%__MODULE__{} = manager, url) do
-    %{manager | url: url}
+  def update_hyperlink_url(%__MODULE__{} = state, url) when is_binary(url) do
+    %{state | hyperlink_url: url}
   end
 
   @doc """
   Gets the current hyperlink state.
   """
-  def get_hyperlink_state(%__MODULE__{} = manager) do
-    manager.state
+  def get_hyperlink_state(%__MODULE__{} = state) do
+    state.hyperlink_state
   end
 
   @doc """
   Updates the hyperlink state.
   """
-  def update_hyperlink_state(%__MODULE__{} = manager, state)
-      when state in [:active, :inactive, :hover] do
-    %{manager | state: state}
+  def update_hyperlink_state(%__MODULE__{} = state, new_state)
+      when new_state in [:inactive, :active, :hover] do
+    %{state | hyperlink_state: new_state}
   end
 
   @doc """
   Clears the hyperlink state.
   """
-  def clear_hyperlink_state(%__MODULE__{} = manager) do
-    %{manager | state: :inactive}
+  def clear_hyperlink_state(%__MODULE__{} = state) do
+    %{state |
+      hyperlink_url: nil,
+      hyperlink_state: :inactive,
+      hyperlink_id: nil,
+      hyperlink_params: %{}
+    }
   end
 
   @doc """
   Creates a new hyperlink with the given parameters.
   """
-  def create_hyperlink(%__MODULE__{} = manager, url, id \\ nil, params \\ %{}) do
-    %{
-      manager
-      | url: url,
-        id: id || generate_id(),
-        params: params,
-        state: :inactive
+  def create_hyperlink(%__MODULE__{} = state, id, url, params \\ %{})
+      when is_binary(id) and is_binary(url) and is_map(params) do
+    %{state |
+      hyperlink_id: id,
+      hyperlink_url: url,
+      hyperlink_params: params,
+      hyperlink_state: :inactive
     }
-  end
-
-  @doc """
-  Gets the hyperlink parameters.
-  """
-  def get_hyperlink_params(%__MODULE__{} = manager) do
-    manager.params
-  end
-
-  @doc """
-  Updates the hyperlink parameters.
-  """
-  def update_hyperlink_params(%__MODULE__{} = manager, params) do
-    %{manager | params: params}
   end
 
   @doc """
   Gets the hyperlink ID.
   """
-  def get_hyperlink_id(%__MODULE__{} = manager) do
-    manager.id
+  def get_hyperlink_id(%__MODULE__{} = state) do
+    state.hyperlink_id
   end
 
-  # Private Functions
+  @doc """
+  Gets the hyperlink parameters.
+  """
+  def get_hyperlink_params(%__MODULE__{} = state) do
+    state.hyperlink_params
+  end
 
-  defp generate_id do
-    :crypto.strong_rand_bytes(16)
-    |> Base.encode16(case: :lower)
+  @doc """
+  Updates the hyperlink parameters.
+  """
+  def update_hyperlink_params(%__MODULE__{} = state, params) when is_map(params) do
+    %{state | hyperlink_params: params}
+  end
+
+  @doc """
+  Checks if a hyperlink is active.
+  """
+  def hyperlink_active?(%__MODULE__{} = state) do
+    state.hyperlink_state == :active
+  end
+
+  @doc """
+  Checks if a hyperlink is being hovered.
+  """
+  def hyperlink_hover?(%__MODULE__{} = state) do
+    state.hyperlink_state == :hover
+  end
+
+  @doc """
+  Checks if a hyperlink exists.
+  """
+  def has_hyperlink?(%__MODULE__{} = state) do
+    state.hyperlink_url != nil
   end
 end

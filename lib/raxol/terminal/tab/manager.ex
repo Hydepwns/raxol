@@ -25,13 +25,15 @@ defmodule Raxol.Terminal.Tab.Manager do
           tabs: %{tab_id() => tab_config()},
           active_tab: tab_id() | nil,
           next_tab_id: non_neg_integer(),
-          tab_stops: MapSet.t()
+          tab_stops: MapSet.t(),
+          default_tab_width: pos_integer()
         }
 
   defstruct tabs: %{},
             active_tab: nil,
             next_tab_id: 1,
-            tab_stops: MapSet.new()
+            tab_stops: MapSet.new(),
+            default_tab_width: 8
 
   # Client API
   def start_link(opts \\ []) do
@@ -240,16 +242,16 @@ defmodule Raxol.Terminal.Tab.Manager do
   @spec set_horizontal_tab(t()) :: t()
   def set_horizontal_tab(manager) do
     # TODO: Implement actual tab stop setting based on cursor position
-    manager
+    next_tab = get_next_tab_stop(manager)
+    %{manager | tab_stops: MapSet.put(manager.tab_stops, next_tab)}
   end
 
   @doc """
-  Clears the tab stop at the current cursor position.
+  Clears a tab stop at the specified position.
   """
-  @spec clear_tab_stop(t()) :: t()
-  def clear_tab_stop(manager) do
-    # TODO: Implement actual tab stop clearing based on cursor position
-    manager
+  @spec clear_tab_stop(t(), pos_integer()) :: t()
+  def clear_tab_stop(manager, position) when is_integer(position) and position >= 0 do
+    %{manager | tab_stops: MapSet.delete(manager.tab_stops, position)}
   end
 
   @doc """
@@ -261,9 +263,9 @@ defmodule Raxol.Terminal.Tab.Manager do
   end
 
   @doc """
-  Gets the next tab stop position.
+  Gets the next tab stop position from the current position.
   """
-  @spec get_next_tab_stop(t()) :: non_neg_integer()
+  @spec get_next_tab_stop(t()) :: pos_integer()
   def get_next_tab_stop(manager) do
     # TODO: Implement actual tab stop calculation
     8
