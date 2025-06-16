@@ -7,15 +7,38 @@ defmodule Raxol.Terminal.Cursor.Manager do
   use GenServer
   require Logger
 
-  # Struct definition for cursor state
-  defstruct position: {0, 0},
-            visible: true,
-            style: :block,
-            blinking: true,
-            state: :visible,
-            blink_rate: 500,
-            custom_shape: nil,
-            custom_dimensions: nil
+  defstruct [
+    x: 0,
+    y: 0,
+    visible: true,
+    blinking: true,
+    style: :block,
+    color: nil,
+    saved_x: nil,
+    saved_y: nil,
+    saved_style: nil,
+    saved_visible: nil,
+    saved_blinking: nil,
+    saved_color: nil
+  ]
+
+  @type cursor_style :: :block | :underline | :bar
+  @type color :: {non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
+
+  @type t :: %__MODULE__{
+    x: non_neg_integer(),
+    y: non_neg_integer(),
+    visible: boolean(),
+    blinking: boolean(),
+    style: cursor_style(),
+    color: color(),
+    saved_x: non_neg_integer() | nil,
+    saved_y: non_neg_integer() | nil,
+    saved_style: cursor_style() | nil,
+    saved_visible: boolean() | nil,
+    saved_blinking: boolean() | nil,
+    saved_color: color() | nil
+  }
 
   # Client API
 
@@ -24,7 +47,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Creates a new cursor struct with default values.
+  Creates a new cursor manager instance.
   """
   def new do
     %__MODULE__{}
@@ -40,161 +63,138 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Gets the current cursor position.
   """
-  def get_position(%__MODULE__{} = cursor) do
-    cursor.position
+  def get_position(%__MODULE__{} = state) do
+    {state.x, state.y}
   end
 
   @doc """
-  Updates the cursor position.
+  Sets the cursor position.
   """
-  def update_position(%__MODULE__{} = cursor, {row, col}) do
-    %{cursor | position: {row, col}}
+  def set_position(%__MODULE__{} = state, x, y)
+      when is_integer(x) and x >= 0
+      and is_integer(y) and y >= 0 do
+    %{state | x: x, y: y}
   end
 
   @doc """
-  Resets the cursor position to the origin (0, 0).
+  Moves the cursor relative to its current position.
   """
-  def reset_position(%__MODULE__{} = cursor) do
-    %{cursor | position: {0, 0}}
+  def move_cursor(%__MODULE__{} = state, dx, dy)
+      when is_integer(dx) and is_integer(dy) do
+    new_x = max(0, state.x + dx)
+    new_y = max(0, state.y + dy)
+    %{state | x: new_x, y: new_y}
   end
 
   @doc """
-  Moves the cursor to a specific position.
+  Gets the cursor visibility state.
   """
-  def move_to(%__MODULE__{} = cursor, row, col) do
-    %{cursor | position: {row, col}}
+  def is_visible?(%__MODULE__{} = state) do
+    state.visible
   end
 
   @doc """
-  Moves the cursor to a specific position with bounds checking.
+  Sets the cursor visibility.
   """
-  def move_to(%__MODULE__{} = cursor, row, col, min_row, max_row) do
-    new_row = max(min_row, min(max_row, row))
-    %{cursor | position: {new_row, col}}
+  def set_visibility(%__MODULE__{} = state, visible) when is_boolean(visible) do
+    %{state | visible: visible}
   end
 
   @doc """
-  Moves the cursor to a specific position with bounds checking for both row and column.
+  Gets the cursor blinking state.
   """
-  def move_to(
-        %__MODULE__{} = cursor,
-        row,
-        col,
-        min_row,
-        max_row,
-        min_col,
-        max_col
-      ) do
-    new_row = max(min_row, min(max_row, row))
-    new_col = max(min_col, min(max_col, col))
-    %{cursor | position: {new_row, new_col}}
+  def is_blinking?(%__MODULE__{} = state) do
+    state.blinking
   end
 
   @doc """
-  Moves the cursor up by the specified number of lines.
+  Sets the cursor blinking state.
   """
-  def move_up(%__MODULE__{} = cursor, lines, min_row, max_row) do
-    {row, col} = cursor.position
-    new_row = max(min_row, row - lines)
-    %{cursor | position: {new_row, col}}
+  def set_blinking(%__MODULE__{} = state, blinking) when is_boolean(blinking) do
+    %{state | blinking: blinking}
   end
 
   @doc """
-  Moves the cursor down by the specified number of lines.
+  Gets the cursor style.
   """
-  def move_down(%__MODULE__{} = cursor, lines, min_row, max_row) do
-    {row, col} = cursor.position
-    new_row = min(max_row, row + lines)
-    %{cursor | position: {new_row, col}}
-  end
-
-  @doc """
-  Moves the cursor left by the specified number of columns.
-  """
-  def move_left(%__MODULE__{} = cursor, cols, min_col, max_col) do
-    {row, col} = cursor.position
-    new_col = max(min_col, col - cols)
-    %{cursor | position: {row, new_col}}
-  end
-
-  @doc """
-  Moves the cursor right by the specified number of columns.
-  """
-  def move_right(%__MODULE__{} = cursor, cols, min_col, max_col) do
-    {row, col} = cursor.position
-    new_col = min(max_col, col + cols)
-    %{cursor | position: {row, new_col}}
-  end
-
-  @doc """
-  Moves the cursor to the start of the current line.
-  """
-  def move_to_line_start(%__MODULE__{} = cursor) do
-    {row, _} = cursor.position
-    %{cursor | position: {row, 0}}
-  end
-
-  @doc """
-  Moves the cursor to a specific column.
-  """
-  def move_to_column(%__MODULE__{} = cursor, col, min_col, max_col) do
-    {row, _} = cursor.position
-    new_col = max(min_col, min(max_col, col))
-    %{cursor | position: {row, new_col}}
-  end
-
-  @doc """
-  Constrains the cursor position within the given bounds.
-  """
-  def constrain_position(
-        %__MODULE__{} = cursor,
-        {min_row, min_col},
-        {max_row, max_col}
-      ) do
-    {row, col} = cursor.position
-    new_row = max(min_row, min(max_row, row))
-    new_col = max(min_col, min(max_col, col))
-    %{cursor | position: {new_row, new_col}}
+  def get_style(%__MODULE__{} = state) do
+    state.style
   end
 
   @doc """
   Sets the cursor style.
   """
-  def set_style(%__MODULE__{} = cursor, style) do
-    %{cursor | style: style}
+  def set_style(%__MODULE__{} = state, style) when style in [:block, :underline, :bar] do
+    %{state | style: style}
   end
 
   @doc """
-  Sets the cursor state (visible, hidden, or blinking).
+  Gets the cursor color.
   """
-  def set_state(%__MODULE__{} = cursor, state) do
-    %{cursor | state: state}
+  def get_color(%__MODULE__{} = state) do
+    state.color
   end
 
   @doc """
-  Sets a custom cursor shape and dimensions.
+  Sets the cursor color.
   """
-  def set_custom_shape(%__MODULE__{} = cursor, shape, dimensions) do
-    %{
-      cursor
-      | style: :custom,
-        custom_shape: shape,
-        custom_dimensions: dimensions
+  def set_color(%__MODULE__{} = state, color) do
+    %{state | color: color}
+  end
+
+  @doc """
+  Resets the cursor color to default.
+  """
+  def reset_color(%__MODULE__{} = state) do
+    %{state | color: nil}
+  end
+
+  @doc """
+  Saves the current cursor state.
+  """
+  def save_state(%__MODULE__{} = state) do
+    %{state |
+      saved_x: state.x,
+      saved_y: state.y,
+      saved_style: state.style,
+      saved_visible: state.visible,
+      saved_blinking: state.blinking,
+      saved_color: state.color
     }
   end
 
   @doc """
-  Updates the cursor blink state and returns the updated cursor and visibility.
+  Restores the saved cursor state.
   """
-  def update_blink(%__MODULE__{} = cursor) do
-    case cursor.state do
-      :blinking ->
-        visible = !cursor.visible
-        {%{cursor | visible: visible}, visible}
+  def restore_state(%__MODULE__{} = state) do
+    %{state |
+      x: state.saved_x || state.x,
+      y: state.saved_y || state.y,
+      style: state.saved_style || state.style,
+      visible: state.saved_visible || state.visible,
+      blinking: state.saved_blinking || state.blinking,
+      color: state.saved_color || state.color
+    }
+  end
 
-      _ ->
-        {cursor, cursor.visible}
-    end
+  @doc """
+  Resets the cursor state to default values.
+  """
+  def reset(%__MODULE__{} = state) do
+    %{state |
+      x: 0,
+      y: 0,
+      visible: true,
+      blinking: true,
+      style: :block,
+      color: nil,
+      saved_x: nil,
+      saved_y: nil,
+      saved_style: nil,
+      saved_visible: nil,
+      saved_blinking: nil,
+      saved_color: nil
+    }
   end
 
   # GenServer API functions
@@ -299,14 +299,18 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def init(_opts) do
     {:ok,
      %{
-       position: {0, 0},
+       x: 0,
+       y: 0,
        visible: true,
-       style: :block,
        blinking: true,
-       state: :visible,
-       blink_rate: 500,
-       custom_shape: nil,
-       custom_dimensions: nil
+       style: :block,
+       color: nil,
+       saved_x: nil,
+       saved_y: nil,
+       saved_style: nil,
+       saved_visible: nil,
+       saved_blinking: nil,
+       saved_color: nil
      }}
   end
 
@@ -327,12 +331,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl true
   def handle_call(:get_position, _from, state) do
-    {:reply, state.position, state}
+    {:reply, {state.x, state.y}, state}
   end
 
   @impl true
   def handle_call({:set_position, row, col}, _from, state) do
-    {:reply, :ok, %{state | position: {row, col}}}
+    {:reply, :ok, %{state | x: row, y: col}}
   end
 
   @impl true
@@ -352,14 +356,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl true
   def handle_call({:move_to, row, col}, _from, state) do
-    {:reply, :ok, %{state | position: {row, col}}}
+    {:reply, :ok, %{state | x: row, y: col}}
   end
 
   @impl true
   def handle_call({:move_to, row, col, min_row, max_row}, _from, state) do
-    {_, current_col} = state.position
+    {_, current_col} = {state.x, state.y}
     new_row = max(min_row, min(max_row, row))
-    {:reply, :ok, %{state | position: {new_row, current_col}}}
+    {:reply, :ok, %{state | x: new_row, y: current_col}}
   end
 
   @impl true
@@ -370,47 +374,47 @@ defmodule Raxol.Terminal.Cursor.Manager do
       ) do
     new_row = max(min_row, min(max_row, row))
     new_col = max(min_col, min(max_col, col))
-    {:reply, :ok, %{state | position: {new_row, new_col}}}
+    {:reply, :ok, %{state | x: new_row, y: new_col}}
   end
 
   @impl true
   def handle_call({:move_up, lines, _min_row, _max_row}, _from, state) do
-    {row, col} = state.position
+    {row, col} = {state.x, state.y}
     new_row = max(0, row - lines)
-    {:reply, :ok, %{state | position: {new_row, col}}}
+    {:reply, :ok, %{state | x: new_row, y: col}}
   end
 
   @impl true
   def handle_call({:move_down, lines, _min_row, _max_row}, _from, state) do
-    {row, col} = state.position
-    new_row = row + lines
-    {:reply, :ok, %{state | position: {new_row, col}}}
+    {row, col} = {state.x, state.y}
+    new_row = min(row + lines, 0)
+    {:reply, :ok, %{state | x: new_row, y: col}}
   end
 
   @impl true
   def handle_call({:move_left, cols, _min_col, _max_col}, _from, state) do
-    {row, col} = state.position
+    {row, col} = {state.x, state.y}
     new_col = max(0, col - cols)
-    {:reply, :ok, %{state | position: {row, new_col}}}
+    {:reply, :ok, %{state | x: row, y: new_col}}
   end
 
   @impl true
   def handle_call({:move_right, cols, _min_col, _max_col}, _from, state) do
-    {row, col} = state.position
-    new_col = col + cols
-    {:reply, :ok, %{state | position: {row, new_col}}}
+    {row, col} = {state.x, state.y}
+    new_col = min(col + cols, 0)
+    {:reply, :ok, %{state | x: row, y: new_col}}
   end
 
   @impl true
   def handle_call({:move_to_column, col, _min_col, _max_col}, _from, state) do
-    {row, _} = state.position
-    {:reply, :ok, %{state | position: {row, col}}}
+    {row, _} = {state.x, state.y}
+    {:reply, :ok, %{state | x: row, y: col}}
   end
 
   @impl true
   def handle_call(:move_to_line_start, _from, state) do
-    {row, _} = state.position
-    {:reply, :ok, %{state | position: {row, 0}}}
+    {row, _} = {state.x, state.y}
+    {:reply, :ok, %{state | x: row, y: 0}}
   end
 
   @impl true
@@ -419,10 +423,10 @@ defmodule Raxol.Terminal.Cursor.Manager do
         _from,
         state
       ) do
-    {row, col} = state.position
+    {row, col} = {state.x, state.y}
     new_row = max(min_row, min(max_row, row))
     new_col = max(min_col, min(max_col, col))
-    {:reply, :ok, %{state | position: {new_row, new_col}}}
+    {:reply, :ok, %{state | x: new_row, y: new_col}}
   end
 
   @impl true

@@ -1,111 +1,150 @@
 defmodule Raxol.Terminal.Window.Manager do
   @moduledoc """
-  Manages terminal window properties and state.
-  Handles window title, size, position, and other window-related operations.
+  Manages terminal window properties and operations.
   """
 
-  use GenServer
-  require Logger
+  defstruct [
+    title: "",
+    icon_name: "",
+    size: {80, 24},  # {width, height}
+    position: {0, 0},  # {x, y}
+    stacking_order: :normal,  # :normal, :above, :below
+    saved_size: nil,
+    saved_position: nil
+  ]
 
-  # Client API
+  @type window_size :: {pos_integer(), pos_integer()}
+  @type window_position :: {integer(), integer()}
+  @type stacking_order :: :normal | :above | :below
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  @type t :: %__MODULE__{
+    title: String.t(),
+    icon_name: String.t(),
+    size: window_size(),
+    position: window_position(),
+    stacking_order: stacking_order(),
+    saved_size: window_size() | nil,
+    saved_position: window_position() | nil
+  }
+
+  @doc """
+  Creates a new window manager instance.
+  """
+  def new(opts \\ []) do
+    %__MODULE__{
+      size: Keyword.get(opts, :size, {80, 24}),
+      position: Keyword.get(opts, :position, {0, 0})
+    }
   end
 
-  def set_window_title(pid \\ __MODULE__, title) do
-    GenServer.call(pid, {:set_window_title, title})
+  @doc """
+  Sets the window title.
+  """
+  def set_window_title(%__MODULE__{} = state, title) when is_binary(title) do
+    %{state | title: title}
   end
 
-  def set_icon_name(pid \\ __MODULE__, name) do
-    GenServer.call(pid, {:set_icon_name, name})
+  @doc """
+  Sets the window icon name.
+  """
+  def set_icon_name(%__MODULE__{} = state, name) when is_binary(name) do
+    %{state | icon_name: name}
   end
 
-  def set_window_size(pid \\ __MODULE__, width, height) do
-    GenServer.call(pid, {:set_window_size, width, height})
+  @doc """
+  Sets the window size.
+  """
+  def set_window_size(%__MODULE__{} = state, width, height)
+      when is_integer(width) and width > 0
+      and is_integer(height) and height > 0 do
+    %{state | size: {width, height}}
   end
 
-  def set_window_position(pid \\ __MODULE__, x, y) do
-    GenServer.call(pid, {:set_window_position, x, y})
+  @doc """
+  Sets the window position.
+  """
+  def set_window_position(%__MODULE__{} = state, x, y)
+      when is_integer(x) and is_integer(y) do
+    %{state | position: {x, y}}
   end
 
-  def set_stacking_order(pid \\ __MODULE__, order) do
-    GenServer.call(pid, {:set_stacking_order, order})
+  @doc """
+  Sets the window stacking order.
+  """
+  def set_stacking_order(%__MODULE__{} = state, order)
+      when order in [:normal, :above, :below] do
+    %{state | stacking_order: order}
   end
 
-  def get_window_state(pid \\ __MODULE__) do
-    GenServer.call(pid, :get_window_state)
+  @doc """
+  Gets the current window state.
+  """
+  def get_window_state(%__MODULE__{} = state) do
+    %{
+      title: state.title,
+      icon_name: state.icon_name,
+      size: state.size,
+      position: state.position,
+      stacking_order: state.stacking_order
+    }
   end
 
-  def save_window_size(pid \\ __MODULE__) do
-    GenServer.call(pid, :save_window_size)
+  @doc """
+  Saves the current window size for later restoration.
+  """
+  def save_window_size(%__MODULE__{} = state) do
+    %{state | saved_size: state.size}
   end
 
-  def restore_window_size(pid \\ __MODULE__) do
-    GenServer.call(pid, :restore_window_size)
-  end
-
-  # Server Callbacks
-
-  @impl true
-  def init(_opts) do
-    {:ok,
-     %{
-       title: "Terminal",
-       icon_name: "Terminal",
-       size: {80, 24},
-       position: {0, 0},
-       stacking_order: :normal,
-       saved_size: nil
-     }}
-  end
-
-  @impl true
-  def handle_call({:set_window_title, title}, _from, state) do
-    {:reply, :ok, %{state | title: title}}
-  end
-
-  @impl true
-  def handle_call({:set_icon_name, name}, _from, state) do
-    {:reply, :ok, %{state | icon_name: name}}
-  end
-
-  @impl true
-  def handle_call({:set_window_size, width, height}, _from, state) do
-    {:reply, :ok, %{state | size: {width, height}}}
-  end
-
-  @impl true
-  def handle_call({:set_window_position, x, y}, _from, state) do
-    {:reply, :ok, %{state | position: {x, y}}}
-  end
-
-  @impl true
-  def handle_call({:set_stacking_order, order}, _from, state) do
-    {:reply, :ok, %{state | stacking_order: order}}
-  end
-
-  @impl true
-  def handle_call(:get_window_state, _from, state) do
-    {:reply, state, state}
-  end
-
-  @impl true
-  def handle_call(:save_window_size, _from, state) do
-    {:reply, :ok, %{state | saved_size: state.size}}
-  end
-
-  @impl true
-  def handle_call(:restore_window_size, _from, state) do
+  @doc """
+  Restores the previously saved window size.
+  """
+  def restore_window_size(%__MODULE__{} = state) do
     case state.saved_size do
-      nil -> {:reply, {:error, :no_saved_size}, state}
-      size -> {:reply, :ok, %{state | size: size}}
+      nil -> state
+      size -> %{state | size: size}
     end
   end
 
-  @impl true
-  def handle_call(request, _from, state) do
-    Logger.warning("Unhandled call: #{inspect(request)}")
-    {:reply, {:error, :unknown_call}, state}
+  @doc """
+  Gets the window width.
+  """
+  def get_width(%__MODULE__{} = state) do
+    elem(state.size, 0)
+  end
+
+  @doc """
+  Gets the window height.
+  """
+  def get_height(%__MODULE__{} = state) do
+    elem(state.size, 1)
+  end
+
+  @doc """
+  Gets the window position.
+  """
+  def get_position(%__MODULE__{} = state) do
+    state.position
+  end
+
+  @doc """
+  Gets the window title.
+  """
+  def get_title(%__MODULE__{} = state) do
+    state.title
+  end
+
+  @doc """
+  Gets the window icon name.
+  """
+  def get_icon_name(%__MODULE__{} = state) do
+    state.icon_name
+  end
+
+  @doc """
+  Gets the window stacking order.
+  """
+  def get_stacking_order(%__MODULE__{} = state) do
+    state.stacking_order
   end
 end

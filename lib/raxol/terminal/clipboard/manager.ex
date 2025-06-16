@@ -1,99 +1,92 @@
 defmodule Raxol.Terminal.Clipboard.Manager do
   @moduledoc """
-  Manages clipboard operations for the terminal.
+  Manages clipboard operations for the terminal, including copying and pasting text.
   """
 
-  use GenServer
-
-  alias Raxol.Terminal.Clipboard.{History, Store, Format, Sync}
-
-  defstruct [:history, :store, :sync]
+  defstruct [:content, :mode]
 
   @type t :: %__MODULE__{
-          history: History.t(),
-          store: Store.t(),
-          sync: Sync.t()
-        }
-
-  # Client API
+    content: String.t(),
+    mode: :normal | :bracketed
+  }
 
   @doc """
-  Starts the clipboard manager.
+  Creates a new clipboard manager instance.
   """
-  @spec start_link(Keyword.t()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
-  @doc """
-  Copies content to the clipboard.
-  """
-  @spec copy(String.t(), String.t()) :: :ok
-  def copy(content, format) do
-    GenServer.cast(__MODULE__, {:copy, content, format})
-  end
-
-  @doc """
-  Pastes content from the clipboard.
-  """
-  @spec paste(String.t()) :: {:ok, String.t()} | {:error, :empty_clipboard}
-  def paste(format) do
-    GenServer.call(__MODULE__, {:paste, format})
-  end
-
-  @doc """
-  Clears the clipboard.
-  """
-  @spec clear() :: :ok
-  def clear do
-    GenServer.cast(__MODULE__, :clear)
-  end
-
-  # Server Callbacks
-
-  @impl true
-  def init(opts) do
-    # 1 hour in milliseconds
-    _max_age = Keyword.get(opts, :max_age, 3_600_000)
-    history_size = Keyword.get(opts, :history_size, 10)
-
-    state = %__MODULE__{
-      history: History.new(history_size),
-      store: Store.new("", "text"),
-      sync: Sync.new()
+  def new do
+    %__MODULE__{
+      content: "",
+      mode: :normal
     }
-
-    {:ok, state}
   end
 
-  @impl true
-  def handle_cast({:copy, content, format}, state) do
-    store = Store.new(content, format)
-    history = History.add(state.history, content, format)
-    Sync.broadcast(state.sync, content, format)
-
-    {:noreply, %{state | store: store, history: history}}
+  @doc """
+  Gets the current clipboard content.
+  """
+  def get_content(%__MODULE__{} = manager) do
+    manager.content
   end
 
-  @impl true
-  def handle_cast(:clear, state) do
-    store = Store.new("", "text")
-    history = History.clear(state.history)
-
-    {:noreply, %{state | store: store, history: history}}
+  @doc """
+  Sets the clipboard content.
+  """
+  def set_content(%__MODULE__{} = manager, content) when is_binary(content) do
+    %{manager | content: content}
   end
 
-  @impl true
-  def handle_call({:paste, format}, _from, state) do
-    case Store.get_content(state.store) do
-      "" ->
-        {:reply, {:error, :empty_clipboard}, state}
+  @doc """
+  Gets the current clipboard mode.
+  """
+  def get_mode(%__MODULE__{} = manager) do
+    manager.mode
+  end
 
-      content ->
-        case Format.apply_filter(format, content, Store.get_format(state.store)) do
-          {:ok, formatted_content} -> {:reply, {:ok, formatted_content}, state}
-          {:error, _} -> {:reply, {:error, :invalid_format}, state}
-        end
-    end
+  @doc """
+  Sets the clipboard mode.
+  """
+  def set_mode(%__MODULE__{} = manager, mode) when mode in [:normal, :bracketed] do
+    %{manager | mode: mode}
+  end
+
+  @doc """
+  Clears the clipboard content.
+  """
+  def clear(%__MODULE__{} = manager) do
+    %{manager | content: ""}
+  end
+
+  @doc """
+  Appends text to the current clipboard content.
+  """
+  def append(%__MODULE__{} = manager, text) when is_binary(text) do
+    %{manager | content: manager.content <> text}
+  end
+
+  @doc """
+  Prepends text to the current clipboard content.
+  """
+  def prepend(%__MODULE__{} = manager, text) when is_binary(text) do
+    %{manager | content: text <> manager.content}
+  end
+
+  @doc """
+  Checks if the clipboard is empty.
+  """
+  def empty?(%__MODULE__{} = manager) do
+    manager.content == ""
+  end
+
+  @doc """
+  Gets the length of the clipboard content.
+  """
+  def length(%__MODULE__{} = manager) do
+    String.length(manager.content)
+  end
+
+  @doc """
+  Resets the clipboard manager to its initial state.
+  """
+  def reset(%__MODULE__{} = manager) do
+    %{manager | content: "", mode: :normal}
   end
 end

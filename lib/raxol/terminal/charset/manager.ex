@@ -1,115 +1,127 @@
 defmodule Raxol.Terminal.Charset.Manager do
   @moduledoc """
-  Manages character set operations for the terminal emulator.
-  This module handles character set designation, invocation, and state management.
+  Manages terminal character sets and encoding operations.
   """
 
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  alias Raxol.Terminal.CharacterSets
+  defstruct g_sets: %{
+              g0: :us_ascii,
+              g1: :us_ascii,
+              g2: :us_ascii,
+              g3: :us_ascii
+            },
+            current_g_set: :g0,
+            single_shift: nil,
+            charsets: %{
+              us_ascii: &__MODULE__.us_ascii_map/0,
+              dec_supplementary: &__MODULE__.dec_supplementary_map/0,
+              dec_special: &__MODULE__.dec_special_map/0,
+              dec_technical: &__MODULE__.dec_technical_map/0
+            }
+
+  @type g_set :: :g0 | :g1 | :g2 | :g3
+  @type charset ::
+          :us_ascii | :dec_supplementary | :dec_special | :dec_technical
+  @type char_map :: %{non_neg_integer() => String.t()}
 
   @type t :: %__MODULE__{
-          state: CharacterSets.charset_state(),
-          g_sets: map(),
-          single_shift: atom() | nil
+          g_sets: %{g_set() => charset()},
+          current_g_set: g_set(),
+          single_shift: g_set() | nil,
+          charsets: %{charset() => (-> char_map())}
         }
 
-  defstruct [:state, :g_sets, :single_shift]
-
   @doc """
-  Creates a new character set state.
+  Creates a new charset manager instance.
   """
-  @spec new() :: CharacterSets.charset_state()
   def new do
-    CharacterSets.new()
+    %__MODULE__{}
   end
 
   @doc """
-  Gets the current character set state.
+  Gets the current state of the charset manager.
   """
-  @spec get_state(EmulatorStruct.t()) :: CharacterSets.charset_state()
-  def get_state(emulator) do
-    emulator.charset_state
+  def get_state(%__MODULE__{} = state) do
+    state
   end
 
   @doc """
-  Updates the character set state.
+  Updates the state of the charset manager.
   """
-  @spec update_state(EmulatorStruct.t(), CharacterSets.charset_state()) ::
-          EmulatorStruct.t()
-  def update_state(emulator, state) do
-    %{emulator | charset_state: state}
+  def update_state(%__MODULE__{} = state, new_state) when is_map(new_state) do
+    Map.merge(state, new_state)
   end
 
   @doc """
-  Designates a character set for the specified G-set.
+  Designates a character set for a specific G-set.
   """
-  @spec designate_charset(EmulatorStruct.t(), atom(), atom()) ::
-          EmulatorStruct.t()
-  def designate_charset(emulator, g_set, charset) do
-    g_sets = Map.put(emulator.charset_state.g_sets, g_set, charset)
-    state = %{emulator.charset_state | g_sets: g_sets}
-    %{emulator | charset_state: state}
+  def designate_charset(%__MODULE__{} = state, g_set, charset)
+      when g_set in [:g0, :g1, :g2, :g3] and
+             charset in [
+               :us_ascii,
+               :dec_supplementary,
+               :dec_special,
+               :dec_technical
+             ] do
+    %{state | g_sets: Map.put(state.g_sets, g_set, charset)}
   end
 
   @doc """
-  Invokes a G-set.
+  Invokes a G-set as the current character set.
   """
-  @spec invoke_g_set(EmulatorStruct.t(), atom()) :: EmulatorStruct.t()
-  def invoke_g_set(emulator, g_set) do
-    state = %{emulator.charset_state | current_g_set: g_set}
-    %{emulator | charset_state: state}
+  def invoke_g_set(%__MODULE__{} = state, g_set)
+      when g_set in [:g0, :g1, :g2, :g3] do
+    %{state | current_g_set: g_set}
   end
 
   @doc """
   Gets the current G-set.
   """
-  @spec get_current_g_set(EmulatorStruct.t()) :: atom()
-  def get_current_g_set(emulator) do
-    emulator.charset_state.current_g_set
+  def get_current_g_set(%__MODULE__{} = state) do
+    state.current_g_set
   end
 
   @doc """
-  Gets the designated character set for a G-set.
+  Gets the designated charset for a G-set.
   """
-  @spec get_designated_charset(EmulatorStruct.t(), atom()) :: atom()
-  def get_designated_charset(emulator, g_set) do
-    emulator.charset_state.g_sets[g_set]
+  def get_designated_charset(%__MODULE__{} = state, g_set)
+      when g_set in [:g0, :g1, :g2, :g3] do
+    Map.get(state.g_sets, g_set)
   end
 
   @doc """
-  Resets character set state to defaults.
+  Resets the charset state to defaults.
   """
-  @spec reset_state(EmulatorStruct.t()) :: EmulatorStruct.t()
-  def reset_state(emulator) do
-    state = %{
-      emulator.charset_state
-      | g_sets: %{},
+  def reset_state(%__MODULE__{} = state) do
+    %{
+      state
+      | g_sets: %{
+          g0: :us_ascii,
+          g1: :us_ascii,
+          g2: :us_ascii,
+          g3: :us_ascii
+        },
         current_g_set: :g0,
         single_shift: nil
     }
-
-    %{emulator | charset_state: state}
   end
 
   @doc """
-  Applies single shift to a G-set.
+  Applies a single shift to the current character.
   """
-  @spec apply_single_shift(EmulatorStruct.t(), atom()) :: EmulatorStruct.t()
-  def apply_single_shift(emulator, g_set) do
-    state = %{emulator.charset_state | single_shift: g_set}
-    %{emulator | charset_state: state}
+  def apply_single_shift(%__MODULE__{} = state, g_set)
+      when g_set in [:g0, :g1, :g2, :g3] do
+    %{state | single_shift: g_set}
   end
 
   @doc """
-  Gets the current single shift state.
+  Gets the current single shift.
   """
-  @spec get_single_shift(EmulatorStruct.t()) :: atom() | nil
-  def get_single_shift(emulator) do
-    emulator.charset_state.single_shift
+  def get_single_shift(%__MODULE__{} = state) do
+    state.single_shift
   end
 
   @doc """
-  Handles Set Character Set (SCS) commands.
+  Translates a character using the current charset.
   """
   def handle_set_charset(emulator, params_buffer, final_byte) do
     case {params_buffer, final_byte} do
@@ -200,15 +212,12 @@ defmodule Raxol.Terminal.Charset.Manager do
     charset = get_charset(emulator, emulator.charset_state.active_set)
 
     case charset do
-      :us_ascii -> char
-      :dec_special -> map_dec_special(char)
-      :dec_technical -> map_dec_technical(char)
-      :dec_supplemental -> map_dec_supplemental(char)
-      :dec_supplemental_graphics -> map_dec_supplemental_graphics(char)
-      :dec_hebrew -> map_dec_hebrew(char)
-      :dec_greek -> map_dec_greek(char)
-      :dec_turkish -> map_dec_turkish(char)
-      _ -> char
+      nil ->
+        char
+
+      charset_name ->
+        char_map = state.charsets[charset_name].()
+        Map.get(char_map, char, char)
     end
   end
 

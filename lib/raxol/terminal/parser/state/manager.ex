@@ -1,234 +1,491 @@
-defmodule Raxol.Terminal.Parser.StateManager do
+defmodule Raxol.Terminal.Parser.State.Manager do
   @moduledoc """
-  Manages parser state transitions and state-specific functionality for the terminal emulator.
-  This module provides a clean interface for managing the parser's state machine and delegating
-  to appropriate state handlers.
+  Manages the state of the terminal parser, including escape sequences,
+  control sequences, and parser modes.
   """
 
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Parser.State
+  defstruct [
+    :state,
+    :params,
+    :intermediate,
+    :ignore,
+    :osc_buffer,
+    :dcs_buffer,
+    :apc_buffer,
+    :pm_buffer,
+    :sos_buffer,
+    :string_buffer,
+    :string_terminator,
+    :string_flags,
+    :string_parser_state
+  ]
 
-  alias Raxol.Terminal.Parser.States.{
-    GroundState,
-    EscapeState,
-    DesignateCharsetState,
-    CSIEntryState,
-    CSIParamState,
-    CSIIntermediateState,
-    OSCStringState,
-    OSCStringMaybeSTState,
-    DCSEntryState,
-    DCSPassthroughState,
-    DCSPassthroughMaybeSTState
+  @type parser_state :: :ground | :escape | :csi_entry | :csi_param | :csi_intermediate | :csi_ignore
+                      | :osc_string | :dcs_entry | :dcs_param | :dcs_intermediate | :dcs_passthrough
+                      | :apc_string | :pm_string | :sos_string | :string
+
+  @type params :: [non_neg_integer()]
+  @type intermediate :: [non_neg_integer()]
+  @type string_flags :: %{String.t() => boolean()}
+
+  @type t :: %__MODULE__{
+    state: parser_state(),
+    params: params(),
+    intermediate: intermediate(),
+    ignore: boolean(),
+    osc_buffer: String.t(),
+    dcs_buffer: String.t(),
+    apc_buffer: String.t(),
+    pm_buffer: String.t(),
+    sos_buffer: String.t(),
+    string_buffer: String.t(),
+    string_terminator: non_neg_integer() | nil,
+    string_flags: string_flags(),
+    string_parser_state: parser_state() | nil
   }
 
+  # Constants for character ranges
+  @c0_range 0x00..0x1F
+  @c1_range 0x80..0x9F
+  @printable_range 0x20..0x7E
+  @extended_range 0xA0..0xFF
+
+  # Special characters
+  @esc 0x1B
+  @bel 0x07
+  @st 0x9C
+  @osc 0x9D
+  @pm 0x9E
+  @apc 0x9F
+  @csi 0x9B
+  @dcs 0x90
+
   @doc """
-  Creates a new parser state with default values.
+  Creates a new parser state manager instance.
   """
-  @spec new() :: map()
   def new do
-    %State{
+    %__MODULE__{
       state: :ground,
-      params: nil,
-      params_buffer: "",
-      intermediates_buffer: "",
-      payload_buffer: "",
-      final_byte: nil,
-      designating_gset: nil
+      params: [],
+      intermediate: [],
+      ignore: false,
+      osc_buffer: "",
+      dcs_buffer: "",
+      apc_buffer: "",
+      pm_buffer: "",
+      sos_buffer: "",
+      string_buffer: "",
+      string_terminator: nil,
+      string_flags: %{},
+      string_parser_state: nil
     }
+  end
+
+  @doc """
+  Processes a single character and updates the parser state accordingly.
+  """
+  def process_char(%__MODULE__{} = manager, char) when is_integer(char) do
+    case manager.state do
+      :ground -> process_ground_state(manager, char)
+      :escape -> process_escape_state(manager, char)
+      :csi_entry -> process_csi_entry_state(manager, char)
+      :csi_param -> process_csi_param_state(manager, char)
+      :csi_intermediate -> process_csi_intermediate_state(manager, char)
+      :csi_ignore -> process_csi_ignore_state(manager, char)
+      :osc_string -> process_osc_string_state(manager, char)
+      :dcs_entry -> process_dcs_entry_state(manager, char)
+      :dcs_param -> process_dcs_param_state(manager, char)
+      :dcs_intermediate -> process_dcs_intermediate_state(manager, char)
+      :dcs_passthrough -> process_dcs_passthrough_state(manager, char)
+      :apc_string -> process_apc_string_state(manager, char)
+      :pm_string -> process_pm_string_state(manager, char)
+      :sos_string -> process_sos_string_state(manager, char)
+      :string -> process_string_state(manager, char)
+    end
+  end
+
+  # State processing functions
+
+  defp process_ground_state(manager, char) do
+    cond do
+      char in @c0_range -> handle_c0_control(manager, char)
+      char in @c1_range -> handle_c1_control(manager, char)
+      char in @printable_range -> handle_printable(manager, char)
+      char in @extended_range -> handle_extended(manager, char)
+      true -> manager
+    end
+  end
+
+  defp process_escape_state(manager, char) do
+    cond do
+      char in @c0_range -> handle_c0_control(manager, char)
+      char in @c1_range -> handle_c1_control(manager, char)
+      char in @printable_range -> handle_escape_printable(manager, char)
+      char in @extended_range -> handle_escape_extended(manager, char)
+      true -> manager
+    end
+  end
+
+  defp process_csi_entry_state(manager, char) do
+    cond do
+      char in 0x30..0x3F -> set_state(manager, :csi_param)
+      char in 0x20..0x2F -> set_state(manager, :csi_intermediate)
+      char in 0x40..0x7E -> set_state(manager, :ground)
+      true -> set_state(manager, :csi_ignore)
+    end
+  end
+
+  defp process_csi_param_state(manager, char) do
+    cond do
+      char in 0x30..0x3F -> manager
+      char in 0x20..0x2F -> set_state(manager, :csi_intermediate)
+      char in 0x40..0x7E -> set_state(manager, :ground)
+      true -> set_state(manager, :csi_ignore)
+    end
+  end
+
+  defp process_csi_intermediate_state(manager, char) do
+    cond do
+      char in 0x20..0x2F -> manager
+      char in 0x40..0x7E -> set_state(manager, :ground)
+      true -> set_state(manager, :csi_ignore)
+    end
+  end
+
+  defp process_csi_ignore_state(manager, char) do
+    if char in 0x40..0x7E do
+      set_state(manager, :ground)
+    else
+      manager
+    end
+  end
+
+  defp process_osc_string_state(manager, char) do
+    if char == @bel or char == @st do
+      set_state(manager, :ground)
+    else
+      set_osc_buffer(manager, manager.osc_buffer <> <<char>>)
+    end
+  end
+
+  defp process_dcs_entry_state(manager, char) do
+    cond do
+      char in 0x30..0x3F -> set_state(manager, :dcs_param)
+      char in 0x20..0x2F -> set_state(manager, :dcs_intermediate)
+      char in 0x40..0x7E -> set_state(manager, :dcs_passthrough)
+      true -> set_state(manager, :ground)
+    end
+  end
+
+  defp process_dcs_param_state(manager, char) do
+    cond do
+      char in 0x30..0x3F -> manager
+      char in 0x20..0x2F -> set_state(manager, :dcs_intermediate)
+      char in 0x40..0x7E -> set_state(manager, :dcs_passthrough)
+      true -> set_state(manager, :ground)
+    end
+  end
+
+  defp process_dcs_intermediate_state(manager, char) do
+    cond do
+      char in 0x20..0x2F -> manager
+      char in 0x40..0x7E -> set_state(manager, :dcs_passthrough)
+      true -> set_state(manager, :ground)
+    end
+  end
+
+  defp process_dcs_passthrough_state(manager, char) do
+    if char == @st do
+      set_state(manager, :ground)
+    else
+      set_dcs_buffer(manager, manager.dcs_buffer <> <<char>>)
+    end
+  end
+
+  defp process_apc_string_state(manager, char) do
+    if char == @bel or char == @st do
+      set_state(manager, :ground)
+    else
+      set_apc_buffer(manager, manager.apc_buffer <> <<char>>)
+    end
+  end
+
+  defp process_pm_string_state(manager, char) do
+    if char == @bel or char == @st do
+      set_state(manager, :ground)
+    else
+      set_pm_buffer(manager, manager.pm_buffer <> <<char>>)
+    end
+  end
+
+  defp process_sos_string_state(manager, char) do
+    if char == @bel or char == @st do
+      set_state(manager, :ground)
+    else
+      set_sos_buffer(manager, manager.sos_buffer <> <<char>>)
+    end
+  end
+
+  defp process_string_state(manager, char) do
+    if char == manager.string_terminator do
+      set_state(manager, :ground)
+    else
+      set_string_buffer(manager, manager.string_buffer <> <<char>>)
+    end
+  end
+
+  # Helper functions for handling different character types
+
+  defp handle_c0_control(manager, char) do
+    case char do
+      @esc -> set_state(manager, :escape)
+      @bel -> manager
+      @st -> manager
+      _ -> manager
+    end
+  end
+
+  defp handle_c1_control(manager, char) do
+    case char do
+      @osc -> set_state(manager, :osc_string)
+      @pm -> set_state(manager, :pm_string)
+      @apc -> set_state(manager, :apc_string)
+      @csi -> set_state(manager, :csi_entry)
+      @dcs -> set_state(manager, :dcs_entry)
+      _ -> manager
+    end
+  end
+
+  defp handle_printable(manager, _char) do
+    manager
+  end
+
+  defp handle_extended(manager, _char) do
+    manager
+  end
+
+  defp handle_escape_printable(manager, char) do
+    case char do
+      _ when char in 0x30..0x7E -> set_state(manager, :ground)
+      _ -> manager
+    end
+  end
+
+  defp handle_escape_extended(manager, _char) do
+    set_state(manager, :ground)
   end
 
   @doc """
   Gets the current parser state.
   """
-  @spec get_current_state(map()) :: map()
-  def get_current_state(state) do
-    state
+  def get_state(%__MODULE__{} = manager) do
+    manager.state
   end
 
   @doc """
-  Sets the parser state to a new value.
+  Sets the parser state.
   """
-  @spec set_state(map(), map()) :: map()
-  def set_state(_current_state, new_state) do
-    new_state
+  def set_state(%__MODULE__{} = manager, state) when state in [
+    :ground, :escape, :csi_entry, :csi_param, :csi_intermediate, :csi_ignore,
+    :osc_string, :dcs_entry, :dcs_param, :dcs_intermediate, :dcs_passthrough,
+    :apc_string, :pm_string, :sos_string, :string
+  ] do
+    %{manager | state: state}
   end
 
   @doc """
-  Processes input in the current parser state.
-  Returns the updated emulator and parser state.
+  Gets the current parameters.
   """
-  @spec process_input(Emulator.t(), map(), binary()) ::
-          {:continue, Emulator.t(), map(), binary()}
-          | {:incomplete, Emulator.t(), map()}
-          | {:handled, Emulator.t()}
-  def process_input(emulator, state, input) do
-    case state.state do
-      :ground ->
-        GroundState.handle(emulator, state, input)
-
-      :escape ->
-        EscapeState.handle(emulator, state, input)
-
-      :designate_charset ->
-        DesignateCharsetState.handle(emulator, state, input)
-
-      :csi_entry ->
-        CSIEntryState.handle(emulator, state, input)
-
-      :csi_param ->
-        CSIParamState.handle(emulator, state, input)
-
-      :csi_intermediate ->
-        CSIIntermediateState.handle(emulator, state, input)
-
-      :osc_string ->
-        OSCStringState.handle(emulator, state, input)
-
-      :osc_string_maybe_st ->
-        OSCStringMaybeSTState.handle(emulator, state, input)
-
-      :dcs_entry ->
-        DCSEntryState.handle(emulator, state, input)
-
-      :dcs_passthrough ->
-        DCSPassthroughState.handle(emulator, state, input)
-
-      :dcs_passthrough_maybe_st ->
-        DCSPassthroughMaybeSTState.handle(emulator, state, input)
-
-      _ ->
-        # Unknown state, return to ground
-        {:continue, emulator, %{state | state: :ground}, input}
-    end
+  def get_params(%__MODULE__{} = manager) do
+    manager.params
   end
 
   @doc """
-  Transitions to a new parser state, clearing relevant buffers.
+  Sets the parameters.
   """
-  @spec transition_to(map(), atom()) :: map()
-  def transition_to(state, new_state) do
-    case new_state do
-      :ground ->
-        %{state | state: :ground}
-
-      :escape ->
-        %{state | state: :escape}
-
-      :designate_charset ->
-        %{state | state: :designate_charset}
-
-      :csi_entry ->
-        %{
-          state
-          | state: :csi_entry,
-            params_buffer: "",
-            intermediates_buffer: ""
-        }
-
-      :csi_param ->
-        %{
-          state
-          | state: :csi_param,
-            params_buffer: "",
-            intermediates_buffer: ""
-        }
-
-      :csi_intermediate ->
-        %{
-          state
-          | state: :csi_intermediate,
-            intermediates_buffer: ""
-        }
-
-      :osc_string ->
-        %{
-          state
-          | state: :osc_string,
-            payload_buffer: ""
-        }
-
-      :osc_string_maybe_st ->
-        %{state | state: :osc_string_maybe_st}
-
-      :dcs_entry ->
-        %{
-          state
-          | state: :dcs_entry,
-            params_buffer: "",
-            intermediates_buffer: "",
-            payload_buffer: ""
-        }
-
-      :dcs_passthrough ->
-        %{
-          state
-          | state: :dcs_passthrough,
-            payload_buffer: ""
-        }
-
-      :dcs_passthrough_maybe_st ->
-        %{state | state: :dcs_passthrough_maybe_st}
-
-      _ ->
-        # Unknown state, return to ground
-        %{state | state: :ground}
-    end
+  def set_params(%__MODULE__{} = manager, params) when is_list(params) do
+    %{manager | params: params}
   end
 
   @doc """
-  Appends a byte to the params buffer.
+  Gets the current intermediate characters.
   """
-  @spec append_param(map(), binary()) :: map()
-  def append_param(state, byte) do
-    %{state | params_buffer: state.params_buffer <> byte}
+  def get_intermediate(%__MODULE__{} = manager) do
+    manager.intermediate
   end
 
   @doc """
-  Appends a byte to the intermediates buffer.
+  Sets the intermediate characters.
   """
-  @spec append_intermediate(map(), binary()) :: map()
-  def append_intermediate(state, byte) do
-    %{state | intermediates_buffer: state.intermediates_buffer <> byte}
+  def set_intermediate(%__MODULE__{} = manager, intermediate) when is_list(intermediate) do
+    %{manager | intermediate: intermediate}
   end
 
   @doc """
-  Appends a byte to the payload buffer.
+  Checks if the parser is in ignore mode.
   """
-  @spec append_payload(map(), binary()) :: map()
-  def append_payload(state, byte) do
-    %{state | payload_buffer: state.payload_buffer <> byte}
+  def ignore?(%__MODULE__{} = manager) do
+    manager.ignore
   end
 
   @doc """
-  Sets the final byte for the current sequence.
+  Sets the ignore mode.
   """
-  @spec set_final_byte(map(), integer()) :: map()
-  def set_final_byte(state, byte) do
-    %{state | final_byte: byte}
+  def set_ignore(%__MODULE__{} = manager, ignore) when is_boolean(ignore) do
+    %{manager | ignore: ignore}
   end
 
   @doc """
-  Sets the G-set being designated.
+  Gets the OSC buffer content.
   """
-  @spec set_designating_gset(map(), non_neg_integer()) :: map()
-  def set_designating_gset(state, gset) do
-    %{state | designating_gset: gset}
+  def get_osc_buffer(%__MODULE__{} = manager) do
+    manager.osc_buffer
   end
 
   @doc """
-  Clears all buffers and resets the state to ground.
+  Sets the OSC buffer content.
   """
-  @spec reset(map()) :: map()
-  def reset(state) do
-    %{
-      state
-      | state: :ground,
-        params_buffer: "",
-        intermediates_buffer: "",
-        payload_buffer: "",
-        final_byte: nil,
-        designating_gset: nil
+  def set_osc_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+    %{manager | osc_buffer: content}
+  end
+
+  @doc """
+  Gets the DCS buffer content.
+  """
+  def get_dcs_buffer(%__MODULE__{} = manager) do
+    manager.dcs_buffer
+  end
+
+  @doc """
+  Sets the DCS buffer content.
+  """
+  def set_dcs_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+    %{manager | dcs_buffer: content}
+  end
+
+  @doc """
+  Gets the APC buffer content.
+  """
+  def get_apc_buffer(%__MODULE__{} = manager) do
+    manager.apc_buffer
+  end
+
+  @doc """
+  Sets the APC buffer content.
+  """
+  def set_apc_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+    %{manager | apc_buffer: content}
+  end
+
+  @doc """
+  Gets the PM buffer content.
+  """
+  def get_pm_buffer(%__MODULE__{} = manager) do
+    manager.pm_buffer
+  end
+
+  @doc """
+  Sets the PM buffer content.
+  """
+  def set_pm_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+    %{manager | pm_buffer: content}
+  end
+
+  @doc """
+  Gets the SOS buffer content.
+  """
+  def get_sos_buffer(%__MODULE__{} = manager) do
+    manager.sos_buffer
+  end
+
+  @doc """
+  Sets the SOS buffer content.
+  """
+  def set_sos_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+    %{manager | sos_buffer: content}
+  end
+
+  @doc """
+  Gets the string buffer content.
+  """
+  def get_string_buffer(%__MODULE__{} = manager) do
+    manager.string_buffer
+  end
+
+  @doc """
+  Sets the string buffer content.
+  """
+  def set_string_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+    %{manager | string_buffer: content}
+  end
+
+  @doc """
+  Gets the string terminator.
+  """
+  def get_string_terminator(%__MODULE__{} = manager) do
+    manager.string_terminator
+  end
+
+  @doc """
+  Sets the string terminator.
+  """
+  def set_string_terminator(%__MODULE__{} = manager, terminator) when is_integer(terminator) do
+    %{manager | string_terminator: terminator}
+  end
+
+  @doc """
+  Gets the string flags.
+  """
+  def get_string_flags(%__MODULE__{} = manager) do
+    manager.string_flags
+  end
+
+  @doc """
+  Sets the string flags.
+  """
+  def set_string_flags(%__MODULE__{} = manager, flags) when is_map(flags) do
+    %{manager | string_flags: flags}
+  end
+
+  @doc """
+  Gets the string parser state.
+  """
+  def get_string_parser_state(%__MODULE__{} = manager) do
+    manager.string_parser_state
+  end
+
+  @doc """
+  Sets the string parser state.
+  """
+  def set_string_parser_state(%__MODULE__{} = manager, state) when state in [
+    :ground, :escape, :csi_entry, :csi_param, :csi_intermediate, :csi_ignore,
+    :osc_string, :dcs_entry, :dcs_param, :dcs_intermediate, :dcs_passthrough,
+    :apc_string, :pm_string, :sos_string, :string
+  ] do
+    %{manager | string_parser_state: state}
+  end
+
+  @doc """
+  Clears all string buffers.
+  """
+  def clear_string_buffers(%__MODULE__{} = manager) do
+    %{manager |
+      osc_buffer: "",
+      dcs_buffer: "",
+      apc_buffer: "",
+      pm_buffer: "",
+      sos_buffer: "",
+      string_buffer: "",
+      string_terminator: nil,
+      string_flags: %{},
+      string_parser_state: nil
     }
+  end
+
+  @doc """
+  Resets the parser state manager to its initial state.
+  """
+  def reset(%__MODULE__{} = manager) do
+    new()
   end
 end
