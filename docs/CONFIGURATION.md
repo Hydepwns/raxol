@@ -2,11 +2,48 @@
 
 ## Overview
 
-The Raxol Terminal Emulator uses a centralized configuration system that manages all aspects of the terminal's operation. This guide explains how to configure the terminal emulator and its various components.
+The Raxol Terminal Emulator uses a centralized configuration system that manages all aspects of the terminal's operation.
+
+```mermaid
+graph TB
+    subgraph Config["Configuration System"]
+        File[Config File]
+        Manager[Config Manager]
+        Validator[Validator]
+        Storage[Storage]
+    end
+
+    File --> Manager
+    Manager --> Validator
+    Manager --> Storage
+
+    classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
+    class File,Manager,Validator,Storage component;
+```
+
+## Configuration Structure
+
+```mermaid
+graph TB
+    subgraph Config["Configuration"]
+        Terminal[Terminal]
+        Buffer[Buffer]
+        Renderer[Renderer]
+    end
+
+    Terminal --> Settings1[Width/Height/Mode]
+    Buffer --> Settings2[Size/Scrollback]
+    Renderer --> Settings3[Mode/Buffering]
+
+    classDef section fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
+    classDef setting fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:12px,padding:4px;
+    class Terminal,Buffer,Renderer section
+    class Settings1,Settings2,Settings3 setting;
+```
 
 ## Configuration File
 
-The main configuration file is located at `config/raxol.exs`. The configuration is organized into several sections:
+Located at `config/raxol.exs`:
 
 ```elixir
 import Config
@@ -31,8 +68,6 @@ config :raxol,
 
 ### Terminal Configuration
 
-Controls the basic terminal settings:
-
 ```elixir
 terminal: %{
   width: 80,        # Terminal width in characters
@@ -43,18 +78,14 @@ terminal: %{
 
 ### Buffer Configuration
 
-Manages the terminal buffer settings:
-
 ```elixir
 buffer: %{
   max_size: 10_000,  # Maximum buffer size in characters
-  scrollback: 1000  # Number of lines to keep in scrollback
+  scrollback: 1000   # Number of lines to keep in scrollback
 }
 ```
 
 ### Renderer Configuration
-
-Controls the rendering system:
 
 ```elixir
 renderer: %{
@@ -65,99 +96,107 @@ renderer: %{
 
 ## Runtime Configuration
 
-The configuration can be modified at runtime using the `Raxol.Core.Config.Manager` module:
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Manager as Config Manager
+    participant Validator as Validator
+    participant Storage as Storage
 
-```elixir
-# Get a configuration value
-width = Raxol.Core.Config.Manager.get(:terminal_width)
-
-# Set a configuration value
-:ok = Raxol.Core.Config.Manager.set(:terminal_width, 100)
-
-# Update a configuration value
-:ok = Raxol.Core.Config.Manager.update(:terminal_width, &(&1 + 50))
-
-# Delete a configuration value
-:ok = Raxol.Core.Config.Manager.delete(:custom_key)
-
-# Get all configuration values
-config = Raxol.Core.Config.Manager.get_all()
-
-# Reload configuration from file
-:ok = Raxol.Core.Config.Manager.reload()
+    App->>Manager: Get/Set Config
+    Manager->>Validator: Validate
+    Validator-->>Manager: Valid/Invalid
+    Manager->>Storage: Persist (if needed)
+    Storage-->>Manager: Success/Failure
+    Manager-->>App: Result
 ```
 
-## Configuration Validation
-
-The configuration system validates all configuration values to ensure they are valid:
-
-- Terminal width and height must be positive integers
-- Terminal mode must be either `:normal` or `:raw`
-- Buffer max size must be a positive integer
-- Buffer scrollback must be a non-negative integer
-- Renderer mode must be either `:gpu` or `:cpu`
-- Renderer double buffering must be a boolean
-
-## Configuration Persistence
-
-Configuration changes can be persisted to the configuration file:
+### Configuration Manager API
 
 ```elixir
-# Set a value and persist it
-:ok = Raxol.Core.Config.Manager.set(:terminal_width, 100, persist: true)
+# Get configuration
+width = Raxol.Core.Config.Manager.get(:terminal_width)
 
-# Set a value without persisting it
-:ok = Raxol.Core.Config.Manager.set(:terminal_width, 100, persist: false)
+# Set configuration
+:ok = Raxol.Core.Config.Manager.set(:terminal_width, 100)
+
+# Update configuration
+:ok = Raxol.Core.Config.Manager.update(:terminal_width, &(&1 + 50))
+
+# Delete configuration
+:ok = Raxol.Core.Config.Manager.delete(:custom_key)
+
+# Get all configuration
+config = Raxol.Core.Config.Manager.get_all()
+
+# Reload configuration
+:ok = Raxol.Core.Config.Manager.reload()
 ```
 
 ## Environment-Specific Configuration
 
-The configuration system supports environment-specific settings:
+```mermaid
+graph TB
+    subgraph Env["Environment Config"]
+        Dev[Development]
+        Test[Testing]
+        Prod[Production]
+    end
 
-```elixir
-# config/dev.exs
-import Config
+    Dev --> DevConfig[config/dev.exs]
+    Test --> TestConfig[config/test.exs]
+    Prod --> ProdConfig[config/prod.exs]
 
-config :raxol,
-  terminal: %{
-    width: 100,
-    height: 30
-  }
+    classDef env fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
+    classDef config fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:12px,padding:4px;
+    class Dev,Test,Prod env
+    class DevConfig,TestConfig,ProdConfig config;
+```
 
-# config/prod.exs
-import Config
+## Validation Rules
 
-config :raxol,
-  terminal: %{
-    width: 80,
-    height: 24
-  }
+```mermaid
+graph TB
+    subgraph Rules["Validation Rules"]
+        Terminal[Terminal Rules]
+        Buffer[Buffer Rules]
+        Renderer[Renderer Rules]
+    end
+
+    Terminal --> T1[Width > 0]
+    Terminal --> T2[Height > 0]
+    Terminal --> T3[Mode in [:normal, :raw]]
+
+    Buffer --> B1[Max Size > 0]
+    Buffer --> B2[Scrollback >= 0]
+
+    Renderer --> R1[Mode in [:gpu, :cpu]]
+    Renderer --> R2[Double Buffering is boolean]
+
+    classDef rule fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
+    classDef check fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:12px,padding:4px;
+    class Terminal,Buffer,Renderer rule
+    class T1,T2,T3,B1,B2,R1,R2 check;
 ```
 
 ## Best Practices
 
-1. **Configuration Organization**
+1. **Organization**
 
-   - Keep related settings together
+   - Group related settings
    - Use descriptive names
-   - Document configuration options
+   - Document options
 
 2. **Validation**
 
-   - Always validate configuration values
-   - Provide meaningful error messages
-   - Handle invalid configurations gracefully
+   - Validate all values
+   - Provide clear errors
+   - Handle invalid configs
 
-3. **Persistence**
-
-   - Only persist necessary changes
-   - Use environment-specific settings
-   - Back up configuration files
-
-4. **Security**
-   - Don't store sensitive data in configuration
-   - Use environment variables for secrets
-   - Validate all configuration inputs
+3. **Security**
+   - No sensitive data
+   - Use env variables
+   - Validate inputs
 
 ## Troubleshooting
 
@@ -165,62 +204,35 @@ config :raxol,
 
 1. **Invalid Configuration**
 
-   - Check for missing required fields
-   - Verify value types and ranges
-   - Check for syntax errors
+   - Check required fields
+   - Verify value types
+   - Check syntax
 
-2. **Configuration Not Loading**
+2. **Loading Issues**
 
    - Verify file path
-   - Check file permissions
-   - Validate file syntax
+   - Check permissions
+   - Validate syntax
 
-3. **Runtime Changes Not Persisting**
+3. **Persistence Issues**
    - Check persist option
-   - Verify file permissions
-   - Check for write errors
-
-### Error Messages
-
-- `:invalid_config_file` - Configuration file is invalid or missing
-- `:invalid_value` - Configuration value is invalid
-- `:persist_error` - Failed to persist configuration changes
-
-## Migration Guide
-
-### From Legacy Configuration
-
-1. **Update Configuration Structure**
-
-   - Move settings to appropriate sections
-   - Update value formats
-   - Add missing required fields
-
-2. **Update Configuration Access**
-
-   - Replace direct access with Manager calls
-   - Update validation logic
-   - Add persistence support
-
-3. **Test Configuration**
-   - Verify all settings work
-   - Check validation
-   - Test persistence
+   - Verify permissions
+   - Check write errors
 
 ## API Reference
 
 ### Raxol.Core.Config.Manager
 
-#### Functions
-
-- `start_link/1` - Start the configuration manager
-- `get/2` - Get a configuration value
-- `set/3` - Set a configuration value
-- `update/3` - Update a configuration value
-- `delete/2` - Delete a configuration value
-- `get_all/0` - Get all configuration values
-- `reload/0` - Reload configuration from file
+| Function       | Description    |
+| -------------- | -------------- |
+| `start_link/1` | Start manager  |
+| `get/2`        | Get value      |
+| `set/3`        | Set value      |
+| `update/3`     | Update value   |
+| `delete/2`     | Delete value   |
+| `get_all/0`    | Get all values |
+| `reload/0`     | Reload config  |
 
 ## Support
 
-For issues and feature requests, please use the issue tracker on GitHub.
+For issues and feature requests, please use the [issue tracker](https://github.com/raxol/raxol/issues).

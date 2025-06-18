@@ -6,12 +6,12 @@ The Raxol Unified Metrics System provides a centralized way to collect, track, a
 
 ## Features
 
-- Centralized metrics collection
-- Multiple metric types support
-- Automatic system metrics collection
-- Configurable metric retention
-- Tag-based metric categorization
-- Comprehensive test coverage
+- 📊 Centralized metrics collection
+- 🔄 Multiple metric types support
+- 🤖 Automatic system metrics collection
+- ⏱️ Configurable metric retention
+- 🏷️ Tag-based metric categorization
+- ✅ Comprehensive test coverage
 
 ## Metric Types
 
@@ -23,17 +23,14 @@ Track performance-related measurements:
 # Record frame timing
 UnifiedCollector.record_performance(:frame_time, 16)
 
-# Record render time
-UnifiedCollector.record_performance(:render_time, 8)
-
 # Record with tags
 UnifiedCollector.record_performance(:frame_time, 16, tags: [:ui, :render])
 ```
 
-Common performance metrics:
+Common metrics:
 
-- `:frame_time` - Time taken to render a frame
-- `:render_time` - Time taken for specific render operations
+- `:frame_time` - Frame render time
+- `:render_time` - Render operations time
 - `:fps` - Frames per second
 - `:jank` - Frame jank detection
 
@@ -45,19 +42,16 @@ Monitor system resource usage:
 # Record memory usage
 UnifiedCollector.record_resource(:memory_usage, 1024)
 
-# Record CPU usage
-UnifiedCollector.record_resource(:cpu_usage, 50)
-
 # Record with tags
 UnifiedCollector.record_resource(:memory_usage, 1024, tags: [:system])
 ```
 
-Common resource metrics:
+Common metrics:
 
 - `:memory_usage` - Memory consumption
 - `:cpu_usage` - CPU utilization
-- `:gc_stats` - Garbage collection statistics
-- `:process_count` - Number of processes
+- `:gc_stats` - Garbage collection stats
+- `:process_count` - Process count
 
 ### 3. Operation Metrics
 
@@ -67,19 +61,16 @@ Track operation counts and timing:
 # Record buffer operation
 UnifiedCollector.record_operation(:buffer_write, 5)
 
-# Record render operation
-UnifiedCollector.record_operation(:render_call, 1)
-
 # Record with tags
 UnifiedCollector.record_operation(:buffer_write, 5, tags: [:buffer, :write])
 ```
 
-Common operation metrics:
+Common metrics:
 
 - `:buffer_write` - Buffer write operations
 - `:buffer_read` - Buffer read operations
 - `:render_call` - Render function calls
-- `:event_processed` - Event processing operations
+- `:event_processed` - Event processing
 
 ### 4. Custom Metrics
 
@@ -93,7 +84,7 @@ UnifiedCollector.record_custom("user.login_time", 150)
 UnifiedCollector.record_custom("api.request_time", 200, tags: [:api, :request])
 ```
 
-## Usage
+## Quick Start
 
 ### Starting the Collector
 
@@ -117,9 +108,6 @@ UnifiedCollector.record_performance(:frame_time, 16)
 UnifiedCollector.record_resource(:memory_usage, 1024)
 UnifiedCollector.record_operation(:buffer_write, 5)
 UnifiedCollector.record_custom("user.login_time", 150)
-
-# Record with tags
-UnifiedCollector.record_performance(:frame_time, 16, tags: [:ui, :render])
 ```
 
 ### Retrieving Metrics
@@ -130,23 +118,13 @@ metrics = UnifiedCollector.get_metrics()
 
 # Get specific metric type
 performance_metrics = UnifiedCollector.get_metrics_by_type(:performance)
-resource_metrics = UnifiedCollector.get_metrics_by_type(:resource)
 ```
 
-## Integration
+## Integration Examples
 
-### Buffer Manager Integration
-
-The buffer manager uses the metrics system to track:
-
-- Buffer operations (read/write)
-- Memory usage
-- Performance metrics
-
-Example:
+### Buffer Manager
 
 ```elixir
-# In buffer manager
 def handle_call({:resize, width, height}, _from, state) do
   start_time = System.monotonic_time()
   # ... resize operations ...
@@ -159,20 +137,9 @@ def handle_call({:resize, width, height}, _from, state) do
 end
 ```
 
-### Performance Monitor Integration
-
-The performance monitor uses the metrics system to track:
-
-- Frame timing
-- FPS
-- Jank detection
-- Memory usage
-- GC statistics
-
-Example:
+### Performance Monitor
 
 ```elixir
-# In performance monitor
 def handle_cast({:record_frame, frame_time}, state) do
   UnifiedCollector.record_performance(:frame_time, frame_time, tags: [:performance, :frame])
   UnifiedCollector.record_performance(:fps, 1000 / frame_time, tags: [:performance, :frame])
@@ -183,15 +150,7 @@ end
 
 ## Configuration
 
-### Options
-
-The metrics collector can be configured with the following options:
-
-- `retention_period` - How long to keep metrics (in seconds)
-- `max_samples` - Maximum number of samples to keep per metric
-- `flush_interval` - How often to flush metrics (in milliseconds)
-
-### Default Values
+### Default Options
 
 ```elixir
 %{
@@ -205,64 +164,26 @@ The metrics collector can be configured with the following options:
 
 1. **Use Tags Consistently**
 
-   - Use consistent tag names across related metrics
-   - Group related metrics with common tags
-   - Use hierarchical tags for better organization
+   - Use consistent tag names
+   - Group related metrics
+   - Use hierarchical tags
 
 2. **Metric Naming**
 
    - Use descriptive names
-   - Follow consistent naming patterns
-   - Use appropriate metric types
+   - Follow consistent patterns
+   - Choose appropriate types
 
-3. **Performance Considerations**
+3. **Performance**
 
-   - Don't record metrics too frequently
+   - Don't record too frequently
    - Use appropriate sample sizes
-   - Monitor the metrics system itself
+   - Monitor the system itself
 
 4. **Error Handling**
-   - Handle metric recording failures gracefully
-   - Log metric collection errors
-   - Provide fallback behavior
-
-## Migration Guide
-
-### From Old Metrics System
-
-1. Replace direct metrics collection:
-
-   ```elixir
-   # Old
-   MetricsCollector.record_frame(collector, frame_time)
-
-   # New
-   UnifiedCollector.record_performance(:frame_time, frame_time)
-   ```
-
-2. Update metric retrieval:
-
-   ```elixir
-   # Old
-   fps = MetricsCollector.get_fps(collector)
-
-   # New
-   metrics = UnifiedCollector.get_metrics_by_type(:performance)
-   fps = case metrics.frame_time do
-     [%{value: frame_time} | _] -> 1000 / frame_time
-     _ -> 0.0
-   end
-   ```
-
-3. Add tags to existing metrics:
-
-   ```elixir
-   # Old
-   MetricsCollector.record_memory_usage(collector)
-
-   # New
-   UnifiedCollector.record_resource(:memory_usage, memory, tags: [:system, :memory])
-   ```
+   - Handle failures gracefully
+   - Log collection errors
+   - Provide fallbacks
 
 ## Troubleshooting
 
@@ -270,9 +191,9 @@ The metrics collector can be configured with the following options:
 
 1. **High Memory Usage**
 
-   - Check metric retention period
+   - Check retention period
    - Reduce max samples
-   - Monitor metric collection frequency
+   - Monitor collection frequency
 
 2. **Missing Metrics**
 
@@ -298,27 +219,27 @@ performance_metrics = UnifiedCollector.get_metrics_by_type(:performance)
 frame_times = performance_metrics.frame_time
 ```
 
-## Future Enhancements
+## Future Roadmap
 
 1. **Visualization**
 
-   - Add metric visualization tools
-   - Create performance dashboards
-   - Implement real-time monitoring
+   - Metric visualization tools
+   - Performance dashboards
+   - Real-time monitoring
 
 2. **Aggregation**
 
-   - Add metric aggregation functions
-   - Implement statistical analysis
-   - Create trend analysis
+   - Metric aggregation functions
+   - Statistical analysis
+   - Trend analysis
 
 3. **Export**
 
-   - Add metric export functionality
-   - Support multiple export formats
-   - Implement metric archiving
+   - Metric export functionality
+   - Multiple export formats
+   - Metric archiving
 
 4. **Integration**
-   - Add support for external monitoring systems
-   - Implement metric forwarding
-   - Create API endpoints
+   - External monitoring support
+   - Metric forwarding
+   - API endpoints

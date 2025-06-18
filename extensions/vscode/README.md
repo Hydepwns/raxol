@@ -11,6 +11,7 @@ View all Raxol components in your project via the dedicated Explorer view. Quick
 ### Performance Analysis
 
 Analyze the performance of your Raxol components with detailed metrics:
+
 - Rendering time
 - Memory usage
 - Event handler efficiency
@@ -19,6 +20,7 @@ Analyze the performance of your Raxol components with detailed metrics:
 ### AI-Assisted Development
 
 This extension integrates with Raxol's AI features to provide:
+
 - Code completion and suggestions
 - Performance optimization recommendations
 - Refactoring assistance
@@ -45,9 +47,9 @@ This extension integrates with Raxol's AI features to provide:
 
 This extension contributes the following settings:
 
-* `raxol.enableIntelligentAssistance`: Enable/disable AI-powered code assistance
-* `raxol.performanceMetricsEnabled`: Enable/disable real-time performance metrics
-* `raxol.componentTemplatesPath`: Path to custom component templates
+- `raxol.enableIntelligentAssistance`: Enable/disable AI-powered code assistance
+- `raxol.performanceMetricsEnabled`: Enable/disable real-time performance metrics
+- `raxol.componentTemplatesPath`: Path to custom component templates
 
 ## Development
 
@@ -74,4 +76,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-For licensing information, see the [License](../../LICENSE.md). 
+For licensing information, see the [License](../../LICENSE.md).

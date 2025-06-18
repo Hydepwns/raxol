@@ -1,101 +1,123 @@
 # Raxol
 
-[![Hex pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
-[![GitHub Actions CI](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
+A modern, feature-rich toolkit for building sophisticated terminal user interfaces (TUIs) in Elixir. Raxol provides a comprehensive set of components, styling options, and event handling capabilities to create interactive terminal applications with rich text formatting and dynamic UI updates.
 
-**Raxol** is a modern toolkit for building interactive terminal (TUI) applications in Elixir.
-It offers a powerful component system, a flexible runtime, and a robust plugin architecture—making it easy to create beautiful, responsive terminal UIs.
+## Features
 
-> **Warning:** Raxol is in active development (pre-release). APIs will change as we improve the toolkit.
-> **Full release:** 1.0.0 <-- Current: 0.4.2
+### Core Features
 
-## ✨ Features
+- **Component-Based Architecture**: Build UIs using reusable components with their own state management
+- **Flexible View Definition**: Choose between HEEx-like syntax or programmatic component functions
+- **Rich Text Formatting**: Support for colors, styles, and dynamic content updates
+- **Layout System**: Flexbox-inspired layout engine for responsive terminal UIs
+- **Event Handling**: Comprehensive event system for keyboard and mouse interactions
+- **Theme Support**: Customizable styling and theming capabilities
+- **Accessibility**: Built-in support for screen readers and keyboard navigation
 
-- **Component Model:** Build UIs from reusable, stateful components with full lifecycle support
-- **Declarative View DSL:** Compose layouts with expressive macros (`panel`, `row`, `column`, `text`, etc.)
-- **Advanced Terminal Features:** Full ANSI/Sixel support, scrollback, and efficient buffer management
-- **Plugin System:** Extend Raxol with hot-reloadable plugins and robust error handling
-- **Performance Optimized:** Event processing < 1ms, screen updates < 2ms, concurrent ops < 5ms
-- **Comprehensive Testing:** 1528 tests with event-based synchronization and performance benchmarks
-- **Modern Architecture:** Layered design with clear separation of concerns and modular subsystems
+### Advanced Features
 
-## 🚀 Get Started
+- **Data Visualization**: Charts, graphs, and TreeMaps for data representation
+- **Animation System**: Smooth transitions and dynamic UI updates
+- **Plugin System**: Extensible architecture for custom functionality
+- **Cloud Integration**: Monitoring, configuration, and service discovery
+- **Performance Optimization**: Advanced caching and rendering optimizations
+- **Metrics System**: Comprehensive performance monitoring and visualization
 
-Add Raxol to your `mix.exs`:
+## Installation
+
+Add Raxol to your dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.4.0"}
+    {:raxol, "~> 0.4.2"}
   ]
 end
 ```
 
-## 📚 Documentation
+Then fetch the dependencies:
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [Component Guide](examples/guides/03_components_and_layout/components/README.md)
-- [Plugin Development](examples/guides/04_extending_raxol/plugin_development.md)
-- [Testing Guide](examples/guides/05_development_and_testing/testing.md)
-- [Migration Guide](docs/MIGRATION_GUIDE.md)
+```bash
+mix deps.get
+```
 
-## 🛠️ Example: A Simple Counter App
+## Quick Start
+
+Create a new application module:
 
 ```elixir
-# Starts ExUnit and runs the app
-defmodule ExampleApp do
+defmodule MyApp.Application do
   use Raxol.Core.Runtime.Application
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <box border="single" padding="1">
+      <text color="cyan" bold="true">Hello from Raxol!</text>
+    </box>
+    """
+  end
+end
+```
+
+Or using the programmatic approach:
+
+```elixir
+defmodule MyApp.Application do
+  use Raxol.Core.Runtime.Application
+  use Raxol.View
   import Raxol.View.Elements
 
   @impl true
-  def init(_), do: {:ok, %{count: 0}}
-
-  @impl true
-  def update(:increment, state), do: {:ok, %{state | count: state.count + 1}, []}
-  def update(:decrement, state), do: {:ok, %{state | count: state.count - 1}, []}
-  def update(_, state), do: {:ok, state, []}
-
-  @impl true
-  def view(state) do
+  def render(assigns) do
     view do
-      panel title: "Counter" do
-        row do
-          button(label: "-", on_click: :decrement)
-          text(content: "Count: #{state.count}")
-          button(label: "+", on_click: :increment)
-        end
+      box border: :single, padding: 1 do
+        text content: "Hello from Raxol!", color: :cyan, attributes: [:bold]
       end
     end
   end
 end
-
-ExampleApp.start()
 ```
 
-## 🗂️ Key Links
+## Documentation
 
-- [Changelog](CHANGELOG.md)
-- [Migration Guide](docs/MIGRATION_GUIDE.md)
-- [Examples](examples/)
-- [Subsystem Docs](docs/README.md)
+### Core Concepts
 
-## 📦 Static Assets
+- [Quick Start Guide](examples/guides/01_getting_started/quick_start.md)
+- [Terminal Emulator](examples/guides/02_core_concepts/terminal_emulator.md)
+- [API Reference](examples/guides/02_core_concepts/api/README.md)
 
-All static assets (JavaScript, CSS, images, etc.) are in `priv/static/@static`.
+### Components & Layout
 
-- Use `/@static/` as the path prefix in templates and code.
-- The asset pipeline (npm, bundlers, etc.) should be run from `priv/static/@static`.
+- [Components Overview](examples/guides/03_components_and_layout/components/README.md)
+- [Visualization Components](examples/guides/03_components_and_layout/components/visualization/README.md)
+- [Database Components](examples/guides/03_components_and_layout/components/database/README.md)
 
-## 🚦 Performance Requirements
+### Development & Testing
 
-- **Event processing:** < 1ms average, < 2ms (95th percentile)
-- **Screen updates:** < 2ms average, < 5ms (95th percentile)
-- **Concurrent operations:** < 5ms average, < 10ms (95th percentile)
+- [Development Guide](examples/guides/05_development_and_testing/development/README.md)
+- [Testing Guide](examples/guides/05_development_and_testing/testing/README.md)
 
-## 🧭 How to Navigate
+## Performance
 
-- New to Raxol? Start with the [Getting Started Guide](examples/guides/01_getting_started/).
-- For a high-level overview, see [Architecture](docs/ARCHITECTURE.md).
-- Explore the links above for in-depth guides and references.
+Raxol is built for speed and reliability. Automated tests enforce strict performance standards:
+
+- **Event processing**: < 1ms average, < 2ms (95th percentile)
+- **Screen updates**: < 2ms average, < 5ms (95th percentile)
+- **Concurrent operations**: < 5ms average, < 10ms (95th percentile)
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- [Documentation](docs/README.md)
+- [Issue Tracker](https://github.com/Hydepwns/raxol/issues)
+- [Discussions](https://github.com/Hydepwns/raxol/discussions)
 
 ---

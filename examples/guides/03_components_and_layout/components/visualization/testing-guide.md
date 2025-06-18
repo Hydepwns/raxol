@@ -1,189 +1,260 @@
 # Visualization Components Testing Guide
 
-This guide provides instructions for testing the visualization components in the Raxol application in both VS Code Extension and Native Terminal environments.
+This guide provides comprehensive instructions for testing the visualization components in the Raxol application, covering both VS Code Extension and Native Terminal environments.
 
 ## Overview
 
-Raxol's visualization components (bar charts and treemaps) can be tested in two different environments:
+Raxol's visualization components can be tested in two different environments:
 
-1. **VS Code Extension Mode**: The visualization components are rendered in a VS Code webview panel.
-2. **Native Terminal Mode**: The visualization components are rendered directly in the terminal using terminal graphics.
+1. **VS Code Extension Mode**: Components rendered in a VS Code webview panel
+2. **Native Terminal Mode**: Components rendered directly in the terminal using terminal graphics
 
-Both environments should provide similar functionality but may have slight differences in appearance due to the different rendering capabilities.
+Both environments provide similar functionality with slight differences in appearance due to different rendering capabilities.
 
 ## Prerequisites
 
-- Ensure you have compiled the latest version of the Raxol application with `mix compile`.
-- For VS Code Extension Mode, ensure you have the necessary dependencies installed with `cd extensions/vscode && npm install`.
+### System Requirements
+
+- Elixir 1.14+ and Erlang/OTP 25+
+- Node.js 16+ (for VS Code Extension)
+- PostgreSQL 13+ (for database components)
+- Terminal with true color support (for Native Terminal mode)
+
+### Setup Steps
+
+1. Compile the latest version:
+
+   ```bash
+   mix deps.get
+   mix compile
+   ```
+
+2. For VS Code Extension:
+
+   ```bash
+   cd extensions/vscode
+   npm install
+   ```
+
+3. Set up test database:
+   ```bash
+   mix ecto.create
+   mix ecto.migrate
+   ```
 
 ## Test Scripts
 
-We've provided two test scripts to help you test the visualization components:
+### Available Scripts
 
-1. **`scripts/test_vscode_visualization.exs`**: Prepares and tests visualization components in VS Code Extension mode.
-2. **`scripts/test_terminal_visualization.exs`**: Prepares and tests visualization components in Native Terminal mode.
+1. **VS Code Extension Tests**:
+
+   ```bash
+   ./scripts/test_vscode_visualization.exs
+   ```
+
+2. **Native Terminal Tests**:
+
+   ```bash
+   ./scripts/test_terminal_visualization.exs
+   ```
+
+3. **Performance Tests**:
+   ```bash
+   mix benchmark.visualization [small|medium|large|production]
+   ```
 
 ## Testing in VS Code Extension Mode
 
-### Step 1: Prepare the Test Environment
+### Environment Setup
 
-Run the VS Code Extension test script:
+1. Run the VS Code Extension test script:
 
-```bash
-cd /path/to/raxol
-./scripts/test_vscode_visualization.exs
-```
+   ```bash
+   ./scripts/test_vscode_visualization.exs
+   ```
 
-This script will:
+2. The script will:
+   - Create test data for all visualization types
+   - Generate a sample dashboard layout
+   - Save layout to `~/.raxol/dashboard_layout.bin`
+   - Verify layout loading
+   - Display widget configurations
 
-- Create test data for bar charts and treemaps
-- Generate a sample dashboard layout with visualization widgets
-- Save the layout to `~/.raxol/dashboard_layout.bin`
-- Verify that the layout can be loaded correctly
-- Show details about the visualization widget configurations
+### Launching Tests
 
-### Step 2: Test in VS Code
+1. Open VS Code Debug panel (View > Run)
+2. Select "Extension" from dropdown
+3. Press play to launch extension
+4. Open command palette (Ctrl+Shift+P or Cmd+Shift+P)
+5. Run "Raxol: Show Terminal"
 
-1. Open the VS Code Debug panel (View > Run)
-2. Select "Extension" from the dropdown menu
-3. Press the play button to launch the extension in a new VS Code window
-4. In the new window, open the command palette (Ctrl+Shift+P or Cmd+Shift+P)
-5. Run the command "Raxol: Show Terminal"
-6. A new panel should open showing the Raxol application with visualization components
+### Verification Checklist
 
-### Step 3: Verify Functionality
-
-- **Chart Rendering**: The bar chart should display correctly with labels and bars
-- **Treemap Rendering**: The treemap should display hierarchical data with proper nesting
-- **Resizing**: Try resizing the VS Code window or panel and verify that the visualizations adjust properly
-- **Interaction**: Test keyboard navigation and interaction with the widgets
-- **Quit**: Verify that Ctrl+C or the configured quit key properly terminates the application
+- [ ] Chart rendering with correct labels and bars
+- [ ] Treemap rendering with proper nesting
+- [ ] Responsive resizing behavior
+- [ ] Keyboard navigation
+- [ ] Mouse interaction
+- [ ] Proper application termination
 
 ## Testing in Native Terminal Mode
 
-### Step 1: Prepare the Test Environment
+### Environment Setup
 
-Run the Native Terminal test script:
+1. Run the Native Terminal test script:
 
-```bash
-cd /path/to/raxol
-./scripts/test_terminal_visualization.exs
-```
+   ```bash
+   ./scripts/test_terminal_visualization.exs
+   ```
 
-This script will:
+2. The script will:
+   - Set environment variables
+   - Create test data
+   - Generate dashboard layout
+   - Save layout configuration
+   - Offer direct launch option
 
-- Set the appropriate environment variables for native terminal mode
-- Create test data for bar charts and treemaps
-- Generate a sample dashboard layout with visualization widgets
-- Save the layout to `~/.raxol/dashboard_layout.bin`
-- Offer to launch the native terminal application directly
-
-### Step 2: Launch the Native Terminal Application
-
-If you didn't launch from the script, run:
+### Launching Tests
 
 ```bash
 ./scripts/run_native_terminal.sh
 ```
 
-### Step 3: Verify Functionality
+### Verification Checklist
 
-- **Terminal Initialization**: Verify that rrex_termbox v2.0.1 NIF initializes properly
-- **Chart Rendering**: The bar chart should display correctly with labels and bars
-- **Treemap Rendering**: The treemap should display hierarchical data with proper nesting
-- **Resizing**: Try resizing the terminal window and verify that the visualizations adjust properly
-- **Interaction**: Test keyboard navigation and interaction with the widgets
-- **Quit**: Verify that Ctrl+C properly terminates the application without VM hang
-
-## Common Issues and Troubleshooting
-
-### VS Code Extension Mode
-
-- **Panel Not Opening**: Ensure VS Code extension is activated properly; check the Debug Console for errors
-- **No Visualization**: Check the output console for JSON parsing errors or missing visualization plugin initialization
-- **Slow Performance**: Check if large data sets are causing performance issues
-
-### Native Terminal Mode
-
-- **rrex_termbox Errors**: Ensure rrex_termbox v2.0.1 NIF is properly compiled for your platform
-- **Incorrect Terminal Dimensions**: The application may use fallback dimensions; try resizing the terminal
-- **VM Hang on Exit**: If the BEAM VM hangs on exit, check the terminate function in Terminal.ex
-
-## Additional Testing
-
-### Dashboard Layout Integration
-
-After verifying basic visualization rendering, test the integration with the dashboard system:
-
-1. Try dragging widgets to different positions
-2. Resize widgets using the resize handle
-3. Test that layout persists across application restarts
-
-### Custom Data Sets
-
-Test with your own data sets:
-
-1. Modify the test scripts to include your own data
-2. Test with edge cases (empty data, large data sets, negative values)
+- [ ] Terminal initialization
+- [ ] Chart rendering
+- [ ] Treemap rendering
+- [ ] Window resizing
+- [ ] Keyboard navigation
+- [ ] Clean application termination
 
 ## Performance Testing
 
-### Benchmarking Visualization Components
-
-Raxol includes comprehensive benchmarking tools for measuring visualization performance:
+### Benchmarking Tools
 
 ```bash
-# Run small visualization benchmark
-mix benchmark.visualization small
-
-# Run medium visualization benchmark
-mix benchmark.visualization medium
-
-# Run large visualization benchmark
-mix benchmark.visualization large
-
-# Run production-level benchmark
-mix benchmark.visualization production
+# Run benchmarks
+mix benchmark.visualization small    # 1,000 data points
+mix benchmark.visualization medium   # 10,000 data points
+mix benchmark.visualization large    # 100,000 data points
+mix benchmark.visualization production # 1,000,000 data points
 ```
 
-### Recent Benchmark Results
-
-Our latest benchmark results show exceptional performance improvements:
+### Performance Metrics
 
 | Component | Without Cache | With Cache | Speedup Factor |
 | --------- | ------------- | ---------- | -------------- |
 | Charts    | ~350ms        | ~0.06ms    | 5,852.9x       |
 | TreeMaps  | ~757ms        | ~0.05ms    | 15,140.4x      |
 
-### Verifying Performance
+### Performance Verification
 
-When testing visualization components, observe:
+1. **Initial Render Time**
 
-1. **Initial Render Time**: The time it takes for visualizations to appear when first loaded
-2. **Subsequent Render Time**: The time for redrawing after data changes or resizing
-3. **Memory Usage**: Monitor system memory during visualization rendering
-4. **CPU Usage**: Check for spikes during rendering operations
+   - Should be < 100ms for small datasets
+   - Should be < 500ms for large datasets
 
-### Testing with Large Datasets
+2. **Subsequent Render Time**
 
-To test with larger datasets:
+   - Should be < 50ms for small datasets
+   - Should be < 200ms for large datasets
+
+3. **Memory Usage**
+
+   - Monitor with `mix profile.memory`
+   - Should not exceed 100MB for large datasets
+
+4. **CPU Usage**
+   - Monitor with `mix profile.cpu`
+   - Should not spike above 50% during rendering
+
+## Advanced Testing
+
+### Custom Data Testing
 
 ```elixir
-# In iex or a script
+# Generate test data
 large_chart_data = Raxol.Benchmarks.VisualizationBenchmark.generate_chart_data(10000)
 large_treemap_data = Raxol.Benchmarks.VisualizationBenchmark.generate_treemap_data(1000)
 
-# Then use this data in your test widgets
+# Test with custom data
+Raxol.Visualization.TestRunner.run_with_data(large_chart_data)
 ```
+
+### Edge Cases
+
+1. **Empty Data**
+
+   - Should display appropriate empty state
+   - Should handle zero values correctly
+
+2. **Invalid Data**
+
+   - Should handle null values
+   - Should handle undefined values
+   - Should handle out-of-range values
+
+3. **Large Datasets**
+   - Should implement virtual scrolling
+   - Should maintain performance
+   - Should handle memory efficiently
+
+## Troubleshooting
+
+### VS Code Extension Issues
+
+1. **Panel Not Opening**
+
+   - Check extension activation
+   - Review Debug Console for errors
+   - Verify webview permissions
+
+2. **Rendering Issues**
+
+   - Check JSON parsing
+   - Verify plugin initialization
+   - Review webview console
+
+3. **Performance Issues**
+   - Monitor data set size
+   - Check memory usage
+   - Review rendering cycles
+
+### Native Terminal Issues
+
+1. **Terminal Errors**
+
+   - Verify rrex_termbox installation
+   - Check terminal compatibility
+   - Review NIF compilation
+
+2. **Rendering Issues**
+
+   - Check terminal dimensions
+   - Verify color support
+   - Review buffer management
+
+3. **VM Issues**
+   - Check terminate function
+   - Review process cleanup
+   - Monitor resource usage
 
 ## Reporting Issues
 
-If you encounter any issues during testing, please document:
+When reporting issues, include:
 
-1. The environment (VS Code Extension or Native Terminal)
-2. The exact steps to reproduce
-3. Any error messages in the console
-4. Screenshots if possible
+1. Environment details
+2. Reproduction steps
+3. Error messages
+4. Screenshots/logs
+5. Performance metrics
+
+## Additional Resources
+
+- [Visualization API Documentation](../api/visualization.md)
+- [Performance Guide](../../05_development_and_testing/performance/README.md)
+- [Testing Best Practices](../../05_development_and_testing/testing/README.md)
 
 ---
 

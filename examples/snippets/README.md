@@ -1,61 +1,127 @@
 # Raxol Examples
 
-This directory contains examples showcasing Raxol's features.
-
-**Note:** Many examples demonstrate specific UI components. Check the comments at the top of the example file (e.g., `progress_bar_test.exs`) which often link to the corresponding component module in `lib/raxol/ui/components/` or similar paths.
+A collection of examples demonstrating Raxol's features and capabilities.
 
 ## Directory Structure
 
-- **/basic/** - Core concepts (`Counter`, `MultipleViews`, `Rendering`, `Subscriptions`, `TableFeatures`).
-- **/advanced/** - Async operations, custom components (`Commands`, `DocumentationBrowser`, `Editor`, `Snake`).
-- **/display/** - Visual display components (`ProgressBar`).
-- **/interactive/** - User interaction, events (`FormValidation`, `EventHandling`).
-- **/layout/** - Layout strategies (`Dashboard`, `AdvancedLayout`).
-- **/showcase/** - More complete applications (`ComponentShowcase`, `ArchitectureDemo`, `ProgressBarDemo`).
-- **/without-runtime/** - Using low-level APIs (`HelloWorld`, `Clock`, `EventViewer`).
+```mermaid
+graph TD
+    A[Examples] --> B[Basic]
+    A --> C[Advanced]
+    A --> D[Display]
+    A --> E[Interactive]
+    A --> F[Layout]
+    A --> G[Showcase]
+    A --> H[Without Runtime]
 
-## Getting Started
+    B --> B1[Counter]
+    B --> B2[MultipleViews]
+    B --> B3[Rendering]
+    B --> B4[Subscriptions]
+    B --> B5[TableFeatures]
 
-If you're new to Raxol, start with the basic examples:
+    C --> C1[Commands]
+    C --> C2[DocumentationBrowser]
+    C --> C3[Editor]
+    C --> C4[Snake]
 
-```elixir
+    D --> D1[ProgressBar]
+    D --> D2[Charts]
+    D --> D3[TreeMaps]
+
+    E --> E1[FormValidation]
+    E --> E2[EventHandling]
+    E --> E3[KeyboardShortcuts]
+
+    F --> F1[Dashboard]
+    F --> F2[AdvancedLayout]
+    F --> F3[Responsive]
+
+    G --> G1[ComponentShowcase]
+    G --> G2[ArchitectureDemo]
+    G --> G3[ProgressBarDemo]
+
+    H --> H1[HelloWorld]
+    H --> H2[Clock]
+    H --> H3[EventViewer]
+```
+
+## Quick Start
+
+```bash
+# Run basic example
 mix run examples/basic/counter.exs | cat
-# Add " | cat " to prevent interference with your current terminal
-```
 
-## Running Examples
-
-Run any example using `mix run`:
-
-```elixir
+# Run showcase example
 mix run examples/showcase/component_showcase.exs | cat
-# Add " | cat " to prevent interference with your current terminal
 ```
 
-## Creating Your Own
+## Example Categories
 
-Use these examples as a starting point. A simple application using the `Raxol.Component` behaviour looks like this:
+### Basic Examples
+
+- **Counter**: Simple state management
+- **MultipleViews**: View composition
+- **Rendering**: Basic rendering patterns
+- **Subscriptions**: Event subscriptions
+- **TableFeatures**: Table component usage
+
+### Advanced Examples
+
+- **Commands**: Command pattern implementation
+- **DocumentationBrowser**: Documentation viewer
+- **Editor**: Text editor implementation
+- **Snake**: Game implementation
+
+### Display Examples
+
+- **ProgressBar**: Progress visualization
+- **Charts**: Data visualization
+- **TreeMaps**: Hierarchical data display
+
+### Interactive Examples
+
+- **FormValidation**: Form handling
+- **EventHandling**: Event system usage
+- **KeyboardShortcuts**: Shortcut implementation
+
+### Layout Examples
+
+- **Dashboard**: Dashboard layout
+- **AdvancedLayout**: Complex layouts
+- **Responsive**: Responsive design
+
+### Showcase Examples
+
+- **ComponentShowcase**: Component library
+- **ArchitectureDemo**: Architecture patterns
+- **ProgressBarDemo**: Progress bar variations
+
+### Without Runtime Examples
+
+- **HelloWorld**: Basic terminal output
+- **Clock**: Real-time updates
+- **EventViewer**: Event debugging
+
+## Creating Your Own Example
 
 ```elixir
 defmodule MyApp do
   use Raxol.Component
-  alias Raxol.View.Elements # Optional if only using <.elements>
+  alias Raxol.View.Elements
 
   @impl Raxol.Component
   def mount(_params, _session, socket) do
-    # Initialize state in assigns
     {:ok, assign(socket, :message, "Hello from Raxol!")}
   end
 
   @impl Raxol.Component
   def handle_event("some_event", _payload, socket) do
-    # Handle user events
     {:noreply, assign(socket, :message, "Event handled!")}
   end
 
   @impl Raxol.Component
   def render(assigns) do
-    # Render UI using the ~V sigil and component syntax
     ~V"""
     <.panel title="My App">
       <.text>{assigns.message}</.text>
@@ -64,8 +130,49 @@ defmodule MyApp do
     """
   end
 end
-
-# Start the application (Assuming a `Raxol.run/1` function exists)
-# Raxol.run(MyApp)
-# Or potentially integrate with a host application (e.g., Phoenix)
 ```
+
+## Component Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as Component
+    participant E as Event Handler
+    participant R as Renderer
+
+    U->>C: Interact
+    C->>E: Handle Event
+    E->>C: Update State
+    C->>R: Render
+    R->>U: Update UI
+```
+
+## Best Practices
+
+1. **Structure**
+
+   - Follow directory organization
+   - Use appropriate category
+   - Include documentation
+
+2. **Implementation**
+
+   - Use component behaviour
+   - Handle events properly
+   - Follow naming conventions
+
+3. **Documentation**
+   - Add file header
+   - Document dependencies
+   - Include usage examples
+
+## Related Documentation
+
+- [Component Guide](../../guides/03_components_and_layout/components/README.md)
+- [Event System](../../guides/02_core_concepts/events.md)
+- [Layout System](../../guides/03_components_and_layout/layout.md)
+
+---
+
+For more examples, check the [examples directory](../../examples/).
