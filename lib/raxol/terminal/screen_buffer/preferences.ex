@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ScreenBuffer.Preferences do
-  @moduledoc '''
+  @moduledoc """
   Manages screen buffer preferences and settings.
-  '''
+  """
 
   use GenServer
 
@@ -61,16 +61,16 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
     }
   end
 
-  @doc '''
+  @doc """
   Gets the current preferences.
-  '''
+  """
   def get do
     GenServer.call(__MODULE__, :get)
   end
 
-  @doc '''
+  @doc """
   Sets new preferences.
-  '''
+  """
   def set(preferences) do
     GenServer.call(__MODULE__, {:set, preferences})
   end

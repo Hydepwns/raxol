@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ScreenBuffer do
-  @moduledoc '''
+  @moduledoc """
   Manages the terminal's screen buffer state (grid, scrollback, selection).
   This module serves as the main interface for terminal buffer operations,
   delegating specific operations to specialized modules in Raxol.Terminal.Buffer.*.
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   * `Cursor` - Cursor state management
   * `Charset` - Character set management
   * `Formatting` - Text formatting and styling
-  '''
+  """
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
@@ -318,29 +318,29 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def cleanup(_buffer), do: :ok
 
   # Higher-arity insert_lines for command handlers
-  @doc '''
+  @doc """
   Inserts blank lines at a specific position with style.
-  '''
+  """
   def insert_lines(buffer, y, count, style) do
     Raxol.Terminal.Buffer.Operations.insert_lines(buffer, y, count, style)
   end
 
   # Higher-arity insert_lines for region
-  @doc '''
+  @doc """
   Inserts blank lines at a specific position within a region.
-  '''
+  """
   def insert_lines(buffer, lines, y, top, bottom) do
     Raxol.Terminal.Buffer.Operations.insert_lines(buffer, lines, y, top, bottom)
   end
 
   # Higher-arity delete_lines for command handlers
-  @doc '''
+  @doc """
   Deletes lines at a specific position.
 
   ## Parameters
   - For command handlers: y, count, style, and region boundaries
   - For region operations: lines, y, top, and bottom positions
-  '''
+  """
   def delete_lines(buffer, y, count, style, {top, bottom}) do
     Raxol.Terminal.Buffer.Operations.delete_lines(
       buffer,
@@ -359,13 +359,18 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # === Screen Operations ===
 
   def clear(buffer, style \\ nil)
-  def clear(buffer, style), do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
+
+  def clear(buffer, style),
+    do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
 
   @impl true
   def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
     # Clear from cursor to end of line
     line = Enum.at(buffer.cells, y, [])
-    cleared_line = List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+
+    cleared_line =
+      List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
 
     # Clear remaining lines
@@ -395,32 +400,58 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @impl true
   def erase_all(buffer) do
-    %{buffer |
-      cells: List.duplicate(List.duplicate(%{}, buffer.width), buffer.height),
-      scrollback: []
+    %{
+      buffer
+      | cells: List.duplicate(List.duplicate(%{}, buffer.width), buffer.height),
+        scrollback: []
     }
   end
 
-  defdelegate clear_region(buffer, x, y, width, height), to: Raxol.Terminal.ScreenBuffer.Core
+  defdelegate clear_region(buffer, x, y, width, height),
+    to: Raxol.Terminal.ScreenBuffer.Core
 
-  defdelegate mark_damaged(buffer, x, y, width, height, reason), to: Raxol.Terminal.ScreenBuffer.Core
+  defdelegate mark_damaged(buffer, x, y, width, height, reason),
+    to: Raxol.Terminal.ScreenBuffer.Core
 
-  defdelegate pop_bottom_lines(buffer, count), to: Raxol.Terminal.ScreenBuffer.Core
+  defdelegate pop_bottom_lines(buffer, count),
+    to: Raxol.Terminal.ScreenBuffer.Core
 
   def erase_display(buffer, mode, cursor, min_row, max_row) do
-    Raxol.Terminal.ScreenBuffer.Core.erase_display(buffer, mode, cursor, min_row, max_row)
+    Raxol.Terminal.ScreenBuffer.Core.erase_display(
+      buffer,
+      mode,
+      cursor,
+      min_row,
+      max_row
+    )
   end
 
   def erase_line(buffer, mode, cursor, min_col, max_col) do
-    Raxol.Terminal.ScreenBuffer.Core.erase_line(buffer, mode, cursor, min_col, max_col)
+    Raxol.Terminal.ScreenBuffer.Core.erase_line(
+      buffer,
+      mode,
+      cursor,
+      min_col,
+      max_col
+    )
   end
 
   def delete_chars(buffer, count, cursor, max_col) do
-    Raxol.Terminal.ScreenBuffer.Core.delete_chars(buffer, count, cursor, max_col)
+    Raxol.Terminal.ScreenBuffer.Core.delete_chars(
+      buffer,
+      count,
+      cursor,
+      max_col
+    )
   end
 
   def insert_chars(buffer, count, cursor, max_col) do
-    Raxol.Terminal.ScreenBuffer.Core.insert_chars(buffer, count, cursor, max_col)
+    Raxol.Terminal.ScreenBuffer.Core.insert_chars(
+      buffer,
+      count,
+      cursor,
+      max_col
+    )
   end
 
   def get_char(buffer, x, y) do
@@ -464,6 +495,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   def mark_damaged(buffer, x, y, width, height, reason) do
-    Raxol.Terminal.ScreenBuffer.Core.mark_damaged(buffer, x, y, width, height, reason)
+    Raxol.Terminal.ScreenBuffer.Core.mark_damaged(
+      buffer,
+      x,
+      y,
+      width,
+      height,
+      reason
+    )
   end
 end

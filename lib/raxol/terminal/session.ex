@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Session do
-  @moduledoc '''
+  @moduledoc """
   Terminal session module.
 
   This module manages terminal sessions, including:
@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Session do
   - State management
   - Configuration
   - Session persistence and recovery
-  '''
+  """
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Session do
     auto_save: true
   ]
 
-  @doc '''
+  @doc """
   Starts a new terminal session.
 
   ## Examples
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Session do
       iex> {:ok, pid} = Session.start_link(%{width: 80, height: 24})
       iex> Process.alive?(pid)
       true
-  '''
+  """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     id = Keyword.get(opts, :id, UUID.uuid4())
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Session do
     GenServer.start_link(__MODULE__, {id, width, height, title, theme})
   end
 
-  @doc '''
+  @doc """
   Stops a terminal session.
 
   ## Examples
@@ -72,13 +72,13 @@ defmodule Raxol.Terminal.Session do
       iex> :ok = Session.stop(pid)
       iex> Process.alive?(pid)
       false
-  '''
+  """
   @spec stop(GenServer.server()) :: :ok
   def stop(pid) do
     GenServer.stop(pid)
   end
 
-  @doc '''
+  @doc """
   Sends input to a terminal session.
 
   ## Examples
@@ -88,13 +88,13 @@ defmodule Raxol.Terminal.Session do
       iex> state = Session.get_state(pid)
       iex> state.input.buffer
       "test"
-  '''
+  """
   @spec send_input(GenServer.server(), String.t()) :: :ok
   def send_input(pid, input) do
     GenServer.cast(pid, {:input, input})
   end
 
-  @doc '''
+  @doc """
   Gets the current state of a terminal session.
 
   ## Examples
@@ -103,13 +103,13 @@ defmodule Raxol.Terminal.Session do
       iex> state = Session.get_state(pid)
       iex> state.width
       80
-  '''
+  """
   @spec get_state(GenServer.server()) :: t()
   def get_state(pid) do
     GenServer.call(pid, :get_state)
   end
 
-  @doc '''
+  @doc """
   Updates the configuration of a terminal session.
 
   ## Examples
@@ -119,23 +119,23 @@ defmodule Raxol.Terminal.Session do
       iex> state = Session.get_state(pid)
       iex> state.width
       100
-  '''
+  """
   @spec update_config(GenServer.server(), map()) :: :ok
   def update_config(pid, config) do
     GenServer.call(pid, {:update_config, config})
   end
 
-  @doc '''
+  @doc """
   Saves the current session state to persistent storage.
-  '''
+  """
   @spec save_session(GenServer.server()) :: :ok | {:error, term()}
   def save_session(pid) do
     GenServer.call(pid, :save_session)
   end
 
-  @doc '''
+  @doc """
   Loads a session from persistent storage.
-  '''
+  """
   @spec load_session(String.t()) :: {:ok, pid()} | {:error, term()}
   def load_session(session_id) do
     case Storage.load_session(session_id) do
@@ -153,17 +153,17 @@ defmodule Raxol.Terminal.Session do
     end
   end
 
-  @doc '''
+  @doc """
   Lists all saved sessions.
-  '''
+  """
   @spec list_saved_sessions() :: {:ok, [String.t()]} | {:error, term()}
   def list_saved_sessions do
     Storage.list_sessions()
   end
 
-  @doc '''
+  @doc """
   Sets whether the session should be automatically saved.
-  '''
+  """
   @spec set_auto_save(GenServer.server(), boolean()) :: :ok
   def set_auto_save(pid, enabled) do
     GenServer.call(pid, {:set_auto_save, enabled})
@@ -288,7 +288,9 @@ defmodule Raxol.Terminal.Session do
     end
 
     # Schedule next auto-save
-    Process.send_after(self(), :auto_save, :timer.minutes(5))
+    _timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:auto_save, _timer_id}, :timer.minutes(5))
+    # Store timer_id in state if needed
     {:noreply, state}
   end
 

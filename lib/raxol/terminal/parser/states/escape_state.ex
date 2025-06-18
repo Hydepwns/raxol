@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Parser.States.EscapeState do
-  @moduledoc '''
+  @moduledoc """
   Handles the :escape state of the terminal parser.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
@@ -11,9 +11,9 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
   @impl Raxol.Terminal.Parser.StateBehaviour
 
-  @doc '''
+  @doc """
   Processes input when the parser is in the :escape state.
-  '''
+  """
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
           | {:handled, Emulator.t()}

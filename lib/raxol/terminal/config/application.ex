@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.Config.Application do
-  @moduledoc '''
+  @moduledoc """
   Terminal configuration application.
 
   This module handles applying configuration settings to the terminal,
   ensuring all changes are properly propagated throughout the system.
-  '''
+  """
 
   alias Raxol.Terminal.Config.{Validation, Capabilities}
 
-  @doc '''
+  @doc """
   Applies a configuration to the terminal.
 
   This function takes a configuration and applies it to the current terminal
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Config.Application do
   ## Returns
 
   `{:ok, applied_config}` or `{:error, reason}`
-  '''
+  """
   def apply_config(config, terminal_pid \\ nil) do
     # Validate the configuration
     case Validation.validate_config(config) do
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Config.Application do
     end
   end
 
-  @doc '''
+  @doc """
   Applies a partial configuration update to the terminal.
 
   This allows updating only specific parts of the configuration without
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Config.Application do
   ## Returns
 
   `{:ok, updated_config}` or `{:error, reason}`
-  '''
+  """
   def apply_partial_config(partial_config, terminal_pid \\ nil) do
     # Get the current configuration
     current_config = get_current_config(terminal_pid)
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Config.Application do
     apply_config(updated_config, terminal_pid)
   end
 
-  @doc '''
+  @doc """
   Gets the current terminal configuration.
 
   ## Parameters
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Config.Application do
   ## Returns
 
   The current terminal configuration.
-  '''
+  """
   def get_current_config(terminal_pid \\ nil) do
     # If terminal_pid is provided, get config from that process
     # Otherwise, use the default terminal process
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Config.Application do
     end
   end
 
-  @doc '''
+  @doc """
   Resets terminal configuration to default values.
 
   ## Parameters
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Config.Application do
   ## Returns
 
   `{:ok, default_config}` or `{:error, reason}`
-  '''
+  """
   def reset_config(terminal_pid \\ nil, optimize \\ true) do
     # Get default configuration
     default_config =

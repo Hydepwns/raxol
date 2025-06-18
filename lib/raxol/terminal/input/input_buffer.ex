@@ -2,10 +2,10 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   alias Raxol.Terminal.Input.Types
   alias Raxol.Terminal.Input.InputBufferUtils
 
-  @moduledoc '''
+  @moduledoc """
   Handles input buffering for the terminal emulator.
   Provides functionality for storing, retrieving, and manipulating input data.
-  '''
+  """
 
   defstruct [
     :contents,
@@ -19,9 +19,9 @@ defmodule Raxol.Terminal.Input.InputBuffer do
 
   @type t :: Types.input_buffer()
 
-  @doc '''
+  @doc """
   Creates a new input buffer with default values.
-  '''
+  """
   def new(max_size \\ 1024, overflow_mode \\ :truncate) do
     %__MODULE__{
       contents: "",
@@ -34,9 +34,9 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     }
   end
 
-  @doc '''
+  @doc """
   Appends data to the buffer, handling escape sequences appropriately.
-  '''
+  """
   def append(%__MODULE__{} = buffer, data) when is_binary(data) do
     if buffer.escape_sequence_mode do
       handle_escape_sequence(buffer, data)
@@ -51,61 +51,61 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     end
   end
 
-  @doc '''
+  @doc """
   Prepends data to the buffer.
-  '''
+  """
   def prepend(%__MODULE__{} = buffer, data) when is_binary(data) do
     new_contents = data <> buffer.contents
     handle_overflow(buffer, new_contents, :prepend)
   end
 
-  @doc '''
+  @doc """
   Sets the buffer contents.
-  '''
+  """
   def set_contents(%__MODULE__{} = buffer, contents) when is_binary(contents) do
     handle_overflow(buffer, contents)
   end
 
-  @doc '''
+  @doc """
   Gets the buffer contents.
-  '''
+  """
   def get_contents(%__MODULE__{} = buffer) do
     buffer.contents
   end
 
-  @doc '''
+  @doc """
   Clears the buffer.
-  '''
+  """
   def clear(%__MODULE__{} = buffer) do
     %{buffer | contents: ""}
   end
 
-  @doc '''
+  @doc """
   Checks if the buffer is empty.
-  '''
+  """
   def empty?(%__MODULE__{} = buffer) do
     buffer.contents == ""
   end
 
-  @doc '''
+  @doc """
   Gets the current size of the buffer.
-  '''
+  """
   def size(%__MODULE__{} = buffer) do
     String.length(buffer.contents)
   end
 
-  @doc '''
+  @doc """
   Gets the maximum size of the buffer.
-  '''
+  """
   def max_size(%__MODULE__{} = buffer) do
     buffer.max_size
   end
 
-  @doc '''
+  @doc """
   Sets the maximum size of the buffer.
   If the current content exceeds the new max size, it will be handled
   according to the current overflow mode.
-  '''
+  """
   def set_max_size(%__MODULE__{} = buffer, max_size)
       when is_integer(max_size) and max_size > 0 do
     # Update the max_size first
@@ -114,25 +114,25 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     handle_overflow(new_buffer, new_buffer.contents)
   end
 
-  @doc '''
+  @doc """
   Sets the overflow mode of the buffer.
-  '''
+  """
   def set_overflow_mode(%__MODULE__{} = buffer, mode)
       when mode in [:truncate, :error, :wrap] do
     %{buffer | overflow_mode: mode}
   end
 
-  @doc '''
+  @doc """
   Gets the overflow mode of the buffer.
-  '''
+  """
   def overflow_mode(%__MODULE__{} = buffer) do
     buffer.overflow_mode
   end
 
-  @doc '''
+  @doc """
   Removes the last character from the buffer.
   Uses graphemes to handle multi-byte characters correctly.
-  '''
+  """
   def backspace(%__MODULE__{contents: contents} = buffer) do
     if String.length(contents) > 0 do
       new_contents =
@@ -144,9 +144,9 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     end
   end
 
-  @doc '''
+  @doc """
   Removes the first character from the buffer.
-  '''
+  """
   def delete_first(%__MODULE__{} = buffer) do
     if String.length(buffer.contents) > 0 do
       %{buffer | contents: String.slice(buffer.contents, 1..-1//1)}
@@ -155,10 +155,10 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     end
   end
 
-  @doc '''
+  @doc """
   Inserts a character at the specified position.
   Raises ArgumentError if position is out of bounds.
-  '''
+  """
   def insert_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
     content_len = String.length(buffer.contents)
     _char_len = String.length(char)
@@ -177,10 +177,10 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     handle_overflow(buffer, new_contents)
   end
 
-  @doc '''
+  @doc """
   Replaces a character at the specified position.
   Raises ArgumentError if position is out of bounds.
-  '''
+  """
   def replace_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
     content_len = String.length(buffer.contents)
     _char_len = String.length(char)
@@ -201,9 +201,9 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     handle_overflow(buffer, new_contents)
   end
 
-  @doc '''
+  @doc """
   Handles escape sequence processing.
-  '''
+  """
   def handle_escape_sequence(%__MODULE__{} = buffer, data) do
     new_sequence = buffer.escape_sequence <> data
 

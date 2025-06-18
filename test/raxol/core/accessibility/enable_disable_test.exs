@@ -1,5 +1,9 @@
 defmodule Raxol.Core.Accessibility.EnableDisableTest do
-  use Raxol.DataCase, async: false
+  @moduledoc """
+  Tests for the accessibility enable/disable functionality, including
+  preference application, announcement handling, and state management.
+  """
+  use ExUnit.Case, async: false
   import Mox
 
   alias Raxol.Core.Accessibility

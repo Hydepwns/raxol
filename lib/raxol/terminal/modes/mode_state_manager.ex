@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Modes.ModeStateManager do
-  @moduledoc '''
+  @moduledoc """
   Manages the state of terminal modes, including transitions and validation.
   Handles mode dependencies, conflicts, and state persistence.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -16,16 +16,16 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the ModeStateManager process.
-  '''
+  """
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Creates a new mode state with default values.
-  '''
+  """
   @spec new() :: t()
   def new do
     %__MODULE__{
@@ -33,9 +33,9 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
     }
   end
 
-  @doc '''
+  @doc """
   Sets a mode to a specific value.
-  '''
+  """
   @spec set_mode(t(), atom(), ModeTypes.mode_value()) ::
           {:ok, t()} | {:error, term()}
   def set_mode(state, mode_name, value) do
@@ -47,9 +47,9 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
     end
   end
 
-  @doc '''
+  @doc """
   Resets a mode to its default value.
-  '''
+  """
   @spec reset_mode(t(), atom()) :: {:ok, t()} | {:error, term()}
   def reset_mode(state, mode_name) do
     with {:ok, mode_def} <- validate_mode(mode_name) do
@@ -58,9 +58,9 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if a mode is enabled.
-  '''
+  """
   @spec mode_enabled?(t(), atom()) :: boolean()
   def mode_enabled?(state, mode_name) do
     case Map.get(state.modes, mode_name) do

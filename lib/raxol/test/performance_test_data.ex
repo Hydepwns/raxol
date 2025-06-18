@@ -1,7 +1,7 @@
 defmodule Raxol.Test.PerformanceTestData do
-  @moduledoc '''
+  @moduledoc """
   Provides large sample data and data generation helpers for performance tests.
-  '''
+  """
 
   @large_data Enum.map(1..1000, fn i ->
                 %{

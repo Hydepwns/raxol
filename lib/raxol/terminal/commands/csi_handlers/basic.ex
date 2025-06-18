@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
-  @moduledoc '''
+  @moduledoc """
   Handlers for basic CSI commands.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
 
-  @doc '''
+  @doc """
   Handles basic CSI commands.
-  '''
+  """
   def handle_command(emulator, params, byte) do
     case byte do
       ?m -> handle_sgr(emulator, params)
@@ -28,10 +28,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Select Graphic Rendition (SGR)
   Sets text attributes and colors.
-  '''
+  """
   def handle_sgr(emulator, params) do
     case params do
       [] ->
@@ -108,10 +108,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Cursor Position (CUP)
   Moves cursor to specified position.
-  '''
+  """
   def handle_cup(emulator, params) do
     row = Enum.at(params, 0, 1)
     col = Enum.at(params, 1, 1)
@@ -125,10 +125,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
      )}
   end
 
-  @doc '''
+  @doc """
   Set Top and Bottom Margins (DECSTBM)
   Sets the scroll region.
-  '''
+  """
   def handle_decstbm(emulator, params) do
     top = Enum.at(params, 0, 1)
     bottom = Enum.at(params, 1, emulator.height)
@@ -141,10 +141,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Erase in Display (ED)
   Clears parts of the screen.
-  '''
+  """
   def handle_ed(emulator, params) do
     mode = Enum.at(params, 0, 0)
     {x, y} = Emulator.get_cursor_position(emulator)
@@ -171,10 +171,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Erase in Line (EL)
   Clears parts of the current line.
-  '''
+  """
   def handle_el(emulator, params) do
     mode = Enum.at(params, 0, 0)
     {x, y} = Emulator.get_cursor_position(emulator)
@@ -197,10 +197,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Reset Mode (RM)
   Resets terminal modes.
-  '''
+  """
   def handle_rm(emulator, params) do
     case params do
       [?\s | rest] -> handle_private_rm(emulator, rest)
@@ -208,10 +208,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Set Mode (SM)
   Sets terminal modes.
-  '''
+  """
   def handle_sm(emulator, params) do
     case params do
       [?\s | rest] -> handle_private_sm(emulator, rest)
@@ -219,10 +219,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Save Cursor (DECSC)
   Saves current cursor position and attributes.
-  '''
+  """
   def handle_decsc(emulator, _params) do
     saved_cursor = %{
       position: Emulator.get_cursor_position(emulator),
@@ -233,10 +233,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     {:ok, %{emulator | saved_cursor: saved_cursor}}
   end
 
-  @doc '''
+  @doc """
   Restore Cursor (DECRC)
   Restores previously saved cursor position and attributes.
-  '''
+  """
   def handle_decrc(emulator, _params) do
     case emulator.saved_cursor do
       nil ->
@@ -260,10 +260,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Device Status Report (DSR)
   Reports cursor position or device status.
-  '''
+  """
   def handle_dsr(emulator, params) do
     case params do
       [5] ->
@@ -280,10 +280,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Device Attributes (DA)
   Reports device attributes.
-  '''
+  """
   def handle_da(emulator, params) do
     case params do
       [0] ->
@@ -299,10 +299,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Set Cursor Style (DECSCUSR)
   Sets the cursor style.
-  '''
+  """
   def handle_decscusr(emulator, params) do
     case params do
       [0] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :block}}}
@@ -316,10 +316,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     end
   end
 
-  @doc '''
+  @doc """
   Soft Terminal Reset (DECSTR)
   Resets terminal to initial state.
-  '''
+  """
   def handle_decstr(emulator, _params) do
     {:ok,
      %{
@@ -333,10 +333,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
      }}
   end
 
-  @doc '''
+  @doc """
   Set Left and Right Margins (DECSLRM)
   Sets the horizontal margins.
-  '''
+  """
   def handle_decslrm(emulator, params) do
     left = Enum.at(params, 0, 1)
     right = Enum.at(params, 1, emulator.width)

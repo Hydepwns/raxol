@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Buffer.UnifiedManager do
-  @moduledoc '''
+  @moduledoc """
   Unified buffer management system for the Raxol terminal emulator.
   This module combines and enhances the functionality of the previous buffer managers,
   providing improved memory management, caching, and performance metrics.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     scrollback_limit: 1000
   ]
 
-  @doc '''
+  @doc """
   Creates a new unified buffer manager with the specified dimensions.
 
   ## Parameters
@@ -55,7 +55,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, state}` - The initialized buffer manager state
-  '''
+  """
   def new(width, height, scrollback_limit \\ 1000, memory_limit \\ 10_000_000) do
     state = %__MODULE__{
       active_buffer: ScreenBuffer.new(width, height, scrollback_limit),
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Starts a new buffer manager process.
 
   ## Options
@@ -81,13 +81,13 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, pid}` - The process ID of the started buffer manager
-  '''
+  """
   def start_link(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     GenServer.start_link(__MODULE__, opts)
   end
 
-  @doc '''
+  @doc """
   Gets a cell from the active buffer at the specified position.
 
   ## Parameters
@@ -97,12 +97,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, cell}` - The cell at the specified position
-  '''
+  """
   def get_cell(%__MODULE__{} = state, x, y) do
     GenServer.call(state, {:get_cell, x, y})
   end
 
-  @doc '''
+  @doc """
   Sets a cell in the active buffer at the specified position.
 
   ## Parameters
@@ -113,12 +113,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
-  '''
+  """
   def set_cell(%__MODULE__{} = state, x, y, cell) do
     GenServer.call(state, {:set_cell, x, y, cell})
   end
 
-  @doc '''
+  @doc """
   Fills a region in the active buffer with a cell.
 
   ## Parameters
@@ -131,12 +131,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
-  '''
+  """
   def fill_region(%__MODULE__{} = state, x, y, width, height, cell) do
     GenServer.call(state, {:fill_region, x, y, width, height, cell})
   end
 
-  @doc '''
+  @doc """
   Scrolls a region in the active buffer.
 
   ## Parameters
@@ -149,12 +149,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
-  '''
+  """
   def scroll_region(%__MODULE__{} = state, x, y, width, height, amount) do
     GenServer.call(state, {:scroll_region, x, y, width, height, amount})
   end
 
-  @doc '''
+  @doc """
   Clears the active buffer.
 
   ## Parameters
@@ -162,12 +162,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
-  '''
+  """
   def clear(%__MODULE__{} = state) do
     GenServer.call(state, :clear)
   end
 
-  @doc '''
+  @doc """
   Resizes the buffer to new dimensions.
 
   ## Parameters
@@ -177,21 +177,21 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
-  '''
+  """
   def resize(%__MODULE__{} = state, width, height) do
     GenServer.call(state, {:resize, width, height})
   end
 
-  @doc '''
+  @doc """
   Gets the active buffer.
-  '''
+  """
   def get_active_buffer(%__MODULE__{} = state) do
     {:ok, state.active_buffer}
   end
 
-  @doc '''
+  @doc """
   Updates the buffer with new commands.
-  '''
+  """
   def update(%__MODULE__{} = state, commands) when is_list(commands) do
     Enum.reduce(commands, {:ok, state}, fn command, {:ok, current_state} ->
       case process_command(current_state, command) do
@@ -201,52 +201,52 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end)
   end
 
-  @doc '''
+  @doc """
   Updates the buffer manager configuration.
   Delegates to update/2 for compatibility.
-  '''
+  """
   def update_config(buffer_manager, config) do
     update(buffer_manager, [config])
   end
 
-  @doc '''
+  @doc """
   Gets the visible content of the buffer.
-  '''
+  """
   def get_visible_content(%__MODULE__{} = state) do
     {:ok, ScreenBuffer.get_visible_content(state.active_buffer)}
   end
 
-  @doc '''
+  @doc """
   Updates the visible region of the buffer.
-  '''
+  """
   def update_visible_region(%__MODULE__{} = state, region) do
     GenServer.call(state, {:update_visible_region, region})
   end
 
-  @doc '''
+  @doc """
   Gets the total number of lines in the buffer.
-  '''
+  """
   def get_total_lines(%__MODULE__{} = state) do
     {:ok, state.height + Scroll.get_size(state.scrollback_buffer)}
   end
 
-  @doc '''
+  @doc """
   Gets the number of visible lines in the buffer.
-  '''
+  """
   def get_visible_lines(%__MODULE__{} = state) do
     {:ok, state.height}
   end
 
-  @doc '''
+  @doc """
   Writes data to the buffer.
-  '''
+  """
   def write(%__MODULE__{} = state, data) do
     GenServer.call(state, {:write, data})
   end
 
-  @doc '''
+  @doc """
   Gets the memory usage of the buffer.
-  '''
+  """
   def get_memory_usage(%__MODULE__{} = state) do
     active_usage = ScreenBuffer.get_memory_usage(state.active_buffer)
     back_usage = ScreenBuffer.get_memory_usage(state.back_buffer)
@@ -256,16 +256,16 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:ok, total_usage}
   end
 
-  @doc '''
+  @doc """
   Gets the buffer manager state.
-  '''
+  """
   def get_buffer_manager(%__MODULE__{} = state) do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Cleans up the buffer manager.
-  '''
+  """
   def cleanup(%__MODULE__{} = state) do
     ScreenBuffer.cleanup(state.active_buffer)
     ScreenBuffer.cleanup(state.back_buffer)
@@ -283,9 +283,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:ok, new_state}
   end
 
-  @doc '''
+  @doc """
   Gets the visible content for a specific buffer.
-  '''
+  """
   @spec get_visible_content(t(), String.t()) ::
           {:ok, list(list(Cell.t()))} | {:error, term()}
   def get_visible_content(manager, buffer_id) do

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
   alias Raxol.Terminal.Input.Manager
 
   describe "new/0" do
-    test 'creates a new input manager with default values' do
+    test ~c"creates a new input manager with default values" do
       manager = Manager.new()
       assert manager.mode == :normal
       assert manager.mouse_enabled == false
@@ -19,13 +19,13 @@ defmodule Raxol.Terminal.Input.ManagerTest do
   end
 
   describe "process_keyboard/2" do
-    test 'processes regular keyboard input' do
+    test ~c"processes regular keyboard input" do
       manager = Manager.new()
       manager = Manager.process_keyboard(manager, "a")
       assert Manager.get_buffer_contents(manager) == "a"
     end
 
-    test 'processes multiple keyboard inputs' do
+    test ~c"processes multiple keyboard inputs" do
       manager = Manager.new()
 
       manager =
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert Manager.get_buffer_contents(manager) == "hello"
     end
 
-    test 'handles backspace' do
+    test ~c"handles backspace" do
       manager = Manager.new()
 
       manager =
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert Manager.get_buffer_contents(manager) == "he"
     end
 
-    test 'handles enter key' do
+    test ~c"handles enter key" do
       manager = Manager.new()
 
       manager =
@@ -64,7 +64,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert manager.input_history == ["test"]
     end
 
-    test 'handles tab completion' do
+    test ~c"handles tab completion" do
       manager = Manager.new()
 
       # Test basic tab completion (spaces)
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
   end
 
   describe "process_special_key/2" do
-    test 'processes arrow keys' do
+    test ~c"processes arrow keys" do
       manager = Manager.new()
 
       manager = Manager.process_special_key(manager, :up)
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert Manager.get_buffer_contents(manager) == "\e[A\e[B"
     end
 
-    test 'processes function keys' do
+    test ~c"processes function keys" do
       manager = Manager.new()
 
       manager = Manager.process_special_key(manager, :f1)
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
   end
 
   describe "process_mouse/2" do
-    test 'ignores mouse events when disabled' do
+    test ~c"ignores mouse events when disabled" do
       manager = Manager.new()
       manager = Manager.process_mouse(manager, {:press, 0, 10, 20})
       assert Manager.get_buffer_contents(manager) == ""
@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert manager.mouse_buttons == MapSet.new()
     end
 
-    test 'processes mouse events when enabled' do
+    test ~c"processes mouse events when enabled" do
       manager = Manager.new() |> Manager.set_mouse_enabled(true)
 
       manager = Manager.process_mouse(manager, {:press, 0, 10, 20})
@@ -124,7 +124,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert manager.mouse_buttons == MapSet.new()
     end
 
-    test 'handles scroll events' do
+    test ~c"handles scroll events" do
       manager = Manager.new() |> Manager.set_mouse_enabled(true)
 
       manager = Manager.process_mouse(manager, {:scroll, 4, 10, 20})
@@ -135,7 +135,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
   end
 
   describe "modifier state" do
-    test 'updates modifier state' do
+    test ~c"updates modifier state" do
       manager = Manager.new()
 
       manager =
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert manager.modifier_state.meta == false
     end
 
-    test 'processes keys with modifiers' do
+    test ~c"processes keys with modifiers" do
       manager = Manager.new()
 
       manager =
@@ -162,7 +162,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
   end
 
   describe "input modes" do
-    test 'sets and gets input mode' do
+    test ~c"sets and gets input mode" do
       manager = Manager.new()
       assert Manager.get_mode(manager) == :normal
 

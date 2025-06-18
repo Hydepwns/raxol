@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.ANSI.SixelPalette do
-  @moduledoc '''
+  @moduledoc """
   Handles Sixel color palette management.
 
   Provides functions to initialize the default palette and potentially
   manage custom color definitions in the future.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Initializes the default Sixel color palette (256 colors).
-  '''
+  """
   @spec initialize_palette() :: map()
   def initialize_palette do
     base_palette = initialize_base_palette()
@@ -58,13 +58,13 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     {value, value, value}
   end
 
-  @doc '''
+  @doc """
   Returns the maximum valid color index (typically 255 for a 256-color palette).
-  '''
+  """
   @spec max_colors() :: non_neg_integer()
   def max_colors(), do: 255
 
-  @doc '''
+  @doc """
   Defines a custom color in the palette using the Sixel "#" command format.
 
   ## Parameters
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   ## Returns
     * `{:ok, updated_palette}` - The updated palette with the new color
     * `{:error, reason}` - If the color definition fails
-  '''
+  """
   @spec define_color(map(), non_neg_integer(), 1..2, 0..100, 0..100, 0..100) ::
           {:ok, map()} | {:error, atom()}
   def define_color(palette, index, format, p1, p2, p3)
@@ -94,12 +94,12 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
 
   # --- Color Conversion Helpers ---
 
-  @doc '''
+  @doc """
   Converts color parameters based on the specified color space.
 
   Handles clamping values and delegation to specific conversion functions.
   Supports HLS (1) and RGB (2).
-  '''
+  """
   @spec convert_color(integer(), integer(), integer(), integer()) ::
           {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
           | {:error, atom()}
@@ -136,12 +136,12 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     end
   end
 
-  @doc '''
+  @doc """
   Simplified HLS to RGB conversion (based on standard formulas).
 
   Input: H (0-360), L (0-1), S (0-1)
   Output: {:ok, {R, G, B}} (0-255)
-  '''
+  """
   @spec hls_to_rgb(float(), float(), float()) ::
           {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
   def hls_to_rgb(h, l, s) do

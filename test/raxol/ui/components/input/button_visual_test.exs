@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.ButtonVisualTest do
   alias Raxol.UI.Components.Input.Button
 
   describe "visual tests for Button component" do
-    test 'renders default button' do
+    test ~c"renders default button" do
       component = setup_visual_component(Button, %{label: "Click Me"})
 
       assert_renders_as(component, fn output ->

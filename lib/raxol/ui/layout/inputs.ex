@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Layout.Inputs do
-  @moduledoc '''
+  @moduledoc """
   Handles measurement of input elements like buttons and text inputs.
-  '''
+  """
 
   def measure(:button, attrs_map, available_space) do
     text = Map.get(attrs_map, :label, "Button")

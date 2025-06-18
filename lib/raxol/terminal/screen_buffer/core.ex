@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ScreenBuffer.Core do
-  @moduledoc '''
+  @moduledoc """
   Core implementation of the screen buffer functionality.
   Implements the Raxol.Terminal.ScreenBufferBehaviour.
-  '''
+  """
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
@@ -211,11 +211,17 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   # --- Erase Operations ---
   def erase_from_cursor_to_end(buffer) do
-    %{buffer | screen_state: Screen.erase_from_cursor_to_end(buffer.screen_state)}
+    %{
+      buffer
+      | screen_state: Screen.erase_from_cursor_to_end(buffer.screen_state)
+    }
   end
 
   def erase_from_start_to_cursor(buffer) do
-    %{buffer | screen_state: Screen.erase_from_start_to_cursor(buffer.screen_state)}
+    %{
+      buffer
+      | screen_state: Screen.erase_from_start_to_cursor(buffer.screen_state)
+    }
   end
 
   def erase_all(buffer) do
@@ -223,15 +229,26 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   def erase_all_with_scrollback(buffer) do
-    %{buffer | screen_state: Screen.erase_all_with_scrollback(buffer.screen_state)}
+    %{
+      buffer
+      | screen_state: Screen.erase_all_with_scrollback(buffer.screen_state)
+    }
   end
 
   def erase_from_cursor_to_end_of_line(buffer) do
-    %{buffer | screen_state: Screen.erase_from_cursor_to_end_of_line(buffer.screen_state)}
+    %{
+      buffer
+      | screen_state:
+          Screen.erase_from_cursor_to_end_of_line(buffer.screen_state)
+    }
   end
 
   def erase_from_start_of_line_to_cursor(buffer) do
-    %{buffer | screen_state: Screen.erase_from_start_of_line_to_cursor(buffer.screen_state)}
+    %{
+      buffer
+      | screen_state:
+          Screen.erase_from_start_of_line_to_cursor(buffer.screen_state)
+    }
   end
 
   def erase_line(buffer) do
@@ -275,7 +292,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   def mark_damaged(buffer, x, y, width, height) do
-    %{buffer | screen_state: Screen.mark_damaged(buffer.screen_state, x, y, width, height)}
+    %{
+      buffer
+      | screen_state:
+          Screen.mark_damaged(buffer.screen_state, x, y, width, height)
+    }
   end
 
   def clear_region(buffer, x, y, width, height) do
@@ -299,7 +320,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   def set_scroll_region(buffer, start_line, end_line) do
-    %{buffer | scroll_state: Scroll.set_region(buffer.scroll_state, start_line, end_line)}
+    %{
+      buffer
+      | scroll_state:
+          Scroll.set_region(buffer.scroll_state, start_line, end_line)
+    }
   end
 
   def clear_scroll_region(buffer) do
@@ -328,7 +353,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   # --- Charset Operations ---
   @impl true
   def designate_charset(buffer, slot, charset) do
-    %{buffer | charset_state: Charset.designate(buffer.charset_state, slot, charset)}
+    %{
+      buffer
+      | charset_state: Charset.designate(buffer.charset_state, slot, charset)
+    }
   end
 
   @impl true
@@ -353,7 +381,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def apply_single_shift(buffer, slot) do
-    %{buffer | charset_state: Charset.apply_single_shift(buffer.charset_state, slot)}
+    %{
+      buffer
+      | charset_state: Charset.apply_single_shift(buffer.charset_state, slot)
+    }
   end
 
   @impl true
@@ -369,27 +400,47 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def update_style(buffer, style) do
-    %{buffer | formatting_state: Formatting.update_style(buffer.formatting_state, style)}
+    %{
+      buffer
+      | formatting_state:
+          Formatting.update_style(buffer.formatting_state, style)
+    }
   end
 
   @impl true
   def set_attribute(buffer, attribute) do
-    %{buffer | formatting_state: Formatting.set_attribute(buffer.formatting_state, attribute)}
+    %{
+      buffer
+      | formatting_state:
+          Formatting.set_attribute(buffer.formatting_state, attribute)
+    }
   end
 
   @impl true
   def reset_attribute(buffer, attribute) do
-    %{buffer | formatting_state: Formatting.reset_attribute(buffer.formatting_state, attribute)}
+    %{
+      buffer
+      | formatting_state:
+          Formatting.reset_attribute(buffer.formatting_state, attribute)
+    }
   end
 
   @impl true
   def set_foreground(buffer, color) do
-    %{buffer | formatting_state: Formatting.set_foreground(buffer.formatting_state, color)}
+    %{
+      buffer
+      | formatting_state:
+          Formatting.set_foreground(buffer.formatting_state, color)
+    }
   end
 
   @impl true
   def set_background(buffer, color) do
-    %{buffer | formatting_state: Formatting.set_background(buffer.formatting_state, color)}
+    %{
+      buffer
+      | formatting_state:
+          Formatting.set_background(buffer.formatting_state, color)
+    }
   end
 
   @impl true
@@ -460,7 +511,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def update_current_state(buffer, state) do
-    %{buffer | terminal_state: State.update_current(buffer.terminal_state, state)}
+    %{
+      buffer
+      | terminal_state: State.update_current(buffer.terminal_state, state)
+    }
   end
 
   # --- Output Operations ---
@@ -486,7 +540,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def enqueue_control_sequence(buffer, sequence) do
-    %{buffer | output_buffer: Output.enqueue_control_sequence(buffer.output_buffer, sequence)}
+    %{
+      buffer
+      | output_buffer:
+          Output.enqueue_control_sequence(buffer.output_buffer, sequence)
+    }
   end
 
   # --- Cell Operations ---
@@ -513,17 +571,29 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def record_performance(buffer, metric, value) do
-    %{buffer | metrics_state: Metrics.record_performance(buffer.metrics_state, metric, value)}
+    %{
+      buffer
+      | metrics_state:
+          Metrics.record_performance(buffer.metrics_state, metric, value)
+    }
   end
 
   @impl true
   def record_operation(buffer, operation, value) do
-    %{buffer | metrics_state: Metrics.record_operation(buffer.metrics_state, operation, value)}
+    %{
+      buffer
+      | metrics_state:
+          Metrics.record_operation(buffer.metrics_state, operation, value)
+    }
   end
 
   @impl true
   def record_resource(buffer, resource, value) do
-    %{buffer | metrics_state: Metrics.record_resource(buffer.metrics_state, resource, value)}
+    %{
+      buffer
+      | metrics_state:
+          Metrics.record_resource(buffer.metrics_state, resource, value)
+    }
   end
 
   @impl true
@@ -533,7 +603,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def record_metric(buffer, metric, value, tags) do
-    %{buffer | metrics_state: Metrics.record(buffer.metrics_state, metric, value, tags)}
+    %{
+      buffer
+      | metrics_state: Metrics.record(buffer.metrics_state, metric, value, tags)
+    }
   end
 
   @impl true
@@ -544,17 +617,32 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   # --- File Watcher Operations ---
   @impl true
   def handle_file_event(buffer, event) do
-    %{buffer | file_watcher_state: FileWatcher.handle_event(buffer.file_watcher_state, event)}
+    %{
+      buffer
+      | file_watcher_state:
+          FileWatcher.handle_event(buffer.file_watcher_state, event)
+    }
   end
 
   @impl true
   def handle_debounced_events(buffer, events, timeout) do
-    %{buffer | file_watcher_state: FileWatcher.handle_debounced(buffer.file_watcher_state, events, timeout)}
+    %{
+      buffer
+      | file_watcher_state:
+          FileWatcher.handle_debounced(
+            buffer.file_watcher_state,
+            events,
+            timeout
+          )
+    }
   end
 
   @impl true
   def cleanup_file_watching(buffer) do
-    %{buffer | file_watcher_state: FileWatcher.cleanup(buffer.file_watcher_state)}
+    %{
+      buffer
+      | file_watcher_state: FileWatcher.cleanup(buffer.file_watcher_state)
+    }
   end
 
   # --- Screen Operations ---
@@ -572,7 +660,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   # --- Visualizer Operations ---
   @impl true
   def create_chart(buffer, data, options) do
-    %{buffer | visualizer_state: Visualizer.create_chart(buffer.visualizer_state, data, options)}
+    %{
+      buffer
+      | visualizer_state:
+          Visualizer.create_chart(buffer.visualizer_state, data, options)
+    }
   end
 
   # --- User Preferences Operations ---
@@ -617,7 +709,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   # --- CSI Handler Operations ---
   @impl true
   def handle_csi_sequence(buffer, sequence, params) do
-    %{buffer | csi_state: CSI.handle_sequence(buffer.csi_state, sequence, params)}
+    %{
+      buffer
+      | csi_state: CSI.handle_sequence(buffer.csi_state, sequence, params)
+    }
   end
 
   def unimplemented(_args), do: :ok

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Integration.State do
-  @moduledoc '''
+  @moduledoc """
   Manages the state of the integrated terminal system.
-  '''
+  """
 
   alias Raxol.Terminal.{
     Buffer.UnifiedManager,
@@ -36,9 +36,9 @@ defmodule Raxol.Terminal.Integration.State do
             input: nil,
             output: nil
 
-  @doc '''
+  @doc """
   Creates a new integration state with the given options.
-  '''
+  """
   @spec new(map()) :: t()
   def new(_opts \\ []) do
     # Create a new integration state
@@ -57,9 +57,9 @@ defmodule Raxol.Terminal.Integration.State do
     }
   end
 
-  @doc '''
+  @doc """
   Updates the integration state with new content.
-  '''
+  """
   @spec update(t(), String.t()) :: t()
   def update(%__MODULE__{} = state, content) do
     # Process content through IO system
@@ -74,9 +74,9 @@ defmodule Raxol.Terminal.Integration.State do
     %{state | buffer_manager: updated_buffer, scroll_buffer: updated_scroll}
   end
 
-  @doc '''
+  @doc """
   Gets the visible content from the current window.
-  '''
+  """
   @spec get_visible_content(t()) :: list()
   def get_visible_content(%__MODULE__{} = state) do
     case UnifiedWindow.get_active_window() do
@@ -97,25 +97,25 @@ defmodule Raxol.Terminal.Integration.State do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current scroll position.
-  '''
+  """
   @spec get_scroll_position(t()) :: integer()
   def get_scroll_position(%__MODULE__{} = state) do
     UnifiedScroll.get_position(state.scroll_buffer)
   end
 
-  @doc '''
+  @doc """
   Gets the current memory usage.
-  '''
+  """
   @spec get_memory_usage(t()) :: integer()
   def get_memory_usage(%__MODULE__{} = state) do
     UnifiedManager.get_memory_usage(state.buffer_manager)
   end
 
-  @doc '''
+  @doc """
   Renders the current state.
-  '''
+  """
   @spec render(t()) :: t()
   def render(%__MODULE__{} = state) do
     case UnifiedWindow.get_active_window() do
@@ -135,18 +135,18 @@ defmodule Raxol.Terminal.Integration.State do
     end
   end
 
-  @doc '''
+  @doc """
   Updates the renderer configuration.
-  '''
+  """
   @spec update_renderer_config(t(), map()) :: t()
   def update_renderer_config(%__MODULE__{} = state, config) do
     UnifiedRenderer.update_config(state.renderer, config)
     state
   end
 
-  @doc '''
+  @doc """
   Resizes the terminal.
-  '''
+  """
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(%__MODULE__{} = state, width, height) do
     case UnifiedWindow.get_active_window() do
@@ -160,9 +160,9 @@ defmodule Raxol.Terminal.Integration.State do
     end
   end
 
-  @doc '''
+  @doc """
   Cleans up resources.
-  '''
+  """
   @spec cleanup(t()) :: :ok
   def cleanup(%__MODULE__{} = state) do
     UnifiedManager.cleanup(state.buffer_manager)

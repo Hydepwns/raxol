@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
+  @moduledoc """
+  Tests for the clipboard plugin, including initialization, termination,
+  command handling, and clipboard operations.
+  """
   use ExUnit.Case, async: true
   import Mox
   import Raxol.Test.Support.ClipboardHelpers
@@ -23,7 +27,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   end
 
   describe "get_commands/0" do
-    test 'returns the expected clipboard commands' do
+    test "returns the expected clipboard commands" do
       commands = ClipboardPlugin.get_commands()
       assert :clipboard_write in commands
       assert :clipboard_read in commands

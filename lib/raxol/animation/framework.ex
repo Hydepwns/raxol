@@ -1,5 +1,5 @@
 defmodule Raxol.Animation.Framework do
-  @moduledoc '''
+  @moduledoc """
   Coordinates the lifecycle of animations within Raxol.
 
   This module acts as the main entry point for creating, starting, stopping,
@@ -48,7 +48,7 @@ defmodule Raxol.Animation.Framework do
   When you start the animation for a specific element, the framework will automatically scope the path to that element:
   - If you pass `element_id = "foo"` and `target_path = [:opacity]`, the animation will update `[:elements, "foo", :opacity]` in your state.
   - If you provide a fully qualified path (e.g., `[:elements, "foo", :opacity]`), it will be used as-is.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Accessibility
@@ -58,7 +58,7 @@ defmodule Raxol.Animation.Framework do
   @animation_fps 30
   @animation_frame_ms round(1000 / @animation_fps)
 
-  @doc '''
+  @doc """
   Initialize the animation framework.
 
   This sets up the necessary state for tracking animations and
@@ -78,7 +78,7 @@ defmodule Raxol.Animation.Framework do
 
       iex> AnimationFramework.init(reduced_motion: true)
       :ok
-  '''
+  """
   def init(opts \\ %{}, user_preferences_pid \\ nil) do
     Raxol.Core.Runtime.Log.debug("Initializing animation framework...")
 
@@ -118,7 +118,7 @@ defmodule Raxol.Animation.Framework do
     :ok
   end
 
-  @doc '''
+  @doc """
   Create a new animation.
 
   ## Parameters
@@ -161,7 +161,7 @@ defmodule Raxol.Animation.Framework do
         direction: :in,
         target_path: [:opacity]
       }
-  '''
+  """
   def create_animation(name, params) do
     # Get default settings via StateManager
     settings = StateManager.get_settings()
@@ -185,7 +185,7 @@ defmodule Raxol.Animation.Framework do
     animation
   end
 
-  @doc '''
+  @doc """
   Start an animation for a specific element.
 
   ## Parameters
@@ -212,7 +212,7 @@ defmodule Raxol.Animation.Framework do
 
       iex> AnimationFramework.start_animation(:slide_in, "panel", %{on_complete: &handle_complete/1}, user_preferences_pid)
       :ok
-  '''
+  """
   def start_animation(
         animation_name,
         element_id,
@@ -244,7 +244,7 @@ defmodule Raxol.Animation.Framework do
       # Build animation instance
       instance = %{
         animation: adapted_animation,
-        start_time: System.monotonic_time(:millisecond),
+        start_time: System.unique_integer([:positive]),
         on_complete: Map.get(opts, :on_complete),
         context: Map.get(opts, :context)
       }
@@ -336,7 +336,7 @@ defmodule Raxol.Animation.Framework do
     end
   end
 
-  @doc '''
+  @doc """
   Update animations and apply their current values to the state.
 
   ## Parameters
@@ -347,7 +347,7 @@ defmodule Raxol.Animation.Framework do
   ## Returns
 
   Updated state with animation values applied.
-  '''
+  """
   def apply_animations_to_state(state, user_preferences_pid \\ nil) do
     now = System.monotonic_time(:millisecond)
     active_animations = StateManager.get_active_animations()
@@ -532,7 +532,7 @@ defmodule Raxol.Animation.Framework do
     end
   end
 
-  @doc '''
+  @doc """
   Stops a specific animation for an element.
 
   ## Parameters
@@ -544,7 +544,7 @@ defmodule Raxol.Animation.Framework do
 
       iex> AnimationFramework.stop_animation(:fade_in, "search_button")
       :ok
-  '''
+  """
   def stop_animation(animation_name, element_id) do
     # Use StateManager to remove the animation
     StateManager.remove_active_animation(element_id, animation_name)
@@ -554,7 +554,7 @@ defmodule Raxol.Animation.Framework do
     :ok
   end
 
-  @doc '''
+  @doc """
   Gets the current value and completion status of an animation instance.
 
   ## Parameters
@@ -571,7 +571,7 @@ defmodule Raxol.Animation.Framework do
 
       iex> AnimationFramework.get_current_value(:fade_in, "search_button")
       {0.5, false}
-  '''
+  """
   def get_current_value(animation_name, element_id) do
     # Get all active animations via StateManager
     active_animations = StateManager.get_active_animations()
@@ -666,9 +666,9 @@ defmodule Raxol.Animation.Framework do
     cognitive_pref
   end
 
-  @doc '''
+  @doc """
   Stops all animations and clears animation state. Used for test cleanup.
-  '''
+  """
   def stop do
     Raxol.Animation.StateManager.clear_all()
     :ok

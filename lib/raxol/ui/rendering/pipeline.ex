@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Rendering.Pipeline do
-  @moduledoc '''
+  @moduledoc """
   Manages the rendering pipeline for the UI as a GenServer.
 
   ## Pipeline Stages (Planned)
@@ -30,7 +30,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   - Integrate animation frame scheduling (request_animation_frame now uses GenServer.call with deferred reply from :animation_tick; this is more robust.)
   - Store and manage pipeline state (previous tree, pending updates, etc.) (GenServer state has current_tree, previous_tree)
   - Connect to the real rendering backend (commit stage calls a renderer module)
-  '''
+  """
 
   use GenServer
 
@@ -62,9 +62,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # Public API
 
-  @doc '''
+  @doc """
   Starts the rendering pipeline GenServer. Registers under the module name by default.
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(
       __MODULE__,
@@ -73,9 +73,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
     )
   end
 
-  @doc '''
+  @doc """
   Child spec for supervision trees.
-  '''
+  """
   def child_spec(opts \\ []) do
     %{
       id: __MODULE__,
@@ -86,25 +86,25 @@ defmodule Raxol.UI.Rendering.Pipeline do
     }
   end
 
-  @doc '''
+  @doc """
   Updates the UI tree in the pipeline and triggers a render.
-  '''
+  """
   @spec update_tree(tree :: map()) :: :ok
   def update_tree(tree) do
     GenServer.cast(__MODULE__, {:update_tree, tree})
   end
 
-  @doc '''
+  @doc """
   Triggers a render with the current UI tree (or provided data).
-  '''
+  """
   @spec trigger_render(data :: any()) :: :ok
   def trigger_render(data \\ nil) do
     GenServer.cast(__MODULE__, {:trigger_render, data})
   end
 
-  @doc '''
+  @doc """
   Applies animation settings (delegates to Renderer).
-  '''
+  """
   @spec apply_animation_settings(
           atom() | nil,
           String.t() | nil,
@@ -140,7 +140,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     :ok
   end
 
-  @doc '''
+  @doc """
   Computes the minimal set of changes (diff) between two UI trees.
 
   Returns:
@@ -149,7 +149,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     * {:update, path, changes} for subtree updates (path is a list of indices)
 
   TODO: Support keyed children, reordering, and more granular diffs.
-  '''
+  """
   @spec diff_trees(old_tree :: map() | nil, new_tree :: map() | nil) ::
           :no_change
           | {:replace, map()}
@@ -157,21 +157,21 @@ defmodule Raxol.UI.Rendering.Pipeline do
   def diff_trees(old_tree, new_tree),
     do: TreeDiffer.diff_trees(old_tree, new_tree)
 
-  @doc '''
+  @doc """
   Requests notification on the next animation frame. The caller will receive {:animation_frame, ref}.
   Returns a unique reference for the request.
-  '''
+  """
   @spec request_animation_frame(pid()) ::
           {:animation_frame, reference()} | {:error, any()}
   def request_animation_frame(pid \\ self()) do
-    ref = make_ref()
+    ref = System.unique_integer([:positive])
     GenServer.call(__MODULE__, {:request_animation_frame, pid, ref})
   end
 
-  @doc '''
+  @doc """
   Schedules a render to occur on the next animation frame.
   Only one render will be scheduled per frame, regardless of how many times this is called before the next frame.
-  '''
+  """
   @spec schedule_render_on_next_frame() :: :ok
   def schedule_render_on_next_frame do
     GenServer.cast(__MODULE__, :schedule_render_on_next_frame)
@@ -180,11 +180,11 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # --- Pipeline Stages (Stubbed) ---
 
-  @doc '''
+  @doc """
   Commits the final output to the Renderer process for display.
   This is where the pipeline would send the output (a list of paint operations)
   to the configured renderer.
-  '''
+  """
   @spec commit(painted_output :: list(map()), renderer :: module()) :: :ok
   # Updated default usage
   def commit(painted_output, renderer \\ @default_renderer) do
@@ -200,19 +200,19 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # --- Extension Points ---
 
-  @doc '''
+  @doc """
   Sets the renderer module to use for output (default: Raxol.UI.Rendering.Renderer).
   This allows for custom renderers or output backends.
-  '''
+  """
   @spec set_renderer(module()) :: :ok
   def set_renderer(renderer_module) do
     Application.put_env(:raxol, :renderer_module, renderer_module)
     :ok
   end
 
-  @doc '''
+  @doc """
   Gets the current renderer module (default: Raxol.UI.Rendering.Renderer).
-  '''
+  """
   @spec get_renderer() :: module()
   def get_renderer do
     Application.get_env(:raxol, :renderer_module, @default_renderer)
@@ -363,105 +363,109 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   @impl true
   def handle_info(
-        {:deferred_render, diff_result, new_tree_for_reference},
+        {:deferred_render, diff_result, new_tree_for_reference, timer_id},
         state
       ) do
-    Raxol.Core.Runtime.Log.debug("Pipeline: Executing deferred render.")
-    new_state_after_clear = %{state | render_timer_ref: nil}
+    if state.render_timer_ref == timer_id do
+      {painted_data, composed_data} =
+        execute_render_stages(
+          diff_result,
+          new_tree_for_reference,
+          state.renderer_module,
+          state.previous_composed_tree,
+          state.previous_painted_output
+        )
 
-    {painted_data, composed_data} =
-      execute_render_stages(
-        diff_result,
-        new_tree_for_reference,
-        state.renderer_module,
-        state.previous_composed_tree,
-        state.previous_painted_output
-      )
+      new_state = %{
+        state
+        | last_render_time: System.monotonic_time(:millisecond),
+          render_timer_ref: nil,
+          render_scheduled_for_next_frame: false,
+          previous_composed_tree: composed_data,
+          previous_painted_output: painted_data
+      }
 
-    final_state = %{
-      new_state_after_clear
-      | last_render_time: System.monotonic_time(:millisecond),
-        previous_composed_tree: composed_data,
-        previous_painted_output: painted_data
-    }
-
-    {:noreply, final_state}
+      {:noreply, new_state}
+    else
+      {:noreply, state}
+    end
   end
 
   @impl true
-  def handle_info(:animation_tick, state) do
-    Raxol.Core.Runtime.Log.debug("Pipeline: Animation tick.")
-    # Capture initial state for decision on rescheduling
-    initial_requests_q = state.animation_frame_requests
-    initial_render_scheduled = state.render_scheduled_for_next_frame
+  def handle_info({:animation_tick, timer_id}, state) do
+    if state.animation_ticker_ref == timer_id do
+      # Process all queued animation frame requests
+      responses = :queue.to_list(state.animation_frame_requests)
+      remaining_requests_q = :queue.new()
 
-    # Process all queued animation frame requests
-    responses = :queue.to_list(initial_requests_q)
-    remaining_requests_q = :queue.new()
-
-    # Added 'from'
-    for {pid, ref, from} <- responses do
-      Raxol.Core.Runtime.Log.debug(
-        "Pipeline: Sending :animation_frame to #{inspect(pid)}, ref #{inspect(ref)} via GenServer.reply to #{inspect(from)}"
-      )
-
-      GenServer.reply(from, {:animation_frame, ref})
-    end
-
-    current_state = %{
-      state
-      | animation_frame_requests: remaining_requests_q,
-        animation_ticker_ref: nil
-    }
-
-    # Process render if scheduled for next frame
-    final_state =
-      if initial_render_scheduled and current_state.current_tree do
+      # Added 'from'
+      for {pid, ref, from} <- responses do
         Raxol.Core.Runtime.Log.debug(
-          "Pipeline: Animation tick triggering scheduled render."
+          "Pipeline: Sending :animation_frame to #{inspect(pid)}, ref #{inspect(ref)} via GenServer.reply to #{inspect(from)}"
         )
 
-        # Pass the full state to schedule_or_execute_render so it can manage its own state updates (like last_render_time)
-        # The diff should be against the previous tree state before this current_tree was set.
-        # For simplicity in this tick, we'll treat it as a full replace of the current tree.
-        # A more sophisticated approach might store the pending diff that led to scheduling.
-        render_state =
-          schedule_or_execute_render(
-            # Treat as full render for simplicity in tick
-            {:replace, current_state.current_tree},
-            current_state.current_tree,
-            # Reset flag before render call
-            %{current_state | render_scheduled_for_next_frame: false}
-          )
-
-        render_state
-      else
-        current_state
+        GenServer.reply(from, {:animation_frame, ref})
       end
 
-    # Reschedule the ticker if there were requests or a render was scheduled (even if not performed due to no tree)
-    # Or if there are still pending requests (though current logic clears them all)
-    if :queue.is_empty(initial_requests_q) == false or initial_render_scheduled do
-      %{
-        final_state
-        | animation_ticker_ref:
-            Process.send_after(
-              self(),
-              :animation_tick,
-              @animation_tick_interval_ms
-            )
+      current_state = %{
+        state
+        | animation_frame_requests: remaining_requests_q,
+          animation_ticker_ref: nil
       }
-    else
-      # No work was done, no new requests during this tick processing (unlikely), so ticker can stop.
-      # It will be restarted by new requests or schedule_render_on_next_frame.
-      Raxol.Core.Runtime.Log.debug(
-        "Pipeline: Animation ticker stopping as no work was done or pending."
-      )
 
-      # animation_ticker_ref is already nil or will be set by ensure_animation_ticker_running if new requests come in
-      final_state
+      # Process render if scheduled for next frame
+      final_state =
+        if current_state.render_scheduled_for_next_frame and
+             current_state.current_tree do
+          Raxol.Core.Runtime.Log.debug(
+            "Pipeline: Animation tick triggering scheduled render."
+          )
+
+          # Pass the full state to schedule_or_execute_render so it can manage its own state updates (like last_render_time)
+          # The diff should be against the previous tree state before this current_tree was set.
+          # For simplicity in this tick, we'll treat it as a full replace of the current tree.
+          # A more sophisticated approach might store the pending diff that led to scheduling.
+          render_state =
+            schedule_or_execute_render(
+              # Treat as full render for simplicity in tick
+              {:replace, current_state.current_tree},
+              current_state.current_tree,
+              # Reset flag before render call
+              %{current_state | render_scheduled_for_next_frame: false}
+            )
+
+          render_state
+        else
+          current_state
+        end
+
+      # Reschedule the ticker if there were requests or a render was scheduled (even if not performed due to no tree)
+      # Or if there are still pending requests (though current logic clears them all)
+      if :queue.is_empty(state.animation_frame_requests) == false do
+        new_timer_id = System.unique_integer([:positive])
+
+        Process.send_after(
+          self(),
+          {:animation_tick, new_timer_id},
+          @animation_tick_interval_ms
+        )
+
+        # Store timer_id in state if needed
+        final_state
+      else
+        # No work was done, no new requests during this tick processing (unlikely), so ticker can stop.
+        # It will be restarted by new requests or schedule_render_on_next_frame.
+        Raxol.Core.Runtime.Log.debug(
+          "Pipeline: Animation ticker stopping as no work was done or pending."
+        )
+
+        # animation_ticker_ref is already nil or will be set by ensure_animation_ticker_running if new requests come in
+        final_state
+      end
+      |> then(&{:noreply, &1})
+    else
+      {:noreply, state}
     end
-    |> then(&{:noreply, &1})
   end
 
   ## Private Helpers
@@ -508,14 +512,15 @@ defmodule Raxol.UI.Rendering.Pipeline do
       if state.render_timer_ref,
         do: Process.cancel_timer(state.render_timer_ref)
 
-      timer_ref =
-        Process.send_after(
-          self(),
-          {:deferred_render, diff_result, new_tree_for_reference},
-          delay
-        )
+      timer_id = System.unique_integer([:positive])
 
-      %{state | render_timer_ref: timer_ref}
+      Process.send_after(
+        self(),
+        {:deferred_render, diff_result, new_tree_for_reference, timer_id},
+        delay
+      )
+
+      %{state | render_timer_ref: timer_id}
     end
   end
 
@@ -585,10 +590,15 @@ defmodule Raxol.UI.Rendering.Pipeline do
         "Pipeline: Animation ticker not running, starting it."
       )
 
-      new_ticker_ref =
-        Process.send_after(self(), :animation_tick, @animation_tick_interval_ms)
+      timer_id = System.unique_integer([:positive])
 
-      %{state | animation_ticker_ref: new_ticker_ref}
+      Process.send_after(
+        self(),
+        {:animation_tick, timer_id},
+        @animation_tick_interval_ms
+      )
+
+      %{state | animation_ticker_ref: timer_id}
     else
       Raxol.Core.Runtime.Log.debug(
         "Pipeline: Animation ticker already running."

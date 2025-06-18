@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   alias Raxol.Terminal.Cursor.Manager
 
   describe "new/0" do
-    test 'creates a new cursor manager with default values' do
+    test ~c"creates a new cursor manager with default values" do
       cursor = Manager.new()
       assert cursor.position == {0, 0}
       assert cursor.saved_position == nil
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "move_to/3" do
-    test 'moves the cursor to a new position' do
+    test ~c"moves the cursor to a new position" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       assert cursor.position == {10, 5}
@@ -27,7 +27,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "save_position/1" do
-    test 'saves the current cursor position' do
+    test ~c"saves the current cursor position" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       cursor = Manager.save_position(cursor)
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "restore_position/1" do
-    test 'restores the saved cursor position' do
+    test ~c"restores the saved cursor position" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       cursor = Manager.save_position(cursor)
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       assert cursor.position == {10, 5}
     end
 
-    test 'returns cursor unchanged if no saved position' do
+    test ~c"returns cursor unchanged if no saved position" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       restored = Manager.restore_position(cursor)
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "set_style/2" do
-    test 'sets the cursor style to block' do
+    test ~c"sets the cursor style to block" do
       cursor = Manager.new()
       cursor = Manager.set_style(cursor, :block)
       assert cursor.style == :block
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       assert cursor.custom_shape == nil
     end
 
-    test 'sets the cursor style to underline' do
+    test ~c"sets the cursor style to underline" do
       cursor = Manager.new()
       cursor = Manager.set_style(cursor, :underline)
       assert cursor.style == :underline
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       assert cursor.custom_shape == nil
     end
 
-    test 'sets the cursor style to bar' do
+    test ~c"sets the cursor style to bar" do
       cursor = Manager.new()
       cursor = Manager.set_style(cursor, :bar)
       assert cursor.style == :bar
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "set_custom_shape/3" do
-    test 'sets a custom cursor shape' do
+    test ~c"sets a custom cursor shape" do
       cursor = Manager.new()
       cursor = Manager.set_custom_shape(cursor, "█", {2, 1})
       assert cursor.style == :custom
@@ -90,19 +90,19 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "set_state/2" do
-    test 'sets the cursor state to visible' do
+    test ~c"sets the cursor state to visible" do
       cursor = Manager.new()
       cursor = Manager.set_state(cursor, :visible)
       assert cursor.state == :visible
     end
 
-    test 'sets the cursor state to hidden' do
+    test ~c"sets the cursor state to hidden" do
       cursor = Manager.new()
       cursor = Manager.set_state(cursor, :hidden)
       assert cursor.state == :hidden
     end
 
-    test 'sets the cursor state to blinking' do
+    test ~c"sets the cursor state to blinking" do
       cursor = Manager.new()
       cursor = Manager.set_state(cursor, :blinking)
       assert cursor.state == :blinking
@@ -110,21 +110,21 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "update_blink/1" do
-    test 'returns true for visible cursor' do
+    test ~c"returns true for visible cursor" do
       cursor = Manager.new()
       cursor = Manager.set_state(cursor, :visible)
       {_cursor, visible} = Manager.update_blink(cursor)
       assert visible == true
     end
 
-    test 'returns false for hidden cursor' do
+    test ~c"returns false for hidden cursor" do
       cursor = Manager.new()
       cursor = Manager.set_state(cursor, :hidden)
       {_cursor, visible} = Manager.update_blink(cursor)
       assert visible == false
     end
 
-    test 'toggles visibility for blinking cursor' do
+    test ~c"toggles visibility for blinking cursor" do
       # Create a cursor with a very short blink rate for testing
       cursor = %{Manager.new() | blink_rate: 50}
       cursor = Manager.set_state(cursor, :blinking)
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "add_to_history/1" do
-    test 'adds the current cursor state to history' do
+    test ~c"adds the current cursor state to history" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       cursor = Manager.set_style(cursor, :underline)
@@ -159,7 +159,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
   end
 
   describe "restore_from_history/1" do
-    test 'restores the cursor state from history' do
+    test ~c"restores the cursor state from history" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       cursor = Manager.set_style(cursor, :underline)
@@ -173,7 +173,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       assert cursor.style == :underline
     end
 
-    test 'returns cursor unchanged if history is empty' do
+    test ~c"returns cursor unchanged if history is empty" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       restored = Manager.restore_from_history(cursor)

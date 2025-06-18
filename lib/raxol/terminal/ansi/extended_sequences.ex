@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.ExtendedSequences do
-  @moduledoc '''
+  @moduledoc """
   Handles extended ANSI sequences and provides improved integration with the screen buffer.
   This module adds support for:
   - Extended SGR attributes (90-97, 100-107)
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   - Unicode handling
   - Terminal state management
   - Improved cursor control
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.{Monitor}
@@ -39,13 +39,13 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
 
   # --- Public API ---
 
-  @doc '''
+  @doc """
   Processes extended SGR (Select Graphic Rendition) parameters.
   Supports:
   - Extended colors (90-97, 100-107)
   - True color (24-bit RGB)
   - Additional attributes
-  '''
+  """
   @spec process_extended_sgr(list(String.t()), ScreenBuffer.t()) ::
           ScreenBuffer.t()
   def process_extended_sgr(params, buffer) do
@@ -62,9 +62,9 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     end
   end
 
-  @doc '''
+  @doc """
   Processes true color sequences (24-bit RGB).
-  '''
+  """
   @spec process_true_color(String.t(), String.t(), ScreenBuffer.t()) ::
           ScreenBuffer.t()
   def process_true_color(type, color_str, buffer) do
@@ -91,9 +91,9 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     end
   end
 
-  @doc '''
+  @doc """
   Handles Unicode character sequences.
-  '''
+  """
   @spec process_unicode(String.t(), ScreenBuffer.t()) :: ScreenBuffer.t()
   def process_unicode(char, buffer) do
     try do
@@ -115,9 +115,9 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     end
   end
 
-  @doc '''
+  @doc """
   Processes terminal state changes.
-  '''
+  """
   @spec process_terminal_state(String.t(), ScreenBuffer.t()) :: ScreenBuffer.t()
   def process_terminal_state(state, buffer) do
     try do
@@ -190,6 +190,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   defp calculate_extended_color(color) when color >= 100 do
     {:background, color - 100 + 8}
   end
+
   defp calculate_extended_color(color) do
     {:foreground, color - 90 + 8}
   end

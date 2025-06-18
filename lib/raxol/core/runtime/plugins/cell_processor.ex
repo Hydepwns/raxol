@@ -1,11 +1,11 @@
 defmodule Raxol.Core.Runtime.Plugins.CellProcessor do
-  @moduledoc '''
+  @moduledoc """
   This module is responsible for processing cells in the Raxol runtime.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Process a cell with the given data.
-  '''
+  """
   def process_cell(cell_data) do
     case cell_data do
       %{type: :placeholder, value: value} = cell ->

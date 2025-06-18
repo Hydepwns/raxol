@@ -1,5 +1,5 @@
 defmodule Raxol.Style.Colors.Advanced do
-  @moduledoc '''
+  @moduledoc """
   Provides advanced color handling capabilities for the terminal.
 
   Features:
@@ -8,7 +8,7 @@ defmodule Raxol.Style.Colors.Advanced do
   - Enhanced color adaptation
   - Color space conversions
   - Color harmony generation
-  '''
+  """
 
   alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.{Adaptive}
@@ -16,7 +16,7 @@ defmodule Raxol.Style.Colors.Advanced do
 
   @type color :: Color.t()
 
-  @doc '''
+  @doc """
   Blends two colors together with the given ratio.
 
   ## Parameters
@@ -32,7 +32,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> blended = Advanced.blend_colors(color1, color2, 0.5)
       iex> blended.hex
       "#800080"  # Purple
-  '''
+  """
   def blend_colors(%Color{} = color1, %Color{} = color2, ratio)
       when ratio >= 0 and ratio <= 1 do
     r = round(color1.r * (1 - ratio) + color2.r * ratio)
@@ -42,7 +42,7 @@ defmodule Raxol.Style.Colors.Advanced do
     Color.from_rgb(r, g, b)
   end
 
-  @doc '''
+  @doc """
   Creates a gradient between two colors with the specified number of steps.
 
   ## Parameters
@@ -58,7 +58,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> gradient = Advanced.create_gradient(color1, color2, 3)
       iex> Enum.map(gradient, & &1.hex)
       ["#FF0000", "#800080", "#0000FF"]
-  '''
+  """
   def create_gradient(%Color{} = color1, %Color{} = color2, steps)
       when steps > 1 do
     step_size = 1.0 / (steps - 1)
@@ -69,7 +69,7 @@ defmodule Raxol.Style.Colors.Advanced do
     end
   end
 
-  @doc '''
+  @doc """
   Converts a color to a different color space.
 
   ## Parameters
@@ -83,7 +83,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> hsl = Advanced.convert_color_space(color, :hsl)
       iex> hsl
       %{h: 0, s: 100, l: 50}
-  '''
+  """
   def convert_color_space(%Color{} = color, target_space) do
     case target_space do
       :rgb -> color
@@ -93,7 +93,7 @@ defmodule Raxol.Style.Colors.Advanced do
     end
   end
 
-  @doc '''
+  @doc """
   Creates a color harmony based on the input color.
 
   ## Parameters
@@ -107,94 +107,110 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> harmony = Advanced.create_harmony(color, :complementary)
       iex> Enum.map(harmony, & &1.hex)
       ["#FF0000", "#00FFFF"]
-  '''
+  """
   def create_harmony(color, type, opts \\ []) do
     angle = Keyword.get(opts, :angle, harmony_angle(type))
     %{h: h, s: s_orig, l: l_orig} = rgb_to_hsl(color)
-
-    # Scale s and l to 0.0-1.0 for hsl_to_rgb which expects this range
     s = s_orig / 100.0
     l = l_orig / 100.0
 
-    # Normalize hues to ensure they are in the 0-359 range
-    hue1 = normalize_hue(h - angle)
-    hue2 = normalize_hue(h + angle)
-
-    harmony_colors =
-      case type do
-        :complementary ->
-          [color | [hsl_to_rgb({hue2, s, l})]]
-
-        :analogous ->
-          [color | [hsl_to_rgb({hue1, s, l}), hsl_to_rgb({hue2, s, l})]]
-
-        :triadic ->
-          [color | [hsl_to_rgb({hue1, s, l}), hsl_to_rgb({hue2, s, l})]]
-
-        :split_complementary ->
-          comp_hue = normalize_hue(h + 180)
-          split1 = normalize_hue(comp_hue - angle)
-          split2 = normalize_hue(comp_hue + angle)
-          [color | [hsl_to_rgb({split1, s, l}), hsl_to_rgb({split2, s, l})]]
-
-        :tetradic ->
-          hue3 = normalize_hue(h + 180)
-          hue4 = normalize_hue(hue3 + angle)
-
-          [
-            color
-            | [
-                hsl_to_rgb({hue2, s, l}),
-                hsl_to_rgb({hue3, s, l}),
-                hsl_to_rgb({hue4, s, l})
-              ]
-          ]
-
-        :square ->
-          hue2_sq = normalize_hue(h + 90)
-          hue3_sq = normalize_hue(h + 180)
-          hue4_sq = normalize_hue(h + 270)
-
-          [
-            color
-            | [
-                hsl_to_rgb({hue2_sq, s, l}),
-                hsl_to_rgb({hue3_sq, s, l}),
-                hsl_to_rgb({hue4_sq, s, l})
-              ]
-          ]
-      end
-
+    harmony_colors = generate_harmony_colors(h, s, l, type, angle)
     preserve_brightness = Keyword.get(opts, :preserve_brightness, false)
 
     if preserve_brightness do
-      # Adjust lightness of harmony colors to match the original color's lightness
-      Enum.map(harmony_colors, fn harmony_color ->
-        %{h: h_harmony, s: s_harmony} = rgb_to_hsl(harmony_color)
-        # Use original lightness l
-        hsl_to_rgb({h_harmony, s_harmony, l})
-      end)
+      adjust_harmony_brightness(harmony_colors, l)
     else
       harmony_colors
     end
   end
 
+  defp generate_harmony_colors(h, s, l, type, angle) do
+    case type do
+      :complementary ->
+        [hsl_to_rgb({h, s, l}) | [hsl_to_rgb({normalize_hue(h + angle), s, l})]]
+
+      :analogous ->
+        [
+          hsl_to_rgb({h, s, l})
+          | [
+              hsl_to_rgb({normalize_hue(h - angle), s, l}),
+              hsl_to_rgb({normalize_hue(h + angle), s, l})
+            ]
+        ]
+
+      :triadic ->
+        [
+          hsl_to_rgb({h, s, l})
+          | [
+              hsl_to_rgb({normalize_hue(h - angle), s, l}),
+              hsl_to_rgb({normalize_hue(h + angle), s, l})
+            ]
+        ]
+
+      :split_complementary ->
+        comp_hue = normalize_hue(h + 180)
+        split1 = normalize_hue(comp_hue - angle)
+        split2 = normalize_hue(comp_hue + angle)
+
+        [
+          hsl_to_rgb({h, s, l})
+          | [hsl_to_rgb({split1, s, l}), hsl_to_rgb({split2, s, l})]
+        ]
+
+      :tetradic ->
+        hue3 = normalize_hue(h + 180)
+        hue4 = normalize_hue(hue3 + angle)
+
+        [
+          hsl_to_rgb({h, s, l})
+          | [
+              hsl_to_rgb({normalize_hue(h + angle), s, l}),
+              hsl_to_rgb({hue3, s, l}),
+              hsl_to_rgb({hue4, s, l})
+            ]
+        ]
+
+      :square ->
+        [hsl_to_rgb({h, s, l}) | generate_square_harmony(h, s, l)]
+    end
+  end
+
+  defp generate_square_harmony(h, s, l) do
+    [
+      hsl_to_rgb({normalize_hue(h + 90), s, l}),
+      hsl_to_rgb({normalize_hue(h + 180), s, l}),
+      hsl_to_rgb({normalize_hue(h + 270), s, l})
+    ]
+  end
+
+  defp adjust_harmony_brightness(harmony_colors, target_l) do
+    harmony_colors
+    |> Enum.flat_map(fn harmony_color ->
+      %{h: h_harmony, s: s_harmony} = rgb_to_hsl(harmony_color)
+      angle = harmony_angle(:complementary)
+      hue1 = normalize_hue(h_harmony - angle)
+      hue2 = normalize_hue(h_harmony + angle)
+
+      [
+        hsl_to_rgb({hue1, s_harmony, target_l}),
+        hsl_to_rgb({hue2, s_harmony, target_l})
+      ]
+    end)
+  end
+
   defp harmony_angle(:complementary), do: 180
   defp harmony_angle(:analogous), do: 30
   defp harmony_angle(:triadic), do: 120
-  # Angle for splitting the complement
   defp harmony_angle(:split_complementary), do: 30
-  # Smaller angle for rectangular tetrad
   defp harmony_angle(:tetradic), do: 60
   defp harmony_angle(:square), do: 90
 
-  # Helper to normalize hue to 0-359 range
   defp normalize_hue(hue) do
     normalized = rem(round(hue), 360)
     if normalized < 0, do: normalized + 360, else: normalized
   end
 
-  @doc '''
+  @doc """
   Adapts a color to the current terminal capabilities with advanced options.
 
   ## Parameters
@@ -211,7 +227,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> adapted = Advanced.adapt_color_advanced(color, preserve_brightness: true)
       iex> adapted.hex
       "#FF0000"  # If terminal supports true color
-  '''
+  """
   def adapt_color_advanced(%Color{} = color, options \\ []) do
     preserve_brightness = Keyword.get(options, :preserve_brightness, false)
     enhance_contrast = Keyword.get(options, :enhance_contrast, false)
@@ -312,46 +328,43 @@ defmodule Raxol.Style.Colors.Advanced do
   end
 
   defp rgb_to_xyz(%Color{r: r, g: g, b: b}) do
-    # Convert RGB to XYZ
-    # This is a simplified conversion - a full implementation would be more complex
-    r =
-      if r > 10.3148,
-        do: :math.pow((r + 14.025) / 269.025, 2.4),
-        else: r / 3294.6
-
-    g =
-      if g > 10.3148,
-        do: :math.pow((g + 14.025) / 269.025, 2.4),
-        else: g / 3294.6
-
-    b =
-      if b > 10.3148,
-        do: :math.pow((b + 14.025) / 269.025, 2.4),
-        else: b / 3294.6
-
+    # Convert RGB to XYZ using standard conversion matrix
     x = r * 0.4124 + g * 0.3576 + b * 0.1805
     y = r * 0.2126 + g * 0.7152 + b * 0.0722
     z = r * 0.0193 + g * 0.1192 + b * 0.9505
 
-    %{x: x * 100, y: y * 100, z: z * 100}
+    %{x: x, y: y, z: z}
+  end
+
+  defp xyz_to_lab(%{x: x, y: y, z: z}) do
+    # Convert XYZ to Lab using standard conversion
+    x = if x > +0.008856, do: :math.pow(x, 1 / 3), else: 7.787 * x + 16 / 116
+    y = if y > +0.008856, do: :math.pow(y, 1 / 3), else: 7.787 * y + 16 / 116
+    z = if z > +0.008856, do: :math.pow(z, 1 / 3), else: 7.787 * z + 16 / 116
+
+    l = 116 * y - 16
+    a = 500 * (x - y)
+    b = 200 * (y - z)
+
+    %{l: l, a: a, b: b}
   end
 
   defp maybe_preserve_brightness(color, true) do
-    # Implement brightness preservation logic
+    # TODO: Implement brightness preservation logic
     color
   end
 
   defp maybe_preserve_brightness(color, false), do: color
 
   defp maybe_enhance_contrast(color, true) do
-    # Implement contrast enhancement logic
+    # TODO: Implement contrast enhancement logic
     color
   end
 
   defp maybe_enhance_contrast(color, false), do: color
 
   defp maybe_make_color_blind_safe(color, true) do
-    # Implement color blind safety logic
+    # TODO: Implement color blind safety logic
     color
   end
 

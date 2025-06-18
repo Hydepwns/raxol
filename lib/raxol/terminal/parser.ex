@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Parser do
-  @moduledoc '''
+  @moduledoc """
   Parses raw byte streams into terminal events and commands.
   Handles escape sequences (CSI, OSC, DCS, etc.) and plain text.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.States.GroundState
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Parser do
 
   # --- Public API ---
 
-  @doc '''
+  @doc """
   Parses a chunk of input data, updating the parser state and emulator.
 
   Takes the current emulator state and input binary, returns the updated emulator state
@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Parser do
 
   Takes the emulator state, the *current* parser state, and the input binary.
   Returns `{final_emulator_state, final_parser_state}`.
-  '''
+  """
   @spec parse_chunk(Emulator.t(), Raxol.Terminal.Parser.State.t(), String.t()) ::
           {Emulator.t(), Raxol.Terminal.Parser.State.t(), String.t()}
   def parse_chunk(emulator, nil, data) do

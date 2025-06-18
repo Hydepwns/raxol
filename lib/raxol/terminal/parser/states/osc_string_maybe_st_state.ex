@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
-  @moduledoc '''
+  @moduledoc """
   Handles the :osc_string_maybe_st state of the terminal parser.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.Commands.Executor
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Processes input when the parser is in the :osc_string_maybe_st state.
-  '''
+  """
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
           | {:handled, Emulator.t()}

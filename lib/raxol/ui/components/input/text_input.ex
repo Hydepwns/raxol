@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Input.TextInput do
-  @moduledoc '''
+  @moduledoc """
   A text input component for capturing user text input.
 
   Features:
@@ -9,7 +9,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
   * Character validation
   * Input masking (for password fields)
   * Event callbacks
-  '''
+  """
 
   alias Raxol.UI.Components.Base.Component
   alias Raxol.Core.Events.Event
@@ -51,9 +51,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Initializes the TextInput component state from the given props.
-  '''
+  """
   @impl true
   @spec init(map()) :: {:ok, map()}
   def init(props) do
@@ -74,9 +74,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
     {:ok, initial_state}
   end
 
-  @doc '''
+  @doc """
   Handles events for the TextInput component, such as keypresses, focus, blur, and mouse events.
-  '''
+  """
   @impl true
   @spec handle_event(map(), map(), map()) :: {map(), list()}
   def handle_event(state, %Event{type: :key, data: key_data}, _context) do
@@ -102,9 +102,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
     {state, []}
   end
 
-  @doc '''
+  @doc """
   Updates the TextInput component state in response to messages or prop changes.
-  '''
+  """
   @impl true
   @spec update(term(), map()) :: map()
   def update(message, state) do
@@ -115,23 +115,23 @@ defmodule Raxol.UI.Components.Input.TextInput do
     state
   end
 
-  @doc '''
+  @doc """
   Mounts the TextInput component. Performs any setup needed after initialization.
-  '''
+  """
   @impl true
   @spec mount(map()) :: map()
   def mount(state), do: state
 
-  @doc '''
+  @doc """
   Unmounts the TextInput component, performing any necessary cleanup.
-  '''
+  """
   @impl true
   @spec unmount(map()) :: map()
   def unmount(state), do: state
 
-  @doc '''
+  @doc """
   Renders the TextInput component using the current state and context.
-  '''
+  """
   @impl true
   @spec render(map(), map()) :: any()
   def render(state, _context) do
@@ -168,7 +168,11 @@ end
 
 defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
   @moduledoc false
-  alias Raxol.UI.Components.Input.TextInput.{CharacterHandler, NavigationHandler, EditingHandler}
+  alias Raxol.UI.Components.Input.TextInput.{
+    CharacterHandler,
+    NavigationHandler,
+    EditingHandler
+  }
 
   def handle_key(state, key, modifiers) do
     case {key, modifiers} do
@@ -189,6 +193,7 @@ defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
     if is_function(state.on_submit, 1) do
       state.on_submit.(state.value)
     end
+
     {state, []}
   end
 
@@ -294,10 +299,13 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
 
   defp process_char_key(char_key) do
     cond do
-      is_binary(char_key) and String.length(char_key) == 1 and String.printable?(char_key) ->
+      is_binary(char_key) and String.length(char_key) == 1 and
+          String.printable?(char_key) ->
         char_key
+
       is_integer(char_key) and char_key >= 32 and char_key <= 126 ->
         <<char_key::utf8>>
+
       true ->
         nil
     end

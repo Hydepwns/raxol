@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Parser.State.Manager do
-  @moduledoc '''
+  @moduledoc """
   Manages the state of the terminal parser, including escape sequences,
   control sequences, and parser modes.
-  '''
+  """
 
   defstruct [
     :state,
@@ -20,29 +20,42 @@ defmodule Raxol.Terminal.Parser.State.Manager do
     :string_parser_state
   ]
 
-  @type parser_state :: :ground | :escape | :csi_entry | :csi_param | :csi_intermediate | :csi_ignore
-                      | :osc_string | :dcs_entry | :dcs_param | :dcs_intermediate | :dcs_passthrough
-                      | :apc_string | :pm_string | :sos_string | :string
+  @type parser_state ::
+          :ground
+          | :escape
+          | :csi_entry
+          | :csi_param
+          | :csi_intermediate
+          | :csi_ignore
+          | :osc_string
+          | :dcs_entry
+          | :dcs_param
+          | :dcs_intermediate
+          | :dcs_passthrough
+          | :apc_string
+          | :pm_string
+          | :sos_string
+          | :string
 
   @type params :: [non_neg_integer()]
   @type intermediate :: [non_neg_integer()]
   @type string_flags :: %{String.t() => boolean()}
 
   @type t :: %__MODULE__{
-    state: parser_state(),
-    params: params(),
-    intermediate: intermediate(),
-    ignore: boolean(),
-    osc_buffer: String.t(),
-    dcs_buffer: String.t(),
-    apc_buffer: String.t(),
-    pm_buffer: String.t(),
-    sos_buffer: String.t(),
-    string_buffer: String.t(),
-    string_terminator: non_neg_integer() | nil,
-    string_flags: string_flags(),
-    string_parser_state: parser_state() | nil
-  }
+          state: parser_state(),
+          params: params(),
+          intermediate: intermediate(),
+          ignore: boolean(),
+          osc_buffer: String.t(),
+          dcs_buffer: String.t(),
+          apc_buffer: String.t(),
+          pm_buffer: String.t(),
+          sos_buffer: String.t(),
+          string_buffer: String.t(),
+          string_terminator: non_neg_integer() | nil,
+          string_flags: string_flags(),
+          string_parser_state: parser_state() | nil
+        }
 
   # Constants for character ranges
   @c0_range 0x00..0x1F
@@ -60,9 +73,9 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @csi 0x9B
   @dcs 0x90
 
-  @doc '''
+  @doc """
   Creates a new parser state manager instance.
-  '''
+  """
   def new do
     %__MODULE__{
       state: :ground,
@@ -81,9 +94,9 @@ defmodule Raxol.Terminal.Parser.State.Manager do
     }
   end
 
-  @doc '''
+  @doc """
   Processes a single character and updates the parser state accordingly.
-  '''
+  """
   def process_char(%__MODULE__{} = manager, char) when is_integer(char) do
     case manager.state do
       :ground -> process_ground_state(manager, char)
@@ -275,216 +288,250 @@ defmodule Raxol.Terminal.Parser.State.Manager do
     set_state(manager, :ground)
   end
 
-  @doc '''
+  @doc """
   Gets the current parser state.
-  '''
+  """
   def get_state(%__MODULE__{} = manager) do
     manager.state
   end
 
-  @doc '''
+  @doc """
   Sets the parser state.
-  '''
-  def set_state(%__MODULE__{} = manager, state) when state in [
-    :ground, :escape, :csi_entry, :csi_param, :csi_intermediate, :csi_ignore,
-    :osc_string, :dcs_entry, :dcs_param, :dcs_intermediate, :dcs_passthrough,
-    :apc_string, :pm_string, :sos_string, :string
-  ] do
+  """
+  def set_state(%__MODULE__{} = manager, state)
+      when state in [
+             :ground,
+             :escape,
+             :csi_entry,
+             :csi_param,
+             :csi_intermediate,
+             :csi_ignore,
+             :osc_string,
+             :dcs_entry,
+             :dcs_param,
+             :dcs_intermediate,
+             :dcs_passthrough,
+             :apc_string,
+             :pm_string,
+             :sos_string,
+             :string
+           ] do
     %{manager | state: state}
   end
 
-  @doc '''
+  @doc """
   Gets the current parameters.
-  '''
+  """
   def get_params(%__MODULE__{} = manager) do
     manager.params
   end
 
-  @doc '''
+  @doc """
   Sets the parameters.
-  '''
+  """
   def set_params(%__MODULE__{} = manager, params) when is_list(params) do
     %{manager | params: params}
   end
 
-  @doc '''
+  @doc """
   Gets the current intermediate characters.
-  '''
+  """
   def get_intermediate(%__MODULE__{} = manager) do
     manager.intermediate
   end
 
-  @doc '''
+  @doc """
   Sets the intermediate characters.
-  '''
-  def set_intermediate(%__MODULE__{} = manager, intermediate) when is_list(intermediate) do
+  """
+  def set_intermediate(%__MODULE__{} = manager, intermediate)
+      when is_list(intermediate) do
     %{manager | intermediate: intermediate}
   end
 
-  @doc '''
+  @doc """
   Checks if the parser is in ignore mode.
-  '''
+  """
   def ignore?(%__MODULE__{} = manager) do
     manager.ignore
   end
 
-  @doc '''
+  @doc """
   Sets the ignore mode.
-  '''
+  """
   def set_ignore(%__MODULE__{} = manager, ignore) when is_boolean(ignore) do
     %{manager | ignore: ignore}
   end
 
-  @doc '''
+  @doc """
   Gets the OSC buffer content.
-  '''
+  """
   def get_osc_buffer(%__MODULE__{} = manager) do
     manager.osc_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the OSC buffer content.
-  '''
-  def set_osc_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+  """
+  def set_osc_buffer(%__MODULE__{} = manager, content)
+      when is_binary(content) do
     %{manager | osc_buffer: content}
   end
 
-  @doc '''
+  @doc """
   Gets the DCS buffer content.
-  '''
+  """
   def get_dcs_buffer(%__MODULE__{} = manager) do
     manager.dcs_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the DCS buffer content.
-  '''
-  def set_dcs_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+  """
+  def set_dcs_buffer(%__MODULE__{} = manager, content)
+      when is_binary(content) do
     %{manager | dcs_buffer: content}
   end
 
-  @doc '''
+  @doc """
   Gets the APC buffer content.
-  '''
+  """
   def get_apc_buffer(%__MODULE__{} = manager) do
     manager.apc_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the APC buffer content.
-  '''
-  def set_apc_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+  """
+  def set_apc_buffer(%__MODULE__{} = manager, content)
+      when is_binary(content) do
     %{manager | apc_buffer: content}
   end
 
-  @doc '''
+  @doc """
   Gets the PM buffer content.
-  '''
+  """
   def get_pm_buffer(%__MODULE__{} = manager) do
     manager.pm_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the PM buffer content.
-  '''
+  """
   def set_pm_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
     %{manager | pm_buffer: content}
   end
 
-  @doc '''
+  @doc """
   Gets the SOS buffer content.
-  '''
+  """
   def get_sos_buffer(%__MODULE__{} = manager) do
     manager.sos_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the SOS buffer content.
-  '''
-  def set_sos_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+  """
+  def set_sos_buffer(%__MODULE__{} = manager, content)
+      when is_binary(content) do
     %{manager | sos_buffer: content}
   end
 
-  @doc '''
+  @doc """
   Gets the string buffer content.
-  '''
+  """
   def get_string_buffer(%__MODULE__{} = manager) do
     manager.string_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the string buffer content.
-  '''
-  def set_string_buffer(%__MODULE__{} = manager, content) when is_binary(content) do
+  """
+  def set_string_buffer(%__MODULE__{} = manager, content)
+      when is_binary(content) do
     %{manager | string_buffer: content}
   end
 
-  @doc '''
+  @doc """
   Gets the string terminator.
-  '''
+  """
   def get_string_terminator(%__MODULE__{} = manager) do
     manager.string_terminator
   end
 
-  @doc '''
+  @doc """
   Sets the string terminator.
-  '''
-  def set_string_terminator(%__MODULE__{} = manager, terminator) when is_integer(terminator) do
+  """
+  def set_string_terminator(%__MODULE__{} = manager, terminator)
+      when is_integer(terminator) do
     %{manager | string_terminator: terminator}
   end
 
-  @doc '''
+  @doc """
   Gets the string flags.
-  '''
+  """
   def get_string_flags(%__MODULE__{} = manager) do
     manager.string_flags
   end
 
-  @doc '''
+  @doc """
   Sets the string flags.
-  '''
+  """
   def set_string_flags(%__MODULE__{} = manager, flags) when is_map(flags) do
     %{manager | string_flags: flags}
   end
 
-  @doc '''
+  @doc """
   Gets the string parser state.
-  '''
+  """
   def get_string_parser_state(%__MODULE__{} = manager) do
     manager.string_parser_state
   end
 
-  @doc '''
+  @doc """
   Sets the string parser state.
-  '''
-  def set_string_parser_state(%__MODULE__{} = manager, state) when state in [
-    :ground, :escape, :csi_entry, :csi_param, :csi_intermediate, :csi_ignore,
-    :osc_string, :dcs_entry, :dcs_param, :dcs_intermediate, :dcs_passthrough,
-    :apc_string, :pm_string, :sos_string, :string
-  ] do
+  """
+  def set_string_parser_state(%__MODULE__{} = manager, state)
+      when state in [
+             :ground,
+             :escape,
+             :csi_entry,
+             :csi_param,
+             :csi_intermediate,
+             :csi_ignore,
+             :osc_string,
+             :dcs_entry,
+             :dcs_param,
+             :dcs_intermediate,
+             :dcs_passthrough,
+             :apc_string,
+             :pm_string,
+             :sos_string,
+             :string
+           ] do
     %{manager | string_parser_state: state}
   end
 
-  @doc '''
+  @doc """
   Clears all string buffers.
-  '''
+  """
   def clear_string_buffers(%__MODULE__{} = manager) do
-    %{manager |
-      osc_buffer: "",
-      dcs_buffer: "",
-      apc_buffer: "",
-      pm_buffer: "",
-      sos_buffer: "",
-      string_buffer: "",
-      string_terminator: nil,
-      string_flags: %{},
-      string_parser_state: nil
+    %{
+      manager
+      | osc_buffer: "",
+        dcs_buffer: "",
+        apc_buffer: "",
+        pm_buffer: "",
+        sos_buffer: "",
+        string_buffer: "",
+        string_terminator: nil,
+        string_flags: %{},
+        string_parser_state: nil
     }
   end
 
-  @doc '''
+  @doc """
   Resets the parser state manager to its initial state.
-  '''
+  """
   def reset(%__MODULE__{} = manager) do
     new()
   end

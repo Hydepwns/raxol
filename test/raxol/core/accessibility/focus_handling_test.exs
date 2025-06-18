@@ -1,5 +1,9 @@
 defmodule Raxol.Core.Accessibility.FocusHandlingTest do
-  use Raxol.DataCase
+  @moduledoc """
+  Tests for the focus handling system, including element focus tracking,
+  announcement generation, and screen reader compatibility.
+  """
+  use ExUnit.Case, async: false
   import Mox
 
   alias Raxol.Core.Accessibility

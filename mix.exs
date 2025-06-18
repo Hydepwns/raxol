@@ -1,16 +1,20 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "0.4.0"
+  @version "0.5.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
     [
       app: :raxol,
       version: @version,
-      elixir: "~> 1.18.3",
+      elixir: "~> 1.17.1",
       elixirc_paths: elixirc_paths(Mix.env()),
-      elixirc_options: [warnings_as_errors: false, ignore_module_conflict: true, compile_order: [:cell, :operations]],
+      elixirc_options: [
+        warnings_as_errors: false,
+        ignore_module_conflict: true,
+        compile_order: [:cell, :operations]
+      ],
       compilers: Mix.compilers(),
       consolidate_protocols: Mix.env() != :test,
       start_permanent: Mix.env() == :prod,
@@ -74,7 +78,13 @@ defmodule Raxol.MixProject do
   end
 
   defp elixirc_paths(:test),
-    do: ["lib", "test/support", "examples/demos", "lib/raxol/test", "lib/raxol/terminal/buffer/cell.ex"]
+    do: [
+      "lib",
+      "test/support",
+      "examples/demos",
+      "lib/raxol/test",
+      "lib/raxol/terminal/buffer/cell.ex"
+    ]
 
   defp elixirc_paths(_), do: ["lib", "lib/raxol/terminal/buffer/cell.ex"]
 
@@ -90,11 +100,11 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2_nif)
-      {:termbox2_nif, "~> 0.3.0"},
+      {:termbox2_nif, path: "lib/termbox2_nif"},
 
       # --- Added for Tutorial Loading ---
       # Markdown parser
-      {:earmark, "~> 1.4.47"},
+      {:cmark, "~> 0.10"},
       # YAML parser for frontmatter
       {:yaml_elixir, "~> 2.11"},
       # ---------------------------------
@@ -106,11 +116,11 @@ defmodule Raxol.MixProject do
 
       # Image processing
       {:mogrify, "~> 0.9.3"},
-
       {:phoenix, "~> 1.7.21"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_view, "~> 1.0.17"},
       {:surface, "~> 0.12.1"},
+      {:sourceror, "~> 1.0.0"},
       {:phoenix_live_dashboard, "~> 0.8.7"},
       {:jason, "~> 1.4.4"},
 
@@ -165,7 +175,9 @@ defmodule Raxol.MixProject do
       {:hackney, "~> 1.24"},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:toml, "~> 0.7"},
-      {:mimerl, "~> 1.4"}
+      {:mimerl, "~> 1.4"},
+      # Use our local version of json parser
+      {:json, path: "lib/json"}
     ]
   end
 
@@ -217,6 +229,7 @@ defmodule Raxol.MixProject do
       main: "readme",
       extras: [
         "README.md",
+        "docs/CONFIGURATION.md",
         "examples/guides/01_getting_started/quick_start.md",
         "examples/guides/02_core_concepts/terminal_emulator.md",
         "examples/snippets/README.md",

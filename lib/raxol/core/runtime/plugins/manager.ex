@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.Manager do
-  @moduledoc '''
+  @moduledoc """
   Manages the loading, initialization, and lifecycle of plugins in the Raxol runtime.
 
   This module is responsible for:
@@ -9,14 +9,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   - Providing access to loaded plugins
   - Handling plugin dependencies and conflicts
   - Optionally watching plugin source files for changes and reloading them (dev only).
-  '''
+  """
 
   # Core runtime dependencies
-  alias Raxol.Core.Runtime.Events.Event
   alias Raxol.Core.Runtime.Plugins.CommandHandler
   alias Raxol.Core.Runtime.Plugins.FileWatcher
   alias Raxol.Core.Runtime.Plugins.Discovery
-  alias Raxol.Core.Runtime.Plugins.StateManager
   alias Raxol.Core.Runtime.Plugins.PluginReloader
   alias Raxol.Core.Runtime.Plugins.TimerManager
 
@@ -46,49 +44,49 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl true
-  def init(_arg) do
-    {:ok, _arg}
+  def init(arg) do
+    {:ok, arg}
   end
 
-  @doc '''
+  @doc """
   Initialize the plugin system and load all available plugins.
-  '''
+  """
   def initialize do
     GenServer.call(__MODULE__, :initialize)
   end
 
-  @doc '''
+  @doc """
   Get a list of all loaded plugins with their metadata.
-  '''
+  """
   def list_plugins do
     GenServer.call(__MODULE__, :list_plugins)
   end
 
-  @doc '''
+  @doc """
   Get a specific plugin by its ID.
-  '''
+  """
   @impl true
   def get_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin, plugin_id})
   end
 
-  @doc '''
+  @doc """
   Enable a plugin that was previously disabled.
-  '''
+  """
   def enable_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:enable_plugin, plugin_id})
   end
 
-  @doc '''
+  @doc """
   Disable a plugin temporarily without unloading it.
-  '''
+  """
   def disable_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:disable_plugin, plugin_id})
   end
 
-  @doc '''
+  @doc """
   Reload a plugin by unloading and then loading it again.
-  '''
+  """
   def reload_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:reload_plugin, plugin_id})
   end
@@ -131,7 +129,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       nil ->
         {:reply, {:error, :plugin_not_found}, state}
 
-      plugin_state ->
+      _plugin_state ->
         case state.lifecycle_helper_module.unload_plugin(
                plugin_id,
                state.plugins,
@@ -144,8 +142,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             new_state = Map.delete(state, plugin_id)
             {:reply, :ok, new_state}
 
-          error ->
-            {:reply, error, state}
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
         end
     end
   end
@@ -168,10 +166,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl true
-  def handle_call(:get_plugin_state, {_from, plugin_id}, state) do
-    case StateManager.get_plugin_state(plugin_id, state) do
-      {:ok, plugin_state} -> {:reply, {:ok, plugin_state}, state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+  def handle_call({:get_plugin_state, plugin_id}, _from, state) do
+    case Map.get(state.plugin_states, plugin_id) do
+      nil -> {:reply, {:error, :plugin_not_found}, state}
+      plugin_state -> {:reply, {:ok, plugin_state}, state}
     end
   end
 
@@ -381,7 +379,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   def handle_cast({:reload_plugin_by_id, plugin_id_string}, state) do
     case PluginReloader.reload_plugin_by_id(plugin_id_string, state) do
       {:ok, updated_state} -> {:noreply, updated_state}
-      {:error, reason, current_state} -> {:noreply, current_state}
+      {:error, _reason, current_state} -> {:noreply, current_state}
     end
   end
 
@@ -408,6 +406,16 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
 
     {:stop, :normal, state}
+  end
+
+  @impl true
+  def handle_cast({:plugin_error, _plugin_id, _reason}, state) do
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:plugin_error, _plugin_id, _reason, current_state}, _state) do
+    {:noreply, current_state}
   end
 
   @impl true
@@ -540,10 +548,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       {:ok, updated_state} ->
         {:noreply, updated_state}
 
-      {:error, reason, updated_state} ->
+      {:error, _reason, updated_state} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "[#{__MODULE__}] Failed to reload plugin #{plugin_id}",
-          reason,
+          _reason,
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, path: path}
         )
@@ -605,7 +613,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
         {:noreply, updated_state}
 
-      {:error, reason} ->
+      {:error, _reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Failed to reload plugin from disk #{state.plugin_id}",
           nil,
@@ -614,7 +622,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             module: __MODULE__,
             plugin_id: state.plugin_id,
             path: path,
-            reason: reason
+            reason: _reason
           }
         )
 
@@ -629,20 +637,24 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl true
+  def handle_info({:plugin_error, _plugin_id, _reason}, state) do
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:plugin_error, _plugin_id, _reason, updated_state}, _state) do
+    {:noreply, updated_state}
+  end
+
+  @impl true
   def terminate(reason, state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Terminating (Reason: #{inspect(reason)}).",
       %{module: __MODULE__, reason: reason}
     )
 
-    # Clean up file watching resources
-    FileWatcher.cleanup_file_watching(state)
-
-    # Cancel any pending timers
-    state = TimerManager.cancel_existing_timer(state)
     state = TimerManager.cancel_periodic_tick(state)
-
-    :ok
+    {:ok, state}
   end
 
   @impl true
@@ -650,39 +662,39 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.stop(pid)
   end
 
-  @doc '''
+  @doc """
   Loads a plugin by sending a call to the GenServer.
-  '''
+  """
   @impl true
   def load_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:load_plugin, plugin_id})
   end
 
-  @doc '''
+  @doc """
   Unloads a plugin by sending a call to the GenServer.
-  '''
+  """
   @impl true
   def unload_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
   end
 
-  @doc '''
+  @doc """
   Updates a plugin's state using a function.
-  '''
+  """
   def update_plugin(plugin_id, update_fun) when is_function(update_fun, 1) do
     GenServer.call(__MODULE__, {:update_plugin_state, plugin_id, update_fun})
   end
 
-  @doc '''
+  @doc """
   Sets a plugin's state directly.
-  '''
+  """
   def set_plugin_state(plugin_id, new_state) do
     GenServer.call(__MODULE__, {:set_plugin_state, plugin_id, new_state})
   end
 
-  @doc '''
+  @doc """
   Gets a plugin's current state.
-  '''
+  """
   def get_plugin_state(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin_state, plugin_id})
   end
@@ -734,15 +746,15 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
         {:reply, :ok, updated_state}
 
-      {:error, reason} ->
+      {:error, _reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Failed to #{success_message} plugin #{plugin_id}",
           nil,
           nil,
-          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+          %{module: __MODULE__, plugin_id: plugin_id, reason: _reason}
         )
 
-        {:reply, {:error, reason}, state}
+        {:reply, {:error, _reason}, state}
     end
   end
 
@@ -815,9 +827,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     }
   end
 
-  @doc '''
+  @doc """
   Loads a plugin with the given name and configuration.
-  '''
+  """
   @spec load_plugin(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   def load_plugin(name, config) do
     # Implement plugin loading logic here

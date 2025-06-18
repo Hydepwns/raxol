@@ -1,8 +1,8 @@
 defmodule Raxol.Plugins.ImagePlugin do
-  @moduledoc '''
+  @moduledoc """
   Plugin that enables displaying images in the terminal using the iTerm2 image protocol.
   Supports various image formats and provides options for image display.
-  '''
+  """
 
   @behaviour Raxol.Plugins.Plugin
   alias Raxol.Plugins.Plugin
@@ -79,7 +79,12 @@ defmodule Raxol.Plugins.ImagePlugin do
 
   @impl Raxol.Plugins.Plugin
   def handle_resize(%__MODULE__{} = plugin, width, height) do
-    {:ok, %{plugin | config: Map.put(plugin.config, :dimensions, %{width: width, height: height})}}
+    {:ok,
+     %{
+       plugin
+       | config:
+           Map.put(plugin.config, :dimensions, %{width: width, height: height})
+     }}
   end
 
   @impl true
@@ -107,6 +112,7 @@ defmodule Raxol.Plugins.ImagePlugin do
       %{type: :placeholder, value: :image} = cell
       when is_map_key(cell, :type) and is_map_key(cell, :value) ->
         handle_image_placeholder(plugin)
+
       _ ->
         {:cont, plugin}
     end
@@ -117,6 +123,7 @@ defmodule Raxol.Plugins.ImagePlugin do
       Raxol.Core.Runtime.Log.debug(
         "[ImagePlugin.handle_cells] sequence_just_generated=true. Resetting flag and declining."
       )
+
       {:cont, %{plugin | sequence_just_generated: false}}
     else
       generate_and_return_sequence(plugin)
@@ -133,11 +140,15 @@ defmodule Raxol.Plugins.ImagePlugin do
         Raxol.Core.Runtime.Log.debug(
           "[ImagePlugin.handle_cells] Sequence generated successfully."
         )
-        {:ok, %{plugin | sequence_just_generated: true}, [], [{:direct_output, sequence}]}
+
+        {:ok, %{plugin | sequence_just_generated: true}, [],
+         [{:direct_output, sequence}]}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "[ImagePlugin.handle_cells] Failed to generate sequence for @static/static/images/logo.png: #{inspect(reason)}"
         )
+
         {:cont, plugin}
     end
   end
@@ -145,7 +156,8 @@ defmodule Raxol.Plugins.ImagePlugin do
   defp generate_sequence_from_path(image_path) do
     with {:ok, content} <- File.read(image_path),
          base64_data = Base.encode64(content),
-         sequence = generate_image_escape_sequence(base64_data, default_params()),
+         sequence =
+           generate_image_escape_sequence(base64_data, default_params()),
          true <- sequence != "" do
       {:ok, sequence}
     else
@@ -166,8 +178,11 @@ defmodule Raxol.Plugins.ImagePlugin do
     case Base.decode64(base64_data) do
       {:ok, decoded_data} ->
         size = byte_size(decoded_data)
+
         "\e]1337;File=inline=1;width=#{width_param};height=#{height_param};preserveAspectRatio=#{preserve_aspect_flag};size=#{size};name=image.png;base64,#{base64_data}\a"
-      :error -> ""
+
+      :error ->
+        ""
     end
   end
 
@@ -186,5 +201,4 @@ defmodule Raxol.Plugins.ImagePlugin do
       false -> "0"
     end
   end
-
 end

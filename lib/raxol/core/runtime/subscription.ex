@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Subscription do
-  @moduledoc '''
+  @moduledoc """
   Provides a way to subscribe to recurring updates and external events.
 
   Subscriptions allow applications to receive messages over time without
@@ -28,7 +28,7 @@ defmodule Raxol.Core.Runtime.Subscription do
 
       # Custom subscription
       Subscription.custom(MyEventSource, :start_listening)
-  '''
+  """
 
   @type t :: %__MODULE__{
           type: :interval | :events | :file_watch | :custom,
@@ -37,21 +37,21 @@ defmodule Raxol.Core.Runtime.Subscription do
 
   defstruct [:type, :data]
 
-  @doc '''
+  @doc """
   Creates a new subscription. This is the low-level constructor, prefer using
   the specific subscription constructors unless you need custom behavior.
-  '''
+  """
   def new(type, data) do
     %__MODULE__{type: type, data: data}
   end
 
-  @doc '''
+  @doc """
   Creates a subscription that will send a message at regular intervals.
 
   ## Options
     * `:start_immediately` - Send first message immediately (default: false)
     * `:jitter` - Add random jitter to interval (default: 0)
-  '''
+  """
   def interval(interval_ms, msg, opts \\ [])
 
   def interval(interval_ms, msg, opts)
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     {:error, :invalid_interval}
   end
 
-  @doc '''
+  @doc """
   Creates a subscription for system or component events.
 
   ## Event Types
@@ -80,7 +80,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     * `:window_resize` - Terminal window resize
     * `:focus_change` - Terminal focus change
     * `:component` - Component-specific events
-  '''
+  """
   def events(event_types) when is_list(event_types) do
     new(:events, event_types)
   end
@@ -89,7 +89,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     {:error, :invalid_events}
   end
 
-  @doc '''
+  @doc """
   Creates a subscription that watches for file system changes.
 
   ## Event Types
@@ -100,7 +100,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     * `:attrib` - Attribute changes
 
   Returns `{:error, :invalid_file_watch_args}` if event_types is not a list.
-  '''
+  """
   def file_watch(path, event_types \\ [:modify])
 
   def file_watch(path, event_types) when is_list(event_types) do
@@ -114,11 +114,11 @@ defmodule Raxol.Core.Runtime.Subscription do
 
   def file_watch(_path, _event_types), do: {:error, :invalid_file_watch_args}
 
-  @doc '''
+  @doc """
   Creates a custom subscription using a provided event source.
   The event source should implement the `Raxol.Core.Runtime.EventSource`
   behaviour.
-  '''
+  """
   def custom(source_module, init_args) do
     data = %{
       module: source_module,
@@ -128,12 +128,12 @@ defmodule Raxol.Core.Runtime.Subscription do
     new(:custom, data)
   end
 
-  @doc '''
+  @doc """
   Starts a subscription within the given context. This is used by the runtime
   system and should not be called directly by applications.
 
   Returns `{:ok, subscription_id}` or `{:error, reason}`.
-  '''
+  """
   def start(%__MODULE__{} = subscription, context) do
     case subscription do
       %{type: :interval, data: data} ->
@@ -150,10 +150,10 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  @doc '''
+  @doc """
   Stops a subscription. This is used by the runtime system and should not
   be called directly by applications.
-  '''
+  """
   def stop(subscription_id) do
     case subscription_id do
       {:interval, timer_ref} ->

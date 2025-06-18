@@ -1,10 +1,10 @@
 defmodule Raxol.Web.Session.Storage do
-  @moduledoc '''
+  @moduledoc """
   Handles session storage and retrieval for Raxol applications.
 
   This module provides persistent storage for session data using ETS tables
   and optional database storage for long-term persistence.
-  '''
+  """
 
   alias Raxol.Repo
   alias Raxol.Web.Session.Session
@@ -12,18 +12,18 @@ defmodule Raxol.Web.Session.Storage do
   # ETS table name for session storage
   @table_name :session_storage
 
-  @doc '''
+  @doc """
   Initialize the session storage system.
-  '''
+  """
   def init do
     # Create ETS table for session storage
     _ = :ets.new(@table_name, [:named_table, :set, :public])
     :ok
   end
 
-  @doc '''
+  @doc """
   Store a session in the storage system.
-  '''
+  """
   def store(session) do
     # Store in ETS for fast access
     :ets.insert(@table_name, {session.id, session})
@@ -44,9 +44,9 @@ defmodule Raxol.Web.Session.Storage do
     end
   end
 
-  @doc '''
+  @doc """
   Retrieve a session from storage.
-  '''
+  """
   def get(session_id) do
     # Try ETS first
     case :ets.lookup(@table_name, session_id) do
@@ -62,9 +62,9 @@ defmodule Raxol.Web.Session.Storage do
     end
   end
 
-  @doc '''
+  @doc """
   Get all expired sessions.
-  '''
+  """
   def get_expired_sessions(timeout) do
     # Get current time
     now = DateTime.utc_now()
@@ -81,9 +81,9 @@ defmodule Raxol.Web.Session.Storage do
     |> Enum.map(fn {_id, session} -> session end)
   end
 
-  @doc '''
+  @doc """
   Delete a session from storage.
-  '''
+  """
   def delete(session_id) do
     # Delete from ETS
     :ets.delete(@table_name, session_id)
@@ -95,9 +95,9 @@ defmodule Raxol.Web.Session.Storage do
     end
   end
 
-  @doc '''
+  @doc """
   Get all active sessions.
-  '''
+  """
   def get_active_sessions do
     :ets.tab2list(@table_name)
     |> Enum.filter(fn {_id, session} -> session.status == :active end)

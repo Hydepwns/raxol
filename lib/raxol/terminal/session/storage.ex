@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.Session.Storage do
-  @moduledoc '''
+  @moduledoc """
   Handles persistence of terminal sessions.
-  '''
+  """
 
   alias Raxol.Terminal.Session.Serializer
 
-  @doc '''
+  @doc """
   Saves a session state to persistent storage.
-  '''
+  """
   @spec save_session(Raxol.Terminal.Session.t()) :: :ok | {:error, term()}
   def save_session(session) do
     serialized = Serializer.serialize(session)
@@ -19,9 +19,9 @@ defmodule Raxol.Terminal.Session.Storage do
     end
   end
 
-  @doc '''
+  @doc """
   Loads a session state from persistent storage.
-  '''
+  """
   @spec load_session(String.t()) ::
           {:ok, Raxol.Terminal.Session.t()} | {:error, term()}
   def load_session(session_id) do
@@ -41,18 +41,18 @@ defmodule Raxol.Terminal.Session.Storage do
     end
   end
 
-  @doc '''
+  @doc """
   Deletes a saved session.
-  '''
+  """
   @spec delete_session(String.t()) :: :ok | {:error, term()}
   def delete_session(session_id) do
     storage_path = get_storage_path(session_id)
     File.rm(storage_path)
   end
 
-  @doc '''
+  @doc """
   Lists all saved sessions.
-  '''
+  """
   @spec list_sessions() :: {:ok, [String.t()]} | {:error, term()}
   def list_sessions do
     storage_dir = get_storage_dir()

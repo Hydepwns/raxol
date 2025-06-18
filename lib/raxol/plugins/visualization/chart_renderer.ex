@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.Visualization.ChartRenderer do
-  @moduledoc '''
+  @moduledoc """
   Handles rendering logic for chart visualizations within the VisualizationPlugin.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
@@ -11,11 +11,11 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   # Define module attributes for thresholds previously in the plugin
   @max_chart_data_points 100
 
-  @doc '''
+  @doc """
   Public entry point for rendering chart content.
   Handles bounds checking, error handling, and calls the internal drawing logic.
   Expects bounds to be a map like %{width: w, height: h}.
-  '''
+  """
   def render_chart_content(
         data,
         opts,
@@ -63,7 +63,17 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
       {max_value, min_value} = calculate_value_bounds(data)
       {chart_height, chart_width} = calculate_chart_dimensions(width, height)
       grid = initialize_grid(width, height, title, max_value, min_value)
-      draw_chart_content(grid, data, max_value, min_value, chart_height, chart_width, height, width)
+
+      draw_chart_content(
+        grid,
+        data,
+        max_value,
+        min_value,
+        chart_height,
+        chart_width,
+        height,
+        width
+      )
     else
       DrawingUtils.draw_box_with_text(
         if(data == [], do: "[No Data]", else: "!"),
@@ -73,11 +83,13 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   end
 
   defp calculate_value_bounds(data) do
-    values = Enum.map(data, fn
-      {_label, value} -> value
-      %{value: value} -> value
-      _ -> 0
-    end)
+    values =
+      Enum.map(data, fn
+        {_label, value} -> value
+        %{value: value} -> value
+        _ -> 0
+      end)
+
     max_value = Enum.max_by(data, &elem(&1, 1), fn -> {nil, 0} end) |> elem(1)
     min_value = Enum.min([0 | values])
     {max_value, min_value}
@@ -93,18 +105,31 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
     grid = DrawingUtils.draw_text_centered(grid, 0, title)
     grid = DrawingUtils.draw_text(grid, 1, 0, Integer.to_string(max_value))
-    grid = DrawingUtils.draw_text(grid, height - 2, 0, Integer.to_string(min_value))
+
+    grid =
+      DrawingUtils.draw_text(grid, height - 2, 0, Integer.to_string(min_value))
+
     draw_y_axis(grid, height)
   end
 
   defp draw_y_axis(grid, height) do
     Enum.reduce(1..(height - 2), grid, fn y, acc_grid ->
       axis_style = Style.new(fg: :dark_gray)
+
       DrawingUtils.put_cell(acc_grid, y, 3, %{Cell.new("|") | style: axis_style})
     end)
   end
 
-  defp draw_chart_content(grid, data, max_value, min_value, chart_height, chart_width, height, _width) do
+  defp draw_chart_content(
+         grid,
+         data,
+         max_value,
+         min_value,
+         chart_height,
+         chart_width,
+         height,
+         _width
+       ) do
     num_bars = Enum.count(data)
     total_bar_area_width = max(1, chart_width - (num_bars - 1))
     bar_width = max(1, div(total_bar_area_width, num_bars))
@@ -112,10 +137,20 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
 
     Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, _index},
                                                      {acc_grid, current_x} ->
-      bar_height = calculate_bar_height(value, max_value, min_value, chart_height)
+      bar_height =
+        calculate_bar_height(value, max_value, min_value, chart_height)
+
       bar_start_y = height - 2 - bar_height
       new_grid = draw_bar(acc_grid, bar_width, bar_start_y, height, current_x)
-      draw_label_and_advance(new_grid, label, bar_width, height, current_x, spacing)
+
+      draw_label_and_advance(
+        new_grid,
+        label,
+        bar_width,
+        height,
+        current_x,
+        spacing
+      )
     end)
     |> elem(0)
   end
@@ -142,7 +177,14 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     end)
   end
 
-  defp draw_label_and_advance(grid, label, bar_width, height, current_x, spacing) do
+  defp draw_label_and_advance(
+         grid,
+         label,
+         bar_width,
+         height,
+         current_x,
+         spacing
+       ) do
     label_str = format_label(label, bar_width)
     final_grid = DrawingUtils.draw_text(grid, height - 1, current_x, label_str)
     next_x = current_x + bar_width + spacing

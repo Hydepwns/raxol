@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Selection.List do
-  @moduledoc '''
+  @moduledoc """
   A component for displaying a selectable list of items.
-  '''
+  """
 
-  @typedoc '''
+  @typedoc """
   State for the Selection.List component.
 
   - :id - unique identifier
@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.Selection.List do
   - :focused - whether the list is focused
   - :on_select - callback for selection
   - :item_renderer - function to render items
-  '''
+  """
   @type t :: %__MODULE__{
           id: any(),
           items: list(),
@@ -54,7 +54,7 @@ defmodule Raxol.UI.Components.Selection.List do
 
   # --- Component Behaviour Callbacks ---
 
-  @doc 'Initializes the List component state from props.'
+  @doc "Initializes the List component state from props."
   @spec init(map()) :: __MODULE__.t()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
@@ -73,7 +73,7 @@ defmodule Raxol.UI.Components.Selection.List do
     }
   end
 
-  @doc 'Updates the List component state in response to messages.'
+  @doc "Updates the List component state in response to messages."
   @spec update(term(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
@@ -92,7 +92,7 @@ defmodule Raxol.UI.Components.Selection.List do
     end
   end
 
-  @doc 'Handles events for the List component, such as keyboard and mouse input.'
+  @doc "Handles events for the List component, such as keyboard and mouse input."
   @spec handle_event(term(), map(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   # Correct arity
@@ -122,7 +122,7 @@ defmodule Raxol.UI.Components.Selection.List do
 
   # --- Render Logic ---
 
-  @doc 'Renders the List component, displaying visible items.'
+  @doc "Renders the List component, displaying visible items."
   @spec render(__MODULE__.t(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   # Correct arity

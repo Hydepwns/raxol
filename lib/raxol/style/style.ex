@@ -1,7 +1,7 @@
 defmodule Raxol.Style do
-  @moduledoc '''
+  @moduledoc """
   Defines style properties for terminal UI elements.
-  '''
+  """
 
   @type t :: %__MODULE__{
           layout: Raxol.Style.Layout.t(),
@@ -31,16 +31,16 @@ defmodule Raxol.Style do
     italic: 3
   }
 
-  @doc '''
+  @doc """
   Creates a new style with default values.
-  '''
+  """
   def new do
     %__MODULE__{}
   end
 
-  @doc '''
+  @doc """
   Creates a new style from a keyword list or map of attributes.
-  '''
+  """
   def new(attrs) when is_list(attrs) do
     Enum.reduce(attrs, new(), fn {key, value}, acc ->
       Map.put(acc, key, value)
@@ -63,7 +63,15 @@ defmodule Raxol.Style do
   end
 
   defp extract_style_attrs(map) do
-    Map.drop(map, [:padding, :margin, :width, :height, :alignment, :overflow, :border])
+    Map.drop(map, [
+      :padding,
+      :margin,
+      :width,
+      :height,
+      :alignment,
+      :overflow,
+      :border
+    ])
   end
 
   defp handle_border(style, map) do
@@ -84,9 +92,9 @@ defmodule Raxol.Style do
     end
   end
 
-  @doc '''
+  @doc """
   Merges two styles, with the second overriding the first.
-  '''
+  """
   def merge(style1, style2) do
     %{
       layout: Map.merge(style1.layout, style2.layout),
@@ -102,9 +110,9 @@ defmodule Raxol.Style do
     }
   end
 
-  @doc '''
+  @doc """
   Converts style properties to ANSI escape sequences (currently just numeric codes).
-  '''
+  """
   def to_ansi(style) do
     fg_ansi =
       if style.color,
@@ -131,9 +139,9 @@ defmodule Raxol.Style do
     # Actual sequence generation (e.g., IO.ANSI...) should happen closer to rendering
   end
 
-  @doc '''
+  @doc """
   Resolves a style definition against the current theme.
-  '''
+  """
   def resolve(style_def, theme \\ nil) do
     theme = theme || Raxol.UI.Theming.Theme.current()
     resolved_style = resolve_style_definition(style_def, theme)
@@ -142,11 +150,20 @@ defmodule Raxol.Style do
 
   defp resolve_style_definition(style_def, theme) do
     case style_def do
-      %__MODULE__{} = style -> style
-      atom when is_atom(atom) -> lookup_theme_style(atom, theme)
-      string when is_binary(string) -> lookup_theme_style(String.to_atom(string), theme)
-      map when is_map(map) -> new(map)
-      _ -> new()
+      %__MODULE__{} = style ->
+        style
+
+      atom when is_atom(atom) ->
+        lookup_theme_style(atom, theme)
+
+      string when is_binary(string) ->
+        lookup_theme_style(String.to_atom(string), theme)
+
+      map when is_map(map) ->
+        new(map)
+
+      _ ->
+        new()
     end
   end
 
@@ -154,9 +171,9 @@ defmodule Raxol.Style do
     theme.styles[key] || new()
   end
 
-  @doc '''
+  @doc """
   Apply responsive styling based on terminal dimensions.
-  '''
+  """
   def apply_responsive(style, width, height) do
     responsive_rules =
       style.responsive
@@ -168,9 +185,9 @@ defmodule Raxol.Style do
     Enum.reduce(responsive_rules, style, &merge/2)
   end
 
-  @doc '''
+  @doc """
   Apply component-specific styling.
-  '''
+  """
   def apply_component_specific(style, component_type) do
     case Map.get(style.component_specific, component_type) do
       nil -> style

@@ -1,12 +1,12 @@
 defmodule Raxol.Core.Runtime.Rendering.Engine do
-  @moduledoc '''
+  @moduledoc """
   Provides the core rendering functionality for Raxol applications.
 
   This module is responsible for:
   * Rendering application views into screen buffers
   * Managing the rendering lifecycle
   * Coordinating with the output backends
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   use GenServer
@@ -32,7 +32,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # --- Public API ---
 
-  @doc 'Starts the Rendering Engine process.'
+  @doc "Starts the Rendering Engine process."
   @impl true
   def start_link(initial_state_map) when is_map(initial_state_map) do
     GenServer.start_link(__MODULE__, initial_state_map, name: __MODULE__)

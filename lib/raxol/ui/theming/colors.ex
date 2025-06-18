@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Theming.Colors do
-  @moduledoc '''
+  @moduledoc """
   Color management utilities for theme handling.
 
   This module provides functions for working with colors in the context of UI theming,
@@ -11,7 +11,7 @@ defmodule Raxol.UI.Theming.Colors do
   - Color manipulation (lighten, darken, blend)
   - Theme color management
   - Accessibility checks
-  '''
+  """
 
   alias Raxol.Style.Colors.{Color, Utilities}
 
@@ -42,57 +42,57 @@ defmodule Raxol.UI.Theming.Colors do
     brown: "#A52A2A"
   }
 
-  @doc '''
+  @doc """
   Converts a hex color string to RGB values.
 
   ## Examples
 
       iex> hex_to_rgb("#FF0000")
       {255, 0, 0}
-  '''
+  """
   def hex_to_rgb(hex) when is_binary(hex) do
     color = Color.from_hex(hex)
     {color.r, color.g, color.b}
   end
 
-  @doc '''
+  @doc """
   Converts RGB values to a hex color string.
 
   ## Examples
 
       iex> rgb_to_hex(255, 0, 0)
       "#FF0000"
-  '''
+  """
   def rgb_to_hex(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
     Color.from_rgb(r, g, b).hex
   end
 
-  @doc '''
+  @doc """
   Converts an ANSI color code to RGB values.
 
   ## Examples
 
       iex> ansi_to_rgb(1)
       {205, 0, 0}
-  '''
+  """
   def ansi_to_rgb(code) when code in 0..255 do
     color = Color.from_ansi(code)
     {color.r, color.g, color.b}
   end
 
-  @doc '''
+  @doc """
   Converts RGB values to the closest ANSI color code.
 
   ## Examples
 
       iex> rgb_to_ansi(255, 0, 0)
       196
-  '''
+  """
   def rgb_to_ansi(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
     Color.from_rgb(r, g, b) |> Color.to_ansi_256()
   end
 
-  @doc '''
+  @doc """
   Lightens a color by the specified amount.
 
   ## Examples
@@ -101,7 +101,7 @@ defmodule Raxol.UI.Theming.Colors do
       "#808080"
       iex> lighten(:red, 0.5)
       "#FF8080"
-  '''
+  """
   def lighten(color, amount)
       when is_integer(amount) and amount >= 0 and amount <= 100 do
     lighten(color, amount / 100)
@@ -124,7 +124,7 @@ defmodule Raxol.UI.Theming.Colors do
     end
   end
 
-  @doc '''
+  @doc """
   Darkens a color by the specified amount.
 
   ## Examples
@@ -133,7 +133,7 @@ defmodule Raxol.UI.Theming.Colors do
       "#808080"
       iex> darken(:red, 0.5)
       "#800000"
-  '''
+  """
   def darken(color, amount)
       when is_integer(amount) and amount >= 0 and amount <= 100 do
     darken(color, amount / 100)
@@ -156,7 +156,7 @@ defmodule Raxol.UI.Theming.Colors do
     end
   end
 
-  @doc '''
+  @doc """
   Blends two colors with the specified alpha value.
 
   ## Examples
@@ -165,7 +165,7 @@ defmodule Raxol.UI.Theming.Colors do
       "#800080"
       iex> blend(:red, :blue, 0.5)
       "#800080"
-  '''
+  """
   def blend(color1, color2, alpha) when alpha >= 0 and alpha <= 1 do
     hex1 = to_hex(color1)
     hex2 = to_hex(color2)
@@ -180,7 +180,7 @@ defmodule Raxol.UI.Theming.Colors do
     rgb_to_hex(r, g, b)
   end
 
-  @doc '''
+  @doc """
   Calculates the contrast ratio between two colors.
 
   ## Examples
@@ -189,7 +189,7 @@ defmodule Raxol.UI.Theming.Colors do
       21.0
       iex> contrast_ratio(:white, :black)
       21.0
-  '''
+  """
   def contrast_ratio(color1, color2) do
     hex1 = to_hex(color1)
     hex2 = to_hex(color2)
@@ -199,14 +199,14 @@ defmodule Raxol.UI.Theming.Colors do
     Utilities.contrast_ratio(c1, c2)
   end
 
-  @doc '''
+  @doc """
   Checks if two colors meet WCAG contrast requirements.
 
   ## Examples
 
       iex> meets_contrast_requirements?("#FFFFFF", "#000000", :AA, :normal)
       true
-  '''
+  """
   def meets_contrast_requirements?(color1, color2, level, size) do
     hex1 = to_hex(color1)
     hex2 = to_hex(color2)
@@ -216,32 +216,32 @@ defmodule Raxol.UI.Theming.Colors do
     Utilities.meets_contrast_requirements?(c1, c2, level, size)
   end
 
-  @doc '''
+  @doc """
   Converts RGB values to HSL values.
 
   ## Examples
 
       iex> rgb_to_hsl(255, 0, 0)
       {0, 1.0, 0.5}
-  '''
+  """
   def rgb_to_hsl(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
     Utilities.rgb_to_hsl(r, g, b)
   end
 
-  @doc '''
+  @doc """
   Converts HSL values to RGB values.
 
   ## Examples
 
       iex> hsl_to_rgb(0, 1.0, 0.5)
       {255, 0, 0}
-  '''
+  """
   def hsl_to_rgb(h, s, l)
       when h >= 0 and h <= 360 and s >= 0 and s <= 1 and l >= 0 and l <= 1 do
     Utilities.hsl_to_rgb(h, s, l)
   end
 
-  @doc '''
+  @doc """
   Converts a color from one format to RGB values.
 
   ## Examples
@@ -251,7 +251,7 @@ defmodule Raxol.UI.Theming.Colors do
 
       iex> Colors.to_rgb(:blue)
       {0, 0, 255}
-  '''
+  """
   def to_rgb(color) do
     case color do
       hex when is_binary(hex) -> hex_to_rgb(hex)
@@ -260,7 +260,7 @@ defmodule Raxol.UI.Theming.Colors do
     end
   end
 
-  @doc '''
+  @doc """
   Converts a color to its hex representation.
 
   ## Examples
@@ -270,7 +270,7 @@ defmodule Raxol.UI.Theming.Colors do
 
       iex> Colors.to_hex("#00FF00")
       "#00FF00"
-  '''
+  """
   def to_hex(color) do
     case color do
       hex when is_binary(hex) ->
@@ -284,7 +284,7 @@ defmodule Raxol.UI.Theming.Colors do
     end
   end
 
-  @doc '''
+  @doc """
   Converts a color to its ANSI representation.
 
   ## Examples
@@ -294,13 +294,13 @@ defmodule Raxol.UI.Theming.Colors do
 
       iex> Colors.to_ansi("#FF0000")
       196
-  '''
+  """
   def to_ansi(color) do
     {r, g, b} = to_rgb(color)
     rgb_to_ansi(r, g, b)
   end
 
-  @doc '''
+  @doc """
   Converts a color to its ANSI 16-color representation.
 
   ## Examples
@@ -310,7 +310,7 @@ defmodule Raxol.UI.Theming.Colors do
 
       iex> Colors.to_ansi_16("#FF0000")
       1
-  '''
+  """
   def to_ansi_16(color) do
     {r, g, b} = to_rgb(color)
     Color.from_rgb(r, g, b) |> Color.to_ansi_16()
@@ -384,9 +384,9 @@ defmodule Raxol.UI.Theming.Colors do
     dr * dr + dg * dg + db * db
   end
 
-  @doc '''
+  @doc """
   Finds the closest ANSI basic color index (0-15) to the given RGB color.
-  '''
+  """
   @spec find_closest_basic_color(color_rgb) :: 0..15
   def find_closest_basic_color(rgb) do
     @ansi_basic_colors
@@ -396,9 +396,9 @@ defmodule Raxol.UI.Theming.Colors do
     |> elem(0)
   end
 
-  @doc '''
+  @doc """
   Finds the closest ANSI 256-color index (0-255) to the given RGB color.
-  '''
+  """
   @spec find_closest_256_color(color_rgb) :: 0..255
   def find_closest_256_color(rgb) do
     @ansi_256_colors
@@ -420,11 +420,11 @@ defmodule Raxol.UI.Theming.Colors do
   # Return non-color values as is
   def convert_to_basic(value), do: value
 
-  @doc '''
+  @doc """
   Converts a color or theme map to use a specific palette (e.g., 256 colors).
   Finds the closest color in the palette for each color in the theme.
   *Currently only supports named palettes like :xterm256*
-  '''
+  """
   def convert_to_palette(value, palette_name \\ :xterm256)
 
   def convert_to_palette(color, palette_name) when is_tuple(color) do
@@ -462,14 +462,14 @@ defmodule Raxol.UI.Theming.Colors do
   # Removed unused distance/2 function
   # defp distance(c1, c2), do: :math.sqrt(color_distance_sq(c1, c2))
 
-  @doc '''
+  @doc """
   Checks if two colors are accessible according to WCAG contrast requirements.
 
   ## Examples
 
       iex> accessible?("#FFFFFF", "#000000", :aa, :normal)
       true
-  '''
+  """
   def accessible?(color1, color2, level, size) do
     meets_contrast_requirements?(color1, color2, level, size)
   end

@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
+  @moduledoc """
+  Tests for the notification plugin, including initialization, command handling,
+  notification sending, and error handling.
+  """
   # Use async: false due to Mox
   use ExUnit.Case, async: false
   # Add this import to make verify_on_exit! available
@@ -15,7 +19,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
   # Remove global skip tag to enable the tests
 
   describe "init" do
-    test 'init initializes state correctly' do
+    test "init initializes state correctly" do
       # Mock Application.get_env if needed, otherwise use default
       assert {:ok, state} = NotificationPlugin.init(%{})
       # Default
@@ -25,7 +29,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
       assert state.notifications == []
     end
 
-    test 'init respects interaction module from config' do
+    test "init respects interaction module from config" do
       # Temporarily set app env for this test
       Application.put_env(
         :raxol,
@@ -42,7 +46,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
 
   describe "get_commands" do
     @tag :notification
-    test 'get_commands/0 returns notify command' do
+    test "get_commands/0 returns notify command" do
       # Expect arity 2 for handle_command(args, state) as registered
       assert [{:notify, :handle_command, 2}] = NotificationPlugin.get_commands()
     end
@@ -310,23 +314,23 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
   end
 
   describe "terminate" do
-    test 'terminate/2 returns :ok' do
+    test "terminate/2 returns :ok" do
       assert NotificationPlugin.terminate(:shutdown, %{}) == :ok
     end
   end
 
   describe "enable/disable/filter_event" do
-    test 'enable returns :ok' do
+    test "enable returns :ok" do
       assert {:ok, _state} = NotificationPlugin.enable(%{enabled: false})
       # Optionally check if state is updated if enable/disable modified it
     end
 
-    test 'disable returns :ok' do
+    test "disable returns :ok" do
       assert {:ok, _state} = NotificationPlugin.disable(%{enabled: true})
       # Optionally check state
     end
 
-    test 'filter_event returns original event' do
+    test "filter_event returns original event" do
       event = {:input, :key, "a"}
       assert {:ok, ^event, _} = NotificationPlugin.filter_event(event, %{})
     end

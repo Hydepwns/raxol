@@ -1,7 +1,7 @@
 defmodule Raxol.System.DeltaUpdater do
-  @moduledoc '''
+  @moduledoc """
   Handles delta updates for the Raxol terminal emulator.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   # Called via adapter now
@@ -36,7 +36,8 @@ defmodule Raxol.System.DeltaUpdater do
     random_suffix = :rand.uniform(1_000_000)
 
     with {:ok, base_tmp_dir} <- @system_adapter.system_tmp_dir(),
-         tmp_dir_path = Path.join(base_tmp_dir, "raxol_update_#{random_suffix}"),
+         tmp_dir_path =
+           Path.join(base_tmp_dir, "raxol_update_#{random_suffix}"),
          :ok <- @system_adapter.file_mkdir_p(tmp_dir_path) do
       try do
         perform_update(tmp_dir_path, delta_url, target_version)
@@ -138,9 +139,14 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   defp check_version(exe_path, expected_version) do
-    case @system_adapter.system_cmd(exe_path, ["--version"], stderr_to_stdout: true) do
+    case @system_adapter.system_cmd(exe_path, ["--version"],
+           stderr_to_stdout: true
+         ) do
       {output, 0} ->
-        if String.contains?(output, expected_version), do: :ok, else: {:error, :version_verification_failed}
+        if String.contains?(output, expected_version),
+          do: :ok,
+          else: {:error, :version_verification_failed}
+
       {error_output, _exit_status} ->
         {:error, {:verify_failed_to_run, error_output}}
     end

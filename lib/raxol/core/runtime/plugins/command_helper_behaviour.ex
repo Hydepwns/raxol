@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandHelper.Behaviour do
-  @moduledoc '''
+  @moduledoc """
   Defines the behaviour for plugin command management.
 
   This behaviour is responsible for:
@@ -7,33 +7,33 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper.Behaviour do
   - Managing command handlers
   - Validating command specifications
   - Handling command execution
-  '''
+  """
 
-  @doc '''
+  @doc """
   Registers commands for a plugin.
-  '''
+  """
   @callback register_plugin_commands(
               plugin_module :: module(),
               plugin_state :: map(),
               command_table :: atom()
             ) :: :ok | {:error, any()}
 
-  @doc '''
+  @doc """
   Unregisters commands for a plugin.
-  '''
+  """
   @callback unregister_plugin_commands(
               plugin_id :: String.t(),
               command_table :: atom()
             ) :: :ok | {:error, any()}
 
-  @doc '''
+  @doc """
   Validates a plugin's command specifications.
-  '''
+  """
   @callback validate_commands(commands :: list(map())) :: :ok | {:error, any()}
 
-  @doc '''
+  @doc """
   Executes a command for a plugin.
-  '''
+  """
   @callback execute_command(
               command :: atom(),
               args :: list(),
@@ -41,9 +41,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper.Behaviour do
               plugin_state :: map()
             ) :: {:ok, map()} | {:error, any()}
 
-  @doc '''
+  @doc """
   Gets all registered commands for a plugin.
-  '''
+  """
   @callback get_plugin_commands(
               plugin_id :: String.t(),
               command_table :: atom()

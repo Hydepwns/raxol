@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Renderer.Views.Table do
-  @moduledoc '''
+  @moduledoc """
   Table view component for displaying tabular data.
 
   Features:
@@ -9,7 +9,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   * Border styles
   * Column resizing
   * Row selection
-  '''
+  """
 
   @behaviour Raxol.UI.Components.Base.Component
 
@@ -50,13 +50,14 @@ defmodule Raxol.Core.Renderer.Views.Table do
         }
 
   defmodule RowContext do
+    @moduledoc false
     defstruct index: nil, row: nil, style: [], columns: [], widths: []
   end
 
-  @doc '''
+  @doc """
   Initializes the Table component with props.
   Props are expected to be a map.
-  '''
+  """
   @impl Raxol.UI.Components.Base.Component
   def init(props) when is_map(props) do
     fields = extract_table_fields(props)
@@ -72,27 +73,27 @@ defmodule Raxol.Core.Renderer.Views.Table do
     {:error, :invalid_props, props}
   end
 
-  @doc '''
+  @doc """
   Called when the component is mounted.
-  '''
+  """
   @impl Raxol.UI.Components.Base.Component
   def mount(state) do
     # No commands on mount for now
     {:ok, state, []}
   end
 
-  @doc '''
+  @doc """
   Renders the Table component based on its current state.
-  '''
+  """
   @impl Raxol.UI.Components.Base.Component
   def render(%__MODULE__{} = state, _props_or_context) do
     content = build_table_content(state)
     wrap_table_content(content, state.border)
   end
 
-  @doc '''
+  @doc """
   Renders the table content, potentially with a border.
-  '''
+  """
   def render_content(state), do: render(state, %{})
 
   defp build_table_content(state) do
@@ -135,18 +136,18 @@ defmodule Raxol.Core.Renderer.Views.Table do
     end
   end
 
-  @doc '''
+  @doc """
   Handles updates to the component state.
-  '''
+  """
   @impl Raxol.UI.Components.Base.Component
   def update(%__MODULE__{} = state, message) do
     log_component(:update, message)
     default_update_response(state)
   end
 
-  @doc '''
+  @doc """
   Handles dispatched events.
-  '''
+  """
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, _props_or_context, %__MODULE__{} = state) do
     log_component(:event, event)
@@ -161,9 +162,9 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   defp default_update_response(state), do: {:ok, state, []}
 
-  @doc '''
+  @doc """
   Called when the component is about to be unmounted.
-  '''
+  """
   @impl Raxol.UI.Components.Base.Component
   def unmount(%__MODULE__{} = state) do
     # No specific cleanup for now
@@ -274,10 +275,10 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   defp format_cell_value(value, _), do: to_string(value)
 
-  @doc '''
+  @doc """
   Constructs a Table struct for view usage (not stateful component usage).
   Accepts a map of props and returns the struct directly (not a tuple).
-  '''
+  """
   def new(props) when is_map(props) do
     fields = extract_table_fields(props)
     build_initial_state(fields)
@@ -329,11 +330,11 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   # Group handle_call clauses together
-  def handle_call({:update_props, _new_props}, _from, _state) do
-    # TODO: Implement this
+  def handle_call({:update_props, _new_props}, _from, state) do
+    {:reply, :not_implemented, state}
   end
 
-  def handle_call({:get_state}, _from, _state) do
-    # TODO: Implement this
+  def handle_call({:get_state}, _from, state) do
+    {:reply, :not_implemented, state}
   end
 end

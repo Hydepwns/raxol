@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.SessionTest do
   end
 
   describe "Session GenServer API" do
-    test 'start_link/1 starts a session and process is alive' do
+    test ~c"start_link/1 starts a session and process is alive" do
       {:ok, pid} =
         Session.start_link(width: 100, height: 40, title: "Test Terminal")
 
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.SessionTest do
       on_exit(fn -> cleanup_process(pid) end)
     end
 
-    test 'get_state/1 returns the correct initial state' do
+    test ~c"get_state/1 returns the correct initial state" do
       {:ok, pid} =
         Session.start_link(width: 90, height: 30, title: "Test Terminal")
 
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert %Renderer{} = state.renderer
     end
 
-    test 'update_state/2 updates the session state' do
+    test ~c"update_state/2 updates the session state" do
       {:ok, pid} =
         Session.start_link(width: 80, height: 24, title: "Test Terminal")
 
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert updated_state.title == "Test Terminal"
     end
 
-    test 'update_state/2 preserves existing state for unspecified fields' do
+    test ~c"update_state/2 preserves existing state for unspecified fields" do
       {:ok, pid} =
         Session.start_link(width: 80, height: 24, title: "Test Terminal")
 
@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert state.title == "Test Terminal"
     end
 
-    test 'update_state/2 handles invalid state updates' do
+    test ~c"update_state/2 handles invalid state updates" do
       {:ok, pid} =
         Session.start_link(width: 80, height: 24, title: "Test Terminal")
 
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert state.height == 24
     end
 
-    test 'update_state/2 handles concurrent updates' do
+    test ~c"update_state/2 handles concurrent updates" do
       {:ok, pid} =
         Session.start_link(width: 80, height: 24, title: "Test Terminal")
 
@@ -124,7 +124,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert state.title == "Updated"
     end
 
-    test 'update_state/2 handles process termination' do
+    test ~c"update_state/2 handles process termination" do
       {:ok, pid} =
         Session.start_link(width: 80, height: 24, title: "Test Terminal")
 
@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert {:error, :noproc} = Session.update_state(pid, %{width: 100})
     end
 
-    test 'get_state/1 handles process termination' do
+    test ~c"get_state/1 handles process termination" do
       {:ok, pid} =
         Session.start_link(width: 80, height: 24, title: "Test Terminal")
 

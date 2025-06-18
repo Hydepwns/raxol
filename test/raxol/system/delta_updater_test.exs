@@ -15,7 +15,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
     # Add Mox verification
     setup :verify_on_exit!
 
-    test 'returns delta info when delta is available' do
+    test ~c"returns delta info when delta is available" do
       # Mock the adapter behaviour
       DeltaUpdaterSystemAdapterMock
       |> expect(:current_version, fn -> "1.1.0" end)
@@ -23,7 +23,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
       |> expect(:http_get, fn url ->
         # Simulate response for release v1.2.0
         if String.contains?(url, "releases/tags/v1.2.0") do
-          body = '''
+          body = """
           {
             "assets": [
               {
@@ -38,7 +38,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
               }
             ]
           }
-          '''
+          """
 
           {:ok, body}
         else
@@ -56,7 +56,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
       assert delta_info.savings_percent == 90
     end
 
-    test 'returns error when delta is not available' do
+    test ~c"returns error when delta is not available" do
       # Mock the adapter behaviour
       DeltaUpdaterSystemAdapterMock
       |> expect(:current_version, fn -> "1.1.0" end)
@@ -64,7 +64,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
       |> expect(:http_get, fn url ->
         # Simulate response for release v1.3.0
         if String.contains?(url, "releases/tags/v1.3.0") do
-          body = '''
+          body = """
           {
             "assets": [
               {
@@ -79,7 +79,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
               }
             ]
           }
-          '''
+          """
 
           {:ok, body}
         else

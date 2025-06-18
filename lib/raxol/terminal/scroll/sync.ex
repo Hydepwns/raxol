@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Scroll.Sync do
-  @moduledoc '''
+  @moduledoc """
   Handles scroll synchronization across terminal splits.
-  '''
+  """
 
   @type t :: %__MODULE__{
           sync_enabled: boolean(),
@@ -13,9 +13,9 @@ defmodule Raxol.Terminal.Scroll.Sync do
     :last_sync
   ]
 
-  @doc '''
+  @doc """
   Creates a new sync instance.
-  '''
+  """
   @spec new() :: t()
   def new do
     %__MODULE__{
@@ -24,9 +24,9 @@ defmodule Raxol.Terminal.Scroll.Sync do
     }
   end
 
-  @doc '''
+  @doc """
   Synchronizes scroll operations across splits.
-  '''
+  """
   @spec sync(t(), :up | :down, non_neg_integer()) :: t()
   def sync(sync, direction, lines) do
     # Update last sync time

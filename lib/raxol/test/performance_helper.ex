@@ -1,5 +1,5 @@
 defmodule Raxol.Test.PerformanceHelper do
-  @moduledoc '''
+  @moduledoc """
   Provides utilities for performance testing and benchmarking in Raxol.
 
   This module includes:
@@ -7,17 +7,17 @@ defmodule Raxol.Test.PerformanceHelper do
   - Performance test setup and teardown
   - Common performance test scenarios
   - Metrics collection and reporting
-  '''
+  """
 
   use ExUnit.CaseTemplate
   import ExUnit.Callbacks
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Sets up a test environment optimized for performance testing.
 
   Returns a context map with initialized services and performance monitoring.
-  '''
+  """
   def setup_performance_test_env do
     # Start performance monitoring
     {:ok, monitor_pid} = start_supervised(Raxol.Core.Performance.Monitor)
@@ -30,14 +30,14 @@ defmodule Raxol.Test.PerformanceHelper do
     {:ok, context}
   end
 
-  @doc '''
+  @doc """
   Runs a benchmark with the given function and options.
 
   ## Options
     * `:iterations` - Number of iterations to run (default: 1000)
     * `:warmup` - Number of warmup iterations (default: 100)
     * `:timeout` - Maximum time to run in milliseconds (default: 5000)
-  '''
+  """
   def benchmark(fun, opts \\ []) do
     iterations = Keyword.get(opts, :iterations, 1000)
     warmup = Keyword.get(opts, :warmup, 100)
@@ -78,14 +78,14 @@ defmodule Raxol.Test.PerformanceHelper do
     }
   end
 
-  @doc '''
+  @doc """
   Asserts that a benchmark meets performance requirements.
 
   ## Options
     * `:max_average_time` - Maximum allowed average time in microseconds
     * `:max_p95_time` - Maximum allowed 95th percentile time in microseconds
     * `:min_iterations` - Minimum number of iterations required
-  '''
+  """
   def assert_performance(benchmark_result, opts \\ []) do
     max_avg = Keyword.get(opts, :max_average_time)
     max_p95 = Keyword.get(opts, :max_p95_time)
@@ -116,20 +116,20 @@ defmodule Raxol.Test.PerformanceHelper do
     :ok
   end
 
-  @doc '''
+  @doc """
   Calculates the nth percentile from a list of times.
-  '''
+  """
   def calculate_percentile(times, percentile) do
     sorted_times = Enum.sort(times)
     index = trunc(length(sorted_times) * percentile / 100)
     Enum.at(sorted_times, index)
   end
 
-  @doc '''
+  @doc """
   Formats benchmark results for human-readable output.
-  '''
+  """
   def format_benchmark_results(results) do
-    '''
+    """
     Benchmark Results:
     ----------------
     Total Time: #{format_time(results.total_time)}
@@ -137,7 +137,7 @@ defmodule Raxol.Test.PerformanceHelper do
     Min Time: #{format_time(results.min_time)}
     Max Time: #{format_time(results.max_time)}
     Iterations: #{results.iterations}
-    '''
+    """
   end
 
   defp format_time(time) do
@@ -148,10 +148,10 @@ defmodule Raxol.Test.PerformanceHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Measures the execution time of an operation.
   Returns {time_in_ms, result}.
-  '''
+  """
   def measure_time(operation) do
     start = System.monotonic_time()
     result = operation.()
@@ -160,10 +160,10 @@ defmodule Raxol.Test.PerformanceHelper do
     {time, result}
   end
 
-  @doc '''
+  @doc """
   Measures the average execution time of an operation over multiple iterations.
   Returns the average time in milliseconds.
-  '''
+  """
   def measure_average_time(operation, iterations \\ 1000) do
     {time, _} =
       measure_time(fn ->
@@ -175,10 +175,10 @@ defmodule Raxol.Test.PerformanceHelper do
     time / iterations
   end
 
-  @doc '''
+  @doc """
   Asserts that an operation's average execution time is below a threshold.
   Use this for direct operation timing, not for benchmark result structs.
-  '''
+  """
   def assert_operation_performance(
         operation,
         name,
@@ -193,9 +193,9 @@ defmodule Raxol.Test.PerformanceHelper do
     )
   end
 
-  @doc '''
+  @doc """
   Asserts that a set of concurrent operations' average execution time is below a threshold.
-  '''
+  """
   def assert_concurrent_performance(
         operations,
         name,
@@ -219,10 +219,10 @@ defmodule Raxol.Test.PerformanceHelper do
     )
   end
 
-  @doc '''
+  @doc """
   Measures memory usage of an operation.
   Returns {memory_in_bytes, result}.
-  '''
+  """
   def measure_memory(operation) do
     :erlang.garbage_collect()
     before = :erlang.memory(:total)
@@ -232,9 +232,9 @@ defmodule Raxol.Test.PerformanceHelper do
     {after_memory - before, result}
   end
 
-  @doc '''
+  @doc """
   Asserts that an operation's memory usage is below a threshold.
-  '''
+  """
   def assert_memory_usage(operation, name, threshold \\ 1_000_000) do
     {memory, _} = measure_memory(operation)
 
@@ -244,9 +244,9 @@ defmodule Raxol.Test.PerformanceHelper do
     )
   end
 
-  @doc '''
+  @doc """
   Measures and asserts both time and memory performance.
-  '''
+  """
   def assert_performance_metrics(
         operation,
         name,

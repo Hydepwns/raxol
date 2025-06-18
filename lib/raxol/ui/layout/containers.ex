@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Layout.Containers do
-  @moduledoc '''
+  @moduledoc """
   Handles layout calculations for container elements like rows and columns.
 
   This module is responsible for:
@@ -7,11 +7,11 @@ defmodule Raxol.UI.Layout.Containers do
   * Column layout calculations
   * Flexbox-like distribution of space
   * Gap and alignment handling
-  '''
+  """
 
   alias Raxol.UI.Layout.Engine
 
-  @doc '''
+  @doc """
   Processes a row element, calculating layout for it and its children.
 
   ## Parameters
@@ -23,7 +23,7 @@ defmodule Raxol.UI.Layout.Containers do
   ## Returns
 
   A list of positioned elements with absolute coordinates.
-  '''
+  """
   def process_row(%{type: :row, attrs: attrs, children: children}, space, acc)
       when is_list(children) do
     # Calculate spacing between items
@@ -113,7 +113,7 @@ defmodule Raxol.UI.Layout.Containers do
 
   def process_row(_, _space, acc), do: acc
 
-  @doc '''
+  @doc """
   Processes a column element, calculating layout for it and its children.
 
   ## Parameters
@@ -125,7 +125,7 @@ defmodule Raxol.UI.Layout.Containers do
   ## Returns
 
   A list of positioned elements with absolute coordinates.
-  '''
+  """
   def process_column(
         %{type: :column, attrs: attrs, children: children},
         space,
@@ -219,7 +219,7 @@ defmodule Raxol.UI.Layout.Containers do
 
   def process_column(_, _space, acc), do: acc
 
-  @doc '''
+  @doc """
   Measures the space needed by a row element.
 
   ## Parameters
@@ -230,7 +230,7 @@ defmodule Raxol.UI.Layout.Containers do
   ## Returns
 
   The dimensions of the row: %{width: w, height: h}
-  '''
+  """
   def measure_row(
         %{type: :row, attrs: _attrs, children: children},
         available_space
@@ -268,7 +268,7 @@ defmodule Raxol.UI.Layout.Containers do
 
   def measure_row(_, _available_space), do: %{width: 0, height: 0}
 
-  @doc '''
+  @doc """
   Measures the space needed by a column element.
 
   ## Parameters
@@ -279,7 +279,7 @@ defmodule Raxol.UI.Layout.Containers do
   ## Returns
 
   The dimensions of the column: %{width: w, height: h}
-  '''
+  """
   def measure_column(
         %{type: :column, attrs: _attrs, children: children},
         available_space

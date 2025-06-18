@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Supervisor do
-  @moduledoc '''
+  @moduledoc """
   Supervisor for terminal-related processes.
-  '''
+  """
 
   use Supervisor
 

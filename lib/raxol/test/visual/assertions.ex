@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Visual.Assertions do
-  @moduledoc '''
+  @moduledoc """
   Provides custom assertions for visual testing of Raxol components.
 
   This module includes assertions for:
@@ -8,28 +8,28 @@ defmodule Raxol.Test.Visual.Assertions do
   - Style checking
   - Visual regression testing
   - Terminal output comparison
-  '''
+  """
 
   import ExUnit.Assertions
   alias Raxol.Test.Visual
 
-  @doc '''
+  @doc """
   Asserts that a component's rendered output matches the expected snapshot.
 
   ## Example
 
       assert_matches_snapshot(component, "button_primary")
-  '''
+  """
   def assert_matches_snapshot(component, name, context \\ %{}) do
     case Visual.compare_with_snapshot(component, name, context) do
       :ok ->
         true
 
       {:diff, diff} ->
-        flunk('''
+        flunk("""
         Component render does not match snapshot:
         #{format_diff(diff)}
-        ''')
+        """)
 
       {:error, :no_snapshot} ->
         _snapshot_content = Visual.snapshot_component(component, name, context)
@@ -37,13 +37,13 @@ defmodule Raxol.Test.Visual.Assertions do
     end
   end
 
-  # @doc '''
+  # @doc """
   # Asserts that a component's layout matches the expected dimensions.
   #
   # ## Example
   #
   #     assert_layout_matches component, width: 10, height: 5
-  # '''
+  # """
   # def assert_layout_matches(component, dimensions) do
   #   message = "expected layout dimensions to match #{inspect(dimensions)}, but they didn't"
   #
@@ -57,13 +57,13 @@ defmodule Raxol.Test.Visual.Assertions do
   #   :ok # Returning ok for now
   # end
 
-  @doc '''
+  @doc """
   Asserts that a component renders with the expected content.
 
   ## Example
 
       assert_renders_with component, "Expected Content"
-  '''
+  """
   def assert_renders_with(component, expected) when is_binary(expected) do
     output = Visual.capture_render(component)
 
@@ -71,13 +71,13 @@ defmodule Raxol.Test.Visual.Assertions do
            "Expected rendered output to include: #{inspect(expected)}\nGot: #{inspect(output)}"
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's style matches the expected theme.
 
   ## Example
 
       assert_styled_with component, %{color: :blue, bold: true}
-  '''
+  """
   def assert_styled_with(component, style) when is_map(style) do
     output = Visual.capture_render(component)
 
@@ -87,7 +87,7 @@ defmodule Raxol.Test.Visual.Assertions do
     end)
   end
 
-  @doc '''
+  @doc """
   Asserts that a component renders correctly at different terminal sizes.
 
   ## Example
@@ -97,7 +97,7 @@ defmodule Raxol.Test.Visual.Assertions do
         {40, 12},
         {20, 6}
       ]
-  '''
+  """
   def assert_responsive(component, sizes) when is_list(sizes) do
     results = Visual.test_responsive_rendering(component, sizes)
 
@@ -117,7 +117,7 @@ defmodule Raxol.Test.Visual.Assertions do
     end)
   end
 
-  @doc '''
+  @doc """
   Asserts that a component renders consistently across different themes.
 
   ## Example
@@ -126,7 +126,7 @@ defmodule Raxol.Test.Visual.Assertions do
         light: light_theme,
         dark: dark_theme
       }
-  '''
+  """
   def assert_theme_consistent(component, themes) when is_map(themes) do
     results = Visual.test_themed_rendering(component, themes)
 
@@ -149,14 +149,14 @@ defmodule Raxol.Test.Visual.Assertions do
     end)
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's borders and edges align properly.
 
   ## Example
 
       assert_aligned component, :all
       assert_aligned component, [:top, :left]
-  '''
+  """
   def assert_aligned(component, edges) do
     output = Visual.capture_render(component)
     lines = String.split(output, "\n")
@@ -188,13 +188,13 @@ defmodule Raxol.Test.Visual.Assertions do
     end)
   end
 
-  # @doc '''
+  # @doc """
   # Asserts that a component's layout constraints match the expected dimensions.
   #
   # ## Example
   #
   #     assert_layout_constraints component, width: 10, height: 5
-  # '''
+  # """
   # def assert_layout_constraints(component, dimensions) do
   #   message =
   #     "expected component layout to match constraints with dimensions #{inspect(dimensions)}, but it didn't"

@@ -1,20 +1,21 @@
 defmodule Raxol.Animation.Accessibility do
-  @moduledoc '''
+  @moduledoc """
   Handles accessibility concerns for the Animation Framework,
   specifically adapting animations for reduced motion preferences.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Adapts an animation definition based on reduced motion settings.
 
   Currently, it significantly shortens the duration to provide a near-instant transition.
   Alternative strategies include setting duration to 0 or changing animation type.
-  '''
+  """
   def adapt_for_reduced_motion(animation) do
     Raxol.Core.Runtime.Log.debug(
-      "[Animation] Adapting "#{animation.name}" for reduced motion."
+      # {animation.name}" for reduced motion."
+      "[Animation] Adapting "
     )
 
     # Use Map.put to avoid potential KeyError with struct-like maps
@@ -26,28 +27,29 @@ defmodule Raxol.Animation.Accessibility do
     # %{animation | disabled: true}
   end
 
-  @doc '''
+  @doc """
   Adapts an animation definition for cognitive accessibility by increasing its duration.
 
   This makes animations slower and potentially easier to follow.
-  '''
+  """
   def adapt_for_cognitive_accessibility(animation) do
     original_duration = animation.duration
     cognitive_duration = round(original_duration * 1.5)
 
     Raxol.Core.Runtime.Log.debug(
-      "[Animation] Adapting "#{animation.name}" for cognitive accessibility. Duration: #{original_duration} -> #{cognitive_duration}."
+      # {animation.name}" for cognitive accessibility. Duration: #{original_duration} -> #{cognitive_duration}."
+      "[Animation] Adapting "
     )
 
     Map.put(animation, :duration, cognitive_duration)
   end
 
-  @doc '''
+  @doc """
   Adapts an animation definition based on reduced motion and cognitive accessibility settings.
   If reduced_motion is true, applies reduced motion adaptation.
   If cognitive_accessibility is true, applies cognitive accessibility adaptation.
   Otherwise, returns the animation unchanged.
-  '''
+  """
   def adapt_animation(animation, reduced_motion, cognitive_accessibility) do
     cond do
       reduced_motion ->

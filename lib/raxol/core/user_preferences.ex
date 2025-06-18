@@ -1,9 +1,9 @@
 defmodule Raxol.Core.UserPreferences do
-  @moduledoc '''
+  @moduledoc """
   Manages user preferences for the terminal emulator.
 
   Acts as a GenServer holding the preferences state and handles persistence.
-  '''
+  """
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -16,7 +16,7 @@ defmodule Raxol.Core.UserPreferences do
 
   # --- Data Structure ---
   defmodule State do
-    @moduledoc 'Internal state for the UserPreferences GenServer.'
+    @moduledoc "Internal state for the UserPreferences GenServer."
     defstruct preferences: %{},
               # Stores ref for the save timer
               save_timer: nil
@@ -154,21 +154,50 @@ defmodule Raxol.Core.UserPreferences do
     {:reply, :ok, new_state}
   end
 
+  # Schedules a save operation, cancelling any existing timer
+  defp schedule_save(state = %State{save_timer: existing_timer}) do
+    cancel_save_timer(existing_timer)
+
+    timer_id = System.unique_integer([:positive])
+
+    Process.send_after(
+      self(),
+      {:perform_delayed_save, timer_id},
+      @save_delay_ms
+    )
+
+    %{state | save_timer: timer_id}
+  end
+
+  # Cancels a Process.send_after timer if it exists
+  defp cancel_save_timer(timer_id) when is_integer(timer_id) do
+    # We can't actually cancel the timer, but we can ignore its message
+    # when it arrives by checking the timer_id
+    :ok
+  end
+
+  defp cancel_save_timer(_), do: :ok
+
   # Handle the delayed save message
   @impl true
-  def handle_info(:perform_delayed_save, state) do
-    case Persistence.save(state.preferences) do
-      :ok ->
-        Raxol.Core.Runtime.Log.debug("User preferences saved after delay.")
+  def handle_info({:perform_delayed_save, timer_id}, state) do
+    if timer_id == state.save_timer do
+      case Persistence.save(state.preferences) do
+        :ok ->
+          Raxol.Core.Runtime.Log.debug("User preferences saved after delay.")
 
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to save preferences after delay: #{inspect(reason)}"
-        )
+        {:error, reason} ->
+          Raxol.Core.Runtime.Log.error(
+            "Failed to save preferences after delay: #{inspect(reason)}"
+          )
+      end
+
+      # Reset the timer id in state
+      {:noreply, %{state | save_timer: nil}}
+    else
+      # Ignore stale timer messages
+      {:noreply, state}
     end
-
-    # Reset the timer ref in state
-    {:noreply, %{state | save_timer: nil}}
   end
 
   # Catch-all for unexpected messages
@@ -192,21 +221,6 @@ defmodule Raxol.Core.UserPreferences do
     end)
   end
 
-  # Schedules a save operation, cancelling any existing timer
-  defp schedule_save(state = %State{save_timer: existing_timer}) do
-    cancel_save_timer(existing_timer)
-
-    new_timer =
-      Process.send_after(self(), :perform_delayed_save, @save_delay_ms)
-
-    %{state | save_timer: new_timer}
-  end
-
-  # Cancels a Process.send_after timer if it exists
-  defp cancel_save_timer(timer_ref) do
-    if timer_ref, do: Process.cancel_timer(timer_ref)
-  end
-
   # Helper to normalize key paths to a list of atoms
   defp normalize_path(path) when is_atom(path), do: [path]
   # Assume list is already correct
@@ -226,9 +240,9 @@ defmodule Raxol.Core.UserPreferences do
       []
   end
 
-  @doc '''
+  @doc """
   Returns the current theme id as an atom, defaulting to :default if not set or invalid.
-  '''
+  """
   def get_theme_id(pid_or_name \\ __MODULE__) do
     theme = get([:theme, :active_id], pid_or_name) || get(:theme, pid_or_name)
 
@@ -248,11 +262,11 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @doc '''
+  @doc """
   Returns the default preferences map.
   This includes default values for theme, terminal configuration, accessibility settings,
   and keybindings.
-  '''
+  """
   def default_preferences do
     %{
       theme: Raxol.UI.Theming.Theme.default_theme().name,

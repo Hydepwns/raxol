@@ -1,15 +1,15 @@
 defmodule Raxol.Test.EventHelpers do
-  @moduledoc '''
+  @moduledoc """
   Helpers for testing event handling in Raxol components.
   Provides utilities for simulating and verifying events.
-  '''
+  """
 
   alias Raxol.Core.Events.Event
   import ExUnit.Assertions
 
-  @doc '''
+  @doc """
   Simulates a user action on a component.
-  '''
+  """
   def simulate_user_action(component, action) do
     case action do
       {:click, pos} ->
@@ -35,16 +35,16 @@ defmodule Raxol.Test.EventHelpers do
     end
   end
 
-  @doc '''
+  @doc """
   Simulates an event on a component.
-  '''
+  """
   def simulate_event(component, event) do
     Raxol.Test.Unit.simulate_event(component, event)
   end
 
-  @doc '''
+  @doc """
   Asserts that a child component received an event from parent.
-  '''
+  """
   def assert_child_received(_child, event_name) do
     receive do
       {:event, received_event_name} ->
@@ -54,24 +54,24 @@ defmodule Raxol.Test.EventHelpers do
     end
   end
 
-  @doc '''
+  @doc """
   Asserts that a parent component was updated after a child event.
-  '''
+  """
   def assert_parent_updated(parent, update_type) do
     assert Map.get(parent.state, update_type) != nil
   end
 
-  @doc '''
+  @doc """
   Verifies that state is synchronized between components.
-  '''
+  """
   def assert_state_synchronized(components, validation_fn) do
     component_states = Enum.map(components, & &1.state)
     assert validation_fn.(component_states)
   end
 
-  @doc '''
+  @doc """
   Verifies that a component properly handles system events.
-  '''
+  """
   def assert_system_events_handled(component, events) do
     Enum.each(events, fn event ->
       {updated, _} = simulate_event(component, event)
@@ -81,9 +81,9 @@ defmodule Raxol.Test.EventHelpers do
     end)
   end
 
-  @doc '''
+  @doc """
   Verifies that error handling works properly between components.
-  '''
+  """
   def assert_error_contained(parent, child, error_fn) do
     try do
       error_fn.()

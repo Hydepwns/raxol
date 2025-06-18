@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Sync.UnifiedSync do
-  @moduledoc '''
+  @moduledoc """
   Unified synchronization system for the Raxol terminal emulator.
   This module provides centralized synchronization mechanisms for:
   - State synchronization between windows
   - Event synchronization
   - Resource synchronization
-  '''
+  """
 
   use GenServer
   require Logger
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the unified synchronization manager.
 
   ## Options
@@ -37,12 +37,12 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     * `:conflict_resolution` - Default conflict resolution strategy
     * `:timeout` - Default synchronization timeout in milliseconds
     * `:retry_count` - Default number of retry attempts
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Creates a new synchronization context.
 
   ## Parameters
@@ -52,12 +52,12 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
       * `:conflict_resolution` - Conflict resolution strategy
       * `:timeout` - Synchronization timeout
       * `:retry_count` - Number of retry attempts
-  '''
+  """
   def create_sync(type, opts \\ []) do
     GenServer.call(__MODULE__, {:create_sync, type, opts})
   end
 
-  @doc '''
+  @doc """
   Synchronizes data between windows.
 
   ## Parameters
@@ -66,22 +66,22 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     * `opts` - Synchronization options
       * `:version` - Current version of the data
       * `:metadata` - Additional metadata
-  '''
+  """
   def sync(sync_id, data, opts \\ []) do
     GenServer.call(__MODULE__, {:sync, sync_id, data, opts})
   end
 
-  @doc '''
+  @doc """
   Gets the current state of a synchronization context.
 
   ## Parameters
     * `sync_id` - The synchronization context ID
-  '''
+  """
   def get_sync_state(sync_id) do
     GenServer.call(__MODULE__, {:get_sync_state, sync_id})
   end
 
-  @doc '''
+  @doc """
   Resolves conflicts between synchronized data.
 
   ## Parameters
@@ -89,17 +89,17 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     * `conflicts` - List of conflicting versions
     * `opts` - Resolution options
       * `:strategy` - Override the default conflict resolution strategy
-  '''
+  """
   def resolve_conflicts(sync_id, conflicts, opts \\ []) do
     GenServer.call(__MODULE__, {:resolve_conflicts, sync_id, conflicts, opts})
   end
 
-  @doc '''
+  @doc """
   Cleans up a synchronization context.
 
   ## Parameters
     * `sync_id` - The synchronization context ID
-  '''
+  """
   def cleanup(sync_id) do
     GenServer.call(__MODULE__, {:cleanup, sync_id})
   end

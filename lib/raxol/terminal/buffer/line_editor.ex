@@ -1,18 +1,18 @@
 defmodule Raxol.Terminal.Buffer.LineEditor do
-  @moduledoc '''
+  @moduledoc """
   Provides functionality for line editing operations in the terminal buffer.
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @doc '''
+  @doc """
   Inserts a specified number of blank lines at the given row index using the provided default_style.
   Existing lines from the insertion point downwards are shifted down.
   Lines shifted off the bottom of the buffer are discarded.
   Uses the buffer's default style for new lines.
-  '''
+  """
   @spec insert_lines(
           ScreenBuffer.t(),
           integer(),
@@ -46,12 +46,12 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
-  @doc '''
+  @doc """
   Deletes a specified number of lines starting from the given row index.
   Lines below the deleted lines are shifted up.
   Blank lines are added at the bottom of the buffer to fill the space using the provided default_style.
   Uses the buffer's default style for new lines.
-  '''
+  """
   @spec delete_lines(
           ScreenBuffer.t(),
           integer(),

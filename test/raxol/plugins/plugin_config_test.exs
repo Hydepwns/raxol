@@ -1,21 +1,21 @@
 defmodule Raxol.Plugins.PluginConfigTest do
   use ExUnit.Case
 
-  @moduledoc '''
+  @moduledoc """
   Tests for plugin configuration functionality including loading, saving,
   and managing plugin settings.
-  '''
+  """
 
   alias Raxol.Plugins.PluginConfig
 
   describe "plugin configuration" do
-    test 'creates a new plugin configuration' do
+    test "creates a new plugin configuration" do
       config = PluginConfig.new()
       assert config.plugin_configs == %{}
       assert config.enabled_plugins == []
     end
 
-    test 'loads and saves plugin configuration' do
+    test "loads and saves plugin configuration" do
       # Create initial config
       config = PluginConfig.new()
 
@@ -37,7 +37,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
       assert "test_plugin" in loaded_config.enabled_plugins
     end
 
-    test 'gets plugin configuration' do
+    test "gets plugin configuration" do
       config = PluginConfig.new()
 
       config =
@@ -53,7 +53,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
       assert plugin_config == %{}
     end
 
-    test 'updates plugin configuration' do
+    test "updates plugin configuration" do
       config = PluginConfig.new()
 
       config =
@@ -70,7 +70,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
       assert plugin_config == %{setting: "new_value"}
     end
 
-    test 'enables and disables plugins' do
+    test "enables and disables plugins" do
       config = PluginConfig.new()
 
       # Enable plugin
@@ -86,7 +86,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
       refute PluginConfig.is_plugin_enabled?(config, "test_plugin")
     end
 
-    test 'handles loading non-existent configuration file' do
+    test "handles loading non-existent configuration file" do
       # Set HOME to a temporary directory to ensure clean state
       System.put_env("HOME", System.tmp_dir!())
 

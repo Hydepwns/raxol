@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
-  @moduledoc '''
+  @moduledoc """
   Handles standard mode operations and their side effects.
   Manages standard terminal modes like insert mode and line feed mode.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
 
-  @doc '''
+  @doc """
   Handles a standard mode change and applies its effects to the emulator.
-  '''
+  """
   @spec handle_mode_change(atom(), ModeTypes.mode_value(), Emulator.t()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def handle_mode_change(mode_name, value, emulator) do

@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Integration do
-  @moduledoc '''
+  @moduledoc """
   Provides utilities for testing component interactions and system integration.
 
   This module focuses on testing:
@@ -27,7 +27,7 @@ defmodule Raxol.Test.Integration do
           assert_parent_updated(parent, :child_responded)
         end
       end
-  '''
+  """
 
   import ExUnit.Assertions
   alias Raxol.Core.Events.{Event, Subscription}
@@ -49,7 +49,7 @@ defmodule Raxol.Test.Integration do
     end
   end
 
-  @doc '''
+  @doc """
   Sets up a test scenario with multiple components.
 
   This function:
@@ -57,7 +57,7 @@ defmodule Raxol.Test.Integration do
   2. Sets up event routing
   3. Configures component relationships
   4. Establishes test monitoring
-  '''
+  """
   def setup_test_scenario(components) when is_map(components) do
     # Initialize each component
     initialized_components =
@@ -73,11 +73,11 @@ defmodule Raxol.Test.Integration do
     {:ok, routed_components}
   end
 
-  @doc '''
+  @doc """
   Sets up a parent-child component hierarchy for testing.
 
   Returns the initialized parent and child components with proper event routing.
-  '''
+  """
   def setup_component_hierarchy(parent_module, child_module, opts \\ []) do
     button_attrs = Keyword.get(opts, :button_attrs, %{})
 
@@ -120,11 +120,11 @@ defmodule Raxol.Test.Integration do
     {:ok, final_parent_with_correct_child, final_child}
   end
 
-  @doc '''
+  @doc """
   Simulates a user action on a component.
 
   Handles various types of user interactions and ensures proper event propagation.
-  '''
+  """
   def simulate_user_action(component, action) do
     event =
       case action do
@@ -153,9 +153,9 @@ defmodule Raxol.Test.Integration do
     end
   end
 
-  @doc '''
+  @doc """
   Simulates component mounting in the application.
-  '''
+  """
   def mount_component(component, parent \\ nil) do
     # Initialize mount state
     mounted_component = put_in(component.mounted, true)
@@ -177,9 +177,9 @@ defmodule Raxol.Test.Integration do
     end
   end
 
-  @doc '''
+  @doc """
   Simulates component unmounting from the application.
-  '''
+  """
   def unmount_component(component) do
     # Trigger unmount callbacks
     if function_exported?(component.module, :unmount, 1) do
@@ -193,9 +193,9 @@ defmodule Raxol.Test.Integration do
     %{component | mounted: false, subscriptions: []}
   end
 
-  @doc '''
+  @doc """
   Verifies that a component properly handles a system event.
-  '''
+  """
   def assert_handles_system_event(component, event) do
     # Capture initial state
     initial_state = component.state

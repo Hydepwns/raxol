@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Button do
-  @moduledoc '''
+  @moduledoc """
   A customizable button component.
 
   This module provides a more sophisticated button component than the basic
@@ -12,14 +12,14 @@ defmodule Raxol.UI.Components.Button do
 
   Button.new("Save Changes", on_click: :save_clicked, style: :primary)
   ```
-  '''
+  """
 
   alias Raxol.Style
   alias Raxol.Style.Borders
 
   @type t :: map()
 
-  @doc '''
+  @doc """
   Creates a new button with the given label and options.
 
   ## Options
@@ -45,7 +45,7 @@ defmodule Raxol.UI.Components.Button do
     icon: :trash
   )
   ```
-  '''
+  """
   @spec new(String.t(), Keyword.t()) :: map()
   def new(label, opts \\ []) do
     # Extract options with defaults
@@ -73,11 +73,11 @@ defmodule Raxol.UI.Components.Button do
     }
   end
 
-  @doc '''
+  @doc """
   Renders the button as a basic element.
 
   This is typically called by the renderer, not directly by users.
-  '''
+  """
   @spec render(map()) :: any()
   def render(button) do
     %Raxol.Core.Renderer.Element{

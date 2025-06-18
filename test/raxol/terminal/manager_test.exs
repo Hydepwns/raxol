@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.ManagerTest do
     assert_received {:terminal_scroll_event, :down, 5, {0, 0}}
   end
 
-  test 'unknown event type does not crash or send messages' do
+  test ~c"unknown event type does not crash or send messages" do
     # Flush the mailbox to remove any previous messages
     flush()
     # Send an unknown event
@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.ManagerTest do
   describe "telemetry event emission" do
     setup do
       test_pid = self()
-      ref = make_ref()
+      ref = System.unique_integer([:positive])
 
       events = [
         [:raxol, :terminal, :scroll_event, :delta],

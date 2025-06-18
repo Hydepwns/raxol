@@ -1,14 +1,14 @@
 defmodule Raxol.UI.Components.CodeBlock do
-  @moduledoc '''
+  @moduledoc """
   Renders a block of code with syntax highlighting.
 
   Requires the `makeup_elixir` dependency (and potentially other lexers).
   Uses HTML output from Makeup.
-  '''
+  """
   use Raxol.UI.Components.Base.Component
   # Removed import Raxol.View.Elements
 
-  @doc '''
+  @doc """
   Renders the code block.
 
   Props:
@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.CodeBlock do
     * `language` (required): The language name (e.g., "elixir", "html").
     * `style`: The Makeup HTML style module (e.g., `Makeup.Styles.GithubLight`). Defaults to `:github_light` style lookup.
     * `class`: Optional CSS class for the outer `pre` tag.
-  '''
+  """
   @spec render(map(), map()) :: any()
   def render(state, _context) do
     _language = state[:language] || "text"
@@ -86,15 +86,15 @@ defmodule Raxol.UI.Components.CodeBlock do
     end
   end
 
-  @doc 'Initializes the component state from props.'
+  @doc "Initializes the component state from props."
   @spec init(map()) :: map()
   def init(props), do: props
 
-  @doc 'Updates the component state. No updates are handled by default.'
+  @doc "Updates the component state. No updates are handled by default."
   @spec update(term(), map()) :: map()
   def update(_message, state), do: state
 
-  @doc 'Handles events for the component. No events are handled by default.'
+  @doc "Handles events for the component. No events are handled by default."
   @spec handle_event(term(), map(), map()) :: {map(), list()}
   def handle_event(_event, state, _context), do: {state, []}
 

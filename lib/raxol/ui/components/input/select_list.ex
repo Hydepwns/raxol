@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Input.SelectList do
-  @moduledoc '''
+  @moduledoc """
   A component that allows users to select an option from a list.
 
   Features:
@@ -9,7 +9,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   * Accessibility support
   * Custom styling and theming
   * Pagination for very large lists
-  '''
+  """
 
   alias Raxol.UI.Components.Input.SelectList.{
     Search,
@@ -74,15 +74,15 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :visible_height => integer() | nil,
           :last_key_time => integer() | nil,
           :search_buffer => String.t(),
-          :search_timer => reference() | nil,
+          :search_timer => integer() | nil,
           :on_focus => (integer() -> any()) | nil
         }
 
   # --- Component Implementation ---
 
-  @doc '''
+  @doc """
   Initializes the SelectList component state from the given props.
-  '''
+  """
   @spec init(map()) :: map()
   @impl true
   def init(props) do
@@ -118,9 +118,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
     Map.merge(defaults, props)
   end
 
-  @doc '''
+  @doc """
   Updates the SelectList component state in response to messages or prop changes.
-  '''
+  """
   @spec update(term(), map()) :: {map(), any()} | {map(), nil}
   @impl true
   def update({:update_props, new_props}, state) do
@@ -164,10 +164,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
     end
 
     # Schedule new search
-    timer_ref = Process.send_after(self(), {:apply_search, search_text}, 300)
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:apply_search, search_text}, 300)
 
     # Update buffer immediately
-    {%{state | search_buffer: search_text, search_timer: timer_ref}, nil}
+    {%{state | search_buffer: search_text, search_timer: timer_id}, nil}
   end
 
   def update({:apply_search, search_text}, state) do
@@ -276,9 +277,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   defp do_update(_message, state), do: {state, nil}
 
-  @doc '''
+  @doc """
   Handles events for the SelectList component, such as keypresses, mouse events, and context changes.
-  '''
+  """
   @spec handle_event(map(), term(), map()) :: {map(), any()} | {map(), nil}
   @impl true
   def handle_event(%{__struct__: _} = event, context, state) do
@@ -419,24 +420,24 @@ defmodule Raxol.UI.Components.Input.SelectList do
     end
   end
 
-  @doc '''
+  @doc """
   Renders the SelectList component using the current state and context.
-  '''
+  """
   @spec render(map(), map()) :: any()
   @impl true
   def render(state, context) do
     Renderer.render(state, context)
   end
 
-  @doc '''
+  @doc """
   Mounts the SelectList component. Performs any setup needed after initialization.
-  '''
+  """
   @impl true
   def mount(state), do: state
 
-  @doc '''
+  @doc """
   Unmounts the SelectList component, performing any necessary cleanup.
-  '''
+  """
   @impl true
   def unmount(state), do: state
 

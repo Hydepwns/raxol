@@ -1,9 +1,9 @@
 defmodule RaxolWeb.PlaygroundLive do
   use Phoenix.LiveView
 
-  @moduledoc '''
+  @moduledoc """
   A LiveView for a code playground that allows users to write, edit, and run code snippets.
-  '''
+  """
 
   # TODO: Define the functionality of this module.
   # This file was created to address a "file not found" issue.
@@ -32,6 +32,7 @@ defmodule RaxolWeb.PlaygroundLive do
     case execute_code(socket.assigns.code, socket.assigns.language) do
       {:ok, output} ->
         {:noreply, assign(socket, output: output, error: nil)}
+
       {:error, error} ->
         {:noreply, assign(socket, error: error, output: nil)}
     end
@@ -46,7 +47,9 @@ defmodule RaxolWeb.PlaygroundLive do
         rescue
           e -> {:error, Exception.message(e)}
         end
-      _ -> {:error, "Unsupported language: #{language}"}
+
+      _ ->
+        {:error, "Unsupported language: #{language}"}
     end
   end
 

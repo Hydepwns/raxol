@@ -1,14 +1,14 @@
 defmodule Raxol.Test.EmulatorHelpers do
-  @moduledoc '''
+  @moduledoc """
   Helper functions for Emulator tests.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
 
-  @doc '''
+  @doc """
   Fills a region of the emulator buffer with identifiable line text.
-  '''
+  """
   def fill_buffer(emulator, start_line, end_line) do
     result =
       Enum.reduce(start_line..(end_line - 1), emulator, fn y, emu ->
@@ -28,10 +28,10 @@ defmodule Raxol.Test.EmulatorHelpers do
     result
   end
 
-  @doc '''
+  @doc """
   Retrieves the text content of a specific line from the emulator's active buffer.
   Replaces nil chars with spaces.
-  '''
+  """
   def get_line_text(emulator, line_index) do
     # IO.puts("get_line_text(#{line_index}):") # DEBUG
     buffer = Emulator.get_active_buffer(emulator)
@@ -41,10 +41,10 @@ defmodule Raxol.Test.EmulatorHelpers do
     text
   end
 
-  @doc '''
+  @doc """
   Unwraps {:ok, value}, {:error, _, value}, or returns value if already a struct.
   Useful for safely extracting emulator or buffer structs from handler results.
-  '''
+  """
   def unwrap_ok({:ok, value}), do: value
   def unwrap_ok({:error, _, value}), do: value
 

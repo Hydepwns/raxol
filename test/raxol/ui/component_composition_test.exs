@@ -4,7 +4,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
   alias Raxol.UI.RendererTestHelper, as: Helper
   import Raxol.Test.Visual.Assertions
 
-  test 'handles basic component composition' do
+  test ~c"handles basic component composition" do
     child1 = Helper.create_test_text(1, 1, "Child 1")
     child2 = Helper.create_test_text(1, 2, "Child 2")
     parent = Helper.create_test_panel(0, 0, 10, 10, [child1, child2])
@@ -18,7 +18,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     assert length(child2_cells) > 0
   end
 
-  test 'handles deep nesting of components' do
+  test ~c"handles deep nesting of components" do
     grandchild = Helper.create_test_text(1, 1, "Grandchild")
     child = Helper.create_test_panel(0, 0, 5, 5, [grandchild])
     parent = Helper.create_test_panel(0, 0, 10, 10, [child])
@@ -29,7 +29,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     assert length(grandchild_cells) > 0
   end
 
-  test 'handles component inheritance' do
+  test ~c"handles component inheritance" do
     child =
       Helper.create_test_box(0, 0, 5, 5, %{
         style: %{foreground: :red}
@@ -47,7 +47,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     Helper.assert_cell_style(cell, :red, :blue)
   end
 
-  test 'handles component overrides' do
+  test ~c"handles component overrides" do
     child =
       Helper.create_test_box(0, 0, 5, 5, %{
         style: %{foreground: :red, background: :green}
@@ -65,7 +65,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     Helper.assert_cell_style(cell, :red, :green)
   end
 
-  test 'handles component visibility' do
+  test ~c"handles component visibility" do
     child1 = Helper.create_test_text(1, 1, "Visible")
     child2 = Helper.create_test_text(1, 2, "Hidden", %{visible: false})
     parent = Helper.create_test_panel(0, 0, 10, 10, [child1, child2])
@@ -79,7 +79,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     assert length(hidden_cells) == 0
   end
 
-  test 'handles component z-index' do
+  test ~c"handles component z-index" do
     child1 = Helper.create_test_box(0, 0, 5, 5, %{z_index: 1})
     child2 = Helper.create_test_box(0, 0, 5, 5, %{z_index: 2})
     parent = Helper.create_test_panel(0, 0, 10, 10, [child1, child2])
@@ -90,7 +90,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     assert cell != nil
   end
 
-  test 'handles component clipping' do
+  test ~c"handles component clipping" do
     child = Helper.create_test_text(0, 0, "This text should be clipped")
     parent = Helper.create_test_panel(0, 0, 5, 5, [child], %{clip: true})
     cells = Renderer.render_to_cells(parent)
@@ -100,7 +100,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
     assert length(cells) <= 25
   end
 
-  test 'handles component padding' do
+  test ~c"handles component padding" do
     child = Helper.create_test_text(0, 0, "Padded")
     parent = Helper.create_test_panel(0, 0, 10, 10, [child], %{padding: 2})
     cells = Renderer.render_to_cells(parent)

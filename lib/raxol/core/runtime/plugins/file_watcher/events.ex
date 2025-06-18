@@ -1,16 +1,16 @@
 defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
-  @moduledoc '''
+  @moduledoc """
   Handles file system events and debouncing for plugin reloading.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   @file_event_debounce_ms 1000
 
-  @doc '''
+  @doc """
   Handles file system events.
   Returns updated state with debounced reload timer if needed.
-  '''
+  """
   def handle_file_event(path, state, file_mod \\ File) do
     # Normalize the path
     normalized_path = Path.expand(path)
@@ -39,18 +39,20 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
         case file_mod.stat(normalized_path) do
           {:ok, %{type: :regular, access: :read}} ->
             # Schedule a debounced reload
-            timer_ref =
-              Process.send_after(
-                self(),
-                {:reload_plugin_file_debounced, plugin_id, normalized_path},
-                @file_event_debounce_ms
-              )
+            timer_id = System.unique_integer([:positive])
+
+            Process.send_after(
+              self(),
+              {:reload_plugin_file_debounced, plugin_id, normalized_path,
+               timer_id},
+              @file_event_debounce_ms
+            )
 
             Raxol.Core.Runtime.Log.debug(
               "[#{__MODULE__}] Scheduled reload for plugin #{plugin_id} in #{@file_event_debounce_ms}ms"
             )
 
-            {:ok, %{state | file_event_timer: timer_ref}}
+            {:ok, %{state | file_event_timer: timer_id}}
 
           {:ok, _} ->
             # Not a regular file or not readable
@@ -72,10 +74,10 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
     end
   end
 
-  @doc '''
+  @doc """
   Handles debounced file events.
   Returns updated state after processing events.
-  '''
+  """
   def handle_debounced_events(plugin_id, path, state) do
     # Clear the timer reference
     new_state = %{state | file_event_timer: nil}

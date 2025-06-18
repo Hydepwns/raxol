@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Input.Processor do
-  @moduledoc '''
+  @moduledoc """
   Processes input events for the terminal emulator.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Creates a new input processor.
-  '''
+  """
   def new do
     %{
       state: :normal,
@@ -13,9 +13,9 @@ defmodule Raxol.Terminal.Input.Processor do
     }
   end
 
-  @doc '''
+  @doc """
   Maps an input event to a terminal command.
-  '''
+  """
   def map_event(event) do
     case event do
       %{type: :key, key: key, modifiers: modifiers} ->

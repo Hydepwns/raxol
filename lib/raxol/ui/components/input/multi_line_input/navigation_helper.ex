@@ -1,14 +1,14 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
-  @moduledoc '''
+  @moduledoc """
   Helper functions for cursor navigation and text selection in MultiLineInput.
-  '''
+  """
 
   # alias Raxol.UI.Components.Input.MultiLineInput # May need state struct definition
   # Need pos_to_index
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Moves the cursor.
 
   It can take a `{row, col}` tuple to move to a specific position, or an atom to move directionally.
@@ -21,7 +21,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   - `:down`: Moves down by one line.
   - `:word_left`: Moves one word to the left.
   - `:word_right`: Moves one word to the right.
-  '''
+  """
   def move_cursor(state, {target_row, target_col}) do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     num_lines = length(lines)
@@ -120,9 +120,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   def select(state, _range_or_direction), do: state
 
   # Moves cursor one word to the left, using regex to find the previous word boundary.
-  @doc '''
+  @doc """
   Moves the cursor one word to the left, using regex to find the previous word boundary.
-  '''
+  """
   def move_cursor_word_left(state) do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     {current_row, current_col} = state.cursor_pos
@@ -160,9 +160,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   end
 
   # Moves cursor one word to the right, using regex to find the next word boundary.
-  @doc '''
+  @doc """
   Moves the cursor one word to the right, using regex to find the next word boundary.
-  '''
+  """
   def move_cursor_word_right(state) do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     {current_row, current_col} = state.cursor_pos

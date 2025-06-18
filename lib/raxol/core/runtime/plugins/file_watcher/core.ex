@@ -1,15 +1,15 @@
 defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Core do
-  @moduledoc '''
+  @moduledoc """
   Core functionality for file watching in plugins.
   Handles basic setup and state management.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Sets up file watching for plugin source files.
   Returns the updated state with the file watcher PID.
-  '''
+  """
   def setup_file_watching(state) do
     if Code.ensure_loaded?(FileSystem) do
       case FileSystem.start_link(dirs: state.plugin_dirs) do
@@ -38,9 +38,9 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Core do
     end
   end
 
-  @doc '''
+  @doc """
   Updates the reverse path mapping for file watching.
-  '''
+  """
   def update_file_watcher(state) do
     if state.file_watching_enabled? do
       # Calculate new reverse map {path => plugin_id} with normalized paths

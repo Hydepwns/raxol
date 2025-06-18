@@ -2,9 +2,9 @@ import ExUnit.Assertions
 import ExUnit.Callbacks
 
 defmodule Raxol.Terminal.DriverTestHelper do
-  @moduledoc '''
+  @moduledoc """
   Helper module for terminal driver tests providing common test utilities and fixtures.
-  '''
+  """
 
   alias Raxol.Terminal.Driver
   alias Raxol.Core.Events.Event

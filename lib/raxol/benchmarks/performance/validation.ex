@@ -1,11 +1,11 @@
 defmodule Raxol.Benchmarks.Performance.Validation do
-  @moduledoc '''
+  @moduledoc """
   Validation functions for Raxol performance benchmarks.
-  '''
+  """
 
   alias Raxol.System.Platform
 
-  @doc '''
+  @doc """
   Validates performance against baseline requirements.
 
   ## Parameters
@@ -16,7 +16,7 @@ defmodule Raxol.Benchmarks.Performance.Validation do
   ## Returns
 
   Map containing validation results and pass/fail status for each metric
-  '''
+  """
   def validate_metrics(results, baseline) do
     # Define validators for each metric category
     validators = %{
@@ -70,11 +70,11 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     })
   end
 
-  @doc '''
+  @doc """
   Retrieves baseline performance metrics for the current platform.
 
   If no platform-specific baseline exists, falls back to default baseline.
-  '''
+  """
   def get_baseline_metrics do
     platform = Platform.get_current_platform()
 

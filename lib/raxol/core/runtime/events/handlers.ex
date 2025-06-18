@@ -1,18 +1,18 @@
 defmodule Raxol.Core.Runtime.Events.Handlers do
-  @moduledoc '''
+  @moduledoc """
   Manages event handlers registration and execution in the Raxol system.
 
   This module is responsible for:
   * Registering event handlers for specific event types
   * Executing handlers when events occur
   * Managing the priority and order of handlers
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Registers a new event handler for the specified event types.
-  '''
+  """
   def register_handler(handler_id, event_types, handler_fun, options \\ []) do
     priority = Keyword.get(options, :priority, 100)
     filter = Keyword.get(options, :filter, fn _event -> true end)
@@ -30,12 +30,12 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
     {:ok, handler_id}
   end
 
-  @doc '''
+  @doc """
   Unregisters an event handler.
 
   ## Parameters
   - `handler_id`: ID of the handler to remove
-  '''
+  """
   def unregister_handler(handler_id) do
     case get_handler(handler_id) do
       nil ->
@@ -47,11 +47,11 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
     end
   end
 
-  @doc '''
+  @doc """
   Executes all registered handlers for the given event.
   Handlers are executed in priority order (lowest to highest).
   Each handler can transform the event for the next handler.
-  '''
+  """
   def execute_handlers(event, state) do
     handlers = get_relevant_handlers(event)
     execute_handlers_in_order(handlers, event, state)
@@ -81,8 +81,12 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
 
   defp execute_single_handler(handler, {current_event, current_state}) do
     case handler.handler_fun.(current_event, current_state) do
-      {:ok, new_event, new_state} -> {:cont, {new_event, new_state}}
-      {:stop, new_event, new_state} -> {:halt, {new_event, new_state}}
+      {:ok, new_event, new_state} ->
+        {:cont, {new_event, new_state}}
+
+      {:stop, new_event, new_state} ->
+        {:halt, {new_event, new_state}}
+
       {:error, reason} ->
         log_handler_error(reason, current_event, current_state, [])
         {:halt, {:error, reason, current_state}}

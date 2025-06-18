@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.ParameterValidation do
-  @moduledoc '''
+  @moduledoc """
   Provides parameter validation functions for CSI command handlers.
 
   This module contains helper functions for validating and extracting
@@ -7,11 +7,11 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   parameters, an index, and a default value, returning either the
   validated parameter value or the default value if the parameter is
   invalid.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Gets a parameter value with validation.
   Returns the parameter value if valid, or the default value if invalid.
 
@@ -33,7 +33,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
 
       iex> ParameterValidation.get_valid_param([-1, 2, 3], 0, 0, 0, 9999)
       0
-  '''
+  """
   @spec get_valid_param(
           list(integer() | nil),
           non_neg_integer(),
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     end
   end
 
-  @doc '''
+  @doc """
   Gets a parameter value with validation for non-negative integers.
   Returns the parameter value if valid, or the default value if invalid.
 
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
 
       iex> ParameterValidation.get_valid_non_neg_param([-1, 2, 3], 0, 0)
       0
-  '''
+  """
   @spec get_valid_non_neg_param(
           list(integer() | nil),
           non_neg_integer(),
@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     get_valid_param(params, index, default, 0, 9999)
   end
 
-  @doc '''
+  @doc """
   Gets a parameter value with validation for positive integers.
   Returns the parameter value if valid, or the default value if invalid.
 
@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
 
       iex> ParameterValidation.get_valid_pos_param([0, 2, 3], 0, 1)
       1
-  '''
+  """
   @spec get_valid_pos_param(
           list(integer() | nil),
           non_neg_integer(),
@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     get_valid_param(params, index, default, 1, 9999)
   end
 
-  @doc '''
+  @doc """
   Gets a parameter value with validation for boolean values (0 or 1).
   Returns the parameter value if valid, or the default value if invalid.
 
@@ -136,16 +136,16 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
 
       iex> ParameterValidation.get_valid_bool_param([2, 2, 3], 0, 0)
       0
-  '''
+  """
   @spec get_valid_bool_param(list(integer() | nil), non_neg_integer(), 0..1) ::
           0..1
   def get_valid_bool_param(params, index, default) do
     get_valid_param(params, index, default, 0, 1)
   end
 
-  @doc '''
+  @doc """
   Validates coordinates, clamping to emulator bounds. Defaults to {0, 0} if invalid.
-  '''
+  """
   def validate_coordinates(emulator, params) do
     {max_x, max_y} = get_dimensions(emulator)
     x = validate_coordinate(Enum.at(params, 0), max_x)
@@ -176,9 +176,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     end
   end
 
-  @doc '''
+  @doc """
   Validates count, clamping between 1 and 10. Defaults to 1 if invalid.
-  '''
+  """
   def validate_count(_emulator, params) do
     case Enum.at(params, 0) do
       v when is_integer(v) and v >= 1 and v <= 10 -> v
@@ -188,9 +188,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     end
   end
 
-  @doc '''
+  @doc """
   Validates mode, must be 0, 1, or 2. Defaults to 0 if invalid.
-  '''
+  """
   def validate_mode(params) do
     case Enum.at(params, 0) do
       v when v in [0, 1, 2] -> v
@@ -198,9 +198,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     end
   end
 
-  @doc '''
+  @doc """
   Validates color, clamping between 0 and 255. Defaults to 0 if invalid.
-  '''
+  """
   def validate_color(params) do
     case Enum.at(params, 0) do
       v when is_integer(v) and v >= 0 and v <= 255 -> v
@@ -210,9 +210,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     end
   end
 
-  @doc '''
+  @doc """
   Validates boolean, returns true for 1, false for 0. Defaults to true if invalid.
-  '''
+  """
   @spec validate_boolean(list(integer() | nil)) :: boolean()
   def validate_boolean(params) do
     case Enum.at(params, 0) do
@@ -222,9 +222,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     end
   end
 
-  @doc '''
+  @doc """
   Normalizes parameters to expected length, padding with nil or truncating as needed.
-  '''
+  """
   @spec normalize_parameters(list(integer() | nil), non_neg_integer()) ::
           list(integer() | nil)
   def normalize_parameters(params, expected_length) do
@@ -235,9 +235,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     end)
   end
 
-  @doc '''
+  @doc """
   Validates a value in params[0], clamping between min and max. Defaults to min if invalid.
-  '''
+  """
   @spec validate_range(list(integer() | nil), integer(), integer()) :: integer()
   def validate_range(params, min, max) do
     value = Enum.at(params, 0)

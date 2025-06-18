@@ -1,11 +1,11 @@
 defmodule Raxol.UI.Components.Input.Checkbox do
-  @moduledoc '''
+  @moduledoc """
   Checkbox component for toggling boolean values.
 
   This component provides a selectable checkbox with customizable appearance and behavior.
   Fully supports style and theme props (with correct merging/precedence),
   implements robust lifecycle hooks, and supports accessibility/extra props.
-  '''
+  """
 
   # use Raxol.UI.Components.Base
   # alias Raxol.UI.Components.Base.Component
@@ -44,10 +44,10 @@ defmodule Raxol.UI.Components.Input.Checkbox do
           focused: boolean()
         }
 
-  @doc '''
+  @doc """
   Creates a new checkbox component with the given options.
   See `init/1` for details.
-  '''
+  """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     # Just delegate to init for consistency
@@ -55,9 +55,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     state
   end
 
-  @doc '''
+  @doc """
   Initializes the Checkbox component state from the given props.
-  '''
+  """
   @impl true
   @spec init(keyword()) :: {:ok, t()}
   def init(props) do
@@ -81,9 +81,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Mounts the Checkbox component. Performs any setup needed after initialization.
-  '''
+  """
   @impl true
   @spec mount(t()) :: {t(), list()}
   def mount(state) do
@@ -92,9 +92,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {state, []}
   end
 
-  @doc '''
+  @doc """
   Unmounts the Checkbox component, performing any necessary cleanup.
-  '''
+  """
   @impl true
   @spec unmount(t()) :: t()
   def unmount(state) do
@@ -102,9 +102,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     state
   end
 
-  @doc '''
+  @doc """
   Updates the Checkbox component state in response to messages or prop changes.
-  '''
+  """
   @impl true
   @spec update(map(), t()) :: {:ok, t(), list()}
   def update(props, state) when is_map(props) do
@@ -161,9 +161,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:noreply, new_state, commands}
   end
 
-  @doc '''
+  @doc """
   Renders the Checkbox component using the current state and context.
-  '''
+  """
   @impl true
   @spec render(t(), map()) :: any()
   def render(state, context) do

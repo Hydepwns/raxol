@@ -71,7 +71,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
   end
 
   describe "plugin manager integration" do
-    test 'loads plugins in correct dependency order' do
+    test ~c"loads plugins in correct dependency order" do
       plugins = [TestPluginA, TestPluginB, TestPluginC, TestPluginD]
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
@@ -87,7 +87,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert Enum.at(load_order, 3) == :plugin_d
     end
 
-    test 'handles version constraints correctly' do
+    test ~c"handles version constraints correctly" do
       defmodule TestPluginE do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -134,7 +134,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert loaded_plugins[:plugin_e].version == "2.0.0"
     end
 
-    test 'handles circular dependencies' do
+    test ~c"handles circular dependencies" do
       defmodule TestPluginG do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -178,7 +178,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert String.contains?(reason, "circular dependency")
     end
 
-    test 'handles optional dependencies' do
+    test ~c"handles optional dependencies" do
       defmodule TestPluginI do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -229,7 +229,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       refute loaded_plugins[:plugin_j]
     end
 
-    test 'handles plugin unloading and reloading' do
+    test ~c"handles plugin unloading and reloading" do
       plugins = [TestPluginA, TestPluginB]
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
@@ -334,7 +334,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       :ok
     end
 
-    test 'lifecycle events are called in correct order' do
+    test ~c"lifecycle events are called in correct order" do
       plugins = [LifecycleTestPluginA, LifecycleTestPluginB]
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
@@ -367,7 +367,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert Process.get(:lifecycle_plugin_b_stop)
     end
 
-    test 'lifecycle events handle errors gracefully' do
+    test ~c"lifecycle events handle errors gracefully" do
       defmodule ErrorTestPlugin do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -445,7 +445,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert String.contains?(reason, "Start failed")
     end
 
-    test 'lifecycle events maintain plugin state' do
+    test ~c"lifecycle events maintain plugin state" do
       defmodule StateTestPlugin do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
         @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
@@ -501,7 +501,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert final_state.start_state == "started"
     end
 
-    test 'handles plugin configuration during lifecycle' do
+    test ~c"handles plugin configuration during lifecycle" do
       defmodule ConfigTestPlugin do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
         @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
@@ -598,7 +598,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert final_config.runtime_setting == "runtime"
     end
 
-    test 'handles concurrent plugin operations' do
+    test ~c"handles concurrent plugin operations" do
       defmodule ConcurrentTestPluginA do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
         @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
@@ -756,7 +756,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert Process.get(:concurrent_plugin_b_start)
     end
 
-    test 'handles plugin communication during lifecycle' do
+    test ~c"handles plugin communication during lifecycle" do
       defmodule CommunicatingPluginA do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
         @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
@@ -873,7 +873,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert Process.get(:plugin_b_stop_message) == "B stopped"
     end
 
-    test 'handles error recovery scenarios' do
+    test ~c"handles error recovery scenarios" do
       defmodule RecoveryTestPluginA do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
         @behaviour Raxol.Core.Runtime.Plugins.Lifecycle

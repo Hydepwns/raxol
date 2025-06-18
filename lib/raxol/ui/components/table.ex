@@ -2,7 +2,7 @@ defmodule Raxol.UI.Components.Table do
   use Surface.Component
   require Raxol.Core.Renderer.View
 
-  @moduledoc '''
+  @moduledoc """
   Table component for displaying and interacting with tabular data.
 
   ## Features
@@ -71,7 +71,7 @@ defmodule Raxol.UI.Components.Table do
   })
   ```
 
-  '''
+  """
 
   defstruct id: nil,
             columns: [],
@@ -110,9 +110,9 @@ defmodule Raxol.UI.Components.Table do
   @behaviour Raxol.UI.Components.Base.Component
 
   @spec init(map()) :: {:ok, map()}
-  @doc '''
+  @doc """
   Initializes the table component with the given props.
-  '''
+  """
   def init(props) do
     id = Map.get(props, :id, :table)
     columns = Map.get(props, :columns, [])
@@ -154,9 +154,9 @@ defmodule Raxol.UI.Components.Table do
   end
 
   @spec update(term(), map()) :: {:ok, map()}
-  @doc '''
+  @doc """
   Updates the table state based on the given message.
-  '''
+  """
   def update({:filter, term}, state) do
     new_state = %{state | filter_term: term, current_page: 1, scroll_top: 0}
     {:ok, new_state}
@@ -186,9 +186,9 @@ defmodule Raxol.UI.Components.Table do
   end
 
   @spec render(map(), map()) :: any()
-  @doc '''
+  @doc """
   Renders the table component.
-  '''
+  """
   @impl true
   def render(state, _context) do
     theme = state.theme || %{}
@@ -239,9 +239,9 @@ defmodule Raxol.UI.Components.Table do
   end
 
   @spec handle_event(term(), map(), map()) :: {:ok, map()}
-  @doc '''
+  @doc """
   Handles events for the table component.
-  '''
+  """
   def handle_event({:key, {:arrow_down, _}}, _context, state) do
     new_index = min(state.selected_row + 1, length(state.data) - 1)
     {:ok, %{state | selected_row: new_index}}

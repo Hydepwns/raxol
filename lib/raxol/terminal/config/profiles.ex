@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.Config.Profiles do
-  @moduledoc '''
+  @moduledoc """
   Terminal configuration profile management.
 
   Allows users to define, save, load, and switch between different
   terminal configuration profiles.
-  '''
+  """
 
   alias Raxol.Terminal.Config.{Persistence, Validation, Defaults}
   # alias Raxol.Core.Config # Unused
@@ -14,13 +14,13 @@ defmodule Raxol.Terminal.Config.Profiles do
   @profiles_dir "priv/config/profiles"
   @profile_ext ".json"
 
-  @doc '''
+  @doc """
   Lists all available terminal configuration profiles.
 
   ## Returns
 
   A list of profile names.
-  '''
+  """
   def list_profiles do
     # Create profiles directory if it doesn't exist
     File.mkdir_p(@profiles_dir)
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Config.Profiles do
     |> Enum.map(&String.replace(&1, @profile_ext, ""))
   end
 
-  @doc '''
+  @doc """
   Loads a specific terminal configuration profile.
 
   ## Parameters
@@ -42,17 +42,17 @@ defmodule Raxol.Terminal.Config.Profiles do
   ## Returns
 
   `{:ok, config}` or `{:error, reason}`
-  '''
+  """
   def load_profile(name) do
     path = profile_path(name)
 
     case File.exists?(path) do
       true -> Persistence.load_config(path)
-      false -> {:error, "Profile "#{name}" not found"}
+      false -> {:error, "Profile #{name} not found"}
     end
   end
 
-  @doc '''
+  @doc """
   Saves the current configuration as a profile.
 
   ## Parameters
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   ## Returns
 
   `:ok` or `{:error, reason}`
-  '''
+  """
   def save_profile(name, config) do
     # Create profiles directory if it doesn't exist
     File.mkdir_p(@profiles_dir)
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Config.Profiles do
     end
   end
 
-  @doc '''
+  @doc """
   Deletes a terminal configuration profile.
 
   ## Parameters
@@ -90,17 +90,17 @@ defmodule Raxol.Terminal.Config.Profiles do
   ## Returns
 
   `:ok` or `{:error, reason}`
-  '''
+  """
   def delete_profile(name) do
     path = profile_path(name)
 
     case File.exists?(path) do
       true -> File.rm(path)
-      false -> {:error, "Profile "#{name}" not found"}
+      false -> {:error, "Profile #{name} not found"}
     end
   end
 
-  @doc '''
+  @doc """
   Creates a new profile with default settings.
 
   ## Parameters
@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   ## Returns
 
   `{:ok, config}` or `{:error, reason}`
-  '''
+  """
   def create_default_profile(name) do
     config = Defaults.generate_default_config()
 
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.Config.Profiles do
     end
   end
 
-  @doc '''
+  @doc """
   Updates an existing profile with new settings.
 
   ## Parameters
@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   ## Returns
 
   `:ok` or `{:error, reason}`
-  '''
+  """
   def update_profile(name, config) do
     path = profile_path(name)
 
@@ -143,11 +143,11 @@ defmodule Raxol.Terminal.Config.Profiles do
         end
 
       false ->
-        {:error, "Profile "#{name}" not found"}
+        {:error, "Profile #{name} not found"}
     end
   end
 
-  @doc '''
+  @doc """
   Duplicates an existing profile with a new name.
 
   ## Parameters
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   ## Returns
 
   `{:ok, config}` or `{:error, reason}`
-  '''
+  """
   def duplicate_profile(source_name, target_name) do
     case load_profile(source_name) do
       {:ok, config} ->

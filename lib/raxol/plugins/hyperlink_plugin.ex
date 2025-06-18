@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.HyperlinkPlugin do
-  @moduledoc '''
+  @moduledoc """
   Plugin that detects URLs in terminal output and makes them clickable.
-  '''
+  """
 
   @behaviour Raxol.Plugins.Plugin
   alias Raxol.Plugins.Plugin
@@ -86,6 +86,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     case event do
       %{type: :mouse, button: :left, x: click_x, y: click_y, modifiers: []} ->
         handle_left_click(plugin_state, click_x, click_y, rendered_cells)
+
       _ ->
         {:ok, plugin_state}
     end
@@ -94,12 +95,17 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   defp handle_left_click(plugin_state, x, y, rendered_cells) do
     case Map.get(rendered_cells, {x, y}) do
       %{style: %{hyperlink: url}} when is_binary(url) and url != "" ->
-        Raxol.Core.Runtime.Log.debug("[HyperlinkPlugin] Clicked on hyperlink: #{url}")
+        Raxol.Core.Runtime.Log.debug(
+          "[HyperlinkPlugin] Clicked on hyperlink: #{url}"
+        )
+
         case open_url(url) do
           :ok -> {:ok, plugin_state}
           {:error, _reason} -> {:ok, plugin_state}
         end
-      _ -> {:ok, plugin_state}
+
+      _ ->
+        {:ok, plugin_state}
     end
   end
 
@@ -151,7 +157,8 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
       {output, exit_code} ->
         Raxol.Core.Runtime.Log.error(
-          "[HyperlinkPlugin] Failed to open URL "#{url}" with command "#{command}". Exit code: #{exit_code}, Output: #{output}"
+          # {url}" with command "#{command}". Exit code: #{exit_code}, Output: #{output}"
+          "[HyperlinkPlugin] Failed to open URL "
         )
 
         {:error, :command_failed}

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.CSIHandlers.SGRHandler do
-  @moduledoc '''
+  @moduledoc """
   Handles Select Graphic Rendition (SGR) commands.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
 
@@ -22,10 +22,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SGRHandler do
     12 => {:alternate_screen, false}
   }
 
-  @doc '''
+  @doc """
   Handle Select Graphic Rendition (SGR) command.
   Sets terminal modes based on the given parameters.
-  '''
+  """
   def handle(emulator, params) do
     new_emulator =
       Enum.reduce(params, emulator, fn param, acc_emulator ->

@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
-  @moduledoc '''
+  @moduledoc """
   Parser for Control Sequence Introducer (CSI) escape sequences.
 
   Handles sequences in the format:
@@ -10,15 +10,15 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
   - F: Final byte (determines command)
 
   Also handles DEC Private sequences (CSI ? P... F)
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Escape.Parsers.BaseParser
 
-  @doc '''
+  @doc """
   Parses a CSI sequence.
   Returns {:ok, command, remaining} or {:incomplete, remaining} or {:error, reason, remaining}
-  '''
+  """
   @spec parse(String.t()) ::
           {:ok, term(), String.t()}
           | {:incomplete, String.t()}
@@ -35,9 +35,9 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
     end
   end
 
-  @doc '''
+  @doc """
   Parses a DEC Private CSI sequence.
-  '''
+  """
   @spec parse_dec_private(String.t(), String.t(), String.t()) ::
           {:ok, {:set_mode, :dec_private, integer(), boolean()}, String.t()}
           | {:error, atom(), String.t()}
@@ -57,9 +57,9 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
     end
   end
 
-  @doc '''
+  @doc """
   Parses a standard CSI sequence.
-  '''
+  """
   @spec parse_standard_csi(String.t()) ::
           {:ok, term(), String.t()}
           | {:incomplete, String.t()}

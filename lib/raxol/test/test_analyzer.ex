@@ -1,7 +1,7 @@
 defmodule Raxol.TestAnalyzer do
-  @moduledoc '''
+  @moduledoc """
   Analyzes test results and categorizes failures and skipped tests.
-  '''
+  """
 
   def analyze_test_output(output) do
     failures = extract_failures(output)

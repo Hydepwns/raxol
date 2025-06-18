@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Theming.Selector do
-  @moduledoc '''
+  @moduledoc """
   A component for selecting and applying themes.
 
   This module provides:
@@ -7,7 +7,7 @@ defmodule Raxol.UI.Theming.Selector do
   * Theme preview capabilities
   * Theme application functionality
   * Theme management integration
-  '''
+  """
 
   use Raxol.UI.Components.Base.Component
 

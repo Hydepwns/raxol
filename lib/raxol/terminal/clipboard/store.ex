@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Clipboard.Store do
-  @moduledoc '''
+  @moduledoc """
   Manages clipboard content storage and retrieval.
-  '''
+  """
 
   defstruct [:content, :format, :timestamp]
 
@@ -11,9 +11,9 @@ defmodule Raxol.Terminal.Clipboard.Store do
           timestamp: integer()
         }
 
-  @doc '''
+  @doc """
   Creates a new clipboard store entry.
-  '''
+  """
   @spec new(String.t(), String.t()) :: t()
   def new(content, format) do
     %__MODULE__{
@@ -23,43 +23,43 @@ defmodule Raxol.Terminal.Clipboard.Store do
     }
   end
 
-  @doc '''
+  @doc """
   Gets the content from a store entry.
-  '''
+  """
   @spec get_content(t()) :: String.t()
   def get_content(%__MODULE__{content: content}), do: content
 
-  @doc '''
+  @doc """
   Gets the format from a store entry.
-  '''
+  """
   @spec get_format(t()) :: String.t()
   def get_format(%__MODULE__{format: format}), do: format
 
-  @doc '''
+  @doc """
   Gets the timestamp from a store entry.
-  '''
+  """
   @spec get_timestamp(t()) :: integer()
   def get_timestamp(%__MODULE__{timestamp: timestamp}), do: timestamp
 
-  @doc '''
+  @doc """
   Updates the content of a store entry.
-  '''
+  """
   @spec update_content(t(), String.t()) :: t()
   def update_content(store, content) do
     %{store | content: content, timestamp: System.system_time(:millisecond)}
   end
 
-  @doc '''
+  @doc """
   Updates the format of a store entry.
-  '''
+  """
   @spec update_format(t(), String.t()) :: t()
   def update_format(store, format) do
     %{store | format: format, timestamp: System.system_time(:millisecond)}
   end
 
-  @doc '''
+  @doc """
   Checks if a store entry is expired.
-  '''
+  """
   @spec expired?(t(), integer()) :: boolean()
   def expired?(%__MODULE__{timestamp: timestamp}, max_age) do
     System.system_time(:millisecond) - timestamp > max_age

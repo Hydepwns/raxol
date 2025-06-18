@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ModeState do
-  @moduledoc '''
+  @moduledoc """
   Manages terminal mode state and transitions.
 
   This module is responsible for:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ModeState do
   - Handling mode transitions
   - Validating mode changes
   - Providing mode state queries
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -86,31 +86,31 @@ defmodule Raxol.Terminal.ModeState do
 
   @type t :: %__MODULE__{}
 
-  @doc '''
+  @doc """
   Creates a new mode state with default values.
-  '''
+  """
   @spec new() :: t()
   def new do
     %__MODULE__{}
   end
 
-  @doc '''
+  @doc """
   Looks up a DEC private mode code and returns the corresponding mode atom.
-  '''
+  """
   @spec lookup_private(integer()) :: atom() | nil
   def lookup_private(code) when is_integer(code) do
     Map.get(@dec_private_modes, code)
   end
 
-  @doc '''
+  @doc """
   Looks up a standard mode code and returns the corresponding mode atom.
-  '''
+  """
   @spec lookup_standard(integer()) :: atom() | nil
   def lookup_standard(code) when is_integer(code) do
     Map.get(@standard_modes, code)
   end
 
-  @doc '''
+  @doc """
   Checks if a specific mode is enabled.
 
   ## Parameters
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.ModeState do
 
   ## Returns
     * `boolean()` - Whether the mode is enabled
-  '''
+  """
   @spec mode_enabled?(t(), atom()) :: boolean()
   def mode_enabled?(state, mode) do
     cond do
@@ -202,7 +202,7 @@ defmodule Raxol.Terminal.ModeState do
     state.alternate_buffer_active
   end
 
-  @doc '''
+  @doc """
   Sets a mode to enabled state.
 
   ## Parameters
@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.ModeState do
 
   ## Returns
     * `t()` - The updated mode state
-  '''
+  """
   @spec set_mode(t(), atom()) :: t()
   def set_mode(state, mode) do
     cond do
@@ -260,7 +260,7 @@ defmodule Raxol.Terminal.ModeState do
     end
   end
 
-  @doc '''
+  @doc """
   Resets a mode to disabled state.
 
   ## Parameters
@@ -269,7 +269,7 @@ defmodule Raxol.Terminal.ModeState do
 
   ## Returns
     * `t()` - The updated mode state
-  '''
+  """
   @spec reset_mode(t(), atom()) :: t()
   def reset_mode(state, mode) do
     cond do
@@ -307,7 +307,7 @@ defmodule Raxol.Terminal.ModeState do
   defp reset_mouse_mode(state), do: %{state | mouse_report_mode: :none}
   defp reset_column_mode(state), do: %{state | column_width_mode: :normal}
 
-  @doc '''
+  @doc """
   Sets the alternate buffer mode.
 
   ## Parameters
@@ -316,13 +316,13 @@ defmodule Raxol.Terminal.ModeState do
 
   ## Returns
     * `t()` - The updated mode state
-  '''
+  """
   @spec set_alternate_buffer_mode(t(), atom()) :: t()
   def set_alternate_buffer_mode(state, type) do
     %{state | alternate_buffer_active: true, alt_screen_mode: type}
   end
 
-  @doc '''
+  @doc """
   Resets the alternate buffer mode.
 
   ## Parameters
@@ -330,7 +330,7 @@ defmodule Raxol.Terminal.ModeState do
 
   ## Returns
     * `t()` - The updated mode state
-  '''
+  """
   @spec reset_alternate_buffer_mode(t()) :: t()
   def reset_alternate_buffer_mode(state) do
     %{state | alternate_buffer_active: false, alt_screen_mode: nil}

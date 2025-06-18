@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   import File, only: [cwd!: 0]
 
   describe "new/0" do
-    test 'creates a new tab manager instance' do
+    test ~c"creates a new tab manager instance" do
       manager = Manager.new()
       assert manager.tabs == %{}
       assert manager.active_tab == nil
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   end
 
   describe "create_tab/2" do
-    test 'creates a new tab with default configuration' do
+    test ~c"creates a new tab with default configuration" do
       manager = Manager.new()
       {:ok, tab_id, updated_manager} = Manager.create_tab(manager)
 
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       assert config.window_id == nil
     end
 
-    test 'creates a new tab with custom configuration' do
+    test ~c"creates a new tab with custom configuration" do
       manager = Manager.new()
 
       custom_config = %{
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   end
 
   describe "delete_tab/2" do
-    test 'deletes an existing tab' do
+    test ~c"deletes an existing tab" do
       manager = Manager.new()
       {:ok, tab_id, manager} = Manager.create_tab(manager)
       {:ok, updated_manager} = Manager.delete_tab(manager, tab_id)
@@ -65,14 +65,14 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
                Manager.get_tab_config(updated_manager, tab_id)
     end
 
-    test 'returns error when deleting non-existent tab' do
+    test ~c"returns error when deleting non-existent tab" do
       manager = Manager.new()
 
       assert {:error, :tab_not_found} ==
                Manager.delete_tab(manager, "non_existent")
     end
 
-    test 'clears active tab when deleting active tab' do
+    test ~c"clears active tab when deleting active tab" do
       manager = Manager.new()
       {:ok, tab_id, manager} = Manager.create_tab(manager)
       {:ok, manager} = Manager.switch_tab(manager, tab_id)
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   end
 
   describe "switch_tab/2" do
-    test 'switches to an existing tab' do
+    test ~c"switches to an existing tab" do
       manager = Manager.new()
       {:ok, tab_id, manager} = Manager.create_tab(manager)
       {:ok, updated_manager} = Manager.switch_tab(manager, tab_id)
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       assert updated_manager.active_tab == tab_id
     end
 
-    test 'returns error when switching to non-existent tab' do
+    test ~c"returns error when switching to non-existent tab" do
       manager = Manager.new()
 
       assert {:error, :tab_not_found} ==
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   end
 
   describe "get_tab_config/2" do
-    test 'returns tab configuration for existing tab' do
+    test ~c"returns tab configuration for existing tab" do
       manager = Manager.new()
       {:ok, tab_id, manager} = Manager.create_tab(manager)
       {:ok, config} = Manager.get_tab_config(manager, tab_id)
@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       assert config.working_directory == File.cwd!()
     end
 
-    test 'returns error for non-existent tab' do
+    test ~c"returns error for non-existent tab" do
       manager = Manager.new()
 
       assert {:error, :tab_not_found} ==
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   end
 
   describe "update_tab_config/3" do
-    test 'updates configuration for existing tab' do
+    test ~c"updates configuration for existing tab" do
       manager = Manager.new()
       {:ok, tab_id, manager} = Manager.create_tab(manager)
       updates = %{title: "Updated Title", state: :active}
@@ -134,7 +134,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       assert config.working_directory == File.cwd!()
     end
 
-    test 'returns error when updating non-existent tab' do
+    test ~c"returns error when updating non-existent tab" do
       manager = Manager.new()
 
       assert {:error, :tab_not_found} ==
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   end
 
   describe "list_tabs/1" do
-    test 'returns all tabs' do
+    test ~c"returns all tabs" do
       manager = Manager.new()
       {:ok, tab1, manager} = Manager.create_tab(manager)
       {:ok, tab2, manager} = Manager.create_tab(manager)
@@ -156,7 +156,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
   end
 
   describe "get_active_tab/1" do
-    test 'returns active tab id' do
+    test ~c"returns active tab id" do
       manager = Manager.new()
       {:ok, tab_id, manager} = Manager.create_tab(manager)
       {:ok, manager} = Manager.switch_tab(manager, tab_id)
@@ -164,7 +164,7 @@ defmodule Raxol.Terminal.Tab.ManagerTest do
       assert Manager.get_active_tab(manager) == tab_id
     end
 
-    test 'returns nil when no active tab' do
+    test ~c"returns nil when no active tab" do
       manager = Manager.new()
       assert Manager.get_active_tab(manager) == nil
     end

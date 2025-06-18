@@ -1,14 +1,14 @@
 defmodule Raxol.Test.AssertionHelpers do
-  @moduledoc '''
+  @moduledoc """
   Common assertion helpers for Raxol tests.
   Provides standardized assertions for components, events, and state.
-  '''
+  """
 
   import ExUnit.Assertions
 
-  @doc '''
+  @doc """
   Asserts that a component's state matches expected values.
-  '''
+  """
   def assert_state_match(component, expected) when is_map(expected) do
     Enum.each([:style, :disabled, :focused], fn key ->
       assert Map.has_key?(component.state, key),
@@ -27,23 +27,23 @@ defmodule Raxol.Test.AssertionHelpers do
     end)
   end
 
-  @doc '''
+  @doc """
   Asserts that a component received an event.
-  '''
+  """
   def assert_event_received(event_name, timeout \\ 1000) do
     assert_receive {:event, ^event_name}, timeout
   end
 
-  @doc '''
+  @doc """
   Asserts that a component did not receive an event.
-  '''
+  """
   def refute_event_received(event_name, timeout \\ 1000) do
     refute_receive {:event, ^event_name}, timeout
   end
 
-  @doc '''
+  @doc """
   Asserts that a component properly handles errors.
-  '''
+  """
   def assert_error_handled(component, error_fn) do
     try do
       error_fn.()
@@ -57,9 +57,9 @@ defmodule Raxol.Test.AssertionHelpers do
     end
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's render output matches expected text.
-  '''
+  """
   def assert_renders_with(component, expected_text) do
     output = capture_render(component)
 
@@ -67,9 +67,9 @@ defmodule Raxol.Test.AssertionHelpers do
            "Expected output to contain: #{expected_text}"
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's render output matches a snapshot.
-  '''
+  """
   def assert_matches_snapshot(component, snapshot_name, context) do
     output = capture_render(component)
     snapshot_path = Path.join(context.snapshots_dir, "#{snapshot_name}.snap")
@@ -84,9 +84,9 @@ defmodule Raxol.Test.AssertionHelpers do
     end
   end
 
-  @doc '''
+  @doc """
   Asserts that a component is responsive across different sizes.
-  '''
+  """
   def assert_responsive(component, sizes) do
     results = Raxol.Test.Visual.test_responsive_rendering(component, sizes)
 
@@ -96,9 +96,9 @@ defmodule Raxol.Test.AssertionHelpers do
     end)
   end
 
-  @doc '''
+  @doc """
   Asserts that a component maintains consistent styling across themes.
-  '''
+  """
   def assert_theme_consistent(component, themes) do
     Enum.each(themes, fn theme ->
       apply_theme(theme)

@@ -1,10 +1,10 @@
 defmodule Raxol.Plugins.PluginSystemTest do
   use ExUnit.Case
 
-  @moduledoc '''
+  @moduledoc """
   Tests for the plugin system functionality including plugin loading, configuration,
   and lifecycle management.
-  '''
+  """
 
   alias Raxol.Plugins.HyperlinkPlugin
   alias Raxol.Plugins.ImagePlugin
@@ -15,7 +15,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
   alias Raxol.Plugins.EventHandler
 
   describe "Plugin Manager" do
-    test 'creates a new plugin manager' do
+    test "creates a new plugin manager" do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
       assert manager.plugins == %{}
 
@@ -37,7 +37,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
     #   assert updated_manager.plugins["hyperlink"].enabled == true
     # end
 
-    test 'loads plugin with dependencies' do
+    test "loads plugin with dependencies" do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       # Create a test plugin that depends on HyperlinkPlugin
@@ -45,9 +45,9 @@ defmodule Raxol.Plugins.PluginSystemTest do
         use Raxol.Plugins.Plugin
         @dependencies ["hyperlink"]
 
-        @moduledoc '''
+        @moduledoc """
         Test plugin that depends on HyperlinkPlugin for testing dependency loading.
-        '''
+        """
 
         def init(_opts \\ %{}) do
           {:ok, %{name: "test_dependent", enabled: true}}
@@ -58,36 +58,47 @@ defmodule Raxol.Plugins.PluginSystemTest do
       {:ok, manager_with_dep} = Lifecycle.load_plugin(manager, HyperlinkPlugin)
 
       # Then load the dependent plugin
-      {:ok, final_manager} = Lifecycle.load_plugin(manager_with_dep, TestDependentPlugin)
+      {:ok, final_manager} =
+        Lifecycle.load_plugin(manager_with_dep, TestDependentPlugin)
 
       assert Map.has_key?(final_manager.plugins, "hyperlink")
       assert Map.has_key?(final_manager.plugins, "test_dependent")
     end
 
-    test 'loads plugin with specific config' do
+    test "loads plugin with specific config" do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       # Create a test plugin that accepts config
       defmodule TestConfigPlugin do
         use Raxol.Plugins.Plugin
 
-        @moduledoc '''
+        @moduledoc """
         Test plugin that accepts configuration options for testing config loading.
-        '''
+        """
 
         def init(opts \\ %{}) do
-          {:ok, %{name: "test_config", enabled: true, custom_setting: opts[:custom_setting]}}
+          {:ok,
+           %{
+             name: "test_config",
+             enabled: true,
+             custom_setting: opts[:custom_setting]
+           }}
         end
       end
 
       # Load plugin with specific config
-      {:ok, updated_manager} = Lifecycle.load_plugin(manager, TestConfigPlugin, %{custom_setting: "test_value"})
+      {:ok, updated_manager} =
+        Lifecycle.load_plugin(manager, TestConfigPlugin, %{
+          custom_setting: "test_value"
+        })
 
       assert Map.has_key?(updated_manager.plugins, "test_config")
-      assert updated_manager.plugins["test_config"].custom_setting == "test_value"
+
+      assert updated_manager.plugins["test_config"].custom_setting ==
+               "test_value"
     end
 
-    test 'unloads a plugin' do
+    test "unloads a plugin" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, manager_with_plugin} =
@@ -102,7 +113,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert updated_manager.plugins == %{}
     end
 
-    test 'enables a plugin' do
+    test "enables a plugin" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, manager_with_plugin} =
@@ -122,7 +133,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert enabled_manager.plugins["hyperlink"].enabled == true
     end
 
-    test 'disables a plugin' do
+    test "disables a plugin" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, manager_with_plugin} =
@@ -139,7 +150,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert updated_manager.plugins["hyperlink"].enabled == false
     end
 
-    test 'processes output through plugins' do
+    test "processes output through plugins" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, manager_with_plugin} =
@@ -160,7 +171,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         )
     end
 
-    test 'processes input through plugins' do
+    test "processes input through plugins" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, manager_with_plugin} =
@@ -175,7 +186,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert updated_manager.plugins["search"].search_term == "example"
     end
 
-    test 'processes mouse events through plugins' do
+    test "processes mouse events through plugins" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
       emulator = Emulator.new(100, 24)
 
@@ -196,13 +207,13 @@ defmodule Raxol.Plugins.PluginSystemTest do
   end
 
   describe "Hyperlink Plugin" do
-    test 'initializes correctly' do
+    test "initializes correctly" do
       {:ok, plugin} = HyperlinkPlugin.init()
       assert plugin.name == "hyperlink"
       assert plugin.enabled == true
     end
 
-    test 'detects and transforms URLs' do
+    test "detects and transforms URLs" do
       {:ok, plugin} = HyperlinkPlugin.init()
 
       {:ok, updated_plugin, transformed_output} =
@@ -214,7 +225,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         HyperlinkPlugin.handle_output(updated_plugin, "Hello, World!")
     end
 
-    test 'Hyperlink Plugin processes output via PluginManager' do
+    test "Hyperlink Plugin processes output via PluginManager" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, manager_after_load} =
@@ -244,7 +255,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
   end
 
   describe "Theme Plugin" do
-    test 'initializes correctly' do
+    test "initializes correctly" do
       {:ok, plugin} = ThemePlugin.init()
       assert plugin.name == "theme"
       assert plugin.enabled == true
@@ -257,7 +268,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
                Raxol.UI.Theming.Theme.default_theme().colors.foreground
     end
 
-    test 'changes theme' do
+    test "changes theme" do
       {:ok, plugin} = ThemePlugin.init()
 
       # Register a new theme for testing
@@ -282,7 +293,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert {:error, _} = ThemePlugin.change_theme(plugin, :invalid_theme)
     end
 
-    test 'lists available themes' do
+    test "lists available themes" do
       # Ensure default theme is registered if not already, for the test to pass reliably.
       ThemePlugin.register_theme(Raxol.UI.Theming.Theme.default_theme())
       # Register another theme to ensure list_themes works with multiple items
@@ -303,7 +314,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert Enum.any?(themes, fn t -> t.name == "Another One" end)
     end
 
-    test 'registers a new theme and retrieves it' do
+    test "registers a new theme and retrieves it" do
       theme_attrs = %{
         id: :custom_theme,
         name: "Custom Theme",
@@ -323,7 +334,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
                String.downcase("#abcdef")
     end
 
-    test 'get_theme/1 returns the current theme struct' do
+    test "get_theme/1 returns the current theme struct" do
       {:ok, plugin} = ThemePlugin.init()
       theme = ThemePlugin.get_theme(plugin)
       assert is_map(theme)
@@ -332,7 +343,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
   end
 
   describe "Search Plugin" do
-    test 'initializes correctly' do
+    test "initializes correctly" do
       {:ok, plugin} = SearchPlugin.init()
       assert plugin.name == "search"
       assert plugin.enabled == true
@@ -341,7 +352,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert plugin.current_result_index == 0
     end
 
-    test 'handles search commands' do
+    test "handles search commands" do
       {:ok, plugin} = SearchPlugin.init()
 
       {:ok, updated_plugin} =
@@ -366,7 +377,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert cleared_plugin.current_result_index == 0
     end
 
-    test 'highlights search terms' do
+    test "highlights search terms" do
       {:ok, plugin} = SearchPlugin.init()
 
       highlighted = SearchPlugin.highlight_search_term("Hello, World!", "World")
@@ -375,7 +386,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
   end
 
   describe "Emulator with Plugins" do
-    test 'loads and uses plugins' do
+    test "loads and uses plugins" do
       emulator = Emulator.new(80, 24)
 
       initial_plugin_manager_struct = emulator.plugin_manager
@@ -400,7 +411,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert length(plugins) == 4
     end
 
-    test 'initializes with plugin manager and plugins' do
+    test "initializes with plugin manager and plugins" do
       plugin_config = %Raxol.Plugins.PluginConfig{
         enabled_plugins: [:hyperlink_plugin],
         plugin_configs: %{
@@ -429,7 +440,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
              )
     end
 
-    test 'processes output through plugins' do
+    test "processes output through plugins" do
       {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, loaded_manager} =
@@ -454,7 +465,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert String.contains?(processed_output, "\e]8;;https://example.com\e\\")
     end
 
-    test 'disabled plugin does not process output' do
+    test "disabled plugin does not process output" do
       {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, loaded_manager} =
@@ -478,7 +489,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert processed_output == output_text
     end
 
-    test 'processes input through plugins' do
+    test "processes input through plugins" do
       {:ok, plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, loaded_manager} =
@@ -504,7 +515,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert search_plugin_state.search_term == "test query"
     end
 
-    test 'Emulator with Plugins loads and uses plugins' do
+    test "Emulator with Plugins loads and uses plugins" do
       {:ok, initial_plugin_manager_struct} = Raxol.Plugins.Manager.Core.new()
 
       {:ok, manager_after_hyperlink} =

@@ -1,15 +1,15 @@
 defmodule Raxol.Core.Clipboard.Behaviour do
-  @moduledoc '''
+  @moduledoc """
   Behaviour for clipboard operations.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Copies text to the clipboard.
-  '''
+  """
   @callback copy(content :: String.t()) :: :ok | {:error, any()}
 
-  @doc '''
+  @doc """
   Pastes text from the clipboard.
-  '''
+  """
   @callback paste() :: {:ok, String.t()} | {:error, any()}
 end

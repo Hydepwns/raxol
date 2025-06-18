@@ -1,7 +1,7 @@
 defmodule Raxol.Docs.TutorialViewer do
-  @moduledoc '''
+  @moduledoc """
   Interactive tutorial viewer component.
-  '''
+  """
 
   use Raxol.Core.Runtime.Application
   require Raxol.View.Elements

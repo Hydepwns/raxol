@@ -1,7 +1,7 @@
 defmodule RaxolWeb.UserAuth do
-  @moduledoc '''
+  @moduledoc """
   Provides authentication plugs and helpers.
-  '''
+  """
   import Plug.Conn
   import Phoenix.Controller
 
@@ -14,7 +14,7 @@ defmodule RaxolWeb.UserAuth do
   # the token expiry itself in UserToken.
   @remember_me_cookie "_raxol_web_user_remember_me"
 
-  @doc '''
+  @doc """
   Logs the user in.
 
   It renews the session ID and clears the whole session
@@ -25,7 +25,7 @@ defmodule RaxolWeb.UserAuth do
   so LiveView sessions are identified and automatically
   disconnected on log out. The line can be safely removed
   if you are not using LiveView.
-  '''
+  """
   def log_in_user(conn, user, _params \\ %{}) do
     # NOTE: This pattern match is a placeholder. Adjust when Auth.create_user_session is fully implemented.
     case Raxol.Auth.create_user_session(user.id, user.role) do
@@ -85,11 +85,11 @@ defmodule RaxolWeb.UserAuth do
     |> clear_session()
   end
 
-  @doc '''
+  @doc """
   Logs the user out.
 
   It clears all session data for safety. See renew_session.
-  '''
+  """
   @dialyzer {:nowarn_function, log_out_user: 1}
   def log_out_user(conn) do
     _user_token = get_session(conn, :user_token)
@@ -107,10 +107,10 @@ defmodule RaxolWeb.UserAuth do
     |> redirect(to: "/")
   end
 
-  @doc '''
+  @doc """
   Authenticates the user by looking into the session
   and remember me token.
-  '''
+  """
   def fetch_current_user(conn, _opts) do
     {user_token, conn} = ensure_user_token(conn)
     session_id = get_session(conn, :user_session_id)
@@ -145,9 +145,9 @@ defmodule RaxolWeb.UserAuth do
     end
   end
 
-  @doc '''
+  @doc """
   Used for routes that require the user to not be authenticated.
-  '''
+  """
   def redirect_if_user_is_authenticated(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
@@ -158,12 +158,12 @@ defmodule RaxolWeb.UserAuth do
     end
   end
 
-  @doc '''
+  @doc """
   Used for routes that require the user to be authenticated.
 
   If you want to enforce the user email is confirmed before
   they use the application at all, here would be a good place.
-  '''
+  """
   def require_authenticated_user(conn, _opts) do
     if conn.assigns[:current_user] do
       conn

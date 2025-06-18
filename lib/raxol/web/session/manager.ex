@@ -1,5 +1,5 @@
 defmodule Raxol.Web.Session.Manager do
-  @moduledoc '''
+  @moduledoc """
   Manages web sessions for Raxol applications.
 
   This module provides comprehensive session management capabilities:
@@ -7,7 +7,7 @@ defmodule Raxol.Web.Session.Manager do
   * Session recovery and cleanup
   * Session limits and monitoring
   * Session metadata management
-  '''
+  """
 
   use GenServer
 
@@ -211,8 +211,8 @@ defmodule Raxol.Web.Session.Manager do
   @impl true
   def handle_info(:cleanup, state) do
     # Schedule next cleanup
-    _cleanup_timer =
-      Process.send_after(self(), :cleanup, state.cleanup_interval)
+    _timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:cleanup, _timer_id}, state.cleanup_interval)
 
     # Perform cleanup
     {:reply, _status, new_state} = handle_call(:cleanup_sessions, self(), state)
@@ -228,6 +228,7 @@ defmodule Raxol.Web.Session.Manager do
   end
 
   defp schedule_cleanup(state) do
-    Process.send_after(self(), :cleanup, state.cleanup_interval)
+    _timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:cleanup, _timer_id}, state.cleanup_interval)
   end
 end

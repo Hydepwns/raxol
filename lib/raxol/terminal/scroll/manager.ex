@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Scroll.Manager do
-  @moduledoc '''
+  @moduledoc """
   Manages terminal scrolling operations with advanced features.
 
   Features:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
   - Scroll caching for efficient memory usage
   - Scroll optimization for better performance
   - Scroll synchronization across splits
-  '''
+  """
 
   alias Raxol.Terminal.Scroll.Predictor
   alias Raxol.Terminal.Scroll.Optimizer
@@ -34,14 +34,14 @@ defmodule Raxol.Terminal.Scroll.Manager do
     :metrics
   ]
 
-  @doc '''
+  @doc """
   Creates a new scroll manager.
 
   ## Options
     * `:prediction_enabled` - Whether to enable predictive scrolling (default: true)
     * `:optimization_enabled` - Whether to enable scroll optimization (default: true)
     * `:sync_enabled` - Whether to enable scroll synchronization (default: true)
-  '''
+  """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     prediction_enabled = Keyword.get(opts, :prediction_enabled, true)
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
     }
   end
 
-  @doc '''
+  @doc """
   Scrolls the terminal content.
 
   ## Parameters
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
       * `:predict` - Whether to use prediction (default: true)
       * `:optimize` - Whether to optimize the scroll (default: true)
       * `:sync` - Whether to sync across splits (default: true)
-  '''
+  """
   @spec scroll(t(), :up | :down, non_neg_integer(), keyword()) ::
           {:ok, t()} | {:error, term()}
   def scroll(manager, direction, amount, opts \\ []) do
@@ -88,14 +88,14 @@ defmodule Raxol.Terminal.Scroll.Manager do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the scroll history.
 
   ## Parameters
     * `manager` - The scroll manager
     * `opts` - History options
       * `:limit` - Maximum number of entries to return (default: all)
-  '''
+  """
   @spec get_history(t(), keyword()) :: [map()]
   def get_history(_manager, opts \\ []) do
     limit = Keyword.get(opts, :limit)
@@ -109,17 +109,17 @@ defmodule Raxol.Terminal.Scroll.Manager do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current scroll metrics.
-  '''
+  """
   @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics
   end
 
-  @doc '''
+  @doc """
   Optimizes the scroll manager based on current metrics.
-  '''
+  """
   @spec optimize(t()) :: t()
   def optimize(manager) do
     # Clear old cache entries if cache is too large

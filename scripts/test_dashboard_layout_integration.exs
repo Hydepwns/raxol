@@ -18,7 +18,7 @@ defmodule DashboardLayoutIntegrationTest do
     IO.puts("Testing visualization components integrated with dashboard layout")
 
     # Initialize test state
-    plugin_state = %{}
+    _plugin_state = %{}
 
     # Create sample data for visualizations
     bar_chart_data = [
@@ -109,7 +109,9 @@ defmodule DashboardLayoutIntegrationTest do
     IO.puts("\n[TEST 1] Dashboard initialization with visualization widgets")
 
     # Initialize the dashboard model
-    {:ok, dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(widgets, grid_config)
+    {:ok, dashboard_model} =
+      Raxol.UI.Components.Dashboard.Dashboard.init(widgets, grid_config)
+
     IO.puts("Dashboard model initialized with #{length(widgets)} widgets")
 
     # Render the dashboard to verify widget creation
@@ -130,15 +132,23 @@ defmodule DashboardLayoutIntegrationTest do
     chart_widget = Enum.find(widgets, fn w -> w.id == "chart1" end)
 
     # Resize chart widget (make it larger)
-    updated_chart_widget = %{chart_widget | grid_spec: %{chart_widget.grid_spec | width: 6, height: 4}}
+    updated_chart_widget = %{
+      chart_widget
+      | grid_spec: %{chart_widget.grid_spec | width: 6, height: 4}
+    }
 
     # Update widgets list with resized widget
-    widgets_after_resize = Enum.map(widgets, fn w ->
-      if w.id == "chart1", do: updated_chart_widget, else: w
-    end)
+    widgets_after_resize =
+      Enum.map(widgets, fn w ->
+        if w.id == "chart1", do: updated_chart_widget, else: w
+      end)
 
     # Create updated dashboard model
-    {:ok, resized_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(widgets_after_resize, grid_config)
+    {:ok, resized_dashboard_model} =
+      Raxol.UI.Components.Dashboard.Dashboard.init(
+        widgets_after_resize,
+        grid_config
+      )
 
     # Render dashboard with resized widget
     resized_props = %{
@@ -147,8 +157,12 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Sample app text for resize test"
     }
 
-    resized_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(resized_props)
-    IO.puts("Dashboard re-rendered after widget resize with #{length(resized_widget_views)} widget views")
+    resized_widget_views =
+      Raxol.UI.Components.Dashboard.Dashboard.render(resized_props)
+
+    IO.puts(
+      "Dashboard re-rendered after widget resize with #{length(resized_widget_views)} widget views"
+    )
 
     # --- TEST 3: Widget Dragging ---
 
@@ -158,15 +172,23 @@ defmodule DashboardLayoutIntegrationTest do
     treemap_widget = Enum.find(widgets, fn w -> w.id == "treemap1" end)
 
     # Move treemap widget to a new position
-    updated_treemap_widget = %{treemap_widget | grid_spec: %{treemap_widget.grid_spec | col: 2, row: 4}}
+    updated_treemap_widget = %{
+      treemap_widget
+      | grid_spec: %{treemap_widget.grid_spec | col: 2, row: 4}
+    }
 
     # Update widgets list with moved widget
-    widgets_after_move = Enum.map(widgets_after_resize, fn w ->
-      if w.id == "treemap1", do: updated_treemap_widget, else: w
-    end)
+    widgets_after_move =
+      Enum.map(widgets_after_resize, fn w ->
+        if w.id == "treemap1", do: updated_treemap_widget, else: w
+      end)
 
     # Create updated dashboard model
-    {:ok, moved_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(widgets_after_move, grid_config)
+    {:ok, moved_dashboard_model} =
+      Raxol.UI.Components.Dashboard.Dashboard.init(
+        widgets_after_move,
+        grid_config
+      )
 
     # Render dashboard with moved widget
     moved_props = %{
@@ -175,8 +197,12 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Sample app text for drag test"
     }
 
-    moved_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(moved_props)
-    IO.puts("Dashboard re-rendered after widget move with #{length(moved_widget_views)} widget views")
+    moved_widget_views =
+      Raxol.UI.Components.Dashboard.Dashboard.render(moved_props)
+
+    IO.puts(
+      "Dashboard re-rendered after widget move with #{length(moved_widget_views)} widget views"
+    )
 
     # --- TEST 4: Layout Persistence ---
 
@@ -184,7 +210,10 @@ defmodule DashboardLayoutIntegrationTest do
 
     # Save the layout
     IO.puts("Saving dashboard layout...")
-    save_result = Raxol.UI.Components.Dashboard.Dashboard.save_layout(widgets_after_move)
+
+    save_result =
+      Raxol.UI.Components.Dashboard.Dashboard.save_layout(widgets_after_move)
+
     IO.puts("Save result: #{inspect(save_result)}")
 
     # Load the layout
@@ -204,13 +233,15 @@ defmodule DashboardLayoutIntegrationTest do
         IO.puts("Found chart and treemap widgets in loaded layout")
 
         # Verify widget positions
-        if loaded_chart.grid_spec.width == 6 && loaded_chart.grid_spec.height == 4 do
+        if loaded_chart.grid_spec.width == 6 &&
+             loaded_chart.grid_spec.height == 4 do
           IO.puts("Chart widget size correctly persisted")
         else
           IO.puts("ERROR: Chart widget size not correctly persisted")
         end
 
-        if loaded_treemap.grid_spec.col == 2 && loaded_treemap.grid_spec.row == 4 do
+        if loaded_treemap.grid_spec.col == 2 &&
+             loaded_treemap.grid_spec.row == 4 do
           IO.puts("Treemap widget position correctly persisted")
         else
           IO.puts("ERROR: Treemap widget position not correctly persisted")
@@ -223,7 +254,8 @@ defmodule DashboardLayoutIntegrationTest do
     end
 
     # Initialize dashboard from loaded widgets
-    {:ok, loaded_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(loaded_widgets, grid_config)
+    {:ok, loaded_dashboard_model} =
+      Raxol.UI.Components.Dashboard.Dashboard.init(loaded_widgets, grid_config)
 
     # Render dashboard with loaded widgets
     loaded_props = %{
@@ -232,12 +264,18 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Sample app text for loaded layout"
     }
 
-    loaded_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(loaded_props)
-    IO.puts("Dashboard rendered with loaded layout: #{length(loaded_widget_views)} widget views")
+    loaded_widget_views =
+      Raxol.UI.Components.Dashboard.Dashboard.render(loaded_props)
+
+    IO.puts(
+      "Dashboard rendered with loaded layout: #{length(loaded_widget_views)} widget views"
+    )
 
     # --- TEST 5: Real-Time Rendering Test ---
 
-    IO.puts("\n[TEST 5] Real-time rendering test with responsive visualizations")
+    IO.puts(
+      "\n[TEST 5] Real-time rendering test with responsive visualizations"
+    )
 
     # Test smaller grid for responsive visualization
     small_grid_config = %{
@@ -248,17 +286,29 @@ defmodule DashboardLayoutIntegrationTest do
     }
 
     # Adjust widget sizes for smaller grid
-    small_grid_widgets = Enum.map(loaded_widgets, fn widget ->
-      case widget.id do
-        "chart1" -> %{widget | grid_spec: %{col: 0, row: 0, width: 2, height: 2}}
-        "treemap1" -> %{widget | grid_spec: %{col: 2, row: 0, width: 2, height: 2}}
-        "info1" -> %{widget | grid_spec: %{col: 0, row: 2, width: 4, height: 1}}
-        _ -> widget
-      end
-    end)
+    small_grid_widgets =
+      Enum.map(loaded_widgets, fn widget ->
+        case widget.id do
+          "chart1" ->
+            %{widget | grid_spec: %{col: 0, row: 0, width: 2, height: 2}}
+
+          "treemap1" ->
+            %{widget | grid_spec: %{col: 2, row: 0, width: 2, height: 2}}
+
+          "info1" ->
+            %{widget | grid_spec: %{col: 0, row: 2, width: 4, height: 1}}
+
+          _ ->
+            widget
+        end
+      end)
 
     # Initialize dashboard with smaller grid
-    {:ok, small_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(small_grid_widgets, small_grid_config)
+    {:ok, small_dashboard_model} =
+      Raxol.UI.Components.Dashboard.Dashboard.init(
+        small_grid_widgets,
+        small_grid_config
+      )
 
     # Render dashboard with smaller grid
     small_props = %{
@@ -267,8 +317,12 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Small grid test"
     }
 
-    small_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(small_props)
-    IO.puts("Dashboard rendered with smaller grid: #{length(small_widget_views)} widget views")
+    small_widget_views =
+      Raxol.UI.Components.Dashboard.Dashboard.render(small_props)
+
+    IO.puts(
+      "Dashboard rendered with smaller grid: #{length(small_widget_views)} widget views"
+    )
 
     # Write test results to file
     File.mkdir_p!(Path.dirname(Path.expand(@visualization_test_file_path)))

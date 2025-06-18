@@ -1,5 +1,5 @@
 defmodule RaxolWeb.TerminalChannel do
-  @moduledoc '''
+  @moduledoc """
   WebSocket channel for real-time terminal communication.
 
   This channel handles:
@@ -8,7 +8,7 @@ defmodule RaxolWeb.TerminalChannel do
   - Terminal resizing
   - Session management
   - Error handling
-  '''
+  """
 
   use RaxolWeb, :channel
   alias Raxol.Terminal.Renderer

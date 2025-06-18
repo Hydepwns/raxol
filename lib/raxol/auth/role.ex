@@ -1,7 +1,7 @@
 defmodule Raxol.Auth.Role do
-  @moduledoc '''
+  @moduledoc """
   Role schema for role-based access control.
-  '''
+  """
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -20,9 +20,9 @@ defmodule Raxol.Auth.Role do
     timestamps()
   end
 
-  @doc '''
+  @doc """
   Creates a changeset for a role.
-  '''
+  """
   def changeset(role, attrs) do
     role
     |> cast(attrs, [:name, :description, :is_system])
@@ -32,9 +32,9 @@ defmodule Raxol.Auth.Role do
     |> unique_constraint(:name)
   end
 
-  @doc '''
+  @doc """
   Creates a changeset for a system role.
-  '''
+  """
   def system_changeset(role, attrs) do
     role
     |> changeset(attrs)

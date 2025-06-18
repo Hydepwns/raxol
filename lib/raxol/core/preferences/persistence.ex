@@ -1,15 +1,15 @@
 defmodule Raxol.Core.Preferences.Persistence do
-  @moduledoc '''
+  @moduledoc """
   Handles persistence (loading/saving) of user preferences to a file.
-  '''
+  """
   require Raxol.Core.Runtime.Log
 
   @default_filename "user_preferences.bin"
 
-  @doc '''
+  @doc """
   Returns the full path to the user preferences file.
   Uses an application-specific directory.
-  '''
+  """
   def preferences_path do
     # Using :user_config dir for user-specific, potentially hidden config
     config_dir = :filename.basedir(:user_config, "raxol")
@@ -18,14 +18,14 @@ defmodule Raxol.Core.Preferences.Persistence do
     Path.join(config_dir, @default_filename)
   end
 
-  @doc '''
+  @doc """
   Loads user preferences from the designated file.
 
   Returns:
     - `{:ok, preferences_map}` if successful.
     - `{:error, :file_not_found}` if the file doesn't exist.
     - `{:error, reason}` for other file or decoding errors.
-  '''
+  """
   def load do
     path = preferences_path()
 
@@ -65,7 +65,7 @@ defmodule Raxol.Core.Preferences.Persistence do
     end
   end
 
-  @doc '''
+  @doc """
   Saves the given preferences map to the designated file.
 
   Serializes the map using `:erlang.term_to_binary`.
@@ -73,7 +73,7 @@ defmodule Raxol.Core.Preferences.Persistence do
   Returns:
     - `:ok` on success.
     - `{:error, reason}` on failure.
-  '''
+  """
   def save(preferences) when is_map(preferences) do
     path = preferences_path()
 

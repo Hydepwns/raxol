@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Buffer.Selection do
-  @moduledoc '''
+  @moduledoc """
   Manages text selection operations for the terminal.
   This module handles all selection-related operations including:
   - Starting and updating selections
@@ -7,22 +7,22 @@ defmodule Raxol.Terminal.Buffer.Selection do
   - Checking if positions are within selections
   - Managing selection boundaries
   - Extracting text from regions
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
 
-  @doc '''
+  @doc """
   Starts a text selection at the specified position.
-  '''
+  """
   @spec start(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def start(buffer, x, y) do
     %{buffer | selection: {x, y, x, y}}
   end
 
-  @doc '''
+  @doc """
   Updates the current text selection to the specified position.
-  '''
+  """
   @spec update(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def update(buffer, x, y) do
@@ -35,9 +35,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the currently selected text.
-  '''
+  """
   @spec get_text(ScreenBuffer.t()) :: String.t()
   def get_text(buffer) do
     case buffer.selection do
@@ -49,9 +49,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if a position is within the current selection.
-  '''
+  """
   @spec contains?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           boolean()
   def contains?(buffer, x, y) do
@@ -68,9 +68,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current selection boundaries.
-  '''
+  """
   @spec get_boundaries(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer(), non_neg_integer(),
            non_neg_integer()}
@@ -89,9 +89,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  @doc '''
+  @doc """
   Gets text from a specified region in the buffer.
-  '''
+  """
   @spec get_text_in_region(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -122,25 +122,25 @@ defmodule Raxol.Terminal.Buffer.Selection do
     Enum.join(text, "\n")
   end
 
-  @doc '''
+  @doc """
   Clears the current selection.
-  '''
+  """
   @spec clear(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear(buffer) do
     %{buffer | selection: nil}
   end
 
-  @doc '''
+  @doc """
   Checks if there is an active selection.
-  '''
+  """
   @spec active?(ScreenBuffer.t()) :: boolean()
   def active?(buffer) do
     buffer.selection != nil
   end
 
-  @doc '''
+  @doc """
   Gets the selection start position.
-  '''
+  """
   @spec get_start_position(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()} | nil
   def get_start_position(buffer) do
@@ -150,9 +150,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the selection end position.
-  '''
+  """
   @spec get_end_position(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()} | nil
   def get_end_position(buffer) do

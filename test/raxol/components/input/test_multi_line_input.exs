@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Input.TestMultiLineInput do
-  @moduledoc '''
+  @moduledoc """
   A special version of MultiLineInput that directly returns test values
   for the failing test cases.
-  '''
+  """
 
   use Raxol.Component
   alias Raxol.Core.Events.Event

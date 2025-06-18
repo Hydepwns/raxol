@@ -1,11 +1,11 @@
 defmodule Raxol.Style.Colors.HotReload do
-  @moduledoc '''
+  @moduledoc """
   Provides hot-reloading capabilities for color themes.
 
   This module watches for changes to theme files and automatically
   reloads them when they change. It also provides a way to subscribe
   to theme change events.
-  '''
+  """
 
   use GenServer
 
@@ -26,31 +26,31 @@ defmodule Raxol.Style.Colors.HotReload do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Subscribe to theme change events.
 
   ## Examples
 
       iex> HotReload.subscribe()
       :ok
-  '''
+  """
   def subscribe do
     GenServer.call(__MODULE__, :subscribe)
   end
 
-  @doc '''
+  @doc """
   Unsubscribe from theme change events.
 
   ## Examples
 
       iex> HotReload.unsubscribe()
       :ok
-  '''
+  """
   def unsubscribe do
     GenServer.call(__MODULE__, :unsubscribe)
   end
 
-  @doc '''
+  @doc """
   Add a path to watch for theme changes.
 
   ## Parameters
@@ -61,7 +61,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
       iex> HotReload.watch_path("/path/to/themes")
       :ok
-  '''
+  """
   def watch_path(path) do
     GenServer.call(__MODULE__, {:watch_path, path})
   end
@@ -140,66 +140,71 @@ defmodule Raxol.Style.Colors.HotReload do
 
   defp get_path_modification_times(path) do
     case File.ls(path) do
-      {:ok, files} ->
-        files
-        |> Enum.filter(&String.ends_with?(&1, ".json"))
-        |> Enum.map(fn file ->
-          full_path = Path.join(path, file)
+      {:ok, files} -> process_theme_files(path, files)
+      _ -> %{}
+    end
+  end
 
-          case File.stat(full_path) do
-            {:ok, %{mtime: mtime}} -> {full_path, mtime}
-            _ -> nil
-          end
-        end)
-        |> Enum.reject(&is_nil/1)
-        |> Map.new()
+  defp process_theme_files(path, files) do
+    files
+    |> Enum.filter(&String.ends_with?(&1, ".json"))
+    |> Enum.map(&get_file_mtime(path, &1))
+    |> Enum.reject(&is_nil/1)
+    |> Map.new()
+  end
 
-      _ ->
-        %{}
+  defp get_file_mtime(path, file) do
+    full_path = Path.join(path, file)
+
+    case File.stat(full_path) do
+      {:ok, %{mtime: mtime}} -> {full_path, mtime}
+      _ -> nil
     end
   end
 
   defp check_for_changes(state) do
-    # Get current modification times
-    current_times =
-      Enum.reduce(state.watched_paths, %{}, fn path, acc ->
-        Map.merge(acc, get_path_modification_times(path))
-      end)
+    current_times = get_current_times(state.watched_paths)
+    changed_files = find_changed_files(current_times, state.last_modified)
 
-    # Check for changes
-    changed_files =
-      Enum.filter(current_times, fn {path, mtime} ->
-        case Map.get(state.last_modified, path) do
-          nil -> true
-          old_time -> old_time != mtime
-        end
-      end)
+    Enum.each(changed_files, &handle_theme_change(&1, state.subscribers))
 
-    # Handle changes
-    Enum.each(changed_files, fn {path, _mtime} ->
-      # Extract theme name from path (e.g., /path/to/MyTheme.json -> MyTheme)
-      theme_name = Path.basename(path, ".json") |> String.to_atom()
-      # Load theme using Persistence module
-      case Persistence.load_theme(theme_name) do
-        {:ok, theme} ->
-          # Apply theme using Raxol module
-          Raxol.set_theme(theme)
-
-          # Notify subscribers
-          Enum.each(state.subscribers, fn pid ->
-            send(pid, {:theme_reloaded, theme})
-          end)
-
-        _ ->
-          :ok
-      end
-    end)
-
-    # Update state
     %{state | last_modified: current_times}
   end
 
+  defp get_current_times(paths) do
+    Enum.reduce(paths, %{}, fn path, acc ->
+      Map.merge(acc, get_path_modification_times(path))
+    end)
+  end
+
+  defp find_changed_files(current_times, last_modified) do
+    Enum.filter(current_times, fn {path, mtime} ->
+      case Map.get(last_modified, path) do
+        nil -> true
+        old_time -> old_time != mtime
+      end
+    end)
+  end
+
+  defp handle_theme_change({path, _mtime}, subscribers) do
+    theme_name = Path.basename(path, ".json") |> String.to_atom()
+
+    case Persistence.load_theme(theme_name) do
+      {:ok, theme} ->
+        Raxol.set_theme(theme)
+        notify_subscribers(subscribers, theme)
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp notify_subscribers(subscribers, theme) do
+    Enum.each(subscribers, fn pid -> send(pid, {:theme_reloaded, theme}) end)
+  end
+
   defp schedule_check do
-    _timer_ref = Process.send_after(self(), :check_changes, @check_interval)
+    _timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:check_changes, _timer_id}, @check_interval)
   end
 end

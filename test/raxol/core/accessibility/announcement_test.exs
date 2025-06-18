@@ -25,7 +25,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
     end
 
     test "announce/2 adds announcement to queue", %{prefs_name: prefs_name} do
-      ref = make_ref()
+      ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
 
       Accessibility.announce("Test announcement", [], prefs_name)
@@ -37,7 +37,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
     test "get_next_announcement/0 retrieves and removes announcement", %{
       prefs_name: prefs_name
     } do
-      ref = make_ref()
+      ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
 
       Accessibility.announce("First", [], prefs_name)
@@ -54,7 +54,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
     end
 
     test "clear_announcements/0 clears the queue", %{prefs_name: prefs_name} do
-      ref = make_ref()
+      ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
 
       Accessibility.announce("Test", [], prefs_name)
@@ -71,7 +71,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
     test "announce/2 does nothing when screen reader is disabled", %{
       prefs_name: prefs_name
     } do
-      ref = make_ref()
+      ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
 
       Raxol.Core.UserPreferences.set(

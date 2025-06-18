@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.FileWatcherBehaviour do
-  @moduledoc '''
+  @moduledoc """
   Behaviour defining the interface for file watching operations.
-  '''
+  """
 
   @callback start_link(opts :: Keyword.t()) :: {:ok, pid()} | {:error, term()}
   @callback stop(pid :: pid()) :: :ok

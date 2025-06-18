@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.Commands.Parser do
-  @moduledoc '''
+  @moduledoc """
   Handles parsing of command parameters in terminal sequences.
 
   This module is part of the terminal command execution system. It provides
   utilities for parsing and extracting parameters from CSI, OSC, and DCS
   sequence parameter strings.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Parses a raw parameter string buffer into a list of integers or nil values.
 
   Handles empty or malformed parameters by converting them to nil.
@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.Commands.Parser do
 
       iex> Parser.parse_params("5:1;10:2;15:3")
       [[5, 1], [10, 2], [15, 3]]
-  '''
+  """
   @spec parse_params(String.t()) ::
           list(integer() | nil | list(integer() | nil))
   def parse_params(""), do: []
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Commands.Parser do
   defp parse_subparam(""), do: nil
   defp parse_subparam(subparam), do: parse_int(subparam)
 
-  @doc '''
+  @doc """
   Gets a parameter at a specific index from the params list.
 
   If the parameter is not available, returns the provided default value.
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Commands.Parser do
 
       iex> Parser.get_param([5, 10], 3, 0)
       0
-  '''
+  """
   @spec get_param(list(integer() | nil), non_neg_integer(), integer()) ::
           integer()
   def get_param(params, index, default \\ 1) do
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Commands.Parser do
     end
   end
 
-  @doc '''
+  @doc """
   Safely parses a string into an integer.
 
   Returns the parsed integer, or nil on failure.
@@ -92,7 +92,7 @@ defmodule Raxol.Terminal.Commands.Parser do
 
       iex> Parser.parse_int("abc")
       nil
-  '''
+  """
   @spec parse_int(String.t()) :: integer() | nil
   def parse_int(str) do
     case Integer.parse(str) do
