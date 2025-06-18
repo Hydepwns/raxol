@@ -35,16 +35,26 @@ defmodule Raxol.UI.Components.Progress do
     base_state = struct!(__MODULE__, props)
 
     # Set up frames and interval based on type
-    state = case type do
-      :spinner -> %{base_state |
-        frames: Map.get(spinner_types(), Map.get(props, :spinner_type, :dots), @spinner_frames),
-        interval: Map.get(props, :interval, 100)
-      }
-      :indeterminate -> %{base_state |
-        interval: Map.get(props, :interval, 100)
-      }
-      _ -> base_state
-    end
+    state =
+      case type do
+        :spinner ->
+          %{
+            base_state
+            | frames:
+                Map.get(
+                  spinner_types(),
+                  Map.get(props, :spinner_type, :dots),
+                  @spinner_frames
+                ),
+              interval: Map.get(props, :interval, 100)
+          }
+
+        :indeterminate ->
+          %{base_state | interval: Map.get(props, :interval, 100)}
+
+        _ ->
+          base_state
+      end
 
     %{state | type: type}
   end
@@ -162,12 +172,20 @@ defmodule Raxol.UI.Components.Progress do
     )
   end
 
-  defp render_label_and_percentage(label, label_style, percentage_text, percentage_style) do
+  defp render_label_and_percentage(
+         label,
+         label_style,
+         percentage_text,
+         percentage_style
+       ) do
     label_text = Raxol.View.Elements.label(content: label, style: label_style)
 
     percentage_element =
       if percentage_text do
-        Raxol.View.Elements.label(content: percentage_text, style: percentage_style)
+        Raxol.View.Elements.label(
+          content: percentage_text,
+          style: percentage_style
+        )
       else
         nil
       end
@@ -219,49 +237,130 @@ defmodule Raxol.UI.Components.Progress do
     id = Keyword.get(opts, :id, "progress_bar_with_label")
 
     # Generate percentage text
-    percentage_text = if show_percentage, do: "#{round(value * 100)}%", else: nil
+    percentage_text =
+      if show_percentage, do: "#{round(value * 100)}%", else: nil
 
     # Create the progress bar with label based on position
     case position do
-      :above -> render_above_position(id, label, label_style, percentage_text, percentage_style, value, opts)
-      :below -> render_below_position(id, label, label_style, percentage_text, percentage_style, value, opts)
-      :right -> render_right_position(id, label, label_style, percentage_text, percentage_style, value, opts)
-      _ -> render_above_position(id, label, label_style, percentage_text, percentage_style, value, opts)
+      :above ->
+        render_above_position(
+          id,
+          label,
+          label_style,
+          percentage_text,
+          percentage_style,
+          value,
+          opts
+        )
+
+      :below ->
+        render_below_position(
+          id,
+          label,
+          label_style,
+          percentage_text,
+          percentage_style,
+          value,
+          opts
+        )
+
+      :right ->
+        render_right_position(
+          id,
+          label,
+          label_style,
+          percentage_text,
+          percentage_style,
+          value,
+          opts
+        )
+
+      _ ->
+        render_above_position(
+          id,
+          label,
+          label_style,
+          percentage_text,
+          percentage_style,
+          value,
+          opts
+        )
     end
   end
 
-  defp render_above_position(id, label, label_style, percentage_text, percentage_style, value, opts) do
+  defp render_above_position(
+         id,
+         label,
+         label_style,
+         percentage_text,
+         percentage_style,
+         value,
+         opts
+       ) do
     Raxol.View.Elements.column id: id do
       [
-        Raxol.View.Elements.row(style: %{justify: :space_between}) do
-          render_label_and_percentage(label, label_style, percentage_text, percentage_style)
+        Raxol.View.Elements.row style: %{justify: :space_between} do
+          render_label_and_percentage(
+            label,
+            label_style,
+            percentage_text,
+            percentage_style
+          )
         end,
         bar(value, opts)
       ]
     end
   end
 
-  defp render_below_position(id, label, label_style, percentage_text, percentage_style, value, opts) do
+  defp render_below_position(
+         id,
+         label,
+         label_style,
+         percentage_text,
+         percentage_style,
+         value,
+         opts
+       ) do
     Raxol.View.Elements.column id: id do
       [
         bar(value, opts),
-        Raxol.View.Elements.row(style: %{justify: :space_between}) do
-          render_label_and_percentage(label, label_style, percentage_text, percentage_style)
+        Raxol.View.Elements.row style: %{justify: :space_between} do
+          render_label_and_percentage(
+            label,
+            label_style,
+            percentage_text,
+            percentage_style
+          )
         end
       ]
     end
   end
 
-  defp render_right_position(id, label, label_style, percentage_text, percentage_style, value, opts) do
-    adjusted_width = Keyword.get(opts, :width, 20) -
-      String.length(label) -
-      if(percentage_text, do: String.length(percentage_text) + 1, else: 0)
+  defp render_right_position(
+         id,
+         label,
+         label_style,
+         percentage_text,
+         percentage_style,
+         value,
+         opts
+       ) do
+    adjusted_width =
+      Keyword.get(opts, :width, 20) -
+        String.length(label) -
+        if(percentage_text, do: String.length(percentage_text) + 1, else: 0)
 
     Raxol.View.Elements.row id: id do
       [
         bar(value, Keyword.put(opts, :width, adjusted_width)),
         Raxol.View.Elements.label(content: " #{label}", style: label_style),
-        if(percentage_text, do: Raxol.View.Elements.label(content: " #{percentage_text}", style: percentage_style))
+        if(percentage_text,
+          do:
+            Raxol.View.Elements.label(
+              content: " #{percentage_text}",
+              style: percentage_style
+            )
+        )
       ]
       |> Enum.reject(&is_nil/1)
     end
@@ -400,7 +499,13 @@ defmodule Raxol.UI.Components.Progress do
     # Create the indeterminate progress bar
     Raxol.View.Elements.row([id: id, style: style],
       do: fn ->
-        create_indeterminate_elements(current_position, segment_size, width, bar_style, background_style)
+        create_indeterminate_elements(
+          current_position,
+          segment_size,
+          width,
+          bar_style,
+          background_style
+        )
       end
     )
   end
@@ -416,7 +521,13 @@ defmodule Raxol.UI.Components.Progress do
     end
   end
 
-  defp create_indeterminate_elements(current_position, segment_size, width, bar_style, background_style) do
+  defp create_indeterminate_elements(
+         current_position,
+         segment_size,
+         width,
+         bar_style,
+         background_style
+       ) do
     left_width = current_position
     bar_width = segment_size
     right_width = width - bar_width - left_width
@@ -425,16 +536,34 @@ defmodule Raxol.UI.Components.Progress do
 
     elements =
       if left_width > 0 do
-        [Raxol.View.Elements.label(content: String.duplicate(" ", left_width), style: background_style) | elements]
+        [
+          Raxol.View.Elements.label(
+            content: String.duplicate(" ", left_width),
+            style: background_style
+          )
+          | elements
+        ]
       else
         elements
       end
 
-    elements = [Raxol.View.Elements.label(content: String.duplicate(" ", bar_width), style: bar_style) | elements]
+    elements = [
+      Raxol.View.Elements.label(
+        content: String.duplicate(" ", bar_width),
+        style: bar_style
+      )
+      | elements
+    ]
 
     elements =
       if right_width > 0 do
-        [Raxol.View.Elements.label(content: String.duplicate(" ", right_width), style: background_style) | elements]
+        [
+          Raxol.View.Elements.label(
+            content: String.duplicate(" ", right_width),
+            style: background_style
+          )
+          | elements
+        ]
       else
         elements
       end
@@ -632,12 +761,26 @@ defmodule Raxol.UI.Components.Progress do
     # Create the progress bar
     Raxol.View.Elements.row([id: id, style: style],
       do: fn ->
-        create_bar_elements(filled_width, filled_portion, filled_style, empty_width, empty_portion, empty_style)
+        create_bar_elements(
+          filled_width,
+          filled_portion,
+          filled_style,
+          empty_width,
+          empty_portion,
+          empty_style
+        )
       end
     )
   end
 
-  defp create_bar_elements(filled_width, filled_portion, filled_style, empty_width, empty_portion, empty_style) do
+  defp create_bar_elements(
+         filled_width,
+         filled_portion,
+         filled_style,
+         empty_width,
+         empty_portion,
+         empty_style
+       ) do
     elements = []
 
     elements =
