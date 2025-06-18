@@ -4,9 +4,6 @@
 # If you run "mix test --cover", coverage assets end up here.
 /cover/
 
-# Ignore the termbox2_nif directory
-/lib/termbox2_nif/
-
 # The directory Mix downloads your dependencies sources to.
 /deps/
 

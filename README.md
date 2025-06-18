@@ -22,6 +22,7 @@ A modern, feature-rich toolkit for building sophisticated terminal user interfac
 - **Cloud Integration**: Monitoring, configuration, and service discovery
 - **Performance Optimization**: Advanced caching and rendering optimizations
 - **Metrics System**: Comprehensive performance monitoring and visualization
+- **Progress Indicators**: Multiple progress visualization options including bars, spinners, and circular indicators
 
 ## Installation
 
@@ -39,6 +40,7 @@ Then fetch the dependencies:
 
 ```bash
 mix deps.get
+git submodule update --init --recursive  # Required for termbox2 dependency
 ```
 
 ## Quick Start
@@ -54,6 +56,7 @@ defmodule MyApp.Application do
     ~H"""
     <box border="single" padding="1">
       <text color="cyan" bold="true">Hello from Raxol!</text>
+      <progress type="bar" value="0.75" width="20" />
     </box>
     """
   end
@@ -73,6 +76,7 @@ defmodule MyApp.Application do
     view do
       box border: :single, padding: 1 do
         text content: "Hello from Raxol!", color: :cyan, attributes: [:bold]
+        Progress.bar(0.75, width: 20)
       end
     end
   end
@@ -92,6 +96,7 @@ end
 - [Components Overview](examples/guides/03_components_and_layout/components/README.md)
 - [Visualization Components](examples/guides/03_components_and_layout/components/visualization/README.md)
 - [Database Components](examples/guides/03_components_and_layout/components/database/README.md)
+- [Progress Components](examples/guides/03_components_and_layout/components/README.md)
 
 ## Performance
 
