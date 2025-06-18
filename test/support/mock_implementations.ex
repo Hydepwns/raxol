@@ -1,9 +1,9 @@
 defmodule Raxol.Test.Support.MockImplementations do
-  @moduledoc """
+  @moduledoc '''
   Provides default implementations for all mocks used in tests.
   These implementations provide basic functionality that can be overridden
   in individual tests as needed.
-  """
+  '''
 
   # Core mock implementations
   defmodule FileWatcherMock do

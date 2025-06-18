@@ -13,11 +13,11 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
       id: :basic,
       title: "Basic Usage",
       description: "Displaying progress.",
-      code: ~S'''
+      code: ~S'""
       view do
         progress_bar(value: 50, max: 100)
       end
-      '''
+      ""'
       # preview_fn: fn props -> ... end
     }
   ],

@@ -2,7 +2,7 @@ defmodule RaxolWeb.ConnCase do
   # Add import for Plug.Conn functions used in helpers
   import Plug.Conn
 
-  @moduledoc """
+  @moduledoc '''
   This module defines the test case to be used by
   tests that require setting up a connection.
 
@@ -16,7 +16,7 @@ defmodule RaxolWeb.ConnCase do
   PostgreSQL, you can even run database tests asynchronously
   by setting `use RaxolWeb.ConnCase, async: true`, although
   this option is not recommended for other databases.
-  """
+  '''
 
   use ExUnit.CaseTemplate
 
@@ -44,9 +44,9 @@ defmodule RaxolWeb.ConnCase do
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 
-  @doc """
+  @doc '''
   Starts the endpoint server for tests requiring it.
-  """
+  '''
   def start_endpoint(_) do
     # Start applications necessary for the endpoint
     Application.ensure_all_started(:phoenix)
@@ -58,9 +58,9 @@ defmodule RaxolWeb.ConnCase do
     :ok
   end
 
-  @doc """
+  @doc '''
   Setup helper functions for tests that interact with the DB
-  """
+  '''
   def setup_sandbox(tags) do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
 
@@ -69,14 +69,14 @@ defmodule RaxolWeb.ConnCase do
     end
   end
 
-  @doc """
+  @doc '''
   A helper that transforms changeset errors into a map of messages.
 
       assert {:error, changeset} = Accounts.create_user(%{password: "short"})
       assert "password is too short" in errors_on(changeset).password
       assert %{password: ["password is too short"]} = errors_on(changeset)
 
-  """
+  '''
   def errors_on(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->
       Regex.replace(~r"%{(\w+)}", message, fn _, key ->
@@ -87,10 +87,10 @@ defmodule RaxolWeb.ConnCase do
     end)
   end
 
-  @doc """
+  @doc '''
   Logs the given user into the connection for testing.
   Mimics the behaviour of RaxolWeb.UserAuth.log_in_user/2.
-  """
+  '''
   def log_in_user(conn, user) do
     session_token = "placeholder_id_#{user.id}"
 

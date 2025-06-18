@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Extension.Plugin do
-  @moduledoc """
+  @moduledoc '''
   A test plugin extension for the Raxol terminal emulator.
-  """
+  '''
 
   def get_plugin_info do
     %{
@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Extension.Plugin do
   end
 
   def register_hook(hook, _callback) do
-    {:error, :hook_not_found, "Hook '#{hook}' not found"}
+    {:error, :hook_not_found, "Hook "#{hook}" not found"}
   end
 
   def unregister_hook("init", _callback) do
@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Extension.Plugin do
   end
 
   def unregister_hook(hook, _callback) do
-    {:error, :hook_not_found, "Hook '#{hook}' not found"}
+    {:error, :hook_not_found, "Hook "#{hook}" not found"}
   end
 
   def trigger_hook("init", args) do
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Extension.Plugin do
   end
 
   def trigger_hook(hook, _args) do
-    {:error, :hook_not_found, "Hook '#{hook}' not found"}
+    {:error, :hook_not_found, "Hook "#{hook}" not found"}
   end
 
   def get_plugin_state do

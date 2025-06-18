@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Extension.Script do
-  @moduledoc """
+  @moduledoc '''
   A test script extension for the Raxol terminal emulator.
-  """
+  '''
 
   def get_script_info do
     %{
@@ -16,12 +16,12 @@ defmodule Raxol.Terminal.Extension.Script do
 
   def execute_command("run", args) do
     # Simulate running a script
-    {:ok, "Command 'run' executed with args: #{inspect(args)}"}
+    {:ok, "Command "run" executed with args: #{inspect(args)}"}
   end
 
   def execute_command("stop", _args) do
     # Simulate stopping a script
-    {:ok, "Command 'stop' executed"}
+    {:ok, "Command "stop" executed"}
   end
 
   def execute_command("status", _args) do
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Extension.Script do
   end
 
   def execute_command(command, _args) do
-    {:error, :command_not_found, "Command '#{command}' not found"}
+    {:error, :command_not_found, "Command "#{command}" not found"}
   end
 
   def get_script_state do

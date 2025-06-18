@@ -1,8 +1,8 @@
 defmodule Raxol.Test.Support.Mocks do
-  @moduledoc """
+  @moduledoc '''
   Provides mock implementations for testing.
   This module defines all the necessary mocks for the test suite.
-  """
+  '''
 
   # Import Mox at the module level
   import Mox
@@ -133,10 +133,10 @@ defmodule Raxol.Test.Support.Mocks do
     for: Raxol.Terminal.Buffer.LineOperations.Behaviour
   )
 
-  @doc """
+  @doc '''
   Sets up all mocks with default implementations.
   This should be called in the setup block of your tests.
-  """
+  '''
   def setup_mocks do
     # Set up default implementations for all mocks
     # Core mocks
