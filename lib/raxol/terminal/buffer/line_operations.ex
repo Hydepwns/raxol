@@ -25,8 +25,29 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     end
   end
 
-  # Helper function to handle the line insertion logic
-  defp do_insert_lines(buffer, cursor_y, count, bottom) do
+  @doc """
+  Helper function to handle the line insertion logic.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `cursor_y` - The y-coordinate of the cursor
+  * `count` - The number of lines to insert
+  * `bottom` - The bottom boundary of the scroll region
+
+  ## Returns
+
+  The updated screen buffer.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> buffer = LineOperations.do_insert_lines(buffer, 0, 5, 23)
+      iex> length(buffer.cells)
+      24
+  """
+  @spec do_insert_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def do_insert_lines(buffer, cursor_y, count, bottom) do
     # Split the content at the cursor position
     {before_cursor, after_cursor} = Enum.split(buffer.cells, cursor_y)
 
@@ -138,39 +159,143 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   @doc """
-  Updates a line in the buffer.
+  Updates a line in the buffer with new cells.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `line_index` - The index of the line to update
+  * `new_line` - The new line content
+
+  ## Returns
+
+  The updated screen buffer.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> new_line = List.duplicate(%Cell{char: "A"}, 80)
+      iex> buffer = LineOperations.update_line(buffer, 0, new_line)
+      iex> LineOperations.get_line(buffer, 0) |> hd() |> Map.get(:char)
+      "A"
   """
-  @spec update_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
-          ScreenBuffer.t()
+  @spec update_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
   def update_line(buffer, line_index, new_line) do
     new_cells = List.update_at(buffer.cells, line_index, fn _ -> new_line end)
     %{buffer | cells: new_cells}
   end
 
   @doc """
-  Clears a line in the buffer.
+  Clears a line in the buffer with optional styling.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `line_index` - The index of the line to clear
+  * `style` - Optional text style for the cleared line
+
+  ## Returns
+
+  The updated screen buffer.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> style = %{fg: :red, bg: :blue}
+      iex> buffer = LineOperations.clear_line(buffer, 0, style)
+      iex> LineOperations.get_line(buffer, 0) |> hd() |> Map.get(:style)
+      %{fg: :red, bg: :blue}
   """
-  @spec clear_line(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          TextFormatting.text_style() | nil
-        ) :: ScreenBuffer.t()
+  @spec clear_line(ScreenBuffer.t(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
   def clear_line(buffer, line_index, style \\ nil) do
     empty_line = create_empty_line(buffer.width, style || buffer.default_style)
     update_line(buffer, line_index, empty_line)
   end
 
-  # Private helper functions
+  @doc """
+  Creates a specified number of empty lines with the given width.
 
-  defp create_empty_lines(width, count) do
+  ## Parameters
+
+  * `width` - The width of each line
+  * `count` - The number of lines to create
+
+  ## Returns
+
+  A list of empty lines, where each line is a list of empty cells.
+
+  ## Examples
+
+      iex> lines = LineOperations.create_empty_lines(80, 2)
+      iex> length(lines)
+      2
+      iex> length(hd(lines))
+      80
+  """
+  @spec create_empty_lines(non_neg_integer(), non_neg_integer()) :: list(list(Cell.t()))
+  def create_empty_lines(width, count) do
     for _ <- 1..count do
       create_empty_line(width)
     end
   end
 
-  defp create_empty_line(width, style \\ nil) do
+  @doc """
+  Creates a single empty line with the given width and optional style.
+
+  ## Parameters
+
+  * `width` - The width of the line
+  * `style` - Optional text style for the cells
+
+  ## Returns
+
+  A list of empty cells representing an empty line.
+
+  ## Examples
+
+      iex> line = LineOperations.create_empty_line(80)
+      iex> length(line)
+      80
+      iex> line = LineOperations.create_empty_line(80, %{fg: :red})
+      iex> hd(line).style.fg
+      :red
+  """
+  @spec create_empty_line(non_neg_integer(), TextFormatting.text_style() | nil) :: list(Cell.t())
+  def create_empty_line(width, style \\ nil) do
     for _ <- 1..width do
       Cell.new("", style)
+    end
+  end
+
+  @doc """
+  Erases a specified number of characters in a line.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `row` - The row to modify
+  * `col` - The starting column
+  * `count` - The number of characters to erase
+
+  ## Returns
+
+  The updated screen buffer.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> buffer = LineOperations.erase_chars(buffer, 0, 0, 10)
+      iex> LineOperations.get_line(buffer, 0) |> Enum.take(10) |> Enum.all?(fn cell -> cell.char == "" end)
+      true
+  """
+  @spec erase_chars(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_chars(buffer, row, col, count) do
+    line = get_line(buffer, row)
+    if line do
+      new_line = List.update_at(line, col, fn _ -> Cell.new("") end)
+      update_line(buffer, row, new_line)
+    else
+      buffer
     end
   end
 end

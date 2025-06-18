@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Buffer.Cell do
   Manages terminal cell operations and attributes.
   """
 
+  alias Raxol.Terminal.ANSI.TextFormatting
+
   defstruct [
     :char,
     :foreground,
@@ -14,8 +16,8 @@ defmodule Raxol.Terminal.Buffer.Cell do
 
   @type t :: %__MODULE__{
           char: String.t(),
-          foreground: integer(),
-          background: integer(),
+          foreground: integer() | atom() | String.t(),
+          background: integer() | atom() | String.t(),
           attributes: map(),
           hyperlink: String.t() | nil,
           width: integer()
@@ -32,6 +34,20 @@ defmodule Raxol.Terminal.Buffer.Cell do
       attributes: Keyword.get(opts, :attributes, %{}),
       hyperlink: Keyword.get(opts, :hyperlink, nil),
       width: Keyword.get(opts, :width, 1)
+    }
+  end
+
+  @doc """
+  Creates a new cell with the specified character and style.
+  """
+  def new(char, style) when is_binary(char) and is_map(style) do
+    %__MODULE__{
+      char: char,
+      foreground: Map.get(style, :foreground, 7),
+      background: Map.get(style, :background, 0),
+      attributes: Map.get(style, :attributes, %{}),
+      hyperlink: Map.get(style, :hyperlink, nil),
+      width: Map.get(style, :width, 1)
     }
   end
 
@@ -148,4 +164,52 @@ defmodule Raxol.Terminal.Buffer.Cell do
         hyperlink: source.hyperlink
     }
   end
+
+  @doc """
+  Validates a cell's data.
+  Returns true if the cell is valid, false otherwise.
+  """
+  def valid?(%__MODULE__{} = cell) do
+    valid_char?(cell.char) and
+      valid_color?(cell.foreground) and
+      valid_color?(cell.background) and
+      valid_attributes?(cell.attributes)
+  end
+
+  def valid?(_), do: false
+
+  defp valid_char?(char) when is_binary(char) do
+    String.length(char) == 1
+  end
+
+  defp valid_char?(_), do: false
+
+  defp valid_color?(color) when is_atom(color) do
+    color in [
+      :default,
+      :black,
+      :red,
+      :green,
+      :yellow,
+      :blue,
+      :magenta,
+      :cyan,
+      :white
+    ]
+  end
+
+  defp valid_color?(color) when is_binary(color) do
+    String.match?(color, ~r/^#[0-9A-Fa-f]{6}$/)
+  end
+
+  defp valid_color?(_), do: false
+
+  defp valid_attributes?(attrs) when is_map(attrs) do
+    Enum.all?(attrs, fn {key, value} ->
+      key in [:bold, :italic, :underline, :strikethrough] and
+        is_boolean(value)
+    end)
+  end
+
+  defp valid_attributes?(_), do: false
 end

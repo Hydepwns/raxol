@@ -376,4 +376,14 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       Cell.new("", style)
     end
   end
+
+  def set_cursor_position(buffer, _x, _y), do: buffer
+
+  def get_cursor_position(_buffer), do: {0, 0}
+
+  def set_scroll_region(buffer, _top, _bottom), do: buffer
+
+  def mark_damaged(buffer, _x, _y, _width, _height), do: buffer
+
+  def get_damage_regions(_buffer), do: []
 end

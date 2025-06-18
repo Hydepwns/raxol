@@ -210,7 +210,7 @@ defmodule Raxol.Terminal.Buffer.Cursor do
 
   ## Returns
 
-  A boolean indicating cursor blink state.
+  A boolean indicating if the cursor is blinking.
 
   ## Examples
 
@@ -352,5 +352,96 @@ defmodule Raxol.Terminal.Buffer.Cursor do
     x = max(0, min(buffer.width - 1, x))
     y = max(0, min(buffer.height - 1, y))
     set_position(buffer, x, y)
+  end
+
+  @doc """
+  Gets the cursor position as a tuple of {row, col}.
+
+  ## Parameters
+
+  * `cursor` - The cursor to query
+
+  ## Returns
+
+  A tuple {row, col} representing the cursor position.
+
+  ## Examples
+
+      iex> cursor = Cursor.init()
+      iex> Cursor.get_cursor_position(cursor)
+      {0, 0}
+  """
+  @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_cursor_position(cursor) do
+    cursor.position
+  end
+
+  @doc """
+  Sets the cursor position.
+
+  ## Parameters
+
+  * `cursor` - The cursor to modify
+  * `row` - The row position
+  * `col` - The column position
+
+  ## Returns
+
+  The updated cursor with new position.
+
+  ## Examples
+
+      iex> cursor = Cursor.init()
+      iex> cursor = Cursor.set_cursor_position(cursor, 5, 10)
+      iex> Cursor.get_cursor_position(cursor)
+      {5, 10}
+  """
+  @spec set_cursor_position(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def set_cursor_position(cursor, row, col) do
+    %{cursor | position: {row, col}}
+  end
+
+  @doc """
+  Checks if the cursor is visible.
+
+  ## Parameters
+
+  * `cursor` - The cursor to query
+
+  ## Returns
+
+  A boolean indicating cursor visibility.
+
+  ## Examples
+
+      iex> cursor = Cursor.init()
+      iex> Cursor.visible?(cursor)
+      true
+  """
+  @spec visible?(t()) :: boolean()
+  def visible?(cursor) do
+    cursor.visible
+  end
+
+  @doc """
+  Checks if the cursor is blinking.
+
+  ## Parameters
+
+  * `cursor` - The cursor to query
+
+  ## Returns
+
+  A boolean indicating if the cursor is blinking.
+
+  ## Examples
+
+      iex> cursor = Cursor.init()
+      iex> Cursor.blinking?(cursor)
+      true
+  """
+  @spec blinking?(t()) :: boolean()
+  def blinking?(cursor) do
+    cursor.blink_state
   end
 end

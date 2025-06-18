@@ -35,14 +35,51 @@ defmodule Raxol.Terminal.Buffer.Writer do
     end
   end
 
-  defp create_cell_style(nil), do: TextFormatting.new()
+  @doc """
+  Creates a cell style by merging the provided style with default formatting.
 
-  defp create_cell_style(style) when is_map(style),
+  ## Parameters
+
+  * `style` - The style to merge with default formatting, or nil for default style
+
+  ## Returns
+
+  A map containing the merged text formatting style.
+
+  ## Examples
+
+      iex> Writer.create_cell_style(%{fg: :red})
+      %{fg: :red, bg: :default, bold: false, ...}
+  """
+  @spec create_cell_style(TextFormatting.text_style() | nil) :: TextFormatting.text_style()
+  def create_cell_style(nil), do: TextFormatting.new()
+
+  def create_cell_style(style) when is_map(style),
     do: Map.merge(TextFormatting.new(), style)
 
-  defp create_cell_style(_), do: TextFormatting.new()
+  def create_cell_style(_), do: TextFormatting.new()
 
-  defp log_char_write(char, x, y, cell_style) do
+  @doc """
+  Logs character write operations for debugging purposes.
+
+  ## Parameters
+
+  * `char` - The character being written
+  * `x` - The x-coordinate where the character is being written
+  * `y` - The y-coordinate where the character is being written
+  * `cell_style` - The style being applied to the cell
+
+  ## Returns
+
+  :ok
+
+  ## Examples
+
+      iex> Writer.log_char_write("A", 0, 0, %{fg: :red})
+      :ok
+  """
+  @spec log_char_write(String.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: :ok
+  def log_char_write(char, x, y, cell_style) do
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.debug(
@@ -50,7 +87,30 @@ defmodule Raxol.Terminal.Buffer.Writer do
     )
   end
 
-  defp update_cells(buffer, x, y, char, cell_style, width) do
+  @doc """
+  Updates cells in the buffer at the specified position.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to update
+  * `x` - The x-coordinate to update
+  * `y` - The y-coordinate to update
+  * `char` - The character to write
+  * `cell_style` - The style to apply
+  * `width` - The width of the character (1 or 2 for wide characters)
+
+  ## Returns
+
+  The updated list of cells.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> Writer.update_cells(buffer, 0, 0, "A", %{fg: :red}, 1)
+      [%Cell{char: "A", style: %{fg: :red}}, ...]
+  """
+  @spec update_cells(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), String.t(), TextFormatting.text_style(), 1..2) :: list(list(Cell.t()))
+  def update_cells(buffer, x, y, char, cell_style, width) do
     List.update_at(
       buffer.cells,
       y,
@@ -58,7 +118,30 @@ defmodule Raxol.Terminal.Buffer.Writer do
     )
   end
 
-  defp update_row(row, x, char, cell_style, width, buffer_width) do
+  @doc """
+  Updates a row in the buffer at the specified position.
+
+  ## Parameters
+
+  * `row` - The row to update
+  * `x` - The x-coordinate to update
+  * `char` - The character to write
+  * `cell_style` - The style to apply
+  * `width` - The width of the character (1 or 2 for wide characters)
+  * `buffer_width` - The total width of the buffer
+
+  ## Returns
+
+  The updated row of cells.
+
+  ## Examples
+
+      iex> row = List.duplicate(Cell.new(), 80)
+      iex> Writer.update_row(row, 0, "A", %{fg: :red}, 1, 80)
+      [%Cell{char: "A", style: %{fg: :red}}, ...]
+  """
+  @spec update_row(list(Cell.t()), non_neg_integer(), String.t(), TextFormatting.text_style(), 1..2, non_neg_integer()) :: list(Cell.t())
+  def update_row(row, x, char, cell_style, width, buffer_width) do
     new_cell = Cell.new(char, cell_style)
 
     if width == 2 and x + 1 < buffer_width do
@@ -93,14 +176,28 @@ defmodule Raxol.Terminal.Buffer.Writer do
     |> elem(0)
   end
 
-  @dialyzer {:nowarn_function, write_segment: 4}
-  @spec write_segment(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          String.t()
-        ) ::
-          {ScreenBuffer.t(), non_neg_integer()}
+  @doc """
+  Writes a segment of text to the buffer.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to write to
+  * `x` - The x-coordinate to start writing at
+  * `y` - The y-coordinate to write at
+  * `segment` - The text segment to write
+
+  ## Returns
+
+  A tuple containing the updated buffer and the new x-coordinate.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> {new_buffer, new_x} = Writer.write_segment(buffer, 0, 0, "Hello")
+      iex> new_x
+      5
+  """
+  @spec write_segment(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), String.t()) :: {ScreenBuffer.t(), non_neg_integer()}
   def write_segment(buffer, x, y, segment) do
     Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,
                                                            {acc_buffer, acc_x} ->
