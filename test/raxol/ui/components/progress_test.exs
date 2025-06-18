@@ -17,11 +17,13 @@ defmodule Raxol.UI.Components.ProgressTest do
     end
 
     test "renders a progress bar with custom styles" do
-      result = Progress.bar(0.25,
-        filled_style: %{bg: :green},
-        empty_style: %{bg: :black},
-        chars: %{filled: "█", empty: "░"}
-      )
+      result =
+        Progress.bar(0.25,
+          filled_style: %{bg: :green},
+          empty_style: %{bg: :black},
+          chars: %{filled: "█", empty: "░"}
+        )
+
       assert result != nil
     end
   end
@@ -33,12 +35,15 @@ defmodule Raxol.UI.Components.ProgressTest do
     end
 
     test "renders a progress bar with label and percentage" do
-      result = Progress.bar_with_label(0.75, "Processing...", show_percentage: true)
+      result =
+        Progress.bar_with_label(0.75, "Processing...", show_percentage: true)
+
       assert result != nil
     end
 
     test "renders a progress bar with label in different positions" do
       positions = [:above, :below, :right]
+
       for position <- positions do
         result = Progress.bar_with_label(0.5, "Loading...", position: position)
         assert result != nil
@@ -59,6 +64,7 @@ defmodule Raxol.UI.Components.ProgressTest do
 
     test "renders different spinner types" do
       types = [:dots, :line, :braille, :pulse, :circle]
+
       for type <- types do
         result = Progress.spinner("Loading...", 0, type: type)
         assert result != nil
@@ -78,11 +84,13 @@ defmodule Raxol.UI.Components.ProgressTest do
     end
 
     test "renders an indeterminate progress bar with custom styles" do
-      result = Progress.indeterminate(0,
-        bar_style: %{bg: :purple},
-        background_style: %{bg: :black},
-        segment_size: 8
-      )
+      result =
+        Progress.indeterminate(0,
+          bar_style: %{bg: :purple},
+          background_style: %{bg: :black},
+          segment_size: 8
+        )
+
       assert result != nil
     end
   end
