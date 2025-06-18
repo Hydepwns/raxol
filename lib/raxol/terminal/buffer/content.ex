@@ -103,6 +103,14 @@ defmodule Raxol.Terminal.Buffer.Content do
   end
 
   @doc """
+  Gets a line of cells from the buffer.
+  """
+  @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
+  def get_line(%ScreenBuffer{cells: cells}, line_index) when line_index >= 0 do
+    Enum.at(cells, line_index, [])
+  end
+
+  @doc """
   Updates a line in the buffer with new cells.
   """
   @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
