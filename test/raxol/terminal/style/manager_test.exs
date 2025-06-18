@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Style.ManagerTest do
   alias Raxol.Terminal.Style.Manager
 
   describe "StyleManager" do
-    test 'new/0 creates a new text style with default values' do
+    test ~c"new/0 creates a new text style with default values" do
       style = Manager.new()
       # Check default boolean attributes
       assert style.bold == false
@@ -23,24 +23,24 @@ defmodule Raxol.Terminal.Style.ManagerTest do
       assert style.hyperlink == nil
     end
 
-    test 'get_current_style/1 returns the current style' do
+    test ~c"get_current_style/1 returns the current style" do
       style = Manager.new()
       assert Manager.get_current_style(style) == style
     end
 
-    test 'set_style/2 updates the style' do
+    test ~c"set_style/2 updates the style" do
       initial_style = Manager.new()
       new_style = Manager.apply_style(initial_style, :bold)
       assert Manager.set_style(initial_style, new_style) == new_style
     end
 
-    test 'apply_style/2 adds a text attribute' do
+    test ~c"apply_style/2 adds a text attribute" do
       style = Manager.new()
       style = Manager.apply_style(style, :bold)
       assert style.bold == true
     end
 
-    test 'reset_style/1 resets all attributes to default' do
+    test ~c"reset_style/1 resets all attributes to default" do
       style = Manager.new()
       style = Manager.apply_style(style, :bold)
       style = Manager.apply_style(style, :underline)
@@ -51,19 +51,19 @@ defmodule Raxol.Terminal.Style.ManagerTest do
       assert reset_style == Manager.new()
     end
 
-    test 'set_foreground/2 and get_foreground/1 work correctly' do
+    test ~c"set_foreground/2 and get_foreground/1 work correctly" do
       style = Manager.new()
       style = Manager.set_foreground(style, :red)
       assert Manager.get_foreground(style) == :red
     end
 
-    test 'set_background/2 and get_background/1 work correctly' do
+    test ~c"set_background/2 and get_background/1 work correctly" do
       style = Manager.new()
       style = Manager.set_background(style, :blue)
       assert Manager.get_background(style) == :blue
     end
 
-    test 'double width and height functions work correctly' do
+    test ~c"double width and height functions work correctly" do
       style = Manager.new()
 
       # Test double width
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Style.ManagerTest do
       assert style.double_height == :none
     end
 
-    test 'hyperlink functions work correctly' do
+    test ~c"hyperlink functions work correctly" do
       style = Manager.new()
       url = "https://example.com"
 
@@ -98,13 +98,13 @@ defmodule Raxol.Terminal.Style.ManagerTest do
       assert Manager.get_hyperlink(style) == nil
     end
 
-    test 'ansi_code_to_color_name/1 converts codes correctly' do
+    test ~c"ansi_code_to_color_name/1 converts codes correctly" do
       assert Manager.ansi_code_to_color_name(31) == :red
       assert Manager.ansi_code_to_color_name(44) == :blue
       assert Manager.ansi_code_to_color_name(99) == nil
     end
 
-    test 'format_sgr_params/1 formats parameters correctly' do
+    test ~c"format_sgr_params/1 formats parameters correctly" do
       style = Manager.new()
       style = Manager.apply_style(style, :bold)
       style = Manager.apply_style(style, :underline)

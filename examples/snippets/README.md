@@ -169,10 +169,4 @@ sequenceDiagram
 
 ## Related Documentation
 
-- [Component Guide](../../guides/03_components_and_layout/components/README.md)
-- [Event System](../../guides/02_core_concepts/events.md)
-- [Layout System](../../guides/03_components_and_layout/layout.md)
-
----
-
 For more examples, check the [examples directory](../../examples/).

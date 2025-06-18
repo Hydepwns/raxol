@@ -1,7 +1,7 @@
 defmodule Raxol.Protocols.Protocol do
-  @moduledoc '''
+  @moduledoc """
   Protocol module for handling protocol-related functionality.
-  '''
+  """
 
   defstruct [
     :id,

@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Metrics.Config do
-  @moduledoc '''
+  @moduledoc """
   Configuration management for the Raxol metrics system.
 
   This module handles:
@@ -7,7 +7,7 @@ defmodule Raxol.Core.Metrics.Config do
   - Runtime configuration updates
   - Configuration validation
   - Default settings
-  '''
+  """
 
   use GenServer
 
@@ -26,16 +26,16 @@ defmodule Raxol.Core.Metrics.Config do
     environment: :prod
   }
 
-  @doc '''
+  @doc """
   Starts the configuration server.
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Gets the current configuration value for the given key.
-  '''
+  """
   def get(key, default \\ nil)
       when key in [
              :retention_period,
@@ -46,30 +46,30 @@ defmodule Raxol.Core.Metrics.Config do
     GenServer.call(__MODULE__, {:get, key, default})
   end
 
-  @doc '''
+  @doc """
   Updates the configuration with the given key-value pairs.
-  '''
+  """
   def update(config_updates) when is_map(config_updates) do
     GenServer.call(__MODULE__, {:update, config_updates})
   end
 
-  @doc '''
+  @doc """
   Resets the configuration to default values.
-  '''
+  """
   def reset do
     GenServer.call(__MODULE__, :reset)
   end
 
-  @doc '''
+  @doc """
   Gets the current environment.
-  '''
+  """
   def environment do
     GenServer.call(__MODULE__, :environment)
   end
 
-  @doc '''
+  @doc """
   Sets the current environment.
-  '''
+  """
   def set_environment(env) when env in [:dev, :test, :prod] do
     GenServer.call(__MODULE__, {:set_environment, env})
   end
@@ -108,17 +108,17 @@ defmodule Raxol.Core.Metrics.Config do
     {:reply, :ok, new_state}
   end
 
-  @doc '''
+  @doc """
   Returns the default configuration.
-  '''
+  """
   def default_config do
     @default_config
   end
 
-  @doc '''
+  @doc """
   Validates the given configuration.
   Returns :ok if valid, {:error, reason} if invalid.
-  '''
+  """
   def validate_config(config) do
     with :ok <- validate_retention_period(config.retention_period),
          :ok <- validate_max_samples(config.max_samples),

@@ -1,7 +1,7 @@
 defmodule TestHelpers do
-  @moduledoc '''
+  @moduledoc """
   Helper functions for tests.
-  '''
+  """
 
   def setup_runtime_environment(_context) do
     # Clean up any existing processes

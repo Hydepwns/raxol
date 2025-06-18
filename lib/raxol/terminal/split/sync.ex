@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Split.Sync do
-  @moduledoc '''
+  @moduledoc """
   Handles synchronization between terminal splits, including event broadcasting,
   state sharing, and communication protocols.
-  '''
+  """
 
   use GenServer
   require Logger

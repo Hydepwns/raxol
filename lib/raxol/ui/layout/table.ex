@@ -1,13 +1,13 @@
 defmodule Raxol.UI.Layout.Table do
-  @moduledoc '''
+  @moduledoc """
   Handles measurement and positioning logic for Table elements within the LayoutEngine.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Measures the required space for a table and returns a single positioned table element.
-  '''
+  """
   def measure_and_position(%{attrs: attrs} = _table_element, space, acc) do
     # Extract attributes passed from the View/Component via Elements.table/1
     # Use :data attribute

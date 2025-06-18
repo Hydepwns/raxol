@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Input.SpecialKeys do
-  @moduledoc '''
+  @moduledoc """
   Handles special key combinations and their escape sequences.
 
   This module provides functionality for:
@@ -7,12 +7,12 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
   - Converting special keys to their corresponding escape sequences
   - Handling modifier key state
   - Supporting extended key combinations
-  '''
+  """
 
   @type modifier :: :ctrl | :alt | :shift | :meta
   @type modifier_state :: %{modifier() => boolean()}
 
-  @doc '''
+  @doc """
   Creates a new modifier state.
 
   ## Examples
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
       iex> state = SpecialKeys.new_state()
       iex> state.ctrl
       false
-  '''
+  """
   def new_state do
     %{
       ctrl: false,
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
     }
   end
 
-  @doc '''
+  @doc """
   Updates the modifier state based on a key event.
 
   ## Examples
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
       iex> state = SpecialKeys.update_state(state, "Control", true)
       iex> state.ctrl
       true
-  '''
+  """
   def update_state(state, key, pressed) do
     case key do
       "Control" -> %{state | ctrl: pressed}
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
     end
   end
 
-  @doc '''
+  @doc """
   Converts a key combination to its corresponding escape sequence.
 
   ## Examples
@@ -58,7 +58,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
       iex> state = SpecialKeys.new_state() |> SpecialKeys.update_state("Control", true)
       iex> SpecialKeys.to_escape_sequence(state, "c")
       "\e[99"
-  '''
+  """
   def to_escape_sequence(state, key) do
     modifiers = calculate_modifiers(state)
 

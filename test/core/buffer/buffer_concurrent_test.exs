@@ -4,14 +4,14 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @moduledoc '''
+  @moduledoc """
   Tests for concurrent buffer access and operations.
   These tests verify that the buffer operations are thread-safe
   and handle concurrent access correctly.
-  '''
+  """
 
   describe "Concurrent Write Operations" do
-    test 'handles multiple concurrent writers' do
+    test ~c"handles multiple concurrent writers" do
       buffer = Buffer.new({80, 24})
 
       # Create multiple writer processes
@@ -43,7 +43,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
              end)
     end
 
-    test 'handles concurrent writes to same region' do
+    test ~c"handles concurrent writes to same region" do
       buffer = Buffer.new({80, 24})
 
       # Create writers that write to the same region
@@ -73,7 +73,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
   end
 
   describe "Concurrent Read/Write Operations" do
-    test 'handles concurrent reads and writes' do
+    test ~c"handles concurrent reads and writes" do
       buffer = Buffer.new({80, 24})
 
       # Create reader and writer processes
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
   end
 
   describe "Concurrent Buffer Operations" do
-    test 'handles concurrent buffer operations' do
+    test ~c"handles concurrent buffer operations" do
       buffer = Buffer.new({80, 24})
 
       # Create processes that perform different operations
@@ -172,7 +172,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
   end
 
   describe "Stress Testing" do
-    test 'handles high concurrency stress test' do
+    test ~c"handles high concurrency stress test" do
       buffer = Buffer.new({80, 24})
 
       # Create many concurrent operations

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ANSI.TerminalStateBehaviour do
-  @moduledoc '''
+  @moduledoc """
   Behaviour for managing terminal state saving and restoring.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   # For the @type t and state_data_map

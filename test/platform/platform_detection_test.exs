@@ -10,7 +10,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       :ok
     end
 
-    test 'identifies current platform' do
+    test ~c"identifies current platform" do
       platform = Platform.get_current_platform()
 
       # Ensure platform is detected
@@ -25,7 +25,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       end
     end
 
-    test 'provides platform-specific information' do
+    test ~c"provides platform-specific information" do
       platform_info = Platform.get_platform_info()
 
       # All platforms should have these basic fields
@@ -36,7 +36,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       assert Map.has_key?(platform_info, :terminal)
     end
 
-    test 'detects environment variables correctly' do
+    test ~c"detects environment variables correctly" do
       # This is a simplified version of the original test
       env_vars = System.get_env()
 
@@ -48,7 +48,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
                Map.has_key?(env_vars, "USERPROFILE")
     end
 
-    test 'detects system capabilities' do
+    test ~c"detects system capabilities" do
       # Get terminal capabilities
       capabilities = Raxol.System.TerminalPlatform.get_terminal_capabilities()
 
@@ -57,7 +57,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       assert is_list(capabilities.features)
     end
 
-    test 'returns correct file extension for current platform' do
+    test ~c"returns correct file extension for current platform" do
       extension = Platform.get_platform_extension()
 
       case Platform.get_current_platform() do
@@ -66,7 +66,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       end
     end
 
-    test 'provides executable name for current platform' do
+    test ~c"provides executable name for current platform" do
       executable = Platform.get_executable_name()
 
       case Platform.get_current_platform() do
@@ -75,7 +75,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       end
     end
 
-    test 'detects terminal capabilities' do
+    test ~c"detects terminal capabilities" do
       terminal_features =
         Raxol.System.TerminalPlatform.get_terminal_capabilities()
 

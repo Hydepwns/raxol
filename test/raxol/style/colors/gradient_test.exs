@@ -5,7 +5,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   alias Raxol.Style.Colors.{Color, Gradient}
 
   describe "linear/3" do
-    test 'creates a linear gradient with the correct number of steps' do
+    test ~c"creates a linear gradient with the correct number of steps" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       steps = 5
@@ -22,7 +22,7 @@ defmodule Raxol.Style.Colors.GradientTest do
       assert List.last(gradient.colors).hex == "#0000FF"
     end
 
-    test 'interpolates colors correctly' do
+    test ~c"interpolates colors correctly" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
 
@@ -38,7 +38,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   end
 
   describe "multi_stop/2" do
-    test 'creates a multi-stop gradient with the correct number of steps' do
+    test ~c"creates a multi-stop gradient with the correct number of steps" do
       colors = [
         # Red
         Color.from_hex("#FF0000"),
@@ -62,7 +62,7 @@ defmodule Raxol.Style.Colors.GradientTest do
       assert List.last(gradient.colors).hex == "#0000FF"
     end
 
-    test 'handles uneven distribution of steps' do
+    test ~c"handles uneven distribution of steps" do
       colors = [
         # Red
         Color.from_hex("#FF0000"),
@@ -84,7 +84,7 @@ defmodule Raxol.Style.Colors.GradientTest do
       assert List.last(gradient.colors).hex == "#0000FF"
     end
 
-    test 'raises error with less than 2 colors' do
+    test ~c"raises error with less than 2 colors" do
       colors = [Color.from_hex("#FF0000")]
 
       assert_raise FunctionClauseError, fn ->
@@ -94,7 +94,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   end
 
   describe "rainbow/1" do
-    test 'creates a rainbow gradient with the specified steps' do
+    test ~c"creates a rainbow gradient with the specified steps" do
       steps = 7
 
       gradient = Gradient.rainbow(steps)
@@ -107,7 +107,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   end
 
   describe "heat_map/1" do
-    test 'creates a heat map gradient with the specified steps' do
+    test ~c"creates a heat map gradient with the specified steps" do
       steps = 5
 
       gradient = Gradient.heat_map(steps)
@@ -125,7 +125,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   end
 
   describe "at_position/2" do
-    test 'gets color at the beginning of the gradient' do
+    test ~c"gets color at the beginning of the gradient" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Gradient.linear(red, blue, 5)
@@ -134,7 +134,7 @@ defmodule Raxol.Style.Colors.GradientTest do
       assert color.hex == "#FF0000"
     end
 
-    test 'gets color at the end of the gradient' do
+    test ~c"gets color at the end of the gradient" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Gradient.linear(red, blue, 5)
@@ -143,7 +143,7 @@ defmodule Raxol.Style.Colors.GradientTest do
       assert color.hex == "#0000FF"
     end
 
-    test 'gets color at the middle of the gradient' do
+    test ~c"gets color at the middle of the gradient" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Gradient.linear(red, blue, 5)
@@ -156,7 +156,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   end
 
   describe "reverse/1" do
-    test 'reverses the order of colors in the gradient' do
+    test ~c"reverses the order of colors in the gradient" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Gradient.linear(red, blue, 5)
@@ -172,7 +172,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   end
 
   describe "apply_to_text/2" do
-    test 'applies colors to text' do
+    test ~c"applies colors to text" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Gradient.linear(red, blue, 5)
@@ -191,13 +191,13 @@ defmodule Raxol.Style.Colors.GradientTest do
       assert colored_text == expected_output
     end
 
-    test 'handles empty text' do
+    test ~c"handles empty text" do
       gradient = Gradient.rainbow(5)
 
       assert Gradient.apply_to_text(gradient, "") == ""
     end
 
-    test 'handles text longer than gradient colors' do
+    test ~c"handles text longer than gradient colors" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Gradient.linear(red, blue, 3)
@@ -209,7 +209,7 @@ defmodule Raxol.Style.Colors.GradientTest do
       assert String.length(colored_text) > String.length(text)
     end
 
-    test 'handles text shorter than gradient colors' do
+    test ~c"handles text shorter than gradient colors" do
       gradient = Gradient.rainbow(10)
       text = "Hi"
 
@@ -221,7 +221,7 @@ defmodule Raxol.Style.Colors.GradientTest do
   end
 
   describe "to_ansi_sequence/2" do
-    test 'is an alias for apply_to_text' do
+    test ~c"is an alias for apply_to_text" do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Gradient.linear(red, blue, 5)

@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
       assert manager.metrics.optimizations == 0
     end
 
-    test 'creates a new scroll manager with custom options' do
+    test ~c"creates a new scroll manager with custom options" do
       manager =
         Manager.new(
           cache_size: 50,

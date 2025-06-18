@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.ANSI.Benchmark do
-  @moduledoc '''
+  @moduledoc """
   Provides benchmarking capabilities for the ANSI handling system.
   Measures performance of parsing and processing ANSI sequences.
-  '''
+  """
 
   alias Raxol.Terminal.ANSI.Parser
 
-  @doc '''
+  @doc """
   Runs a benchmark suite on the ANSI handling system.
   Returns a map of benchmark results.
-  '''
+  """
   @spec run_benchmark() :: map()
   def run_benchmark do
     %{
@@ -19,9 +19,9 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
     }
   end
 
-  @doc '''
+  @doc """
   Benchmarks the parsing performance with various ANSI sequences.
-  '''
+  """
   @spec benchmark_parsing() :: map()
   def benchmark_parsing do
     sequences = generate_test_sequences()
@@ -48,9 +48,9 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
     Enum.each(sequences, &Parser.parse/1)
   end
 
-  @doc '''
+  @doc """
   Benchmarks the processing performance with various ANSI sequences.
-  '''
+  """
   @spec benchmark_processing() :: map()
   def benchmark_processing do
     sequences = generate_test_sequences()
@@ -78,9 +78,9 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
     end)
   end
 
-  @doc '''
+  @doc """
   Benchmarks the state machine performance with various inputs.
-  '''
+  """
   @spec benchmark_state_machine() :: map()
   def benchmark_state_machine do
     inputs = generate_test_inputs()

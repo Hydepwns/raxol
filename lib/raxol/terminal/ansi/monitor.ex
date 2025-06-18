@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ANSI.Monitor do
-  @moduledoc '''
+  @moduledoc """
   Provides monitoring capabilities for the ANSI handling system.
   Tracks performance metrics, errors, and sequence statistics.
-  '''
+  """
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -24,41 +24,41 @@ defmodule Raxol.Terminal.ANSI.Monitor do
 
   # --- Client API ---
 
-  @doc '''
+  @doc """
   Starts the ANSI monitor process.
-  '''
+  """
   @spec start_link(Keyword.t()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Records the processing of an ANSI sequence.
-  '''
+  """
   @spec record_sequence(String.t()) :: :ok
   def record_sequence(input) do
     GenServer.cast(__MODULE__, {:record_sequence, input})
   end
 
-  @doc '''
+  @doc """
   Records an error in ANSI sequence processing.
-  '''
+  """
   @spec record_error(String.t(), String.t(), map()) :: :ok
   def record_error(input, reason, context) do
     GenServer.cast(__MODULE__, {:record_error, input, reason, context})
   end
 
-  @doc '''
+  @doc """
   Gets the current metrics.
-  '''
+  """
   @spec get_metrics() :: metrics()
   def get_metrics do
     GenServer.call(__MODULE__, :get_metrics)
   end
 
-  @doc '''
+  @doc """
   Resets the metrics.
-  '''
+  """
   @spec reset_metrics() :: :ok
   def reset_metrics do
     GenServer.cast(__MODULE__, :reset_metrics)

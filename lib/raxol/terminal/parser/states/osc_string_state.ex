@@ -1,18 +1,18 @@
 defmodule Raxol.Terminal.Parser.States.OSCStringState do
-  @moduledoc '''
+  @moduledoc """
   Handles the OSC String state in the terminal parser.
   This state is entered when an OSC sequence is initiated.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.Commands.Executor
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Processes input when the parser is in the :osc_string state.
   Collects the OSC string until ST (ESC \) or BEL.
-  '''
+  """
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
           | {:finished, Emulator.t(), State.t()}

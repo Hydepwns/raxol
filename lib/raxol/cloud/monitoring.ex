@@ -1,5 +1,5 @@
 defmodule Raxol.Cloud.Monitoring do
-  @moduledoc '''
+  @moduledoc """
   Cloud monitoring system for Raxol applications.
 
   This module provides comprehensive monitoring capabilities for Raxol
@@ -13,7 +13,7 @@ defmodule Raxol.Cloud.Monitoring do
   * Health checks and status monitoring
   * Alerting and notification system
   * Integration with popular monitoring services
-  '''
+  """
 
   alias Raxol.Cloud.Monitoring.{Metrics, Errors, Health, Alerts}
   alias Raxol.Cloud.EdgeComputing
@@ -36,9 +36,9 @@ defmodule Raxol.Cloud.Monitoring do
         active: false,
         config: %{
           # 10 seconds
-          metrics_interval: 10000,
+          metrics_interval: 10_000,
           # 1 minute
-          health_check_interval: 60000,
+          health_check_interval: 60_000,
           # 100%
           error_sample_rate: 1.0,
           metrics_batch_size: 100,
@@ -65,7 +65,7 @@ defmodule Raxol.Cloud.Monitoring do
   # Process dictionary key for monitoring state
   @monitoring_key :raxol_monitoring_state
 
-  @doc '''
+  @doc """
   Initializes the monitoring system.
 
   ## Options
@@ -82,7 +82,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> init(metrics_interval: 5000, backends: [:datadog, :prometheus])
       :ok
-  '''
+  """
   def init(opts \\ []) do
     state = State.new()
 
@@ -125,9 +125,9 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc '''
+  @doc """
   Updates the monitoring configuration.
-  '''
+  """
   def update_config(state \\ nil, config) do
     with_state(state, fn s ->
       # Merge new config with existing config
@@ -136,26 +136,26 @@ defmodule Raxol.Cloud.Monitoring do
     end)
   end
 
-  @doc '''
+  @doc """
   Starts the monitoring system if it's not already active.
-  '''
+  """
   def start() do
     with_state(fn state ->
-      if not state.active do
+      if state.active do
+        state
+      else
         # Start monitoring loops
         _monitoring_pid = start_monitoring(state.config)
         %{state | active: true}
-      else
-        state
       end
     end)
 
     :ok
   end
 
-  @doc '''
+  @doc """
   Stops the monitoring system.
-  '''
+  """
   def stop() do
     with_state(fn state ->
       %{state | active: false}
@@ -164,7 +164,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc '''
+  @doc """
   Records a metric with the given name and value.
 
   ## Options
@@ -177,7 +177,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> record_metric("response_time", 123, tags: ["api", "users"], source: :api)
       :ok
-  '''
+  """
   def record_metric(name, value, opts \\ []) do
     state = get_state()
 
@@ -192,7 +192,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc '''
+  @doc """
   Records a batch of metrics.
 
   ## Examples
@@ -202,7 +202,7 @@ defmodule Raxol.Cloud.Monitoring do
       ...>   {"memory_usage", 0.5, [source: :system]}
       ...> ])
       :ok
-  '''
+  """
   def record_metrics(metrics) do
     state = get_state()
 
@@ -215,7 +215,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc '''
+  @doc """
   Records an error or exception.
 
   ## Options
@@ -230,7 +230,7 @@ defmodule Raxol.Cloud.Monitoring do
       iex> record_error(%RuntimeError{message: "Connection failed"},
       ...>   context: %{user_id: 123}, severity: :error)
       :ok
-  '''
+  """
   def record_error(error, opts \\ []) do
     state = get_state()
 
@@ -247,7 +247,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc '''
+  @doc """
   Runs a health check on the system.
 
   ## Options
@@ -259,7 +259,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> run_health_check(components: [:database, :api])
       {:ok, %{status: :healthy, components: %{database: :healthy, api: :healthy}}}
-  '''
+  """
   def run_health_check(opts \\ []) do
     state = get_state()
 
@@ -286,7 +286,7 @@ defmodule Raxol.Cloud.Monitoring do
     end
   end
 
-  @doc '''
+  @doc """
   Triggers an alert with the given type and data.
 
   ## Options
@@ -298,7 +298,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> trigger_alert(:high_cpu_usage, %{value: 0.95}, severity: :critical)
       :ok
-  '''
+  """
   def trigger_alert(type, data, opts \\ []) do
     state = get_state()
 
@@ -326,9 +326,9 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc '''
+  @doc """
   Gets the current monitoring status.
-  '''
+  """
   def status() do
     state = get_state()
 
@@ -343,7 +343,7 @@ defmodule Raxol.Cloud.Monitoring do
     }
   end
 
-  @doc '''
+  @doc """
   Gets recent metrics for the specified metric name.
 
   ## Options
@@ -357,12 +357,12 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> get_metrics("response_time", limit: 10, tags: ["api"])
       [%{name: "response_time", value: 123, timestamp: ~U[2023-01-01 12:00:00Z], tags: ["api"]}]
-  '''
+  """
   def get_metrics(name, opts \\ []) do
     Metrics.get(name, opts)
   end
 
-  @doc '''
+  @doc """
   Gets recent errors.
 
   ## Options
@@ -377,12 +377,12 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> get_errors(limit: 10, severity: :critical)
       [%{error: %RuntimeError{...}, severity: :critical, ...}]
-  '''
+  """
   def get_errors(opts \\ []) do
     Errors.get(opts)
   end
 
-  @doc '''
+  @doc """
   Gets recent alerts.
 
   ## Options
@@ -397,7 +397,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> get_alerts(limit: 10, severity: :critical)
       [%{type: :high_cpu_usage, severity: :critical, ...}]
-  '''
+  """
   def get_alerts(opts \\ []) do
     state = get_state()
 
@@ -491,9 +491,14 @@ defmodule Raxol.Cloud.Monitoring do
   end
 
   defp collect_system_metrics() do
-    # Collect various system metrics
+    collect_memory_metrics()
+    collect_process_metrics()
+    collect_runtime_metrics()
+    collect_edge_metrics()
+    collect_gc_metrics()
+  end
 
-    # Memory usage
+  defp collect_memory_metrics() do
     memory = :erlang.memory()
     total_memory = memory[:total]
     process_memory = memory[:processes]
@@ -504,36 +509,35 @@ defmodule Raxol.Cloud.Monitoring do
     record_metric("memory.usage_ratio", process_memory / total_memory,
       source: :system
     )
+  end
 
-    # Process metrics
-    process_count = length(:erlang.processes())
-    record_metric("process.count", process_count, source: :system)
+  defp collect_process_metrics() do
+    record_metric("process.count", length(:erlang.processes()), source: :system)
+  end
 
-    # Runtime metrics
+  defp collect_runtime_metrics() do
     runtime_info = :erlang.statistics(:runtime)
     uptime = :erlang.statistics(:wall_clock)
-
     runtime_ratio = elem(runtime_info, 0) / elem(uptime, 0)
     record_metric("runtime.ratio", runtime_ratio, source: :system)
+  end
 
-    # Edge computing metrics (if available)
+  defp collect_edge_metrics() do
     if function_exported?(EdgeComputing, :get_metrics, 0) do
-      edge_metrics = EdgeComputing.get_metrics()
-
-      edge_metrics
+      EdgeComputing.get_metrics()
       |> Enum.each(fn {name, value} ->
         record_metric("edge.#{name}", value, source: :edge)
       end)
     end
+  end
 
-    # GC metrics
+  defp collect_gc_metrics() do
     record_metric(
       "gc.count",
       :erlang.statistics(:garbage_collection) |> elem(0),
       source: :system
     )
 
-    # Reductions (work done)
     record_metric("reductions", :erlang.statistics(:reductions) |> elem(0),
       source: :system
     )

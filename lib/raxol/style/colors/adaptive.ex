@@ -1,5 +1,5 @@
 defmodule Raxol.Style.Colors.Adaptive do
-  @moduledoc '''
+  @moduledoc """
   Detects terminal capabilities and adapts color schemes accordingly.
 
   This module provides functionality to detect what color capabilities are
@@ -27,7 +27,7 @@ defmodule Raxol.Style.Colors.Adaptive do
     # Use dark text on light background
   end
   ```
-  '''
+  """
 
   alias Raxol.Style.Colors.{Color, Utilities}
 
@@ -54,12 +54,12 @@ defmodule Raxol.Style.Colors.Adaptive do
     "cygwin"
   ]
 
-  @doc '''
+  @doc """
   Initializes the terminal capabilities cache.
 
   This should be called once, usually during application startup.
   It creates the ETS table used for caching detected capabilities.
-  '''
+  """
   def init do
     # Create the ETS table if it doesn't already exist
     if :ets.info(@capabilities_cache_name) == :undefined do
@@ -74,7 +74,7 @@ defmodule Raxol.Style.Colors.Adaptive do
     :ok
   end
 
-  @doc '''
+  @doc """
   Detects the color support level of the current terminal.
 
   Returns one of:
@@ -87,7 +87,7 @@ defmodule Raxol.Style.Colors.Adaptive do
 
       iex> Raxol.Style.Colors.Adaptive.detect_color_support()
       :true_color  # Depends on your terminal
-  '''
+  """
   def detect_color_support do
     # Ensure cache is initialized
     init()
@@ -105,32 +105,32 @@ defmodule Raxol.Style.Colors.Adaptive do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if the terminal supports true color (24-bit color).
 
   ## Examples
 
       iex> Raxol.Style.Colors.Adaptive.supports_true_color?()
       true  # Depends on your terminal
-  '''
+  """
   def supports_true_color? do
     detect_color_support() == :true_color
   end
 
-  @doc '''
+  @doc """
   Checks if the terminal supports 256 colors.
 
   ## Examples
 
       iex> Raxol.Style.Colors.Adaptive.supports_256_colors?()
       true  # Depends on your terminal
-  '''
+  """
   def supports_256_colors? do
     support = detect_color_support()
     support == :true_color or support == :ansi_256
   end
 
-  @doc '''
+  @doc """
   Detects the terminal background color (light or dark).
 
   Returns one of:
@@ -142,7 +142,7 @@ defmodule Raxol.Style.Colors.Adaptive do
 
       iex> Raxol.Style.Colors.Adaptive.terminal_background()
       :dark  # Depends on your terminal
-  '''
+  """
   def terminal_background do
     # Check if we have a cached result
     case get_cached_capability(:background) do
@@ -157,19 +157,19 @@ defmodule Raxol.Style.Colors.Adaptive do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if the terminal has a dark background.
 
   ## Examples
 
       iex> Raxol.Style.Colors.Adaptive.dark_terminal?()
       true  # Depends on your terminal
-  '''
+  """
   def dark_terminal? do
     terminal_background() == :dark
   end
 
-  @doc '''
+  @doc """
   Adapts a color to the current terminal capabilities.
 
   If the terminal does not support the full color range, this will
@@ -185,7 +185,7 @@ defmodule Raxol.Style.Colors.Adaptive do
       iex> adapted = Raxol.Style.Colors.Adaptive.adapt_color(color)
       iex> adapted.hex
       "#FF5500"  # If terminal supports true color, otherwise closest supported color
-  '''
+  """
   def adapt_color(%Color{} = color) do
     case detect_color_support() do
       :true_color ->
@@ -219,7 +219,7 @@ defmodule Raxol.Style.Colors.Adaptive do
     end
   end
 
-  @doc '''
+  @doc """
   Adapts a theme (canonical structure) to the current terminal capabilities and background.
 
   ## Parameters
@@ -232,7 +232,7 @@ defmodule Raxol.Style.Colors.Adaptive do
       iex> adapted = Raxol.Style.Colors.Adaptive.adapt_theme(theme)
       iex> adapted.name
       "default (Adapted)"  # Adapted to terminal capabilities
-  '''
+  """
   def adapt_theme(theme) when is_map(theme) do
     # Adapt each color in the canonical theme's :colors map
     adapted_colors =
@@ -248,7 +248,7 @@ defmodule Raxol.Style.Colors.Adaptive do
     |> Map.put(:colors, adapted_colors)
   end
 
-  @doc '''
+  @doc """
   Gets the optimal color format for the current terminal.
 
   Returns one of:
@@ -261,17 +261,17 @@ defmodule Raxol.Style.Colors.Adaptive do
 
       iex> Raxol.Style.Colors.Adaptive.optimal_format()
       :true_color  # Depends on your terminal
-  '''
+  """
   def optimal_format do
     detect_color_support()
   end
 
-  @doc '''
+  @doc """
   Resets the cached terminal capabilities.
 
   This forces the next call to detection functions to re-evaluate
   the terminal environment.
-  '''
+  """
   def reset_detection do
     # Only delete if the table exists
     if :ets.info(@capabilities_cache_name) != :undefined do
@@ -283,7 +283,7 @@ defmodule Raxol.Style.Colors.Adaptive do
     :ok
   end
 
-  @doc '''
+  @doc """
   Gets the optimal color format for the current terminal.
 
   Returns one of:
@@ -295,7 +295,7 @@ defmodule Raxol.Style.Colors.Adaptive do
 
       iex> Raxol.Style.Colors.Adaptive.get_optimal_format()
       :true_color  # Depends on your terminal
-  '''
+  """
   def get_optimal_format do
     detect_color_support()
   end

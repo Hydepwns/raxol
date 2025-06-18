@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Buffer.ScrollRegion do
-  @moduledoc '''
+  @moduledoc """
   Handles scroll region operations for the screen buffer.
   This module manages the scroll region boundaries and provides functions
   for scrolling content within the defined region.
@@ -17,13 +17,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   * Getting region boundaries
   * Validating region boundaries
   * Managing content within the region
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Sets the scroll region boundaries.
   The region must be valid (top < bottom) and within screen bounds.
 
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.set_region(buffer, 15, 5)  # Invalid region
       iex> ScrollRegion.get_region(buffer)
       nil
-  '''
+  """
   @spec set_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def set_region(buffer, top, bottom)
@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
   def set_region(buffer, _top, _bottom), do: %{buffer | scroll_region: nil}
 
-  @doc '''
+  @doc """
   Clears the scroll region, resetting to full screen.
 
   ## Parameters
@@ -77,13 +77,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.clear(buffer)
       iex> ScrollRegion.get_region(buffer)
       nil
-  '''
+  """
   @spec clear(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear(buffer) do
     %{buffer | scroll_region: nil}
   end
 
-  @doc '''
+  @doc """
   Gets the current scroll region boundaries.
 
   ## Parameters
@@ -105,12 +105,12 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.set_region(buffer, 5, 15)
       iex> ScrollRegion.get_region(buffer)
       {5, 15}
-  '''
+  """
   @spec get_region(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()} | nil
   def get_region(%ScreenBuffer{scroll_region: region}), do: region
 
-  @doc '''
+  @doc """
   Gets the current scroll region boundaries.
   Returns {0, height-1} if no region is set.
 
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.set_region(buffer, 5, 15)
       iex> ScrollRegion.get_boundaries(buffer)
       {5, 15}
-  '''
+  """
   @spec get_boundaries(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()}
   def get_boundaries(%ScreenBuffer{scroll_region: nil, height: height}) do
@@ -142,7 +142,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   def get_boundaries(%ScreenBuffer{scroll_region: {top, bottom}}),
     do: {top, bottom}
 
-  @doc '''
+  @doc """
   Scrolls the content up within the scroll region.
 
   ## Parameters
@@ -161,7 +161,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.set_region(buffer, 5, 15)
       iex> buffer = ScrollRegion.scroll_up(buffer, 1)
       iex> # Content is scrolled up within region 5-15
-  '''
+  """
   @spec scroll_up(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -180,8 +180,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
   defp clear_region(buffer, start, ending) do
     visible_lines = ending - start + 1
-    empty_region_cells = List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-    updated_cells = replace_region_content(buffer.cells, start, ending, empty_region_cells)
+
+    empty_region_cells =
+      List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
+
+    updated_cells =
+      replace_region_content(buffer.cells, start, ending, empty_region_cells)
+
     %{buffer | cells: updated_cells}
   end
 
@@ -195,7 +200,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     %{buffer | cells: updated_cells}
   end
 
-  @doc '''
+  @doc """
   Scrolls the content down within the scroll region.
 
   ## Parameters
@@ -214,7 +219,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.set_region(buffer, 5, 15)
       iex> buffer = ScrollRegion.scroll_down(buffer, 1)
       iex> # Content is scrolled down within region 5-15
-  '''
+  """
   @spec scroll_down(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -241,7 +246,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     %{buffer | cells: updated_cells}
   end
 
-  @doc '''
+  @doc """
   Replaces the content of a region in the buffer with new content.
 
   ## Parameters
@@ -261,7 +266,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> new_content = [[%Cell{char: "X"}, %Cell{char: "Y"}], [%Cell{char: "Z"}, %Cell{char: "W"}]]
       iex> ScrollRegion.replace_region_content(cells, 0, 1, new_content)
       [[%Cell{char: "X"}, %Cell{char: "Y"}], [%Cell{char: "Z"}, %Cell{char: "W"}]]
-  '''
+  """
   @spec replace_region_content(
           list(list(Cell.t())),
           non_neg_integer(),
@@ -276,19 +281,26 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
   defp get_effective_region(buffer, scroll_region_arg) do
     case scroll_region_arg do
-      {start, ending} when is_integer(start) and start >= 0 and is_integer(ending) and ending >= start ->
+      {start, ending}
+      when is_integer(start) and start >= 0 and is_integer(ending) and
+             ending >= start ->
         clamp_region({start, ending}, buffer.height)
+
       _ ->
         get_buffer_region(buffer)
     end
   end
 
-  defp clamp_region({start, ending}, height), do: {start, min(height - 1, ending)}
+  defp clamp_region({start, ending}, height),
+    do: {start, min(height - 1, ending)}
 
   defp get_buffer_region(%ScreenBuffer{scroll_region: region, height: height}) do
     case region do
-      {start, ending} when is_integer(start) and start >= 0 and is_integer(ending) and ending >= start ->
+      {start, ending}
+      when is_integer(start) and start >= 0 and is_integer(ending) and
+             ending >= start ->
         clamp_region({start, ending}, height)
+
       _ ->
         {0, height - 1}
     end

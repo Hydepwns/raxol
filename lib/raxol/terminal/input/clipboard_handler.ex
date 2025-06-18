@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.Input.ClipboardHandler do
-  @moduledoc '''
+  @moduledoc """
   Handles clipboard operations for the terminal emulator.
-  '''
+  """
 
   alias Raxol.System.Clipboard
   alias Raxol.Terminal.Input.CoreHandler
 
-  @doc '''
+  @doc """
   Handles clipboard paste operation.
-  '''
+  """
   @spec handle_paste(CoreHandler.t()) ::
           {:ok, CoreHandler.t()} | {:error, any()}
   def handle_paste(%CoreHandler{} = handler) do
@@ -25,10 +25,10 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
     end
   end
 
-  @doc '''
+  @doc """
   Handles clipboard copy operation.
   (Currently copies the entire buffer)
-  '''
+  """
   @spec handle_copy(CoreHandler.t()) :: {:ok, CoreHandler.t()} | {:error, any()}
   def handle_copy(%CoreHandler{} = handler) do
     case Clipboard.copy(handler.buffer) do
@@ -40,10 +40,10 @@ defmodule Raxol.Terminal.Input.ClipboardHandler do
     end
   end
 
-  @doc '''
+  @doc """
   Handles clipboard cut operation.
   (Currently cuts the entire buffer)
-  '''
+  """
   @spec handle_cut(CoreHandler.t()) :: {:ok, CoreHandler.t()} | {:error, any()}
   def handle_cut(%CoreHandler{} = handler) do
     case Clipboard.copy(handler.buffer) do

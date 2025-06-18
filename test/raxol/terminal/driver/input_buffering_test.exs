@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Driver.InputBufferingTest do
   end
 
   describe "Input Buffering" do
-    test 'correctly requests more input if buffer is empty' do
+    test ~c"correctly requests more input if buffer is empty" do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Driver.InputBufferingTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test 'correctly buffers partial input sequences' do
+    test ~c"correctly buffers partial input sequences" do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Driver.InputBufferingTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test 'handles intermingled input correctly' do
+    test ~c"handles intermingled input correctly" do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Driver.InputBufferingTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test 'handles rapid input sequences' do
+    test ~c"handles rapid input sequences" do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 

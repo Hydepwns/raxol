@@ -14,7 +14,7 @@ defmodule Raxol.Core.Runtime.Events.HandlersTest do
   end
 
   describe "register_handler/4" do
-    test 'registers a handler with default options' do
+    test ~c"registers a handler with default options" do
       handler_fun = fn _event, state -> {:ok, _event, state} end
 
       assert {:ok, :test_handler} =
@@ -25,7 +25,7 @@ defmodule Raxol.Core.Runtime.Events.HandlersTest do
                )
     end
 
-    test 'registers a handler with custom priority and filter' do
+    test ~c"registers a handler with custom priority and filter" do
       handler_fun = fn _event, state -> {:ok, _event, state} end
       filter_fun = fn event -> event.data == "test data" end
 
@@ -41,7 +41,7 @@ defmodule Raxol.Core.Runtime.Events.HandlersTest do
   end
 
   describe "unregister_handler/1" do
-    test 'unregisters an existing handler' do
+    test ~c"unregisters an existing handler" do
       # First register a handler
       handler_fun = fn _event, state -> {:ok, _event, state} end
 
@@ -52,7 +52,7 @@ defmodule Raxol.Core.Runtime.Events.HandlersTest do
       assert :ok = Handlers.unregister_handler(:temp_handler)
     end
 
-    test 'returns error when unregistering non-existent handler' do
+    test ~c"returns error when unregistering non-existent handler" do
       assert {:error, :not_found} =
                Handlers.unregister_handler(:non_existent_handler)
     end

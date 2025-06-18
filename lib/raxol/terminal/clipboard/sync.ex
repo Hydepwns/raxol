@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Clipboard.Sync do
-  @moduledoc '''
+  @moduledoc """
   Handles clipboard synchronization between different terminal instances.
-  '''
+  """
 
   defstruct [:subscribers]
 
@@ -9,9 +9,9 @@ defmodule Raxol.Terminal.Clipboard.Sync do
           subscribers: list(pid())
         }
 
-  @doc '''
+  @doc """
   Creates a new clipboard sync instance.
-  '''
+  """
   @spec new() :: t()
   def new() do
     %__MODULE__{
@@ -19,9 +19,9 @@ defmodule Raxol.Terminal.Clipboard.Sync do
     }
   end
 
-  @doc '''
+  @doc """
   Broadcasts clipboard content to all subscribers.
-  '''
+  """
   @spec broadcast(t(), String.t(), String.t()) :: {:ok, t()}
   def broadcast(sync, content, format) do
     for subscriber <- sync.subscribers do
@@ -31,17 +31,17 @@ defmodule Raxol.Terminal.Clipboard.Sync do
     {:ok, sync}
   end
 
-  @doc '''
+  @doc """
   Adds a subscriber to receive clipboard updates.
-  '''
+  """
   @spec add_subscriber(t(), pid()) :: {:ok, t()}
   def add_subscriber(sync, pid) do
     {:ok, %{sync | subscribers: [pid | sync.subscribers]}}
   end
 
-  @doc '''
+  @doc """
   Removes a subscriber from receiving clipboard updates.
-  '''
+  """
   @spec remove_subscriber(t(), pid()) :: {:ok, t()}
   def remove_subscriber(sync, pid) do
     {:ok, %{sync | subscribers: List.delete(sync.subscribers, pid)}}

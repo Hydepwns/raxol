@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.WindowManipulation do
-  @moduledoc '''
+  @moduledoc """
   Handles window manipulation sequences for terminal control.
   Supports window resizing, positioning, and state management.
 
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   * Window layout management
   * Window group management
   * Window animations
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.Monitor
@@ -99,9 +99,9 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     "o" => &__MODULE__.handle_shadow_offset/1
   }
 
-  @doc '''
+  @doc """
   Processes a window manipulation sequence and returns the corresponding event.
-  '''
+  """
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
     try do
@@ -170,9 +170,9 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   def handle_shadow_offset([x, y]),
     do: {:window_shadow_offset, {parse_number(x), parse_number(y)}}
 
-  @doc '''
+  @doc """
   Formats a window event into an ANSI sequence.
-  '''
+  """
   @spec format_event(window_event()) :: String.t()
   def format_event({event_type, params}) do
     case Map.get(@event_handlers, event_type) do
@@ -223,63 +223,70 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   def format_shadow_blur(blur), do: "\e[#{blur}u"
   def format_shadow_offset({x, y}), do: "\e[#{x};#{y}o"
 
-  @doc '''
+  @doc """
   Enables window manipulation mode.
-  '''
+  """
   @spec enable_window_manipulation() :: String.t()
   def enable_window_manipulation do
     "\e[?62h"
   end
 
-  @doc '''
+  @doc """
   Disables window manipulation mode.
-  '''
+  """
   @spec disable_window_manipulation() :: String.t()
   def disable_window_manipulation do
     "\e[?62l"
   end
 
-  @doc '''
+  @doc """
   Formats a mouse click event into an ANSI sequence.
-  '''
+  """
   @spec mouse_click(atom(), non_neg_integer(), non_neg_integer()) :: String.t()
   def mouse_click(button, x, y) do
-    button_code = case button do
-      :left -> 0
-      :middle -> 1
-      :right -> 2
-      :wheel_up -> 64
-      :wheel_down -> 65
-      _ -> 0
-    end
+    button_code =
+      case button do
+        :left -> 0
+        :middle -> 1
+        :right -> 2
+        :wheel_up -> 64
+        :wheel_down -> 65
+        _ -> 0
+      end
+
     "\e[M#{button_code + 32}#{x + 32}#{y + 32}"
   end
 
-  @doc '''
+  @doc """
   Formats a mouse drag event into an ANSI sequence.
-  '''
+  """
   @spec mouse_drag(atom(), non_neg_integer(), non_neg_integer()) :: String.t()
   def mouse_drag(button, x, y) do
-    button_code = case button do
-      :left -> 0
-      :middle -> 1
-      :right -> 2
-      _ -> 0
-    end
+    button_code =
+      case button do
+        :left -> 0
+        :middle -> 1
+        :right -> 2
+        _ -> 0
+      end
+
     "\e[M#{button_code + 32 + 32}#{x + 32}#{y + 32}"
   end
 
-  @doc '''
+  @doc """
   Formats a mouse release event into an ANSI sequence.
-  '''
-  @spec mouse_release(atom(), non_neg_integer(), non_neg_integer()) :: String.t()
+  """
+  @spec mouse_release(atom(), non_neg_integer(), non_neg_integer()) ::
+          String.t()
   def mouse_release(button, x, y) do
-    button_code = case button do
-      :left -> 0
-      :middle -> 1
-      :right -> 2
-      _ -> 0
-    end
+    button_code =
+      case button do
+        :left -> 0
+        :middle -> 1
+        :right -> 2
+        _ -> 0
+      end
+
     "\e[M#{button_code + 32 + 64}#{x + 32}#{y + 32}"
   end
 
@@ -309,9 +316,9 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     "Left" => "\e[D"
   }
 
-  @doc '''
+  @doc """
   Formats a key press event into an ANSI sequence.
-  '''
+  """
   @spec key_press(String.t()) :: String.t()
   def key_press(key) do
     Map.get(@key_press_sequences, key, key)
@@ -343,23 +350,23 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     "Left" => "\e[1;2D"
   }
 
-  @doc '''
+  @doc """
   Formats a key release event into an ANSI sequence.
-  '''
+  """
   @spec key_release(String.t()) :: String.t()
   def key_release(key) do
     Map.get(@key_release_sequences, key, key)
   end
 
-  @doc '''
+  @doc """
   Formats a focus gain event into an ANSI sequence.
-  '''
+  """
   @spec focus_gain() :: String.t()
   def focus_gain, do: "\e[I"
 
-  @doc '''
+  @doc """
   Formats a focus loss event into an ANSI sequence.
-  '''
+  """
   @spec focus_loss() :: String.t()
   def focus_loss, do: "\e[O"
 
@@ -373,33 +380,33 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   defp parse_number(num) when is_integer(num), do: num
   defp parse_number(_), do: 0
 
-  @doc '''
+  @doc """
   Clears the entire screen.
-  '''
+  """
   @spec clear_screen() :: String.t()
   def clear_screen, do: "\e[2J"
 
-  @doc '''
+  @doc """
   Moves the cursor to the specified position.
-  '''
+  """
   @spec move_cursor(integer(), integer()) :: String.t()
   def move_cursor(x, y), do: "\e[#{y};#{x}H"
 
-  @doc '''
+  @doc """
   Sets the window title.
-  '''
+  """
   @spec set_title(String.t()) :: String.t()
   def set_title(title), do: "\e]0;#{title}\a"
 
-  @doc '''
+  @doc """
   Sets the window icon name.
-  '''
+  """
   @spec set_icon_name(String.t()) :: String.t()
   def set_icon_name(name), do: "\e]1;#{name}\a"
 
-  @doc '''
+  @doc """
   Sets the window mode.
-  '''
+  """
   @spec set_mode(String.t()) :: String.t()
   def set_mode(mode), do: "\e[#{mode}h"
 end

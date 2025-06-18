@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
   alias Raxol.Terminal.Commands.History
 
   describe "new/1" do
-    test 'creates a new history with specified max size' do
+    test ~c"creates a new history with specified max size" do
       history = History.new(1000)
       assert %History{} = history
       assert history.max_size == 1000
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
       assert history.current_input == ""
     end
 
-    test 'raises error when max_size is not positive' do
+    test ~c"raises error when max_size is not positive" do
       assert_raise FunctionClauseError, fn ->
         History.new(0)
       end
@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
   end
 
   describe "add/2" do
-    test 'adds command to empty history' do
+    test ~c"adds command to empty history" do
       history = History.new(10)
       history = History.add(history, "test command")
 
@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
       assert history.current_input == ""
     end
 
-    test 'adds command to existing history' do
+    test ~c"adds command to existing history" do
       history =
         History.new(10)
         |> History.add("first command")
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
       assert history.commands == ["second command", "first command"]
     end
 
-    test 'respects max_size limit' do
+    test ~c"respects max_size limit" do
       history = History.new(3)
 
       history =
@@ -59,12 +59,12 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
   end
 
   describe "previous/1" do
-    test 'returns nil for empty history' do
+    test ~c"returns nil for empty history" do
       history = History.new(10)
       assert {nil, ^history} = History.previous(history)
     end
 
-    test 'returns previous command and updates index' do
+    test ~c"returns previous command and updates index" do
       history =
         History.new(10)
         |> History.add("first command")
@@ -86,12 +86,12 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
   end
 
   describe "next/1" do
-    test 'returns nil for empty history' do
+    test ~c"returns nil for empty history" do
       history = History.new(10)
       assert {nil, ^history} = History.next(history)
     end
 
-    test 'returns next command after previous calls' do
+    test ~c"returns next command after previous calls" do
       history =
         History.new(10)
         |> History.add("first command")
@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
       assert history.current_index == -1
     end
 
-    test 'returns saved input when at start position' do
+    test ~c"returns saved input when at start position" do
       history =
         History.new(10)
         |> History.add("command")
@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
   end
 
   describe "save_input/2" do
-    test 'saves current input' do
+    test ~c"saves current input" do
       history = History.new(10)
       history = History.save_input(history, "partial command")
 
@@ -142,7 +142,7 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
   end
 
   describe "clear/1" do
-    test 'clears all commands' do
+    test ~c"clears all commands" do
       history =
         History.new(10)
         |> History.add("command 1")
@@ -158,12 +158,12 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
   end
 
   describe "list/1" do
-    test 'returns empty list for empty history' do
+    test ~c"returns empty list for empty history" do
       history = History.new(10)
       assert History.list(history) == []
     end
 
-    test 'returns list of commands in order' do
+    test ~c"returns list of commands in order" do
       history =
         History.new(10)
         |> History.add("first command")

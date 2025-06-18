@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Runtime.SupervisorTest do
+  @moduledoc """
+  Tests for the runtime supervisor, including child process management,
+  supervisor configuration, and error handling.
+  """
   use ExUnit.Case, async: false
   require Mox
   import Raxol.Test.Support.TestHelper
@@ -60,7 +64,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   end
 
   describe "supervisor structure" do
-    test 'starts all runtime child processes with mocks' do
+    test ~c"starts all runtime child processes with mocks" do
       # Define the init args, injecting mock modules
       init_arg = %{
         dispatcher_module: Raxol.Core.Runtime.Events.DispatcherMock,
@@ -96,7 +100,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
       # Explicit verify calls are optional here
     end
 
-    test 'uses one_for_all strategy' do
+    test ~c"uses one_for_all strategy" do
       # Minimal init_arg needed for Supervisor.init/1 to work
       init_arg = %{}
       # Fetch the supervisor spec directly by calling init/1

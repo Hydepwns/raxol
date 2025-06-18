@@ -1,34 +1,41 @@
 defmodule Raxol.Terminal.Cache.EvictionHelpers do
-  @moduledoc '''
+  @moduledoc """
   Helper functions for cache eviction strategies.
   Provides shared implementations for LRU, LFU, and FIFO eviction policies.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Evicts entries using the Least Recently Used (LRU) policy.
-  '''
+  """
   def evict_lru(cache, current_size, needed_size) do
-    evict_by(cache, current_size, needed_size, fn {_, entry} -> entry.last_access end)
+    evict_by(cache, current_size, needed_size, fn {_, entry} ->
+      entry.last_access
+    end)
   end
 
-  @doc '''
+  @doc """
   Evicts entries using the Least Frequently Used (LFU) policy.
-  '''
+  """
   def evict_lfu(cache, current_size, needed_size) do
-    evict_by(cache, current_size, needed_size, fn {_, entry} -> entry.access_count end)
+    evict_by(cache, current_size, needed_size, fn {_, entry} ->
+      entry.access_count
+    end)
   end
 
-  @doc '''
+  @doc """
   Evicts entries using the First In First Out (FIFO) policy.
-  '''
+  """
   def evict_fifo(cache, current_size, needed_size) do
-    evict_by(cache, current_size, needed_size, fn {_, entry} -> entry.created_at end)
+    evict_by(cache, current_size, needed_size, fn {_, entry} ->
+      entry.created_at
+    end)
   end
 
   defp evict_by(cache, current_size, needed_size, sort_fn) do
     cache
     |> Enum.sort_by(sort_fn)
-    |> Enum.reduce_while({cache, current_size}, fn {key, entry}, {acc_cache, acc_size} ->
+    |> Enum.reduce_while({cache, current_size}, fn {key, entry},
+                                                   {acc_cache, acc_size} ->
       if acc_size + needed_size <= current_size do
         {:halt, {acc_cache, acc_size}}
       else

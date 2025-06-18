@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ExampleCallback do
-  @moduledoc '''
+  @moduledoc """
   Example implementation of Raxol.Terminal.Manager.Callback.
   This module logs each event it receives. Use as a template for your own callback modules.
-  '''
+  """
   @behaviour Raxol.Terminal.Manager.Callback
 
   require Raxol.Core.Runtime.Log

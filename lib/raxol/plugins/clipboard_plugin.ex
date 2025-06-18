@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.ClipboardPlugin do
-  @moduledoc '''
+  @moduledoc """
   Plugin for clipboard operations in Raxol.
-  '''
+  """
 
   @behaviour Raxol.Plugins.Plugin
   require Raxol.Core.Runtime.Log
@@ -142,7 +142,11 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   defp get_selected_text(%__MODULE__{} = state) do
-    with %{selection_start: start_pos, selection_end: end_pos, last_cells_at_selection: cells} <- state do
+    with %{
+           selection_start: start_pos,
+           selection_end: end_pos,
+           last_cells_at_selection: cells
+         } <- state do
       if valid_selection?(start_pos, end_pos, cells) do
         {min_x, max_x, min_y, max_y} = get_selection_bounds(start_pos, end_pos)
         {:ok, build_selected_text(cells, min_x, max_x, min_y, max_y)}

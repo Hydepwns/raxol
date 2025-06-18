@@ -1,9 +1,9 @@
 defmodule Raxol.Core.Config.Manager do
-  @moduledoc '''
+  @moduledoc """
   Configuration manager for the Raxol Terminal Emulator.
   Provides a unified interface for managing all configuration options,
   including loading, validation, and runtime updates.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -15,7 +15,7 @@ defmodule Raxol.Core.Config.Manager do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the configuration manager.
 
   ## Options
@@ -26,12 +26,12 @@ defmodule Raxol.Core.Config.Manager do
   ## Returns
     * `{:ok, pid}` - If the manager starts successfully
     * `{:error, reason}` - If the manager fails to start
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Gets a configuration value.
 
   ## Parameters
@@ -40,12 +40,12 @@ defmodule Raxol.Core.Config.Manager do
 
   ## Returns
     * The configuration value or default
-  '''
+  """
   def get(key, default \\ nil) do
     GenServer.call(__MODULE__, {:get, key, default})
   end
 
-  @doc '''
+  @doc """
   Sets a configuration value.
 
   ## Parameters
@@ -58,12 +58,12 @@ defmodule Raxol.Core.Config.Manager do
   ## Returns
     * `:ok` - If the value was set successfully
     * `{:error, reason}` - If the value could not be set
-  '''
+  """
   def set(key, value, opts \\ []) do
     GenServer.call(__MODULE__, {:set, key, value, opts})
   end
 
-  @doc '''
+  @doc """
   Updates a configuration value using a function.
 
   ## Parameters
@@ -76,12 +76,12 @@ defmodule Raxol.Core.Config.Manager do
   ## Returns
     * `:ok` - If the value was updated successfully
     * `{:error, reason}` - If the value could not be updated
-  '''
+  """
   def update(key, fun, opts \\ []) when is_function(fun, 1) do
     GenServer.call(__MODULE__, {:update, key, fun, opts})
   end
 
-  @doc '''
+  @doc """
   Deletes a configuration value.
 
   ## Parameters
@@ -92,28 +92,28 @@ defmodule Raxol.Core.Config.Manager do
   ## Returns
     * `:ok` - If the value was deleted successfully
     * `{:error, reason}` - If the value could not be deleted
-  '''
+  """
   def delete(key, opts \\ []) do
     GenServer.call(__MODULE__, {:delete, key, opts})
   end
 
-  @doc '''
+  @doc """
   Gets all configuration values.
 
   ## Returns
     * Map of all configuration values
-  '''
+  """
   def get_all do
     GenServer.call(__MODULE__, :get_all)
   end
 
-  @doc '''
+  @doc """
   Reloads configuration from the file.
 
   ## Returns
     * `:ok` - If the configuration was reloaded successfully
     * `{:error, reason}` - If the configuration could not be reloaded
-  '''
+  """
   def reload do
     GenServer.call(__MODULE__, :reload)
   end

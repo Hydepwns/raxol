@@ -1,19 +1,19 @@
 defmodule Raxol.Plugins.Visualization.TreemapRenderer do
-  @moduledoc '''
+  @moduledoc """
   Handles rendering logic for treemap visualizations within the VisualizationPlugin.
   Uses a squarified layout algorithm.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
 
-  @doc '''
+  @doc """
   Public entry point for rendering treemap content.
   Handles bounds checking, error handling, and calls the internal layout/drawing logic.
   Expects bounds map: %{width: w, height: h}.
-  '''
+  """
   def render_treemap_content(
         data,
         opts,
@@ -98,11 +98,18 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
   end
 
   defp handle_parent_node(node, children, bounds, depth) do
-    valid_children = Enum.filter(children, fn c -> Map.get(c, :value, 0) > 0 end)
-    children_total_value = Enum.sum(Enum.map(valid_children, &Map.get(&1, :value, 0)))
+    valid_children =
+      Enum.filter(children, fn c -> Map.get(c, :value, 0) > 0 end)
+
+    children_total_value =
+      Enum.sum(Enum.map(valid_children, &Map.get(&1, :value, 0)))
 
     if children_total_value <= 0 do
-      create_leaf_node(%{node | name: node.name <> " (No Child Values)"}, bounds, depth)
+      create_leaf_node(
+        %{node | name: node.name <> " (No Child Values)"},
+        bounds,
+        depth
+      )
     else
       squarify(valid_children, children_total_value, bounds, depth + 1, [])
     end
@@ -123,7 +130,10 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
     else
       horizontal = bw >= bh
       fixed_dimension = if horizontal, do: bh, else: bw
-      {row, rest_children} = find_best_row(children, total_value, fixed_dimension)
+
+      {row, rest_children} =
+        find_best_row(children, total_value, fixed_dimension)
+
       row_value = Enum.sum(Enum.map(row, &Map.get(&1, :value, 0)))
       row_proportion = row_value / total_value
 
@@ -142,20 +152,70 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
     end
   end
 
-  defp layout_direction(%{row: row, row_value: row_value, row_proportion: row_proportion, rest_children: rest_children, remaining_value: remaining_value, bounds: bounds, depth: depth, acc_rects: acc_rects}, true) do
+  defp layout_direction(
+         %{
+           row: row,
+           row_value: row_value,
+           row_proportion: row_proportion,
+           rest_children: rest_children,
+           remaining_value: remaining_value,
+           bounds: bounds,
+           depth: depth,
+           acc_rects: acc_rects
+         },
+         true
+       ) do
     row_width = max(1, round(bounds.width * row_proportion))
     row_bounds = %{bounds | width: row_width}
-    remaining_bounds = %{bounds | x: bounds.x + row_width, width: max(0, bounds.width - row_width)}
+
+    remaining_bounds = %{
+      bounds
+      | x: bounds.x + row_width,
+        width: max(0, bounds.width - row_width)
+    }
+
     new_rects = layout_row(row, row_value, row_bounds, depth, false)
-    squarify(rest_children, remaining_value, remaining_bounds, depth, acc_rects ++ new_rects)
+
+    squarify(
+      rest_children,
+      remaining_value,
+      remaining_bounds,
+      depth,
+      acc_rects ++ new_rects
+    )
   end
 
-  defp layout_direction(%{row: row, row_value: row_value, row_proportion: row_proportion, rest_children: rest_children, remaining_value: remaining_value, bounds: bounds, depth: depth, acc_rects: acc_rects}, false) do
+  defp layout_direction(
+         %{
+           row: row,
+           row_value: row_value,
+           row_proportion: row_proportion,
+           rest_children: rest_children,
+           remaining_value: remaining_value,
+           bounds: bounds,
+           depth: depth,
+           acc_rects: acc_rects
+         },
+         false
+       ) do
     row_height = max(1, round(bounds.height * row_proportion))
     row_bounds = %{bounds | height: row_height}
-    remaining_bounds = %{bounds | y: bounds.y + row_height, height: max(0, bounds.height - row_height)}
+
+    remaining_bounds = %{
+      bounds
+      | y: bounds.y + row_height,
+        height: max(0, bounds.height - row_height)
+    }
+
     new_rects = layout_row(row, row_value, row_bounds, depth, true)
-    squarify(rest_children, remaining_value, remaining_bounds, depth, acc_rects ++ new_rects)
+
+    squarify(
+      rest_children,
+      remaining_value,
+      remaining_bounds,
+      depth,
+      acc_rects ++ new_rects
+    )
   end
 
   # Finds the row of children that minimizes the maximum aspect ratio
@@ -209,15 +269,42 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
          index
        ) do
     current_row = Enum.slice(children, 0..index)
-    compare_and_continue(current_row, children, tail, total, fixed_dim, best_row, min_ratio, index)
+
+    compare_and_continue(
+      current_row,
+      children,
+      tail,
+      total,
+      fixed_dim,
+      best_row,
+      min_ratio,
+      index
+    )
   end
 
-  defp compare_and_continue(current_row, children, tail, total, fixed_dim, best_row, min_ratio, index) do
+  defp compare_and_continue(
+         current_row,
+         children,
+         tail,
+         total,
+         fixed_dim,
+         best_row,
+         min_ratio,
+         index
+       ) do
     ratio = calculate_max_aspect_ratio(current_row, total, fixed_dim)
+
     if ratio < min_ratio do
       {best_row, children}
     else
-      find_best_row_recursive(tail, total, fixed_dim, current_row, ratio, index + 1)
+      find_best_row_recursive(
+        tail,
+        total,
+        fixed_dim,
+        current_row,
+        ratio,
+        index + 1
+      )
     end
   end
 
@@ -247,41 +334,103 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
          depth,
          split_vertically
        ) do
-    layout_child_and_continue(child, rest, row_value, current_bounds, depth, split_vertically)
+    layout_child_and_continue(
+      child,
+      rest,
+      row_value,
+      current_bounds,
+      depth,
+      split_vertically
+    )
   end
 
-  defp layout_child_and_continue(child, rest, row_value, current_bounds, depth, split_vertically) do
+  defp layout_child_and_continue(
+         child,
+         rest,
+         row_value,
+         current_bounds,
+         depth,
+         split_vertically
+       ) do
     child_value = Map.get(child, :value, 0)
 
     if child_value <= 0 do
       layout_row(rest, row_value, current_bounds, depth, split_vertically)
     else
-      {child_bounds, next_bounds} = calculate_child_bounds(current_bounds, child_value, row_value, split_vertically)
-      layout_child_with_rest(child, rest, row_value, child_value, child_bounds, next_bounds, depth, split_vertically)
+      {child_bounds, next_bounds} =
+        calculate_child_bounds(
+          current_bounds,
+          child_value,
+          row_value,
+          split_vertically
+        )
+
+      layout_child_with_rest(
+        child,
+        rest,
+        row_value,
+        child_value,
+        child_bounds,
+        next_bounds,
+        depth,
+        split_vertically
+      )
     end
   end
 
-  defp calculate_child_bounds(current_bounds, child_value, row_value, split_vertically) do
+  defp calculate_child_bounds(
+         current_bounds,
+         child_value,
+         row_value,
+         split_vertically
+       ) do
     proportion = child_value / row_value
     calculate_bounds(current_bounds, proportion, split_vertically)
   end
 
-  defp layout_child_with_rest(child, rest, row_value, child_value, child_bounds, next_bounds, depth, split_vertically) do
+  defp layout_child_with_rest(
+         child,
+         rest,
+         row_value,
+         child_value,
+         child_bounds,
+         next_bounds,
+         depth,
+         split_vertically
+       ) do
     layout_treemap_nodes(child, child_bounds, depth, child_value) ++
-      layout_row(rest, row_value - child_value, next_bounds, depth, split_vertically)
+      layout_row(
+        rest,
+        row_value - child_value,
+        next_bounds,
+        depth,
+        split_vertically
+      )
   end
 
   defp calculate_bounds(current_bounds, proportion, true) do
     child_height = max(1, round(current_bounds.height * proportion))
     child_bounds = %{current_bounds | height: child_height}
-    next_bounds = %{current_bounds | y: current_bounds.y + child_height, height: max(0, current_bounds.height - child_height)}
+
+    next_bounds = %{
+      current_bounds
+      | y: current_bounds.y + child_height,
+        height: max(0, current_bounds.height - child_height)
+    }
+
     {child_bounds, next_bounds}
   end
 
   defp calculate_bounds(current_bounds, proportion, false) do
     child_width = max(1, round(current_bounds.width * proportion))
     child_bounds = %{current_bounds | width: child_width}
-    next_bounds = %{current_bounds | x: current_bounds.x + child_width, width: max(0, current_bounds.width - child_width)}
+
+    next_bounds = %{
+      current_bounds
+      | x: current_bounds.x + child_width,
+        width: max(0, current_bounds.width - child_width)
+    }
+
     {child_bounds, next_bounds}
   end
 
@@ -306,7 +455,12 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
     end)
   end
 
-  defp draw_treemap_node(%{x: nx, y: ny, width: nw, height: nh, name: name, depth: depth}, grid, color_palette, num_colors) do
+  defp draw_treemap_node(
+         %{x: nx, y: ny, width: nw, height: nh, name: name, depth: depth},
+         grid,
+         color_palette,
+         num_colors
+       ) do
     color = Enum.at(color_palette, rem(depth - 1, num_colors))
     style = Style.new(bg: color, border: :single)
     grid_with_rect = draw_filled_rectangle(grid, nx, ny, nw, nh, style)
@@ -322,7 +476,14 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
       start_x = nx + max(0, div(nw - text_len, 2))
       truncated_text = String.slice(label, 0, max(0, nx + nw - start_x))
       text_style = Style.new(fg: :black, bg: color)
-      DrawingUtils.draw_text(grid, ny + div(nh, 2), start_x, truncated_text, text_style)
+
+      DrawingUtils.draw_text(
+        grid,
+        ny + div(nh, 2),
+        start_x,
+        truncated_text,
+        text_style
+      )
     else
       grid
     end

@@ -1,5 +1,5 @@
 defmodule Raxol.Style.Colors.Formats do
-  @moduledoc '''
+  @moduledoc """
   Color format conversion utilities.
 
   This module provides functions for converting between different color formats:
@@ -7,9 +7,9 @@ defmodule Raxol.Style.Colors.Formats do
   - Hex strings
   - ANSI color codes
   - Named colors
-  '''
+  """
 
-  @doc '''
+  @doc """
   Converts a color to its hex representation.
 
   ## Examples
@@ -19,7 +19,7 @@ defmodule Raxol.Style.Colors.Formats do
 
       iex> Formats.to_hex({255, 0, 0, 128})
       "#FF000080"
-  '''
+  """
   @spec to_hex(
           {integer(), integer(), integer()}
           | {integer(), integer(), integer(), integer()}
@@ -38,7 +38,7 @@ defmodule Raxol.Style.Colors.Formats do
     base <> String.upcase(a_hex)
   end
 
-  @doc '''
+  @doc """
   Parses a hex string into RGB/RGBA values.
 
   ## Examples
@@ -48,7 +48,7 @@ defmodule Raxol.Style.Colors.Formats do
 
       iex> Formats.from_hex("#FF000080")
       {255, 0, 0, 128}
-  '''
+  """
   @spec from_hex(String.t()) ::
           {integer(), integer(), integer()}
           | {integer(), integer(), integer(), integer()}
@@ -85,14 +85,14 @@ defmodule Raxol.Style.Colors.Formats do
     end
   end
 
-  @doc '''
+  @doc """
   Converts an ANSI color code to RGB values.
 
   ## Examples
 
       iex> Formats.ansi_to_rgb(1)
       {205, 0, 0}
-  '''
+  """
   @spec ansi_to_rgb(integer()) :: {integer(), integer(), integer()}
   def ansi_to_rgb(code) when code in 0..255 do
     case code do
@@ -176,14 +176,14 @@ defmodule Raxol.Style.Colors.Formats do
     end
   end
 
-  @doc '''
+  @doc """
   Converts RGB values to an ANSI color code.
 
   ## Examples
 
       iex> Formats.rgb_to_ansi({255, 0, 0})
       196
-  '''
+  """
   @spec rgb_to_ansi({integer(), integer(), integer()}) :: integer()
   def rgb_to_ansi({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
     # For now, we'll use a simple approximation

@@ -1,11 +1,11 @@
 defmodule Raxol.Test.IntegrationHelper do
-  @moduledoc '''
+  @moduledoc """
   Test helper module for integration testing.
   Provides utilities for setting up test environments with multiple components,
   coordinating interactions between components, and cleaning up after tests.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Sets up an integration test environment.
 
   ## Options
@@ -16,7 +16,7 @@ defmodule Raxol.Test.IntegrationHelper do
 
   ## Returns
     * `{:ok, state}` - The test state containing all started components
-  '''
+  """
   def setup_integration_test(opts \\ []) do
     components = Keyword.get(opts, :components, [:metrics, :buffer, :renderer])
     state = %{}
@@ -60,12 +60,12 @@ defmodule Raxol.Test.IntegrationHelper do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Cleans up the integration test environment.
 
   ## Parameters
     * `state` - The test state returned by `setup_integration_test/1`
-  '''
+  """
   def cleanup_integration_test(state) do
     if state.metrics do
       Raxol.Test.MetricsHelper.cleanup_metrics_test(state.metrics)
@@ -80,7 +80,7 @@ defmodule Raxol.Test.IntegrationHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Performs an end-to-end test of the terminal system.
 
   ## Parameters
@@ -95,7 +95,7 @@ defmodule Raxol.Test.IntegrationHelper do
   ## Examples
       iex> perform_end_to_end_test(state, "Hello, World!")
       {:ok, %{write_time: 5, render_time: 16}}
-  '''
+  """
   def perform_end_to_end_test(state, test_data, opts \\ []) do
     with {:ok, _} <-
            Raxol.Test.BufferHelper.write_test_data(
@@ -129,7 +129,7 @@ defmodule Raxol.Test.IntegrationHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Tests the interaction between buffer and renderer components.
 
   ## Parameters
@@ -144,7 +144,7 @@ defmodule Raxol.Test.IntegrationHelper do
   ## Examples
       iex> test_buffer_renderer_interaction(state, "Test content")
       {:ok, %{buffer_metrics: %{}, renderer_metrics: %{}}}
-  '''
+  """
   def test_buffer_renderer_interaction(state, test_data, opts \\ []) do
     with {:ok, buffer_metrics} <-
            Raxol.Test.BufferHelper.perform_test_operation(
@@ -168,7 +168,7 @@ defmodule Raxol.Test.IntegrationHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Tests the interaction between metrics and other components.
 
   ## Parameters
@@ -183,7 +183,7 @@ defmodule Raxol.Test.IntegrationHelper do
   ## Examples
       iex> test_metrics_interaction(state, [:buffer_write, :render])
       {:ok, %{buffer_write: 5, render: 16}}
-  '''
+  """
   def test_metrics_interaction(state, operations, opts \\ []) do
     metrics =
       Enum.reduce_while(operations, %{}, fn operation, acc ->
@@ -202,7 +202,7 @@ defmodule Raxol.Test.IntegrationHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Waits for all components to reach a desired state.
 
   ## Parameters
@@ -219,7 +219,7 @@ defmodule Raxol.Test.IntegrationHelper do
   ## Examples
       iex> wait_for_components(state, %{buffer: "content", renderer: "content"})
       :ok
-  '''
+  """
   def wait_for_components(state, conditions, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5000)
     check_interval = Keyword.get(opts, :check_interval, 100)

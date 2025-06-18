@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
-  @moduledoc '''
+  @moduledoc """
   Handles OSC 4 (Color Palette Set/Query) commands.
 
   This handler manages the terminal's color palette, allowing dynamic
@@ -12,9 +12,9 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   - #RGB (hex, 1 digit per component)
   - rgb(r,g,b) (decimal, 0-255)
   - rgb(r%,g%,b%) (percentage, 0-100%)
-  '''
+  """
 
-  @doc '''
+  @doc """
   Handles OSC 4 commands for color palette management.
 
   ## Commands
@@ -25,175 +25,155 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   Where:
   - c is the color index (0-255)
   - spec is the color specification
-  '''
+  """
   def handle("4;" <> rest, state) do
     case parse_command(rest) do
-      {:set, index, spec} ->
-        case parse_color_spec(spec) do
-          {:ok, color} ->
-            new_palette = Map.put(state.palette, index, color)
-            new_state = %{state | palette: new_palette}
-            {:ok, new_state}
+      {:set, index, spec} -> handle_set(index, spec, state)
+      {:query, index} -> handle_query(index, state)
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-          {:error, reason} ->
-            {:error, {:invalid_color, reason}}
-        end
-
-      {:query, index} ->
-        case get_palette_color(state.palette, index) do
-          {:ok, color} ->
-            response = format_color_response(index, color)
-            {:ok, state, response}
-
-          {:error, _} ->
-            {:error, {:invalid_index, index}}
-        end
+  defp handle_set(index, spec, state) do
+    case parse_color_spec(spec) do
+      {:ok, color} ->
+        new_palette = Map.put(state.palette, index, color)
+        {:ok, %{state | palette: new_palette}}
 
       {:error, reason} ->
-        {:error, reason}
+        {:error, {:invalid_color, reason}}
+    end
+  end
+
+  defp handle_query(index, state) do
+    case get_palette_color(state.palette, index) do
+      {:ok, color} -> {:ok, state, format_color_response(index, color)}
+      {:error, _} -> {:error, {:invalid_index, index}}
     end
   end
 
   # Private Helpers
 
   defp parse_command(rest) do
-    case String.split(rest, ";", parts: 2) do
-      [index_str, spec] ->
-        case Integer.parse(index_str) do
-          {index, ""} when index >= 0 and index <= 255 ->
-            if spec == "?' do
-              {:query, index}
-            else
-              {:set, index, spec}
-            end
-
-          _ ->
-            {:error, {:invalid_index, index_str}}
-        end
-
-      _ ->
-        {:error, :invalid_format}
+    with [index_str, spec] <- String.split(rest, ";", parts: 2),
+         {index, ""} <- Integer.parse(index_str),
+         true <- index >= 0 and index <= 255 do
+      if spec == "?", do: {:query, index}, else: {:set, index, spec}
+    else
+      _ -> {:error, :invalid_format}
     end
   end
 
   defp parse_color_spec(spec) do
     cond do
-      # rgb:RR/GG/BB (hex, 1-4 digits per component)
-      String.starts_with?(spec, 'rgb:") ->
-        case String.split(String.trim_leading(spec, "rgb:"), "/", parts: 3) do
-          [r_hex, g_hex, b_hex] ->
-            with {:ok, r} <- parse_hex_component(r_hex),
-                 {:ok, g} <- parse_hex_component(g_hex),
-                 {:ok, b} <- parse_hex_component(b_hex) do
-              {:ok, {r, g, b}}
-            else
-              _ -> {:error, "invalid rgb: component(s)"}
-            end
+      parse_rgb_colon(spec) != :no_match -> parse_rgb_colon(spec)
+      parse_hex6(spec) != :no_match -> parse_hex6(spec)
+      parse_hex3(spec) != :no_match -> parse_hex3(spec)
+      parse_rgb_decimal(spec) != :no_match -> parse_rgb_decimal(spec)
+      parse_rgb_percent(spec) != :no_match -> parse_rgb_percent(spec)
+      true -> {:error, "unsupported color format"}
+    end
+  end
 
-          _ ->
-            {:error, "invalid rgb: format"}
-        end
+  defp parse_and_validate_rgb({r, g, b}) do
+    with {:ok, r} <- parse_component(r),
+         {:ok, g} <- parse_component(g),
+         {:ok, b} <- parse_component(b) do
+      {:ok, {r, g, b}}
+    else
+      _ -> :no_match
+    end
+  end
 
-      # #RRGGBB (hex, 2 digits)
-      String.starts_with?(spec, "#") and byte_size(spec) == 7 ->
-        r_hex = String.slice(spec, 1..2)
-        g_hex = String.slice(spec, 3..4)
-        b_hex = String.slice(spec, 5..6)
+  defp parse_rgb_colon(spec) do
+    if String.starts_with?(spec, "rgb:") do
+      case String.split(String.trim_leading(spec, "rgb:"), "/", parts: 3) do
+        [r_hex, g_hex, b_hex] ->
+          parse_and_validate_rgb({r_hex, g_hex, b_hex})
 
-        with {r, ""} <- Integer.parse(r_hex, 16),
-             {g, ""} <- Integer.parse(g_hex, 16),
-             {b, ""} <- Integer.parse(b_hex, 16) do
-          {:ok, {r, g, b}}
-        else
-          _ -> {:error, "invalid #RRGGBB hex value(s)"}
-        end
+        _ ->
+          :no_match
+      end
+    else
+      :no_match
+    end
+  end
 
-      # #RGB (hex, 1 digit - scale R*17, G*17, B*17)
-      String.starts_with?(spec, "#") and byte_size(spec) == 4 ->
-        r1 = String.slice(spec, 1..1)
-        g1 = String.slice(spec, 2..2)
-        b1 = String.slice(spec, 3..3)
+  defp parse_hex6(spec) do
+    if String.starts_with?(spec, "#") and byte_size(spec) == 7 do
+      r_hex = String.slice(spec, 1..2)
+      g_hex = String.slice(spec, 3..4)
+      b_hex = String.slice(spec, 5..6)
 
-        with {r, ""} <- Integer.parse(r1 <> r1, 16),
-             {g, ""} <- Integer.parse(g1 <> g1, 16),
-             {b, ""} <- Integer.parse(b1 <> b1, 16) do
-          {:ok, {r, g, b}}
-        else
-          _ -> {:error, "invalid #RGB hex value(s)"}
-        end
+      parse_and_validate_rgb({r_hex, g_hex, b_hex})
+    else
+      :no_match
+    end
+  end
 
-      # rgb(r,g,b) (decimal, 0-255)
-      String.match?(spec, ~r/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/) ->
-        case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec,
-               capture: :all_but_first
-             ) do
-          [r_str, g_str, b_str] ->
-            with {r, ""} <- Integer.parse(r_str),
-                 {g, ""} <- Integer.parse(g_str),
-                 {b, ""} <- Integer.parse(b_str),
-                 true <- r >= 0 and r <= 255,
-                 true <- g >= 0 and g <= 255,
-                 true <- b >= 0 and b <= 255 do
-              {:ok, {r, g, b}}
-            else
-              _ -> {:error, "rgb() values must be between 0 and 255"}
-            end
+  defp parse_hex3(spec) do
+    if String.starts_with?(spec, "#") and byte_size(spec) == 4 do
+      r1 = String.slice(spec, 1..1)
+      g1 = String.slice(spec, 2..2)
+      b1 = String.slice(spec, 3..3)
 
-          _ ->
-            {:error, "invalid rgb() format"}
-        end
+      parse_and_validate_rgb({r1 <> r1, g1 <> g1, b1 <> b1})
+    else
+      :no_match
+    end
+  end
 
-      # rgb(r%,g%,b%) (percentage, 0-100%)
-      String.match?(spec, ~r/^rgb\(\s*\d+%\s*,\s*\d+%\s*,\s*\d+%\s*\)$/) ->
-        case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec,
-               capture: :all_but_first
-             ) do
-          [r_str, g_str, b_str] ->
-            with {r_pct, ""} <- Integer.parse(r_str),
-                 {g_pct, ""} <- Integer.parse(g_str),
-                 {b_pct, ""} <- Integer.parse(b_str),
-                 true <- r_pct >= 0 and r_pct <= 100,
-                 true <- g_pct >= 0 and g_pct <= 100,
-                 true <- b_pct >= 0 and b_pct <= 100 do
-              r = round(r_pct * 255 / 100)
-              g = round(g_pct * 255 / 100)
-              b = round(b_pct * 255 / 100)
-              {:ok, {r, g, b}}
-            else
-              _ -> {:error, "rgb() percentage values must be between 0 and 100"}
-            end
+  defp parse_rgb_decimal(spec) do
+    if String.match?(spec, ~r/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/) do
+      case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec,
+             capture: :all_but_first
+           ) do
+        [r_str, g_str, b_str] ->
+          parse_and_validate_rgb({r_str, g_str, b_str})
 
-          _ ->
-            {:error, "invalid rgb() percentage format"}
-        end
+        _ ->
+          :no_match
+      end
+    else
+      :no_match
+    end
+  end
 
-      true ->
-        {:error, "unsupported color format"}
+  defp parse_rgb_percent(spec) do
+    if String.match?(spec, ~r/^rgb\(\s*\d+%\s*,\s*\d+%\s*,\s*\d+%\s*\)$/) do
+      case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec,
+             capture: :all_but_first
+           ) do
+        [r_str, g_str, b_str] ->
+          parse_and_validate_rgb({r_str, g_str, b_str})
+
+        _ ->
+          :no_match
+      end
+    else
+      :no_match
     end
   end
 
   # Parses hex color component (1-4 digits), scales to 0-255 appropriately
-  defp parse_hex_component(hex_str) do
+  defp parse_component(hex_str) do
     len = byte_size(hex_str)
+    if len < 1 or len > 4, do: :error
 
-    if len >= 1 and len <= 4 do
-      case Integer.parse(hex_str, 16) do
-        {val, ""} ->
-          scaled_val =
-            case len do
-              1 -> round(val * 255 / 15)
-              2 -> val
-              3 -> round(val * 255 / 4095)
-              4 -> round(val * 255 / 65_535)
-            end
+    case Integer.parse(hex_str, 16) do
+      {val, ""} ->
+        scaled_val =
+          case len do
+            1 -> round(val * 255 / 15)
+            2 -> val
+            3 -> round(val * 255 / 4095)
+            4 -> round(val * 255 / 65_535)
+          end
 
-          {:ok, max(0, min(255, scaled_val))}
+        {:ok, max(0, min(255, scaled_val))}
 
-        _ ->
-          :error
-      end
-    else
-      :error
+      _ ->
+        :error
     end
   end
 

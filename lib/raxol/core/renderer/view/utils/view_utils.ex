@@ -1,9 +1,9 @@
 defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
-  @moduledoc '''
+  @moduledoc """
   Provides utility functions for common view operations in the Raxol view system.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Normalizes spacing values for padding and margin.
   Accepts various input formats and converts them to a standardized format.
 
@@ -12,7 +12,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       normalize_spacing(5)           # {5, 5, 5, 5}
       normalize_spacing({10, 20})    # {10, 20, 10, 20}
       normalize_spacing({1, 2, 3, 4}) # {1, 2, 3, 4}
-  '''
+  """
   def normalize_spacing(spacing) when is_integer(spacing) do
     {spacing, spacing, spacing, spacing}
   end
@@ -25,7 +25,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     {vertical, horizontal, vertical, horizontal}
   end
 
-  @doc '''
+  @doc """
   Applies styles to a string of text.
 
   ## Options
@@ -33,7 +33,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     * `:underline` - Underlines text
     * `:italic` - Makes text italic
     * `:strikethrough` - Adds strikethrough to text
-  '''
+  """
   def apply_styles(text, styles) do
     Enum.reduce(styles, text, fn
       {:bold, true}, acc -> "\e[1m#{acc}\e[22m"
@@ -44,14 +44,14 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     end)
   end
 
-  @doc '''
+  @doc """
   Applies foreground and background colors to text.
 
   ## Examples
 
       apply_colors("Hello", fg: :red, bg: :blue)
       apply_colors("World", fg: {255, 0, 0}, bg: {0, 0, 255})
-  '''
+  """
   def apply_colors(text, fg: fg, bg: bg) do
     text
     |> apply_foreground(fg)
@@ -80,9 +80,9 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     "\e[48;2;#{r};#{g};#{b}m#{text}\e[49m"
   end
 
-  @doc '''
+  @doc """
   Converts a color name to its ANSI color code.
-  '''
+  """
   def color_to_code(color) do
     case color do
       :black -> 0
@@ -106,9 +106,9 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Calculates the dimensions of a view based on its content and constraints.
-  '''
+  """
   def calculate_dimensions(view, available_size) do
     {min_width, min_height} = get_minimum_size(view)
     {max_width, max_height} = get_maximum_size(view)
@@ -138,9 +138,9 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Merges two views, with the second view's properties taking precedence.
-  '''
+  """
   def merge_views(base_view, override_view) do
     Map.merge(base_view, override_view, fn
       :children, base_children, override_children ->

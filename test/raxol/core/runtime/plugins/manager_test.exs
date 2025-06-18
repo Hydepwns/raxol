@@ -1,17 +1,18 @@
 defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
+  @moduledoc """
+  Tests for the plugin manager, including initialization, event handling,
+  command processing, and metadata retrieval.
+  """
   use ExUnit.Case, async: false
   import Mox
   import Raxol.Test.Support.TestHelper
 
-  # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
 
-  # Set up common test environment
   setup do
     {:ok, context} = setup_test_env()
     setup_common_mocks()
 
-    # Set up specific mock expectations for this test
     expect(FileWatcherMock, :setup_file_watching, fn state ->
       {:ok, Map.put(state, :file_watcher_pid, self())}
     end)
@@ -39,7 +40,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
        }}
     end)
 
-    # Create a test plugin
     plugin = create_test_plugin("test_plugin")
 
     {:ok, Map.put(context, :plugin, plugin)}
@@ -60,7 +60,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     end
 
     test "handles initialization errors", %{plugin: plugin} do
-      # Set up mock to return error
       expect(LoaderMock, :initialize_plugin, fn _module, _config ->
         {:error, :initialization_failed}
       end)
@@ -76,7 +75,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
   describe "handle_event/2" do
     test "processes events successfully", %{plugin: plugin} do
-      # Set up mock to handle event
       expect(LoaderMock, :handle_event, fn _event, state ->
         {:ok, Map.put(state, :event_processed, true)}
       end)
@@ -98,7 +96,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     end
 
     test "handles event processing errors", %{plugin: plugin} do
-      # Set up mock to return error
       expect(LoaderMock, :handle_event, fn _event, _state ->
         {:error, :event_processing_failed}
       end)
@@ -120,7 +117,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
   describe "handle_command/3" do
     test "processes commands successfully", %{plugin: plugin} do
-      # Set up mock to handle command
       expect(LoaderMock, :handle_command, fn _command, _args, state ->
         {:ok, Map.put(state, :command_processed, true)}
       end)
@@ -143,7 +139,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     end
 
     test "handles command processing errors", %{plugin: plugin} do
-      # Set up mock to return error
       expect(LoaderMock, :handle_command, fn _command, _args, _state ->
         {:error, :command_processing_failed}
       end)
@@ -166,7 +161,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
   describe "get_commands/1" do
     test "returns plugin commands", %{plugin: plugin} do
-      # Set up mock to return commands
       expect(LoaderMock, :get_commands, fn ->
         [:test_command1, :test_command2]
       end)
@@ -185,7 +179,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
   describe "get_metadata/1" do
     test "returns plugin metadata", %{plugin: plugin} do
-      # Set up mock to return metadata
       expect(LoaderMock, :get_metadata, fn ->
         %{
           name: "test_plugin",

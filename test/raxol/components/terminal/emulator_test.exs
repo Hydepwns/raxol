@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   # Should now correctly refer to Component's init
   @initial_state EmulatorComponent.init()
 
-  test 'debug tuple transformation sanity check' do
+  test ~c"debug tuple transformation sanity check" do
     # Call the helper
     result = return_a_two_tuple()
     # This is what the test actually received
@@ -40,7 +40,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     end
   end
 
-  test 'initializes terminal emulator' do
+  test ~c"initializes terminal emulator" do
     state = EmulatorComponent.init()
     # Access core emulator state via the field
     assert Map.get(
@@ -74,7 +74,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert Map.get(Map.get(state, :core_emulator), :cursor).position == {0, 0}
   end
 
-  test 'processes basic input' do
+  test ~c"processes basic input" do
     # Revert to "Hello" but keep the explicit match and IO.inspect
     {the_state, the_output} =
       EmulatorComponent.process_input("Hello", @initial_state)
@@ -89,7 +89,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
              {5, 0}
   end
 
-  test 'handles ANSI color codes' do
+  test ~c"handles ANSI color codes" do
     # Test SGR sequences (e.g., color changes)
     # Input: ESC [ 31 m (set text color to red)
     {state1, _} = EmulatorComponent.process_input("\e[31m", @initial_state)
@@ -105,7 +105,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert Map.get(Map.get(state3, :core_emulator), :style).foreground == nil
   end
 
-  test 'handles cursor movement' do
+  test ~c"handles cursor movement" do
     initial_state = EmulatorComponent.init(%{rows: 24, cols: 80})
 
     result = EmulatorComponent.process_input("\e[5;10H", initial_state)
@@ -119,7 +119,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert match?({_, _}, result)
   end
 
-  test 'handles screen resizing' do
+  test ~c"handles screen resizing" do
     # Initial state
     {state, _} = EmulatorComponent.process_input("Hello", @initial_state)
 
@@ -160,7 +160,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert content =~ "Hello"
   end
 
-  test 'handles line wrapping' do
+  test ~c"handles line wrapping" do
     # Create a line longer than terminal width
     long_line = String.duplicate("a", 85)
     width = 80
@@ -179,7 +179,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert String.length(hd(lines)) == 80
   end
 
-  test 'maintains cell attributes' do
+  test ~c"maintains cell attributes" do
     # Set some attributes
     {state, _} =
       EmulatorComponent.process_input("\e[1;31mBold Red\e[0m", @initial_state)
@@ -197,7 +197,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert style.foreground == :red
   end
 
-  test 'handles scroll region' do
+  test ~c"handles scroll region" do
     # Handle tuple return
     {state, _} = EmulatorComponent.process_input("\e[5;20r", @initial_state)
     # Check scroll region in the core emulator
@@ -205,7 +205,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert Map.get(Map.get(state, :core_emulator), :scroll_region) == {4, 19}
   end
 
-  test 'preserves content during resize' do
+  test ~c"preserves content during resize" do
     # Direct call for testing
     {state, _output} =
       EmulatorComponent.process_input("Line 1\n", @initial_state)
@@ -222,7 +222,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert Map.get(Map.get(state, :core_emulator), :cursor).position == {0, 0}
   end
 
-  test 'handles terminal modes' do
+  test ~c"handles terminal modes" do
     # Insert mode
     # DECSET Insert Mode (IRM)
     # Handle tuple return
@@ -240,7 +240,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
              false
   end
 
-  test 'handles dirty cells' do
+  test ~c"handles dirty cells" do
     # Handle tuple return
     {state, _} = EmulatorComponent.process_input("Hello", @initial_state)
 
@@ -263,7 +263,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert Enum.all?(Enum.take(first_row, 5), & &1.dirty)
   end
 
-  test 'handles OSC sequences' do
+  test ~c"handles OSC sequences" do
     result =
       EmulatorComponent.process_input(
         "\e]0;New Window Title\e\\",

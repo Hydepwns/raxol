@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Integration.Buffer do
-  @moduledoc '''
+  @moduledoc """
   Handles buffer and cursor management for the terminal.
-  '''
+  """
 
   alias Raxol.Terminal.{
     Buffer.UnifiedManager,
@@ -10,9 +10,9 @@ defmodule Raxol.Terminal.Integration.Buffer do
     Integration.State
   }
 
-  @doc '''
+  @doc """
   Writes text to the terminal buffer.
-  '''
+  """
   def write(%State{} = state, text) do
     # Update the buffer manager with the new text
     {:ok, buffer_manager} = UnifiedManager.write(state.buffer_manager, text)
@@ -27,9 +27,9 @@ defmodule Raxol.Terminal.Integration.Buffer do
     })
   end
 
-  @doc '''
+  @doc """
   Clears the terminal buffer.
-  '''
+  """
   def clear(%State{} = state) do
     # Clear the buffer manager
     {:ok, buffer_manager} = UnifiedManager.clear(state.buffer_manager)
@@ -44,9 +44,9 @@ defmodule Raxol.Terminal.Integration.Buffer do
     })
   end
 
-  @doc '''
+  @doc """
   Scrolls the terminal buffer.
-  '''
+  """
   def scroll(%State{} = state, direction, amount \\ 1) do
     # Update the scroll buffer
     scroll_buffer = UnifiedScroll.scroll(state.scroll_buffer, direction, amount)
@@ -65,9 +65,9 @@ defmodule Raxol.Terminal.Integration.Buffer do
     })
   end
 
-  @doc '''
+  @doc """
   Moves the cursor to a specific position.
-  '''
+  """
   def move_cursor(%State{} = state, x, y) do
     # Update the cursor position
     cursor_manager = Manager.move_to(state.cursor_manager, x, y)
@@ -76,44 +76,44 @@ defmodule Raxol.Terminal.Integration.Buffer do
     State.update(state, cursor_manager: cursor_manager)
   end
 
-  @doc '''
+  @doc """
   Gets the current cursor position.
-  '''
+  """
   def get_cursor_position(%State{} = state) do
     Manager.get_position(state.cursor_manager)
   end
 
-  @doc '''
+  @doc """
   Gets the current visible content.
-  '''
+  """
   def get_visible_content(%State{} = state) do
     UnifiedManager.get_visible_content(state.buffer_manager)
   end
 
-  @doc '''
+  @doc """
   Gets the current scroll position.
-  '''
+  """
   def get_scroll_position(%State{} = state) do
     UnifiedScroll.get_position(state.scroll_buffer)
   end
 
-  @doc '''
+  @doc """
   Gets the total number of lines in the buffer.
-  '''
+  """
   def get_total_lines(%State{} = state) do
     UnifiedManager.get_total_lines(state.buffer_manager)
   end
 
-  @doc '''
+  @doc """
   Gets the number of visible lines.
-  '''
+  """
   def get_visible_lines(%State{} = state) do
     UnifiedManager.get_visible_lines(state.buffer_manager)
   end
 
-  @doc '''
+  @doc """
   Resizes the terminal buffer.
-  '''
+  """
   def resize(%State{} = state, width, height) do
     # Resize the buffer manager
     {:ok, buffer_manager} =

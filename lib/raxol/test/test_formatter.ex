@@ -1,7 +1,7 @@
 defmodule Raxol.TestFormatter do
-  @moduledoc '''
+  @moduledoc """
   Custom ExUnit formatter for Raxol test output.
-  '''
+  """
   # @behaviour ExUnit.Formatter # ExUnit.Formatter is not a formal OTP behaviour
   use GenServer
 

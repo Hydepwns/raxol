@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.Emulator.Input do
-  @moduledoc '''
+  @moduledoc """
   Handles input processing for the terminal emulator.
   Provides functions for key event handling, command history, and input parsing.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
-  @doc '''
+  @doc """
   Creates a new input handler.
-  '''
+  """
   def new do
     %{
       buffer: [],
@@ -18,25 +18,27 @@ defmodule Raxol.Terminal.Emulator.Input do
     }
   end
 
-  @doc '''
+  @doc """
   Processes a key event through the emulator.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
-  '''
+  """
   def process_key_event(%EmulatorStruct{} = emulator, event) do
     case event do
       %{type: :key_press, key: key, modifiers: modifiers} ->
         process_key_press(emulator, key, modifiers)
+
       %{type: :key_release, key: key, modifiers: modifiers} ->
         process_key_release(emulator, key, modifiers)
+
       _ ->
         {:error, :unknown_key_event}
     end
   end
 
-  @doc '''
+  @doc """
   Processes a key press event.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
-  '''
+  """
   def process_key_press(emulator, _key, _modifiers) do
     # Handle key press
     commands = []
@@ -44,10 +46,10 @@ defmodule Raxol.Terminal.Emulator.Input do
     {:ok, emulator, commands}
   end
 
-  @doc '''
+  @doc """
   Processes a key release event.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
-  '''
+  """
   def process_key_release(emulator, _key, _modifiers) do
     # Handle key release
     commands = []
@@ -55,10 +57,10 @@ defmodule Raxol.Terminal.Emulator.Input do
     {:ok, emulator, commands}
   end
 
-  @doc '''
+  @doc """
   Processes a mouse event.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
-  '''
+  """
   @spec process_mouse_event(EmulatorStruct.t(), map()) ::
           {:ok, EmulatorStruct.t(), list()} | {:error, String.t()}
   def process_mouse_event(%EmulatorStruct{} = emulator, event) do
@@ -67,10 +69,10 @@ defmodule Raxol.Terminal.Emulator.Input do
     {:ok, emulator, commands}
   end
 
-  @doc '''
+  @doc """
   Updates the command history with a new command.
   Returns {:ok, updated_emulator}.
-  '''
+  """
   @spec add_to_history(EmulatorStruct.t(), String.t()) ::
           {:ok, EmulatorStruct.t()}
   def add_to_history(%EmulatorStruct{} = emulator, command)
@@ -85,37 +87,37 @@ defmodule Raxol.Terminal.Emulator.Input do
     {:error, "Invalid command: #{inspect(invalid_command)}"}
   end
 
-  @doc '''
+  @doc """
   Clears the command history.
   Returns {:ok, updated_emulator}.
-  '''
+  """
   @spec clear_history(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()}
   def clear_history(%EmulatorStruct{} = emulator) do
     {:ok, %{emulator | command_history: []}}
   end
 
-  @doc '''
+  @doc """
   Gets the command history.
   Returns the list of commands in history.
-  '''
+  """
   @spec get_history(EmulatorStruct.t()) :: list()
   def get_history(%EmulatorStruct{} = emulator) do
     emulator.command_history
   end
 
-  @doc '''
+  @doc """
   Gets the current command buffer.
   Returns the current command buffer.
-  '''
+  """
   @spec get_command_buffer(EmulatorStruct.t()) :: String.t()
   def get_command_buffer(%EmulatorStruct{} = emulator) do
     emulator.current_command_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the command buffer.
   Returns {:ok, updated_emulator}.
-  '''
+  """
   @spec set_command_buffer(EmulatorStruct.t(), String.t()) ::
           {:ok, EmulatorStruct.t()}
   def set_command_buffer(%EmulatorStruct{} = emulator, buffer)
@@ -127,10 +129,10 @@ defmodule Raxol.Terminal.Emulator.Input do
     {:error, "Invalid command buffer: #{inspect(invalid_buffer)}"}
   end
 
-  @doc '''
+  @doc """
   Clears the command buffer.
   Returns {:ok, updated_emulator}.
-  '''
+  """
   @spec clear_command_buffer(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()}
   def clear_command_buffer(%EmulatorStruct{} = emulator) do
     {:ok, %{emulator | current_command_buffer: ""}}

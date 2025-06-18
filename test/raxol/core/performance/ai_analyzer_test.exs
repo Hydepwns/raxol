@@ -1,10 +1,14 @@
 defmodule Raxol.Core.Performance.AIAnalyzerTest do
+  @moduledoc """
+  Tests for the AI analyzer, including performance metrics analysis,
+  report generation, and error handling.
+  """
   use ExUnit.Case
 
   alias Raxol.Core.Performance.AIAnalyzer
 
   describe "AI Analyzer" do
-    test 'analyzes performance metrics' do
+    test ~c"analyzes performance metrics" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -33,7 +37,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert is_float(analysis.ai_confidence)
     end
 
-    test 'generates text report' do
+    test ~c"generates text report" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -61,7 +65,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert String.contains?(report.report, "Expected Impact")
     end
 
-    test 'generates JSON report' do
+    test ~c"generates JSON report" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -85,7 +89,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert {:ok, _} = Jason.decode(report.report)
     end
 
-    test 'generates HTML report' do
+    test ~c"generates HTML report" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -113,7 +117,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert String.contains?(report.report, "<style>")
     end
 
-    test 'handles custom analysis options' do
+    test ~c"handles custom analysis options" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -148,7 +152,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(analysis, :ai_confidence)
     end
 
-    test 'handles missing metrics gracefully' do
+    test ~c"handles missing metrics gracefully" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -166,7 +170,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(analysis, :ai_confidence)
     end
 
-    test 'includes metadata in report' do
+    test ~c"includes metadata in report" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,

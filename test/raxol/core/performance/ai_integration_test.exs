@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Performance.AIIntegrationTest do
+  @moduledoc """
+  Tests for the AI integration, including configuration validation,
+  performance data analysis, and error handling.
+  """
   use ExUnit.Case
 
   # Only compile Mox and related tests if the flag is enabled
@@ -24,16 +28,16 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         :ok
       end
 
-      test 'validates configuration' do
+      test ~c"validates configuration" do
         assert :ok = AIIntegration.validate_config()
       end
 
-      test 'detects missing configuration' do
+      test ~c"detects missing configuration" do
         Application.put_env(:raxol, :ai_integration, %{})
         assert {:error, :missing_config} = AIIntegration.validate_config()
       end
 
-      test 'detects invalid endpoint' do
+      test ~c"detects invalid endpoint" do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "invalid-url",
           api_key: "test-api-key"
@@ -42,7 +46,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_endpoint} = AIIntegration.validate_config()
       end
 
-      test 'detects invalid API key' do
+      test ~c"detects invalid API key" do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "https://api.ai-agent.com/v1",
           api_key: ""
@@ -51,7 +55,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_api_key} = AIIntegration.validate_config()
       end
 
-      test 'detects invalid timeout' do
+      test ~c"detects invalid timeout" do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "https://api.ai-agent.com/v1",
           api_key: "test-api-key",
@@ -61,7 +65,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_timeout} = AIIntegration.validate_config()
       end
 
-      test 'detects invalid retry configuration' do
+      test ~c"detects invalid retry configuration" do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "https://api.ai-agent.com/v1",
           api_key: "test-api-key",
@@ -82,7 +86,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_retry_delay} = AIIntegration.validate_config()
       end
 
-      test 'sends performance data for analysis' do
+      test ~c"sends performance data for analysis" do
         data = %{
           metrics: %{
             fps: 60,
@@ -176,7 +180,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert analysis.metadata.version == "1.0.0"
       end
 
-      test 'handles API errors' do
+      test ~c"handles API errors" do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},
@@ -195,7 +199,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data)
       end
 
-      test 'handles network errors' do
+      test ~c"handles network errors" do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},
@@ -210,7 +214,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data)
       end
 
-      test 'handles invalid response format' do
+      test ~c"handles invalid response format" do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},
@@ -229,7 +233,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_analysis_format} = AIIntegration.analyze(data)
       end
 
-      test 'respects custom timeout and retry options' do
+      test ~c"respects custom timeout and retry options" do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},
@@ -237,15 +241,15 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         }
 
         options = %{
-          timeout: 10000,
+          timeout: 10_000,
           retry_attempts: 1,
           retry_delay: 200
         }
 
-        # Mock HTTPoison to verify options
+        # Mock HTTPoison to verify <options>
         expect(HTTPoison, :request, fn _method, _url, _body, _headers, opts ->
-          assert Map.get(opts, :timeout) == 10000
-          assert Map.get(opts, :recv_timeout) == 10000
+          assert Map.get(opts, :timeout) == 10_000
+          assert Map.get(opts, :recv_timeout) == 10_000
 
           {:ok,
            %{

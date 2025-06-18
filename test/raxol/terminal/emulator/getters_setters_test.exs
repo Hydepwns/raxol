@@ -4,13 +4,13 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
-  test 'get_scroll_region/1 returns nil by default' do
+  test ~c"get_scroll_region/1 returns nil by default" do
     emulator = Emulator.new(80, 24)
     # scroll_region is nil by default in the Emulator struct
     assert emulator.scroll_region == nil
   end
 
-  test 'set_scroll_region/2 updates the scroll region' do
+  test ~c"set_scroll_region/2 updates the scroll region" do
     emulator = Emulator.new(80, 24)
     # DECSTBM uses 1-based indexing, so region (2, 10) -> {1, 9} 0-based
     {emulator_after_set, _} = Emulator.process_input(emulator, "\e[2;10r")
@@ -27,23 +27,23 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert emulator_after_reset.scroll_region == nil
   end
 
-  test 'get_cursor_position/1 returns the current cursor position' do
+  test ~c"get_cursor_position/1 returns the current cursor position" do
     emulator = Emulator.new(80, 24)
     assert Emulator.get_cursor_position(emulator) == {0, 0}
   end
 
-  test 'set_cursor_position/2 updates the cursor position' do
+  test ~c"set_cursor_position/2 updates the cursor position" do
     emulator = Emulator.new(80, 24)
     {emulator_after_set, _} = Emulator.process_input(emulator, "\e[2;10H")
     assert Emulator.get_cursor_position(emulator_after_set) == {1, 9}
   end
 
-  test 'get_cursor_visible/1 returns true by default' do
+  test ~c"get_cursor_visible/1 returns true by default" do
     emulator = Emulator.new(80, 24)
     assert Emulator.get_cursor_visible(emulator) == true
   end
 
-  test 'set_cursor_visible/2 updates cursor visibility' do
+  test ~c"set_cursor_visible/2 updates cursor visibility" do
     emulator = Emulator.new(80, 24)
     # Hide cursor with DECTCEM
     {emulator_after_hide, _} = Emulator.process_input(emulator, "\e[?25l")
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert Emulator.get_cursor_visible(emulator_after_show) == true
   end
 
-  test 'get_style/1 returns the default style initially' do
+  test ~c"get_style/1 returns the default style initially" do
     emulator = Emulator.new(80, 24)
     style = emulator.style
     assert style.foreground == nil
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert style.strikethrough == false
   end
 
-  test 'set_style/2 updates the current text style' do
+  test ~c"set_style/2 updates the current text style" do
     emulator = Emulator.new(80, 24)
     # Set red foreground, bold, and underline
     {emulator_after_set, _} = Emulator.process_input(emulator, "\e[31;1;4m")
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert style.underline == true
   end
 
-  test 'reset_style/1 resets the style to default' do
+  test ~c"reset_style/1 resets the style to default" do
     emulator = Emulator.new(80, 24)
     # First set some styles
     {emulator_after_set, _} = Emulator.process_input(emulator, "\e[31;1;4m")

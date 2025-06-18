@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.Benchmark.Visualization do
-  @moduledoc '''
+  @moduledoc """
   Runs visualization performance benchmarks.
 
   ## Usage
@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       * `--medium` - Run a medium-sized benchmark
       * `--large` - Run a large benchmark with more data points
       * `--production` - Run a comprehensive benchmark for production analysis
-  '''
+  """
 
   use Mix.Task
   alias Raxol.Benchmarks.VisualizationBenchmark
@@ -72,7 +72,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       "test/performance/benchmark_results/visualization/#{Atom.to_string(test_size)}"
 
     # Print header
-    IO.puts('''
+    IO.puts("""
     =================================================
     Raxol Visualization Performance Benchmark
     #{title}
@@ -82,7 +82,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       Dataset sizes: #{inspect(datasets)}
       Iterations: #{iterations}
       Output: #{output_dir}
-    ''')
+    """)
 
     # Run benchmark
     benchmark_opts = [
@@ -103,7 +103,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
     total_time_s = benchmark_time / 1_000_000
 
     # Print summary
-    IO.puts('''
+    IO.puts("""
     =================================================
     Benchmark Completed in #{Float.round(total_time_s, 2)} seconds
     =================================================
@@ -118,6 +118,6 @@ defmodule Mix.Tasks.Benchmark.Visualization do
 
     To view full results, open:
     #{Path.expand(results.output_file)}
-    ''')
+    """)
   end
 end

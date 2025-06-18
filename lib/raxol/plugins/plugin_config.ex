@@ -1,8 +1,8 @@
 defmodule Raxol.Plugins.PluginConfig do
-  @moduledoc '''
+  @moduledoc """
   Handles persistence of plugin configurations.
   Stores and loads plugin configurations from disk.
-  '''
+  """
 
   @derive Jason.Encoder
   @config_dir ".config/raxol/plugins"
@@ -18,9 +18,9 @@ defmodule Raxol.Plugins.PluginConfig do
     :enabled_plugins
   ]
 
-  @doc '''
+  @doc """
   Creates a new plugin configuration manager.
-  '''
+  """
   def new do
     %__MODULE__{
       plugin_configs: %{},
@@ -28,9 +28,9 @@ defmodule Raxol.Plugins.PluginConfig do
     }
   end
 
-  @doc '''
+  @doc """
   Loads plugin configurations from disk.
-  '''
+  """
   def load do
     config_path = config_file_path()
 
@@ -53,9 +53,9 @@ defmodule Raxol.Plugins.PluginConfig do
     end
   end
 
-  @doc '''
+  @doc """
   Saves plugin configurations to disk.
-  '''
+  """
   def save(%__MODULE__{} = config) do
     config_path = config_file_path()
     config_dir = Path.dirname(config_path)
@@ -78,34 +78,34 @@ defmodule Raxol.Plugins.PluginConfig do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the configuration for a specific plugin.
-  '''
+  """
   def get_plugin_config(%__MODULE__{} = config, plugin_name)
       when is_binary(plugin_name) do
     Map.get(config.plugin_configs, plugin_name, %{})
   end
 
-  @doc '''
+  @doc """
   Updates the configuration for a specific plugin.
-  '''
+  """
   def update_plugin_config(%__MODULE__{} = config, plugin_name, plugin_config)
       when is_binary(plugin_name) and is_map(plugin_config) do
     updated_configs = Map.put(config.plugin_configs, plugin_name, plugin_config)
     %{config | plugin_configs: updated_configs}
   end
 
-  @doc '''
+  @doc """
   Checks if a plugin is enabled.
-  '''
+  """
   def is_plugin_enabled?(%__MODULE__{} = config, plugin_name)
       when is_binary(plugin_name) do
     plugin_name in config.enabled_plugins
   end
 
-  @doc '''
+  @doc """
   Enables a plugin.
-  '''
+  """
   def enable_plugin(%__MODULE__{} = config, plugin_name)
       when is_binary(plugin_name) do
     if plugin_name in config.enabled_plugins do
@@ -115,9 +115,9 @@ defmodule Raxol.Plugins.PluginConfig do
     end
   end
 
-  @doc '''
+  @doc """
   Disables a plugin.
-  '''
+  """
   def disable_plugin(%__MODULE__{} = config, plugin_name)
       when is_binary(plugin_name) do
     %{

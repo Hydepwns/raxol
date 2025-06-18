@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.TelemetryLogger do
-  @moduledoc '''
+  @moduledoc """
   Logs all Raxol.Terminal telemetry events for observability and debugging.
 
   Call `Raxol.Terminal.TelemetryLogger.attach_all/0` in your application start to enable logging.
-  '''
+  """
   require Logger
 
   @events [
@@ -17,9 +17,9 @@ defmodule Raxol.Terminal.TelemetryLogger do
     [:raxol, :terminal, :scroll_event]
   ]
 
-  @doc '''
+  @doc """
   Attaches the logger to all Raxol.Terminal telemetry events.
-  '''
+  """
   def attach_all do
     for event <- @events do
       handler_id = "raxol-terminal-logger-" <> Enum.join(event, "-")

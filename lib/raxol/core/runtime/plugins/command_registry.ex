@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
-  @moduledoc '''
+  @moduledoc """
   Manages command registration and execution for plugins.
-  '''
+  """
 
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
 
@@ -25,7 +25,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @impl true
   def register_command(
         _table_name,
-        namespace,
+        _namespace,
         command_name,
         module,
         function,
@@ -37,23 +37,23 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   @impl true
-  def unregister_command(_table_name, namespace, command_name) do
+  def unregister_command(_table_name, _namespace, _command_name) do
     {:ok, nil}
   end
 
   @impl true
-  def lookup_command(_table_name, namespace, command_name) do
+  def lookup_command(_table_name, _namespace, _command_name) do
     {:error, :not_found}
   end
 
   @impl true
-  def unregister_commands_by_module(_table_name, module) do
+  def unregister_commands_by_module(_table_name, _module) do
     {:ok, nil}
   end
 
-  @doc '''
+  @doc """
   Registers commands for a plugin.
-  '''
+  """
   def register_plugin_commands(plugin_module, plugin_state, command_table) do
     with {:ok, commands} <- get_plugin_commands(plugin_module),
          :ok <- validate_commands(commands),
@@ -62,9 +62,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @doc '''
+  @doc """
   Unregisters all commands for a plugin.
-  '''
+  """
   def unregister_plugin_commands(plugin_module, command_table) do
     case Map.get(command_table, plugin_module) do
       nil -> :ok
@@ -72,9 +72,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @doc '''
+  @doc """
   Executes a command with proper error handling and timeout.
-  '''
+  """
   def execute_command(command_name, args, command_table) do
     case find_command(command_name, command_table) do
       {:ok, {handler, metadata}} ->
@@ -89,10 +89,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @doc '''
+  @doc """
   Looks up the handler for a command name and namespace (plugin module).
   Returns {:ok, {module, function, arity}} or {:error, :not_found}.
-  '''
+  """
   def find_command(command_name, command_table) do
     command_table
     |> Enum.find_value({:error, :not_found}, fn {_namespace, commands} ->
@@ -141,9 +141,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  defp unregister_commands(_commands, command_table, _plugin_module) do
+  defp unregister_commands(_commands, command_table, plugin_module) do
     try do
-      updated_table = Map.delete(command_table, _plugin_module)
+      updated_table = Map.delete(command_table, plugin_module)
       {:ok, updated_table}
     rescue
       e ->
@@ -151,7 +151,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           "Failed to unregister commands",
           e,
           nil,
-          %{plugin_module: _plugin_module, module: __MODULE__}
+          %{plugin_module: plugin_module, module: __MODULE__}
         )
 
         {:error, :unregistration_failed}
@@ -196,22 +196,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     with :ok <- validate_command_handler(command.handler),
          :ok <- validate_command_metadata(command.metadata) do
       :ok
-    end
-  end
-
-  defp validate_command_name(name) do
-    cond do
-      not is_binary(name) ->
-        {:error, :invalid_command_name}
-
-      String.length(name) == 0 ->
-        {:error, :empty_command_name}
-
-      not String.match?(name, ~r/^[a-zA-Z0-9_-]+$/) ->
-        {:error, :invalid_command_name_format}
-
-      true ->
-        :ok
     end
   end
 

@@ -186,5 +186,3 @@ graph TD
 - Custom contexts as needed
 
 ---
-
-For detailed API reference, see [Keyboard Shortcuts API](../api/keyboard_shortcuts.md).

@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Display.Progress do
-  @moduledoc '''
+  @moduledoc """
   A progress bar component for displaying completion status.
 
   Features:
@@ -10,7 +10,7 @@ defmodule Raxol.UI.Components.Display.Progress do
   * Optional label
   * Accessibility/extra props (aria_label, tooltip, etc)
   * Robust lifecycle hooks (mount/unmount)
-  '''
+  """
 
   alias Raxol.UI.Components.Base.Component
   # alias Raxol.UI.Element # Unused
@@ -59,9 +59,9 @@ defmodule Raxol.UI.Components.Display.Progress do
   # ms between frames
   @animation_speed 100
 
-  @doc '''
+  @doc """
   Initializes the progress bar state from props.
-  '''
+  """
   @impl Component
   def init(props) do
     # Initialize state by merging normalized props with default internal state
@@ -76,15 +76,15 @@ defmodule Raxol.UI.Components.Display.Progress do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Mounts the progress bar (for future extensibility: timers, subscriptions, etc).
-  '''
+  """
   @impl Component
   def mount(state), do: {state, []}
 
-  @doc '''
+  @doc """
   Unmounts the progress bar (cleanup for future extensibility).
-  '''
+  """
   @impl Component
   def unmount(state), do: state
 

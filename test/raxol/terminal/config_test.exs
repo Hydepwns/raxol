@@ -72,13 +72,13 @@ defmodule Raxol.Terminal.ConfigTest do
   end
 
   describe "Schema" do
-    test 'schema/0 returns a valid schema' do
+    test ~c"schema/0 returns a valid schema" do
       schema = Schema.schema()
       assert is_map(schema)
       assert map_size(schema) > 0
     end
 
-    test 'schema/0 includes all required fields' do
+    test ~c"schema/0 includes all required fields" do
       schema = Schema.schema()
 
       required_fields = [
@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.ConfigTest do
       end
     end
 
-    test 'schema/0 validates field types' do
+    test ~c"schema/0 validates field types" do
       schema = Schema.schema()
 
       assert is_map(schema.terminal_type) and
@@ -128,26 +128,26 @@ defmodule Raxol.Terminal.ConfigTest do
   end
 
   describe "Validation" do
-    test 'validate_config/1 validates valid configuration' do
+    test ~c"validate_config/1 validates valid configuration" do
       assert {:ok, validated} = Validation.validate_config(@valid_config)
       assert validated == @valid_config
     end
 
-    test 'validate_config/1 rejects invalid configuration (unknown key)' do
+    test ~c"validate_config/1 rejects invalid configuration (unknown key)" do
       invalid_config = Map.put(@valid_config, :unknown_key, "value")
       assert {:error, reason} = Validation.validate_config(invalid_config)
       assert String.contains?(reason, "Unknown configuration keys")
       assert String.contains?(reason, ":unknown_key")
     end
 
-    test 'validate_config/1 rejects invalid configuration (wrong type)' do
+    test ~c"validate_config/1 rejects invalid configuration (wrong type)" do
       invalid_config = Map.put(@valid_config, :unicode_support, "not_a_boolean")
       assert {:error, reason} = Validation.validate_config(invalid_config)
       assert String.contains?(reason, "Invalid value")
       assert String.contains?(reason, "[:unicode_support]")
     end
 
-    test 'validate_config/1 rejects invalid configuration (bad enum value)' do
+    test ~c"validate_config/1 rejects invalid configuration (bad enum value)" do
       invalid_config = Map.put(@valid_config, :cursor_style, :invalid_style)
       assert {:error, reason} = Validation.validate_config(invalid_config)
       assert String.contains?(reason, "not one of")
@@ -156,13 +156,13 @@ defmodule Raxol.Terminal.ConfigTest do
   end
 
   describe "Defaults" do
-    test 'generate_default_config/0 generates valid default configuration' do
+    test ~c"generate_default_config/0 generates valid default configuration" do
       config = Defaults.generate_default_config()
       assert is_map(config)
       assert {:ok, _validated} = Validation.validate_config(config)
     end
 
-    test 'minimal_config/0 generates valid minimal configuration' do
+    test ~c"minimal_config/0 generates valid minimal configuration" do
       config = Defaults.minimal_config()
       assert is_map(config)
       assert {:ok, _validated} = Validation.validate_config(config)
@@ -172,7 +172,7 @@ defmodule Raxol.Terminal.ConfigTest do
   describe "Capabilities" do
     setup :verify_on_exit!
 
-    test 'optimized_config/1 generates optimized configuration based on detected capabilities' do
+    test ~c"optimized_config/1 generates optimized configuration based on detected capabilities" do
       # Mock adapter calls
       EnvironmentAdapterMock
       |> expect(:get_env, fn
@@ -282,7 +282,7 @@ defmodule Raxol.Terminal.ConfigTest do
       assert loaded_config.height == config.height
     end
 
-    test 'can list saved configurations' do
+    test ~c"can list saved configurations" do
       # Create and save multiple configurations
       config1 = Config.new(80, 24)
       config2 = Config.new(100, 50)
@@ -310,7 +310,7 @@ defmodule Raxol.Terminal.ConfigTest do
       assert Map.has_key?(migrated_config.performance, :render_buffer_size)
     end
 
-    test 'handles invalid configuration data' do
+    test ~c"handles invalid configuration data" do
       # Try to load non-existent configuration
       assert {:error, _} = Config.load("nonexistent")
 

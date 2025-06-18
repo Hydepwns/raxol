@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
   alias Raxol.Terminal.Input.SpecialKeys
 
   describe "new_state/0" do
-    test 'creates a new modifier state with all modifiers disabled' do
+    test ~c"creates a new modifier state with all modifiers disabled" do
       state = SpecialKeys.new_state()
       assert state.ctrl == false
       assert state.alt == false
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
   end
 
   describe "update_state/3" do
-    test 'updates ctrl modifier' do
+    test ~c"updates ctrl modifier" do
       state = SpecialKeys.new_state()
       state = SpecialKeys.update_state(state, "Control", true)
       assert state.ctrl == true
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert state.meta == false
     end
 
-    test 'updates alt modifier' do
+    test ~c"updates alt modifier" do
       state = SpecialKeys.new_state()
       state = SpecialKeys.update_state(state, "Alt", true)
       assert state.ctrl == false
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert state.meta == false
     end
 
-    test 'updates shift modifier' do
+    test ~c"updates shift modifier" do
       state = SpecialKeys.new_state()
       state = SpecialKeys.update_state(state, "Shift", true)
       assert state.ctrl == false
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert state.meta == false
     end
 
-    test 'updates meta modifier' do
+    test ~c"updates meta modifier" do
       state = SpecialKeys.new_state()
       state = SpecialKeys.update_state(state, "Meta", true)
       assert state.ctrl == false
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert state.meta == true
     end
 
-    test 'handles multiple modifiers' do
+    test ~c"handles multiple modifiers" do
       state = SpecialKeys.new_state()
 
       state =
@@ -64,7 +64,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert state.meta == false
     end
 
-    test 'ignores unknown modifiers' do
+    test ~c"ignores unknown modifiers" do
       state = SpecialKeys.new_state()
       state = SpecialKeys.update_state(state, "Unknown", true)
       assert state.ctrl == false
@@ -75,34 +75,34 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
   end
 
   describe "to_escape_sequence/2" do
-    test 'handles regular characters without modifiers' do
+    test ~c"handles regular characters without modifiers" do
       state = SpecialKeys.new_state()
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[97"
     end
 
-    test 'handles regular characters with ctrl modifier' do
+    test ~c"handles regular characters with ctrl modifier" do
       state =
         SpecialKeys.new_state() |> SpecialKeys.update_state("Control", true)
 
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[1;97"
     end
 
-    test 'handles regular characters with alt modifier' do
+    test ~c"handles regular characters with alt modifier" do
       state = SpecialKeys.new_state() |> SpecialKeys.update_state("Alt", true)
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[2;97"
     end
 
-    test 'handles regular characters with shift modifier' do
+    test ~c"handles regular characters with shift modifier" do
       state = SpecialKeys.new_state() |> SpecialKeys.update_state("Shift", true)
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[4;97"
     end
 
-    test 'handles regular characters with meta modifier' do
+    test ~c"handles regular characters with meta modifier" do
       state = SpecialKeys.new_state() |> SpecialKeys.update_state("Meta", true)
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[8;97"
     end
 
-    test 'handles multiple modifiers' do
+    test ~c"handles multiple modifiers" do
       state =
         SpecialKeys.new_state()
         |> SpecialKeys.update_state("Control", true)
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[7;97"
     end
 
-    test 'handles arrow keys' do
+    test ~c"handles arrow keys" do
       state = SpecialKeys.new_state()
       assert SpecialKeys.to_escape_sequence(state, "ArrowUp") == "\e[A"
       assert SpecialKeys.to_escape_sequence(state, "ArrowDown") == "\e[B"
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert SpecialKeys.to_escape_sequence(state, "ArrowLeft") == "\e[D"
     end
 
-    test 'handles function keys' do
+    test ~c"handles function keys" do
       state = SpecialKeys.new_state()
       assert SpecialKeys.to_escape_sequence(state, "F1") == "\e[P"
       assert SpecialKeys.to_escape_sequence(state, "F2") == "\e[Q"
@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert SpecialKeys.to_escape_sequence(state, "F12") == "\e[24~"
     end
 
-    test 'handles navigation keys' do
+    test ~c"handles navigation keys" do
       state = SpecialKeys.new_state()
       assert SpecialKeys.to_escape_sequence(state, "Home") == "\e[H"
       assert SpecialKeys.to_escape_sequence(state, "End") == "\e[F"
@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
       assert SpecialKeys.to_escape_sequence(state, "Delete") == "\e[3~"
     end
 
-    test 'handles unknown keys' do
+    test ~c"handles unknown keys" do
       state = SpecialKeys.new_state()
       assert SpecialKeys.to_escape_sequence(state, "Unknown") == ""
     end

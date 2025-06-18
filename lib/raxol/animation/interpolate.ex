@@ -1,14 +1,14 @@
 defmodule Raxol.Animation.Interpolate do
-  @moduledoc '''
+  @moduledoc """
   Provides interpolation functions for different data types.
-  '''
+  """
 
   alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.HSL
 
-  @doc '''
+  @doc """
   Interpolates between two values based on progress `t` (0.0 to 1.0).
-  '''
+  """
   def value(from, to, t) when is_number(from) and is_number(to) do
     from + (to - from) * t
   end
@@ -86,8 +86,8 @@ defmodule Raxol.Animation.Interpolate do
 
   defp interpolate_hsl({h1, s1, l1}, {h2, s2, l2}, t) do
     h = interpolate_hue(h1, h2, t)
-    s = value(s1, s2, t) |> max(0.0) |> min(1.0)
-    l = value(l1, l2, t) |> max(0.0) |> min(1.0)
+    s = value(s1, s2, t) |> max(+0.0) |> min(1.0)
+    l = value(l1, l2, t) |> max(+0.0) |> min(1.0)
     {h, s, l}
   end
 

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
   alias Raxol.Terminal.ANSI.StateMachine
 
   describe "new/0" do
-    test 'creates a new parser state with default values' do
+    test ~c"creates a new parser state with default values" do
       state = StateMachine.new()
       assert state.state == :ground
       assert state.params_buffer == ""
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
   end
 
   describe "process/2" do
-    test 'handles simple text' do
+    test ~c"handles simple text" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "Hello")
       assert new_state.state == :ground
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
       assert Enum.map(sequences, & &1.text) == ["H", "e", "l", "l", "o"]
     end
 
-    test 'handles CSI sequences' do
+    test ~c"handles CSI sequences" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e[1;2;3m")
       assert new_state.state == :ground
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
       assert sequence.final == "m"
     end
 
-    test 'handles OSC sequences' do
+    test ~c"handles OSC sequences" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e]0;title\a")
       assert new_state.state == :ground
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
       assert sequence.text == "title"
     end
 
-    test 'handles character set designation' do
+    test ~c"handles character set designation" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e(0")
       assert new_state.state == :ground
@@ -59,21 +59,21 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
       assert sequence.command == "(0"
     end
 
-    test 'handles invalid sequences' do
+    test ~c"handles invalid sequences" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e[invalid")
       assert new_state.state == :ground
       assert length(sequences) == 0
     end
 
-    test 'handles CAN/SUB in CSI sequences' do
+    test ~c"handles CAN/SUB in CSI sequences" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e[1\x18")
       assert new_state.state == :ground
       assert length(sequences) == 0
     end
 
-    test 'handles OSC with ST terminator' do
+    test ~c"handles OSC with ST terminator" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e]0;title\e\\")
       assert new_state.state == :ground
@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
       assert sequence.text == "title"
     end
 
-    test 'handles multiple sequences' do
+    test ~c"handles multiple sequences" do
       state = StateMachine.new()
 
       {new_state, sequences} =

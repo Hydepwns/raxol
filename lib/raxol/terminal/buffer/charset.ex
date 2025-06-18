@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Buffer.Charset do
-  @moduledoc '''
+  @moduledoc """
   Manages character set state and operations for the screen buffer.
   This module handles character set designations, G-sets, and single shifts.
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
 
@@ -26,9 +26,9 @@ defmodule Raxol.Terminal.Buffer.Charset do
     :single_shift
   ]
 
-  @doc '''
+  @doc """
   Initializes a new charset state with default values.
-  '''
+  """
   @spec init() :: t()
   def init do
     %__MODULE__{
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Buffer.Charset do
     }
   end
 
-  @doc '''
+  @doc """
   Designates a character set to a specific slot.
 
   ## Parameters
@@ -61,14 +61,14 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = Charset.designate(buffer, :g0, :us_ascii)
       iex> Charset.get_designated(buffer, :g0)
       :us_ascii
-  '''
+  """
   @spec designate(ScreenBuffer.t(), atom(), atom()) :: ScreenBuffer.t()
   def designate(buffer, slot, charset) when slot in [:g0, :g1, :g2, :g3] do
     new_charset_state = %{buffer.charset_state | slot => charset}
     %{buffer | charset_state: new_charset_state}
   end
 
-  @doc '''
+  @doc """
   Gets the designated character set for a specific slot.
 
   ## Parameters
@@ -85,13 +85,13 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Charset.get_designated(buffer, :g0)
       :us_ascii
-  '''
+  """
   @spec get_designated(ScreenBuffer.t(), atom()) :: atom()
   def get_designated(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
     Map.get(buffer.charset_state, slot)
   end
 
-  @doc '''
+  @doc """
   Invokes a G-set for the left or right side.
 
   ## Parameters
@@ -109,14 +109,14 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = Charset.invoke_g_set(buffer, :g1)
       iex> Charset.get_current_g_set(buffer)
       :g1
-  '''
+  """
   @spec invoke_g_set(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def invoke_g_set(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
     new_charset_state = %{buffer.charset_state | gl: slot}
     %{buffer | charset_state: new_charset_state}
   end
 
-  @doc '''
+  @doc """
   Gets the current G-set.
 
   ## Parameters
@@ -132,13 +132,13 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Charset.get_current_g_set(buffer)
       :g0
-  '''
+  """
   @spec get_current_g_set(ScreenBuffer.t()) :: atom()
   def get_current_g_set(buffer) do
     buffer.charset_state.gl
   end
 
-  @doc '''
+  @doc """
   Applies a single shift to a specific G-set.
 
   ## Parameters
@@ -156,14 +156,14 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = Charset.apply_single_shift(buffer, :g1)
       iex> Charset.get_single_shift(buffer)
       :g1
-  '''
+  """
   @spec apply_single_shift(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def apply_single_shift(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
     new_charset_state = %{buffer.charset_state | single_shift: slot}
     %{buffer | charset_state: new_charset_state}
   end
 
-  @doc '''
+  @doc """
   Gets the current single shift.
 
   ## Parameters
@@ -179,13 +179,13 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Charset.get_single_shift(buffer)
       nil
-  '''
+  """
   @spec get_single_shift(ScreenBuffer.t()) :: atom() | nil
   def get_single_shift(buffer) do
     buffer.charset_state.single_shift
   end
 
-  @doc '''
+  @doc """
   Resets the charset state to default values.
 
   ## Parameters
@@ -202,13 +202,13 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = Charset.reset(buffer)
       iex> Charset.get_current_g_set(buffer)
       :g0
-  '''
+  """
   @spec reset(ScreenBuffer.t()) :: ScreenBuffer.t()
   def reset(buffer) do
     %{buffer | charset_state: init()}
   end
 
-  @doc '''
+  @doc """
   Translates a character according to the current charset state.
 
   ## Parameters
@@ -225,7 +225,7 @@ defmodule Raxol.Terminal.Buffer.Charset do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Charset.translate_char(buffer, "A")
       "A"
-  '''
+  """
   @spec translate_char(ScreenBuffer.t(), String.t()) :: String.t()
   def translate_char(buffer, char) do
     charset = get_active_charset(buffer)

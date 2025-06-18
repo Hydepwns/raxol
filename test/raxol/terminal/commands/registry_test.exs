@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Commands.RegistryTest do
       assert registry.metrics.validations == 0
     end
 
-    test 'creates registry with custom max history' do
+    test ~c"creates registry with custom max history" do
       registry = Registry.new(max_history: 500)
       assert registry.max_history == 500
     end

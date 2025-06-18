@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
-  @moduledoc '''
+  @moduledoc """
   Handles plugin command registration and dispatch for the Plugin Manager.
-  '''
+  """
 
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
 
@@ -28,7 +28,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
             ArgumentError ->
               # If namespace string cannot be converted to an atom, treat as no namespace
               Raxol.Core.Runtime.Log.debug(
-                "Namespace string "#{namespace}" could not be converted to an existing atom."
+                # {namespace}" could not be converted to an existing atom."
+                "Namespace string "
               )
 
               nil
@@ -66,8 +67,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  defp process_commands(plugin_module, commands, command_table) when is_list(commands) do
-    Enum.reduce(commands, command_table, &register_command(plugin_module, &1, &2))
+  defp process_commands(plugin_module, commands, command_table)
+       when is_list(commands) do
+    Enum.reduce(
+      commands,
+      command_table,
+      &register_command(plugin_module, &1, &2)
+    )
   end
 
   defp process_commands(plugin_module, _invalid, command_table) do
@@ -76,57 +82,70 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   end
 
   defp register_command(plugin_module, {name, function, arity}, acc)
-       when is_atom(name) and is_atom(function) and is_integer(arity) and arity >= 0 do
+       when is_atom(name) and is_atom(function) and is_integer(arity) and
+              arity >= 0 do
     name_str = Atom.to_string(name) |> String.trim() |> String.downcase()
 
-    if valid_command_name?(name_str) and function_exported?(plugin_module, function, arity) do
+    if valid_command_name?(name_str) and
+         function_exported?(plugin_module, function, arity) do
       register_valid_command(acc, plugin_module, name_str, function, arity)
     else
       log_invalid_command(plugin_module, name_str, function, arity)
       acc
     end
   end
+
   defp register_command(_plugin_module, _invalid, acc), do: acc
 
   defp valid_command_name?(name_str) do
-    not String.contains?(name_str, " ") and String.match?(name_str, ~r/^[a-zA-Z0-9_-]+$/)
+    not String.contains?(name_str, " ") and
+      String.match?(name_str, ~r/^[a-zA-Z0-9_-]+$/)
   end
 
   defp register_valid_command(acc, plugin_module, name_str, function, arity) do
-    case CommandRegistry.register_command(acc, plugin_module, name_str, plugin_module, function, arity) do
-                      new_table when is_map(new_table) -> new_table
-                      _ -> acc
-                    end
+    case CommandRegistry.register_command(
+           acc,
+           plugin_module,
+           name_str,
+           plugin_module,
+           function,
+           arity
+         ) do
+      new_table when is_map(new_table) -> new_table
+      _ -> acc
+    end
   end
 
   defp log_invalid_command(plugin_module, name_str, function, arity) do
-                    Raxol.Core.Runtime.Log.warning_with_context(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{inspect(plugin_module)} does not export #{function}/#{arity} for command #{inspect(name_str)}. Skipping registration.",
-                      context: __MODULE__,
-                      stacktrace: nil
-                    )
+      context: __MODULE__,
+      stacktrace: nil
+    )
   end
 
   defp log_invalid_commands(plugin_module) do
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Plugin #{inspect(plugin_module)} get_commands/0 did not return a list.",
-            context: __MODULE__,
-            stacktrace: nil
-          )
-        end
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Plugin #{inspect(plugin_module)} get_commands/0 did not return a list.",
+      context: __MODULE__,
+      stacktrace: nil
+    )
+  end
 
   defp log_command_error(plugin_module, error) do
-          Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}",
-            error,
-            nil
-          )
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}",
+      error,
+      nil
+    )
   end
 
   @impl true
   def handle_command(command_table, command_name_str, _namespace, args, state) do
-    with {:ok, {plugin_module, handler, _arity}} <- lookup_valid_command(command_table, command_name_str, args),
-         {:ok, plugin_id, plugin_state} <- get_plugin_state(state, plugin_module) do
+    with {:ok, {plugin_module, handler, _arity}} <-
+           lookup_valid_command(command_table, command_name_str, args),
+         {:ok, plugin_id, plugin_state} <-
+           get_plugin_state(state, plugin_module) do
       execute_and_update_state(handler, args, plugin_state, plugin_id, state)
     else
       {:error, reason} -> {:error, reason, nil}
@@ -135,14 +154,22 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   defp lookup_valid_command(command_table, command_name_str, args) do
     with :ok <- validate_command_args(args),
-         {:ok, result} <- find_plugin_for_command(command_table, command_name_str, :unknown, :unknown) do
+         {:ok, result} <-
+           find_plugin_for_command(
+             command_table,
+             command_name_str,
+             :unknown,
+             :unknown
+           ) do
       {:ok, result}
     end
   end
 
   defp get_plugin_state(state, plugin_module) do
     case find_plugin_id_by_module(state.plugins, plugin_module) do
-      nil -> {:error, :missing_plugin_state}
+      nil ->
+        {:error, :missing_plugin_state}
+
       plugin_id ->
         case Map.get(state.plugin_states, plugin_id) do
           nil -> {:error, :missing_plugin_state}
@@ -156,6 +183,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
       {:ok, new_state, result} ->
         _updated_states = Map.put(state.plugin_states, plugin_id, new_state)
         {:ok, new_state, result, plugin_id}
+
       {:error, reason, new_state} ->
         {:error, reason, new_state}
     end
@@ -165,10 +193,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     case with_timeout(fn -> handler.(args, plugin_state) end, 5000) do
       {:ok, new_state, result} when is_map(new_state) ->
         {:ok, new_state, result}
+
       {:error, reason, new_state} when is_map(new_state) ->
         {:error, reason, new_state}
+
       {:error, {:exception, error}} ->
         {:error, {:exception, error}, plugin_state}
+
       invalid ->
         {:error, {:unexpected_plugin_return, invalid}, plugin_state}
     end
@@ -184,16 +215,16 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     CommandRegistry.unregister_commands_by_module(command_table, plugin_module)
   end
 
-  @doc '''
+  @doc """
   Finds the plugin ID for a given module.
-  '''
+  """
   def find_plugin_id_by_module(plugins, module) do
     Enum.find_value(plugins, fn {id, mod} -> if mod == module, do: id end)
   end
 
-  @doc '''
+  @doc """
   Validates command arguments.
-  '''
+  """
   def validate_command_args(args) do
     cond do
       is_nil(args) ->

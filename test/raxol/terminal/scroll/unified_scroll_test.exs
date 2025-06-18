@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   alias Raxol.Terminal.Cell
 
   describe "new/2" do
-    test 'creates a new scroll buffer with default values' do
+    test ~c"creates a new scroll buffer with default values" do
       scroll = UnifiedScroll.new(1000)
       assert scroll.max_height == 1000
       assert scroll.position == 0
@@ -16,14 +16,14 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
       assert scroll.cache == %{}
     end
 
-    test 'creates a new scroll buffer with custom memory limit' do
+    test ~c"creates a new scroll buffer with custom memory limit" do
       scroll = UnifiedScroll.new(1000, 10_000_000)
       assert scroll.memory_limit == 10_000_000
     end
   end
 
   describe "add_line/2" do
-    test 'adds a line to the buffer' do
+    test ~c"adds a line to the buffer" do
       scroll = UnifiedScroll.new(1000)
       line = [Cell.new("A"), Cell.new("B")]
       scroll = UnifiedScroll.add_line(scroll, line)
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
       assert hd(scroll.buffer) == line
     end
 
-    test 'trims buffer when it exceeds max height' do
+    test ~c"trims buffer when it exceeds max height" do
       scroll = UnifiedScroll.new(2)
       line1 = [Cell.new("A")]
       line2 = [Cell.new("B")]
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "get_view/2" do
-    test 'returns a view of the buffer at current position' do
+    test ~c"returns a view of the buffer at current position" do
       scroll = UnifiedScroll.new(1000)
       line1 = [Cell.new("A")]
       line2 = [Cell.new("B")]
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
       assert hd(tl(view)) == line2
     end
 
-    test 'caches view results' do
+    test ~c"caches view results" do
       scroll = UnifiedScroll.new(1000)
       line = [Cell.new("A")]
       scroll = UnifiedScroll.add_line(scroll, line)
@@ -77,7 +77,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "scroll/2" do
-    test 'scrolls the buffer by the given amount' do
+    test ~c"scrolls the buffer by the given amount" do
       scroll = UnifiedScroll.new(1000)
       line1 = [Cell.new("A")]
       line2 = [Cell.new("B")]
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
       assert scroll.position == 1
     end
 
-    test 'does not scroll beyond buffer bounds' do
+    test ~c"does not scroll beyond buffer bounds" do
       scroll = UnifiedScroll.new(1000)
       line = [Cell.new("A")]
       scroll = UnifiedScroll.add_line(scroll, line)
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "scroll/3" do
-    test 'scrolls up' do
+    test ~c"scrolls up" do
       scroll = UnifiedScroll.new(1000)
       line1 = [Cell.new("A")]
       line2 = [Cell.new("B")]
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
       assert scroll.position == 0
     end
 
-    test 'scrolls down' do
+    test ~c"scrolls down" do
       scroll = UnifiedScroll.new(1000)
       line1 = [Cell.new("A")]
       line2 = [Cell.new("B")]
@@ -129,13 +129,13 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "set_scroll_region/3" do
-    test 'sets valid scroll region' do
+    test ~c"sets valid scroll region" do
       scroll = UnifiedScroll.new(1000)
       scroll = UnifiedScroll.set_scroll_region(scroll, 1, 5)
       assert scroll.scroll_region == {1, 5}
     end
 
-    test 'ignores invalid scroll region' do
+    test ~c"ignores invalid scroll region" do
       scroll = UnifiedScroll.new(1000)
       scroll = UnifiedScroll.set_scroll_region(scroll, 5, 1)
       assert scroll.scroll_region == nil
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "clear_scroll_region/1" do
-    test 'clears scroll region' do
+    test ~c"clears scroll region" do
       scroll = UnifiedScroll.new(1000)
       scroll = UnifiedScroll.set_scroll_region(scroll, 1, 5)
       scroll = UnifiedScroll.clear_scroll_region(scroll)
@@ -152,7 +152,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "get_visible_region/1" do
-    test 'returns full range when no scroll region' do
+    test ~c"returns full range when no scroll region" do
       scroll = UnifiedScroll.new(1000)
       line = [Cell.new("A")]
       scroll = UnifiedScroll.add_line(scroll, line)
@@ -160,7 +160,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
       assert UnifiedScroll.get_visible_region(scroll) == {0, 0}
     end
 
-    test 'returns scroll region when set' do
+    test ~c"returns scroll region when set" do
       scroll = UnifiedScroll.new(1000)
       scroll = UnifiedScroll.set_scroll_region(scroll, 1, 5)
       assert UnifiedScroll.get_visible_region(scroll) == {1, 5}
@@ -168,7 +168,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "clear/1" do
-    test 'clears the buffer' do
+    test ~c"clears the buffer" do
       scroll = UnifiedScroll.new(1000)
       line = [Cell.new("A")]
       scroll = UnifiedScroll.add_line(scroll, line)
@@ -183,7 +183,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "set_max_height/2" do
-    test 'updates max height and trims buffer if needed' do
+    test ~c"updates max height and trims buffer if needed" do
       scroll = UnifiedScroll.new(3)
       line1 = [Cell.new("A")]
       line2 = [Cell.new("B")]
@@ -201,7 +201,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScrollTest do
   end
 
   describe "resize/2" do
-    test 'updates height' do
+    test ~c"updates height" do
       scroll = UnifiedScroll.new(1000)
       scroll = UnifiedScroll.resize(scroll, 50)
       assert scroll.height == 50

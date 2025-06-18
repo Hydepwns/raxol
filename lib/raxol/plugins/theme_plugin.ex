@@ -1,8 +1,8 @@
 defmodule Raxol.Plugins.ThemePlugin do
-  @moduledoc '''
+  @moduledoc """
   Plugin that manages terminal themes and color schemes.
   Allows users to apply predefined themes or create custom color schemes.
-  '''
+  """
 
   @behaviour Raxol.Plugins.Plugin
 
@@ -84,32 +84,32 @@ defmodule Raxol.Plugins.ThemePlugin do
   @impl true
   def get_dependencies, do: []
 
-  @doc '''
+  @doc """
   Changes the current theme to the specified theme name.
-  '''
+  """
   def change_theme(plugin, theme_name) do
     case Theme.get(theme_name) do
-      nil -> {:error, "Theme "#{theme_name}" not found"}
+      nil -> {:error, "Theme \"#{theme_name}\" not found"}
       theme -> {:ok, %{plugin | current_theme: theme}}
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current theme.
-  '''
+  """
   def get_theme(plugin), do: plugin.current_theme
 
-  @doc '''
+  @doc """
   Gets a list of available themes.
-  '''
+  """
   def list_themes do
     Theme.list_themes()
   end
 
-  @doc '''
+  @doc """
   Registers a new theme.
   Can accept either a map of theme attributes or an existing Theme struct.
-  '''
+  """
   def register_theme(theme_input) do
     theme_to_register =
       case theme_input do

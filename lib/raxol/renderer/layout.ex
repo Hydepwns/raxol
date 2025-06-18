@@ -2,12 +2,12 @@ defmodule Raxol.Renderer.Layout do
   import Kernel, except: [to_string: 1]
   require Raxol.Core.Renderer.View
 
-  @moduledoc '''
+  @moduledoc """
   Handles layout calculations for UI elements.
 
   This module translates the logical layout (panels, rows, columns)
   into absolute positions for rendering.
-  '''
+  """
 
   # Define container and valid types as module attributes
   @container_types [
@@ -47,7 +47,7 @@ defmodule Raxol.Renderer.Layout do
   @default_text_input_style %{fg: :white, bg: :black}
   @default_placeholder_style %{fg: :gray, bg: :black}
 
-  @doc '''
+  @doc """
   Applies layout to a view, calculating absolute positions for all elements.
 
   ## Parameters
@@ -58,7 +58,7 @@ defmodule Raxol.Renderer.Layout do
   ## Returns
 
   A list of positioned elements with absolute coordinates.
-  '''
+  """
   def apply_layout(view, dimensions) do
     # Start with the full screen as available space
     available_space = %{

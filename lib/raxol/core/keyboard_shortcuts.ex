@@ -1,5 +1,5 @@
 defmodule Raxol.Core.KeyboardShortcuts do
-  @moduledoc '''
+  @moduledoc """
   Keyboard shortcuts manager for Raxol applications.
 
   This module provides functionality to register, manage, and handle keyboard shortcuts
@@ -36,7 +36,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       # Display help for available shortcuts
       KeyboardShortcuts.show_shortcuts_help()
-  '''
+  """
 
   @behaviour Raxol.Core.KeyboardShortcutsBehaviour
 
@@ -44,7 +44,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   alias Raxol.Core.Accessibility
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Initialize the keyboard shortcuts manager.
 
   This function sets up the necessary state for managing keyboard shortcuts
@@ -54,7 +54,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       iex> KeyboardShortcuts.init()
       :ok
-  '''
+  """
   def init do
     # Initialize shortcuts registry
     Process.put(:keyboard_shortcuts, %{
@@ -73,7 +73,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Clean up the keyboard shortcuts manager.
 
   This function cleans up any resources used by the keyboard shortcuts manager
@@ -83,7 +83,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       iex> KeyboardShortcuts.cleanup()
       :ok
-  '''
+  """
   def cleanup do
     # Unregister event handler
     EventManager.unregister_handler(
@@ -99,7 +99,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Register a keyboard shortcut with a callback function.
 
   ## Parameters
@@ -123,7 +123,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
       iex> KeyboardShortcuts.register_shortcut("Alt+F", :file_menu, fn -> open_file_menu() end,
       ...>   context: :main_menu, description: "Open File menu")
       :ok
-  '''
+  """
   def register_shortcut(shortcut, name, callback, opts \\ []) do
     # Parse shortcut string
     parsed_shortcut = parse_shortcut(shortcut)
@@ -174,7 +174,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Unregister a keyboard shortcut.
 
   ## Parameters
@@ -189,7 +189,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       iex> KeyboardShortcuts.unregister_shortcut(:file_menu, :main_menu)
       :ok
-  '''
+  """
   def unregister_shortcut(name, context \\ :global) do
     # Get current shortcuts registry
     shortcuts = Process.get(:keyboard_shortcuts)
@@ -223,7 +223,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Set the current context for shortcuts.
 
   This affects which shortcuts are active and will be triggered by keyboard events.
@@ -239,7 +239,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       iex> KeyboardShortcuts.set_context(:file_browser)
       :ok
-  '''
+  """
   def set_context(context) do
     # Store current context
     Process.put(:keyboard_shortcuts_context, context)
@@ -251,20 +251,20 @@ defmodule Raxol.Core.KeyboardShortcuts do
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Get the current active context for shortcuts.
 
   ## Examples
 
       iex> KeyboardShortcuts.get_current_context()
       :editor
-  '''
+  """
   def get_current_context do
     Process.get(:keyboard_shortcuts_context, :global)
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Get all shortcuts for a specific context.
 
   ## Parameters
@@ -278,7 +278,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
         %{name: :save, key_combo: "Ctrl+S", description: "Save document"},
         %{name: :find, key_combo: "Ctrl+F", description: "Find in document"}
       ]
-  '''
+  """
   def get_shortcuts_for_context(context \\ nil) do
     # Get current shortcuts registry
     shortcuts = Process.get(:keyboard_shortcuts)
@@ -310,7 +310,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     end)
   end
 
-  @doc '''
+  @doc """
   Show help for available keyboard shortcuts for the current context.
 
   Returns a formatted string of available shortcuts. This version matches the behaviour and can be called without arguments.
@@ -319,13 +319,13 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       iex> KeyboardShortcuts.show_shortcuts_help()
       {:ok, help_string}
-  '''
+  """
   def show_shortcuts_help() do
     show_shortcuts_help(nil)
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Display help for available shortcuts.
 
   This function generates a help message for all shortcuts available in the current context
@@ -339,7 +339,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       iex> KeyboardShortcuts.show_shortcuts_help(self())
       :ok
-  '''
+  """
   def show_shortcuts_help(user_preferences_pid_or_name) do
     # Get current context
     current_context = get_current_context()
@@ -375,7 +375,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
-  @doc '''
+  @doc """
   Trigger a shortcut programmatically.
 
   ## Parameters
@@ -390,7 +390,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
       iex> KeyboardShortcuts.trigger_shortcut(:file_menu, :main_menu)
       :ok
-  '''
+  """
   def trigger_shortcut(name, context \\ nil) do
     # Get current shortcuts registry
     shortcuts = Process.get(:keyboard_shortcuts)

@@ -153,6 +153,5 @@ end
 
 Congratulations! You've built and run your first Raxol application. Here's what you can explore next:
 
-- [Components & Layout](03_components_and_layout/components/README.md) - Learn about available components and layout options
 - [Examples](../) - Check out sample applications and use cases
 - [Installation Guide](install.md) - Learn about platform-specific considerations

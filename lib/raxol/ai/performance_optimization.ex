@@ -1,5 +1,5 @@
 defmodule Raxol.AI.PerformanceOptimization do
-  @moduledoc '''
+  @moduledoc """
   Runtime AI features for intelligent performance optimization.
 
   This module provides AI-driven performance optimizations including:
@@ -10,7 +10,7 @@ defmodule Raxol.AI.PerformanceOptimization do
   * Prefetching - Predict and preload content likely to be needed soon
   * Adaptive throttling - Adjust refresh rates based on current activity
   * Runtime profiling - Continuously monitor and analyze performance patterns
-  '''
+  """
 
   alias Raxol.Benchmarks.Performance, as: Benchmarks
   alias Raxol.Core.UXRefinement
@@ -50,7 +50,7 @@ defmodule Raxol.AI.PerformanceOptimization do
   # Process dictionary key for optimizer state
   @state_key :raxol_optimizer_state
 
-  @doc '''
+  @doc """
   Initializes the performance optimization system.
 
   ## Options
@@ -62,7 +62,7 @@ defmodule Raxol.AI.PerformanceOptimization do
 
       iex> init(optimization_level: :balanced)
       :ok
-  '''
+  """
   def init(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
 
@@ -93,14 +93,14 @@ defmodule Raxol.AI.PerformanceOptimization do
     end
   end
 
-  @doc '''
+  @doc """
   Records component render time for optimization analysis.
 
   ## Examples
 
       iex> record_render_time("user_profile", 25)
       :ok
-  '''
+  """
   def record_render_time(component_name, time_ms) do
     _ =
       with_state(fn state ->
@@ -134,14 +134,14 @@ defmodule Raxol.AI.PerformanceOptimization do
     :ok
   end
 
-  @doc '''
+  @doc """
   Records component usage for optimization analysis.
 
   ## Examples
 
       iex> record_component_usage("dropdown_menu")
       :ok
-  '''
+  """
   def record_component_usage(component_name) do
     _ =
       with_state(fn state ->
@@ -165,7 +165,7 @@ defmodule Raxol.AI.PerformanceOptimization do
     :ok
   end
 
-  @doc '''
+  @doc """
   Determines if a component should be rendered based on current conditions.
   Uses predictive rendering to optimize performance.
 
@@ -173,7 +173,7 @@ defmodule Raxol.AI.PerformanceOptimization do
 
       iex> should_render?("large_table", %{visible: false, scroll_position: 500})
       false
-  '''
+  """
   def should_render?(component_name, context \\ %{}) do
     if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       true
@@ -234,14 +234,14 @@ defmodule Raxol.AI.PerformanceOptimization do
     )
   end
 
-  @doc '''
+  @doc """
   Gets the recommended refresh rate for a component based on current activity.
 
   ## Examples
 
       iex> get_refresh_rate("animated_progress")
       16  # milliseconds (approximately 60fps)
-  '''
+  """
   def get_refresh_rate(component_name) do
     if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       16
@@ -276,14 +276,14 @@ defmodule Raxol.AI.PerformanceOptimization do
     end
   end
 
-  @doc '''
+  @doc """
   Recommends components for prefetching based on usage patterns.
 
   ## Examples
 
       iex> get_prefetch_recommendations("user_profile")
       ["user_settings", "user_activity"]
-  '''
+  """
   def get_prefetch_recommendations(current_component) do
     # Default to empty list if optimization is off
     if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
@@ -304,7 +304,7 @@ defmodule Raxol.AI.PerformanceOptimization do
     end
   end
 
-  @doc '''
+  @doc """
   Analyzes performance and suggests optimizations.
 
   ## Examples
@@ -314,7 +314,7 @@ defmodule Raxol.AI.PerformanceOptimization do
         %{type: :component, name: "data_table", issue: :slow_rendering, suggestion: "Consider virtual scrolling"},
         %{type: :pattern, issue: :excessive_updates, suggestion: "Implement throttling for search inputs"}
       ]
-  '''
+  """
   def analyze_performance do
     if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       []
@@ -343,14 +343,14 @@ defmodule Raxol.AI.PerformanceOptimization do
     end
   end
 
-  @doc '''
+  @doc """
   Enables or disables a specific optimization feature.
 
   ## Examples
 
       iex> toggle_feature(:predictive_rendering, true)
       :ok
-  '''
+  """
   def toggle_feature(feature, enabled) do
     _ =
       with_state(fn state ->
@@ -367,14 +367,14 @@ defmodule Raxol.AI.PerformanceOptimization do
     :ok
   end
 
-  @doc '''
+  @doc """
   Sets the optimization level for the system.
 
   ## Examples
 
       iex> set_optimization_level(:aggressive)
       :ok
-  '''
+  """
   def set_optimization_level(level)
       when level in [:minimal, :balanced, :aggressive] do
     with_state(fn state ->

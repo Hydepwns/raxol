@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.View.Types do
-  @moduledoc '''
+  @moduledoc """
   Type definitions for the Raxol view system.
-  '''
+  """
 
   alias Raxol.Core.Renderer.Color
 
@@ -37,9 +37,9 @@ defmodule Raxol.Core.Renderer.View.Types do
              non_neg_integer()}
   @type margin :: padding()
 
-  @doc '''
+  @doc """
   Returns the border characters for different border styles.
-  '''
+  """
   def border_chars do
     %{
       single: %{

@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
   # @initial_state Emulator.new(80, 24)
 
   describe "character set functionality" do
-    test 'initializes with default character sets' do
+    test ~c"initializes with default character sets" do
       emulator = Emulator.new(80, 24)
       # Get the charset state struct from the emulator
       charset_state = emulator.charset_state
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
       assert CharacterSets.get_active_charset(charset_state) == :us_ascii
     end
 
-    test 'writes characters with character set translation (DEC Special Graphics)' do
+    test ~c"writes characters with character set translation (DEC Special Graphics)" do
       emulator = Emulator.new(80, 24)
       # Set G1 to DEC Special Graphics & Character Set (ESC ) 0)
       {emulator, ""} = Emulator.process_input(emulator, "\e)0")
@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
       # assert cell.codepoint == 0x2592
     end
 
-    test 'handles character set switching and invoking' do
+    test ~c"handles character set switching and invoking" do
       emulator = Emulator.new(80, 24)
       # Set G0 to US ASCII (ESC ( B)
       {emulator, ""} = Emulator.process_input(emulator, "\e(B")
@@ -75,7 +75,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
     # Lock Shift (LS1R, LS2, LS2R, LS3, LS3R) tests might also require specific handling.
     # test 'handles lock shift' do ...
 
-    test 'handles character set switching and invoking with designator' do
+    test ~c"handles character set switching and invoking with designator" do
       emulator = Emulator.new(80, 24)
       # Set G0 to US ASCII (ESC ( B)
       {emulator, ""} = Emulator.process_input(emulator, "\e(B")
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
                :us_ascii
     end
 
-    test 'designate G2 works in isolation' do
+    test ~c"designate G2 works in isolation" do
       emulator = Emulator.new(80, 24)
       {final_emulator, ""} = Emulator.process_input(emulator, "\e*0")
       assert final_emulator.charset_state.g2 == :dec_special_graphics

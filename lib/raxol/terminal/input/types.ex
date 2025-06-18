@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Input.Types do
-  @moduledoc '''
+  @moduledoc """
   Defines shared types for the Raxol terminal input subsystem.
-  '''
+  """
 
   @typedoc "Represents the state of the terminal input buffer."
   @type input_buffer :: %{

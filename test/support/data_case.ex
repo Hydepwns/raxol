@@ -1,5 +1,5 @@
 defmodule Raxol.DataCase do
-  @moduledoc '''
+  @moduledoc """
   This module defines the setup for tests requiring
   access to the application's data layer.
 
@@ -8,7 +8,7 @@ defmodule Raxol.DataCase do
   - Conditional database enabling
   - Safe transaction handling
   - Proper sandbox setup
-  '''
+  """
 
   use ExUnit.CaseTemplate
 
@@ -37,10 +37,10 @@ defmodule Raxol.DataCase do
     :ok
   end
 
-  @doc '''
+  @doc """
   Helper function to safely execute database operations
   within a transaction that will be rolled back.
-  '''
+  """
   def with_transaction(fun) do
     if Application.get_env(:raxol, :database_enabled, false) do
       Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
@@ -65,14 +65,14 @@ defmodule Raxol.DataCase do
     :ok
   end
 
-  @doc '''
+  @doc """
   A helper that transforms changeset errors into a map of messages.
 
       assert {:error, changeset} = Accounts.create_user(%{password: "short"})
       assert "password is too short" in errors_on(changeset).password
       assert %{password: ["password is too short"]} = errors_on(changeset)
 
-  '''
+  """
   def errors_on(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
       Regex.replace(~r"%{(\w+)}", msg, fn _, key ->

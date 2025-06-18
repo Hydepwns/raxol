@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Base.Component do
-  @moduledoc '''
+  @moduledoc """
   Defines the behavior for UI components in the Raxol system.
 
   This module provides the core structure for building reusable UI components
@@ -48,7 +48,7 @@ defmodule Raxol.UI.Components.Base.Component do
           {%{state | count: state.count - 1}, []}
         end
       end
-  '''
+  """
 
   @type props :: map()
   @type state :: map()
@@ -59,52 +59,52 @@ defmodule Raxol.UI.Components.Base.Component do
   # Type for context passed to render/handle_event
   @type context :: map()
 
-  @doc '''
+  @doc """
   Initializes the component with the given props.
 
   Called when the component is created. Should merge default values with
   the provided props to create the initial state.
-  '''
+  """
   @callback init(props()) :: state()
 
-  @doc '''
+  @doc """
   Called when the component is mounted in the UI.
 
   This is where you can set up subscriptions, execute initial commands,
   or perform other setup tasks. Returns the potentially modified state
   and any commands to execute.
-  '''
+  """
   @callback mount(state()) :: {state(), [command()]}
 
-  @doc '''
+  @doc """
   Updates the component state in response to messages.
 
   Similar to the application update function, this handles messages sent to
   the component and returns the new state.
-  '''
+  """
   @callback update(message(), state()) :: state()
 
-  @doc '''
+  @doc """
   Renders the component based on its current state.
 
   Returns an element tree that will be rendered to the screen. The context
   map contains theme, layout constraints, etc.
-  '''
+  """
   @callback render(state(), context()) :: element()
 
-  @doc '''
+  @doc """
   Handles UI events that occur on the component.
 
   The context map provides additional event details or UI state.
   Returns the potentially modified state and any commands to execute.
-  '''
+  """
   @callback handle_event(event(), state(), context()) :: {state(), [command()]}
 
-  @doc '''
+  @doc """
   Called when the component is being removed from the UI.
 
   Use this to clean up any resources or perform final actions.
-  '''
+  """
   @callback unmount(state()) :: state()
 
   @optional_callbacks [mount: 1, unmount: 1]

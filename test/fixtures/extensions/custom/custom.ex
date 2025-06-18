@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Extension.Custom do
-  @moduledoc '''
+  @moduledoc """
   A test custom extension for the Raxol terminal emulator.
-  '''
+  """
 
   def get_custom_info do
     %{
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Extension.Custom do
   end
 
   def execute_feature(feature, _args) do
-    {:error, :feature_not_found, "Feature "#{feature}" not found"}
+    {:error, :feature_not_found, "Feature '#{feature}' not found"}
   end
 
   def get_custom_state do

@@ -3,7 +3,7 @@ defmodule Raxol.System.TerminalPlatformTest do
   alias Raxol.System.TerminalPlatform
 
   describe "get_terminal_capabilities/0" do
-    test 'returns a map with all expected keys' do
+    test ~c"returns a map with all expected keys" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
 
       assert is_map(capabilities)
@@ -16,7 +16,7 @@ defmodule Raxol.System.TerminalPlatformTest do
       assert Map.has_key?(capabilities, :output)
     end
 
-    test 'features list contains only supported features' do
+    test ~c"features list contains only supported features" do
       features = TerminalPlatform.get_supported_features()
 
       assert is_list(features)
@@ -39,7 +39,7 @@ defmodule Raxol.System.TerminalPlatformTest do
   end
 
   describe "supports_feature?/1" do
-    test 'returns boolean for valid features' do
+    test ~c"returns boolean for valid features" do
       assert is_boolean(TerminalPlatform.supports_feature?(:true_color))
       assert is_boolean(TerminalPlatform.supports_feature?(:unicode))
       assert is_boolean(TerminalPlatform.supports_feature?(:mouse))
@@ -49,7 +49,7 @@ defmodule Raxol.System.TerminalPlatformTest do
       assert is_boolean(TerminalPlatform.supports_feature?(:title))
     end
 
-    test 'feature support matches capabilities list' do
+    test ~c"feature support matches capabilities list" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
       features = capabilities.features
 
@@ -73,7 +73,7 @@ defmodule Raxol.System.TerminalPlatformTest do
   end
 
   describe "get_supported_features/0" do
-    test 'returns a list of supported features' do
+    test ~c"returns a list of supported features" do
       features = TerminalPlatform.get_supported_features()
 
       assert is_list(features)
@@ -94,7 +94,7 @@ defmodule Raxol.System.TerminalPlatformTest do
              )
     end
 
-    test 'matches features in capabilities' do
+    test ~c"matches features in capabilities" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
       assert is_list(capabilities.features)
       assert capabilities.features == TerminalPlatform.get_supported_features()
@@ -102,59 +102,59 @@ defmodule Raxol.System.TerminalPlatformTest do
   end
 
   describe "color capabilities" do
-    test 'reports basic color support' do
+    test ~c"reports basic color support" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
       assert capabilities.colors.basic == true
     end
 
-    test 'reports true color support consistently' do
+    test ~c"reports true color support consistently" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
 
       assert capabilities.colors.true_color ==
                TerminalPlatform.supports_feature?(:true_color)
     end
 
-    test 'has valid color palette' do
+    test ~c"has valid color palette" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
       assert capabilities.colors.palette in ["default", "xterm-256color"]
     end
   end
 
   describe "unicode capabilities" do
-    test 'reports unicode support consistently' do
+    test ~c"reports unicode support consistently" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
 
       assert capabilities.unicode.support ==
                TerminalPlatform.supports_feature?(:unicode)
     end
 
-    test 'has valid unicode width' do
+    test ~c"has valid unicode width" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
       assert capabilities.unicode.width in [:ambiguous, :narrow, :wide]
     end
 
-    test 'reports emoji support' do
+    test ~c"reports emoji support" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
       assert is_boolean(capabilities.unicode.emoji)
     end
   end
 
   describe "input capabilities" do
-    test 'reports mouse support consistently' do
+    test ~c"reports mouse support consistently" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
 
       assert capabilities.input.mouse ==
                TerminalPlatform.supports_feature?(:mouse)
     end
 
-    test 'reports bracketed paste support consistently' do
+    test ~c"reports bracketed paste support consistently" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
 
       assert capabilities.input.bracketed_paste ==
                TerminalPlatform.supports_feature?(:bracketed_paste)
     end
 
-    test 'reports focus support consistently' do
+    test ~c"reports focus support consistently" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
 
       assert capabilities.input.focus ==
@@ -163,14 +163,14 @@ defmodule Raxol.System.TerminalPlatformTest do
   end
 
   describe "output capabilities" do
-    test 'reports title support consistently' do
+    test ~c"reports title support consistently" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
 
       assert capabilities.output.title ==
                TerminalPlatform.supports_feature?(:title)
     end
 
-    test 'reports basic output features' do
+    test ~c"reports basic output features" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
       assert capabilities.output.bell == true
       assert capabilities.output.alternate_screen == true

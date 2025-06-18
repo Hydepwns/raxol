@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.State do
-  @moduledoc '''
+  @moduledoc """
   Provides state management for the terminal emulator.
   This module handles operations like creating new states, saving and restoring states,
   and managing state transitions.
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @doc '''
+  @doc """
   Creates a new terminal state with the specified dimensions and limits.
-  '''
+  """
   @spec new(
           non_neg_integer(),
           non_neg_integer(),
@@ -36,9 +36,9 @@ defmodule Raxol.Terminal.State do
     }
   end
 
-  @doc '''
+  @doc """
   Saves the current state.
-  '''
+  """
   @spec save_state(map()) :: map()
   def save_state(state) do
     saved_state = %{
@@ -50,9 +50,9 @@ defmodule Raxol.Terminal.State do
     %{state | saved_states: [saved_state | state.saved_states]}
   end
 
-  @doc '''
+  @doc """
   Restores the most recently saved state.
-  '''
+  """
   @spec restore_state(map()) :: map()
   def restore_state(state) do
     case state.saved_states do
@@ -72,17 +72,17 @@ defmodule Raxol.Terminal.State do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current cursor position.
-  '''
+  """
   @spec get_cursor_position(map()) :: {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(state) do
     state.cursor.position
   end
 
-  @doc '''
+  @doc """
   Sets the cursor position.
-  '''
+  """
   @spec set_cursor_position(map(), non_neg_integer(), non_neg_integer()) ::
           map()
   def set_cursor_position(state, x, y) do
@@ -90,17 +90,17 @@ defmodule Raxol.Terminal.State do
     %{state | cursor: new_cursor}
   end
 
-  @doc '''
+  @doc """
   Gets the current screen buffer.
-  '''
+  """
   @spec get_screen_buffer(map()) :: ScreenBuffer.t()
   def get_screen_buffer(state) do
     state.screen_buffer
   end
 
-  @doc '''
+  @doc """
   Sets the screen buffer.
-  '''
+  """
   @spec set_screen_buffer(map(), ScreenBuffer.t()) :: map()
   def set_screen_buffer(state, buffer) do
     %{state | screen_buffer: buffer}

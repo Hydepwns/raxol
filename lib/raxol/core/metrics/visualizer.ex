@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Metrics.Visualizer do
-  @moduledoc '''
+  @moduledoc """
   Visualization system for the Raxol metrics.
 
   This module handles:
@@ -8,7 +8,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
   - Chart generation
   - Dashboard rendering
   - Export capabilities
-  '''
+  """
 
   use GenServer
 
@@ -35,37 +35,37 @@ defmodule Raxol.Core.Metrics.Visualizer do
     time_range: nil
   }
 
-  @doc '''
+  @doc """
   Starts the metrics visualizer.
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Creates a new chart with the given metrics and options.
-  '''
+  """
   def create_chart(metrics, options \\ %{}) do
     GenServer.call(__MODULE__, {:create_chart, metrics, options})
   end
 
-  @doc '''
+  @doc """
   Updates an existing chart with new metrics.
-  '''
+  """
   def update_chart(chart_id, metrics) do
     GenServer.call(__MODULE__, {:update_chart, chart_id, metrics})
   end
 
-  @doc '''
+  @doc """
   Gets the current chart data.
-  '''
+  """
   def get_chart(chart_id) do
     GenServer.call(__MODULE__, {:get_chart, chart_id})
   end
 
-  @doc '''
+  @doc """
   Exports chart data in the specified format.
-  '''
+  """
   def export_chart(chart_id, format) when format in [:json, :csv, :png] do
     GenServer.call(__MODULE__, {:export_chart, chart_id, format})
   end
@@ -385,7 +385,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     |> Enum.join("\n")
   end
 
-  defp export_to_png(chart) do
+  defp export_to_png(_chart) do
     # This would typically use a library like Chart.js or similar
     # to render the chart to a PNG file
     {:error, :not_implemented}

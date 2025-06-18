@@ -1,10 +1,10 @@
 import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
 
 defmodule Raxol.Core.Renderer.Views.TableTest do
-  @moduledoc '''
+  @moduledoc """
   Test module for the Table view component.
   Verifies table initialization, styling, column handling, and rendering behavior.
-  '''
+  """
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.Views.Table
@@ -44,19 +44,19 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
   end
 
   describe "component lifecycle" do
-    test 'creates a basic table' do
+    test ~c"creates a basic table" do
       props = basic_table_props()
       state = Table.init(props)
       assert_common_table_state(state, props)
     end
 
-    test 'respects title property' do
+    test ~c"respects title property" do
       props = Map.put(basic_table_props(), :title, "My Table")
       state = Table.init(props)
       assert state.title == "My Table"
     end
 
-    test 'handles empty data' do
+    test ~c"handles empty data" do
       props = %{
         columns: basic_table_props().columns,
         data: [],
@@ -69,7 +69,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.columns == props.columns
     end
 
-    test 'applies striping to rows' do
+    test ~c"applies striping to rows" do
       props =
         basic_table_props()
         |> Map.put(:striped, true)
@@ -78,7 +78,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.striped == true
     end
 
-    test 'handles row selection' do
+    test ~c"handles row selection" do
       props =
         basic_table_props()
         |> Map.merge(%{
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.selected == 1
     end
 
-    test 'applies custom border style' do
+    test ~c"applies custom border style" do
       props =
         basic_table_props()
         |> Map.put(:border, :double)
@@ -100,7 +100,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.border == :double
     end
 
-    test 'applies custom header style' do
+    test ~c"applies custom header style" do
       props =
         basic_table_props()
         |> Map.put(:header_style, [:bold, :underline])
@@ -109,7 +109,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.header_style == [:bold, :underline]
     end
 
-    test 'applies custom row style' do
+    test ~c"applies custom row style" do
       props =
         basic_table_props()
         |> Map.put(:row_style, [:dim])
@@ -121,7 +121,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
   end
 
   describe "column handling" do
-    test 'calculates auto widths' do
+    test ~c"calculates auto widths" do
       props = %{
         columns: [
           %{header: "Short", key: :name, width: :auto, align: :left},
@@ -139,7 +139,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.calculated_widths == [5, 16]
     end
 
-    test 'handles custom formatters' do
+    test ~c"handles custom formatters" do
       props = %{
         columns: [
           %{
@@ -161,7 +161,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       # Further assertions could check the formatter's output in the rendered view
     end
 
-    test 'handles function keys' do
+    test ~c"handles function keys" do
       props = %{
         columns: [
           %{

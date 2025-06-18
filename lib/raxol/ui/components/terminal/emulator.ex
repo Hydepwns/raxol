@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Terminal.Emulator do
-  @moduledoc '''
+  @moduledoc """
   Terminal emulator component wrapping the core emulator logic.
-  '''
+  """
 
   alias Raxol.Terminal.{
     IO.UnifiedIO,
@@ -12,10 +12,10 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
           state: State.t()
         }
 
-  @doc '''
+  @doc """
   Initializes a new terminal emulator component state.
   Accepts an optional map of options, currently supporting `:width` and `:height`.
-  '''
+  """
   @spec init(map()) :: emulator_state()
   def init(opts \\ %{}) do
     width = Map.get(opts, :width)
@@ -34,10 +34,10 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
     }
   end
 
-  @doc '''
+  @doc """
   Processes input and updates terminal state by delegating to UnifiedIO.
   Returns a tuple `{updated_state, output_string}`.
-  '''
+  """
   @spec process_input(term(), emulator_state()) :: {emulator_state(), term()}
   def process_input(input, %{state: current_state} = state) do
     # Process input through UnifiedIO
@@ -50,11 +50,11 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
     {updated_state, commands}
   end
 
-  @doc '''
+  @doc """
   Handles terminal resize events by delegating to State.
   This ensures that the terminal's internal buffers and state are correctly
   adjusted while preserving existing content and history where possible.
-  '''
+  """
   @spec handle_resize({integer(), integer()}, emulator_state()) ::
           emulator_state()
   def handle_resize({width, height}, %{state: current_state} = state) do
@@ -63,9 +63,9 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
     %{state | state: updated_state}
   end
 
-  @doc '''
+  @doc """
   Renders the current terminal state.
-  '''
+  """
   @spec render(emulator_state()) :: emulator_state()
   def render(%{state: current_state} = state) do
     # Delegate rendering to State
@@ -73,9 +73,9 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
     %{state | state: updated_state}
   end
 
-  @doc '''
+  @doc """
   Cleans up resources when the component is destroyed.
-  '''
+  """
   @spec cleanup(emulator_state()) :: :ok
   def cleanup(%{state: current_state}) do
     State.cleanup(current_state)

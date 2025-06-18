@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Extension.Theme do
-  @moduledoc '''
+  @moduledoc """
   A test theme extension for the Raxol terminal emulator.
-  '''
+  """
 
   def get_theme_info do
     %{

@@ -15,14 +15,14 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   end
 
   describe "basic operations" do
-    test 'creates sync context' do
+    test ~c"creates sync context" do
       assert {:ok, sync_id} = UnifiedSync.create_sync(:state)
       assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
       assert sync_state.type == :state
       assert sync_state.version == 0
     end
 
-    test 'syncs data' do
+    test ~c"syncs data" do
       {:ok, sync_id} = UnifiedSync.create_sync(:state)
       data = %{value: "test"}
       assert :ok = UnifiedSync.sync(sync_id, data)
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
       assert sync_state.version == 1
     end
 
-    test 'handles version conflicts' do
+    test ~c"handles version conflicts" do
       {:ok, sync_id} = UnifiedSync.create_sync(:state)
       data1 = %{value: "test1"}
       data2 = %{value: "test2"}
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   end
 
   describe "consistency levels" do
-    test 'strong consistency' do
+    test ~c"strong consistency" do
       {:ok, sync_id} = UnifiedSync.create_sync(:state, consistency: :strong)
       data = %{value: "test"}
       assert :ok = UnifiedSync.sync(sync_id, data)
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
       assert sync_state.data == data
     end
 
-    test 'eventual consistency' do
+    test ~c"eventual consistency" do
       {:ok, sync_id} = UnifiedSync.create_sync(:state, consistency: :eventual)
       data = %{value: "test"}
       assert :ok = UnifiedSync.sync(sync_id, data)
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   end
 
   describe "conflict resolution" do
-    test 'last write wins' do
+    test ~c"last write wins" do
       {:ok, sync_id} =
         UnifiedSync.create_sync(:state, conflict_resolution: :last_write_wins)
 
@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
       assert resolved.value == "new"
     end
 
-    test 'version based' do
+    test ~c"version based" do
       {:ok, sync_id} =
         UnifiedSync.create_sync(:state, conflict_resolution: :version_based)
 
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
       assert resolved.value == "new"
     end
 
-    test 'custom strategy' do
+    test ~c"custom strategy" do
       {:ok, sync_id} =
         UnifiedSync.create_sync(:state, conflict_resolution: :custom)
 
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   end
 
   describe "error handling" do
-    test 'handles non-existent sync' do
+    test ~c"handles non-existent sync" do
       assert {:error, :sync_not_found} =
                UnifiedSync.get_sync_state("nonexistent")
 
@@ -114,13 +114,13 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
       assert {:error, :sync_not_found} = UnifiedSync.cleanup("nonexistent")
     end
 
-    test 'handles invalid sync type' do
+    test ~c"handles invalid sync type" do
       assert {:error, _} = UnifiedSync.create_sync(:invalid)
     end
   end
 
   describe "cleanup" do
-    test 'cleans up sync context' do
+    test ~c"cleans up sync context" do
       {:ok, sync_id} = UnifiedSync.create_sync(:state)
       assert :ok = UnifiedSync.cleanup(sync_id)
       assert {:error, :sync_not_found} = UnifiedSync.get_sync_state(sync_id)
@@ -128,7 +128,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   end
 
   describe "metadata" do
-    test 'handles metadata in sync' do
+    test ~c"handles metadata in sync" do
       {:ok, sync_id} = UnifiedSync.create_sync(:state)
       data = %{value: "test"}
       metadata = %{source: "test", priority: 1}
@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   end
 
   describe "concurrent operations" do
-    test 'handles concurrent syncs' do
+    test ~c"handles concurrent syncs" do
       {:ok, sync_id} = UnifiedSync.create_sync(:state)
       data1 = %{value: "test1"}
       data2 = %{value: "test2"}

@@ -1,12 +1,16 @@
 import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
 
 defmodule Raxol.Core.Renderer.ViewTest do
+  @moduledoc """
+  Tests for the view module, including creation, layout,
+  spacing normalization, and flex layout features.
+  """
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.View
   require Raxol.Core.Renderer.View
 
   describe "new/2" do
-    test 'creates a basic view' do
+    test "creates a basic view" do
       view = View.new(:text, content: "Hello")
       assert is_map(view)
       assert Map.has_key?(view, :type)
@@ -16,7 +20,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert view.border == nil
     end
 
-    test 'applies all options' do
+    test "applies all options" do
       view =
         View.new(:box,
           position: {0, 0},
@@ -39,13 +43,13 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert view.margin == {2, 2, 2, 2}
     end
 
-    test 'handles invalid view type' do
+    test "handles invalid view type" do
       assert_raise ArgumentError, "Invalid view type: :invalid_type", fn ->
         View.new(:invalid_type, content: "Hello")
       end
     end
 
-    test 'handles invalid position values' do
+    test "handles invalid position values" do
       assert_raise ArgumentError,
                    "Position must be a tuple of two integers",
                    fn ->
@@ -59,7 +63,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
                    end
     end
 
-    test 'handles invalid size values' do
+    test "handles invalid size values" do
       assert_raise ArgumentError,
                    "Size must be a tuple of two positive integers",
                    fn ->
@@ -75,7 +79,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
   end
 
   describe "layout/2" do
-    test 'layout/2 basic text layout' do
+    test "layout/2 basic text layout" do
       view = View.text("Hello")
       result = View.layout(view, width: 10, height: 1)
 
@@ -96,7 +100,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert result == expected
     end
 
-    test 'handles invalid container dimensions' do
+    test "handles invalid container dimensions" do
       view = View.text("Hello")
 
       assert_raise ArgumentError,
@@ -112,7 +116,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
                    end
     end
 
-    test 'handles overflow in flex layout' do
+    test "handles overflow in flex layout" do
       view =
         View.flex direction: :row, size: {2, 1} do
           [
@@ -132,7 +136,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert b.position == {2, 0}
     end
 
-    test 'handles invalid flex direction' do
+    test "handles invalid flex direction" do
       assert_raise ArgumentError, "Invalid flex direction: :invalid", fn ->
         View.flex direction: :invalid, size: {2, 1} do
           [View.text("A")]
@@ -140,7 +144,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       end
     end
 
-    test 'handles invalid grid columns' do
+    test "handles invalid grid columns" do
       assert_raise ArgumentError, "Grid must have at least 1 column", fn ->
         View.grid columns: 0, size: {2, 1} do
           [View.text("A")]
@@ -148,7 +152,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       end
     end
 
-    test 'handles invalid border style' do
+    test "handles invalid border style" do
       assert_raise ArgumentError, "Invalid border style: :invalid", fn ->
         View.border :invalid, size: {2, 1} do
           View.text("A")
@@ -156,7 +160,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       end
     end
 
-    test 'handles invalid scroll offset' do
+    test "handles invalid scroll offset" do
       assert_raise ArgumentError,
                    "Scroll offset must be a tuple of two integers",
                    fn ->
@@ -166,7 +170,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
                    end
     end
 
-    test 'handles invalid shadow offset' do
+    test "handles invalid shadow offset" do
       assert_raise ArgumentError,
                    "Shadow offset must be a tuple of two integers",
                    fn ->
@@ -176,7 +180,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
                    end
     end
 
-    test 'flex layout with row direction' do
+    test "flex layout with row direction" do
       view =
         View.flex direction: :row, size: {10, 1} do
           [
@@ -200,7 +204,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert b.position == {1, 0}
     end
 
-    test 'grid layout' do
+    test "grid layout" do
       view =
         View.grid columns: 2, size: {4, 2} do
           [
@@ -230,7 +234,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert four.position == {0, 0}
     end
 
-    test 'border layout' do
+    test "border layout" do
       view =
         View.border :single, size: {4, 3} do
           View.text("Hi")
@@ -243,7 +247,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert content.position == {0, 0}
     end
 
-    test 'scroll layout' do
+    test "scroll layout" do
       view =
         View.scroll_wrap offset: {1, 1} do
           View.text("Content", size: {10, 5})
@@ -259,7 +263,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert content.position == {-1, -1}
     end
 
-    test 'shadow layout' do
+    test "shadow layout" do
       view =
         View.shadow offset: {1, 1} do
           View.text("Hi", size: {2, 1})
@@ -276,24 +280,24 @@ defmodule Raxol.Core.Renderer.ViewTest do
   end
 
   describe "spacing normalization" do
-    test 'spacing normalization single integer becomes uniform spacing' do
+    test "spacing normalization single integer becomes uniform spacing" do
       view = View.new(:box, padding: 2, margin: 1)
       assert view.padding == {2, 2, 2, 2}
       assert view.margin == {1, 1, 1, 1}
     end
 
-    test 'spacing normalization horizontal/vertical pair expands correctly' do
+    test "spacing normalization horizontal/vertical pair expands correctly" do
       view = View.new(:box, padding: {1, 2}, margin: {3, 4})
       assert view.padding == {1, 2, 1, 2}
       assert view.margin == {3, 4, 3, 4}
     end
 
-    test 'spacing normalization four-tuple remains unchanged' do
+    test "spacing normalization four-tuple remains unchanged" do
       view = View.new(:box, padding: {1, 2, 3, 4})
       assert view.padding == {1, 2, 3, 4}
     end
 
-    test 'handles invalid padding values' do
+    test "handles invalid padding values" do
       assert_raise ArgumentError,
                    "Padding must be a positive integer or tuple",
                    fn ->
@@ -305,7 +309,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       end
     end
 
-    test 'handles invalid margin values' do
+    test "handles invalid margin values" do
       assert_raise ArgumentError,
                    "Margin must be a positive integer or tuple",
                    fn ->
@@ -319,7 +323,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
   end
 
   describe "flex layout features" do
-    test 'simplified wrapping in row direction' do
+    test "simplified wrapping in row direction" do
       IO.puts("--- Test: simplified wrapping in row direction ---")
       # PARENT: height 1 to force B to wrap or overflow
       view =
@@ -350,7 +354,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert b.position == {0, 1}
     end
 
-    test 'wrapping in column direction' do
+    test "wrapping in column direction" do
       view =
         View.flex direction: :column, wrap: true, size: {4, 2} do
           [

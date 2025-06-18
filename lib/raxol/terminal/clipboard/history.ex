@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Clipboard.History do
-  @moduledoc '''
+  @moduledoc """
   Manages clipboard history for the terminal.
-  '''
+  """
 
   defstruct [:entries, :max_size]
 
@@ -11,9 +11,9 @@ defmodule Raxol.Terminal.Clipboard.History do
           max_size: non_neg_integer()
         }
 
-  @doc '''
+  @doc """
   Creates a new clipboard history with the specified size limit.
-  '''
+  """
   @spec new(non_neg_integer()) :: t()
   def new(max_size) do
     %__MODULE__{
@@ -22,9 +22,9 @@ defmodule Raxol.Terminal.Clipboard.History do
     }
   end
 
-  @doc '''
+  @doc """
   Adds content to the clipboard history.
-  '''
+  """
   @spec add(t(), String.t(), String.t()) :: {:ok, t()}
   def add(history, content, format) do
     entries =
@@ -34,9 +34,9 @@ defmodule Raxol.Terminal.Clipboard.History do
     {:ok, %{history | entries: entries}}
   end
 
-  @doc '''
+  @doc """
   Gets content from the clipboard history by index.
-  '''
+  """
   @spec get(t(), non_neg_integer(), String.t()) ::
           {:ok, String.t()} | {:error, :not_found}
   def get(history, index, format) do
@@ -46,9 +46,9 @@ defmodule Raxol.Terminal.Clipboard.History do
     end
   end
 
-  @doc '''
+  @doc """
   Gets all entries from the clipboard history with the specified format.
-  '''
+  """
   @spec get_all(t(), String.t(), non_neg_integer() | :infinity) ::
           {:ok, list(String.t()), t()}
   def get_all(history, format, limit \\ :infinity) do
@@ -64,9 +64,9 @@ defmodule Raxol.Terminal.Clipboard.History do
     {:ok, entries, history}
   end
 
-  @doc '''
+  @doc """
   Clears the clipboard history.
-  '''
+  """
   @spec clear(t()) :: {:ok, t()}
   def clear(history) do
     {:ok, %{history | entries: []}}

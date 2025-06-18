@@ -1,10 +1,10 @@
 defmodule Raxol.Cloud.Core do
-  @moduledoc '''
+  @moduledoc """
   Core functionality for Raxol cloud integrations.
 
   This module combines edge computing and monitoring capabilities,
   providing a unified interface for cloud operations.
-  '''
+  """
 
   alias Raxol.Cloud.EdgeComputing
   alias Raxol.Cloud.Integrations
@@ -14,7 +14,7 @@ defmodule Raxol.Cloud.Core do
   # Central state manager process name
   @state_name :raxol_cloud_state
 
-  @doc '''
+  @doc """
   Initializes the cloud core components.
 
   ## Options
@@ -22,7 +22,7 @@ defmodule Raxol.Cloud.Core do
   * `:edge` - Edge computing options
   * `:monitoring` - Monitoring options
   * `:providers` - List of cloud providers to enable
-  '''
+  """
   def init(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     # Extract options
@@ -47,9 +47,9 @@ defmodule Raxol.Cloud.Core do
     {:ok, %{status: :initialized}}
   end
 
-  @doc '''
+  @doc """
   Starts all cloud services.
-  '''
+  """
   def start do
     # Start monitoring
     Monitoring.start()
@@ -63,9 +63,9 @@ defmodule Raxol.Cloud.Core do
     :ok
   end
 
-  @doc '''
+  @doc """
   Stops all cloud services.
-  '''
+  """
   def stop do
     # Record stop event before stopping monitoring
     record_metric("cloud.stop", 1, tags: ["service:all"])
@@ -80,9 +80,9 @@ defmodule Raxol.Cloud.Core do
     :ok
   end
 
-  @doc '''
+  @doc """
   Returns the current status of all cloud services.
-  '''
+  """
   def status do
     %{
       edge: EdgeComputing.status(),
@@ -91,7 +91,7 @@ defmodule Raxol.Cloud.Core do
     }
   end
 
-  @doc '''
+  @doc """
   Executes a function in the optimal location (edge or cloud).
 
   ## Options
@@ -99,7 +99,7 @@ defmodule Raxol.Cloud.Core do
   * `:priority` - Priority for execution (:speed, :reliability, :cost)
   * `:location` - Preferred location (:auto, :edge, :cloud)
   * `:timeout` - Timeout in milliseconds
-  '''
+  """
   def execute(fun, opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     # Log execution
@@ -144,33 +144,33 @@ defmodule Raxol.Cloud.Core do
 
   # ===== Monitoring functions =====
 
-  @doc '''
+  @doc """
   Records a metric with the given name and value.
-  '''
+  """
   def record_metric(name, value, opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.record_metric(name, value, opts)
   end
 
-  @doc '''
+  @doc """
   Records an error or exception.
-  '''
+  """
   def record_error(error, opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.record_error(error, opts)
   end
 
-  @doc '''
+  @doc """
   Runs a health check on the system.
-  '''
+  """
   def run_health_check(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.run_health_check(opts)
   end
 
-  @doc '''
+  @doc """
   Triggers an alert with the given type and data.
-  '''
+  """
   def trigger_alert(type, data, opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.trigger_alert(type, data, opts)
@@ -178,41 +178,41 @@ defmodule Raxol.Cloud.Core do
 
   # ===== Service management functions =====
 
-  @doc '''
+  @doc """
   Discovers services available in the current environment.
-  '''
+  """
   def discover_services(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.discover_services(opts)
   end
 
-  @doc '''
+  @doc """
   Registers the current application as a service.
-  '''
+  """
   def register_service(opts) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.register_service(opts)
   end
 
-  @doc '''
+  @doc """
   Deploys an application component.
-  '''
+  """
   def deploy(opts) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.deploy(opts)
   end
 
-  @doc '''
+  @doc """
   Scales a service based on current metrics and conditions.
-  '''
+  """
   def scale(opts) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.scale(opts)
   end
 
-  @doc '''
+  @doc """
   Gets a connection to a cloud service.
-  '''
+  """
   def get_service_connection(opts) do
     Integrations.get_service_connection(opts)
   end

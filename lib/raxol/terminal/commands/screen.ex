@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.Commands.Screen do
-  @moduledoc '''
+  @moduledoc """
   Handles screen manipulation commands in the terminal.
 
   This module provides functions for clearing the screen or parts of it,
   inserting and deleting lines, and other screen manipulation operations.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Clears the screen or a part of it based on the mode parameter.
 
   ## Parameters
@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   ## Returns
 
   * Updated emulator state
-  '''
+  """
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
     buffer = Emulator.get_active_buffer(emulator)
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     Emulator.update_active_buffer(emulator, new_buffer)
   end
 
-  @doc '''
+  @doc """
   Clears a line or part of a line based on the mode parameter.
 
   ## Parameters
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   ## Returns
 
   * Updated emulator state
-  '''
+  """
   @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
   def clear_line(emulator, mode) do
     buffer = Emulator.get_active_buffer(emulator)
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     Emulator.update_active_buffer(emulator, new_buffer)
   end
 
-  @doc '''
+  @doc """
   Inserts blank lines at the current cursor position.
 
   ## Parameters
@@ -113,7 +113,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   ## Returns
 
   * Updated emulator state
-  '''
+  """
   @spec insert_lines(Emulator.t(), integer()) :: Emulator.t()
   def insert_lines(emulator, count) do
     {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @doc '''
+  @doc """
   Deletes lines at the current cursor position.
 
   ## Parameters
@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   ## Returns
 
   * Updated emulator state
-  '''
+  """
   @spec delete_lines(Emulator.t(), integer()) :: Emulator.t()
   def delete_lines(emulator, count) do
     {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
@@ -182,11 +182,13 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @doc '''
+  @doc """
   Scrolls the screen up by moving lines from the scrollback buffer to the screen buffer.
-  '''
-  @spec scroll_up_screen_command(Emulator.t(), non_neg_integer()) :: Emulator.t()
-  def scroll_up_screen_command(emulator, count) when is_integer(count) and count > 0 do
+  """
+  @spec scroll_up_screen_command(Emulator.t(), non_neg_integer()) ::
+          Emulator.t()
+  def scroll_up_screen_command(emulator, count)
+      when is_integer(count) and count > 0 do
     scrollback = emulator.scrollback_buffer || []
     buffer = emulator.main_screen_buffer
     {to_restore, remaining_scrollback} = Enum.split(scrollback, count)
@@ -201,9 +203,9 @@ defmodule Raxol.Terminal.Commands.Screen do
     }
   end
 
-  @doc '''
+  @doc """
   Scrolls down by moving lines from the screen buffer into the scrollback buffer.
-  '''
+  """
   @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_down(emulator, count) when is_integer(count) and count > 0 do
     buffer = Emulator.get_active_buffer(emulator)
@@ -222,9 +224,9 @@ defmodule Raxol.Terminal.Commands.Screen do
     end
   end
 
-  @doc '''
+  @doc """
   Scrolls the screen up by the specified number of lines.
-  '''
+  """
   @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_up(emulator, lines) when is_integer(lines) and lines > 0 do
     buffer = Emulator.get_active_buffer(emulator)

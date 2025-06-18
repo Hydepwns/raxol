@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   end
 
   describe "new/0" do
-    test 'creates a new empty terminal state stack' do
+    test ~c"creates a new empty terminal state stack" do
       stack = TerminalState.new()
       assert stack == []
       assert TerminalState.empty?(stack) == true
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   end
 
   describe "save_state/2" do
-    test 'saves terminal state to the stack' do
+    test ~c"saves terminal state to the stack" do
       stack = TerminalState.new()
 
       initial_style =
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert saved_state.cursor_style == :blinking_block
     end
 
-    test 'saves multiple states to the stack' do
+    test ~c"saves multiple states to the stack" do
       stack = TerminalState.new()
 
       style1 = TextFormatting.new() |> TextFormatting.set_foreground(:red)
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   end
 
   describe "restore_state/1" do
-    test 'restores the most recently saved state' do
+    test ~c"restores the most recently saved state" do
       stack = TerminalState.new()
 
       initial_style =
@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert restored_state.cursor_style == :blinking_block
     end
 
-    test 'returns nil when restoring from an empty stack' do
+    test ~c"returns nil when restoring from an empty stack" do
       stack = TerminalState.new()
       {stack, restored_state} = TerminalState.restore_state(stack)
 
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert restored_state == nil
     end
 
-    test 'restores states in LIFO order' do
+    test ~c"restores states in LIFO order" do
       stack = TerminalState.new()
 
       style1 = TextFormatting.new() |> TextFormatting.set_foreground(:red)
@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   end
 
   describe "clear_state/1" do
-    test 'clears the terminal state stack' do
+    test ~c"clears the terminal state stack" do
       stack = TerminalState.new()
 
       initial_style =
@@ -164,7 +164,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   end
 
   describe "get_state_stack/1" do
-    test 'returns the current terminal state stack' do
+    test ~c"returns the current terminal state stack" do
       stack = TerminalState.new()
 
       initial_style =

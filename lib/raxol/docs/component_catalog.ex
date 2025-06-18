@@ -1,5 +1,5 @@
 defmodule Raxol.Docs.ComponentCatalog do
-  @moduledoc '''
+  @moduledoc """
   Visual component catalog for Raxol documentation.
 
   This module provides a comprehensive catalog of all UI components
@@ -13,9 +13,9 @@ defmodule Raxol.Docs.ComponentCatalog do
   * Accessibility information
   * Related components suggestions
   * Search functionality
-  '''
+  """
 
-  # TODO: Ensure all component source modules are located under `lib/raxol/ui/components/`
+  # Ensure all component source modules are located under `lib/raxol/ui/components/`
   # and are correctly referenced by the catalog data in `lib/raxol/docs/catalog_data/`.
   # (Original concern about `lib/raxol/components/` seems resolved as this path is not actively used).
 
@@ -80,34 +80,34 @@ defmodule Raxol.Docs.ComponentCatalog do
   # Import the DSL elements
   # import Raxol.View.Elements # Removed unused import
 
-  @doc '''
+  @doc """
   Initializes the component catalog.
-  '''
+  """
   def init do
     catalog = build_catalog()
     Process.put(@catalog_key, catalog)
     :ok
   end
 
-  @doc '''
+  @doc """
   Lists all component categories.
-  '''
+  """
   def list_categories do
     catalog = get_catalog()
     Map.values(catalog)
   end
 
-  @doc '''
+  @doc """
   Gets a specific category by ID.
-  '''
+  """
   def get_category(category_id) do
     catalog = get_catalog()
     Map.get(catalog, category_id)
   end
 
-  @doc '''
+  @doc """
   Lists all components in a specific category.
-  '''
+  """
   def list_components(category_id) do
     catalog = get_catalog()
 
@@ -117,9 +117,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end
   end
 
-  @doc '''
+  @doc """
   Gets a specific component by ID.
-  '''
+  """
   def get_component(component_id) do
     catalog = get_catalog()
 
@@ -130,32 +130,34 @@ defmodule Raxol.Docs.ComponentCatalog do
     end)
   end
 
-  @doc '''
+  @doc """
   Searches for components based on a query.
-  '''
+  """
   def search(query) do
     catalog = get_catalog()
     query_downcase = String.downcase(query)
 
-    # Search in all categories and components
     Enum.flat_map(catalog, fn {_, category} ->
       Enum.filter(category.components, fn component ->
-        # Search in name, description, and tags
         String.contains?(String.downcase(component.name), query_downcase) ||
           String.contains?(
             String.downcase(component.description),
             query_downcase
           ) ||
-          Enum.any?(Map.get(component, :tags, []), fn tag ->
-            String.contains?(String.downcase(tag), query_downcase)
-          end)
+          tag_matches?(component, query_downcase)
       end)
     end)
   end
 
-  @doc '''
+  defp tag_matches?(component, query_downcase) do
+    Enum.any?(Map.get(component, :tags, []), fn tag ->
+      String.contains?(String.downcase(tag), query_downcase)
+    end)
+  end
+
+  @doc """
   Renders a component example.
-  '''
+  """
   def render_example(component_id, example_id, custom_props \\ %{}) do
     component = get_component(component_id)
 
@@ -176,9 +178,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end
   end
 
-  @doc '''
+  @doc """
   Gets usage statistics for components.
-  '''
+  """
   def get_usage_stats do
     # This would typically be gathered from actual usage data
     %{
@@ -206,67 +208,30 @@ defmodule Raxol.Docs.ComponentCatalog do
     }
   end
 
-  @doc '''
+  @doc """
   Generates code snippets for a component with the given properties.
-  '''
+  """
   def generate_code_snippet(component_id, props \\ %{}) do
     component = get_component(component_id)
 
     if component do
-      # Generate props string suitable for DSL functions
-      props_str =
-        props
-        |> Enum.map(fn {k, v} ->
-          # Handle special cases like content (often the first arg)
-          if k == :content || k == :label do
-            # Handled separately or as first arg
-            nil
-          else
-            "#{k}: #{inspect(v)}"
-          end
-        end)
-        |> Enum.reject(&is_nil/1)
-        |> Enum.join(", ")
+      props_str = build_props_str(props)
+      main_arg = get_main_arg(props)
+      dsl_call = build_dsl_call(component.id, main_arg, props_str)
 
-      # Determine the main argument (content or label)
-      main_arg =
-        cond do
-          props[:content] -> inspect(props[:content])
-          props[:label] -> inspect(props[:label])
-          true -> nil
-        end
-
-      # Construct the DSL call
-      dsl_call =
-        if main_arg do
-          if props_str == "" do
-            "#{component.id}(#{main_arg})"
-          else
-            "#{component.id}(#{main_arg}, #{props_str})"
-          end
-        else
-          if props_str == "" do
-            # Or handle components requiring content differently
-            "#{component.id}()"
-          else
-            "#{component.id}(#{props_str})"
-          end
-        end
-
-      # Wrap in a view block for context
-      '''
+      """
       view do
         #{dsl_call}
       end
-      '''
+      """
     else
       {:error, "Component not found"}
     end
   end
 
-  @doc '''
+  @doc """
   Gets accessibility information for a component.
-  '''
+  """
   def get_accessibility_info(component_id) do
     component = get_component(component_id)
 
@@ -277,9 +242,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end
   end
 
-  @doc '''
+  @doc """
   Suggests related components.
-  '''
+  """
   def suggest_related_components(component_id) do
     component = get_component(component_id)
 
@@ -302,66 +267,69 @@ defmodule Raxol.Docs.ComponentCatalog do
     Process.get(@catalog_key) || build_catalog()
   end
 
-  # Load component definitions dynamically from files
   defp build_catalog do
+    component_files = get_component_files()
+    loaded_components = load_and_enrich_components(component_files)
+    components_by_category = group_components_by_category(loaded_components)
+    build_final_catalog_map(components_by_category)
+  end
+
+  defp get_component_files do
     catalog_data_path = Path.join(__DIR__, "catalog_data")
+    Path.wildcard(Path.join(catalog_data_path, "*/*.exs"))
+  end
 
-    component_files = Path.wildcard(Path.join(catalog_data_path, "*/*.exs"))
+  defp load_and_enrich_components(component_files) do
+    Enum.map(component_files, fn file_path ->
+      case Code.eval_file(file_path) do
+        {static_component_data, _binding} ->
+          # Attempt Introspection
+          module = static_component_data.module
+          introspected_data = fetch_introspected_data(module)
 
-    loaded_components =
-      Enum.map(component_files, fn file_path ->
-        case Code.eval_file(file_path) do
-          {static_component_data, _binding} ->
-            # Attempt Introspection
-            module = static_component_data.module
-            introspected_data = fetch_introspected_data(module)
+          # Extract descriptions from constructor docstring if possible
+          constructor_doc = find_constructor_doc(introspected_data.fun_docs)
 
-            # Extract descriptions from constructor docstring if possible
-            constructor_doc = find_constructor_doc(introspected_data.fun_docs)
+          prop_descriptions_from_doc =
+            parse_prop_descriptions(constructor_doc)
 
-            prop_descriptions_from_doc =
-              parse_prop_descriptions(constructor_doc)
+          # Enrich static properties with introspected descriptions
+          enriched_properties =
+            enrich_properties(
+              static_component_data.properties,
+              prop_descriptions_from_doc
+            )
 
-            # Enrich static properties with introspected descriptions
-            enriched_properties =
-              enrich_properties(
-                static_component_data.properties,
-                prop_descriptions_from_doc
-              )
+          # Merge top-level description (prefer introspected moduledoc)
+          merged_description =
+            introspected_data.description || static_component_data.description
 
-            # Merge top-level description (prefer introspected moduledoc)
-            merged_description =
-              introspected_data.description || static_component_data.description
+          # Build final component data, prioritizing static data except for enriched fields
+          final_component_data =
+            static_component_data
+            |> Map.put(:description, merged_description)
+            |> Map.put(:properties, enriched_properties)
 
-            # Build final component data, prioritizing static data except for enriched fields
-            final_component_data =
-              static_component_data
-              |> Map.put(:description, merged_description)
-              |> Map.put(:properties, enriched_properties)
+          # Extract category name from directory path
+          category_id =
+            file_path
+            |> Path.dirname()
+            |> Path.basename()
 
-            # Extract category name from directory path
-            category_id =
-              file_path
-              |> Path.dirname()
-              |> Path.basename()
+          {category_id, final_component_data}
+      end
+    end)
+  end
 
-            {category_id, final_component_data}
-            # {:error, reason} -> # Commented out - flagged as unreachable
-            #   # Handle or log error loading file
-            #   IO.warn("Error loading component definition #{file_path}: #{inspect(reason)}")
-            #   nil
-        end
-      end)
-      |> Enum.reject(&is_nil/1)
+  defp group_components_by_category(loaded_components) do
+    Enum.group_by(
+      loaded_components,
+      fn {category_id, _component} -> category_id end,
+      fn {_category_id, component} -> component end
+    )
+  end
 
-    # Group components by category_id
-    components_by_category =
-      loaded_components
-      |> Enum.group_by(
-        fn {category_id, _component} -> category_id end,
-        fn {_category_id, component} -> component end
-      )
-
+  defp build_final_catalog_map(components_by_category) do
     # Define category metadata (could also be loaded from files)
     category_definitions = %{
       "basic" => %{
@@ -465,4 +433,26 @@ defmodule Raxol.Docs.ComponentCatalog do
   end
 
   defp fetch_introspected_data(_), do: %{}
+
+  defp build_props_str(props) do
+    props
+    |> Enum.map(fn {key, value} -> ":#{key}: #{inspect(value)}" end)
+    |> Enum.join(", ")
+  end
+
+  defp get_main_arg(props) do
+    case props do
+      %{content: content} -> content
+      %{text: text} -> text
+      %{label: label} -> label
+      _ -> nil
+    end
+  end
+
+  defp build_dsl_call(id, main_arg, props_str) do
+    case main_arg do
+      nil -> "#{id}(#{props_str})"
+      arg -> "#{id}(#{inspect(arg)}, #{props_str})"
+    end
+  end
 end

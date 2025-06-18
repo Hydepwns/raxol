@@ -1,14 +1,14 @@
 defmodule Raxol.Docs.InteractiveTutorial.Loader do
-  @moduledoc '''
+  @moduledoc """
   Handles loading and parsing of tutorials from markdown files.
-  '''
+  """
 
   alias Raxol.Docs.InteractiveTutorial.Models.{Tutorial, Step}
   alias YamlElixir
 
-  @doc '''
+  @doc """
   Loads all tutorials from the specified directory.
-  '''
+  """
   def load_tutorials_from_markdown(dir_path) do
     dir_path
     |> Path.join("**/*.md")
@@ -17,9 +17,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     |> Enum.reject(&is_nil/1)
   end
 
-  @doc '''
+  @doc """
   Loads a single tutorial from a markdown file.
-  '''
+  """
   def load_tutorial(file_path) do
     with {:ok, content} <- File.read(file_path),
          {:ok, front_matter, markdown} <- extract_front_matter(content),
@@ -31,9 +31,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     end
   end
 
-  @doc '''
+  @doc """
   Extracts YAML front matter from markdown content.
-  '''
+  """
   def extract_front_matter(content) do
     case Regex.run(~r/^---\n(.*?)\n---\n(.*)/s, content) do
       [_, front_matter, markdown] -> {:ok, front_matter, markdown}
@@ -41,9 +41,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     end
   end
 
-  @doc '''
+  @doc """
   Parses YAML front matter into a Tutorial struct.
-  '''
+  """
   def parse_front_matter(front_matter) do
     case YamlElixir.read_from_string(front_matter) do
       {:ok, data} ->
@@ -66,9 +66,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     end
   end
 
-  @doc '''
+  @doc """
   Parses markdown content into a list of Step structs.
-  '''
+  """
   def parse_steps(markdown) do
     markdown
     |> String.split(~r/^##\s+/m)
@@ -77,9 +77,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     |> Enum.map(&parse_step/1)
   end
 
-  @doc '''
+  @doc """
   Parses a single step from markdown content.
-  '''
+  """
   def parse_step(step_content) do
     [title | content_parts] = String.split(step_content, "\n", parts: 2)
     content = List.first(content_parts) || ""

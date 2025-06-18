@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.ANSI.SixelRenderer do
-  @moduledoc '''
+  @moduledoc """
   Handles rendering Sixel graphics data from a pixel buffer.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   import Bitwise
 
   alias Raxol.Terminal.ANSI.SixelGraphics
 
-  @doc '''
+  @doc """
   Renders the image stored in the pixel_buffer as a Sixel data stream.
-  '''
+  """
   @spec render_image(SixelGraphics.sixel_state()) ::
           {:ok, binary()} | {:error, atom()}
   def render_image(state) do

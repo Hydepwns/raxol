@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Application do
-  @moduledoc '''
+  @moduledoc """
   Defines the behaviour for Raxol applications following The Elm Architecture (TEA).
 
   This module provides the core structure for building terminal applications using
@@ -75,7 +75,7 @@ defmodule Raxol.Core.Runtime.Application do
 
   Define subscriptions in the `subscribe/1` callback, which is called after
   initialization and after each state update.
-  '''
+  """
 
   @type context :: map()
   @type state :: term()
@@ -86,7 +86,7 @@ defmodule Raxol.Core.Runtime.Application do
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Initializes the application state.
 
   Called once when the application starts. The context map contains runtime
@@ -96,10 +96,10 @@ defmodule Raxol.Core.Runtime.Application do
   Returns either:
   - Initial state: `state()`
   - State and commands: `{state(), [command()]}`
-  '''
+  """
   @callback init(context()) :: state() | {state(), [command()]}
 
-  @doc '''
+  @doc """
   Updates the application state in response to messages.
 
   Called whenever a message is received, either from events, commands, or
@@ -108,27 +108,27 @@ defmodule Raxol.Core.Runtime.Application do
 
   Returns a tuple of the new state and any commands to be executed:
   `{state(), [command()]}`
-  '''
+  """
   @callback update(message(), state()) :: {state(), [command()]}
 
-  @doc '''
+  @doc """
   Renders the current state as UI elements.
 
   Called after every state update to generate the new view. Should be a
   pure function that converts the state into UI elements.
 
   Returns an element tree that will be rendered to the terminal.
-  '''
+  """
   @callback view(state()) :: element()
 
-  @doc '''
+  @doc """
   Sets up subscriptions based on the current state.
 
   Called after initialization and after each state update. Use this to
   set up recurring updates or subscribe to external events.
 
   Returns a list of subscription specifications.
-  '''
+  """
   @callback subscribe(state()) :: [subscription()]
 
   @optional_callbacks [subscribe: 1]
@@ -174,7 +174,7 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
-  @doc '''
+  @doc """
   Delegates initialization to the provided application module.
 
   Attempts to call the `init/1` callback on the given module, handles the result,
@@ -187,9 +187,9 @@ defmodule Raxol.Core.Runtime.Application do
   ## Returns
     - `{model, commands}` tuple when successful
     - `{:error, reason}` tuple when initialization fails
-  '''
+  """
   @spec delegate_init(module(), context()) ::
-            {model(), list(Command.t())} | {:error, term()}
+          {model(), list(Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
     alias Raxol.Core.Runtime.Log
     require Logger
@@ -204,8 +204,13 @@ defmodule Raxol.Core.Runtime.Application do
       false ->
         Log.warning_with_context(
           "[#{__MODULE__}] Module #{inspect(app_module)} does not export init/1. Using default empty state.",
-          %{module: __MODULE__, app_module: app_module, warning: :no_init_exported}
+          %{
+            module: __MODULE__,
+            app_module: app_module,
+            warning: :no_init_exported
+          }
         )
+
         {%{}, []}
 
       {:error, reason} ->
@@ -232,6 +237,7 @@ defmodule Raxol.Core.Runtime.Application do
           nil,
           %{module: __MODULE__, app_module: app_module}
         )
+
         {:error, {:init_failed, error}}
     end
   end
@@ -252,6 +258,7 @@ defmodule Raxol.Core.Runtime.Application do
           nil,
           %{invalid_return: invalid_return, app_module: app_module}
         )
+
         # Return empty model with no commands as fallback
         {:ok, {%{}, []}}
     end
@@ -262,13 +269,16 @@ defmodule Raxol.Core.Runtime.Application do
   def delegate_update(app_module, message, current_model)
       when is_atom(app_module) do
     with true <- function_exported?(app_module, :update, 2),
-         {:ok, result} <- safely_call_update(app_module, message, current_model),
-         {:ok, {new_model, commands}} <- normalize_update_result(app_module, result, message, current_model) do
+         {:ok, result} <-
+           safely_call_update(app_module, message, current_model),
+         {:ok, {new_model, commands}} <-
+           normalize_update_result(app_module, result, message, current_model) do
       {new_model, commands}
     else
       false ->
         log_missing_update_callback(app_module, message, current_model)
         {:error, :update_callback_not_implemented}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -289,8 +299,15 @@ defmodule Raxol.Core.Runtime.Application do
     case result do
       {new_model, commands} when is_map(new_model) and is_list(commands) ->
         {:ok, {new_model, commands}}
+
       invalid_return ->
-        log_invalid_update_result(app_module, invalid_return, message, current_model)
+        log_invalid_update_result(
+          app_module,
+          invalid_return,
+          message,
+          current_model
+        )
+
         {:error, :invalid_update_result}
     end
   end
@@ -325,7 +342,12 @@ defmodule Raxol.Core.Runtime.Application do
     )
   end
 
-  defp log_invalid_update_result(app_module, invalid_return, message, current_model) do
+  defp log_invalid_update_result(
+         app_module,
+         invalid_return,
+         message,
+         current_model
+       ) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] #{inspect(app_module)}.update/2 returned invalid value: #{inspect(invalid_return)}. Expected {map(), list()}. Falling back to previous model with no commands.",
       nil,
@@ -340,9 +362,9 @@ defmodule Raxol.Core.Runtime.Application do
     )
   end
 
-  @doc '''
+  @doc """
   Gets environment configuration for the application.
-  '''
+  """
   @spec get_env(atom(), atom(), any()) :: any()
   def get_env(app, key, default \\ nil) do
     Raxol.Core.Runtime.Log.debug(
@@ -379,19 +401,12 @@ defmodule Raxol.Core.Runtime.Application do
   # --- Placeholder Implementations for Helper Functions ---
   # These are not part of the behaviour but are called by the runtime.
 
-  @doc '''
+  @doc """
   Initializes the application state.
 
   Called once when the application starts. The context map contains runtime
   information such as terminal dimensions, environment variables, and startup
   arguments.
-
-  Returns either:
-  - Initial state: `state()`
-  - State and commands: `{state(), [command()]}`
-  '''
-  @doc '''
-  Initializes the application state.
 
   A simpler version of delegate_init that provides fallbacks for different return types
   from application modules.
@@ -399,19 +414,19 @@ defmodule Raxol.Core.Runtime.Application do
   ## Returns
     - `{model, commands}` tuple when successful
     - `{:error, reason}` tuple when initialization fails
-  '''
+  """
   def init(app_module, context) do
     case delegate_init(app_module, context) do
-      {model, commands} -> {model, commands}
       {:error, _} = error -> error
+      {model, commands} -> {model, commands}
     end
   end
 
-  @doc '''
+  @doc """
   Handles incoming events or messages and updates the application state.
 
   Returns the updated model and optional commands to execute.
-  '''
+  """
   def update(app_module, message, model) do
     if function_exported?(app_module, :update, 2) do
       case app_module.update(message, model) do

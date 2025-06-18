@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
   end
 
   describe "graphics creation" do
-    test 'creates graphics context with default configuration' do
+    test ~c"creates graphics context with default configuration" do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
 
       assert {:ok, graphics_state} =
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
       assert graphics_state.config.format == :rgba
     end
 
-    test 'creates graphics context with custom configuration' do
+    test ~c"creates graphics context with custom configuration" do
       config = %{
         width: 1024,
         height: 768,
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
       assert graphics_state.config.quality == 85
     end
 
-    test 'first graphics context becomes active' do
+    test ~c"first graphics context becomes active" do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, active_id} = UnifiedGraphics.get_active_graphics()
       assert graphics_id == active_id
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
   end
 
   describe "graphics management" do
-    test 'gets list of all graphics contexts' do
+    test ~c"gets list of all graphics contexts" do
       assert {:ok, graphics1} = UnifiedGraphics.create_graphics()
       assert {:ok, graphics2} = UnifiedGraphics.create_graphics()
       assert {:ok, graphics3} = UnifiedGraphics.create_graphics()
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
       assert graphics3 in graphics
     end
 
-    test 'sets active graphics context' do
+    test ~c"sets active graphics context" do
       assert {:ok, graphics1} = UnifiedGraphics.create_graphics()
       assert {:ok, graphics2} = UnifiedGraphics.create_graphics()
 
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
       assert active_id == graphics2
     end
 
-    test 'handles non-existent graphics context' do
+    test ~c"handles non-existent graphics context" do
       assert {:error, :graphics_not_found} =
                UnifiedGraphics.set_active_graphics(999)
 
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
   end
 
   describe "graphics operations" do
-    test 'renders graphics data' do
+    test ~c"renders graphics data" do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       data = <<0, 0, 0, 255, 255, 255, 255, 255>>
       assert :ok = UnifiedGraphics.render_graphics(graphics_id, data)
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
       assert graphics_state.buffer == data
     end
 
-    test 'clears graphics context' do
+    test ~c"clears graphics context" do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       data = <<0, 0, 0, 255, 255, 255, 255, 255>>
       assert :ok = UnifiedGraphics.render_graphics(graphics_id, data)
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
       assert graphics_state.buffer == <<>>
     end
 
-    test 'closes graphics context' do
+    test ~c"closes graphics context" do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert :ok = UnifiedGraphics.close_graphics(graphics_id)
 
@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
                UnifiedGraphics.get_graphics_state(graphics_id)
     end
 
-    test 'closing active graphics updates active graphics' do
+    test ~c"closing active graphics updates active graphics" do
       assert {:ok, graphics1} = UnifiedGraphics.create_graphics()
       assert {:ok, graphics2} = UnifiedGraphics.create_graphics()
 
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
   end
 
   describe "graphics configuration" do
-    test 'updates graphics configuration' do
+    test ~c"updates graphics configuration" do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
 
       new_config = %{
@@ -142,7 +142,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
       assert graphics_state.config.format == :grayscale
     end
 
-    test 'updates graphics manager configuration' do
+    test ~c"updates graphics manager configuration" do
       config = %{
         max_graphics: 5,
         default_width: 1024,
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
   end
 
   describe "cleanup" do
-    test 'cleans up all graphics contexts' do
+    test ~c"cleans up all graphics contexts" do
       assert {:ok, graphics1} = UnifiedGraphics.create_graphics()
       assert {:ok, graphics2} = UnifiedGraphics.create_graphics()
 
@@ -170,7 +170,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
   end
 
   describe "error handling" do
-    test 'handles invalid graphics operations' do
+    test ~c"handles invalid graphics operations" do
       assert {:error, :graphics_not_found} =
                UnifiedGraphics.set_active_graphics(999)
 

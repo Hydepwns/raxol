@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Parser.StateManagerBehaviour do
-  @moduledoc '''
+  @moduledoc """
   Behaviour for terminal parser state management.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.Parser.State

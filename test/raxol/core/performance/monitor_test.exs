@@ -1,15 +1,21 @@
 defmodule Raxol.Core.Performance.MonitorTest do
+  @moduledoc """
+  Tests for the performance monitor, including frame rate tracking,
+  memory usage monitoring, garbage collection statistics,
+  and jank detection.
+  """
   use ExUnit.Case
 
   alias Raxol.Core.Performance.Monitor
 
   setup do
     {:ok, monitor} = Monitor.start_link()
+    {:ok, _} = Raxol.Core.Preferences.start_link()
     {:ok, %{monitor: monitor}}
   end
 
   describe "Performance Monitor" do
-    test 'initializes with default settings' do
+    test "initializes with default settings" do
       {:ok, monitor} = Monitor.start_link()
 
       # Wait for the first memory check to occur
@@ -51,7 +57,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert_in_delta metrics.fps, 62.5, 0.1
     end
 
-    test 'tracks memory usage' do
+    test "tracks memory usage" do
       # Faster interval for testing
       {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 
@@ -91,30 +97,30 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert_in_delta metrics.avg_frame_time, 16.0, 0.1
     end
 
-    test 'adapts to reduced motion setting' do
-      # Mock UserPreferences to simulate reduced motion
-      # TODO: Replace with actual preference system if available
-      # For now, we test the current behavior: jank is still detected
-      # as JankDetector doesn't implement reduced motion logic.
-
+    test "adapts to reduced motion setting" do
       {:ok, monitor} = Monitor.start_link(jank_threshold: 15)
 
-      # Simulate some work that might cause jank
-      Monitor.record_frame(monitor, 10)
+      # Test with reduced motion disabled
+      Raxol.Core.Preferences.set_preference(:reduced_motion, false)
       Monitor.record_frame(monitor, 25)
       Monitor.record_frame(monitor, 30)
-      Monitor.record_frame(monitor, 5)
-
       metrics = Monitor.get_metrics(monitor)
-
-      # Assert that jank IS counted, even if reduced motion was hypothetically enabled
-      # This assertion should pass based on current JankDetector implementation
       assert metrics.jank_count == 2
+
+      # Reset monitor
+      Monitor.reset_metrics(monitor)
+
+      # Test with reduced motion enabled
+      Raxol.Core.Preferences.set_preference(:reduced_motion, true)
+      Monitor.record_frame(monitor, 25)
+      Monitor.record_frame(monitor, 30)
+      metrics = Monitor.get_metrics(monitor)
+      assert metrics.jank_count == 0
 
       GenServer.stop(monitor)
     end
 
-    test 'tracks garbage collection statistics' do
+    test "tracks garbage collection statistics" do
       # Faster interval
       {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 

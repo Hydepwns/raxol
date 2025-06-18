@@ -1,11 +1,11 @@
 require Raxol.Core.Renderer.View
 
 defmodule Raxol.UI.Components.Modal do
-  @moduledoc '''
+  @moduledoc """
   A modal component for displaying overlay dialogs like alerts, prompts, confirmations, and forms.
-  '''
+  """
 
-  @typedoc '''
+  @typedoc """
   State for the Modal component.
 
   - :id - unique identifier
@@ -17,7 +17,7 @@ defmodule Raxol.UI.Components.Modal do
   - :width - modal width
   - :style - style map
   - :form_state - state for prompt/form fields
-  '''
+  """
   @type t :: %__MODULE__{
           id: any(),
           visible: boolean(),
@@ -61,7 +61,7 @@ defmodule Raxol.UI.Components.Modal do
 
   # --- Component Behaviour Callbacks ---
 
-  @doc 'Initializes the Modal component state from props.'
+  @doc "Initializes the Modal component state from props."
   @impl Raxol.UI.Components.Base.Component
   @spec init(map()) :: map()
   def init(props) do
@@ -132,102 +132,119 @@ defmodule Raxol.UI.Components.Modal do
   # Ignore invalid field defs
   defp normalize_field(_), do: nil
 
-  @doc 'Updates the Modal component state in response to messages. Handles show/hide, button clicks, and form updates.'
+  @doc "Updates the Modal component state in response to messages. Handles show/hide, button clicks, and form updates."
   @impl Raxol.UI.Components.Base.Component
   @spec update(term(), map()) :: {map(), list()}
   def update(msg, state) do
-    # Handle messages to show/hide, button clicks, form updates
     Raxol.Core.Runtime.Log.debug(
       "Modal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
     )
 
+    if state.visible do
+      handle_visible_update(msg, state)
+    else
+      handle_hidden_update(msg, state)
+    end
+  end
+
+  defp handle_visible_update(msg, state) do
     case msg do
       :show ->
-        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :show. State BEFORE: #{inspect state}")
-        cmd = set_focus_command(state)
-        new_state = %{state | visible: true}
-        # Emit state changed event
-        send(
-          self(),
-          {:modal_state_changed, Map.get(state, :id, nil), :visible, true}
-        )
-
-        # Raxol.Core.Runtime.Log.debug("Modal Update: State AFTER :show: #{inspect new_state}, Command: #{inspect cmd}")
-        {new_state, [cmd]}
+        handle_show(state)
 
       :hide ->
-        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :hide. State BEFORE: #{inspect state}")
-        new_state = %{state | visible: false}
-        # Emit state changed event
-        send(
-          self(),
-          {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-        )
+        handle_hide(state)
 
-        # Raxol.Core.Runtime.Log.debug("Modal Update: State AFTER :hide: #{inspect new_state}")
-        {new_state, []}
+      {:button_click, button_msg} ->
+        handle_button_click_msg(button_msg, state)
 
-      # --- Button Clicks ---
-      {:button_click, {:submit, original_msg}} ->
-        handle_form_submission(state, original_msg)
-
-      # Handle explicit cancel tuple
-      {:button_click, {:cancel, original_msg}} ->
-        new_state = %{state | visible: false}
-        # Emit state changed event
-        send(
-          self(),
-          {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-        )
-
-        {new_state, [original_msg]}
-
-      {:button_click, btn_msg} ->
-        # Hide modal and send the button's message
-        new_state = %{state | visible: false}
-        # Emit state changed event
-        send(
-          self(),
-          {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-        )
-
-        {new_state, [btn_msg]}
-
-      # --- Field Updates ---
       {:field_update, field_id, new_value} ->
         update_field_value(state, field_id, new_value)
 
       {:focus_next_field} ->
-        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :focus_next_field. Current focus: #{state.form_state.focus_index}")
-        new_state_tuple = change_focus(state, 1)
-
-        # Raxol.Core.Runtime.Log.debug("Modal Update: After change_focus for :focus_next_field: #{inspect new_state_tuple}")
-        new_state_tuple
+        change_focus(state, 1)
 
       {:focus_prev_field} ->
-        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :focus_prev_field. Current focus: #{state.form_state.focus_index}")
-        new_state_tuple = change_focus(state, -1)
+        change_focus(state, -1)
 
-        # Raxol.Core.Runtime.Log.debug("Modal Update: After change_focus for :focus_prev_field: #{inspect new_state_tuple}")
-        new_state_tuple
-
-      # --- Old Input Changed (Prompt compatibility) ---
       {:input_changed, value} when state.type == :prompt ->
-        # Assume prompt has only one field
-        update_field_value(
-          state,
-          state.form_state.fields |> hd() |> Map.get(:id),
-          value
-        )
+        handle_prompt_input(state, value)
 
-      # --- Other ---
       _ ->
-        Raxol.Core.Runtime.Log.warning(
-          "Modal #{Map.get(state, :id, nil)} received unknown message: #{inspect(msg)}"
-        )
-
-        {state, []}
+        handle_unknown_message(state, msg)
     end
+  end
+
+  defp handle_button_click_msg({:submit, original_msg}, state),
+    do: handle_form_submission(state, original_msg)
+
+  defp handle_button_click_msg({:cancel, original_msg}, state),
+    do: handle_cancel(state, original_msg)
+
+  defp handle_button_click_msg(btn_msg, state),
+    do: handle_button_click(state, btn_msg)
+
+  defp handle_hidden_update(_msg, state), do: {state, []}
+
+  defp handle_show(state) do
+    cmd = set_focus_command(state)
+    new_state = %{state | visible: true}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, true}
+    )
+
+    {new_state, [cmd]}
+  end
+
+  defp handle_hide(state) do
+    new_state = %{state | visible: false}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+    )
+
+    {new_state, []}
+  end
+
+  defp handle_cancel(state, original_msg) do
+    new_state = %{state | visible: false}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+    )
+
+    {new_state, [original_msg]}
+  end
+
+  defp handle_button_click(state, btn_msg) do
+    new_state = %{state | visible: false}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+    )
+
+    {new_state, [btn_msg]}
+  end
+
+  defp handle_prompt_input(state, value) do
+    update_field_value(
+      state,
+      state.form_state.fields |> hd() |> Map.get(:id),
+      value
+    )
+  end
+
+  defp handle_unknown_message(state, msg) do
+    Raxol.Core.Runtime.Log.warning(
+      "Modal #{Map.get(state, :id, nil)} received unknown message: #{inspect(msg)}"
+    )
+
+    {state, []}
   end
 
   # --- Form Specific Update Helpers ---
@@ -328,97 +345,89 @@ defmodule Raxol.UI.Components.Modal do
 
   # Helper to generate focus command for the focused field
   defp set_focus_command(state) do
-    # Raxol.Core.Runtime.Log.debug("set_focus_command called with state ID: #{inspect state.id}, focus_index: #{inspect state.form_state.focus_index}, fields: #{inspect state.form_state.fields}")
     focused_field =
       Enum.at(state.form_state.fields, state.form_state.focus_index)
 
-    # Raxol.Core.Runtime.Log.debug("Focused field: #{inspect focused_field}")
     command =
       if focused_field do
         # Construct the full ID path if the modal has an ID
         field_full_id =
-          if Map.get(state, :id, nil),
-            do: "#{Map.get(state, :id, nil)}.#{focused_field.id}",
-            else: focused_field.id
+          case state.id do
+            nil -> focused_field.id
+            id -> "#{id}.#{focused_field.id}"
+          end
 
-        # Raxol.Core.Runtime.Log.debug("Generating focus command for field: #{inspect field_full_id}")
         {:set_focus, field_full_id}
       else
         # Focus the modal itself if no fields or focus index is invalid
-        # Raxol.Core.Runtime.Log.debug("Generating focus command for modal: #{inspect state.id}")
-        {:set_focus, Map.get(state, :id, nil)}
+        {:set_focus, state.id}
       end
 
-    # Raxol.Core.Runtime.Log.debug("Final command: #{inspect command}") # Log the generated command
     command
   end
 
   @impl Raxol.UI.Components.Base.Component
   @spec handle_event(term(), map(), map()) :: {map(), list()}
   def handle_event(event, %{} = _props, state) do
-    # Handle Escape key to close, Enter/Tab in prompts/forms
     Raxol.Core.Runtime.Log.debug(
       "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)}"
     )
 
     if state.visible do
-      case event do
-        %{type: :key, data: %{key: "Escape"}} ->
-          # Check if a cancel button exists, trigger its message
-          cancel_msg =
-            Enum.find_value(state.buttons, nil, fn {_label, msg} ->
-              # Check if the message itself is :cancel or a tuple like {:cancel, _}
-              is_cancel_msg =
-                case msg do
-                  :cancel -> true
-                  {:cancel, _} -> true
-                  _ -> false
-                end
-
-              if is_cancel_msg, do: msg, else: nil
-            end)
-
-          # Directly return hide state and cancel command if found
-          if cancel_msg,
-            do: {%{state | visible: false}, [cancel_msg]},
-            else: update(:hide, state)
-
-        %{type: :key, data: %{key: "Enter"}}
-        when state.type in [:prompt, :form] ->
-          # Trigger submit button if it exists
-          submit_msg_tuple =
-            Enum.find(state.buttons, fn {_, msg_tuple} ->
-              elem(msg_tuple, 0) == :submit
-            end)
-
-          if submit_msg_tuple do
-            {_label, submit_msg} = submit_msg_tuple
-            update({:button_click, submit_msg}, state)
-          else
-            # No submit button?
-            {state, []}
-          end
-
-        %{type: :key, data: %{key: "Tab", shift: false}}
-        when state.type in [:prompt, :form] ->
-          # Move focus to next field
-          update(:focus_next_field, state)
-
-        %{type: :key, data: %{key: "Tab", shift: true}}
-        when state.type in [:prompt, :form] ->
-          # Move focus to previous field
-          update(:focus_prev_field, state)
-
-        # TODO: Potentially delegate other events to the focused form field?
-        # This might require the form fields themselves to handle events.
-        # For now, rely on messages like :input_changed from the elements.
-        _ ->
-          {state, []}
-      end
+      handle_visible_event(event, state)
     else
-      # Ignore events if not visible
       {state, []}
     end
+  end
+
+  defp handle_visible_event(%{type: :key, data: data}, state) do
+    case data do
+      %{key: "Escape"} ->
+        handle_escape_key(state)
+
+      %{key: "Enter"} when state.type in [:prompt, :form] ->
+        handle_enter_key(state)
+
+      %{key: "Tab", shift: false} when state.type in [:prompt, :form] ->
+        update(:focus_next_field, state)
+
+      %{key: "Tab", shift: true} when state.type in [:prompt, :form] ->
+        update(:focus_prev_field, state)
+
+      _ ->
+        {state, []}
+    end
+  end
+
+  defp handle_visible_event(_, state), do: {state, []}
+
+  defp handle_escape_key(state) do
+    cancel_msg = find_cancel_message(state.buttons)
+
+    if cancel_msg,
+      do: {%{state | visible: false}, [cancel_msg]},
+      else: update(:hide, state)
+  end
+
+  defp handle_enter_key(state) do
+    case find_submit_message(state.buttons) do
+      {_label, submit_msg} -> update({:button_click, submit_msg}, state)
+      nil -> {state, []}
+    end
+  end
+
+  defp find_cancel_message(buttons) do
+    Enum.find_value(buttons, nil, fn {_label, msg} ->
+      case msg do
+        :cancel -> msg
+        {:cancel, _} -> msg
+        _ -> nil
+      end
+    end)
+  end
+
+  defp find_submit_message(buttons) do
+    Enum.find(buttons, fn {_, msg_tuple} -> elem(msg_tuple, 0) == :submit end)
   end
 
   # --- Render Logic ---
@@ -513,122 +522,126 @@ defmodule Raxol.UI.Components.Modal do
   # --- Internal Render Helpers ---
 
   defp render_form_content(state) do
-    # Render specific inputs for prompt/form types
-    # Raxol.Core.Runtime.Log.debug("[Render Form] Processing #{length(state.form_state.fields)} fields.")
     field_elements =
       Enum.with_index(state.form_state.fields)
-      |> Enum.map(fn {field, index} ->
-        # Raxol.Core.Runtime.Log.debug("[Render Form] Processing field ##{index}: #{inspect field.id}")
-        # Construct the full ID path for focus management if modal has ID
-        field_full_id =
-          if Map.get(state, :id, nil),
-            do: "#{Map.get(state, :id, nil)}.#{field.id}",
-            else: field.id
+      |> Enum.map(&render_field(&1, state))
+      |> Enum.reject(&is_nil/1)
 
-        is_focused = index == state.form_state.focus_index
-
-        # Common props: merge field-specific props with focus and ID
-        common_props =
-          Map.merge(field.props || %{}, %{
-            id: field_full_id,
-            focused: is_focused
-          })
-
-        input_element =
-          case field.type do
-            :text_input ->
-              text_input_props =
-                Map.merge(common_props, %{
-                  "value" => field.value || "",
-                  "on_change" => {:field_update, field.id}
-                  # Add placeholder etc. if needed from field.props
-                })
-
-              Raxol.View.Elements.text_input(text_input_props)
-
-            :checkbox ->
-              # Ensure boolean
-              checkbox_props =
-                Map.merge(common_props, %{
-                  "checked" => !!field.value,
-                  # Label is rendered separately
-                  "label" => "",
-                  "on_toggle" => {:field_update, field.id}
-                })
-
-              Raxol.View.Elements.checkbox(checkbox_props)
-
-            :dropdown ->
-              dropdown_props =
-                Map.merge(common_props, %{
-                  # Expecting [{label, value}]
-                  "options" => field.options || [],
-                  # Use initial_value for Dropdown init
-                  "initial_value" => field.value,
-                  # Example width, might need adjustment
-                  "width" => :fill,
-                  "on_change" => {:field_update, field.id}
-                })
-
-              # Represent the component as a map for the renderer
-              %{type: Dropdown, attrs: dropdown_props}
-
-            _ ->
-              Raxol.Core.Runtime.Log.warning(
-                "Unsupported form field type in Modal: #{inspect(field.type)}"
-              )
-
-              Raxol.View.Elements.label(
-                content: "[Unsupported Field: #{field.id}]"
-              )
-          end
-
-        # Render label, field, and error message in a column
-        Raxol.View.Elements.column style: %{width: :fill, gap: 0} do
-          [
-            Raxol.View.Elements.row style: %{width: :fill, gap: 1} do
-              [
-                if field.label do
-                  # Fixed width for label?
-                  Raxol.View.Elements.label(
-                    content: field.label,
-                    style: %{width: 15}
-                  )
-                else
-                  nil
-                end,
-                input_element
-              ]
-              |> Enum.reject(&is_nil(&1))
-            end,
-            # Render error message if present
-            if field.error do
-              # Row to allow padding/alignment
-              Raxol.View.Elements.row style: %{width: :fill} do
-                # Indent error
-                Raxol.View.Elements.label(
-                  content: field.error,
-                  style: %{color: :red, padding_left: 16}
-                )
-              end
-            else
-              nil
-            end
-          ]
-          |> Enum.reject(&is_nil(&1))
-        end
-      end)
-
-    # Return a column containing all field columns (label+input+error)
     Raxol.View.Elements.column style: %{width: :fill, gap: 1} do
       field_elements
+    end
+  end
+
+  defp render_field({field, index}, state) do
+    field_full_id = get_field_full_id(field, state)
+    is_focused = index == state.form_state.focus_index
+    common_props = get_common_props(field, field_full_id, is_focused)
+
+    input_element = render_input_element(field, common_props)
+    render_field_container(field, input_element)
+  end
+
+  defp get_field_full_id(field, state) do
+    if Map.get(state, :id, nil),
+      do: "#{Map.get(state, :id, nil)}.#{field.id}",
+      else: field.id
+  end
+
+  defp get_common_props(field, field_full_id, is_focused) do
+    Map.merge(field.props || %{}, %{
+      id: field_full_id,
+      focused: is_focused
+    })
+  end
+
+  defp render_input_element(field, common_props) do
+    case field.type do
+      :text_input -> render_text_input(field, common_props)
+      :checkbox -> render_checkbox(field, common_props)
+      :dropdown -> render_dropdown(field, common_props)
+      _ -> render_unsupported_field(field)
+    end
+  end
+
+  defp render_text_input(field, common_props) do
+    text_input_props =
+      Map.merge(common_props, %{
+        "value" => field.value || "",
+        "on_change" => {:field_update, field.id}
+      })
+
+    Raxol.View.Elements.text_input(text_input_props)
+  end
+
+  defp render_checkbox(field, common_props) do
+    checkbox_props =
+      Map.merge(common_props, %{
+        "checked" => !!field.value,
+        "label" => "",
+        "on_toggle" => {:field_update, field.id}
+      })
+
+    Raxol.View.Elements.checkbox(checkbox_props)
+  end
+
+  defp render_dropdown(field, common_props) do
+    dropdown_props =
+      Map.merge(common_props, %{
+        "options" => field.options || [],
+        "initial_value" => field.value,
+        "width" => :fill,
+        "on_change" => {:field_update, field.id}
+      })
+
+    %{type: Dropdown, attrs: dropdown_props}
+  end
+
+  defp render_unsupported_field(field) do
+    Raxol.Core.Runtime.Log.warning(
+      "Unsupported form field type in Modal: #{inspect(field.type)}"
+    )
+
+    Raxol.View.Elements.label(content: "[Unsupported Field: #{field.id}]")
+  end
+
+  defp render_field_container(field, input_element) do
+    Raxol.View.Elements.column style: %{width: :fill, gap: 0} do
+      [
+        render_field_row(field, input_element),
+        render_field_error(field)
+      ]
+      |> Enum.reject(&is_nil/1)
+    end
+  end
+
+  defp render_field_row(field, input_element) do
+    Raxol.View.Elements.row style: %{width: :fill, gap: 1} do
+      [
+        if(field.label,
+          do:
+            Raxol.View.Elements.label(content: field.label, style: %{width: 15})
+        ),
+        input_element
+      ]
+      |> Enum.reject(&is_nil/1)
+    end
+  end
+
+  defp render_field_error(field) do
+    if field.error do
+      Raxol.View.Elements.row style: %{width: :fill} do
+        Raxol.View.Elements.label(
+          content: field.error,
+          style: %{color: :red, padding_left: 16}
+        )
+      end
     end
   end
 
   # --- Public Helper Functions (Constructors) ---
 
   # Simplified
-  @doc 'Creates props for an alert modal.'
+  @doc "Creates props for an alert modal."
   @spec alert(any(), any(), any(), Keyword.t()) :: map()
   def alert(id, title, content, opts \\ []) do
     props =
@@ -646,7 +659,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   # Simplified
-  @doc 'Creates props for a confirmation modal.'
+  @doc "Creates props for a confirmation modal."
   @spec confirm(any(), any(), any(), any(), any(), Keyword.t()) :: map()
   def confirm(
         id,
@@ -672,7 +685,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   # Simplified
-  @doc 'Creates props for a prompt modal.'
+  @doc "Creates props for a prompt modal."
   @spec prompt(any(), any(), any(), any(), any(), Keyword.t()) :: map()
   def prompt(
         id,
@@ -704,13 +717,13 @@ defmodule Raxol.UI.Components.Modal do
     props
   end
 
-  @doc '''
+  @doc """
   Creates props for a form modal.
 
   `fields` should be a list of maps, each defining a form field:
   `%{id: :atom, type: :text_input | :checkbox | :dropdown, label: "string", value: initial_value, props: keyword_list, options: list, validate: regex | function}`
   (options only for dropdown)
-  '''
+  """
   @spec form(any(), any(), list(), any(), any(), Keyword.t()) :: map()
   def form(
         id,

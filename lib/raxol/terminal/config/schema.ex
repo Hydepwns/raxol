@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.Config.Schema do
-  @moduledoc '''
+  @moduledoc """
   Schema definitions for terminal configuration.
 
   Defines the structure and types for all terminal configuration options.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Defines the schema for terminal configuration.
 
   This includes all possible configuration fields with their types,
   default values, and descriptions.
-  '''
+  """
   def config_schema do
     %{
       # Base settings
@@ -111,15 +111,15 @@ defmodule Raxol.Terminal.Config.Schema do
     }
   end
 
-  @doc '''
+  @doc """
   Returns the default configuration values.
   This delegates to the Defaults module for actual values.
-  '''
+  """
   def default_config do
     Raxol.Terminal.Config.Defaults.generate_default_config()
   end
 
-  @doc '''
+  @doc """
   Returns the type information for a specific configuration path.
 
   ## Parameters
@@ -129,7 +129,7 @@ defmodule Raxol.Terminal.Config.Schema do
   ## Returns
 
   A tuple with type information or nil if the path doesn't exist
-  '''
+  """
   def get_type(path) do
     # Implementation to retrieve type info from the schema
     schema = config_schema()

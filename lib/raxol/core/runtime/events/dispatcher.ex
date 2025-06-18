@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Runtime.Events.Dispatcher do
-  @moduledoc '''
+  @moduledoc """
   Manages the application state (model) and dispatches events to the application's
   `update/2` function. It also handles commands returned by `update/2`.
-  '''
+  """
 
   use GenServer
   @behaviour Raxol.Core.Runtime.Events.DispatcherBehaviour
@@ -21,18 +21,16 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defmodule State do
     @moduledoc false
-    defstruct [
-      runtime_pid: nil,
-      app_module: nil,
-      model: nil,
-      width: 0,
-      height: 0,
-      focused: true,
-      debug_mode: false,
-      plugin_manager: nil,
-      command_registry_table: nil,
-      current_theme_id: :default
-    ]
+    defstruct runtime_pid: nil,
+              app_module: nil,
+              model: nil,
+              width: 0,
+              height: 0,
+              focused: true,
+              debug_mode: false,
+              plugin_manager: nil,
+              command_registry_table: nil,
+              current_theme_id: :default
   end
 
   @impl true
@@ -68,9 +66,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Dispatches an event to the appropriate handler based on event type and target.
-  '''
+  """
   def dispatch_event(event, state) do
     try do
       do_dispatch_event(event, state)
@@ -87,9 +85,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
-  @doc '''
+  @doc """
   Handles an application-level event and updates the application state.
-  '''
+  """
   def handle_event(event, %State{} = state) do
     message = default_event_to_message(event)
     process_app_update(state, message, event)
@@ -97,10 +95,13 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp process_app_update(state, message, event) do
     case Application.delegate_update(state.app_module, message, state.model) do
-      {updated_model, commands} when is_map(updated_model) and is_list(commands) ->
+      {updated_model, commands}
+      when is_map(updated_model) and is_list(commands) ->
         process_successful_update(state, updated_model, commands)
+
       {:error, reason} ->
         log_update_error(state, message, event, reason)
+
       other ->
         log_unexpected_return(state, message, event, other)
     end
@@ -124,7 +125,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp handle_theme_update(state, updated_model) do
-    new_theme_id = Map.get(updated_model, :current_theme_id, state.current_theme_id)
+    new_theme_id =
+      Map.get(updated_model, :current_theme_id, state.current_theme_id)
+
     if new_theme_id != state.current_theme_id do
       :ok = UserPreferences.set("theme.active_id", new_theme_id)
       %{state | model: updated_model, current_theme_id: new_theme_id}
@@ -146,6 +149,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         event: event
       }
     )
+
     {:error, reason}
   end
 
@@ -161,12 +165,13 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         other: other
       }
     )
+
     {:error, {:unexpected_return, other}}
   end
 
-  @doc '''
+  @doc """
   Processes a system-level event that affects the runtime itself rather than the application logic.
-  '''
+  """
   def process_system_event(event, state) do
     case event do
       %Event{type: :resize, data: data} -> handle_resize_event(data, state)
@@ -192,28 +197,30 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       nil,
       %{module: __MODULE__, error: error, state: state}
     )
+
     {:error, error, state}
   end
 
   # --- Public API for PubSub ---
 
-  @doc 'Subscribes the calling process to a specific event topic.'
+  @doc "Subscribes the calling process to a specific event topic."
   @spec subscribe(atom()) :: :ok | {:error, term()}
   def subscribe(topic) when is_atom(topic) do
     Registry.register(@registry_name, topic, {})
   end
 
-  @doc 'Unsubscribes the calling process from a specific event topic.'
+  @doc "Unsubscribes the calling process from a specific event topic."
   @spec unsubscribe(atom()) :: :ok | {:error, term()}
   def unsubscribe(topic) when is_atom(topic) do
     Registry.unregister(@registry_name, topic)
   end
 
-  @doc 'Broadcasts an event payload to all subscribers of a topic.'
+  @doc "Broadcasts an event payload to all subscribers of a topic."
   @spec broadcast(atom(), map()) :: :ok | {:error, term()}
   def broadcast(topic, payload) when is_atom(topic) and is_map(payload) do
     Raxol.Core.Runtime.Log.debug(
-      "[#{__MODULE__}] Broadcasting on topic "#{topic}": #{inspect(payload)}"
+      # {topic}": #{inspect(payload)}"
+      "[#{__MODULE__}] Broadcasting on topic "
     )
 
     # Find subscribers for the topic
@@ -314,10 +321,13 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp process_command_result(state, message) do
     case Application.delegate_update(state.app_module, message, state.model) do
-      {updated_model, commands} when is_map(updated_model) and is_list(commands) ->
+      {updated_model, commands}
+      when is_map(updated_model) and is_list(commands) ->
         process_command_commands(state, updated_model, commands)
+
       {:error, reason} ->
         log_command_error(state, message, reason)
+
       other ->
         log_command_unexpected(state, message, other)
     end
@@ -325,11 +335,13 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp process_command_commands(state, updated_model, commands) do
     context = build_command_context(state)
+
     try do
       process_commands(commands, context)
     rescue
       error -> log_command_process_error(error)
     end
+
     {:noreply, %{state | model: updated_model}}
   end
 
@@ -340,6 +352,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       nil,
       %{module: __MODULE__, msg: message, state: state}
     )
+
     {:noreply, state}
   end
 
@@ -348,6 +361,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       "[Dispatcher] Unexpected return from delegate_update in handle_info",
       %{module: __MODULE__, msg: message, state: state, other: other}
     )
+
     {:noreply, state}
   end
 
@@ -427,6 +441,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp apply_plugin_filters(event, state) do
     manager_pid = Raxol.Core.Runtime.Plugins.Manager
+
     case GenServer.call(manager_pid, {:filter_event, event}) do
       {:ok, filtered_event} -> filtered_event
       :halt -> nil

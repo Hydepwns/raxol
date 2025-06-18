@@ -1,12 +1,11 @@
 defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
-  @moduledoc '''
+  @moduledoc """
   Helper functions for plugin lifecycle management.
-  '''
+  """
 
   @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
 
   alias Raxol.Core.Runtime.Plugins.{
-    DependencyManager,
     StateManager,
     CommandRegistry,
     Loader
@@ -30,56 +29,70 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         command_table,
         plugin_config
       ) do
-    with {plugin_id, plugin_module} <- resolve_plugin_identity(plugin_id_or_module),
+    with {plugin_id, plugin_module} <-
+           resolve_plugin_identity(plugin_id_or_module),
          :ok <- validate_plugin(plugin_id, plugin_module, plugins),
          {:ok, plugin_metadata} <- Loader.extract_metadata(plugin_module),
-         {:ok, updated_maps} <- initialize_and_register_plugin(%{
-           plugin_id: plugin_id,
-           plugin_module: plugin_module,
-           plugin_metadata: plugin_metadata,
-           config: config,
-           plugins: plugins,
-           metadata: metadata,
-           plugin_states: plugin_states,
-           load_order: load_order,
-           command_table: command_table,
-           plugin_config: plugin_config
-         }) do
+         {:ok, updated_maps} <-
+           initialize_and_register_plugin(%{
+             plugin_id: plugin_id,
+             plugin_module: plugin_module,
+             plugin_metadata: plugin_metadata,
+             config: config,
+             plugins: plugins,
+             metadata: metadata,
+             plugin_states: plugin_states,
+             load_order: load_order,
+             command_table: command_table,
+             plugin_config: plugin_config
+           }) do
       {:ok, updated_maps}
     else
-      {:error, :already_loaded} -> {:error, "Plugin #{plugin_id_or_module} is already loaded"}
-      {:error, :invalid_plugin} -> {:error, "Plugin #{plugin_id_or_module} does not implement required behaviour"}
-      {:error, :dependency_missing, missing} -> {:error, "Missing dependency #{missing} for plugin #{plugin_id_or_module}"}
-      {:error, :dependency_cycle, cycle} -> {:error, "Dependency cycle detected: #{inspect(cycle)}"}
-      {:error, reason} -> handle_load_error(reason, plugin_id_or_module)
+      {:error, :already_loaded} ->
+        {:error, "Plugin #{plugin_id_or_module} is already loaded"}
+
+      {:error, :invalid_plugin} ->
+        {:error,
+         "Plugin #{plugin_id_or_module} does not implement required behaviour"}
+
+      {:error, :dependency_missing, missing} ->
+        {:error,
+         "Missing dependency #{missing} for plugin #{plugin_id_or_module}"}
+
+      {:error, :dependency_cycle, cycle} ->
+        {:error, "Dependency cycle detected: #{inspect(cycle)}"}
+
+      {:error, reason} ->
+        handle_load_error(reason, plugin_id_or_module)
     end
   end
 
   defp initialize_and_register_plugin(%{
-    plugin_id: plugin_id,
-    plugin_module: plugin_module,
-    plugin_metadata: plugin_metadata,
-    config: config,
-    plugins: plugins,
-    metadata: metadata,
-    plugin_states: plugin_states,
-    load_order: load_order,
-    command_table: command_table,
-    plugin_config: plugin_config
-  }) do
+         plugin_id: plugin_id,
+         plugin_module: plugin_module,
+         plugin_metadata: plugin_metadata,
+         config: config,
+         plugins: plugins,
+         metadata: metadata,
+         plugin_states: plugin_states,
+         load_order: load_order,
+         command_table: command_table,
+         plugin_config: plugin_config
+       }) do
     with {:ok, initial_state} <- initialize_plugin_state(plugin_module, config),
-         :ok <- register_plugin_components(%{
-           plugin_id: plugin_id,
-           plugin_module: plugin_module,
-           initial_state: initial_state,
-           command_table: command_table,
-           plugin_metadata: plugin_metadata,
-           plugins: plugins,
-           metadata: metadata,
-           plugin_states: plugin_states,
-           load_order: load_order,
-           plugin_config: plugin_config
-         }) do
+         :ok <-
+           register_plugin_components(%{
+             plugin_id: plugin_id,
+             plugin_module: plugin_module,
+             initial_state: initial_state,
+             command_table: command_table,
+             plugin_metadata: plugin_metadata,
+             plugins: plugins,
+             metadata: metadata,
+             plugin_states: plugin_states,
+             load_order: load_order,
+             plugin_config: plugin_config
+           }) do
       build_updated_maps(%{
         plugin_id: plugin_id,
         plugin_module: plugin_module,
@@ -100,35 +113,44 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   end
 
   defp register_plugin_components(%{
-    plugin_id: plugin_id,
-    plugin_module: plugin_module,
-    initial_state: initial_state,
-    command_table: command_table,
-    plugin_metadata: plugin_metadata,
-    plugins: plugins,
-    metadata: metadata,
-    plugin_states: plugin_states,
-    load_order: load_order,
-    plugin_config: plugin_config
-  }) do
-    with :ok <- update_plugin_state(plugin_id, initial_state, plugins, metadata, plugin_states, load_order, plugin_config),
+         plugin_id: plugin_id,
+         plugin_module: plugin_module,
+         initial_state: initial_state,
+         command_table: command_table,
+         plugin_metadata: plugin_metadata,
+         plugins: plugins,
+         metadata: metadata,
+         plugin_states: plugin_states,
+         load_order: load_order,
+         plugin_config: plugin_config
+       }) do
+    with :ok <-
+           update_plugin_state(
+             plugin_id,
+             initial_state,
+             plugins,
+             metadata,
+             plugin_states,
+             load_order,
+             plugin_config
+           ),
          :ok <- register_commands(plugin_module, initial_state, command_table) do
       register_plugin(plugin_id, plugin_metadata)
     end
   end
 
   defp build_updated_maps(%{
-    plugin_id: plugin_id,
-    plugin_module: plugin_module,
-    plugin_metadata: plugin_metadata,
-    initial_state: initial_state,
-    config: config,
-    plugins: plugins,
-    metadata: metadata,
-    plugin_states: plugin_states,
-    load_order: load_order,
-    plugin_config: plugin_config
-  }) do
+         plugin_id: plugin_id,
+         plugin_module: plugin_module,
+         plugin_metadata: plugin_metadata,
+         initial_state: initial_state,
+         config: config,
+         plugins: plugins,
+         metadata: metadata,
+         plugin_states: plugin_states,
+         load_order: load_order,
+         plugin_config: plugin_config
+       }) do
     %{
       plugins: Map.put(plugins, plugin_id, plugin_module),
       metadata: Map.put(metadata, plugin_id, plugin_metadata),
@@ -146,11 +168,15 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   defp and_then(:ok, fun), do: fun.()
   defp and_then(error, _fun), do: error
 
-  defp validate_dependencies(plugin_id, plugin_metadata, plugins) do
-    DependencyManager.check_dependencies(plugin_id, plugin_metadata, plugins)
-  end
-
-  defp update_plugin_state(plugin_id, initial_state, plugins, metadata, plugin_states, load_order, plugin_config) do
+  defp update_plugin_state(
+         plugin_id,
+         initial_state,
+         plugins,
+         metadata,
+         plugin_states,
+         load_order,
+         plugin_config
+       ) do
     StateManager.update_plugin_state(plugin_id, initial_state, %{
       plugins: plugins,
       metadata: metadata,
@@ -161,11 +187,18 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   end
 
   defp register_commands(plugin_module, initial_state, command_table) do
-    CommandRegistry.register_plugin_commands(plugin_module, initial_state, command_table)
+    CommandRegistry.register_plugin_commands(
+      plugin_module,
+      initial_state,
+      command_table
+    )
   end
 
   defp register_plugin(plugin_id, plugin_metadata) do
-    Raxol.Core.Runtime.Plugins.Registry.register_plugin(plugin_id, plugin_metadata)
+    Raxol.Core.Runtime.Plugins.Registry.register_plugin(
+      plugin_id,
+      plugin_metadata
+    )
   end
 
   defp handle_load_error(reason, plugin_id_or_module) do
@@ -179,6 +212,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         reason: reason
       }
     )
+
     {:error, reason}
   end
 
@@ -193,6 +227,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         _opts
       ) do
     table = initialize_command_table(command_table, plugins)
+
     Enum.reduce_while(
       load_order,
       {:ok, {metadata, states, table}},
@@ -200,10 +235,18 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     )
   end
 
-  defp initialize_plugin(plugin_id, {:ok, {meta, sts, tbl}}, plugins, plugin_config) do
+  defp initialize_plugin(
+         plugin_id,
+         {:ok, {meta, sts, tbl}},
+         plugins,
+         plugin_config
+       ) do
     case Map.get(plugins, plugin_id) do
-      nil -> {:cont, {:ok, {meta, sts, tbl}}}
-      plugin -> handle_plugin_init(plugin, plugin_id, meta, sts, tbl, plugin_config)
+      nil ->
+        {:cont, {:ok, {meta, sts, tbl}}}
+
+      plugin ->
+        handle_plugin_init(plugin, plugin_id, meta, sts, tbl, plugin_config)
     end
   end
 
@@ -221,6 +264,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
+
         {:halt, {:error, reason}}
     end
   end
@@ -238,9 +282,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       ) do
     try do
       with :ok <- reload_module(plugin_module),
-           {:ok, updated_state} <- initialize_plugin_state(plugin_module, plugin_state),
-           {:ok, updated_table} <- update_command_table(command_table, plugin_module, updated_state) do
-        {:ok, updated_state, updated_table, update_metadata(metadata, plugin_id, plugin_path, updated_state)}
+           {:ok, updated_state} <-
+             initialize_plugin_state(plugin_module, plugin_state),
+           {:ok, updated_table} <-
+             update_command_table(command_table, plugin_module, updated_state) do
+        {:ok, updated_state, updated_table,
+         update_metadata(metadata, plugin_id, plugin_path, updated_state)}
       else
         {:error, reason} -> handle_reload_error(reason, plugin_id)
       end
@@ -254,10 +301,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          {:module, ^plugin_module} <- :code.load_file(plugin_module) do
       :ok
     end
-  end
-
-  defp initialize_plugin_state(plugin_module, plugin_state) do
-    plugin_module.init(plugin_state)
   end
 
   defp update_metadata(metadata, plugin_id, plugin_path, updated_state) do
@@ -275,6 +318,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       nil,
       %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
     )
+
     {:error, :reload_failed}
   end
 
@@ -283,6 +327,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       "Failed to reload plugin (exception)",
       %{module: __MODULE__, plugin_id: plugin_id, error: inspect(e)}
     )
+
     {:error, :reload_failed}
   end
 
@@ -315,6 +360,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       nil,
       %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
     )
+
     {:error, reason}
   end
 
@@ -444,9 +490,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end)
   end
 
-  @doc '''
+  @doc """
   Catch-all for load_plugin/3. Raises a clear error if called with the wrong arity.
-  '''
+  """
   def load_plugin(_a, _b, _c) do
     raise "Raxol.Core.Runtime.Plugins.LifecycleHelper.load_plugin/3 is not implemented. Use load_plugin/8."
   end

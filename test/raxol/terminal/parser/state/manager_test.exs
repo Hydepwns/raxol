@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
   alias Raxol.Terminal.Emulator
 
   describe "ParserStateManager" do
-    test 'new/0 creates a new parser state with default values' do
+    test ~c"new/0 creates a new parser state with default values" do
       state = Manager.new()
       assert state.state == :ground
       assert state.params_buffer == ""
@@ -14,18 +14,18 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state.designating_gset == nil
     end
 
-    test 'get_current_state/1 returns the current state' do
+    test ~c"get_current_state/1 returns the current state" do
       state = Manager.new()
       assert Manager.get_current_state(state) == state
     end
 
-    test 'set_state/2 updates the state' do
+    test ~c"set_state/2 updates the state" do
       initial_state = Manager.new()
       new_state = %{initial_state | state: :escape}
       assert Manager.set_state(initial_state, new_state) == new_state
     end
 
-    test 'transition_to/2 transitions to a new state and clears relevant buffers' do
+    test ~c"transition_to/2 transitions to a new state and clears relevant buffers" do
       state = Manager.new()
 
       # Test transition to CSI entry state
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state.state == :ground
     end
 
-    test 'append_param/2 appends to params buffer' do
+    test ~c"append_param/2 appends to params buffer" do
       state = Manager.new()
       state = Manager.append_param(state, "1")
       state = Manager.append_param(state, ";")
@@ -59,33 +59,33 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state.params_buffer == "1;2"
     end
 
-    test 'append_intermediate/2 appends to intermediates buffer' do
+    test ~c"append_intermediate/2 appends to intermediates buffer" do
       state = Manager.new()
       state = Manager.append_intermediate(state, "?')
       state = Manager.append_intermediate(state, '!")
       assert state.intermediates_buffer == "?!"
     end
 
-    test 'append_payload/2 appends to payload buffer' do
+    test ~c"append_payload/2 appends to payload buffer" do
       state = Manager.new()
       state = Manager.append_payload(state, "Hello")
       state = Manager.append_payload(state, " World")
       assert state.payload_buffer == "Hello World"
     end
 
-    test 'set_final_byte/2 sets the final byte' do
+    test ~c"set_final_byte/2 sets the final byte" do
       state = Manager.new()
       state = Manager.set_final_byte(state, ?m)
       assert state.final_byte == ?m
     end
 
-    test 'set_designating_gset/2 sets the G-set' do
+    test ~c"set_designating_gset/2 sets the G-set" do
       state = Manager.new()
       state = Manager.set_designating_gset(state, 0)
       assert state.designating_gset == 0
     end
 
-    test 'reset/1 clears all buffers and resets to ground state' do
+    test ~c"reset/1 clears all buffers and resets to ground state" do
       state = Manager.new()
 
       state = %{
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert reset_state.designating_gset == nil
     end
 
-    test 'process_input/3 delegates to appropriate state handler' do
+    test ~c"process_input/3 delegates to appropriate state handler" do
       emulator = Emulator.new(80, 24)
 
       emulator = %{
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert new_state.state == :ground
     end
 
-    test 'SS2 (ESC N and 0x8E) sets single_shift and is cleared after one char' do
+    test ~c"SS2 (ESC N and 0x8E) sets single_shift and is cleared after one char" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 
@@ -165,7 +165,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
                state_after_c1_ss2.single_shift == nil
     end
 
-    test 'SS3 (ESC O and 0x8F) sets single_shift and is cleared after one char' do
+    test ~c"SS3 (ESC O and 0x8F) sets single_shift and is cleared after one char" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 
@@ -191,7 +191,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
   end
 
   describe "SS2/SS3 edge cases" do
-    test 'multiple SS2 in a row only affects next char each time' do
+    test ~c"multiple SS2 in a row only affects next char each time" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 
@@ -218,7 +218,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state2.single_shift == nil
     end
 
-    test 'multiple SS3 in a row only affects next char each time' do
+    test ~c"multiple SS3 in a row only affects next char each time" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 
@@ -243,7 +243,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state2.single_shift == nil
     end
 
-    test 'SS2 at end of input sets single_shift but does not persist after use' do
+    test ~c"SS2 at end of input sets single_shift but does not persist after use" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 
@@ -264,7 +264,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state2.single_shift == nil
     end
 
-    test 'SS3 at end of input sets single_shift but does not persist after use' do
+    test ~c"SS3 at end of input sets single_shift but does not persist after use" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 
@@ -285,7 +285,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state2.single_shift == nil
     end
 
-    test 'SS2 followed by non-printable character clears single_shift' do
+    test ~c"SS2 followed by non-printable character clears single_shift" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 
@@ -302,7 +302,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       assert state1.single_shift == nil
     end
 
-    test 'SS3 followed by non-printable character clears single_shift' do
+    test ~c"SS3 followed by non-printable character clears single_shift" do
       state = Manager.new()
       emulator = Emulator.new(80, 24)
 

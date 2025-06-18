@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Theme.Manager do
-  @moduledoc '''
+  @moduledoc """
   Manages terminal themes with advanced features:
   - Theme loading from files and presets
   - Theme customization and modification
   - Dynamic theme switching
   - Theme persistence and state management
-  '''
+  """
 
   @type color :: %{
           r: integer(),
@@ -78,9 +78,9 @@ defmodule Raxol.Terminal.Theme.Manager do
     :metrics
   ]
 
-  @doc '''
+  @doc """
   Creates a new theme manager with the given options.
-  '''
+  """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     default_theme = %{
@@ -169,9 +169,9 @@ defmodule Raxol.Terminal.Theme.Manager do
     }
   end
 
-  @doc '''
+  @doc """
   Loads a theme from a file or preset.
-  '''
+  """
   @spec load_theme(t(), String.t()) :: {:ok, t()} | {:error, term()}
   def load_theme(manager, theme_name) do
     case Map.get(manager.themes, theme_name) do
@@ -189,9 +189,9 @@ defmodule Raxol.Terminal.Theme.Manager do
     end
   end
 
-  @doc '''
+  @doc """
   Adds a custom style to the current theme.
-  '''
+  """
   @spec add_custom_style(t(), String.t(), style()) ::
           {:ok, t()} | {:error, term()}
   def add_custom_style(manager, name, style) do
@@ -210,9 +210,9 @@ defmodule Raxol.Terminal.Theme.Manager do
     end
   end
 
-  @doc '''
+  @doc """
   Gets a style from the current theme or custom styles.
-  '''
+  """
   @spec get_style(t(), String.t()) :: {:ok, style()} | {:error, term()}
   def get_style(manager, style_name) do
     case Map.get(manager.current_theme.styles, style_name) do
@@ -240,17 +240,17 @@ defmodule Raxol.Terminal.Theme.Manager do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current theme metrics.
-  '''
+  """
   @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics
   end
 
-  @doc '''
+  @doc """
   Saves the current theme state for persistence.
-  '''
+  """
   @spec save_theme_state(t()) :: {:ok, map()} | {:error, term()}
   def save_theme_state(manager) do
     state = %{
@@ -261,9 +261,9 @@ defmodule Raxol.Terminal.Theme.Manager do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Restores a theme state from saved data.
-  '''
+  """
   @spec restore_theme_state(t(), map()) :: {:ok, t()} | {:error, term()}
   def restore_theme_state(manager, state) do
     with {:ok, manager} <- load_theme(manager, state.current_theme) do

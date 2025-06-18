@@ -13,11 +13,11 @@ import Raxol.View.Elements
       id: "basic",
       title: "Basic Button",
       description: "A simple button with default styling.",
-      code: '''
+      code: """
       view do
         button(content: "Click me")
       end
-      ''',
+      """,
       preview_fn: fn props ->
         label = props[:label] || "Click me"
         dsl_props = Map.drop(props, [:label]) |> Keyword.new()
@@ -65,11 +65,11 @@ import Raxol.View.Elements
       id: "icon_button",
       title: "Icon Button",
       description: "A button with an icon.",
-      code: '''
+      code: """
       view do
         button(content: "Save", icon: :save)
       end
-      ''',
+      """,
       preview_fn: fn props ->
         label = props[:label] || "Save"
         icon = props[:icon] || :save
@@ -160,7 +160,7 @@ import Raxol.View.Elements
       "Uses high-contrast styles when high-contrast mode is enabled",
     best_practices: [
       "Use clear and concise labels",
-      "Avoid using generic labels like "Click here"",
+      "Avoid using generic labels like \"Click here\"",
       "Use appropriate button styles to indicate purpose"
     ]
   },

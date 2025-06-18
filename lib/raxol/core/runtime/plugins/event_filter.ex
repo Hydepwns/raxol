@@ -1,18 +1,18 @@
 defmodule Raxol.Core.Runtime.Plugins.EventFilter do
-  @moduledoc '''
+  @moduledoc """
   Handles event filtering for plugins.
   This module is responsible for:
   - Filtering events through registered plugin filters
   - Managing event modifications
   - Handling event halting
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Filters an event through registered plugin filters.
   Returns the filtered event or :halt if the event should be stopped.
-  '''
+  """
   def filter_event(plugin_manager_state, event) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] filter_event called for: #{inspect(event.type)}"

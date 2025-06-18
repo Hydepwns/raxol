@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       assert emulator.cursor.style == :bar
     end
 
-    test 'set_cursor_visible delegates to Cursor.Style' do
+    test ~c"set_cursor_visible delegates to Cursor.Style" do
       emulator = Emulator.new(80, 24)
       # Assuming default is visible
       # Check state directly

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ANSI.TerminalState do
-  @moduledoc '''
+  @moduledoc """
   Manages terminal state operations for ANSI escape sequences.
-  '''
+  """
 
   defstruct [
     :state_stack,
@@ -17,9 +17,9 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
           max_saved_states: integer()
         }
 
-  @doc '''
+  @doc """
   Creates a new terminal state with default settings.
-  '''
+  """
   def new(opts \\ []) do
     %__MODULE__{
       state_stack: [],
@@ -29,24 +29,24 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     }
   end
 
-  @doc '''
+  @doc """
   Gets the current state stack.
-  '''
+  """
   def get_state_stack(%__MODULE__{} = state) do
     state.state_stack
   end
 
-  @doc '''
+  @doc """
   Updates the state stack.
-  '''
+  """
   def update_state_stack(%__MODULE__{} = state, new_stack)
       when is_list(new_stack) do
     %{state | state_stack: new_stack}
   end
 
-  @doc '''
+  @doc """
   Saves the current state.
-  '''
+  """
   def save(%__MODULE__{} = state) do
     saved_states = [state.current_state | state.saved_states]
 
@@ -60,9 +60,9 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     %{state | saved_states: saved_states}
   end
 
-  @doc '''
+  @doc """
   Restores the most recently saved state.
-  '''
+  """
   def restore(%__MODULE__{} = state) do
     case state.saved_states do
       [saved_state | remaining_states] ->
@@ -73,53 +73,53 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if there are any saved states.
-  '''
+  """
   def has_saved_states?(%__MODULE__{} = state) do
     length(state.saved_states) > 0
   end
 
-  @doc '''
+  @doc """
   Gets the number of saved states.
-  '''
+  """
   def get_saved_states_count(%__MODULE__{} = state) do
     length(state.saved_states)
   end
 
-  @doc '''
+  @doc """
   Clears all saved states.
-  '''
+  """
   def clear(%__MODULE__{} = state) do
     %{state | saved_states: []}
   end
 
-  @doc '''
+  @doc """
   Gets the current state.
-  '''
+  """
   def get_current_state(%__MODULE__{} = state) do
     state.current_state
   end
 
-  @doc '''
+  @doc """
   Updates the current state.
-  '''
+  """
   def update_current_state(%__MODULE__{} = state, new_state)
       when is_map(new_state) do
     %{state | current_state: new_state}
   end
 
-  @doc '''
+  @doc """
   Pushes the current state onto the state stack.
-  '''
+  """
   def push(%__MODULE__{} = state) do
     new_stack = [state.current_state | state.state_stack]
     %{state | state_stack: new_stack}
   end
 
-  @doc '''
+  @doc """
   Pops a state from the state stack.
-  '''
+  """
   def pop(%__MODULE__{} = state) do
     case state.state_stack do
       [popped_state | remaining_stack] ->
@@ -131,9 +131,9 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current state from the state stack.
-  '''
+  """
   def current(%__MODULE__{} = state) do
     case state.state_stack do
       [current | _] -> current
@@ -141,17 +141,17 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     end
   end
 
-  @doc '''
+  @doc """
   Saves the current terminal state to the state stack.
-  '''
+  """
   def save_state(stack, state) do
     [state | stack]
   end
 
-  @doc '''
+  @doc """
   Restores the most recently saved terminal state from the state stack.
   Returns the restored state and the updated stack.
-  '''
+  """
   def restore_state([state | stack]), do: {state, stack}
   def restore_state([]), do: {nil, []}
 

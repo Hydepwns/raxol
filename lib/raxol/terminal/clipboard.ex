@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Clipboard do
-  @moduledoc '''
+  @moduledoc """
   Provides a high-level interface for clipboard operations.
 
   This module offers a unified API for clipboard operations across different
@@ -32,11 +32,11 @@ defmodule Raxol.Terminal.Clipboard do
   # Clear clipboard
   Clipboard.clear()
   ```
-  '''
+  """
 
   alias Raxol.Terminal.Clipboard.Manager
 
-  @doc '''
+  @doc """
   Copies content to the clipboard.
 
   ## Parameters
@@ -55,13 +55,13 @@ defmodule Raxol.Terminal.Clipboard do
 
       iex> Clipboard.copy("<b>Hello</b>", "html")
       :ok
-  '''
+  """
   @spec copy(String.t(), String.t()) :: :ok
   def copy(content, format \\ "text") do
     Manager.copy(content, format)
   end
 
-  @doc '''
+  @doc """
   Pastes content from the clipboard.
 
   ## Parameters
@@ -82,13 +82,13 @@ defmodule Raxol.Terminal.Clipboard do
       iex> Clipboard.clear()
       iex> Clipboard.paste()
       {:error, :empty_clipboard}
-  '''
+  """
   @spec paste(String.t()) :: {:ok, String.t()} | {:error, :empty_clipboard}
   def paste(format \\ "text") do
     Manager.paste(format)
   end
 
-  @doc '''
+  @doc """
   Clears the clipboard contents.
 
   ## Returns
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Clipboard do
       iex> Clipboard.clear()
       iex> Clipboard.paste()
       {:error, :empty_clipboard}
-  '''
+  """
   @spec clear() :: :ok
   def clear do
     Manager.clear()

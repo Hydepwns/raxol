@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
-  @moduledoc '''
+  @moduledoc """
   Handles load order resolution for plugin dependencies using Tarjan's algorithm.
   Provides efficient cycle detection and topological sorting of dependencies.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Performs a topological sort of the dependency graph using Tarjan's algorithm.
   This algorithm efficiently detects cycles and produces a valid load order.
 
@@ -24,7 +24,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
         "plugin_b" => []
       })
       {:ok, ["plugin_b", "plugin_a"]}
-  '''
+  """
   def tarjan_sort(graph) do
     # Initialize data structures
     index = 0

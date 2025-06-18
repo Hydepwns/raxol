@@ -2,7 +2,7 @@ defmodule Raxol.System.Updater do
   use GenServer
   require Logger
 
-  @moduledoc '''
+  @moduledoc """
   Provides version management and self-update functionality for Raxol.
 
   This module handles:
@@ -10,7 +10,7 @@ defmodule Raxol.System.Updater do
   - Comparing versions to determine if updates are available
   - Self-updating the application when running as a compiled binary
   - Managing update settings and configurations
-  '''
+  """
 
   alias Raxol.System.DeltaUpdater
   # alias Raxol.Plugins.PluginManager # Unused
@@ -64,7 +64,9 @@ defmodule Raxol.System.Updater do
     settings = get_update_settings()
     platform = get_platform()
     ext = if platform == "windows", do: "zip", else: "tar.gz"
-    url = "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
+
+    url =
+      "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
 
     case download_file(url, Path.join(settings.download_path, "update.#{ext}")) do
       :ok -> {:ok, version}
@@ -97,7 +99,10 @@ defmodule Raxol.System.Updater do
 
     if File.exists?(backup_path) do
       _platform = get_platform()
-      current_exe = System.get_env("BURRITO_EXECUTABLE_PATH") || System.argv() |> List.first()
+
+      current_exe =
+        System.get_env("BURRITO_EXECUTABLE_PATH") ||
+          System.argv() |> List.first()
 
       case File.cp(backup_path, current_exe) do
         :ok -> {:ok, get_current_version()}
@@ -129,8 +134,12 @@ defmodule Raxol.System.Updater do
           {:ok, history} -> {:ok, history}
           _ -> {:ok, []}
         end
-      {:error, :enoent} -> {:ok, []}
-      {:error, reason} -> {:error, reason}
+
+      {:error, :enoent} ->
+        {:ok, []}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -153,7 +162,9 @@ defmodule Raxol.System.Updater do
 
   def cancel_update do
     case Process.get(:update_pid) do
-      nil -> {:error, :no_update_in_progress}
+      nil ->
+        {:error, :no_update_in_progress}
+
       pid ->
         Process.put(:update_progress, 0)
         Process.exit(pid, :normal)
@@ -201,8 +212,12 @@ defmodule Raxol.System.Updater do
           {:ok, stats} -> {:ok, stats}
           _ -> {:ok, default_stats()}
         end
-      {:error, :enoent} -> {:ok, default_stats()}
-      {:error, reason} -> {:error, reason}
+
+      {:error, :enoent} ->
+        {:ok, default_stats()}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -251,6 +266,7 @@ defmodule Raxol.System.Updater do
       last_check: nil,
       error: nil
     }
+
     {:ok, state}
   end
 
@@ -269,18 +285,18 @@ defmodule Raxol.System.Updater do
   def handle_call(:check_for_updates, _from, state) do
     case check_updates(state) do
       {:ok, updates} ->
-        state = %{state |
-          status: :updates_available,
-          available_updates: updates,
-          last_check: DateTime.utc_now(),
-          error: nil
+        state = %{
+          state
+          | status: :updates_available,
+            available_updates: updates,
+            last_check: DateTime.utc_now(),
+            error: nil
         }
+
         {:reply, {:ok, updates}, state}
+
       {:error, reason} ->
-        state = %{state |
-          status: :error,
-          error: reason
-        }
+        state = %{state | status: :error, error: reason}
         {:reply, {:error, reason}, state}
     end
   end
@@ -293,6 +309,7 @@ defmodule Raxol.System.Updater do
       last_check: state.last_check,
       error: state.error
     }
+
     {:reply, status, state}
   end
 
@@ -301,15 +318,18 @@ defmodule Raxol.System.Updater do
   defp default_update_settings do
     %{
       auto_update: true,
-      check_interval: 24 * 60 * 60, # 24 hours in seconds
+      # 24 hours in seconds
+      check_interval: 24 * 60 * 60,
       update_channel: :stable,
       notify_on_update: true,
       download_path: System.get_env("HOME") <> "/.raxol/downloads",
       backup_path: System.get_env("HOME") <> "/.raxol/backups",
       max_backups: 5,
       retry_count: 3,
-      retry_delay: 5, # seconds
-      timeout: 300, # seconds
+      # seconds
+      retry_delay: 5,
+      # seconds
+      timeout: 300,
       verify_checksums: true,
       require_confirmation: true
     }
@@ -323,10 +343,18 @@ defmodule Raxol.System.Updater do
     case fetch_latest_version() do
       {:ok, %{version: latest_version}} ->
         if latest_version != state.current_version do
-          {:ok, [%{version: latest_version, url: "https://github.com/#{@github_repo}/releases/tag/v#{latest_version}"}]}
+          {:ok,
+           [
+             %{
+               version: latest_version,
+               url:
+                 "https://github.com/#{@github_repo}/releases/tag/v#{latest_version}"
+             }
+           ]}
         else
           {:ok, []}
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -335,24 +363,25 @@ defmodule Raxol.System.Updater do
   defp perform_install_update(version, state) do
     case self_update(version, use_delta: true) do
       :ok ->
-        _new_state = %{state |
-          status: :installed,
-          current_version: version,
-          error: nil
+        _new_state = %{
+          state
+          | status: :installed,
+            current_version: version,
+            error: nil
         }
+
         {:ok, state}
+
       {:error, reason} ->
-        _new_state = %{state |
-          status: :error,
-          error: reason
-        }
+        _new_state = %{state | status: :error, error: reason}
         {:error, reason}
+
       {:no_update, _current_version} ->
         {:ok, state}
     end
   end
 
-  @doc '''
+  @doc """
   Checks if a newer version of Raxol is available.
 
   Returns a tuple with the check result and the latest version if available:
@@ -371,7 +400,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.check_for_updates(force: true)
       {:update_available, "0.2.0"}
-  '''
+  """
   def check_for_updates(opts \\ []) do
     force = Keyword.get(opts, :force, false)
 
@@ -393,7 +422,7 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  @doc '''
+  @doc """
   Performs a self-update of the application if running as a compiled binary.
 
   Returns:
@@ -414,7 +443,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.self_update("0.2.0")
       {:error, "Not running as a compiled binary"}
-  '''
+  """
   defp do_version_update(version, use_delta) do
     if use_delta do
       try_delta_update(version)
@@ -451,7 +480,7 @@ defmodule Raxol.System.Updater do
     {:error, reason} -> {:error, reason}
   end
 
-  @doc '''
+  @doc """
   Displays update information to the user, if an update is available.
 
   This function checks for updates (respecting the check interval) and
@@ -461,7 +490,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.notify_if_update_available()
       :ok
-  '''
+  """
   def notify_if_update_available do
     case check_for_updates() do
       {:update_available, version} ->
@@ -480,7 +509,7 @@ defmodule Raxol.System.Updater do
         Terminal.println("Update Available!", color: fg_hex, background: bg_hex)
 
         IO.puts("Version #{version} is available.")
-        IO.puts("Run "raxol update" to install.")
+        IO.puts("Run \"raxol update\" to install.")
         :ok
 
       _ ->
@@ -488,7 +517,7 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  @doc '''
+  @doc """
   Enables or disables automatic update checks.
 
   ## Parameters
@@ -502,7 +531,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.set_auto_check(false)
       :ok
-  '''
+  """
   def set_auto_check(enabled) when is_boolean(enabled) do
     with {:ok, settings} <- get_update_settings() do
       settings = Map.put(settings, "auto_check", enabled)
@@ -554,7 +583,9 @@ defmodule Raxol.System.Updater do
             version = release_data["tag_name"]
             url = release_data["html_url"]
             {:ok, %{version: version, url: url}}
-          _ -> {:error, :invalid_response}
+
+          _ ->
+            {:error, :invalid_response}
         end
 
       {:ok, {{_, status, _}, _, _}} ->
@@ -678,7 +709,9 @@ defmodule Raxol.System.Updater do
     case File.ls(dir) do
       {:ok, files} ->
         Enum.find_value(files, &check_file(Path.join(dir, &1), filename))
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -695,12 +728,12 @@ defmodule Raxol.System.Updater do
       safe_new_exe = Path.expand(new_exe)
       safe_current_exe = Path.expand(current_exe)
 
-      batch_contents = '''
+      batch_contents = """
       @echo off
       timeout /t 2 /nobreak > nul
       copy /y "#{safe_new_exe}" "#{safe_current_exe}"
       del "#{updater_bat}"
-      '''
+      """
 
       File.write!(updater_bat, batch_contents)
 
@@ -742,10 +775,14 @@ defmodule Raxol.System.Updater do
   end
 
   defp do_delta_update(version, delta_info) do
-    IO.puts("Delta update available (#{delta_info.savings_percent}% smaller download)")
+    IO.puts(
+      "Delta update available (#{delta_info.savings_percent}% smaller download)"
+    )
 
     case DeltaUpdater.apply_delta_update(version, delta_info.delta_url) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         IO.puts("Delta update failed: #{reason}")
         IO.puts("Falling back to full update...")
@@ -768,7 +805,9 @@ defmodule Raxol.System.Updater do
           {:no_update, v} -> {:no_update, v}
           {:error, reason} -> {:error, reason}
         end
-      v -> {:ok, v}
+
+      v ->
+        {:ok, v}
     end
   end
 
@@ -799,14 +838,23 @@ defmodule Raxol.System.Updater do
   defp fetch_github_releases do
     url = "https://api.github.com/repos/#{@github_repo}/releases"
 
-    case :httpc.request(:get, {String.to_charlist(url), [{~c"User-Agent", ~c"Raxol-Updater"}]}, [], []) do
+    case :httpc.request(
+           :get,
+           {String.to_charlist(url), [{~c"User-Agent", ~c"Raxol-Updater"}]},
+           [],
+           []
+         ) do
       {:ok, {{_, 200, _}, _, body}} ->
         case Jason.decode(body) do
           {:ok, releases} -> {:ok, releases}
           _ -> {:error, :invalid_response}
         end
-      {:ok, {{_, status, _}, _, _}} -> {:error, "GitHub API returned status #{status}"}
-      {:error, reason} -> {:error, "Failed to connect to GitHub: #{inspect(reason)}"}
+
+      {:ok, {{_, status, _}, _, _}} ->
+        {:error, "GitHub API returned status #{status}"}
+
+      {:error, reason} ->
+        {:error, "Failed to connect to GitHub: #{inspect(reason)}"}
     end
   end
 
@@ -842,5 +890,4 @@ defmodule Raxol.System.Updater do
     stats_file = Path.join(settings.download_path, "update_stats.json")
     File.write(stats_file, Jason.encode!(stats))
   end
-
 end

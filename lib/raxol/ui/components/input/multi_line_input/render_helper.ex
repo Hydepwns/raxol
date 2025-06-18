@@ -1,13 +1,13 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
-  @moduledoc '''
+  @moduledoc """
   UI adapter for MultiLineInput's RenderHelper. Delegates to the implementation in
   Raxol.UI.Components.Input.MultiLineInput.RenderHelper.
-  '''
+  """
 
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper,
     as: ComponentRenderHelper
 
-  @doc '''
+  @doc """
   Renders the multi-line input component with proper styling based on the state.
   Returns a grid of cell data for the visible portion of text.
 
@@ -17,15 +17,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
   - state: The MultiLineInput state
   - context: The render context
   - theme: The theme containing style information
-  '''
+  """
   def render(state, context, theme) do
     ComponentRenderHelper.render(state, context, theme)
   end
 
-  @doc '''
+  @doc """
   Renders a single line of the multi-line input, applying selection and cursor styles as needed.
   Returns a list of label components for the segments of the line.
-  '''
+  """
   def render_line(line_index, line_content, state, theme) do
     require Raxol.View.Components
     alias Raxol.View.Components

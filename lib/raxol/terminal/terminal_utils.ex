@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.TerminalUtils do
-  @moduledoc '''
+  @moduledoc """
   Utility functions for terminal operations, providing cross-platform and
   consistent handling of terminal capabilities and dimensions.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias :termbox2_nif, as: Termbox2Nif
 
-  @doc '''
+  @doc """
   Detects terminal dimensions using a multi-layered approach:
   1. Uses `:io.columns` and `:io.rows` (preferred)
   2. Falls back to termbox2 NIF if `:io` methods fail
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   4. Finally uses hardcoded default dimensions if all else fails
 
   Returns a tuple of {width, height}.
-  '''
+  """
   @spec detect_dimensions :: {pos_integer(), pos_integer()}
   def detect_dimensions do
     default_width = 80
@@ -61,18 +61,18 @@ defmodule Raxol.Terminal.TerminalUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Gets terminal dimensions and returns them in a map format.
-  '''
+  """
   @spec get_dimensions_map() :: %{width: pos_integer(), height: pos_integer()}
   def get_dimensions_map do
     {width, height} = detect_dimensions()
     %{width: width, height: height}
   end
 
-  @doc '''
+  @doc """
   Creates a bounds map with dimensions, starting at origin (0,0)
-  '''
+  """
   @spec get_bounds_map() :: %{
           x: 0,
           y: 0,
@@ -84,19 +84,19 @@ defmodule Raxol.Terminal.TerminalUtils do
     %{x: 0, y: 0, width: width, height: height}
   end
 
-  @doc '''
+  @doc """
   Returns the current cursor position, if available.
-  '''
+  """
   @spec cursor_position ::
           {:ok, {pos_integer(), pos_integer()}} | {:error, term()}
   def cursor_position do
     {:error, :not_implemented}
   end
 
-  @doc '''
+  @doc """
   Detects terminal dimensions using :io.columns and :io.rows.
   Returns {:ok, width, height} or {:error, reason}.
-  '''
+  """
   @spec detect_with_io(atom()) ::
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_io(io_facade) do
@@ -128,10 +128,10 @@ defmodule Raxol.Terminal.TerminalUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Detects terminal dimensions using the termbox2 NIF.
   Returns {:ok, width, height} or {:error, reason}.
-  '''
+  """
   @spec detect_with_termbox() ::
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_termbox do
@@ -151,10 +151,10 @@ defmodule Raxol.Terminal.TerminalUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Detects terminal dimensions using the stty size command.
   Returns {:ok, width, height} or {:error, reason}.
-  '''
+  """
   @spec detect_with_stty() ::
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_stty do
@@ -189,9 +189,9 @@ defmodule Raxol.Terminal.TerminalUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Returns true if the current process is attached to a real TTY device.
-  '''
+  """
   @spec real_tty?() :: boolean()
   def real_tty? do
     case System.cmd("tty", []) do

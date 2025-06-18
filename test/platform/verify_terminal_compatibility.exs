@@ -362,7 +362,7 @@ defmodule Raxol.Terminal.CompatibilityTest do
       "_build/test/results/terminal_#{platform_info.name}_#{System.os_time(:second)}.log"
 
     # Format the results
-    content = '''
+    content = """
     RAXOL TERMINAL COMPATIBILITY TEST RESULTS
     =========================================
 
@@ -384,7 +384,7 @@ defmodule Raxol.Terminal.CompatibilityTest do
     #{Enum.map_join(feature_results, "\n", fn {feature, supported} -> "#{feature}: #{if supported, do: "Supported", else: "Not supported"}" end)}
 
     Test completed at: #{DateTime.utc_now() |> to_string}
-    '''
+    """
 
     # Write the file
     File.write!(filename, content)

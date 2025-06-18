@@ -103,8 +103,9 @@ defmodule FileWatcher.Events do
   end
 
   defp schedule_debounced_reload(path, state) do
-    timer = Process.send_after(self(), {:debounced_reload, path}, 1000)
-    %{state | file_event_timer: timer}
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:debounced_reload, path, timer_id}, 1000)
+    %{state | file_event_timer: timer_id}
   end
 end
 ```

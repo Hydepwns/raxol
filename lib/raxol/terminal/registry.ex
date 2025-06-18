@@ -1,12 +1,12 @@
 defmodule Raxol.Terminal.Registry do
-  @moduledoc '''
+  @moduledoc """
   Terminal registry module.
 
   This module manages the registry of terminal sessions, including:
   - Session registration
   - Session lookup
   - Session cleanup
-  '''
+  """
   use GenServer
   # Define the @registry attribute to fix the compiler warning
   # @registry __MODULE__

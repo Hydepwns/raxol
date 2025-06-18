@@ -4,14 +4,14 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @moduledoc '''
+  @moduledoc """
   Performance benchmarks for buffer operations.
   These tests measure the performance of various buffer operations
   under different conditions and load patterns.
-  '''
+  """
 
   describe "Buffer Fill Performance" do
-    test 'measures performance of filling large buffers' do
+    test ~c"measures performance of filling large buffers" do
       sizes = [
         # Standard terminal
         {80, 24},
@@ -50,7 +50,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       end)
     end
 
-    test 'measures performance of partial buffer updates' do
+    test ~c"measures performance of partial buffer updates" do
       buffer = Buffer.new({200, 100})
 
       # Test different update patterns
@@ -89,7 +89,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   end
 
   describe "Buffer Read Performance" do
-    test 'measures performance of reading from large buffers' do
+    test ~c"measures performance of reading from large buffers" do
       buffer = Buffer.new({200, 100})
 
       # Fill buffer with data
@@ -123,7 +123,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   end
 
   describe "Buffer Scroll Performance" do
-    test 'measures performance of scrolling operations' do
+    test ~c"measures performance of scrolling operations" do
       buffer = Buffer.new({80, 24})
 
       # Fill buffer with data
@@ -157,7 +157,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   end
 
   describe "Memory Usage" do
-    test 'measures memory usage of buffer operations' do
+    test ~c"measures memory usage of buffer operations" do
       sizes = [
         # Standard terminal
         {80, 24},

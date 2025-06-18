@@ -5,7 +5,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   describe "Edge Cases" do
-    test 'handles out of bounds coordinates' do
+    test ~c"handles out of bounds coordinates" do
       buffer = Buffer.new({80, 24})
 
       # Test negative coordinates
@@ -27,12 +27,12 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       end
     end
 
-    test 'handles empty buffer operations' do
+    test ~c"handles empty buffer operations" do
       buffer = Buffer.new({0, 0})
       assert Buffer.get_cell(buffer, 0, 0) == Cell.new()
     end
 
-    test 'handles buffer resize edge cases' do
+    test ~c"handles buffer resize edge cases" do
       buffer = Buffer.new({80, 24})
 
       # Test resize to same dimensions
@@ -49,7 +49,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       end
     end
 
-    test 'handles scroll region edge cases' do
+    test ~c"handles scroll region edge cases" do
       buffer = Buffer.new({80, 24})
 
       # Test invalid scroll region (top > bottom)
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
   end
 
   describe "Performance Tests" do
-    test 'handles large buffer operations efficiently' do
+    test ~c"handles large buffer operations efficiently" do
       # Create a large buffer
       buffer = Buffer.new({200, 100})
 
@@ -96,7 +96,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
              "Buffer fill operation took too long: #{execution_time}ms"
     end
 
-    test 'handles rapid buffer updates efficiently' do
+    test ~c"handles rapid buffer updates efficiently" do
       buffer = Buffer.new({80, 24})
 
       # Measure time for rapid updates
@@ -123,7 +123,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
   end
 
   describe "Concurrent Access Tests" do
-    test 'handles concurrent buffer access safely' do
+    test ~c"handles concurrent buffer access safely" do
       buffer = Buffer.new({80, 24})
 
       # Create multiple processes that access the buffer
@@ -152,7 +152,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
              end)
     end
 
-    test 'handles concurrent read/write operations' do
+    test ~c"handles concurrent read/write operations" do
       buffer = Buffer.new({80, 24})
 
       # Create reader and writer processes
@@ -183,7 +183,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
   end
 
   describe "Error Handling" do
-    test 'handles invalid cell data' do
+    test ~c"handles invalid cell data" do
       buffer = Buffer.new({80, 24})
 
       # Test invalid cell data
@@ -197,7 +197,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       end
     end
 
-    test 'handles invalid buffer operations' do
+    test ~c"handles invalid buffer operations" do
       buffer = Buffer.new({80, 24})
 
       # Test invalid write operations
@@ -211,7 +211,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       end
     end
 
-    test 'handles buffer corruption gracefully' do
+    test ~c"handles buffer corruption gracefully" do
       buffer = Buffer.new({80, 24})
 
       # Simulate buffer corruption by directly modifying the struct

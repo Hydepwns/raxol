@@ -1,10 +1,10 @@
 defmodule Raxol.System.TerminalPlatform do
-  @moduledoc '''
+  @moduledoc """
   Terminal-specific platform features and compatibility checks.
 
   This module provides detailed information about terminal capabilities,
   feature support, and compatibility across different platforms and terminal emulators.
-  '''
+  """
 
   @type terminal_feature ::
           :true_color
@@ -15,7 +15,7 @@ defmodule Raxol.System.TerminalPlatform do
           | :focus
           | :title
 
-  @doc '''
+  @doc """
   Returns detailed information about the current terminal's capabilities.
 
   ## Returns
@@ -58,7 +58,7 @@ defmodule Raxol.System.TerminalPlatform do
           alternate_screen: true
         }
       }
-  '''
+  """
   @spec get_terminal_capabilities() :: map()
   def get_terminal_capabilities do
     %{
@@ -72,7 +72,7 @@ defmodule Raxol.System.TerminalPlatform do
     }
   end
 
-  @doc '''
+  @doc """
   Checks if a specific terminal feature is supported.
 
   ## Parameters
@@ -88,13 +88,13 @@ defmodule Raxol.System.TerminalPlatform do
 
       iex> TerminalPlatform.supports_feature?(:true_color)
       true
-  '''
+  """
   @spec supports_feature?(terminal_feature()) :: boolean()
   def supports_feature?(feature) do
     feature in get_supported_features()
   end
 
-  @doc '''
+  @doc """
   Returns the list of all supported terminal features.
 
   ## Returns
@@ -105,7 +105,7 @@ defmodule Raxol.System.TerminalPlatform do
 
       iex> TerminalPlatform.get_supported_features()
       [:true_color, :unicode, :mouse, :clipboard]
-  '''
+  """
   @spec get_supported_features() :: list(terminal_feature())
   def get_supported_features do
     [
@@ -126,21 +126,40 @@ defmodule Raxol.System.TerminalPlatform do
     term_emulator = System.get_env("TERM_EMULATOR") || ""
 
     features = []
-    features = if String.contains?(term, "256") || term_program in ["iTerm.app", "vscode"], do: [:colors_256 | features], else: features
-    features = if term_program in ["iTerm.app", "vscode"] || term_emulator == "JetBrains-JediTerm", do: [:true_color | features], else: features
+
+    features =
+      if String.contains?(term, "256") ||
+           term_program in ["iTerm.app", "vscode"],
+         do: [:colors_256 | features],
+         else: features
+
+    features =
+      if term_program in ["iTerm.app", "vscode"] ||
+           term_emulator == "JetBrains-JediTerm",
+         do: [:true_color | features],
+         else: features
+
     features
   end
 
   defp detect_mouse_feature do
     term_program = System.get_env("TERM_PROGRAM") || ""
     term_emulator = System.get_env("TERM_EMULATOR") || ""
-    if term_program in ["iTerm.app", "vscode"] || term_emulator == "JetBrains-JediTerm", do: [:mouse], else: []
+
+    if term_program in ["iTerm.app", "vscode"] ||
+         term_emulator == "JetBrains-JediTerm",
+       do: [:mouse],
+       else: []
   end
 
   defp detect_title_feature do
     term_program = System.get_env("TERM_PROGRAM") || ""
     term_emulator = System.get_env("TERM_EMULATOR") || ""
-    if term_program in ["iTerm.app", "vscode", "Apple_Terminal"] || term_emulator == "JetBrains-JediTerm", do: [:title], else: []
+
+    if term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
+         term_emulator == "JetBrains-JediTerm",
+       do: [:title],
+       else: []
   end
 
   defp detect_unicode_feature do

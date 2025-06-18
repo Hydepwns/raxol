@@ -1,12 +1,12 @@
 defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
-  @moduledoc '''
+  @moduledoc """
   Unified metrics system for the Raxol terminal emulator.
   This module provides centralized metrics collection for:
   - Performance metrics (response times, throughput)
   - Resource usage (memory, CPU)
   - Error tracking
   - Usage statistics
-  '''
+  """
 
   use GenServer
   require Logger
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the unified metrics manager.
 
   ## Options
@@ -40,12 +40,12 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     * `:aggregation_interval` - How often to aggregate metrics (in milliseconds)
     * `:alert_thresholds` - Thresholds for alerting
     * `:export_format` - Format for exporting metrics
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Records a metric value.
 
   ## Parameters
@@ -55,12 +55,12 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       * `:type` - Metric type (:counter, :gauge, :histogram, :summary)
       * `:labels` - Metric labels
       * `:metadata` - Additional metadata
-  '''
+  """
   def record_metric(name, value, opts \\ []) do
     GenServer.call(__MODULE__, {:record_metric, name, value, opts})
   end
 
-  @doc '''
+  @doc """
   Gets the current value of a metric.
 
   ## Parameters
@@ -68,12 +68,12 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     * `opts` - Get options
       * `:labels` - Filter by labels
       * `:time_range` - Time range to query
-  '''
+  """
   def get_metric(name, opts \\ []) do
     GenServer.call(__MODULE__, {:get_metric, name, opts})
   end
 
-  @doc '''
+  @doc """
   Records an error event.
 
   ## Parameters
@@ -82,42 +82,42 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       * `:severity` - Error severity
       * `:context` - Error context
       * `:metadata` - Additional metadata
-  '''
+  """
   def record_error(error, opts \\ []) do
     GenServer.call(__MODULE__, {:record_error, error, opts})
   end
 
-  @doc '''
+  @doc """
   Gets error statistics.
 
   ## Parameters
     * `opts` - Get options
       * `:time_range` - Time range to query
       * `:severity` - Filter by severity
-  '''
+  """
   def get_error_stats(opts \\ []) do
     GenServer.call(__MODULE__, {:get_error_stats, opts})
   end
 
-  @doc '''
+  @doc """
   Exports metrics in the configured format.
 
   ## Parameters
     * `opts` - Export options
       * `:format` - Override the default export format
       * `:time_range` - Time range to export
-  '''
+  """
   def export_metrics(opts \\ []) do
     GenServer.call(__MODULE__, {:export_metrics, opts})
   end
 
-  @doc '''
+  @doc """
   Cleans up old metrics.
 
   ## Parameters
     * `opts` - Cleanup options
       * `:before` - Timestamp before which to clean up
-  '''
+  """
   def cleanup_metrics(opts \\ []) do
     GenServer.call(__MODULE__, {:cleanup_metrics, opts})
   end
@@ -241,7 +241,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   end
 
   @impl true
-  def handle_info(:aggregate_metrics, state) do
+  def handle_info({:aggregate_metrics, timer_id}, state) do
     updated_metrics = aggregate_all_metrics(state.metrics)
 
     updated_state = %{
@@ -261,7 +261,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   end
 
   defp schedule_aggregation(interval) do
-    Process.send_after(self(), :aggregate_metrics, interval)
+    _timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:aggregate_metrics, _timer_id}, interval)
   end
 
   defp filter_metrics(metrics, opts) do
@@ -373,12 +374,11 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   defp export_prometheus(metrics) do
     metrics
-    |> Enum.map(fn {name, values} ->
+    |> Enum.map_join("\n", fn {name, values} ->
       value = aggregate_metrics(values)
       labels = format_labels(hd(values).labels)
       "#{name}#{labels} #{value}"
     end)
-    |> Enum.join("\n")
   end
 
   defp export_json(metrics) do
@@ -402,8 +402,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     case labels do
       %{} = labels when map_size(labels) > 0 ->
         labels
-        |> Enum.map(fn {key, value} -> "#{key}=\"#{value}\"" end)
-        |> Enum.join(",")
+        |> Enum.map_join(",", fn {key, value} -> "#{key}=\"#{value}\"" end)
         |> then(&"{#{&1}}")
 
       _ ->

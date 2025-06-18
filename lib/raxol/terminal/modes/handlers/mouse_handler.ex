@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Modes.Handlers.MouseHandler do
-  @moduledoc '''
+  @moduledoc """
   Handles mouse mode operations and their side effects.
   Manages different mouse reporting modes and their effects on the terminal.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
 
-  @doc '''
+  @doc """
   Handles a mouse mode change and applies its effects to the emulator.
-  '''
+  """
   @spec handle_mode_change(atom(), ModeTypes.mode_value(), Emulator.t()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def handle_mode_change(mode_name, value, emulator) do

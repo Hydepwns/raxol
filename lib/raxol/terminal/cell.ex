@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Cell do
-  @moduledoc '''
+  @moduledoc """
   Terminal character cell module.
 
   This module handles the representation and manipulation of individual
@@ -7,13 +7,13 @@ defmodule Raxol.Terminal.Cell do
   - Character content
   - Text attributes (color, style)
   - Cell state
-  '''
+  """
 
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @typedoc '''
+  @typedoc """
   Text style for a terminal cell. See `Raxol.Terminal.ANSI.TextFormatting.text_style/0` for details.
-  '''
+  """
   @type style :: TextFormatting.text_style()
 
   @type t :: %__MODULE__{
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Cell do
     is_wide_placeholder: false
   ]
 
-  @doc '''
+  @doc """
   Creates a new cell with optional character and style.
 
   ## Examples
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Cell do
       "A"
       iex> Cell.get_style(cell)
       %{foreground: :red}
-  '''
+  """
   @spec new(String.t() | nil, TextFormatting.text_style() | nil) :: t()
   def new(char \\ "", style \\ nil) do
     %__MODULE__{
@@ -59,10 +59,10 @@ defmodule Raxol.Terminal.Cell do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a new cell representing the second half of a wide character.
   Inherits the style from the primary cell.
-  '''
+  """
   def new_wide_placeholder(style) do
     %__MODULE__{
       # Placeholder has no visible char
@@ -73,13 +73,13 @@ defmodule Raxol.Terminal.Cell do
     }
   end
 
-  @doc '''
+  @doc """
   Returns the character of the cell.
-  '''
+  """
   @spec get_char(t()) :: String.t() | char()
   def get_char(%__MODULE__{char: char}), do: char
 
-  @doc '''
+  @doc """
   Gets the text style of the cell.
 
   ## Examples
@@ -87,11 +87,11 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.new("A", %{foreground: :red})
       iex> Cell.get_style(cell)
       %{foreground: :red}
-  '''
+  """
   @spec get_style(t()) :: TextFormatting.text_style() | nil
   def get_style(%__MODULE__{style: style}), do: style
 
-  @doc '''
+  @doc """
   Sets the character content of a cell.
 
   ## Examples
@@ -100,13 +100,13 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.set_char(cell, "A")
       iex> Cell.get_char(cell)
       "A"
-  '''
+  """
   @spec set_char(t(), String.t()) :: t()
   def set_char(%__MODULE__{} = cell, char) do
     %{cell | char: char}
   end
 
-  @doc '''
+  @doc """
   Sets the text style of the cell.
 
   ## Examples
@@ -115,13 +115,13 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.set_style(cell, %{foreground: :red})
       iex> Cell.get_style(cell)
       %{foreground: :red}
-  '''
+  """
   @spec set_style(t(), TextFormatting.text_style() | nil) :: t()
   def set_style(%__MODULE__{} = cell, style) do
     %{cell | style: style}
   end
 
-  @doc '''
+  @doc """
   Merges a given style map into the cell's style.
 
   Only non-default attributes from the `style` map will overwrite existing attributes
@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Cell do
       iex> merged_cell = Cell.merge_style(cell, merge_style)
       iex> Cell.get_style(merged_cell)
       %{bold: true, underline: true} # Note: :bold remains, :underline added
-  '''
+  """
   def merge_style(%__MODULE__{} = cell, style_to_merge)
       when is_map(style_to_merge) do
     default_style = TextFormatting.new()
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Cell do
     %{cell | style: final_style}
   end
 
-  @doc '''
+  @doc """
   Checks if the cell has a specific attribute.
 
   ## Examples
@@ -163,12 +163,12 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.new("A", %{foreground: :red})
       iex> Cell.has_attribute?(cell, :foreground)
       true
-  '''
+  """
   def has_attribute?(%__MODULE__{style: style}, attribute) do
     Map.get(style, attribute, false)
   end
 
-  @doc '''
+  @doc """
   Checks if the cell has a specific decoration.
 
   ## Examples
@@ -176,12 +176,12 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.new("A", %{foreground: :red})
       iex> Cell.has_decoration?(cell, :bold)
       false
-  '''
+  """
   def has_decoration?(%__MODULE__{style: style}, decoration) do
     Map.get(style, decoration, false)
   end
 
-  @doc '''
+  @doc """
   Checks if the cell is in double-width mode.
 
   ## Examples
@@ -189,10 +189,10 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.new("A", %{foreground: :red})
       iex> Cell.double_width?(cell)
       false
-  '''
+  """
   def double_width?(%__MODULE__{style: style}), do: style.double_width
 
-  @doc '''
+  @doc """
   Checks if the cell is in double-height mode.
 
   ## Examples
@@ -200,11 +200,11 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.new("A", %{foreground: :red})
       iex> Cell.double_height?(cell)
       false
-  '''
+  """
   def double_height?(%__MODULE__{style: style}),
     do: style.double_height != :none
 
-  @doc '''
+  @doc """
   Checks if a cell is empty.
 
   A cell is considered empty if it contains a space character *and*
@@ -224,13 +224,13 @@ defmodule Raxol.Terminal.Cell do
       iex> cell = Cell.new(" ", bold_style) # Space char but non-default style
       iex> Cell.is_empty?(cell)
       false
-  '''
+  """
   @spec empty?(t()) :: boolean()
   def empty?(%__MODULE__{char: char, style: style}) do
     char == " " and style == TextFormatting.new()
   end
 
-  @doc '''
+  @doc """
   Creates a copy of a cell with new attributes applied.
 
   Accepts a map of attributes or a list of attribute atoms.
@@ -248,7 +248,7 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_style(new_cell)
       %{bold: true, underline: true, reverse: true} # Original bold + list applied
 
-  '''
+  """
   def with_attributes(%__MODULE__{} = cell, attributes)
       when is_list(attributes) do
     # Reduce the list of attribute atoms into the cell's *existing* style
@@ -267,7 +267,7 @@ defmodule Raxol.Terminal.Cell do
     merge_style(cell, attributes)
   end
 
-  @doc '''
+  @doc """
   Creates a copy of a cell with a new character.
 
   ## Examples
@@ -278,12 +278,12 @@ defmodule Raxol.Terminal.Cell do
       "B"
       iex> Cell.get_style(new_cell)
       %{foreground: :red}
-  '''
+  """
   def with_char(%__MODULE__{} = cell, char) do
     %{cell | char: char}
   end
 
-  @doc '''
+  @doc """
   Creates a deep copy of a cell.
 
   ## Examples
@@ -294,7 +294,7 @@ defmodule Raxol.Terminal.Cell do
       "A"
       iex> Cell.get_style(copy)
       %{foreground: :red}
-  '''
+  """
   def copy(%__MODULE__{} = cell) do
     %__MODULE__{
       char: cell.char,
@@ -302,7 +302,7 @@ defmodule Raxol.Terminal.Cell do
     }
   end
 
-  @doc '''
+  @doc """
   Compares two cells for equality.
 
   Cells are considered equal if they have the same character and the same style map.
@@ -328,7 +328,7 @@ defmodule Raxol.Terminal.Cell do
       false
       iex> Cell.equals?(nil, nil)
       true
-  '''
+  """
   def equals?(%__MODULE__{} = cell1, %__MODULE__{} = cell2) do
     cell1.char == cell2.char && cell1.style == cell2.style &&
       cell1.is_wide_placeholder == cell2.is_wide_placeholder
@@ -338,11 +338,11 @@ defmodule Raxol.Terminal.Cell do
   def equals?(_, nil), do: false
   def equals?(nil, _), do: false
 
-  @doc '''
+  @doc """
   Creates a Cell struct from a map representation, typically from rendering.
   Expects a map like %{char: integer_codepoint, style: map, is_wide_placeholder: boolean | nil}.
   Returns nil if the map is invalid.
-  '''
+  """
   @spec from_map(map()) :: t() | nil
   def from_map(%{char: char_code, style: style} = map)
       when is_integer(char_code) and is_map(style) do
@@ -365,9 +365,9 @@ defmodule Raxol.Terminal.Cell do
     nil
   end
 
-  @doc '''
+  @doc """
   Creates an empty cell.
-  '''
+  """
   @spec empty() :: t()
   def empty, do: new()
 end

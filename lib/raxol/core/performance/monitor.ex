@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Performance.Monitor do
-  @moduledoc '''
+  @moduledoc """
   Performance monitoring system for Raxol applications.
 
   This module provides tools for:
@@ -26,15 +26,16 @@ defmodule Raxol.Core.Performance.Monitor do
   # Get performance metrics
   metrics = Monitor.get_metrics(monitor)
   ```
-  '''
+  """
 
   use GenServer
 
-  alias Raxol.Core.Performance.{JankDetector, MetricsCollector}
+  @default_jank_threshold 16
+  @default_memory_check_interval 5000
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts a new performance monitor.
 
   ## Options
@@ -50,12 +51,12 @@ defmodule Raxol.Core.Performance.Monitor do
 
       iex> {:ok, monitor} = Monitor.start_link(jank_threshold: 20)
       {:ok, #PID<0.124.0>}
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts)
   end
 
-  @doc '''
+  @doc """
   Records a frame's timing.
 
   ## Parameters
@@ -67,12 +68,12 @@ defmodule Raxol.Core.Performance.Monitor do
 
       iex> Monitor.record_frame(monitor, 16)
       :ok
-  '''
+  """
   def record_frame(monitor, frame_time) do
     GenServer.cast(monitor, {:record_frame, frame_time})
   end
 
-  @doc '''
+  @doc """
   Checks if jank was detected in the last frame.
 
   ## Parameters
@@ -88,12 +89,12 @@ defmodule Raxol.Core.Performance.Monitor do
 
       iex> Monitor.detect_jank?(monitor)
       false
-  '''
+  """
   def detect_jank?(monitor) do
-    GenServer.call(monitor, :detect_jank)
+    GenServer.call(monitor, :detect_jank?)
   end
 
-  @doc '''
+  @doc """
   Gets current performance metrics.
 
   ## Parameters
@@ -119,117 +120,65 @@ defmodule Raxol.Core.Performance.Monitor do
         memory_usage: 1234567,
         gc_stats: %{...}
       }
-  '''
+  """
   def get_metrics(monitor) do
     GenServer.call(monitor, :get_metrics)
+  end
+
+  def reset_metrics(monitor) do
+    GenServer.cast(monitor, :reset_metrics)
   end
 
   # Server Callbacks
 
   @impl true
   def init(opts) do
-    jank_threshold = Keyword.get(opts, :jank_threshold, 16)
-    sample_size = Keyword.get(opts, :sample_size, 60)
-    memory_check_interval = Keyword.get(opts, :memory_check_interval, 5000)
+    jank_threshold = Keyword.get(opts, :jank_threshold, @default_jank_threshold)
 
-    # Initialize state
+    memory_check_interval =
+      Keyword.get(opts, :memory_check_interval, @default_memory_check_interval)
+
     state = %{
-      jank_detector: JankDetector.new(jank_threshold, sample_size),
-      metrics_collector: MetricsCollector.new(),
+      frame_times: [],
+      jank_count: 0,
+      jank_threshold: jank_threshold,
       memory_check_interval: memory_check_interval,
-      last_memory_check: System.monotonic_time(:millisecond)
+      last_memory_check: System.monotonic_time()
     }
 
-    # Schedule memory check
-    _memory_check_timer =
-      Process.send_after(self(), :check_memory, memory_check_interval)
-
+    schedule_memory_check(memory_check_interval)
     {:ok, state}
   end
 
   @impl true
   def handle_cast({:record_frame, frame_time}, state) do
-    # Update jank detector
-    jank_detector = JankDetector.record_frame(state.jank_detector, frame_time)
+    new_frame_times = [frame_time | state.frame_times] |> Enum.take(60)
 
-    # Record performance metrics
-    Raxol.Core.Metrics.UnifiedCollector.record_performance(
-      :frame_time,
-      frame_time,
-      tags: [:performance, :frame]
-    )
+    new_jank_count =
+      if detect_jank?(frame_time, state.jank_threshold),
+        do: state.jank_count + 1,
+        else: state.jank_count
 
-    # Record FPS
-    fps = 1000 / frame_time
-
-    Raxol.Core.Metrics.UnifiedCollector.record_performance(
-      :fps,
-      fps,
-      tags: [:performance, :frame]
-    )
-
-    # Record jank if detected
-    if JankDetector.detect_jank?(jank_detector) do
-      Raxol.Core.Metrics.UnifiedCollector.record_performance(
-        :jank,
-        1,
-        tags: [:performance, :frame, :jank]
-      )
-    end
-
-    {:noreply, %{state | jank_detector: jank_detector}}
+    {:noreply,
+     %{state | frame_times: new_frame_times, jank_count: new_jank_count}}
   end
 
   @impl true
-  def handle_call(:detect_jank, _from, state) do
-    jank_detected = JankDetector.detect_jank?(state.jank_detector)
-    {:reply, jank_detected, state}
+  def handle_cast(:reset_metrics, state) do
+    {:noreply, %{state | frame_times: [], jank_count: 0}}
   end
 
   @impl true
   def handle_call(:get_metrics, _from, state) do
-    # Get metrics from unified collector
-    performance_metrics =
-      Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:performance)
-
-    resource_metrics =
-      Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:resource)
-
-    # Calculate metrics
-    fps =
-      case performance_metrics.frame_time do
-        [%{value: frame_time} | _] -> 1000 / frame_time
-        _ -> 0.0
-      end
-
-    avg_frame_time =
-      case performance_metrics.frame_time do
-        [%{value: frame_time} | _] -> frame_time
-        _ -> 0.0
-      end
-
-    jank_count =
-      case performance_metrics.jank do
-        janks when is_list(janks) -> length(janks)
-        _ -> 0
-      end
-
-    memory_usage =
-      case resource_metrics.memory_usage do
-        [%{value: memory} | _] -> memory
-        _ -> 0
-      end
-
-    gc_stats =
-      case resource_metrics.gc_stats do
-        [%{value: stats} | _] -> stats
-        _ -> %{}
-      end
+    fps = calculate_fps(state.frame_times)
+    avg_frame_time = calculate_avg_frame_time(state.frame_times)
+    memory_usage = get_memory_usage()
+    gc_stats = :erlang.statistics(:garbage_collection)
 
     metrics = %{
       fps: fps,
       avg_frame_time: avg_frame_time,
-      jank_count: jank_count,
+      jank_count: state.jank_count,
       memory_usage: memory_usage,
       gc_stats: gc_stats
     }
@@ -238,39 +187,58 @@ defmodule Raxol.Core.Performance.Monitor do
   end
 
   @impl true
+  def handle_call(:detect_jank?, _from, state) do
+    jank_detected =
+      case state.frame_times do
+        [latest | _] -> detect_jank?(latest, state.jank_threshold)
+        [] -> false
+      end
+
+    {:reply, jank_detected, state}
+  end
+
+  @impl true
   def handle_info(:check_memory, state) do
-    # Get memory metrics
-    memory = :erlang.memory()
-    total_memory = memory[:total]
-    process_memory = memory[:processes]
-
-    # Record memory metrics
-    Raxol.Core.Metrics.UnifiedCollector.record_resource(
-      :total_memory,
-      total_memory,
-      tags: [:memory, :system]
-    )
-
-    Raxol.Core.Metrics.UnifiedCollector.record_resource(
-      :process_memory,
-      process_memory,
-      tags: [:memory, :process]
-    )
-
-    # Record memory ratio
-    Raxol.Core.Metrics.UnifiedCollector.record_resource(
-      :memory_usage_ratio,
-      process_memory / total_memory,
-      tags: [:memory, :ratio]
-    )
-
-    # Reschedule memory check
+    memory_usage = get_memory_usage()
+    send(self(), {:memory_check, memory_usage})
     schedule_memory_check(state.memory_check_interval)
-
-    {:noreply, state}
+    {:noreply, %{state | last_memory_check: System.monotonic_time()}}
   end
 
   # Private Helpers
+
+  defp detect_jank?(frame_time, threshold) do
+    adjusted_threshold = get_jank_threshold(threshold)
+    frame_time > adjusted_threshold
+  end
+
+  defp get_jank_threshold(base_threshold) do
+    if Raxol.Core.Preferences.get_preference(:reduced_motion, false) do
+      # Higher threshold for reduced motion (less sensitive to jank)
+      base_threshold * 2
+    else
+      base_threshold
+    end
+  end
+
+  defp calculate_fps(frame_times) do
+    case frame_times do
+      [] -> 0.0
+      times -> 1000 / (Enum.sum(times) / length(times))
+    end
+  end
+
+  defp calculate_avg_frame_time(frame_times) do
+    case frame_times do
+      [] -> 0.0
+      times -> Enum.sum(times) / length(times)
+    end
+  end
+
+  defp get_memory_usage do
+    {:memory, total} = :erlang.memory(:total)
+    total
+  end
 
   defp schedule_memory_check(interval) do
     Process.send_after(self(), :check_memory, interval)

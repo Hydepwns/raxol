@@ -1,49 +1,49 @@
 defmodule Raxol.Terminal.Buffer.Queries do
-  @moduledoc '''
+  @moduledoc """
   Handles buffer state querying operations.
   This module provides functions for querying the state of the screen buffer,
   including dimensions, content, and selection state.
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
 
-  @doc '''
+  @doc """
   Gets the dimensions of the buffer.
-  '''
+  """
   @spec get_dimensions(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()}
   def get_dimensions(buffer) do
     {buffer.width, buffer.height}
   end
 
-  @doc '''
+  @doc """
   Gets the width of the buffer.
-  '''
+  """
   @spec get_width(ScreenBuffer.t()) :: non_neg_integer()
   def get_width(buffer) do
     buffer.width
   end
 
-  @doc '''
+  @doc """
   Gets the height of the buffer.
-  '''
+  """
   @spec get_height(ScreenBuffer.t()) :: non_neg_integer()
   def get_height(buffer) do
     buffer.height
   end
 
-  @doc '''
+  @doc """
   Gets the content of the buffer as a list of lines.
-  '''
+  """
   @spec get_content(ScreenBuffer.t()) :: list(list(Cell.t()))
   def get_content(buffer) do
     buffer.cells
   end
 
-  @doc '''
+  @doc """
   Gets a specific line from the buffer.
-  '''
+  """
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, y) when y >= 0 and y < buffer.height do
     Enum.at(buffer.cells, y)
@@ -51,9 +51,9 @@ defmodule Raxol.Terminal.Buffer.Queries do
 
   def get_line(_, _), do: []
 
-  @doc '''
+  @doc """
   Gets a specific cell from the buffer.
-  '''
+  """
   @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
@@ -68,9 +68,9 @@ defmodule Raxol.Terminal.Buffer.Queries do
 
   def get_cell(_, _, _), do: Cell.new()
 
-  @doc '''
+  @doc """
   Gets the text content of the buffer.
-  '''
+  """
   @spec get_text(ScreenBuffer.t()) :: String.t()
   def get_text(buffer) do
     buffer.cells
@@ -80,9 +80,9 @@ defmodule Raxol.Terminal.Buffer.Queries do
     end)
   end
 
-  @doc '''
+  @doc """
   Gets the text content of a specific line.
-  '''
+  """
   @spec get_line_text(ScreenBuffer.t(), non_neg_integer()) :: String.t()
   def get_line_text(buffer, y) when y >= 0 and y < buffer.height do
     buffer.cells
@@ -92,9 +92,9 @@ defmodule Raxol.Terminal.Buffer.Queries do
 
   def get_line_text(_, _), do: ""
 
-  @doc '''
+  @doc """
   Checks if a position is within the buffer bounds.
-  '''
+  """
   @spec in_bounds?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           boolean()
   def in_bounds?(buffer, x, y) when x >= 0 and y >= 0 do
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Buffer.Queries do
 
   def in_bounds?(_, _, _), do: false
 
-  @doc '''
+  @doc """
   Checks if the buffer is empty.
 
   ## Parameters
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.Buffer.Queries do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Queries.empty?(buffer)
       true
-  '''
+  """
   @spec empty?(ScreenBuffer.t()) :: boolean()
   def empty?(buffer) do
     Enum.all?(buffer.cells, fn line ->
@@ -127,15 +127,15 @@ defmodule Raxol.Terminal.Buffer.Queries do
     end)
   end
 
-  @doc '''
+  @doc """
   Gets the character at the given position in the buffer.
-  '''
+  """
   @spec get_char(map(), integer(), integer()) :: String.t()
   def get_char(_buffer, _x, _y) do
     " "
   end
 
-  @doc '''
+  @doc """
   Gets the cell at the specified position in the buffer.
 
   ## Parameters
@@ -154,13 +154,14 @@ defmodule Raxol.Terminal.Buffer.Queries do
       iex> cell = Queries.get_cell_at(buffer, 0, 0)
       iex> cell.char
       ""
-  '''
-  @spec get_cell_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
+  """
+  @spec get_cell_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          Cell.t()
   def get_cell_at(buffer, x, y) do
     get_cell(buffer, x, y)
   end
 
-  @doc '''
+  @doc """
   Gets the character at the specified position in the buffer.
 
   ## Parameters
@@ -178,8 +179,9 @@ defmodule Raxol.Terminal.Buffer.Queries do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Queries.get_char_at(buffer, 0, 0)
       " "
-  '''
-  @spec get_char_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: String.t()
+  """
+  @spec get_char_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          String.t()
   def get_char_at(buffer, x, y) do
     get_char(buffer, x, y)
   end
