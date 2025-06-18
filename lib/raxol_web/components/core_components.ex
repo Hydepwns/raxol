@@ -1,13 +1,13 @@
 defmodule RaxolWeb.CoreComponents do
-  @moduledoc """
+  @moduledoc '''
   Provides core UI components for the Raxol web interface.
-  """
+  '''
 
   use Phoenix.Component
 
-  @doc """
+  @doc '''
   Renders a button with the given text and options.
-  """
+  '''
   attr :type, :string, default: "button"
   attr :class, :string, default: nil
   attr :disabled, :boolean, default: false
@@ -15,7 +15,7 @@ defmodule RaxolWeb.CoreComponents do
   slot(:inner_block, required: true)
 
   def button(assigns) do
-    ~H"""
+    ~H'''
     <button
       type={@type}
       class={[
@@ -30,12 +30,12 @@ defmodule RaxolWeb.CoreComponents do
     >
       <%= render_slot(@inner_block) %>
     </button>
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Renders a form input with the given type and options.
-  """
+  '''
   attr :type, :string, default: "text"
   attr :name, :string, required: true
   attr(:value, :any)
@@ -45,7 +45,7 @@ defmodule RaxolWeb.CoreComponents do
   attr :rest, :global, include: ~w(autocomplete form required)
 
   def input(assigns) do
-    ~H"""
+    ~H'''
     <input
       type={@type}
       name={@name}
@@ -60,18 +60,18 @@ defmodule RaxolWeb.CoreComponents do
       disabled={@disabled}
       {@rest}
     />
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Renders a label for a form input.
-  """
+  '''
   attr :for, :string, required: true
   attr :class, :string, default: nil
   slot(:inner_block, required: true)
 
   def label(assigns) do
-    ~H"""
+    ~H'''
     <label
       for={@for}
       class={[
@@ -81,12 +81,12 @@ defmodule RaxolWeb.CoreComponents do
     >
       <%= render_slot(@inner_block) %>
     </label>
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Renders a form group with a label and input.
-  """
+  '''
   attr :name, :string, required: true
   attr :label, :string, required: true
   attr :type, :string, default: "text"
@@ -97,7 +97,7 @@ defmodule RaxolWeb.CoreComponents do
   attr :rest, :global, include: ~w(autocomplete form required)
 
   def form_group(assigns) do
-    ~H"""
+    ~H'''
     <div class={["space-y-1", @class]}>
       <.label for={@name}><%= @label %></.label>
       <.input
@@ -109,19 +109,19 @@ defmodule RaxolWeb.CoreComponents do
         {@rest}
       />
     </div>
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Renders a flash message.
-  """
+  '''
   attr :kind, :string, required: true
   attr :title, :string, default: nil
   attr :rest, :global, include: ~w(phx-click phx-value)
   slot(:inner_block, required: true)
 
   def flash(assigns) do
-    ~H"""
+    ~H'''
     <div
       role="alert"
       class={[
@@ -140,6 +140,6 @@ defmodule RaxolWeb.CoreComponents do
         <%= render_slot(@inner_block) %>
       </div>
     </div>
-    """
+    '''
   end
 end

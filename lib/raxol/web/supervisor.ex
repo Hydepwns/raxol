@@ -1,7 +1,7 @@
 defmodule Raxol.Web.Supervisor do
-  @moduledoc """
+  @moduledoc '''
   Supervisor for web-related processes.
-  """
+  '''
 
   use Supervisor
 

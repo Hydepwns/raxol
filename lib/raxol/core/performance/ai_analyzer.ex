@@ -1,14 +1,14 @@
 defmodule Raxol.Core.Performance.AIAnalyzer do
-  @moduledoc """
+  @moduledoc '''
   Handles AI-based analysis of performance metrics and generates optimization recommendations.
   This module integrates with an AI agent to provide deep insights and actionable suggestions.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Performance.Analyzer
 
-  @doc """
+  @doc '''
   Analyzes performance metrics using AI and returns detailed insights and recommendations.
 
   ## Parameters
@@ -25,7 +25,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
       - :risk_assessment - Performance risk analysis
       - :optimization_impact - Expected impact of suggested optimizations
       - :ai_confidence - AI's confidence in the analysis
-  """
+  '''
   def analyze(metrics, options \\ %{}) do
     # Prepare data for AI analysis
     analysis_data = Analyzer.analyze(metrics)
@@ -55,7 +55,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     generate_mock_analysis(ai_data)
   end
 
-  @doc """
+  @doc '''
   Generates a performance report with AI insights and recommendations.
 
   ## Parameters
@@ -67,7 +67,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
   ## Returns
     - Map containing the formatted report and additional data
-  """
+  '''
   def generate_report(metrics, options \\ %{}) do
     analysis = analyze(metrics, options)
 
@@ -106,7 +106,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
     case format do
       :text ->
-        """
+        '''
         Performance Analysis Report
         =========================
 
@@ -123,13 +123,13 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
         #{format_impact(analysis.optimization_impact)}
 
         AI Confidence: #{Float.round(analysis.ai_confidence * 100, 1)}%
-        """
+        '''
 
       :json ->
         Jason.encode!(analysis, pretty: true)
 
       :html ->
-        """
+        '''
         <!DOCTYPE html>
         <html>
           <head>
@@ -172,19 +172,19 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
             </div>
           </body>
         </html>
-        """
+        '''
     end
   end
 
   defp format_recommendations(recommendations) do
     recommendations
     |> Enum.map(fn rec ->
-      """
+      '''
       [#{rec.priority}] #{rec.area}
       Description: #{rec.description}
       Impact: #{rec.impact}
       Effort: #{rec.effort}
-      """
+      '''
     end)
     |> Enum.join("\n")
   end
@@ -192,20 +192,20 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
   defp format_recommendations_html(recommendations) do
     recommendations
     |> Enum.map(fn rec ->
-      """
+      '''
       <div class="recommendation #{rec.priority}">
         <h3>[#{rec.priority}] #{rec.area}</h3>
         <p><strong>Description:</strong> #{rec.description}</p>
         <p><strong>Impact:</strong> #{rec.impact}</p>
         <p><strong>Effort:</strong> #{rec.effort}</p>
       </div>
-      """
+      '''
     end)
     |> Enum.join("\n")
   end
 
   defp format_risk_assessment(risk) do
-    """
+    '''
     Overall Risk: #{risk.overall_risk}
 
     Area Risks:
@@ -213,11 +213,11 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
     Trends:
     #{Enum.map_join(risk.trends, "\n", fn {area, trend} -> "  #{area}: #{trend}" end)}
-    """
+    '''
   end
 
   defp format_risk_assessment_html(risk) do
-    """
+    '''
     <p><strong>Overall Risk:</strong> <span class="#{risk.overall_risk}">#{risk.overall_risk}</span></p>
 
     <h3>Area Risks</h3>
@@ -229,7 +229,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     <ul>
       #{Enum.map_join(risk.trends, "\n", fn {area, trend} -> "<li>#{area}: #{trend}</li>" end)}
     </ul>
-    """
+    '''
   end
 
   defp format_impact(impact) do
@@ -237,10 +237,10 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
   end
 
   defp format_impact_html(impact) do
-    """
+    '''
     <ul>
       #{Enum.map_join(impact, "\n", fn {area, value} -> "<li><strong>#{area}:</strong> #{value}</li>" end)}
     </ul>
-    """
+    '''
   end
 end

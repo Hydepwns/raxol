@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.MemoryManager do
-  @moduledoc """
+  @moduledoc '''
   Manages memory usage and limits for the terminal emulator.
-  """
+  '''
 
   use GenServer
 
@@ -21,45 +21,45 @@ defmodule Raxol.Terminal.MemoryManager do
 
   # Client API
 
-  @doc """
+  @doc '''
   Starts the memory manager process.
-  """
+  '''
   def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Gets the current memory usage.
-  """
+  '''
   def get_memory_usage(memory_manager) do
     GenServer.call(memory_manager, :get_memory_usage)
   end
 
-  @doc """
+  @doc '''
   Updates memory usage for the given state.
-  """
+  '''
   def update_usage(state) do
     current_memory = calculate_memory_usage(state)
     %{state | memory_usage: current_memory}
   end
 
-  @doc """
+  @doc '''
   Checks if the current memory usage is within limits.
-  """
+  '''
   def within_limits?(memory_manager, state) do
     GenServer.call(memory_manager, {:within_limits, state})
   end
 
-  @doc """
+  @doc '''
   Checks if scrolling is needed based on memory usage.
-  """
+  '''
   def should_scroll?(memory_manager, state) do
     GenServer.call(memory_manager, {:should_scroll, state})
   end
 
-  @doc """
+  @doc '''
   Checks and cleans up memory if needed.
-  """
+  '''
   def check_and_cleanup(state) do
     current_memory = calculate_memory_usage(state)
 

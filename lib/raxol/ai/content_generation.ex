@@ -1,5 +1,5 @@
 defmodule Raxol.AI.ContentGeneration do
-  @moduledoc """
+  @moduledoc '''
   Content generation capabilities for Raxol applications.
 
   This module provides AI-powered content generation for various aspects of
@@ -14,7 +14,7 @@ defmodule Raxol.AI.ContentGeneration do
 
   The generation is configurable and can be adapted to different contexts
   within the application.
-  """
+  '''
 
   alias Raxol.Core.UXRefinement
 
@@ -27,7 +27,7 @@ defmodule Raxol.AI.ContentGeneration do
           model: atom()
         }
 
-  @doc """
+  @doc '''
   Generates content based on the specified type and prompt.
 
   ## Options
@@ -41,8 +41,8 @@ defmodule Raxol.AI.ContentGeneration do
   ## Examples
 
       iex> generate(:text, "Create a welcome message", max_length: 50)
-      {:ok, "Welcome to the terminal! How can I assist you today?"}
-  """
+      {:ok, "Welcome to the terminal! How can I assist you today?'}
+  '''
   @spec generate(generation_type(), String.t(), keyword()) ::
           {:ok, String.t()} | {:error, String.t()}
   def generate(type, prompt, opts \\ []) do
@@ -52,18 +52,18 @@ defmodule Raxol.AI.ContentGeneration do
     if UXRefinement.feature_enabled?(:ai_content_generation) do
       do_generate(type, prompt, options)
     else
-      {:error, "AI content generation is not enabled"}
+      {:error, 'AI content generation is not enabled"}
     end
   end
 
-  @doc """
+  @doc '''
   Generates text suggestions based on current input context.
 
   ## Examples
 
       iex> suggest_text("print(", context: %{language: :python})
       {:ok, ["print(\"Hello, World!\")", "print(value)", "print(f\"Value: {value}\")"]}
-  """
+  '''
   @spec suggest_text(String.t(), keyword()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def suggest_text(input, opts \\ []) do
@@ -76,14 +76,14 @@ defmodule Raxol.AI.ContentGeneration do
     end
   end
 
-  @doc """
+  @doc '''
   Generates a contextual help document based on application state.
 
   ## Examples
 
       iex> generate_help(%{current_view: :editor, command_mode: true})
       {:ok, %{title: "Editor Mode Commands", content: "..."}}
-  """
+  '''
   @spec generate_help(map(), keyword()) :: {:ok, map()} | {:error, String.t()}
   def generate_help(context, opts \\ []) do
     options = opts |> Enum.into(%{}) |> normalize_options()
@@ -95,14 +95,14 @@ defmodule Raxol.AI.ContentGeneration do
     end
   end
 
-  @doc """
+  @doc '''
   Generates an interactive tutorial for a specific feature.
 
   ## Examples
 
       iex> generate_tutorial(:keyboard_shortcuts)
       {:ok, %{steps: [...], interactive: true}}
-  """
+  '''
   @spec generate_tutorial(atom(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
   def generate_tutorial(feature, opts \\ []) do

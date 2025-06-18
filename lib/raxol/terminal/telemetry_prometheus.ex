@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.TelemetryPrometheus do
-  @moduledoc """
+  @moduledoc '''
   Example integration of Telemetry.Metrics and TelemetryMetricsPrometheus for Raxol terminal events.
 
   Add this module to your supervision tree to automatically export terminal metrics for Prometheus scraping.
@@ -13,12 +13,12 @@ defmodule Raxol.Terminal.TelemetryPrometheus do
         Supervisor.start_link(children, strategy: :one_for_one)
       end
 
-  """
+  '''
   import Telemetry.Metrics
 
-  @doc """
+  @doc '''
   Returns a list of Telemetry metrics for Raxol terminal events, including advanced Prometheus metrics.
-  """
+  '''
   def metrics do
     [
       counter("raxol.terminal.focus_changed"),

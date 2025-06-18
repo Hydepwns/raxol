@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Plugins.Manager.Core do
-  @moduledoc """
+  @moduledoc '''
   Core functionality for managing terminal plugins.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Creates a new plugin manager instance.
-  """
+  '''
   def new do
     %{
       plugins: %{},

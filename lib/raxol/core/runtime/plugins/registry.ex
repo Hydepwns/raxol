@@ -1,41 +1,41 @@
 defmodule Raxol.Core.Runtime.Plugins.Registry do
-  @moduledoc """
+  @moduledoc '''
   Plugin registry using GenServer for state management.
   Manages information about loaded plugins and their metadata.
-  """
+  '''
 
   use GenServer
   require Raxol.Core.Runtime.Log
 
   # Public API
 
-  @doc """
+  @doc '''
   Starts the plugin registry GenServer.
-  """
+  '''
   def start_link(_opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Registers a plugin with its metadata.
-  """
+  '''
   @spec register_plugin(atom(), map()) :: :ok
   def register_plugin(plugin_id, metadata)
       when is_atom(plugin_id) and is_map(metadata) do
     GenServer.call(__MODULE__, {:register_plugin, plugin_id, metadata})
   end
 
-  @doc """
+  @doc '''
   Unregisters a plugin by its ID.
-  """
+  '''
   @spec unregister_plugin(atom()) :: :ok
   def unregister_plugin(plugin_id) when is_atom(plugin_id) do
     GenServer.call(__MODULE__, {:unregister_plugin, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Lists all registered plugins as {plugin_id, metadata} tuples.
-  """
+  '''
   @spec list_plugins() :: list({atom(), map()})
   def list_plugins do
     GenServer.call(__MODULE__, :list_plugins)

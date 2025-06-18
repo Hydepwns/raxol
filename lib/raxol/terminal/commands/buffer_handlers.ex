@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.Commands.BufferHandlers do
-  @moduledoc """
+  @moduledoc '''
   Handles buffer manipulation commands.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.Editor
 
-  @doc """
-  Handles the 'l' command (insert blank lines).
-  """
+  @doc '''
+  Handles the "l" command (insert blank lines).
+  '''
   def handle_l(emulator, count) do
     active_buffer = Emulator.get_active_buffer(emulator)
     {_x, y} = Emulator.get_cursor_position(emulator)
@@ -18,9 +18,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
   end
 
-  @doc """
-  Handles the 'm' command (delete lines).
-  """
+  @doc '''
+  Handles the "m" command (delete lines).
+  '''
   def handle_m(emulator, count) do
     active_buffer = Emulator.get_active_buffer(emulator)
     {_x, y} = Emulator.get_cursor_position(emulator)
@@ -28,9 +28,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
   end
 
-  @doc """
-  Handles the 'x' command (erase characters).
-  """
+  @doc '''
+  Handles the "x" command (erase characters).
+  '''
   def handle_x(emulator, count) do
     active_buffer = Emulator.get_active_buffer(emulator)
     {x, y} = Emulator.get_cursor_position(emulator)

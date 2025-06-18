@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.EscapeSequence do
-  @moduledoc """
+  @moduledoc '''
   Handles parsing of ANSI escape sequences and other control sequences.
 
   This module provides functions for parsing ANSI escape sequences
   into structured data representing terminal commands.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Escape.Parsers.{BaseParser, CSIParser, SCSParser}
 
   # --- Public API ---
 
-  @doc """
+  @doc '''
   Parses an input string, potentially containing an escape sequence.
 
   Returns:
@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.EscapeSequence do
     * `{:designate_charset, target_g_set, charset_atom}`
     * `{:invoke_charset, target_g_set}`
     * etc.
-  """
+  '''
   @spec parse(String.t()) ::
           {:ok, term(), String.t()}
           | {:incomplete, String.t()}

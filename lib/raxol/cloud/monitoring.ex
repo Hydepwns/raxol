@@ -1,5 +1,5 @@
 defmodule Raxol.Cloud.Monitoring do
-  @moduledoc """
+  @moduledoc '''
   Cloud monitoring system for Raxol applications.
 
   This module provides comprehensive monitoring capabilities for Raxol
@@ -13,7 +13,7 @@ defmodule Raxol.Cloud.Monitoring do
   * Health checks and status monitoring
   * Alerting and notification system
   * Integration with popular monitoring services
-  """
+  '''
 
   alias Raxol.Cloud.Monitoring.{Metrics, Errors, Health, Alerts}
   alias Raxol.Cloud.EdgeComputing
@@ -65,7 +65,7 @@ defmodule Raxol.Cloud.Monitoring do
   # Process dictionary key for monitoring state
   @monitoring_key :raxol_monitoring_state
 
-  @doc """
+  @doc '''
   Initializes the monitoring system.
 
   ## Options
@@ -82,7 +82,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> init(metrics_interval: 5000, backends: [:datadog, :prometheus])
       :ok
-  """
+  '''
   def init(opts \\ []) do
     state = State.new()
 
@@ -125,9 +125,9 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc """
+  @doc '''
   Updates the monitoring configuration.
-  """
+  '''
   def update_config(state \\ nil, config) do
     with_state(state, fn s ->
       # Merge new config with existing config
@@ -136,9 +136,9 @@ defmodule Raxol.Cloud.Monitoring do
     end)
   end
 
-  @doc """
+  @doc '''
   Starts the monitoring system if it's not already active.
-  """
+  '''
   def start() do
     with_state(fn state ->
       if not state.active do
@@ -153,9 +153,9 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc """
+  @doc '''
   Stops the monitoring system.
-  """
+  '''
   def stop() do
     with_state(fn state ->
       %{state | active: false}
@@ -164,7 +164,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc """
+  @doc '''
   Records a metric with the given name and value.
 
   ## Options
@@ -177,7 +177,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> record_metric("response_time", 123, tags: ["api", "users"], source: :api)
       :ok
-  """
+  '''
   def record_metric(name, value, opts \\ []) do
     state = get_state()
 
@@ -192,7 +192,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc """
+  @doc '''
   Records a batch of metrics.
 
   ## Examples
@@ -202,7 +202,7 @@ defmodule Raxol.Cloud.Monitoring do
       ...>   {"memory_usage", 0.5, [source: :system]}
       ...> ])
       :ok
-  """
+  '''
   def record_metrics(metrics) do
     state = get_state()
 
@@ -215,7 +215,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc """
+  @doc '''
   Records an error or exception.
 
   ## Options
@@ -230,7 +230,7 @@ defmodule Raxol.Cloud.Monitoring do
       iex> record_error(%RuntimeError{message: "Connection failed"},
       ...>   context: %{user_id: 123}, severity: :error)
       :ok
-  """
+  '''
   def record_error(error, opts \\ []) do
     state = get_state()
 
@@ -247,7 +247,7 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc """
+  @doc '''
   Runs a health check on the system.
 
   ## Options
@@ -259,7 +259,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> run_health_check(components: [:database, :api])
       {:ok, %{status: :healthy, components: %{database: :healthy, api: :healthy}}}
-  """
+  '''
   def run_health_check(opts \\ []) do
     state = get_state()
 
@@ -286,7 +286,7 @@ defmodule Raxol.Cloud.Monitoring do
     end
   end
 
-  @doc """
+  @doc '''
   Triggers an alert with the given type and data.
 
   ## Options
@@ -298,7 +298,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> trigger_alert(:high_cpu_usage, %{value: 0.95}, severity: :critical)
       :ok
-  """
+  '''
   def trigger_alert(type, data, opts \\ []) do
     state = get_state()
 
@@ -326,9 +326,9 @@ defmodule Raxol.Cloud.Monitoring do
     :ok
   end
 
-  @doc """
+  @doc '''
   Gets the current monitoring status.
-  """
+  '''
   def status() do
     state = get_state()
 
@@ -343,7 +343,7 @@ defmodule Raxol.Cloud.Monitoring do
     }
   end
 
-  @doc """
+  @doc '''
   Gets recent metrics for the specified metric name.
 
   ## Options
@@ -357,12 +357,12 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> get_metrics("response_time", limit: 10, tags: ["api"])
       [%{name: "response_time", value: 123, timestamp: ~U[2023-01-01 12:00:00Z], tags: ["api"]}]
-  """
+  '''
   def get_metrics(name, opts \\ []) do
     Metrics.get(name, opts)
   end
 
-  @doc """
+  @doc '''
   Gets recent errors.
 
   ## Options
@@ -377,12 +377,12 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> get_errors(limit: 10, severity: :critical)
       [%{error: %RuntimeError{...}, severity: :critical, ...}]
-  """
+  '''
   def get_errors(opts \\ []) do
     Errors.get(opts)
   end
 
-  @doc """
+  @doc '''
   Gets recent alerts.
 
   ## Options
@@ -397,7 +397,7 @@ defmodule Raxol.Cloud.Monitoring do
 
       iex> get_alerts(limit: 10, severity: :critical)
       [%{type: :high_cpu_usage, severity: :critical, ...}]
-  """
+  '''
   def get_alerts(opts \\ []) do
     state = get_state()
 

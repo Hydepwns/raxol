@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Selection.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages text selection operations in the terminal.
-  """
+  '''
 
   defstruct [
     start_pos: nil,
@@ -22,16 +22,16 @@ defmodule Raxol.Terminal.Selection.Manager do
     scrollback_included: boolean()
   }
 
-  @doc """
+  @doc '''
   Creates a new selection manager instance.
-  """
+  '''
   def new do
     %__MODULE__{}
   end
 
-  @doc """
+  @doc '''
   Starts a new selection at the given position.
-  """
+  '''
   def start_selection(%__MODULE__{} = state, pos, mode \\ :normal)
       when is_tuple(pos) and tuple_size(pos) == 2
       and mode in [:normal, :word, :line] do
@@ -43,9 +43,9 @@ defmodule Raxol.Terminal.Selection.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Updates the selection end position.
-  """
+  '''
   def update_selection(%__MODULE__{} = state, pos)
       when is_tuple(pos) and tuple_size(pos) == 2 do
     if state.active do
@@ -55,9 +55,9 @@ defmodule Raxol.Terminal.Selection.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Ends the current selection.
-  """
+  '''
   def end_selection(%__MODULE__{} = state) do
     %{state |
       active: false,
@@ -66,9 +66,9 @@ defmodule Raxol.Terminal.Selection.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the current selection range.
-  """
+  '''
   def get_selection_range(%__MODULE__{} = state) do
     if state.active and state.start_pos and state.end_pos do
       {state.start_pos, state.end_pos}
@@ -77,9 +77,9 @@ defmodule Raxol.Terminal.Selection.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Checks if a position is within the current selection.
-  """
+  '''
   def position_in_selection?(%__MODULE__{} = state, pos)
       when is_tuple(pos) and tuple_size(pos) == 2 do
     if state.active and state.start_pos and state.end_pos do
@@ -117,9 +117,9 @@ defmodule Raxol.Terminal.Selection.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the selected text from the terminal buffer.
-  """
+  '''
   def get_selected_text(%__MODULE__{} = state, buffer) do
     if state.active and state.start_pos and state.end_pos do
       {start_x, start_y} = state.start_pos
@@ -139,16 +139,16 @@ defmodule Raxol.Terminal.Selection.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Includes scrollback buffer in selection.
-  """
+  '''
   def include_scrollback(%__MODULE__{} = state, include \\ true) do
     %{state | scrollback_included: include}
   end
 
-  @doc """
+  @doc '''
   Checks if scrollback is included in selection.
-  """
+  '''
   def scrollback_included?(%__MODULE__{} = state) do
     state.scrollback_included
   end

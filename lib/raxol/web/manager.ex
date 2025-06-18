@@ -1,7 +1,7 @@
 defmodule Raxol.Web.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages web sessions and terminal connections for the Raxol application.
-  """
+  '''
 
   use GenServer
 

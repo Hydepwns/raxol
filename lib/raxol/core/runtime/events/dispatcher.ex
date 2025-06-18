@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Runtime.Events.Dispatcher do
-  @moduledoc """
+  @moduledoc '''
   Manages the application state (model) and dispatches events to the application's
   `update/2` function. It also handles commands returned by `update/2`.
-  """
+  '''
 
   use GenServer
   @behaviour Raxol.Core.Runtime.Events.DispatcherBehaviour
@@ -68,9 +68,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:ok, state}
   end
 
-  @doc """
+  @doc '''
   Dispatches an event to the appropriate handler based on event type and target.
-  """
+  '''
   def dispatch_event(event, state) do
     try do
       do_dispatch_event(event, state)
@@ -87,9 +87,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
-  @doc """
+  @doc '''
   Handles an application-level event and updates the application state.
-  """
+  '''
   def handle_event(event, %State{} = state) do
     message = default_event_to_message(event)
     process_app_update(state, message, event)
@@ -164,9 +164,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:error, {:unexpected_return, other}}
   end
 
-  @doc """
+  @doc '''
   Processes a system-level event that affects the runtime itself rather than the application logic.
-  """
+  '''
   def process_system_event(event, state) do
     case event do
       %Event{type: :resize, data: data} -> handle_resize_event(data, state)
@@ -197,23 +197,23 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Public API for PubSub ---
 
-  @doc "Subscribes the calling process to a specific event topic."
+  @doc 'Subscribes the calling process to a specific event topic.'
   @spec subscribe(atom()) :: :ok | {:error, term()}
   def subscribe(topic) when is_atom(topic) do
     Registry.register(@registry_name, topic, {})
   end
 
-  @doc "Unsubscribes the calling process from a specific event topic."
+  @doc 'Unsubscribes the calling process from a specific event topic.'
   @spec unsubscribe(atom()) :: :ok | {:error, term()}
   def unsubscribe(topic) when is_atom(topic) do
     Registry.unregister(@registry_name, topic)
   end
 
-  @doc "Broadcasts an event payload to all subscribers of a topic."
+  @doc 'Broadcasts an event payload to all subscribers of a topic.'
   @spec broadcast(atom(), map()) :: :ok | {:error, term()}
   def broadcast(topic, payload) when is_atom(topic) and is_map(payload) do
     Raxol.Core.Runtime.Log.debug(
-      "[#{__MODULE__}] Broadcasting on topic '#{topic}': #{inspect(payload)}"
+      "[#{__MODULE__}] Broadcasting on topic "#{topic}": #{inspect(payload)}"
     )
 
     # Find subscribers for the topic

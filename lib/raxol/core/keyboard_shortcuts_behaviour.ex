@@ -1,8 +1,8 @@
 defmodule Raxol.Core.KeyboardShortcutsBehaviour do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for the KeyboardShortcuts module.
   This allows for mocking the KeyboardShortcuts module in tests.
-  """
+  '''
 
   @type shortcut :: String.t()
   @type shortcut_name :: atom() | String.t()

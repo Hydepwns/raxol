@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.SelectionParser do
-  @moduledoc """
+  @moduledoc '''
   Handles parsing of selection-related OSC commands.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Parses a selection command string into a command tuple.
-  """
+  '''
   @spec parse(String.t()) ::
           {:query, nil}
           | {:start, integer(), integer()}
@@ -15,8 +15,8 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.SelectionParser do
           | {:error, term()}
   def parse(data) do
     case String.split(data, ";") do
-      ["?"] -> {:query, nil}
-      ["start", x_str, y_str] -> parse_coordinates(x_str, y_str, :start)
+      ["?'] -> {:query, nil}
+      ['start", x_str, y_str] -> parse_coordinates(x_str, y_str, :start)
       ["end", x_str, y_str] -> parse_coordinates(x_str, y_str, :end)
       ["clear"] -> {:clear, nil}
       ["text" | rest] -> {:text, Enum.join(rest, ";")}

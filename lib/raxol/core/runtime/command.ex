@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Command do
-  @moduledoc """
+  @moduledoc '''
   Provides a way to handle side effects in a pure functional way.
 
   Commands are used to describe side effects that should be performed by the
@@ -57,7 +57,7 @@ defmodule Raxol.Core.Runtime.Command do
 
       # Send notification
       Command.notify("Task Complete", "Your background job finished.")
-  """
+  '''
 
   # alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   require Raxol.Core.Runtime.Log
@@ -79,87 +79,87 @@ defmodule Raxol.Core.Runtime.Command do
 
   defstruct [:type, :data]
 
-  @doc """
+  @doc '''
   Creates a new command. This is the low-level constructor, prefer using
   the specific command constructors unless you need custom behavior.
-  """
+  '''
   def new(type, data \\ nil) do
     %__MODULE__{type: type, data: data}
   end
 
-  @doc """
+  @doc '''
   Returns a command that does nothing.
-  """
+  '''
   def none, do: new(:none)
 
-  @doc """
+  @doc '''
   Creates a command that will execute the given function asynchronously.
   The function should return a message that will be sent back to the update
   function when the task completes.
-  """
+  '''
   def task(fun) when is_function(fun, 0) do
     new(:task, fun)
   end
 
-  @doc """
+  @doc '''
   Creates a command that will execute multiple commands in sequence.
-  """
+  '''
   def batch(commands) when is_list(commands) do
     new(:batch, commands)
   end
 
-  @doc """
+  @doc '''
   Creates a command that will send a message after the specified delay
   in milliseconds.
-  """
+  '''
   def delay(msg, delay_ms) when is_integer(delay_ms) and delay_ms >= 0 do
     new(:delay, {msg, delay_ms})
   end
 
-  @doc """
+  @doc '''
   Creates a command that will broadcast a message to all components.
-  """
+  '''
   def broadcast(msg) do
     new(:broadcast, msg)
   end
 
-  @doc """
+  @doc '''
   Creates a command for system-level operations like file I/O or network
   requests. The operation type and options specify what should be done.
-  """
+  '''
   def system(operation, opts \\ []) do
     new(:system, {operation, opts})
   end
 
-  @doc """
+  @doc '''
   Returns a command that signals the runtime to quit.
-  """
+  '''
   def quit, do: new(:quit)
 
-  @doc """
+  @doc '''
   Creates a command to write text to the system clipboard.
-  """
+  '''
   def clipboard_write(text) when is_binary(text) do
     new(:clipboard_write, text)
   end
 
-  @doc """
+  @doc '''
   Creates a command to read text from the system clipboard.
   This will eventually result in a `{:command_result, {:clipboard_content, content}}`
   message being sent back to the application's update function.
-  """
+  '''
   def clipboard_read do
     new(:clipboard_read)
   end
 
-  @doc """
+  @doc '''
   Creates a command to send a system notification.
-  """
+  '''
   def notify(title, body) when is_binary(title) and is_binary(body) do
     new(:notify, {title, body})
   end
 
-  @doc """
+  @doc '''
   Maps a function over a command's result message. This is useful for
   namespacing messages or transforming them before they reach the update
   function.
@@ -169,7 +169,7 @@ defmodule Raxol.Core.Runtime.Command do
       # Transform the task's result message
       Command.task(fn -> {:data, fetch_data()} end)
       |> Command.map(fn {:data, result} -> {:processed_data, process(result)} end)
-  """
+  '''
   def map(%__MODULE__{type: :task, data: fun} = cmd, mapper)
       when is_function(mapper, 1) do
     mapped_fun = fn ->
@@ -194,10 +194,10 @@ defmodule Raxol.Core.Runtime.Command do
 
   def map(cmd, _), do: cmd
 
-  @doc """
+  @doc '''
   Executes a command within the given context. This is used by the runtime
   system and should not be called directly by applications.
-  """
+  '''
   def execute(%__MODULE__{} = command, context) do
     Raxol.Core.Runtime.Log.debug(
       "[Command.execute] Executing command: #{inspect(command)} with context: #{inspect(context)}"

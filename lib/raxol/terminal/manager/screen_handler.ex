@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Manager.ScreenHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles screen updates and batch operations.
 
   This module is responsible for:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   - Handling batch screen updates
   - Managing screen state transitions
   - Coordinating with notification system
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ScreenUpdater
@@ -15,9 +15,9 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
-  @doc """
+  @doc '''
   Processes a single screen update and returns updated state.
-  """
+  '''
   @spec process_update(map(), map()) :: {:ok, map()} | {:error, term()}
   def process_update(update, state) do
     case update do
@@ -62,9 +62,9 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
     end
   end
 
-  @doc """
+  @doc '''
   Processes a batch of screen updates and returns updated state.
-  """
+  '''
   @spec process_batch_updates([map()], map()) :: {:ok, map()} | {:error, term()}
   def process_batch_updates(updates, state) do
     case updates do

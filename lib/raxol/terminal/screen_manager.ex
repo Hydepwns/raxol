@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ScreenUpdater do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal screen state and updates.
 
   This module is responsible for:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
   - Handling screen updates
   - Coordinating screen state transitions
   - Managing screen dimensions
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @doc """
+  @doc '''
   Updates the screen with a single update.
 
   ## Parameters
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
 
   ## Returns
     * `{updated_emulator, output}` - The updated emulator state and any output
-  """
+  '''
   @spec update_screen(Emulator.t(), map()) :: {Emulator.t(), any()}
   def update_screen(emulator, update) do
     buffer = Emulator.get_active_buffer(emulator)
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
     {new_emulator, nil}
   end
 
-  @doc """
+  @doc '''
   Updates the screen with multiple updates.
 
   ## Parameters
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
 
   ## Returns
     * `{updated_emulator, output}` - The updated emulator state and any output
-  """
+  '''
   @spec batch_update_screen(Emulator.t(), [map()]) :: {Emulator.t(), any()}
   def batch_update_screen(emulator, updates) do
     buffer = Emulator.get_active_buffer(emulator)
@@ -104,7 +104,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
     {new_emulator, nil}
   end
 
-  @doc """
+  @doc '''
   Handles screen resize.
 
   ## Parameters
@@ -114,7 +114,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
 
   ## Returns
     * `updated_emulator` - The updated emulator state
-  """
+  '''
   @spec handle_resize(Emulator.t(), integer(), integer()) :: Emulator.t()
   def handle_resize(emulator, width, height) do
     # Resize main buffer
@@ -142,7 +142,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the current screen dimensions.
 
   ## Parameters
@@ -150,14 +150,14 @@ defmodule Raxol.Terminal.ScreenUpdater do
 
   ## Returns
     * `{width, height}` - The current screen dimensions
-  """
+  '''
   @spec get_dimensions(Emulator.t()) :: {integer(), integer()}
   def get_dimensions(emulator) do
     buffer = Emulator.get_active_buffer(emulator)
     ScreenBuffer.get_dimensions(buffer)
   end
 
-  @doc """
+  @doc '''
   Clears the screen.
 
   ## Parameters
@@ -165,7 +165,7 @@ defmodule Raxol.Terminal.ScreenUpdater do
 
   ## Returns
     * `updated_emulator` - The updated emulator state
-  """
+  '''
   @spec clear_screen(Emulator.t()) :: Emulator.t()
   def clear_screen(emulator) do
     buffer = Emulator.get_active_buffer(emulator)

@@ -1,10 +1,10 @@
 defmodule Raxol.System.TerminalPlatform do
-  @moduledoc """
+  @moduledoc '''
   Terminal-specific platform features and compatibility checks.
 
   This module provides detailed information about terminal capabilities,
   feature support, and compatibility across different platforms and terminal emulators.
-  """
+  '''
 
   @type terminal_feature ::
           :true_color
@@ -15,7 +15,7 @@ defmodule Raxol.System.TerminalPlatform do
           | :focus
           | :title
 
-  @doc """
+  @doc '''
   Returns detailed information about the current terminal's capabilities.
 
   ## Returns
@@ -58,7 +58,7 @@ defmodule Raxol.System.TerminalPlatform do
           alternate_screen: true
         }
       }
-  """
+  '''
   @spec get_terminal_capabilities() :: map()
   def get_terminal_capabilities do
     %{
@@ -72,7 +72,7 @@ defmodule Raxol.System.TerminalPlatform do
     }
   end
 
-  @doc """
+  @doc '''
   Checks if a specific terminal feature is supported.
 
   ## Parameters
@@ -88,13 +88,13 @@ defmodule Raxol.System.TerminalPlatform do
 
       iex> TerminalPlatform.supports_feature?(:true_color)
       true
-  """
+  '''
   @spec supports_feature?(terminal_feature()) :: boolean()
   def supports_feature?(feature) do
     feature in get_supported_features()
   end
 
-  @doc """
+  @doc '''
   Returns the list of all supported terminal features.
 
   ## Returns
@@ -105,7 +105,7 @@ defmodule Raxol.System.TerminalPlatform do
 
       iex> TerminalPlatform.get_supported_features()
       [:true_color, :unicode, :mouse, :clipboard]
-  """
+  '''
   @spec get_supported_features() :: list(terminal_feature())
   def get_supported_features do
     [

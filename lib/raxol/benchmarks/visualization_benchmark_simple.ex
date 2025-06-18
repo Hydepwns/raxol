@@ -1,17 +1,17 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmarkSimple do
-  @moduledoc """
+  @moduledoc '''
   A simplified benchmark tool for visualization components, without external dependencies.
   This is designed for direct testing during development without requiring the full application.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Run a simple benchmark test of the visualization caching system.
 
   This function directly tests the VisualizationPlugin's caching system
   with small data samples and doesn't require the full application to be running.
 
   Returns a map with the benchmark results.
-  """
+  '''
   def run_simple_benchmark do
     IO.puts("Starting simplified visualization benchmark test...")
 

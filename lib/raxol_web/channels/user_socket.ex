@@ -21,9 +21,9 @@ defmodule RaxolWeb.UserSocket do
     {:ok, socket}
   end
 
-  @doc """
+  @doc '''
   Identifies the socket connections.
-  """
+  '''
   @impl true
   def id(socket), do: "user_socket:" <> socket.assigns.user_id
 end

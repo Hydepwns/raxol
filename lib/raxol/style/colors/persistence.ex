@@ -1,12 +1,12 @@
 defmodule Raxol.Style.Colors.Persistence do
-  @moduledoc """
+  @moduledoc '''
   Handles persistence of color themes and user preferences.
 
   This module provides functionality for:
   - Saving and loading themes
   - Managing user preferences
   - Handling theme file storage
-  """
+  '''
 
   alias Raxol.Style.Colors.Color
 
@@ -19,7 +19,7 @@ defmodule Raxol.Style.Colors.Persistence do
     Application.get_env(:raxol, :config_dir, ".")
   end
 
-  @doc """
+  @doc '''
   Saves a theme to a file.
 
   ## Parameters
@@ -30,7 +30,7 @@ defmodule Raxol.Style.Colors.Persistence do
 
   - `:ok` on success
   - `{:error, reason}` on failure
-  """
+  '''
   def save_theme(theme) do
     # Pre-process theme to convert tuple values to lists for JSON encoding
     theme = deep_convert_tuples_to_lists(theme)
@@ -91,7 +91,7 @@ defmodule Raxol.Style.Colors.Persistence do
   defp to_string_key(k) when is_atom(k), do: Atom.to_string(k)
   defp to_string_key(k), do: to_string(k)
 
-  @doc """
+  @doc '''
   Loads a theme from a file.
 
   ## Parameters
@@ -102,7 +102,7 @@ defmodule Raxol.Style.Colors.Persistence do
 
   - `{:ok, theme}` on success
   - `{:error, reason}` on failure
-  """
+  '''
   def load_theme(theme_name) do
     theme_path =
       Path.join(Path.join(config_dir(), @themes_dir), "#{theme_name}.json")
@@ -118,14 +118,14 @@ defmodule Raxol.Style.Colors.Persistence do
     end
   end
 
-  @doc """
+  @doc '''
   Loads the current theme from user preferences.
 
   ## Returns
 
   - `{:ok, theme}` on success
   - `{:error, reason}` on failure
-  """
+  '''
   def load_current_theme do
     case load_user_preferences() do
       {:ok, preferences} ->
@@ -141,14 +141,14 @@ defmodule Raxol.Style.Colors.Persistence do
     end
   end
 
-  @doc """
+  @doc '''
   Loads user preferences from file.
 
   ## Returns
 
   - `{:ok, preferences}` on success
   - `{:error, reason}` on failure
-  """
+  '''
   def load_user_preferences do
     prefs_path = Path.join(config_dir(), @preferences_file)
 
@@ -171,7 +171,7 @@ defmodule Raxol.Style.Colors.Persistence do
     end
   end
 
-  @doc """
+  @doc '''
   Saves user preferences to file.
 
   ## Parameters
@@ -182,7 +182,7 @@ defmodule Raxol.Style.Colors.Persistence do
 
   - `:ok` on success
   - `{:error, reason}` on failure
-  """
+  '''
   def save_user_preferences(preferences) do
     prefs_path = Path.join(config_dir(), @preferences_file)
 
@@ -192,13 +192,13 @@ defmodule Raxol.Style.Colors.Persistence do
     end
   end
 
-  @doc """
+  @doc '''
   Lists all available themes.
 
   ## Returns
 
   - A list of theme names
-  """
+  '''
   def list_themes do
     full_themes_dir = Path.join(config_dir(), @themes_dir)
     # Ensure themes directory exists
@@ -211,7 +211,7 @@ defmodule Raxol.Style.Colors.Persistence do
     |> Enum.map(&String.replace(&1, ".json", ""))
   end
 
-  @doc """
+  @doc '''
   Deletes a theme.
 
   ## Parameters
@@ -222,7 +222,7 @@ defmodule Raxol.Style.Colors.Persistence do
 
   - `:ok` on success
   - `{:error, reason}` on failure
-  """
+  '''
   def delete_theme(theme_name) do
     theme_path =
       Path.join(Path.join(config_dir(), @themes_dir), "#{theme_name}.json")

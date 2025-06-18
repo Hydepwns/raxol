@@ -1,7 +1,7 @@
 defmodule Raxol.Test.MockDB do
-  @moduledoc """
+  @moduledoc '''
   A mock database adapter for testing purposes that implements all required Ecto adapter behaviors.
-  """
+  '''
 
   @behaviour Ecto.Adapter
   @behaviour Ecto.Adapter.Storage

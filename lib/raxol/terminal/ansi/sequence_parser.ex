@@ -1,12 +1,12 @@
 defmodule Raxol.Terminal.ANSI.SequenceParser do
-  @moduledoc """
+  @moduledoc '''
   Helper module for parsing ANSI escape sequences.
 
   This module provides common utilities for parsing and handling ANSI sequences,
   extracted from duplicate implementations in other ANSI-related modules.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Parses parameters from an ANSI sequence.
 
   Splits the parameter string by semicolons and converts them to integers.
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ANSI.SequenceParser do
 
   * `{:ok, params}` - Successfully parsed parameters
   * `:error` - Failed to parse parameters
-  """
+  '''
   @spec parse_params(binary()) :: {:ok, list(integer())} | :error
   def parse_params(params) do
     case String.split(params, ";", trim: true) do
@@ -33,7 +33,7 @@ defmodule Raxol.Terminal.ANSI.SequenceParser do
     end
   end
 
-  @doc """
+  @doc '''
   Generic parser for ANSI sequences that follow the pattern: params + operation code.
 
   ## Parameters
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.ANSI.SequenceParser do
 
   * `{:ok, operation, params}` - Successfully parsed sequence
   * `:error` - Failed to parse sequence
-  """
+  '''
   @spec parse_sequence(binary(), function()) ::
           {:ok, atom(), list(integer())} | :error
   def parse_sequence(sequence, operation_decoder) do

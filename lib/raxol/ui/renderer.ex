@@ -1,10 +1,10 @@
 defmodule Raxol.UI.Renderer do
-  @moduledoc """
+  @moduledoc '''
   Translates a positioned element tree into a flat list of renderable cells.
 
   Takes the output of the Layout Engine and converts UI primitives (text, boxes, etc.)
   into styled characters at specific coordinates.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -22,7 +22,7 @@ defmodule Raxol.UI.Renderer do
   # Or use theme.colors.background?
   @default_bg :default
 
-  @doc """
+  @doc '''
   Renders a tree of positioned elements into a list of cells.
 
   Args:
@@ -31,7 +31,7 @@ defmodule Raxol.UI.Renderer do
 
   Returns:
     - `list(cell())`
-  """
+  '''
   @spec render_to_cells(
           positioned_element() | list(positioned_element()),
           theme()

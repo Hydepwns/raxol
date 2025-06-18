@@ -1,13 +1,13 @@
 defmodule Raxol.UI.Components.Input.SelectList.Renderer do
-  @moduledoc """
+  @moduledoc '''
   Handles rendering functionality for the SelectList component.
-  """
+  '''
 
   alias Raxol.UI.Components.Input.SelectList.Pagination
 
-  @doc """
+  @doc '''
   Renders the SelectList component.
-  """
+  '''
   def render(state, _context) do
     effective_options = Pagination.get_effective_options(state)
     _num_options = length(effective_options)
@@ -59,9 +59,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     |> Enum.reject(&is_nil/1)
   end
 
-  @doc """
+  @doc '''
   Renders the search input element.
-  """
+  '''
   def render_search_input(state) do
     merged_style =
       Map.merge(
@@ -94,9 +94,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     }
   end
 
-  @doc """
+  @doc '''
   Renders the main list container with options.
-  """
+  '''
   def render_list_container(state, visible_options) do
     %{
       type: :container,
@@ -113,9 +113,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     }
   end
 
-  @doc """
+  @doc '''
   Renders the list of options.
-  """
+  '''
   def render_options(state, visible_options) do
     if Enum.empty?(visible_options) do
       merged_style =
@@ -175,9 +175,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     end
   end
 
-  @doc """
+  @doc '''
   Renders a single option.
-  """
+  '''
   def render_option(state, label, _value, index, opt_style) do
     is_selected = MapSet.member?(state.selected_indices, index)
     is_focused = index == state.focused_index
@@ -256,9 +256,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     }
   end
 
-  @doc """
+  @doc '''
   Renders pagination controls.
-  """
+  '''
   def render_pagination_controls(state) do
     effective_options = Pagination.get_effective_options(state)
 

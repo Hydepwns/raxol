@@ -1,11 +1,11 @@
 defmodule Raxol.Test.WindowTestHelper do
-  @moduledoc """
+  @moduledoc '''
   Helper functions for window-related tests.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Creates a test emulator with default window state.
-  """
+  '''
   def create_test_emulator do
     emu = Raxol.Terminal.Emulator.new(80, 24)
 
@@ -19,9 +19,9 @@ defmodule Raxol.Test.WindowTestHelper do
       else: emu
   end
 
-  @doc """
+  @doc '''
   Returns a list of basic window operations for testing.
-  """
+  '''
   def basic_window_operations do
     [
       {[1], "deiconify"},
@@ -36,9 +36,9 @@ defmodule Raxol.Test.WindowTestHelper do
     ]
   end
 
-  @doc """
+  @doc '''
   Returns a list of window reporting operations for testing.
-  """
+  '''
   def reporting_operations do
     [
       {[11], "state report"},
@@ -49,9 +49,9 @@ defmodule Raxol.Test.WindowTestHelper do
     ]
   end
 
-  @doc """
+  @doc '''
   Returns a list of invalid parameters for testing.
-  """
+  '''
   def invalid_parameters do
     [
       {[], "empty parameters"},
@@ -65,9 +65,9 @@ defmodule Raxol.Test.WindowTestHelper do
     ]
   end
 
-  @doc """
+  @doc '''
   Returns a list of test window sizes for resize operations.
-  """
+  '''
   def test_window_sizes do
     [
       {100, 50},

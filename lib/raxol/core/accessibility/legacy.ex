@@ -1,12 +1,12 @@
 defmodule Raxol.Core.Accessibility.Legacy do
-  @moduledoc """
+  @moduledoc '''
   Legacy functions for backwards compatibility.
   These functions are deprecated and will be removed in a future version.
-  """
+  '''
 
   alias Raxol.Core.Accessibility.Preferences
 
-  @doc """
+  @doc '''
   Check if high contrast mode is enabled.
 
   ## Returns
@@ -17,12 +17,12 @@ defmodule Raxol.Core.Accessibility.Legacy do
 
       iex> Legacy.high_contrast_enabled?()
       false
-  """
+  '''
   def high_contrast_enabled?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:high_contrast, user_preferences_pid_or_name, false)
   end
 
-  @doc """
+  @doc '''
   Check if reduced motion mode is enabled.
 
   ## Returns
@@ -33,12 +33,12 @@ defmodule Raxol.Core.Accessibility.Legacy do
 
       iex> Legacy.reduced_motion_enabled?()
       false
-  """
+  '''
   def reduced_motion_enabled?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:reduced_motion, user_preferences_pid_or_name, false)
   end
 
-  @doc """
+  @doc '''
   Check if large text mode is enabled.
 
   ## Returns
@@ -49,7 +49,7 @@ defmodule Raxol.Core.Accessibility.Legacy do
 
       iex> Legacy.large_text_enabled?()
       false
-  """
+  '''
   def large_text_enabled?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:large_text, user_preferences_pid_or_name, false)
   end

@@ -1,41 +1,41 @@
 defmodule Raxol.Terminal.Buffer.Scroller do
-  @moduledoc """
+  @moduledoc '''
   Handles scrolling operations for the terminal buffer.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.ScreenBuffer
 
-  @doc """
+  @doc '''
   Scrolls the buffer up by the specified number of lines.
-  """
+  '''
   def scroll_up(buffer, count) do
     do_scroll_up(buffer, count)
   end
 
-  @doc """
+  @doc '''
   Scrolls the buffer down by the specified number of lines.
-  """
+  '''
   def scroll_down(buffer, count) do
     do_scroll_down(buffer, count)
   end
 
-  @doc """
+  @doc '''
   Gets the scroll top position.
-  """
+  '''
   def get_scroll_top(_buffer, scroll_margins) do
     scroll_margins.top
   end
 
-  @doc """
+  @doc '''
   Gets the scroll bottom position.
-  """
+  '''
   def get_scroll_bottom(_buffer, scroll_margins) do
     scroll_margins.bottom
   end
 
-  @doc """
+  @doc '''
   Scrolls the entire buffer up by the specified number of lines.
 
   ## Parameters
@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
       iex> {:ok, new_buffer} = Scroller.scroll_entire_buffer_up(buffer, 1)
       iex> length(new_buffer.content)
       24
-  """
+  '''
   @spec scroll_entire_buffer_up(ScreenBuffer.t(), non_neg_integer()) :: {:ok, ScreenBuffer.t()}
   def scroll_entire_buffer_up(buffer, count) do
     {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
     {:ok, %{new_buffer | content: new_content}}
   end
 
-  @doc """
+  @doc '''
   Scrolls the entire buffer down by the specified number of lines.
 
   ## Parameters
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
       iex> {:ok, new_buffer} = Scroller.scroll_entire_buffer_down(buffer, 1)
       iex> length(new_buffer.content)
       24
-  """
+  '''
   @spec scroll_entire_buffer_down(ScreenBuffer.t(), non_neg_integer()) :: {:ok, ScreenBuffer.t()}
   def scroll_entire_buffer_down(buffer, count) do
     {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
     {:ok, %{new_buffer | content: new_content}}
   end
 
-  @doc """
+  @doc '''
   Scrolls a specific region of the buffer up by the specified number of lines.
 
   ## Parameters
@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
       iex> {:ok, new_buffer} = Scroller.scroll_region_up(buffer, 1, 5, 15)
       iex> length(new_buffer.content)
       24
-  """
+  '''
   @spec scroll_region_up(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: {:ok, ScreenBuffer.t()}
   def scroll_region_up(buffer, count, top, bottom) do
     region_lines = Enum.slice(buffer.content, top..bottom)
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
     {:ok, %{buffer | content: new_content}}
   end
 
-  @doc """
+  @doc '''
   Scrolls a specific region of the buffer down by the specified number of lines.
 
   ## Parameters
@@ -140,7 +140,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
       iex> {:ok, new_buffer} = Scroller.scroll_region_down(buffer, 1, 5, 15)
       iex> length(new_buffer.content)
       24
-  """
+  '''
   @spec scroll_region_down(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: {:ok, ScreenBuffer.t()}
   def scroll_region_down(buffer, count, top, bottom) do
     region_lines = Enum.slice(buffer.content, top..bottom)

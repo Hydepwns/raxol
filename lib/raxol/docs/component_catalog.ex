@@ -1,5 +1,5 @@
 defmodule Raxol.Docs.ComponentCatalog do
-  @moduledoc """
+  @moduledoc '''
   Visual component catalog for Raxol documentation.
 
   This module provides a comprehensive catalog of all UI components
@@ -13,7 +13,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   * Accessibility information
   * Related components suggestions
   * Search functionality
-  """
+  '''
 
   # TODO: Ensure all component source modules are located under `lib/raxol/ui/components/`
   # and are correctly referenced by the catalog data in `lib/raxol/docs/catalog_data/`.
@@ -80,34 +80,34 @@ defmodule Raxol.Docs.ComponentCatalog do
   # Import the DSL elements
   # import Raxol.View.Elements # Removed unused import
 
-  @doc """
+  @doc '''
   Initializes the component catalog.
-  """
+  '''
   def init do
     catalog = build_catalog()
     Process.put(@catalog_key, catalog)
     :ok
   end
 
-  @doc """
+  @doc '''
   Lists all component categories.
-  """
+  '''
   def list_categories do
     catalog = get_catalog()
     Map.values(catalog)
   end
 
-  @doc """
+  @doc '''
   Gets a specific category by ID.
-  """
+  '''
   def get_category(category_id) do
     catalog = get_catalog()
     Map.get(catalog, category_id)
   end
 
-  @doc """
+  @doc '''
   Lists all components in a specific category.
-  """
+  '''
   def list_components(category_id) do
     catalog = get_catalog()
 
@@ -117,9 +117,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end
   end
 
-  @doc """
+  @doc '''
   Gets a specific component by ID.
-  """
+  '''
   def get_component(component_id) do
     catalog = get_catalog()
 
@@ -130,9 +130,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end)
   end
 
-  @doc """
+  @doc '''
   Searches for components based on a query.
-  """
+  '''
   def search(query) do
     catalog = get_catalog()
     query_downcase = String.downcase(query)
@@ -153,9 +153,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end)
   end
 
-  @doc """
+  @doc '''
   Renders a component example.
-  """
+  '''
   def render_example(component_id, example_id, custom_props \\ %{}) do
     component = get_component(component_id)
 
@@ -176,9 +176,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end
   end
 
-  @doc """
+  @doc '''
   Gets usage statistics for components.
-  """
+  '''
   def get_usage_stats do
     # This would typically be gathered from actual usage data
     %{
@@ -206,9 +206,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     }
   end
 
-  @doc """
+  @doc '''
   Generates code snippets for a component with the given properties.
-  """
+  '''
   def generate_code_snippet(component_id, props \\ %{}) do
     component = get_component(component_id)
 
@@ -254,19 +254,19 @@ defmodule Raxol.Docs.ComponentCatalog do
         end
 
       # Wrap in a view block for context
-      """
+      '''
       view do
         #{dsl_call}
       end
-      """
+      '''
     else
       {:error, "Component not found"}
     end
   end
 
-  @doc """
+  @doc '''
   Gets accessibility information for a component.
-  """
+  '''
   def get_accessibility_info(component_id) do
     component = get_component(component_id)
 
@@ -277,9 +277,9 @@ defmodule Raxol.Docs.ComponentCatalog do
     end
   end
 
-  @doc """
+  @doc '''
   Suggests related components.
-  """
+  '''
   def suggest_related_components(component_id) do
     component = get_component(component_id)
 

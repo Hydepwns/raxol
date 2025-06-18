@@ -1,11 +1,11 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
-  @moduledoc """
+  @moduledoc '''
   Handles plugin reloading operations.
   This module is responsible for:
   - Reloading plugins from disk
   - Managing plugin state during reloads
   - Handling reload failures and recovery
-  """
+  '''
 
   @behaviour Raxol.Core.Runtime.Plugins.PluginReloader.Behaviour
 
@@ -187,7 +187,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
     case Map.get(state.plugins, plugin_id_atom) do
       nil ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom} (from string '#{plugin_id_string}'): Not found.",
+          "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom} (from string "#{plugin_id_string}"): Not found.",
           nil,
           nil,
           %{module: __MODULE__, plugin_id_string: plugin_id_string}

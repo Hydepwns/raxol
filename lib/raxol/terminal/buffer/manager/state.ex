@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Buffer.Manager.State do
-  @moduledoc """
+  @moduledoc '''
   Defines the state structure and operations for the buffer manager.
   This module handles the core state management for the terminal buffer,
   including active buffer, back buffer, scrollback, damage tracking, and memory management.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Scrollback
@@ -30,9 +30,9 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
           metrics: map()
         }
 
-  @doc """
+  @doc '''
   Creates a new state with the specified dimensions.
-  """
+  '''
   def new(width, height) do
     %__MODULE__{
       active_buffer: ScreenBuffer.new(width, height),
@@ -50,58 +50,58 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the dimensions of the active buffer.
-  """
+  '''
   def get_dimensions(%__MODULE__{} = state) do
     {state.active_buffer.width, state.active_buffer.height}
   end
 
-  @doc """
+  @doc '''
   Gets the width of the active buffer.
-  """
+  '''
   def get_width(%__MODULE__{} = state) do
     state.active_buffer.width
   end
 
-  @doc """
+  @doc '''
   Gets the height of the active buffer.
-  """
+  '''
   def get_height(%__MODULE__{} = state) do
     state.active_buffer.height
   end
 
-  @doc """
+  @doc '''
   Gets a line from the active buffer.
-  """
+  '''
   def get_line(%__MODULE__{} = state, line_index) do
     ScreenBuffer.get_line(state.active_buffer, line_index)
   end
 
-  @doc """
+  @doc '''
   Gets a cell from the active buffer.
-  """
+  '''
   def get_cell(%__MODULE__{} = state, x, y) do
     ScreenBuffer.get_cell(state.active_buffer, x, y)
   end
 
-  @doc """
+  @doc '''
   Gets the content of the active buffer.
-  """
+  '''
   def get_content(%__MODULE__{} = state) do
     ScreenBuffer.get_content(state.active_buffer)
   end
 
-  @doc """
+  @doc '''
   Gets a cell from the active buffer at the specified coordinates.
-  """
+  '''
   def get_cell_at(%__MODULE__{} = state, x, y) do
     ScreenBuffer.get_cell_at(state.active_buffer, x, y)
   end
 
-  @doc """
+  @doc '''
   Updates a line in the active buffer.
-  """
+  '''
   def put_line(%__MODULE__{} = state, line_index, new_cells) do
     new_active_buffer =
       ScreenBuffer.put_line(state.active_buffer, line_index, new_cells)

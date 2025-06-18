@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Rendering.Pipeline do
-  @moduledoc """
+  @moduledoc '''
   Manages the rendering pipeline for the UI as a GenServer.
 
   ## Pipeline Stages (Planned)
@@ -30,7 +30,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   - Integrate animation frame scheduling (request_animation_frame now uses GenServer.call with deferred reply from :animation_tick; this is more robust.)
   - Store and manage pipeline state (previous tree, pending updates, etc.) (GenServer state has current_tree, previous_tree)
   - Connect to the real rendering backend (commit stage calls a renderer module)
-  """
+  '''
 
   use GenServer
 
@@ -62,9 +62,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # Public API
 
-  @doc """
+  @doc '''
   Starts the rendering pipeline GenServer. Registers under the module name by default.
-  """
+  '''
   def start_link(opts \\ []) do
     GenServer.start_link(
       __MODULE__,
@@ -73,9 +73,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
     )
   end
 
-  @doc """
+  @doc '''
   Child spec for supervision trees.
-  """
+  '''
   def child_spec(opts \\ []) do
     %{
       id: __MODULE__,
@@ -86,25 +86,25 @@ defmodule Raxol.UI.Rendering.Pipeline do
     }
   end
 
-  @doc """
+  @doc '''
   Updates the UI tree in the pipeline and triggers a render.
-  """
+  '''
   @spec update_tree(tree :: map()) :: :ok
   def update_tree(tree) do
     GenServer.cast(__MODULE__, {:update_tree, tree})
   end
 
-  @doc """
+  @doc '''
   Triggers a render with the current UI tree (or provided data).
-  """
+  '''
   @spec trigger_render(data :: any()) :: :ok
   def trigger_render(data \\ nil) do
     GenServer.cast(__MODULE__, {:trigger_render, data})
   end
 
-  @doc """
+  @doc '''
   Applies animation settings (delegates to Renderer).
-  """
+  '''
   @spec apply_animation_settings(
           atom() | nil,
           String.t() | nil,
@@ -140,7 +140,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     :ok
   end
 
-  @doc """
+  @doc '''
   Computes the minimal set of changes (diff) between two UI trees.
 
   Returns:
@@ -149,7 +149,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     * {:update, path, changes} for subtree updates (path is a list of indices)
 
   TODO: Support keyed children, reordering, and more granular diffs.
-  """
+  '''
   @spec diff_trees(old_tree :: map() | nil, new_tree :: map() | nil) ::
           :no_change
           | {:replace, map()}
@@ -157,10 +157,10 @@ defmodule Raxol.UI.Rendering.Pipeline do
   def diff_trees(old_tree, new_tree),
     do: TreeDiffer.diff_trees(old_tree, new_tree)
 
-  @doc """
+  @doc '''
   Requests notification on the next animation frame. The caller will receive {:animation_frame, ref}.
   Returns a unique reference for the request.
-  """
+  '''
   @spec request_animation_frame(pid()) ::
           {:animation_frame, reference()} | {:error, any()}
   def request_animation_frame(pid \\ self()) do
@@ -168,10 +168,10 @@ defmodule Raxol.UI.Rendering.Pipeline do
     GenServer.call(__MODULE__, {:request_animation_frame, pid, ref})
   end
 
-  @doc """
+  @doc '''
   Schedules a render to occur on the next animation frame.
   Only one render will be scheduled per frame, regardless of how many times this is called before the next frame.
-  """
+  '''
   @spec schedule_render_on_next_frame() :: :ok
   def schedule_render_on_next_frame do
     GenServer.cast(__MODULE__, :schedule_render_on_next_frame)
@@ -180,11 +180,11 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # --- Pipeline Stages (Stubbed) ---
 
-  @doc """
+  @doc '''
   Commits the final output to the Renderer process for display.
   This is where the pipeline would send the output (a list of paint operations)
   to the configured renderer.
-  """
+  '''
   @spec commit(painted_output :: list(map()), renderer :: module()) :: :ok
   # Updated default usage
   def commit(painted_output, renderer \\ @default_renderer) do
@@ -200,19 +200,19 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # --- Extension Points ---
 
-  @doc """
+  @doc '''
   Sets the renderer module to use for output (default: Raxol.UI.Rendering.Renderer).
   This allows for custom renderers or output backends.
-  """
+  '''
   @spec set_renderer(module()) :: :ok
   def set_renderer(renderer_module) do
     Application.put_env(:raxol, :renderer_module, renderer_module)
     :ok
   end
 
-  @doc """
+  @doc '''
   Gets the current renderer module (default: Raxol.UI.Rendering.Renderer).
-  """
+  '''
   @spec get_renderer() :: module()
   def get_renderer do
     Application.get_env(:raxol, :renderer_module, @default_renderer)

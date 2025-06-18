@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Buffer.Content do
-  @moduledoc """
+  @moduledoc '''
   Handles content operations for the screen buffer.
   This module provides functions for writing and reading content from the buffer,
   including character and string operations.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @doc """
+  @doc '''
   Writes a character at the specified position with optional styling.
-  """
+  '''
   @spec write_char(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -34,9 +34,9 @@ defmodule Raxol.Terminal.Buffer.Content do
     end
   end
 
-  @doc """
+  @doc '''
   Writes a string starting at the specified position.
-  """
+  '''
   @spec write_string(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -57,9 +57,9 @@ defmodule Raxol.Terminal.Buffer.Content do
     |> elem(0)
   end
 
-  @doc """
+  @doc '''
   Gets a character at the specified position.
-  """
+  '''
   @spec get_char(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           String.t()
   def get_char(buffer, x, y) when x >= 0 and y >= 0 do
@@ -73,9 +73,9 @@ defmodule Raxol.Terminal.Buffer.Content do
     end
   end
 
-  @doc """
+  @doc '''
   Gets a cell at the specified position.
-  """
+  '''
   @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
@@ -88,9 +88,9 @@ defmodule Raxol.Terminal.Buffer.Content do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the entire buffer content as a string.
-  """
+  '''
   @spec get_content(ScreenBuffer.t()) :: String.t()
   def get_content(%ScreenBuffer{cells: cells}) do
     cells
@@ -102,17 +102,17 @@ defmodule Raxol.Terminal.Buffer.Content do
     |> Enum.join("\n")
   end
 
-  @doc """
+  @doc '''
   Gets a line of cells from the buffer.
-  """
+  '''
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
   def get_line(%ScreenBuffer{cells: cells}, line_index) when line_index >= 0 do
     Enum.at(cells, line_index, [])
   end
 
-  @doc """
+  @doc '''
   Updates a line in the buffer with new cells.
-  """
+  '''
   @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
           ScreenBuffer.t()
   def put_line(%ScreenBuffer{cells: cells} = buffer, line_index, new_cells)
@@ -122,9 +122,9 @@ defmodule Raxol.Terminal.Buffer.Content do
     %{buffer | cells: new_cells_list}
   end
 
-  @doc """
+  @doc '''
   Calculates the difference between the current buffer state and a list of changes.
-  """
+  '''
   @spec diff(
           ScreenBuffer.t(),
           list({non_neg_integer(), non_neg_integer(), map()})
@@ -139,9 +139,9 @@ defmodule Raxol.Terminal.Buffer.Content do
     end)
   end
 
-  @doc """
+  @doc '''
   Updates the buffer with a list of changes.
-  """
+  '''
   @spec update(
           ScreenBuffer.t(),
           list({non_neg_integer(), non_neg_integer(), Cell.t() | map()})

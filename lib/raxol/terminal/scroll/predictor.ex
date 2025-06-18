@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Scroll.Predictor do
-  @moduledoc """
+  @moduledoc '''
   Handles predictive scrolling operations for the terminal.
-  """
+  '''
 
   @type t :: %__MODULE__{
           window_size: non_neg_integer(),
@@ -13,9 +13,9 @@ defmodule Raxol.Terminal.Scroll.Predictor do
     :history
   ]
 
-  @doc """
+  @doc '''
   Creates a new predictor instance.
-  """
+  '''
   @spec new() :: t()
   def new do
     %__MODULE__{
@@ -24,9 +24,9 @@ defmodule Raxol.Terminal.Scroll.Predictor do
     }
   end
 
-  @doc """
+  @doc '''
   Predicts the next scroll operation based on history.
-  """
+  '''
   @spec predict(t(), :up | :down, non_neg_integer()) :: t()
   def predict(predictor, direction, lines) do
     # Add current operation to history

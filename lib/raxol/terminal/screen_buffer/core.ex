@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ScreenBuffer.Core do
-  @moduledoc """
+  @moduledoc '''
   Core implementation of the screen buffer functionality.
   Implements the Raxol.Terminal.ScreenBufferBehaviour.
-  """
+  '''
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 

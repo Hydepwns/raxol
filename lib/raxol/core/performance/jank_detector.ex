@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Performance.JankDetector do
-  @moduledoc """
+  @moduledoc '''
   Detects UI jank by analyzing frame timing.
 
   A frame is considered janky if it takes longer than the jank threshold
@@ -20,7 +20,7 @@ defmodule Raxol.Core.Performance.JankDetector do
     Raxol.Core.Runtime.Log.warning_with_context("Jank detected", %{})
   end
   ```
-  """
+  '''
 
   defstruct [
     :threshold,
@@ -29,7 +29,7 @@ defmodule Raxol.Core.Performance.JankDetector do
     :jank_count
   ]
 
-  @doc """
+  @doc '''
   Creates a new jank detector.
 
   ## Parameters
@@ -50,7 +50,7 @@ defmodule Raxol.Core.Performance.JankDetector do
         frame_times: [],
         jank_count: 0
       }
-  """
+  '''
   def new(threshold, window_size) do
     %__MODULE__{
       threshold: threshold,
@@ -60,7 +60,7 @@ defmodule Raxol.Core.Performance.JankDetector do
     }
   end
 
-  @doc """
+  @doc '''
   Records a frame's timing.
 
   ## Parameters
@@ -78,7 +78,7 @@ defmodule Raxol.Core.Performance.JankDetector do
       iex> detector = JankDetector.record_frame(detector, 20)
       iex> detector.jank_count
       1
-  """
+  '''
   def record_frame(detector, frame_time) do
     # Add frame time to window
     frame_times =
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Performance.JankDetector do
     %{detector | frame_times: frame_times, jank_count: jank_count}
   end
 
-  @doc """
+  @doc '''
   Checks if jank was detected in the last frame.
 
   ## Parameters
@@ -109,7 +109,7 @@ defmodule Raxol.Core.Performance.JankDetector do
       iex> detector = JankDetector.record_frame(detector, 20)
       iex> JankDetector.detect_jank?(detector)
       true
-  """
+  '''
   def detect_jank?(detector) do
     case detector.frame_times do
       [latest | _] -> latest > detector.threshold
@@ -117,7 +117,7 @@ defmodule Raxol.Core.Performance.JankDetector do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the number of janky frames in the current window.
 
   ## Parameters
@@ -134,10 +134,10 @@ defmodule Raxol.Core.Performance.JankDetector do
       iex> detector = JankDetector.record_frame(detector, 20)
       iex> JankDetector.get_jank_count(detector)
       1
-  """
+  '''
   def get_jank_count(detector), do: detector.jank_count
 
-  @doc """
+  @doc '''
   Gets the average frame time in the current window.
 
   ## Parameters
@@ -154,7 +154,7 @@ defmodule Raxol.Core.Performance.JankDetector do
       iex> detector = JankDetector.record_frame(detector, 20)
       iex> JankDetector.get_avg_frame_time(detector)
       20.0
-  """
+  '''
   def get_avg_frame_time(detector) do
     case detector.frame_times do
       [] -> 0.0
@@ -162,7 +162,7 @@ defmodule Raxol.Core.Performance.JankDetector do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the maximum frame time in the current window.
 
   ## Parameters
@@ -179,7 +179,7 @@ defmodule Raxol.Core.Performance.JankDetector do
       iex> detector = JankDetector.record_frame(detector, 20)
       iex> JankDetector.get_max_frame_time(detector)
       20
-  """
+  '''
   def get_max_frame_time(detector) do
     case detector.frame_times do
       [] -> 0

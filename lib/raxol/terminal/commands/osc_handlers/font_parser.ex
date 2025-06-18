@@ -1,18 +1,18 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.FontParser do
-  @moduledoc """
+  @moduledoc '''
   Handles parsing of font-related OSC commands.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Parses a font command string into a tuple of {family, size, style}.
-  """
+  '''
   @spec parse(String.t()) ::
           {:query, nil}
           | {:set, String.t(), pos_integer() | nil, String.t() | nil}
           | {:error, term()}
   def parse(data) do
     case String.split(data, ";") do
-      ["?"] -> {:query, nil}
+      ["?'] -> {:query, nil}
       parts -> parse_font_parts(parts)
     end
   end
@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.FontParser do
 
   defp parse_font_size(size_str) do
     case Integer.parse(size_str) do
-      {size, ""} when size > 0 -> {:ok, size}
+      {size, '"} when size > 0 -> {:ok, size}
       _ -> {:error, :invalid_size}
     end
   end

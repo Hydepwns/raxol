@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Emulator do
-  @moduledoc """
+  @moduledoc '''
   Manages the state of the terminal emulator, including screen buffer,
   cursor position, attributes, and modes.
 
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Emulator do
 
       Emulator.new(80, 24, scrollback: 2000)
 
-  """
+  '''
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Emulator do
   # To access the window position, use `emulator.window_state.position`.
   # Do NOT use `emulator.position` -- this will cause a KeyError.
 
-  @doc """
+  @doc '''
   Creates a new terminal emulator instance.
 
   Can be called with:
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.Emulator do
     * `:plugin_manager` - A pre-initialized `Raxol.Plugins.Manager.Core` struct.
     * `:session_id` - A session identifier string.
     * `:client_options` - A map of client-specific options.
-  """
+  '''
   @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
   @impl Raxol.Terminal.EmulatorBehaviour
   def new() do
@@ -178,10 +178,10 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate in_escape_state?(emulator), to: ParserStateManager
   defdelegate in_control_sequence_state?(emulator), to: ParserStateManager
 
-  @doc """
+  @doc '''
   Processes input from the user, handling both regular characters and escape sequences.
   Delegates to Raxol.Terminal.InputHandler.process_terminal_input/2.
-  """
+  '''
   @spec process_input(t(), String.t()) :: {t(), String.t()}
   @impl Raxol.Terminal.EmulatorBehaviour
   def process_input(%Struct{} = emulator, input) when is_binary(input) do
@@ -198,7 +198,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # --- Active Buffer Helpers ---
 
-  @doc "Updates the currently active screen buffer."
+  @doc 'Updates the currently active screen buffer.'
   @spec update_active_buffer(
           Raxol.Terminal.Emulator.t(),
           Raxol.Terminal.ScreenBuffer.t()
@@ -227,7 +227,7 @@ defmodule Raxol.Terminal.Emulator do
   # --- CSI Sequence Handling ---
   # Logic moved to InputHandler which calls Parser, which calls Commands.Executor for CSI.
 
-  @doc """
+  @doc '''
   Resizes the emulator's screen buffers.
 
   ## Parameters
@@ -239,7 +239,7 @@ defmodule Raxol.Terminal.Emulator do
   ## Returns
 
   Updated emulator with resized buffers
-  """
+  '''
   @spec resize(
           Raxol.Terminal.Emulator.t(),
           non_neg_integer(),
@@ -534,10 +534,10 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate apply_single_shift(emulator, g_set), to: CharsetManager
   defdelegate get_single_shift(emulator), to: CharsetManager
 
-  @doc """
+  @doc '''
   Sets the character set for the specified G-set.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  """
+  '''
   def set_charset(emulator, charset) do
     case CharsetManager.designate_charset(emulator, :g0, charset) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}
@@ -572,17 +572,17 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate get_current_state(emulator), to: TerminalStateManager
   defdelegate update_current_state(emulator, state), to: TerminalStateManager
 
-  @doc """
+  @doc '''
   Writes data to the terminal output.
-  """
+  '''
   @spec write(t(), String.t()) :: t()
   def write(emulator, data) do
     Output.Manager.write(emulator, data)
   end
 
-  @doc """
+  @doc '''
   Writes output to the terminal.
-  """
+  '''
   @spec write_to_output(t(), String.t()) :: t()
   def write_to_output(%Struct{} = emulator, output) when is_binary(output) do
     {new_emulator, _} = process_input(emulator, output)

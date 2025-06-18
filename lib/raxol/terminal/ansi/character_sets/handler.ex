@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
-  @moduledoc """
+  @moduledoc '''
   Handles character set control sequences and state changes.
-  """
+  '''
 
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
 
-  @doc """
+  @doc '''
   Handles a character set control sequence.
-  """
+  '''
   def handle_sequence(state, sequence) do
     case sequence do
       # Designate G0 character set
@@ -43,9 +43,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
     end
   end
 
-  @doc """
+  @doc '''
   Designates a character set for a specific G-set.
-  """
+  '''
   def designate_charset(state, gset_index, code) do
     case StateManager.charset_code_to_atom(code) do
       nil ->
@@ -60,23 +60,23 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
     end
   end
 
-  @doc """
+  @doc '''
   Sets a locking shift character set.
-  """
+  '''
   def set_locking_shift(state, gset) do
     StateManager.set_gl(state, gset)
   end
 
-  @doc """
+  @doc '''
   Sets a single shift character set.
-  """
+  '''
   def set_single_shift(state, gset) do
     StateManager.set_single_shift(state, StateManager.get_gset(state, gset))
   end
 
-  @doc """
+  @doc '''
   Invokes a character set.
-  """
+  '''
   def invoke_charset(state, gset) do
     StateManager.set_gl(state, gset)
   end

@@ -1,8 +1,8 @@
 defmodule Raxol.Metrics.Collector do
-  @moduledoc """
+  @moduledoc '''
   Collects and stores performance metrics for the Raxol event system.
   Works in conjunction with the Visualizer module to provide insights into system performance.
-  """
+  '''
 
   use GenServer
 

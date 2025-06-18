@@ -2,7 +2,7 @@ defmodule RaxolWeb.ThemeToggleComponent do
   use RaxolWeb, :live_component
 
   def render(assigns) do
-    ~H"""
+    ~H'''
     <button
       type="button"
       class="theme-toggle"
@@ -31,7 +31,7 @@ defmodule RaxolWeb.ThemeToggleComponent do
         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
       </svg>
     </button>
-    """
+    '''
   end
 
   def handle_event("toggle_theme", _params, socket) do

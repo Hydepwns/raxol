@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Selection.Behaviour do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for terminal selection buffer.
-  """
+  '''
 
   @callback new() :: any()
   @callback set_selection(any(), {integer(), integer()}, {integer(), integer()}) ::

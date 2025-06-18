@@ -1,11 +1,11 @@
 require Raxol.Core.Renderer.View
 
 defmodule Raxol.UI.Components.Modal do
-  @moduledoc """
+  @moduledoc '''
   A modal component for displaying overlay dialogs like alerts, prompts, confirmations, and forms.
-  """
+  '''
 
-  @typedoc """
+  @typedoc '''
   State for the Modal component.
 
   - :id - unique identifier
@@ -17,7 +17,7 @@ defmodule Raxol.UI.Components.Modal do
   - :width - modal width
   - :style - style map
   - :form_state - state for prompt/form fields
-  """
+  '''
   @type t :: %__MODULE__{
           id: any(),
           visible: boolean(),
@@ -61,7 +61,7 @@ defmodule Raxol.UI.Components.Modal do
 
   # --- Component Behaviour Callbacks ---
 
-  @doc "Initializes the Modal component state from props."
+  @doc 'Initializes the Modal component state from props.'
   @impl Raxol.UI.Components.Base.Component
   @spec init(map()) :: map()
   def init(props) do
@@ -132,7 +132,7 @@ defmodule Raxol.UI.Components.Modal do
   # Ignore invalid field defs
   defp normalize_field(_), do: nil
 
-  @doc "Updates the Modal component state in response to messages. Handles show/hide, button clicks, and form updates."
+  @doc 'Updates the Modal component state in response to messages. Handles show/hide, button clicks, and form updates.'
   @impl Raxol.UI.Components.Base.Component
   @spec update(term(), map()) :: {map(), list()}
   def update(msg, state) do
@@ -628,7 +628,7 @@ defmodule Raxol.UI.Components.Modal do
   # --- Public Helper Functions (Constructors) ---
 
   # Simplified
-  @doc "Creates props for an alert modal."
+  @doc 'Creates props for an alert modal.'
   @spec alert(any(), any(), any(), Keyword.t()) :: map()
   def alert(id, title, content, opts \\ []) do
     props =
@@ -646,7 +646,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   # Simplified
-  @doc "Creates props for a confirmation modal."
+  @doc 'Creates props for a confirmation modal.'
   @spec confirm(any(), any(), any(), any(), any(), Keyword.t()) :: map()
   def confirm(
         id,
@@ -672,7 +672,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   # Simplified
-  @doc "Creates props for a prompt modal."
+  @doc 'Creates props for a prompt modal.'
   @spec prompt(any(), any(), any(), any(), any(), Keyword.t()) :: map()
   def prompt(
         id,
@@ -704,13 +704,13 @@ defmodule Raxol.UI.Components.Modal do
     props
   end
 
-  @doc """
+  @doc '''
   Creates props for a form modal.
 
   `fields` should be a list of maps, each defining a form field:
   `%{id: :atom, type: :text_input | :checkbox | :dropdown, label: "string", value: initial_value, props: keyword_list, options: list, validate: regex | function}`
   (options only for dropdown)
-  """
+  '''
   @spec form(any(), any(), list(), any(), any(), Keyword.t()) :: map()
   def form(
         id,

@@ -1,11 +1,11 @@
 defmodule Raxol.Core.Runtime.Log do
-  @moduledoc """
+  @moduledoc '''
   Standardized logging helpers for error and warning messages with context and stacktraces.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Logs an error with stacktrace and context.
-  """
+  '''
   def error_with_stacktrace(msg, error, stacktrace, context \\ nil) do
     error(
       "#{msg}\nError: #{inspect(error)}\nStacktrace: #{Exception.format_stacktrace(stacktrace)}",
@@ -13,9 +13,9 @@ defmodule Raxol.Core.Runtime.Log do
     )
   end
 
-  @doc """
+  @doc '''
   Logs a warning with context.
-  """
+  '''
   def warning_with_context(msg, context) do
     IO.puts("[WARN] #{msg} | Context: #{inspect(context)}")
   end

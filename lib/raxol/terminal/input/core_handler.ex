@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Input.CoreHandler do
-  @moduledoc """
+  @moduledoc '''
   Core input handling functionality for the terminal emulator.
   Manages the main input buffer and cursor state.
-  """
+  '''
 
   alias Raxol.Terminal.ModeManager
   alias Raxol.Terminal.Parser
@@ -26,9 +26,9 @@ defmodule Raxol.Terminal.Input.CoreHandler do
     :mode_manager
   ]
 
-  @doc """
+  @doc '''
   Creates a new input handler with default values.
-  """
+  '''
   @spec new() :: t()
   def new do
     %__MODULE__{
@@ -41,9 +41,9 @@ defmodule Raxol.Terminal.Input.CoreHandler do
     }
   end
 
-  @doc """
+  @doc '''
   Inserts text at the specified position in the buffer.
-  """
+  '''
   @spec insert_text(String.t(), non_neg_integer(), String.t()) :: String.t()
   def insert_text(buffer, position, text) do
     before_text = String.slice(buffer, 0, position)
@@ -51,10 +51,10 @@ defmodule Raxol.Terminal.Input.CoreHandler do
     before_text <> text <> after_text
   end
 
-  @doc """
+  @doc '''
   Processes a raw input string for the terminal, parsing control sequences and printable characters.
   This function drives the terminal command parser.
-  """
+  '''
   @spec process_terminal_input(Emulator.t(), String.t()) ::
           {Emulator.t(), String.t()}
   def process_terminal_input(emulator, input) when is_binary(input) do

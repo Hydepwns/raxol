@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Input.CharacterProcessor do
-  @moduledoc """
+  @moduledoc '''
   Handles character processing, translation, and writing to the terminal buffer.
-  """
+  '''
 
   alias Raxol.Terminal.{Emulator, ScreenBuffer, CharacterHandling}
   alias Raxol.Terminal.ANSI.CharacterSets
@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Processes a single character codepoint.
   Delegates to C0 handlers or printable character handlers.
-  """
+  '''
   @spec process_character(Emulator.t(), integer()) :: Emulator.t()
   def process_character(emulator, char_codepoint)
       when (char_codepoint >= 0 and char_codepoint <= 31) or
@@ -25,10 +25,10 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     process_printable_character(emulator, char_codepoint)
   end
 
-  @doc """
+  @doc '''
   Processes a single printable character codepoint.
   Handles writing the character to the buffer, cursor advancement, and line wrapping.
-  """
+  '''
   @spec process_printable_character(Emulator.t(), integer()) :: Emulator.t()
   def process_printable_character(emulator, char_codepoint) do
     {_active_buffer, buffer_width, buffer_height} = get_buffer_info(emulator)
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
        ) do
     if write_y < buffer_height do
       Raxol.Core.Runtime.Log.debug(
-        "[InputHandler] Writing char codepoint '#{translated_char}' with style: #{inspect(emulator.style)}"
+        "[InputHandler] Writing char codepoint "#{translated_char}" with style: #{inspect(emulator.style)}"
       )
 
       buffer_for_write = Emulator.get_active_buffer(emulator)

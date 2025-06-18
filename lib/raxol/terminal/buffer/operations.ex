@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Buffer.Operations do
-  @moduledoc """
+  @moduledoc '''
   Handles buffer operations for the terminal, including resizing, scrolling,
   and cursor movement.
-  """
+  '''
 
   @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 
@@ -10,9 +10,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   alias Raxol.Terminal.Buffer.{Cursor, Queries, LineOperations}
 
   @impl true
-  @doc """
+  @doc '''
   Resizes the buffer to the specified dimensions.
-  """
+  '''
   def resize(buffer, rows, cols)
       when is_list(buffer) and is_integer(rows) and is_integer(cols) do
     rows = max(1, rows)
@@ -37,9 +37,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Checks if scrolling is needed and performs it if necessary.
-  """
+  '''
   def maybe_scroll(buffer) when is_list(buffer) do
     # Check if we need to scroll
     if needs_scroll?(buffer) do
@@ -50,9 +50,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Moves the cursor to the next line, scrolling if necessary.
-  """
+  '''
   def next_line(buffer) when is_list(buffer) do
     buffer
     |> maybe_scroll()
@@ -60,27 +60,27 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Moves the cursor to the previous line.
-  """
+  '''
   def reverse_index(buffer) when is_list(buffer) do
     # Move cursor up one line
     buffer
   end
 
   @impl true
-  @doc """
+  @doc '''
   Moves the cursor to the beginning of the next line.
-  """
+  '''
   def index(buffer) when is_list(buffer) do
     # Move cursor to beginning of next line
     buffer
   end
 
   @impl true
-  @doc """
+  @doc '''
   Scrolls the buffer up by the specified number of lines.
-  """
+  '''
   def scroll_up(buffer, lines, cursor_y, cursor_x)
       when is_list(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
@@ -101,9 +101,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Scrolls the buffer down by the specified number of lines.
-  """
+  '''
   def scroll_down(buffer, lines, cursor_y, cursor_x)
       when is_list(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
@@ -124,9 +124,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Inserts the specified number of blank lines at the cursor position.
-  """
+  '''
   def insert_lines(buffer, count, cursor_y, cursor_x)
       when is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
@@ -143,9 +143,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Inserts the specified number of blank lines at the cursor position with scroll region.
-  """
+  '''
   def insert_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
       when is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
@@ -167,9 +167,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Deletes the specified number of lines at the cursor position.
-  """
+  '''
   def delete_lines(buffer, count, cursor_y, cursor_x)
       when is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
@@ -183,9 +183,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Deletes the specified number of lines at the cursor position with scroll region.
-  """
+  '''
   def delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
       when is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
@@ -204,9 +204,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Erases characters in the current line based on the mode.
-  """
+  '''
   def erase_in_line(buffer, mode, cursor) do
     {row, col} = Cursor.get_cursor_position(cursor)
 
@@ -219,9 +219,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Erases characters in the display based on the mode.
-  """
+  '''
   def erase_in_display(buffer, mode, cursor) do
     {row, col} = Cursor.get_cursor_position(cursor)
 
@@ -235,9 +235,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Writes a character to the buffer at the specified position.
-  """
+  '''
   def write_char(buffer, x, y, char, style)
       when is_list(buffer) and is_integer(x) and is_integer(y) and
              is_binary(char) and is_map(style) do
@@ -266,9 +266,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Inserts the specified number of blank characters at the cursor position.
-  """
+  '''
   def insert_chars(buffer, count)
       when is_list(buffer) and is_integer(count) and count > 0 do
     # Insert blank characters at cursor position
@@ -281,9 +281,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Deletes the specified number of characters at the cursor position.
-  """
+  '''
   def delete_chars(buffer, count)
       when is_list(buffer) and is_integer(count) and count > 0 do
     # Delete characters at cursor position
@@ -295,9 +295,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Creates a new buffer with the specified dimensions.
-  """
+  '''
   def new(opts) do
     rows = Keyword.get(opts, :rows, 24)
     cols = Keyword.get(opts, :cols, 80)
@@ -309,9 +309,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @doc """
+  @doc '''
   Writes data to the buffer.
-  """
+  '''
   def write(buffer, data, opts \\ []) do
     case data do
       {x, y, char} when is_integer(x) and is_integer(y) and is_binary(char) ->
@@ -340,9 +340,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Raxol.Terminal.Buffer.Writer.write_string(buffer, x, y, string)
   end
 
-  @doc """
+  @doc '''
   Reads data from the buffer.
-  """
+  '''
   def read(buffer, opts \\ []) do
     # Example: read a line or region, depending on opts
     case Keyword.get(opts, :line) do
@@ -354,9 +354,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @doc """
+  @doc '''
   Scrolls the buffer by the specified number of lines.
-  """
+  '''
   def scroll(buffer, lines) do
     if lines > 0 do
       Raxol.Terminal.Buffer.Scroller.scroll_up(buffer, lines)
@@ -365,16 +365,16 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @doc """
+  @doc '''
   Writes a string to the buffer.
-  """
+  '''
   def write_string(buffer, x, y, string) do
     Raxol.Terminal.Buffer.Writer.write_string(buffer, x, y, string)
   end
 
-  @doc """
+  @doc '''
   Gets the content of the buffer.
-  """
+  '''
   def get_content(buffer) do
     Raxol.Terminal.Buffer.Content.get_content(buffer)
   end
@@ -394,7 +394,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   # Private helper functions
 
-  @doc """
+  @doc '''
   Creates a new empty line with the specified number of columns.
 
   ## Parameters
@@ -409,13 +409,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
       iex> Operations.create_empty_line(80)
       [%Cell{char: "", style: %{}}, ...]
-  """
+  '''
   @spec create_empty_line(non_neg_integer()) :: [Cell.t()]
   def create_empty_line(cols) do
     List.duplicate(Cell.new(), cols)
   end
 
-  @doc """
+  @doc '''
   Erases characters from the cursor position to the end of the line.
 
   ## Parameters
@@ -433,7 +433,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Operations.erase_from_cursor_to_line_end(buffer, 0, 40)
       [%Cell{char: "", style: %{}}, ...]
-  """
+  '''
   @spec erase_from_cursor_to_line_end(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -443,7 +443,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     LineOperations.erase_chars(buffer, row, col, buffer.width - col)
   end
 
-  @doc """
+  @doc '''
   Erases characters from the start of the line to the cursor position.
 
   ## Parameters
@@ -461,7 +461,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Operations.erase_from_line_start_to_cursor(buffer, 0, 40)
       [%Cell{char: "", style: %{}}, ...]
-  """
+  '''
   @spec erase_from_line_start_to_cursor(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -471,7 +471,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     LineOperations.erase_chars(buffer, row, 0, col + 1)
   end
 
-  @doc """
+  @doc '''
   Erases the entire line.
 
   ## Parameters
@@ -488,14 +488,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Operations.erase_entire_line(buffer, 0)
       [%Cell{char: "", style: %{}}, ...]
-  """
+  '''
   @spec erase_entire_line(ScreenBuffer.t(), non_neg_integer()) ::
           ScreenBuffer.t()
   def erase_entire_line(buffer, row) do
     LineOperations.erase_chars(buffer, row, 0, buffer.width)
   end
 
-  @doc """
+  @doc '''
   Erases all lines after the specified row.
 
   ## Parameters
@@ -512,7 +512,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Operations.erase_lines_after(buffer, 12)
       [%Cell{char: "", style: %{}}, ...]
-  """
+  '''
   @spec erase_lines_after(ScreenBuffer.t(), non_neg_integer()) ::
           ScreenBuffer.t()
   def erase_lines_after(buffer, start_row) do
@@ -521,7 +521,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Erases all lines before the specified row.
 
   ## Parameters
@@ -538,7 +538,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Operations.erase_lines_before(buffer, 12)
       [%Cell{char: "", style: %{}}, ...]
-  """
+  '''
   @spec erase_lines_before(ScreenBuffer.t(), non_neg_integer()) ::
           ScreenBuffer.t()
   def erase_lines_before(buffer, end_row) do
@@ -547,7 +547,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Clears the scrollback buffer.
 
   ## Parameters
@@ -563,13 +563,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Operations.clear_scrollback(buffer)
       %{buffer | scrollback: []}
-  """
+  '''
   @spec clear_scrollback(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear_scrollback(buffer) do
     %{buffer | scrollback: []}
   end
 
-  @doc """
+  @doc '''
   Checks if scrolling is needed based on buffer state.
 
   ## Parameters
@@ -585,15 +585,15 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Operations.needs_scroll?(buffer)
       false
-  """
+  '''
   @spec needs_scroll?(ScreenBuffer.t()) :: boolean()
   def needs_scroll?(buffer) do
     false
   end
 
-  @doc """
+  @doc '''
   Erases from the cursor position to the end of the display.
-  """
+  '''
   defp erase_from_cursor_to_end(buffer, row, col) do
     buffer
     |> Enum.with_index()
@@ -606,9 +606,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Erases from the start of the display to the cursor position.
-  """
+  '''
   defp erase_from_start_to_cursor(buffer, row, col) do
     buffer
     |> Enum.with_index()
@@ -621,25 +621,25 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Erases the entire display.
-  """
+  '''
   defp erase_all(buffer) do
     width = length(hd(buffer))
     List.duplicate(List.duplicate(Cell.new(), width), length(buffer))
   end
 
-  @doc """
+  @doc '''
   Erases the entire display including scrollback.
-  """
+  '''
   defp erase_all_with_scrollback(buffer) do
     width = length(hd(buffer))
     List.duplicate(List.duplicate(Cell.new(), width), length(buffer))
   end
 
-  @doc """
+  @doc '''
   Erases from the cursor position to the end of the line.
-  """
+  '''
   defp erase_from_cursor_to_line_end(line, col) do
     line
     |> Enum.with_index()
@@ -652,9 +652,9 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end)
   end
 
-  @doc """
+  @doc '''
   Erases from the start of the line to the cursor position.
-  """
+  '''
   defp erase_from_line_start_to_cursor(line, col) do
     line
     |> Enum.with_index()
@@ -665,27 +665,5 @@ defmodule Raxol.Terminal.Buffer.Operations do
         cell
       end
     end)
-  end
-
-  @doc """
-  Erases the entire line.
-  """
-  defp erase_entire_line(buffer, row) do
-    buffer
-    |> Enum.with_index()
-    |> Enum.map(fn {line, line_row} ->
-      if line_row == row do
-        List.duplicate(Cell.new(), length(line))
-      else
-        line
-      end
-    end)
-  end
-
-  @doc """
-  Creates an empty line with the specified width.
-  """
-  defp create_empty_line(width) do
-    List.duplicate(Cell.new(), width)
   end
 end

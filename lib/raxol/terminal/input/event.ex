@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Input.Event do
-  @moduledoc """
+  @moduledoc '''
   Defines the base event struct and common types for input events.
-  """
+  '''
 
   @type modifier :: :shift | :ctrl | :alt | :meta
   @type timestamp :: integer()
@@ -9,9 +9,9 @@ defmodule Raxol.Terminal.Input.Event do
   defstruct [:timestamp]
 
   defmodule MouseEvent do
-    @moduledoc """
+    @moduledoc '''
     Represents a mouse input event.
-    """
+    '''
 
     @type button :: :left | :middle | :right | :wheel_up | :wheel_down
     @type action :: :press | :release | :drag | :move
@@ -36,9 +36,9 @@ defmodule Raxol.Terminal.Input.Event do
   end
 
   defmodule KeyEvent do
-    @moduledoc """
+    @moduledoc '''
     Represents a keyboard input event.
-    """
+    '''
 
     defstruct [
       :key,

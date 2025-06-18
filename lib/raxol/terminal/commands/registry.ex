@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Commands.Registry do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal commands with advanced features:
   - Command registration and lookup
   - Command validation and execution
   - Command history tracking
   - Command completion suggestions
-  """
+  '''
 
   @type command_name :: String.t()
   @type command_description :: String.t()
@@ -44,9 +44,9 @@ defmodule Raxol.Terminal.Commands.Registry do
     :metrics
   ]
 
-  @doc """
+  @doc '''
   Creates a new command registry with the given options.
-  """
+  '''
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %__MODULE__{
@@ -62,9 +62,9 @@ defmodule Raxol.Terminal.Commands.Registry do
     }
   end
 
-  @doc """
+  @doc '''
   Registers a new command in the registry.
-  """
+  '''
   @spec register_command(t(), command()) :: {:ok, t()} | {:error, term()}
   def register_command(registry, command) do
     with :ok <- validate_command(command),
@@ -83,9 +83,9 @@ defmodule Raxol.Terminal.Commands.Registry do
     end
   end
 
-  @doc """
+  @doc '''
   Executes a command with the given arguments.
-  """
+  '''
   @spec execute_command(t(), String.t(), [String.t()]) ::
           {:ok, t(), term()} | {:error, term()}
   def execute_command(registry, command_name, args) do
@@ -106,9 +106,9 @@ defmodule Raxol.Terminal.Commands.Registry do
     end
   end
 
-  @doc """
+  @doc '''
   Gets command completion suggestions for the given input.
-  """
+  '''
   @spec get_completions(t(), String.t()) ::
           {:ok, t(), [String.t()]} | {:error, term()}
   def get_completions(registry, input) do
@@ -130,25 +130,25 @@ defmodule Raxol.Terminal.Commands.Registry do
     {:ok, updated_registry, suggestions}
   end
 
-  @doc """
+  @doc '''
   Gets the command history.
-  """
+  '''
   @spec get_history(t()) :: [String.t()]
   def get_history(registry) do
     registry.history
   end
 
-  @doc """
+  @doc '''
   Gets the current registry metrics.
-  """
+  '''
   @spec get_metrics(t()) :: map()
   def get_metrics(registry) do
     registry.metrics
   end
 
-  @doc """
+  @doc '''
   Clears the command history.
-  """
+  '''
   @spec clear_history(t()) :: t()
   def clear_history(registry) do
     %{registry | history: []}

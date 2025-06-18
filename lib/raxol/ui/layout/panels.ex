@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Layout.Panels do
-  @moduledoc """
+  @moduledoc '''
   Handles layout calculations for panel UI elements.
 
   This module is responsible for:
@@ -7,12 +7,12 @@ defmodule Raxol.UI.Layout.Panels do
   * Panel content layout
   * Panel title positioning
   * Panel-specific spacing and constraints
-  """
+  '''
 
   alias Raxol.UI.Layout.Engine
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Processes a panel element, calculating layout for it and its children.
 
   ## Parameters
@@ -24,7 +24,7 @@ defmodule Raxol.UI.Layout.Panels do
   ## Returns
 
   A list of positioned elements with absolute coordinates.
-  """
+  '''
   def process(
         %{type: :panel, attrs: attrs, children: children_input} = panel_element,
         space,
@@ -135,7 +135,7 @@ defmodule Raxol.UI.Layout.Panels do
     elements ++ title_elements ++ processed_children_elements ++ acc
   end
 
-  @doc """
+  @doc '''
   Measures the space required by a panel element.
 
   ## Parameters
@@ -146,7 +146,7 @@ defmodule Raxol.UI.Layout.Panels do
   ## Returns
 
   The dimensions of the panel: %{width: w, height: h}
-  """
+  '''
   def measure_panel(
         %{type: :panel, attrs: attrs, children: children},
         available_space

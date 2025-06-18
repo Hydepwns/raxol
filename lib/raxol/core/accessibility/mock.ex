@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Accessibility.Mock do
-  @moduledoc """
+  @moduledoc '''
   Mock implementation of the accessibility module for testing.
-  """
+  '''
 
   @behaviour Raxol.Core.Accessibility.Behaviour
 

@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
-  @moduledoc """
+  @moduledoc '''
   Core plugin responsible for handling notifications (:notify).
   Relies on an implementation of Raxol.System.Interaction for OS interactions.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -59,7 +59,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   # with a different signature than what get_commands implies.
   def handle_command(_command_name, args, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
-      "NotificationPlugin :handle_command received unexpected command '#{_command_name}' with args format: #{inspect(args)}",
+      "NotificationPlugin :handle_command received unexpected command "#{_command_name}" with args format: #{inspect(args)}",
       %{}
     )
 
@@ -73,7 +73,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     title = Map.get(data, :title, "Raxol Notification")
 
     Raxol.Core.Runtime.Log.debug(
-      "NotificationPlugin: Sending notification - Title: '#{title}', Message: '#{message}'"
+      "NotificationPlugin: Sending notification - Title: "#{title}", Message: "#{message}""
     )
 
     # Determine the command and arguments based on the OS using injected module
@@ -175,21 +175,21 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     case reason_tuple do
       {:command_not_found, :notify_send} ->
         Raxol.Core.Runtime.Log.error(
-          "NotificationPlugin: Command 'notify-send' not found. Please install it."
+          "NotificationPlugin: Command "notify-send" not found. Please install it."
         )
 
         {:error, {:command_not_found, :notify_send}, state}
 
       {:command_not_found, :osascript} ->
         Raxol.Core.Runtime.Log.error(
-          "NotificationPlugin: Command 'osascript' not found."
+          "NotificationPlugin: Command "osascript" not found."
         )
 
         {:error, {:command_not_found, :osascript}, state}
 
       {:command_not_found, :powershell} ->
         Raxol.Core.Runtime.Log.error(
-          "NotificationPlugin: Command 'powershell' not found."
+          "NotificationPlugin: Command "powershell" not found."
         )
 
         {:error, {:command_not_found, :powershell}, state}
@@ -232,9 +232,9 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   # Defensive: handle_command/2 returns an error indicating incorrect arity
   # Add a wrapper for backward compatibility with tests
-  @doc """
+  @doc '''
   Wrapper for handle_command/2 for backward compatibility. Delegates to handle_command/3 if possible.
-  """
+  '''
   def handle_command([a, b], state) when is_binary(a) and is_binary(b) do
     handle_command(:notify, [a, b], state)
   end

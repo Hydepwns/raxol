@@ -1,18 +1,18 @@
 defmodule Raxol.Plugins.Manager.Hooks do
-  @moduledoc """
+  @moduledoc '''
   Handles plugin hook execution.
   Provides functions for running various plugin hooks and collecting their results.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.Manager.Core
 
-  @doc """
+  @doc '''
   Runs render-related hooks for all enabled plugins.
   Collects any direct output commands (e.g., escape sequences) returned by plugins.
   Returns {:ok, updated_manager, list_of_output_commands}
-  """
+  '''
   def run_render_hooks(%Core{} = manager) do
     Enum.reduce(manager.plugins, {:ok, manager, []}, &run_plugin_render_hook/2)
   end
@@ -45,10 +45,10 @@ defmodule Raxol.Plugins.Manager.Hooks do
     end
   end
 
-  @doc """
+  @doc '''
   Runs a specific hook on all enabled plugins.
   Returns {:ok, updated_manager, results} where results is a list of hook results.
-  """
+  '''
   def run_hook(%Core{} = manager, hook_name, args \\ []) do
     Enum.reduce(manager.plugins, {:ok, manager, []}, fn {name, plugin}, acc ->
       run_plugin_hook({name, plugin}, acc, hook_name, args)

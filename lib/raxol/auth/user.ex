@@ -1,7 +1,7 @@
 defmodule Raxol.Auth.User do
-  @moduledoc """
+  @moduledoc '''
   User schema for authentication and authorization.
-  """
+  '''
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -31,9 +31,9 @@ defmodule Raxol.Auth.User do
     timestamps()
   end
 
-  @doc """
+  @doc '''
   Creates a changeset for a user.
-  """
+  '''
   def changeset(user, attrs) do
     user
     |> cast(attrs, [
@@ -60,9 +60,9 @@ defmodule Raxol.Auth.User do
     |> put_password_hash()
   end
 
-  @doc """
+  @doc '''
   Creates a changeset for registration.
-  """
+  '''
   def registration_changeset(user, attrs) do
     user
     |> changeset(attrs)
@@ -70,9 +70,9 @@ defmodule Raxol.Auth.User do
     |> put_confirmation_token()
   end
 
-  @doc """
+  @doc '''
   Creates a changeset for password reset.
-  """
+  '''
   def password_reset_changeset(user, attrs) do
     user
     |> cast(attrs, [:password])

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Charset.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal character sets and encoding operations.
-  """
+  '''
 
   defstruct g_sets: %{
               g0: :us_ascii,
@@ -30,30 +30,30 @@ defmodule Raxol.Terminal.Charset.Manager do
           charsets: %{charset() => (-> char_map())}
         }
 
-  @doc """
+  @doc '''
   Creates a new charset manager instance.
-  """
+  '''
   def new do
     %__MODULE__{}
   end
 
-  @doc """
+  @doc '''
   Gets the current state of the charset manager.
-  """
+  '''
   def get_state(%__MODULE__{} = state) do
     state
   end
 
-  @doc """
+  @doc '''
   Updates the state of the charset manager.
-  """
+  '''
   def update_state(%__MODULE__{} = state, new_state) when is_map(new_state) do
     Map.merge(state, new_state)
   end
 
-  @doc """
+  @doc '''
   Designates a character set for a specific G-set.
-  """
+  '''
   def designate_charset(%__MODULE__{} = state, g_set, charset)
       when g_set in [:g0, :g1, :g2, :g3] and
              charset in [
@@ -65,32 +65,32 @@ defmodule Raxol.Terminal.Charset.Manager do
     %{state | g_sets: Map.put(state.g_sets, g_set, charset)}
   end
 
-  @doc """
+  @doc '''
   Invokes a G-set as the current character set.
-  """
+  '''
   def invoke_g_set(%__MODULE__{} = state, g_set)
       when g_set in [:g0, :g1, :g2, :g3] do
     %{state | current_g_set: g_set}
   end
 
-  @doc """
+  @doc '''
   Gets the current G-set.
-  """
+  '''
   def get_current_g_set(%__MODULE__{} = state) do
     state.current_g_set
   end
 
-  @doc """
+  @doc '''
   Gets the designated charset for a G-set.
-  """
+  '''
   def get_designated_charset(%__MODULE__{} = state, g_set)
       when g_set in [:g0, :g1, :g2, :g3] do
     Map.get(state.g_sets, g_set)
   end
 
-  @doc """
+  @doc '''
   Resets the charset state to defaults.
-  """
+  '''
   def reset_state(%__MODULE__{} = state) do
     %{
       state
@@ -105,24 +105,24 @@ defmodule Raxol.Terminal.Charset.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Applies a single shift to the current character.
-  """
+  '''
   def apply_single_shift(%__MODULE__{} = state, g_set)
       when g_set in [:g0, :g1, :g2, :g3] do
     %{state | single_shift: g_set}
   end
 
-  @doc """
+  @doc '''
   Gets the current single shift.
-  """
+  '''
   def get_single_shift(%__MODULE__{} = state) do
     state.single_shift
   end
 
-  @doc """
+  @doc '''
   Returns the US ASCII character map.
-  """
+  '''
   def us_ascii_map do
     %{
       # Basic ASCII characters
@@ -157,8 +157,8 @@ defmodule Raxol.Terminal.Charset.Manager do
       60 => "<",  # Less than
       61 => "=",  # Equals
       62 => ">",  # Greater than
-      63 => "?",  # Question mark
-      64 => "@",  # At sign
+      63 => "?',  # Question mark
+      64 => '@",  # At sign
       65 => "A",  # A
       66 => "B",  # B
       67 => "C",  # C
@@ -224,9 +224,9 @@ defmodule Raxol.Terminal.Charset.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Returns the DEC Supplementary character map.
-  """
+  '''
   def dec_supplementary_map do
     %{
       # Box drawing characters
@@ -275,7 +275,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       ?~ => "▲", # Square
       ?` => "△", # Square
       ?' => "▴", # Triangle
-      ?" => "▵", # Triangle
+      ?' => '▵", # Triangle
       ?( => "▶", # Triangle
       ?) => "▷", # Triangle
       ?[ => "▸", # Triangle
@@ -287,9 +287,9 @@ defmodule Raxol.Terminal.Charset.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Returns the DEC Special character map.
-  """
+  '''
   def dec_special_map do
     %{
       # Box drawing characters
@@ -308,7 +308,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       ?o => "°", # Degree symbol
       ?` => "±", # Plus-minus
       ?' => "′", # Prime
-      ?" => "″", # Double prime
+      ?' => '″", # Double prime
       ?! => "≠", # Not equal
       ?= => "≡", # Identical
       ?/ => "÷", # Division
@@ -333,9 +333,9 @@ defmodule Raxol.Terminal.Charset.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Returns the DEC Technical character map.
-  """
+  '''
   def dec_technical_map do
     %{
       # Greek letters
@@ -383,7 +383,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       ?_ => "∪", # Union
       ?` => "∈", # Element of
       ?' => "∉", # Not element of
-      ?" => "⊂", # Subset of
+      ?' => '⊂", # Subset of
       ?( => "⊃", # Superset of
       ?) => "⊆", # Subset of or equal to
       ?[ => "⊇", # Superset of or equal to
@@ -394,9 +394,9 @@ defmodule Raxol.Terminal.Charset.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Translates a character using the current charset.
-  """
+  '''
   def handle_set_charset(emulator, params_buffer, final_byte) do
     case {params_buffer, final_byte} do
       # US ASCII
@@ -466,9 +466,9 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the current character set for the specified G-set.
-  """
+  '''
   def get_charset(emulator, g_set) do
     case g_set do
       :g0 -> emulator.charset_state.g0
@@ -479,9 +479,9 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Maps a character using the current character set.
-  """
+  '''
   def map_character(emulator, char) do
     charset = get_charset(emulator, emulator.charset_state.active_set)
 
@@ -528,7 +528,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       # Prime
       ?' -> ?′
       # Double prime
-      ?" -> ?″
+      ?' -> ?″
       # Not equal
       ?! -> ?≠
       # Identical
@@ -665,7 +665,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       # Not element of
       ?' -> ?∉
       # Subset of
-      ?" -> ?⊂
+      ?' -> ?⊂
       # Superset of
       ?( -> ?⊃
       # Subset of or equal to
@@ -727,7 +727,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       # Not element of
       ?' -> ?∉
       # Subset of
-      ?" -> ?⊂
+      ?' -> ?⊂
       # Superset of
       ?( -> ?⊃
       # Subset of or equal to
@@ -839,7 +839,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       # Triangle
       ?' -> ?▴
       # Triangle
-      ?" -> ?▵
+      ?' -> ?▵
       # Triangle
       ?( -> ?▶
       # Triangle
@@ -1074,7 +1074,7 @@ defmodule Raxol.Terminal.Charset.Manager do
       # Tilde
       ?~ -> ?~
       # Diaeresis
-      ?" -> ?"
+      ?' -> ?'
       _ -> char
     end
   end

@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.LoaderBehaviour do
-  @moduledoc """
+  @moduledoc '''
   Behaviour defining the interface for plugin loading operations.
-  """
+  '''
 
   @callback load_plugin(plugin_path :: String.t()) ::
               {:ok, term()} | {:error, term()}

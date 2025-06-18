@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Commands.Editor do
-  @moduledoc """
+  @moduledoc '''
   Handles editor-related terminal commands.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.{LineEditor, CharEditor, Eraser}
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Emulator
 
-  @doc """
+  @doc '''
   Inserts a specified number of blank lines at the current cursor position.
   Lines below the cursor are shifted down, and lines shifted off the bottom are discarded.
-  """
+  '''
   @spec insert_lines(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -22,10 +22,10 @@ defmodule Raxol.Terminal.Commands.Editor do
     LineEditor.insert_lines(buffer, row, count, default_style)
   end
 
-  @doc """
+  @doc '''
   Deletes a specified number of lines starting from the current cursor position.
   Lines below the deleted lines are shifted up, and blank lines are added at the bottom.
-  """
+  '''
   @spec delete_lines(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -36,10 +36,10 @@ defmodule Raxol.Terminal.Commands.Editor do
     LineEditor.delete_lines(buffer, row, count, default_style)
   end
 
-  @doc """
+  @doc '''
   Inserts a specified number of blank characters at the current cursor position.
   Characters to the right of the cursor are shifted right, and characters shifted off the end are discarded.
-  """
+  '''
   @spec insert_chars(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -51,10 +51,10 @@ defmodule Raxol.Terminal.Commands.Editor do
     CharEditor.insert_characters(buffer, row, col, count, default_style)
   end
 
-  @doc """
+  @doc '''
   Deletes a specified number of characters starting from the current cursor position.
   Characters to the right of the deleted characters are shifted left, and blank characters are added at the end.
-  """
+  '''
   @spec delete_chars(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -66,10 +66,10 @@ defmodule Raxol.Terminal.Commands.Editor do
     CharEditor.delete_characters(buffer, row, col, count, default_style)
   end
 
-  @doc """
+  @doc '''
   Erases a specified number of characters starting from the current cursor position.
   Characters are replaced with blank spaces using the default style.
-  """
+  '''
   @spec erase_chars(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Commands.Editor do
     Eraser.clear_region(buffer, row, col, row, end_col, default_style)
   end
 
-  @doc """
+  @doc '''
   Clears the screen based on the mode parameter.
 
   ## Parameters
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Commands.Editor do
   ## Returns
 
   * Updated emulator state
-  """
+  '''
   @spec clear_screen(
           Emulator.t(),
           integer(),
@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.Commands.Editor do
     end
   end
 
-  @doc """
+  @doc '''
   Clears a line or part of a line based on the mode parameter.
 
   ## Parameters
@@ -160,7 +160,7 @@ defmodule Raxol.Terminal.Commands.Editor do
   ## Returns
 
   * Updated emulator state
-  """
+  '''
   @spec clear_line(
           Emulator.t(),
           integer(),

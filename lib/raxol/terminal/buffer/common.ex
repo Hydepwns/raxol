@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.Buffer.Common do
-  @moduledoc """
+  @moduledoc '''
   Common buffer operations shared between different buffer-related modules.
   This module provides utility functions for buffer manipulation that are used
   by multiple modules to avoid code duplication.
-  """
+  '''
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.ScreenBuffer
 
-  @doc """
+  @doc '''
   Gets the lines within a specific region of the buffer.
 
   ## Parameters
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Buffer.Common do
   ## Returns
     * `{:ok, region_lines}` on success
     * `{:error, :invalid_region}` on failure
-  """
+  '''
   @spec get_region_lines(
           list(list(Cell.t())),
           non_neg_integer(),
@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.Buffer.Common do
     end
   end
 
-  @doc """
+  @doc '''
   Replaces content in a specific region of the buffer.
 
   ## Parameters
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Buffer.Common do
 
   ## Returns
     Updated buffer lines with the region replaced
-  """
+  '''
   @spec replace_region(
           list(list(Cell.t())),
           list(list(Cell.t())),
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Buffer.Common do
     List.replace_at(lines, top, new_region)
   end
 
-  @doc """
+  @doc '''
   Creates empty lines with optional styling.
 
   ## Parameters
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.Buffer.Common do
 
   ## Returns
     * `{:ok, new_lines}` on success
-  """
+  '''
   @spec create_empty_lines(non_neg_integer(), TextFormatting.text_style() | nil) ::
           {:ok, list(list(Cell.t()))}
   def create_empty_lines(count, blank_style) do
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Buffer.Common do
     {:ok, lines}
   end
 
-  @doc """
+  @doc '''
   Creates a single empty line with optional styling.
 
   ## Parameters
@@ -81,13 +81,13 @@ defmodule Raxol.Terminal.Buffer.Common do
 
   ## Returns
     Empty line with optional styling
-  """
+  '''
   @spec create_empty_line(TextFormatting.text_style() | nil) :: list(Cell.t())
   def create_empty_line(blank_style) do
     [Cell.new(" ", blank_style)]
   end
 
-  @doc """
+  @doc '''
   Appends new lines to existing lines.
 
   ## Parameters
@@ -96,14 +96,14 @@ defmodule Raxol.Terminal.Buffer.Common do
 
   ## Returns
     * `{:ok, combined_lines}` on success
-  """
+  '''
   @spec append_lines(list(list(Cell.t())), list(list(Cell.t()))) ::
           {:ok, list(list(Cell.t()))}
   def append_lines(lines, new_lines) do
     {:ok, lines ++ new_lines}
   end
 
-  @doc """
+  @doc '''
   Gets the top boundary of the scroll region.
 
   ## Parameters
@@ -113,7 +113,7 @@ defmodule Raxol.Terminal.Buffer.Common do
   ## Returns
     * `{:ok, top}` on success
     * `{:error, reason}` on failure
-  """
+  '''
   @spec get_scroll_top(
           ScreenBuffer.t(),
           {non_neg_integer(), non_neg_integer()} | nil
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Buffer.Common do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the bottom boundary of the scroll region.
 
   ## Parameters
@@ -135,7 +135,7 @@ defmodule Raxol.Terminal.Buffer.Common do
   ## Returns
     * `{:ok, bottom}` on success
     * `{:error, reason}` on failure
-  """
+  '''
   @spec get_scroll_bottom(
           ScreenBuffer.t(),
           {non_neg_integer(), non_neg_integer()} | nil

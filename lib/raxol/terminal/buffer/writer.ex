@@ -1,18 +1,18 @@
 defmodule Raxol.Terminal.Buffer.Writer do
-  @moduledoc """
+  @moduledoc '''
   Handles writing characters and strings to the Raxol.Terminal.ScreenBuffer.
   Responsible for character width, bidirectional text segmentation, and cell creation.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @doc """
+  @doc '''
   Writes a character to the buffer at the specified position.
   Handles wide characters by taking up two cells when necessary.
   Accepts an optional style to apply to the cell.
-  """
+  '''
   @dialyzer {:nowarn_function, write_char: 5}
   @spec write_char(
           ScreenBuffer.t(),
@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a cell style by merging the provided style with default formatting.
 
   ## Parameters
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
 
       iex> Writer.create_cell_style(%{fg: :red})
       %{fg: :red, bg: :default, bold: false, ...}
-  """
+  '''
   @spec create_cell_style(TextFormatting.text_style() | nil) :: TextFormatting.text_style()
   def create_cell_style(nil), do: TextFormatting.new()
 
@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
 
   def create_cell_style(_), do: TextFormatting.new()
 
-  @doc """
+  @doc '''
   Logs character write operations for debugging purposes.
 
   ## Parameters
@@ -77,17 +77,17 @@ defmodule Raxol.Terminal.Buffer.Writer do
 
       iex> Writer.log_char_write("A", 0, 0, %{fg: :red})
       :ok
-  """
+  '''
   @spec log_char_write(String.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: :ok
   def log_char_write(char, x, y, cell_style) do
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.debug(
-      "[Buffer.Writer] Writing char '#{char}' at {#{x}, #{y}} with style: #{inspect(cell_style)}"
+      "[Buffer.Writer] Writing char "#{char}" at {#{x}, #{y}} with style: #{inspect(cell_style)}"
     )
   end
 
-  @doc """
+  @doc '''
   Updates cells in the buffer at the specified position.
 
   ## Parameters
@@ -108,7 +108,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> Writer.update_cells(buffer, 0, 0, "A", %{fg: :red}, 1)
       [%Cell{char: "A", style: %{fg: :red}}, ...]
-  """
+  '''
   @spec update_cells(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), String.t(), TextFormatting.text_style(), 1..2) :: list(list(Cell.t()))
   def update_cells(buffer, x, y, char, cell_style, width) do
     List.update_at(
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
     )
   end
 
-  @doc """
+  @doc '''
   Updates a row in the buffer at the specified position.
 
   ## Parameters
@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
       iex> row = List.duplicate(Cell.new(), 80)
       iex> Writer.update_row(row, 0, "A", %{fg: :red}, 1, 80)
       [%Cell{char: "A", style: %{fg: :red}}, ...]
-  """
+  '''
   @spec update_row(list(Cell.t()), non_neg_integer(), String.t(), TextFormatting.text_style(), 1..2, non_neg_integer()) :: list(Cell.t())
   def update_row(row, x, char, cell_style, width, buffer_width) do
     new_cell = Cell.new(char, cell_style)
@@ -153,10 +153,10 @@ defmodule Raxol.Terminal.Buffer.Writer do
     end
   end
 
-  @doc """
+  @doc '''
   Writes a string to the buffer at the specified position.
   Handles wide characters and bidirectional text.
-  """
+  '''
   @spec write_string(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -176,7 +176,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
     |> elem(0)
   end
 
-  @doc """
+  @doc '''
   Writes a segment of text to the buffer.
 
   ## Parameters
@@ -196,7 +196,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
       iex> {new_buffer, new_x} = Writer.write_segment(buffer, 0, 0, "Hello")
       iex> new_x
       5
-  """
+  '''
   @spec write_segment(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), String.t()) :: {ScreenBuffer.t(), non_neg_integer()}
   def write_segment(buffer, x, y, segment) do
     Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,

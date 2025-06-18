@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Display.AsciiArt do
-  @moduledoc """
+  @moduledoc '''
   ASCII art rendering system for the Raxol terminal emulator.
 
   This module provides functionality for:
@@ -7,13 +7,13 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   - Creating custom ASCII art
   - Animating ASCII art
   - Integrating with the terminal display system
-  """
+  '''
 
-  @doc """
+  @doc '''
   Returns the ASCII art logo for the Raxol project.
-  """
+  '''
   def logo do
-    """
+    '''
        ██████╗  █████╗ ██╗  ██╗ ██████╗ ██╗
        ██╔══██╗██╔══██╗██║ ██╔╝██╔═══██╗██║
        ██████╔╝███████║█████╔╝ ██║   ██║██║
@@ -21,62 +21,62 @@ defmodule Raxol.Terminal.Display.AsciiArt do
        ██║  ██║██║  ██║██║  ██╗╚██████╔╝███████╗
        ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
     =====================================================
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art success indicator.
-  """
+  '''
   def success do
-    """
+    '''
      ╭───────────────────────────────╮
      │  ✓  Operation successful!     │
      ╰───────────────────────────────╯
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art error indicator.
-  """
+  '''
   def error do
-    """
+    '''
      ╭───────────────────────────────╮
      │  ✗  Operation failed!         │
      ╰───────────────────────────────╯
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art warning indicator.
-  """
+  '''
   def warning do
-    """
+    '''
      ╭───────────────────────────────╮
      │  ⚠  Warning!                  │
      ╰───────────────────────────────╯
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns a stylized header with the given text.
-  """
+  '''
   def header(text) do
     padding = div(80 - String.length(text), 2)
     left_padding = String.duplicate("═", padding)
     right_padding = String.duplicate("═", 80 - padding - String.length(text))
 
-    """
+    '''
     ╔════════════════════════════════════════════════════════════════════════════════╗
     ║#{left_padding}#{text}#{right_padding}║
     ╚════════════════════════════════════════════════════════════════════════════════╝
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art help screen.
-  """
+  '''
   def help do
-    """
+    '''
      ╭───────────────────────────────────────────────────────────────────╮
      │                   TERMINAL COMMAND REFERENCE                       │
      ├───────────────────────────────────────────────────────────────────┤
@@ -89,14 +89,14 @@ defmodule Raxol.Terminal.Display.AsciiArt do
      │  info       - Display system information                          │
      │  preferences - Customize terminal appearance                      │
      ╰───────────────────────────────────────────────────────────────────╯
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art theme preview.
-  """
+  '''
   def theme_preview do
-    """
+    '''
      ╭───────────────────────────────────────────────────────────────────╮
      │                   AVAILABLE THEME OPTIONS                          │
      ├───────────────────────────────────────────────────────────────────┤
@@ -105,12 +105,12 @@ defmodule Raxol.Terminal.Display.AsciiArt do
      │  dim        - Dark background with softer text colors             │
      │  high-contrast - High contrast colors for accessibility           │
      ╰───────────────────────────────────────────────────────────────────╯
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art progress bar with the given percentage.
-  """
+  '''
   def progress_bar(percentage)
       when is_integer(percentage) and percentage >= 0 and percentage <= 100 do
     width = 50
@@ -120,16 +120,16 @@ defmodule Raxol.Terminal.Display.AsciiArt do
     filled_bar = String.duplicate("█", filled)
     empty_bar = String.duplicate("░", empty)
 
-    """
+    '''
     ╭──────────────────────────────────────────────────╮
     │  [#{String.pad_leading(filled_bar <> empty_bar, width)}] #{String.pad_leading(Integer.to_string(percentage), 3)}% │
     ╰──────────────────────────────────────────────────╯
-    """
+    '''
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art box with the given text.
-  """
+  '''
   def box(text) do
     lines = String.split(text, "\n")
     max_length = Enum.max(Enum.map(lines, &String.length/1))
@@ -148,9 +148,9 @@ defmodule Raxol.Terminal.Display.AsciiArt do
     |> Enum.join("\n")
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art table with the given headers and rows.
-  """
+  '''
   def table(headers, rows) do
     # Calculate column widths
     all_rows = [headers | rows]
@@ -193,18 +193,18 @@ defmodule Raxol.Terminal.Display.AsciiArt do
     |> Enum.join("\n")
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art spinner animation frame for the given step.
-  """
+  '''
   def spinner(step) when is_integer(step) do
     frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     frame = Enum.at(frames, rem(step, length(frames)))
     "#{frame} Processing..."
   end
 
-  @doc """
+  @doc '''
   Returns an ASCII art loading animation for the given text.
-  """
+  '''
   def loading(text, step) when is_integer(step) do
     dots = String.duplicate(".", rem(step, 4))
     "#{text}#{dots}"

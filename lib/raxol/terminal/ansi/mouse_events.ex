@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.MouseEvents do
-  @moduledoc """
+  @moduledoc '''
   Handles mouse event reporting for the terminal emulator.
   Supports various mouse reporting modes including:
   - Basic mouse tracking (mode 1000)
@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   - SGR mouse reporting (mode 1006)
   - URXVT mouse reporting (mode 1015)
   - SGR pixels mouse reporting (mode 1016)
-  """
+  '''
 
   import Bitwise
 
@@ -38,9 +38,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
 
   @type modifier :: :shift | :alt | :ctrl | :meta
 
-  @doc """
+  @doc '''
   Creates a new mouse state with default values.
-  """
+  '''
   @spec new() :: mouse_state()
   def new do
     %{
@@ -54,33 +54,33 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     }
   end
 
-  @doc """
+  @doc '''
   Enables mouse tracking with the specified mode.
-  """
+  '''
   @spec enable(mouse_state(), mouse_mode()) :: mouse_state()
   def enable(state, mode) do
     %{state | enabled: true, mode: mode}
   end
 
-  @doc """
+  @doc '''
   Disables mouse tracking.
-  """
+  '''
   @spec disable(mouse_state()) :: mouse_state()
   def disable(state) do
     %{state | enabled: false}
   end
 
-  @doc """
+  @doc '''
   Updates the mouse position.
-  """
+  '''
   @spec update_position(mouse_state(), {integer(), integer()}) :: mouse_state()
   def update_position(state, position) do
     %{state | last_position: state.position, position: position}
   end
 
-  @doc """
+  @doc '''
   Updates the button state.
-  """
+  '''
   @spec update_button_state(
           mouse_state(),
           :none | :left | :middle | :right | :release
@@ -89,26 +89,26 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     %{state | button_state: button_state}
   end
 
-  @doc """
+  @doc '''
   Updates the modifiers state.
-  """
+  '''
   @spec update_modifiers(mouse_state(), MapSet.t()) :: mouse_state()
   def update_modifiers(state, modifiers) do
     %{state | modifiers: modifiers}
   end
 
-  @doc """
+  @doc '''
   Updates the drag state.
-  """
+  '''
   @spec update_drag_state(mouse_state(), :none | :dragging | :drag_end) ::
           mouse_state()
   def update_drag_state(state, drag_state) do
     %{state | drag_state: drag_state}
   end
 
-  @doc """
+  @doc '''
   Generates a mouse event report based on the current state.
-  """
+  '''
   @spec generate_report(mouse_state()) :: String.t()
   def generate_report(state) do
     case state.mode do
@@ -124,10 +124,10 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Processes a mouse event and returns the updated state and event data.
   Supports extended mouse reporting modes including SGR pixels and URXVT.
-  """
+  '''
   @spec process_event(mouse_state(), binary()) :: {mouse_state(), map()}
   def process_event(state, <<"\e[M", button, x, y>>)
       when state.mode == :basic do
@@ -166,9 +166,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Parses a mouse event in the format: <button>;<x>;<y>M
-  """
+  '''
   @spec parse_mouse_event(binary()) ::
           {:ok,
            %{
@@ -196,9 +196,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Parses a URXVT mouse event in the format: <button>;<x>;<y>M
-  """
+  '''
   @spec parse_urxvt_event(binary()) ::
           {:ok,
            %{
@@ -226,9 +226,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Parses an SGR pixels mouse event in the format: <button>;<x>;<y>M
-  """
+  '''
   @spec parse_sgr_pixels_event(binary()) ::
           {:ok,
            %{
@@ -256,9 +256,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Decodes button state and modifiers from a mouse event byte.
-  """
+  '''
   @spec decode_button(integer()) :: :left | :middle | :right | :release
   def decode_button(button) do
     case button &&& 0x3 do
@@ -269,9 +269,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Decodes modifier keys from a mouse event byte.
-  """
+  '''
   @spec decode_modifiers(integer()) :: MapSet.t(modifier())
   def decode_modifiers(button) do
     modifiers = MapSet.new()
@@ -299,9 +299,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     modifiers
   end
 
-  @doc """
+  @doc '''
   Decodes URXVT button state from a mouse event byte.
-  """
+  '''
   @spec decode_urxvt_button(integer()) :: :left | :middle | :right | :release
   def decode_urxvt_button(button) do
     case button &&& 0x3 do
@@ -312,9 +312,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Parses coordinates from a mouse event string.
-  """
+  '''
   @spec parse_coordinates(binary()) :: {:ok, {integer(), integer()}} | :error
   def parse_coordinates(rest) do
     case String.split(rest, ";", parts: 2) do
@@ -331,9 +331,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     end
   end
 
-  @doc """
+  @doc '''
   Updates the mouse state with new event data.
-  """
+  '''
   @spec update_state(mouse_state(), map()) :: mouse_state()
   def update_state(state, event) do
     %{
@@ -346,9 +346,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     }
   end
 
-  @doc """
+  @doc '''
   Calculates the drag state based on the current and previous mouse states.
-  """
+  '''
   @spec calculate_drag_state(mouse_state(), map()) ::
           :none | :dragging | :drag_end
   def calculate_drag_state(state, event) do

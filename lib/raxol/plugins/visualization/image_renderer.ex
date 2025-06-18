@@ -1,19 +1,19 @@
 defmodule Raxol.Plugins.Visualization.ImageRenderer do
-  @moduledoc """
+  @moduledoc '''
   Handles rendering logic for image visualization within the VisualizationPlugin.
   Supports both sixel and kitty protocols for terminal image rendering.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
 
-  @doc """
+  @doc '''
   Public entry point for rendering image content.
   Handles bounds checking and calls the internal drawing logic.
   Expects bounds map: %{width: w, height: h}.
-  """
+  '''
   def render_image_content(
         data,
         opts,

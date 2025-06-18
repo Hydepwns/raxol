@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Buffer.CacheManager do
-  @moduledoc """
+  @moduledoc '''
   Manages caching for the terminal buffer system.
   Provides efficient caching mechanisms for frequently accessed buffer regions.
-  """
+  '''
 
   @type cache_key ::
           {non_neg_integer(), non_neg_integer(), non_neg_integer(),
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
             hit_count: 0,
             miss_count: 0
 
-  @doc """
+  @doc '''
   Creates a new cache manager with the specified maximum size.
 
   ## Parameters
@@ -34,12 +34,12 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
 
   ## Returns
     * A new cache manager instance
-  """
+  '''
   def new(max_size \\ 1000) do
     %__MODULE__{max_size: max_size}
   end
 
-  @doc """
+  @doc '''
   Gets a value from the cache.
 
   ## Parameters
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
   ## Returns
     * `{:ok, value}` - The cached value if found
     * `:miss` - If the value is not in cache
-  """
+  '''
   def get(%__MODULE__{} = cache, key) do
     case Map.get(cache.cache, key) do
       nil ->
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
     end
   end
 
-  @doc """
+  @doc '''
   Puts a value in the cache.
 
   ## Parameters
@@ -82,7 +82,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
 
   ## Returns
     * Updated cache manager instance
-  """
+  '''
   def put(%__MODULE__{} = cache, key, value) do
     if cache.current_size >= cache.max_size do
       # Evict least recently used entry
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
     }
   end
 
-  @doc """
+  @doc '''
   Invalidates a cache entry.
 
   ## Parameters
@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
 
   ## Returns
     * Updated cache manager instance
-  """
+  '''
   def invalidate(%__MODULE__{} = cache, key) do
     case Map.pop(cache.cache, key) do
       {nil, _} ->
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets cache statistics.
 
   ## Parameters
@@ -130,7 +130,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
 
   ## Returns
     * Map containing cache statistics
-  """
+  '''
   def stats(%__MODULE__{} = cache) do
     %{
       size: cache.current_size,

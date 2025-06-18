@@ -1,7 +1,7 @@
 defmodule Raxol.DynamicSupervisor do
-  @moduledoc """
+  @moduledoc '''
   A dynamic supervisor for dynamically starting Raxol application processes.
-  """
+  '''
   use DynamicSupervisor
 
   def start_link(init_arg) do

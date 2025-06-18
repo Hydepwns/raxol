@@ -1,7 +1,7 @@
 defmodule Raxol.Protocols do
-  @moduledoc """
+  @moduledoc '''
   Protocols module for managing protocols.
-  """
+  '''
 
   alias Raxol.Protocols.Protocol
   alias UUID

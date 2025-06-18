@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Scroll.Optimizer do
-  @moduledoc """
+  @moduledoc '''
   Handles scroll optimization for better performance.
-  """
+  '''
 
   @type t :: %__MODULE__{
           batch_size: non_neg_integer(),
@@ -13,9 +13,9 @@ defmodule Raxol.Terminal.Scroll.Optimizer do
     :last_optimization
   ]
 
-  @doc """
+  @doc '''
   Creates a new optimizer instance.
-  """
+  '''
   @spec new() :: t()
   def new do
     %__MODULE__{
@@ -24,9 +24,9 @@ defmodule Raxol.Terminal.Scroll.Optimizer do
     }
   end
 
-  @doc """
+  @doc '''
   Optimizes scroll operations for better performance.
-  """
+  '''
   @spec optimize(t(), :up | :down, non_neg_integer()) :: t()
   def optimize(optimizer, _direction, _lines) do
     # Optimize scroll operations based on current state

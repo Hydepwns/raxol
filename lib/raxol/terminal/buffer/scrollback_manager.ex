@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.ScrollbackManager do
-  @moduledoc """
+  @moduledoc '''
   Manages scrollback buffer for the terminal emulator.
-  """
+  '''
 
   use GenServer
 
@@ -22,44 +22,44 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
 
   # Client API
 
-  @doc """
+  @doc '''
   Starts the scrollback manager process.
-  """
+  '''
   def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Gets the current number of scrollback lines.
-  """
+  '''
   def get_scrollback_count(scrollback_manager) do
     GenServer.call(scrollback_manager, :get_scrollback_count)
   end
 
-  @doc """
+  @doc '''
   Adds a line to the scrollback buffer.
-  """
+  '''
   def add_line(scrollback_manager, line) do
     GenServer.call(scrollback_manager, {:add_line, line})
   end
 
-  @doc """
+  @doc '''
   Gets a range of lines from the scrollback buffer.
-  """
+  '''
   def get_lines(scrollback_manager, start_line, count) do
     GenServer.call(scrollback_manager, {:get_lines, start_line, count})
   end
 
-  @doc """
+  @doc '''
   Clears the scrollback buffer.
-  """
+  '''
   def clear(scrollback_manager) do
     GenServer.call(scrollback_manager, :clear)
   end
 
-  @doc """
+  @doc '''
   Creates a new scrollback manager.
-  """
+  '''
   @spec new() :: t()
   def new do
     %__MODULE__{

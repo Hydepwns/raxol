@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.ScreenBufferBehaviour do
-  @moduledoc """
+  @moduledoc '''
   Defines the behaviour for screen buffer operations in the terminal.
   This module specifies the callbacks that must be implemented by any module
   that wants to act as a screen buffer.
-  """
+  '''
 
   @type t :: term()
   @type position :: {non_neg_integer(), non_neg_integer()}

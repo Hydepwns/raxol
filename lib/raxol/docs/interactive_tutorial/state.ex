@@ -1,7 +1,7 @@
 defmodule Raxol.Docs.InteractiveTutorial.State do
-  @moduledoc """
+  @moduledoc '''
   Manages the state of the interactive tutorial system.
-  """
+  '''
 
   alias Raxol.Docs.InteractiveTutorial.Models.Tutorial
 
@@ -31,9 +31,9 @@ defmodule Raxol.Docs.InteractiveTutorial.State do
           history: [{atom(), tutorial_id(), step_id()}]
         }
 
-  @doc """
+  @doc '''
   Creates a new empty state.
-  """
+  '''
   def new do
     %__MODULE__{
       tutorials: %{},
@@ -45,9 +45,9 @@ defmodule Raxol.Docs.InteractiveTutorial.State do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the current step from the state.
-  """
+  '''
   def get_current_step(%__MODULE__{} = state) do
     with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
          step_id when not is_nil(step_id) <- state.current_step,
@@ -61,9 +61,9 @@ defmodule Raxol.Docs.InteractiveTutorial.State do
     end
   end
 
-  @doc """
+  @doc '''
   Updates the progress for a tutorial.
-  """
+  '''
   def update_progress(%__MODULE__{} = state, tutorial_id, step_id) do
     progress =
       Map.get(state.progress, tutorial_id, %{
@@ -81,9 +81,9 @@ defmodule Raxol.Docs.InteractiveTutorial.State do
     %{state | progress: Map.put(state.progress, tutorial_id, updated_progress)}
   end
 
-  @doc """
+  @doc '''
   Marks a tutorial as completed.
-  """
+  '''
   def mark_completed(%__MODULE__{} = state, tutorial_id) do
     progress =
       Map.get(state.progress, tutorial_id, %{

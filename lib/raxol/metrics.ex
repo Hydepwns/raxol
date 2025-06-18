@@ -1,5 +1,5 @@
 defmodule Raxol.Metrics do
-  @moduledoc """
+  @moduledoc '''
   Handles collection and management of system metrics.
 
   This module is responsible for collecting and managing various system metrics
@@ -10,7 +10,7 @@ defmodule Raxol.Metrics do
   - Database connections
   - Response times
   - Error rates
-  """
+  '''
 
   use GenServer
   alias Raxol.Repo
@@ -28,7 +28,7 @@ defmodule Raxol.Metrics do
     {:ok, initial_state()}
   end
 
-  @doc """
+  @doc '''
   Records a gauge metric value.
 
   ## Parameters
@@ -39,7 +39,7 @@ defmodule Raxol.Metrics do
   ## Examples
 
       Raxol.Metrics.gauge("raxol.chart_render_time", 42.5)
-  """
+  '''
   def gauge(name, value) when is_binary(name) do
     try do
       GenServer.cast(__MODULE__, {:gauge, name, value})
@@ -54,7 +54,7 @@ defmodule Raxol.Metrics do
     end
   end
 
-  @doc """
+  @doc '''
   Increments a counter metric.
 
   ## Parameters
@@ -64,7 +64,7 @@ defmodule Raxol.Metrics do
   ## Examples
 
       Raxol.Metrics.increment("raxol.chart_cache_hits")
-  """
+  '''
   def increment(name) when is_binary(name) do
     try do
       GenServer.cast(__MODULE__, {:increment, name})
@@ -79,11 +79,11 @@ defmodule Raxol.Metrics do
     end
   end
 
-  @doc """
+  @doc '''
   Returns the current metrics.
 
   Returns a map containing the current system metrics.
-  """
+  '''
   def get_current_metrics do
     try do
       GenServer.call(__MODULE__, :get_metrics)

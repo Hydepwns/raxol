@@ -1,12 +1,12 @@
 defmodule Raxol.Style.Colors.Harmony do
-  @moduledoc """
+  @moduledoc '''
   Provides functions for generating color harmonies based on a base color.
-  """
+  '''
 
   alias Raxol.Style.Colors.HSL
   alias Raxol.Style.Colors.Color
 
-  @doc """
+  @doc '''
   Generates analogous colors based on the HSL color wheel.
   Analogous colors are groups of colors that are adjacent to each other on the color wheel.
 
@@ -19,7 +19,7 @@ defmodule Raxol.Style.Colors.Harmony do
   ## Returns
 
   A list of `Color{}` structs representing the analogous colors.
-  """
+  '''
   # Define head with defaults
   def analogous_colors(color, count \\ 3, angle \\ 30)
 
@@ -40,7 +40,7 @@ defmodule Raxol.Style.Colors.Harmony do
     end)
   end
 
-  @doc """
+  @doc '''
   Generates complementary colors (opposite on the color wheel).
 
   Returns a list containing the base color and its complement.
@@ -59,7 +59,7 @@ defmodule Raxol.Style.Colors.Harmony do
       iex> [red_struct, cyan_struct] = Raxol.Style.Colors.Harmony.complementary_colors(red)
       iex> cyan_struct.hex
       "#00FFFF"
-  """
+  '''
   def complementary_colors(color) when is_binary(color) do
     case Color.from_hex(color) do
       %Color{} = c -> complementary_colors(c)
@@ -73,7 +73,7 @@ defmodule Raxol.Style.Colors.Harmony do
     [color, complement]
   end
 
-  @doc """
+  @doc '''
   Generates triadic colors (three colors evenly spaced on the color wheel).
 
   ## Parameters
@@ -91,7 +91,7 @@ defmodule Raxol.Style.Colors.Harmony do
       iex> length(colors)
       3
       # Colors will be red, green, blue (approximately)
-  """
+  '''
   def triadic_colors(color) when is_binary(color) do
     case Color.from_hex(color) do
       %Color{} = c -> triadic_colors(c)

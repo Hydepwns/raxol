@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
-  @moduledoc """
+  @moduledoc '''
   Handles OSC 4 (Color Palette Set/Query) commands.
 
   This handler manages the terminal's color palette, allowing dynamic
@@ -12,12 +12,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   - #RGB (hex, 1 digit per component)
   - rgb(r,g,b) (decimal, 0-255)
   - rgb(r%,g%,b%) (percentage, 0-100%)
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Handles OSC 4 commands for color palette management.
 
   ## Commands
@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   Where:
   - c is the color index (0-255)
   - spec is the color specification
-  """
+  '''
   @spec handle_4(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_4(emulator, data) do
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
       [index_str, spec] ->
         case Integer.parse(index_str) do
           {index, ""} when index >= 0 and index <= 255 ->
-            if spec == "?" do
+            if spec == "?' do
               {:query, index}
             else
               {:set, index, spec}
@@ -95,7 +95,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
 
   defp parse_color_spec(spec) do
     cond do
-      String.starts_with?(spec, "rgb:") ->
+      String.starts_with?(spec, 'rgb:") ->
         parse_rgb_hex(spec)
 
       String.starts_with?(spec, "#") ->

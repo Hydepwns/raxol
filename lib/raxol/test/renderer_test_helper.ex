@@ -1,9 +1,9 @@
 import ExUnit.Assertions
 
 defmodule Raxol.UI.RendererTestHelper do
-  @moduledoc """
+  @moduledoc '''
   Helper module for renderer tests providing common test utilities and fixtures.
-  """
+  '''
 
   alias Raxol.UI.Theming.Theme
 

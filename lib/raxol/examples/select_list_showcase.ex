@@ -1,5 +1,5 @@
 defmodule Raxol.Examples.SelectListShowcase do
-  @moduledoc """
+  @moduledoc '''
   Showcase for the enhanced SelectList component with its various features.
 
   This example demonstrates:
@@ -8,7 +8,7 @@ defmodule Raxol.Examples.SelectListShowcase do
   - Pagination
   - Keyboard navigation
   - Styling options
-  """
+  '''
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements

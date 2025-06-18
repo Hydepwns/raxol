@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ScreenBuffer do
-  @moduledoc """
+  @moduledoc '''
   Manages the terminal's screen buffer state (grid, scrollback, selection).
   This module serves as the main interface for terminal buffer operations,
   delegating specific operations to specialized modules in Raxol.Terminal.Buffer.*.
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   * `Cursor` - Cursor state management
   * `Charset` - Character set management
   * `Formatting` - Text formatting and styling
-  """
+  '''
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
@@ -318,29 +318,29 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def cleanup(_buffer), do: :ok
 
   # Higher-arity insert_lines for command handlers
-  @doc """
+  @doc '''
   Inserts blank lines at a specific position with style.
-  """
+  '''
   def insert_lines(buffer, y, count, style) do
     Raxol.Terminal.Buffer.Operations.insert_lines(buffer, y, count, style)
   end
 
   # Higher-arity insert_lines for region
-  @doc """
+  @doc '''
   Inserts blank lines at a specific position within a region.
-  """
+  '''
   def insert_lines(buffer, lines, y, top, bottom) do
     Raxol.Terminal.Buffer.Operations.insert_lines(buffer, lines, y, top, bottom)
   end
 
   # Higher-arity delete_lines for command handlers
-  @doc """
+  @doc '''
   Deletes lines at a specific position.
 
   ## Parameters
   - For command handlers: y, count, style, and region boundaries
   - For region operations: lines, y, top, and bottom positions
-  """
+  '''
   def delete_lines(buffer, y, count, style, {top, bottom}) do
     Raxol.Terminal.Buffer.Operations.delete_lines(
       buffer,

@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
-  @moduledoc """
+  @moduledoc '''
   Handles file system event monitoring for the terminal screen buffer.
   This module provides functions for processing file system events and managing
   debounced event handling.
-  """
+  '''
 
   @type event ::
           {:created, Path.t()} | {:modified, Path.t()} | {:deleted, Path.t()}
@@ -20,10 +20,10 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
             pending_events: [],
             last_event_time: 0
 
-  @doc """
+  @doc '''
   Handles a file system event.
   Returns a new file watcher state with the event processed.
-  """
+  '''
   @spec handle_event(t(), event()) :: t()
   def handle_event(%__MODULE__{} = state, event) do
     %{
@@ -33,10 +33,10 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
     }
   end
 
-  @doc """
+  @doc '''
   Handles debounced file system events.
   Returns a new file watcher state with the events processed after the timeout.
-  """
+  '''
   @spec handle_debounced(t(), events(), debounce_timeout()) :: t()
   def handle_debounced(%__MODULE__{} = state, events, timeout) do
     current_time = System.monotonic_time(:millisecond)
@@ -53,10 +53,10 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
     end
   end
 
-  @doc """
+  @doc '''
   Cleans up the file watcher state.
   Returns a new file watcher state with all watched paths and pending events cleared.
-  """
+  '''
   @spec cleanup(t()) :: t()
   def cleanup(%__MODULE__{} = state) do
     %{
@@ -67,9 +67,9 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
     }
   end
 
-  @doc """
+  @doc '''
   Initializes a new file watcher struct with default values.
-  """
+  '''
   def init do
     %__MODULE__{}
   end

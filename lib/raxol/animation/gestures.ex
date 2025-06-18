@@ -1,5 +1,5 @@
 defmodule Raxol.Animation.Gestures do
-  @moduledoc """
+  @moduledoc '''
   Gesture-driven interactions for Raxol animations.
 
   This module provides a system for detecting and handling gestures in terminal UI,
@@ -12,7 +12,7 @@ defmodule Raxol.Animation.Gestures do
   * Drag (press, move, release)
   * Pinch/zoom (simulated in terminal context)
   * Multi-tap (multiple quick taps)
-  """
+  '''
 
   alias Raxol.Animation.Physics.{PhysicsEngine, Vector}
 
@@ -57,23 +57,23 @@ defmodule Raxol.Animation.Gestures do
   @type direction :: :up | :down | :left | :right
   @type handler :: (map() -> any())
 
-  @doc """
+  @doc '''
   Initializes the gesture system.
-  """
+  '''
   def init do
     state = State.new()
     Process.put(@state_key, state)
     :ok
   end
 
-  @doc """
+  @doc '''
   Registers a handler for a specific gesture type.
 
   ## Examples
 
       iex> register_handler(:swipe, fn %{direction: :left} -> handle_left_swipe() end)
       :ok
-  """
+  '''
   def register_handler(gesture_type, handler) when is_function(handler, 1) do
     with_state(fn state ->
       handlers =
@@ -90,9 +90,9 @@ defmodule Raxol.Animation.Gestures do
     :ok
   end
 
-  @doc """
+  @doc '''
   Handles a touch/mouse down event.
-  """
+  '''
   def touch_down(position, time \\ System.monotonic_time(:millisecond)) do
     with_state(fn state ->
       %{
@@ -110,9 +110,9 @@ defmodule Raxol.Animation.Gestures do
     :ok
   end
 
-  @doc """
+  @doc '''
   Handles a touch/mouse move event.
-  """
+  '''
   def touch_move(position, time \\ System.monotonic_time(:millisecond)) do
     with_state(fn state ->
       if state.is_active do
@@ -145,9 +145,9 @@ defmodule Raxol.Animation.Gestures do
     :ok
   end
 
-  @doc """
+  @doc '''
   Handles a touch/mouse up event.
-  """
+  '''
   def touch_up(position, time \\ System.monotonic_time(:millisecond)) do
     with_state(fn state ->
       if state.is_active do
@@ -221,10 +221,10 @@ defmodule Raxol.Animation.Gestures do
     end
   end
 
-  @doc """
+  @doc '''
   Updates all active physics-based animations.
   Should be called on each frame.
-  """
+  '''
   def update_animations(delta_time \\ nil) do
     with_state(fn state ->
       # Update all physics worlds
@@ -246,10 +246,10 @@ defmodule Raxol.Animation.Gestures do
     :ok
   end
 
-  @doc """
+  @doc '''
   Gets the current state of all objects in active animations.
   This is used for rendering.
-  """
+  '''
   def get_animation_objects do
     with_state(fn state ->
       objects = map_animation_objects(state.active_animations)

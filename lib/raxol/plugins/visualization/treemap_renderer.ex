@@ -1,19 +1,19 @@
 defmodule Raxol.Plugins.Visualization.TreemapRenderer do
-  @moduledoc """
+  @moduledoc '''
   Handles rendering logic for treemap visualizations within the VisualizationPlugin.
   Uses a squarified layout algorithm.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
 
-  @doc """
+  @doc '''
   Public entry point for rendering treemap content.
   Handles bounds checking, error handling, and calls the internal layout/drawing logic.
   Expects bounds map: %{width: w, height: h}.
-  """
+  '''
   def render_treemap_content(
         data,
         opts,

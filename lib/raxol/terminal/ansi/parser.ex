@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ANSI.Parser do
-  @moduledoc """
+  @moduledoc '''
   Provides comprehensive parsing for ANSI escape sequences.
   Determines the type of sequence and extracts its parameters.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.{StateMachine, Monitor}
@@ -18,10 +18,10 @@ defmodule Raxol.Terminal.ANSI.Parser do
           text: String.t()
         }
 
-  @doc """
+  @doc '''
   Parses a string containing ANSI escape sequences.
   Returns a list of parsed sequences.
-  """
+  '''
   @spec parse(String.t()) :: list(sequence())
   def parse(input) do
     try do
@@ -40,10 +40,10 @@ defmodule Raxol.Terminal.ANSI.Parser do
     end
   end
 
-  @doc """
+  @doc '''
   Parses a single ANSI escape sequence.
   Returns a map containing the sequence type and parameters.
-  """
+  '''
   @spec parse_sequence(String.t()) :: sequence() | nil
   def parse_sequence(input) do
     case parse(input) do
@@ -52,17 +52,17 @@ defmodule Raxol.Terminal.ANSI.Parser do
     end
   end
 
-  @doc """
+  @doc '''
   Determines if a string contains ANSI escape sequences.
-  """
+  '''
   @spec contains_ansi?(String.t()) :: boolean()
   def contains_ansi?(input) do
     String.contains?(input, "\e")
   end
 
-  @doc """
+  @doc '''
   Strips all ANSI escape sequences from a string.
-  """
+  '''
   @spec strip_ansi(String.t()) :: String.t()
   def strip_ansi(input) do
     state = StateMachine.new()

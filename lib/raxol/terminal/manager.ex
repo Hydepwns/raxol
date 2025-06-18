@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Manager do
-  @moduledoc """
+  @moduledoc '''
   Terminal manager module.
 
   This module manages terminal sessions, including:
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Manager do
 
   All notifications are logged at the info level for easy debugging and auditability.
 
-  """
+  '''
 
   use GenServer
 
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Manager do
     :callback_module
   ]
 
-  @doc """
+  @doc '''
   Starts the terminal manager.
 
   ## Options
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Manager do
       iex> {:ok, pid} = Manager.start_link(terminal: term, runtime_pid: self())
       iex> Process.alive?(pid)
       true
-  """
+  '''
   def start_link(opts \\ []) do
     state = %{
       sessions: %{},
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Manager do
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Creates a new terminal session.
 
   ## Examples
@@ -111,12 +111,12 @@ defmodule Raxol.Terminal.Manager do
       iex> {:ok, session_id} = Manager.create_session(pid, %{width: 80, height: 24})
       iex> is_binary(session_id)
       true
-  """
+  '''
   def create_session(pid \\ __MODULE__, opts \\ []) do
     GenServer.call(pid, {:create_session, opts})
   end
 
-  @doc """
+  @doc '''
   Destroys a terminal session.
 
   ## Examples
@@ -126,12 +126,12 @@ defmodule Raxol.Terminal.Manager do
       iex> :ok = Manager.destroy_session(pid, session_id)
       iex> Manager.get_session(pid, session_id)
       {:error, :not_found}
-  """
+  '''
   def destroy_session(pid \\ __MODULE__, session_id) do
     GenServer.call(pid, {:destroy_session, session_id})
   end
 
-  @doc """
+  @doc '''
   Gets a terminal session by ID.
 
   ## Examples
@@ -141,12 +141,12 @@ defmodule Raxol.Terminal.Manager do
       iex> {:ok, session} = Manager.get_session(pid, session_id)
       iex> session.id
       session_id
-  """
+  '''
   def get_session(pid \\ __MODULE__, session_id) do
     GenServer.call(pid, {:get_session, session_id})
   end
 
-  @doc """
+  @doc '''
   Lists all terminal sessions.
 
   ## Examples
@@ -157,12 +157,12 @@ defmodule Raxol.Terminal.Manager do
       iex> sessions = Manager.list_sessions(pid)
       iex> length(sessions)
       2
-  """
+  '''
   def list_sessions(pid \\ __MODULE__) do
     GenServer.call(pid, :list_sessions)
   end
 
-  @doc """
+  @doc '''
   Gets the count of terminal sessions.
 
   ## Examples
@@ -172,12 +172,12 @@ defmodule Raxol.Terminal.Manager do
       iex> {:ok, _} = Manager.create_session(pid)
       iex> Manager.count_sessions(pid)
       2
-  """
+  '''
   def count_sessions(pid \\ __MODULE__) do
     GenServer.call(pid, :count_sessions)
   end
 
-  @doc """
+  @doc '''
   Monitors a terminal session.
 
   ## Examples
@@ -187,12 +187,12 @@ defmodule Raxol.Terminal.Manager do
       iex> :ok = Manager.monitor_session(pid, session_id)
       iex> Process.whereis({:via, Registry, {Registry, session_id}})
       #PID<0.123.0>
-  """
+  '''
   def monitor_session(pid \\ __MODULE__, session_id) do
     GenServer.call(pid, {:monitor_session, session_id})
   end
 
-  @doc """
+  @doc '''
   Unmonitors a terminal session.
 
   ## Examples
@@ -203,7 +203,7 @@ defmodule Raxol.Terminal.Manager do
       iex> :ok = Manager.unmonitor_session(pid, session_id)
       iex> Process.whereis({:via, Registry, {Registry, session_id}})
       nil
-  """
+  '''
   def unmonitor_session(pid \\ __MODULE__, session_id) do
     GenServer.call(pid, {:unmonitor_session, session_id})
   end
@@ -312,9 +312,9 @@ defmodule Raxol.Terminal.Manager do
 end
 
 defmodule Raxol.Terminal.Manager.Callback do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for terminal manager event callbacks. Implement this behaviour to receive notifications for terminal events.
-  """
+  '''
   @callback focus_changed(focused :: boolean(), state :: map()) :: any()
   @callback resized(width :: integer(), height :: integer(), state :: map()) ::
               any()

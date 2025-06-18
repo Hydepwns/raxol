@@ -1,9 +1,9 @@
 defmodule Raxol.Core.Accessibility.Metadata do
-  @moduledoc """
+  @moduledoc '''
   Handles accessibility metadata for UI elements and component styles.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Register metadata for an element to be used for accessibility features.
 
   ## Parameters
@@ -15,7 +15,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
 
       iex> Metadata.register_element_metadata("search_button", %{label: "Search"})
       :ok
-  """
+  '''
   def register_element_metadata(element_id, metadata)
       when is_binary(element_id) and is_map(metadata) do
     # Store the metadata in process dictionary for simplicity
@@ -25,7 +25,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
     :ok
   end
 
-  @doc """
+  @doc '''
   Get metadata for an element.
 
   ## Parameters
@@ -40,13 +40,13 @@ defmodule Raxol.Core.Accessibility.Metadata do
 
       iex> Metadata.get_element_metadata("search_button")
       %{label: "Search"}
-  """
+  '''
   def get_element_metadata(element_id) when is_binary(element_id) do
     element_metadata = Process.get(:accessibility_element_metadata) || %{}
     Map.get(element_metadata, element_id)
   end
 
-  @doc """
+  @doc '''
   Register style settings for a component type.
 
   ## Parameters
@@ -58,7 +58,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
 
       iex> Metadata.register_component_style(:button, %{background: :blue})
       :ok
-  """
+  '''
   def register_component_style(component_type, style)
       when is_atom(component_type) and is_map(style) do
     # Store the component styles in process dictionary for simplicity
@@ -68,7 +68,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
     :ok
   end
 
-  @doc """
+  @doc '''
   Get style settings for a component type.
 
   ## Parameters
@@ -83,13 +83,13 @@ defmodule Raxol.Core.Accessibility.Metadata do
 
       iex> Metadata.get_component_style(:button)
       %{background: :blue}
-  """
+  '''
   def get_component_style(component_type) when is_atom(component_type) do
     component_styles = Process.get(:accessibility_component_styles) || %{}
     Map.get(component_styles, component_type, %{})
   end
 
-  @doc """
+  @doc '''
   Get the accessible name for an element.
 
   ## Parameters
@@ -104,7 +104,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
 
       iex> Metadata.get_accessible_name("search_button")
       "Search"
-  """
+  '''
   def get_accessible_name(element) do
     cond do
       is_binary(element) ->

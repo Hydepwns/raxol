@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Buffer.LineOperations do
-  @moduledoc """
+  @moduledoc '''
   Provides line-level operations for the screen buffer.
   This module handles operations like inserting, deleting, and manipulating lines.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @doc """
+  @doc '''
   Inserts a specified number of blank lines at the current cursor position.
   Lines below the cursor are shifted down, and lines shifted off the bottom are discarded.
-  """
+  '''
   @spec insert_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def insert_lines(buffer, count) when is_integer(count) and count > 0 do
     {_, y} = Raxol.Terminal.Cursor.get_position(buffer)
@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     end
   end
 
-  @doc """
+  @doc '''
   Helper function to handle the line insertion logic.
 
   ## Parameters
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       iex> buffer = LineOperations.do_insert_lines(buffer, 0, 5, 23)
       iex> length(buffer.cells)
       24
-  """
+  '''
   @spec do_insert_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
   def do_insert_lines(buffer, cursor_y, count, bottom) do
     # Split the content at the cursor position
@@ -75,10 +75,10 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     %{buffer | cells: final_cells}
   end
 
-  @doc """
+  @doc '''
   Deletes a specified number of lines starting from the current cursor position.
   Lines below the deleted lines are shifted up, and blank lines are added at the bottom.
-  """
+  '''
   @spec delete_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def delete_lines(buffer, count) when is_integer(count) and count > 0 do
     {_x, y} = Raxol.Terminal.Cursor.get_position(buffer)
@@ -102,10 +102,10 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     end
   end
 
-  @doc """
+  @doc '''
   Prepends lines to the top of the screen buffer, shifting existing content down.
   Lines shifted off the bottom are moved to the scrollback buffer.
-  """
+  '''
   @spec prepend_lines(ScreenBuffer.t(), list(list(Cell.t()))) ::
           ScreenBuffer.t()
   def prepend_lines(buffer, lines) do
@@ -135,9 +135,9 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     }
   end
 
-  @doc """
+  @doc '''
   Removes lines from the top of the buffer.
-  """
+  '''
   @spec pop_top_lines(ScreenBuffer.t(), non_neg_integer()) ::
           {list(list(Cell.t())), ScreenBuffer.t()}
   def pop_top_lines(buffer, count) do
@@ -150,15 +150,15 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     {popped_lines, %{buffer | cells: new_cells}}
   end
 
-  @doc """
+  @doc '''
   Gets a line from the buffer.
-  """
+  '''
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t()) | nil
   def get_line(buffer, line_index) do
     Enum.at(buffer.cells, line_index)
   end
 
-  @doc """
+  @doc '''
   Updates a line in the buffer with new cells.
 
   ## Parameters
@@ -178,14 +178,14 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       iex> buffer = LineOperations.update_line(buffer, 0, new_line)
       iex> LineOperations.get_line(buffer, 0) |> hd() |> Map.get(:char)
       "A"
-  """
+  '''
   @spec update_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
   def update_line(buffer, line_index, new_line) do
     new_cells = List.update_at(buffer.cells, line_index, fn _ -> new_line end)
     %{buffer | cells: new_cells}
   end
 
-  @doc """
+  @doc '''
   Clears a line in the buffer with optional styling.
 
   ## Parameters
@@ -205,14 +205,14 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       iex> buffer = LineOperations.clear_line(buffer, 0, style)
       iex> LineOperations.get_line(buffer, 0) |> hd() |> Map.get(:style)
       %{fg: :red, bg: :blue}
-  """
+  '''
   @spec clear_line(ScreenBuffer.t(), non_neg_integer(), TextFormatting.text_style() | nil) :: ScreenBuffer.t()
   def clear_line(buffer, line_index, style \\ nil) do
     empty_line = create_empty_line(buffer.width, style || buffer.default_style)
     update_line(buffer, line_index, empty_line)
   end
 
-  @doc """
+  @doc '''
   Creates a specified number of empty lines with the given width.
 
   ## Parameters
@@ -231,7 +231,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       2
       iex> length(hd(lines))
       80
-  """
+  '''
   @spec create_empty_lines(non_neg_integer(), non_neg_integer()) :: list(list(Cell.t()))
   def create_empty_lines(width, count) do
     for _ <- 1..count do
@@ -239,7 +239,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a single empty line with the given width and optional style.
 
   ## Parameters
@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       iex> line = LineOperations.create_empty_line(80, %{fg: :red})
       iex> hd(line).style.fg
       :red
-  """
+  '''
   @spec create_empty_line(non_neg_integer(), TextFormatting.text_style() | nil) :: list(Cell.t())
   def create_empty_line(width, style \\ nil) do
     for _ <- 1..width do
@@ -267,7 +267,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     end
   end
 
-  @doc """
+  @doc '''
   Erases a specified number of characters in a line.
 
   ## Parameters
@@ -287,7 +287,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       iex> buffer = LineOperations.erase_chars(buffer, 0, 0, 10)
       iex> LineOperations.get_line(buffer, 0) |> Enum.take(10) |> Enum.all?(fn cell -> cell.char == "" end)
       true
-  """
+  '''
   @spec erase_chars(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_chars(buffer, row, col, count) do
     line = get_line(buffer, row)

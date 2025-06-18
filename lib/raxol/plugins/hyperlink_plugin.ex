@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.HyperlinkPlugin do
-  @moduledoc """
+  @moduledoc '''
   Plugin that detects URLs in terminal output and makes them clickable.
-  """
+  '''
 
   @behaviour Raxol.Plugins.Plugin
   alias Raxol.Plugins.Plugin
@@ -151,7 +151,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
       {output, exit_code} ->
         Raxol.Core.Runtime.Log.error(
-          "[HyperlinkPlugin] Failed to open URL '#{url}' with command '#{command}'. Exit code: #{exit_code}, Output: #{output}"
+          "[HyperlinkPlugin] Failed to open URL "#{url}" with command "#{command}". Exit code: #{exit_code}, Output: #{output}"
         )
 
         {:error, :command_failed}

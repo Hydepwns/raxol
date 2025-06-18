@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.Session.Serializer do
-  @moduledoc """
+  @moduledoc '''
   Handles serialization and deserialization of terminal session state.
-  """
+  '''
 
   alias Raxol.Terminal.{Session, Renderer, ScreenBuffer}
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
-  @doc """
+  @doc '''
   Serializes a session state to a map that can be stored and later restored.
-  """
+  '''
   @spec serialize(Session.t()) :: map()
   def serialize(%Session{} = session) do
     %{
@@ -22,9 +22,9 @@ defmodule Raxol.Terminal.Session.Serializer do
     }
   end
 
-  @doc """
+  @doc '''
   Deserializes a session state from a map.
-  """
+  '''
   @spec deserialize(map()) :: {:ok, Session.t()} | {:error, term()}
   def deserialize(%{
         id: id,

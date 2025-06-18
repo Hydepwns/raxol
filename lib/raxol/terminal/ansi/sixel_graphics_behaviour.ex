@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ANSI.SixelGraphics.Behaviour do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for Sixel graphics support.
-  """
+  '''
 
   @type t :: %{
           width: non_neg_integer(),

@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Input do
-  @moduledoc """
+  @moduledoc '''
   Handles input processing for the terminal.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Creates a new input handler.
-  """
+  '''
   def new do
     %{
       buffer: [],

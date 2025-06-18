@@ -1,5 +1,5 @@
 defmodule Raxol.Web.Session.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages web sessions for Raxol applications.
 
   This module provides comprehensive session management capabilities:
@@ -7,7 +7,7 @@ defmodule Raxol.Web.Session.Manager do
   * Session recovery and cleanup
   * Session limits and monitoring
   * Session metadata management
-  """
+  '''
 
   use GenServer
 

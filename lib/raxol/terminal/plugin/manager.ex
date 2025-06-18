@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Plugin.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal plugins with advanced features:
   - Plugin loading and unloading
   - Plugin lifecycle management
   - Plugin API and hooks
   - Plugin configuration and state management
-  """
+  '''
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
@@ -44,9 +44,9 @@ defmodule Raxol.Terminal.Plugin.Manager do
     :metrics
   ]
 
-  @doc """
+  @doc '''
   Creates a new plugin manager with the given options.
-  """
+  '''
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %__MODULE__{
@@ -62,9 +62,9 @@ defmodule Raxol.Terminal.Plugin.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Loads a plugin into the manager.
-  """
+  '''
   @spec load_plugin(t(), plugin()) :: {:ok, t()} | {:error, term()}
   def load_plugin(manager, plugin) do
     with :ok <- validate_plugin(plugin),
@@ -85,9 +85,9 @@ defmodule Raxol.Terminal.Plugin.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Unloads a plugin from the manager.
-  """
+  '''
   @spec unload_plugin(t(), String.t()) :: {:ok, t()} | {:error, term()}
   def unload_plugin(manager, plugin_name) do
     case Map.get(manager.plugins, plugin_name) do
@@ -109,9 +109,9 @@ defmodule Raxol.Terminal.Plugin.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Calls a hook with the given arguments.
-  """
+  '''
   @spec call_hook(t(), String.t(), [term()]) ::
           {:ok, [term()], t()} | {:error, term()}
   def call_hook(manager, hook_name, args \\ []) do
@@ -134,9 +134,9 @@ defmodule Raxol.Terminal.Plugin.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Updates the configuration for a plugin.
-  """
+  '''
   @spec update_plugin_config(t(), String.t(), map()) ::
           {:ok, t()} | {:error, term()}
   def update_plugin_config(manager, plugin_name, config) do
@@ -158,9 +158,9 @@ defmodule Raxol.Terminal.Plugin.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the current plugin metrics.
-  """
+  '''
   @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics

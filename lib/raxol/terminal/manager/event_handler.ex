@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.Manager.EventHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles terminal events and dispatches them to appropriate handlers.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
 
-  @doc """
+  @doc '''
   Handles a terminal event.
-  """
+  '''
   def handle_event(emulator, event) do
     case event do
       {:key_press, key, modifiers} ->

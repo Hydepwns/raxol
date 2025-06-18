@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ScreenBuffer.System do
-  @moduledoc """
+  @moduledoc '''
   Manages system-related settings for the screen buffer.
-  """
+  '''
 
   use GenServer
 
@@ -45,9 +45,9 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the current update settings.
-  """
+  '''
   def get_update_settings do
     GenServer.call(__MODULE__, :get_update_settings)
   end

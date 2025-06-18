@@ -1,7 +1,7 @@
 defmodule Raxol.Animation.Animation do
-  @moduledoc """
+  @moduledoc '''
   Delegates animation API calls to Raxol.Animation.Framework for test and compatibility purposes.
-  """
+  '''
 
   defdelegate stop(), to: Raxol.Animation.Framework
   defdelegate create_animation(name, params), to: Raxol.Animation.Framework

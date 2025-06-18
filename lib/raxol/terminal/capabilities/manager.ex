@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Capabilities.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal capabilities including detection, negotiation, and caching.
-  """
+  '''
 
   use GenServer
 
@@ -9,33 +9,33 @@ defmodule Raxol.Terminal.Capabilities.Manager do
 
   @type state :: Types.t()
 
-  @doc """
+  @doc '''
   Starts the capabilities manager.
-  """
+  '''
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Detects and registers a new capability.
-  """
+  '''
   @spec detect_capability(atom(), term()) :: :ok | {:error, term()}
   def detect_capability(capability, value) do
     GenServer.call(__MODULE__, {:detect_capability, capability, value})
   end
 
-  @doc """
+  @doc '''
   Queries if a capability is supported.
-  """
+  '''
   @spec query_capability(atom()) :: Types.capability_response()
   def query_capability(capability) do
     GenServer.call(__MODULE__, {:query_capability, capability})
   end
 
-  @doc """
+  @doc '''
   Enables a capability if supported.
-  """
+  '''
   @spec enable_capability(atom()) :: :ok | {:error, term()}
   def enable_capability(capability) do
     GenServer.call(__MODULE__, {:enable_capability, capability})

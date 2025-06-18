@@ -1,9 +1,9 @@
 defmodule Raxol.Core.UserPreferences do
-  @moduledoc """
+  @moduledoc '''
   Manages user preferences for the terminal emulator.
 
   Acts as a GenServer holding the preferences state and handles persistence.
-  """
+  '''
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -16,7 +16,7 @@ defmodule Raxol.Core.UserPreferences do
 
   # --- Data Structure ---
   defmodule State do
-    @moduledoc "Internal state for the UserPreferences GenServer."
+    @moduledoc 'Internal state for the UserPreferences GenServer.'
     defstruct preferences: %{},
               # Stores ref for the save timer
               save_timer: nil
@@ -226,9 +226,9 @@ defmodule Raxol.Core.UserPreferences do
       []
   end
 
-  @doc """
+  @doc '''
   Returns the current theme id as an atom, defaulting to :default if not set or invalid.
-  """
+  '''
   def get_theme_id(pid_or_name \\ __MODULE__) do
     theme = get([:theme, :active_id], pid_or_name) || get(:theme, pid_or_name)
 
@@ -248,11 +248,11 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @doc """
+  @doc '''
   Returns the default preferences map.
   This includes default values for theme, terminal configuration, accessibility settings,
   and keybindings.
-  """
+  '''
   def default_preferences do
     %{
       theme: Raxol.UI.Theming.Theme.default_theme().name,

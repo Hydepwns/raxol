@@ -1,5 +1,5 @@
 defmodule Raxol.Style.Colors.Advanced do
-  @moduledoc """
+  @moduledoc '''
   Provides advanced color handling capabilities for the terminal.
 
   Features:
@@ -8,7 +8,7 @@ defmodule Raxol.Style.Colors.Advanced do
   - Enhanced color adaptation
   - Color space conversions
   - Color harmony generation
-  """
+  '''
 
   alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.{Adaptive}
@@ -16,7 +16,7 @@ defmodule Raxol.Style.Colors.Advanced do
 
   @type color :: Color.t()
 
-  @doc """
+  @doc '''
   Blends two colors together with the given ratio.
 
   ## Parameters
@@ -32,7 +32,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> blended = Advanced.blend_colors(color1, color2, 0.5)
       iex> blended.hex
       "#800080"  # Purple
-  """
+  '''
   def blend_colors(%Color{} = color1, %Color{} = color2, ratio)
       when ratio >= 0 and ratio <= 1 do
     r = round(color1.r * (1 - ratio) + color2.r * ratio)
@@ -42,7 +42,7 @@ defmodule Raxol.Style.Colors.Advanced do
     Color.from_rgb(r, g, b)
   end
 
-  @doc """
+  @doc '''
   Creates a gradient between two colors with the specified number of steps.
 
   ## Parameters
@@ -58,7 +58,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> gradient = Advanced.create_gradient(color1, color2, 3)
       iex> Enum.map(gradient, & &1.hex)
       ["#FF0000", "#800080", "#0000FF"]
-  """
+  '''
   def create_gradient(%Color{} = color1, %Color{} = color2, steps)
       when steps > 1 do
     step_size = 1.0 / (steps - 1)
@@ -69,7 +69,7 @@ defmodule Raxol.Style.Colors.Advanced do
     end
   end
 
-  @doc """
+  @doc '''
   Converts a color to a different color space.
 
   ## Parameters
@@ -83,7 +83,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> hsl = Advanced.convert_color_space(color, :hsl)
       iex> hsl
       %{h: 0, s: 100, l: 50}
-  """
+  '''
   def convert_color_space(%Color{} = color, target_space) do
     case target_space do
       :rgb -> color
@@ -93,7 +93,7 @@ defmodule Raxol.Style.Colors.Advanced do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a color harmony based on the input color.
 
   ## Parameters
@@ -107,7 +107,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> harmony = Advanced.create_harmony(color, :complementary)
       iex> Enum.map(harmony, & &1.hex)
       ["#FF0000", "#00FFFF"]
-  """
+  '''
   def create_harmony(color, type, opts \\ []) do
     angle = Keyword.get(opts, :angle, harmony_angle(type))
     %{h: h, s: s_orig, l: l_orig} = rgb_to_hsl(color)
@@ -194,7 +194,7 @@ defmodule Raxol.Style.Colors.Advanced do
     if normalized < 0, do: normalized + 360, else: normalized
   end
 
-  @doc """
+  @doc '''
   Adapts a color to the current terminal capabilities with advanced options.
 
   ## Parameters
@@ -211,7 +211,7 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> adapted = Advanced.adapt_color_advanced(color, preserve_brightness: true)
       iex> adapted.hex
       "#FF0000"  # If terminal supports true color
-  """
+  '''
   def adapt_color_advanced(%Color{} = color, options \\ []) do
     preserve_brightness = Keyword.get(options, :preserve_brightness, false)
     enhance_contrast = Keyword.get(options, :enhance_contrast, false)

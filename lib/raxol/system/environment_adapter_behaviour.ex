@@ -1,7 +1,7 @@
 defmodule Raxol.System.EnvironmentAdapterBehaviour do
-  @moduledoc """
+  @moduledoc '''
   A behaviour for abstracting system environment interactions.
-  """
+  '''
 
   @callback get_env(variable :: String.t()) :: String.t() | nil
   @callback cmd(

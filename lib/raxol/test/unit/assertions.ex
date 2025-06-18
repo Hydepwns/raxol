@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Unit.Assertions do
-  @moduledoc """
+  @moduledoc '''
   Provides custom assertions for testing Raxol components.
 
   This module includes assertions for:
@@ -9,11 +9,11 @@ defmodule Raxol.Test.Unit.Assertions do
   - Render output validation
   - Layout verification
   - Style application testing
-  """
+  '''
 
   import ExUnit.Assertions
 
-  @doc """
+  @doc '''
   Asserts that a component's rendered output matches the expected output.
 
   ## Example
@@ -22,7 +22,7 @@ defmodule Raxol.Test.Unit.Assertions do
         assert output.type == :text
         assert output.content == "Hello, World!"
       end
-  """
+  '''
   defmacro assert_rendered(component, assertion) do
     quote do
       rendered = render_component(unquote(component))
@@ -30,7 +30,7 @@ defmodule Raxol.Test.Unit.Assertions do
     end
   end
 
-  @doc """
+  @doc '''
   Asserts that a component's layout matches the expected constraints.
 
   ## Example
@@ -41,7 +41,7 @@ defmodule Raxol.Test.Unit.Assertions do
         x: 0,
         y: 0
       }
-  """
+  '''
   def assert_layout(component, constraints) when is_map(constraints) do
     layout = get_component_layout(component)
 
@@ -53,7 +53,7 @@ defmodule Raxol.Test.Unit.Assertions do
     end)
   end
 
-  @doc """
+  @doc '''
   Asserts that a style is properly applied to a component.
 
   ## Example
@@ -63,7 +63,7 @@ defmodule Raxol.Test.Unit.Assertions do
         background: :white,
         bold: true
       }
-  """
+  '''
   def assert_style(component, style) when is_map(style) do
     applied_style = get_component_style(component)
 
@@ -75,13 +75,13 @@ defmodule Raxol.Test.Unit.Assertions do
     end)
   end
 
-  @doc """
+  @doc '''
   Asserts that a component has specific subscriptions active.
 
   ## Example
 
       assert_subscribed component, [:keyboard, :mouse]
-  """
+  '''
   def assert_subscribed(component, subscription_types)
       when is_list(subscription_types) do
     active_subs = get_component_subscriptions(component)
@@ -92,7 +92,7 @@ defmodule Raxol.Test.Unit.Assertions do
     end)
   end
 
-  @doc """
+  @doc '''
   Asserts that a component's state history includes specific changes.
 
   ## Example
@@ -102,7 +102,7 @@ defmodule Raxol.Test.Unit.Assertions do
         %{text: "Hello"},
         %{text: "Hello, World!"}
       ]
-  """
+  '''
   def assert_state_history(component, expected_states)
       when is_list(expected_states) do
     history = get_component_state_history(component)
@@ -116,7 +116,7 @@ defmodule Raxol.Test.Unit.Assertions do
     end)
   end
 
-  @doc """
+  @doc '''
   Asserts that a component emitted specific commands in sequence.
 
   ## Example
@@ -126,7 +126,7 @@ defmodule Raxol.Test.Unit.Assertions do
         {:notify, :changed},
         {:submit}
       ]
-  """
+  '''
   def assert_command_sequence(_component, expected_commands)
       when is_list(expected_commands) do
     # Placeholder: Need to integrate with command history or mocking framework
@@ -134,7 +134,7 @@ defmodule Raxol.Test.Unit.Assertions do
     assert true
   end
 
-  @doc """
+  @doc '''
   Asserts that a component properly handles an error condition.
 
   ## Example
@@ -142,7 +142,7 @@ defmodule Raxol.Test.Unit.Assertions do
       assert_handles_error component, fn ->
         simulate_event(component, invalid_event())
       end
-  """
+  '''
   def assert_handles_error(component, error_fn) do
     try do
       error_fn.()

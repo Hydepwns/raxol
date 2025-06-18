@@ -1,5 +1,5 @@
 defmodule Raxol.Animation.Physics.PhysicsEngine do
-  @moduledoc """
+  @moduledoc '''
   Physics engine for Raxol animations.
 
   Provides physics-based animation capabilities including:
@@ -12,7 +12,7 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
 
   These can be used to create natural, organic animations that respond
   to user interactions in a physically plausible way.
-  """
+  '''
 
   alias Raxol.Animation.Physics.ForceField
   alias Raxol.Animation.Physics.Vector
@@ -39,9 +39,9 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
           last_update: integer()
         }
 
-  @doc """
+  @doc '''
   Creates a new physics world with default values.
-  """
+  '''
   def new_world do
     %{
       objects: %{},
@@ -61,9 +61,9 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a new physics world with custom settings.
-  """
+  '''
   def new_world(opts) do
     world = new_world()
 
@@ -76,9 +76,9 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     )
   end
 
-  @doc """
+  @doc '''
   Creates a new physics object with the given properties.
-  """
+  '''
   def new_object(id, opts \\ []) do
     %{
       id: id,
@@ -92,37 +92,37 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     }
   end
 
-  @doc """
+  @doc '''
   Adds an object to the physics world.
-  """
+  '''
   def add_object(world, object) do
     %{world | objects: Map.put(world.objects, object.id, object)}
   end
 
-  @doc """
+  @doc '''
   Removes an object from the physics world.
-  """
+  '''
   def remove_object(world, object_id) do
     %{world | objects: Map.delete(world.objects, object_id)}
   end
 
-  @doc """
+  @doc '''
   Adds a force field to the physics world.
-  """
+  '''
   def add_force_field(world, force_field) do
     %{world | force_fields: [force_field | world.force_fields]}
   end
 
-  @doc """
+  @doc '''
   Sets the boundaries of the physics world.
-  """
+  '''
   def set_boundaries(world, boundaries) do
     %{world | boundaries: Map.merge(world.boundaries, boundaries)}
   end
 
-  @doc """
+  @doc '''
   Updates the physics world by one time step.
-  """
+  '''
   def update(world, delta_time \\ nil) do
     # Calculate delta time if not provided
     delta_time =
@@ -158,9 +158,9 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a spring force between two objects.
-  """
+  '''
   def spring_force(
         world,
         object_id_1,
@@ -203,9 +203,9 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a particle system at the specified position.
-  """
+  '''
   def create_particle_system(world, position, count, opts \\ []) do
     params = %{
       velocity_range: Keyword.get(opts, :velocity_range, {-5.0, 5.0}),
@@ -258,9 +258,9 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     :rand.uniform() * (max - min) + min
   end
 
-  @doc """
+  @doc '''
   Applies an impulse force to an object.
-  """
+  '''
   def apply_impulse(world, object_id, impulse) do
     case Map.get(world.objects, object_id) do
       nil ->

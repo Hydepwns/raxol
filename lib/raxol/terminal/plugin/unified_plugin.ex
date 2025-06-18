@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
-  @moduledoc """
+  @moduledoc '''
   Unified plugin system for the Raxol terminal emulator.
   Handles themes, scripting, and extensions.
-  """
+  '''
 
   use GenServer
   require Logger
@@ -28,44 +28,44 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Loads a plugin from a file or directory.
-  """
+  '''
   def load_plugin(path, type, opts \\ []) do
     GenServer.call(__MODULE__, {:load_plugin, path, type, opts})
   end
 
-  @doc """
+  @doc '''
   Unloads a plugin by ID.
-  """
+  '''
   def unload_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Gets the state of a plugin.
-  """
+  '''
   def get_plugin_state(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin_state, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Gets all loaded plugins.
-  """
+  '''
   def get_plugins(opts \\ []) do
     GenServer.call(__MODULE__, {:get_plugins, opts})
   end
 
-  @doc """
+  @doc '''
   Updates a plugin's configuration.
-  """
+  '''
   def update_plugin_config(plugin_id, config) do
     GenServer.call(__MODULE__, {:update_plugin_config, plugin_id, config})
   end
 
-  @doc """
+  @doc '''
   Executes a plugin function.
-  """
+  '''
   def execute_plugin_function(plugin_id, function, args \\ []) do
     GenServer.call(
       __MODULE__,
@@ -73,9 +73,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     )
   end
 
-  @doc """
+  @doc '''
   Reloads a plugin.
-  """
+  '''
   def reload_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:reload_plugin, plugin_id})
   end

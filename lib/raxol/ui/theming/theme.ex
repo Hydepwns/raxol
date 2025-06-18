@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Theming.Theme do
-  @moduledoc """
+  @moduledoc '''
   Theme management for Raxol UI components.
 
   This module provides functionality for:
@@ -7,7 +7,7 @@ defmodule Raxol.UI.Theming.Theme do
   - Color palette integration
   - Component styling
   - Theme variants and accessibility
-  """
+  '''
 
   alias Raxol.Style.Colors.{Color, Utilities}
   alias Raxol.Core.ColorSystem
@@ -47,9 +47,9 @@ defmodule Raxol.UI.Theming.Theme do
     Map.pop(theme, key)
   end
 
-  @doc """
+  @doc '''
   Creates a new theme with the given attributes.
-  """
+  '''
   def new(), do: new(default_attrs())
 
   def new(attrs) when is_map(attrs) do
@@ -71,9 +71,9 @@ defmodule Raxol.UI.Theming.Theme do
     struct(__MODULE__, attrs)
   end
 
-  @doc """
+  @doc '''
   Gets a color from the theme, respecting variants and accessibility settings.
-  """
+  '''
   def get_color(theme, color_name, arg3 \\ nil)
 
   def get_color(%__MODULE__{} = theme, color_name, variant) do
@@ -84,9 +84,9 @@ defmodule Raxol.UI.Theming.Theme do
     get_in(theme, [:colors, color_name]) || default
   end
 
-  @doc """
+  @doc '''
   Gets a component style from the theme.
-  """
+  '''
   def get_component_style(%__MODULE__{} = theme, component_type) do
     case get_in(theme, [:component_styles, component_type]) do
       nil ->
@@ -111,9 +111,9 @@ defmodule Raxol.UI.Theming.Theme do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a high contrast variant of the theme.
-  """
+  '''
   def create_high_contrast_variant(%__MODULE__{} = theme) do
     high_contrast_colors =
       Enum.map(theme.colors, fn {name, color} ->
@@ -131,17 +131,17 @@ defmodule Raxol.UI.Theming.Theme do
     }
   end
 
-  @doc """
+  @doc '''
   Returns a high-contrast version of the given theme, for accessibility support.
   If the theme is already high-contrast, returns it unchanged.
-  """
+  '''
   def adjust_for_high_contrast(%__MODULE__{} = theme) do
     create_high_contrast_variant(theme)
   end
 
-  @doc """
+  @doc '''
   Gets a theme by ID.
-  """
+  '''
   def get(theme_id) do
     case Application.get_env(:raxol, :themes) do
       nil -> default_theme()
@@ -149,16 +149,16 @@ defmodule Raxol.UI.Theming.Theme do
     end
   end
 
-  @doc """
+  @doc '''
   Returns the current theme.
-  """
+  '''
   def current do
     Application.get_env(:raxol, :current_theme, default_theme())
   end
 
-  @doc """
+  @doc '''
   Returns the default theme.
-  """
+  '''
   def default_theme do
     new(%{
       id: :default,
@@ -208,9 +208,9 @@ defmodule Raxol.UI.Theming.Theme do
     })
   end
 
-  @doc """
+  @doc '''
   Returns the dark theme.
-  """
+  '''
   def dark_theme do
     new(%{
       id: :dark,
@@ -310,10 +310,10 @@ defmodule Raxol.UI.Theming.Theme do
     }
   end
 
-  @doc """
+  @doc '''
   Initializes the theme system and registers the default theme.
   This should be called during application startup.
-  """
+  '''
   def init do
     # Create and register the default theme
     default_theme = new()
@@ -321,9 +321,9 @@ defmodule Raxol.UI.Theming.Theme do
     :ok
   end
 
-  @doc """
+  @doc '''
   Registers a theme in the application environment.
-  """
+  '''
   def register(%__MODULE__{} = theme) do
     current_themes = Application.get_env(:raxol, :themes, %{})
     new_themes = Map.put(current_themes, theme.id, theme)
@@ -331,9 +331,9 @@ defmodule Raxol.UI.Theming.Theme do
     :ok
   end
 
-  @doc """
+  @doc '''
   Applies a theme by name or struct.
-  """
+  '''
   def apply_theme(%__MODULE__{} = theme) do
     Application.put_env(:raxol, :current_theme, theme)
     :ok
@@ -346,9 +346,9 @@ defmodule Raxol.UI.Theming.Theme do
     end
   end
 
-  @doc """
+  @doc '''
   Lists all available themes.
-  """
+  '''
   def list_themes do
     case Application.get_env(:raxol, :themes) do
       nil -> [default_theme()]

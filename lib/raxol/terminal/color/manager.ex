@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Color.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal colors and color operations.
-  """
+  '''
 
   defstruct [
     colors: %{
@@ -41,9 +41,9 @@ defmodule Raxol.Terminal.Color.Manager do
     default_palette: color_map()
   }
 
-  @doc """
+  @doc '''
   Creates a new color manager instance.
-  """
+  '''
   def new(opts \\ []) do
     %__MODULE__{
       colors: %{
@@ -54,24 +54,24 @@ defmodule Raxol.Terminal.Color.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Sets multiple colors at once.
-  """
+  '''
   def set_colors(%__MODULE__{} = state, colors) when is_map(colors) do
     new_colors = Map.merge(state.colors, colors)
     %{state | colors: new_colors}
   end
 
-  @doc """
+  @doc '''
   Gets all current colors.
-  """
+  '''
   def get_colors(%__MODULE__{} = state) do
     state.colors
   end
 
-  @doc """
+  @doc '''
   Gets a specific color by name.
-  """
+  '''
   def get_color(%__MODULE__{} = state, name) when is_atom(name) do
     case name do
       :foreground -> state.colors.foreground
@@ -80,9 +80,9 @@ defmodule Raxol.Terminal.Color.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Sets a specific color by name.
-  """
+  '''
   def set_color(%__MODULE__{} = state, name, value) when is_atom(name) do
     case name do
       :foreground ->
@@ -95,9 +95,9 @@ defmodule Raxol.Terminal.Color.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Resets all colors to their default values.
-  """
+  '''
   def reset_colors(%__MODULE__{} = state) do
     %{state |
       colors: %{
@@ -108,9 +108,9 @@ defmodule Raxol.Terminal.Color.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Converts a color to RGB format.
-  """
+  '''
   def color_to_rgb(%__MODULE__{} = state, color) do
     case color do
       :default -> :default
@@ -121,23 +121,23 @@ defmodule Raxol.Terminal.Color.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the default color palette.
-  """
+  '''
   def get_default_palette(%__MODULE__{} = state) do
     state.default_palette
   end
 
-  @doc """
+  @doc '''
   Sets a custom color palette.
-  """
+  '''
   def set_palette(%__MODULE__{} = state, palette) when is_map(palette) do
     %{state | colors: %{state.colors | palette: palette}}
   end
 
-  @doc """
+  @doc '''
   Merges a new palette with the existing one.
-  """
+  '''
   def merge_palette(%__MODULE__{} = state, palette) when is_map(palette) do
     new_palette = Map.merge(state.colors.palette, palette)
     %{state | colors: %{state.colors | palette: new_palette}}

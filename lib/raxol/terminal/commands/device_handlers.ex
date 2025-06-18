@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.Commands.DeviceHandlers do
-  @moduledoc """
+  @moduledoc '''
   Handles device status and attribute related CSI commands.
 
   This module contains handlers for device status reports (DSR) and device
   attributes (DA). Each function takes the current emulator state and parsed
   parameters, returning the updated emulator state.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
-  @doc "Handles Device Status Report (DSR - 'n')"
+  @doc 'Handles Device Status Report (DSR - 'n')'
   @spec handle_n(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_n(emulator, params) do
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     end
   end
 
-  @doc "Handles Device Attributes (DA - 'c')"
+  @doc 'Handles Device Attributes (DA - 'c')'
   @spec handle_c(Emulator.t(), list(integer()), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_c(emulator, _params, intermediates_buffer) do

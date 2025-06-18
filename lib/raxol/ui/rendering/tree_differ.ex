@@ -1,13 +1,13 @@
 defmodule Raxol.UI.Rendering.TreeDiffer do
-  @moduledoc """
+  @moduledoc '''
   Provides functions to compute the difference (diff) between two UI trees.
   This module is responsible for identifying changes, additions, removals,
   and reordering of nodes, supporting both keyed and non-keyed children.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Computes the minimal set of changes (diff) between two UI trees.
 
   Returns:
@@ -22,7 +22,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   children (e.g., in `{:key_update, key, child_diff}`) will have their own paths
   relative to that child (i.e., starting with `[]` if the child itself is the root
   of that sub-diff).
-  """
+  '''
   @spec diff_trees(old_tree :: map() | nil, new_tree :: map() | nil) ::
           :no_change
           | {:replace, map()}

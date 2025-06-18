@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Clipboard.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages clipboard operations for the terminal, including copying and pasting text.
-  """
+  '''
 
   defstruct [:content, :mode]
 
@@ -10,9 +10,9 @@ defmodule Raxol.Terminal.Clipboard.Manager do
     mode: :normal | :bracketed
   }
 
-  @doc """
+  @doc '''
   Creates a new clipboard manager instance.
-  """
+  '''
   def new do
     %__MODULE__{
       content: "",
@@ -20,72 +20,72 @@ defmodule Raxol.Terminal.Clipboard.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the current clipboard content.
-  """
+  '''
   def get_content(%__MODULE__{} = manager) do
     manager.content
   end
 
-  @doc """
+  @doc '''
   Sets the clipboard content.
-  """
+  '''
   def set_content(%__MODULE__{} = manager, content) when is_binary(content) do
     %{manager | content: content}
   end
 
-  @doc """
+  @doc '''
   Gets the current clipboard mode.
-  """
+  '''
   def get_mode(%__MODULE__{} = manager) do
     manager.mode
   end
 
-  @doc """
+  @doc '''
   Sets the clipboard mode.
-  """
+  '''
   def set_mode(%__MODULE__{} = manager, mode) when mode in [:normal, :bracketed] do
     %{manager | mode: mode}
   end
 
-  @doc """
+  @doc '''
   Clears the clipboard content.
-  """
+  '''
   def clear(%__MODULE__{} = manager) do
     %{manager | content: ""}
   end
 
-  @doc """
+  @doc '''
   Appends text to the current clipboard content.
-  """
+  '''
   def append(%__MODULE__{} = manager, text) when is_binary(text) do
     %{manager | content: manager.content <> text}
   end
 
-  @doc """
+  @doc '''
   Prepends text to the current clipboard content.
-  """
+  '''
   def prepend(%__MODULE__{} = manager, text) when is_binary(text) do
     %{manager | content: text <> manager.content}
   end
 
-  @doc """
+  @doc '''
   Checks if the clipboard is empty.
-  """
+  '''
   def empty?(%__MODULE__{} = manager) do
     manager.content == ""
   end
 
-  @doc """
+  @doc '''
   Gets the length of the clipboard content.
-  """
+  '''
   def length(%__MODULE__{} = manager) do
     String.length(manager.content)
   end
 
-  @doc """
+  @doc '''
   Resets the clipboard manager to its initial state.
-  """
+  '''
   def reset(%__MODULE__{} = manager) do
     %{manager | content: "", mode: :normal}
   end

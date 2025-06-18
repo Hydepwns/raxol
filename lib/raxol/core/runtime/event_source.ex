@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.EventSource do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for implementing custom event sources for subscriptions.
 
   Event sources are processes that can generate events over time and send them
@@ -24,9 +24,9 @@ defmodule Raxol.Core.Runtime.EventSource do
           {:noreply, state}
         end
       end
-  """
+  '''
 
-  @doc """
+  @doc '''
   Called when the event source is started. Should return the initial state.
 
   ## Parameters
@@ -36,11 +36,11 @@ defmodule Raxol.Core.Runtime.EventSource do
   ## Returns
     * `{:ok, state}` - Successfully initialized with state
     * `{:error, reason}` - Failed to initialize
-  """
+  '''
   @callback init(args :: term(), context :: map()) ::
               {:ok, state :: term()} | {:error, reason :: term()}
 
-  @doc """
+  @doc '''
   Called when the event source receives a message. Should handle the message
   and optionally send events to the subscriber.
 
@@ -51,12 +51,12 @@ defmodule Raxol.Core.Runtime.EventSource do
   ## Returns
     * `{:noreply, new_state}` - Continue with new state
     * `{:stop, reason, new_state}` - Stop the event source
-  """
+  '''
   @callback handle_info(msg :: term(), state :: term()) ::
               {:noreply, new_state :: term()}
               | {:stop, reason :: term(), new_state :: term()}
 
-  @doc """
+  @doc '''
   Called when the event source is stopping. Can be used to clean up resources.
 
   ## Parameters
@@ -65,7 +65,7 @@ defmodule Raxol.Core.Runtime.EventSource do
 
   ## Returns
     * `:ok`
-  """
+  '''
   @callback terminate(reason :: term(), state :: term()) :: :ok
 
   @optional_callbacks [terminate: 2]

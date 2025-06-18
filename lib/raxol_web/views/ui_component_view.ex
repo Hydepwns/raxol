@@ -1,9 +1,9 @@
 defmodule RaxolWeb.UIComponentView do
   # use Phoenix.View
 
-  @moduledoc """
+  @moduledoc '''
   A view for rendering UI components.
-  """
+  '''
 
   # TODO: Define the functionality of this module.
   # This file was created to address a "file not found" issue.

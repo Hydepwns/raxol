@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Commands.EraseHandlers do
-  @moduledoc """
+  @moduledoc '''
   Handles erase related CSI commands.
 
   This module contains handlers for erase operations like ED (Erase in Display)
   and EL (Erase in Line). Each function takes the current emulator state and
   parsed parameters, returning the updated emulator state.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
@@ -13,10 +13,10 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   alias Raxol.Terminal.Buffer.Eraser
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Helper function to get active buffer, cursor position, and default style.
   Returns a tuple of {active_buffer, cursor_pos, default_style}.
-  """
+  '''
   @spec get_buffer_state(Emulator.t()) ::
           {ScreenBuffer.t(), {integer(), integer()},
            Raxol.Terminal.ANSI.TextFormatting.text_style()}
@@ -32,10 +32,10 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     {active_buffer, cursor_pos, blank_style}
   end
 
-  @doc """
+  @doc '''
   Helper function to handle erase operations.
   Takes the emulator, erase type, and erase parameters.
-  """
+  '''
   @spec handle_erase(
           Emulator.t(),
           :screen | :line,
@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     end
   end
 
-  @doc "Handles Erase in Display (ED - \"J\")"
+  @doc 'Handles Erase in Display (ED - \'J\")"
   @spec handle_j(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_j(emulator, params) do
@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
-  @doc "Handles Erase in Line (EL - \"K\")"
+  @doc 'Handles Erase in Line (EL - \'K\")"
   @spec handle_k(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_k(emulator, params) do

@@ -1,16 +1,16 @@
 defmodule Raxol.CLI.Commands.UpdateCmd do
-  @moduledoc """
+  @moduledoc '''
   CLI command for managing Raxol updates.
 
   This module handles:
   - Checking for updates
   - Performing self-updates
   - Managing update settings
-  """
+  '''
 
   alias Raxol.System.Updater
 
-  @doc """
+  @doc '''
   Executes the update command with the provided options and arguments.
 
   ## Options
@@ -48,7 +48,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   ```
   raxol update --auto off
   ```
-  """
+  '''
   def execute(args) do
     {opts, _, _} =
       OptionParser.parse(args,
@@ -104,7 +104,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
         IO.puts(success_msg("Automatic update checks are now disabled"))
 
       _ ->
-        IO.puts(error_msg("Invalid value for --auto. Use 'on' or 'off'"))
+        IO.puts(error_msg("Invalid value for --auto. Use "on" or "off""))
     end
   end
 
@@ -115,7 +115,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
       {:update_available, version} ->
         IO.puts(success_msg("Update available: v#{version}"))
         IO.puts("Current version: v#{Application.spec(:raxol, :vsn)}")
-        IO.puts("\nRun 'raxol update' to install the update")
+        IO.puts("\nRun "raxol update" to install the update")
 
       {:no_update, version} ->
         IO.puts(success_msg("Raxol is up to date (v#{version})"))
@@ -245,7 +245,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   end
 
   defp print_help do
-    help_text = """
+    help_text = '''
     Raxol Update Command
 
     Usage: raxol update [options]
@@ -266,7 +266,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
       raxol update --no-delta          # Update using full update only
       raxol update --version 0.2.0     # Update to version 0.2.0
       raxol update --auto off          # Disable automatic update checks
-    """
+    '''
 
     IO.puts(help_text)
   end

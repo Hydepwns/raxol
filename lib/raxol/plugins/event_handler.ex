@@ -1,11 +1,11 @@
 defmodule Raxol.Plugins.EventHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles dispatching various events (input, resize, mouse, etc.) to plugins.
 
   Provides a generic mechanism to iterate through enabled plugins and invoke
   specific callback functions defined by the `Raxol.Plugins.Plugin` behaviour.
   Updates the plugin manager state based on the results returned by the plugins.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -17,9 +17,9 @@ defmodule Raxol.Plugins.EventHandler do
   @type result :: {:ok, manager()} | {:error, term()}
   @type propagation :: :propagate | :halt
 
-  @doc """
-  Dispatches an 'input' event to all enabled plugins implementing `handle_input/2`.
-  """
+  @doc '''
+  Dispatches an "input" event to all enabled plugins implementing `handle_input/2`.
+  '''
   @spec handle_input(Core.t(), binary()) :: result()
   def handle_input(%Core{} = manager, input) do
     event = %{
@@ -37,9 +37,9 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc """
-  Dispatches a 'resize' event to all enabled plugins implementing `handle_resize/3`.
-  """
+  @doc '''
+  Dispatches a "resize" event to all enabled plugins implementing `handle_resize/3`.
+  '''
   @spec handle_resize(Core.t(), integer(), integer()) :: result()
   def handle_resize(%Core{} = manager, width, height) do
     event = %{
@@ -58,10 +58,10 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc """
+  @doc '''
   Dispatches a mouse event to all enabled plugins implementing `handle_mouse/3`.
   Returns {:ok, updated_manager, :propagate | :halt} or {:error, reason}.
-  """
+  '''
   @spec handle_mouse_event(Core.t(), map(), map()) ::
           {:ok, Core.t(), propagation()} | {:error, term()}
   def handle_mouse_event(%Core{} = manager, event, rendered_cells) do
@@ -86,10 +86,10 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc """
-  Dispatches an 'output' event to all enabled plugins implementing `handle_output/2`.
+  @doc '''
+  Dispatches an "output" event to all enabled plugins implementing `handle_output/2`.
   Accumulates transformed output.
-  """
+  '''
   @spec handle_output(Core.t(), binary()) ::
           {:ok, Core.t(), binary()} | {:error, term()}
   def handle_output(%Core{} = manager, output) do
@@ -111,10 +111,10 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc """
+  @doc '''
   Dispatches a key event to enabled plugins implementing `handle_input/2`.
   Returns {:ok, updated_manager, :propagate | :halt} or {:error, reason}.
-  """
+  '''
   @spec handle_key_event(Core.t(), map()) ::
           {:ok, Core.t(), propagation()} | {:error, term()}
   def handle_key_event(%Core{} = manager, key_event) do
@@ -212,7 +212,7 @@ defmodule Raxol.Plugins.EventHandler do
         rescue
           e ->
             Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an exception during #{callback_name} event handling",
+              "[#{__MODULE__}] Plugin "#{inspect(plugin.name)}" raised an exception during #{callback_name} event handling",
               e,
               nil,
               %{
@@ -227,7 +227,7 @@ defmodule Raxol.Plugins.EventHandler do
         catch
           kind, value ->
             Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an error during #{callback_name} event handling",
+              "[#{__MODULE__}] Plugin "#{inspect(plugin.name)}" raised an error during #{callback_name} event handling",
               value,
               nil,
               %{

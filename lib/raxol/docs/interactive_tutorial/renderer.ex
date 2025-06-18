@@ -1,13 +1,13 @@
 defmodule Raxol.Docs.InteractiveTutorial.Renderer do
-  @moduledoc """
+  @moduledoc '''
   Handles rendering of interactive tutorial content.
-  """
+  '''
 
   alias Raxol.Docs.InteractiveTutorial.Models.{Tutorial, Step}
 
-  @doc """
+  @doc '''
   Renders a tutorial's content.
-  """
+  '''
   def render_tutorial(%Tutorial{} = tutorial) do
     content =
       [
@@ -22,9 +22,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
     {:ok, content}
   end
 
-  @doc """
+  @doc '''
   Renders a single step's content.
-  """
+  '''
   def render_step(%Step{} = step) do
     content =
       [
@@ -40,9 +40,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
     {:ok, content}
   end
 
-  @doc """
+  @doc '''
   Renders interactive elements for a step.
-  """
+  '''
   def render_interactive_elements(%Step{} = step) do
     elements =
       step.interactive_elements

@@ -1,8 +1,8 @@
 defmodule Raxol.Runtime.Supervisor do
-  @moduledoc """
+  @moduledoc '''
   The main supervisor for the Raxol application runtime.
   Manages core processes like Dispatcher, Plugin system, etc.
-  """
+  '''
   use Supervisor
 
   require Raxol.Core.Runtime.Log

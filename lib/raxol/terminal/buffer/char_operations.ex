@@ -1,12 +1,14 @@
-defmodule Raxol.Terminal.Buffer.CharOperations do
-  @moduledoc """
-  Handles character-based operations in the terminal buffer.
-  """
+alias Raxol.Terminal.Buffer.Cell
 
-  @doc """
+defmodule Raxol.Terminal.Buffer.CharOperations do
+  @moduledoc '''
+  Handles character-based operations in the terminal buffer.
+  '''
+
+  @doc '''
   Inserts a specified number of blank characters at the current cursor position.
   Characters to the right of the cursor are shifted right, and characters shifted off the end are discarded.
-  """
+  '''
   @spec insert_chars(Raxol.Terminal.ScreenBuffer.t(), non_neg_integer()) :: Raxol.Terminal.ScreenBuffer.t()
   def insert_chars(buffer, count) when is_integer(count) and count > 0 do
     {x, y} = Raxol.Terminal.Cursor.get_position(buffer)
@@ -34,10 +36,10 @@ defmodule Raxol.Terminal.Buffer.CharOperations do
     before_cursor ++ blank_chars ++ Enum.take(after_cursor, width - x - count)
   end
 
-  @doc """
+  @doc '''
   Deletes a specified number of characters starting from the current cursor position.
   Characters to the right of the deleted characters are shifted left, and blank characters are added at the end.
-  """
+  '''
   @spec delete_chars(Raxol.Terminal.ScreenBuffer.t(), non_neg_integer()) :: Raxol.Terminal.ScreenBuffer.t()
   def delete_chars(buffer, count) when is_integer(count) and count > 0 do
     {x, y} = Raxol.Terminal.Cursor.get_position(buffer)
@@ -56,7 +58,7 @@ defmodule Raxol.Terminal.Buffer.CharOperations do
     end
   end
 
-  @doc """
+  @doc '''
   Helper function that handles the line manipulation logic for deleting characters.
   Splits the line at the cursor position, removes characters, and adds blanks at the end.
 
@@ -78,7 +80,7 @@ defmodule Raxol.Terminal.Buffer.CharOperations do
       10
       iex> Enum.at(new_line, 5).char
       " "
-  """
+  '''
   @spec delete_chars_from_line(list(Cell.t()), non_neg_integer(), non_neg_integer()) :: list(Cell.t())
   def delete_chars_from_line(line, x, count) do
     {before_cursor, after_cursor} = Enum.split(line, x)
@@ -91,7 +93,7 @@ defmodule Raxol.Terminal.Buffer.CharOperations do
     before_cursor ++ remaining_chars ++ blank_chars
   end
 
-  @doc """
+  @doc '''
   Inserts a specified number of blank characters at the given position.
   Characters to the right of the insertion point are shifted right.
   Characters shifted off the end of the line are discarded.
@@ -115,7 +117,7 @@ defmodule Raxol.Terminal.Buffer.CharOperations do
       iex> buffer = CharOperations.insert_characters(buffer, 0, 0, 5, style)
       iex> CharOperations.get_char(buffer, 0, 0)
       " "
-  """
+  '''
   @spec insert_characters(
           Raxol.Terminal.ScreenBuffer.t(),
           non_neg_integer(),
@@ -133,7 +135,7 @@ defmodule Raxol.Terminal.Buffer.CharOperations do
     end
   end
 
-  @doc """
+  @doc '''
   Inserts characters into a line at the specified position.
 
   ## Parameters
@@ -154,7 +156,7 @@ defmodule Raxol.Terminal.Buffer.CharOperations do
       iex> new_line = CharOperations.insert_into_line(line, 5, 3, style)
       iex> length(new_line)
       10
-  """
+  '''
   @spec insert_into_line(list(Cell.t()), non_neg_integer(), non_neg_integer(), Raxol.Terminal.ANSI.TextFormatting.text_style()) :: list(Cell.t())
   def insert_into_line(line, col, count, default_style) do
     {left_part, right_part} = Enum.split(line, col)

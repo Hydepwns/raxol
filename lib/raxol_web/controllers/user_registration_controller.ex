@@ -1,7 +1,7 @@
 defmodule RaxolWeb.UserRegistrationController do
-  @moduledoc """
+  @moduledoc '''
   Handles user registration.
-  """
+  '''
   use RaxolWeb, :controller
 
   # alias Raxol.Auth # Removed unused alias

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Sync.Component do
-  @moduledoc """
+  @moduledoc '''
   Defines the structure for synchronized components.
-  """
+  '''
 
   defstruct [
     :id,

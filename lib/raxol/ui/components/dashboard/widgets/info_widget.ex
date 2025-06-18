@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Dashboard.Widgets.InfoWidget do
-  @moduledoc """
+  @moduledoc '''
   A dashboard widget that displays simple text information.
-  """
+  '''
 
   use Raxol.UI.Components.Base.Component
   require Raxol.View.Elements

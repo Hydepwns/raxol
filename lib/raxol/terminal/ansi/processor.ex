@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.ANSI.Processor do
-  @moduledoc """
+  @moduledoc '''
   Processes ANSI escape sequences for terminal control.
-  """
+  '''
 
   alias Raxol.Terminal.Cursor
   alias Raxol.Terminal.Buffer.Eraser
   alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets}
 
-  @doc """
+  @doc '''
   Processes an ANSI escape sequence and updates the terminal state accordingly.
-  """
+  '''
   def process_sequence(emulator, sequence) do
     case sequence do
       {:cursor_up, n} ->

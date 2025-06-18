@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Integration.Assertions do
-  @moduledoc """
+  @moduledoc '''
   Provides custom assertions for integration testing of Raxol components.
 
   This module includes assertions for:
@@ -8,17 +8,17 @@ defmodule Raxol.Test.Integration.Assertions do
   - State synchronization checking
   - Command routing verification
   - Component lifecycle testing
-  """
+  '''
 
   import ExUnit.Assertions
 
-  @doc """
+  @doc '''
   Asserts that a child component received an event from its parent.
 
   ## Example
 
       assert_child_received child, :parent_clicked
-  """
+  '''
   def assert_child_received(child_component_map, expected_event_type_atom) do
     {:messages, messages} = Process.info(self(), :messages)
     # Get the atom like Button
@@ -42,13 +42,13 @@ defmodule Raxol.Test.Integration.Assertions do
            "Expected child component #{inspect(child_module_expected)} to receive event of type #{inspect(expected_event_type_atom)}. Messages: #{inspect(messages)}"
   end
 
-  @doc """
+  @doc '''
   Asserts that a parent component was updated in response to a child event.
 
   ## Example
 
       assert_parent_updated parent, :child_responded
-  """
+  '''
   def assert_parent_updated(parent_component_map, expected_event_type_atom) do
     {:messages, messages} = Process.info(self(), :messages)
     parent_module_expected = parent_component_map.module
@@ -70,13 +70,13 @@ defmodule Raxol.Test.Integration.Assertions do
            "Expected parent component #{inspect(parent_module_expected)} to have handled an event of type #{inspect(expected_event_type_atom)} (indicating update). Messages: #{inspect(messages)}"
   end
 
-  @doc """
+  @doc '''
   Asserts that components are properly connected in a hierarchy.
 
   ## Example
 
       assert_hierarchy_valid parent, [child1, child2]
-  """
+  '''
   def assert_hierarchy_valid(parent, children) do
     # Verify parent-child relationships
     Enum.each(children, fn child ->
@@ -94,7 +94,7 @@ defmodule Raxol.Test.Integration.Assertions do
     end)
   end
 
-  @doc """
+  @doc '''
   Asserts that a component properly handles mounting and unmounting.
 
   ## Example
@@ -105,7 +105,7 @@ defmodule Raxol.Test.Integration.Assertions do
         unmount_component(comp)
         # Test unmounted state
       end
-  """
+  '''
   def assert_lifecycle_handled(component, lifecycle_fn) do
     try do
       lifecycle_fn.(component)
@@ -122,7 +122,7 @@ defmodule Raxol.Test.Integration.Assertions do
     end
   end
 
-  @doc """
+  @doc '''
   Asserts that events are properly propagated through the component hierarchy.
 
   ## Example
@@ -130,7 +130,7 @@ defmodule Raxol.Test.Integration.Assertions do
       assert_event_propagation [parent, child1, child2], event, fn components ->
         # Verify each component's response
       end
-  """
+  '''
   def assert_event_propagation(components, event, verification_fn)
       when is_list(components) do
     # Track event propagation
@@ -152,13 +152,13 @@ defmodule Raxol.Test.Integration.Assertions do
     end
   end
 
-  @doc """
+  @doc '''
   Asserts that commands are properly routed between components.
 
   ## Example
 
       assert_command_routing source, target, command
-  """
+  '''
   def assert_command_routing(source, target, command) do
     {:messages, messages} = Process.info(self(), :messages)
 
@@ -172,7 +172,7 @@ defmodule Raxol.Test.Integration.Assertions do
            "Expected command #{inspect(command)} to be routed from #{inspect(source)} to #{inspect(target)}"
   end
 
-  @doc """
+  @doc '''
   Asserts that component state is synchronized after interactions.
 
   ## Example
@@ -180,7 +180,7 @@ defmodule Raxol.Test.Integration.Assertions do
       assert_state_synchronized [comp1, comp2], fn states ->
         Enum.all?(states, & &1.counter == 0)
       end
-  """
+  '''
   def assert_state_synchronized(components, state_check)
       when is_list(components) do
     states = Enum.map(components, & &1.state)
@@ -189,13 +189,13 @@ defmodule Raxol.Test.Integration.Assertions do
            "Expected component states to be synchronized"
   end
 
-  @doc """
+  @doc '''
   Asserts that a component handles system events without corruption.
 
   ## Example
 
       assert_system_events_handled component, [:resize, :focus, :blur]
-  """
+  '''
   def assert_system_events_handled(component, events) when is_list(events) do
     Enum.each(events, fn event ->
       {updated, initial, _commands} =
@@ -209,7 +209,7 @@ defmodule Raxol.Test.Integration.Assertions do
     end)
   end
 
-  @doc """
+  @doc '''
   Asserts that error boundaries contain component failures.
 
   ## Example
@@ -217,7 +217,7 @@ defmodule Raxol.Test.Integration.Assertions do
       assert_error_contained parent, child, fn ->
         simulate_user_action(child, :trigger_error)
       end
-  """
+  '''
   def assert_error_contained(parent, child, error_fn) do
     parent_state = parent.state
 

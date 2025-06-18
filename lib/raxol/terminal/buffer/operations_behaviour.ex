@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.OperationsBehaviour do
-  @moduledoc """
+  @moduledoc '''
   Defines the behaviour for terminal buffer operations.
-  """
+  '''
 
   @type buffer :: list(list(Raxol.Terminal.Buffer.Cell.t()))
   @type style :: map()

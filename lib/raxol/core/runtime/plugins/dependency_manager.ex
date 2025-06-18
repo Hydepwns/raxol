@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
-  @moduledoc """
+  @moduledoc '''
   Manages plugin dependencies, ensuring that plugins are loaded in the correct
   order and that their dependencies are met.
 
@@ -13,7 +13,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
 
   For more detailed documentation about the module's architecture and internals,
   see `docs/dependency_manager.md`.
-  """
+  '''
 
   alias Raxol.Core.Runtime.Plugins.DependencyManager.Core
   alias Raxol.Core.Runtime.Plugins.DependencyManager.Graph
@@ -30,7 +30,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
              dependency_chain()}
           | {:error, :circular_dependency, [String.t()], dependency_chain()}
 
-  @doc """
+  @doc '''
   Checks if a plugin's dependencies are met by the currently loaded plugins.
 
   ## Parameters
@@ -57,7 +57,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
 
       iex> DependencyManager.check_dependencies("my_plugin", %{dependencies: [{"other_plugin", ">= 2.0.0"}]}, %{"other_plugin" => %{version: "1.0.0"}}, [])
       {:error, :version_mismatch, [{"other_plugin", "1.0.0", ">= 2.0.0"}], ["my_plugin"]}
-  """
+  '''
   def check_dependencies(
         plugin_id,
         plugin_metadata,
@@ -72,18 +72,18 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
     )
   end
 
-  @doc """
+  @doc '''
   Resolves the load order for a list of plugins.
-  """
+  '''
   def resolve_load_order(plugins) do
     plugins
     |> Graph.build_dependency_graph()
     |> Resolver.tarjan_sort()
   end
 
-  @doc """
+  @doc '''
   Checks if a version meets a version requirement.
-  """
+  '''
   def satisfies_version?(installed_version, version_req) do
     case DepVersion.check_version(installed_version, version_req) do
       :ok -> true

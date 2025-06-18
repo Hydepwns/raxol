@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Input.SingleLineInput do
-  @moduledoc """
+  @moduledoc '''
   A simple single-line text input component.
-  """
+  '''
 
-  @typedoc """
+  @typedoc '''
   State for the SingleLineInput component.
 
   - :id - unique identifier
@@ -14,7 +14,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   - :cursor_pos - cursor position
   - :on_change - callback for value change
   - :on_submit - callback for submit action
-  """
+  '''
   @type t :: %__MODULE__{
           id: any(),
           value: String.t(),
@@ -45,9 +45,9 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
   # --- Component Behaviour Callbacks ---
 
-  @doc """
+  @doc '''
   Initializes the SingleLineInput component state from the given props.
-  """
+  '''
   @spec init(map()) :: __MODULE__.t()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
@@ -63,9 +63,9 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
     }
   end
 
-  @doc """
+  @doc '''
   Updates the SingleLineInput component state in response to messages or prop changes.
-  """
+  '''
   @spec update(term(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
@@ -89,9 +89,9 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
     end
   end
 
-  @doc """
+  @doc '''
   Handles events for the SingleLineInput component, such as keypresses and mouse clicks.
-  """
+  '''
   @spec handle_event(term(), map(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
@@ -115,9 +115,9 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
   # --- Render Logic ---
 
-  @doc """
+  @doc '''
   Renders the SingleLineInput component using the current state and props.
-  """
+  '''
   @spec render(__MODULE__.t(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   # Correct arity

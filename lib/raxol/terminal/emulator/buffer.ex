@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Emulator.Buffer do
-  @moduledoc """
+  @moduledoc '''
   Provides buffer management functionality for the terminal emulator.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -19,10 +19,10 @@ defmodule Raxol.Terminal.Emulator.Buffer do
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
-  @doc """
+  @doc '''
   Switches between main and alternate screen buffers.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  """
+  '''
   @spec switch_buffer(EmulatorStruct.t(), :main | :alternate) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def switch_buffer(%EmulatorStruct{} = emulator, :main) do
@@ -37,10 +37,10 @@ defmodule Raxol.Terminal.Emulator.Buffer do
     {:error, "Invalid buffer type: #{inspect(invalid_type)}"}
   end
 
-  @doc """
+  @doc '''
   Sets the scroll region for the active buffer.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  """
+  '''
   @spec set_scroll_region(
           EmulatorStruct.t(),
           non_neg_integer(),
@@ -57,58 +57,58 @@ defmodule Raxol.Terminal.Emulator.Buffer do
      "Invalid scroll region: top (#{top}) must be less than bottom (#{bottom})"}
   end
 
-  @doc """
+  @doc '''
   Clears the scroll region, allowing scrolling of the entire screen.
   Returns {:ok, updated_emulator}.
-  """
+  '''
   @spec clear_scroll_region(EmulatorStruct.t()) :: {:ok, EmulatorStruct.t()}
   def clear_scroll_region(%EmulatorStruct{} = emulator) do
     {:ok, %{emulator | scroll_region: nil}}
   end
 
-  @doc """
+  @doc '''
   Scrolls the buffer up by the specified number of lines.
-  """
+  '''
   def scroll_up_emulator(emulator, lines) do
     updated_emulator = ScreenBuffer.scroll_up(emulator, lines)
     %{updated_emulator | active_buffer: updated_emulator.active_buffer}
   end
 
-  @doc """
+  @doc '''
   Scrolls the buffer down by the specified number of lines.
-  """
+  '''
   def scroll_down(emulator, lines) do
     updated_emulator = ScreenBuffer.scroll_down(emulator, lines)
     %{updated_emulator | active_buffer: updated_emulator.active_buffer}
   end
 
-  @doc """
+  @doc '''
   Clears the entire buffer.
-  """
+  '''
   def clear_buffer(emulator) do
     updated_emulator = ScreenBuffer.clear(emulator)
     %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0, y: 0}}
   end
 
-  @doc """
+  @doc '''
   Clears from cursor to end of screen.
-  """
+  '''
   def clear_from_cursor_to_end(emulator) do
     updated_emulator = ScreenBuffer.clear(emulator)
     %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0}}
   end
 
-  @doc """
+  @doc '''
   Clears from start of screen to cursor.
-  """
+  '''
   def clear_from_cursor_to_start(emulator) do
     updated_emulator = ScreenBuffer.clear(emulator)
     %{updated_emulator | cursor: %{updated_emulator.cursor | x: 0}}
   end
 
-  @doc """
+  @doc '''
   Clears the current line.
-  """
+  '''
   def clear_line(emulator) do
     updated_emulator = ScreenBuffer.clear_line(emulator, 2)
     %{updated_emulator | active_buffer: updated_emulator.active_buffer}

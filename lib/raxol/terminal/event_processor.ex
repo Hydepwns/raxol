@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.EventProcessor do
-  @moduledoc """
+  @moduledoc '''
   Handles processing of terminal events and their effects on the terminal state.
 
   This module is responsible for:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.EventProcessor do
   - Validating event data
   - Applying event effects to the terminal state
   - Coordinating with other terminal components
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.EventProcessor do
     scroll: &Handlers.handle_scroll_event/2
   }
 
-  @doc """
+  @doc '''
   Processes a terminal event and returns the updated terminal state.
 
   ## Parameters
@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.EventProcessor do
 
   ## Returns
     * `{updated_emulator, output}` - The updated emulator state and any output
-  """
+  '''
   @spec process_event(Event.t(), Emulator.t()) :: {Emulator.t(), any()}
   def process_event(%Event{type: type, data: data} = _event, emulator) do
     case Map.get(@event_handlers, type) do

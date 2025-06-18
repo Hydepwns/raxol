@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Renderer.View.Components.Box do
-  @moduledoc """
+  @moduledoc '''
   Handles box layout functionality for the Raxol view system.
   Provides box model layout with content, padding, border, and margin.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Creates a new box view.
 
   ## Options
@@ -20,7 +20,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
 
       Box.new(children: [view1, view2], padding: 1)
       Box.new(padding: {1, 2, 1, 2}, border: :single)
-  """
+  '''
   def new(opts \\ []) do
     style = Keyword.get(opts, :style, [])
     border = Keyword.get(style, :border, Keyword.get(opts, :border, :none))
@@ -39,9 +39,9 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     }
   end
 
-  @doc """
+  @doc '''
   Calculates the layout of a box and its children.
-  """
+  '''
   def calculate_layout(box, available_size) do
     # Calculate content size by subtracting padding and border
     content_size = calculate_content_size(box, available_size)

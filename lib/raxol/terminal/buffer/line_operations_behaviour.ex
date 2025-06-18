@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Buffer.LineOperations.Behaviour do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for terminal buffer line operations.
   This module defines the callbacks required for manipulating lines in the screen buffer.
-  """
+  '''
 
   alias Raxol.Terminal.{
     Cell

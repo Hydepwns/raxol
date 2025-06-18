@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.ClipboardPlugin do
-  @moduledoc """
+  @moduledoc '''
   Plugin for clipboard operations in Raxol.
-  """
+  '''
 
   @behaviour Raxol.Plugins.Plugin
   require Raxol.Core.Runtime.Log

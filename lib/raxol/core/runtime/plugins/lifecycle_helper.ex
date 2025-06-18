@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
-  @moduledoc """
+  @moduledoc '''
   Helper functions for plugin lifecycle management.
-  """
+  '''
 
   @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
 
@@ -444,9 +444,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end)
   end
 
-  @doc """
+  @doc '''
   Catch-all for load_plugin/3. Raises a clear error if called with the wrong arity.
-  """
+  '''
   def load_plugin(_a, _b, _c) do
     raise "Raxol.Core.Runtime.Plugins.LifecycleHelper.load_plugin/3 is not implemented. Use load_plugin/8."
   end

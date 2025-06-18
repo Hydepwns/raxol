@@ -1,10 +1,10 @@
 defmodule Raxol.Test.MockTermbox do
-  @moduledoc """
+  @moduledoc '''
   Mock implementation of rrex_termbox v2.0.1 for testing environments.
 
   This module provides stub implementations of all rrex_termbox NIF-based functions
   to allow tests to run in CI environments where a real TTY may not be available.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 

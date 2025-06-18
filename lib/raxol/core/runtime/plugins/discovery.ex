@@ -1,20 +1,20 @@
 defmodule Raxol.Core.Runtime.Plugins.Discovery do
-  @moduledoc """
+  @moduledoc '''
   Handles plugin discovery and initialization.
   This module is responsible for:
   - Discovering available plugins in configured directories
   - Initializing the plugin system
   - Managing plugin metadata and paths
   - Handling plugin dependencies
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.{FileWatcher, Loader, StateManager}
 
-  @doc """
+  @doc '''
   Initializes the plugin discovery system.
-  """
+  '''
   def initialize(state) do
     with {:ok, state} <- StateManager.initialize(state),
          {:ok, state} <- FileWatcher.setup_file_watching(state) do
@@ -43,9 +43,9 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end
   end
 
-  @doc """
+  @doc '''
   Discovers plugins in the given state (all plugin_dirs and plugins_dir).
-  """
+  '''
   def discover_plugins(state) do
     plugin_dirs =
       (state.plugin_dirs || []) ++
@@ -61,26 +61,26 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end)
   end
 
-  @doc """
+  @doc '''
   Discovers plugins in a specific directory.
-  """
+  '''
   def discover_plugins_in_dir(dir, state) do
     # Use the private helper directly
     discover_plugins_in_dir_helper(dir, state)
   end
 
-  @doc """
+  @doc '''
   Lists all discovered plugins in load order as {id, metadata}.
-  """
+  '''
   def list_plugins(state) do
     Enum.map(state.load_order || [], fn id ->
       {id, Map.get(state.metadata || %{}, id)}
     end)
   end
 
-  @doc """
+  @doc '''
   Gets a specific plugin by ID.
-  """
+  '''
   def get_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil -> {:error, :not_found}

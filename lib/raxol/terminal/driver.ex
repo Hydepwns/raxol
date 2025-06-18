@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Driver do
-  @moduledoc """
+  @moduledoc '''
   Handles raw terminal input/output and event generation.
 
   Responsibilities:
@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Driver do
   - Detecting terminal resize events
   - Sending parsed events to the `Dispatcher`
   - Restoring terminal state on exit
-  """
+  '''
   use GenServer
   @behaviour Raxol.Terminal.Driver.Behaviour
 
@@ -36,9 +36,9 @@ defmodule Raxol.Terminal.Driver do
 
   # --- Public API ---
 
-  @doc """
+  @doc '''
   Starts the GenServer.
-  """
+  '''
   @impl true
   # Allow nil or pid
   def start_link(dispatcher_pid) do
@@ -209,9 +209,9 @@ defmodule Raxol.Terminal.Driver do
     :ok
   end
 
-  @doc """
+  @doc '''
   Processes a terminal title change event.
-  """
+  '''
   @impl true
   def process_title_change(title, state) when is_binary(title) do
     if Mix.env() != :test and real_tty?() do
@@ -220,9 +220,9 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  @doc """
+  @doc '''
   Processes a terminal position change event.
-  """
+  '''
   @impl true
   def process_position_change(x, y, state) when is_integer(x) and is_integer(y) do
     if Mix.env() != :test and real_tty?() do
@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.Driver do
 
       _ ->
         Raxol.Core.Runtime.Log.warning_with_context(
-          "Unexpected output from 'stty size': #{inspect(output)}",
+          "Unexpected output from "stty size": #{inspect(output)}",
           %{}
         )
 
@@ -283,7 +283,7 @@ defmodule Raxol.Terminal.Driver do
 
   defp log_stty_error(type, reason) do
     Raxol.Core.Runtime.Log.error(
-      "Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}"
+      "Error getting terminal size via "stty size": #{type}: #{inspect(reason)}"
     )
   end
 

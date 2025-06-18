@@ -1,13 +1,13 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmark do
-  @moduledoc """
+  @moduledoc '''
   Performance benchmarking tool for visualization components.
   Provides tools to measure rendering time, memory usage, and optimization effectiveness
   for different data sizes and visualization types.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Run a comprehensive benchmark suite for visualization components.
 
   This test will:
@@ -25,7 +25,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   * `:iterations` - Number of times to run each test (default: 5)
   * `:cache_test` - Whether to test cache performance (default: true)
   * `:memory_test` - Whether to track memory usage (default: true)
-  """
+  '''
   def run_benchmark(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     output_path = Keyword.get(opts, :output_path, "benchmark_results")
@@ -70,9 +70,9 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     }
   end
 
-  @doc """
+  @doc '''
   Benchmark chart rendering performance.
-  """
+  '''
   def benchmark_charts(datasets, iterations, test_cache, test_memory) do
     Enum.map(datasets, fn {size, data} ->
       IO.puts("  Benchmarking chart with #{size} data points...")
@@ -154,9 +154,9 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     end)
   end
 
-  @doc """
+  @doc '''
   Benchmark treemap rendering performance.
-  """
+  '''
   def benchmark_treemaps(datasets, iterations, test_cache, test_memory) do
     Enum.map(datasets, fn {size, data} ->
       IO.puts("  Benchmarking treemap with #{size} nodes...")
@@ -380,7 +380,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
   defp write_results(file, chart_results, treemap_results, opts) do
     # Prepare markdown content
-    content = """
+    content = '''
     # Visualization Performance Benchmark Results
 
     **Date:** #{format_timestamp()}
@@ -413,7 +413,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     ## Conclusions
 
     - #{interpret_performance(chart_results, treemap_results)}
-    """
+    '''
 
     # Write to file
     File.write!(file, content)
@@ -446,14 +446,14 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       chart_speedup = calculate_cache_speedup(chart_results)
       treemap_speedup = calculate_cache_speedup(treemap_results)
 
-      """
+      '''
       Cache performance metrics demonstrate the effectiveness of the caching system:
 
       - **Chart Cache Speedup:** #{Float.round(chart_speedup, 2)}x faster after initial render (average)
       - **TreeMap Cache Speedup:** #{Float.round(treemap_speedup, 2)}x faster after initial render (average)
 
       This indicates that the caching system is #{evaluate_cache_effectiveness(chart_speedup, treemap_speedup)}.
-      """
+      '''
     else
       "*Cache testing disabled*"
     end
@@ -500,7 +500,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     treemap_memory = largest_treemap.memory
 
     if chart_memory && treemap_memory do
-      """
+      '''
       Memory usage metrics for the largest datasets:
 
       **Chart (#{largest_chart.size} data points):**
@@ -510,7 +510,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       **TreeMap (#{largest_treemap.size} data points, #{largest_treemap.node_count} nodes):**
       - Memory Used: #{format_bytes(treemap_memory.memory_used)}
       - GC Runs: #{treemap_memory.gc_count}
-      """
+      '''
     else
       "*Memory data collection failed*"
     end

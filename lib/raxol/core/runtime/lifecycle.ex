@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
-  @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
+  @moduledoc 'Manages the application lifecycle, including startup, shutdown, and terminal interaction.'
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -31,7 +31,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               plugin_manager_ready: false
   end
 
-  @doc """
+  @doc '''
   Starts and links a new Raxol application lifecycle manager.
 
   ## Options
@@ -43,7 +43,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:initial_commands` - A list of `Raxol.Core.Runtime.Command` structs to execute on startup.
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
     * Other options are passed to the application module's `init/1` function.
-  """
+  '''
   def start_link(app_module, options \\ []) when is_atom(app_module) do
     name_option = Keyword.get(options, :name, derive_process_name(app_module))
     GenServer.start_link(__MODULE__, {app_module, options}, name: name_option)
@@ -53,10 +53,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     Module.concat(__MODULE__, Atom.to_string(app_module))
   end
 
-  @doc """
+  @doc '''
   Stops the Raxol application lifecycle manager.
   `pid_or_name` can be the PID or the registered name of the Lifecycle GenServer.
-  """
+  '''
   def stop(pid_or_name) do
     GenServer.cast(pid_or_name, :shutdown)
   end
@@ -397,19 +397,19 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   # === Compatibility Wrappers ===
-  @doc """
+  @doc '''
   Initializes the runtime environment. (Stub for test compatibility)
-  """
+  '''
   def initialize_environment(options), do: options
 
-  @doc """
+  @doc '''
   Starts a Raxol application (compatibility wrapper).
-  """
+  '''
   def start_application(app, opts), do: start_link(app, opts)
 
-  @doc """
+  @doc '''
   Stops a Raxol application (compatibility wrapper).
-  """
+  '''
   def stop_application(val), do: stop(val)
 
   def lookup_app(app_id) do

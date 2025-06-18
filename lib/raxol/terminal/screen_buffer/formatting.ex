@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ScreenBuffer.Formatting do
-  @moduledoc """
+  @moduledoc '''
   Handles text formatting operations for the screen buffer.
-  """
+  '''
 
   def init do
     %{

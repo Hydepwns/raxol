@@ -1,17 +1,17 @@
 defmodule Raxol.Plugins.Visualization.DrawingUtils do
-  @moduledoc """
+  @moduledoc '''
   Utility functions for drawing basic shapes and text onto a cell grid.
   Used by visualization renderers.
-  """
+  '''
 
   alias Raxol.Terminal.Cell
   alias Raxol.Style
 
-  @doc """
+  @doc '''
   Draws a simple box with optional text centered inside.
   Returns a grid of cells.
   Expects bounds map: %{width: w, height: h}.
-  """
+  '''
   def draw_box_with_text(text, %{width: width, height: height} = _bounds) do
     # Create empty grid
     grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
@@ -23,9 +23,9 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     draw_text_centered(grid, div(height, 2), text)
   end
 
-  @doc """
+  @doc '''
   Draws box borders onto an existing grid.
-  """
+  '''
   def draw_box_borders(grid, y, x, width, height, style) do
     max_y = y + height - 1
     max_x = x + width - 1
@@ -75,10 +75,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     if current_y == y, do: "─", else: "│"
   end
 
-  @doc """
+  @doc '''
   Draws text centered horizontally on a specific row in the grid.
   Truncates text if it exceeds grid width.
-  """
+  '''
   def draw_text_centered(grid, y, text) do
     height = length(grid)
     width = if height > 0, do: length(List.first(grid)), else: 0
@@ -95,11 +95,11 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     end
   end
 
-  @doc """
+  @doc '''
   Draws text onto a grid at a specific coordinate.
   Truncates if text exceeds grid width.
   Uses optional style.
-  """
+  '''
   def draw_text(grid, y, x, text, style \\ Style.new()) do
     _text_length = String.length(text)
     grid_height = length(grid)
@@ -129,10 +129,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     end
   end
 
-  @doc """
+  @doc '''
   Safely puts a cell into the grid (list of lists).
   Handles out-of-bounds coordinates gracefully (no-op).
-  """
+  '''
   def put_cell(grid, y, x, cell) when is_list(grid) and y >= 0 and x >= 0 do
     if y < length(grid) do
       update_row(grid, y, x, cell)
@@ -153,10 +153,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     end
   end
 
-  @doc """
+  @doc '''
   Safely gets a cell from the grid.
   Returns nil if coordinates are out of bounds.
-  """
+  '''
   def get_cell(grid, x, y) do
     # Use Enum.fetch for lists
     case Enum.fetch(grid, y) do

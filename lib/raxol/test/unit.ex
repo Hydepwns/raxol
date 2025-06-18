@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Unit do
-  @moduledoc """
+  @moduledoc '''
   Provides utilities for unit testing Raxol components and modules.
 
   This module offers a comprehensive set of tools for:
@@ -22,7 +22,7 @@ defmodule Raxol.Test.Unit do
           assert_command_emitted(result, :submit)
         end
       end
-  """
+  '''
 
   use ExUnit.CaseTemplate
 
@@ -54,9 +54,9 @@ defmodule Raxol.Test.Unit do
     end
   end
 
-  @doc """
+  @doc '''
   Sets up a component for isolated testing with initial properties.
-  """
+  '''
   def setup_isolated_component(component, props) when is_map(props) do
     # Initialize component with test props
     {:ok, state} = component.init(props)
@@ -91,11 +91,11 @@ defmodule Raxol.Test.Unit do
     setup_isolated_component(component, %{})
   end
 
-  @doc """
+  @doc '''
   Simulates an event being sent to a component.
 
   Returns the updated state and any emitted commands.
-  """
+  '''
   def simulate_event(component, %Event{} = event) do
     # Call handle_event/3, passing empty map as opts for now
     IO.puts("Simulating event: #{inspect(event)}")
@@ -142,9 +142,9 @@ defmodule Raxol.Test.Unit do
     simulate_event(component, Raxol.Core.Events.Event.custom_event(event))
   end
 
-  @doc """
+  @doc '''
   Creates a keyboard event for testing.
-  """
+  '''
   def keyboard_event(key) when is_atom(key) do
     Event.key_event(key, :pressed)
   end
@@ -153,39 +153,39 @@ defmodule Raxol.Test.Unit do
     Event.key_event({:char, char}, :pressed)
   end
 
-  @doc """
+  @doc '''
   Creates a window event for testing.
-  """
+  '''
   def window_event(width, height, action) do
     Event.window_event(action, width, height)
   end
 
-  @doc """
+  @doc '''
   Creates a custom event for testing.
-  """
+  '''
   def custom_event(data) do
     Event.custom_event(data)
   end
 
-  @doc """
+  @doc '''
   Asserts that a component's state matches the expected state.
-  """
+  '''
   def assert_state(component, expected_state) do
     actual_state = component.state
     assert_state_match(actual_state, expected_state)
   end
 
-  @doc """
+  @doc '''
   Asserts that a command was emitted by the component.
-  """
+  '''
   def assert_command_emitted({_component, commands}, command) do
     assert command in commands,
            "Expected command #{inspect(command)} to be emitted, but got: #{inspect(commands)}"
   end
 
-  @doc """
+  @doc '''
   Asserts that a specific event was handled by the component.
-  """
+  '''
   def assert_event_handled(component, event, expected_result) do
     {updated_component, commands} = simulate_event(component, event)
 

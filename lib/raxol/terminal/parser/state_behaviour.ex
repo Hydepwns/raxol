@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Parser.StateBehaviour do
-  @moduledoc """
+  @moduledoc '''
   Defines the behaviour for parser states.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
 
