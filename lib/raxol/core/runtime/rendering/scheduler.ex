@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Rendering.Scheduler do
-  @moduledoc """
+  @moduledoc '''
   Manages the rendering schedule based on frame rate.
-  """
+  '''
 
   use GenServer
 

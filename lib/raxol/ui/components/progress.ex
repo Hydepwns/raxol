@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Progress do
-  @moduledoc """
+  @moduledoc '''
   Provides components for displaying progress, like progress bars and spinners.
-  """
+  '''
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
@@ -115,7 +115,7 @@ defmodule Raxol.UI.Components.Progress do
 
   defp render_spinner(state) do
     # Based on original spinner logic
-    frame = Enum.at(state.frames, state.frame_index, "?")
+    frame = Enum.at(state.frames, state.frame_index, "?')
 
     Raxol.View.Elements.row id: Map.get(state, :id, nil), style: state.style do
       Raxol.View.Elements.label(content: frame)
@@ -132,7 +132,7 @@ defmodule Raxol.UI.Components.Progress do
   defp render_indeterminate(state) do
     # Based on original indeterminate logic - needs state tracking for animation
     Raxol.View.Elements.label(
-      content: "[ <=> ]",
+      content: '[ <=> ]",
       id: Map.get(state, :id, nil),
       style: state.style
     )
@@ -169,7 +169,7 @@ defmodule Raxol.UI.Components.Progress do
   ]
 
   @spec spinner_types() :: map()
-  @doc """
+  @doc '''
   Returns the available spinner types.
 
   ## Returns
@@ -181,7 +181,7 @@ defmodule Raxol.UI.Components.Progress do
   ```elixir
   spinner_types = Progress.spinner_types()
   ```
-  """
+  '''
   def spinner_types do
     %{
       dots: @spinner_frames,
@@ -193,7 +193,7 @@ defmodule Raxol.UI.Components.Progress do
   end
 
   @spec bar(float(), keyword()) :: any()
-  @doc """
+  @doc '''
   Renders a simple progress bar with configurable appearance.
 
   ## Parameters
@@ -226,7 +226,7 @@ defmodule Raxol.UI.Components.Progress do
     chars: %{filled: "█", empty: "░"}
   )
   ```
-  """
+  '''
   def bar(value, opts \\ []) do
     # Ensure value is within bounds
     value = max(0.0, min(1.0, value))
@@ -288,7 +288,7 @@ defmodule Raxol.UI.Components.Progress do
   end
 
   @spec bar_with_label(float(), String.t(), keyword()) :: any()
-  @doc """
+  @doc '''
   Renders a progress bar with a label and optional percentage display.
 
   ## Parameters
@@ -320,7 +320,7 @@ defmodule Raxol.UI.Components.Progress do
     filled_style: %{bg: :cyan}
   )
   ```
-  """
+  '''
   def bar_with_label(value, label, opts \\ []) do
     # Extract additional options
     show_percentage = Keyword.get(opts, :show_percentage, true)
@@ -455,7 +455,7 @@ defmodule Raxol.UI.Components.Progress do
   end
 
   @spec spinner(String.t() | nil, integer(), keyword()) :: any()
-  @doc """
+  @doc '''
   Renders a spinner animation for indicating loading or processing.
 
   ## Parameters
@@ -492,7 +492,7 @@ defmodule Raxol.UI.Components.Progress do
     spinner_style: %{fg: :cyan}
   )
   ```
-  """
+  '''
   def spinner(message \\ nil, frame, opts \\ []) do
     # Extract options with defaults
     id = Keyword.get(opts, :id, "spinner")
@@ -537,7 +537,7 @@ defmodule Raxol.UI.Components.Progress do
   end
 
   @spec indeterminate(integer(), keyword()) :: any()
-  @doc """
+  @doc '''
   Renders an indeterminate progress bar (animated).
 
   ## Parameters
@@ -568,7 +568,7 @@ defmodule Raxol.UI.Components.Progress do
     segment_size: 8
   )
   ```
-  """
+  '''
   def indeterminate(frame, opts \\ []) do
     # Extract options with defaults
     id = Keyword.get(opts, :id, "indeterminate_progress")
@@ -654,7 +654,7 @@ defmodule Raxol.UI.Components.Progress do
   end
 
   @spec circular(float(), keyword()) :: any()
-  @doc """
+  @doc '''
   Renders a circular progress indicator.
 
   ## Parameters
@@ -681,7 +681,7 @@ defmodule Raxol.UI.Components.Progress do
     style: %{fg: :green}
   )
   ```
-  """
+  '''
   def circular(value, opts \\ []) do
     # Ensure value is within bounds
     value = max(0.0, min(1.0, value))

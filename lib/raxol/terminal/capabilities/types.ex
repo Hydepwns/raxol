@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Capabilities.Types do
-  @moduledoc """
+  @moduledoc '''
   Defines types and structures for terminal capabilities management.
-  """
+  '''
 
   @type capability :: atom()
   @type capability_value :: term()

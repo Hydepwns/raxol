@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Emulator.Output do
-  @moduledoc """
+  @moduledoc '''
   Handles output processing for the terminal emulator.
   Provides functions for output buffering, processing, and formatting.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.Parser
 
-  @doc """
+  @doc '''
   Processes output data and updates the emulator state.
-  """
+  '''
   def process_output(%EmulatorStruct{} = emulator, data) do
     updated_emulator = %{
       emulator
@@ -21,30 +21,30 @@ defmodule Raxol.Terminal.Emulator.Output do
     {:ok, updated_emulator}
   end
 
-  @doc """
+  @doc '''
   Gets the current output buffer content.
-  """
+  '''
   def get_output_buffer(%EmulatorStruct{} = emulator) do
     emulator.output_buffer
   end
 
-  @doc """
+  @doc '''
   Clears the output buffer.
-  """
+  '''
   def clear_output_buffer(%EmulatorStruct{} = emulator) do
     {:ok, %{emulator | output_buffer: ""}}
   end
 
-  @doc """
+  @doc '''
   Writes data to the output buffer.
-  """
+  '''
   def write(%EmulatorStruct{} = emulator, data) do
     {:ok, %{emulator | output_buffer: emulator.output_buffer <> data}}
   end
 
-  @doc """
+  @doc '''
   Processes the output buffer and updates the emulator state.
-  """
+  '''
   def process_buffer(%EmulatorStruct{} = emulator) do
     case Parser.parse(emulator.parser_state, emulator.output_buffer) do
       {:ok, new_state, commands} ->
@@ -61,10 +61,10 @@ defmodule Raxol.Terminal.Emulator.Output do
     end
   end
 
-  @doc """
+  @doc '''
   Writes a line to the output buffer.
   Returns {:ok, updated_emulator}.
-  """
+  '''
   @spec write_line(EmulatorStruct.t(), String.t()) :: {:ok, EmulatorStruct.t()}
   def write_line(%EmulatorStruct{} = emulator, data) when is_binary(data) do
     write(emulator, data <> "\r\n")
@@ -74,10 +74,10 @@ defmodule Raxol.Terminal.Emulator.Output do
     {:error, "Invalid line data: #{inspect(invalid_data)}"}
   end
 
-  @doc """
+  @doc '''
   Writes a control character to the output buffer.
   Returns {:ok, updated_emulator}.
-  """
+  '''
   @spec write_control(EmulatorStruct.t(), char()) :: {:ok, EmulatorStruct.t()}
   def write_control(%EmulatorStruct{} = emulator, char)
       when is_integer(char) and char in 0..31 do
@@ -88,10 +88,10 @@ defmodule Raxol.Terminal.Emulator.Output do
     {:error, "Invalid control character: #{inspect(invalid_char)}"}
   end
 
-  @doc """
+  @doc '''
   Writes an escape sequence to the output buffer.
   Returns {:ok, updated_emulator}.
-  """
+  '''
   @spec write_escape(EmulatorStruct.t(), String.t()) ::
           {:ok, EmulatorStruct.t()}
   def write_escape(%EmulatorStruct{} = emulator, sequence)

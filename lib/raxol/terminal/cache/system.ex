@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Cache.System do
-  @moduledoc """
+  @moduledoc '''
   Unified caching system for the Raxol terminal emulator.
   This module provides a centralized caching mechanism that consolidates all caching
   operations across the terminal system, including:
@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Cache.System do
   - Scroll caching
   - Clipboard caching
   - General purpose caching
-  """
+  '''
 
   use GenServer
   alias Raxol.Terminal.Cache.EvictionHelpers
@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.Cache.System do
           eviction_count: non_neg_integer()
         }
 
-  @doc """
+  @doc '''
   Starts the unified cache system.
 
   ## Options
@@ -43,25 +43,25 @@ defmodule Raxol.Terminal.Cache.System do
     * `:eviction_policy` - Cache eviction policy (:lru, :lfu, :fifo) (default: :lru)
     * `:compression_enabled` - Whether to enable compression (default: true)
     * `:namespace_configs` - Configuration for specific namespaces
-  """
+  '''
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Gets a value from the cache.
 
   ## Parameters
     * `key` - The cache key
     * `opts` - Get options
       * `:namespace` - Cache namespace (default: :general)
-  """
+  '''
   def get(key, opts \\ []) do
     namespace = Keyword.get(opts, :namespace, :general)
     GenServer.call(__MODULE__, {:get, namespace, key})
   end
 
-  @doc """
+  @doc '''
   Puts a value in the cache.
 
   ## Parameters
@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.Cache.System do
       * `:namespace` - Cache namespace (default: :general)
       * `:ttl` - Time-to-live in seconds
       * `:metadata` - Additional metadata
-  """
+  '''
   def put(key, value, opts \\ []) do
     namespace = Keyword.get(opts, :namespace, :general)
     ttl = Keyword.get(opts, :ttl)
@@ -79,47 +79,47 @@ defmodule Raxol.Terminal.Cache.System do
     GenServer.call(__MODULE__, {:put, namespace, key, value, ttl, metadata})
   end
 
-  @doc """
+  @doc '''
   Invalidates a cache entry.
 
   ## Parameters
     * `key` - The cache key
     * `opts` - Invalidate options
       * `:namespace` - Cache namespace (default: :general)
-  """
+  '''
   def invalidate(key, opts \\ []) do
     namespace = Keyword.get(opts, :namespace, :general)
     GenServer.call(__MODULE__, {:invalidate, namespace, key})
   end
 
-  @doc """
+  @doc '''
   Gets cache statistics.
 
   ## Parameters
     * `opts` - Stats options
       * `:namespace` - Cache namespace (default: :general)
-  """
+  '''
   def stats(opts \\ []) do
     namespace = Keyword.get(opts, :namespace, :general)
     GenServer.call(__MODULE__, {:stats, namespace})
   end
 
-  @doc """
+  @doc '''
   Clears the cache.
 
   ## Parameters
     * `opts` - Clear options
       * `:namespace` - Cache namespace (default: :general)
-  """
+  '''
   def clear(opts \\ []) do
     namespace = Keyword.get(opts, :namespace, :general)
     GenServer.call(__MODULE__, {:clear, namespace})
   end
 
-  @doc """
+  @doc '''
   Returns the current monotonic time in milliseconds.
   This is used for cache expiration and timing operations.
-  """
+  '''
   @spec monotonic_time() :: integer()
   def monotonic_time do
     System.monotonic_time(:millisecond)

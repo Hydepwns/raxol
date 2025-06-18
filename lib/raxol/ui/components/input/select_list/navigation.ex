@@ -1,13 +1,13 @@
 defmodule Raxol.UI.Components.Input.SelectList.Navigation do
-  @moduledoc """
+  @moduledoc '''
   Handles keyboard navigation functionality for the SelectList component.
-  """
+  '''
 
   alias Raxol.UI.Components.Input.SelectList.Pagination
 
-  @doc """
+  @doc '''
   Handles arrow up key press, moving focus up one item.
-  """
+  '''
   def handle_arrow_up(state) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -20,9 +20,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Handles arrow down key press, moving focus down one item.
-  """
+  '''
   def handle_arrow_down(state) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -35,9 +35,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Handles page up key press, moving focus up one page.
-  """
+  '''
   def handle_page_up(state) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -50,9 +50,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Handles page down key press, moving focus down one page.
-  """
+  '''
   def handle_page_down(state) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -65,9 +65,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Handles home key press, moving focus to the first item.
-  """
+  '''
   def handle_home(state) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -79,9 +79,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Handles end key press, moving focus to the last item.
-  """
+  '''
   def handle_end(state) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -93,9 +93,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Updates focus index and scroll position to ensure the focused item is visible.
-  """
+  '''
   def update_focus_and_scroll(state, new_index) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -121,10 +121,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Calculates the index of the option clicked based on the y position and current state.
   Returns the index, or -1 if out of bounds.
-  """
+  '''
   def calculate_clicked_index(y, state) do
     # Assume y is the vertical position relative to the top of the options list.
     # If there is a header/search input, y should be offset accordingly by the caller.
@@ -139,10 +139,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     end
   end
 
-  @doc """
+  @doc '''
   Recalculates scroll position to ensure the focused item is visible after a resize or visible_height change.
   Always returns a valid state map.
-  """
+  '''
   def update_scroll_position(state) do
     visible_height = state.visible_height || state.page_size
     focused_index = state.focused_index

@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Emulator.Style.Behaviour do
-  @moduledoc """
+  @moduledoc '''
   Defines the behaviour for terminal emulator style management.
   This includes handling text attributes, colors, and text formatting.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 

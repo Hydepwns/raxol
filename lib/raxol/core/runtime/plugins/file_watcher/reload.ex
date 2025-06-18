@@ -1,14 +1,14 @@
 defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
-  @moduledoc """
+  @moduledoc '''
   Handles plugin reloading functionality.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Reloads a plugin after file changes.
   Returns :ok on success or {:error, reason} on failure.
-  """
+  '''
   def reload_plugin(plugin_id, path) do
     # Verify the plugin exists and is loaded
     case Raxol.Core.Runtime.Plugins.Manager.get_plugin(plugin_id) do

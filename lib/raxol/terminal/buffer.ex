@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer do
-  @moduledoc """
+  @moduledoc '''
   Manages the terminal buffer state and operations.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.{Cell, TextFormatting, Operations}
@@ -32,10 +32,10 @@ defmodule Raxol.Terminal.Buffer do
     :damage_regions
   ]
 
-  @doc """
+  @doc '''
   Creates a new buffer with the specified dimensions.
   Raises ArgumentError if dimensions are invalid.
-  """
+  '''
   @spec new({non_neg_integer(), non_neg_integer()}) :: t()
   def new({width, height}) when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     %__MODULE__{
@@ -58,10 +58,10 @@ defmodule Raxol.Terminal.Buffer do
     raise ArgumentError, "Invalid buffer dimensions: expected {width, height} tuple, got #{inspect(invalid)}"
   end
 
-  @doc """
+  @doc '''
   Sets a cell in the buffer at the specified coordinates.
   Raises ArgumentError if coordinates or cell data are invalid.
-  """
+  '''
   @spec set_cell(t(), non_neg_integer(), non_neg_integer(), Cell.t()) :: t()
   def set_cell(buffer, x, y, cell) when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 and x < buffer.width and y < buffer.height do
     if not Cell.valid?(cell) do
@@ -83,9 +83,9 @@ defmodule Raxol.Terminal.Buffer do
     raise ArgumentError, "Invalid coordinates: expected non-negative integers, got (#{inspect(x)}, #{inspect(y)})"
   end
 
-  @doc """
+  @doc '''
   Writes data to the buffer at the current cursor position.
-  """
+  '''
   @spec write(t(), String.t(), keyword()) :: t()
   def write(buffer, data, _opts \\ []) do
     screen_buffer = to_screen_buffer(buffer)
@@ -101,18 +101,18 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
-  @doc """
+  @doc '''
   Reads data from the buffer.
-  """
+  '''
   @spec read(t(), keyword()) :: {String.t(), t()}
   def read(buffer, _opts \\ []) do
     screen_buffer = to_screen_buffer(buffer)
     {Operations.get_content(screen_buffer), buffer}
   end
 
-  @doc """
+  @doc '''
   Clears the buffer.
-  """
+  '''
   @spec clear(t(), keyword()) :: t()
   def clear(buffer, _opts \\ []) do
     screen_buffer = to_screen_buffer(buffer)
@@ -120,9 +120,9 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
-  @doc """
+  @doc '''
   Sets the cursor position.
-  """
+  '''
   @spec set_cursor_position(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_cursor_position(buffer, x, y) do
     screen_buffer = to_screen_buffer(buffer)
@@ -130,18 +130,18 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
-  @doc """
+  @doc '''
   Gets the current cursor position.
-  """
+  '''
   @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(buffer) do
     screen_buffer = to_screen_buffer(buffer)
     Raxol.Terminal.Buffer.Eraser.get_cursor_position(screen_buffer)
   end
 
-  @doc """
+  @doc '''
   Sets the scroll region.
-  """
+  '''
   @spec set_scroll_region(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_scroll_region(buffer, top, bottom) do
     screen_buffer = to_screen_buffer(buffer)
@@ -152,9 +152,9 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
-  @doc """
+  @doc '''
   Scrolls the buffer by the specified number of lines.
-  """
+  '''
   @spec scroll(t(), integer()) :: t()
   def scroll(buffer, lines) do
     screen_buffer = to_screen_buffer(buffer)
@@ -162,9 +162,9 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
-  @doc """
+  @doc '''
   Marks a region of the buffer as damaged.
-  """
+  '''
   @spec mark_damaged(
           t(),
           non_neg_integer(),
@@ -181,9 +181,9 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
-  @doc """
+  @doc '''
   Gets all damaged regions in the buffer.
-  """
+  '''
   @spec get_damage_regions(t()) :: [
           {non_neg_integer(), non_neg_integer(), non_neg_integer(),
            non_neg_integer()}
@@ -193,7 +193,7 @@ defmodule Raxol.Terminal.Buffer do
     Raxol.Terminal.Buffer.Eraser.get_damage_regions(screen_buffer)
   end
 
-  @doc """
+  @doc '''
   Adds content to the buffer at the current cursor position.
 
   ## Examples
@@ -203,7 +203,7 @@ defmodule Raxol.Terminal.Buffer do
       iex> {content, _} = Buffer.read(buffer)
       iex> content
       "Hello, World!"
-  """
+  '''
   @spec add(t(), String.t()) :: t()
   def add(buffer, content) do
     write(buffer, content)

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal buffer operations and state.
-  """
+  '''
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -66,10 +66,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:ok, state}
   end
 
-  @doc """
+  @doc '''
   Performs an atomic operation on the buffer.
   This ensures thread safety for concurrent operations.
-  """
+  '''
   def atomic_operation(pid, operation) when is_function(operation, 1) do
     GenServer.call(pid, {:atomic_operation, operation})
   end

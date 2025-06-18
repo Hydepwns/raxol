@@ -1,5 +1,5 @@
 defmodule Raxol.AccessibilityTestHelpers do
-  @moduledoc """
+  @moduledoc '''
   Test helpers for accessibility-related assertions and simulation in Raxol.
   Provides assertion helpers for screen reader announcements, contrast, keyboard navigation, and focus management.
 
@@ -18,11 +18,11 @@ defmodule Raxol.AccessibilityTestHelpers do
   use ExUnit.Case
   import Raxol.AccessibilityTestHelpers
 
-  test "button has proper contrast ratio" do
+  test 'button has proper contrast ratio' do
     assert_sufficient_contrast("#0077CC", "#FFFFFF")
   end
 
-  test "screen reader announcement is made" do
+  test 'screen reader announcement is made' do
     with_screen_reader_spy fn ->
       # Perform action that should trigger announcement
       click_button("Save")
@@ -31,7 +31,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       assert_announced("File saved successfully")
     end
   end
-  """
+  '''
 
   alias Raxol.Core.Accessibility
   alias Raxol.Style.Colors.Utilities
@@ -41,7 +41,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
   import ExUnit.Assertions
 
-  @doc """
+  @doc '''
   Run a test with a spy on screen reader announcements.
 
   This function sets up a spy to capture screen reader announcements
@@ -57,7 +57,7 @@ defmodule Raxol.AccessibilityTestHelpers do
         # Assert announcement
         assert_announced("File saved successfully")
       end)
-  """
+  '''
   def with_screen_reader_spy(pid, fun)
       when is_pid(pid) and is_function(fun, 0) do
     # Initialize announcement spy
@@ -87,7 +87,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     raise "with_screen_reader_spy/2 must be called with a pid and a function. Example: with_screen_reader_spy(user_preferences_pid, fn -> ... end)"
   end
 
-  @doc """
+  @doc '''
   Assert that a specific announcement was made to the screen reader.
 
   ## Parameters
@@ -105,7 +105,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       assert_announced("File saved")
 
       assert_announced(~r/File .* saved/, exact: false)
-  """
+  '''
   def assert_announced(expected, opts \\ []) do
     announcements = Process.get(:accessibility_test_announcements, [])
     exact = Keyword.get(opts, :exact, false)
@@ -141,7 +141,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Assert that no announcements were made to the screen reader.
 
   ## Parameters
@@ -155,7 +155,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   ## Examples
 
       assert_no_announcements()
-  """
+  '''
   def assert_no_announcements(opts \\ []) do
     announcements = Process.get(:accessibility_test_announcements, [])
     context = Keyword.get(opts, :context, "")
@@ -167,7 +167,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Assert that a color combination has sufficient contrast for accessibility.
 
   ## Parameters
@@ -187,7 +187,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       assert_sufficient_contrast("#000000", "#FFFFFF")
 
       assert_sufficient_contrast("#777777", "#FFFFFF", :aaa, :large)
-  """
+  '''
   def assert_sufficient_contrast(
         foreground,
         background,
@@ -216,7 +216,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Simulate a keyboard navigation sequence.
 
   This function simulates pressing the tab key to navigate through focusable elements.
@@ -238,7 +238,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       simulate_keyboard_navigation(2, shift: true)
 
       simulate_keyboard_navigation(1, starting_element: "search_field")
-  """
+  '''
   def simulate_keyboard_navigation(count, opts \\ []) do
     # Get options
     shift = Keyword.get(opts, :shift, false)
@@ -269,7 +269,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     end)
   end
 
-  @doc """
+  @doc '''
   Assert that the focus is on a specific element.
 
   ## Parameters
@@ -284,7 +284,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   ## Examples
 
       assert_focus_on("search_button")
-  """
+  '''
   def assert_focus_on(expected, opts \\ []) do
     current = FocusManager.get_current_focus()
 
@@ -297,7 +297,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Test keyboard shortcut handling.
 
   This function simulates pressing a keyboard shortcut and verifies that
@@ -318,7 +318,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       test_keyboard_shortcut("Ctrl+S")
 
       test_keyboard_shortcut("Ctrl+F", in_context: :editor)
-  """
+  '''
   def test_keyboard_shortcut(shortcut, opts \\ []) do
     # Get options
     context = Keyword.get(opts, :context, "")
@@ -371,7 +371,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Test high contrast mode.
 
   This function temporarily enables high contrast mode, runs the provided
@@ -383,7 +383,7 @@ defmodule Raxol.AccessibilityTestHelpers do
         # Test how elements look in high contrast mode
         assert color_of("button") == "#FFFFFF"
       end
-  """
+  '''
   def with_high_contrast(fun) do
     # Store current setting
     previous = Accessibility.get_option(:high_contrast, nil)
@@ -400,7 +400,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Test reduced motion mode.
 
   This function temporarily enables reduced motion mode, runs the provided
@@ -412,7 +412,7 @@ defmodule Raxol.AccessibilityTestHelpers do
         # Test animations with reduced motion
         refute animation_running?("focus_ring", :pulse)
       end
-  """
+  '''
   def with_reduced_motion(fun_or_pid, fun \\ nil) do
     case {fun_or_pid, fun} do
       {pid, fun} when is_pid(pid) and is_function(fun, 0) ->
@@ -437,9 +437,9 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Spy handler for screen reader announcements.
-  """
+  '''
   def handle_announcement_spy({:accessibility_announce, message}) do
     # Record the announcement
     announcements = Process.get(:accessibility_test_announcements, [])
@@ -449,9 +449,9 @@ defmodule Raxol.AccessibilityTestHelpers do
     :ok
   end
 
-  @doc """
+  @doc '''
   Spy handler for shortcut execution.
-  """
+  '''
   def handle_shortcut_spy({:shortcut_executed, shortcut_id, _shortcut}) do
     # Record execution
     Process.put(:shortcut_action_executed, true)

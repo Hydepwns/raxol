@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour do
-  @moduledoc """
+  @moduledoc '''
   Defines the behaviour for plugin command registration.
 
   This behaviour is responsible for:
@@ -7,7 +7,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour do
   - Managing command lookups
   - Handling command unregistration
   - Maintaining command metadata
-  """
+  '''
 
   @type command_name :: String.t()
   @type namespace :: atom() | nil
@@ -15,15 +15,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour do
   @type command_entry :: {module(), atom(), integer() | nil}
   @type table_name :: atom()
 
-  @doc """
+  @doc '''
   Creates a new command registry table.
   Returns the name of the created table.
-  """
+  '''
   @callback new() :: table_name()
 
-  @doc """
+  @doc '''
   Registers a command provided by a plugin.
-  """
+  '''
   @callback register_command(
               table_name(),
               namespace(),
@@ -33,27 +33,27 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour do
               integer() | nil
             ) :: :ok | {:error, :already_registered}
 
-  @doc """
+  @doc '''
   Unregisters a command.
-  """
+  '''
   @callback unregister_command(
               table_name(),
               namespace(),
               command_name()
             ) :: :ok
 
-  @doc """
+  @doc '''
   Looks up the handler for a command name and namespace.
-  """
+  '''
   @callback lookup_command(
               table_name(),
               namespace(),
               command_name()
             ) :: {:ok, command_entry()} | {:error, :not_found}
 
-  @doc """
+  @doc '''
   Unregisters all commands associated with a specific module.
-  """
+  '''
   @callback unregister_commands_by_module(
               table_name(),
               module()

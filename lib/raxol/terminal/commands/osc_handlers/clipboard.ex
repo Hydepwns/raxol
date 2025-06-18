@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
-  @moduledoc """
+  @moduledoc '''
   Handles clipboard-related OSC commands.
 
   This handler manages clipboard operations, including:
@@ -11,19 +11,19 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
 
   - OSC 9: Set/Query clipboard content
   - OSC 52: Set/Query clipboard or selection content
-  """
+  '''
 
   alias Raxol.Terminal.{Emulator, Clipboard}
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Handles OSC 9 command to set/query clipboard content.
-  """
+  '''
   @spec handle_9(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_9(emulator, data) do
     case data do
-      "?" ->
+      "?' ->
         case Clipboard.get_content(emulator.clipboard) do
           {:ok, content} ->
             response = format_clipboard_response(9, content)
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.warning(
-              "Failed to get clipboard content: #{inspect(reason)}"
+              'Failed to get clipboard content: #{inspect(reason)}"
             )
 
             {:error, reason, emulator}
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
     end
   end
 
-  @doc """
+  @doc '''
   Handles OSC 52 command to set/query clipboard or selection content.
 
   ## Command Format
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
   Where:
   - c: clipboard
   - s: selection
-  """
+  '''
   @spec handle_52(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_52(emulator, data) do
@@ -137,13 +137,13 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
 
   defp parse_command(data) do
     case String.split(data, ";") do
-      ["c", "?"] ->
+      ["c", "?'] ->
         {:query, :clipboard}
 
-      ["s", "?"] ->
+      ['s", "?'] ->
         {:query, :selection}
 
-      ["c" | rest] ->
+      ['c" | rest] ->
         {:set, :clipboard, Enum.join(rest, ";")}
 
       ["s" | rest] ->

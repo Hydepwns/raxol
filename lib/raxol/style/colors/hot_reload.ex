@@ -1,11 +1,11 @@
 defmodule Raxol.Style.Colors.HotReload do
-  @moduledoc """
+  @moduledoc '''
   Provides hot-reloading capabilities for color themes.
 
   This module watches for changes to theme files and automatically
   reloads them when they change. It also provides a way to subscribe
   to theme change events.
-  """
+  '''
 
   use GenServer
 
@@ -26,31 +26,31 @@ defmodule Raxol.Style.Colors.HotReload do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Subscribe to theme change events.
 
   ## Examples
 
       iex> HotReload.subscribe()
       :ok
-  """
+  '''
   def subscribe do
     GenServer.call(__MODULE__, :subscribe)
   end
 
-  @doc """
+  @doc '''
   Unsubscribe from theme change events.
 
   ## Examples
 
       iex> HotReload.unsubscribe()
       :ok
-  """
+  '''
   def unsubscribe do
     GenServer.call(__MODULE__, :unsubscribe)
   end
 
-  @doc """
+  @doc '''
   Add a path to watch for theme changes.
 
   ## Parameters
@@ -61,7 +61,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
       iex> HotReload.watch_path("/path/to/themes")
       :ok
-  """
+  '''
   def watch_path(path) do
     GenServer.call(__MODULE__, {:watch_path, path})
   end

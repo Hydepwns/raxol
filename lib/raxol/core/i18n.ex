@@ -1,5 +1,5 @@
 defmodule Raxol.Core.I18n do
-  @moduledoc """
+  @moduledoc '''
   Internationalization framework for Raxol terminal UI applications.
 
   This module provides comprehensive internationalization (i18n) support:
@@ -31,14 +31,14 @@ defmodule Raxol.Core.I18n do
   # Check if the current locale is RTL
   is_rtl = I18n.rtl?()
   ```
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.Accessibility
 
-  @doc """
+  @doc '''
   Initialize the internationalization system.
 
   ## Options
@@ -55,7 +55,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.init(default_locale: "fr", available_locales: ["en", "fr", "es"])
       :ok
-  """
+  '''
   def init(opts \\ []) do
     # Get configuration
     default_locale = Keyword.get(opts, :default_locale, "en")
@@ -106,7 +106,7 @@ defmodule Raxol.Core.I18n do
     end
   end
 
-  @doc """
+  @doc '''
   Get a translated string for the current locale.
 
   ## Parameters
@@ -130,7 +130,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.t("missing_key", %{}, default: "Missing translation")
       "Missing translation"
-  """
+  '''
   def t(key, bindings \\ %{}, opts \\ []) do
     # Get locale (from options or current)
     locale = Keyword.get(opts, :locale) || Process.get(:i18n_current_locale)
@@ -168,7 +168,7 @@ defmodule Raxol.Core.I18n do
     apply_bindings(translation, bindings)
   end
 
-  @doc """
+  @doc '''
   Check if the current locale is right-to-left (RTL).
 
   ## Options
@@ -182,7 +182,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.rtl?(locale: "ar")
       true
-  """
+  '''
   def rtl?(opts \\ []) do
     # Get locale (from options or current)
     locale = Keyword.get(opts, :locale) || Process.get(:i18n_current_locale)
@@ -194,7 +194,7 @@ defmodule Raxol.Core.I18n do
     Enum.member?(rtl_locales, locale)
   end
 
-  @doc """
+  @doc '''
   Set the current locale.
 
   ## Parameters
@@ -208,7 +208,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.set_locale("invalid")
       {:error, :invalid_locale}
-  """
+  '''
   def set_locale(locale) do
     # Get config
     config = Process.get(:i18n_config)
@@ -239,32 +239,32 @@ defmodule Raxol.Core.I18n do
     end
   end
 
-  @doc """
+  @doc '''
   Get the current locale.
 
   ## Examples
 
       iex> I18n.get_locale()
       "en"
-  """
+  '''
   def get_locale do
     Process.get(:i18n_current_locale)
   end
 
-  @doc """
+  @doc '''
   Get a list of available locales.
 
   ## Examples
 
       iex> I18n.available_locales()
       ["en", "fr", "es"]
-  """
+  '''
   def available_locales do
     config = Process.get(:i18n_config)
     Map.get(config, :available_locales, ["en"])
   end
 
-  @doc """
+  @doc '''
   Format a screen reader announcement in the current locale.
 
   This integrates with the accessibility module to provide
@@ -283,7 +283,7 @@ defmodule Raxol.Core.I18n do
 
       iex> I18n.announce("item_selected", %{item: "Document"})
       :ok
-  """
+  '''
   def announce(key, bindings \\ %{}, opts \\ []) do
     # Get translated message
     message = t(key, bindings, opts)
@@ -292,7 +292,7 @@ defmodule Raxol.Core.I18n do
     _ = Accessibility.announce(message)
   end
 
-  @doc """
+  @doc '''
   Register translations for a specific locale.
 
   ## Parameters
@@ -307,7 +307,7 @@ defmodule Raxol.Core.I18n do
       ...>   "hello_name" => "Bonjour, {{name}}!"
       ...> })
       :ok
-  """
+  '''
   def register_translations(locale, translations) do
     # Get existing translations
     current_translations = get_translations(locale)
@@ -326,9 +326,9 @@ defmodule Raxol.Core.I18n do
     :ok
   end
 
-  @doc """
+  @doc '''
   Handle locale changed events.
-  """
+  '''
   def handle_locale_changed({:locale_changed, old_locale, new_locale}) do
     # This event handler can be used for additional actions when locale changes
     # For example, updating screen orientation for RTL languages

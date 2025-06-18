@@ -1,14 +1,14 @@
 defmodule Raxol.Animation.Interpolate do
-  @moduledoc """
+  @moduledoc '''
   Provides interpolation functions for different data types.
-  """
+  '''
 
   alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.HSL
 
-  @doc """
+  @doc '''
   Interpolates between two values based on progress `t` (0.0 to 1.0).
-  """
+  '''
   def value(from, to, t) when is_number(from) and is_number(to) do
     from + (to - from) * t
   end

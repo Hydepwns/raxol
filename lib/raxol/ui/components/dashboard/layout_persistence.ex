@@ -1,19 +1,19 @@
 defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
-  @moduledoc """
+  @moduledoc '''
   Handles saving and loading dashboard widget layouts to disk.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   # User-specific config dir
   @layout_file Path.expand("~/.raxol/dashboard_layout.bin")
 
-  @doc """
+  @doc '''
   Saves the current widget layout (list of widget configs) to a file.
 
   Only saves fields essential for reconstructing the layout and widget state:
   `:id`, `:type`, `:title`, `:grid_spec`, `:component_opts`, `:data`.
-  """
+  '''
   @spec save_layout(list(map())) :: :ok | {:error, term()}
   def save_layout(widgets) when is_list(widgets) do
     layout_file = @layout_file
@@ -54,10 +54,10 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
     end
   end
 
-  @doc """
+  @doc '''
   Loads the widget layout from the file.
   Returns the list of widget configurations `[map()]` or `nil` if load fails or file doesn't exist.
-  """
+  '''
   @spec load_layout() :: list(map()) | nil
   def load_layout do
     layout_file = @layout_file

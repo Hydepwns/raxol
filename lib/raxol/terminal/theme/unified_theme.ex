@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Theme.UnifiedTheme do
-  @moduledoc """
+  @moduledoc '''
   Unified theme system for the Raxol terminal emulator.
   Handles theme management, preview, switching, and customization.
-  """
+  '''
 
   use GenServer
   require Logger
@@ -28,65 +28,65 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Loads a theme from a file or directory.
-  """
+  '''
   def load_theme(path, opts \\ []) do
     GenServer.call(__MODULE__, {:load_theme, path, opts})
   end
 
-  @doc """
+  @doc '''
   Unloads a theme by ID.
-  """
+  '''
   def unload_theme(theme_id) do
     GenServer.call(__MODULE__, {:unload_theme, theme_id})
   end
 
-  @doc """
+  @doc '''
   Gets the state of a theme.
-  """
+  '''
   def get_theme_state(theme_id) do
     GenServer.call(__MODULE__, {:get_theme_state, theme_id})
   end
 
-  @doc """
+  @doc '''
   Gets all loaded themes.
-  """
+  '''
   def get_themes(opts \\ []) do
     GenServer.call(__MODULE__, {:get_themes, opts})
   end
 
-  @doc """
+  @doc '''
   Updates a theme's configuration.
-  """
+  '''
   def update_theme_config(theme_id, config) do
     GenServer.call(__MODULE__, {:update_theme_config, theme_id, config})
   end
 
-  @doc """
+  @doc '''
   Applies a theme to the terminal.
-  """
+  '''
   def apply_theme(theme_id) do
     GenServer.call(__MODULE__, {:apply_theme, theme_id})
   end
 
-  @doc """
+  @doc '''
   Previews a theme without applying it.
-  """
+  '''
   def preview_theme(theme_id) do
     GenServer.call(__MODULE__, {:preview_theme, theme_id})
   end
 
-  @doc """
+  @doc '''
   Exports a theme to a file.
-  """
+  '''
   def export_theme(theme_id, path) do
     GenServer.call(__MODULE__, {:export_theme, theme_id, path})
   end
 
-  @doc """
+  @doc '''
   Imports a theme from a file.
-  """
+  '''
   def import_theme(path) do
     GenServer.call(__MODULE__, {:import_theme, path})
   end

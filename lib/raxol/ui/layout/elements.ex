@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Layout.Elements do
-  @moduledoc """
+  @moduledoc '''
   Handles measurement of basic UI elements like text, labels, boxes, and checkboxes.
-  """
+  '''
 
   def measure(:text, attrs_map) do
     text = Map.get(attrs_map, :text, "")

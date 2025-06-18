@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Emulator.Struct do
-  @moduledoc """
+  @moduledoc '''
   Provides terminal emulator structure and related functionality.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
 
@@ -104,9 +104,9 @@ defmodule Raxol.Terminal.Emulator.Struct do
           parser_state: term()
         }
 
-  @doc """
+  @doc '''
   Creates a new terminal emulator with the given options.
-  """
+  '''
   @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
   def new(width, height, opts \\ []) do
     active_buffer = ScreenBuffer.new(width, height)
@@ -119,17 +119,17 @@ defmodule Raxol.Terminal.Emulator.Struct do
     )
   end
 
-  @doc """
+  @doc '''
   Gets the active buffer from the emulator.
-  """
+  '''
   @spec get_active_buffer(t()) :: ScreenBuffer.t()
   def get_active_buffer(emulator) do
     emulator.active_buffer
   end
 
-  @doc """
+  @doc '''
   Checks if scrolling is needed and performs it if necessary.
-  """
+  '''
   @spec maybe_scroll(t()) :: t()
   def maybe_scroll(emulator) do
     if needs_scroll?(emulator) do
@@ -139,17 +139,17 @@ defmodule Raxol.Terminal.Emulator.Struct do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the cursor position from the emulator.
-  """
+  '''
   @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(emulator) do
     emulator.cursor.position
   end
 
-  @doc """
+  @doc '''
   Processes input for the emulator.
-  """
+  '''
   @spec process_input(t(), String.t()) :: {t(), String.t()}
   def process_input(emulator, input) do
     # For now, just return the emulator unchanged and the input as output
@@ -157,9 +157,9 @@ defmodule Raxol.Terminal.Emulator.Struct do
     {emulator, input}
   end
 
-  @doc """
+  @doc '''
   Updates the active buffer in the emulator.
-  """
+  '''
   @spec update_active_buffer(t(), ScreenBuffer.t()) :: t()
   def update_active_buffer(emulator, buffer) do
     %{emulator | active_buffer: buffer}

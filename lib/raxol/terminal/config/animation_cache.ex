@@ -1,27 +1,27 @@
 defmodule Raxol.Terminal.Config.AnimationCache do
-  @moduledoc """
+  @moduledoc '''
   Manages caching for terminal animations using the unified caching system.
-  """
+  '''
 
   alias Raxol.Terminal.Cache.System
 
   # Module attributes for preload dir
   @preload_dir "priv/animations"
 
-  @doc """
+  @doc '''
   Initializes the animation cache.
-  """
+  '''
   def init_animation_cache do
     # The unified cache system is already initialized by the application
     :ok
   end
 
-  @doc """
+  @doc '''
   Gets a cached animation.
 
   ## Parameters
     * `animation_path` - Path to the animation file
-  """
+  '''
   def get_cached_animation(animation_path) do
     case animation_path do
       nil -> nil
@@ -29,13 +29,13 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     end
   end
 
-  @doc """
+  @doc '''
   Caches an animation.
 
   ## Parameters
     * `animation_path` - Path to the animation file
     * `animation_type` - Type of animation (:gif, :video, :shader, :particle)
-  """
+  '''
   def cache_animation(animation_path, animation_type) do
     case File.read(animation_path) do
       {:ok, animation_data} ->
@@ -81,19 +81,19 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     end
   end
 
-  @doc """
+  @doc '''
   Decompresses an animation.
 
   ## Parameters
     * `compressed_data` - Compressed animation data
-  """
+  '''
   def decompress_animation(compressed_data) do
     :zlib.uncompress(compressed_data)
   end
 
-  @doc """
+  @doc '''
   Gets the current cache size.
-  """
+  '''
   def get_cache_size do
     case System.stats(namespace: :animation) do
       {:ok, stats} -> stats.size
@@ -101,9 +101,9 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     end
   end
 
-  @doc """
+  @doc '''
   Preloads animations from the preload directory.
-  """
+  '''
   def preload_animations do
     preload_path = Path.expand(@preload_dir)
 
@@ -121,25 +121,25 @@ defmodule Raxol.Terminal.Config.AnimationCache do
 
       {:error, reason} ->
         IO.warn(
-          "Could not create preload directory '#{preload_path}': #{inspect(reason)}"
+          "Could not create preload directory "#{preload_path}": #{inspect(reason)}"
         )
 
         :ok
     end
   end
 
-  @doc """
+  @doc '''
   Clears the animation cache.
-  """
+  '''
   def clear_animation_cache do
     System.clear(namespace: :animation)
     IO.puts("Animation cache cleared")
     :ok
   end
 
-  @doc """
+  @doc '''
   Gets animation cache statistics.
-  """
+  '''
   def get_animation_cache_stats do
     case System.stats(namespace: :animation) do
       {:ok, stats} ->
@@ -173,12 +173,12 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     end
   end
 
-  @doc """
+  @doc '''
   Preloads a single animation.
 
   ## Parameters
     * `animation_path` - Path to the animation file
-  """
+  '''
   def preload_animation(animation_path) do
     if File.exists?(animation_path) do
       animation_type = determine_animation_type(animation_path)

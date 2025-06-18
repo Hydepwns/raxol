@@ -5,14 +5,14 @@ defmodule Raxol.Repo do
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Initializes the repository.
 
   ## Overrides
 
   This function is called when the repo is started. It adds improved logging
   around database connection events.
-  """
+  '''
   def init(_, config) do
     # Apply runtime configuration if needed
     config = apply_runtime_config(config)
@@ -46,7 +46,7 @@ defmodule Raxol.Repo do
     end
   end
 
-  @doc """
+  @doc '''
   Executes raw SQL query with logging.
 
   This adds better error handling and logging around raw SQL queries.
@@ -55,7 +55,7 @@ defmodule Raxol.Repo do
 
   * `{:ok, result}` - on success
   * `{:error, exception}` - on failure
-  """
+  '''
   def custom_query(sql, params \\ [], opts \\ []) do
     Raxol.Core.Runtime.Log.debug(
       "Executing SQL: #{sql}, params: #{inspect(params)}"
@@ -94,11 +94,11 @@ defmodule Raxol.Repo do
     end
   end
 
-  @doc """
+  @doc '''
   Executes raw SQL query with logging, raising on errors.
 
   This adds better error handling and logging around raw SQL queries.
-  """
+  '''
   def custom_query!(sql, params \\ [], opts \\ []) do
     Raxol.Core.Runtime.Log.debug(
       "Executing SQL: #{sql}, params: #{inspect(params)}"

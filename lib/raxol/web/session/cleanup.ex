@@ -1,27 +1,27 @@
 defmodule Raxol.Web.Session.Cleanup do
-  @moduledoc """
+  @moduledoc '''
   Handles session cleanup for Raxol applications.
 
   This module provides functionality to clean up expired and inactive sessions,
   ensuring efficient resource usage and data hygiene.
-  """
+  '''
 
   import Ecto.Query
   alias Raxol.Web.Session.{Storage, Session}
   alias Raxol.Repo
 
-  @doc """
+  @doc '''
   Initialize the session cleanup system.
-  """
+  '''
   def init do
     # Clean up any expired sessions
     _ = cleanup_expired_sessions()
     :ok
   end
 
-  @doc """
+  @doc '''
   Clean up expired sessions.
-  """
+  '''
   def cleanup_expired_sessions do
     # Get current time
     now = DateTime.utc_now()
@@ -50,9 +50,9 @@ defmodule Raxol.Web.Session.Cleanup do
     end
   end
 
-  @doc """
+  @doc '''
   Clean up old sessions.
-  """
+  '''
   def cleanup_old_sessions(days \\ 30) do
     # Get cutoff date
     cutoff = DateTime.add(DateTime.utc_now(), -days * 24 * 60 * 60, :second)
@@ -68,9 +68,9 @@ defmodule Raxol.Web.Session.Cleanup do
     Repo.delete_all(query)
   end
 
-  @doc """
+  @doc '''
   Clean up orphaned sessions.
-  """
+  '''
   def cleanup_orphaned_sessions do
     # Get all sessions from database
     sessions = Repo.all(Session)

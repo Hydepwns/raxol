@@ -1,10 +1,10 @@
 defmodule Raxol.Animation.StateManager do
-  @moduledoc """
+  @moduledoc '''
   Manages the state for the Raxol Animation Framework.
 
   This module encapsulates the storage and retrieval of animation settings,
   definitions, and active instances, currently using the process dictionary.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -12,9 +12,9 @@ defmodule Raxol.Animation.StateManager do
   @animations_key :animation_framework_animations
   @active_animations_key :animation_framework_active_animations
 
-  @doc """
+  @doc '''
   Initializes the animation state storage.
-  """
+  '''
   def init(settings) do
     Process.put(@settings_key, settings)
     Process.put(@animations_key, %{})
@@ -22,33 +22,33 @@ defmodule Raxol.Animation.StateManager do
     :ok
   end
 
-  @doc """
+  @doc '''
   Retrieves the animation framework settings.
-  """
+  '''
   def get_settings do
     Process.get(@settings_key, %{})
   end
 
-  @doc """
+  @doc '''
   Stores an animation definition.
-  """
+  '''
   def put_animation(animation) do
     animations = Process.get(@animations_key, %{})
     updated_animations = Map.put(animations, animation.name, animation)
     Process.put(@animations_key, updated_animations)
   end
 
-  @doc """
+  @doc '''
   Retrieves an animation definition by name.
-  """
+  '''
   def get_animation(animation_name) do
     Process.get(@animations_key, %{})
     |> Map.get(animation_name)
   end
 
-  @doc """
+  @doc '''
   Stores an active animation instance for a given element.
-  """
+  '''
   def put_active_animation(element_id, animation_name, instance) do
     active_animations = Process.get(@active_animations_key, %{})
     element_animations = Map.get(active_animations, element_id, %{})
@@ -62,16 +62,16 @@ defmodule Raxol.Animation.StateManager do
     Process.put(@active_animations_key, updated_active_animations)
   end
 
-  @doc """
+  @doc '''
   Retrieves all active animations. Returns a map of `{element_id, %{animation_name => instance}}`.
-  """
+  '''
   def get_active_animations do
     Process.get(@active_animations_key, %{})
   end
 
-  @doc """
+  @doc '''
   Removes a completed or stopped animation instance for a specific element.
-  """
+  '''
   def remove_active_animation(element_id, animation_name) do
     active_animations = get_active_animations()
     element_animations = Map.get(active_animations, element_id, %{})
@@ -88,9 +88,9 @@ defmodule Raxol.Animation.StateManager do
     :ok
   end
 
-  @doc """
+  @doc '''
   Clears all animation state (used primarily for testing or reset).
-  """
+  '''
   def clear_all do
     Process.delete(@settings_key)
     Process.delete(@animations_key)

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.BufferManager do
-  @moduledoc """
+  @moduledoc '''
   Manages buffer operations and tab stops for the terminal.
-  """
+  '''
 
   defstruct tab_stops: MapSet.new()
 
@@ -9,16 +9,16 @@ defmodule Raxol.Terminal.BufferManager do
           tab_stops: MapSet.t()
         }
 
-  @doc """
+  @doc '''
   Creates a new BufferManager struct.
-  """
+  '''
   def new do
     %__MODULE__{}
   end
 
-  @doc """
+  @doc '''
   Gets the default tab stops.
-  """
+  '''
   def default_tab_stops(%__MODULE__{} = state) do
     state.tab_stops
   end

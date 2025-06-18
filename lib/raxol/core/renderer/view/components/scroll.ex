@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Renderer.View.Components.Scroll do
-  @moduledoc """
+  @moduledoc '''
   Handles scrollable views for the Raxol view system.
   Provides viewport management, scrollbar rendering, and content scrolling.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Creates a new scrollable view.
 
   ## Options
@@ -18,7 +18,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
 
       Scroll.new(content, viewport: {80, 24})
       Scroll.new(content, offset: {0, 10}, scrollbars: true)
-  """
+  '''
   def new(content, opts \\ []) do
     %{
       type: :scroll,
@@ -31,9 +31,9 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     }
   end
 
-  @doc """
+  @doc '''
   Calculates the layout of a scrollable view.
-  """
+  '''
   def calculate_layout(scroll, available_size) do
     {viewport_width, viewport_height} = scroll.viewport
     {offset_x, offset_y} = scroll.offset
@@ -140,9 +140,9 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     content
   end
 
-  @doc """
+  @doc '''
   Updates the scroll offset of a view.
-  """
+  '''
   def update_offset(scroll, {new_x, new_y}) do
     # Validate and constrain the new offset
     {content_width, content_height} =

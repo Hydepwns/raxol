@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Performance.Analyzer do
-  @moduledoc """
+  @moduledoc '''
   Analyzes performance metrics and generates insights for AI analysis.
 
   This module:
@@ -20,9 +20,9 @@ defmodule Raxol.Core.Performance.Analyzer do
   # Get AI-ready data
   ai_data = Analyzer.prepare_ai_data(analysis)
   ```
-  """
+  '''
 
-  @doc """
+  @doc '''
   Analyzes performance metrics and generates insights.
 
   ## Parameters
@@ -55,7 +55,7 @@ defmodule Raxol.Core.Performance.Analyzer do
         patterns: %{...},
         trends: %{...}
       }
-  """
+  '''
   def analyze(metrics) do
     %{
       metrics: metrics,
@@ -67,7 +67,7 @@ defmodule Raxol.Core.Performance.Analyzer do
     }
   end
 
-  @doc """
+  @doc '''
   Prepares performance data for AI analysis.
 
   ## Parameters
@@ -89,7 +89,7 @@ defmodule Raxol.Core.Performance.Analyzer do
       iex> ai_data = Analyzer.prepare_ai_data(analysis)
       iex> Map.has_key?(ai_data, :metrics)
       true
-  """
+  '''
   def prepare_ai_data(analysis) do
     %{
       metrics: analysis.metrics,

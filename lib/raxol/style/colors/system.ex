@@ -1,5 +1,5 @@
 defmodule Raxol.Style.Colors.System do
-  @moduledoc """
+  @moduledoc '''
   Core color system for the Raxol terminal emulator.
 
   This module provides a robust color system that:
@@ -34,7 +34,7 @@ defmodule Raxol.Style.Colors.System do
   # Apply a theme
   ColorSystem.apply_theme(:ocean)
   ```
-  """
+  '''
 
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Core.Events.Manager, as: EventManager
@@ -47,7 +47,7 @@ defmodule Raxol.Style.Colors.System do
 
   @default_theme :default
 
-  @doc """
+  @doc '''
   Initialize the color system.
 
   This sets up the default themes, registers event handlers for accessibility changes,
@@ -65,7 +65,7 @@ defmodule Raxol.Style.Colors.System do
 
       iex> ColorSystem.init(theme: :dark)
       :ok
-  """
+  '''
   def init(opts \\ []) do
     # Get the initial theme (as an atom or struct)
     initial_theme_id = Keyword.get(opts, :theme, @default_theme)
@@ -102,7 +102,7 @@ defmodule Raxol.Style.Colors.System do
     :ok
   end
 
-  @doc """
+  @doc '''
   Get a color from the current theme.
 
   This function respects the current accessibility settings, automatically
@@ -120,7 +120,7 @@ defmodule Raxol.Style.Colors.System do
 
       iex> ColorSystem.get_color(:primary, :hover)
       "#0088DD"
-  """
+  '''
   def get_color(color_name, variant \\ :base) do
     current_theme = get_current_theme()
     # Always check for the variant tuple key first
@@ -139,7 +139,7 @@ defmodule Raxol.Style.Colors.System do
     end
   end
 
-  @doc """
+  @doc '''
   Register a custom theme.
 
   ## Parameters
@@ -156,13 +156,13 @@ defmodule Raxol.Style.Colors.System do
       ...>   accent: "#FF9900"
       ...> })
       :ok
-  """
+  '''
   def register_theme(theme_attrs) do
     theme = Theme.new(theme_attrs)
     Theme.register(theme)
   end
 
-  @doc """
+  @doc '''
   Applies a theme to the color system.
 
   ## Parameters
@@ -175,7 +175,7 @@ defmodule Raxol.Style.Colors.System do
 
   - `:ok` on success
   - `{:error, reason}` on failure
-  """
+  '''
   def apply_theme(theme_name, opts \\ []) do
     high_contrast =
       Keyword.get(
@@ -195,9 +195,9 @@ defmodule Raxol.Style.Colors.System do
     :ok
   end
 
-  @doc """
+  @doc '''
   Handle high contrast mode changes from the accessibility module.
-  """
+  '''
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
     # Update high contrast setting
     Process.put(:color_system_high_contrast, enabled)
@@ -262,11 +262,11 @@ defmodule Raxol.Style.Colors.System do
     Process.get(:color_system_current_theme, @default_theme)
   end
 
-  @doc """
+  @doc '''
   Get a UI color by role (e.g., :primary_button) from the current theme.
   Resolves the role using the theme's ui_mappings, then fetches the color.
   Returns nil if the role or color is not found.
-  """
+  '''
   @spec get_ui_color(atom()) :: any()
   def get_ui_color(ui_role) do
     theme = get_current_theme()
@@ -283,9 +283,9 @@ defmodule Raxol.Style.Colors.System do
     end
   end
 
-  @doc """
+  @doc '''
   Get all UI colors for the current theme as a map of role => color.
-  """
+  '''
   @spec get_all_ui_colors() :: map()
   def get_all_ui_colors() do
     theme = get_current_theme()
@@ -297,9 +297,9 @@ defmodule Raxol.Style.Colors.System do
     end
   end
 
-  @doc """
+  @doc '''
   Get all UI colors for a specific theme as a map of role => color.
-  """
+  '''
   def get_all_ui_colors(theme) do
     (theme.ui_mappings || %{})
     |> Enum.map(fn {role, color_name} ->

@@ -1,7 +1,7 @@
 defmodule Raxol.System.EnvironmentAdapterImpl do
-  @moduledoc """
+  @moduledoc '''
   Concrete implementation of EnvironmentAdapterBehaviour using Elixir's System module.
-  """
+  '''
 
   @behaviour Raxol.System.EnvironmentAdapterBehaviour
 

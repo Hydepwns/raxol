@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Tab.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal tabs and their associated sessions.
   This module handles:
   - Creation, deletion, and switching of terminal tabs
   - Tab state and configuration management
   - Tab stop management for terminal operations
-  """
+  '''
 
   use GenServer
   require Logger
@@ -40,15 +40,15 @@ defmodule Raxol.Terminal.Tab.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Creates a new tab manager instance.
-  """
+  '''
   @spec new() :: t()
   def new do
     %__MODULE__{}
   end
 
-  @doc """
+  @doc '''
   Creates a new tab with the given configuration.
 
   ## Parameters
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   `{:ok, tab_id, updated_manager}` on success
   `{:error, reason}` on failure
-  """
+  '''
   @spec create_tab(t(), tab_config() | nil) ::
           {:ok, tab_id(), t()} | {:error, term()}
   def create_tab(manager, config \\ %{}) do
@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     {:ok, tab_id, updated_manager}
   end
 
-  @doc """
+  @doc '''
   Deletes a tab by its ID.
 
   ## Parameters
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   `{:ok, updated_manager}` on success
   `{:error, :tab_not_found}` if the tab doesn't exist
-  """
+  '''
   @spec delete_tab(t(), tab_id()) :: {:ok, t()} | {:error, :tab_not_found}
   def delete_tab(manager, tab_id) do
     case Map.get(manager.tabs, tab_id) do
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Switches to a different tab.
 
   ## Parameters
@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   `{:ok, updated_manager}` on success
   `{:error, :tab_not_found}` if the tab doesn't exist
-  """
+  '''
   @spec switch_tab(t(), tab_id()) :: {:ok, t()} | {:error, :tab_not_found}
   def switch_tab(manager, tab_id) do
     case Map.get(manager.tabs, tab_id) do
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the configuration for a specific tab.
 
   ## Parameters
@@ -161,7 +161,7 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   `{:ok, config}` on success
   `{:error, :tab_not_found}` if the tab doesn't exist
-  """
+  '''
   @spec get_tab_config(t(), tab_id()) ::
           {:ok, tab_config()} | {:error, :tab_not_found}
   def get_tab_config(manager, tab_id) do
@@ -171,7 +171,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Updates the configuration for a specific tab.
 
   ## Parameters
@@ -184,7 +184,7 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   `{:ok, updated_manager}` on success
   `{:error, :tab_not_found}` if the tab doesn't exist
-  """
+  '''
   @spec update_tab_config(t(), tab_id(), tab_config()) ::
           {:ok, t()} | {:error, :tab_not_found}
   def update_tab_config(manager, tab_id, config) do
@@ -202,7 +202,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Lists all tabs.
 
   ## Parameters
@@ -212,13 +212,13 @@ defmodule Raxol.Terminal.Tab.Manager do
   ## Returns
 
   A list of tab configurations
-  """
+  '''
   @spec list_tabs(t()) :: [tab_config()]
   def list_tabs(manager) do
     Map.values(manager.tabs)
   end
 
-  @doc """
+  @doc '''
   Gets the active tab ID.
 
   ## Parameters
@@ -228,7 +228,7 @@ defmodule Raxol.Terminal.Tab.Manager do
   ## Returns
 
   The active tab ID or nil if no tab is active
-  """
+  '''
   @spec get_active_tab(t()) :: tab_id() | nil
   def get_active_tab(manager) do
     manager.active_tab
@@ -236,9 +236,9 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   # Tab Stop Management Functions
 
-  @doc """
+  @doc '''
   Sets a horizontal tab stop at the current cursor position.
-  """
+  '''
   @spec set_horizontal_tab(t()) :: t()
   def set_horizontal_tab(manager) do
     # TODO: Implement actual tab stop setting based on cursor position
@@ -246,25 +246,25 @@ defmodule Raxol.Terminal.Tab.Manager do
     %{manager | tab_stops: MapSet.put(manager.tab_stops, next_tab)}
   end
 
-  @doc """
+  @doc '''
   Clears a tab stop at the specified position.
-  """
+  '''
   @spec clear_tab_stop(t(), pos_integer()) :: t()
   def clear_tab_stop(manager, position) when is_integer(position) and position >= 0 do
     %{manager | tab_stops: MapSet.delete(manager.tab_stops, position)}
   end
 
-  @doc """
+  @doc '''
   Clears all tab stops.
-  """
+  '''
   @spec clear_all_tab_stops(t()) :: t()
   def clear_all_tab_stops(manager) do
     %{manager | tab_stops: MapSet.new()}
   end
 
-  @doc """
+  @doc '''
   Gets the next tab stop position from the current position.
-  """
+  '''
   @spec get_next_tab_stop(t()) :: pos_integer()
   def get_next_tab_stop(manager) do
     # TODO: Implement actual tab stop calculation

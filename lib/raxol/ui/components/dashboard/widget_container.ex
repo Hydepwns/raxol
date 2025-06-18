@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
-  @moduledoc """
+  @moduledoc '''
   A container component for dashboard widgets.
   Provides a frame, title bar (optional), and potentially drag/resize handles.
   Renders the actual widget content passed to it.
-  """
+  '''
 
   # Add use Component and placeholders
   use Raxol.UI.Components.Base.Component
@@ -34,7 +34,7 @@ defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
   # but it could be added later if needed (e.g., for internal state like focus).
 
   @spec render(map(), map()) :: any()
-  @doc """
+  @doc '''
   Renders the widget container frame and its content.
 
   Requires props:
@@ -42,7 +42,7 @@ defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
   - `widget_config`: The configuration map for the widget being rendered.
                      Used for title, etc. (%{id: _, type: _, title: _, ...}).
   - `content`: The actual View element(s) representing the widget's content.
-  """
+  '''
   @impl Raxol.UI.Components.Base.Component
   # Add props argument, use state instead of props directly
   def render(state, _props) do

@@ -1,22 +1,22 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles command execution and management for plugins.
   This module is responsible for:
   - Processing command requests
   - Executing commands through plugins
   - Managing command results and error handling
   - Handling clipboard-related commands
-  """
+  '''
 
   alias Raxol.Core.Runtime.Plugins.CommandHelper
   require Raxol.Core.Runtime.Log
 
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
 
-  @doc """
+  @doc '''
   Handles a command request by delegating to the appropriate plugin.
   Returns an updated state and any necessary side effects.
-  """
+  '''
   @impl true
   def handle_command(command_atom, namespace, data, dispatcher_pid, state) do
     command_name_str = Atom.to_string(command_atom)
@@ -93,10 +93,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
     end
   end
 
-  @doc """
+  @doc '''
   Processes a command by delegating to the appropriate handler.
   Returns an updated state and any necessary side effects.
-  """
+  '''
   @impl true
   def process_command(command, state) do
     case command do
@@ -114,9 +114,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
     end
   end
 
-  @doc """
+  @doc '''
   Handles clipboard result messages.
-  """
+  '''
   def handle_clipboard_result(pid, content) do
     send(pid, {:command_result, {:clipboard_content, content}})
     :ok

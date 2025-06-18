@@ -1,5 +1,5 @@
 defmodule Raxol.Core.KeyboardNavigator do
-  @moduledoc """
+  @moduledoc '''
   Keyboard navigation handler for Raxol terminal UI applications.
 
   This module integrates with the FocusManager to provide keyboard navigation between
@@ -20,12 +20,12 @@ defmodule Raxol.Core.KeyboardNavigator do
   # Customize keybindings
   KeyboardNavigator.configure(next_key: :right, previous_key: :left)
   ```
-  """
+  '''
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.FocusManager
 
-  @doc """
+  @doc '''
   Initialize the keyboard navigator.
 
   This registers event handlers for keyboard navigation.
@@ -34,7 +34,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
       iex> KeyboardNavigator.init()
       :ok
-  """
+  '''
   def init do
     EventManager.register_handler(:keyboard, __MODULE__, :handle_keyboard_event)
     Process.put(:keyboard_navigator_config, default_config())
@@ -42,7 +42,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     :ok
   end
 
-  @doc """
+  @doc '''
   Configure keyboard navigation behavior.
 
   ## Options
@@ -61,7 +61,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
       iex> KeyboardNavigator.configure(vim_keys: true)
       :ok
-  """
+  '''
   def configure(opts \\ []) do
     ensure_keyword = fn
       kw when is_list(kw) and (kw == [] or is_tuple(hd(kw))) -> kw
@@ -78,7 +78,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     :ok
   end
 
-  @doc """
+  @doc '''
   Register component positions for spatial navigation.
 
   This allows arrow keys to navigate components based on their physical layout.
@@ -95,7 +95,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
       iex> KeyboardNavigator.register_component_position("search_input", 10, 5, 30, 3)
       :ok
-  """
+  '''
   def register_component_position(component_id, x, y, width, height) do
     spatial_map = get_spatial_map()
 
@@ -114,7 +114,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     :ok
   end
 
-  @doc """
+  @doc '''
   Define explicit navigation paths between components.
 
   This allows customizing navigation beyond spatial or tab order.
@@ -129,7 +129,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
       iex> KeyboardNavigator.define_navigation_path("search_input", :down, "submit_button")
       :ok
-  """
+  '''
   def define_navigation_path(from_id, direction, to_id) do
     nav_paths = Process.get(:keyboard_navigator_paths) || %{}
 
@@ -141,7 +141,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     :ok
   end
 
-  @doc """
+  @doc '''
   Handle keyboard events for navigation.
 
   This function is called by the EventManager when keyboard events occur.
@@ -154,7 +154,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   * `:handled` - If the event was handled by the navigator
   * `:unhandled` - If the event was not handled
-  """
+  '''
   def handle_keyboard_event(event) do
     config = get_config()
 
@@ -233,7 +233,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     end
   end
 
-  @doc """
+  @doc '''
   Register a custom shortcut handler.
 
   ## Parameters
@@ -246,7 +246,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
       iex> KeyboardNavigator.register_shortcut(:f1, [], &show_help/0)
       :ok
-  """
+  '''
   def register_shortcut(key, modifiers, handler) when is_function(handler, 0) do
     shortcuts = Process.get(:keyboard_navigator_shortcuts) || %{}
     shortcut_key = {key, modifiers}

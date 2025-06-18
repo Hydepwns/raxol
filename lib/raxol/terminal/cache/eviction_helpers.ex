@@ -1,26 +1,26 @@
 defmodule Raxol.Terminal.Cache.EvictionHelpers do
-  @moduledoc """
+  @moduledoc '''
   Helper functions for cache eviction strategies.
   Provides shared implementations for LRU, LFU, and FIFO eviction policies.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Evicts entries using the Least Recently Used (LRU) policy.
-  """
+  '''
   def evict_lru(cache, current_size, needed_size) do
     evict_by(cache, current_size, needed_size, fn {_, entry} -> entry.last_access end)
   end
 
-  @doc """
+  @doc '''
   Evicts entries using the Least Frequently Used (LFU) policy.
-  """
+  '''
   def evict_lfu(cache, current_size, needed_size) do
     evict_by(cache, current_size, needed_size, fn {_, entry} -> entry.access_count end)
   end
 
-  @doc """
+  @doc '''
   Evicts entries using the First In First Out (FIFO) policy.
-  """
+  '''
   def evict_fifo(cache, current_size, needed_size) do
     evict_by(cache, current_size, needed_size, fn {_, entry} -> entry.created_at end)
   end

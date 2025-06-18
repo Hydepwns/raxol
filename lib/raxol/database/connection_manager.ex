@@ -1,12 +1,12 @@
 defmodule Raxol.Database.ConnectionManager do
-  @moduledoc """
+  @moduledoc '''
   Manages database connections and provides retry logic for Postgres errors.
 
   This module:
   - Handles graceful connection retries
   - Monitors database connection health
   - Provides tools for debugging connection issues
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Repo
@@ -14,7 +14,7 @@ defmodule Raxol.Database.ConnectionManager do
   @max_retries 5
   @retry_delay_ms 1000
 
-  @doc """
+  @doc '''
   Attempts a database operation with retry logic.
 
   ## Parameters
@@ -27,7 +27,7 @@ defmodule Raxol.Database.ConnectionManager do
 
   - `{:ok, result}` - Operation succeeded
   - `{:error, error}` - Operation failed after retries
-  """
+  '''
   @spec with_retries(function(), integer(), integer()) ::
           {:ok, any()} | {:error, any()}
   def with_retries(
@@ -38,14 +38,14 @@ defmodule Raxol.Database.ConnectionManager do
     retry_operation(operation, 0, max_retries, retry_delay_ms)
   end
 
-  @doc """
+  @doc '''
   Checks if the database connection is healthy.
 
   ## Returns
 
   - `true` - Connection is healthy
   - `false` - Connection is unhealthy
-  """
+  '''
   @spec healthy?() :: boolean()
   def healthy? do
     try do
@@ -71,11 +71,11 @@ defmodule Raxol.Database.ConnectionManager do
     end
   end
 
-  @doc """
+  @doc '''
   Ensures the database connection is reset after application crash.
 
   This function should be called during application startup.
-  """
+  '''
   @spec ensure_connection() :: :ok
   def ensure_connection do
     if Process.whereis(Repo) do
@@ -109,9 +109,9 @@ defmodule Raxol.Database.ConnectionManager do
     :ok
   end
 
-  @doc """
+  @doc '''
   Forcibly restarts the database connection.
-  """
+  '''
   @spec restart_connection() :: :ok
   def restart_connection do
     # Only attempt restart if the Repo process exists

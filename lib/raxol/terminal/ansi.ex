@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI do
-  @moduledoc """
+  @moduledoc '''
   This module serves as a documentation reference for the ANSI terminal functionality.
 
   The functionality has been organized into smaller, more focused modules:
@@ -14,5 +14,5 @@ defmodule Raxol.Terminal.ANSI do
 
   This module itself does not contain any functionality - it exists solely as a documentation
   reference to help developers find the appropriate specialized modules for their needs.
-  """
+  '''
 end

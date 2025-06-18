@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Events.TermboxConverter do
-  @moduledoc """
+  @moduledoc '''
   Converts rrex_termbox v2.0.1 NIF events to Raxol.Core.Events.Event structs.
 
   This module handles the translation from the low-level rrex_termbox event format
   to the Raxol event system format.
-  """
+  '''
 
   import Bitwise
   alias Raxol.Core.Events.Event
@@ -37,7 +37,7 @@ defmodule Raxol.Core.Events.TermboxConverter do
   @f11 275
   @f12 276
 
-  @doc """
+  @doc '''
   Converts a rrex_termbox v2.0.1 event map to a Raxol Event struct.
 
   ## Parameters
@@ -49,7 +49,7 @@ defmodule Raxol.Core.Events.TermboxConverter do
   - `{:ok, %Event{}}` if the conversion was successful
   - `:ignore` if the event should be ignored
   - `{:error, reason}` if the conversion failed
-  """
+  '''
   @spec convert(map()) :: {:ok, Event.t()} | :ignore | {:error, term()}
   def convert(event_map) do
     try do

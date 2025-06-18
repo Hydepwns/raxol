@@ -1,14 +1,14 @@
 defmodule Raxol.View.Components do
-  @moduledoc """
+  @moduledoc '''
   Provides component functions for Raxol views.
 
   This module contains functions for creating various UI components
   that can be used in Raxol views.
-  """
+  '''
 
   # alias Raxol.Core.Renderer.View # Unused
 
-  @doc """
+  @doc '''
   Creates a text component with options for content, style, foreground, and background colors.
 
   ## Options
@@ -19,7 +19,7 @@ defmodule Raxol.View.Components do
 
   ## Example
       text("Hello World", style: [bold: true], fg: :blue)
-  """
+  '''
   def text(content, opts \\ []) do
     %{
       type: :text,
@@ -30,7 +30,7 @@ defmodule Raxol.View.Components do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a button component with options for label, click action, style, and disabled state.
 
   ## Options
@@ -41,7 +41,7 @@ defmodule Raxol.View.Components do
 
   ## Example
       button("Submit", on_click: &handle_submit/0, style: [bg: :blue])
-  """
+  '''
   def button(label, opts \\ []) do
     %{
       type: :button,
@@ -52,7 +52,7 @@ defmodule Raxol.View.Components do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a text input component with options for value, placeholder, change action, and style.
 
   ## Options
@@ -63,7 +63,7 @@ defmodule Raxol.View.Components do
 
   ## Example
       text_input(value: name, placeholder: "Enter your name", on_change: &handle_name_change/1)
-  """
+  '''
   def text_input(opts \\ []) do
     %{
       type: :text_input,
@@ -73,7 +73,7 @@ defmodule Raxol.View.Components do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a space component with options for width and height.
 
   ## Options
@@ -84,7 +84,7 @@ defmodule Raxol.View.Components do
   ## Example
       space(width: 2)
       space(width: 1, height: 2)
-  """
+  '''
   def space(opts \\ []) do
     %{
       type: :spacer,
@@ -94,7 +94,7 @@ defmodule Raxol.View.Components do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a label component with options for text, width, and style.
 
   ## Options
@@ -105,7 +105,7 @@ defmodule Raxol.View.Components do
   ## Example
       label("Username:", width: 10)
       label("Password:", width: 10, align: :right)
-  """
+  '''
   def label(text, opts \\ []) do
     %{
       type: :label,

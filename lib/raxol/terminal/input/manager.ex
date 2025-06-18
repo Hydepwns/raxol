@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Input.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal input operations with advanced features:
   - Advanced key handling with modifier support
   - Input validation and sanitization
   - Input buffering with timeout handling
   - Input customization and mapping
-  """
+  '''
 
   alias Raxol.Terminal.{
     Input.Buffer,
@@ -35,9 +35,9 @@ defmodule Raxol.Terminal.Input.Manager do
     :metrics
   ]
 
-  @doc """
+  @doc '''
   Creates a new input manager with the given options.
-  """
+  '''
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %__MODULE__{
@@ -51,9 +51,9 @@ defmodule Raxol.Terminal.Input.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Processes a key event with validation and mapping.
-  """
+  '''
   @spec process_key_event(t(), key_event()) :: {:ok, t()} | {:error, term()}
   def process_key_event(manager, event) do
     with {:ok, mapped_event} <- Processor.map_event(event),
@@ -63,17 +63,17 @@ defmodule Raxol.Terminal.Input.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the current input metrics.
-  """
+  '''
   @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics
   end
 
-  @doc """
+  @doc '''
   Flushes the input buffer.
-  """
+  '''
   @spec flush_buffer(t()) :: t()
   def flush_buffer(manager) do
     %{manager | buffer: Buffer.new(manager.buffer.max_size)}

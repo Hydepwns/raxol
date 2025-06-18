@@ -2,7 +2,7 @@ defmodule RaxolWeb.AccessibilityComponent do
   use RaxolWeb, :live_component
 
   def render(assigns) do
-    ~H"""
+    ~H'''
     <div class="accessibility-menu" role="menu" aria-label="Accessibility options">
       <button
         type="button"
@@ -74,7 +74,7 @@ defmodule RaxolWeb.AccessibilityComponent do
         Font Size
       </button>
     </div>
-    """
+    '''
   end
 
   def handle_event("toggle_high_contrast", _params, socket) do

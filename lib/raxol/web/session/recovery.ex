@@ -1,26 +1,26 @@
 defmodule Raxol.Web.Session.Recovery do
-  @moduledoc """
+  @moduledoc '''
   Handles session recovery for Raxol applications.
 
   This module provides functionality to recover sessions after crashes or
   unexpected terminations, ensuring session continuity and data integrity.
-  """
+  '''
 
   alias Raxol.Web.Session.Storage
   # alias Raxol.Web.Session.{Storage, Session} # Session unused
 
-  @doc """
+  @doc '''
   Initialize the session recovery system.
-  """
+  '''
   def init do
     # Recover any active sessions from the database
     _ = recover_active_sessions()
     :ok
   end
 
-  @doc """
+  @doc '''
   Recover a specific session.
-  """
+  '''
   def recover_session(session_id) do
     case Storage.get(session_id) do
       {:ok, session} ->

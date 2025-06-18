@@ -1,7 +1,7 @@
 defmodule Raxol.System.DeltaUpdater do
-  @moduledoc """
+  @moduledoc '''
   Handles delta updates for the Raxol terminal emulator.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   # Called via adapter now

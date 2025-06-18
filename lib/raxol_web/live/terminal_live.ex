@@ -1,5 +1,5 @@
 defmodule RaxolWeb.TerminalLive do
-  @moduledoc """
+  @moduledoc '''
   LiveView component for the terminal interface.
 
   This component provides:
@@ -9,7 +9,7 @@ defmodule RaxolWeb.TerminalLive do
   - Theme customization
   - Scroll management
   - Session management
-  """
+  '''
 
   use RaxolWeb, :live_view
   alias RaxolWeb.Presence
@@ -272,7 +272,7 @@ defmodule RaxolWeb.TerminalLive do
 
   @impl Phoenix.LiveView
   def render(assigns) do
-    ~H"""
+    ~H'''
     <div class="terminal-container" id="terminal-container">
       <div class="terminal-header">
         <div class="terminal-title">Terminal</div>
@@ -327,7 +327,7 @@ defmodule RaxolWeb.TerminalLive do
         <% end %>
       </div>
     </div>
-    """
+    '''
   end
 
   defp generate_session_id do

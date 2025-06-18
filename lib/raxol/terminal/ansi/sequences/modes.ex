@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.ANSI.Sequences.Modes do
-  @moduledoc """
+  @moduledoc '''
   ANSI Terminal Modes Sequence Handler.
 
   Handles parsing and application of ANSI terminal mode sequences,
   including screen modes, input modes, and rendering modes.
-  """
+  '''
 
   alias Raxol.Terminal.ModeManager
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Set or reset a screen mode.
 
   ## Parameters
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def set_screen_mode(emulator, mode, enabled) do
     # ModeManager uses integer codes. Assume 'mode' is the integer code.
     # Determine if it's private (starts with '?') or standard
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
     end
   end
 
-  @doc """
+  @doc '''
   Enable or disable bracketed paste mode.
 
   ## Parameters
@@ -59,12 +59,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def set_bracketed_paste_mode(emulator, enabled) do
     %{emulator | bracketed_paste_mode: enabled}
   end
 
-  @doc """
+  @doc '''
   Enable or disable focus reporting.
 
   ## Parameters
@@ -75,12 +75,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def set_focus_reporting(emulator, enabled) do
     %{emulator | focus_reporting: enabled}
   end
 
-  @doc """
+  @doc '''
   Switch to alternate buffer mode.
 
   ## Parameters
@@ -91,15 +91,15 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def set_alternate_buffer(emulator, use_alternate) do
     buffer_type = if use_alternate, do: :alternate, else: :main
     %{emulator | active_buffer_type: buffer_type}
   end
 
-  @doc """
+  @doc '''
   Sets or resets ANSI modes.
-  """
+  '''
   def handle_mode_sequence(_emulator, _params, _private \\ false) do
     # Implementation...
   end

@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Split.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal split windows, handling creation, resizing, navigation, and synchronization
   of split terminal windows.
-  """
+  '''
 
   use GenServer
   require Logger

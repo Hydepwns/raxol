@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Renderer.View.Layout.Flex do
-  @moduledoc """
+  @moduledoc '''
   Handles flex layout functionality for the Raxol view system.
   Provides row and column layouts with various alignment and justification options.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Creates a row layout container that arranges its children horizontally.
 
   ## Options
@@ -17,7 +17,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
       Flex.row(children: [view1, view2])
       Flex.row(align: :center, justify: :space_between, children: [view1, view2])
-  """
+  '''
   def row(opts \\ []) do
     children = Keyword.get(opts, :children, [])
     align = Keyword.get(opts, :align, :start)
@@ -36,7 +36,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a flex container that arranges its children in the specified direction.
 
   ## Options
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
       Flex.container(direction: :row, children: [view1, view2])
       Flex.container(direction: :column, align: :center, children: [view1, view2])
-  """
+  '''
   def container(opts) do
     direction = Keyword.get(opts, :direction, :row)
     # Get raw children from opts
@@ -85,7 +85,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a column layout container that arranges its children vertically.
 
   ## Options
@@ -98,7 +98,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
       Flex.column(children: [view1, view2])
       Flex.column(align: :center, justify: :space_between, children: [view1, view2])
-  """
+  '''
   def column(opts \\ []) do
     children = Keyword.get(opts, :children, [])
     align = Keyword.get(opts, :align, :start)
@@ -117,9 +117,9 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     }
   end
 
-  @doc """
+  @doc '''
   Calculates the layout of flex children based on container size and options.
-  """
+  '''
   def calculate_layout(_container, _size) do
     # Implementation of flex layout algorithm
     # This would handle:

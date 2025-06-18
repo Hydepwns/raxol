@@ -1,18 +1,18 @@
 defmodule Raxol.Core.Runtime.Events.Keyboard do
-  @moduledoc """
+  @moduledoc '''
   Handles keyboard event processing in the Raxol system.
 
   This module is responsible for:
   * Processing keyboard events
   * Handling special key combinations
   * Converting keyboard events to application messages
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Events.Event
 
-  @doc """
+  @doc '''
   Processes a keyboard event and determines if it should be handled by the application
   or if it's a system-level command.
 
@@ -24,7 +24,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
   `{:system, command, state}` if it's a system command,
   `{:application, event, state}` if it should be handled by the application,
   `{:ignore, state}` if the event should be ignored.
-  """
+  '''
   def process_keyboard_event(%Event{type: :key, data: key_data} = event, state) do
     key = key_data.key
     modifiers = key_data.modifiers || []
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     end
   end
 
-  @doc """
+  @doc '''
   Converts a keyboard event to an application message.
 
   ## Parameters
@@ -59,7 +59,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   ## Returns
   A message that can be understood by the application's update function.
-  """
+  '''
   def convert_to_message(%Event{type: :key, data: key_data} = _event) do
     key = key_data.key
     modifiers = key_data.modifiers || []
@@ -78,7 +78,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     end
   end
 
-  @doc """
+  @doc '''
   Checks if a key combination matches any of the application's registered shortcuts.
 
   ## Parameters
@@ -87,7 +87,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   ## Returns
   `{:ok, action}` if a match is found, `:none` otherwise.
-  """
+  '''
   def check_shortcuts(%Event{type: :key, data: key_data} = _event, shortcuts)
       when is_map(shortcuts) do
     key = key_data.key

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Formatting.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal text formatting and styling operations.
-  """
+  '''
 
   defstruct [
     current_format: %{
@@ -39,31 +39,31 @@ defmodule Raxol.Terminal.Formatting.Manager do
     saved_format: format() | nil
   }
 
-  @doc """
+  @doc '''
   Creates a new formatting manager instance.
-  """
+  '''
   def new do
     %__MODULE__{}
   end
 
-  @doc """
+  @doc '''
   Gets the current formatting state.
-  """
+  '''
   def get_format(%__MODULE__{} = state) do
     state.current_format
   end
 
-  @doc """
+  @doc '''
   Applies a new format to the current state.
-  """
+  '''
   def apply_format(%__MODULE__{} = state, format) when is_map(format) do
     new_format = Map.merge(state.current_format, format)
     %{state | current_format: new_format}
   end
 
-  @doc """
+  @doc '''
   Resets the current format to default values.
-  """
+  '''
   def reset_format(%__MODULE__{} = state) do
     %{state |
       current_format: %{
@@ -82,16 +82,16 @@ defmodule Raxol.Terminal.Formatting.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Saves the current format state.
-  """
+  '''
   def save_format(%__MODULE__{} = state) do
     %{state | saved_format: state.current_format}
   end
 
-  @doc """
+  @doc '''
   Restores the previously saved format state.
-  """
+  '''
   def restore_format(%__MODULE__{} = state) do
     case state.saved_format do
       nil -> state
@@ -99,86 +99,86 @@ defmodule Raxol.Terminal.Formatting.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the foreground color.
-  """
+  '''
   def set_foreground(%__MODULE__{} = state, color) do
     %{state | current_format: Map.put(state.current_format, :foreground, color)}
   end
 
-  @doc """
+  @doc '''
   Sets the background color.
-  """
+  '''
   def set_background(%__MODULE__{} = state, color) do
     %{state | current_format: Map.put(state.current_format, :background, color)}
   end
 
-  @doc """
+  @doc '''
   Toggles bold formatting.
-  """
+  '''
   def toggle_bold(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :bold, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Toggles faint formatting.
-  """
+  '''
   def toggle_faint(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :faint, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Toggles italic formatting.
-  """
+  '''
   def toggle_italic(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :italic, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Toggles underline formatting.
-  """
+  '''
   def toggle_underline(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :underline, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Toggles blink formatting.
-  """
+  '''
   def toggle_blink(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :blink, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Toggles reverse video formatting.
-  """
+  '''
   def toggle_reverse(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :reverse, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Toggles conceal formatting.
-  """
+  '''
   def toggle_conceal(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :conceal, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Toggles strikethrough formatting.
-  """
+  '''
   def toggle_strikethrough(%__MODULE__{} = state) do
     %{state | current_format: Map.update!(state.current_format, :strikethrough, &(!&1))}
   end
 
-  @doc """
+  @doc '''
   Sets the font number.
-  """
+  '''
   def set_font(%__MODULE__{} = state, font) when is_integer(font) and font >= 0 do
     %{state | current_format: Map.put(state.current_format, :font, font)}
   end
 
-  @doc """
+  @doc '''
   Applies formatting to a string.
-  """
+  '''
   def apply_formatting(%__MODULE__{} = state, text) when is_binary(text) do
     format = state.current_format
     text

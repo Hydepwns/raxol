@@ -1,11 +1,11 @@
 defmodule Raxol.UI.Rendering.Composer do
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Composes a render tree or command list from the layout tree.
   Currently a stub; in the future, this will build a render tree or command list,
   potentially processing diffs or layout-specific changes.
-  """
+  '''
   @spec compose_render_tree(
           layout_stage_output :: any(),
           new_tree_for_reference :: map() | nil,

@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.Buffer.DamageTracker do
-  @moduledoc """
+  @moduledoc '''
   Manages damage tracking for terminal buffers.
 
   Handles marking regions as damaged and merging overlapping regions
   for efficient redrawing.
-  """
+  '''
 
   @type region ::
           {non_neg_integer(), non_neg_integer(), non_neg_integer(),
@@ -15,17 +15,17 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
 
   defstruct regions: []
 
-  @doc """
+  @doc '''
   Creates a new, empty damage tracker.
-  """
+  '''
   @spec new() :: t()
   def new(), do: %__MODULE__{regions: []}
 
-  @doc """
+  @doc '''
   Marks a rectangular region as damaged.
 
   Merges the new region with any existing overlapping regions.
-  """
+  '''
   @spec mark_damaged(
           t(),
           non_neg_integer(),
@@ -39,17 +39,17 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
     %__MODULE__{tracker | regions: merged_regions}
   end
 
-  @doc """
+  @doc '''
   Gets the list of distinct damaged regions.
-  """
+  '''
   @spec get_regions(t()) :: list(region())
   def get_regions(%__MODULE__{} = tracker) do
     tracker.regions
   end
 
-  @doc """
+  @doc '''
   Clears all tracked damage regions.
-  """
+  '''
   @spec clear_regions(t()) :: t()
   def clear_regions(%__MODULE__{} = tracker) do
     %__MODULE__{tracker | regions: []}

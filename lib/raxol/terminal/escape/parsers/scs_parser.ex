@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
-  @moduledoc """
+  @moduledoc '''
   Parser for Select Character Set (SCS) escape sequences.
 
   Handles sequences like:
@@ -7,15 +7,15 @@ defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
   - ESC ) C -> Designate G1 as Charset C
   - ESC * C -> Designate G2 as Charset C
   - ESC + C -> Designate G3 as Charset C
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Escape.Parsers.BaseParser
 
-  @doc """
+  @doc '''
   Parses a Select Character Set sequence.
   Returns {:ok, command, remaining} or {:incomplete, remaining} or {:error, reason, remaining}
-  """
+  '''
   @spec parse(char(), String.t()) ::
           {:ok, {:designate_charset, :g0 | :g1 | :g2 | :g3, atom()}, String.t()}
           | {:incomplete, String.t()}
@@ -35,9 +35,9 @@ defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
     {:incomplete, ""}
   end
 
-  @doc """
+  @doc '''
   Maps a designator character to its corresponding G-set.
-  """
+  '''
   @spec designate_char_to_gset(char()) ::
           {:ok, :g0 | :g1 | :g2 | :g3} | {:error, :invalid_designator}
   def designate_char_to_gset(?() do
@@ -60,10 +60,10 @@ defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
     {:error, :invalid_designator}
   end
 
-  @doc """
+  @doc '''
   Maps a character code byte to its corresponding charset atom.
   Reference: https://vt100.net/docs/vt510-rm/SCS.html
-  """
+  '''
   @spec charset_code_to_atom(char()) ::
           {:ok, atom()} | {:error, :invalid_charset}
   def charset_code_to_atom(?B) do

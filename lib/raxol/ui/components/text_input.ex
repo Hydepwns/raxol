@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.TextInput do
-  @moduledoc """
+  @moduledoc '''
   A text input component with editing capabilities.
 
   This module provides a text input field that allows users to enter
@@ -16,13 +16,13 @@ defmodule Raxol.UI.Components.TextInput do
     on_change: fn value -> {:update_name, value} end
   )
   ```
-  """
+  '''
 
   alias Raxol.Style
 
   @type t :: map()
 
-  @doc """
+  @doc '''
   Creates a new text input with the given options.
 
   ## Options
@@ -51,7 +51,7 @@ defmodule Raxol.UI.Components.TextInput do
     invalid_message: "Must be a valid email"
   )
   ```
-  """
+  '''
   def new(opts \\ []) do
     # Extract options with defaults
     value = Keyword.get(opts, :value, "")
@@ -87,11 +87,11 @@ defmodule Raxol.UI.Components.TextInput do
     }
   end
 
-  @doc """
+  @doc '''
   Renders the text input as a basic element.
 
   This is typically called by the renderer, not directly by users.
-  """
+  '''
   def render(input) do
     # The style is pre-calculated in new/1
     # display_text = get_display_text(input)
@@ -99,7 +99,7 @@ defmodule Raxol.UI.Components.TextInput do
     input.style
   end
 
-  @doc """
+  @doc '''
   Updates the text input based on keyboard input.
 
   ## Parameters
@@ -116,7 +116,7 @@ defmodule Raxol.UI.Components.TextInput do
   ```elixir
   updated_input = TextInput.handle_key_event(input, {:none, ?a})
   ```
-  """
+  '''
   def handle_key_event(input, {_meta, key} = _key_event) when key in 32..126 do
     # Only process if not disabled
     if input.disabled do

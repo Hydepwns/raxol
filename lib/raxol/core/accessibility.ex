@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Accessibility do
   @behaviour Raxol.Core.Accessibility.Behaviour
 
-  @moduledoc """
+  @moduledoc '''
   Accessibility module for Raxol terminal UI applications.
 
   This module provides accessibility features including:
@@ -30,7 +30,7 @@ defmodule Raxol.Core.Accessibility do
   # Enable large text mode
   Accessibility.set_large_text(true)
   ```
-  """
+  '''
 
   alias Raxol.Core.Events.Manager, as: EventManager
 
@@ -46,7 +46,7 @@ defmodule Raxol.Core.Accessibility do
   alias Raxol.Core.FocusManager
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Enable accessibility features with the given options.
 
   ## Parameters
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.enable(reduced_motion: true, screen_reader: false)
       :ok
-  """
+  '''
   def enable(options \\ [], user_preferences_pid_or_name \\ nil) do
     Raxol.Core.Runtime.Log.debug(
       "Enabling accessibility features with options: #{inspect(options)} and pid_or_name: #{inspect(user_preferences_pid_or_name)}"
@@ -153,14 +153,14 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
-  @doc """
+  @doc '''
   Disable accessibility features.
 
   ## Examples
 
       iex> Accessibility.disable()
       :ok
-  """
+  '''
   def disable(user_preferences_pid_or_name \\ nil) do
     target_prefs =
       user_preferences_pid_or_name || Preferences.default_prefs_name()
@@ -212,7 +212,7 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
-  @doc """
+  @doc '''
   Make an announcement for screen readers.
 
   ## Parameters
@@ -223,12 +223,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.announce("You have selected the search button")
       :ok
-  """
+  '''
   def announce(message) do
     announce(message, :polite)
   end
 
-  @doc """
+  @doc '''
   Make an announcement for screen readers with a specific priority.
 
   ## Parameters
@@ -240,12 +240,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.announce("You have selected the search button", :assertive)
       :ok
-  """
+  '''
   def announce(message, priority) do
     announce(message, priority, nil)
   end
 
-  @doc """
+  @doc '''
   Make an announcement for screen readers with a specific priority and user preferences.
 
   ## Parameters
@@ -258,7 +258,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.announce("You have selected the search button", :assertive, :user_preferences)
       :ok
-  """
+  '''
   def announce(message, priority, user_preferences_pid_or_name) do
     if enabled?(user_preferences_pid_or_name) do
       Announcements.announce(message, priority, user_preferences_pid_or_name)
@@ -267,7 +267,7 @@ defmodule Raxol.Core.Accessibility do
     end
   end
 
-  @doc """
+  @doc '''
   Get the next announcement to be read by screen readers.
 
   This function is typically called by the screen reader integration.
@@ -276,24 +276,24 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.get_next_announcement()
       "Button clicked"
-  """
+  '''
   def get_next_announcement(user_preferences_pid_or_name) do
     Announcements.get_next_announcement(user_preferences_pid_or_name)
   end
 
-  @doc """
+  @doc '''
   Clear all pending announcements.
 
   ## Examples
 
       iex> Accessibility.clear_announcements()
       :ok
-  """
+  '''
   def clear_announcements do
     Announcements.clear_announcements()
   end
 
-  @doc """
+  @doc '''
   Enable or disable high contrast mode.
 
   ## Parameters
@@ -305,13 +305,13 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.set_high_contrast(true)
       :ok
-  """
+  '''
   def set_high_contrast(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     Preferences.set_high_contrast(enabled, user_preferences_pid_or_name)
   end
 
-  @doc """
+  @doc '''
   Enable or disable reduced motion.
 
   ## Parameters
@@ -323,13 +323,13 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.set_reduced_motion(true)
       :ok
-  """
+  '''
   def set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     Preferences.set_reduced_motion(enabled, user_preferences_pid_or_name)
   end
 
-  @doc """
+  @doc '''
   Enable or disable large text mode.
 
   ## Parameters
@@ -341,13 +341,13 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.set_large_text(true)
       :ok
-  """
+  '''
   def set_large_text(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     Preferences.set_large_text(enabled, user_preferences_pid_or_name)
   end
 
-  @doc """
+  @doc '''
   Get the current text scale factor based on the large text setting.
 
   ## Parameters
@@ -358,24 +358,24 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.get_text_scale()
       1.0 # or 1.5 if large_text is enabled
-  """
+  '''
   def get_text_scale(user_preferences_pid_or_name \\ nil) do
     Preferences.get_text_scale(user_preferences_pid_or_name)
   end
 
-  @doc """
+  @doc '''
   Get the current color scheme based on accessibility settings.
 
   ## Examples
 
       iex> Accessibility.get_color_scheme()
       %{background: ...}  # Returns the current color scheme
-  """
+  '''
   def get_color_scheme do
     ThemeIntegration.get_theme()
   end
 
-  @doc """
+  @doc '''
   Register metadata for an element to be used for accessibility features.
 
   ## Parameters
@@ -387,13 +387,13 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.register_element_metadata("search_button", %{label: "Search"})
       :ok
-  """
+  '''
   def register_element_metadata(element_id, metadata)
       when is_binary(element_id) and is_map(metadata) do
     Metadata.register_element_metadata(element_id, metadata)
   end
 
-  @doc """
+  @doc '''
   Get metadata for an element.
 
   ## Parameters
@@ -408,12 +408,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.get_element_metadata("search_button")
       %{label: "Search"}
-  """
+  '''
   def get_element_metadata(element_id) when is_binary(element_id) do
     Metadata.get_element_metadata(element_id)
   end
 
-  @doc """
+  @doc '''
   Register style settings for a component type.
 
   ## Parameters
@@ -425,13 +425,13 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.register_component_style(:button, %{background: :blue})
       :ok
-  """
+  '''
   def register_component_style(component_type, style)
       when is_atom(component_type) and is_map(style) do
     Metadata.register_component_style(component_type, style)
   end
 
-  @doc """
+  @doc '''
   Get style settings for a component type.
 
   ## Parameters
@@ -446,7 +446,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.get_component_style(:button)
       %{background: :blue}
-  """
+  '''
   def get_component_style(component_type) when is_atom(component_type) do
     Metadata.get_component_style(component_type)
   end
@@ -468,9 +468,9 @@ defmodule Raxol.Core.Accessibility do
     EventHandlers.handle_locale_changed(event)
   end
 
-  @doc """
+  @doc '''
   Delegates theme changed events to the EventHandlers module.
-  """
+  '''
   def handle_theme_changed(event, user_preferences_pid_or_name \\ nil) do
     Raxol.Core.Accessibility.EventHandlers.handle_theme_changed(
       event,
@@ -497,18 +497,18 @@ defmodule Raxol.Core.Accessibility do
     Legacy.large_text_enabled?(user_preferences_pid_or_name)
   end
 
-  @doc """
+  @doc '''
   Gets an accessibility option value.
-  """
+  '''
   def get_option(category, option, default \\ nil) do
     Application.get_env(:raxol, :accessibility, %{})
     |> Map.get(category, %{})
     |> Map.get(option, default)
   end
 
-  @doc """
+  @doc '''
   Sets an accessibility option value.
-  """
+  '''
   def set_option(category, option, value) do
     current = Application.get_env(:raxol, :accessibility, %{})
     current = if is_map(current), do: current, else: %{}
@@ -537,7 +537,7 @@ defmodule Raxol.Core.Accessibility do
     get_option(:display, :color_scheme, :default)
   end
 
-  @doc """
+  @doc '''
   Subscribe a process (by ref) to accessibility announcement events.
 
   ## Parameters
@@ -552,7 +552,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.subscribe_to_announcements(self())
       :ok
-  """
+  '''
   def subscribe_to_announcements(ref) do
     EventManager.register_handler(
       :accessibility_announce,
@@ -563,7 +563,7 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
-  @doc """
+  @doc '''
   Unsubscribe a process (by ref) from accessibility announcement events.
 
   ## Parameters
@@ -578,7 +578,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.unsubscribe_from_announcements(self())
       :ok
-  """
+  '''
   def unsubscribe_from_announcements(ref) do
     EventManager.unregister_handler(
       :accessibility_announce,
@@ -603,7 +603,7 @@ defmodule Raxol.Core.Accessibility do
     EventHandlers.handle_focus_change(event)
   end
 
-  @doc """
+  @doc '''
   Set keyboard focus indicators.
 
   ## Parameters
@@ -619,7 +619,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.set_keyboard_focus(true)
       :ok
-  """
+  '''
   def set_keyboard_focus(enabled, user_preferences_pid_or_name \\ nil) do
     Preferences.set_option(
       :keyboard_focus,
@@ -628,7 +628,7 @@ defmodule Raxol.Core.Accessibility do
     )
   end
 
-  @doc """
+  @doc '''
   Set screen reader support.
 
   ## Parameters
@@ -640,7 +640,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.set_screen_reader(true)
       :ok
-  """
+  '''
   def set_screen_reader(enabled, user_preferences_pid_or_name \\ nil) do
     Preferences.set_option(
       :screen_reader,
@@ -649,7 +649,7 @@ defmodule Raxol.Core.Accessibility do
     )
   end
 
-  @doc """
+  @doc '''
   Set silence announcements.
 
   ## Parameters
@@ -661,7 +661,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.set_silence_announcements(true)
       :ok
-  """
+  '''
   def set_silence_announcements(enabled, user_preferences_pid_or_name \\ nil) do
     Preferences.set_option(
       :silence_announcements,
@@ -670,7 +670,7 @@ defmodule Raxol.Core.Accessibility do
     )
   end
 
-  @doc """
+  @doc '''
   Get the current accessibility settings.
 
   ## Parameters
@@ -681,7 +681,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.get_settings()
       %{enabled: true, screen_reader: true, high_contrast: false, ...}
-  """
+  '''
   def get_settings(user_preferences_pid_or_name \\ nil) do
     [
       enabled:
@@ -721,7 +721,7 @@ defmodule Raxol.Core.Accessibility do
     ]
   end
 
-  @doc """
+  @doc '''
   Check if accessibility features are enabled.
 
   ## Parameters
@@ -732,7 +732,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.enabled?()
       true
-  """
+  '''
   def enabled?(user_preferences_pid_or_name \\ nil) do
     target_prefs =
       user_preferences_pid_or_name || Preferences.default_prefs_name()
@@ -740,7 +740,7 @@ defmodule Raxol.Core.Accessibility do
     Preferences.get_option(:enabled, target_prefs)
   end
 
-  @doc """
+  @doc '''
   Check if high contrast mode is enabled.
 
   ## Parameters
@@ -751,12 +751,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.high_contrast?()
       false
-  """
+  '''
   def high_contrast?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:high_contrast, user_preferences_pid_or_name, false)
   end
 
-  @doc """
+  @doc '''
   Check if reduced motion mode is enabled.
 
   ## Parameters
@@ -767,12 +767,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.reduced_motion?()
       false
-  """
+  '''
   def reduced_motion?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:reduced_motion, user_preferences_pid_or_name, false)
   end
 
-  @doc """
+  @doc '''
   Check if large text mode is enabled.
 
   ## Parameters
@@ -783,12 +783,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.large_text?()
       false
-  """
+  '''
   def large_text?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:large_text, user_preferences_pid_or_name, false)
   end
 
-  @doc """
+  @doc '''
   Check if keyboard focus indicators are enabled.
 
   ## Parameters
@@ -799,12 +799,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.keyboard_focus?()
       true
-  """
+  '''
   def keyboard_focus?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:keyboard_focus, user_preferences_pid_or_name, false)
   end
 
-  @doc """
+  @doc '''
   Check if screen reader support is enabled.
 
   ## Parameters
@@ -815,12 +815,12 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.screen_reader?()
       true
-  """
+  '''
   def screen_reader?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(:screen_reader, user_preferences_pid_or_name, false)
   end
 
-  @doc """
+  @doc '''
   Check if announcements are silenced.
 
   ## Parameters
@@ -831,7 +831,7 @@ defmodule Raxol.Core.Accessibility do
 
       iex> Accessibility.silence_announcements?()
       false
-  """
+  '''
   def silence_announcements?(user_preferences_pid_or_name \\ nil) do
     Preferences.get_option(
       :silence_announcements,
@@ -840,7 +840,7 @@ defmodule Raxol.Core.Accessibility do
     )
   end
 
-  @doc """
+  @doc '''
   Get the current list of announcements.
 
   ## Returns
@@ -855,7 +855,7 @@ defmodule Raxol.Core.Accessibility do
       :ok
       iex> Accessibility.get_announcements()
       ["Hello", "World"]
-  """
+  '''
   def get_announcements do
     Process.get(:accessibility_announcements, [])
   end

@@ -1,9 +1,9 @@
 defmodule Raxol.Benchmarks.Performance.EventHandling do
-  @moduledoc """
+  @moduledoc '''
   Event handling performance benchmark functions for Raxol.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Benchmarks event handling latency for different event types and volumes.
 
   Tests event handling for:
@@ -12,7 +12,7 @@ defmodule Raxol.Benchmarks.Performance.EventHandling do
   - Window events
   - Custom events
   - High-volume event bursts
-  """
+  '''
   def benchmark_event_handling do
     IO.puts("Benchmarking event handling latency...")
 

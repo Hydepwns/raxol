@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.CSIHandlers do
-  @moduledoc """
+  @moduledoc '''
   Handlers for CSI (Control Sequence Introducer) commands.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.{Basic, Cursor, Screen, Device}
@@ -76,18 +76,18 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     Basic.handle_decscusr(emulator, params)
   end
 
-  @doc """
+  @doc '''
   Handles DECCUSR (DEC Cursor Style Report) command.
   This is an alias for handle_deccusr/2 for backward compatibility.
-  """
+  '''
   def handle_q_deccusr(emulator, params) do
     handle_deccusr(emulator, params)
   end
 
-  @doc """
+  @doc '''
   Handles SCS (Select Character Set) command.
   The final_byte parameter determines which character set to select.
-  """
+  '''
   @spec handle_scs(Emulator.t(), list(integer()), integer()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_scs(emulator, _params, final_byte) do

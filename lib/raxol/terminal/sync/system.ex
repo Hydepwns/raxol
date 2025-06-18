@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Sync.System do
-  @moduledoc """
+  @moduledoc '''
   Unified synchronization system for the terminal emulator.
   Handles synchronization between splits, windows, and tabs with different consistency levels.
-  """
+  '''
 
   use GenServer
   require Logger
@@ -269,17 +269,17 @@ defmodule Raxol.Terminal.Sync.System do
     %{state | stats: Map.put(state.stats, sync_id, new_sync_stats)}
   end
 
-  @doc """
+  @doc '''
   Gets the current monotonic time in the specified unit.
-  """
+  '''
   @spec monotonic_time(:millisecond | :microsecond | :nanosecond) :: integer()
   def monotonic_time(unit) do
     System.monotonic_time(unit)
   end
 
-  @doc """
+  @doc '''
   Gets the current system time in the specified unit.
-  """
+  '''
   @spec system_time(:millisecond | :microsecond | :nanosecond) :: integer()
   def system_time(unit) do
     System.system_time(unit)

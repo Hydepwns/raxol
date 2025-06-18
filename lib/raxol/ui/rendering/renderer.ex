@@ -1,45 +1,45 @@
 defmodule Raxol.UI.Rendering.Renderer do
-  @moduledoc """
+  @moduledoc '''
   GenServer responsible for managing rendering state and applying animation settings.
   Receives commands from the rendering pipeline and coordinates rendering actions.
-  """
+  '''
 
   use GenServer
 
   # Public API
 
-  @doc """
+  @doc '''
   Starts the rendering process.
-  """
+  '''
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, opts)
   end
 
-  @doc """
+  @doc '''
   Sets animation settings for the renderer.
-  """
+  '''
   def set_animation_settings(settings) when is_map(settings) do
     GenServer.cast(__MODULE__, {:set_animation_settings, settings})
   end
 
-  @doc """
+  @doc '''
   Triggers a render with the current state.
-  """
+  '''
   def render(data \\ nil) do
     GenServer.cast(__MODULE__, {:render, data})
   end
 
-  @doc """
+  @doc '''
   Sets a test process PID to receive render messages (for test visibility).
   No-op in production.
-  """
+  '''
   def set_test_pid(pid) when is_pid(pid) do
     GenServer.cast(__MODULE__, {:set_test_pid, pid})
   end
 
-  @doc """
+  @doc '''
   Applies a diff to the renderer. For now, only full replacement is supported; granular diffs are logged and trigger a full render.
-  """
+  '''
   def apply_diff(:no_change, _new_tree), do: :ok
   def apply_diff({:replace, new_tree}, _new_tree), do: render(new_tree)
 

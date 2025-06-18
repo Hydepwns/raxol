@@ -1,11 +1,11 @@
 alias Raxol.Style.Colors.Color
 
 defmodule Raxol.Style.Colors.HSL do
-  @moduledoc """
+  @moduledoc '''
   Provides functions for HSL color space conversions and adjustments.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Converts RGB values to HSL.
 
   ## Parameters
@@ -13,7 +13,7 @@ defmodule Raxol.Style.Colors.HSL do
 
   ## Returns
   - `{h, s, l}` tuple: Hue (0-360), Saturation (0.0-1.0), Lightness (0.0-1.0)
-  """
+  '''
   @spec rgb_to_hsl(integer(), integer(), integer()) ::
           {float(), float(), float()}
   def rgb_to_hsl(r, g, b)
@@ -53,7 +53,7 @@ defmodule Raxol.Style.Colors.HSL do
         |> then(&rem(round(&1), 360))
   end
 
-  @doc """
+  @doc '''
   Converts HSL values to RGB.
 
   ## Parameters
@@ -61,7 +61,7 @@ defmodule Raxol.Style.Colors.HSL do
 
   ## Returns
   - `{r, g, b}` tuple: Red, Green, Blue values (0-255)
-  """
+  '''
   @spec hsl_to_rgb(number(), float(), float()) ::
           {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l)
@@ -92,7 +92,7 @@ defmodule Raxol.Style.Colors.HSL do
     {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}
   end
 
-  @doc """
+  @doc '''
   Rotates the hue of a color by a specified number of degrees.
 
   ## Parameters
@@ -103,7 +103,7 @@ defmodule Raxol.Style.Colors.HSL do
   ## Returns
 
   - A Color struct representing the rotated color
-  """
+  '''
   @spec rotate_hue(Color.t(), number()) :: Color.t()
   def rotate_hue(%Color{} = color, degrees) when is_number(degrees) do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
@@ -113,7 +113,7 @@ defmodule Raxol.Style.Colors.HSL do
     %Color{color | r: r, g: g, b: b}
   end
 
-  @doc """
+  @doc '''
   Lightens a color by a specified amount (adjusting Lightness).
 
   ## Parameters
@@ -124,7 +124,7 @@ defmodule Raxol.Style.Colors.HSL do
   ## Returns
 
   - A Color struct representing the lightened color
-  """
+  '''
   @spec lighten(Color.t(), float()) :: Color.t()
   def lighten(%Color{} = color, amount)
       when is_float(amount) and amount >= 0.0 do
@@ -134,7 +134,7 @@ defmodule Raxol.Style.Colors.HSL do
     %Color{color | r: r, g: g, b: b}
   end
 
-  @doc """
+  @doc '''
   Darkens a color by a specified amount (adjusting Lightness).
 
   ## Parameters
@@ -145,7 +145,7 @@ defmodule Raxol.Style.Colors.HSL do
   ## Returns
 
   - A Color struct representing the darkened color
-  """
+  '''
   @spec darken(Color.t(), float()) :: Color.t()
   def darken(%Color{} = color, amount)
       when is_float(amount) and amount >= 0.0 do
@@ -155,7 +155,7 @@ defmodule Raxol.Style.Colors.HSL do
     %Color{color | r: r, g: g, b: b}
   end
 
-  @doc """
+  @doc '''
   Saturates a color by a specified amount (adjusting Saturation).
 
   ## Parameters
@@ -166,7 +166,7 @@ defmodule Raxol.Style.Colors.HSL do
   ## Returns
 
   - A Color struct representing the saturated color
-  """
+  '''
   @spec saturate(Color.t(), float()) :: Color.t()
   def saturate(%Color{} = color, amount)
       when is_float(amount) and amount >= 0.0 do
@@ -176,7 +176,7 @@ defmodule Raxol.Style.Colors.HSL do
     %Color{color | r: r, g: g, b: b}
   end
 
-  @doc """
+  @doc '''
   Desaturates a color by a specified amount (adjusting Saturation).
 
   ## Parameters
@@ -187,7 +187,7 @@ defmodule Raxol.Style.Colors.HSL do
   ## Returns
 
   - A Color struct representing the desaturated color
-  """
+  '''
   @spec desaturate(Color.t(), float()) :: Color.t()
   def desaturate(%Color{} = color, amount)
       when is_float(amount) and amount >= 0.0 do

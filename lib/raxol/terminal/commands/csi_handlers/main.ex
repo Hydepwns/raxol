@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.Commands.CSIHandlers.Main do
-  @moduledoc """
+  @moduledoc '''
   Main coordinator module for CSI (Control Sequence Introducer) commands.
   Routes commands to the appropriate handler modules.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.{Basic, Cursor, Screen, Device}
 
-  @doc """
+  @doc '''
   Handles CSI commands by routing them to the appropriate handler module.
-  """
+  '''
   def handle_command(emulator, params, intermediates_buffer, byte) do
     case route_command(byte) do
       {:basic, cmd} ->

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
-  @moduledoc """
+  @moduledoc '''
   Handles the :dcs_passthrough state of the terminal parser.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
   @behaviour Raxol.Terminal.Parser.StateBehaviour
 
   @impl Raxol.Terminal.Parser.StateBehaviour
-  @doc """
+  @doc '''
   Processes input when the parser is in the :dcs_passthrough state.
   Collects the DCS data string until ST (ESC \).
-  """
+  '''
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
           | {:finished, Emulator.t(), State.t()}

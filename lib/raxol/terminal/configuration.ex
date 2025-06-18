@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Configuration do
-  @moduledoc """
+  @moduledoc '''
   Configuration management for the terminal emulator.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -27,9 +27,9 @@ defmodule Raxol.Terminal.Configuration do
     :saved_state
   ]
 
-  @doc """
+  @doc '''
   Creates a new configuration with default values.
-  """
+  '''
   def new(opts \\ []) do
     %__MODULE__{
       width: Keyword.get(opts, :width, 80),
@@ -43,16 +43,16 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @doc """
+  @doc '''
   Saves the current terminal state.
-  """
+  '''
   def save_state(state, config) do
     %{config | saved_state: [state | config.saved_state]}
   end
 
-  @doc """
+  @doc '''
   Restores the most recently saved terminal state.
-  """
+  '''
   def restore_state(config) do
     case config.saved_state do
       [state | rest] -> {state, %{config | saved_state: rest}}
@@ -60,9 +60,9 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
-  @doc """
+  @doc '''
   Applies restored data to the configuration.
-  """
+  '''
   def apply_restored_data(state, _data, _opts) do
     state
   end

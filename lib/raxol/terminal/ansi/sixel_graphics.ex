@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.SixelGraphics do
-  @moduledoc """
+  @moduledoc '''
   Sixel graphics support for terminal rendering.
 
   This module handles:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   * Color palette management
   * Image scaling and positioning
   * Terminal compatibility checks
-  """
+  '''
 
   @behaviour Raxol.Terminal.ANSI.SixelGraphics.Behaviour
 
@@ -40,20 +40,20 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
             sixel_cursor_pos: {0, 0}
 
   @impl true
-  @doc """
+  @doc '''
   Creates a new Sixel image with default values.
 
   ## Returns
 
   A new `t:Raxol.Terminal.ANSI.SixelGraphics.t/0` struct with default values.
-  """
+  '''
   @spec new() :: t()
   def new do
     %__MODULE__{}
   end
 
   @impl true
-  @doc """
+  @doc '''
   Creates a new Sixel image with specified dimensions.
 
   ## Parameters
@@ -64,7 +64,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   A new `t:Raxol.Terminal.ANSI.SixelGraphics.t/0` struct with the specified dimensions.
-  """
+  '''
   @spec new(non_neg_integer(), non_neg_integer()) :: t()
   def new(width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Sets the image data for a Sixel image.
 
   ## Parameters
@@ -83,14 +83,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   The updated image with new data.
-  """
+  '''
   @spec set_data(t(), binary()) :: t()
   def set_data(image, data) when is_binary(data) do
     %{image | data: data}
   end
 
   @impl true
-  @doc """
+  @doc '''
   Gets the current image data.
 
   ## Parameters
@@ -100,14 +100,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   The binary image data.
-  """
+  '''
   @spec get_data(t()) :: binary()
   def get_data(image) do
     image.data
   end
 
   @impl true
-  @doc """
+  @doc '''
   Sets the color palette for a Sixel image.
 
   ## Parameters
@@ -118,14 +118,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   The updated image with new palette.
-  """
+  '''
   @spec set_palette(t(), map()) :: t()
   def set_palette(image, palette) when is_map(palette) do
     %{image | palette: palette}
   end
 
   @impl true
-  @doc """
+  @doc '''
   Gets the current color palette.
 
   ## Parameters
@@ -135,14 +135,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   A map containing the current color palette.
-  """
+  '''
   @spec get_palette(t()) :: map()
   def get_palette(image) do
     image.palette
   end
 
   @impl true
-  @doc """
+  @doc '''
   Sets the scale factor for a Sixel image.
 
   ## Parameters
@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   The updated image with new scale factors.
-  """
+  '''
   @spec set_scale(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_scale(image, x_scale, y_scale)
       when is_integer(x_scale) and is_integer(y_scale) and x_scale > 0 and
@@ -163,7 +163,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Gets the current scale factors.
 
   ## Parameters
@@ -173,14 +173,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   A tuple `{x_scale, y_scale}` with the current scale factors.
-  """
+  '''
   @spec get_scale(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_scale(image) do
     image.scale
   end
 
   @impl true
-  @doc """
+  @doc '''
   Sets the position for a Sixel image.
 
   ## Parameters
@@ -192,7 +192,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   The updated image with new position.
-  """
+  '''
   @spec set_position(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_position(image, x, y)
       when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 do
@@ -200,7 +200,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Gets the current position.
 
   ## Parameters
@@ -210,14 +210,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   A tuple `{x, y}` with the current position.
-  """
+  '''
   @spec get_position(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_position(image) do
     image.position
   end
 
   @impl true
-  @doc """
+  @doc '''
   Encodes a Sixel image to ANSI escape sequence.
 
   ## Parameters
@@ -227,14 +227,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   A binary containing the ANSI escape sequence for the Sixel image.
-  """
+  '''
   @spec encode(t()) :: binary()
   def encode(_image) do
     ""
   end
 
   @impl true
-  @doc """
+  @doc '''
   Decodes an ANSI escape sequence into a Sixel image.
 
   ## Parameters
@@ -244,27 +244,27 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   A new `t:Raxol.Terminal.ANSI.SixelGraphics.t/0` struct with the decoded image data.
-  """
+  '''
   @spec decode(binary()) :: t()
   def decode(data) when is_binary(data) do
     %__MODULE__{}
   end
 
   @impl true
-  @doc """
+  @doc '''
   Checks if the terminal supports Sixel graphics.
 
   ## Returns
 
   `true` if Sixel graphics are supported, `false` otherwise.
-  """
+  '''
   @spec supported?() :: boolean()
   def supported? do
     false
   end
 
   @impl true
-  @doc """
+  @doc '''
   Processes a sequence of Sixel data.
 
   ## Parameters
@@ -275,7 +275,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   ## Returns
 
   A tuple containing the updated state and a response.
-  """
+  '''
   @spec process_sequence(t(), binary()) :: {t(), :ok | {:error, atom()}}
   def process_sequence(state, data) when is_binary(data) do
     case Raxol.Terminal.ANSI.SixelParser.parse(

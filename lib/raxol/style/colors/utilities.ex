@@ -1,15 +1,15 @@
 alias Raxol.Style.Colors.Color
 
 defmodule Raxol.Style.Colors.Utilities do
-  @moduledoc """
+  @moduledoc '''
   Shared color utilities for the Raxol color system.
 
   This module provides common color manipulation and analysis functions,
   including contrast calculations, accessibility checks, and color format
   conversions.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Calculates the relative luminance of a color according to WCAG 2.0.
 
   ## Parameters
@@ -19,7 +19,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
 
   A float between 0 and 1 representing the relative luminance
-  """
+  '''
   def relative_luminance(%Color{} = color) do
     relative_luminance({color.r, color.g, color.b})
   end
@@ -34,7 +34,7 @@ defmodule Raxol.Style.Colors.Utilities do
     0.2126 * r + 0.7152 * g + 0.0722 * b
   end
 
-  @doc """
+  @doc '''
   Calculates the contrast ratio between two colors according to WCAG 2.0.
 
   ## Parameters
@@ -45,7 +45,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
 
   A float representing the contrast ratio (1:1 to 21:1)
-  """
+  '''
   def contrast_ratio(color1, color2) do
     l1 = relative_luminance(color1)
     l2 = relative_luminance(color2)
@@ -57,7 +57,7 @@ defmodule Raxol.Style.Colors.Utilities do
     (l1 + 0.05) / (l2 + 0.05)
   end
 
-  @doc """
+  @doc '''
   Checks if two colors meet WCAG contrast requirements.
 
   ## Parameters
@@ -70,14 +70,14 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
 
   `true` if the contrast meets requirements, `false` otherwise
-  """
+  '''
   def meets_contrast_requirements?(color1, color2, level, size) do
     ratio = contrast_ratio(color1, color2)
     required_ratio = get_required_ratio(level, size)
     ratio >= required_ratio
   end
 
-  @doc """
+  @doc '''
   Adjusts a color to meet contrast requirements with another color.
 
   ## Parameters
@@ -90,7 +90,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
 
   An adjusted Color struct that meets contrast requirements
-  """
+  '''
   def adjust_for_contrast(color, background, level, size) do
     required_ratio = get_required_ratio(level, size)
     current_ratio = contrast_ratio(color, background)
@@ -110,7 +110,7 @@ defmodule Raxol.Style.Colors.Utilities do
     end
   end
 
-  @doc """
+  @doc '''
   Increases the contrast of a color by making it more extreme.
 
   ## Parameters
@@ -120,7 +120,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
 
   A new Color struct with increased contrast
-  """
+  '''
   def increase_contrast(%Color{} = color) do
     {r, g, b} = increase_contrast({color.r, color.g, color.b})
     %{color | r: r, g: g, b: b}
@@ -134,9 +134,9 @@ defmodule Raxol.Style.Colors.Utilities do
     }
   end
 
-  @doc """
+  @doc '''
   Checks if two colors have sufficient contrast according to WCAG guidelines.
-  """
+  '''
   def check_contrast(color1, color2, level \\ :aa, size \\ :normal) do
     ratio = contrast_ratio(color1, color2)
 
@@ -155,9 +155,9 @@ defmodule Raxol.Style.Colors.Utilities do
     end
   end
 
-  @doc """
+  @doc '''
   Returns black or white, whichever has better contrast with the background.
-  """
+  '''
   def best_bw_contrast(background, min_ratio \\ 4.5) do
     black = Color.from_hex("#000000")
     white = Color.from_hex("#FFFFFF")
@@ -171,7 +171,7 @@ defmodule Raxol.Style.Colors.Utilities do
     end
   end
 
-  @doc """
+  @doc '''
   Converts RGB values to HSL.
 
   ## Parameters
@@ -186,7 +186,7 @@ defmodule Raxol.Style.Colors.Utilities do
   * h is hue (0-360)
   * s is saturation (0-1)
   * l is lightness (0-1)
-  """
+  '''
   def rgb_to_hsl(r, g, b)
       when is_integer(r) and is_integer(g) and is_integer(b) do
     r = r / 255
@@ -218,7 +218,7 @@ defmodule Raxol.Style.Colors.Utilities do
     {h, s, l}
   end
 
-  @doc """
+  @doc '''
   Converts HSL values to RGB.
 
   ## Parameters
@@ -230,7 +230,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
 
   A tuple {r, g, b} where each component is in the range 0-255
-  """
+  '''
   def hsl_to_rgb(h, s, l) when is_number(h) and is_number(s) and is_number(l) do
     h = rem(h + 360, 360)
     s = max(0, min(1, s))

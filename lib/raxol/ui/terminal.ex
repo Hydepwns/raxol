@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Terminal do
-  @moduledoc """
+  @moduledoc '''
   A terminal UI rendering module for Raxol.
 
   This module provides basic terminal rendering capabilities for Raxol applications,
@@ -14,27 +14,27 @@ defmodule Raxol.UI.Terminal do
   - Basic UI elements (boxes, lines, progress bars)
   - RTL rendering support
   - Accessibility-friendly output formatting
-  """
+  '''
 
   alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Core.I18n
 
   @spec clear() :: :ok
-  @doc """
+  @doc '''
   Clear the terminal screen.
 
   ## Examples
 
       iex> Terminal.clear()
       :ok
-  """
+  '''
   def clear do
     IO.write("\e[2J\e[H")
     :ok
   end
 
   @spec move_cursor(integer(), integer()) :: :ok
-  @doc """
+  @doc '''
   Move the cursor to a specific position.
 
   ## Parameters
@@ -46,14 +46,14 @@ defmodule Raxol.UI.Terminal do
 
       iex> Terminal.move_cursor(1, 1)
       :ok
-  """
+  '''
   def move_cursor(row, col) do
     IO.write("\e[#{row};#{col}H")
     :ok
   end
 
   @spec print(String.t(), keyword()) :: :ok
-  @doc """
+  @doc '''
   Print text with optional styling.
 
   ## Options
@@ -71,7 +71,7 @@ defmodule Raxol.UI.Terminal do
 
       iex> Terminal.print("Hello", color: "#FF0000", bold: true)
       :ok
-  """
+  '''
   def print(text, opts \\ []) do
     # Get RTL setting
     rtl = Keyword.get(opts, :rtl) || I18n.rtl?()
@@ -94,7 +94,7 @@ defmodule Raxol.UI.Terminal do
   end
 
   @spec println(String.t(), keyword()) :: :ok
-  @doc """
+  @doc '''
   Print text followed by a newline.
 
   Takes the same options as `print/2`.
@@ -103,7 +103,7 @@ defmodule Raxol.UI.Terminal do
 
       iex> Terminal.println("Hello", color: "#FF0000", bold: true)
       :ok
-  """
+  '''
   def println(text \\ "", opts \\ []) do
     print(text, opts)
     IO.write("\n")
@@ -111,7 +111,7 @@ defmodule Raxol.UI.Terminal do
   end
 
   @spec print_centered(String.t(), keyword()) :: :ok
-  @doc """
+  @doc '''
   Print centered text.
 
   ## Options
@@ -122,7 +122,7 @@ defmodule Raxol.UI.Terminal do
 
       iex> Terminal.print_centered("Title", color: "#FF0000", bold: true)
       :ok
-  """
+  '''
   def print_centered(text, opts \\ []) do
     # Get terminal width
     width = get_terminal_size().width
@@ -136,7 +136,7 @@ defmodule Raxol.UI.Terminal do
   end
 
   @spec print_horizontal_line(keyword()) :: :ok
-  @doc """
+  @doc '''
   Print a horizontal line spanning the terminal width.
 
   ## Options
@@ -148,7 +148,7 @@ defmodule Raxol.UI.Terminal do
 
       iex> Terminal.print_horizontal_line(char: "-", color: "#CCCCCC")
       :ok
-  """
+  '''
   def print_horizontal_line(opts \\ []) do
     # Get terminal width
     width = get_terminal_size().width
@@ -162,7 +162,7 @@ defmodule Raxol.UI.Terminal do
   end
 
   @spec read_key(keyword()) :: {:ok, term()} | :timeout | {:error, term()}
-  @doc """
+  @doc '''
   Read a keypress from the user.
 
   ## Options
@@ -182,7 +182,7 @@ defmodule Raxol.UI.Terminal do
 
       iex> Terminal.read_key(timeout: 1000)
       :timeout
-  """
+  '''
   def read_key(opts \\ []) do
     timeout = Keyword.get(opts, :timeout, :infinity)
     original_opts = :io.getopts()
@@ -219,7 +219,7 @@ defmodule Raxol.UI.Terminal do
   end
 
   @spec print_box(String.t(), keyword()) :: :ok
-  @doc """
+  @doc '''
   Print a box with content.
 
   ## Parameters
@@ -240,7 +240,7 @@ defmodule Raxol.UI.Terminal do
 
       iex> Terminal.print_box("Hello\nWorld", title: "Greeting", border_color: "#0000FF")
       :ok
-  """
+  '''
   def print_box(content, opts \\ []) do
     # Parse content into lines
     lines = String.split(content, "\n")

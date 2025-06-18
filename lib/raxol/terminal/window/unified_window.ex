@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Window.UnifiedWindow do
-  @moduledoc """
+  @moduledoc '''
   Unified window management system for the Raxol Terminal Emulator.
   Handles window creation, manipulation, state management, and ANSI sequence processing.
-  """
+  '''
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -48,9 +48,9 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   # Client API
 
-  @doc """
+  @doc '''
   Starts the window manager with optional configuration.
-  """
+  '''
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
     GenServer.start_link(__MODULE__, opts,
@@ -58,118 +58,118 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     )
   end
 
-  @doc """
+  @doc '''
   Creates a new window with the given options.
-  """
+  '''
   @spec create_window(map()) :: {:ok, window_id()} | {:error, String.t()}
   def create_window(opts \\ %{}) do
     GenServer.call(__MODULE__, {:create_window, opts})
   end
 
-  @doc """
+  @doc '''
   Splits an existing window in the specified direction.
-  """
+  '''
   @spec split_window(window_id(), :horizontal | :vertical) ::
           {:ok, window_id()} | {:error, String.t()}
   def split_window(window_id, direction) do
     GenServer.call(__MODULE__, {:split_window, window_id, direction})
   end
 
-  @doc """
+  @doc '''
   Closes a window and its children.
-  """
+  '''
   @spec close_window(window_id()) :: :ok | {:error, String.t()}
   def close_window(window_id) do
     GenServer.call(__MODULE__, {:close_window, window_id})
   end
 
-  @doc """
+  @doc '''
   Sets the window title.
-  """
+  '''
   @spec set_title(window_id(), String.t()) :: :ok | {:error, String.t()}
   def set_title(window_id, title) do
     GenServer.call(__MODULE__, {:set_title, window_id, title})
   end
 
-  @doc """
+  @doc '''
   Sets the window icon name.
-  """
+  '''
   @spec set_icon_name(window_id(), String.t()) :: :ok | {:error, String.t()}
   def set_icon_name(window_id, name) do
     GenServer.call(__MODULE__, {:set_icon_name, window_id, name})
   end
 
-  @doc """
+  @doc '''
   Resizes a window to the specified dimensions.
-  """
+  '''
   @spec resize(window_id(), non_neg_integer(), non_neg_integer()) ::
           :ok | {:error, String.t()}
   def resize(window_id, width, height) do
     GenServer.call(__MODULE__, {:resize, window_id, width, height})
   end
 
-  @doc """
+  @doc '''
   Moves a window to the specified position.
-  """
+  '''
   @spec move(window_id(), non_neg_integer(), non_neg_integer()) ::
           :ok | {:error, String.t()}
   def move(window_id, x, y) do
     GenServer.call(__MODULE__, {:move, window_id, x, y})
   end
 
-  @doc """
+  @doc '''
   Sets the window's stacking order.
-  """
+  '''
   @spec set_stacking_order(window_id(), :normal | :above | :below) ::
           :ok | {:error, String.t()}
   def set_stacking_order(window_id, order) do
     GenServer.call(__MODULE__, {:set_stacking_order, window_id, order})
   end
 
-  @doc """
+  @doc '''
   Maximizes or restores a window.
-  """
+  '''
   @spec set_maximized(window_id(), boolean()) :: :ok | {:error, String.t()}
   def set_maximized(window_id, maximized) do
     GenServer.call(__MODULE__, {:set_maximized, window_id, maximized})
   end
 
-  @doc """
+  @doc '''
   Sets the active window.
-  """
+  '''
   @spec set_active_window(window_id()) :: :ok | {:error, String.t()}
   def set_active_window(window_id) do
     GenServer.call(__MODULE__, {:set_active_window, window_id})
   end
 
-  @doc """
+  @doc '''
   Gets the state of a window.
-  """
+  '''
   @spec get_window_state(window_id()) ::
           {:ok, window_state()} | {:error, String.t()}
   def get_window_state(window_id) do
     GenServer.call(__MODULE__, {:get_window_state, window_id})
   end
 
-  @doc """
+  @doc '''
   Gets the active window ID.
-  """
+  '''
   @spec get_active_window() :: window_id() | nil
   def get_active_window do
     GenServer.call(__MODULE__, :get_active_window)
   end
 
-  @doc """
+  @doc '''
   Updates the window manager configuration.
-  """
+  '''
   @spec update_config(map()) :: :ok
   def update_config(config) do
     GenServer.call(__MODULE__, {:update_config, config})
   end
 
-  @doc """
+  @doc '''
   Cleans up the window manager.
-  """
+  '''
   def cleanup(_window_manager) do
     # TODO: Implementation for cleanup
     :ok

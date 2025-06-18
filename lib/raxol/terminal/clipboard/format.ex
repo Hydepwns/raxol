@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Clipboard.Format do
-  @moduledoc """
+  @moduledoc '''
   Handles clipboard content formatting and filtering.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Applies a filter to clipboard content.
-  """
+  '''
   @spec apply_filter(String.t(), String.t(), String.t()) ::
           {:ok, String.t()} | {:error, :invalid_filter}
   def apply_filter(filter, content, format) do
@@ -17,9 +17,9 @@ defmodule Raxol.Terminal.Clipboard.Format do
     end
   end
 
-  @doc """
+  @doc '''
   Strips formatting from content.
-  """
+  '''
   @spec strip_formatting(String.t()) :: String.t()
   def strip_formatting(content) do
     content
@@ -28,9 +28,9 @@ defmodule Raxol.Terminal.Clipboard.Format do
     |> String.trim()
   end
 
-  @doc """
+  @doc '''
   Converts content to HTML format.
-  """
+  '''
   @spec to_html(String.t(), String.t()) :: String.t()
   def to_html(content, format) do
     case format do
@@ -40,9 +40,9 @@ defmodule Raxol.Terminal.Clipboard.Format do
     end
   end
 
-  @doc """
+  @doc '''
   Converts content to RTF format.
-  """
+  '''
   @spec to_rtf(String.t(), String.t()) :: String.t()
   def to_rtf(content, format) do
     case format do

@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
-  @moduledoc """
+  @moduledoc '''
   Helper functions for text and line manipulation in MultiLineInput.
-  """
+  '''
 
   alias Raxol.UI.Components.Input.TextWrapping
   alias Raxol.UI.Components.Input.MultiLineInput
@@ -10,9 +10,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
   # --- Line Splitting and Wrapping ---
 
-  @doc """
+  @doc '''
   Splits the given text into lines, applying the specified wrapping mode (:none, :char, or :word).
-  """
+  '''
   def split_into_lines("", _width, _wrap), do: [""]
 
   def split_into_lines(text, width, wrap_mode) do
@@ -26,9 +26,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   end
 
   # Helper to split by newline and apply wrapping function
-  @doc """
+  @doc '''
   Splits the given text into lines and applies the provided wrapping function to each line.
-  """
+  '''
   def split_and_wrap(text, width, wrap_fun) do
     text
     |> String.split("\n")
@@ -37,9 +37,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
   # --- Position Conversion ---
 
-  @doc """
+  @doc '''
   Converts a {row, col} tuple to a flat string index based on the provided lines.
-  """
+  '''
   def pos_to_index(text_lines, {row, col}) do
     # Original Implementation
     num_lines = length(text_lines)
@@ -71,9 +71,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
   # --- Text Insertion/Deletion ---
 
-  @doc """
+  @doc '''
   Replaces text within a range (from start_pos_tuple to end_pos_tuple) with the given replacement string. Returns {new_full_text, replaced_text}.
-  """
+  '''
   def replace_text_range(
         lines_list,
         start_pos_tuple,
@@ -168,9 +168,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     {new_full_text, replaced_text}
   end
 
-  @doc """
+  @doc '''
   Inserts a character or codepoint at the current cursor position in the state, updating lines and value.
-  """
+  '''
   def insert_char(state, char_or_codepoint) do
     %{lines: lines, cursor_pos: {row, col}} = state
 
@@ -215,9 +215,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     new_state
   end
 
-  @doc """
+  @doc '''
   Deletes the currently selected text in the state, updating lines and value.
-  """
+  '''
   def delete_selection(state) do
     %{lines: lines} = state
 

@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ANSI.StateMachine do
-  @moduledoc """
+  @moduledoc '''
   A state machine for parsing ANSI escape sequences.
   This module provides a more efficient alternative to regex-based parsing.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -40,9 +40,9 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
           designating_gset: atom() | nil
         }
 
-  @doc """
+  @doc '''
   Creates a new parser state with default values.
-  """
+  '''
   @spec new() :: parser_state()
   def new do
     %{
@@ -55,10 +55,10 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
     }
   end
 
-  @doc """
+  @doc '''
   Processes input bytes through the state machine.
   Returns the updated state and any parsed sequences.
-  """
+  '''
   @spec process(parser_state(), binary()) :: {parser_state(), list(sequence())}
   def process(state, input) do
     process_bytes(state, input, [])

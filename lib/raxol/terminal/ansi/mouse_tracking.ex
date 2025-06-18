@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ANSI.MouseTracking do
-  @moduledoc """
+  @moduledoc '''
   Handles mouse tracking and focus tracking for the terminal.
   Supports various mouse tracking modes and focus tracking events.
-  """
+  '''
 
   alias Raxol.Terminal.ANSI.Monitor
 
@@ -34,9 +34,9 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     3 => :release
   }
 
-  @doc """
+  @doc '''
   Enables mouse tracking with the specified mode.
-  """
+  '''
   @spec enable_mouse_tracking(atom()) :: String.t()
   def enable_mouse_tracking(mode) do
     case Map.get(@mouse_modes, mode) do
@@ -54,9 +54,9 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     end
   end
 
-  @doc """
+  @doc '''
   Disables mouse tracking with the specified mode.
-  """
+  '''
   @spec disable_mouse_tracking(atom()) :: String.t()
   def disable_mouse_tracking(mode) do
     case Map.get(@mouse_modes, mode) do
@@ -74,9 +74,9 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     end
   end
 
-  @doc """
+  @doc '''
   Parses a mouse tracking sequence into a mouse event.
-  """
+  '''
   @spec parse_mouse_sequence(String.t()) :: mouse_event() | nil
   def parse_mouse_sequence(sequence) do
     try do
@@ -101,9 +101,9 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     end
   end
 
-  @doc """
+  @doc '''
   Parses a focus tracking sequence into a focus event.
-  """
+  '''
   @spec parse_focus_sequence(String.t()) :: focus_event() | nil
   def parse_focus_sequence(sequence) do
     try do
@@ -123,9 +123,9 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     end
   end
 
-  @doc """
+  @doc '''
   Formats a mouse event into a tracking sequence.
-  """
+  '''
   @spec format_mouse_event(mouse_event()) :: String.t()
   def format_mouse_event({button, action, x, y}) do
     button_code = get_button_code(button)
@@ -133,9 +133,9 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     "\e[M#{button_code + action_code}#{x + 32}#{y + 32}"
   end
 
-  @doc """
+  @doc '''
   Formats a focus event into a tracking sequence.
-  """
+  '''
   @spec format_focus_event(focus_event()) :: String.t()
   def format_focus_event(:focus_in), do: "\e[I"
   def format_focus_event(:focus_out), do: "\e[O"

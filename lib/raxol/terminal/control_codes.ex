@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.ControlCodes do
-  @moduledoc """
+  @moduledoc '''
   Handles C0 control codes and simple ESC sequences.
 
   Extracted from Terminal.Emulator for better organization.
   Relies on Emulator state and ScreenBuffer for actions.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -33,10 +33,10 @@ defmodule Raxol.Terminal.ControlCodes do
   @esc 27
   @del 127
 
-  @doc """
+  @doc '''
   Handles a C0 control code (0-31) or DEL (127).
   Delegates to specific handlers based on the codepoint.
-  """
+  '''
   @spec handle_c0(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
   def handle_c0(emulator, char_codepoint) do
     handler = c0_handler_for(char_codepoint)
@@ -82,15 +82,15 @@ defmodule Raxol.Terminal.ControlCodes do
       emulator
     end
 
-  @doc """
+  @doc '''
   Handles bell control code.
-  """
+  '''
   def handle_bel(emulator) do
     System.cmd("tput", ["bel"])
     emulator
   end
 
-  @doc "Handle Backspace (BS)"
+  @doc 'Handle Backspace (BS)'
   def handle_bs(%EmulatorStruct{} = emulator) do
     # Move cursor left by one, respecting margins
     # Use alias
@@ -98,9 +98,9 @@ defmodule Raxol.Terminal.ControlCodes do
     %{emulator | cursor: new_cursor}
   end
 
-  @doc """
+  @doc '''
   Handles the Horizontal Tab (HT) action.
-  """
+  '''
   def handle_ht(%EmulatorStruct{} = emulator) do
     # Move cursor to the next tab stop
     {current_col, _} =
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.ControlCodes do
     %{emulator | cursor: new_cursor}
   end
 
-  @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
+  @doc 'Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)'
   def handle_lf(%EmulatorStruct{} = emulator) do
     emulator
     |> handle_pending_wrap()
@@ -201,7 +201,7 @@ defmodule Raxol.Terminal.ControlCodes do
     end
   end
 
-  @doc "Handle Carriage Return (CR)"
+  @doc 'Handle Carriage Return (CR)'
   def handle_cr(%EmulatorStruct{} = emulator) do
     Raxol.Core.Runtime.Log.debug(
       "[handle_cr] Input: cursor=#{inspect(Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor))}, last_exceeded=#{emulator.last_col_exceeded}"
@@ -283,9 +283,9 @@ defmodule Raxol.Terminal.ControlCodes do
     emulator
   end
 
-  @doc """
+  @doc '''
   Handles substitute character control code.
-  """
+  '''
   def handle_sub(emulator) do
     # Print a substitute character (typically displayed as ^Z)
     System.cmd("echo", ["-n", "^Z"])
@@ -336,7 +336,7 @@ defmodule Raxol.Terminal.ControlCodes do
     %{emulator | tab_stops: new_tab_stops}
   end
 
-  @doc "Handle Reverse Index (RI) - ESC M"
+  @doc 'Handle Reverse Index (RI) - ESC M'
   def handle_ri(%EmulatorStruct{} = emulator) do
     # Move cursor up one line. If at the top margin, scroll down.
     {_col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)

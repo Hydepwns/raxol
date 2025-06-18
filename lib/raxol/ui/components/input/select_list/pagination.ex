@@ -1,14 +1,14 @@
 defmodule Raxol.UI.Components.Input.SelectList.Pagination do
-  @moduledoc """
+  @moduledoc '''
   Handles pagination functionality for the SelectList component.
-  """
+  '''
 
   @type option :: {String.t(), any()}
   @type options :: [option()]
 
-  @doc """
+  @doc '''
   Calculates the total number of pages based on the number of options and page size.
-  """
+  '''
   def calculate_total_pages(num_options, page_size) do
     if num_options == 0 do
       1
@@ -17,18 +17,18 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the options for a specific page.
-  """
+  '''
   def get_page_options(options, page_num, page_size) do
     start_idx = page_num * page_size
     end_idx = min(start_idx + page_size, length(options))
     Enum.slice(options, start_idx, end_idx - start_idx)
   end
 
-  @doc """
+  @doc '''
   Updates pagination state based on a new page number.
-  """
+  '''
   def update_page_state(state, page_num) do
     effective_options = get_effective_options(state)
 
@@ -53,9 +53,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the effective options list (filtered or original) based on current state.
-  """
+  '''
   def get_effective_options(state) do
     if state.is_filtering do
       state.filtered_options || []

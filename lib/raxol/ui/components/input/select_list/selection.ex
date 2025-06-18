@@ -1,14 +1,14 @@
 defmodule Raxol.UI.Components.Input.SelectList.Selection do
-  @moduledoc """
+  @moduledoc '''
   Handles selection functionality for the SelectList component.
-  """
+  '''
 
   alias Raxol.UI.Components.Input.SelectList.Pagination
 
-  @doc """
+  @doc '''
   Updates selection state based on a selected index.
   Returns updated state and any commands to execute.
-  """
+  '''
   def handle_select(state) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
@@ -43,9 +43,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     end
   end
 
-  @doc """
+  @doc '''
   Generates commands based on selection callbacks.
-  """
+  '''
   def generate_selection_commands(state, value) do
     commands = []
 
@@ -66,9 +66,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     commands
   end
 
-  @doc """
+  @doc '''
   Updates selection state for a specific index.
-  """
+  '''
   def update_selection_state(state, index) do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)

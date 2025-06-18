@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ANSI.SixelParser do
-  @moduledoc """
+  @moduledoc '''
   Handles the parsing logic for Sixel graphics data streams within a DCS sequence.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -9,10 +9,10 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   alias Raxol.Terminal.ANSI.SixelPalette
 
   defmodule ParserState do
-    @moduledoc """
+    @moduledoc '''
     Represents the state during the parsing of a Sixel graphics data stream.
     Tracks position, color, palette, and pixel buffer information.
-    """
+    '''
 
     @type t :: %__MODULE__{
             x: integer(),
@@ -323,7 +323,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           {:ok, params, rest_of_binary}
         rescue
           e in ArgumentError ->
-            {:error, {"Invalid integer parameter in '#{param_section}'", e},
+            {:error, {"Invalid integer parameter in "#{param_section}"", e},
              input_binary}
         end
 

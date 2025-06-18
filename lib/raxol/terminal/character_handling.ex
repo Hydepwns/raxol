@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.CharacterHandling do
-  @moduledoc """
+  @moduledoc '''
   Handles wide character and bidirectional text support for the terminal emulator.
 
   This module provides functions for:
@@ -7,13 +7,13 @@ defmodule Raxol.Terminal.CharacterHandling do
   - Handling bidirectional text rendering
   - Managing character combining
   - Supporting Unicode character properties
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Determines if a character is a wide character (takes up two cells).
-  """
+  '''
   @spec wide_char?(char()) :: boolean()
   def wide_char?(char) do
     wide_ranges = [
@@ -50,9 +50,9 @@ defmodule Raxol.Terminal.CharacterHandling do
     end)
   end
 
-  @doc """
+  @doc '''
   Determine the display width of a given character code point or string.
-  """
+  '''
   @spec get_char_width(codepoint :: integer() | String.t()) :: 1 | 2
   def get_char_width(codepoint) when is_integer(codepoint) do
     if wide_char?(codepoint), do: 2, else: 1
@@ -65,9 +65,9 @@ defmodule Raxol.Terminal.CharacterHandling do
     end
   end
 
-  @doc """
+  @doc '''
   Determines if a character is a combining character.
-  """
+  '''
   @spec combining_char?(char()) :: boolean()
   def combining_char?(char) do
     combining_ranges = [
@@ -88,10 +88,10 @@ defmodule Raxol.Terminal.CharacterHandling do
     end)
   end
 
-  @doc """
+  @doc '''
   Determines the bidirectional character type.
   Returns :LTR, :RTL, :NEUTRAL, or :COMBINING.
-  """
+  '''
   @dialyzer {:nowarn_function, get_bidi_type: 1}
   def get_bidi_type(char) do
     cond do
@@ -140,10 +140,10 @@ defmodule Raxol.Terminal.CharacterHandling do
     Enum.any?(ranges, fn {start, finish} -> char >= start and char <= finish end)
   end
 
-  @doc """
+  @doc '''
   Processes a string for bidirectional text rendering.
   Returns a list of segments with their rendering order.
-  """
+  '''
   @spec process_bidi_text(String.t()) ::
           list({:LTR | :RTL | :NEUTRAL, String.t()})
   @dialyzer {:nowarn_function, process_bidi_text: 1}
@@ -171,10 +171,10 @@ defmodule Raxol.Terminal.CharacterHandling do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the effective width of a string, taking into account wide characters
   and ignoring combining characters.
-  """
+  '''
   @spec get_string_width(String.t()) :: non_neg_integer()
   def get_string_width(string) do
     string
@@ -183,9 +183,9 @@ defmodule Raxol.Terminal.CharacterHandling do
     |> Enum.sum()
   end
 
-  @doc """
+  @doc '''
   Splits a string at a given width, respecting wide characters.
-  """
+  '''
   @spec split_at_width(String.t(), non_neg_integer()) ::
           {String.t(), String.t()}
   def split_at_width(string, width) do

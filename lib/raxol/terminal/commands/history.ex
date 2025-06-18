@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.History do
-  @moduledoc """
+  @moduledoc '''
   Manages command history for the terminal emulator.
 
   This module provides functionality for:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Commands.History do
   - Navigating through command history
   - Persisting command history
   - Managing history size limits
-  """
+  '''
 
   @type command_history :: [String.t()]
   @type command_history_config :: %{
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Commands.History do
     :current_input
   ]
 
-  @doc """
+  @doc '''
   Creates a new command history manager.
 
   ## Examples
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history = History.new(1000)
       iex> history.max_size
       1000
-  """
+  '''
   @spec new(non_neg_integer()) :: t()
   def new(max_size) when is_integer(max_size) and max_size > 0 do
     %__MODULE__{
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Commands.History do
     }
   end
 
-  @doc """
+  @doc '''
   Adds a command to the history.
 
   ## Examples
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history = History.add(history, "ls -la")
       iex> history.commands
       ["ls -la"]
-  """
+  '''
   @spec add(t(), String.t()) :: t()
   def add(%__MODULE__{} = history, command) when is_binary(command) do
     commands = [command | history.commands]
@@ -66,7 +66,7 @@ defmodule Raxol.Terminal.Commands.History do
     %{history | commands: commands, current_index: -1, current_input: ""}
   end
 
-  @doc """
+  @doc '''
   Retrieves the previous command in history.
 
   ## Examples
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history = History.add(history, "cd /tmp")
       iex> History.previous(history)
       {"cd /tmp", %History{...}}
-  """
+  '''
   @spec previous(t()) :: {String.t() | nil, t()}
   def previous(%__MODULE__{} = history) do
     case history.current_index + 1 < length(history.commands) do
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Commands.History do
     end
   end
 
-  @doc """
+  @doc '''
   Retrieves the next command in history.
 
   ## Examples
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Commands.History do
       iex> {_, history} = History.previous(history)
       iex> History.next(history)
       {"ls -la", %History{...}}
-  """
+  '''
   @spec next(t()) :: {String.t() | nil, t()}
   def next(%__MODULE__{} = history) do
     case history.current_index - 1 >= -1 do
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.Commands.History do
     end
   end
 
-  @doc """
+  @doc '''
   Saves the current input state.
 
   ## Examples
@@ -129,13 +129,13 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history = History.save_input(history, "ls -l")
       iex> history.current_input
       "ls -l"
-  """
+  '''
   @spec save_input(t(), String.t()) :: t()
   def save_input(%__MODULE__{} = history, input) when is_binary(input) do
     %{history | current_input: input}
   end
 
-  @doc """
+  @doc '''
   Clears the command history.
 
   ## Examples
@@ -145,13 +145,13 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history = History.clear(history)
       iex> history.commands
       []
-  """
+  '''
   @spec clear(t()) :: t()
   def clear(%__MODULE__{} = history) do
     %{history | commands: [], current_index: -1, current_input: ""}
   end
 
-  @doc """
+  @doc '''
   Returns the current command history as a list.
 
   ## Examples
@@ -161,17 +161,17 @@ defmodule Raxol.Terminal.Commands.History do
       iex> history = History.add(history, "cd /tmp")
       iex> History.list(history)
       ["cd /tmp", "ls -la"]
-  """
+  '''
   @spec list(t()) :: command_history()
   def list(%__MODULE__{} = history) do
     history.commands
   end
 
-  @doc """
+  @doc '''
   Adds to the emulator's command history if the input is a newline (10),
   or appends to the current command buffer if it's a printable character.
   Returns the updated emulator struct.
-  """
+  '''
   @spec maybe_add_to_history(Emulator.t(), integer()) :: Emulator.t()
   def maybe_add_to_history(emulator, 10) do
     # On newline, add the current buffer to history if not empty, then clear buffer
@@ -199,9 +199,9 @@ defmodule Raxol.Terminal.Commands.History do
   @spec maybe_add_to_history(Emulator.t(), any()) :: Emulator.t()
   def maybe_add_to_history(emulator, _), do: emulator
 
-  @doc """
+  @doc '''
   Updates the maximum size of the command history. Truncates the history if needed.
-  """
+  '''
   @spec update_size(t(), non_neg_integer()) :: t()
   def update_size(%__MODULE__{} = history, new_size)
       when is_integer(new_size) and new_size > 0 do
@@ -215,10 +215,10 @@ defmodule Raxol.Terminal.Commands.History do
     }
   end
 
-  @doc """
+  @doc '''
   Updates the command history configuration.
   Delegates to update_size/2 for compatibility.
-  """
+  '''
   def update_config(%__MODULE__{} = history, config) do
     update_size(history, config.command_history_limit)
   end

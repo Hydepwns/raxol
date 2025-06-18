@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.TimerManager do
-  @moduledoc """
+  @moduledoc '''
   Manages timers and scheduling for plugin operations.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 

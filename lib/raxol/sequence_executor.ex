@@ -1,14 +1,14 @@
 defmodule Raxol.SequenceExecutor do
-  @moduledoc """
+  @moduledoc '''
   Handles the execution of sequences of terminal commands.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Sequence
 
-  @doc """
+  @doc '''
   Executes a sequence of terminal commands.
-  """
+  '''
   @spec execute_sequence(Sequence.t(), map()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def execute_sequence(%Sequence{steps: steps}, config) do

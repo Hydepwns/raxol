@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Sync.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages synchronization between different terminal components (splits, windows, tabs).
   Provides a high-level interface for component synchronization and state management.
-  """
+  '''
 
   use GenServer
   require Logger
@@ -34,9 +34,9 @@ defmodule Raxol.Terminal.Sync.Manager do
         }
 
   # Client API
-  @doc """
+  @doc '''
   Starts the sync manager.
-  """
+  '''
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -53,9 +53,9 @@ defmodule Raxol.Terminal.Sync.Manager do
     GenServer.call(__MODULE__, {:unregister_component, component_id})
   end
 
-  @doc """
+  @doc '''
   Syncs a component's state.
-  """
+  '''
   @spec sync_state(String.t(), String.t(), term(), keyword()) :: :ok
   def sync_state(component_id, component_type, new_state, opts \\ []) do
     GenServer.call(

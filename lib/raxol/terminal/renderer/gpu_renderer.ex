@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Renderer.GPURenderer do
-  @moduledoc """
+  @moduledoc '''
   GPU-accelerated terminal renderer.
 
   This module provides hardware-accelerated rendering capabilities for the terminal,
@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   - Performance optimization
   - Memory management
   - Resource pooling
-  """
+  '''
 
   alias Raxol.Terminal.{ScreenBuffer, Renderer}
 
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     :performance_metrics
   ]
 
-  @doc """
+  @doc '''
   Creates a new GPU renderer instance.
 
   ## Parameters
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   ## Returns
 
   A new GPU renderer instance
-  """
+  '''
   @spec new(Renderer.t(), keyword()) :: t()
   def new(renderer, opts \\ []) do
     gpu_context = initialize_gpu_context(opts)
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     }
   end
 
-  @doc """
+  @doc '''
   Renders the screen buffer using GPU acceleration.
 
   ## Parameters
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   ## Returns
 
   The rendered output
-  """
+  '''
   @spec render(t(), keyword()) :: String.t()
   def render(gpu_renderer, opts \\ []) do
     start_time = System.monotonic_time()
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     output
   end
 
-  @doc """
+  @doc '''
   Updates the render pipeline configuration.
 
   ## Parameters
@@ -108,7 +108,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   ## Returns
 
   Updated GPU renderer instance
-  """
+  '''
   @spec update_pipeline(t(), map()) :: t()
   def update_pipeline(gpu_renderer, config) do
     updated_pipeline =
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     %{gpu_renderer | render_pipeline: updated_pipeline}
   end
 
-  @doc """
+  @doc '''
   Gets the current performance metrics.
 
   ## Parameters
@@ -127,13 +127,13 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   ## Returns
 
   Map containing performance metrics
-  """
+  '''
   @spec get_performance_metrics(t()) :: map()
   def get_performance_metrics(gpu_renderer) do
     gpu_renderer.performance_metrics
   end
 
-  @doc """
+  @doc '''
   Optimizes the render pipeline based on current performance metrics.
 
   ## Parameters
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   ## Returns
 
   Updated GPU renderer instance with optimized pipeline
-  """
+  '''
   @spec optimize_pipeline(t()) :: t()
   def optimize_pipeline(gpu_renderer) do
     metrics = gpu_renderer.performance_metrics

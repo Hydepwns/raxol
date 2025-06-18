@@ -1,11 +1,11 @@
 defmodule Raxol.UI.Rendering.Painter do
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Paints the render tree into draw commands or buffer updates.
   Currently a stub; in the future, this will convert the render tree into draw commands,
   potentially processing diffs or composition-specific changes.
-  """
+  '''
   @spec paint(
           compose_stage_output :: any(),
           new_tree_for_reference :: map() | nil,

@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Buffer.EnhancedManager do
-  @moduledoc """
+  @moduledoc '''
   Enhanced buffer manager with advanced features for improved performance.
 
   This module provides:
@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   - Compression to reduce memory usage
   - Buffer pooling for efficient memory management
   - Performance monitoring and optimization
-  """
+  '''
 
   alias Raxol.Terminal.{Buffer, ScreenBuffer}
 
@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     :performance_metrics
   ]
 
-  @doc """
+  @doc '''
   Creates a new enhanced buffer manager.
 
   ## Parameters
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   A new enhanced buffer manager instance
-  """
+  '''
   @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
   def new(width, height, opts \\ []) do
     buffer = ScreenBuffer.new(width, height)
@@ -64,7 +64,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     }
   end
 
-  @doc """
+  @doc '''
   Queues an asynchronous buffer update.
 
   ## Parameters
@@ -75,14 +75,14 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   Updated buffer manager instance
-  """
+  '''
   @spec queue_update(t(), (ScreenBuffer.t() -> ScreenBuffer.t())) :: t()
   def queue_update(manager, update_fn) do
     updated_queue = :queue.in(update_fn, manager.update_queue)
     %{manager | update_queue: updated_queue}
   end
 
-  @doc """
+  @doc '''
   Processes all queued updates.
 
   ## Parameters
@@ -92,7 +92,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   Updated buffer manager instance
-  """
+  '''
   @spec process_updates(t()) :: t()
   def process_updates(manager) do
     start_time = System.monotonic_time()
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     }
   end
 
-  @doc """
+  @doc '''
   Compresses the buffer to reduce memory usage.
 
   ## Parameters
@@ -129,7 +129,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   Updated buffer manager instance
-  """
+  '''
   @spec compress_buffer(t(), keyword()) :: t()
   def compress_buffer(manager, opts \\ []) do
     start_time = System.monotonic_time()
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     }
   end
 
-  @doc """
+  @doc '''
   Gets a buffer from the pool or creates a new one.
 
   ## Parameters
@@ -170,7 +170,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   `{buffer, updated_manager}`
-  """
+  '''
   @spec get_buffer(t(), non_neg_integer(), non_neg_integer()) ::
           {ScreenBuffer.t(), t()}
   def get_buffer(manager, width, height) do
@@ -184,7 +184,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     end
   end
 
-  @doc """
+  @doc '''
   Returns a buffer to the pool.
 
   ## Parameters
@@ -195,14 +195,14 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   Updated buffer manager instance
-  """
+  '''
   @spec return_buffer(t(), ScreenBuffer.t()) :: t()
   def return_buffer(manager, buffer) do
     updated_pool = add_to_pool(manager.pool, buffer)
     %{manager | pool: updated_pool}
   end
 
-  @doc """
+  @doc '''
   Gets the current performance metrics.
 
   ## Parameters
@@ -212,13 +212,13 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   Map containing performance metrics
-  """
+  '''
   @spec get_performance_metrics(t()) :: map()
   def get_performance_metrics(manager) do
     manager.performance_metrics
   end
 
-  @doc """
+  @doc '''
   Optimizes the buffer manager based on current performance metrics.
 
   ## Parameters
@@ -228,7 +228,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   ## Returns
 
   Updated buffer manager instance
-  """
+  '''
   @spec optimize(t()) :: t()
   def optimize(manager) do
     metrics = manager.performance_metrics

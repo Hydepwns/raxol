@@ -1,15 +1,15 @@
 defmodule Raxol.Docs.InteractiveTutorial.Models do
-  @moduledoc """
+  @moduledoc '''
   Defines the core data structures for the interactive tutorial system.
-  """
+  '''
 
   @type tutorial_id :: String.t()
   @type step_id :: String.t()
 
   defmodule Step do
-    @moduledoc """
+    @moduledoc '''
     Represents a single step in a tutorial.
-    """
+    '''
     defstruct [
       :id,
       :title,
@@ -36,9 +36,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Models do
   end
 
   defmodule Tutorial do
-    @moduledoc """
+    @moduledoc '''
     Represents a complete tutorial with multiple steps.
-    """
+    '''
     defstruct [
       :id,
       :title,

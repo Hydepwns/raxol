@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
-  @moduledoc """
+  @moduledoc '''
   ANSI Cursor Sequence Handler.
 
   Handles parsing and application of ANSI cursor control sequences,
   including movement, position saving/restoring, and visibility.
-  """
+  '''
 
   alias Raxol.Terminal.ScreenBuffer
 
-  @doc """
+  @doc '''
   Move cursor to absolute position.
 
   ## Parameters
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def move_cursor(emulator, row, col) do
     # Convert 1-indexed ANSI coordinates to 0-indexed internal coordinates
     row = max(0, row - 1)
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     %{emulator | cursor: %{emulator.cursor | position: {col, row}}}
   end
 
-  @doc """
+  @doc '''
   Move cursor up by specified number of rows.
 
   ## Parameters
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def move_cursor_up(emulator, n) do
     n = if n <= 0, do: 1, else: n
     {cur_x, cur_y} = emulator.cursor.position
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     %{emulator | cursor: %{emulator.cursor | position: {cur_x, new_y}}}
   end
 
-  @doc """
+  @doc '''
   Move cursor down by specified number of rows.
 
   ## Parameters
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def move_cursor_down(emulator, n) do
     n = if n <= 0, do: 1, else: n
     height = ScreenBuffer.get_height(emulator.active_buffer)
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     %{emulator | cursor: %{emulator.cursor | position: {cur_x, new_y}}}
   end
 
-  @doc """
+  @doc '''
   Move cursor forward by specified number of columns.
 
   ## Parameters
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def move_cursor_forward(emulator, n) do
     n = if n <= 0, do: 1, else: n
     width = ScreenBuffer.get_width(emulator.active_buffer)
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     %{emulator | cursor: %{emulator.cursor | position: {new_x, cur_y}}}
   end
 
-  @doc """
+  @doc '''
   Move cursor backward by specified number of columns.
 
   ## Parameters
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def move_cursor_backward(emulator, n) do
     n = if n <= 0, do: 1, else: n
     {cur_x, cur_y} = emulator.cursor.position
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     %{emulator | cursor: %{emulator.cursor | position: {new_x, cur_y}}}
   end
 
-  @doc """
+  @doc '''
   Save current cursor position.
 
   ## Parameters
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state with saved cursor position
-  """
+  '''
   def save_cursor_position(emulator) do
     %{
       emulator
@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     }
   end
 
-  @doc """
+  @doc '''
   Restore previously saved cursor position.
 
   ## Parameters
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state with restored cursor position
-  """
+  '''
   def restore_cursor_position(emulator) do
     case emulator.cursor.saved_position do
       {x, y} -> %{emulator | cursor: %{emulator.cursor | position: {x, y}}}
@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     end
   end
 
-  @doc """
+  @doc '''
   Set cursor visibility.
 
   ## Parameters
@@ -162,7 +162,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   ## Returns
 
   Updated emulator state
-  """
+  '''
   def set_cursor_visibility(emulator, visible) do
     %{emulator | cursor_visible: visible}
   end

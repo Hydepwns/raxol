@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Input.Buffer do
-  @moduledoc """
+  @moduledoc '''
   Manages input buffering for the terminal emulator.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Creates a new input buffer with the given size.
-  """
+  '''
   def new(max_size) when is_integer(max_size) and max_size > 0 do
     %{
       buffer: [],
@@ -14,9 +14,9 @@ defmodule Raxol.Terminal.Input.Buffer do
     }
   end
 
-  @doc """
+  @doc '''
   Adds an event to the input buffer.
-  """
+  '''
   def add(buffer, event) do
     if buffer.current_size >= buffer.max_size do
       {:error, :buffer_full}
@@ -31,16 +31,16 @@ defmodule Raxol.Terminal.Input.Buffer do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the current buffer contents.
-  """
+  '''
   def get_contents(buffer) do
     buffer.buffer
   end
 
-  @doc """
+  @doc '''
   Clears the input buffer.
-  """
+  '''
   def clear(buffer) do
     %{buffer | buffer: [], current_size: 0}
   end

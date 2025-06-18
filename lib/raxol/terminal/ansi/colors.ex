@@ -1,18 +1,18 @@
 defmodule Raxol.Terminal.ANSI.Colors do
-  @moduledoc """
+  @moduledoc '''
   Provides ANSI color functionality for terminal output.
   Handles color parsing, setting, and management for terminal text.
-  """
+  '''
 
   @type color ::
           :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white
   @type color_mode :: :normal | :bright | :dim
   @type rgb :: {0..255, 0..255, 0..255}
 
-  @doc """
+  @doc '''
   Parses a color specification into a standardized format.
   Accepts named colors, RGB values, and ANSI color codes.
-  """
+  '''
   def parse_color(color) when is_atom(color) do
     case color do
       :black -> {:ok, 0}
@@ -38,9 +38,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
 
   def parse_color(_), do: {:error, :invalid_color_format}
 
-  @doc """
+  @doc '''
   Sets a color for the given type (foreground/background) and mode.
-  """
+  '''
   def set_color(type, color, mode \\ :normal) do
     with {:ok, parsed_color} <- parse_color(color) do
       case {type, mode} do
@@ -55,23 +55,23 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the foreground color.
-  """
+  '''
   def set_foreground(color, mode \\ :normal) do
     set_color(:foreground, color, mode)
   end
 
-  @doc """
+  @doc '''
   Sets the background color.
-  """
+  '''
   def set_background(color, mode \\ :normal) do
     set_color(:background, color, mode)
   end
 
-  @doc """
+  @doc '''
   Sets the cursor color.
-  """
+  '''
   def set_cursor_color(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
@@ -92,9 +92,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the mouse foreground color.
-  """
+  '''
   def set_mouse_foreground(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
@@ -115,9 +115,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the mouse background color.
-  """
+  '''
   def set_mouse_background(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
@@ -138,9 +138,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the highlight foreground color.
-  """
+  '''
   def set_highlight_foreground(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
@@ -161,9 +161,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the highlight background color.
-  """
+  '''
   def set_highlight_background(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
@@ -184,9 +184,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the highlight cursor color.
-  """
+  '''
   def set_highlight_cursor(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
@@ -207,9 +207,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the highlight mouse foreground color.
-  """
+  '''
   def set_highlight_mouse_foreground(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do
@@ -230,9 +230,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
     end
   end
 
-  @doc """
+  @doc '''
   Sets the highlight mouse background color.
-  """
+  '''
   def set_highlight_mouse_background(color, mode \\ :normal) do
     with {:ok, {r, g, b}} <- parse_color(color) do
       case mode do

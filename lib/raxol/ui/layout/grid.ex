@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Layout.Grid do
-  @moduledoc """
+  @moduledoc '''
   Handles layout calculations for grid UI elements.
 
   This module is responsible for:
@@ -7,11 +7,11 @@ defmodule Raxol.UI.Layout.Grid do
   * Cell sizing and positioning
   * Column and row spanning elements
   * Grid-specific spacing and constraints
-  """
+  '''
 
   alias Raxol.UI.Layout.Engine
 
-  @doc """
+  @doc '''
   Processes a grid element, calculating layout for it and its children.
 
   ## Parameters
@@ -23,7 +23,7 @@ defmodule Raxol.UI.Layout.Grid do
   ## Returns
 
   A list of positioned elements with absolute coordinates.
-  """
+  '''
   def process(%{type: :grid, attrs: attrs, children: children}, space, acc)
       when is_list(children) do
     # Skip if no children
@@ -79,7 +79,7 @@ defmodule Raxol.UI.Layout.Grid do
 
   def process(_, _space, acc), do: acc
 
-  @doc """
+  @doc '''
   Measures the space needed by a grid element.
 
   ## Parameters
@@ -90,7 +90,7 @@ defmodule Raxol.UI.Layout.Grid do
   ## Returns
 
   The dimensions of the grid: %{width: w, height: h}
-  """
+  '''
   def measure_grid(
         %{type: :grid, attrs: attrs, children: children},
         available_space
@@ -141,7 +141,7 @@ defmodule Raxol.UI.Layout.Grid do
 
   # Helper functions for grid layout
 
-  @doc """
+  @doc '''
   Creates grid cell information for a grid layout.
 
   ## Parameters
@@ -152,7 +152,7 @@ defmodule Raxol.UI.Layout.Grid do
   ## Returns
 
   A map containing cell dimensions and grid information.
-  """
+  '''
   def calculate_grid_cells(grid_attrs, space) do
     # Get grid configuration
     columns = Map.get(grid_attrs, :columns, 1)
@@ -179,7 +179,7 @@ defmodule Raxol.UI.Layout.Grid do
     }
   end
 
-  @doc """
+  @doc '''
   Calculates the position for a cell in the grid.
 
   ## Parameters
@@ -192,7 +192,7 @@ defmodule Raxol.UI.Layout.Grid do
   ## Returns
 
   A space map with x, y, width, and height for the cell.
-  """
+  '''
   def cell_position(col, row, grid_cells, space) do
     x = space.x + col * (grid_cells.cell_width + grid_cells.gap_x)
     y = space.y + row * (grid_cells.cell_height + grid_cells.gap_y)

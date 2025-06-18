@@ -1,5 +1,5 @@
 defmodule Raxol do
-  @moduledoc """
+  @moduledoc '''
   Raxol is a feature-rich terminal UI framework for Elixir.
 
   It provides a comprehensive set of components and tools for building
@@ -98,13 +98,13 @@ defmodule Raxol do
   * Tab bars
 
   Each component follows consistent patterns for styling and behavior.
-  """
+  '''
 
   alias Raxol.Core.Runtime.Application
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Runs a Raxol application.
 
   This function starts the Raxol runtime with the provided application module
@@ -136,12 +136,12 @@ defmodule Raxol do
   ```elixir
   Raxol.run(MyApp, %{initial: "state"}, title: "My Application", fps: 30)
   ```
-  """
+  '''
   def run(app, opts \\ []) do
     Raxol.Core.Runtime.Lifecycle.start_application(app, opts)
   end
 
-  @doc """
+  @doc '''
   Gracefully stops a running Raxol application.
 
   This function can be called from within your application to exit gracefully.
@@ -158,12 +158,12 @@ defmodule Raxol do
     model
   end
   ```
-  """
+  '''
   def stop(return_value \\ :ok) do
     Raxol.Core.Runtime.Lifecycle.stop_application(return_value)
   end
 
-  @doc """
+  @doc '''
   Returns the current version of Raxol.
 
   ## Returns
@@ -176,12 +176,12 @@ defmodule Raxol do
   Raxol.version()
   # => "1.0.0"
   ```
-  """
+  '''
   def version do
     "1.0.0"
   end
 
-  @doc """
+  @doc '''
   Returns information about the terminal environment.
 
   This includes terminal size, color support, and other capabilities.
@@ -201,12 +201,12 @@ defmodule Raxol do
   #      ...
   #    }
   ```
-  """
+  '''
   def terminal_info do
     %{width: 80, height: 24, colors: 256}
   end
 
-  @doc """
+  @doc '''
   Sets the default theme for Raxol applications.
 
   This function sets the default theme that will be used by Raxol components.
@@ -225,12 +225,12 @@ defmodule Raxol do
   custom_theme = Raxol.UI.Theming.Theme.new(name: "Custom", colors: %{primary: :green})
   Raxol.set_theme(custom_theme)
   ```
-  """
+  '''
   def set_theme(theme) do
     :application.set_env(:raxol, :theme, theme)
   end
 
-  @doc """
+  @doc '''
   Gets the current default theme.
 
   ## Returns
@@ -242,12 +242,12 @@ defmodule Raxol do
   ```elixir
   theme = Raxol.current_theme()
   ```
-  """
+  '''
   def current_theme do
     Application.get_env(:raxol, :theme, Raxol.UI.Theming.Theme.default_theme())
   end
 
-  @doc """
+  @doc '''
   Enables or disables accessibility features.
 
   ## Parameters
@@ -266,7 +266,7 @@ defmodule Raxol do
   ```elixir
   Raxol.set_accessibility(screen_reader: true, high_contrast: true)
   ```
-  """
+  '''
   def set_accessibility(opts \\ []) do
     if opts[:high_contrast] do
       set_theme(Raxol.UI.Theming.Theme.dark_theme())
@@ -277,7 +277,7 @@ defmodule Raxol do
     :ok
   end
 
-  @doc """
+  @doc '''
   Gets the current accessibility settings.
 
   ## Returns
@@ -292,7 +292,7 @@ defmodule Raxol do
     # Do something for high contrast mode
   end
   ```
-  """
+  '''
   def accessibility_settings do
     Application.get_env(:raxol, :accessibility, %{
       screen_reader: true,

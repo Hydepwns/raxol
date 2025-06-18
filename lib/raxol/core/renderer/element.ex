@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Renderer.Element do
-  @moduledoc """
+  @moduledoc '''
   Defines the core element structure for the rendering system.
 
   Elements are the building blocks of Raxol's UI system. Each element
@@ -7,7 +7,7 @@ defmodule Raxol.Core.Renderer.Element do
   * A tag identifying its type
   * Attributes controlling its appearance and behavior
   * Optional children forming a tree structure
-  """
+  '''
 
   @type t :: %__MODULE__{
           tag: atom(),
@@ -25,9 +25,9 @@ defmodule Raxol.Core.Renderer.Element do
             content: nil,
             style: %{}
 
-  @doc """
+  @doc '''
   Creates a new element with the given tag and attributes.
-  """
+  '''
   def new(tag, attrs, opts \\ []) do
     attrs =
       cond do
@@ -47,23 +47,23 @@ defmodule Raxol.Core.Renderer.Element do
     }
   end
 
-  @doc """
+  @doc '''
   Updates an element's attributes while preserving its structure.
-  """
+  '''
   def update_attrs(%__MODULE__{} = element, attrs) do
     %{element | attributes: attrs}
   end
 
-  @doc """
+  @doc '''
   Adds children to an existing element.
-  """
+  '''
   def add_children(%__MODULE__{} = element, children) when is_list(children) do
     %{element | children: element.children ++ children}
   end
 
-  @doc """
+  @doc '''
   Validates that an element tree follows the component rules.
-  """
+  '''
   def validate(%__MODULE__{} = element) do
     with :ok <- validate_tag(element.tag),
          :ok <- validate_attributes(element.attributes),

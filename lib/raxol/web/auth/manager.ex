@@ -1,7 +1,7 @@
 defmodule Raxol.Web.Auth.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages authentication state and operations for the Raxol application.
-  """
+  '''
 
   use GenServer
 

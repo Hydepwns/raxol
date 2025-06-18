@@ -1,14 +1,14 @@
 defmodule Raxol.UI.Components.Base do
-  @moduledoc """
+  @moduledoc '''
   Provides base functionality and utilities for Raxol components.
 
   This module contains shared functionality used across different components,
   including common validation, styling, and event handling patterns.
-  """
+  '''
 
   @type state :: map()
 
-  @doc """
+  @doc '''
   Validates component props against a schema.
 
   ## Example
@@ -24,7 +24,7 @@ defmodule Raxol.UI.Components.Base do
           }
         })
       end
-  """
+  '''
   @spec validate_props(map(), map()) :: :ok | {:error, any()}
   def validate_props(props, schema) do
     with :ok <- validate_required(props, schema[:required] || []),
@@ -35,9 +35,9 @@ defmodule Raxol.UI.Components.Base do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a base style for components with common properties.
-  """
+  '''
   @spec base_style(Keyword.t()) :: any()
   def base_style(opts \\ []) do
     Raxol.Style.new(
@@ -49,11 +49,11 @@ defmodule Raxol.UI.Components.Base do
     )
   end
 
-  @doc """
+  @doc '''
   Handles common events like focus, blur, and keyboard navigation.
 
   Should be called from a component's handle_event callback.
-  """
+  '''
   @spec handle_common_events(map(), map()) :: {map(), list()}
   def handle_common_events(%{type: :focus} = _event, state) do
     {Map.put(state, :focused, true), []}

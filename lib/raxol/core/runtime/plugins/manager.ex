@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages the loading, initialization, and lifecycle of plugins in the Raxol runtime.
 
   This module is responsible for:
@@ -9,7 +9,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   - Providing access to loaded plugins
   - Handling plugin dependencies and conflicts
   - Optionally watching plugin source files for changes and reloading them (dev only).
-  """
+  '''
 
   # Core runtime dependencies
   alias Raxol.Core.Runtime.Events.Event
@@ -50,45 +50,45 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:ok, _arg}
   end
 
-  @doc """
+  @doc '''
   Initialize the plugin system and load all available plugins.
-  """
+  '''
   def initialize do
     GenServer.call(__MODULE__, :initialize)
   end
 
-  @doc """
+  @doc '''
   Get a list of all loaded plugins with their metadata.
-  """
+  '''
   def list_plugins do
     GenServer.call(__MODULE__, :list_plugins)
   end
 
-  @doc """
+  @doc '''
   Get a specific plugin by its ID.
-  """
+  '''
   @impl true
   def get_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Enable a plugin that was previously disabled.
-  """
+  '''
   def enable_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:enable_plugin, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Disable a plugin temporarily without unloading it.
-  """
+  '''
   def disable_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:disable_plugin, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Reload a plugin by unloading and then loading it again.
-  """
+  '''
   def reload_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:reload_plugin, plugin_id})
   end
@@ -650,39 +650,39 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.stop(pid)
   end
 
-  @doc """
+  @doc '''
   Loads a plugin by sending a call to the GenServer.
-  """
+  '''
   @impl true
   def load_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:load_plugin, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Unloads a plugin by sending a call to the GenServer.
-  """
+  '''
   @impl true
   def unload_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
   end
 
-  @doc """
+  @doc '''
   Updates a plugin's state using a function.
-  """
+  '''
   def update_plugin(plugin_id, update_fun) when is_function(update_fun, 1) do
     GenServer.call(__MODULE__, {:update_plugin_state, plugin_id, update_fun})
   end
 
-  @doc """
+  @doc '''
   Sets a plugin's state directly.
-  """
+  '''
   def set_plugin_state(plugin_id, new_state) do
     GenServer.call(__MODULE__, {:set_plugin_state, plugin_id, new_state})
   end
 
-  @doc """
+  @doc '''
   Gets a plugin's current state.
-  """
+  '''
   def get_plugin_state(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin_state, plugin_id})
   end
@@ -815,9 +815,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Loads a plugin with the given name and configuration.
-  """
+  '''
   @spec load_plugin(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   def load_plugin(name, config) do
     # Implement plugin loading logic here

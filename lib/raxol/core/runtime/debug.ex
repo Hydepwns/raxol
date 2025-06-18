@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Debug do
-  @moduledoc """
+  @moduledoc '''
   Debug logging functionality for the Raxol runtime.
-  """
+  '''
 
   @callback debug(message :: String.t()) :: :ok
   @callback info(message :: String.t()) :: :ok

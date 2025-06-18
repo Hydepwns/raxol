@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.ANSI.SGRHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles parsing of SGR (Select Graphic Rendition) ANSI escape sequences.
   Translates SGR codes into updates on a TextFormatting style map.
-  """
+  '''
 
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @doc """
+  @doc '''
   Applies a list of SGR parameters to the current style.
   Handles multi-parameter sequences like 38/48.
-  """
+  '''
   @spec apply_sgr_params(list(integer() | tuple()), TextFormatting.text_style()) ::
           TextFormatting.text_style()
   def apply_sgr_params(params, current_style) do

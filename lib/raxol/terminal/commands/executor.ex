@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.Commands.Executor do
-  @moduledoc """
+  @moduledoc '''
   Executes parsed terminal commands (CSI, OSC, DCS).
 
   This module takes parsed command details and the current emulator state,
   and returns the updated emulator state after applying the command's effects.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.Parser
@@ -37,12 +37,12 @@ defmodule Raxol.Terminal.Commands.Executor do
     scs: @scs_commands
   }
 
-  @doc """
+  @doc '''
   Executes a CSI (Control Sequence Introducer) command.
 
   This function delegates to handler modules (e.g., CSIHandlers, CursorHandlers, etc.).
   To add support for new CSI commands, implement them in the appropriate handler module.
-  """
+  '''
   @spec execute_csi_command(
           Emulator.t(),
           String.t(),
@@ -206,11 +206,11 @@ defmodule Raxol.Terminal.Commands.Executor do
     )
   end
 
-  @doc """
+  @doc '''
   Executes an OSC (Operating System Command).
 
   Params: `command_string` (the content between OSC and ST).
-  """
+  '''
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
   def execute_osc_command(emulator, command_string) do
     Raxol.Core.Runtime.Log.debug(
@@ -239,11 +239,11 @@ defmodule Raxol.Terminal.Commands.Executor do
     OSCHandlers.handle(emulator, ps_code, pt)
   end
 
-  @doc """
+  @doc '''
   Executes a DCS (Device Control String) command.
 
   Params: `params_buffer`, `intermediates_buffer`, `data_string` (content between DCS and ST).
-  """
+  '''
   @spec execute_dcs_command(
           Emulator.t(),
           String.t(),

@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Renderer.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages the rendering system for Raxol applications.
 
   This module coordinates:
@@ -7,7 +7,7 @@ defmodule Raxol.Core.Renderer.Manager do
   * Terminal buffer management
   * Component rendering
   * Screen updates
-  """
+  '''
 
   use GenServer
 

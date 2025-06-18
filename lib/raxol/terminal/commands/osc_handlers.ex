@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers do
-  @moduledoc """
+  @moduledoc '''
   Handles Operating System Command (OSC) sequences.
 
   This module dispatches OSC commands to their respective handlers based on the command number.
@@ -13,12 +13,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   - Color Management (OSC 10, 11, 12, 17, 19)
   - Cursor and Font (OSC 12, 50, 112)
   - Selection (OSC 51)
-  """
+  '''
 
   alias Raxol.Terminal.{Emulator, Commands.OSCHandlers}
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Handles an OSC command by dispatching it to the appropriate handler.
 
   ## Parameters
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
 
   - `{:ok, emulator}` - Command handled successfully
   - `{:error, reason, emulator}` - Command failed with reason
-  """
+  '''
   @spec handle(Emulator.t(), non_neg_integer(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle(emulator, command, data) do

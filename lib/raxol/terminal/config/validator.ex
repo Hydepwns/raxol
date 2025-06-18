@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.Config.Validator do
-  @moduledoc """
+  @moduledoc '''
   Validates terminal configuration settings.
-  """
+  '''
 
   alias Raxol.Terminal.Config
 
   @type validation_result :: :ok | {:error, String.t()}
 
-  @doc """
+  @doc '''
   Validates a configuration update.
-  """
+  '''
   @spec validate_update(Config.t(), map()) :: validation_result()
   def validate_update(_config, updates) when is_map(updates) do
     with :ok <- validate_dimensions(updates),
@@ -22,9 +22,9 @@ defmodule Raxol.Terminal.Config.Validator do
     end
   end
 
-  @doc """
+  @doc '''
   Validates a complete configuration.
-  """
+  '''
   @spec validate_config(Config.t()) :: validation_result()
   def validate_config(%Config{} = config) do
     with :ok <-

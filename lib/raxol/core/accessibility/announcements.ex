@@ -1,12 +1,12 @@
 defmodule Raxol.Core.Accessibility.Announcements do
-  @moduledoc """
+  @moduledoc '''
   Handles screen reader announcements and announcement queue management.
-  """
+  '''
 
   alias Raxol.Core.Events.Manager, as: EventManager
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Make an announcement for screen readers.
 
   ## Parameters
@@ -27,7 +27,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
       iex> Announcements.announce("Error occurred", priority: :high, interrupt: true)
       :ok
-  """
+  '''
   def announce(message, opts \\ [], user_preferences_pid_or_name)
       when is_binary(message) do
     if is_nil(user_preferences_pid_or_name) do
@@ -85,7 +85,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
     :ok
   end
 
-  @doc """
+  @doc '''
   Get the next announcement to be read by screen readers for a specific user/context.
 
   ## Parameters
@@ -94,7 +94,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   ## Examples
       iex> Announcements.get_next_announcement(:user1)
       "Button clicked"
-  """
+  '''
   def get_next_announcement(user_preferences_pid_or_name) do
     key =
       if user_preferences_pid_or_name do
@@ -115,14 +115,14 @@ defmodule Raxol.Core.Accessibility.Announcements do
     end
   end
 
-  @doc """
+  @doc '''
   Clear all pending announcements.
 
   ## Examples
 
       iex> Announcements.clear_announcements()
       :ok
-  """
+  '''
   def clear_announcements do
     Process.put(:accessibility_announcements, [])
     :ok

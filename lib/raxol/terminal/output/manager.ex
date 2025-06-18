@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Output.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal output buffering and control sequences.
-  """
+  '''
 
   defstruct [
     output_buffer: "",
@@ -17,18 +17,18 @@ defmodule Raxol.Terminal.Output.Manager do
     max_buffer_size: pos_integer()
   }
 
-  @doc """
+  @doc '''
   Creates a new output manager instance.
-  """
+  '''
   def new(opts \\ []) do
     %__MODULE__{
       max_buffer_size: Keyword.get(opts, :max_buffer_size, 1024 * 1024)
     }
   end
 
-  @doc """
+  @doc '''
   Enqueues output to the buffer.
-  """
+  '''
   def enqueue_output(%__MODULE__{} = state, output) when is_binary(output) do
     new_size = state.buffer_size + byte_size(output)
 
@@ -48,9 +48,9 @@ defmodule Raxol.Terminal.Output.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Flushes the output buffer and returns the content.
-  """
+  '''
   def flush_output(%__MODULE__{} = state) do
     output = state.output_buffer
     new_state = %{state |
@@ -60,9 +60,9 @@ defmodule Raxol.Terminal.Output.Manager do
     {output, new_state}
   end
 
-  @doc """
+  @doc '''
   Clears the output buffer.
-  """
+  '''
   def clear_output_buffer(%__MODULE__{} = state) do
     %{state |
       output_buffer: "",
@@ -70,25 +70,25 @@ defmodule Raxol.Terminal.Output.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the current output buffer content.
-  """
+  '''
   def get_output_buffer(%__MODULE__{} = state) do
     state.output_buffer
   end
 
-  @doc """
+  @doc '''
   Enqueues a control sequence to be processed.
-  """
+  '''
   def enqueue_control_sequence(%__MODULE__{} = state, sequence) when is_binary(sequence) do
     %{state |
       control_sequences: [sequence | state.control_sequences]
     }
   end
 
-  @doc """
+  @doc '''
   Gets the next control sequence from the queue.
-  """
+  '''
   def get_next_control_sequence(%__MODULE__{} = state) do
     case state.control_sequences do
       [sequence | rest] ->
@@ -98,30 +98,30 @@ defmodule Raxol.Terminal.Output.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets all pending control sequences.
-  """
+  '''
   def get_pending_control_sequences(%__MODULE__{} = state) do
     state.control_sequences
   end
 
-  @doc """
+  @doc '''
   Clears all pending control sequences.
-  """
+  '''
   def clear_control_sequences(%__MODULE__{} = state) do
     %{state | control_sequences: []}
   end
 
-  @doc """
+  @doc '''
   Gets the current buffer size.
-  """
+  '''
   def get_buffer_size(%__MODULE__{} = state) do
     state.buffer_size
   end
 
-  @doc """
+  @doc '''
   Sets the maximum buffer size.
-  """
+  '''
   def set_max_buffer_size(%__MODULE__{} = state, size) when is_integer(size) and size > 0 do
     %{state | max_buffer_size: size}
   end

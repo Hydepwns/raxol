@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.Chart do
   require Raxol.Core.Renderer.View
 
-  @moduledoc """
+  @moduledoc '''
   Chart view component for data visualization.
 
   Supports:
@@ -11,7 +11,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   * Axes and labels
   * Multiple series
   * Custom styling
-  """
+  '''
 
   alias Raxol.Core.Renderer.View
 
@@ -39,9 +39,9 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   @bar_chars ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
 
-  @doc """
+  @doc '''
   Creates a new chart view.
-  """
+  '''
   def new(opts) do
     options = parse_chart_options(opts)
     content = build_chart_content(options)

@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.SearchPlugin do
-  @moduledoc """
+  @moduledoc '''
   Plugin for text search functionality.
-  """
+  '''
 
   @behaviour Raxol.Plugins.Plugin
 
@@ -150,39 +150,39 @@ defmodule Raxol.Plugins.SearchPlugin do
      %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
   end
 
-  @doc """
+  @doc '''
   Highlights the search term in the given text.
-  """
+  '''
   def highlight_search_term(text, search_term)
       when is_binary(text) and is_binary(search_term) and search_term != "" do
     # ANSI escape sequence for highlighting: \e[43m (yellow background)
     String.replace(text, search_term, "\e[43m#{search_term}\e[0m")
   end
 
-  @doc """
+  @doc '''
   Gets the current search term.
-  """
+  '''
   def get_search_term(plugin) do
     plugin.search_term
   end
 
-  @doc """
+  @doc '''
   Gets the current search results.
-  """
+  '''
   def get_search_results(plugin) do
     plugin.search_results
   end
 
-  @doc """
+  @doc '''
   Gets the current result index.
-  """
+  '''
   def get_current_result_index(plugin) do
     plugin.current_result_index
   end
 
-  @doc """
+  @doc '''
   Gets the current search result.
-  """
+  '''
   def get_current_result(plugin) do
     if length(plugin.search_results) > 0 do
       Enum.at(plugin.search_results, plugin.current_result_index)

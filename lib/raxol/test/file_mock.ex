@@ -1,7 +1,7 @@
 defmodule FileMock do
-  @moduledoc """
+  @moduledoc '''
   Default implementation of File.Behaviour for testing.
-  """
+  '''
 
   @behaviour File.Behaviour
 

@@ -1,7 +1,7 @@
 defmodule Raxol.Auth.Plug do
-  @moduledoc """
+  @moduledoc '''
   Plug for handling authentication and authorization.
-  """
+  '''
 
   import Plug.Conn
   import Phoenix.Controller
@@ -29,9 +29,9 @@ defmodule Raxol.Auth.Plug do
     end
   end
 
-  @doc """
+  @doc '''
   Authenticates a user by email and password.
-  """
+  '''
   def authenticate_user(conn, email, password) do
     Raxol.Core.Runtime.Log.debug("Authenticating user: #{email}")
 
@@ -52,9 +52,9 @@ defmodule Raxol.Auth.Plug do
     end
   end
 
-  @doc """
+  @doc '''
   Logs out the current user.
-  """
+  '''
   def logout_user(conn) do
     conn
     |> configure_session(drop: true)
@@ -89,9 +89,9 @@ defmodule Raxol.Auth.Plug do
     conn
   end
 
-  @doc """
+  @doc '''
   Checks if the current user is logged in.
-  """
+  '''
   def require_authenticated_user(conn, _opts) do
     if conn.assigns[:current_user] do
       conn

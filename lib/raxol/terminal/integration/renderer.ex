@@ -1,18 +1,18 @@
 defmodule Raxol.Terminal.Integration.Renderer do
-  @moduledoc """
+  @moduledoc '''
   Handles terminal output rendering and display management using Termbox2.
-  """
+  '''
 
   alias Raxol.Terminal.Integration.State
   alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   require Logger
 
-  @doc """
+  @doc '''
   Initializes the underlying terminal system.
   Must be called before other rendering functions.
   Returns :ok or {:error, reason}.
-  """
+  '''
   def init_terminal do
     IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
 
@@ -47,22 +47,22 @@ defmodule Raxol.Terminal.Integration.Renderer do
       kind, reason ->
         tb_stacktrace = __STACKTRACE__
 
-        Logger.error("""
+        Logger.error('''
         [Renderer] Caught exception/exit during :termbox2_nif.tb_init() call.
         Kind: #{inspect(kind)}
         Reason: #{inspect(reason)}
         Stacktrace: #{inspect(tb_stacktrace)}
-        """)
+        ''')
 
         {:error, {:init_failed_exception, kind, reason}}
     end
   end
 
-  @doc """
+  @doc '''
   Shuts down the underlying terminal system.
   Must be called to restore terminal state.
   Returns :ok or {:error, reason}.
-  """
+  '''
   def shutdown_terminal do
     IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
 
@@ -74,21 +74,21 @@ defmodule Raxol.Terminal.Integration.Renderer do
       kind, reason ->
         tb_stacktrace = __STACKTRACE__
 
-        Logger.error("""
+        Logger.error('''
         [Renderer] Caught exception/exit during :termbox2_nif.tb_shutdown() call.
         Kind: #{inspect(kind)}
         Reason: #{inspect(reason)}
         Stacktrace: #{inspect(tb_stacktrace)}
-        """)
+        ''')
 
         {:error, {:shutdown_failed_exception, kind, reason}}
     end
   end
 
-  @doc """
+  @doc '''
   Renders the current terminal state to the screen.
   Returns :ok or {:error, reason}.
-  """
+  '''
   def render(%State{} = state) do
     active_buffer = Manager.get_active_buffer(state.buffer_manager)
 
@@ -160,12 +160,12 @@ defmodule Raxol.Terminal.Integration.Renderer do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the current terminal dimensions.
   Returns {:ok, {width, height}} or {:error, :dimensions_unavailable}.
   Note: termbox2 width/height C functions return int, not status codes.
   A negative value might indicate an error (e.g., not initialized).
-  """
+  '''
   def get_dimensions do
     width = :termbox2_nif.tb_width()
     height = :termbox2_nif.tb_height()
@@ -178,11 +178,11 @@ defmodule Raxol.Terminal.Integration.Renderer do
     end
   end
 
-  @doc """
+  @doc '''
   Clears the terminal screen (specifically, the back buffer).
   Call present/0 afterwards to make it visible.
   Returns :ok or {:error, reason}.
-  """
+  '''
   # state is not used in the body with tb_clear
   def clear_screen(%State{} = _state) do
     case :termbox2_nif.tb_clear() do
@@ -201,12 +201,12 @@ defmodule Raxol.Terminal.Integration.Renderer do
     end
   end
 
-  @doc """
+  @doc '''
   Moves the hardware cursor to a specific position on the screen.
   Call present/0 afterwards if you want to ensure it's shown with other changes.
   The cursor position is typically updated with present/0.
   Returns :ok or {:error, reason}.
-  """
+  '''
   # state is not used in the body
   def move_cursor(%State{} = _state, x, y) do
     case :termbox2_nif.tb_set_cursor(x, y) do
@@ -225,64 +225,64 @@ defmodule Raxol.Terminal.Integration.Renderer do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a new renderer with the given options.
-  """
+  '''
   def new(_opts \\ []) do
     {:ok, %State{}}
   end
 
-  @doc """
+  @doc '''
   Updates the renderer configuration.
-  """
+  '''
   def update_config(state, _config) do
     # Implementation details...
     state
   end
 
-  @doc """
+  @doc '''
   Sets a specific configuration value.
-  """
+  '''
   def set_config_value(state, _key, _value) do
     # Implementation details...
     state
   end
 
-  @doc """
+  @doc '''
   Resets the renderer configuration to defaults.
-  """
+  '''
   def reset_config(state) do
     # Implementation details...
     state
   end
 
-  @doc """
+  @doc '''
   Resizes the renderer to the given dimensions.
-  """
+  '''
   def resize(state, _width, _height) do
     # Implementation details...
     state
   end
 
-  @doc """
+  @doc '''
   Sets the cursor visibility.
-  """
+  '''
   def set_cursor_visibility(state, _visible) do
     # Implementation details...
     state
   end
 
-  @doc """
+  @doc '''
   Sets the terminal title.
-  """
+  '''
   def set_title(state, _title) do
     # Implementation details...
     state
   end
 
-  @doc """
+  @doc '''
   Gets the terminal title.
-  """
+  '''
   def get_title(_state) do
     # Implementation details...
     ""

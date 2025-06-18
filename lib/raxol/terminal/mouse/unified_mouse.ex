@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Mouse.UnifiedMouse do
-  @moduledoc """
+  @moduledoc '''
   Provides unified mouse handling functionality for the terminal emulator.
   This module handles mouse events, tracking, and state management.
-  """
+  '''
 
   use GenServer
   require Logger
@@ -24,66 +24,66 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
         }
 
   # Client API
-  @doc """
+  @doc '''
   Starts the mouse manager with the given options.
-  """
+  '''
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Creates a new mouse context with the given configuration.
-  """
+  '''
   @spec create_mouse(map()) :: {:ok, mouse_id()} | {:error, term()}
   def create_mouse(config \\ %{}) do
     GenServer.call(__MODULE__, {:create_mouse, config})
   end
 
-  @doc """
+  @doc '''
   Gets the list of all mouse contexts.
-  """
+  '''
   @spec get_mice() :: list(mouse_id())
   def get_mice do
     GenServer.call(__MODULE__, :get_mice)
   end
 
-  @doc """
+  @doc '''
   Gets the active mouse context ID.
-  """
+  '''
   @spec get_active_mouse() :: {:ok, mouse_id()} | {:error, :no_active_mouse}
   def get_active_mouse do
     GenServer.call(__MODULE__, :get_active_mouse)
   end
 
-  @doc """
+  @doc '''
   Sets the active mouse context.
-  """
+  '''
   @spec set_active_mouse(mouse_id()) :: :ok | {:error, term()}
   def set_active_mouse(mouse_id) do
     GenServer.call(__MODULE__, {:set_active_mouse, mouse_id})
   end
 
-  @doc """
+  @doc '''
   Gets the state of a specific mouse context.
-  """
+  '''
   @spec get_mouse_state(mouse_id()) :: {:ok, map()} | {:error, term()}
   def get_mouse_state(mouse_id) do
     GenServer.call(__MODULE__, {:get_mouse_state, mouse_id})
   end
 
-  @doc """
+  @doc '''
   Updates the configuration of a specific mouse context.
-  """
+  '''
   @spec update_mouse_config(mouse_id(), mouse_config()) ::
           :ok | {:error, term()}
   def update_mouse_config(mouse_id, config) do
     GenServer.call(__MODULE__, {:update_mouse_config, mouse_id, config})
   end
 
-  @doc """
+  @doc '''
   Processes a mouse event.
-  """
+  '''
   @spec process_mouse_event(
           mouse_id(),
           mouse_event(),
@@ -98,43 +98,43 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     )
   end
 
-  @doc """
+  @doc '''
   Gets the current mouse position.
-  """
+  '''
   @spec get_mouse_position(mouse_id()) ::
           {:ok, {integer(), integer()}} | {:error, term()}
   def get_mouse_position(mouse_id) do
     GenServer.call(__MODULE__, {:get_mouse_position, mouse_id})
   end
 
-  @doc """
+  @doc '''
   Gets the current mouse button state.
-  """
+  '''
   @spec get_mouse_button_state(mouse_id()) ::
           {:ok, list(mouse_button())} | {:error, term()}
   def get_mouse_button_state(mouse_id) do
     GenServer.call(__MODULE__, {:get_mouse_button_state, mouse_id})
   end
 
-  @doc """
+  @doc '''
   Closes a mouse context.
-  """
+  '''
   @spec close_mouse(mouse_id()) :: :ok | {:error, term()}
   def close_mouse(mouse_id) do
     GenServer.call(__MODULE__, {:close_mouse, mouse_id})
   end
 
-  @doc """
+  @doc '''
   Updates the mouse manager configuration.
-  """
+  '''
   @spec update_config(map()) :: :ok
   def update_config(config) do
     GenServer.call(__MODULE__, {:update_config, config})
   end
 
-  @doc """
+  @doc '''
   Cleans up resources.
-  """
+  '''
   @spec cleanup() :: :ok
   def cleanup do
     GenServer.call(__MODULE__, :cleanup)

@@ -1,5 +1,5 @@
 defmodule Raxol.I18nTestHelpers do
-  @moduledoc """
+  @moduledoc '''
   Test helpers for internationalization testing that integrate with accessibility features.
 
   This module provides utilities for testing internationalization features in Raxol applications,
@@ -12,14 +12,14 @@ defmodule Raxol.I18nTestHelpers do
   * Screen reader announcement testing in different languages
   * Translation verification
   * Locale-specific accessibility testing
-  """
+  '''
 
   import ExUnit.Assertions
   import Raxol.AccessibilityTestHelpers
 
   alias Raxol.Core.I18n, as: Gettext
 
-  @doc """
+  @doc '''
   Executes the given function with a specific locale set.
 
   The locale will be reset to the original value after the function completes.
@@ -29,7 +29,7 @@ defmodule Raxol.I18nTestHelpers do
       with_locale("fr") do
         assert Gettext.t("greeting") == "Bonjour, i would like to surrender!"
       end
-  """
+  '''
   def with_locale(locale, fun) when is_binary(locale) and is_function(fun, 0) do
     original_locale = Gettext.get_locale()
 
@@ -41,37 +41,37 @@ defmodule Raxol.I18nTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Asserts that a translation key exists for the given locale.
 
   ## Examples
 
       assert_translation_exists("fr", "buttons.save")
-  """
+  '''
   def assert_translation_exists(locale, key)
       when is_binary(locale) and is_binary(key) do
     translated = Gettext.t(key, %{}, locale: locale, default: key)
 
     assert translated != key,
-           "Expected translation key '#{key}' to exist for locale '#{locale}', but it doesn't"
+           "Expected translation key "#{key}" to exist for locale "#{locale}", but it doesn't"
   end
 
-  @doc """
+  @doc '''
   Asserts that a translation matches the expected value for the given locale.
 
   ## Examples
 
       assert_translation("fr", "buttons.save", "Enregistrer")
-  """
+  '''
   def assert_translation(locale, key, expected)
       when is_binary(locale) and is_binary(key) do
     actual = Gettext.t(key, %{}, locale)
 
     assert actual == expected,
-           "Expected translation of '#{key}' in '#{locale}' to be '#{expected}', but got '#{actual}'"
+           "Expected translation of "#{key}" in "#{locale}" to be "#{expected}", but got "#{actual}""
   end
 
-  @doc """
+  @doc '''
   Tests screen reader announcements in a specific locale.
 
   ## Examples
@@ -83,7 +83,7 @@ defmodule Raxol.I18nTestHelpers do
         # Assert announcement in French
         assert_announced("Mode contraste élevé activé")
       end
-  """
+  '''
   def with_locale_announcements(locale, user_preferences_pid, fun)
       when is_binary(locale) and is_pid(user_preferences_pid) and
              is_function(fun, 0) do
@@ -92,7 +92,7 @@ defmodule Raxol.I18nTestHelpers do
     end)
   end
 
-  @doc """
+  @doc '''
   Tests RTL layout and behavior.
 
   ## Examples
@@ -101,7 +101,7 @@ defmodule Raxol.I18nTestHelpers do
         # Test RTL-specific behavior
         assert layout.direction == :rtl
       end
-  """
+  '''
   def with_rtl_locale(fun) when is_function(fun, 0) do
     rtl_locale =
       Gettext.available_locales()
@@ -114,13 +114,13 @@ defmodule Raxol.I18nTestHelpers do
     end
   end
 
-  @doc """
+  @doc '''
   Asserts that all accessibility-related translation keys exist for the given locale.
 
   ## Examples
 
       assert_accessibility_translations_complete("fr")
-  """
+  '''
   def assert_accessibility_translations_complete(locale)
       when is_binary(locale) do
     essential_keys = [
@@ -142,16 +142,16 @@ defmodule Raxol.I18nTestHelpers do
       end)
 
     assert Enum.empty?(missing_keys),
-           "Missing accessibility translations for locale '#{locale}': #{inspect(missing_keys)}"
+           "Missing accessibility translations for locale "#{locale}": #{inspect(missing_keys)}"
   end
 
-  @doc """
+  @doc '''
   Tests that screen reader announcements are properly formatted for the given locale.
 
   ## Examples
 
       assert_screen_reader_format("fr", "focus_moved", %{element: "bouton"})
-  """
+  '''
   def assert_screen_reader_format(locale, announcement_type, bindings \\ %{}) do
     with_locale(locale, fn ->
       key = "accessibility.screen_reader.#{announcement_type}"
@@ -161,24 +161,24 @@ defmodule Raxol.I18nTestHelpers do
       formatted = Gettext.t(key, bindings)
 
       refute formatted == key,
-             "Screen reader announcement '#{announcement_type}' not properly formatted for locale '#{locale}'"
+             "Screen reader announcement "#{announcement_type}" not properly formatted for locale "#{locale}""
 
       if map_size(bindings) > 0 do
         Enum.each(bindings, fn {key, value} ->
           assert String.contains?(formatted, to_string(value)),
-                 "Screen reader announcement doesn't contain binding value '#{value}' for key '#{key}'. Formatted: '#{formatted}'"
+                 "Screen reader announcement doesn't contain binding value "#{value}" for key "#{key}". Formatted: "#{formatted}""
         end)
       end
     end)
   end
 
-  @doc """
+  @doc '''
   Tests that a component's accessibility labels are properly translated.
 
   ## Examples
 
       assert_component_accessibility_labels("fr", button, ["label", "hint"])
-  """
+  '''
   def assert_component_accessibility_labels(locale, component_id, label_types)
       when is_binary(locale) and is_binary(component_id) and
              is_list(label_types) do
@@ -195,7 +195,7 @@ defmodule Raxol.I18nTestHelpers do
         label = Map.get(metadata, label_type)
 
         refute is_nil(label),
-               "Component '#{component_id}' is missing '#{label_type}' accessibility label in locale '#{locale}'"
+               "Component "#{component_id}" is missing "#{label_type}" accessibility label in locale "#{locale}""
 
         default_locale = Gettext.get_locale()
 
@@ -210,10 +210,10 @@ defmodule Raxol.I18nTestHelpers do
 
           if not is_nil(default_label) do
             refute label == default_label,
-                   "Component '#{component_id}' '#{label_type}' label ('#{label}') was not translated from default locale ('#{default_label}')"
+                   "Component "#{component_id}" "#{label_type}" label ("#{label}") was not translated from default locale ("#{default_label}")"
           else
             Raxol.Core.Runtime.Log.debug(
-              "Could not compare label for '#{component_id}' '#{label_type}' as default label was nil"
+              "Could not compare label for "#{component_id}" "#{label_type}" as default label was nil"
             )
           end
         end
@@ -231,13 +231,13 @@ defmodule Raxol.I18nTestHelpers do
     }
   end
 
-  @doc """
+  @doc '''
   Tests that keyboard shortcuts are properly documented in the given locale.
 
   ## Examples
 
       assert_shortcut_documentation("fr", :save, "Ctrl+S", "Enregistrer le document")
-  """
+  '''
   def assert_shortcut_documentation(
         locale,
         shortcut_id,
@@ -255,32 +255,32 @@ defmodule Raxol.I18nTestHelpers do
         actual_description = shortcut_data.description
 
         assert actual_key == expected_key,
-               "Expected shortcut key for '#{shortcut_id}' to be '#{expected_key}' in locale '#{locale}', but got '#{actual_key}'"
+               "Expected shortcut key for "#{shortcut_id}" to be "#{expected_key}" in locale "#{locale}", but got "#{actual_key}""
 
         assert actual_description == expected_description,
-               "Expected shortcut description for '#{shortcut_id}' to be '#{expected_description}' in locale '#{locale}', but got '#{actual_description}'"
+               "Expected shortcut description for "#{shortcut_id}" to be "#{expected_description}" in locale "#{locale}", but got "#{actual_description}""
       else
         flunk(
-          "Shortcut with ID '#{shortcut_id}' not found in current context for locale '#{locale}'"
+          "Shortcut with ID "#{shortcut_id}" not found in current context for locale "#{locale}""
         )
       end
     end)
   end
 
-  @doc """
+  @doc '''
   Tests that locale-specific accessibility settings are properly applied.
 
   ## Examples
 
       assert_locale_accessibility_settings("fr")
-  """
+  '''
   def assert_locale_accessibility_settings(locale) do
     with_locale(locale, fn ->
       # Mock implementation for tests
       settings = get_mock_locale_accessibility_settings()
 
       assert is_map(settings),
-             "Expected locale-specific accessibility settings for '#{locale}'"
+             "Expected locale-specific accessibility settings for "#{locale}""
     end)
   end
 

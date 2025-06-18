@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Performance.Monitor do
-  @moduledoc """
+  @moduledoc '''
   Performance monitoring system for Raxol applications.
 
   This module provides tools for:
@@ -26,7 +26,7 @@ defmodule Raxol.Core.Performance.Monitor do
   # Get performance metrics
   metrics = Monitor.get_metrics(monitor)
   ```
-  """
+  '''
 
   use GenServer
 
@@ -34,7 +34,7 @@ defmodule Raxol.Core.Performance.Monitor do
 
   # Client API
 
-  @doc """
+  @doc '''
   Starts a new performance monitor.
 
   ## Options
@@ -50,12 +50,12 @@ defmodule Raxol.Core.Performance.Monitor do
 
       iex> {:ok, monitor} = Monitor.start_link(jank_threshold: 20)
       {:ok, #PID<0.124.0>}
-  """
+  '''
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts)
   end
 
-  @doc """
+  @doc '''
   Records a frame's timing.
 
   ## Parameters
@@ -67,12 +67,12 @@ defmodule Raxol.Core.Performance.Monitor do
 
       iex> Monitor.record_frame(monitor, 16)
       :ok
-  """
+  '''
   def record_frame(monitor, frame_time) do
     GenServer.cast(monitor, {:record_frame, frame_time})
   end
 
-  @doc """
+  @doc '''
   Checks if jank was detected in the last frame.
 
   ## Parameters
@@ -88,12 +88,12 @@ defmodule Raxol.Core.Performance.Monitor do
 
       iex> Monitor.detect_jank?(monitor)
       false
-  """
+  '''
   def detect_jank?(monitor) do
     GenServer.call(monitor, :detect_jank)
   end
 
-  @doc """
+  @doc '''
   Gets current performance metrics.
 
   ## Parameters
@@ -119,7 +119,7 @@ defmodule Raxol.Core.Performance.Monitor do
         memory_usage: 1234567,
         gc_stats: %{...}
       }
-  """
+  '''
   def get_metrics(monitor) do
     GenServer.call(monitor, :get_metrics)
   end

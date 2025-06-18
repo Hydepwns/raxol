@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
-  @moduledoc """
+  @moduledoc '''
   Core module for managing plugin dependencies and dependency resolution.
   Provides the main public API for dependency checking and load order resolution.
-  """
+  '''
 
   @behaviour Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
 
@@ -24,7 +24,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
           | {:error, :circular_dependency, [String.t()], dependency_chain()}
 
   @impl true
-  @doc """
+  @doc '''
   Checks if a plugin's dependencies are satisfied.
 
   ## Parameters
@@ -40,7 +40,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   * `{:error, :missing_dependencies, missing, chain}` - If any dependencies are missing
   * `{:error, :version_mismatch, mismatches, chain}` - If any dependencies have incompatible versions
   * `{:error, :circular_dependency, cycle, chain}` - If a circular dependency is detected
-  """
+  '''
   def check_dependencies(
         plugin_id,
         plugin_metadata,
@@ -144,7 +144,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Resolves the load order for a set of plugins based on their dependencies.
   Uses Tarjan's algorithm for efficient cycle detection and component identification.
 
@@ -156,7 +156,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `{:ok, load_order}` - List of plugin IDs in the correct load order
   * `{:error, :circular_dependency, cycle, chain}` - If a circular dependency is detected
-  """
+  '''
   def resolve_load_order(plugins) do
     graph = Graph.build_dependency_graph(plugins)
 
@@ -280,7 +280,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Resolves dependencies between plugins.
 
   ## Parameters
@@ -292,7 +292,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `{:ok, resolved_deps}` - List of resolved dependencies
   * `{:error, reason}` - If dependency resolution fails
-  """
+  '''
   def resolve_dependencies(plugin_metadata, loaded_plugins) do
     dependencies = Map.get(plugin_metadata, :dependencies, [])
 
@@ -309,7 +309,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Validates a list of dependencies.
 
   ## Parameters
@@ -320,7 +320,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `:ok` - If all dependencies are valid
   * `{:error, reason}` - If any dependencies are invalid
-  """
+  '''
   def validate_dependencies(dependencies) do
     case Enum.find(dependencies, fn
       {dep_id, _ver_req} when is_binary(dep_id) -> false
@@ -334,7 +334,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   @impl true
-  @doc """
+  @doc '''
   Checks for circular dependencies in the plugin graph.
 
   ## Parameters
@@ -347,7 +347,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `:ok` - If no circular dependencies are found
   * `{:error, :circular_dependency, cycle, chain}` - If a circular dependency is detected
-  """
+  '''
   def check_circular_dependencies(plugin_id, dependencies, loaded_plugins) do
     graph = Graph.build_dependency_graph(%{plugin_id => %{dependencies: dependencies}})
 

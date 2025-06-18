@@ -1,7 +1,7 @@
 defmodule Raxol.System.InteractionImpl do
-  @moduledoc """
+  @moduledoc '''
   Concrete implementation of the System.Interaction behaviour using standard Elixir/Erlang functions.
-  """
+  '''
   @behaviour Raxol.System.Interaction
 
   @impl Raxol.System.Interaction

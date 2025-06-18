@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Selection.Dropdown do
-  @moduledoc """
+  @moduledoc '''
   A dropdown component that allows selecting one option from a list.
-  """
+  '''
 
-  @typedoc """
+  @typedoc '''
   State for the Selection.Dropdown component.
 
   - :id - unique identifier
@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   - :focused - whether the dropdown is focused
   - :on_change - callback for selection change
   - :list_state - state of the nested list
-  """
+  '''
   @type t :: %__MODULE__{
           id: any(),
           options: list(),
@@ -55,7 +55,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
 
   # --- Component Behaviour Callbacks ---
 
-  @doc "Initializes the Dropdown component state from props."
+  @doc 'Initializes the Dropdown component state from props.'
   @spec init(map()) :: __MODULE__.t()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
@@ -90,7 +90,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
     }
   end
 
-  @doc "Updates the Dropdown component state in response to messages."
+  @doc 'Updates the Dropdown component state in response to messages.'
   @spec update(term(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
@@ -138,7 +138,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
     end
   end
 
-  @doc "Handles key events for the Dropdown component, including toggling expansion and forwarding to the list."
+  @doc 'Handles key events for the Dropdown component, including toggling expansion and forwarding to the list.'
   @impl Raxol.UI.Components.Base.Component
   def handle_event(%{type: :key, data: key_data} = event, %{} = _props, state) do
     Raxol.Core.Runtime.Log.debug(
@@ -186,7 +186,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
 
   # --- Render Logic ---
 
-  @doc "Renders the Dropdown component, showing either the expanded or collapsed state."
+  @doc 'Renders the Dropdown component, showing either the expanded or collapsed state.'
   @spec render(__MODULE__.t(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = _props) do

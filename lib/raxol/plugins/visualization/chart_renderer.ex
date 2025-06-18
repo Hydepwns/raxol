@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.Visualization.ChartRenderer do
-  @moduledoc """
+  @moduledoc '''
   Handles rendering logic for chart visualizations within the VisualizationPlugin.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
@@ -11,11 +11,11 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   # Define module attributes for thresholds previously in the plugin
   @max_chart_data_points 100
 
-  @doc """
+  @doc '''
   Public entry point for rendering chart content.
   Handles bounds checking, error handling, and calls the internal drawing logic.
   Expects bounds to be a map like %{width: w, height: h}.
-  """
+  '''
   def render_chart_content(
         data,
         opts,

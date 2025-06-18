@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.Modes do
-  @moduledoc """
+  @moduledoc '''
   Handles terminal modes and state transitions for the terminal emulator.
 
   This module provides functions for managing terminal modes, processing
   escape sequences, and handling terminal state transitions.
-  """
+  '''
 
   @type mode :: :insert | :replace | :visual | :command | :normal
   @type mode_state :: %{mode => boolean()}
 
-  @doc """
+  @doc '''
   Creates a new terminal mode state.
 
   ## Examples
@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Modes do
       iex> modes = Modes.new()
       iex> modes.insert
       false
-  """
+  '''
   def new do
     %{
       insert: false,
@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Modes do
     }
   end
 
-  @doc """
+  @doc '''
   Sets a terminal mode.
 
   ## Examples
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.Modes do
       true
       iex> modes.replace
       false
-  """
+  '''
   def set_mode(%{} = modes, mode) when is_atom(mode) do
     # Turn off all modes first
     modes =
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Modes do
     Map.put(modes, mode, true)
   end
 
-  @doc """
+  @doc '''
   Resets a specific terminal mode to its default value.
 
   ## Examples
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Modes do
       iex> modes = Modes.reset_mode(modes, :replace) # replace defaults to true
       iex> modes.replace
       true
-  """
+  '''
   @spec reset_mode(mode_state(), atom()) :: mode_state()
   def reset_mode(%{} = modes, mode) when is_atom(mode) do
     default_modes = new()
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Modes do
     Map.put(modes, mode, default_value)
   end
 
-  @doc """
+  @doc '''
   Checks if a terminal mode is active.
 
   ## Examples
@@ -82,12 +82,12 @@ defmodule Raxol.Terminal.Modes do
       true
       iex> Modes.active?(modes, :insert)
       false
-  """
+  '''
   def active?(%{} = modes, mode) when is_atom(mode) do
     Map.get(modes, mode, false)
   end
 
-  @doc """
+  @doc '''
   Processes an escape sequence for terminal mode changes.
 
   ## Examples
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Modes do
       iex> {modes, _} = Modes.process_escape(modes, "?1049h")
       iex> Modes.active?(modes, :alternate_screen)
       true
-  """
+  '''
   def process_escape(%{} = modes, "?1049h"),
     do: handle_alternate_screen(modes, "?1049h")
 
@@ -190,7 +190,7 @@ defmodule Raxol.Terminal.Modes do
   defp handle_normal_mode(modes, "?1002l"),
     do: {set_mode(modes, :normal), "Normal mode disabled"}
 
-  @doc """
+  @doc '''
   Saves the current terminal mode state.
 
   ## Examples
@@ -201,13 +201,13 @@ defmodule Raxol.Terminal.Modes do
       iex> modes = Modes.restore_state(modes, saved_modes)
       iex> Modes.active?(modes, :normal)
       true
-  """
+  '''
   def save_state(%{} = modes) do
     # Maps are immutable, just return the current map
     {modes, modes}
   end
 
-  @doc """
+  @doc '''
   Restores a previously saved terminal mode state.
 
   ## Examples
@@ -218,12 +218,12 @@ defmodule Raxol.Terminal.Modes do
       iex> modes = Modes.restore_state(modes, saved_modes)
       iex> Modes.active?(modes, :normal)
       true
-  """
+  '''
   def restore_state(%{} = _modes, %{} = saved_modes) do
     saved_modes
   end
 
-  @doc """
+  @doc '''
   Returns a list of all active terminal modes.
 
   ## Examples
@@ -231,14 +231,14 @@ defmodule Raxol.Terminal.Modes do
       iex> modes = Modes.new()
       iex> Modes.active_modes(modes)
       [:normal, :replace]
-  """
+  '''
   def active_modes(%{} = modes) do
     modes
     |> Enum.filter(fn {_k, v} -> v end)
     |> Enum.map(fn {k, _v} -> k end)
   end
 
-  @doc """
+  @doc '''
   Returns a string representation of the terminal mode state.
 
   ## Examples
@@ -246,7 +246,7 @@ defmodule Raxol.Terminal.Modes do
       iex> modes = Modes.new()
       iex> Modes.to_string(modes)
       "Terminal Modes: normal, replace"
-  """
+  '''
   def to_string(%{} = modes) do
     active = active_modes(modes)
     "Terminal Modes: #{Enum.join(active, ", ")}"

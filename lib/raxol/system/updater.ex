@@ -2,7 +2,7 @@ defmodule Raxol.System.Updater do
   use GenServer
   require Logger
 
-  @moduledoc """
+  @moduledoc '''
   Provides version management and self-update functionality for Raxol.
 
   This module handles:
@@ -10,7 +10,7 @@ defmodule Raxol.System.Updater do
   - Comparing versions to determine if updates are available
   - Self-updating the application when running as a compiled binary
   - Managing update settings and configurations
-  """
+  '''
 
   alias Raxol.System.DeltaUpdater
   # alias Raxol.Plugins.PluginManager # Unused
@@ -352,7 +352,7 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  @doc """
+  @doc '''
   Checks if a newer version of Raxol is available.
 
   Returns a tuple with the check result and the latest version if available:
@@ -371,7 +371,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.check_for_updates(force: true)
       {:update_available, "0.2.0"}
-  """
+  '''
   def check_for_updates(opts \\ []) do
     force = Keyword.get(opts, :force, false)
 
@@ -393,7 +393,7 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  @doc """
+  @doc '''
   Performs a self-update of the application if running as a compiled binary.
 
   Returns:
@@ -414,7 +414,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.self_update("0.2.0")
       {:error, "Not running as a compiled binary"}
-  """
+  '''
   defp do_version_update(version, use_delta) do
     if use_delta do
       try_delta_update(version)
@@ -451,7 +451,7 @@ defmodule Raxol.System.Updater do
     {:error, reason} -> {:error, reason}
   end
 
-  @doc """
+  @doc '''
   Displays update information to the user, if an update is available.
 
   This function checks for updates (respecting the check interval) and
@@ -461,7 +461,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.notify_if_update_available()
       :ok
-  """
+  '''
   def notify_if_update_available do
     case check_for_updates() do
       {:update_available, version} ->
@@ -480,7 +480,7 @@ defmodule Raxol.System.Updater do
         Terminal.println("Update Available!", color: fg_hex, background: bg_hex)
 
         IO.puts("Version #{version} is available.")
-        IO.puts("Run 'raxol update' to install.")
+        IO.puts("Run "raxol update" to install.")
         :ok
 
       _ ->
@@ -488,7 +488,7 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  @doc """
+  @doc '''
   Enables or disables automatic update checks.
 
   ## Parameters
@@ -502,7 +502,7 @@ defmodule Raxol.System.Updater do
 
       iex> Raxol.System.Updater.set_auto_check(false)
       :ok
-  """
+  '''
   def set_auto_check(enabled) when is_boolean(enabled) do
     with {:ok, settings} <- get_update_settings() do
       settings = Map.put(settings, "auto_check", enabled)
@@ -695,12 +695,12 @@ defmodule Raxol.System.Updater do
       safe_new_exe = Path.expand(new_exe)
       safe_current_exe = Path.expand(current_exe)
 
-      batch_contents = """
+      batch_contents = '''
       @echo off
       timeout /t 2 /nobreak > nul
       copy /y "#{safe_new_exe}" "#{safe_current_exe}"
       del "#{updater_bat}"
-      """
+      '''
 
       File.write!(updater_bat, batch_contents)
 

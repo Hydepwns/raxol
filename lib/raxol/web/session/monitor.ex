@@ -1,10 +1,10 @@
 defmodule Raxol.Web.Session.Monitor do
-  @moduledoc """
+  @moduledoc '''
   Handles session monitoring for Raxol applications.
 
   This module provides functionality to monitor active sessions, track usage
   patterns, and detect potential issues.
-  """
+  '''
 
   use GenServer
 

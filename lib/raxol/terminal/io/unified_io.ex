@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.IO.UnifiedIO do
-  @moduledoc """
+  @moduledoc '''
   Unified input/output system for the terminal emulator.
 
   This module provides a consolidated interface for handling all terminal I/O operations,
@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   - Input mode management
   - Event propagation control
   - Performance optimizations
-  """
+  '''
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -132,72 +132,72 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   # Client API
 
-  @doc """
+  @doc '''
   Starts the unified IO system.
-  """
+  '''
   def start_link(opts \\ %{}) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Initializes the terminal IO system.
-  """
+  '''
   def init_terminal(width, height, config) do
     GenServer.call(__MODULE__, {:init_terminal, width, height, config})
   end
 
-  @doc """
+  @doc '''
   Processes an input event.
-  """
+  '''
   def process_input(event) do
     GenServer.call(__MODULE__, {:process_input, event})
   end
 
-  @doc """
+  @doc '''
   Processes output data.
-  """
+  '''
   def process_output(data) do
     GenServer.call(__MODULE__, {:process_output, data})
   end
 
-  @doc """
+  @doc '''
   Updates the IO configuration.
-  """
+  '''
   def update_config(config) do
     GenServer.call(__MODULE__, {:update_config, config})
   end
 
-  @doc """
+  @doc '''
   Sets a specific configuration value.
-  """
+  '''
   def set_config_value(path, value) do
     GenServer.call(__MODULE__, {:set_config_value, path, value})
   end
 
-  @doc """
+  @doc '''
   Resets the configuration to defaults.
-  """
+  '''
   def reset_config do
     GenServer.call(__MODULE__, :reset_config)
   end
 
-  @doc """
+  @doc '''
   Resizes the terminal.
-  """
+  '''
   def resize(width, height) do
     GenServer.call(__MODULE__, {:resize, width, height})
   end
 
-  @doc """
+  @doc '''
   Sets cursor visibility.
-  """
+  '''
   def set_cursor_visibility(visible) do
     GenServer.call(__MODULE__, {:set_cursor_visibility, visible})
   end
 
-  @doc """
+  @doc '''
   Cleans up the I/O manager.
-  """
+  '''
   def cleanup(_io) do
     # Stop the renderer
     UnifiedRenderer.stop()

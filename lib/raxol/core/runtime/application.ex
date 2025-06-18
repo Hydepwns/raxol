@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Application do
-  @moduledoc """
+  @moduledoc '''
   Defines the behaviour for Raxol applications following The Elm Architecture (TEA).
 
   This module provides the core structure for building terminal applications using
@@ -75,7 +75,7 @@ defmodule Raxol.Core.Runtime.Application do
 
   Define subscriptions in the `subscribe/1` callback, which is called after
   initialization and after each state update.
-  """
+  '''
 
   @type context :: map()
   @type state :: term()
@@ -86,7 +86,7 @@ defmodule Raxol.Core.Runtime.Application do
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Initializes the application state.
 
   Called once when the application starts. The context map contains runtime
@@ -96,10 +96,10 @@ defmodule Raxol.Core.Runtime.Application do
   Returns either:
   - Initial state: `state()`
   - State and commands: `{state(), [command()]}`
-  """
+  '''
   @callback init(context()) :: state() | {state(), [command()]}
 
-  @doc """
+  @doc '''
   Updates the application state in response to messages.
 
   Called whenever a message is received, either from events, commands, or
@@ -108,27 +108,27 @@ defmodule Raxol.Core.Runtime.Application do
 
   Returns a tuple of the new state and any commands to be executed:
   `{state(), [command()]}`
-  """
+  '''
   @callback update(message(), state()) :: {state(), [command()]}
 
-  @doc """
+  @doc '''
   Renders the current state as UI elements.
 
   Called after every state update to generate the new view. Should be a
   pure function that converts the state into UI elements.
 
   Returns an element tree that will be rendered to the terminal.
-  """
+  '''
   @callback view(state()) :: element()
 
-  @doc """
+  @doc '''
   Sets up subscriptions based on the current state.
 
   Called after initialization and after each state update. Use this to
   set up recurring updates or subscribe to external events.
 
   Returns a list of subscription specifications.
-  """
+  '''
   @callback subscribe(state()) :: [subscription()]
 
   @optional_callbacks [subscribe: 1]
@@ -174,7 +174,7 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
-  @doc """
+  @doc '''
   Delegates initialization to the provided application module.
 
   Attempts to call the `init/1` callback on the given module, handles the result,
@@ -187,7 +187,7 @@ defmodule Raxol.Core.Runtime.Application do
   ## Returns
     - `{model, commands}` tuple when successful
     - `{:error, reason}` tuple when initialization fails
-  """
+  '''
   @spec delegate_init(module(), context()) ::
             {model(), list(Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
@@ -340,9 +340,9 @@ defmodule Raxol.Core.Runtime.Application do
     )
   end
 
-  @doc """
+  @doc '''
   Gets environment configuration for the application.
-  """
+  '''
   @spec get_env(atom(), atom(), any()) :: any()
   def get_env(app, key, default \\ nil) do
     Raxol.Core.Runtime.Log.debug(
@@ -379,7 +379,7 @@ defmodule Raxol.Core.Runtime.Application do
   # --- Placeholder Implementations for Helper Functions ---
   # These are not part of the behaviour but are called by the runtime.
 
-  @doc """
+  @doc '''
   Initializes the application state.
 
   Called once when the application starts. The context map contains runtime
@@ -389,8 +389,8 @@ defmodule Raxol.Core.Runtime.Application do
   Returns either:
   - Initial state: `state()`
   - State and commands: `{state(), [command()]}`
-  """
-  @doc """
+  '''
+  @doc '''
   Initializes the application state.
 
   A simpler version of delegate_init that provides fallbacks for different return types
@@ -399,7 +399,7 @@ defmodule Raxol.Core.Runtime.Application do
   ## Returns
     - `{model, commands}` tuple when successful
     - `{:error, reason}` tuple when initialization fails
-  """
+  '''
   def init(app_module, context) do
     case delegate_init(app_module, context) do
       {model, commands} -> {model, commands}
@@ -407,11 +407,11 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
-  @doc """
+  @doc '''
   Handles incoming events or messages and updates the application state.
 
   Returns the updated model and optional commands to execute.
-  """
+  '''
   def update(app_module, message, model) do
     if function_exported?(app_module, :update, 2) do
       case app_module.update(message, model) do

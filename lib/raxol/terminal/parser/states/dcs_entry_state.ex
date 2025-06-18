@@ -1,16 +1,16 @@
 defmodule Raxol.Terminal.Parser.States.DCSEntryState do
-  @moduledoc """
+  @moduledoc '''
   Handles the :dcs_entry state of the terminal parser.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Processes input when the parser is in the :dcs_entry state.
   Similar to CSI Entry - collects params/intermediates/final byte.
-  """
+  '''
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
           | {:finished, Emulator.t(), State.t()}

@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.OutputManager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal output buffering, control sequences, and formatting.
   Provides functionality for:
   - Output buffering with size limits
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.OutputManager do
   - Output formatting and styling
   - Performance metrics tracking
   - Batch processing
-  """
+  '''
 
   defstruct output_buffer: "",
             control_sequence_buffer: "",
@@ -73,12 +73,12 @@ defmodule Raxol.Terminal.OutputManager do
     "\x1D" => "^]",
     "\x1E" => "^^",
     "\x1F" => "^_",
-    "\x7F" => "^?"
+    "\x7F" => "^?'
   }
 
-  @doc """
+  @doc '''
   Creates a new OutputManager with default settings.
-  """
+  '''
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %__MODULE__{
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.OutputManager do
         &format_unicode/1
       ],
       style_map: %{
-        "default" => %{
+        'default" => %{
           foreground: :white,
           background: :black,
           attributes: []
@@ -99,10 +99,10 @@ defmodule Raxol.Terminal.OutputManager do
     }
   end
 
-  @doc """
+  @doc '''
   Enqueues output to the buffer.
   Returns {:ok, updated_manager} or {:error, :buffer_overflow}
-  """
+  '''
   @spec enqueue_output(t(), String.t()) ::
           {:ok, t()} | {:error, :buffer_overflow}
   def enqueue_output(%__MODULE__{} = manager, output) do
@@ -136,35 +136,35 @@ defmodule Raxol.Terminal.OutputManager do
     end
   end
 
-  @doc """
+  @doc '''
   Flushes the output buffer and returns its contents.
   Returns {output, updated_manager}
-  """
+  '''
   @spec flush_output(t()) :: {String.t(), t()}
   def flush_output(%__MODULE__{} = manager) do
     {manager.output_buffer, %{manager | output_buffer: ""}}
   end
 
-  @doc """
+  @doc '''
   Clears the output buffer.
-  """
+  '''
   @spec clear_output_buffer(t()) :: t()
   def clear_output_buffer(%__MODULE__{} = manager) do
     %{manager | output_buffer: ""}
   end
 
-  @doc """
+  @doc '''
   Gets the current output buffer contents.
-  """
+  '''
   @spec get_output_buffer(t()) :: String.t()
   def get_output_buffer(%__MODULE__{} = manager) do
     manager.output_buffer
   end
 
-  @doc """
+  @doc '''
   Enqueues a control sequence to the buffer.
   Returns {:ok, updated_manager} or {:error, :buffer_overflow}
-  """
+  '''
   @spec enqueue_control_sequence(t(), String.t()) ::
           {:ok, t()} | {:error, :buffer_overflow}
   def enqueue_control_sequence(%__MODULE__{} = manager, sequence) do
@@ -191,43 +191,43 @@ defmodule Raxol.Terminal.OutputManager do
     end
   end
 
-  @doc """
+  @doc '''
   Flushes the control sequence buffer and returns its contents.
   Returns {sequences, updated_manager}
-  """
+  '''
   @spec flush_control_sequence_buffer(t()) :: {String.t(), t()}
   def flush_control_sequence_buffer(%__MODULE__{} = manager) do
     {manager.control_sequence_buffer, %{manager | control_sequence_buffer: ""}}
   end
 
-  @doc """
+  @doc '''
   Clears the control sequence buffer.
-  """
+  '''
   @spec clear_control_sequence_buffer(t()) :: t()
   def clear_control_sequence_buffer(%__MODULE__{} = manager) do
     %{manager | control_sequence_buffer: ""}
   end
 
-  @doc """
+  @doc '''
   Gets the current control sequence buffer contents.
-  """
+  '''
   @spec get_control_sequence_buffer(t()) :: String.t()
   def get_control_sequence_buffer(%__MODULE__{} = manager) do
     manager.control_sequence_buffer
   end
 
-  @doc """
+  @doc '''
   Adds a custom formatting rule to the manager.
-  """
+  '''
   @spec add_format_rule(t(), function()) :: t()
   def add_format_rule(%__MODULE__{} = manager, rule)
       when is_function(rule, 1) do
     %{manager | format_rules: [rule | manager.format_rules]}
   end
 
-  @doc """
+  @doc '''
   Gets the current metrics.
-  """
+  '''
   @spec get_metrics(t()) :: map()
   def get_metrics(%__MODULE__{} = manager) do
     manager.metrics

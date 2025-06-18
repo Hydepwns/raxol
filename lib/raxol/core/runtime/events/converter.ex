@@ -1,17 +1,17 @@
 defmodule Raxol.Core.Runtime.Events.Converter do
-  @moduledoc """
+  @moduledoc '''
   Handles conversion between different event formats in the Raxol system.
 
   This module is responsible for:
   * Converting Termbox events to the Raxol event format
   * Converting VS Code events to the Raxol event format
   * Normalizing events into a consistent format
-  """
+  '''
 
   alias Raxol.Core.Events.Event
   import Bitwise
 
-  @doc """
+  @doc '''
   Converts a Termbox event to the standardized Raxol event format.
 
   ## Parameters
@@ -23,7 +23,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
 
   ## Returns
   A structured `%Event{}` struct.
-  """
+  '''
   def convert_termbox_event(type, mod, key, ch, w \\ nil, h \\ nil) do
     case type do
       :key ->
@@ -46,7 +46,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     end
   end
 
-  @doc """
+  @doc '''
   Converts a VS Code extension event to the standardized Raxol event format.
 
   ## Parameters
@@ -54,7 +54,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
 
   ## Returns
   A structured `%Event{}` struct.
-  """
+  '''
   def convert_vscode_event(event) do
     case event do
       %{type: "keydown", key: key, modifiers: mods} ->
@@ -90,7 +90,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     end
   end
 
-  @doc """
+  @doc '''
   Normalizes events from various sources into a consistent format.
 
   This is useful when handling events from multiple backends to ensure
@@ -101,7 +101,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
 
   ## Returns
   A normalized `%Event{}` struct.
-  """
+  '''
   def normalize_event(event) do
     case event do
       # Already an Event struct

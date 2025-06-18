@@ -1,14 +1,14 @@
 defmodule Raxol.Benchmark do
-  @moduledoc """
+  @moduledoc '''
   Benchmarking utilities for Raxol.
-  """
+  '''
 
   alias Raxol.SequenceExecutor
   alias Raxol.Sequence
 
-  @doc """
+  @doc '''
   Run a benchmark with the given configuration.
-  """
+  '''
   def run_benchmark(config) do
     sequences = read_sequences()
     results = Enum.map(sequences, &benchmark_sequence(&1, config))

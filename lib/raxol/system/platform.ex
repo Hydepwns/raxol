@@ -1,12 +1,12 @@
 defmodule Raxol.System.Platform do
-  @moduledoc """
+  @moduledoc '''
   Platform-specific functionality and detection for Raxol.
 
   This module handles detection of the current platform, providing platform-specific
   information, and managing platform-dependent operations.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Returns the current platform as an atom.
 
   ## Returns
@@ -19,7 +19,7 @@ defmodule Raxol.System.Platform do
 
       iex> Platform.get_current_platform()
       :macos
-  """
+  '''
   @spec get_current_platform() :: :linux | :macos | :windows
   def get_current_platform do
     case :os.type() do
@@ -29,7 +29,7 @@ defmodule Raxol.System.Platform do
     end
   end
 
-  @doc """
+  @doc '''
   Returns the platform name as a string.
 
   ## Returns
@@ -42,7 +42,7 @@ defmodule Raxol.System.Platform do
 
       iex> Platform.get_platform_name()
       "macos"
-  """
+  '''
   @spec get_platform_name() :: String.t()
   def get_platform_name do
     case get_current_platform() do
@@ -52,7 +52,7 @@ defmodule Raxol.System.Platform do
     end
   end
 
-  @doc """
+  @doc '''
   Returns the file extension for the current platform.
 
   ## Returns
@@ -64,7 +64,7 @@ defmodule Raxol.System.Platform do
 
       iex> Platform.get_platform_extension()
       "tar.gz"
-  """
+  '''
   @spec get_platform_extension() :: String.t()
   def get_platform_extension do
     case get_current_platform() do
@@ -73,7 +73,7 @@ defmodule Raxol.System.Platform do
     end
   end
 
-  @doc """
+  @doc '''
   Returns the executable name for the current platform.
 
   ## Returns
@@ -85,7 +85,7 @@ defmodule Raxol.System.Platform do
 
       iex> Platform.get_executable_name()
       "raxol"
-  """
+  '''
   @spec get_executable_name() :: String.t()
   def get_executable_name do
     case get_current_platform() do
@@ -94,7 +94,7 @@ defmodule Raxol.System.Platform do
     end
   end
 
-  @doc """
+  @doc '''
   Gathers detailed information about the current platform.
 
   ## Returns
@@ -115,7 +115,7 @@ defmodule Raxol.System.Platform do
         architecture: "arm64",
         terminal: "iTerm.app"
       }
-  """
+  '''
   @spec get_platform_info() :: %{
           :name => :linux | :macos | :windows,
           :version => String.t() | nil,
@@ -148,7 +148,7 @@ defmodule Raxol.System.Platform do
     end
   end
 
-  @doc """
+  @doc '''
   Detects if the feature is supported on the current platform.
 
   ## Parameters
@@ -164,7 +164,7 @@ defmodule Raxol.System.Platform do
 
       iex> Platform.supports_feature?(:true_color)
       true
-  """
+  '''
   @spec supports_feature?(atom()) :: boolean()
   def supports_feature?(feature) do
     case feature do

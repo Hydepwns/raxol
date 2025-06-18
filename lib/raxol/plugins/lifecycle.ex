@@ -1,10 +1,10 @@
 defmodule Raxol.Plugins.Lifecycle do
-  @moduledoc """
+  @moduledoc '''
   Handles the lifecycle management of Raxol plugins.
 
   This includes loading, unloading, enabling, disabling, and managing
   dependencies and configuration persistence.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -12,13 +12,13 @@ defmodule Raxol.Plugins.Lifecycle do
   alias Raxol.Plugins.{PluginConfig, PluginDependency, Manager.Core}
   alias Raxol.Core.Runtime.Plugins.DependencyManager
 
-  @doc """
+  @doc '''
   Loads a single plugin module and initializes it.
 
   Handles configuration merging, API compatibility checks, dependency checks,
   and saving the updated configuration.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
-  """
+  '''
   @spec load_plugin(Core.t(), atom(), map()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugin(%Core{} = manager, module, config \\ %{}) when is_atom(module) do
@@ -213,13 +213,13 @@ defmodule Raxol.Plugins.Lifecycle do
   defp validate_map_field(value, _field) when is_map(value), do: :ok
   defp validate_map_field(_value, field), do: {:error, {:invalid_field, field, :map}}
 
-  @doc """
+  @doc '''
   Loads multiple plugins in the correct dependency order.
 
   Initializes all plugins first, resolves dependencies, then loads them
   one by one using `load_plugin/3`.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
-  """
+  '''
   @spec load_plugins(Core.t(), list(atom())) ::
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugins(%Core{} = manager, modules) when is_list(modules) do
@@ -249,13 +249,13 @@ defmodule Raxol.Plugins.Lifecycle do
   defp handle_load_plugins_error({:error, reason}),
     do: {:error, "Failed to load plugins: #{inspect(reason)}"}
 
-  @doc """
+  @doc '''
   Unloads a plugin by name.
 
   Calls the plugin's `cleanup/1` callback, updates the configuration to disable
   the plugin, saves the configuration, and removes the plugin from the manager state.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
-  """
+  '''
   @spec unload_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def unload_plugin(%Core{} = manager, name) when is_binary(name) do
@@ -303,13 +303,13 @@ defmodule Raxol.Plugins.Lifecycle do
     end
   end
 
-  @doc """
+  @doc '''
   Enables a plugin by name.
 
   Checks dependencies, updates the configuration to enable the plugin,
   saves the configuration, and updates the plugin state in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
-  """
+  '''
   @spec enable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def enable_plugin(%Core{} = manager, name) when is_binary(name) do
@@ -360,13 +360,13 @@ defmodule Raxol.Plugins.Lifecycle do
     }
   end
 
-  @doc """
+  @doc '''
   Disables a plugin by name.
 
   Updates the configuration to disable the plugin, saves the configuration,
   and updates the plugin state in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
-  """
+  '''
   @spec disable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def disable_plugin(%Core{} = manager, name) when is_binary(name) do

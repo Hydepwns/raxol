@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Extension.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal extensions with advanced features:
   - Extension loading and unloading
   - Extension lifecycle management
   - Extension API and event system
   - Extension configuration and state management
-  """
+  '''
 
   @type extension :: %{
           name: String.t(),
@@ -53,9 +53,9 @@ defmodule Raxol.Terminal.Extension.Manager do
     :metrics
   ]
 
-  @doc """
+  @doc '''
   Creates a new extension manager with the given options.
-  """
+  '''
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %__MODULE__{
@@ -73,9 +73,9 @@ defmodule Raxol.Terminal.Extension.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Loads an extension into the manager.
-  """
+  '''
   @spec load_extension(t(), extension()) :: {:ok, t()} | {:error, term()}
   def load_extension(manager, extension) do
     with :ok <- validate_extension(extension),
@@ -102,9 +102,9 @@ defmodule Raxol.Terminal.Extension.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Unloads an extension from the manager.
-  """
+  '''
   @spec unload_extension(t(), String.t()) :: {:ok, t()} | {:error, term()}
   def unload_extension(manager, extension_name) do
     case Map.get(manager.extensions, extension_name) do
@@ -130,9 +130,9 @@ defmodule Raxol.Terminal.Extension.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Emits an event to all registered handlers.
-  """
+  '''
   @spec emit_event(t(), String.t(), [term()]) ::
           {:ok, [term()], t()} | {:error, term()}
   def emit_event(manager, event_name, args \\ []) do
@@ -155,9 +155,9 @@ defmodule Raxol.Terminal.Extension.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Executes an extension command.
-  """
+  '''
   @spec execute_command(t(), String.t(), [term()]) ::
           {:ok, term(), t()} | {:error, term()}
   def execute_command(manager, command_name, args \\ []) do
@@ -177,9 +177,9 @@ defmodule Raxol.Terminal.Extension.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Updates the configuration for an extension.
-  """
+  '''
   @spec update_extension_config(t(), String.t(), map()) ::
           {:ok, t()} | {:error, term()}
   def update_extension_config(manager, extension_name, config) do
@@ -206,9 +206,9 @@ defmodule Raxol.Terminal.Extension.Manager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the current extension metrics.
-  """
+  '''
   @spec get_metrics(t()) :: map()
   def get_metrics(manager) do
     manager.metrics

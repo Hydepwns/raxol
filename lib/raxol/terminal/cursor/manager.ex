@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Cursor.Manager do
-  @moduledoc """
+  @moduledoc '''
   Manages cursor state and operations in the terminal.
   Handles cursor position, visibility, style, and blinking state.
-  """
+  '''
 
   use GenServer
   require Logger
@@ -50,213 +50,213 @@ defmodule Raxol.Terminal.Cursor.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Creates a new cursor manager instance.
-  """
+  '''
   def new do
     %__MODULE__{}
   end
 
-  @doc """
+  @doc '''
   Creates a new cursor struct with the given options.
-  """
+  '''
   def new(opts) when is_map(opts) do
     struct!(__MODULE__, opts)
   end
 
-  @doc """
+  @doc '''
   Gets the current cursor position.
-  """
+  '''
   def get_position(pid \\ __MODULE__) do
     GenServer.call(pid, :get_position)
   end
 
-  @doc """
+  @doc '''
   Sets the cursor position.
-  """
+  '''
   def set_position(pid \\ __MODULE__, {row, col}) do
     GenServer.call(pid, {:set_position, row, col})
   end
 
-  @doc """
+  @doc '''
   Moves the cursor relative to its current position.
-  """
+  '''
   def move_cursor(pid \\ __MODULE__, direction, count \\ 1) do
     GenServer.call(pid, {:move_cursor, direction, count})
   end
 
-  @doc """
+  @doc '''
   Gets the cursor visibility state.
-  """
+  '''
   def get_visibility(pid \\ __MODULE__) do
     GenServer.call(pid, :get_visibility)
   end
 
-  @doc """
+  @doc '''
   Sets the cursor visibility state.
-  """
+  '''
   def set_visibility(pid \\ __MODULE__, visible) do
     GenServer.call(pid, {:set_visibility, visible})
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to a specific position.
-  """
+  '''
   def move_to(cursor, row, col) do
     %{cursor | x: row, y: col}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor up by the specified number of lines.
-  """
+  '''
   def move_up(cursor, lines, _width, _height) do
     new_y = max(cursor.top_margin, cursor.y - lines)
     %{cursor | y: new_y}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor down by the specified number of lines.
-  """
+  '''
   def move_down(cursor, lines, _width, _height) do
     new_y = min(cursor.bottom_margin, cursor.y + lines)
     %{cursor | y: new_y}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor left by the specified number of columns.
-  """
+  '''
   def move_left(cursor, cols, _width, _height) do
     new_x = max(0, cursor.x - cols)
     %{cursor | x: new_x}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor right by the specified number of columns.
-  """
+  '''
   def move_right(cursor, cols, _width, _height) do
     new_x = cursor.x + cols
     %{cursor | x: new_x}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to the beginning of the line.
-  """
+  '''
   def move_to_line_start(cursor) do
     %{cursor | x: 0}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to the end of the line.
-  """
+  '''
   def move_to_line_end(cursor, line_width) do
     %{cursor | x: line_width - 1}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to the specified column.
-  """
+  '''
   def move_to_column(cursor, column) do
     %{cursor | x: column}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to the specified line.
-  """
+  '''
   def move_to_line(cursor, line) do
     %{cursor | y: line}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to the home position (0, 0).
-  """
+  '''
   def move_home(cursor, _width, _height) do
     %{cursor | x: 0, y: 0}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to the next tab stop.
-  """
+  '''
   def move_to_next_tab(cursor, tab_size, width, _height) do
     next_tab = div(cursor.x + tab_size, tab_size) * tab_size
     new_x = min(next_tab, width - 1)
     %{cursor | x: new_x}
   end
 
-  @doc """
+  @doc '''
   Moves the cursor to the previous tab stop.
-  """
+  '''
   def move_to_prev_tab(cursor, tab_size, _width, _height) do
     prev_tab = div(cursor.x - 1, tab_size) * tab_size
     new_x = max(prev_tab, 0)
     %{cursor | x: new_x}
   end
 
-  @doc """
+  @doc '''
   Sets the cursor margins.
-  """
+  '''
   def set_margins(cursor, top, bottom) do
     %{cursor | top_margin: top, bottom_margin: bottom}
   end
 
-  @doc """
+  @doc '''
   Gets the cursor margins.
-  """
+  '''
   def get_margins(cursor) do
     {cursor.top_margin, cursor.bottom_margin}
   end
 
-  @doc """
+  @doc '''
   Gets the cursor blinking state.
-  """
+  '''
   def get_blink(pid \\ __MODULE__) do
     GenServer.call(pid, :get_blink)
   end
 
-  @doc """
+  @doc '''
   Sets the cursor blinking state.
-  """
+  '''
   def set_blink(pid \\ __MODULE__, blink) do
     GenServer.call(pid, {:set_blink, blink})
   end
 
-  @doc """
+  @doc '''
   Gets the cursor style.
-  """
+  '''
   def get_style(pid \\ __MODULE__) do
     GenServer.call(pid, :get_style)
   end
 
-  @doc """
+  @doc '''
   Sets the cursor style.
-  """
+  '''
   def set_style(pid \\ __MODULE__, style) do
     GenServer.call(pid, {:set_style, style})
   end
 
-  @doc """
+  @doc '''
   Gets the cursor color.
-  """
+  '''
   def get_color(%__MODULE__{} = state) do
     state.color
   end
 
-  @doc """
+  @doc '''
   Sets the cursor color.
-  """
+  '''
   def set_color(%__MODULE__{} = state, color) do
     %{state | color: color}
   end
 
-  @doc """
+  @doc '''
   Resets the cursor color to default.
-  """
+  '''
   def reset_color(%__MODULE__{} = state) do
     %{state | color: nil}
   end
 
-  @doc """
+  @doc '''
   Saves the current cursor state.
-  """
+  '''
   def save_state(%__MODULE__{} = state) do
     %{state |
       saved_x: state.x,
@@ -268,9 +268,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Restores the saved cursor state.
-  """
+  '''
   def restore_state(%__MODULE__{} = state) do
     %{state |
       x: state.saved_x || state.x,
@@ -282,9 +282,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Resets the cursor state to default values.
-  """
+  '''
   def reset(%__MODULE__{} = state) do
     %{state |
       x: 0,
@@ -302,10 +302,10 @@ defmodule Raxol.Terminal.Cursor.Manager do
     }
   end
 
-  @doc """
+  @doc '''
   Sets the cursor state based on a state atom.
   Supported states: :visible, :hidden
-  """
+  '''
   def set_state(%__MODULE__{} = state, :visible) do
     set_visibility(state, true)
   end

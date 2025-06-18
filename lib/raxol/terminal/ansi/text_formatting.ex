@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.ANSI.TextFormatting do
-  @moduledoc """
+  @moduledoc '''
   Handles advanced text formatting features for the terminal emulator.
   This includes double-width and double-height characters, as well as
   other advanced text attributes and colors.
-  """
+  '''
 
   @behaviour Raxol.Terminal.ANSI.TextFormattingBehaviour
 
@@ -90,9 +90,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   }
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Creates a new text formatting struct with default values.
-  """
+  '''
   def new do
     %__MODULE__{
       bold: false,
@@ -106,79 +106,79 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets the foreground color.
-  """
+  '''
   @spec set_foreground(text_style(), color()) :: text_style()
   def set_foreground(style, color) do
     %{style | foreground: color}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets the background color.
-  """
+  '''
   @spec set_background(text_style(), color()) :: text_style()
   def set_background(style, color) do
     %{style | background: color}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Gets the foreground color.
-  """
+  '''
   @spec get_foreground(text_style()) :: color()
   def get_foreground(%{} = style) do
     style.foreground
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Gets the background color.
-  """
+  '''
   @spec get_background(text_style()) :: color()
   def get_background(%{} = style) do
     style.background
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets double-width mode for the current line.
-  """
+  '''
   @spec set_double_width(text_style()) :: text_style()
   def set_double_width(style) do
     %{style | double_width: true, double_height: :none}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets double-height top half mode for the current line.
-  """
+  '''
   @spec set_double_height_top(text_style()) :: text_style()
   def set_double_height_top(style) do
     %{style | double_width: true, double_height: :top}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets double-height bottom half mode for the current line.
-  """
+  '''
   @spec set_double_height_bottom(text_style()) :: text_style()
   def set_double_height_bottom(style) do
     %{style | double_width: true, double_height: :bottom}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Resets to single-width, single-height mode.
-  """
+  '''
   @spec reset_size(text_style()) :: text_style()
   def reset_size(style) do
     %{style | double_width: false, double_height: :none}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Applies a text attribute to the style map.
 
   ## Parameters
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   ## Returns
 
   The updated text style with the new attribute applied.
-  """
+  '''
   @spec apply_attribute(text_style(), atom()) :: text_style()
   def apply_attribute(style, attribute) do
     case Map.get(@attribute_handlers, attribute) do
@@ -199,171 +199,171 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets bold text mode.
-  """
+  '''
   @spec set_bold(text_style()) :: text_style()
   def set_bold(style) do
     %{style | bold: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets faint text mode.
-  """
+  '''
   @spec set_faint(text_style()) :: text_style()
   def set_faint(style) do
     %{style | faint: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets italic text mode.
-  """
+  '''
   @spec set_italic(text_style()) :: text_style()
   def set_italic(style) do
     %{style | italic: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets underline text mode.
-  """
+  '''
   @spec set_underline(text_style()) :: text_style()
   def set_underline(style) do
     %{style | underline: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets blink text mode.
-  """
+  '''
   @spec set_blink(text_style()) :: text_style()
   def set_blink(style) do
     %{style | blink: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets reverse video mode.
-  """
+  '''
   @spec set_reverse(text_style()) :: text_style()
   def set_reverse(style) do
     %{style | reverse: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets concealed text mode.
-  """
+  '''
   @spec set_conceal(text_style()) :: text_style()
   def set_conceal(style) do
     %{style | conceal: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets strikethrough text mode.
-  """
+  '''
   @spec set_strikethrough(text_style()) :: text_style()
   def set_strikethrough(style) do
     %{style | strikethrough: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets fraktur text mode.
-  """
+  '''
   @spec set_fraktur(text_style()) :: text_style()
   def set_fraktur(style) do
     %{style | fraktur: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets double underline text mode.
-  """
+  '''
   @spec set_double_underline(text_style()) :: text_style()
   def set_double_underline(style) do
     %{style | double_underline: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets framed text mode.
-  """
+  '''
   @spec set_framed(text_style()) :: text_style()
   def set_framed(style) do
     %{style | framed: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets encircled text mode.
-  """
+  '''
   @spec set_encircled(text_style()) :: text_style()
   def set_encircled(style) do
     %{style | encircled: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets overlined text mode.
-  """
+  '''
   @spec set_overlined(text_style()) :: text_style()
   def set_overlined(style) do
     %{style | overlined: true}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets a hyperlink for the text.
-  """
+  '''
   @spec set_hyperlink(text_style(), String.t() | nil) :: text_style()
   def set_hyperlink(style, url) do
     %{style | hyperlink: url}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Resets all text attributes to their default values.
-  """
+  '''
   @spec reset_attributes(text_style()) :: text_style()
   def reset_attributes(_style) do
     new()
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets multiple text attributes at once.
-  """
+  '''
   @spec set_attributes(text_style(), list(atom())) :: text_style()
   def set_attributes(style, attributes) do
     Enum.reduce(attributes, style, &apply_attribute(&2, &1))
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Sets a custom attribute in the style map.
-  """
+  '''
   @spec set_custom(text_style(), atom(), any()) :: text_style()
   def set_custom(style, key, value) do
     Map.put(style, key, value)
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Updates multiple attributes from a map.
-  """
+  '''
   @spec update_attrs(text_style(), map()) :: text_style()
   def update_attrs(style, attrs) do
     Map.merge(style, attrs)
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Validates a text style map.
-  """
+  '''
   @spec validate(text_style()) :: {:ok, text_style()} | {:error, String.t()}
   def validate(style) do
     case style do
@@ -394,45 +394,45 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     end
   end
 
-  @doc """
+  @doc '''
   Applies the given color to the text.
-  """
+  '''
   @spec apply_color(String.t(), atom(), atom()) :: String.t()
   def apply_color(text, _fg, _bg) do
     # Implementation for applying color
     text
   end
 
-  @doc """
+  @doc '''
   Calculates the effective width of the text.
-  """
+  '''
   @spec effective_width(String.t(), map()) :: integer()
   def effective_width(text, _buffer) do
     # Implementation for calculating effective width
     String.length(text)
   end
 
-  @doc """
+  @doc '''
   Returns the paired line type for the given line.
-  """
+  '''
   @spec get_paired_line_type(String.t()) :: atom()
   def get_paired_line_type(_line) do
     # Implementation for getting paired line type
     :none
   end
 
-  @doc """
+  @doc '''
   Checks if the line needs a paired line.
-  """
+  '''
   @spec needs_paired_line?(String.t()) :: boolean()
   def needs_paired_line?(_line) do
     # Implementation for checking if line needs pairing
     false
   end
 
-  @doc """
+  @doc '''
   Converts an ANSI code to a color name.
-  """
+  '''
   @spec ansi_code_to_color_name(integer()) :: atom()
   def ansi_code_to_color_name(_code) do
     # Implementation for converting ANSI code to color name
@@ -440,61 +440,61 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Resets bold text mode.
-  """
+  '''
   @spec reset_bold(text_style()) :: text_style()
   def reset_bold(style) do
     %{style | bold: false}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Resets italic text mode.
-  """
+  '''
   @spec reset_italic(text_style()) :: text_style()
   def reset_italic(style) do
     %{style | italic: false}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Resets underline text mode.
-  """
+  '''
   @spec reset_underline(text_style()) :: text_style()
   def reset_underline(style) do
     %{style | underline: false}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Resets blink text mode.
-  """
+  '''
   @spec reset_blink(text_style()) :: text_style()
   def reset_blink(style) do
     %{style | blink: false}
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  @doc """
+  @doc '''
   Resets reverse video mode.
-  """
+  '''
   @spec reset_reverse(text_style()) :: text_style()
   def reset_reverse(style) do
     %{style | reverse: false}
   end
 
-  @doc """
+  @doc '''
   Gets the hyperlink from a style.
   Returns the hyperlink URL or nil if no hyperlink is set.
-  """
+  '''
   def get_hyperlink(%{hyperlink: url}) when is_binary(url), do: url
   def get_hyperlink(_), do: nil
 
-  @doc """
+  @doc '''
   Formats a style into SGR (Select Graphic Rendition) parameters.
   Returns a list of ANSI SGR codes.
-  """
+  '''
   def format_sgr_params(style) do
     Enum.reduce(@sgr_style_map, [], fn {attr, code}, acc ->
       if Map.get(style, attr), do: [code] ++ acc, else: acc
@@ -503,9 +503,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     |> Enum.concat([48, 5, style.background])
   end
 
-  @doc """
+  @doc '''
   Sets a single attribute on the emulator.
-  """
+  '''
   @spec set_attribute(t(), atom()) :: t()
   def set_attribute(emulator, attribute) do
     attributes = MapSet.put(emulator.attributes, attribute)

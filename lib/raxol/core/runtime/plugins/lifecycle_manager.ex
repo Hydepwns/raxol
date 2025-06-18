@@ -1,18 +1,18 @@
 defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
-  @moduledoc """
+  @moduledoc '''
   Handles plugin lifecycle operations including enabling, disabling, and reloading plugins.
   This module is responsible for:
   - Enabling plugins
   - Disabling plugins
   - Reloading plugins
   - Managing plugin states during lifecycle changes
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Enables a previously disabled plugin.
-  """
+  '''
   def enable_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -47,9 +47,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
     end
   end
 
-  @doc """
+  @doc '''
   Disables a plugin temporarily without unloading it.
-  """
+  '''
   def disable_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -84,9 +84,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
     end
   end
 
-  @doc """
+  @doc '''
   Reloads a plugin by unloading and then loading it again.
-  """
+  '''
   def reload_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -117,9 +117,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
     end
   end
 
-  @doc """
+  @doc '''
   Loads a plugin with the given configuration.
-  """
+  '''
   def load_plugin(plugin_id, config, state) do
     log_plugin_loading(plugin_id)
     load_and_initialize_plugin(plugin_id, config, state)

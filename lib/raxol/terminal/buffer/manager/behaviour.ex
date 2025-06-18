@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Manager.Behaviour do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for terminal buffer management.
-  """
+  '''
 
   @callback initialize_buffers(
               width :: non_neg_integer(),

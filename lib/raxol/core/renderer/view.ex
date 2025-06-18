@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.View do
-  @moduledoc """
+  @moduledoc '''
   Provides view-related functionality for rendering UI components.
-  """
+  '''
 
   alias Raxol.Core.Renderer.View.Types
   alias Raxol.Core.Renderer.View.Layout.Flex
@@ -10,13 +10,13 @@ defmodule Raxol.Core.Renderer.View do
   alias Raxol.Core.Renderer.View.Utils.ViewUtils
   alias Raxol.Renderer.Layout, as: LayoutEngine
 
-  @typedoc """
+  @typedoc '''
   Style options for a view. Typically a list of atoms, e.g., [:bold, :underline].
   See `Raxol.Core.Renderer.View.Types.style/0` for details.
-  """
+  '''
   @type style :: Types.style()
 
-  @doc """
+  @doc '''
   Creates a new view with the specified type and options.
 
   ## Options
@@ -37,7 +37,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.new(:box, size: {80, 24})
       View.new(:text, content: "Hello", fg: :red)
-  """
+  '''
   def new(type, opts \\ []) do
     defaults = %{
       type: type,
@@ -58,7 +58,7 @@ defmodule Raxol.Core.Renderer.View do
     normalize_spacing(view)
   end
 
-  @doc """
+  @doc '''
   Creates a new text view.
 
   ## Options
@@ -73,12 +73,12 @@ defmodule Raxol.Core.Renderer.View do
 
       View.text("Hello", fg: :red)
       View.text("World", style: [bold: true, underline: true])
-  """
+  '''
   def text(content, opts \\ []) do
     Text.new(content, opts)
   end
 
-  @doc """
+  @doc '''
   Creates a new box view with padding and optional border.
 
   ## Parameters
@@ -94,7 +94,7 @@ defmodule Raxol.Core.Renderer.View do
       View.box(padding: 2)
       View.box(padding: 2, border: :single)
       View.box(style: [border: :double, padding: 1], children: [text("Hello")])
-  """
+  '''
   def box(opts \\ []) do
     require Keyword
 
@@ -123,7 +123,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a new row layout.
 
   ## Options
@@ -140,7 +140,7 @@ defmodule Raxol.Core.Renderer.View do
       View.row align: :center, gap: 2 do
         [text("A"), text("B")]
       end
-  """
+  '''
   def row(opts \\ []) do
     require Keyword
 
@@ -152,7 +152,7 @@ defmodule Raxol.Core.Renderer.View do
     Flex.row(opts)
   end
 
-  @doc """
+  @doc '''
   Creates a new flex container.
 
   ## Options
@@ -167,7 +167,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.flex(direction: :column, children: [text("Hello"), text("World")])
       View.flex(align: :center, gap: 2, wrap: true)
-  """
+  '''
   defmacro flex(opts, do: block) do
     quote do
       require Keyword
@@ -185,7 +185,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a grid layout with the given options and block.
 
   ## Options
@@ -200,7 +200,7 @@ defmodule Raxol.Core.Renderer.View do
       View.grid(columns: 2, gap: 2) do
         [text("A"), text("B"), text("C"), text("D")]
       end
-  """
+  '''
   defmacro grid(opts, do: block) do
     quote do
       require Keyword
@@ -234,7 +234,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a new border around a view.
 
   ## Options
@@ -247,7 +247,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.border(view, style: :single)
       View.border(view, title: "Title", style: :double)
-  """
+  '''
   def border(view, opts \\ []) do
     require Keyword
 
@@ -259,7 +259,7 @@ defmodule Raxol.Core.Renderer.View do
     Border.wrap(view, opts)
   end
 
-  @doc """
+  @doc '''
   Creates a new scrollable view.
 
   ## Options
@@ -273,7 +273,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.scroll(view, viewport: {80, 24})
       View.scroll(view, offset: {0, 10}, scrollbars: true)
-  """
+  '''
   def scroll(view, opts \\ []) do
     require Keyword
 
@@ -285,10 +285,10 @@ defmodule Raxol.Core.Renderer.View do
     Scroll.new(view, opts)
   end
 
-  @doc """
+  @doc '''
   Applies layout to a view, calculating absolute positions for all elements.
   Delegates to Raxol.Renderer.Layout.apply_layout/2.
-  """
+  '''
   def layout(view, dimensions) do
     require Keyword
 
@@ -300,7 +300,7 @@ defmodule Raxol.Core.Renderer.View do
     LayoutEngine.apply_layout(view, dimensions)
   end
 
-  @doc """
+  @doc '''
   Macro for creating a row layout with a do-block for children.
 
   ## Examples
@@ -308,7 +308,7 @@ defmodule Raxol.Core.Renderer.View do
       View.row style: [:bold] do
         [View.text("A"), View.text("B")]
       end
-  """
+  '''
   defmacro row(opts, do: block) do
     quote do
       require Keyword
@@ -327,7 +327,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
+  @doc '''
   Macro for creating a border around a view with a do-block for children.
 
   ## Examples
@@ -339,7 +339,7 @@ defmodule Raxol.Core.Renderer.View do
       View.border_wrap :single, style: [:bold] do
         [View.text("A"), View.text("B")]
       end
-  """
+  '''
   defmacro border_wrap(style, do: block) do
     quote do
       require Keyword
@@ -366,7 +366,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
+  @doc '''
   Macro for creating a scrollable view with a do-block for children.
 
   ## Examples
@@ -374,7 +374,7 @@ defmodule Raxol.Core.Renderer.View do
       View.scroll_wrap viewport: {80, 24} do
         [View.text("A"), View.text("B")]
       end
-  """
+  '''
   defmacro scroll_wrap(opts, do: block) do
     quote do
       require Keyword
@@ -391,7 +391,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
+  @doc '''
   Wraps a view with a border, optionally with a title and style.
 
   ## Parameters
@@ -405,7 +405,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.border_wrap(view, style: :single)
       View.border_wrap(view, title: "Title", style: :double)
-  """
+  '''
   def wrap_with_border(view, opts \\ []) do
     require Keyword
 
@@ -417,7 +417,7 @@ defmodule Raxol.Core.Renderer.View do
     Border.wrap(view, opts)
   end
 
-  @doc """
+  @doc '''
   Wraps a view with a border using a block style.
 
   ## Parameters
@@ -430,7 +430,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.block_border(view)
       View.block_border(view, title: "Title")
-  """
+  '''
   def block_border(view, opts \\ []) do
     require Keyword
 
@@ -442,7 +442,7 @@ defmodule Raxol.Core.Renderer.View do
     wrap_with_border(view, Keyword.put(opts, :style, :block))
   end
 
-  @doc """
+  @doc '''
   Wraps a view with a border using a double line style.
 
   ## Parameters
@@ -455,7 +455,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.double_border(view)
       View.double_border(view, title: "Title")
-  """
+  '''
   def double_border(view, opts \\ []) do
     require Keyword
 
@@ -467,7 +467,7 @@ defmodule Raxol.Core.Renderer.View do
     wrap_with_border(view, Keyword.put(opts, :style, :double))
   end
 
-  @doc """
+  @doc '''
   Wraps a view with a border using a rounded style.
 
   ## Parameters
@@ -480,7 +480,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.rounded_border(view)
       View.rounded_border(view, title: "Title")
-  """
+  '''
   def rounded_border(view, opts \\ []) do
     require Keyword
 
@@ -492,7 +492,7 @@ defmodule Raxol.Core.Renderer.View do
     wrap_with_border(view, Keyword.put(opts, :style, :rounded))
   end
 
-  @doc """
+  @doc '''
   Wraps a view with a border using a bold style.
 
   ## Parameters
@@ -505,7 +505,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.bold_border(view)
       View.bold_border(view, title: "Title")
-  """
+  '''
   def bold_border(view, opts \\ []) do
     require Keyword
 
@@ -517,7 +517,7 @@ defmodule Raxol.Core.Renderer.View do
     wrap_with_border(view, Keyword.put(opts, :style, :bold))
   end
 
-  @doc """
+  @doc '''
   Wraps a view with a border using a simple style.
 
   ## Parameters
@@ -530,7 +530,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.simple_border(view)
       View.simple_border(view, title: "Title")
-  """
+  '''
   def simple_border(view, opts \\ []) do
     require Keyword
 
@@ -542,7 +542,7 @@ defmodule Raxol.Core.Renderer.View do
     wrap_with_border(view, Keyword.put(opts, :style, :simple))
   end
 
-  @doc """
+  @doc '''
   Creates a new panel view (box with border and children).
 
   ## Options
@@ -559,7 +559,7 @@ defmodule Raxol.Core.Renderer.View do
       View.panel(border: :double, title: "Panel")
 
   NOTE: Only panel/1 (with a keyword list) is supported. Update any panel/2 usages to panel/1.
-  """
+  '''
   def panel(opts \\ []) do
     require Keyword
 
@@ -590,7 +590,7 @@ defmodule Raxol.Core.Renderer.View do
     __MODULE__.box(box_opts)
   end
 
-  @doc """
+  @doc '''
   Creates a new column layout.
 
   ## Options
@@ -607,12 +607,12 @@ defmodule Raxol.Core.Renderer.View do
       View.column align: :center, gap: 2 do
         [text("A"), text("B")]
       end
-  """
+  '''
   def column(opts) do
     Raxol.Core.Renderer.View.Layout.Flex.column(opts)
   end
 
-  @doc """
+  @doc '''
   Creates a button element.
 
   ## Options
@@ -625,7 +625,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.button("Click Me", on_click: {:button_clicked})
       View.button("Submit", aria_label: "Submit form")
-  """
+  '''
   def button(text, opts \\ []) do
     %{
       type: :button,
@@ -637,7 +637,7 @@ defmodule Raxol.Core.Renderer.View do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a checkbox element.
 
   ## Options
@@ -651,7 +651,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.checkbox("Enable Feature", checked: true)
       View.checkbox("Accept Terms", on_toggle: {:terms_toggled})
-  """
+  '''
   def checkbox(label, opts \\ []) do
     %{
       type: :checkbox,
@@ -664,7 +664,7 @@ defmodule Raxol.Core.Renderer.View do
     }
   end
 
-  @doc """
+  @doc '''
   Creates a text input element.
 
   ## Options
@@ -679,7 +679,7 @@ defmodule Raxol.Core.Renderer.View do
 
       View.text_input(placeholder: "Enter your name...")
       View.text_input(value: "John", on_change: {:name_changed})
-  """
+  '''
   def text_input(opts \\ []) do
     %{
       type: :text_input,
@@ -692,7 +692,7 @@ defmodule Raxol.Core.Renderer.View do
     }
   end
 
-  @doc """
+  @doc '''
   Renders a view with the given options.
 
   ## Parameters
@@ -701,7 +701,7 @@ defmodule Raxol.Core.Renderer.View do
 
   ## Returns
     - A rendered view
-  """
+  '''
   defmacro view(opts, do: block) do
     quote do
       rendered_view = unquote(block)
@@ -734,9 +734,9 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a simple box element with the given options.
-  """
+  '''
   def box_element(opts \\ []) do
     %{
       type: :box,
@@ -745,10 +745,10 @@ defmodule Raxol.Core.Renderer.View do
     }
   end
 
-  @doc """
+  @doc '''
   Calculates flex layout dimensions based on the given constraints.
   Returns a map with calculated width and height.
-  """
+  '''
   @spec flex(map()) :: %{width: integer(), height: integer()}
   def flex(constraints) do
     %{

@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
-  @moduledoc """
+  @moduledoc '''
   Handles parsing of color specifications in various formats.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Parses a color specification string into an RGB tuple.
-  """
+  '''
   @spec parse(String.t()) :: {:ok, {0..255, 0..255, 0..255}} | {:error, term()}
   def parse(spec) do
     cond do

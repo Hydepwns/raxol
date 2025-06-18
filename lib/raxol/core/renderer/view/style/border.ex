@@ -1,12 +1,12 @@
 defmodule Raxol.Core.Renderer.View.Style.Border do
-  @moduledoc """
+  @moduledoc '''
   Handles border rendering for the Raxol view system.
   Provides various border styles and rendering functionality.
-  """
+  '''
 
   alias Raxol.Core.Renderer.View.Types
 
-  @doc """
+  @doc '''
   Creates a border around a view.
 
   ## Options
@@ -19,7 +19,7 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
 
       Border.wrap(view, style: :single)
       Border.wrap(view, style: :double, title: "Title")
-  """
+  '''
   def wrap(view, opts \\ []) do
     border_type = Keyword.get(opts, :border, Keyword.get(opts, :style, :single))
     title = Keyword.get(opts, :title)
@@ -38,9 +38,9 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
     }
   end
 
-  @doc """
+  @doc '''
   Renders a border around a view with the given style and dimensions.
-  """
+  '''
   def render_border(view, style, {width, height}) do
     chars = Types.border_chars()[style]
     title = view[:title]

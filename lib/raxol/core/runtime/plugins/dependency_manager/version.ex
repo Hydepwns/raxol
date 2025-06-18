@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
-  @moduledoc """
+  @moduledoc '''
   Handles version parsing and constraint checking for plugin dependencies.
   Provides sophisticated version constraint handling with support for complex requirements.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Checks if a version satisfies a version requirement.
 
   ## Parameters
@@ -16,7 +16,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
 
   * `:ok` - If the version satisfies the requirement
   * `{:error, reason}` - If there's an error or the version doesn't satisfy the requirement
-  """
+  '''
   def check_version(version, requirement) do
     with {:ok, _} <- Version.parse(version),
          {:ok, parsed_req} <- parse_version_requirement(requirement) do
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
     end
   end
 
-  @doc """
+  @doc '''
   Parses a version requirement string into a format suitable for version matching.
 
   ## Parameters
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
 
       iex> Version.parse_version_requirement(">= 1.0.0 || >= 2.0.0")
       {:ok, {:or, [">= 1.0.0", ">= 2.0.0"]}}
-  """
+  '''
   def parse_version_requirement(requirement) when is_binary(requirement) do
     # Handle complex version requirements
     case String.split(requirement, "||") do
@@ -96,7 +96,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
     {:error, :invalid_requirement_format}
   end
 
-  @doc """
+  @doc '''
   Parses a single version requirement.
 
   ## Parameters
@@ -107,7 +107,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
 
   * `{:ok, parsed}` - The parsed requirement
   * `{:error, :invalid_requirement_format}` - If the requirement is invalid
-  """
+  '''
   def parse_single_requirement(req) do
     req = String.trim(req)
 

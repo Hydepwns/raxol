@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
-  @moduledoc """
+  @moduledoc '''
   Manages character set state and operations.
-  """
+  '''
 
   @type charset ::
           :us_ascii
@@ -30,9 +30,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
           gr: :g0 | :g1 | :g2 | :g3
         }
 
-  @doc """
+  @doc '''
   Creates a new character set state with default values.
-  """
+  '''
   def new do
     %{
       active: :us_ascii,
@@ -46,78 +46,78 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     }
   end
 
-  @doc """
+  @doc '''
   Gets the active character set.
-  """
+  '''
   def get_active(state), do: state.active
 
-  @doc """
+  @doc '''
   Sets the active character set.
-  """
+  '''
   def set_active(state, set) do
     %{state | active: set}
   end
 
-  @doc """
+  @doc '''
   Gets the single shift character set.
-  """
+  '''
   def get_single_shift(state), do: state.single_shift
 
-  @doc """
+  @doc '''
   Sets the single shift character set.
-  """
+  '''
   def set_single_shift(state, set) do
     %{state | single_shift: set}
   end
 
-  @doc """
+  @doc '''
   Clears the single shift character set.
-  """
+  '''
   def clear_single_shift(state) do
     %{state | single_shift: nil}
   end
 
-  @doc """
+  @doc '''
   Gets a G-set character set.
-  """
+  '''
   def get_gset(state, gset) do
     Map.get(state, gset)
   end
 
-  @doc """
+  @doc '''
   Sets a G-set character set.
-  """
+  '''
   def set_gset(state, gset, set) when gset in [:g0, :g1, :g2, :g3] do
     Map.put(state, gset, set)
   end
 
-  @doc """
+  @doc '''
   Gets the GL (left) character set.
-  """
+  '''
   def get_gl(state), do: state.gl
 
-  @doc """
+  @doc '''
   Sets the GL (left) character set.
-  """
+  '''
   def set_gl(state, gset) when gset in [:g0, :g1, :g2, :g3] do
     %{state | gl: gset}
   end
 
-  @doc """
+  @doc '''
   Gets the GR (right) character set.
-  """
+  '''
   def get_gr(state), do: state.gr
 
-  @doc """
+  @doc '''
   Sets the GR (right) character set.
-  """
+  '''
   def set_gr(state, gset) when gset in [:g0, :g1, :g2, :g3] do
     %{state | gr: gset}
   end
 
-  @doc """
+  @doc '''
   Gets the active G-set character set.
-  """
+  '''
   def get_active_gset(state) do
     case state.gl do
       :g0 -> state.g0
@@ -127,9 +127,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the active GR character set.
-  """
+  '''
   def get_active_gr(state) do
     case state.gr do
       :g0 -> state.g0
@@ -139,9 +139,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     end
   end
 
-  @doc """
+  @doc '''
   Converts a character set code to an atom.
-  """
+  '''
   def charset_code_to_atom(code) do
     case code do
       ?0 -> :dec_special_graphics
@@ -161,9 +161,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     end
   end
 
-  @doc """
+  @doc '''
   Converts a G-set index to an atom.
-  """
+  '''
   def index_to_gset(index) when index in 0..3 do
     case index do
       0 -> :g0
@@ -173,38 +173,38 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the mode manager from the emulator state.
-  """
+  '''
   def get_mode_manager(emulator) do
     emulator.mode_manager
   end
 
-  @doc """
+  @doc '''
   Updates the mode manager in the emulator state.
-  """
+  '''
   def update_mode_manager(emulator, mode_manager) do
     %{emulator | mode_manager: mode_manager}
   end
 
-  @doc """
+  @doc '''
   Gets the charset state from the emulator state.
-  """
+  '''
   def get_charset_state(emulator) do
     emulator.charset_state
   end
 
-  @doc """
+  @doc '''
   Updates the charset state in the emulator state.
-  """
+  '''
   def update_charset_state(emulator, charset_state) do
     %{emulator | charset_state: charset_state}
   end
 
-  @doc """
+  @doc '''
   Validates a character set state.
   Returns :ok if valid, or {:error, reason} if invalid.
-  """
+  '''
   def validate_state(state) when is_map(state) do
     required_keys = [:active, :single_shift, :g0, :g1, :g2, :g3, :gl, :gr]
 

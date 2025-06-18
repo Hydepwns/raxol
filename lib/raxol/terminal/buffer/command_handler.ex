@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.CommandHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles buffer commands for the unified buffer manager.
-  """
+  '''
 
   alias Raxol.Terminal.Buffer.UnifiedManager
 

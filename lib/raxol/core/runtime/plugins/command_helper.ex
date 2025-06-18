@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
-  @moduledoc """
+  @moduledoc '''
   Handles plugin command registration and dispatch for the Plugin Manager.
-  """
+  '''
 
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
 
@@ -28,7 +28,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
             ArgumentError ->
               # If namespace string cannot be converted to an atom, treat as no namespace
               Raxol.Core.Runtime.Log.debug(
-                "Namespace string '#{namespace}' could not be converted to an existing atom."
+                "Namespace string "#{namespace}" could not be converted to an existing atom."
               )
 
               nil
@@ -184,16 +184,16 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     CommandRegistry.unregister_commands_by_module(command_table, plugin_module)
   end
 
-  @doc """
+  @doc '''
   Finds the plugin ID for a given module.
-  """
+  '''
   def find_plugin_id_by_module(plugins, module) do
     Enum.find_value(plugins, fn {id, mod} -> if mod == module, do: id end)
   end
 
-  @doc """
+  @doc '''
   Validates command arguments.
-  """
+  '''
   def validate_command_args(args) do
     cond do
       is_nil(args) ->

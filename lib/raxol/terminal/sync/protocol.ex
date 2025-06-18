@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Sync.Protocol do
-  @moduledoc """
+  @moduledoc '''
   Defines the synchronization protocol for terminal components.
   Handles message formats, versioning, and conflict resolution strategies.
-  """
+  '''
 
   # Types
   @type sync_message :: %{

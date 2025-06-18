@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Metrics.AlertManager do
-  @moduledoc """
+  @moduledoc '''
   Alert management system for the Raxol metrics.
 
   This module handles:
@@ -8,7 +8,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
   - Alert state tracking
   - Alert notifications
   - Alert history
-  """
+  '''
 
   use GenServer
   alias Raxol.Core.Metrics.{UnifiedCollector, Aggregator}
@@ -38,44 +38,44 @@ defmodule Raxol.Core.Metrics.AlertManager do
     default_severity: :warning
   }
 
-  @doc """
+  @doc '''
   Starts the alert manager.
-  """
+  '''
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Adds a new alert rule.
-  """
+  '''
   def add_rule(rule) do
     GenServer.call(__MODULE__, {:add_rule, rule})
   end
 
-  @doc """
+  @doc '''
   Gets all alert rules.
-  """
+  '''
   def get_rules do
     GenServer.call(__MODULE__, :get_rules)
   end
 
-  @doc """
+  @doc '''
   Gets the current alert state for a rule.
-  """
+  '''
   def get_alert_state(rule_id) do
     GenServer.call(__MODULE__, {:get_alert_state, rule_id})
   end
 
-  @doc """
+  @doc '''
   Gets the alert history.
-  """
+  '''
   def get_alert_history(rule_id) do
     GenServer.call(__MODULE__, {:get_alert_history, rule_id})
   end
 
-  @doc """
+  @doc '''
   Acknowledges an alert.
-  """
+  '''
   def acknowledge_alert(rule_id) do
     GenServer.call(__MODULE__, {:acknowledge_alert, rule_id})
   end

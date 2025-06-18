@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Split.Supervisor do
-  @moduledoc """
+  @moduledoc '''
   Supervisor for the terminal split management system.
-  """
+  '''
 
   use DynamicSupervisor
 

@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Renderer.Buffer do
-  @moduledoc """
+  @moduledoc '''
   Manages terminal buffer rendering with double buffering and damage tracking.
 
   This module provides efficient terminal rendering by:
@@ -7,7 +7,7 @@ defmodule Raxol.Core.Renderer.Buffer do
   * Tracking damaged regions to minimize updates
   * Supporting partial screen updates
   * Managing frame timing
-  """
+  '''
 
   @type position :: {non_neg_integer(), non_neg_integer()}
   @type size :: {non_neg_integer(), non_neg_integer()}
@@ -25,9 +25,9 @@ defmodule Raxol.Core.Renderer.Buffer do
 
   defstruct [:front_buffer, :back_buffer, :fps, :last_frame_time]
 
-  @doc """
+  @doc '''
   Creates a new buffer manager with the given size and FPS.
-  """
+  '''
   def new(width, height, fps \\ 60) do
     empty_buffer = %{
       size: {width, height},
@@ -43,9 +43,9 @@ defmodule Raxol.Core.Renderer.Buffer do
     }
   end
 
-  @doc """
+  @doc '''
   Updates a cell in the back buffer and marks it as damaged.
-  """
+  '''
   def put_cell(buffer, {x, y} = pos, char, opts \\ []) do
     {width, height} = buffer.back_buffer.size
 
@@ -71,9 +71,9 @@ defmodule Raxol.Core.Renderer.Buffer do
     end
   end
 
-  @doc """
+  @doc '''
   Clears the entire buffer and marks all cells as damaged.
-  """
+  '''
   def clear(buffer) do
     {width, height} = buffer.back_buffer.size
 
@@ -88,10 +88,10 @@ defmodule Raxol.Core.Renderer.Buffer do
     %{buffer | back_buffer: back_buffer}
   end
 
-  @doc """
+  @doc '''
   Swaps the front and back buffers if enough time has passed since the last frame.
   Returns {buffer, should_render}, where should_render indicates if a new frame should be drawn.
-  """
+  '''
   def swap_buffers(buffer) do
     now = System.monotonic_time(:millisecond)
     # Ensure frame_time is an integer for comparison
@@ -122,20 +122,20 @@ defmodule Raxol.Core.Renderer.Buffer do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the damaged regions that need to be redrawn.
   Returns a list of {position, cell} tuples.
-  """
+  '''
   def get_damage(buffer) do
     Enum.map(buffer.front_buffer.damage, fn pos ->
       {pos, Map.get(buffer.front_buffer.cells, pos)}
     end)
   end
 
-  @doc """
+  @doc '''
   Resizes the buffer to the new dimensions.
   Preserves content where possible and marks all changed cells as damaged.
-  """
+  '''
   def resize(buffer, new_width, new_height) do
     old_size = buffer.back_buffer.size
     new_size = {new_width, new_height}

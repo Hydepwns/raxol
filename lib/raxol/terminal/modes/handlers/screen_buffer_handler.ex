@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles screen buffer mode operations and their side effects.
   Manages alternate screen buffer switching and related functionality.
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
 
@@ -16,9 +16,9 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
                           Raxol.Terminal.ScreenBuffer
                         )
 
-  @doc """
+  @doc '''
   Handles a screen buffer mode change and applies its effects to the emulator.
-  """
+  '''
   @spec handle_mode_change(atom(), ModeTypes.mode_value(), Emulator.t()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def handle_mode_change(mode_name, value, emulator) do

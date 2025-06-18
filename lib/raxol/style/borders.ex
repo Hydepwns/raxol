@@ -1,7 +1,7 @@
 defmodule Raxol.Style.Borders do
-  @moduledoc """
+  @moduledoc '''
   Defines border properties for terminal UI elements.
-  """
+  '''
 
   @type t :: %__MODULE__{
           style: :none | :solid | :double | :dashed | :dotted,
@@ -15,23 +15,23 @@ defmodule Raxol.Style.Borders do
             color: nil,
             radius: 0
 
-  @doc """
+  @doc '''
   Creates a new border with default values.
-  """
+  '''
   def new do
     %__MODULE__{}
   end
 
-  @doc """
+  @doc '''
   Creates a new border with the specified values.
-  """
+  '''
   def new(attrs) when is_map(attrs) do
     struct(__MODULE__, attrs)
   end
 
-  @doc """
+  @doc '''
   Merges two border structs, with the second overriding the first.
-  """
+  '''
   def merge(base, override) when is_map(base) and is_map(override) do
     Map.merge(base, override)
   end

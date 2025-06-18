@@ -1,17 +1,17 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
-  @moduledoc """
+  @moduledoc '''
   A realistic benchmark tool for visualization components with progressive data sizes.
   Tests the performance impact of our optimizations on various dataset sizes.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Run a benchmark test with realistic dataset sizes.
 
   This function tests the caching system and data sampling optimizations
   with progressively larger data sizes.
 
   Returns a map with the benchmark results.
-  """
+  '''
   def run_benchmark do
     IO.puts("\n=================================================")
     IO.puts("Visualization Performance Benchmark - Realistic Test")

@@ -1,9 +1,9 @@
 defmodule Raxol.Accounts do
-  @moduledoc """
+  @moduledoc '''
   The Accounts context.
   Manages user accounts and registration.
   (Currently uses an in-memory Agent for storage)
-  """
+  '''
 
   use Agent
 
@@ -11,14 +11,14 @@ defmodule Raxol.Accounts do
     Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Returns the list of registered users.
-  """
+  '''
   def list_users do
     Agent.get(__MODULE__, & &1)
   end
 
-  @doc """
+  @doc '''
   Registers a new user.
 
   ## Examples
@@ -29,7 +29,7 @@ defmodule Raxol.Accounts do
       iex> register_user(%{email: "user@example.com", password: "password"})
       {:error, %{email: "has already been taken"}}
 
-  """
+  '''
   @spec register_user(map()) :: {:ok, map()} | {:error, map()}
   def register_user(attrs) do
     # Handle both atom and string keys for email
@@ -50,12 +50,12 @@ defmodule Raxol.Accounts do
     end)
   end
 
-  @doc """
+  @doc '''
   Authenticates a user by email and password.
 
   Currently checks against plaintext passwords stored in the agent.
   In a real app, this should use password hashing.
-  """
+  '''
   @spec authenticate_user(String.t(), String.t()) ::
           {:ok, map()} | {:error, :invalid_credentials}
   def authenticate_user(email, password) do
@@ -74,10 +74,10 @@ defmodule Raxol.Accounts do
     end)
   end
 
-  @doc """
+  @doc '''
   Retrieves the full user map by user ID.
   Note: Inefficient O(N) scan of the agent state.
-  """
+  '''
   @spec get_user(String.t()) :: map() | nil
   def get_user(user_id) do
     Agent.get(__MODULE__, fn users ->
@@ -87,10 +87,10 @@ defmodule Raxol.Accounts do
     end)
   end
 
-  @doc """
+  @doc '''
   Updates a user's password after verifying the current password.
   Uses user_id to find the user.
-  """
+  '''
   @spec update_password(String.t(), String.t(), String.t()) ::
           :ok | {:error, atom() | map()}
   def update_password(user_id, current_password, new_password) do

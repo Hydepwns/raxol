@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.Buffer.Manager.Damage do
-  @moduledoc """
+  @moduledoc '''
   Handles damage tracking for the terminal buffer.
   Provides functionality for tracking and managing damaged regions.
-  """
+  '''
 
   alias Raxol.Terminal.Buffer.Manager.State
   alias Raxol.Terminal.Buffer.DamageTracker
 
-  @doc """
+  @doc '''
   Marks a region of the buffer as damaged.
 
   ## Examples
@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       iex> state = Damage.mark_region(state, 0, 0, 10, 5)
       iex> length(Damage.get_regions(state))
       1
-  """
+  '''
   def mark_region(%State{} = state, x1, y1, x2, y2) do
     new_tracker =
       DamageTracker.mark_damaged(state.damage_tracker, x1, y1, x2, y2)
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
     %{state | damage_tracker: new_tracker}
   end
 
-  @doc """
+  @doc '''
   Gets all damaged regions.
 
   ## Examples
@@ -34,12 +34,12 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       iex> regions = Damage.get_regions(state)
       iex> length(regions)
       1
-  """
+  '''
   def get_regions(%State{} = state) do
     DamageTracker.get_regions(state.damage_tracker)
   end
 
-  @doc """
+  @doc '''
   Clears all damage regions.
 
   ## Examples
@@ -49,13 +49,13 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       iex> state = Damage.clear_regions(state)
       iex> length(Damage.get_regions(state))
       0
-  """
+  '''
   def clear_regions(%State{} = state) do
     new_tracker = DamageTracker.clear_regions(state.damage_tracker)
     %{state | damage_tracker: new_tracker}
   end
 
-  @doc """
+  @doc '''
   Marks the entire visible region as damaged.
 
   ## Examples
@@ -64,13 +64,13 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       iex> state = Damage.mark_all(state)
       iex> length(Damage.get_regions(state))
       1
-  """
+  '''
   def mark_all(%State{} = state) do
     {width, height} = State.get_dimensions(state)
     mark_region(state, 0, 0, width - 1, height - 1)
   end
 
-  @doc """
+  @doc '''
   Marks a line as damaged.
 
   ## Examples
@@ -79,13 +79,13 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       iex> state = Damage.mark_line(state, 5)
       iex> length(Damage.get_regions(state))
       1
-  """
+  '''
   def mark_line(%State{} = state, y) do
     {width, _} = State.get_dimensions(state)
     mark_region(state, 0, y, width - 1, y)
   end
 
-  @doc """
+  @doc '''
   Marks a column as damaged.
 
   ## Examples
@@ -94,13 +94,13 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       iex> state = Damage.mark_column(state, 10)
       iex> length(Damage.get_regions(state))
       1
-  """
+  '''
   def mark_column(%State{} = state, x) do
     {_, height} = State.get_dimensions(state)
     mark_region(state, x, 0, x, height - 1)
   end
 
-  #  @doc """
+  #  @doc '''
   #  Merges overlapping damage regions.
   #
   #  ## Examples
@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
   #      iex> state = Damage.merge_regions(state)
   #      iex> length(Damage.get_regions(state))
   #      1
-  #  """
+  #  '''
   #  def merge_regions(%State{} = state) do
   #    # Get all damage regions
   #    regions = DamageTracker.get_regions(state.damage_tracker)

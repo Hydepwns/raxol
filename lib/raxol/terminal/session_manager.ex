@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.SessionManager do
-  @moduledoc """
+  @moduledoc '''
   Session management module for handling terminal sessions.
 
   This module provides functionality for:
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.SessionManager do
   - Session authentication
   - Session state tracking
   - Session cleanup
-  """
+  '''
 
   use GenServer
   alias Raxol.Terminal.Emulator

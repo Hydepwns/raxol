@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.WindowEvents do
-  @moduledoc """
+  @moduledoc '''
   Handles window events for terminal control.
   Supports window close, minimize, maximize, restore, and other window events.
 
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   * Window activation events
   * Window drag events
   * Window drop events
-  """
+  '''
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.Monitor
@@ -43,9 +43,9 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   @current_event nil
 
-  @doc """
+  @doc '''
   Processes a window event sequence and returns the corresponding event.
-  """
+  '''
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
     try do
@@ -80,9 +80,9 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     nil
   end
 
-  @doc """
+  @doc '''
   Formats a window event into an ANSI escape sequence.
-  """
+  '''
   def format_event(event) do
     case event do
       {:window_event, type, params} ->
@@ -134,17 +134,17 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     }[type]
   end
 
-  @doc """
+  @doc '''
   Enables window event reporting.
-  """
+  '''
   @spec enable_window_events() :: String.t()
   def enable_window_events do
     "\e[?63h"
   end
 
-  @doc """
+  @doc '''
   Disables window event reporting.
-  """
+  '''
   @spec disable_window_events() :: String.t()
   def disable_window_events do
     "\e[?63l"
@@ -196,10 +196,10 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     %{x: parse_number(x), y: parse_number(y)}
   end
 
-  @doc """
+  @doc '''
   Processes window-related ANSI escape sequences.
   Returns updated emulator state and any commands that need to be executed.
-  """
+  '''
   def process_window_event(emulator_state, event) do
     case event do
       {:resize, w, h} -> handle_resize(emulator_state, w, h)

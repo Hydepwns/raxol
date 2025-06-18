@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Input.Button do
-  @moduledoc """
+  @moduledoc '''
   Button component for interactive UI elements.
 
   This component provides a clickable button with customizable appearance and behavior.
-  """
+  '''
 
   alias Raxol.UI.Components.Base.Component
   # alias Raxol.Core.Events.Event # REMOVE ALIAS
@@ -26,10 +26,10 @@ defmodule Raxol.UI.Components.Input.Button do
         }
 
   @spec new(map()) :: t()
-  @doc """
+  @doc '''
   Creates a new Button state map, applying defaults.
   Expects opts to be a Map.
-  """
+  '''
   def new(opts) when is_map(opts) do
     # Use Map.get for accessing options from the map
     id = Map.get(opts, :id, "button-#{System.unique_integer([:positive])}")
@@ -65,9 +65,9 @@ defmodule Raxol.UI.Components.Input.Button do
     }
   end
 
-  @doc """
+  @doc '''
   Initializes the Button component state from the given props.
-  """
+  '''
   @spec init(map()) :: {:ok, t()}
   @impl Component
   def init(state) do
@@ -76,23 +76,23 @@ defmodule Raxol.UI.Components.Input.Button do
     {:ok, initialized_state}
   end
 
-  @doc """
+  @doc '''
   Mounts the Button component. Performs any setup needed after initialization.
-  """
+  '''
   @spec mount(t()) :: t()
   @impl Component
   def mount(state), do: state
 
-  @doc """
+  @doc '''
   Unmounts the Button component, performing any necessary cleanup.
-  """
+  '''
   @spec unmount(t()) :: t()
   @impl Component
   def unmount(state), do: state
 
-  @doc """
+  @doc '''
   Updates the Button component state in response to messages or prop changes.
-  """
+  '''
   @spec update(t(), term()) :: {:noreply, t()}
   @impl Component
   def update(state, _message) do
@@ -100,7 +100,7 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   @spec render(t(), map()) :: map()
-  @doc """
+  @doc '''
   Renders the button component based on its current state.
 
   ## Parameters
@@ -111,7 +111,7 @@ defmodule Raxol.UI.Components.Input.Button do
   ## Returns
 
   A rendered view representation of the button.
-  """
+  '''
   @impl Component
   def render(button, context) do
     # Access component styles correctly from context.component_styles
@@ -159,7 +159,7 @@ defmodule Raxol.UI.Components.Input.Button do
 
   @spec handle_event(t(), any(), map()) ::
           {:update, t(), list()} | {:handled, t()} | :passthrough
-  @doc """
+  @doc '''
   Handles input events for the button component.
 
   ## Parameters
@@ -173,7 +173,7 @@ defmodule Raxol.UI.Components.Input.Button do
   `{:update, updated_button}` if the button state changed,
   `{:handled, button}` if the event was handled but state didn't change,
   `:passthrough` if the event wasn't handled by the button.
-  """
+  '''
   @impl Component
   def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
     if button.disabled do

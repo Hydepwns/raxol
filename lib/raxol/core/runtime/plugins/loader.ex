@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.Loader do
-  @moduledoc """
+  @moduledoc '''
   Manages plugin loading operations.
-  """
+  '''
 
   use GenServer
   require Logger
@@ -21,48 +21,48 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # Client API
 
-  @doc """
+  @doc '''
   Starts the plugin loader.
-  """
+  '''
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
+  @doc '''
   Loads a plugin from the given path.
-  """
+  '''
   @impl true
   def load_plugin(plugin_path) when is_binary(plugin_path) do
     GenServer.call(__MODULE__, {:load_plugin, plugin_path})
   end
 
-  @doc """
+  @doc '''
   Unloads a plugin.
-  """
+  '''
   @impl true
   def unload_plugin(plugin) do
     GenServer.call(__MODULE__, {:unload_plugin, plugin})
   end
 
-  @doc """
+  @doc '''
   Reloads a plugin.
-  """
+  '''
   @impl true
   def reload_plugin(plugin) do
     GenServer.call(__MODULE__, {:reload_plugin, plugin})
   end
 
-  @doc """
+  @doc '''
   Gets the list of loaded plugins.
-  """
+  '''
   @impl true
   def get_loaded_plugins do
     GenServer.call(__MODULE__, :get_loaded_plugins)
   end
 
-  @doc """
+  @doc '''
   Checks if a plugin is loaded.
-  """
+  '''
   @impl true
   def is_plugin_loaded?(plugin) do
     GenServer.call(__MODULE__, {:is_plugin_loaded?, plugin})

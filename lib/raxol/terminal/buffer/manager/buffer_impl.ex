@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
-  @moduledoc """
+  @moduledoc '''
   Implementation of buffer operations for the terminal.
   This module contains the actual implementation of buffer operations
   that are used by the public Buffer interface.
-  """
+  '''
 
   alias Raxol.Terminal.Buffer.Cell
 
@@ -154,18 +154,18 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
     %{buffer | width: width, height: height, cells: cells}
   end
 
-  @doc """
+  @doc '''
   Gets a line from the buffer.
-  """
+  '''
   def get_line(buffer, y) do
     for x <- 0..(buffer.width - 1) do
       get_cell(buffer, x, y)
     end
   end
 
-  @doc """
+  @doc '''
   Sets a line in the buffer.
-  """
+  '''
   def set_line(buffer, y, cells) do
     cells
     |> Enum.with_index()
@@ -174,100 +174,100 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
     end)
   end
 
-  @doc """
+  @doc '''
   Gets the buffer size.
-  """
+  '''
   def get_size(buffer) do
     {buffer.width, buffer.height}
   end
 
-  @doc """
+  @doc '''
   Gets the cursor position.
-  """
+  '''
   def get_cursor(buffer) do
     buffer.cursor_position
   end
 
-  @doc """
+  @doc '''
   Sets the cursor position.
-  """
+  '''
   def set_cursor(buffer, cursor) do
     %{buffer | cursor_position: cursor}
   end
 
-  @doc """
+  @doc '''
   Gets the current attributes.
-  """
+  '''
   def get_attributes(buffer) do
     buffer.attributes
   end
 
-  @doc """
+  @doc '''
   Sets the current attributes.
-  """
+  '''
   def set_attributes(buffer, attributes) do
     %{buffer | attributes: attributes}
   end
 
-  @doc """
+  @doc '''
   Gets the current mode.
-  """
+  '''
   def get_mode(buffer) do
     buffer.mode
   end
 
-  @doc """
+  @doc '''
   Sets the current mode.
-  """
+  '''
   def set_mode(buffer, mode) do
     %{buffer | mode: mode}
   end
 
-  @doc """
+  @doc '''
   Gets the window title.
-  """
+  '''
   def get_title(buffer) do
     buffer.title
   end
 
-  @doc """
+  @doc '''
   Sets the window title.
-  """
+  '''
   def set_title(buffer, title) do
     %{buffer | title: title}
   end
 
-  @doc """
+  @doc '''
   Gets the icon name.
-  """
+  '''
   def get_icon_name(buffer) do
     buffer.icon_name
   end
 
-  @doc """
+  @doc '''
   Sets the icon name.
-  """
+  '''
   def set_icon_name(buffer, icon_name) do
     %{buffer | icon_name: icon_name}
   end
 
-  @doc """
+  @doc '''
   Gets the icon title.
-  """
+  '''
   def get_icon_title(buffer) do
     buffer.icon_title
   end
 
-  @doc """
+  @doc '''
   Sets the icon title.
-  """
+  '''
   def set_icon_title(buffer, icon_title) do
     %{buffer | icon_title: icon_title}
   end
 
-  @doc """
+  @doc '''
   Adds content to the buffer at the current cursor position.
-  """
+  '''
   def add(buffer, content) when is_binary(content) do
     {x, y} = buffer.cursor_position
     cells = buffer.cells

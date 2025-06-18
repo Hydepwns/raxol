@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
-  @moduledoc """
+  @moduledoc '''
   Handles cursor and font-related OSC commands.
 
   This handler manages cursor properties and font settings, including:
@@ -13,25 +13,25 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
   - OSC 12: Set/Query cursor color
   - OSC 50: Set/Query font
   - OSC 112: Reset cursor color
-  """
+  '''
 
   alias Raxol.Terminal.{Emulator, Cursor, Font}
   alias Raxol.Terminal.Commands.OSCHandlers.{ColorParser, FontParser}
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Handles OSC 12 command to set/query cursor color.
-  """
+  '''
   @spec handle_12(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_12(emulator, data) do
     case data do
-      "?" -> handle_color_query(emulator, 12, &Cursor.get_color/1)
+      "?' -> handle_color_query(emulator, 12, &Cursor.get_color/1)
       color_spec -> set_color(emulator, color_spec, &Cursor.set_color/2)
     end
   end
 
-  @doc """
+  @doc '''
   Handles OSC 50 command to set/query font.
 
   ## Command Format
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
   - family: Font family name
   - size: Font size in points
   - style: Font style (normal, bold, italic)
-  """
+  '''
   @spec handle_50(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_50(emulator, data) do
@@ -61,9 +61,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
     end
   end
 
-  @doc """
+  @doc '''
   Handles OSC 112 command to reset cursor color.
-  """
+  '''
   @spec handle_112(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_112(emulator, _data) do
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning(
-          "Failed to reset cursor color: #{inspect(reason)}"
+          'Failed to reset cursor color: #{inspect(reason)}"
         )
 
         {:error, reason, emulator}

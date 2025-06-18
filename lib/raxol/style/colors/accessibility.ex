@@ -1,7 +1,7 @@
 defmodule Raxol.Style.Colors.Accessibility do
-  @moduledoc """
+  @moduledoc '''
   Provides utilities for color accessibility, focusing on WCAG contrast.
-  """
+  '''
 
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Style.Colors.Color
@@ -17,7 +17,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   # AAA level for large text
   @contrast_aaa_large 4.5
 
-  @doc """
+  @doc '''
   Calculates the relative luminance of a color according to WCAG guidelines.
 
   ## Parameters
@@ -35,7 +35,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
       iex> Raxol.Style.Colors.Accessibility.relative_luminance("#FFFFFF")
       1.0
-  """
+  '''
   def relative_luminance(color) when is_binary(color) do
     # Allow hex string input for convenience
     case Color.from_hex(color) do
@@ -61,7 +61,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     if v <= 0.03928, do: v / 12.92, else: :math.pow((v + 0.055) / 1.055, 2.4)
   end
 
-  @doc """
+  @doc '''
   Calculates the contrast ratio between two colors according to WCAG guidelines.
 
   ## Parameters
@@ -80,7 +80,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
       iex> Raxol.Style.Colors.Accessibility.contrast_ratio("#777777", "#999999")
       1.3
-  """
+  '''
   def contrast_ratio(color1, color2)
       when is_binary(color1) or is_binary(color2) do
     # Allow hex string input
@@ -102,7 +102,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     contrast_ratio(c1, c2)
   end
 
-  @doc """
+  @doc '''
   Checks if a foreground color is readable on a background color.
 
   ## Parameters
@@ -122,7 +122,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> fg = Raxol.Style.Colors.Color.from_hex("#999999")
       iex> Raxol.Style.Colors.Accessibility.readable?(bg, fg, :aaa)
       false
-  """
+  '''
   @spec readable?(
           Color.t() | String.t(),
           Color.t() | String.t(),
@@ -143,7 +143,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     ratio >= threshold
   end
 
-  @doc """
+  @doc '''
   Suggests an appropriate text color (black or white) for a given background.
 
   Ensures minimum AA contrast.
@@ -159,7 +159,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
       iex> Raxol.Style.Colors.Accessibility.suggest_text_color("#EEEEEE").hex
       "#000000"
-  """
+  '''
   def suggest_text_color(background) do
     bg =
       if is_binary(background), do: Color.from_hex(background), else: background
@@ -167,7 +167,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     Utilities.best_bw_contrast(bg)
   end
 
-  @doc """
+  @doc '''
   Suggests a color with good contrast (at least AA) to the base color.
 
   Prioritizes complementary color, then black/white.
@@ -182,7 +182,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> contrast_color = Raxol.Style.Colors.Accessibility.suggest_contrast_color(color)
       iex> Raxol.Style.Colors.Accessibility.readable?(color, contrast_color)
       true
-  """
+  '''
   def suggest_contrast_color(color) when is_binary(color) do
     case Color.from_hex(color) do
       %Color{} = c -> suggest_contrast_color(c)
@@ -207,7 +207,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  @doc """
+  @doc '''
   Finds an accessible color pair (foreground/background) based on a base color and WCAG level.
 
   Tries to find a contrasting color (black or white first) that meets the desired level.
@@ -221,7 +221,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     and the other is a contrasting color (typically black or white) that meets the
     specified `level`. Returns `nil` if no suitable pair is found immediately
     (further logic might be needed for complex cases).
-  """
+  '''
   def accessible_color_pair(base_color, level \\ :aa)
 
   # @doc false # Silence @doc warning for the first clause
@@ -373,6 +373,10 @@ defmodule Raxol.Style.Colors.Accessibility do
           Color.t() | String.t(),
           Color.t() | String.t() | Keyword.t()
         ) :: String.t()
+  def suggest_accessible_color(color, background) when is_binary(background) do
+    suggest_accessible_color(color, background: background)
+  end
+
   def suggest_accessible_color(color, opts) when is_list(opts) do
     color = normalize_color(color)
     {bg, min_ratio} = extract_options(opts)
@@ -530,7 +534,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  @doc """
+  @doc '''
   Checks if two colors have sufficient contrast according to WCAG guidelines.
 
   ## Parameters
@@ -544,7 +548,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   - `{:ok, ratio}` if contrast is sufficient
   - `{:error, {:contrast_too_low, ratio, min_ratio}}` if contrast is insufficient
-  """
+  '''
   def check_contrast(color1, color2, level \\ :aa, size \\ :normal) do
     ratio = contrast_ratio(color1, color2)
 
@@ -563,7 +567,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  @doc """
+  @doc '''
   Adjusts a color palette to ensure all colors are accessible against a background.
 
   ## Parameters
@@ -574,7 +578,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   ## Returns
 
   - Map of adjusted colors
-  """
+  '''
   @spec adjust_palette(map(), Color.t() | String.t()) :: map()
   def adjust_palette(colors, background) do
     bg = normalize_color(background)

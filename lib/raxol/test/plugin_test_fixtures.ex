@@ -1,11 +1,11 @@
 defmodule Raxol.Test.PluginTestFixtures do
-  @moduledoc """
+  @moduledoc '''
   Test fixtures for plugin-related tests.
 
   Each plugin in this module is designed to be isolated and self-contained,
   with clear state management and error handling. Plugins are designed to be
   used in parallel test runs without interference.
-  """
+  '''
 
   # Test plugin that implements the Plugin behaviour correctly
   defmodule TestPlugin do

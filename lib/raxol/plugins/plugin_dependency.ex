@@ -1,13 +1,13 @@
 defmodule Raxol.Plugins.PluginDependency do
-  @moduledoc """
+  @moduledoc '''
   Provides utilities for plugin dependency and API compatibility checks.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Checks if the plugin's API version is compatible with the manager's API version.
   Returns :ok if compatible, {:error, :api_incompatible} otherwise.
   Compatibility is defined as matching major version (e.g., 1.x.x == 1.y.z).
-  """
+  '''
   def check_api_compatibility(plugin_api_version, manager_api_version)
       when is_binary(plugin_api_version) and is_binary(manager_api_version) do
     case {parse_major(plugin_api_version), parse_major(manager_api_version)} do

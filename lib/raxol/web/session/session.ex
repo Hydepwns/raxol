@@ -1,7 +1,7 @@
 defmodule Raxol.Web.Session.Session do
-  @moduledoc """
+  @moduledoc '''
   Database schema for session storage.
-  """
+  '''
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -19,9 +19,9 @@ defmodule Raxol.Web.Session.Session do
     timestamps()
   end
 
-  @doc """
+  @doc '''
   Creates a changeset for a session.
-  """
+  '''
   def changeset(session, attrs) do
     session
     |> cast(attrs, [

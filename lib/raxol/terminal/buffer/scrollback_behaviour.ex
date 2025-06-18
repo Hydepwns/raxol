@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Scrollback.Behaviour do
-  @moduledoc """
+  @moduledoc '''
   Behaviour for terminal scrollback buffer.
-  """
+  '''
 
   @callback new() :: any()
   @callback add_line(any(), String.t()) :: any()

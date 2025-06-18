@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Input.TextInput do
-  @moduledoc """
+  @moduledoc '''
   A text input component for capturing user text input.
 
   Features:
@@ -9,10 +9,12 @@ defmodule Raxol.UI.Components.Input.TextInput do
   * Character validation
   * Input masking (for password fields)
   * Event callbacks
-  """
+  '''
 
   alias Raxol.UI.Components.Base.Component
   alias Raxol.Core.Events.Event
+  alias Raxol.UI.Components.Input.TextInput.KeyHandler
+  alias Raxol.UI.Components.Input.TextInput.CharacterHandler
   # alias Raxol.View
   # alias Raxol.View.Style
   # alias Raxol.Core.Events
@@ -49,9 +51,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Initializes the TextInput component state from the given props.
-  """
+  '''
   @impl true
   @spec init(map()) :: {:ok, map()}
   def init(props) do
@@ -72,145 +74,13 @@ defmodule Raxol.UI.Components.Input.TextInput do
     {:ok, initial_state}
   end
 
-  @doc """
+  @doc '''
   Handles events for the TextInput component, such as keypresses, focus, blur, and mouse events.
-  """
+  '''
   @impl true
   @spec handle_event(map(), map(), map()) :: {map(), list()}
   def handle_event(state, %Event{type: :key, data: key_data}, _context) do
-    key = key_data.key
-    modifiers = key_data.modifiers || []
-
-    case {key, modifiers} do
-      {:enter, _} ->
-        if is_function(state.on_submit, 1) do
-          state.on_submit.(state.value)
-        end
-
-        {state, []}
-
-      {:escape, _} ->
-        new_state = %{state | focused: false}
-        {new_state, []}
-
-      {:backspace, _} ->
-        current_pos = state.cursor_pos
-        current_value = state.value || ""
-
-        if current_pos > 0 do
-          before_part = String.slice(current_value, 0..(current_pos - 2))
-          remaining_part = String.slice(current_value, current_pos..-1)
-          before = before_part || ""
-          remaining = remaining_part || ""
-          new_value = before <> remaining
-          new_state = %{state | cursor_pos: current_pos - 1, value: new_value}
-          emit_change_side_effect(state, new_value)
-          {new_state, []}
-        else
-          {state, []}
-        end
-
-      {:delete, _} ->
-        current_pos = state.cursor_pos
-        current_value = state.value || ""
-
-        if current_pos < String.length(current_value) do
-          before = String.slice(current_value, 0, current_pos)
-
-          after_text =
-            String.slice(current_value, (current_pos + 1)..-1//1) || ""
-
-          new_value = before <> after_text
-          new_state = %{state | value: new_value}
-          emit_change_side_effect(state, new_value)
-          {new_state, []}
-        else
-          {state, []}
-        end
-
-      {:left, _} ->
-        if state.cursor_pos > 0 do
-          new_cursor_pos = state.cursor_pos - 1
-          new_state = %{state | cursor_pos: new_cursor_pos}
-          {new_state, []}
-        else
-          {state, []}
-        end
-
-      {:right, _} ->
-        current_value = state.value || ""
-
-        if state.cursor_pos < String.length(current_value) do
-          new_cursor_pos = state.cursor_pos + 1
-          new_state = %{state | cursor_pos: new_cursor_pos}
-          {new_state, []}
-        else
-          {state, []}
-        end
-
-      {:home, _} ->
-        new_state = %{state | cursor_pos: 0}
-        {new_state, []}
-
-      {:end, _} ->
-        current_value = state.value || ""
-        new_state = %{state | cursor_pos: String.length(current_value)}
-        {new_state, []}
-
-      {char_key, []} ->
-        char_str =
-          cond do
-            is_binary(char_key) and String.length(char_key) == 1 and
-                String.printable?(char_key) ->
-              char_key
-
-            is_integer(char_key) and char_key >= 32 and char_key <= 126 ->
-              <<char_key::utf8>>
-
-            true ->
-              nil
-          end
-
-        if char_str do
-          max_length = state.max_length
-          current_value = state.value || ""
-
-          if max_length && String.length(current_value) >= max_length do
-            {state, []}
-          else
-            validator = state.validator
-
-            should_reject =
-              is_function(validator, 1) &&
-                !validator.(char_str)
-
-            if should_reject do
-              {state, []}
-            else
-              cursor_pos = state.cursor_pos
-              before = String.slice(current_value, 0, cursor_pos)
-              after_text = String.slice(current_value, cursor_pos..-1//1) || ""
-
-              new_value = before <> char_str <> after_text
-              new_cursor_pos = cursor_pos + 1
-
-              new_state = %{
-                state
-                | cursor_pos: new_cursor_pos,
-                  value: new_value
-              }
-
-              emit_change_side_effect(state, new_value)
-              {new_state, []}
-            end
-          end
-        else
-          {state, []}
-        end
-
-      _ ->
-        {state, []}
-    end
+    KeyHandler.handle_key(state, key_data.key, key_data.modifiers || [])
   end
 
   def handle_event(state, %{type: :focus}, _context) do
@@ -232,9 +102,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
     {state, []}
   end
 
-  @doc """
+  @doc '''
   Updates the TextInput component state in response to messages or prop changes.
-  """
+  '''
   @impl true
   @spec update(term(), map()) :: map()
   def update(message, state) do
@@ -245,23 +115,23 @@ defmodule Raxol.UI.Components.Input.TextInput do
     state
   end
 
-  @doc """
+  @doc '''
   Mounts the TextInput component. Performs any setup needed after initialization.
-  """
+  '''
   @impl true
   @spec mount(map()) :: map()
   def mount(state), do: state
 
-  @doc """
+  @doc '''
   Unmounts the TextInput component, performing any necessary cleanup.
-  """
+  '''
   @impl true
   @spec unmount(map()) :: map()
   def unmount(state), do: state
 
-  @doc """
+  @doc '''
   Renders the TextInput component using the current state and context.
-  """
+  '''
   @impl true
   @spec render(map(), map()) :: any()
   def render(state, _context) do
@@ -287,6 +157,179 @@ defmodule Raxol.UI.Components.Input.TextInput do
       focused: state.focused,
       style: merged_style
     }
+  end
+
+  defp emit_change_side_effect(state, new_value) do
+    if is_function(state.on_change, 1) do
+      state.on_change.(new_value)
+    end
+  end
+end
+
+defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
+  @moduledoc false
+  alias Raxol.UI.Components.Input.TextInput.{CharacterHandler, NavigationHandler, EditingHandler}
+
+  def handle_key(state, key, modifiers) do
+    case {key, modifiers} do
+      {:enter, _} -> handle_enter(state)
+      {:escape, _} -> handle_escape(state)
+      {:backspace, _} -> EditingHandler.handle_backspace(state)
+      {:delete, _} -> EditingHandler.handle_delete(state)
+      {:left, _} -> NavigationHandler.handle_left(state)
+      {:right, _} -> NavigationHandler.handle_right(state)
+      {:home, _} -> NavigationHandler.handle_home(state)
+      {:end, _} -> NavigationHandler.handle_end(state)
+      {char_key, []} -> CharacterHandler.handle_character(state, char_key)
+      _ -> {state, []}
+    end
+  end
+
+  defp handle_enter(state) do
+    if is_function(state.on_submit, 1) do
+      state.on_submit.(state.value)
+    end
+    {state, []}
+  end
+
+  defp handle_escape(state) do
+    new_state = %{state | focused: false}
+    {new_state, []}
+  end
+end
+
+defmodule Raxol.UI.Components.Input.TextInput.NavigationHandler do
+  @moduledoc false
+
+  def handle_left(state) do
+    if state.cursor_pos > 0 do
+      new_cursor_pos = state.cursor_pos - 1
+      new_state = %{state | cursor_pos: new_cursor_pos}
+      {new_state, []}
+    else
+      {state, []}
+    end
+  end
+
+  def handle_right(state) do
+    current_value = state.value || ""
+
+    if state.cursor_pos < String.length(current_value) do
+      new_cursor_pos = state.cursor_pos + 1
+      new_state = %{state | cursor_pos: new_cursor_pos}
+      {new_state, []}
+    else
+      {state, []}
+    end
+  end
+
+  def handle_home(state) do
+    new_state = %{state | cursor_pos: 0}
+    {new_state, []}
+  end
+
+  def handle_end(state) do
+    current_value = state.value || ""
+    new_state = %{state | cursor_pos: String.length(current_value)}
+    {new_state, []}
+  end
+end
+
+defmodule Raxol.UI.Components.Input.TextInput.EditingHandler do
+  @moduledoc false
+
+  def handle_backspace(state) do
+    current_pos = state.cursor_pos
+    current_value = state.value || ""
+
+    if current_pos > 0 do
+      before_part = String.slice(current_value, 0..(current_pos - 2))
+      remaining_part = String.slice(current_value, current_pos..-1//1)
+      before = before_part || ""
+      remaining = remaining_part || ""
+      new_value = before <> remaining
+      new_state = %{state | cursor_pos: current_pos - 1, value: new_value}
+      emit_change_side_effect(state, new_value)
+      {new_state, []}
+    else
+      {state, []}
+    end
+  end
+
+  def handle_delete(state) do
+    current_pos = state.cursor_pos
+    current_value = state.value || ""
+
+    if current_pos < String.length(current_value) do
+      before = String.slice(current_value, 0, current_pos)
+      after_text = String.slice(current_value, (current_pos + 1)..-1//1) || ""
+      new_value = before <> after_text
+      new_state = %{state | value: new_value}
+      emit_change_side_effect(state, new_value)
+      {new_state, []}
+    else
+      {state, []}
+    end
+  end
+
+  defp emit_change_side_effect(state, new_value) do
+    if is_function(state.on_change, 1) do
+      state.on_change.(new_value)
+    end
+  end
+end
+
+defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
+  @moduledoc false
+
+  def handle_character(state, char_key) do
+    with char_str when not is_nil(char_str) <- process_char_key(char_key),
+         true <- validate_length(state, char_str),
+         true <- validate_char(state, char_str) do
+      insert_char_at_cursor(state, char_str)
+    else
+      _ -> {state, []}
+    end
+  end
+
+  defp process_char_key(char_key) do
+    cond do
+      is_binary(char_key) and String.length(char_key) == 1 and String.printable?(char_key) ->
+        char_key
+      is_integer(char_key) and char_key >= 32 and char_key <= 126 ->
+        <<char_key::utf8>>
+      true ->
+        nil
+    end
+  end
+
+  defp validate_length(state, char_str) do
+    current_value = state.value || ""
+    max_length = state.max_length
+    !max_length || String.length(current_value) < max_length
+  end
+
+  defp validate_char(state, char_str) do
+    validator = state.validator
+    !is_function(validator, 1) || validator.(char_str)
+  end
+
+  defp insert_char_at_cursor(state, char_str) do
+    current_value = state.value || ""
+    cursor_pos = state.cursor_pos
+    before = String.slice(current_value, 0, cursor_pos)
+    after_text = String.slice(current_value, cursor_pos..-1//1) || ""
+    new_value = before <> char_str <> after_text
+    new_cursor_pos = cursor_pos + 1
+
+    new_state = %{
+      state
+      | cursor_pos: new_cursor_pos,
+        value: new_value
+    }
+
+    emit_change_side_effect(state, new_value)
+    {new_state, []}
   end
 
   defp emit_change_side_effect(state, new_value) do

@@ -1,35 +1,35 @@
 defmodule Raxol.Terminal.Input.ControlSequenceHandler do
-  @moduledoc """
+  @moduledoc '''
   Handles various control sequences for the terminal emulator.
   Includes CSI, OSC, DCS, PM, and APC sequence handling.
-  """
+  '''
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.{CSIHandlers, OSCHandlers}
 
   require Raxol.Core.Runtime.Log
 
-  @doc """
+  @doc '''
   Handles a CSI (Control Sequence Introducer) sequence.
-  """
+  '''
   @spec handle_csi_sequence(Emulator.t(), String.t(), list(String.t())) ::
           Emulator.t()
   def handle_csi_sequence(emulator, command, params) do
     CSIHandlers.handle_csi_sequence(emulator, command, params)
   end
 
-  @doc """
+  @doc '''
   Handles an OSC (Operating System Command) sequence.
-  """
+  '''
   @spec handle_osc_sequence(Emulator.t(), String.t(), String.t()) ::
           Emulator.t()
   def handle_osc_sequence(emulator, command, data) do
     OSCHandlers.handle_osc_sequence(emulator, command, data)
   end
 
-  @doc """
+  @doc '''
   Handles a DCS (Device Control String) sequence.
-  """
+  '''
   @spec handle_dcs_sequence(Emulator.t(), String.t(), String.t()) ::
           Emulator.t()
   def handle_dcs_sequence(emulator, command, data) do
@@ -52,9 +52,9 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
     end
   end
 
-  @doc """
+  @doc '''
   Handles a PM (Privacy Message) sequence.
-  """
+  '''
   @spec handle_pm_sequence(Emulator.t(), String.t(), String.t()) :: Emulator.t()
   def handle_pm_sequence(emulator, command, data) do
     # PM sequences are typically ignored by terminals
@@ -65,9 +65,9 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
     emulator
   end
 
-  @doc """
+  @doc '''
   Handles an APC (Application Program Command) sequence.
-  """
+  '''
   @spec handle_apc_sequence(Emulator.t(), String.t(), String.t()) ::
           Emulator.t()
   def handle_apc_sequence(emulator, command, data) do

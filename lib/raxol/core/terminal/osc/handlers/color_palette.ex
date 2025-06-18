@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
-  @moduledoc """
+  @moduledoc '''
   Handles OSC 4 (Color Palette Set/Query) commands.
 
   This handler manages the terminal's color palette, allowing dynamic
@@ -12,9 +12,9 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   - #RGB (hex, 1 digit per component)
   - rgb(r,g,b) (decimal, 0-255)
   - rgb(r%,g%,b%) (percentage, 0-100%)
-  """
+  '''
 
-  @doc """
+  @doc '''
   Handles OSC 4 commands for color palette management.
 
   ## Commands
@@ -25,7 +25,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   Where:
   - c is the color index (0-255)
   - spec is the color specification
-  """
+  '''
   def handle("4;" <> rest, state) do
     case parse_command(rest) do
       {:set, index, spec} ->
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
       [index_str, spec] ->
         case Integer.parse(index_str) do
           {index, ""} when index >= 0 and index <= 255 ->
-            if spec == "?" do
+            if spec == "?' do
               {:query, index}
             else
               {:set, index, spec}
@@ -79,7 +79,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   defp parse_color_spec(spec) do
     cond do
       # rgb:RR/GG/BB (hex, 1-4 digits per component)
-      String.starts_with?(spec, "rgb:") ->
+      String.starts_with?(spec, 'rgb:") ->
         case String.split(String.trim_leading(spec, "rgb:"), "/", parts: 3) do
           [r_hex, g_hex, b_hex] ->
             with {:ok, r} <- parse_hex_component(r_hex),
