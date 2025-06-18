@@ -126,18 +126,34 @@
 
 ### Added
 
+- **Progress Component:**
+
+  - New `Raxol.UI.Components.Progress` module with multiple progress indicators:
+    - Progress bars with customizable styles and labels
+    - Spinner animations with multiple animation types
+    - Indeterminate progress bars
+    - Circular progress indicators
+  - Comprehensive test coverage for all progress variants
+  - Full documentation with examples and usage guidelines
+
 - **Documentation Overhaul:**
+
   - Major updates to all component documentation in `docs/components/`
   - Improved structure, navigation, and cross-references
   - Added mermaid diagrams and comprehensive API references
   - Expanded best practices and common pitfalls sections
+
 - **Test Suite Improvements:**
+
   - Enhanced test coverage and organization
   - Updated test fixtures and support files
   - Improved reliability and maintainability
+
 - **Code Style and Formatting:**
+
   - Applied consistent formatting across all Elixir source files
   - Improved code readability and maintainability
+
 - **Utility Scripts:**
   - Added scripts for code maintenance and consistency
 
@@ -151,7 +167,7 @@
 - Obsolete migration and test consolidation guides
 
 - **Native Dependency Management:**
-  - Removed vendored `termbox2` C source from `lib/termbox2_nif/c_src/termbox2`.
-  - Now uses the official [termbox2](https://github.com/termbox/termbox2) as a git submodule.
-  - Developers must run `git submodule update --init --recursive` before building.
-  - Updated build and documentation to reflect this change.
+  - Removed vendored `termbox2` C source from `lib/termbox2_nif/c_src/termbox2`
+  - Now uses the official [termbox2](https://github.com/termbox/termbox2) as a git submodule
+  - Developers must run `git submodule update --init --recursive` before building
+  - Updated build and documentation to reflect this change
