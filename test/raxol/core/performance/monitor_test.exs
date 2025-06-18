@@ -9,7 +9,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
   end
 
   describe "Performance Monitor" do
-    test "initializes with default settings" do
+    test 'initializes with default settings' do
       {:ok, monitor} = Monitor.start_link()
 
       # Wait for the first memory check to occur
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert_in_delta metrics.fps, 62.5, 0.1
     end
 
-    test "tracks memory usage" do
+    test 'tracks memory usage' do
       # Faster interval for testing
       {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert_in_delta metrics.avg_frame_time, 16.0, 0.1
     end
 
-    test "adapts to reduced motion setting" do
+    test 'adapts to reduced motion setting' do
       # Mock UserPreferences to simulate reduced motion
       # TODO: Replace with actual preference system if available
       # For now, we test the current behavior: jank is still detected
@@ -114,7 +114,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       GenServer.stop(monitor)
     end
 
-    test "tracks garbage collection statistics" do
+    test 'tracks garbage collection statistics' do
       # Faster interval
       {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 

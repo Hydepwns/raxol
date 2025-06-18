@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Driver.ResizeEventTest do
   end
 
   describe "handle_info({:termbox_event, ...}) for resize events" do
-    test "parses and dispatches resize events" do
+    test 'parses and dispatches resize events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Driver.ResizeEventTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "handles multiple resize events" do
+    test 'handles multiple resize events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Driver.ResizeEventTest do
   end
 
   describe "handle_signal(:sigwinch, ...)" do
-    test "sends resize event when SIGWINCH is received" do
+    test 'sends resize event when SIGWINCH is received' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Driver.ResizeEventTest do
 
   @tag :skip
   describe "handle_info({:signal, :SIGWINCH})" do
-    test "sends resize event when SIGWINCH is received" do
+    test 'sends resize event when SIGWINCH is received' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 

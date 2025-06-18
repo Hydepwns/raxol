@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   end
 
   describe "basic operations" do
-    test "sync and get" do
+    test 'sync and get' do
       # Sync a value
       assert :ok == System.sync("test_sync", "test_key", "test_value")
 
@@ -25,16 +25,16 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       assert {:ok, "test_value"} == System.get("test_sync", "test_key")
     end
 
-    test "get non-existent sync" do
+    test 'get non-existent sync' do
       assert {:error, :not_found} == System.get("nonexistent", "test_key")
     end
 
-    test "get non-existent key" do
+    test 'get non-existent key' do
       System.sync("test_sync", "test_key", "test_value")
       assert {:error, :not_found} == System.get("test_sync", "nonexistent")
     end
 
-    test "delete" do
+    test 'delete' do
       # Sync a value
       System.sync("test_sync", "test_key", "test_value")
       assert {:ok, "test_value"} == System.get("test_sync", "test_key")
@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       assert {:error, :not_found} == System.get("test_sync", "test_key")
     end
 
-    test "clear" do
+    test 'clear' do
       # Sync multiple values
       System.sync("test_sync", "key1", "value1")
       System.sync("test_sync", "key2", "value2")
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   end
 
   describe "consistency levels" do
-    test "strong consistency" do
+    test 'strong consistency' do
       # First sync with strong consistency
       System.sync("split", "test_key", "value1", consistency: :strong)
 
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       assert {:ok, "value1"} == System.get("split", "test_key")
     end
 
-    test "eventual consistency" do
+    test 'eventual consistency' do
       # First sync with eventual consistency
       System.sync("tab", "test_key", "value1", consistency: :eventual)
 
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       assert {:ok, "value2"} == System.get("tab", "test_key")
     end
 
-    test "conflict resolution" do
+    test 'conflict resolution' do
       # First sync with eventual consistency
       System.sync("tab", "test_key", "value1", consistency: :eventual)
 
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   end
 
   describe "metadata handling" do
-    test "preserves metadata" do
+    test 'preserves metadata' do
       # Sync with metadata
       System.sync("test_sync", "test_key", "test_value", source: "test_source")
 
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   end
 
   describe "statistics" do
-    test "tracks sync statistics" do
+    test 'tracks sync statistics' do
       # Perform some syncs
       System.sync("test_sync", "key1", "value1", consistency: :strong)
       System.sync("test_sync", "key2", "value2", consistency: :eventual)
@@ -123,7 +123,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       assert stats.consistency_levels.causal == 1
     end
 
-    test "tracks conflicts" do
+    test 'tracks conflicts' do
       # First sync
       System.sync("test_sync", "test_key", "value1", consistency: :eventual)
 
@@ -137,7 +137,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   end
 
   describe "multiple syncs" do
-    test "handles multiple sync types" do
+    test 'handles multiple sync types' do
       # Sync to different types
       System.sync("split", "key1", "split_value")
       System.sync("window", "key1", "window_value")
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       assert {:ok, "tab_value"} == System.get("tab", "key1")
     end
 
-    test "get_all returns all data for sync" do
+    test 'get_all returns all data for sync' do
       # Sync multiple values
       System.sync("test_sync", "key1", "value1")
       System.sync("test_sync", "key2", "value2")

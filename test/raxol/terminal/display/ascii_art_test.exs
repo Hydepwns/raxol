@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   alias Raxol.Terminal.Display.AsciiArt
 
   describe "logo/0" do
-    test "returns a non-empty string containing the Raxol logo" do
+    test 'returns a non-empty string containing the Raxol logo' do
       logo = AsciiArt.logo()
       assert is_binary(logo)
       assert String.length(logo) > 0
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "success/0" do
-    test "returns a success message with checkmark" do
+    test 'returns a success message with checkmark' do
       success = AsciiArt.success()
       assert is_binary(success)
       assert String.contains?(success, "✓")
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "error/0" do
-    test "returns an error message with x mark" do
+    test 'returns an error message with x mark' do
       error = AsciiArt.error()
       assert is_binary(error)
       assert String.contains?(error, "✗")
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "warning/0" do
-    test "returns a warning message with warning symbol" do
+    test 'returns a warning message with warning symbol' do
       warning = AsciiArt.warning()
       assert is_binary(warning)
       assert String.contains?(warning, "⚠")
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "header/1" do
-    test "returns a centered header with the given text" do
+    test 'returns a centered header with the given text' do
       text = "Test Header"
       header = AsciiArt.header(text)
       assert is_binary(header)
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
       assert String.contains?(header, "╝")
     end
 
-    test "handles empty text" do
+    test 'handles empty text' do
       header = AsciiArt.header("")
       assert is_binary(header)
       assert String.contains?(header, "╔")
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "help/0" do
-    test "returns a help screen with command reference" do
+    test 'returns a help screen with command reference' do
       help = AsciiArt.help()
       assert is_binary(help)
       assert String.contains?(help, "TERMINAL COMMAND REFERENCE")
@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "theme_preview/0" do
-    test "returns a theme preview with available options" do
+    test 'returns a theme preview with available options' do
       preview = AsciiArt.theme_preview()
       assert is_binary(preview)
       assert String.contains?(preview, "AVAILABLE THEME OPTIONS")
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "progress_bar/1" do
-    test "returns a progress bar with the given percentage" do
+    test 'returns a progress bar with the given percentage' do
       progress = AsciiArt.progress_bar(50)
       assert is_binary(progress)
       assert String.contains?(progress, "50%")
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
       assert String.contains?(progress, "░")
     end
 
-    test "handles 0% progress" do
+    test 'handles 0% progress' do
       progress = AsciiArt.progress_bar(0)
       assert is_binary(progress)
       assert String.contains?(progress, "0%")
@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
       refute String.contains?(progress, "█")
     end
 
-    test "handles 100% progress" do
+    test 'handles 100% progress' do
       progress = AsciiArt.progress_bar(100)
       assert is_binary(progress)
       assert String.contains?(progress, "100%")
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
       refute String.contains?(progress, "░")
     end
 
-    test "raises error for invalid percentage" do
+    test 'raises error for invalid percentage' do
       assert_raise FunctionClauseError, fn ->
         AsciiArt.progress_bar(-1)
       end
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "box/1" do
-    test "returns a box with the given text" do
+    test 'returns a box with the given text' do
       text = "Test\nMulti\nLine"
       box = AsciiArt.box(text)
       assert is_binary(box)
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
       assert String.contains?(box, "╯")
     end
 
-    test "handles empty text" do
+    test 'handles empty text' do
       box = AsciiArt.box("")
       assert is_binary(box)
       assert String.contains?(box, "╭")
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "table/2" do
-    test "returns a formatted table with headers and rows" do
+    test 'returns a formatted table with headers and rows' do
       headers = ["Name", "Age", "City"]
 
       rows = [
@@ -160,7 +160,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
       assert String.contains?(table, "Bob")
     end
 
-    test "handles empty table" do
+    test 'handles empty table' do
       headers = ["Name"]
       rows = []
       table = AsciiArt.table(headers, rows)
@@ -170,7 +170,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "spinner/1" do
-    test "returns different spinner frames for different steps" do
+    test 'returns different spinner frames for different steps' do
       frames =
         for step <- 0..9 do
           AsciiArt.spinner(step)
@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   end
 
   describe "loading/2" do
-    test "returns loading animation with dots" do
+    test 'returns loading animation with dots' do
       text = "Loading"
 
       frames =

@@ -3,7 +3,7 @@ defmodule Raxol.Core.Events.EventTest do
   alias Raxol.Core.Events.Event
 
   describe "new/2" do
-    test "creates a new event with type and data" do
+    test 'creates a new event with type and data' do
       event = Event.new(:test, :data)
       assert %Event{} = event
 
@@ -16,7 +16,7 @@ defmodule Raxol.Core.Events.EventTest do
   end
 
   describe "key_event/3" do
-    test "creates a keyboard event with default modifiers" do
+    test 'creates a keyboard event with default modifiers' do
       event = Event.key_event(:enter, :pressed)
       assert %Event{type: :key} = event
 
@@ -30,7 +30,7 @@ defmodule Raxol.Core.Events.EventTest do
              } = event.data
     end
 
-    test "creates a keyboard event with modifiers" do
+    test 'creates a keyboard event with modifiers' do
       event = Event.key_event("a", :released, [:shift, :ctrl])
       assert %Event{type: :key} = event
 
@@ -44,18 +44,18 @@ defmodule Raxol.Core.Events.EventTest do
              } = event.data
     end
 
-    test "validates key state" do
+    test 'validates key state' do
       assert {:error, :invalid_key_event} = Event.key_event(:enter, :invalid)
     end
 
-    test "validates modifiers is a list" do
+    test 'validates modifiers is a list' do
       assert {:error, :invalid_key_event} =
                Event.key_event(:enter, :pressed, :not_a_list)
     end
   end
 
   describe "mouse_event/4" do
-    test "creates a mouse event with defaults" do
+    test 'creates a mouse event with defaults' do
       event = Event.mouse(:left, {10, 20})
       assert %Event{type: :mouse} = event
 
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Events.EventTest do
              } = event.data
     end
 
-    test "creates a mouse event with all parameters" do
+    test 'creates a mouse event with all parameters' do
       event = Event.mouse_event(:left, {10, 20}, :pressed, [:shift])
       assert %Event{type: :mouse} = event
 
@@ -85,17 +85,17 @@ defmodule Raxol.Core.Events.EventTest do
              } = event.data
     end
 
-    test "validates mouse button" do
+    test 'validates mouse button' do
       assert {:error, :invalid_mouse_event} =
                Event.mouse_event(:invalid, {0, 0}, :pressed)
     end
 
-    test "validates mouse state" do
+    test 'validates mouse state' do
       assert {:error, :invalid_mouse_event} =
                Event.mouse_event(:left, {0, 0}, :invalid)
     end
 
-    test "validates position is a 2-tuple" do
+    test 'validates position is a 2-tuple' do
       event = Event.mouse_event(:left, {0, 0}, :pressed)
       assert event.data.position == {0, 0}
 
@@ -105,7 +105,7 @@ defmodule Raxol.Core.Events.EventTest do
   end
 
   describe "window_event/3" do
-    test "creates a window event with defaults" do
+    test 'creates a window event with defaults' do
       event = Event.window_event(0, 0, :focus)
       assert %Event{type: :window} = event
 
@@ -119,7 +119,7 @@ defmodule Raxol.Core.Events.EventTest do
              } = event.data
     end
 
-    test "creates a resize event with dimensions" do
+    test 'creates a resize event with dimensions' do
       event = Event.window_event(80, 24, :resize)
       assert %Event{type: :window} = event
 
@@ -133,12 +133,12 @@ defmodule Raxol.Core.Events.EventTest do
              } = event.data
     end
 
-    test "validates window action" do
+    test 'validates window action' do
       assert {:error, :invalid_window_event} =
                Event.window_event(0, 0, :invalid)
     end
 
-    test "validates width and height are integers or nil" do
+    test 'validates width and height are integers or nil' do
       assert {:error, :invalid_window_event} =
                Event.window_event(:not_integer, 24, :resize)
 
@@ -148,7 +148,7 @@ defmodule Raxol.Core.Events.EventTest do
   end
 
   describe "custom_event/1" do
-    test "creates a system event (as custom)" do
+    test 'creates a system event (as custom)' do
       event = Event.custom_event(:shutdown)
       assert %Event{type: :custom} = event
 
@@ -158,7 +158,7 @@ defmodule Raxol.Core.Events.EventTest do
       assert event.data == :shutdown
     end
 
-    test "creates a custom event with complex data" do
+    test 'creates a custom event with complex data' do
       custom_data = %{type: :"app.custom", value: 123}
       event = Event.custom_event(custom_data)
       assert %Event{type: :custom} = event

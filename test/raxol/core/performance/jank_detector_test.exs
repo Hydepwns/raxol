@@ -4,7 +4,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
   alias Raxol.Core.Performance.JankDetector
 
   describe "Jank Detector" do
-    test "creates new detector with default settings" do
+    test 'creates new detector with default settings' do
       detector = JankDetector.new(16, 60)
 
       assert detector.threshold == 16
@@ -13,7 +13,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert detector.jank_count == 0
     end
 
-    test "records frame time" do
+    test 'records frame time' do
       detector = JankDetector.new(16, 60)
       detector = JankDetector.record_frame(detector, 16)
 
@@ -21,7 +21,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert hd(detector.frame_times) == 16
     end
 
-    test "detects jank when frame time exceeds threshold" do
+    test 'detects jank when frame time exceeds threshold' do
       detector = JankDetector.new(16, 60)
       detector = JankDetector.record_frame(detector, 20)
 
@@ -29,7 +29,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert detector.jank_count == 1
     end
 
-    test "does not detect jank when frame time is below threshold" do
+    test 'does not detect jank when frame time is below threshold' do
       detector = JankDetector.new(16, 60)
       detector = JankDetector.record_frame(detector, 16)
 
@@ -37,7 +37,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert detector.jank_count == 0
     end
 
-    test "maintains window size limit" do
+    test 'maintains window size limit' do
       detector = JankDetector.new(16, 3)
 
       # Record more frames than window size
@@ -49,7 +49,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert length(detector.frame_times) == 3
     end
 
-    test "calculates average frame time correctly" do
+    test 'calculates average frame time correctly' do
       detector = JankDetector.new(16, 60)
 
       # Record some frames
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert_in_delta JankDetector.get_avg_frame_time(detector), 20.0, 0.1
     end
 
-    test "handles empty frame times" do
+    test 'handles empty frame times' do
       detector = JankDetector.new(16, 60)
 
       assert JankDetector.get_avg_frame_time(detector) == 0.0
@@ -69,7 +69,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert JankDetector.get_jank_count(detector) == 0
     end
 
-    test "tracks jank count in window" do
+    test 'tracks jank count in window' do
       detector = JankDetector.new(16, 60)
 
       # Record mix of janky and non-janky frames
@@ -82,7 +82,7 @@ defmodule Raxol.Core.Performance.JankDetectorTest do
       assert detector.jank_count == 2
     end
 
-    test "updates jank count when window changes" do
+    test 'updates jank count when window changes' do
       detector = JankDetector.new(16, 3)
 
       # Record janky frames

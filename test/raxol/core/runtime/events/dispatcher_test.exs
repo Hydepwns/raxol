@@ -39,7 +39,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
   describe "GenServer Callbacks" do
     # No context injected from setup
-    test "handle_cast :dispatch dispatches event and updates state" do
+    test 'handle_cast :dispatch dispatches event and updates state' do
       # Attempt to resize RenderingEngine buffer to minimize log output on failure
       # This is a temporary measure to help diagnose the actual test failure.
       # It assumes RenderingEngine is running and registered by this name.
@@ -99,7 +99,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         # Default case (log unexpected calls)
         unexpected_cmd, _context ->
           Raxol.Core.Runtime.Log.warning(
-            "Unexpected call to Command.execute stub in test '#{__ENV__.function}': #{inspect(unexpected_cmd)}"
+            "Unexpected call to Command.execute stub in test "#{__ENV__.function}": #{inspect(unexpected_cmd)}"
           )
 
           :error
@@ -119,7 +119,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
         server, topic, msg ->
           Raxol.Core.Runtime.Log.warning(
-            "Unexpected call to PubSub.broadcast stub in test '#{__ENV__.function}': #{inspect({server, topic, msg})}"
+            "Unexpected call to PubSub.broadcast stub in test "#{__ENV__.function}": #{inspect({server, topic, msg})}"
           )
 
           :error
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       end)
     end
 
-    test "handle_cast :dispatch handles application update errors" do
+    test 'handle_cast :dispatch handles application update errors' do
       # Start Mock Plugin Manager for this test
       {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
 

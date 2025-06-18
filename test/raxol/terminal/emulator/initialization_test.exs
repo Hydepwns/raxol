@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   describe "Emulator Initialization" do
-    test "new creates a new terminal emulator instance with defaults" do
+    test 'new creates a new terminal emulator instance with defaults' do
       emulator = Emulator.new(80, 24)
       # Use ScreenBuffer functions for dimensions -> use main_screen_buffer
       assert ScreenBuffer.get_width(Emulator.get_active_buffer(emulator)) == 80
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       assert Raxol.Terminal.ANSI.TerminalState.count(emulator.state_stack) == 0
     end
 
-    test "move_cursor moves cursor and clamps within bounds" do
+    test 'move_cursor moves cursor and clamps within bounds' do
       emulator = Emulator.new(80, 24)
       # Use the aliased Manager module function
       emulator = %{
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       assert emulator.cursor.position == {-5, -2}
     end
 
-    test "move_cursor_up/down/left/right delegate to Cursor.Movement" do
+    test 'move_cursor_up/down/left/right delegate to Cursor.Movement' do
       emulator = Emulator.new(80, 24)
       # Initial position {0, 0}
       {x, y} = emulator.cursor.position

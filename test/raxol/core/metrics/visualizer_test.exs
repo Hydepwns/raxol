@@ -8,7 +8,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   end
 
   describe "chart creation" do
-    test "creates a line chart with default options" do
+    test 'creates a line chart with default options' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -28,7 +28,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
                "Metrics Visualization"
     end
 
-    test "creates a bar chart with custom options" do
+    test 'creates a bar chart with custom options' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -59,7 +59,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
              |> Map.get(:backgroundColor) == "#FF0000"
     end
 
-    test "creates a gauge chart" do
+    test 'creates a gauge chart' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -79,7 +79,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
       assert chart_data.data.datasets |> List.first() |> Map.get(:value) == 75
     end
 
-    test "creates a histogram chart" do
+    test 'creates a histogram chart' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -110,7 +110,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   end
 
   describe "chart updates" do
-    test "updates an existing chart" do
+    test 'updates an existing chart' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -135,13 +135,13 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
              ]
     end
 
-    test "returns error for non-existent chart" do
+    test 'returns error for non-existent chart' do
       assert {:error, :chart_not_found} = Visualizer.update_chart(999, [])
     end
   end
 
   describe "chart retrieval" do
-    test "gets an existing chart" do
+    test 'gets an existing chart' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -154,13 +154,13 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
       assert chart.data.datasets |> List.first() |> Map.get(:data) == [10]
     end
 
-    test "returns error for non-existent chart" do
+    test 'returns error for non-existent chart' do
       assert {:error, :chart_not_found} = Visualizer.get_chart(999)
     end
   end
 
   describe "chart export" do
-    test "exports chart to JSON" do
+    test 'exports chart to JSON' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -174,7 +174,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
       assert {:ok, _} = Jason.decode(json_data)
     end
 
-    test "exports chart to CSV" do
+    test 'exports chart to CSV' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -188,7 +188,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
       assert String.contains?(csv_data, "Timestamp,Value")
     end
 
-    test "returns error for PNG export (not implemented)" do
+    test 'returns error for PNG export (not implemented)' do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -204,7 +204,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   end
 
   describe "time range filtering" do
-    test "filters metrics by time range" do
+    test 'filters metrics by time range' do
       now = DateTime.utc_now()
       one_hour_ago = DateTime.add(now, -3600, :second)
       two_hours_ago = DateTime.add(now, -7200, :second)

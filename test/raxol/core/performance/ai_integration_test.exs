@@ -24,16 +24,16 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         :ok
       end
 
-      test "validates configuration" do
+      test 'validates configuration' do
         assert :ok = AIIntegration.validate_config()
       end
 
-      test "detects missing configuration" do
+      test 'detects missing configuration' do
         Application.put_env(:raxol, :ai_integration, %{})
         assert {:error, :missing_config} = AIIntegration.validate_config()
       end
 
-      test "detects invalid endpoint" do
+      test 'detects invalid endpoint' do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "invalid-url",
           api_key: "test-api-key"
@@ -42,7 +42,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_endpoint} = AIIntegration.validate_config()
       end
 
-      test "detects invalid API key" do
+      test 'detects invalid API key' do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "https://api.ai-agent.com/v1",
           api_key: ""
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_api_key} = AIIntegration.validate_config()
       end
 
-      test "detects invalid timeout" do
+      test 'detects invalid timeout' do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "https://api.ai-agent.com/v1",
           api_key: "test-api-key",
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_timeout} = AIIntegration.validate_config()
       end
 
-      test "detects invalid retry configuration" do
+      test 'detects invalid retry configuration' do
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "https://api.ai-agent.com/v1",
           api_key: "test-api-key",
@@ -82,7 +82,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_retry_delay} = AIIntegration.validate_config()
       end
 
-      test "sends performance data for analysis" do
+      test 'sends performance data for analysis' do
         data = %{
           metrics: %{
             fps: 60,
@@ -176,7 +176,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert analysis.metadata.version == "1.0.0"
       end
 
-      test "handles API errors" do
+      test 'handles API errors' do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},
@@ -195,7 +195,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data)
       end
 
-      test "handles network errors" do
+      test 'handles network errors' do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},
@@ -210,7 +210,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data)
       end
 
-      test "handles invalid response format" do
+      test 'handles invalid response format' do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},
@@ -229,7 +229,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert {:error, :invalid_analysis_format} = AIIntegration.analyze(data)
       end
 
-      test "respects custom timeout and retry options" do
+      test 'respects custom timeout and retry options' do
         data = %{
           metrics: %{fps: 60},
           analysis: %{},

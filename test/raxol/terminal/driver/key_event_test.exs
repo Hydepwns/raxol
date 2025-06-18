@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Driver.KeyEventTest do
   end
 
   describe "handle_info({:termbox_event, ...}) for key events" do
-    test "parses and dispatches regular key events" do
+    test 'parses and dispatches regular key events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Driver.KeyEventTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches special key events" do
+    test 'parses and dispatches special key events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Driver.KeyEventTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches function key events" do
+    test 'parses and dispatches function key events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Driver.KeyEventTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches modifier key events" do
+    test 'parses and dispatches modifier key events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 

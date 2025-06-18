@@ -2,7 +2,7 @@ defmodule Raxol.Terminal.ANSI.EmitterTest do
   use ExUnit.Case
   alias Raxol.Terminal.ANSI.Emitter
 
-  test "generates cursor movement sequences" do
+  test 'generates cursor movement sequences' do
     assert Emitter.cursor_up() == "\e[1A"
     assert Emitter.cursor_up(5) == "\e[5A"
     assert Emitter.cursor_down() == "\e[1B"
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.ANSI.EmitterTest do
     assert Emitter.cursor_hide() == "\e[?25l"
   end
 
-  test "generates screen manipulation sequences" do
+  test 'generates screen manipulation sequences' do
     assert Emitter.clear_screen() == "\e[2J"
     assert Emitter.clear_screen_from_cursor() == "\e[0J"
     assert Emitter.clear_screen_to_cursor() == "\e[1J"
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.ANSI.EmitterTest do
     assert Emitter.scroll_down(3) == "\e[3T"
   end
 
-  test "generates text attribute sequences" do
+  test 'generates text attribute sequences' do
     assert Emitter.reset_attributes() == "\e[0m"
     assert Emitter.bold() == "\e[1m"
     assert Emitter.faint() == "\e[2m"
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.ANSI.EmitterTest do
     assert Emitter.no_strikethrough() == "\e[29m"
   end
 
-  test "generates color sequences" do
+  test 'generates color sequences' do
     # Basic colors
     # Red
     assert Emitter.foreground(1) == "\e[38;5;1m"
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.ANSI.EmitterTest do
     assert Emitter.background_rgb(50, 100, 150) == "\e[48;2;50;100;150m"
   end
 
-  test "generates terminal mode sequences" do
+  test 'generates terminal mode sequences' do
     # Show cursor
     assert Emitter.set_mode(25) == "\e[?25h"
     # Hide cursor

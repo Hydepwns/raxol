@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Selection.ListTest do
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
-    test "initializes with default values when no props provided" do
+    test 'initializes with default values when no props provided' do
       state = List.init(%{id: :list1})
       assert state.id == :list1
       assert state.items == []
@@ -20,7 +20,7 @@ defmodule Raxol.UI.Components.Selection.ListTest do
       assert is_function(state.item_renderer)
     end
 
-    test "initializes with provided values" do
+    test 'initializes with provided values' do
       on_select_func = fn _ -> :selected end
       item_renderer_func = fn i -> "Item-#{i}" end
 
@@ -197,7 +197,7 @@ defmodule Raxol.UI.Components.Selection.ListTest do
     end
   end
 
-  test "handles custom item rendering" do
+  test 'handles custom item rendering' do
     # Custom renderer that returns a label with a prefix
     custom_renderer = fn item -> "Custom: #{item}" end
 

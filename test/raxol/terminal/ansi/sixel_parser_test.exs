@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
   alias Raxol.Terminal.ANSI.SixelParser
   alias Raxol.Terminal.ANSI.SixelPalette
 
-  test "SixelParser handles raster attributes" do
+  test 'SixelParser handles raster attributes' do
     initial_state = %SixelParser.ParserState{
       x: 0,
       y: 0,
@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
     # DCS " Pn1 ; Pn2 ; Pn3 ; Pn4 q DATA ST
     # Pn1 = Pan, Pn2 = Pad, Pn3 = Ph, Pn4 = Pv
     # Example data with raster attributes then a pixel command
-    sixel_data = "\\\"1;1;123;456?"
+    sixel_data = "\\\"1;1;123;456?'
 
     {:ok, actual_state} = SixelParser.parse(sixel_data, initial_state)
 
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
     assert actual_state.raster_attrs == expected_attributes
   end
 
-  test "SixelParser handles missing raster attributes" do
+  test 'SixelParser handles missing raster attributes" do
     initial_state = %SixelParser.ParserState{
       x: 0,
       y: 0,
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
 
     # DCS " Pn1 q DATA ST (Missing Pad, Ph, Pv)
     # Only Pan provided, then pixel data
-    sixel_data = "\\\"1?"
+    sixel_data = "\\\"1?'
 
     {:ok, actual_state} = SixelParser.parse(sixel_data, initial_state)
 
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
     assert actual_state.raster_attrs == expected_attributes
   end
 
-  test "SixelParser handles empty raster attributes" do
+  test 'SixelParser handles empty raster attributes" do
     initial_state = %SixelParser.ParserState{
       x: 0,
       y: 0,

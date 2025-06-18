@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
   describe "process_input state machine" do
     # Tests focus on how Emulator.process_input handles various sequences
 
-    test "handles basic CSI sequence (Cursor Up)" do
+    test 'handles basic CSI sequence (Cursor Up)' do
       emulator = Emulator.new(80, 24)
       # Move cursor down first
       emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 0, 5)}
@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.cursor.position == {0, 4}
     end
 
-    test "handles parameterized CSI sequence (Cursor Down 5)" do
+    test 'handles parameterized CSI sequence (Cursor Down 5)' do
       emulator = Emulator.new(80, 24)
       assert emulator.cursor.position == {0, 0}
 
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.cursor.position == {0, 5}
     end
 
-    test "handles multi-parameter CSI sequence (Cursor Position 10, 20)" do
+    test 'handles multi-parameter CSI sequence (Cursor Position 10, 20)' do
       emulator = Emulator.new(80, 24)
       assert emulator.cursor.position == {0, 0}
 
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.cursor.position == {9, 19}
     end
 
-    test "handles mixed printable text and CSI sequences" do
+    test 'handles mixed printable text and CSI sequences' do
       emulator = Emulator.new(80, 24)
       # Write "Hello", move cursor up, write "World"
       input = "Hello" <> "\e[A" <> "World"
@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.cursor.position == {10, 0}
     end
 
-    test "handles OSC sequence (Set Window Title)" do
+    test 'handles OSC sequence (Set Window Title)' do
       emulator = Emulator.new(80, 24)
       title = "My Test Title"
       # Process OSC 0 ; title ST (ESC ] 0 ; title ESC \
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.window_title == title
     end
 
-    test "handles simple ESC sequence (Index)" do
+    test 'handles simple ESC sequence (Index)' do
       emulator = Emulator.new(80, 24)
       # Position cursor
       emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 5, 5)}
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.cursor.position == {5, 6}
     end
 
-    test "handles basic DCS sequence" do
+    test 'handles basic DCS sequence' do
       emulator = Emulator.new(80, 24)
       # Example DCS sequence (content doesn't matter for this test)
       # \eP is DCS start, \e\ is ST (String Terminator)
@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       # More specific assertions could be added if Emulator state tracks DCS processing
     end
 
-    test "handles CSI with intermediate character (Private Mode DECTCEM Show Cursor)" do
+    test 'handles CSI with intermediate character (Private Mode DECTCEM Show Cursor)' do
       emulator = Emulator.new(80, 24)
 
       # Ensure cursor starts hidden for the test to be meaningful (if default is visible)
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.mode_manager.cursor_visible == true
     end
 
-    test "handles incomplete CSI sequence correctly" do
+    test 'handles incomplete CSI sequence correctly' do
       emulator = Emulator.new(80, 24)
       partial_input = "\e["
 
@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.cursor.position == {0, 0}
     end
 
-    test "resets state after incomplete sequence followed by text" do
+    test 'resets state after incomplete sequence followed by text' do
       emulator = Emulator.new(80, 24)
       partial_input = "\e["
 
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert emulator.cursor.position == {5, 0}
     end
 
-    test "handles alternate screen buffer mode correctly" do
+    test 'handles alternate screen buffer mode correctly' do
       emulator = Emulator.new(80, 24)
       # Assuming DECTCEM (Cursor Enable Mode) is handled
       {emulator, _} = Emulator.process_input(emulator, "\e[?25h")

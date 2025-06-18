@@ -3,19 +3,19 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   alias Raxol.UI.Components.Terminal.Emulator
 
   describe "init/1" do
-    test "initializes with default options" do
+    test 'initializes with default options' do
       state = Emulator.init()
       assert %{state: state} = state
       assert is_map(state)
     end
 
-    test "initializes with custom width and height" do
+    test 'initializes with custom width and height' do
       state = Emulator.init(%{width: 80, height: 24})
       assert %{state: state} = state
       assert is_map(state)
     end
 
-    test "initializes with custom config" do
+    test 'initializes with custom config' do
       config = %{
         behavior: %{
           scrollback_limit: 2000,

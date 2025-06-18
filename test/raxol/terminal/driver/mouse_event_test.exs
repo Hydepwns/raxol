@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Driver.MouseEventTest do
   end
 
   describe "handle_info({:termbox_event, ...}) for mouse events" do
-    test "parses and dispatches mouse button events" do
+    test 'parses and dispatches mouse button events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Driver.MouseEventTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "handles mouse events at screen boundaries" do
+    test 'handles mouse events at screen boundaries' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Driver.MouseEventTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "handles rapid mouse events" do
+    test 'handles rapid mouse events' do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 

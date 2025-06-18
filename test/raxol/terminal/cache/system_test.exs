@@ -29,18 +29,18 @@ defmodule Raxol.Terminal.Cache.SystemTest do
   end
 
   describe "basic operations" do
-    test "put and get" do
+    test 'put and get' do
       assert :ok == System.put("test_key", "test_value", namespace: :general)
       assert {:ok, "test_value"} == System.get("test_key", namespace: :general)
     end
 
-    test "invalidate" do
+    test 'invalidate' do
       System.put("test_key", "test_value", namespace: :general)
       assert :ok == System.invalidate("test_key", namespace: :general)
       assert {:error, :not_found} == System.get("test_key", namespace: :general)
     end
 
-    test "clear" do
+    test 'clear' do
       System.put("test_key1", "test_value1", namespace: :general)
       System.put("test_key2", "test_value2", namespace: :general)
       assert :ok == System.clear(namespace: :general)
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
   end
 
   describe "namespace operations" do
-    test "different namespaces" do
+    test 'different namespaces' do
       System.put("test_key", "buffer_value", namespace: :buffer)
       System.put("test_key", "animation_value", namespace: :animation)
       System.put("test_key", "scroll_value", namespace: :scroll)
@@ -75,21 +75,21 @@ defmodule Raxol.Terminal.Cache.SystemTest do
                System.get("test_key", namespace: :general)
     end
 
-    test "namespace not found" do
+    test 'namespace not found' do
       assert {:error, :namespace_not_found} ==
                System.get("test_key", namespace: :invalid)
     end
   end
 
   describe "TTL operations" do
-    test "expired entry" do
+    test 'expired entry' do
       System.put("test_key", "test_value", namespace: :general, ttl: 1)
       # Wait for entry to expire
       :timer.sleep(1100)
       assert {:error, :expired} == System.get("test_key", namespace: :general)
     end
 
-    test "non-expired entry" do
+    test 'non-expired entry' do
       System.put("test_key", "test_value", namespace: :general, ttl: 2)
       # Wait less than TTL
       :timer.sleep(1000)
@@ -98,7 +98,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
   end
 
   describe "eviction policies" do
-    test "LRU eviction" do
+    test 'LRU eviction' do
       # Fill cache with values
       for i <- 1..10 do
         System.put("key#{i}", String.duplicate("value", 100),
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       assert is_binary(value2)
     end
 
-    test "LFU eviction" do
+    test 'LFU eviction' do
       # Start with LFU policy
       {:ok, _pid} =
         System.start_link(
@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       assert is_binary(value2)
     end
 
-    test "FIFO eviction" do
+    test 'FIFO eviction' do
       # Start with FIFO policy
       {:ok, _pid} =
         System.start_link(
@@ -184,7 +184,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
   end
 
   describe "statistics" do
-    test "cache stats" do
+    test 'cache stats' do
       # Add some entries
       System.put("key1", "value1", namespace: :general)
       System.put("key2", "value2", namespace: :general)
@@ -205,7 +205,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
   end
 
   describe "metadata" do
-    test "metadata storage and retrieval" do
+    test 'metadata storage and retrieval' do
       metadata = %{type: :test, size: 100, compressed: true}
 
       System.put("test_key", "test_value",

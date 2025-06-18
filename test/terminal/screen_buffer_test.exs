@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   defp line_to_string(nil), do: ""
 
   describe "initialization" do
-    test "creates a new buffer with correct dimensions" do
+    test 'creates a new buffer with correct dimensions' do
       buffer = ScreenBuffer.new(10, 5)
       assert length(buffer.cells) == 5
       assert length(List.first(buffer.cells)) == 10
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert buffer.height == 5
     end
 
-    test "initializes with empty cells" do
+    test 'initializes with empty cells' do
       buffer = ScreenBuffer.new(10, 5)
 
       assert Enum.all?(buffer.cells, fn row ->
@@ -31,20 +31,20 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   end
 
   describe "character writing" do
-    test "writes a single character" do
+    test 'writes a single character' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_char(buffer, 0, 0, "A")
       assert Cell.get_char(Enum.at(buffer.cells, 0) |> Enum.at(0)) == "A"
     end
 
-    test "writes a wide character" do
+    test 'writes a wide character' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_char(buffer, 0, 0, "中")
       assert Cell.get_char(Enum.at(buffer.cells, 0) |> Enum.at(0)) == "中"
       assert Cell.get_char(Enum.at(buffer.cells, 0) |> Enum.at(1)) == " "
     end
 
-    test "writes a string" do
+    test 'writes a string' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hello")
       first_row = Enum.at(buffer.cells, 0)
@@ -58,7 +58,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
              ]
     end
 
-    test "writes a string with wide characters" do
+    test 'writes a string with wide characters' do
       buffer = ScreenBuffer.new(10, 1)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hi 中国")
       first_row = ScreenBuffer.get_line(buffer, 0)
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   end
 
   describe "scrolling" do
-    test "scrolling up moves lines correctly" do
+    test 'scrolling up moves lines correctly' do
       buffer = ScreenBuffer.new(10, 5)
 
       buffer =
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert line_to_string(ScreenBuffer.get_line(buffer, 4)) =~ ~r/^\s*$/
     end
 
-    test "scrolling down inserts lines correctly (no scrollback)" do
+    test 'scrolling down inserts lines correctly (no scrollback)' do
       buffer = ScreenBuffer.new(10, 5)
 
       buffer =
@@ -147,7 +147,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
              )
     end
 
-    test "scrolling scrolls up within scroll region" do
+    test 'scrolling scrolls up within scroll region' do
       buffer = ScreenBuffer.new(10, 5)
 
       buffer =
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/
     end
 
-    test "scrolling scrolls down within scroll region" do
+    test 'scrolling scrolls down within scroll region' do
       buffer = ScreenBuffer.new(10, 5)
 
       buffer =
@@ -226,7 +226,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   end
 
   describe "selection" do
-    test "starts and updates selection" do
+    test 'starts and updates selection' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)
       assert buffer.selection == {1, 1, 1, 1}
@@ -235,7 +235,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert buffer.selection == {1, 1, 3, 2}
     end
 
-    test "gets selected text" do
+    test 'gets selected text' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hello")
       buffer = ScreenBuffer.write_string(buffer, 0, 1, "World")
@@ -245,7 +245,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert ScreenBuffer.get_selection(buffer) == "Hello\nWorld"
     end
 
-    test "checks if position is in selection" do
+    test 'checks if position is in selection' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)
       buffer = ScreenBuffer.update_selection(buffer, 3, 2)
@@ -256,7 +256,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       refute ScreenBuffer.in_selection?(buffer, 4, 3)
     end
 
-    test "gets selection boundaries" do
+    test 'gets selection boundaries' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)
       buffer = ScreenBuffer.update_selection(buffer, 3, 2)
@@ -266,7 +266,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   end
 
   describe "scroll region" do
-    test "sets and clears scroll region" do
+    test 'sets and clears scroll region' do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
       assert buffer.scroll_region == {1, 3}
@@ -275,7 +275,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert buffer.scroll_region == nil
     end
 
-    test "gets scroll region boundaries" do
+    test 'gets scroll region boundaries' do
       buffer = ScreenBuffer.new(10, 5)
       assert ScreenBuffer.get_scroll_region_boundaries(buffer) == {0, 4}
 
@@ -285,7 +285,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   end
 
   describe "clearing" do
-    test "clears the screen buffer" do
+    test 'clears the screen buffer' do
       # Setup: Create a buffer and fill it
       initial_buffer = ScreenBuffer.new(10, 5)
 
@@ -308,11 +308,11 @@ defmodule Raxol.Terminal.ScreenBufferTest do
     end
 
     # Maybe add a test specifically for Eraser.clear_screen if direct testing is desired
-    # test "Eraser.clear_screen resets cells" do ... end
+    # test 'Eraser.clear_screen resets cells' do ... end
   end
 
   describe "resize" do
-    test "clears selection and scroll region after resizing" do
+    test 'clears selection and scroll region after resizing' do
       buffer = ScreenBuffer.new(10, 5)
       # Set a selection
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)

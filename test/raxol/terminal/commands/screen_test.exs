@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
   # end
 
   describe "clear_screen/2" do
-    test "clears from cursor to end of screen (mode 0)" do
+    test 'clears from cursor to end of screen (mode 0)' do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       end
     end
 
-    test "clears from beginning of screen to cursor (mode 1)" do
+    test 'clears from beginning of screen to cursor (mode 1)' do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Assert that the specific cell (8,0) is "X" before clearing
       assert ScreenBuffer.get_cell(emulator.main_screen_buffer, 8, 0).char ==
                "X",
-             "Cell (8,0) should be 'X' before clear_screen (mode 1) is called"
+             "Cell (8,0) should be "X" before clear_screen (mode 1) is called"
 
       # Clear from beginning of screen to cursor (2,2)
       emulator_after_clear = Screen.clear_screen(emulator, 1)
@@ -133,12 +133,12 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
             ScreenBuffer.get_cell(emulator_after_clear.main_screen_buffer, x, y)
 
           assert cell.char == "X",
-                 "Expected cell at (#{x},#{y}) to be 'X', got: #{inspect(cell)}"
+                 "Expected cell at (#{x},#{y}) to be "X", got: #{inspect(cell)}"
         end
       end
     end
 
-    test "clears entire screen (mode 2)" do
+    test 'clears entire screen (mode 2)' do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -161,7 +161,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       assert_entire_buffer_cleared(result.main_screen_buffer)
     end
 
-    test "clears entire screen and scrollback (mode 3)" do
+    test 'clears entire screen and scrollback (mode 3)' do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -187,7 +187,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
   end
 
   describe "clear_line/2" do
-    test "clears from cursor to end of line (mode 0)" do
+    test 'clears from cursor to end of line (mode 0)' do
       initial_emulator = Emulator.new(10, 5)
       {emulator, _output} = Emulator.process_input(initial_emulator, "\e[3;3H")
 
@@ -210,7 +210,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       end
     end
 
-    test "clears from beginning of line to cursor (mode 1)" do
+    test 'clears from beginning of line to cursor (mode 1)' do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -240,11 +240,11 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
         cell = ScreenBuffer.get_cell(result.main_screen_buffer, x, 2)
 
         assert cell.char == "X",
-               "Expected cell at (#{x},2) to be 'X', got: #{inspect(cell)}"
+               "Expected cell at (#{x},2) to be "X", got: #{inspect(cell)}"
       end
     end
 
-    test "clears entire line (mode 2)" do
+    test 'clears entire line (mode 2)' do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed

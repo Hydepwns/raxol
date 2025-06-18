@@ -48,7 +48,7 @@ defmodule Raxol.ColorSystemTest do
   end
 
   describe "ColorSystem with accessibility integration" do
-    test "applies high contrast mode to theme colors" do
+    test 'applies high contrast mode to theme colors' do
       # Apply a theme
       ColorSystem.apply_theme(:standard)
       assert_receive {:theme_changed, :standard}, 100
@@ -88,7 +88,7 @@ defmodule Raxol.ColorSystemTest do
       assert_sufficient_contrast(high_contrast_primary, background)
     end
 
-    test "announces theme changes to screen readers" do
+    test 'announces theme changes to screen readers' do
       # Ensure queue is clear before test
       Process.put(:accessibility_announcements, [])
 
@@ -106,10 +106,10 @@ defmodule Raxol.ColorSystemTest do
       assert Enum.any?(announcements, fn announcement ->
                announcement.message == "Theme changed to dark"
              end),
-             "Expected announcement 'Theme changed to dark' not found in #{inspect(announcements)}"
+             "Expected announcement "Theme changed to dark" not found in #{inspect(announcements)}"
     end
 
-    test "maintains user color preferences" do
+    test 'maintains user color preferences' do
       # Set a user preference for accent color
       UserPreferences.set(:accent_color, "#FF5722")
 
@@ -128,7 +128,7 @@ defmodule Raxol.ColorSystemTest do
       assert UserPreferences.get(:accent_color) == "#FF5722"
     end
 
-    test "generates accessible color scales" do
+    test 'generates accessible color scales' do
       # Generate a color scale
       scale = PaletteManager.generate_scale("#0077CC", 5)
 
@@ -152,7 +152,7 @@ defmodule Raxol.ColorSystemTest do
       end)
     end
 
-    test "adapts focus ring color for high contrast mode" do
+    test 'adapts focus ring color for high contrast mode' do
       # Initialize a default focus ring state
       initial_state =
         Raxol.UI.Components.FocusRing.init(%{
@@ -183,7 +183,7 @@ defmodule Raxol.ColorSystemTest do
       assert high_contrast_color != initial_color
     end
 
-    test "color system integrates with user preferences" do
+    test 'color system integrates with user preferences' do
       # TODO: Implement automatic theme application on preference change
       # Manually apply theme for now to test the effect
       # --- Test 1: Apply dark theme without high contrast ---
@@ -222,7 +222,7 @@ defmodule Raxol.ColorSystemTest do
       # Utilities.assert_sufficient_contrast(primary, background)
     end
 
-    test "themes have sufficient contrast for accessibility" do
+    test 'themes have sufficient contrast for accessibility' do
       # Test all standard themes
       themes = [:standard, :dark, :high_contrast]
 
@@ -239,7 +239,7 @@ defmodule Raxol.ColorSystemTest do
       end)
     end
 
-    test "color system respects reduced motion settings" do
+    test 'color system respects reduced motion settings' do
       # Set reduced motion through user preferences
       UserPreferences.set("accessibility.reduced_motion", true)
 

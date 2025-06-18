@@ -8,7 +8,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   end
 
   describe "rule management" do
-    test "adds a new alert rule" do
+    test 'adds a new alert rule' do
       rule = %{
         name: "High CPU Usage",
         description: "Alert when CPU usage is above 80%",
@@ -27,7 +27,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       assert Map.has_key?(rules, rule_id)
     end
 
-    test "validates and normalizes rule fields" do
+    test 'validates and normalizes rule fields' do
       rule = %{
         metric_name: "test_metric",
         threshold: 50
@@ -196,7 +196,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   end
 
   describe "grouped metrics" do
-    test "evaluates alerts for grouped metrics" do
+    test 'evaluates alerts for grouped metrics' do
       rule = %{
         name: "Grouped Alert",
         metric_name: "test_metric",
@@ -240,7 +240,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   end
 
   describe "error handling" do
-    test "returns error for non-existent rule" do
+    test 'returns error for non-existent rule' do
       assert {:error, :rule_not_found} = AlertManager.get_alert_state(999)
       assert {:error, :rule_not_found} = AlertManager.get_alert_history(999)
       assert {:error, :rule_not_found} = AlertManager.acknowledge_alert(999)

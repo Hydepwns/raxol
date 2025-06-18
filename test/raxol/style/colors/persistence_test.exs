@@ -62,7 +62,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
   end
 
   describe "theme persistence" do
-    test "saves and loads theme" do
+    test 'saves and loads theme' do
       # Save theme
       assert :ok == Persistence.save_theme(@test_theme)
 
@@ -74,12 +74,12 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       assert_color_maps_equal(loaded_theme.colors, @test_theme.colors)
     end
 
-    test "loads non-existent theme" do
+    test 'loads non-existent theme' do
       # Try to load non-existent theme
       assert {:error, :enoent} = Persistence.load_theme("Non Existent Theme")
     end
 
-    test "theme persistence lists themes" do
+    test 'theme persistence lists themes' do
       # Ensure clean state - handled by setup block
       :ok = Persistence.save_theme(%{@test_theme | name: "Theme A"})
       :ok = Persistence.save_theme(%{@test_theme | name: "Theme B"})
@@ -92,7 +92,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       assert "Theme B" in themes
     end
 
-    test "theme persistence deletes theme" do
+    test 'theme persistence deletes theme' do
       # Ensure clean state - handled by setup block
       :ok = Persistence.save_theme(%{@test_theme | name: "Theme A"})
       :ok = Persistence.save_theme(%{@test_theme | name: "Theme B"})
@@ -106,7 +106,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       assert {:error, :enoent} == Persistence.delete_theme("NonExistent")
     end
 
-    test "theme persistence handles file errors" do
+    test 'theme persistence handles file errors' do
       # Save theme
       assert :ok == Persistence.save_theme(@test_theme)
 
@@ -120,7 +120,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
   end
 
   describe "user preferences" do
-    test "saves and loads preferences" do
+    test 'saves and loads preferences' do
       # Create preferences
       preferences = %{
         "theme" => "Test Theme",
@@ -140,7 +140,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       assert loaded_preferences["high_contrast"] == preferences["high_contrast"]
     end
 
-    test "loads default preferences when file doesn't exist" do
+    test 'loads default preferences when file doesn't exist' do
       # Load preferences
       assert {:ok, preferences} = Persistence.load_user_preferences()
 
@@ -150,7 +150,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
   end
 
   describe "current theme" do
-    test "loads current theme from preferences" do
+    test 'loads current theme from preferences' do
       # Save theme
       assert :ok == Persistence.save_theme(@test_theme)
 
@@ -170,7 +170,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       assert_color_maps_equal(current_theme.colors, @test_theme.colors)
     end
 
-    test "loads default theme when no theme is set" do
+    test 'loads default theme when no theme is set' do
       # Load current theme
       assert {:ok, current_theme} = Persistence.load_current_theme()
 
@@ -178,7 +178,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       assert current_theme.name in ["Default", "default"]
     end
 
-    test "loads default theme when theme doesn't exist" do
+    test 'loads default theme when theme doesn't exist' do
       # Save preferences with non-existent theme
       assert :ok ==
                Persistence.save_user_preferences(%{

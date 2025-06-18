@@ -39,7 +39,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   ]
 
   describe "dashboard layout" do
-    test "combines table with sparklines" do
+    test 'combines table with sparklines' do
       # Create table columns with embedded sparklines
       columns = [
         %{
@@ -175,7 +175,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
              "No yellow status cell found"
     end
 
-    test "creates side-by-side charts" do
+    test 'creates side-by-side charts' do
       # Create bar chart
       bar_chart =
         Chart.new(
@@ -263,7 +263,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       # end)
     end
 
-    test "creates complex dashboard layout" do
+    test 'creates complex dashboard layout' do
       # Create header
       header =
         View.box(
@@ -396,7 +396,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   end
 
   describe "interactive components" do
-    test "combines table with chart detail view" do
+    test 'combines table with chart detail view' do
       # Create selectable table
       table =
         Table.new(%{
@@ -508,7 +508,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       # Example: check style of selected_data_row_map or its children
     end
 
-    test "creates tabbed view container" do
+    test 'creates tabbed view container' do
       # Create tab headers
       tabs = [
         %{id: :table, label: "Table View"},
@@ -589,7 +589,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   end
 
   describe "layout adaptability" do
-    test "handles nested borders and padding" do
+    test 'handles nested borders and padding' do
       view =
         View.border :double, padding: 1 do
           View.border :single, [] do
@@ -674,7 +674,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       assert status_cell.content == "   up   "
     end
 
-    test "creates responsive grid layout" do
+    test 'creates responsive grid layout' do
       # Create multiple charts in a grid
       charts =
         Enum.map(@sample_data, fn product ->
@@ -795,7 +795,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       %{view: view}
     end
 
-    test "layout with borders and padding handles nested borders and padding" do
+    test 'layout with borders and padding handles nested borders and padding' do
       # Defines a complex nested structure: Border > Border > Table > Grid
       view =
         View.border :double, padding: 1, border: :double do

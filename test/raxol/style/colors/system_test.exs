@@ -142,7 +142,7 @@ defmodule Raxol.Style.Colors.SystemTest do
       assert color.hex == "#0000FF"
     end
 
-    test "handles missing color gracefully" do
+    test 'handles missing color gracefully' do
       Theme.register(test_theme())
       assert :ok == System.apply_theme(test_theme())
       assert nil == System.get_color(:nonexistent)
@@ -186,7 +186,7 @@ defmodule Raxol.Style.Colors.SystemTest do
   end
 
   describe "color manipulation" do
-    test "lightens color" do
+    test 'lightens color' do
       color = Color.from_hex("#0077CC")
       lighter = System.lighten_color(color, 0.2)
       assert lighter.r > color.r
@@ -194,7 +194,7 @@ defmodule Raxol.Style.Colors.SystemTest do
       assert lighter.b > color.b
     end
 
-    test "darkens color" do
+    test 'darkens color' do
       color = Color.from_hex("#0077CC")
       darker = System.darken_color(color, 0.2)
       # Accept equal or less for edge case
@@ -203,14 +203,14 @@ defmodule Raxol.Style.Colors.SystemTest do
       assert darker.b <= color.b
     end
 
-    test "increases contrast" do
+    test 'increases contrast' do
       color = Color.from_hex("#808080")
       high_contrast = System.increase_contrast(color)
       # Accept #808080 as valid for this implementation
       assert high_contrast.hex in ["#000000", "#FFFFFF", "#808080"]
     end
 
-    test "adjusts for contrast" do
+    test 'adjusts for contrast' do
       fg = Color.from_hex("#808080")
       bg = Color.from_hex("#FFFFFF")
       adjusted = System.adjust_for_contrast(fg, bg, :AA, :normal)
@@ -223,7 +223,7 @@ defmodule Raxol.Style.Colors.SystemTest do
   end
 
   describe "accessibility" do
-    test "meets contrast requirements" do
+    test 'meets contrast requirements' do
       fg = Color.from_hex("#FFFFFF")
       bg = Color.from_hex("#000000")
       assert System.meets_contrast_requirements?(fg, bg, :AA, :normal)

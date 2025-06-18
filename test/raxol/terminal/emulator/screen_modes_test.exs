@@ -6,12 +6,12 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
   alias Raxol.Terminal.ModeManager
 
   describe "screen mode functionality" do
-    test "initializes with default screen modes" do
+    test 'initializes with default screen modes' do
       emulator = Emulator.new(80, 24)
       assert emulator.mode_manager == Raxol.Terminal.ModeManager.new()
     end
 
-    test "switches between normal and alternate screen buffer" do
+    test 'switches between normal and alternate screen buffer' do
       emulator = Emulator.new(80, 24)
 
       # Write some content to normal buffer
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert Emulator.get_active_buffer(emulator_normal) == main_buffer_content
     end
 
-    test "switches between normal and alternate screen buffer (DEC mode 1047 - no clear)" do
+    test 'switches between normal and alternate screen buffer (DEC mode 1047 - no clear)' do
       emulator = Emulator.new(80, 24)
 
       # Write to main buffer
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert Emulator.get_active_buffer(emulator) == alt_buffer_content_snapshot
     end
 
-    test "sets and resets screen modes (Insert Mode - IRM)" do
+    test 'sets and resets screen modes (Insert Mode - IRM)' do
       emulator = Emulator.new(80, 24)
 
       # Set insert mode (SM 4)
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
                false
     end
 
-    test "sets and resets screen modes (Origin Mode - DECOM)" do
+    test 'sets and resets screen modes (Origin Mode - DECOM)' do
       emulator = Emulator.new(80, 24)
 
       # Set origin mode (DECSET ?6h)
@@ -134,7 +134,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
                false
     end
 
-    test "handles cursor visibility (DECTCEM)" do
+    test 'handles cursor visibility (DECTCEM)' do
       emulator = Emulator.new(80, 24)
       # Check state directly as getter `get_cursor_visible` returns bool
       assert emulator.cursor.state == :visible
@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert emulator.cursor.state == :visible
     end
 
-    test "handles application keypad mode (DECKPAM/DECKPNM)" do
+    test 'handles application keypad mode (DECKPAM/DECKPNM)' do
       emulator = Emulator.new(80, 24)
       assert ModeManager.mode_enabled?(emulator.mode_manager, :decckm) == false
 
@@ -175,7 +175,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
                false
     end
 
-    test "handles terminal modes (standard modes like IRM)" do
+    test 'handles terminal modes (standard modes like IRM)' do
       emulator = Emulator.new(80, 24)
       # Insert mode (Set Standard Mode 4)
       {state_after_set, _} = Emulator.process_input(emulator, "\e[4h")

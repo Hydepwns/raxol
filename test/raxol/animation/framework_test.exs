@@ -61,7 +61,7 @@ defmodule Raxol.Animation.FrameworkTest do
       %{user_preferences_pid: user_preferences_pid}
     end
 
-    test "initializes with default settings" do
+    test 'initializes with default settings' do
       assert :ok == Framework.init()
       # Verify default settings
       settings = Process.get(:animation_framework_settings, %{})
@@ -70,7 +70,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert settings.default_easing == :linear
     end
 
-    test "creates animation with default settings" do
+    test 'creates animation with default settings' do
       animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
@@ -91,7 +91,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert animation.to == 1
     end
 
-    test "creates animation with custom settings" do
+    test 'creates animation with custom settings' do
       animation =
         Framework.create_animation(:custom_animation, %{
           type: :slide,

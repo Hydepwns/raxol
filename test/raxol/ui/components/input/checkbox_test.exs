@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
   # alias Raxol.Core.Events.Event # Commented out until needed
 
   describe "init/1" do
-    test "initializes with default values" do
+    test 'initializes with default values' do
       # init returns {:ok, state}
       assert {:ok, state} = Checkbox.init(id: :cb1)
 
@@ -26,7 +26,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert state.aria_label == nil
     end
 
-    test "initializes with provided props" do
+    test 'initializes with provided props' do
       on_toggle_func = fn _ -> :toggled end
       # Define props as a Keyword list
       props = [
@@ -70,7 +70,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       %{theme: Raxol.UI.Theming.Theme.default_theme()}
     end
 
-    test "renders unchecked checkbox" do
+    test 'renders unchecked checkbox' do
       {:ok, state} = Checkbox.init(label: "Option")
       # Render requires state and context
       hbox_element = Checkbox.render(state, default_context())
@@ -90,7 +90,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert label_element[:text] == " Option"
     end
 
-    test "renders checked checkbox" do
+    test 'renders checked checkbox' do
       {:ok, state} = Checkbox.init(label: "Option", checked: true)
       hbox_element = Checkbox.render(state, default_context())
 
@@ -109,7 +109,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert label_element[:text] == " Option"
     end
 
-    test "renders disabled checkbox with disabled style" do
+    test 'renders disabled checkbox with disabled style' do
       # Note: Now that render uses the theme, we expect the theme's
       # disabled style (e.g., disabled_fg) to be applied.
       {:ok, state} =
@@ -135,7 +135,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
   # TODO: Add tests for update/2 and handle_event/3
   describe "update/2" do
-    test "updates the checked state" do
+    test 'updates the checked state' do
       {:ok, initial_state} = Checkbox.init(id: :cb_update)
       assert initial_state.checked == false
 
@@ -150,7 +150,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert final_state.checked == false
     end
 
-    test "updates the label" do
+    test 'updates the label' do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, label: "Initial")
       assert initial_state.label == "Initial"
 
@@ -160,7 +160,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert updated_state.label == "Updated"
     end
 
-    test "updates the disabled state" do
+    test 'updates the disabled state' do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, disabled: false)
       assert is_map(initial_state)
       assert Map.has_key?(initial_state, :disabled)
@@ -174,7 +174,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert updated_state.disabled == true
     end
 
-    test "updates the on_toggle callback" do
+    test 'updates the on_toggle callback' do
       cb_func_1 = fn _ -> :one end
       cb_func_2 = fn _ -> :two end
       {:ok, initial_state} = Checkbox.init(id: :cb_update, on_toggle: cb_func_1)
@@ -186,7 +186,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert updated_state.on_toggle == cb_func_2
     end
 
-    test "merges style and theme on update" do
+    test 'merges style and theme on update' do
       {:ok, initial_state} =
         Checkbox.init(id: :cb_update, style: %{fg: :red}, theme: %{bg: :blue})
 
@@ -266,7 +266,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       }
     end
 
-    test "toggles state from unchecked to checked on click" do
+    test 'toggles state from unchecked to checked on click' do
       state = init_state(checked: false)
 
       {:noreply, new_state, _cmds} =
@@ -275,7 +275,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert new_state.checked == true
     end
 
-    test "toggles state from checked to unchecked on click" do
+    test 'toggles state from checked to unchecked on click' do
       state = init_state(checked: true)
 
       {:noreply, new_state, _cmds} =
@@ -284,7 +284,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert new_state.checked == false
     end
 
-    test "toggles state from unchecked to checked on space keypress" do
+    test 'toggles state from unchecked to checked on space keypress' do
       state = init_state(checked: false)
 
       {:noreply, new_state, _cmds} =
@@ -293,7 +293,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert new_state.checked == true
     end
 
-    test "toggles state from checked to unchecked on space keypress" do
+    test 'toggles state from checked to unchecked on space keypress' do
       state = init_state(checked: true)
 
       {:noreply, new_state, _cmds} =
@@ -302,7 +302,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert new_state.checked == false
     end
 
-    test "does not toggle state on other keypress" do
+    test 'does not toggle state on other keypress' do
       state = init_state(checked: false)
 
       {:noreply, new_state, _cmds} =
@@ -318,7 +318,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert new_state_checked.checked == true
     end
 
-    test "does not toggle when disabled (click)" do
+    test 'does not toggle when disabled (click)' do
       state = init_state(checked: false, disabled: true)
 
       {:noreply, new_state, _cmds} =
@@ -327,7 +327,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert new_state.checked == false
     end
 
-    test "does not toggle when disabled (space keypress)" do
+    test 'does not toggle when disabled (space keypress)' do
       state = init_state(checked: false, disabled: true)
 
       {:noreply, new_state, _cmds} =
@@ -336,7 +336,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert new_state.checked == false
     end
 
-    test "calls on_toggle callback with new state when toggled" do
+    test 'calls on_toggle callback with new state when toggled' do
       # Use Process dictionary to track if callback was called
       on_toggle_func = fn checked_state ->
         Process.put(:toggled_to, checked_state)
@@ -363,7 +363,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert Process.get(:toggled_to) == false
     end
 
-    test "does not call on_toggle callback when not toggled" do
+    test 'does not call on_toggle callback when not toggled' do
       # Use Process dictionary to track if callback was called
       on_toggle_func = fn _ -> Process.put(:toggle_called, true) end
 

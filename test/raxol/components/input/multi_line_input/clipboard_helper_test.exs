@@ -8,7 +8,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
   import Raxol.Test.Support.ClipboardHelpers
 
   describe "copy_selection/1" do
-    test "returns state and :clipboard_write command with selected text" do
+    test 'returns state and :clipboard_write command with selected text' do
       # Select "ell" in "hello"
       state = create_state("hello\nworld", {0, 4}, {{0, 1}, {0, 4}})
       {new_state, commands} = ClipboardHelper.copy_selection(state)
@@ -18,7 +18,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
       assert_clipboard_write(commands, "ell")
     end
 
-    test "returns state and :clipboard_write command with selected text across lines" do
+    test 'returns state and :clipboard_write command with selected text across lines' do
       # Select "llo\nwo"
       state = create_state("hello\nworld", {1, 2}, {{0, 2}, {1, 2}})
       {new_state, commands} = ClipboardHelper.copy_selection(state)
@@ -27,14 +27,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
       assert_clipboard_write(commands, "llo\nwo")
     end
 
-    test "returns original state and empty command list if no selection" do
+    test 'returns original state and empty command list if no selection' do
       state = create_state("hello", {0, 1})
       {new_state, commands} = ClipboardHelper.copy_selection(state)
       assert new_state == state
       assert commands == []
     end
 
-    test "handles reversed selection" do
+    test 'handles reversed selection' do
       # Reversed selection
       state = create_state("hello\nworld", {0, 0}, {{1, 2}, {0, 2}})
       {new_state, commands} = ClipboardHelper.copy_selection(state)
@@ -44,7 +44,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
   end
 
   describe "cut_selection/1" do
-    test "returns state with deleted text and :clipboard_write command" do
+    test 'returns state with deleted text and :clipboard_write command' do
       # Select "ell" in "hello"
       state = create_state("hello\nworld", {0, 4}, {{0, 1}, {0, 4}})
       {new_state, commands} = ClipboardHelper.cut_selection(state)
@@ -59,7 +59,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
       assert_clipboard_write(commands, "ell")
     end
 
-    test "cuts text across lines" do
+    test 'cuts text across lines' do
       # Select "llo\nwo"
       state = create_state("hello\nworld", {1, 2}, {{0, 2}, {1, 2}})
       {new_state, commands} = ClipboardHelper.cut_selection(state)
@@ -70,7 +70,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
       assert_clipboard_write(commands, "llo\nwo")
     end
 
-    test "returns original state and empty command list if no selection" do
+    test 'returns original state and empty command list if no selection' do
       state = create_state("hello", {0, 1})
       {new_state, commands} = ClipboardHelper.cut_selection(state)
       assert new_state == state
@@ -80,7 +80,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
 
   # Renamed from paste_clipboard
   describe "paste/1" do
-    test "returns state and :clipboard_read command" do
+    test 'returns state and :clipboard_read command' do
       state = create_state("hello", {0, 2})
       # Call paste/1
       {new_state, commands} = ClipboardHelper.paste(state)

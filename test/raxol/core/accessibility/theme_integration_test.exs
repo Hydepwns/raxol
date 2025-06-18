@@ -18,7 +18,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   end
 
   describe "init/0" do
-    test "initializes theme integration" do
+    test 'initializes theme integration' do
       assert :ok = ThemeIntegration.init()
 
       # Verify event handlers are registered
@@ -42,7 +42,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   end
 
   describe "cleanup/0" do
-    test "cleans up theme integration" do
+    test 'cleans up theme integration' do
       # First initialize
       ThemeIntegration.init()
 
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   end
 
   describe "handle_high_contrast/1" do
-    test "updates component styles for high contrast mode" do
+    test 'updates component styles for high contrast mode' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -95,7 +95,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.unsubscribe(ref)
     end
 
-    test "updates component styles for standard mode" do
+    test 'updates component styles for standard mode' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -122,7 +122,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   end
 
   describe "handle_reduced_motion/1" do
-    test "disables animations when reduced motion is enabled" do
+    test 'disables animations when reduced motion is enabled' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -142,7 +142,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.unsubscribe(ref)
     end
 
-    test "enables animations when reduced motion is disabled" do
+    test 'enables animations when reduced motion is disabled' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -164,7 +164,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   end
 
   describe "handle_large_text/1" do
-    test "sets text scale for large text mode" do
+    test 'sets text scale for large text mode' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -184,7 +184,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.unsubscribe(ref)
     end
 
-    test "sets text scale for standard text mode" do
+    test 'sets text scale for standard text mode' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -206,7 +206,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   end
 
   describe "apply_settings/1" do
-    test "applies accessibility settings" do
+    test 'applies accessibility settings' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -235,7 +235,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   end
 
   describe "get_color_scheme/0" do
-    test "returns high contrast colors when high contrast is enabled" do
+    test 'returns high contrast colors when high contrast is enabled' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -255,7 +255,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.unsubscribe(ref)
     end
 
-    test "returns standard colors when high contrast is disabled" do
+    test 'returns standard colors when high contrast is disabled' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
@@ -275,7 +275,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.unsubscribe(ref)
     end
 
-    test "returns standard colors when accessibility options are not set" do
+    test 'returns standard colors when accessibility options are not set' do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 

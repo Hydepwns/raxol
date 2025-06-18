@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Output.ManagerTest do
       assert manager.metrics.style_applications == 0
     end
 
-    test "creates manager with custom options" do
+    test 'creates manager with custom options' do
       opts = [buffer_size: 2048, batch_size: 50]
       manager = Manager.new(opts)
       assert manager.buffer.max_size == 2048

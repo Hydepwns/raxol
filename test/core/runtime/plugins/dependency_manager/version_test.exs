@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
   alias Raxol.Core.Runtime.Plugins.DependencyManager.Version
 
   describe "check_version/2" do
-    test "handles simple version constraints" do
+    test 'handles simple version constraints' do
       assert :ok = Version.check_version("1.0.0", ">= 1.0.0")
       assert :ok = Version.check_version("1.1.0", ">= 1.0.0")
       assert :ok = Version.check_version("2.0.0", ">= 1.0.0")
@@ -12,7 +12,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
                Version.check_version("0.9.0", ">= 1.0.0")
     end
 
-    test "handles exact version matches" do
+    test 'handles exact version matches' do
       assert :ok = Version.check_version("1.0.0", "== 1.0.0")
 
       assert {:error, :version_mismatch} =
@@ -22,7 +22,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
                Version.check_version("1.1.0", "== 1.0.0")
     end
 
-    test "handles version ranges" do
+    test 'handles version ranges' do
       assert :ok = Version.check_version("1.0.0", "~> 1.0")
       assert :ok = Version.check_version("1.0.1", "~> 1.0")
       assert :ok = Version.check_version("1.9.9", "~> 1.0")
@@ -31,7 +31,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
                Version.check_version("2.0.0", "~> 1.0")
     end
 
-    test "handles complex version constraints" do
+    test 'handles complex version constraints' do
       assert :ok = Version.check_version("1.0.0", ">= 1.0.0 and < 2.0.0")
       assert :ok = Version.check_version("1.9.9", ">= 1.0.0 and < 2.0.0")
 
@@ -42,7 +42,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
                Version.check_version("0.9.0", ">= 1.0.0 and < 2.0.0")
     end
 
-    test "handles OR conditions" do
+    test 'handles OR conditions' do
       assert :ok = Version.check_version("1.0.0", ">= 1.0.0 || >= 2.0.0")
       assert :ok = Version.check_version("2.0.0", ">= 1.0.0 || >= 2.0.0")
 
@@ -50,7 +50,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
                Version.check_version("0.9.0", ">= 1.0.0 || >= 2.0.0")
     end
 
-    test "handles invalid version formats" do
+    test 'handles invalid version formats' do
       assert {:error, :invalid_version_format} =
                Version.check_version("invalid", ">= 1.0.0")
 
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
                Version.check_version("1.0", ">= 1.0.0")
     end
 
-    test "handles invalid requirement formats" do
+    test 'handles invalid requirement formats' do
       assert {:error, :invalid_requirement_format} =
                Version.check_version("1.0.0", "invalid")
 
@@ -74,13 +74,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
   end
 
   describe "parse_version_requirement/1" do
-    test "parses simple version requirements" do
+    test 'parses simple version requirements' do
       assert match?({:ok, _}, Version.parse_version_requirement(">= 1.0.0"))
       assert match?({:ok, _}, Version.parse_version_requirement("== 1.0.0"))
       assert match?({:ok, _}, Version.parse_version_requirement("~> 1.0"))
     end
 
-    test "parses complex version requirements" do
+    test 'parses complex version requirements' do
       assert {:ok, _} =
                Version.parse_version_requirement(">= 1.0.0 and < 2.0.0")
 
@@ -88,7 +88,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
                Version.parse_version_requirement(">= 1.0.0 || >= 2.0.0")
     end
 
-    test "handles invalid requirement formats" do
+    test 'handles invalid requirement formats' do
       assert {:error, :invalid_requirement_format} =
                Version.parse_version_requirement("invalid")
 

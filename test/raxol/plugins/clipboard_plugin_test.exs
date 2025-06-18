@@ -18,13 +18,13 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   setup :verify_on_exit!
 
   describe "init/1" do
-    test "initializes with default state" do
+    test 'initializes with default state' do
       # Init with default implementation - pass empty list, not map
       assert {:ok, %{clipboard_impl: Raxol.System.Clipboard}} =
                ClipboardPlugin.init([])
     end
 
-    test "initializes with custom implementation" do
+    test 'initializes with custom implementation' do
       # Init with mock implementation - pass keyword list
       assert {:ok, %{clipboard_impl: @clipboard_mock}} =
                ClipboardPlugin.init(clipboard_impl: @clipboard_mock)
@@ -32,7 +32,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   end
 
   describe "get_commands/0" do
-    test "registers clipboard_write and clipboard_read commands" do
+    test 'registers clipboard_write and clipboard_read commands' do
       # No mocking needed for get_commands
       expected_commands = [
         {:clipboard_write, :handle_clipboard_command, 2},
@@ -49,7 +49,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       %{clipboard_impl: @clipboard_mock}
     end
 
-    test "delegates :clipboard_write command to System.Clipboard.copy/1 successfully" do
+    test 'delegates :clipboard_write command to System.Clipboard.copy/1 successfully' do
       # Use helper to get state with mock
       initial_state = initial_state_with_mock()
       test_content = "hello clipboard"
@@ -66,7 +66,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       # Verification is handled by setup :verify_on_exit!
     end
 
-    test "delegates :clipboard_write command and handles System.Clipboard.copy/1 error" do
+    test 'delegates :clipboard_write command and handles System.Clipboard.copy/1 error' do
       # Use helper to get state with mock
       initial_state = initial_state_with_mock()
       test_content = "error content"
@@ -91,7 +91,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       # Verification handled by :verify_on_exit!
     end
 
-    test "delegates :clipboard_read command to System.Clipboard.paste/0 successfully" do
+    test 'delegates :clipboard_read command to System.Clipboard.paste/0 successfully' do
       # Use helper to get state with mock
       initial_state = initial_state_with_mock()
       clipboard_content = "pasted content"
@@ -108,7 +108,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       # Verification handled by :verify_on_exit!
     end
 
-    test "delegates :clipboard_read command and handles System.Clipboard.paste/0 error" do
+    test 'delegates :clipboard_read command and handles System.Clipboard.paste/0 error' do
       # Use helper to get state with mock
       initial_state = initial_state_with_mock()
       command_name = :clipboard_read
@@ -128,7 +128,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       # Verification handled by :verify_on_exit!
     end
 
-    test "returns error for unhandled command variants" do
+    test 'returns error for unhandled command variants' do
       # Use helper to get state with mock (although mock isn't called)
       initial_state = initial_state_with_mock()
       # Test calling write handler (arity 2) with wrong args
@@ -152,7 +152,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
 
   # Basic check for terminate callback existence
   describe "terminate/2" do
-    test "terminate/2 exists and returns :ok" do
+    test 'terminate/2 exists and returns :ok' do
       # Use helper for state
       initial_state = initial_state_with_mock()
       assert ClipboardPlugin.terminate(:shutdown, initial_state) == :ok
@@ -166,17 +166,17 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       %{clipboard_impl: @clipboard_mock}
     end
 
-    test "enable/1 exists" do
+    test 'enable/1 exists' do
       initial_state = initial_state_with_mock()
       assert {:ok, ^initial_state} = ClipboardPlugin.enable(initial_state)
     end
 
-    test "disable/1 exists" do
+    test 'disable/1 exists' do
       initial_state = initial_state_with_mock()
       assert {:ok, ^initial_state} = ClipboardPlugin.disable(initial_state)
     end
 
-    test "filter_event/2 exists" do
+    test 'filter_event/2 exists' do
       initial_state = initial_state_with_mock()
       event = %{type: :test}
 

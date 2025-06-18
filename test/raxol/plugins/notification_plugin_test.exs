@@ -8,7 +8,7 @@ defmodule Raxol.Plugins.NotificationPluginTest do
   setup :verify_on_exit!
 
   describe "init" do
-    test "initializes with default configuration" do
+    test 'initializes with default configuration' do
       # Mock Application.get_env if needed, otherwise use default
       assert {:ok, state} = NotificationPlugin.init(%{})
       # Default
@@ -18,7 +18,7 @@ defmodule Raxol.Plugins.NotificationPluginTest do
       assert state.notifications == []
     end
 
-    test "respects interaction module from config" do
+    test 'respects interaction module from config' do
       # Temporarily set app env for this test
       Application.put_env(
         :raxol,
@@ -34,7 +34,7 @@ defmodule Raxol.Plugins.NotificationPluginTest do
   end
 
   describe "get_commands" do
-    test "get_commands/0 returns notify command" do
+    test 'get_commands/0 returns notify command' do
       # Expect arity 2 for handle_command(args, state) as registered
       assert [{:notify, :handle_command, 2}] = NotificationPlugin.get_commands()
     end

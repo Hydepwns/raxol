@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
-    test "initializes with default values when no props provided" do
+    test 'initializes with default values when no props provided' do
       state = Spinner.init(%{})
       assert state.style == :dots
       assert state.frames == ~w(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
@@ -17,7 +17,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
       assert is_integer(state.last_update)
     end
 
-    test "initializes with provided values" do
+    test 'initializes with provided values' do
       props = %{
         style: :line,
         colors: [:red, :blue],
@@ -37,7 +37,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
       assert state.text_position == :left
     end
 
-    test "initializes with custom frames" do
+    test 'initializes with custom frames' do
       props = %{
         style: :custom,
         frames: ["A", "B", "C"]
@@ -123,7 +123,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
   end
 
   describe "handle_event/2" do
-    test "handles frame events" do
+    test 'handles frame events' do
       state = Spinner.init(%{speed: 0})
       event = %Raxol.Core.Events.Event{type: :frame, data: nil}
 
@@ -140,7 +140,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
       assert wrapped_state.frame_index == 0
     end
 
-    test "ignores other events" do
+    test 'ignores other events' do
       state = Spinner.init(%{})
 
       event = %Raxol.Core.Events.Event{
@@ -155,14 +155,14 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
   end
 
   describe "helper functions" do
-    test "loading/1 creates default loading spinner" do
+    test 'loading/1 creates default loading spinner' do
       state = Spinner.loading()
       assert state.style == :dots
       assert state.text == "Loading"
       assert Map.get(state, :colors) == [:white]
     end
 
-    test "processing/1 creates processing spinner" do
+    test 'processing/1 creates processing spinner' do
       state = Spinner.processing("Working")
       assert state.style == :dots
       assert state.text == "Working"
@@ -170,7 +170,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
       assert state.speed == 100
     end
 
-    test "saving/1 creates saving spinner" do
+    test 'saving/1 creates saving spinner' do
       state = Spinner.saving()
       assert state.style == :pulse
       assert state.text == "Saving"
@@ -178,7 +178,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
       assert state.speed == 500
     end
 
-    test "error/1 creates error spinner" do
+    test 'error/1 creates error spinner' do
       state = Spinner.error("Failed")
       assert state.style == :pulse
       assert state.text == "Failed"

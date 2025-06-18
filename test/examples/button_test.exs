@@ -119,7 +119,7 @@ defmodule Raxol.Examples.ButtonTest do
       assert Map.get(button_after_resize.state, :focused) == false
     end
 
-    test "applies style and theme with correct precedence" do
+    test 'applies style and theme with correct precedence' do
       theme = %{fg: :red, bg: :blue, focused_fg: :green}
       style = %{fg: :yellow, bg: :magenta}
 
@@ -141,7 +141,7 @@ defmodule Raxol.Examples.ButtonTest do
       assert Map.get(view.attrs, :bg) == :magenta
     end
 
-    test "mount and unmount lifecycle hooks are called and return state" do
+    test 'mount and unmount lifecycle hooks are called and return state' do
       state =
         Button.new(%{
           label: "Test",

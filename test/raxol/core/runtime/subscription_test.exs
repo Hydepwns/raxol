@@ -4,7 +4,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
   alias Raxol.Core.Runtime.Subscription
 
   describe "new/2" do
-    test "creates a new subscription with given type and data" do
+    test 'creates a new subscription with given type and data' do
       sub = Subscription.new(:interval, %{interval: 1000, message: :tick})
 
       assert %Subscription{
@@ -15,7 +15,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
   end
 
   describe "interval/2" do
-    test "creates an interval subscription with default options" do
+    test 'creates an interval subscription with default options' do
       sub = Subscription.interval(1000, :tick)
       assert %Subscription{type: :interval} = sub
 
@@ -27,7 +27,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
              } = sub.data
     end
 
-    test "creates an interval subscription with custom options" do
+    test 'creates an interval subscription with custom options' do
       sub =
         Subscription.interval(1000, :tick, start_immediately: true, jitter: 100)
 
@@ -41,18 +41,18 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
              } = sub.data
     end
 
-    test "validates interval is positive" do
+    test 'validates interval is positive' do
       assert {:error, :invalid_interval} = Subscription.interval(0, :tick)
       assert {:error, :invalid_interval} = Subscription.interval(-1000, :tick)
     end
 
-    test "handles very large intervals" do
+    test 'handles very large intervals' do
       sub = Subscription.interval(1_000_000_000, :tick)
       assert %Subscription{type: :interval} = sub
       assert %{interval: 1_000_000_000} = sub.data
     end
 
-    test "handles very small intervals" do
+    test 'handles very small intervals' do
       sub = Subscription.interval(1, :tick)
       assert %Subscription{type: :interval} = sub
       assert %{interval: 1} = sub.data
@@ -60,13 +60,13 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
   end
 
   describe "events/1" do
-    test "creates an events subscription" do
+    test 'creates an events subscription' do
       events = [:key_press, :mouse_click]
       sub = Subscription.events(events)
       assert %Subscription{type: :events, data: ^events} = sub
     end
 
-    test "requires event types to be a list" do
+    test 'requires event types to be a list' do
       assert {:error, :invalid_events} = Subscription.events(:key_press)
     end
   end
@@ -106,14 +106,14 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
       assert %{path: ^test_file, events: ^events} = sub.data
     end
 
-    test "requires events to be a list" do
+    test 'requires events to be a list' do
       assert {:error, :invalid_file_watch_args} =
                Subscription.file_watch("test.txt", :modify)
     end
   end
 
   describe "custom/2" do
-    test "creates a custom subscription" do
+    test 'creates a custom subscription' do
       module = MyEventSource
       args = %{config: :value}
       sub = Subscription.custom(module, args)
@@ -121,12 +121,12 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
       assert %{module: ^module, args: ^args} = sub.data
     end
 
-    test "validates module is an atom" do
+    test 'validates module is an atom' do
       assert {:error, :invalid_module} =
                Subscription.custom("not_a_module", %{})
     end
 
-    test "validates args is a map" do
+    test 'validates args is a map' do
       assert {:error, :invalid_args} =
                Subscription.custom(MyEventSource, "not_a_map")
     end
@@ -213,7 +213,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
       assert :ok = Subscription.stop(sub_id)
     end
 
-    test "returns error for invalid subscription id" do
+    test 'returns error for invalid subscription id' do
       assert {:error, :invalid_subscription} = Subscription.stop(:invalid)
     end
 

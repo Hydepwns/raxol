@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
   alias Raxol.Core.Runtime.Plugins.DependencyManager.Resolver
 
   describe "tarjan_sort/1" do
-    test "sorts a simple acyclic graph" do
+    test 'sorts a simple acyclic graph' do
       graph = %{
         "a" => [{"b", ">= 1.0.0", %{optional: false}}],
         "b" => []
@@ -15,7 +15,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert order == ["b", "a"]
     end
 
-    test "sorts a complex acyclic graph" do
+    test 'sorts a complex acyclic graph' do
       graph = %{
         "a" => [
           {"b", ">= 1.0.0", %{optional: false}},
@@ -40,7 +40,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert c_index < a_index
     end
 
-    test "detects a simple cycle" do
+    test 'detects a simple cycle' do
       graph = %{
         "a" => [{"b", ">= 1.0.0", %{optional: false}}],
         "b" => [{"a", ">= 1.0.0", %{optional: false}}]
@@ -53,7 +53,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert "b" in cycle
     end
 
-    test "detects a complex cycle" do
+    test 'detects a complex cycle' do
       graph = %{
         "a" => [{"b", ">= 1.0.0", %{optional: false}}],
         "b" => [{"c", ">= 1.0.0", %{optional: false}}],
@@ -68,14 +68,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert "c" in cycle
     end
 
-    test "handles an empty graph" do
+    test 'handles an empty graph' do
       result = Resolver.tarjan_sort(%{})
       assert match?({:ok, _}, result)
       {:ok, order} = result
       assert order == []
     end
 
-    test "handles a graph with isolated nodes" do
+    test 'handles a graph with isolated nodes' do
       graph = %{
         "a" => [],
         "b" => [],
@@ -88,7 +88,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert Enum.sort(order) == ["a", "b", "c"]
     end
 
-    test "handles optional dependencies correctly" do
+    test 'handles optional dependencies correctly' do
       graph = %{
         "a" => [
           {"b", ">= 1.0.0", %{optional: true}},
@@ -107,7 +107,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert c_index < a_index
     end
 
-    test "handles diamond-shaped dependency graph" do
+    test 'handles diamond-shaped dependency graph' do
       graph = %{
         "a" => [
           {"b", ">= 1.0.0", %{optional: false}},
@@ -135,7 +135,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert c_index < a_index
     end
 
-    test "handles self-referential dependencies" do
+    test 'handles self-referential dependencies' do
       graph = %{
         "a" => [{"a", ">= 1.0.0", %{optional: false}}]
       }
@@ -146,7 +146,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert cycle == ["a"]
     end
 
-    test "handles version constraints in dependency graph" do
+    test 'handles version constraints in dependency graph' do
       graph = %{
         "a" => [
           {"b", ">= 1.0.0 and < 2.0.0", %{optional: false}},
@@ -170,7 +170,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert c_index < a_index
     end
 
-    test "handles multiple paths to same dependency" do
+    test 'handles multiple paths to same dependency' do
       graph = %{
         "a" => [{"c", ">= 1.0.0", %{optional: false}}],
         "b" => [{"c", ">= 1.0.0", %{optional: false}}],
@@ -190,7 +190,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert c_index < b_index
     end
 
-    test "handles deep dependency chains" do
+    test 'handles deep dependency chains' do
       graph = %{
         "a" => [{"b", ">= 1.0.0", %{optional: false}}],
         "b" => [{"c", ">= 1.0.0", %{optional: false}}],
@@ -213,7 +213,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
       assert b_index < a_index
     end
 
-    test "handles disconnected components" do
+    test 'handles disconnected components' do
       graph = %{
         "a" => [{"b", ">= 1.0.0", %{optional: false}}],
         "b" => [],
