@@ -1,11 +1,11 @@
 defmodule Raxol.Test.VisualizationTestData do
-  @moduledoc """
+  @moduledoc '''
   Provides test data for visualization edge cases to be used in testing.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Returns test data for bar charts with various edge cases.
-  """
+  '''
   def bar_chart_test_data do
     %{
       # Basic normal chart data
@@ -96,9 +96,9 @@ defmodule Raxol.Test.VisualizationTestData do
     }
   end
 
-  @doc """
+  @doc '''
   Returns test data for treemaps with various edge cases.
-  """
+  '''
   def treemap_test_data do
     %{
       # Basic normal treemap data
@@ -289,10 +289,10 @@ defmodule Raxol.Test.VisualizationTestData do
     }
   end
 
-  @doc """
+  @doc '''
   Generates a dataset suitable for testing rendering at different terminal sizes.
   The function accepts width and height parameters to allow testing different constraints.
-  """
+  '''
   def size_adaptive_test_data(width, height) do
     # Adapt bar chart - more bars for wider terminals
     num_bars = max(3, div(width, 10))

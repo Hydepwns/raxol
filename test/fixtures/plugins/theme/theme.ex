@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Plugin.Theme do
-  @moduledoc """
+  @moduledoc '''
   Test theme plugin for the Raxol terminal emulator.
-  """
+  '''
 
   def apply_theme(config) do
     # Default theme configuration

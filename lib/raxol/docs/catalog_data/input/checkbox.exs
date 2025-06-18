@@ -14,11 +14,11 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
       id: :basic,
       title: "Basic Usage",
       description: "A simple checkbox.",
-      code: ~S'''
+      code: ~S'""
       view do
         checkbox(label: "Accept Terms")
       end
-      '''
+      ""'
       # preview_fn: fn props -> ... end # Add preview function later
     }
   ],

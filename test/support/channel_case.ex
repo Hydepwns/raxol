@@ -1,5 +1,5 @@
 defmodule RaxolWeb.ChannelCase do
-  @moduledoc """
+  @moduledoc '''
   This module defines the setup for tests requiring
   access to the application's channel layer.
 
@@ -13,7 +13,7 @@ defmodule RaxolWeb.ChannelCase do
   PostgreSQL, you can even run database tests asynchronously
   by setting `use RaxolWeb.ChannelCase, async: true`, although
   this option is not recommended for other databases.
-  """
+  '''
 
   use ExUnit.CaseTemplate
 
@@ -38,9 +38,9 @@ defmodule RaxolWeb.ChannelCase do
     :ok
   end
 
-  @doc """
+  @doc '''
   Starts the endpoint server for tests requiring it.
-  """
+  '''
   def start_endpoint(_) do
     # Start applications necessary for the endpoint
     Application.ensure_all_started(:phoenix)

@@ -10,6 +10,7 @@ defmodule Raxol.MixProject do
       version: @version,
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
+      elixirc_options: [warnings_as_errors: false, ignore_module_conflict: true, compile_order: [:cell, :operations]],
       compilers: Mix.compilers(),
       consolidate_protocols: Mix.env() != :test,
       start_permanent: Mix.env() == :prod,
@@ -73,9 +74,9 @@ defmodule Raxol.MixProject do
   end
 
   defp elixirc_paths(:test),
-    do: ["lib", "test/support", "examples/demos", "lib/raxol/test"]
+    do: ["lib", "test/support", "examples/demos", "lib/raxol/test", "lib/raxol/terminal/buffer/cell.ex"]
 
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(_), do: ["lib", "lib/raxol/terminal/buffer/cell.ex"]
 
   defp test_applications do
     if Mix.env() == :test do
@@ -88,8 +89,8 @@ defmodule Raxol.MixProject do
   defp deps do
     [
       # Core dependencies
-      # Terminal rendering library
-      {:termbox2_nif, "~> 0.2.0"},
+      # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2_nif)
+      {:termbox2_nif, "~> 0.3.0"},
 
       # --- Added for Tutorial Loading ---
       # Markdown parser
@@ -193,7 +194,9 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Raxol - A toolkit for building interactive terminal UI applications in Elixir.
+    Raxol - A modern, feature-rich toolkit for building sophisticated terminal user interfaces (TUIs) in Elixir.
+    Provides a comprehensive set of components, styling options, and event handling for creating interactive
+    terminal applications with rich text formatting, keyboard input handling, and dynamic UI updates.
     """
   end
 
@@ -215,7 +218,10 @@ defmodule Raxol.MixProject do
       extras: [
         "README.md",
         "examples/guides/01_getting_started/quick_start.md",
-        "examples/guides/04_extending_raxol/vscode_extension.md"
+        "examples/guides/02_core_concepts/terminal_emulator.md",
+        "examples/snippets/README.md",
+        "extensions/vscode/README.md",
+        "examples/guides/03_components_and_layout/components/README.md"
       ],
       source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",

@@ -1,13 +1,13 @@
 defmodule Raxol.Test.ClipboardAssertions do
-  @moduledoc """
+  @moduledoc '''
   Provides assertion helpers for clipboard-related tests.
-  """
+  '''
 
   import ExUnit.Assertions
 
-  @doc """
+  @doc '''
   Asserts that a clipboard write command was sent with the given content.
-  """
+  '''
   def assert_clipboard_write_command(content) do
     receive do
       {:command, :clipboard_write, [received_content]} ->
@@ -20,9 +20,9 @@ defmodule Raxol.Test.ClipboardAssertions do
     end
   end
 
-  @doc """
+  @doc '''
   Asserts that a clipboard read command was sent.
-  """
+  '''
   def assert_clipboard_read_command do
     assert_receive {:command, :clipboard_read, []}
   end

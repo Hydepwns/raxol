@@ -13,11 +13,11 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
       id: :basic,
       title: "Basic Usage",
       description: "A simple text input.",
-      code: ~S'''
+      code: ~S'""
       view do
         text_field(placeholder: "Enter your name")
       end
-      '''
+      ""'
       # preview_fn: fn props -> ... end
     }
   ],

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Plugin.Script do
-  @moduledoc """
+  @moduledoc '''
   Test script plugin for the Raxol terminal emulator.
-  """
+  '''
 
   def run_script(script_name, args \\ []) do
     # Default script configuration

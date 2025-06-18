@@ -13,12 +13,12 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
       id: :basic,
       title: "Basic Usage",
       description: "A simple select list.",
-      code: ~S'''
+      code: ~S'""
       options = [{"Option 1", "opt1"}, {"Option 2", "opt2"}]
       view do
         select_list(options: options)
       end
-      '''
+      ""'
       # preview_fn: fn props -> ... end
     }
   ],

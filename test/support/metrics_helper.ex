@@ -1,11 +1,11 @@
 defmodule Raxol.Test.MetricsHelper do
-  @moduledoc """
+  @moduledoc '''
   Test helper module for the metrics system.
   Provides utilities for setting up test environments, recording metrics,
   verifying metric values, and cleaning up after tests.
-  """
+  '''
 
-  @doc """
+  @doc '''
   Sets up a test environment for metrics testing.
 
   ## Options
@@ -16,7 +16,7 @@ defmodule Raxol.Test.MetricsHelper do
 
   ## Returns
     * `{:ok, state}` - The test state containing all started components
-  """
+  '''
   def setup_metrics_test(opts \\ []) do
     # Start metrics collector
     {:ok, collector} =
@@ -65,12 +65,12 @@ defmodule Raxol.Test.MetricsHelper do
     }
   end
 
-  @doc """
+  @doc '''
   Cleans up the metrics test environment.
 
   ## Parameters
     * `state` - The test state returned by `setup_metrics_test/1`
-  """
+  '''
   def cleanup_metrics_test(state) do
     Raxol.Core.Metrics.UnifiedCollector.stop(state.collector)
     Raxol.Core.Metrics.Aggregator.stop(state.aggregator)
@@ -78,7 +78,7 @@ defmodule Raxol.Test.MetricsHelper do
     Raxol.Core.Metrics.AlertManager.stop(state.alert_manager)
   end
 
-  @doc """
+  @doc '''
   Records a test metric.
 
   ## Parameters
@@ -90,12 +90,12 @@ defmodule Raxol.Test.MetricsHelper do
   ## Examples
       iex> record_test_metric("buffer_operations", :performance, 42, tags: %{operation: "write"})
       :ok
-  """
+  '''
   def record_test_metric(name, type, value, opts \\ []) do
     Raxol.Core.Metrics.UnifiedCollector.record_metric(name, type, value, opts)
   end
 
-  @doc """
+  @doc '''
   Verifies that a metric has been recorded with the expected value.
 
   ## Parameters
@@ -111,7 +111,7 @@ defmodule Raxol.Test.MetricsHelper do
   ## Examples
       iex> verify_metric("buffer_operations", :performance, 42, tags: %{operation: "write"})
       :ok
-  """
+  '''
   def verify_metric(name, type, expected_value, opts \\ []) do
     case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, opts) do
       {:ok, %{value: ^expected_value}} ->
@@ -125,7 +125,7 @@ defmodule Raxol.Test.MetricsHelper do
     end
   end
 
-  @doc """
+  @doc '''
   Waits for a metric to be recorded with the expected value.
 
   ## Parameters
@@ -145,7 +145,7 @@ defmodule Raxol.Test.MetricsHelper do
   ## Examples
       iex> wait_for_metric("buffer_operations", :performance, 42, timeout: 2000)
       :ok
-  """
+  '''
   def wait_for_metric(name, type, expected_value, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 1000)
     check_interval = Keyword.get(opts, :check_interval, 100)
@@ -192,7 +192,7 @@ defmodule Raxol.Test.MetricsHelper do
     end
   end
 
-  @doc """
+  @doc '''
   Creates a test aggregation rule.
 
   ## Parameters
@@ -204,7 +204,7 @@ defmodule Raxol.Test.MetricsHelper do
   ## Examples
       iex> create_test_rule("hourly_ops", "buffer_operations", :mean, time_window: :timer.hours(1))
       :ok
-  """
+  '''
   def create_test_rule(name, metric_name, type, opts \\ []) do
     Raxol.Core.Metrics.Aggregator.add_rule(%{
       name: name,
@@ -215,7 +215,7 @@ defmodule Raxol.Test.MetricsHelper do
     })
   end
 
-  @doc """
+  @doc '''
   Creates a test alert rule.
 
   ## Parameters
@@ -227,7 +227,7 @@ defmodule Raxol.Test.MetricsHelper do
   ## Examples
       iex> create_test_alert("high_usage", "memory_usage", {:above, 90}, severity: :warning)
       :ok
-  """
+  '''
   def create_test_alert(name, metric_name, condition, opts \\ []) do
     Raxol.Core.Metrics.AlertManager.add_rule(%{
       name: name,
@@ -239,7 +239,7 @@ defmodule Raxol.Test.MetricsHelper do
     })
   end
 
-  @doc """
+  @doc '''
   Creates a test chart.
 
   ## Parameters
@@ -250,7 +250,7 @@ defmodule Raxol.Test.MetricsHelper do
   ## Examples
       iex> create_test_chart("buffer_operations", :line, title: "Buffer Operations")
       {:ok, chart_id}
-  """
+  '''
   def create_test_chart(metric_name, chart_type, opts \\ []) do
     Raxol.Core.Metrics.Visualizer.create_chart(
       metric_name,
@@ -263,9 +263,9 @@ defmodule Raxol.Test.MetricsHelper do
     )
   end
 
-  @doc """
+  @doc '''
   Creates a mock metrics collector for testing.
-  """
+  '''
   def create_mock_collector do
     %{
       metrics: %{},
@@ -274,9 +274,9 @@ defmodule Raxol.Test.MetricsHelper do
     }
   end
 
-  @doc """
+  @doc '''
   Records a metric value in the collector.
-  """
+  '''
   def record_metric(collector, name, value) do
     metrics =
       Map.update(collector.metrics, name, value, fn current ->
@@ -289,30 +289,30 @@ defmodule Raxol.Test.MetricsHelper do
     %{collector | metrics: metrics, last_update: System.monotonic_time()}
   end
 
-  @doc """
+  @doc '''
   Gets a metric value from the collector.
-  """
+  '''
   def get_metric(collector, name) do
     Map.get(collector.metrics, name)
   end
 
-  @doc """
+  @doc '''
   Gets all metrics from the collector.
-  """
+  '''
   def get_all_metrics(collector) do
     collector.metrics
   end
 
-  @doc """
+  @doc '''
   Clears all metrics from the collector.
-  """
+  '''
   def clear_metrics(collector) do
     %{collector | metrics: %{}, last_update: System.monotonic_time()}
   end
 
-  @doc """
+  @doc '''
   Calculates the average of a metric.
-  """
+  '''
   def calculate_average(collector, name) do
     case get_metric(collector, name) do
       nil ->
@@ -326,9 +326,9 @@ defmodule Raxol.Test.MetricsHelper do
     end
   end
 
-  @doc """
+  @doc '''
   Calculates the sum of a metric.
-  """
+  '''
   def calculate_sum(collector, name) do
     case get_metric(collector, name) do
       nil ->
@@ -342,9 +342,9 @@ defmodule Raxol.Test.MetricsHelper do
     end
   end
 
-  @doc """
+  @doc '''
   Calculates the minimum value of a metric.
-  """
+  '''
   def calculate_min(collector, name) do
     case get_metric(collector, name) do
       nil ->
@@ -358,9 +358,9 @@ defmodule Raxol.Test.MetricsHelper do
     end
   end
 
-  @doc """
+  @doc '''
   Calculates the maximum value of a metric.
-  """
+  '''
   def calculate_max(collector, name) do
     case get_metric(collector, name) do
       nil ->
@@ -374,16 +374,16 @@ defmodule Raxol.Test.MetricsHelper do
     end
   end
 
-  @doc """
+  @doc '''
   Gets the time since the last update.
-  """
+  '''
   def get_time_since_last_update(collector) do
     System.monotonic_time() - collector.last_update
   end
 
-  @doc """
+  @doc '''
   Gets the total runtime of the collector.
-  """
+  '''
   def get_total_runtime(collector) do
     System.monotonic_time() - collector.start_time
   end
