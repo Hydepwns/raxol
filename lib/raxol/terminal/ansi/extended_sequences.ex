@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
       # Validate Unicode character
       if String.valid?(char) do
         # Process the character with current style
-        ScreenBuffer.write_char(buffer, char, buffer.default_style)
+        ScreenBuffer.write_char(buffer, 0, 0, char, buffer.default_style)
       else
         buffer
       end

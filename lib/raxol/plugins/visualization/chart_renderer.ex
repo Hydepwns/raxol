@@ -104,7 +104,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     end)
   end
 
-  defp draw_chart_content(grid, data, max_value, min_value, chart_height, chart_width, height, width) do
+  defp draw_chart_content(grid, data, max_value, min_value, chart_height, chart_width, height, _width) do
     num_bars = Enum.count(data)
     total_bar_area_width = max(1, chart_width - (num_bars - 1))
     bar_width = max(1, div(total_bar_area_width, num_bars))

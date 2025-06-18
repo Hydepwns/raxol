@@ -21,7 +21,7 @@ defmodule Raxol.Style.Colors.Adaptive do
   adapted_color = Raxol.Style.Colors.Adaptive.adapt_color(color)
 
   # Check if we're in a dark terminal
-  if Raxol.Style.Colors.Adaptive.is_dark_terminal?() do
+  if Raxol.Style.Colors.Adaptive.dark_terminal?() do
     # Use light text on dark background
   else
     # Use dark text on light background
@@ -162,10 +162,10 @@ defmodule Raxol.Style.Colors.Adaptive do
 
   ## Examples
 
-      iex> Raxol.Style.Colors.Adaptive.is_dark_terminal?()
+      iex> Raxol.Style.Colors.Adaptive.dark_terminal?()
       true  # Depends on your terminal
   """
-  def is_dark_terminal? do
+  def dark_terminal? do
     terminal_background() == :dark
   end
 
@@ -365,31 +365,24 @@ defmodule Raxol.Style.Colors.Adaptive do
   end
 
   defp detect_terminal_background_impl do
-    # Simple check based on COLORFGBG (common in rxvt and derivatives)
     case System.get_env("COLORFGBG") do
-      # Format is usually "fg;bg" or "fg;bg;attrs"
-      fgbg when is_binary(fgbg) ->
-        case String.split(fgbg, ";") do
-          # Check background part (second element)
-          [_fg, bg | _] ->
-            case Integer.parse(bg) do
-              # 0-7 are typically dark colors in standard ANSI palette
-              {val, ""} when val >= 0 and val <= 7 -> :dark
-              # 8-15 are typically light colors
-              {val, ""} when val >= 8 and val <= 15 -> :light
-              # Cannot parse or out of range
-              _ -> :unknown
-            end
+      fgbg when is_binary(fgbg) -> parse_colorfgbg(fgbg)
+      nil -> :unknown
+    end
+  end
 
-          # Unexpected format
-          _ ->
-            :unknown
-        end
+  defp parse_colorfgbg(fgbg) do
+    case String.split(fgbg, ";") do
+      [_fg, bg | _] -> parse_background_color(bg)
+      _ -> :unknown
+    end
+  end
 
-      nil ->
-        # Add other detection methods here if needed (e.g., OSC 11 query, specific terminal env vars)
-        # Default if no information found
-        :unknown
+  defp parse_background_color(bg) do
+    case Integer.parse(bg) do
+      {val, ""} when val >= 0 and val <= 7 -> :dark
+      {val, ""} when val >= 8 and val <= 15 -> :light
+      _ -> :unknown
     end
   end
 

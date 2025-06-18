@@ -120,4 +120,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Metrics do
       _ -> nil
     end
   end
+
+  @doc """
+  Initializes a new metrics struct with default values.
+  """
+  def init do
+    %__MODULE__{}
+  end
 end

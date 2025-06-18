@@ -26,7 +26,23 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
   end
 
   def init(theme) do
-    {:ok, theme}
+    %__MODULE__{
+      name: Keyword.get(theme, :name, "default"),
+      foreground: Keyword.get(theme, :foreground, "#FFFFFF"),
+      background: Keyword.get(theme, :background, "#000000"),
+      cursor: Keyword.get(theme, :cursor, "#FFFFFF"),
+      selection: Keyword.get(theme, :selection, "#444444")
+    }
+  end
+
+  def init do
+    %__MODULE__{
+      name: "default",
+      foreground: "#FFFFFF",
+      background: "#000000",
+      cursor: "#FFFFFF",
+      selection: "#444444"
+    }
   end
 
   @doc """
@@ -53,7 +69,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
 
   defp default_theme do
     %__MODULE__{
-      name: "dark",
+      name: "default",
       foreground: "#FFFFFF",
       background: "#000000",
       cursor: "#FFFFFF",

@@ -162,13 +162,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
 
   # Gets a parameter value with validation.
   # Returns the parameter value if valid, or the default value if invalid.
-  @spec get_valid_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          integer(),
-          integer(),
-          integer()
-        ) :: integer()
+  @doc false
   defp get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
       value when is_integer(value) and value >= min and value <= max ->

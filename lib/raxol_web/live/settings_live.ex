@@ -84,78 +84,6 @@ defmodule RaxolWeb.SettingsLive do
     end
   end
 
-  # Extracted validation functions
-  defp validate_current_password(nil),
-    do:
-      {:error, :current_password, "Current password is required.",
-       "Current password is required"}
-
-  defp validate_current_password(""),
-    do:
-      {:error, :current_password, "Current password is required.",
-       "Current password is required"}
-
-  defp validate_current_password(_password), do: {:ok, :valid}
-
-  defp validate_new_password(nil),
-    do:
-      {:error, :password, "New password must be at least 6 characters.",
-       "Password must be at least 6 characters"}
-
-  defp validate_new_password(password) when byte_size(password) < 6,
-    do:
-      {:error, :password, "New password must be at least 6 characters.",
-       "Password must be at least 6 characters"}
-
-  defp validate_new_password(_password), do: {:ok, :valid}
-
-  defp validate_password_confirmation(password, confirmation)
-       when password != confirmation,
-       do:
-         {:error, :password_confirmation, "Passwords do not match.",
-          "Passwords do not match"}
-
-  defp validate_password_confirmation(_password, _confirmation),
-    do: {:ok, :valid}
-
-  # Handle password update logic
-  defp update_user_password(socket, user_id, current_password, new_password) do
-    case Accounts.update_password(user_id, current_password, new_password) do
-      :ok ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Password updated successfully")
-         |> assign(:changeset, %{})}
-
-      {:error, :invalid_current_password} ->
-        {:noreply,
-         create_error_response(
-           socket,
-           :current_password,
-           "Current password is incorrect.",
-           "Invalid current password"
-         )}
-
-      {:error, reason} ->
-        {:noreply,
-         create_error_response(
-           socket,
-           :password,
-           "Failed to update password.",
-           "Failed to update password: #{inspect(reason)}"
-         )}
-    end
-  end
-
-  # Common error response builder
-  defp create_error_response(socket, field, flash_message, error_message) do
-    socket
-    |> put_flash(:error, flash_message)
-    |> assign(:changeset, %{
-      errors: [{field, {error_message, []}}]
-    })
-  end
-
   @impl true
   def handle_event("validate", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
@@ -243,5 +171,77 @@ defmodule RaxolWeb.SettingsLive do
      socket
      |> assign(:cloud_config, updated_config)
      |> put_flash(:info, "Cloud settings updated successfully.")}
+  end
+
+  # Extracted validation functions
+  defp validate_current_password(nil),
+    do:
+      {:error, :current_password, "Current password is required.",
+       "Current password is required"}
+
+  defp validate_current_password(""),
+    do:
+      {:error, :current_password, "Current password is required.",
+       "Current password is required"}
+
+  defp validate_current_password(_password), do: {:ok, :valid}
+
+  defp validate_new_password(nil),
+    do:
+      {:error, :password, "New password must be at least 6 characters.",
+       "Password must be at least 6 characters"}
+
+  defp validate_new_password(password) when byte_size(password) < 6,
+    do:
+      {:error, :password, "New password must be at least 6 characters.",
+       "Password must be at least 6 characters"}
+
+  defp validate_new_password(_password), do: {:ok, :valid}
+
+  defp validate_password_confirmation(password, confirmation)
+       when password != confirmation,
+       do:
+         {:error, :password_confirmation, "Passwords do not match.",
+          "Passwords do not match"}
+
+  defp validate_password_confirmation(_password, _confirmation),
+    do: {:ok, :valid}
+
+  # Handle password update logic
+  defp update_user_password(socket, user_id, current_password, new_password) do
+    case Accounts.update_password(user_id, current_password, new_password) do
+      :ok ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Password updated successfully")
+         |> assign(:changeset, %{})}
+
+      {:error, :invalid_current_password} ->
+        {:noreply,
+         create_error_response(
+           socket,
+           :current_password,
+           "Current password is incorrect.",
+           "Invalid current password"
+         )}
+
+      {:error, reason} ->
+        {:noreply,
+         create_error_response(
+           socket,
+           :password,
+           "Failed to update password.",
+           "Failed to update password: #{inspect(reason)}"
+         )}
+    end
+  end
+
+  # Common error response builder
+  defp create_error_response(socket, field, flash_message, error_message) do
+    socket
+    |> put_flash(:error, flash_message)
+    |> assign(:changeset, %{
+      errors: [{field, {error_message, []}}]
+    })
   end
 end

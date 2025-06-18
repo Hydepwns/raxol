@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Buffer.Manager.Buffer do
   """
 
   alias Raxol.Terminal.Buffer.Manager.State
-  alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.Buffer.Manager.BufferImpl
 
   @doc """

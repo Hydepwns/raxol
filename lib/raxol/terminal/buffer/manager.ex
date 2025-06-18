@@ -20,7 +20,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
     :metrics,
     :renderer,
     :scrollback_manager,
-    :cursor_position
+    :cursor_position,
+    :lock
   ]
 
   @type t :: %__MODULE__{
@@ -30,7 +31,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
           metrics: term(),
           renderer: term(),
           scrollback_manager: term(),
-          cursor_position: {non_neg_integer(), non_neg_integer()} | nil
+          cursor_position: {non_neg_integer(), non_neg_integer()} | nil,
+          lock: :ets.tid()
         }
 
   # Client API
@@ -44,6 +46,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @impl true
   def init(opts) do
     {:ok, memory_manager} = MemoryManager.start_link()
+    lock = :ets.new(:buffer_lock, [:set, :private])
 
     state = %__MODULE__{
       buffer: Operations.new(opts),
@@ -56,10 +59,19 @@ defmodule Raxol.Terminal.Buffer.Manager do
         reads: 0,
         scrolls: 0,
         memory_usage: 0
-      }
+      },
+      lock: lock
     }
 
     {:ok, state}
+  end
+
+  @doc """
+  Performs an atomic operation on the buffer.
+  This ensures thread safety for concurrent operations.
+  """
+  def atomic_operation(pid, operation) when is_function(operation, 1) do
+    GenServer.call(pid, {:atomic_operation, operation})
   end
 
   @impl true
@@ -200,24 +212,57 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   @impl true
+  def handle_call({:atomic_operation, operation}, _from, state) do
+    # Acquire lock
+    :ets.insert(state.lock, {:lock, self()})
+
+    try do
+      # Perform operation
+      result = operation.(state)
+      {:reply, {:ok, result}, result}
+    catch
+      kind, reason ->
+        {:reply, {:error, {kind, reason}}, state}
+    after
+      # Release lock
+      :ets.delete(state.lock, :lock)
+    end
+  end
+
+  @impl true
   def handle_call({:write, data, opts}, _from, state) do
-    new_buffer = Operations.write(state.buffer, data, opts)
-    new_state = update_metrics(%{state | buffer: new_buffer}, :writes)
-    {:reply, :ok, new_state}
+    try do
+      new_buffer = Operations.write(state.buffer, data, opts)
+      new_state = update_metrics(%{state | buffer: new_buffer}, :writes)
+      {:reply, :ok, new_state}
+    catch
+      kind, reason ->
+        {:reply, {:error, {kind, reason}}, state}
+    end
   end
 
   @impl true
   def handle_call({:read, opts}, _from, state) do
-    {data, new_buffer} = Operations.read(state.buffer, opts)
-    new_state = update_metrics(%{state | buffer: new_buffer}, :reads)
-    {:reply, data, new_state}
+    try do
+      {data, new_buffer} = Operations.read(state.buffer, opts)
+      new_state = update_metrics(%{state | buffer: new_buffer}, :reads)
+      {:reply, data, new_state}
+    catch
+      kind, reason ->
+        {:reply, {:error, {kind, reason}}, state}
+    end
   end
 
   @impl true
   def handle_call({:resize, size, opts}, _from, state) do
-    new_buffer = Operations.resize(state.buffer, size, opts)
-    new_state = %{state | buffer: new_buffer}
-    {:reply, :ok, new_state}
+    try do
+      new_buffer = Operations.resize(state.buffer, size, opts)
+      new_state = %{state | buffer: new_buffer}
+      {:reply, :ok, new_state}
+    catch
+      kind, reason ->
+        {:reply, {:error, {kind, reason}}, state}
+    end
   end
 
   @impl true
@@ -357,8 +402,21 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   # Private functions
 
-  defp update_metrics(state, metric) do
-    metrics = Map.update!(state.metrics, metric, &(&1 + 1))
+  defp update_metrics(state, operation) do
+    metrics = Map.update(state.metrics, operation, 1, &(&1 + 1))
     %{state | metrics: metrics}
+  end
+
+  defp validate_state(%__MODULE__{} = state) do
+    with true <- is_map(state.buffer),
+         true <- is_map(state.damage_tracker),
+         true <- is_map(state.memory_manager),
+         true <- is_map(state.metrics),
+         true <- is_map(state.renderer),
+         true <- is_map(state.scrollback_manager) do
+      :ok
+    else
+      _ -> {:error, :invalid_state}
+    end
   end
 end

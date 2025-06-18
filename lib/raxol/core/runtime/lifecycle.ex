@@ -474,15 +474,17 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   # Private helper functions
 
-  defp cleanup_state(_context) do
+  @doc false
+  defp _cleanup_state(_context) do
     :ok
   end
 
-  defp cleanup_resources(_context) do
+  @doc false
+  defp _cleanup_resources(_context) do
     :ok
   end
 
-  defp cleanup_plugins(_context) do
+  defp _cleanup_plugins(_context) do
     :ok
   end
 end

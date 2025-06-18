@@ -489,4 +489,192 @@ defmodule Raxol.Cloud.Config do
   defp map_to_keyword(map) do
     map |> Enum.map(fn {k, v} -> {k, v} end)
   end
+
+  def default_config do
+    %{
+      enabled: false,
+      # 5 minutes in seconds
+      sync_interval: 5 * 60,
+      auto_sync: true,
+      sync_on_startup: true,
+      sync_on_shutdown: true,
+      max_retries: 3,
+      # seconds
+      retry_delay: 5,
+      # seconds
+      timeout: 30,
+      compression: true,
+      encryption: true,
+      encryption_key: nil,
+      backup_enabled: true,
+      # 24 hours in seconds
+      backup_interval: 24 * 60 * 60,
+      max_backups: 10,
+      backup_path: System.get_env("HOME") <> "/.raxol/cloud/backups",
+      sync_path: System.get_env("HOME") <> "/.raxol/cloud/sync",
+      exclude_patterns: [
+        "*.tmp",
+        "*.log",
+        "*.bak",
+        "*.swp",
+        "*.swo",
+        ".git/*",
+        ".svn/*",
+        "node_modules/*"
+      ],
+      include_patterns: [
+        "*.ex",
+        "*.exs",
+        "*.erl",
+        "*.hrl",
+        "*.json",
+        "*.yaml",
+        "*.yml",
+        "*.md",
+        "*.txt"
+      ],
+      # :ask, :local, :remote, :newer
+      conflict_resolution: :ask,
+      notify_on_sync: true,
+      notify_on_error: true,
+      log_level: :info,
+      log_path: System.get_env("HOME") <> "/.raxol/cloud/logs",
+      # 10 MB
+      max_log_size: 10 * 1024 * 1024,
+      max_log_files: 5,
+      proxy: nil,
+      proxy_auth: nil,
+      ssl_verify: true,
+      ssl_cert_path: nil,
+      ssl_key_path: nil,
+      ssl_ca_path: nil
+    }
+  end
+
+  def get_config do
+    case Application.get_env(:raxol, :cloud_config) do
+      nil -> default_config()
+      config -> config
+    end
+  end
+
+  def set_config(config) do
+    Application.put_env(:raxol, :cloud_config, config)
+  end
+
+  def update_config(updates) do
+    current_config = get_config()
+    new_config = Map.merge(current_config, updates)
+    set_config(new_config)
+  end
+
+  def reset_config do
+    set_config(default_config())
+  end
+
+  def get_sync_status do
+    # Implementation for getting sync status
+    :idle
+  end
+
+  def get_sync_progress do
+    # Implementation for getting sync progress
+    0
+  end
+
+  def cancel_sync do
+    # Implementation for canceling sync
+    :ok
+  end
+
+  def get_sync_error do
+    # Implementation for getting sync error
+    nil
+  end
+
+  def clear_sync_error do
+    # Implementation for clearing sync error
+    :ok
+  end
+
+  def get_sync_log do
+    # Implementation for getting sync log
+    []
+  end
+
+  def clear_sync_log do
+    # Implementation for clearing sync log
+    :ok
+  end
+
+  def get_sync_stats do
+    # Implementation for getting sync stats
+    %{
+      total_syncs: 0,
+      successful_syncs: 0,
+      failed_syncs: 0,
+      last_sync: nil,
+      average_sync_time: 0,
+      total_bytes_synced: 0,
+      total_files_synced: 0
+    }
+  end
+
+  def clear_sync_stats do
+    # Implementation for clearing sync stats
+    :ok
+  end
+
+  def get_backup_status do
+    # Implementation for getting backup status
+    :idle
+  end
+
+  def get_backup_progress do
+    # Implementation for getting backup progress
+    0
+  end
+
+  def cancel_backup do
+    # Implementation for canceling backup
+    :ok
+  end
+
+  def get_backup_error do
+    # Implementation for getting backup error
+    nil
+  end
+
+  def clear_backup_error do
+    # Implementation for clearing backup error
+    :ok
+  end
+
+  def get_backup_log do
+    # Implementation for getting backup log
+    []
+  end
+
+  def clear_backup_log do
+    # Implementation for clearing backup log
+    :ok
+  end
+
+  def get_backup_stats do
+    # Implementation for getting backup stats
+    %{
+      total_backups: 0,
+      successful_backups: 0,
+      failed_backups: 0,
+      last_backup: nil,
+      average_backup_time: 0,
+      total_bytes_backed_up: 0,
+      total_files_backed_up: 0
+    }
+  end
+
+  def clear_backup_stats do
+    # Implementation for clearing backup stats
+    :ok
+  end
 end

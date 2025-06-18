@@ -358,7 +358,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Screen Operations ===
 
-  def clear(buffer, style \\ nil), do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
+  def clear(buffer, style \\ nil)
+  def clear(buffer, style), do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
 
   @impl true
   def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
@@ -398,5 +399,71 @@ defmodule Raxol.Terminal.ScreenBuffer do
       cells: List.duplicate(List.duplicate(%{}, buffer.width), buffer.height),
       scrollback: []
     }
+  end
+
+  defdelegate clear_region(buffer, x, y, width, height), to: Raxol.Terminal.ScreenBuffer.Core
+
+  defdelegate mark_damaged(buffer, x, y, width, height, reason), to: Raxol.Terminal.ScreenBuffer.Core
+
+  defdelegate pop_bottom_lines(buffer, count), to: Raxol.Terminal.ScreenBuffer.Core
+
+  def erase_display(buffer, mode, cursor, min_row, max_row) do
+    Raxol.Terminal.ScreenBuffer.Core.erase_display(buffer, mode, cursor, min_row, max_row)
+  end
+
+  def erase_line(buffer, mode, cursor, min_col, max_col) do
+    Raxol.Terminal.ScreenBuffer.Core.erase_line(buffer, mode, cursor, min_col, max_col)
+  end
+
+  def delete_chars(buffer, count, cursor, max_col) do
+    Raxol.Terminal.ScreenBuffer.Core.delete_chars(buffer, count, cursor, max_col)
+  end
+
+  def insert_chars(buffer, count, cursor, max_col) do
+    Raxol.Terminal.ScreenBuffer.Core.insert_chars(buffer, count, cursor, max_col)
+  end
+
+  def get_char(buffer, x, y) do
+    Raxol.Terminal.ScreenBuffer.Core.get_char(buffer, x, y)
+  end
+
+  def write_char(buffer, x, y, char, style \\ nil) do
+    Raxol.Terminal.ScreenBuffer.Core.write_char(buffer, x, y, char, style)
+  end
+
+  def insert_lines(buffer, count) do
+    Raxol.Terminal.ScreenBuffer.Core.insert_lines(buffer, count)
+  end
+
+  def delete_lines(buffer, count) do
+    Raxol.Terminal.ScreenBuffer.Core.delete_lines(buffer, count)
+  end
+
+  def get_dimensions(buffer) do
+    Raxol.Terminal.ScreenBuffer.Core.get_dimensions(buffer)
+  end
+
+  def set_dimensions(buffer, width, height) do
+    Raxol.Terminal.ScreenBuffer.Core.set_dimensions(buffer, width, height)
+  end
+
+  def get_scrollback(buffer) do
+    Raxol.Terminal.ScreenBuffer.Core.get_scrollback(buffer)
+  end
+
+  def set_scrollback(buffer, scrollback) do
+    Raxol.Terminal.ScreenBuffer.Core.set_scrollback(buffer, scrollback)
+  end
+
+  def get_damaged_regions(buffer) do
+    Raxol.Terminal.ScreenBuffer.Core.get_damaged_regions(buffer)
+  end
+
+  def clear_damaged_regions(buffer) do
+    Raxol.Terminal.ScreenBuffer.Core.clear_damaged_regions(buffer)
+  end
+
+  def mark_damaged(buffer, x, y, width, height, reason) do
+    Raxol.Terminal.ScreenBuffer.Core.mark_damaged(buffer, x, y, width, height, reason)
   end
 end

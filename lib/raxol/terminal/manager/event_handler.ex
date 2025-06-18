@@ -80,4 +80,6 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp handle_focus_loss(emulator) do
     {:ok, emulator}
   end
+
+  def process_event(event, state), do: {state, event}
 end

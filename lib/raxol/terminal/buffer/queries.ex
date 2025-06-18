@@ -118,4 +118,75 @@ defmodule Raxol.Terminal.Buffer.Queries do
   def get_char(_buffer, _x, _y) do
     " "
   end
+
+  @doc """
+  Gets the cell at the specified position in the buffer.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to query
+  * `x` - The x-coordinate (column)
+  * `y` - The y-coordinate (row)
+
+  ## Returns
+
+  The cell at the specified position, or an empty cell if the position is out of bounds.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> cell = Queries.get_cell_at(buffer, 0, 0)
+      iex> cell.char
+      ""
+  """
+  @spec get_cell_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
+  def get_cell_at(buffer, x, y) do
+    get_cell(buffer, x, y)
+  end
+
+  @doc """
+  Checks if the buffer is empty.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to check
+
+  ## Returns
+
+  A boolean indicating if the buffer is empty.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> Queries.empty?(buffer)
+      true
+  """
+  @spec empty?(ScreenBuffer.t()) :: boolean()
+  def empty?(buffer) do
+    empty?(buffer)
+  end
+
+  @doc """
+  Gets the character at the specified position in the buffer.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to query
+  * `x` - The x-coordinate (column)
+  * `y` - The y-coordinate (row)
+
+  ## Returns
+
+  The character at the specified position, or a space if the position is out of bounds.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> Queries.get_char_at(buffer, 0, 0)
+      " "
+  """
+  @spec get_char_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: String.t()
+  def get_char_at(buffer, x, y) do
+    get_char(buffer, x, y)
+  end
 end

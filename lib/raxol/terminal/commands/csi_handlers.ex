@@ -77,6 +77,14 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   end
 
   @doc """
+  Handles DECCUSR (DEC Cursor Style Report) command.
+  This is an alias for handle_deccusr/2 for backward compatibility.
+  """
+  def handle_q_deccusr(emulator, params) do
+    handle_deccusr(emulator, params)
+  end
+
+  @doc """
   Handles SCS (Select Character Set) command.
   The final_byte parameter determines which character set to select.
   """

@@ -108,49 +108,55 @@ defmodule Raxol.System.TerminalPlatform do
   """
   @spec get_supported_features() :: list(terminal_feature())
   def get_supported_features do
+    [
+      detect_color_features(),
+      detect_mouse_feature(),
+      detect_title_feature(),
+      detect_unicode_feature(),
+      detect_clipboard_feature(),
+      detect_bracketed_paste_feature(),
+      detect_focus_feature()
+    ]
+    |> List.flatten()
+  end
+
+  defp detect_color_features do
     term = System.get_env("TERM") || ""
     term_program = System.get_env("TERM_PROGRAM") || ""
     term_emulator = System.get_env("TERM_EMULATOR") || ""
 
-    supports_256_colors? =
-      String.contains?(term, "256") || term_program in ["iTerm.app", "vscode"]
-
-    supports_true_color? =
-      term_program in ["iTerm.app", "vscode"] ||
-        term_emulator == "JetBrains-JediTerm"
-
-    supports_mouse? =
-      term_program in ["iTerm.app", "vscode"] ||
-        term_emulator == "JetBrains-JediTerm"
-
-    supports_title? =
-      term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
-        term_emulator == "JetBrains-JediTerm"
-
     features = []
-
-    features =
-      if supports_256_colors?, do: [:colors_256 | features], else: features
-
-    features =
-      if supports_true_color?, do: [:true_color | features], else: features
-
-    features = if supports_mouse?, do: [:mouse | features], else: features
-    features = if supports_title?, do: [:title | features], else: features
-
-    features = if supports_unicode?(), do: [:unicode | features], else: features
-
-    features =
-      if supports_clipboard?(), do: [:clipboard | features], else: features
-
-    features =
-      if supports_bracketed_paste?(),
-        do: [:bracketed_paste | features],
-        else: features
-
-    features = if supports_focus?(), do: [:focus | features], else: features
-
+    features = if String.contains?(term, "256") || term_program in ["iTerm.app", "vscode"], do: [:colors_256 | features], else: features
+    features = if term_program in ["iTerm.app", "vscode"] || term_emulator == "JetBrains-JediTerm", do: [:true_color | features], else: features
     features
+  end
+
+  defp detect_mouse_feature do
+    term_program = System.get_env("TERM_PROGRAM") || ""
+    term_emulator = System.get_env("TERM_EMULATOR") || ""
+    if term_program in ["iTerm.app", "vscode"] || term_emulator == "JetBrains-JediTerm", do: [:mouse], else: []
+  end
+
+  defp detect_title_feature do
+    term_program = System.get_env("TERM_PROGRAM") || ""
+    term_emulator = System.get_env("TERM_EMULATOR") || ""
+    if term_program in ["iTerm.app", "vscode", "Apple_Terminal"] || term_emulator == "JetBrains-JediTerm", do: [:title], else: []
+  end
+
+  defp detect_unicode_feature do
+    if supports_unicode?(), do: [:unicode], else: []
+  end
+
+  defp detect_clipboard_feature do
+    if supports_clipboard?(), do: [:clipboard], else: []
+  end
+
+  defp detect_bracketed_paste_feature do
+    if supports_bracketed_paste?(), do: [:bracketed_paste], else: []
+  end
+
+  defp detect_focus_feature do
+    if supports_focus?(), do: [:focus], else: []
   end
 
   # Private helper functions

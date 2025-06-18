@@ -66,4 +66,11 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
         last_event_time: 0
     }
   end
+
+  @doc """
+  Initializes a new file watcher struct with default values.
+  """
+  def init do
+    %__MODULE__{}
+  end
 end

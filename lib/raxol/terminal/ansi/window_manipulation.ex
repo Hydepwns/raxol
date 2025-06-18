@@ -124,50 +124,50 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     end
   end
 
-  defp handle_resize([height, width]),
+  def handle_resize([height, width]),
     do: {:window_resize, {parse_number(width), parse_number(height)}}
 
-  defp handle_move([x, y]),
+  def handle_move([x, y]),
     do: {:window_move, {parse_number(x), parse_number(y)}}
 
-  defp handle_state([state]),
+  def handle_state([state]),
     do: Map.get(@window_states, state) && {:window_state, @window_states[state]}
 
-  defp handle_title([title]), do: {:window_title, title}
-  defp handle_icon([icon]), do: {:window_icon, icon}
-  defp handle_focus(["1"]), do: {:window_focus, true}
-  defp handle_focus(["0"]), do: {:window_focus, false}
-  defp handle_stack([position]), do: {:window_stack, parse_number(position)}
+  def handle_title([title]), do: {:window_title, title}
+  def handle_icon([icon]), do: {:window_icon, icon}
+  def handle_focus(["1"]), do: {:window_focus, true}
+  def handle_focus(["0"]), do: {:window_focus, false}
+  def handle_stack([position]), do: {:window_stack, parse_number(position)}
 
-  defp handle_transparency([alpha]),
+  def handle_transparency([alpha]),
     do: {:window_transparency, parse_number(alpha) / 100}
 
-  defp handle_border_style([style]),
+  def handle_border_style([style]),
     do:
       Map.get(@border_styles, style) && {:window_border, @border_styles[style]}
 
-  defp handle_border_color([r, g, b]),
+  def handle_border_color([r, g, b]),
     do:
       {:window_border_color,
        {parse_number(r), parse_number(g), parse_number(b)}}
 
-  defp handle_border_width([width]),
+  def handle_border_width([width]),
     do: {:window_border_width, parse_number(width)}
 
-  defp handle_border_radius([radius]),
+  def handle_border_radius([radius]),
     do: {:window_border_radius, parse_number(radius)}
 
-  defp handle_shadow(["1"]), do: {:window_shadow, true}
-  defp handle_shadow(["0"]), do: {:window_shadow, false}
+  def handle_shadow(["1"]), do: {:window_shadow, true}
+  def handle_shadow(["0"]), do: {:window_shadow, false}
 
-  defp handle_shadow_color([r, g, b]),
+  def handle_shadow_color([r, g, b]),
     do:
       {:window_shadow_color,
        {parse_number(r), parse_number(g), parse_number(b)}}
 
-  defp handle_shadow_blur([blur]), do: {:window_shadow_blur, parse_number(blur)}
+  def handle_shadow_blur([blur]), do: {:window_shadow_blur, parse_number(blur)}
 
-  defp handle_shadow_offset([x, y]),
+  def handle_shadow_offset([x, y]),
     do: {:window_shadow_offset, {parse_number(x), parse_number(y)}}
 
   @doc """
@@ -183,13 +183,13 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
 
   def format_event(_), do: ""
 
-  defp format_resize(%{width: width, height: height}) do
+  def format_resize(%{width: width, height: height}) do
     "\e[8;#{height};#{width}t"
   end
 
-  defp format_move({x, y}), do: "\e[3;#{x};#{y}t"
+  def format_move({x, y}), do: "\e[3;#{x};#{y}t"
 
-  defp format_state(state) do
+  def format_state(state) do
     code =
       Enum.find_value(@window_states, fn {code, s} ->
         if s == state, do: code
@@ -198,14 +198,14 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     "\e[#{code}t"
   end
 
-  defp format_title(title), do: "\e]l#{title}\e\\"
-  defp format_icon(icon), do: "\e]L#{icon}\e\\"
-  defp format_focus(true), do: "\e[1f"
-  defp format_focus(false), do: "\e[0f"
-  defp format_stack(position), do: "\e[#{position}r"
-  defp format_transparency(alpha), do: "\e[#{trunc(alpha * 100)}T"
+  def format_title(title), do: "\e]l#{title}\e\\"
+  def format_icon(icon), do: "\e]L#{icon}\e\\"
+  def format_focus(true), do: "\e[1f"
+  def format_focus(false), do: "\e[0f"
+  def format_stack(position), do: "\e[#{position}r"
+  def format_transparency(alpha), do: "\e[#{trunc(alpha * 100)}T"
 
-  defp format_border_style(style) do
+  def format_border_style(style) do
     code =
       Enum.find_value(@border_styles, fn {code, s} ->
         if s == style, do: code
@@ -214,14 +214,14 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     "\e[#{code}b"
   end
 
-  defp format_border_color({r, g, b}), do: "\e[#{r};#{g};#{b}B"
-  defp format_border_width(width), do: "\e[#{width}w"
-  defp format_border_radius(radius), do: "\e[#{radius}R"
-  defp format_shadow(true), do: "\e[1s"
-  defp format_shadow(false), do: "\e[0s"
-  defp format_shadow_color({r, g, b}), do: "\e[#{r};#{g};#{b}S"
-  defp format_shadow_blur(blur), do: "\e[#{blur}u"
-  defp format_shadow_offset({x, y}), do: "\e[#{x};#{y}o"
+  def format_border_color({r, g, b}), do: "\e[#{r};#{g};#{b}B"
+  def format_border_width(width), do: "\e[#{width}w"
+  def format_border_radius(radius), do: "\e[#{radius}R"
+  def format_shadow(true), do: "\e[1s"
+  def format_shadow(false), do: "\e[0s"
+  def format_shadow_color({r, g, b}), do: "\e[#{r};#{g};#{b}S"
+  def format_shadow_blur(blur), do: "\e[#{blur}u"
+  def format_shadow_offset({x, y}), do: "\e[#{x};#{y}o"
 
   @doc """
   Enables window manipulation mode.

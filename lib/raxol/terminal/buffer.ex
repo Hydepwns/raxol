@@ -34,9 +34,10 @@ defmodule Raxol.Terminal.Buffer do
 
   @doc """
   Creates a new buffer with the specified dimensions.
+  Raises ArgumentError if dimensions are invalid.
   """
   @spec new({non_neg_integer(), non_neg_integer()}) :: t()
-  def new({width, height}) do
+  def new({width, height}) when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     %__MODULE__{
       width: width,
       height: height,
@@ -47,6 +48,39 @@ defmodule Raxol.Terminal.Buffer do
       scroll_region_bottom: height - 1,
       damage_regions: []
     }
+  end
+
+  def new({width, height}) when is_integer(width) and is_integer(height) do
+    raise ArgumentError, "Invalid buffer dimensions: width and height must be positive integers"
+  end
+
+  def new(invalid) do
+    raise ArgumentError, "Invalid buffer dimensions: expected {width, height} tuple, got #{inspect(invalid)}"
+  end
+
+  @doc """
+  Sets a cell in the buffer at the specified coordinates.
+  Raises ArgumentError if coordinates or cell data are invalid.
+  """
+  @spec set_cell(t(), non_neg_integer(), non_neg_integer(), Cell.t()) :: t()
+  def set_cell(buffer, x, y, cell) when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 and x < buffer.width and y < buffer.height do
+    if not Cell.valid?(cell) do
+      raise ArgumentError, "Invalid cell data: #{inspect(cell)}"
+    end
+
+    new_cells = List.update_at(buffer.cells, y, fn row ->
+      List.update_at(row, x, fn _ -> cell end)
+    end)
+
+    %{buffer | cells: new_cells}
+  end
+
+  def set_cell(buffer, x, y, _cell) when is_integer(x) and is_integer(y) do
+    raise ArgumentError, "Coordinates out of bounds: (#{x}, #{y}) for buffer size #{buffer.width}x#{buffer.height}"
+  end
+
+  def set_cell(_buffer, x, y, _cell) do
+    raise ArgumentError, "Invalid coordinates: expected non-negative integers, got (#{inspect(x)}, #{inspect(y)})"
   end
 
   @doc """
@@ -82,7 +116,7 @@ defmodule Raxol.Terminal.Buffer do
   @spec clear(t(), keyword()) :: t()
   def clear(buffer, _opts \\ []) do
     screen_buffer = to_screen_buffer(buffer)
-    updated_screen_buffer = Operations.clear_screen(screen_buffer)
+    updated_screen_buffer = Raxol.Terminal.Buffer.Eraser.clear_screen(screen_buffer)
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
@@ -92,7 +126,7 @@ defmodule Raxol.Terminal.Buffer do
   @spec set_cursor_position(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_cursor_position(buffer, x, y) do
     screen_buffer = to_screen_buffer(buffer)
-    updated_screen_buffer = Operations.set_cursor_position(screen_buffer, x, y)
+    updated_screen_buffer = Raxol.Terminal.Buffer.Eraser.set_cursor_position(screen_buffer, x, y)
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
@@ -102,7 +136,7 @@ defmodule Raxol.Terminal.Buffer do
   @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(buffer) do
     screen_buffer = to_screen_buffer(buffer)
-    Operations.get_cursor_position(screen_buffer)
+    Raxol.Terminal.Buffer.Eraser.get_cursor_position(screen_buffer)
   end
 
   @doc """
@@ -113,7 +147,7 @@ defmodule Raxol.Terminal.Buffer do
     screen_buffer = to_screen_buffer(buffer)
 
     updated_screen_buffer =
-      Operations.set_scroll_region(screen_buffer, top, bottom)
+      Raxol.Terminal.Buffer.Eraser.set_scroll_region(screen_buffer, top, bottom)
 
     from_screen_buffer(updated_screen_buffer, buffer)
   end
@@ -142,7 +176,7 @@ defmodule Raxol.Terminal.Buffer do
     screen_buffer = to_screen_buffer(buffer)
 
     updated_screen_buffer =
-      Operations.mark_damaged(screen_buffer, x, y, width, height)
+      Raxol.Terminal.Buffer.Eraser.mark_damaged(screen_buffer, x, y, width, height)
 
     from_screen_buffer(updated_screen_buffer, buffer)
   end
@@ -156,7 +190,7 @@ defmodule Raxol.Terminal.Buffer do
         ]
   def get_damage_regions(buffer) do
     screen_buffer = to_screen_buffer(buffer)
-    Operations.get_damage_regions(screen_buffer)
+    Raxol.Terminal.Buffer.Eraser.get_damage_regions(screen_buffer)
   end
 
   @doc """

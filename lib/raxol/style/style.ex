@@ -48,79 +48,39 @@ defmodule Raxol.Style do
   end
 
   def new(map) when is_map(map) do
-    # Extract layout attributes
-    layout_attrs = %{}
-
-    layout_attrs =
-      if Map.has_key?(map, :padding),
-        do: Map.put(layout_attrs, :padding, map.padding),
-        else: layout_attrs
-
-    layout_attrs =
-      if Map.has_key?(map, :margin),
-        do: Map.put(layout_attrs, :margin, map.margin),
-        else: layout_attrs
-
-    layout_attrs =
-      if Map.has_key?(map, :width),
-        do: Map.put(layout_attrs, :width, map.width),
-        else: layout_attrs
-
-    layout_attrs =
-      if Map.has_key?(map, :height),
-        do: Map.put(layout_attrs, :height, map.height),
-        else: layout_attrs
-
-    layout_attrs =
-      if Map.has_key?(map, :alignment),
-        do: Map.put(layout_attrs, :alignment, map.alignment),
-        else: layout_attrs
-
-    layout_attrs =
-      if Map.has_key?(map, :overflow),
-        do: Map.put(layout_attrs, :overflow, map.overflow),
-        else: layout_attrs
-
-    # Attributes for the main Style struct (excluding layout ones already handled)
-    # and explicitly excluding border for now, as it's handled specially.
-    style_specific_attrs =
-      Map.drop(map, [
-        :padding,
-        :margin,
-        :width,
-        :height,
-        :alignment,
-        :overflow,
-        :border
-      ])
-
-    # Create the initial Style struct with its specific attrs
-    initial_style = struct(new(), style_specific_attrs)
-
-    # Set the layout field
+    layout_attrs = extract_layout_attrs(map)
+    style_attrs = extract_style_attrs(map)
+    initial_style = struct(new(), style_attrs)
     final_style = %{initial_style | layout: Layout.new(layout_attrs)}
+    handle_border(final_style, map)
+  end
 
-    # Handle border separately
+  defp extract_layout_attrs(map) do
+    [:padding, :margin, :width, :height, :alignment, :overflow]
+    |> Enum.reduce(%{}, fn key, acc ->
+      if Map.has_key?(map, key), do: Map.put(acc, key, map[key]), else: acc
+    end)
+  end
+
+  defp extract_style_attrs(map) do
+    Map.drop(map, [:padding, :margin, :width, :height, :alignment, :overflow, :border])
+  end
+
+  defp handle_border(style, map) do
     case Map.get(map, :border) do
-      atom when is_atom(atom) ->
-        border_struct =
-          case atom do
-            :none -> %Borders{style: :none, width: 0}
-            :single -> %Borders{style: :solid, width: 1}
-            :solid -> %Borders{style: :solid, width: 1}
-            :double -> %Borders{style: :double, width: 1}
-            _ -> Borders.new()
-          end
+      atom when is_atom(atom) -> %{style | border: create_border_struct(atom)}
+      %Borders{} = border -> %{style | border: border}
+      _ -> style
+    end
+  end
 
-        %{final_style | border: border_struct}
-
-      # If it's already a Borders struct
-      %Borders{} = border_struct ->
-        %{final_style | border: border_struct}
-
-      # No border or nil, or other map format for border (which might need more handling if supported)
-      _ ->
-        final_style
+  defp create_border_struct(atom) do
+    case atom do
+      :none -> %Borders{style: :none, width: 0}
+      :single -> %Borders{style: :solid, width: 1}
+      :solid -> %Borders{style: :solid, width: 1}
+      :double -> %Borders{style: :double, width: 1}
+      _ -> Borders.new()
     end
   end
 
@@ -176,27 +136,22 @@ defmodule Raxol.Style do
   """
   def resolve(style_def, theme \\ nil) do
     theme = theme || Raxol.UI.Theming.Theme.current()
-
-    resolved_style =
-      case style_def do
-        %__MODULE__{} = style ->
-          style
-
-        atom when is_atom(atom) ->
-          theme.styles[atom] || new()
-
-        string when is_binary(string) ->
-          theme.styles[String.to_atom(string)] || new()
-
-        map when is_map(map) ->
-          new(map)
-
-        _ ->
-          new()
-      end
-
-    # Apply theme variants if applicable
+    resolved_style = resolve_style_definition(style_def, theme)
     apply_theme_variant(resolved_style, theme)
+  end
+
+  defp resolve_style_definition(style_def, theme) do
+    case style_def do
+      %__MODULE__{} = style -> style
+      atom when is_atom(atom) -> lookup_theme_style(atom, theme)
+      string when is_binary(string) -> lookup_theme_style(String.to_atom(string), theme)
+      map when is_map(map) -> new(map)
+      _ -> new()
+    end
+  end
+
+  defp lookup_theme_style(key, theme) do
+    theme.styles[key] || new()
   end
 
   @doc """

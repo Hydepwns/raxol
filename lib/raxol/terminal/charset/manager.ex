@@ -121,6 +121,280 @@ defmodule Raxol.Terminal.Charset.Manager do
   end
 
   @doc """
+  Returns the US ASCII character map.
+  """
+  def us_ascii_map do
+    %{
+      # Basic ASCII characters
+      32 => " ",  # Space
+      33 => "!",  # Exclamation mark
+      34 => "\"", # Double quote
+      35 => "#",  # Hash
+      36 => "$",  # Dollar sign
+      37 => "%",  # Percent
+      38 => "&",  # Ampersand
+      39 => "'",  # Single quote
+      40 => "(",  # Left parenthesis
+      41 => ")",  # Right parenthesis
+      42 => "*",  # Asterisk
+      43 => "+",  # Plus
+      44 => ",",  # Comma
+      45 => "-",  # Hyphen
+      46 => ".",  # Period
+      47 => "/",  # Forward slash
+      48 => "0",  # Zero
+      49 => "1",  # One
+      50 => "2",  # Two
+      51 => "3",  # Three
+      52 => "4",  # Four
+      53 => "5",  # Five
+      54 => "6",  # Six
+      55 => "7",  # Seven
+      56 => "8",  # Eight
+      57 => "9",  # Nine
+      58 => ":",  # Colon
+      59 => ";",  # Semicolon
+      60 => "<",  # Less than
+      61 => "=",  # Equals
+      62 => ">",  # Greater than
+      63 => "?",  # Question mark
+      64 => "@",  # At sign
+      65 => "A",  # A
+      66 => "B",  # B
+      67 => "C",  # C
+      68 => "D",  # D
+      69 => "E",  # E
+      70 => "F",  # F
+      71 => "G",  # G
+      72 => "H",  # H
+      73 => "I",  # I
+      74 => "J",  # J
+      75 => "K",  # K
+      76 => "L",  # L
+      77 => "M",  # M
+      78 => "N",  # N
+      79 => "O",  # O
+      80 => "P",  # P
+      81 => "Q",  # Q
+      82 => "R",  # R
+      83 => "S",  # S
+      84 => "T",  # T
+      85 => "U",  # U
+      86 => "V",  # V
+      87 => "W",  # W
+      88 => "X",  # X
+      89 => "Y",  # Y
+      90 => "Z",  # Z
+      91 => "[",  # Left square bracket
+      92 => "\\", # Backslash
+      93 => "]",  # Right square bracket
+      94 => "^",  # Caret
+      95 => "_",  # Underscore
+      96 => "`",  # Backtick
+      97 => "a",  # a
+      98 => "b",  # b
+      99 => "c",  # c
+      100 => "d", # d
+      101 => "e", # e
+      102 => "f", # f
+      103 => "g", # g
+      104 => "h", # h
+      105 => "i", # i
+      106 => "j", # j
+      107 => "k", # k
+      108 => "l", # l
+      109 => "m", # m
+      110 => "n", # n
+      111 => "o", # o
+      112 => "p", # p
+      113 => "q", # q
+      114 => "r", # r
+      115 => "s", # s
+      116 => "t", # t
+      117 => "u", # u
+      118 => "v", # v
+      119 => "w", # w
+      120 => "x", # x
+      121 => "y", # y
+      122 => "z", # z
+      123 => "{", # Left curly brace
+      124 => "|", # Vertical bar
+      125 => "}", # Right curly brace
+      126 => "~"  # Tilde
+    }
+  end
+
+  @doc """
+  Returns the DEC Supplementary character map.
+  """
+  def dec_supplementary_map do
+    %{
+      # Box drawing characters
+      ?l => "┌", # Upper left corner
+      ?k => "┐", # Upper right corner
+      ?j => "└", # Lower left corner
+      ?m => "┘", # Lower right corner
+      ?q => "─", # Horizontal line
+      ?x => "│", # Vertical line
+      ?t => "├", # Left T
+      ?u => "┤", # Right T
+      ?v => "┴", # Bottom T
+      ?w => "┬", # Top T
+      ?n => "┼", # Cross
+      # Block elements
+      ?a => "█", # Full block
+      ?b => "▓", # Dark shade
+      ?c => "▒", # Medium shade
+      ?d => "░", # Light shade
+      # Geometric shapes
+      ?e => "◆", # Diamond
+      ?f => "■", # Square
+      ?g => "●", # Circle
+      ?h => "○", # Circle
+      ?i => "◎", # Circle
+      ?j => "★", # Star
+      ?k => "☆", # Star
+      ?l => "◇", # Diamond
+      ?m => "□", # Square
+      ?n => "▣", # Square
+      ?o => "▢", # Square
+      ?p => "▤", # Square
+      ?q => "▥", # Square
+      ?r => "▦", # Square
+      ?s => "▧", # Square
+      ?t => "▨", # Square
+      ?u => "▩", # Square
+      ?v => "▪", # Square
+      ?w => "▫", # Square
+      ?x => "▬", # Square
+      ?y => "▭", # Square
+      ?z => "▮", # Square
+      ?{ => "▯", # Square
+      ?} => "▰", # Square
+      ?| => "▱", # Square
+      ?~ => "▲", # Square
+      ?` => "△", # Square
+      ?' => "▴", # Triangle
+      ?" => "▵", # Triangle
+      ?( => "▶", # Triangle
+      ?) => "▷", # Triangle
+      ?[ => "▸", # Triangle
+      ?] => "▹", # Triangle
+      ?< => "►", # Triangle
+      ?> => "◄", # Triangle
+      ?/ => "◅", # Triangle
+      ?\\ => "▻" # Triangle
+    }
+  end
+
+  @doc """
+  Returns the DEC Special character map.
+  """
+  def dec_special_map do
+    %{
+      # Box drawing characters
+      ?_ => "─", # Horizontal line
+      ?| => "│", # Vertical line
+      ?- => "┌", # Upper left corner
+      ?+ => "┐", # Upper right corner
+      ?* => "└", # Lower left corner
+      ?# => "┘", # Lower right corner
+      # Mathematical symbols
+      ?~ => "≈", # Approximately equal
+      ?^ => "↑", # Up arrow
+      ?v => "↓", # Down arrow
+      ?< => "←", # Left arrow
+      ?> => "→", # Right arrow
+      ?o => "°", # Degree symbol
+      ?` => "±", # Plus-minus
+      ?' => "′", # Prime
+      ?" => "″", # Double prime
+      ?! => "≠", # Not equal
+      ?= => "≡", # Identical
+      ?/ => "÷", # Division
+      ?\\ => "×", # Multiplication
+      ?[ => "≤", # Less than or equal
+      ?] => "≥", # Greater than or equal
+      ?{ => "⌈", # Ceiling
+      ?} => "⌉", # Ceiling
+      ?( => "⌊", # Floor
+      ?) => "⌋", # Floor
+      # Geometric shapes
+      ?@ => "◆", # Diamond
+      ?# => "■", # Square
+      ?$ => "●", # Circle
+      ?% => "○", # Circle
+      ?& => "◎", # Circle
+      ?* => "★", # Star
+      ?+ => "⊕", # Plus
+      ?- => "⊖", # Minus
+      ?. => "·", # Middle dot
+      ?/ => "/"  # Slash
+    }
+  end
+
+  @doc """
+  Returns the DEC Technical character map.
+  """
+  def dec_technical_map do
+    %{
+      # Greek letters
+      ?a => "α", # Alpha
+      ?b => "β", # Beta
+      ?g => "γ", # Gamma
+      ?d => "δ", # Delta
+      ?e => "ε", # Epsilon
+      ?z => "ζ", # Zeta
+      ?h => "η", # Eta
+      ?q => "θ", # Theta
+      ?i => "ι", # Iota
+      ?k => "κ", # Kappa
+      ?l => "λ", # Lambda
+      ?m => "μ", # Mu
+      ?n => "ν", # Nu
+      ?x => "ξ", # Xi
+      ?o => "ο", # Omicron
+      ?p => "π", # Pi
+      ?r => "ρ", # Rho
+      ?s => "σ", # Sigma
+      ?t => "τ", # Tau
+      ?u => "υ", # Upsilon
+      ?f => "φ", # Phi
+      ?c => "χ", # Chi
+      ?y => "ψ", # Psi
+      ?w => "ω", # Omega
+      # Mathematical operators
+      ?+ => "∑", # Summation
+      ?- => "∏", # Product
+      ?* => "∫", # Integral
+      ?/ => "√", # Square root
+      ?= => "≈", # Approximately equal
+      ?< => "≤", # Less than or equal
+      ?> => "≥", # Greater than or equal
+      ?! => "≠", # Not equal
+      ?@ => "∞", # Infinity
+      ?# => "∇", # Nabla
+      ?$ => "∂", # Partial derivative
+      ?% => "∝", # Proportional to
+      ?& => "∧", # Logical AND
+      ?| => "∨", # Logical OR
+      ?~ => "¬", # Logical NOT
+      ?^ => "∩", # Intersection
+      ?_ => "∪", # Union
+      ?` => "∈", # Element of
+      ?' => "∉", # Not element of
+      ?" => "⊂", # Subset of
+      ?( => "⊃", # Superset of
+      ?) => "⊆", # Subset of or equal to
+      ?[ => "⊇", # Superset of or equal to
+      ?] => "⊄", # Not subset of
+      ?{ => "⊅", # Not superset of
+      ?} => "⊈", # Not subset of or equal to
+      ?\\ => "⊉" # Not superset of or equal to
+    }
+  end
+
+  @doc """
   Translates a character using the current charset.
   """
   def handle_set_charset(emulator, params_buffer, final_byte) do
@@ -216,12 +490,13 @@ defmodule Raxol.Terminal.Charset.Manager do
         char
 
       charset_name ->
-        char_map = state.charsets[charset_name].()
+        char_map = emulator.charset_state.charsets[charset_name].()
         Map.get(char_map, char, char)
     end
   end
 
   # Character mapping functions for different character sets
+  @doc false
   defp map_dec_special(char) do
     case char do
       # Horizontal line
@@ -298,6 +573,7 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  @doc false
   defp map_dec_technical(char) do
     case char do
       # Mathematical symbols
@@ -408,6 +684,7 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  @doc false
   defp map_math_operators(char) do
     case char do
       # Mathematical operators
@@ -469,6 +746,7 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  @doc false
   defp map_dec_supplemental(char) do
     case char do
       # Box drawing characters
@@ -582,6 +860,7 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  @doc false
   defp map_dec_supplemental_graphics(char) do
     case char do
       # Arrows
@@ -621,6 +900,7 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  @doc false
   defp map_dec_hebrew(char) do
     case char do
       # Alef
@@ -681,6 +961,7 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  @doc false
   defp map_dec_greek(char) do
     case char do
       # Uppercase Greek letters
@@ -798,6 +1079,7 @@ defmodule Raxol.Terminal.Charset.Manager do
     end
   end
 
+  @doc false
   defp map_dec_turkish(char) do
     case char do
       # Uppercase Turkish letters

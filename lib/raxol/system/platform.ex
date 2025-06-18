@@ -167,25 +167,41 @@ defmodule Raxol.System.Platform do
   """
   @spec supports_feature?(atom()) :: boolean()
   def supports_feature?(feature) do
-    case {get_current_platform(), feature} do
+    case feature do
       # Features fully supported across all platforms
-      {_, :keyboard} -> true
-      {_, :basic_colors} -> true
-      # Platform-specific feature support
-      {:macos, :true_color} -> true
-      {:macos, :unicode} -> true
-      {:macos, :mouse} -> true
-      {:macos, :clipboard} -> true
-      {:linux, :true_color} -> true
-      {:linux, :unicode} -> true
-      {:linux, :mouse} -> true
-      {:linux, :clipboard} -> detect_linux_clipboard_support()
-      {:windows, :true_color} -> detect_windows_true_color()
-      {:windows, :unicode} -> detect_windows_unicode()
-      {:windows, :mouse} -> true
-      {:windows, :clipboard} -> true
-      # Default for unknown features/platforms
-      {_, _} -> false
+      :keyboard -> true
+      :basic_colors -> true
+      # Platform-specific features
+      feature when feature in [:true_color, :unicode, :mouse, :clipboard] ->
+        platform_supports_feature?(get_current_platform(), feature)
+      _ -> false
+    end
+  end
+
+  defp platform_supports_feature?(platform, feature) do
+    case platform do
+      :macos -> macos_supports_feature?(feature)
+      :linux -> linux_supports_feature?(feature)
+      :windows -> windows_supports_feature?(feature)
+    end
+  end
+
+  defp macos_supports_feature?(feature) do
+    feature in [:true_color, :unicode, :mouse, :clipboard]
+  end
+
+  defp linux_supports_feature?(feature) do
+    case feature do
+      :clipboard -> detect_linux_clipboard_support()
+      _ -> feature in [:true_color, :unicode, :mouse]
+    end
+  end
+
+  defp windows_supports_feature?(feature) do
+    case feature do
+      :true_color -> detect_windows_true_color()
+      :unicode -> detect_windows_unicode()
+      _ -> feature in [:mouse, :clipboard]
     end
   end
 
@@ -214,7 +230,7 @@ defmodule Raxol.System.Platform do
 
   defp get_macos_info do
     %{
-      is_apple_silicon: is_apple_silicon?(),
+      is_apple_silicon: apple_silicon?(),
       terminal_app: detect_macos_terminal()
     }
   end
@@ -222,14 +238,14 @@ defmodule Raxol.System.Platform do
   defp get_linux_info do
     %{
       distribution: detect_linux_distribution(),
-      is_wsl: is_wsl?(),
-      is_wayland: is_wayland?()
+      is_wsl: wsl?(),
+      is_wayland: wayland?()
     }
   end
 
   defp get_windows_info do
     %{
-      is_windows_terminal: is_windows_terminal?(),
+      is_windows_terminal: windows_terminal?(),
       console_type: detect_windows_console_type()
     }
   end
@@ -282,7 +298,7 @@ defmodule Raxol.System.Platform do
 
   # Platform-specific detection helpers
 
-  defp is_apple_silicon? do
+  defp apple_silicon? do
     case :os.type() do
       {:unix, :darwin} ->
         case System.cmd("uname", ["-m"], stderr_to_stdout: true) do
@@ -320,7 +336,7 @@ defmodule Raxol.System.Platform do
     end
   end
 
-  defp is_wsl? do
+  defp wsl? do
     File.exists?("/proc/sys/kernel/osrelease") &&
       case File.read("/proc/sys/kernel/osrelease") do
         {:ok, content} ->
@@ -332,11 +348,11 @@ defmodule Raxol.System.Platform do
       end
   end
 
-  defp is_wayland? do
+  defp wayland? do
     System.get_env("WAYLAND_DISPLAY") != nil
   end
 
-  defp is_windows_terminal? do
+  defp windows_terminal? do
     System.get_env("WT_SESSION") != nil
   end
 
@@ -379,7 +395,7 @@ defmodule Raxol.System.Platform do
   end
 
   defp detect_windows_true_color do
-    windows_terminal? = is_windows_terminal?()
+    windows_terminal? = windows_terminal?()
 
     # Windows Terminal supports true color
     # For other terminals, check COLORTERM
@@ -388,7 +404,7 @@ defmodule Raxol.System.Platform do
 
   defp detect_windows_unicode do
     # Windows Terminal and WSL have better unicode support than native cmd/powershell
-    is_windows_terminal?() || is_wsl?() ||
+    windows_terminal?() || wsl?() ||
       System.get_env("TERM") == "xterm-256color"
   end
 end

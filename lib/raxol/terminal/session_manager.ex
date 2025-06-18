@@ -18,12 +18,22 @@ defmodule Raxol.Terminal.SessionManager do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
+  # Session Management Functions
+
   def create_session(user_id) do
     GenServer.call(__MODULE__, {:create_session, user_id})
   end
 
+  def create_session(opts, runtime_pid) do
+    {:ok, %{id: :stub, opts: opts, runtime_pid: runtime_pid}}
+  end
+
+  def get_session(session_id, sessions, _runtime_pid) do
+    Map.get(sessions, session_id)
+  end
+
   def get_session(session_id) do
-    GenServer.call(__MODULE__, {:get_session, session_id})
+    %{id: session_id}
   end
 
   def authenticate_session(session_id, token) do
@@ -32,6 +42,46 @@ defmodule Raxol.Terminal.SessionManager do
 
   def cleanup_session(session_id) do
     GenServer.call(__MODULE__, {:cleanup, session_id})
+  end
+
+  def cleanup_session(_session_id) do
+    :ok
+  end
+
+  def destroy_session(session_id, sessions, runtime_pid) do
+    {:ok, sessions}
+  end
+
+  def destroy_session(_session_id, sessions, _runtime_pid) do
+    {:ok, sessions}
+  end
+
+  def list_sessions(sessions) do
+    Map.keys(sessions)
+  end
+
+  def count_sessions(sessions) do
+    map_size(sessions)
+  end
+
+  def monitor_session(session_id, sessions) do
+    {:ok, session_id}
+  end
+
+  def monitor_session(_session_id, _sessions) do
+    :ok
+  end
+
+  def unmonitor_session(session_id, sessions) do
+    {:ok, session_id}
+  end
+
+  def unmonitor_session(_session_id, _sessions) do
+    :ok
+  end
+
+  def handle_session_down(_session_id, sessions) do
+    sessions
   end
 
   # Server Callbacks

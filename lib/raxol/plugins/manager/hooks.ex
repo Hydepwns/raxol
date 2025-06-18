@@ -50,8 +50,8 @@ defmodule Raxol.Plugins.Manager.Hooks do
   Returns {:ok, updated_manager, results} where results is a list of hook results.
   """
   def run_hook(%Core{} = manager, hook_name, args \\ []) do
-    Enum.reduce(manager.plugins, {:ok, manager, []}, fn {_name, plugin}, acc ->
-      run_plugin_hook({_name, plugin}, acc, hook_name, args)
+    Enum.reduce(manager.plugins, {:ok, manager, []}, fn {name, plugin}, acc ->
+      run_plugin_hook({name, plugin}, acc, hook_name, args)
     end)
   end
 

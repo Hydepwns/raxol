@@ -22,7 +22,27 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
   end
 
   def init(settings) do
-    {:ok, settings}
+    %__MODULE__{
+      update_interval: Keyword.get(settings, :update_interval, 16),
+      auto_update: Keyword.get(settings, :auto_update, true),
+      debug_mode: Keyword.get(settings, :debug_mode, false)
+    }
+  end
+
+  def init do
+    %__MODULE__{
+      update_interval: 16,
+      auto_update: true,
+      debug_mode: false
+    }
+  end
+
+  defp default_settings do
+    %__MODULE__{
+      update_interval: 16,
+      auto_update: true,
+      debug_mode: false
+    }
   end
 
   @doc """
@@ -34,13 +54,5 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
 
   def handle_call(:get_update_settings, _from, state) do
     {:reply, state, state}
-  end
-
-  defp default_settings do
-    %__MODULE__{
-      update_interval: 100,
-      auto_update: true,
-      debug_mode: false
-    }
   end
 end
