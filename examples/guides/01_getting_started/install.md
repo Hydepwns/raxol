@@ -28,7 +28,7 @@ Add Raxol to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.4.2"}
+    {:raxol, "~> 0.5.0"}
   ]
 end
 ```
