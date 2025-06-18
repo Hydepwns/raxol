@@ -1,7 +1,7 @@
 defmodule Raxol.Test.Support.Mocks.BufferManagerMock do
-  @moduledoc '''
+  @moduledoc """
   Mock implementation for Raxol.Terminal.Buffer.Manager.Behaviour
-  '''
+  """
 
   @behaviour Raxol.Terminal.Buffer.Manager.Behaviour
 
@@ -25,9 +25,9 @@ defmodule Raxol.Test.Support.Mocks.BufferManagerMock do
 end
 
 defmodule Raxol.Test.Support.Mocks.BufferScrollbackMock do
-  @moduledoc '''
+  @moduledoc """
   Mock implementation for Raxol.Terminal.Buffer.Scrollback.Behaviour
-  '''
+  """
 
   @behaviour Raxol.Terminal.Buffer.Scrollback.Behaviour
 
@@ -40,9 +40,9 @@ defmodule Raxol.Test.Support.Mocks.BufferScrollbackMock do
 end
 
 defmodule Raxol.Test.Support.Mocks.BufferScrollRegionMock do
-  @moduledoc '''
+  @moduledoc """
   Mock implementation for Raxol.Terminal.Buffer.ScrollRegion.Behaviour
-  '''
+  """
 
   @behaviour Raxol.Terminal.Buffer.ScrollRegion.Behaviour
 
@@ -55,9 +55,9 @@ defmodule Raxol.Test.Support.Mocks.BufferScrollRegionMock do
 end
 
 defmodule Raxol.Test.Support.Mocks.BufferSelectionMock do
-  @moduledoc '''
+  @moduledoc """
   Mock implementation for Raxol.Terminal.Buffer.Selection.Behaviour
-  '''
+  """
 
   @behaviour Raxol.Terminal.Buffer.Selection.Behaviour
 
@@ -70,9 +70,9 @@ defmodule Raxol.Test.Support.Mocks.BufferSelectionMock do
 end
 
 defmodule Raxol.Test.Support.Mocks.BufferQueriesMock do
-  @moduledoc '''
+  @moduledoc """
   Mock implementation for Raxol.Terminal.Buffer.Queries.Behaviour
-  '''
+  """
 
   @behaviour Raxol.Terminal.Buffer.Queries.Behaviour
 
@@ -90,9 +90,9 @@ defmodule Raxol.Test.Support.Mocks.BufferQueriesMock do
 end
 
 defmodule Raxol.Test.Support.Mocks.BufferLineOperationsMock do
-  @moduledoc '''
+  @moduledoc """
   Mock implementation for Raxol.Terminal.Buffer.LineOperations.Behaviour
-  '''
+  """
 
   @behaviour Raxol.Terminal.Buffer.LineOperations.Behaviour
 

@@ -8,22 +8,22 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
   end
 
   describe "basic operations" do
-    test 'put and get' do
+    test ~c"put and get" do
       assert :ok == UnifiedCache.put("key1", "value1")
       assert {:ok, "value1"} == UnifiedCache.get("key1")
     end
 
-    test 'get non-existent key' do
+    test ~c"get non-existent key" do
       assert {:error, :not_found} == UnifiedCache.get("nonexistent")
     end
 
-    test 'invalidate' do
+    test ~c"invalidate" do
       UnifiedCache.put("key1", "value1")
       assert :ok == UnifiedCache.invalidate("key1")
       assert {:error, :not_found} == UnifiedCache.get("key1")
     end
 
-    test 'clear' do
+    test ~c"clear" do
       UnifiedCache.put("key1", "value1")
       UnifiedCache.put("key2", "value2")
       assert :ok == UnifiedCache.clear()
@@ -33,28 +33,28 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
   end
 
   describe "namespaces" do
-    test 'different namespaces' do
+    test ~c"different namespaces" do
       UnifiedCache.put("key1", "value1", namespace: :ns1)
       UnifiedCache.put("key1", "value2", namespace: :ns2)
       assert {:ok, "value1"} == UnifiedCache.get("key1", namespace: :ns1)
       assert {:ok, "value2"} == UnifiedCache.get("key1", namespace: :ns2)
     end
 
-    test 'non-existent namespace' do
+    test ~c"non-existent namespace" do
       assert {:error, :namespace_not_found} ==
                UnifiedCache.get("key1", namespace: :nonexistent)
     end
   end
 
   describe "TTL" do
-    test 'expired entry' do
+    test ~c"expired entry" do
       UnifiedCache.put("key1", "value1", ttl: 1)
       # Wait for expiration
       Process.sleep(1100)
       assert {:error, :expired} == UnifiedCache.get("key1")
     end
 
-    test 'non-expired entry' do
+    test ~c"non-expired entry" do
       UnifiedCache.put("key1", "value1", ttl: 2)
       # Wait less than TTL
       Process.sleep(1000)
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
   end
 
   describe "eviction policies" do
-    test 'LRU eviction' do
+    test ~c"LRU eviction" do
       {:ok, _pid} =
         UnifiedCache.start_link(max_size: 100, eviction_policy: :lru)
 
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
       assert {:ok, _value3} = UnifiedCache.get("key3")
     end
 
-    test 'LFU eviction' do
+    test ~c"LFU eviction" do
       {:ok, _pid} =
         UnifiedCache.start_link(max_size: 100, eviction_policy: :lfu)
 
@@ -92,7 +92,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
       assert {:ok, _value3} = UnifiedCache.get("key3")
     end
 
-    test 'FIFO eviction' do
+    test ~c"FIFO eviction" do
       {:ok, _pid} =
         UnifiedCache.start_link(max_size: 100, eviction_policy: :fifo)
 
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
   end
 
   describe "statistics" do
-    test 'hit and miss counts' do
+    test ~c"hit and miss counts" do
       UnifiedCache.put("key1", "value1")
       # Hit
       UnifiedCache.get("key1")
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
       assert_in_delta stats.hit_ratio, 0.666, 0.001
     end
 
-    test 'size tracking' do
+    test ~c"size tracking" do
       value = String.duplicate("a", 100)
       UnifiedCache.put("key1", value)
       {:ok, stats} = UnifiedCache.stats()
@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
   end
 
   describe "metadata" do
-    test 'metadata storage' do
+    test ~c"metadata storage" do
       metadata = %{type: "test", priority: 1}
       UnifiedCache.put("key1", "value1", metadata: metadata)
       {:ok, stats} = UnifiedCache.stats()

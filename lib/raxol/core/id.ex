@@ -1,21 +1,17 @@
 defmodule Raxol.Core.ID do
-  @moduledoc '''
+  @moduledoc """
   Provides functions for generating unique identifiers.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Generates a unique string identifier.
 
-  Uses Erlang's `make_ref` and converts it to a string representation.
-  While unique within the runtime, refs are not guaranteed universally unique
-  like UUIDs.
-  '''
+  Uses `System.unique_integer([:positive])` and converts it to a string.
+  While unique within the runtime, these are not guaranteed universally unique like UUIDs.
+  """
   @spec generate() :: String.t()
   def generate() do
-    :erlang.make_ref()
-    # Convert ref to charlist
-    |> :erlang.ref_to_list()
-    # Convert charlist to string
-    |> List.to_string()
+    System.unique_integer([:positive])
+    |> Integer.to_string()
   end
 end

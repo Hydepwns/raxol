@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Terminal.State do
-  @moduledoc '''
+  @moduledoc """
   Represents the core state of a terminal instance.
 
   This module defines the minimal state structure required for terminal operations,
@@ -28,14 +28,14 @@ defmodule Raxol.Core.Terminal.State do
     }
   }
   ```
-  '''
+  """
 
-  @doc '''
+  @doc """
   Defines the terminal state structure.
 
   ## Fields
 
     * `:palette` - Map of color indices to RGB values
-  '''
+  """
   defstruct palette: %{}
 end

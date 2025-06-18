@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.Config.Persistence do
-  @moduledoc '''
+  @moduledoc """
   Handles persistence and migration of terminal configurations.
-  '''
+  """
 
   alias Raxol.Terminal.Config
   alias Raxol.Terminal.Config.Validator
 
-  @doc '''
+  @doc """
   Saves a configuration to persistent storage.
-  '''
+  """
   @spec save_config(Config.t(), String.t()) :: :ok | {:error, term()}
   def save_config(config, name) do
     with :ok <- Validator.validate_config(config) do
@@ -21,9 +21,9 @@ defmodule Raxol.Terminal.Config.Persistence do
     end
   end
 
-  @doc '''
+  @doc """
   Loads a configuration from persistent storage.
-  '''
+  """
   @spec load_config(String.t()) :: {:ok, Config.t()} | {:error, term()}
   def load_config(name) do
     storage_path = get_storage_path(name)
@@ -45,9 +45,9 @@ defmodule Raxol.Terminal.Config.Persistence do
     end
   end
 
-  @doc '''
+  @doc """
   Lists all saved configurations.
-  '''
+  """
   @spec list_configs() :: {:ok, [String.t()]} | {:error, term()}
   def list_configs do
     storage_dir = get_storage_dir()
@@ -66,9 +66,9 @@ defmodule Raxol.Terminal.Config.Persistence do
     end
   end
 
-  @doc '''
+  @doc """
   Migrates a configuration to the latest version.
-  '''
+  """
   @spec migrate_config(Config.t()) :: {:ok, Config.t()} | {:error, term()}
   def migrate_config(config) do
     # Get current version

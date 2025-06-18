@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Progress.ProgressBar do
-  @moduledoc '''
+  @moduledoc """
   A component to display a progress bar.
-  '''
+  """
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component

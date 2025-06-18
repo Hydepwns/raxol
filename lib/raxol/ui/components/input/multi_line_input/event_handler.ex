@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
-  @moduledoc '''
+  @moduledoc """
   Handles events for the MultiLineInput component.
-  '''
+  """
 
   # Needed for update/2 calls
   # alias Raxol.UI.Components.Input.MultiLineInput
@@ -11,7 +11,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
   # alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Handles events for the multi-line input component.
 
   ## Parameters
@@ -20,7 +20,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
   ## Returns
   A tuple of `{:ok, new_state}` or `{:error, reason}`.
-  '''
+  """
   def handle_event(event, state) do
     case event do
       %Event{
@@ -84,9 +84,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     end
   end
 
-  @doc '''
+  @doc """
   Handles key events for MultiLineInput, translating them into update messages for the component. Only processes events when the key state is :pressed or :repeat.
-  '''
+  """
   def handle_key_event(
         %Event{
           type: :key,
@@ -221,10 +221,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     end
   end
 
-  @doc '''
+  @doc """
   Handles mouse events for MultiLineInput, supporting both x/y fields and position tuple formats.
   Returns an update message to move the cursor to the clicked position.
-  '''
+  """
   def handle_mouse_event(
         %Event{
           type: :mouse,
@@ -260,9 +260,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     {:update, msg, state}
   end
 
-  @doc '''
+  @doc """
   Special case for testing: handles the :pageup key event directly, returning an update message to move the cursor up by one page.
-  '''
+  """
   def handle_special_case_pageup(
         %Event{type: :key, data: %{key: :pageup}} = event,
         input_state
@@ -274,9 +274,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     {:update, {:move_cursor_page, :up}, input_state}
   end
 
-  @doc '''
+  @doc """
   Special case for testing: handles the :pagedown key event directly, returning an update message to move the cursor down by one page.
-  '''
+  """
   def handle_special_case_pagedown(
         %Event{type: :key, data: %{key: :pagedown}} = event,
         input_state
@@ -368,7 +368,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Handles scroll events.
 
   ## Parameters
@@ -377,14 +377,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
   ## Returns
     - {:ok, updated_state}
-  '''
+  """
   def handle_scroll_event(%Event{type: :scroll}, state) do
     {_scroll_row, _scroll_col} = state.scroll_offset
     # Handle scroll event
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Handles resize events.
 
   ## Parameters
@@ -393,7 +393,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
   ## Returns
     - {:ok, updated_state}
-  '''
+  """
   def handle_resize_event(%Event{type: :resize}, state) do
     {_scroll_row, _scroll_col} = state.scroll_offset
     # Handle resize event

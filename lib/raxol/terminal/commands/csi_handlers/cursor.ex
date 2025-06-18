@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
-  @moduledoc '''
+  @moduledoc """
   Handles CSI cursor control sequences.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator, as: Emulator
   alias Raxol.Terminal.ScreenBuffer
@@ -22,9 +22,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     ?$ => {__MODULE__, :handle_hpr}
   }
 
-  @doc '''
+  @doc """
   Handles cursor movement commands.
-  '''
+  """
   def handle_command(emulator, params, byte) do
     case Map.get(@command_map, byte) do
       {module, function} -> apply(module, function, [emulator, params])
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     end
   end
 
-  @doc 'Handles Cursor Up (CUU - 'A')'
+  @doc "Handles Cursor Up (CUU - 'A')"
   @spec handle_cuu(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cuu(emulator, params) do
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_up(emulator, lines, width, height)
   end
 
-  @doc 'Handles Cursor Down (CUD - 'B')'
+  @doc "Handles Cursor Down (CUD - 'B')"
   @spec handle_cud(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cud(emulator, params) do
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_down(emulator, lines, width, height)
   end
 
-  @doc 'Handles Cursor Forward (CUF - 'C')'
+  @doc "Handles Cursor Forward (CUF - 'C')"
   @spec handle_cuf(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cuf(emulator, params) do
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_right(emulator, cols, width, height)
   end
 
-  @doc 'Handles Cursor Backward (CUB - 'D')'
+  @doc "Handles Cursor Backward (CUB - 'D')"
   @spec handle_cub(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cub(emulator, params) do
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_left(emulator, cols, width, height)
   end
 
-  @doc 'Handles Cursor Next Line (CNL - 'E')'
+  @doc "Handles Cursor Next Line (CNL - 'E')"
   @spec handle_cnl(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cnl(emulator, params) do
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_to_line_start(emulator)
   end
 
-  @doc 'Handles Cursor Previous Line (CPL - 'F')'
+  @doc "Handles Cursor Previous Line (CPL - 'F')"
   @spec handle_cpl(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cpl(emulator, params) do
@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_to_line_start(emulator)
   end
 
-  @doc 'Handles Cursor Horizontal Absolute (CHA - 'G')'
+  @doc "Handles Cursor Horizontal Absolute (CHA - 'G')"
   @spec handle_cha(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cha(emulator, params) do
@@ -104,7 +104,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_to_column(emulator, col - 1, width, height)
   end
 
-  @doc 'Handles Cursor Position (CUP - 'H')'
+  @doc "Handles Cursor Position (CUP - 'H')"
   @spec handle_cup(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cup(emulator, params) do
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_to(emulator, {col - 1, row - 1}, width, height)
   end
 
-  @doc 'Handles Horizontal Position Absolute (HPA - '`')'
+  @doc "Handles Horizontal Position Absolute (HPA - '`')"
   @spec handle_hpa(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_hpa(emulator, params) do
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_to_column(emulator, col - 1, width, height)
   end
 
-  @doc 'Handles Vertical Position Absolute (VPA - 'd')'
+  @doc "Handles Vertical Position Absolute (VPA - 'd')"
   @spec handle_vpa(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_vpa(emulator, params) do
@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     Emulator.move_cursor_to(emulator, {current_x, row - 1}, width, height)
   end
 
-  @doc 'Handles Horizontal Position Relative (HPR - 'a')'
+  @doc "Handles Horizontal Position Relative (HPR - 'a')"
   @spec handle_hpr(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_hpr(emulator, params) do

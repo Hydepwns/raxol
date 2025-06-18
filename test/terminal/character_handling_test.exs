@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
   alias Raxol.Terminal.CharacterHandling
 
   describe "wide character detection" do
-    test 'identifies wide characters correctly' do
+    test ~c"identifies wide characters correctly" do
       assert CharacterHandling.is_wide_char?(?中)
       assert CharacterHandling.is_wide_char?(?日)
       refute CharacterHandling.is_wide_char?(?a)
@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
   end
 
   describe "character width" do
-    test 'calculates character width correctly' do
+    test ~c"calculates character width correctly" do
       assert Raxol.Terminal.CharacterHandling.get_char_width("中") == 2
       assert Raxol.Terminal.CharacterHandling.get_char_width("日") == 2
       assert Raxol.Terminal.CharacterHandling.get_char_width("a") == 1
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
   end
 
   describe "combining characters" do
-    test 'handles combining characters correctly' do
+    test ~c"handles combining characters correctly" do
       assert Raxol.Terminal.CharacterHandling.is_combining_char?(0x0301)
       assert Raxol.Terminal.CharacterHandling.get_char_width("e\u0301") == 1
     end
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
     #       is a placeholder and does not fully implement the Unicode Bidirectional Algorithm.
     #       A proper fix requires a more sophisticated approach.
     # @tag :skip # Unskipping the test
-    test 'processes bidirectional text correctly' do
+    test ~c"processes bidirectional text correctly" do
       # Using a proper RTL character sequence
       # \u202E is RTL mark
       text = "Hello \u202E World"
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
   end
 
   describe "string width" do
-    test 'calculates string width correctly' do
+    test ~c"calculates string width correctly" do
       assert Raxol.Terminal.CharacterHandling.get_string_width("Hello") == 5
       # 5 (Hello) + 1 (space) + 2 (世) + 2 (界) = 10
       assert Raxol.Terminal.CharacterHandling.get_string_width("Hello 世界") == 10

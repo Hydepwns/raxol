@@ -14,7 +14,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   end
 
   describe "component lifecycle" do
-    test 'mount registers a component' do
+    test ~c"mount registers a component" do
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
       # Verify component was registered
@@ -27,7 +27,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert component_id in render_queue
     end
 
-    test 'mount with props' do
+    test ~c"mount with props" do
       props = %{initial_value: 100}
       {:ok, component_id} = ComponentManager.mount(TestComponent, props)
 
@@ -36,7 +36,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert component_data.state.initial_value == 100
     end
 
-    test 'unmount removes a component' do
+    test ~c"unmount removes a component" do
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
       # Verify component was registered
@@ -49,12 +49,12 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert ComponentManager.get_component(component_id) == nil
     end
 
-    test 'unmount returns error for unknown component' do
+    test ~c"unmount returns error for unknown component" do
       assert {:error, :not_found} =
                ComponentManager.unmount("unknown_component")
     end
 
-    test 'unmount cleans up component resources' do
+    test ~c"unmount cleans up component resources" do
       # Mount component with subscriptions
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
@@ -74,14 +74,14 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert ComponentManager.get_render_queue() == []
     end
 
-    test 'mount handles invalid component module' do
+    test ~c"mount handles invalid component module" do
       assert {:error, :invalid_component} = ComponentManager.mount(nil)
 
       assert {:error, :invalid_component} =
                ComponentManager.mount("not_a_module")
     end
 
-    test 'mount handles component init failure' do
+    test ~c"mount handles component init failure" do
       defmodule BadComponent do
         def init(_props), do: {:error, :init_failed}
       end
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   end
 
   describe "component updates" do
-    test 'update modifies component state' do
+    test ~c"update modifies component state" do
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
       # Get initial state
@@ -107,7 +107,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert updated_data.state.counter == 1
     end
 
-    test 'update queues component for render' do
+    test ~c"update queues component for render" do
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
       # Clear render queue
@@ -121,12 +121,12 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert component_id in render_queue
     end
 
-    test 'update returns error for unknown component' do
+    test ~c"update returns error for unknown component" do
       assert {:error, :not_found} =
                ComponentManager.update("unknown_component", :increment)
     end
 
-    test 'update handles component errors gracefully' do
+    test ~c"update handles component errors gracefully" do
       defmodule ErrorComponent do
         def init(_props), do: {:ok, %{error_count: 0}}
         def mount(state), do: {state, []}
@@ -146,7 +146,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert component_data.state.error_count == 0
     end
 
-    test 'update handles invalid return values' do
+    test ~c"update handles invalid return values" do
       defmodule InvalidReturnComponent do
         def init(_props), do: {:ok, %{}}
         def mount(state), do: {state, []}
@@ -166,7 +166,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   end
 
   describe "event dispatch" do
-    test 'dispatch_event sends events to components' do
+    test ~c"dispatch_event sends events to components" do
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
       # Dispatch event
@@ -186,7 +186,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   end
 
   describe "render queue management" do
-    test 'get_render_queue returns and clears the queue' do
+    test ~c"get_render_queue returns and clears the queue" do
       # Mount multiple components
       {:ok, component_id1} = ComponentManager.mount(TestComponent)
       {:ok, component_id2} = ComponentManager.mount(TestComponent)
@@ -208,14 +208,16 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   end
 
   describe "command processing" do
-    test 'handles component commands (e.g., scheduled messages)' do
+    test ~c"handles component commands (e.g., scheduled messages)" do
       # Use standard mount
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
       # Manually schedule the message that mount_with_commands would have
+      timer_id = System.unique_integer([:positive])
+
       Process.send_after(
         ComponentManager,
-        {:update, component_id, :delayed_message},
+        {:update, component_id, :delayed_message, timer_id},
         50
       )
 
@@ -227,7 +229,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert final_component_data.state.last_message == :delayed_message
     end
 
-    test 'handles broadcast commands' do
+    test ~c"handles broadcast commands" do
       # Mount multiple components
       {:ok, component_id1} = ComponentManager.mount(TestComponent)
       {:ok, component_id2} = ComponentManager.mount(TestComponent)

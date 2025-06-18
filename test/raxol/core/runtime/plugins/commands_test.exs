@@ -1,11 +1,14 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
+  @moduledoc """
+  Tests for the command runtime system, including registration,
+  execution, and error handling.
+  """
   use ExUnit.Case, async: false
   import Raxol.Test.TestHelper
 
   alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
   alias Raxol.Core.Runtime.Plugins.State, as: ManagerState
 
-  # Mock command handler for testing
   @moduledoc false
   defmodule TestCommandHandler do
     def execute(args, context) do

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
-  @moduledoc '''
+  @moduledoc """
   Handlers for device-related CSI commands.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
 
@@ -21,13 +21,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     end
   end
 
-  @doc '''
+  @doc """
   Handle Device Attributes (DA) command.
   Responds with terminal capabilities.
-  '''
+  """
   def handle_da(emulator, _params, intermediates_buffer) do
     case intermediates_buffer do
-      "?' ->
+      "?" ->
         # Respond with VT100 capabilities
         # ESC [ ? 1 ; 2 c
         # 1 = VT100
@@ -36,15 +36,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
 
       _ ->
         # Public DA - respond with standard capabilities
-        Emulator.write_to_output(emulator, '\e[?62;1;6;9;15;22;29c")
+        Emulator.write_to_output(emulator, ~c"\e[?62;1;6;9;15;22;29c")
         {:ok, emulator}
     end
   end
 
-  @doc '''
+  @doc """
   Handle Device Status Report (DSR) command.
   Responds with cursor position or device status.
-  '''
+  """
   def handle_dsr(emulator, params) do
     case params do
       [5] ->
@@ -65,10 +65,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     end
   end
 
-  @doc '''
+  @doc """
   Handle Save Cursor (DECSC) command.
   Saves cursor position and attributes.
-  '''
+  """
   def handle_decsc(emulator, _params) do
     saved_cursor = %{
       position: Emulator.get_cursor_position(emulator),
@@ -79,10 +79,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, %{emulator | saved_cursor: saved_cursor}}
   end
 
-  @doc '''
+  @doc """
   Handle Restore Cursor (DECRC) command.
   Restores cursor position and attributes.
-  '''
+  """
   def handle_decrc(emulator, _params) do
     case emulator.saved_cursor do
       nil ->
@@ -106,10 +106,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     end
   end
 
-  @doc '''
+  @doc """
   Handle Window Manipulation (XTWINOPS) command.
   Handles window size and state changes.
-  '''
+  """
   def handle_xtwinops(emulator, params) do
     case params do
       [3, _x, _y] ->

@@ -1,18 +1,18 @@
 defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
-  @moduledoc '''
+  @moduledoc """
   Handles plugin lifecycle operations including enabling, disabling, and reloading plugins.
   This module is responsible for:
   - Enabling plugins
   - Disabling plugins
   - Reloading plugins
   - Managing plugin states during lifecycle changes
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Enables a previously disabled plugin.
-  '''
+  """
   def enable_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -47,9 +47,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
     end
   end
 
-  @doc '''
+  @doc """
   Disables a plugin temporarily without unloading it.
-  '''
+  """
   def disable_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -84,9 +84,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
     end
   end
 
-  @doc '''
+  @doc """
   Reloads a plugin by unloading and then loading it again.
-  '''
+  """
   def reload_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -97,13 +97,15 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Reloading plugin: #{plugin_id}",
           %{}
         )
+
         do_reload_plugin(plugin_id, state)
     end
   end
 
   defp do_reload_plugin(plugin_id, state) do
     with {:ok, state_after_disable} <- disable_plugin(plugin_id, state),
-         {:ok, state_after_enable} <- enable_plugin(plugin_id, state_after_disable) do
+         {:ok, state_after_enable} <-
+           enable_plugin(plugin_id, state_after_disable) do
       {:ok, state_after_enable}
     else
       {:error, reason} ->
@@ -113,13 +115,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
 
-  @doc '''
+  @doc """
   Loads a plugin with the given configuration.
-  '''
+  """
   def load_plugin(plugin_id, config, state) do
     log_plugin_loading(plugin_id)
     load_and_initialize_plugin(plugin_id, config, state)
@@ -134,24 +137,44 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
 
   defp load_and_initialize_plugin(plugin_id, config, state) do
     case state.loader_module.load_plugin(plugin_id, config) do
-      {:ok, plugin, metadata} -> initialize_and_update_state(plugin_id, plugin, metadata, config, state)
-      {:error, reason} -> handle_load_error(reason, plugin_id)
+      {:ok, plugin, metadata} ->
+        initialize_and_update_state(plugin_id, plugin, metadata, config, state)
+
+      {:error, reason} ->
+        handle_load_error(reason, plugin_id)
     end
   end
 
   defp initialize_and_update_state(plugin_id, plugin, metadata, config, state) do
     case state.lifecycle_helper_module.initialize_plugin(plugin, config) do
-      {:ok, initial_state} -> {:ok, update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state)}
-      {:error, reason} -> handle_load_error(reason, plugin_id)
+      {:ok, initial_state} ->
+        {:ok,
+         update_state_with_plugin(
+           state,
+           plugin_id,
+           plugin,
+           metadata,
+           initial_state
+         )}
+
+      {:error, reason} ->
+        handle_load_error(reason, plugin_id)
     end
   end
 
-  defp update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state) do
-    %{state |
-      plugins: Map.put(state.plugins, plugin_id, plugin),
-      metadata: Map.put(state.metadata, plugin_id, metadata),
-      plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
-      load_order: [plugin_id | state.load_order]
+  defp update_state_with_plugin(
+         state,
+         plugin_id,
+         plugin,
+         metadata,
+         initial_state
+       ) do
+    %{
+      state
+      | plugins: Map.put(state.plugins, plugin_id, plugin),
+        metadata: Map.put(state.metadata, plugin_id, metadata),
+        plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
+        load_order: [plugin_id | state.load_order]
     }
   end
 
@@ -162,6 +185,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       nil,
       %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
     )
+
     {:error, reason}
   end
 end

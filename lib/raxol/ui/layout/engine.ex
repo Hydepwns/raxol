@@ -1,18 +1,18 @@
 defmodule Raxol.UI.Layout.Engine do
-  @moduledoc '''
+  @moduledoc """
   Core layout engine that translates the logical view structure into absolute positions.
 
   This module is responsible for:
   * Calculating element positions based on available space
   * Resolving layout constraints
   * Managing the layout pipeline
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Layout.{Grid, Panels, Containers, Table, Elements, Inputs}
 
-  @doc '''
+  @doc """
   Applies layout to a view, calculating absolute positions for all elements.
 
   ## Parameters
@@ -23,7 +23,7 @@ defmodule Raxol.UI.Layout.Engine do
   ## Returns
 
   A list of positioned elements with absolute coordinates.
-  '''
+  """
   def apply_layout(view, dimensions) do
     # Start with the full screen as available space
     available_space = %{
@@ -216,7 +216,7 @@ defmodule Raxol.UI.Layout.Engine do
 
   # --- Element Measurement Logic ---
   # Function Header for multi-clause function with defaults
-  @doc '''
+  @doc """
   Calculates the intrinsic dimensions (width, height) of an element.
 
   This function determines the natural size of an element before layout constraints
@@ -231,7 +231,7 @@ defmodule Raxol.UI.Layout.Engine do
   ## Returns
 
   A map representing the dimensions: `%{width: integer(), height: integer()}`.
-  '''
+  """
   def measure_element(element, available_space \\ %{})
 
   # Handles valid elements (maps with :type and :attrs)

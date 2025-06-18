@@ -4,14 +4,14 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
-  @moduledoc '''
+  @moduledoc """
   Tests for buffer error handling and edge cases.
   These tests verify that the buffer operations handle errors
   and edge cases gracefully.
-  '''
+  """
 
   describe "Invalid Input Handling" do
-    test 'handles invalid buffer dimensions' do
+    test ~c"handles invalid buffer dimensions" do
       # Test negative dimensions
       assert_raise ArgumentError, fn ->
         Buffer.new({-1, 24})
@@ -40,7 +40,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
       end
     end
 
-    test 'handles invalid cell data' do
+    test ~c"handles invalid cell data" do
       buffer = Buffer.new({80, 24})
 
       # Test invalid cell data types
@@ -66,7 +66,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
       end
     end
 
-    test 'handles invalid coordinates' do
+    test ~c"handles invalid coordinates" do
       buffer = Buffer.new({80, 24})
 
       # Test non-integer coordinates
@@ -90,7 +90,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
   end
 
   describe "Buffer State Error Handling" do
-    test 'handles corrupted buffer state' do
+    test ~c"handles corrupted buffer state" do
       buffer = Buffer.new({80, 24})
 
       # Test corrupted cells
@@ -114,7 +114,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
       end
     end
 
-    test 'handles invalid buffer operations' do
+    test ~c"handles invalid buffer operations" do
       buffer = Buffer.new({80, 24})
 
       # Test invalid write operations
@@ -143,14 +143,14 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
   end
 
   describe "Resource Error Handling" do
-    test 'handles memory allocation errors' do
+    test ~c"handles memory allocation errors" do
       # Test with extremely large buffer
       assert_raise RuntimeError, fn ->
         Buffer.new({1_000_000, 1_000_000})
       end
     end
 
-    test 'handles buffer overflow' do
+    test ~c"handles buffer overflow" do
       buffer = Buffer.new({80, 24})
 
       # Test writing beyond buffer capacity
@@ -163,7 +163,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
   end
 
   describe "Recovery from Errors" do
-    test 'recovers from temporary errors' do
+    test ~c"recovers from temporary errors" do
       buffer = Buffer.new({80, 24})
 
       # Test recovery from invalid operation
@@ -183,7 +183,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
       assert Buffer.get_cell(buffer, 0, 0) == Cell.new()
     end
 
-    test 'maintains buffer integrity after errors' do
+    test ~c"maintains buffer integrity after errors" do
       buffer = Buffer.new({80, 24})
 
       # Fill buffer with known content

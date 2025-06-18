@@ -1,10 +1,15 @@
 defmodule Raxol.Core.Performance.AnalyzerTest do
+  @moduledoc """
+  Tests for the performance analyzer, including performance metrics analysis,
+  issue identification, optimization suggestions, performance patterns,
+  trends analysis, AI data preparation, and error handling.
+  """
   use ExUnit.Case
 
   alias Raxol.Core.Performance.Analyzer
 
   describe "Performance Analyzer" do
-    test 'analyzes good performance metrics' do
+    test "analyzes good performance metrics" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -29,7 +34,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       assert analysis.patterns.jank_patterns == "none"
     end
 
-    test 'identifies performance issues' do
+    test "identifies performance issues" do
       metrics = %{
         fps: 35,
         avg_frame_time: 28.5,
@@ -52,7 +57,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       assert "Warning: Frequent garbage collection" in analysis.issues
     end
 
-    test 'generates optimization suggestions' do
+    test "generates optimization suggestions" do
       metrics = %{
         fps: 40,
         avg_frame_time: 25.0,
@@ -74,7 +79,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       assert "Review resource cleanup" in analysis.suggestions
     end
 
-    test 'identifies performance patterns' do
+    test "identifies performance patterns" do
       metrics = %{
         fps: 45,
         avg_frame_time: 22.2,
@@ -96,7 +101,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       assert analysis.patterns.jank_patterns == "minor"
     end
 
-    test 'analyzes performance trends' do
+    test "analyzes performance trends" do
       metrics = %{
         fps: 55,
         avg_frame_time: 18.2,
@@ -117,7 +122,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       assert analysis.trends.jank_trend == "stable"
     end
 
-    test 'prepares data for AI analysis' do
+    test "prepares data for AI analysis" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -145,7 +150,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       assert Map.has_key?(ai_data.context, :system_info)
     end
 
-    test 'handles missing metrics gracefully' do
+    test "handles missing metrics gracefully" do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,

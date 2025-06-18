@@ -1,5 +1,5 @@
 defmodule Raxol.Cloud.Integrations do
-  @moduledoc '''
+  @moduledoc """
   Cloud integration utilities for Raxol applications.
 
   This module provides integration utilities for connecting various cloud services
@@ -12,11 +12,11 @@ defmodule Raxol.Cloud.Integrations do
   * Service discovery and registration
   * Multi-cloud provider support
   * Deployment and scaling utilities
-  '''
+  """
 
   alias Raxol.Cloud.{EdgeComputing, Monitoring}
 
-  @doc '''
+  @doc """
   Initializes all cloud integrations with the provided configuration.
 
   ## Options
@@ -35,7 +35,7 @@ defmodule Raxol.Cloud.Integrations do
       ...>   providers: [:aws]
       ...> )
       :ok
-  '''
+  """
   def init(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     # Extract configuration for each component
@@ -56,7 +56,7 @@ defmodule Raxol.Cloud.Integrations do
     :ok
   end
 
-  @doc '''
+  @doc """
   Returns the current status of all cloud integrations.
 
   ## Examples
@@ -67,7 +67,7 @@ defmodule Raxol.Cloud.Integrations do
         monitoring: %{active: true, ...},
         providers: %{aws: :connected, ...}
       }
-  '''
+  """
   def status() do
     %{
       edge: EdgeComputing.status(),
@@ -76,7 +76,7 @@ defmodule Raxol.Cloud.Integrations do
     }
   end
 
-  @doc '''
+  @doc """
   Executes a function in the optimal location (edge or cloud) based on current conditions.
 
   This is a wrapper around EdgeComputing.execute/2 that adds monitoring.
@@ -85,7 +85,7 @@ defmodule Raxol.Cloud.Integrations do
 
       iex> execute(fn -> perform_calculation(data) end, priority: :speed)
       {:ok, result}
-  '''
+  """
   def execute(fun, opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     start_time = :os.system_time(:millisecond)
@@ -114,7 +114,7 @@ defmodule Raxol.Cloud.Integrations do
     result
   end
 
-  @doc '''
+  @doc """
   Deploys an application component to the appropriate environment based on configuration.
 
   ## Options
@@ -133,7 +133,7 @@ defmodule Raxol.Cloud.Integrations do
       ...>   strategy: :blue_green
       ...> )
       {:ok, %{deployment_id: "dep-12345", status: :in_progress}}
-  '''
+  """
   def deploy(opts) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     required = [:component, :version, :environment]
@@ -170,7 +170,7 @@ defmodule Raxol.Cloud.Integrations do
     end
   end
 
-  @doc '''
+  @doc """
   Discovers services available in the current environment.
 
   ## Options
@@ -186,7 +186,7 @@ defmodule Raxol.Cloud.Integrations do
         %{name: "main-db", type: :database, endpoint: "main-db.example.com:5432"},
         %{name: "analytics-db", type: :database, endpoint: "analytics-db.example.com:5432"}
       ]}
-  '''
+  """
   def discover_services(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     type = Keyword.get(opts, :type, :all)
@@ -242,7 +242,7 @@ defmodule Raxol.Cloud.Integrations do
     {:ok, filtered_services}
   end
 
-  @doc '''
+  @doc """
   Registers the current application as a service in the service discovery system.
 
   ## Options
@@ -262,7 +262,7 @@ defmodule Raxol.Cloud.Integrations do
       ...>   health_check_path: "/health"
       ...> )
       {:ok, %{registration_id: "reg-12345", status: :registered}}
-  '''
+  """
   def register_service(opts) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     required = [:name, :type, :endpoint]
@@ -289,7 +289,7 @@ defmodule Raxol.Cloud.Integrations do
     end
   end
 
-  @doc '''
+  @doc """
   Scales a service based on current metrics and conditions.
 
   ## Options
@@ -312,7 +312,7 @@ defmodule Raxol.Cloud.Integrations do
       ...>   ]
       ...> )
       {:ok, %{service: "api-server", current: 2, target: 4, status: :scaling}}
-  '''
+  """
   def scale(opts) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     required = [:service]
@@ -371,7 +371,7 @@ defmodule Raxol.Cloud.Integrations do
     end
   end
 
-  @doc '''
+  @doc """
   Gets a connection to a cloud service with the specified parameters.
 
   ## Options
@@ -394,7 +394,7 @@ defmodule Raxol.Cloud.Integrations do
       ...>   service: :storage,
       ...>   provider: :aws
       ...> }}
-  '''
+  """
   def get_service_connection(opts) do
     required = [:service]
 

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   alias Raxol.Terminal.Sync.Protocol
 
   describe "message creation" do
-    test 'creates sync message' do
+    test ~c"creates sync message" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "test"})
 
@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
       assert message.metadata.consistency == :strong
     end
 
-    test 'creates ack message' do
+    test ~c"creates ack message" do
       message = Protocol.create_ack_message("test_split", :split, 123)
       assert message.type == :ack
       assert message.component_id == "test_split"
@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
       assert is_integer(message.metadata.timestamp)
     end
 
-    test 'creates conflict message' do
+    test ~c"creates conflict message" do
       current_state = %{content: "current", version: 1}
       incoming_state = %{content: "incoming", version: 2}
 
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
       assert is_integer(message.metadata.timestamp)
     end
 
-    test 'creates resolve message' do
+    test ~c"creates resolve message" do
       resolved_state = %{content: "resolved", version: 3}
 
       message =
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   end
 
   describe "message validation" do
-    test 'validates complete message' do
+    test ~c"validates complete message" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "test"})
 
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
                Protocol.handle_sync_message(message, %{metadata: %{version: 0}})
     end
 
-    test 'rejects invalid message' do
+    test ~c"rejects invalid message" do
       # Missing required fields
       message = %{type: :sync}
 
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   end
 
   describe "sync message handling" do
-    test 'accepts newer version with strong consistency' do
+    test ~c"accepts newer version with strong consistency" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "new"},
           consistency: :strong
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
                Protocol.handle_sync_message(message, current_state)
     end
 
-    test 'rejects older version with strong consistency' do
+    test ~c"rejects older version with strong consistency" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "old"},
           consistency: :strong
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
                Protocol.handle_sync_message(message, current_state)
     end
 
-    test 'accepts newer version with eventual consistency' do
+    test ~c"accepts newer version with eventual consistency" do
       message =
         Protocol.create_sync_message("test_tab", :tab, %{content: "new"},
           consistency: :eventual
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
                Protocol.handle_sync_message(message, current_state)
     end
 
-    test 'reports conflict with same version' do
+    test ~c"reports conflict with same version" do
       message =
         Protocol.create_sync_message("test_tab", :tab, %{content: "conflict"},
           consistency: :eventual
@@ -129,13 +129,13 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   end
 
   describe "ack message handling" do
-    test 'accepts matching version' do
+    test ~c"accepts matching version" do
       message = Protocol.create_ack_message("test_split", :split, 123)
       current_state = %{metadata: %{version: 123}}
       assert :ok == Protocol.handle_ack_message(message, current_state)
     end
 
-    test 'rejects mismatched version' do
+    test ~c"rejects mismatched version" do
       message = Protocol.create_ack_message("test_split", :split, 123)
       current_state = %{metadata: %{version: 456}}
 
@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   end
 
   describe "conflict message handling" do
-    test 'resolves conflict with newer version' do
+    test ~c"resolves conflict with newer version" do
       current_state = %{content: "current", version: 1}
       incoming_state = %{content: "incoming", version: 2}
 
@@ -161,7 +161,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
                Protocol.handle_conflict_message(message, current_state)
     end
 
-    test 'keeps current state with older version' do
+    test ~c"keeps current state with older version" do
       current_state = %{content: "current", version: 2}
       incoming_state = %{content: "incoming", version: 1}
 
@@ -177,7 +177,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
                Protocol.handle_conflict_message(message, current_state)
     end
 
-    test 'reports unresolved conflict with same version' do
+    test ~c"reports unresolved conflict with same version" do
       current_state = %{content: "current", version: 1}
       incoming_state = %{content: "incoming", version: 1}
 
@@ -195,7 +195,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   end
 
   describe "resolve message handling" do
-    test 'accepts newer version' do
+    test ~c"accepts newer version" do
       resolved_state = %{content: "resolved", version: 3}
 
       message =
@@ -207,7 +207,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
                Protocol.handle_resolve_message(message, current_state)
     end
 
-    test 'rejects older version' do
+    test ~c"rejects older version" do
       resolved_state = %{content: "resolved", version: 1}
 
       message =
@@ -221,28 +221,28 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   end
 
   describe "consistency levels" do
-    test 'enforces strong consistency for splits' do
+    test ~c"enforces strong consistency for splits" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "test"})
 
       assert message.metadata.consistency == :strong
     end
 
-    test 'enforces strong consistency for windows' do
+    test ~c"enforces strong consistency for windows" do
       message =
         Protocol.create_sync_message("test_window", :window, %{content: "test"})
 
       assert message.metadata.consistency == :strong
     end
 
-    test 'uses eventual consistency for tabs' do
+    test ~c"uses eventual consistency for tabs" do
       message =
         Protocol.create_sync_message("test_tab", :tab, %{content: "test"})
 
       assert message.metadata.consistency == :eventual
     end
 
-    test 'allows overriding consistency level' do
+    test ~c"allows overriding consistency level" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "test"},
           consistency: :eventual

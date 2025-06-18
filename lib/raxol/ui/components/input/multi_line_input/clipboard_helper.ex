@@ -1,16 +1,16 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
-  @moduledoc '''
+  @moduledoc """
   UI adapter for MultiLineInput's ClipboardHelper. Delegates to the implementation in
   Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.
-  '''
+  """
 
   alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper, as: Impl
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
 
-  @doc '''
+  @doc """
   Copies the currently selected text to the clipboard.
-  '''
+  """
   def copy_selection(%State{} = state) do
     {start_pos, end_pos} =
       Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
@@ -34,9 +34,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Cuts the selected text (copies then deletes).
-  '''
+  """
   def cut_selection(%State{} = state) do
     # Get the selected text
     {start_pos, end_pos} =
@@ -66,8 +66,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Initiates a paste operation from clipboard.
-  '''
+  """
   def paste(%State{} = state), do: Impl.paste(state)
 end

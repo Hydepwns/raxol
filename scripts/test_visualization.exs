@@ -24,7 +24,7 @@ defmodule VisualizationTest do
     IO.puts("\n=== Testing VisualizationPlugin ===\n")
 
     # Initialize the plugin
-    {:ok, plugin_state} = Raxol.Plugins.VisualizationPlugin.init()
+    {:ok, _plugin_state} = Raxol.Plugins.VisualizationPlugin.init()
 
     # Test data for bar chart
     bar_chart_data = [
@@ -88,19 +88,31 @@ defmodule VisualizationTest do
 
     # Call the plugin's handle_cells function with each test cell
     IO.puts("Testing bar chart rendering...")
-    case Raxol.Plugins.VisualizationPlugin.handle_cells(chart_cell, %{}, plugin_state) do
+
+    case Raxol.Plugins.VisualizationPlugin.handle_cells(
+           chart_cell,
+           %{},
+           _plugin_state
+         ) do
       {:ok, _updated_state, chart_cells, _commands} ->
         IO.puts("Generated #{length(chart_cells)} cells for chart")
         print_sample_cells(chart_cells, 10)
+
       other ->
         IO.puts("Unexpected result: #{inspect(other)}")
     end
 
     IO.puts("\nTesting treemap rendering...")
-    case Raxol.Plugins.VisualizationPlugin.handle_cells(treemap_cell, %{}, plugin_state) do
+
+    case Raxol.Plugins.VisualizationPlugin.handle_cells(
+           treemap_cell,
+           %{},
+           _plugin_state
+         ) do
       {:ok, _updated_state, treemap_cells, _commands} ->
         IO.puts("Generated #{length(treemap_cells)} cells for treemap")
         print_sample_cells(treemap_cells, 10)
+
       other ->
         IO.puts("Unexpected result: #{inspect(other)}")
     end
@@ -110,17 +122,22 @@ defmodule VisualizationTest do
 
   # Helper to print a sample of cells for verification
   defp print_sample_cells(cells, count) do
-    IO.puts("Sample of cells (first #{min(count, length(cells))} of #{length(cells)}):")
+    IO.puts(
+      "Sample of cells (first #{min(count, length(cells))} of #{length(cells)}):"
+    )
 
     cells
     |> Enum.take(count)
     |> Enum.each(fn {x, y, cell} ->
-      char = case cell.char do
-        c when is_integer(c) -> <<c::utf8>>
-        other -> inspect(other)
-      end
+      char =
+        case cell.char do
+          c when is_integer(c) -> <<c::utf8>>
+          other -> inspect(other)
+        end
 
-      IO.puts("  Position: (#{x},#{y}) - Char: #{char}, FG: #{cell.fg}, BG: #{cell.bg}")
+      IO.puts(
+        "  Position: (#{x},#{y}) - Char: #{char}, FG: #{cell.fg}, BG: #{cell.bg}"
+      )
     end)
   end
 end

@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Visual.Matchers do
-  @moduledoc '''
+  @moduledoc """
   Provides pattern matching helpers for visual testing of Raxol components.
 
   This module includes matchers for:
@@ -7,9 +7,9 @@ defmodule Raxol.Test.Visual.Matchers do
   - Terminal layout patterns
   - Border and edge patterns
   - Component structure patterns
-  '''
+  """
 
-  @doc '''
+  @doc """
   Matches ANSI color codes in the output.
 
   ## Example
@@ -17,7 +17,7 @@ defmodule Raxol.Test.Visual.Matchers do
       output
       |> matches_color(:red, "Error message")
       |> matches_color(:green, "Success")
-  '''
+  """
   def matches_color(output, color, content) when is_binary(output) do
     color_code = ansi_color_code(color)
 
@@ -31,7 +31,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  @doc '''
+  @doc """
   Matches ANSI style codes in the output.
 
   ## Example
@@ -39,7 +39,7 @@ defmodule Raxol.Test.Visual.Matchers do
       output
       |> matches_style(:bold, "Important")
       |> matches_style(:underline, "Link")
-  '''
+  """
   def matches_style(output, style, content) when is_binary(output) do
     style_code = ansi_style_code(style)
 
@@ -53,7 +53,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  @doc '''
+  @doc """
   Matches box drawing characters in the output.
 
   ## Example
@@ -61,7 +61,7 @@ defmodule Raxol.Test.Visual.Matchers do
       output
       |> matches_box_edges()
       |> matches_box_corners()
-  '''
+  """
   def matches_box_edges(output) when is_binary(output) do
     horizontal = "─"
     vertical = "│"
@@ -84,7 +84,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  @doc '''
+  @doc """
   Matches specific layout patterns in the output.
 
   ## Example
@@ -92,7 +92,7 @@ defmodule Raxol.Test.Visual.Matchers do
       output
       |> matches_layout(:centered)
       |> matches_layout(:padded, padding: 2)
-  '''
+  """
   def matches_layout(output, layout, opts \\ [])
 
   def matches_layout(output, :centered, _opts) when is_binary(output) do
@@ -129,7 +129,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  @doc '''
+  @doc """
   Matches specific component patterns in the output.
 
   ## Example
@@ -137,7 +137,7 @@ defmodule Raxol.Test.Visual.Matchers do
       output
       |> matches_component(:button, "Click me")
       |> matches_component(:input, placeholder: "Enter text")
-  '''
+  """
   def matches_component(output, type, opts \\ [])
 
   def matches_component(output, :button, label) when is_binary(output) do
@@ -161,7 +161,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  @doc '''
+  @doc """
   Matches specific text alignment patterns in the output.
 
   ## Example
@@ -169,7 +169,7 @@ defmodule Raxol.Test.Visual.Matchers do
       output
       |> matches_alignment(:left)
       |> matches_alignment(:right, width: 80)
-  '''
+  """
   def matches_alignment(output, alignment, opts \\ []) when is_binary(output) do
     width = Keyword.get(opts, :width, 80)
     lines = String.split(output, "\n")

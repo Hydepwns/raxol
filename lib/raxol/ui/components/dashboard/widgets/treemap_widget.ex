@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Dashboard.Widgets.TreeMapWidget do
-  @moduledoc '''
+  @moduledoc """
   A dashboard widget that displays a treemap using Raxol.UI.Components.Visualization.TreeMap.
   This module is responsible for holding the treemap's state (data, config)
   and providing a data structure for rendering, rather than rendering directly.
-  '''
+  """
 
   # --- State ---
 

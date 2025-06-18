@@ -73,7 +73,7 @@ defmodule RaxolWeb.TerminalChannelTest do
                socket.assigns.user_id
     end
 
-    test 'rejects invalid session topics' do
+    test ~c"rejects invalid session topics" do
       # Expect new/4 to be called even for invalid topics
       expect(EmulatorMock, :new, fn _width, _height, _opts ->
         {:ok, %EmulatorStruct{}}

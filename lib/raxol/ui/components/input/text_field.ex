@@ -1,15 +1,15 @@
 defmodule Raxol.UI.Components.Input.TextField do
-  @moduledoc '''
+  @moduledoc """
   A text field component for single-line text input.
 
   It supports validation, placeholders, masks, and styling.
-  '''
+  """
   alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
 
-  @typedoc '''
+  @typedoc """
   State for the TextField component.
 
   - :id - unique identifier
@@ -23,7 +23,7 @@ defmodule Raxol.UI.Components.Input.TextField do
   - :cursor_pos - cursor position
   - :scroll_offset - horizontal scroll offset
   - :width - visible width of the field (not in defstruct, but added in init)
-  '''
+  """
   @type t :: %__MODULE__{
           id: any(),
           value: String.t(),
@@ -51,9 +51,9 @@ defmodule Raxol.UI.Components.Input.TextField do
             scroll_offset: 0,
             width: 20
 
-  @doc '''
+  @doc """
   Initializes the TextField component state from the given props.
-  '''
+  """
   @spec init(map()) :: {:ok, map()}
   @impl true
   def init(props) do
@@ -64,16 +64,16 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:ok, state}
   end
 
-  @doc '''
+  @doc """
   Mounts the TextField component. Performs any setup needed after initialization.
-  '''
+  """
   @spec mount(map()) :: map()
   @impl true
   def mount(state), do: state
 
-  @doc '''
+  @doc """
   Updates the TextField component state in response to messages or prop changes.
-  '''
+  """
   @spec update(term(), map()) :: {:noreply, map()} | {:noreply, map(), any()}
   @impl true
   def update({:update_props, new_props}, state) do
@@ -112,9 +112,9 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, state}
   end
 
-  @doc '''
+  @doc """
   Handles events for the TextField component, such as keypresses, focus, and blur.
-  '''
+  """
   @spec handle_event(map(), term(), map()) ::
           {:noreply, map()} | {:noreply, map(), any()}
   @impl true
@@ -270,9 +270,9 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, state}
   end
 
-  @doc '''
+  @doc """
   Renders the TextField component using the current state and context.
-  '''
+  """
   @spec render(map(), map()) :: any()
   @impl true
   def render(state, _context) do
@@ -350,9 +350,9 @@ defmodule Raxol.UI.Components.Input.TextField do
     Element.new(:view, %{style: style}, do: text_children)
   end
 
-  @doc '''
+  @doc """
   Unmounts the TextField component, performing any necessary cleanup.
-  '''
+  """
   @impl true
   def unmount(state), do: state
 

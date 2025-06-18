@@ -1,7 +1,5 @@
 # Raxol Component Architecture
 
-> See also: [Component API Reference](./api_reference.md) for callback signatures and types.
-
 ## Table of Contents
 
 1. [Overview](#overview)
@@ -13,6 +11,8 @@
 7. [Communication Patterns](#communication-patterns)
 8. [Error Handling](#error-handling)
 9. [Performance Considerations](#performance-considerations)
+10. [Common Patterns](#common-patterns)
+11. [Migration Guide](#migration-guide)
 
 ## Overview
 
@@ -34,6 +34,16 @@ graph TD
     G --> M[Cleanup]
 ```
 
+### Key Concepts
+
+- **Stateful Components**: Each component maintains its own state and can update it through well-defined callbacks
+- **Unidirectional Data Flow**: Data flows down through props and up through events
+- **Lifecycle Management**: Clear lifecycle hooks for setup and cleanup
+- **Event System**: Robust event handling with type safety
+- **Composition**: Components can be composed to build complex UIs
+
+### Component Callbacks
+
 - `init/1` — Initialize state from props
 - `mount/1` — Set up resources after mounting
 - `update/2` — Update state in response to messages
@@ -45,7 +55,7 @@ graph TD
 
 Every component in Raxol must implement the `Raxol.UI.Components.Base.Component` behaviour, which requires the above callbacks. Components are composed using the `Raxol.View.Elements` DSL, supporting hierarchical parent-child relationships and explicit event propagation.
 
-Example component structure:
+### Basic Component Example
 
 ```elixir
 defmodule MyComponent do
@@ -87,6 +97,73 @@ defmodule MyComponent do
 end
 ```
 
+### Advanced Component Example
+
+```elixir
+defmodule AdvancedComponent do
+  @behaviour Raxol.UI.Components.Base.Component
+
+  def init(props) do
+    %{
+      id: props[:id],
+      data: props[:initial_data] || [],
+      loading: false,
+      error: nil,
+      children: %{}
+    }
+  end
+
+  def mount(state) do
+    # Setup subscriptions, timers, etc.
+    {state, [
+      {:subscribe, :data_updates},
+      {:timer, :refresh, 5000}
+    ]}
+  end
+
+  def update({:data_updated, new_data}, state) do
+    {put_in(state, [:data], new_data), []}
+  end
+
+  def update({:child_event, child_id, event}, state) do
+    # Handle child events
+    {state, []}
+  end
+
+  def render(state) do
+    %{
+      type: :container,
+      children: [
+        %{
+          type: :loading_indicator,
+          visible: state.loading
+        },
+        %{
+          type: :error_message,
+          visible: state.error != nil,
+          message: state.error
+        },
+        %{
+          type: :data_list,
+          items: state.data
+        }
+      ]
+    }
+  end
+
+  def handle_event(%{type: :refresh}, state) do
+    {put_in(state, [:loading], true), [
+      {:command, :fetch_data}
+    ]}
+  end
+
+  def unmount(state) do
+    # Cleanup subscriptions, timers, etc.
+    state
+  end
+end
+```
+
 ## Component Hierarchy
 
 ### Parent-Child Relationships
@@ -104,16 +181,21 @@ graph TD
     style D fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
-- **Parent Components:**
-  - Manage child components and track their state
-  - Handle child events and coordinate updates
-  - Maintain child lifecycle
-- **Child Components:**
-  - Communicate state changes up via events/commands
-  - Receive updates from parent
-  - Maintain local state
+### Parent Component Responsibilities
 
-Events propagate up and down the component tree, enabling rich interactivity and predictable state management.
+- Manage child components and track their state
+- Handle child events and coordinate updates
+- Maintain child lifecycle
+- Provide context and shared resources
+- Handle child errors and recovery
+
+### Child Component Responsibilities
+
+- Communicate state changes up via events/commands
+- Receive updates from parent
+- Maintain local state
+- Handle local errors
+- Clean up local resources
 
 ## Component Lifecycle
 
@@ -135,33 +217,87 @@ sequenceDiagram
     P->>P: unmount/1
 ```
 
-- **Mounting:**
-  1. Parent components mount first
-  2. Children mount in order
-  3. Each component's `mount/1` callback is called
-  4. State initialization occurs
-- **Unmounting:**
-  1. Children unmount first
-  2. Parent unmounts last
-  3. Each component's `unmount/1` callback is called
-  4. Cleanup occurs in reverse order
+### Mounting Process
+
+1. Parent components mount first
+2. Children mount in order
+3. Each component's `mount/1` callback is called
+4. State initialization occurs
+5. Resources are set up
+6. Subscriptions are established
+
+### Unmounting Process
+
+1. Children unmount first
+2. Parent unmounts last
+3. Each component's `unmount/1` callback is called
+4. Cleanup occurs in reverse order
+5. Resources are released
+6. Subscriptions are cancelled
 
 ## Best Practices
+
+### State Management
 
 - Keep state minimal and focused
 - Use immutable updates
 - Track child states in parent
 - Use typed events and proper error handling
 - Minimize state updates and use efficient data structures
-- Test components in isolation using provided helpers
+
+### Component Design
+
+- Single Responsibility Principle
+- Clear component boundaries
+- Predictable data flow
+- Reusable components
+- Well-documented interfaces
+
+### Performance
+
+- Implement `should_update?/2`
+- Use efficient data structures
+- Cache expensive computations
+- Batch related updates
+- Clean up resources properly
 
 ## Testing
 
-Components should be tested for:
+### Unit Testing
 
-- Unit behavior and state management
-- Parent-child relationships and event propagation
-- Lifecycle (mounting/unmounting, state persistence, error recovery)
+```elixir
+defmodule MyComponentTest do
+  use Raxol.ComponentCase
+
+  test "initializes with default state" do
+    assert {:ok, state} = MyComponent.init(%{})
+    assert state.value == ""
+    assert state.error == nil
+  end
+
+  test "handles value changes" do
+    {:ok, state} = MyComponent.init(%{})
+    {new_state, _} = MyComponent.handle_event(%{type: :change, value: "new value"}, state)
+    assert new_state.value == "new value"
+  end
+end
+```
+
+### Integration Testing
+
+```elixir
+defmodule ComponentIntegrationTest do
+  use Raxol.IntegrationCase
+
+  test "parent-child communication" do
+    # Test parent-child interaction
+  end
+
+  test "lifecycle management" do
+    # Test mounting and unmounting
+  end
+end
+```
 
 ## Communication Patterns
 
@@ -178,45 +314,89 @@ graph LR
     style D fill:#f96,stroke:#333,stroke-width:2px
 ```
 
-1. **Upward Communication**
-
-   - Children notify parents through commands
-   - Parents receive updates via `update/2` callback
-   - State changes are tracked in parent's `child_states`
-
-2. **Downward Communication**
-   - Parents send events to children
-   - Children receive updates via `update/2` callback
-   - State synchronization is maintained
-
-### Broadcast Events
-
-Components can broadcast events to multiple children:
+### Upward Communication
 
 ```elixir
-# Parent broadcasting to children
-def handle_event(%{type: :broadcast, value: value}, state) do
+# Child component
+def handle_event(%{type: :click}, state) do
+  {state, [{:command, {:notify_parent, :clicked}}]}
+end
+
+# Parent component
+def update({:child_event, child_id, :clicked}, state) do
+  # Handle child click
+  {state, []}
+end
+```
+
+### Downward Communication
+
+```elixir
+# Parent component
+def handle_event(%{type: :update_children}, state) do
   commands = Enum.map(state.children, fn child_id ->
-    {:command, {:child_event, child_id, value}}
+    {:command, {:child_event, child_id, :update}}
   end)
   {state, commands}
+end
+
+# Child component
+def update({:parent_event, :update}, state) do
+  # Handle parent update
+  {state, []}
 end
 ```
 
 ## Error Handling
 
-### Graceful Error Recovery
+### Error Recovery Strategies
 
 1. **Child Errors**
 
    - Parent components remain stable
    - Child state is preserved
    - Error events are logged
+   - Recovery mechanisms are triggered
 
 2. **Parent Errors**
    - Children remain stable
    - Parent state is preserved
    - Error events are logged
+   - Recovery mechanisms are triggered
+
+### Error Boundary Example
+
+```elixir
+defmodule ErrorBoundary do
+  @behaviour Raxol.UI.Components.Base.Component
+
+  def init(props) do
+    %{
+      id: props[:id],
+      children: props[:children] || [],
+      error: nil
+    }
+  end
+
+  def update({:child_error, error}, state) do
+    {put_in(state, [:error], error), []}
+  end
+
+  def render(state) do
+    if state.error do
+      %{
+        type: :error_display,
+        error: state.error
+      }
+    else
+      %{
+        type: :container,
+        children: state.children
+      }
+    end
+  end
+end
+```
 
 ## Performance Considerations
 
@@ -225,44 +405,97 @@ end
 - Use immutable updates with `Map.put/3` and `Map.update/4`
 - Batch related state updates
 - Minimize state size and complexity
+- Use efficient data structures
 
 ### Rendering
 
 - Implement `should_update?/2` for performance optimization
 - Use efficient data structures
 - Cache expensive computations
+- Avoid unnecessary re-renders
 
 ### Event Handling
 
 - Debounce frequent events
 - Throttle expensive operations
 - Clean up event listeners
+- Use efficient event patterns
 
 ### Memory Management
 
 - Clean up resources in `unmount/1`
 - Avoid memory leaks in event handlers
 - Use proper garbage collection
+- Monitor memory usage
 
-Example performance optimization:
+## Common Patterns
+
+### Form Handling
 
 ```elixir
-def should_update?(new_state, old_state) do
-  # Only update if relevant state changed
-  new_state.value != old_state.value or
-    new_state.error != old_state.error
-end
+defmodule FormComponent do
+  @behaviour Raxol.UI.Components.Base.Component
 
-def handle_event(%{type: :input} = event, state) do
-  # Debounce input events
-  Process.send_after(self(), {:debounced_input, event.value}, 100)
-  {state, []}
+  def init(props) do
+    %{
+      id: props[:id],
+      fields: props[:fields] || %{},
+      errors: %{},
+      submitting: false
+    }
+  end
+
+  def handle_event(%{type: :submit}, state) do
+    {put_in(state, [:submitting], true), [
+      {:command, {:submit_form, state.fields}}
+    ]}
+  end
 end
 ```
 
+### Data Loading
+
+```elixir
+defmodule DataLoader do
+  @behaviour Raxol.UI.Components.Base.Component
+
+  def init(props) do
+    %{
+      id: props[:id],
+      data: nil,
+      loading: false,
+      error: nil
+    }
+  end
+
+  def mount(state) do
+    {put_in(state, [:loading], true), [
+      {:command, :load_data}
+    ]}
+  end
+end
+```
+
+## Migration Guide
+
+### From Version 1.x to 2.x
+
+1. Update component callbacks
+2. Migrate state management
+3. Update event handling
+4. Review lifecycle changes
+5. Update testing approach
+
+### From Version 2.x to 3.x
+
+1. Adopt new component structure
+2. Update communication patterns
+3. Implement new error handling
+4. Review performance optimizations
+5. Update documentation
+
 ## Related Documentation
 
-- [Component API Reference](./api_reference.md)
 - [Component Style Guide](./style_guide.md)
 - [Component Testing Guide](./testing.md)
 - [Component Composition Patterns](./composition.md)

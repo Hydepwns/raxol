@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Metrics.AggregatorTest do
+  @moduledoc """
+  Tests for the metrics aggregator, including rule management, metric aggregation,
+  error handling, and statistical calculations.
+  """
   use ExUnit.Case, async: true
   alias Raxol.Core.Metrics.Aggregator
 
@@ -7,8 +11,18 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
     :ok
   end
 
+  defp create_test_metrics(values, tags \\ %{service: "test"}) do
+    Enum.map(values, fn value ->
+      %{
+        timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
+        value: value,
+        tags: tags
+      }
+    end)
+  end
+
   describe "rule management" do
-    test 'adds a new aggregation rule' do
+    test "adds a new aggregation rule" do
       rule = %{
         type: :mean,
         window: :hour,
@@ -22,7 +36,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
       assert Map.has_key?(rules, rule_id)
     end
 
-    test 'validates and normalizes rule fields' do
+    test "validates and normalizes rule fields" do
       rule = %{
         metric_name: "test_metric"
       }
@@ -53,23 +67,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
     end
 
     test "aggregates metrics by mean", %{rule_id: rule_id} do
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 10,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 20,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 30,
-          tags: %{service: "test"}
-        }
-      ]
+      metrics = create_test_metrics([10, 20, 30])
 
       # Mock UnifiedCollector.get_metrics to return our test metrics
       :meck.new(UnifiedCollector, [:passthrough])
@@ -96,23 +94,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       {:ok, median_rule_id} = Aggregator.add_rule(rule)
 
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 10,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 20,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 30,
-          tags: %{service: "test"}
-        }
-      ]
+      metrics = create_test_metrics([10, 20, 30])
 
       :meck.new(UnifiedCollector, [:passthrough])
 
@@ -176,14 +158,15 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
   end
 
   describe "error handling" do
-    test 'returns error for non-existent rule' do
+    test "returns error for non-existent rule" do
       assert {:error, :rule_not_found} = Aggregator.get_aggregated_metrics(999)
       assert {:error, :rule_not_found} = Aggregator.update_aggregation(999)
+      assert {:error, :rule_not_found} = Aggregator.get_rules()
     end
   end
 
   describe "statistical calculations" do
-    test 'calculates median correctly' do
+    test "calculates median correctly" do
       rule = %{
         type: :median,
         window: :hour,
@@ -193,28 +176,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       {:ok, rule_id} = Aggregator.add_rule(rule)
 
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 10,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 20,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 30,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 40,
-          tags: %{service: "test"}
-        }
-      ]
+      metrics = create_test_metrics([10, 20, 30, 40])
 
       :meck.new(UnifiedCollector, [:passthrough])
 
@@ -229,7 +191,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
       :meck.unload(UnifiedCollector)
     end
 
-    test 'calculates percentile correctly' do
+    test "calculates percentile correctly" do
       rule = %{
         type: :percentile,
         window: :hour,
@@ -239,33 +201,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       {:ok, rule_id} = Aggregator.add_rule(rule)
 
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 10,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 20,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 30,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 40,
-          tags: %{service: "test"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 50,
-          tags: %{service: "test"}
-        }
-      ]
+      metrics = create_test_metrics([10, 20, 30, 40, 50])
 
       :meck.new(UnifiedCollector, [:passthrough])
 

@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.HyperlinkParser do
-  @moduledoc '''
+  @moduledoc """
   Parser for hyperlink data in OSC commands.
 
   This module handles parsing of hyperlink data in the format:
   - Query: "?'
   - Set: 'id;url"
   - Clear: "id;"
-  '''
+  """
 
-  @doc '''
+  @doc """
   Parses hyperlink data from an OSC command.
 
   Returns:
@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.HyperlinkParser do
   - `{:set, id, url}` for set commands
   - `{:clear, id}` for clear commands
   - `{:error, reason}` for invalid data
-  '''
+  """
   @spec parse(String.t()) ::
           {:query, String.t()}
           | {:set, String.t(), String.t()}
@@ -24,8 +24,8 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.HyperlinkParser do
           | {:error, term()}
   def parse(data) do
     case data do
-      "?' ->
-        {:query, '"}
+      "?'" ->
+        {:query, "'"}
 
       str when is_binary(str) ->
         case String.split(str, ";") do

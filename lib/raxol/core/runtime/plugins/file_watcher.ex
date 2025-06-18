@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
-  @moduledoc '''
+  @moduledoc """
   Manages file watching operations for plugins.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -25,50 +25,50 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the file watcher.
-  '''
+  """
   @impl true
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Stops the file watcher.
-  '''
+  """
   @impl true
   def stop(pid) do
     GenServer.stop(pid)
   end
 
-  @doc '''
+  @doc """
   Adds a file to watch.
-  '''
+  """
   @impl true
   def watch_file(pid, file_path, callback)
       when is_binary(file_path) and is_function(callback, 1) do
     GenServer.call(pid, {:watch_file, file_path, callback})
   end
 
-  @doc '''
+  @doc """
   Removes a file from watching.
-  '''
+  """
   @impl true
   def unwatch_file(pid, file_path) when is_binary(file_path) do
     GenServer.call(pid, {:unwatch_file, file_path})
   end
 
-  @doc '''
+  @doc """
   Gets the list of watched files.
-  '''
+  """
   @impl true
   def get_watched_files(pid) do
     GenServer.call(pid, :get_watched_files)
   end
 
-  @doc '''
+  @doc """
   Sets up file watching for a directory.
-  '''
+  """
   @impl true
   def setup_file_watching(pid) do
     GenServer.call(pid, :setup_file_watching)
@@ -171,6 +171,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   end
 
   defp schedule_event_processing(interval) do
-    Process.send_after(self(), :process_events, interval)
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:process_events, timer_id}, interval)
   end
 end

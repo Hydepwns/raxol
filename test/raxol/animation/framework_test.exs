@@ -2,11 +2,15 @@ defmodule Raxol.Animation.FrameworkTest do
   # Disable async because we are manipulating GenServers
   use ExUnit.Case, async: false
 
+  require Logger
+
   alias Raxol.Animation.{Animation, Framework}
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Test.EventAssertions
   import Raxol.AccessibilityTestHelpers
+
+  Logger.debug("Starting FrameworkTest module")
 
   # Helper to wait for animation completion
   defp wait_for_animation_completion(element_id, animation_name, timeout \\ 100) do
@@ -20,11 +24,19 @@ defmodule Raxol.Animation.FrameworkTest do
 
   # Start UserPreferences for these tests
   setup do
+    Logger.debug("Starting setup block")
     local_user_prefs_name = __MODULE__.UserPreferences
     user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
+    Logger.debug(
+      "Starting UserPreferences with opts: #{inspect(user_prefs_opts)}"
+    )
+
     {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
+    Logger.debug("UserPreferences started successfully")
+
     Framework.init(%{}, local_user_prefs_name)
+    Logger.debug("Framework initialized")
 
     # Reset relevant prefs before each test
     UserPreferences.set(
@@ -47,9 +59,11 @@ defmodule Raxol.Animation.FrameworkTest do
 
     # Wait for preferences to be applied
     assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
+    Logger.debug("Preferences applied successfully")
 
     on_exit(fn ->
       Framework.stop()
+      Logger.debug("Framework stopped in on_exit")
     end)
 
     :ok
@@ -61,7 +75,7 @@ defmodule Raxol.Animation.FrameworkTest do
       %{user_preferences_pid: user_preferences_pid}
     end
 
-    test 'initializes with default settings' do
+    test ~c"initializes with default settings" do
       assert :ok == Framework.init()
       # Verify default settings
       settings = Process.get(:animation_framework_settings, %{})
@@ -70,7 +84,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert settings.default_easing == :linear
     end
 
-    test 'creates animation with default settings' do
+    test ~c"creates animation with default settings" do
       animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
@@ -91,7 +105,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert animation.to == 1
     end
 
-    test 'creates animation with custom settings' do
+    test ~c"creates animation with custom settings" do
       animation =
         Framework.create_animation(:custom_animation, %{
           type: :slide,
@@ -337,7 +351,7 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       # Measure animation performance
-      start_time = System.monotonic_time()
+      start_time = System.unique_integer([:positive])
 
       :ok =
         Framework.start_animation(
@@ -350,7 +364,7 @@ defmodule Raxol.Animation.FrameworkTest do
       wait_for_animation_start("test_element", animation.name)
       wait_for_animation_completion("test_element", animation.name)
 
-      end_time = System.monotonic_time()
+      end_time = System.unique_integer([:positive])
 
       duration =
         System.convert_time_unit(end_time - start_time, :native, :millisecond)

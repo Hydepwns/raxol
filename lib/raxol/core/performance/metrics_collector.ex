@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Performance.MetricsCollector do
-  @moduledoc '''
+  @moduledoc """
   Collects and calculates performance metrics.
 
   This module tracks:
@@ -23,7 +23,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
   # Update memory metrics
   collector = MetricsCollector.update_memory_usage(collector)
   ```
-  '''
+  """
 
   defstruct [
     :frame_times,
@@ -33,7 +33,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     :last_memory_usage
   ]
 
-  @doc '''
+  @doc """
   Creates a new metrics collector.
 
   ## Returns
@@ -49,7 +49,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
         gc_stats: %{},
         last_gc_time: 0
       }
-  '''
+  """
   def new do
     %__MODULE__{
       frame_times: [],
@@ -59,7 +59,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     }
   end
 
-  @doc '''
+  @doc """
   Records a frame's timing.
 
   ## Parameters
@@ -77,7 +77,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       iex> collector = MetricsCollector.record_frame(collector, 16)
       iex> length(collector.frame_times)
       1
-  '''
+  """
   def record_frame(collector, frame_time) do
     # Add frame time to history (keep last 60 frames)
     frame_times =
@@ -87,7 +87,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     %{collector | frame_times: frame_times}
   end
 
-  @doc '''
+  @doc """
   Gets the current frames per second.
 
   ## Parameters
@@ -104,7 +104,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       iex> collector = MetricsCollector.record_frame(collector, 16)
       iex> MetricsCollector.get_fps(collector)
       62.5
-  '''
+  """
   def get_fps(collector) do
     case collector.frame_times do
       [] ->
@@ -116,7 +116,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the average frame time.
 
   ## Parameters
@@ -133,7 +133,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       iex> collector = MetricsCollector.record_frame(collector, 16)
       iex> MetricsCollector.get_avg_frame_time(collector)
       16.0
-  '''
+  """
   def get_avg_frame_time(collector) do
     case collector.frame_times do
       [] -> 0.0
@@ -141,7 +141,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     end
   end
 
-  @doc '''
+  @doc """
   Updates memory usage metrics.
 
   ## Parameters
@@ -158,7 +158,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       iex> collector = MetricsCollector.update_memory_usage(collector)
       iex> collector.memory_usage > 0
       true
-  '''
+  """
   def update_memory_usage(collector) do
     # Get current memory usage
     memory_usage = :erlang.memory(:total)
@@ -174,7 +174,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     }
   end
 
-  @doc '''
+  @doc """
   Gets the memory usage trend.
 
   ## Parameters
@@ -192,7 +192,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       iex> collector = MetricsCollector.update_memory_usage(collector)
       iex> MetricsCollector.get_memory_trend(collector)
       0.0
-  '''
+  """
   def get_memory_trend(collector) do
     case collector.last_gc_time do
       0 ->
@@ -213,7 +213,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     end
   end
 
-  @doc '''
+  @doc """
   Gets garbage collection statistics.
 
   ## Parameters
@@ -235,6 +235,6 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       iex> gc_stats = MetricsCollector.get_gc_stats(collector)
       iex> Map.has_key?(gc_stats, :number_of_gcs)
       true
-  '''
+  """
   def get_gc_stats(collector), do: collector.gc_stats
 end

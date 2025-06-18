@@ -2,9 +2,9 @@
 # This demo will show how to use the accessibility features of Raxol.
 
 defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
-  @moduledoc '''
+  @moduledoc """
   A demo showcasing integrated accessibility features.
-  '''
+  """
 
   @behaviour Raxol.Core.Runtime.Application
 
@@ -57,7 +57,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   @impl true
   def view(model), do: demo_view(model)
 
-  @doc '''
+  @doc """
   Renders the accessibility demo view.
 
   ## Parameters
@@ -65,7 +65,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
 
   ## Returns
     - The rendered view
-  '''
+  """
   def demo_view(model) do
     View.column(
       do: [
@@ -98,7 +98,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
     )
   end
 
-  @doc '''
+  @doc """
   Gets the accessibility settings.
 
   ## Parameters
@@ -106,7 +106,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
 
   ## Returns
     - A map containing the accessibility settings
-  '''
+  """
   def get_settings(_user_preferences_pid_or_name) do
     # TODO: Implement get_settings
     %{}

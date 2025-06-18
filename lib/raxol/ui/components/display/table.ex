@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Display.Table do
-  @moduledoc '''
+  @moduledoc """
   A component for displaying tabular data with sorting, filtering, and pagination.
-  '''
+  """
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
 
@@ -104,7 +104,7 @@ defmodule Raxol.UI.Components.Display.Table do
 
   # --- Component Implementation ---
 
-  @doc 'Initializes the Table component state from props.'
+  @doc "Initializes the Table component state from props."
   @spec init(map()) :: {:ok, state()}
   @impl true
   def init(attrs) do
@@ -140,7 +140,7 @@ defmodule Raxol.UI.Components.Display.Table do
     {:ok, internal_state}
   end
 
-  @doc 'Mounts the Table component, performing any setup needed.'
+  @doc "Mounts the Table component, performing any setup needed."
   @spec mount(state()) :: {:ok, state(), list()}
   @impl true
   def mount(state) do
@@ -148,7 +148,7 @@ defmodule Raxol.UI.Components.Display.Table do
     {:ok, state, []}
   end
 
-  @doc 'Updates the Table component state in response to messages. Handles prop updates, sorting, filtering, and selection.'
+  @doc "Updates the Table component state in response to messages. Handles prop updates, sorting, filtering, and selection."
   @spec update(term(), state()) :: {:noreply, state()}
   @impl true
   def update(message, state) do
@@ -193,7 +193,7 @@ defmodule Raxol.UI.Components.Display.Table do
     end
   end
 
-  @doc 'Handles events for the Table component.'
+  @doc "Handles events for the Table component."
   @spec handle_event(state(), term(), map()) ::
           {:noreply, state()} | {:noreply, state(), list()}
   @impl true
@@ -267,7 +267,7 @@ defmodule Raxol.UI.Components.Display.Table do
     end
   end
 
-  @doc 'Renders the Table component.'
+  @doc "Renders the Table component."
   @spec render(state(), map()) :: any()
   @impl true
   def render(state, context) do

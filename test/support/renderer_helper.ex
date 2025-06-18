@@ -1,11 +1,11 @@
 defmodule Raxol.Test.RendererHelper do
-  @moduledoc '''
+  @moduledoc """
   Test helper module for the rendering system.
   Provides utilities for setting up test environments, creating test renderers,
   performing rendering operations, and cleaning up after tests.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Sets up a test environment for renderer testing.
 
   ## Options
@@ -14,7 +14,7 @@ defmodule Raxol.Test.RendererHelper do
 
   ## Returns
     * `{:ok, state}` - The test state containing the renderer
-  '''
+  """
   def setup_renderer_test(opts \\ []) do
     # Start renderer
     {:ok, renderer} =
@@ -42,12 +42,12 @@ defmodule Raxol.Test.RendererHelper do
     }
   end
 
-  @doc '''
+  @doc """
   Cleans up the renderer test environment.
 
   ## Parameters
     * `state` - The test state returned by `setup_renderer_test/1`
-  '''
+  """
   def cleanup_renderer_test(state) do
     Raxol.Terminal.Renderer.stop(state.renderer)
 
@@ -56,7 +56,7 @@ defmodule Raxol.Test.RendererHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Creates a test renderer with the specified options.
 
   ## Parameters
@@ -69,7 +69,7 @@ defmodule Raxol.Test.RendererHelper do
   ## Examples
       iex> create_test_renderer(mode: :gpu, double_buffering: true)
       {:ok, renderer}
-  '''
+  """
   def create_test_renderer(opts \\ []) do
     Raxol.Terminal.Renderer.start_link(
       Keyword.merge(
@@ -85,7 +85,7 @@ defmodule Raxol.Test.RendererHelper do
     )
   end
 
-  @doc '''
+  @doc """
   Renders test content.
 
   ## Parameters
@@ -100,12 +100,12 @@ defmodule Raxol.Test.RendererHelper do
   ## Examples
       iex> render_test_content(renderer, buffer)
       :ok
-  '''
+  """
   def render_test_content(renderer, buffer, opts \\ []) do
     Raxol.Terminal.Renderer.render(renderer, buffer, opts)
   end
 
-  @doc '''
+  @doc """
   Verifies rendered content.
 
   ## Parameters
@@ -120,7 +120,7 @@ defmodule Raxol.Test.RendererHelper do
   ## Examples
       iex> verify_rendered_content(renderer, "Hello, World!")
       :ok
-  '''
+  """
   def verify_rendered_content(renderer, expected_content, opts \\ []) do
     case Raxol.Terminal.Renderer.get_content(renderer, opts) do
       {:ok, ^expected_content} -> :ok
@@ -129,7 +129,7 @@ defmodule Raxol.Test.RendererHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Performs a test rendering operation and records metrics.
 
   ## Parameters
@@ -144,7 +144,7 @@ defmodule Raxol.Test.RendererHelper do
   ## Examples
       iex> perform_test_render(renderer, buffer)
       :ok
-  '''
+  """
   def perform_test_render(renderer, buffer, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
@@ -164,7 +164,7 @@ defmodule Raxol.Test.RendererHelper do
     result
   end
 
-  @doc '''
+  @doc """
   Tests rendering performance.
 
   ## Parameters
@@ -180,7 +180,7 @@ defmodule Raxol.Test.RendererHelper do
   ## Examples
       iex> test_render_performance(renderer, buffer, 1000)
       {:ok, %{avg_time: 16, min_time: 15, max_time: 18}}
-  '''
+  """
   def test_render_performance(renderer, buffer, iterations, opts \\ []) do
     times =
       for _ <- 1..iterations do
@@ -208,7 +208,7 @@ defmodule Raxol.Test.RendererHelper do
     {:ok, metrics}
   end
 
-  @doc '''
+  @doc """
   Waits for rendered content to match expected value.
 
   ## Parameters
@@ -225,7 +225,7 @@ defmodule Raxol.Test.RendererHelper do
   ## Examples
       iex> wait_for_rendered_content(renderer, "Hello, World!", timeout: 2000)
       :ok
-  '''
+  """
   def wait_for_rendered_content(renderer, expected_content, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 1000)
     check_interval = Keyword.get(opts, :check_interval, 100)
@@ -269,7 +269,7 @@ defmodule Raxol.Test.RendererHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Compares rendering performance between different modes.
 
   ## Parameters
@@ -284,7 +284,7 @@ defmodule Raxol.Test.RendererHelper do
   ## Examples
       iex> compare_rendering_modes(buffer, 1000)
       {:ok, %{gpu: %{avg_time: 16}, cpu: %{avg_time: 32}}}
-  '''
+  """
   def compare_rendering_modes(buffer, iterations, _opts \\ []) do
     with {:ok, gpu_renderer} <- create_test_renderer(mode: :gpu),
          {:ok, cpu_renderer} <- create_test_renderer(mode: :cpu),

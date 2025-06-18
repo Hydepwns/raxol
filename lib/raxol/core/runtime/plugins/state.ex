@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.State do
-  @moduledoc '''
+  @moduledoc """
   Defines the state struct for the plugin manager.
-  '''
+  """
 
   defstruct [
     :runtime_pid,

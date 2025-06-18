@@ -1,16 +1,16 @@
 defmodule Raxol.CLI.Commands.UpdateCmd do
-  @moduledoc '''
+  @moduledoc """
   CLI command for managing Raxol updates.
 
   This module handles:
   - Checking for updates
   - Performing self-updates
   - Managing update settings
-  '''
+  """
 
   alias Raxol.System.Updater
 
-  @doc '''
+  @doc """
   Executes the update command with the provided options and arguments.
 
   ## Options
@@ -48,30 +48,36 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   ```
   raxol update --auto off
   ```
-  '''
+  """
   def execute(args) do
-    {opts, _, _} =
-      OptionParser.parse(args,
-        strict: [
-          check: :boolean,
-          force: :boolean,
-          auto: :string,
-          version: :string,
-          help: :boolean,
-          no_delta: :boolean,
-          delta_info: :boolean
-        ],
-        aliases: [
-          c: :check,
-          f: :force,
-          a: :auto,
-          v: :version,
-          h: :help,
-          n: :no_delta,
-          d: :delta_info
-        ]
-      )
+    {opts, _, _} = parse_options(args)
+    handle_command(opts)
+  end
 
+  defp parse_options(args) do
+    OptionParser.parse(args,
+      strict: [
+        check: :boolean,
+        force: :boolean,
+        auto: :string,
+        version: :string,
+        help: :boolean,
+        no_delta: :boolean,
+        delta_info: :boolean
+      ],
+      aliases: [
+        c: :check,
+        f: :force,
+        a: :auto,
+        v: :version,
+        h: :help,
+        n: :no_delta,
+        d: :delta_info
+      ]
+    )
+  end
+
+  defp handle_command(opts) do
     cond do
       opts[:help] ->
         print_help()
@@ -104,7 +110,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
         IO.puts(success_msg("Automatic update checks are now disabled"))
 
       _ ->
-        IO.puts(error_msg("Invalid value for --auto. Use "on" or "off""))
+        IO.puts(error_msg("Invalid value for --auto. Use 'on' or 'off'"))
     end
   end
 
@@ -115,7 +121,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
       {:update_available, version} ->
         IO.puts(success_msg("Update available: v#{version}"))
         IO.puts("Current version: v#{Application.spec(:raxol, :vsn)}")
-        IO.puts("\nRun "raxol update" to install the update")
+        IO.puts("\nRun 'raxol update' to install the update")
 
       {:no_update, version} ->
         IO.puts(success_msg("Raxol is up to date (v#{version})"))
@@ -126,58 +132,47 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   end
 
   defp perform_update(version, opts) do
-    # Extract options with defaults
     _force = Keyword.get(opts, :force, false)
     use_delta = Keyword.get(opts, :use_delta, true)
 
-    # First check if an update is available
     check_result =
       if is_nil(version) do
-        # If no specific version is provided, check for updates
         IO.puts("Checking for updates...")
         Updater.check_for_updates(opts)
       else
-        # If a specific version is provided, we'll try to update to it
         {:update_available, version}
       end
 
     case check_result do
       {:update_available, update_version} ->
-        # Show if using delta updates
-        if use_delta do
-          IO.puts(
-            "Updating to version v#{update_version} (with delta updates if available)..."
-          )
-        else
-          IO.puts(
-            "Updating to version v#{update_version} (using full update)..."
-          )
-        end
-
-        case Updater.self_update(update_version, use_delta: use_delta) do
-          :ok ->
-            IO.puts(success_msg("Update successful!"))
-            IO.puts("Raxol has been updated to v#{update_version}")
-            IO.puts("Please restart Raxol to use the new version")
-
-          {:no_update, current_version} ->
-            IO.puts(success_msg("Already running version v#{current_version}"))
-
-          {:error, reason} ->
-            IO.puts(error_msg("Update failed: #{reason}"))
-
-            IO.puts(
-              "\nYou can try downloading the latest version manually from:"
-            )
-
-            IO.puts("https://github.com/username/raxol/releases/latest")
-        end
+        do_update(update_version, use_delta)
 
       {:no_update, version} ->
         IO.puts(success_msg("Raxol is already up to date (v#{version})"))
 
       {:error, reason} ->
         IO.puts(error_msg("Error checking for updates: #{reason}"))
+    end
+  end
+
+  defp do_update(version, use_delta) do
+    IO.puts(
+      "Updating to version v#{version} #{if use_delta, do: "(with delta updates if available)...", else: "(using full update)..."}"
+    )
+
+    case Updater.self_update(version, use_delta: use_delta) do
+      :ok ->
+        IO.puts(success_msg("Update successful!"))
+        IO.puts("Raxol has been updated to v#{version}")
+        IO.puts("Please restart Raxol to use the new version")
+
+      {:no_update, current_version} ->
+        IO.puts(success_msg("Already running version v#{current_version}"))
+
+      {:error, reason} ->
+        IO.puts(error_msg("Update failed: #{reason}"))
+        IO.puts("\nYou can try downloading the latest version manually from:")
+        IO.puts("https://github.com/username/raxol/releases/latest")
     end
   end
 
@@ -245,7 +240,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   end
 
   defp print_help do
-    help_text = '''
+    help_text = """
     Raxol Update Command
 
     Usage: raxol update [options]
@@ -266,7 +261,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
       raxol update --no-delta          # Update using full update only
       raxol update --version 0.2.0     # Update to version 0.2.0
       raxol update --auto off          # Disable automatic update checks
-    '''
+    """
 
     IO.puts(help_text)
   end

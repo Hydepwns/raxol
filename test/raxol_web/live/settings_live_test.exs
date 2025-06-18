@@ -1,9 +1,9 @@
 defmodule RaxolWeb.SettingsLiveTest do
-  @moduledoc '''
+  @moduledoc """
   Test module for the SettingsLive LiveView component.
   Tests user settings functionality including profile updates,
   password changes, and authentication requirements.
-  '''
+  """
   use RaxolWeb.ConnCase
   import Phoenix.LiveViewTest
   alias Raxol.Accounts

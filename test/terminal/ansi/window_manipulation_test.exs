@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
   alias Raxol.Terminal.ANSI.WindowManipulation
 
   describe "new/0" do
-    test 'creates a new window state with default values' do
+    test ~c"creates a new window state with default values" do
       state = WindowManipulation.new()
 
       assert state.title == ""
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
   end
 
   describe "process_sequence/2" do
-    test 'handles window move operation' do
+    test ~c"handles window move operation" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window resize operation' do
+    test ~c"handles window resize operation" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window maximize operation' do
+    test ~c"handles window maximize operation" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window restore operation' do
+    test ~c"handles window restore operation" do
       state = %{WindowManipulation.new() | size: {100, 50}}
 
       {new_state, response} =
@@ -55,7 +55,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window raise operation' do
+    test ~c"handles window raise operation" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window lower operation' do
+    test ~c"handles window lower operation" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -75,7 +75,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window title setting' do
+    test ~c"handles window title setting" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window icon setting' do
+    test ~c"handles window icon setting" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -95,7 +95,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test 'handles window size report request' do
+    test ~c"handles window size report request" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -105,7 +105,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == "\e[8;24;80t"
     end
 
-    test 'handles window position report request' do
+    test ~c"handles window position report request" do
       state = WindowManipulation.new()
 
       {new_state, response} =
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == "\e[3;0;0t"
     end
 
-    test 'handles invalid sequences gracefully' do
+    test ~c"handles invalid sequences gracefully" do
       state = WindowManipulation.new()
 
       {new_state, response} =

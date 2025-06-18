@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.TimerManager do
-  @moduledoc '''
+  @moduledoc """
   Manages timers and scheduling for plugin operations.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -13,14 +13,15 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
     state = cancel_existing_timer(state)
 
     # Schedule new reload
-    timer_ref =
-      Process.send_after(
-        self(),
-        {:reload_plugin_file_debounced, plugin_id, path},
-        @debounce_timeout
-      )
+    timer_id = System.unique_integer([:positive])
 
-    {:ok, %{state | file_event_timer: timer_ref}}
+    Process.send_after(
+      self(),
+      {:reload_plugin_file_debounced, plugin_id, path},
+      @debounce_timeout
+    )
+
+    {:ok, %{state | file_event_timer: timer_id}}
   end
 
   def cancel_existing_timer(state) do
@@ -36,8 +37,9 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
       Process.cancel_timer(state.tick_timer)
     end
 
-    timer_ref = Process.send_after(self(), :tick, interval)
-    %{state | tick_timer: timer_ref}
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:tick, timer_id}, interval)
+    %{state | tick_timer: timer_id}
   end
 
   def cancel_periodic_tick(state) do

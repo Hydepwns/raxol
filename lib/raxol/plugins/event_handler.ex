@@ -1,11 +1,11 @@
 defmodule Raxol.Plugins.EventHandler do
-  @moduledoc '''
+  @moduledoc """
   Handles dispatching various events (input, resize, mouse, etc.) to plugins.
 
   Provides a generic mechanism to iterate through enabled plugins and invoke
   specific callback functions defined by the `Raxol.Plugins.Plugin` behaviour.
   Updates the plugin manager state based on the results returned by the plugins.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -17,9 +17,9 @@ defmodule Raxol.Plugins.EventHandler do
   @type result :: {:ok, manager()} | {:error, term()}
   @type propagation :: :propagate | :halt
 
-  @doc '''
+  @doc """
   Dispatches an "input" event to all enabled plugins implementing `handle_input/2`.
-  '''
+  """
   @spec handle_input(Core.t(), binary()) :: result()
   def handle_input(%Core{} = manager, input) do
     event = %{
@@ -37,9 +37,9 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc '''
+  @doc """
   Dispatches a "resize" event to all enabled plugins implementing `handle_resize/3`.
-  '''
+  """
   @spec handle_resize(Core.t(), integer(), integer()) :: result()
   def handle_resize(%Core{} = manager, width, height) do
     event = %{
@@ -58,21 +58,22 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc '''
+  @doc """
   Dispatches a mouse event to all enabled plugins implementing `handle_mouse/3`.
   Returns {:ok, updated_manager, :propagate | :halt} or {:error, reason}.
-  '''
+  """
   @spec handle_mouse_event(Core.t(), map(), map()) ::
           {:ok, Core.t(), propagation()} | {:error, term()}
   def handle_mouse_event(%Core{} = manager, event, rendered_cells) do
     # Ensure event has required fields
-    event = Map.merge(
-      %{
-        type: :mouse,
-        timestamp: System.monotonic_time()
-      },
-      event
-    )
+    event =
+      Map.merge(
+        %{
+          type: :mouse,
+          timestamp: System.monotonic_time()
+        },
+        event
+      )
 
     # Initial accumulator includes the propagation state
     initial_acc = {:ok, manager, :propagate}
@@ -86,10 +87,10 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc '''
+  @doc """
   Dispatches an "output" event to all enabled plugins implementing `handle_output/2`.
   Accumulates transformed output.
-  '''
+  """
   @spec handle_output(Core.t(), binary()) ::
           {:ok, Core.t(), binary()} | {:error, term()}
   def handle_output(%Core{} = manager, output) do
@@ -111,21 +112,22 @@ defmodule Raxol.Plugins.EventHandler do
     )
   end
 
-  @doc '''
+  @doc """
   Dispatches a key event to enabled plugins implementing `handle_input/2`.
   Returns {:ok, updated_manager, :propagate | :halt} or {:error, reason}.
-  '''
+  """
   @spec handle_key_event(Core.t(), map()) ::
           {:ok, Core.t(), propagation()} | {:error, term()}
   def handle_key_event(%Core{} = manager, key_event) do
     # Ensure event has required fields
-    event = Map.merge(
-      %{
-        type: :key,
-        timestamp: System.monotonic_time()
-      },
-      key_event
-    )
+    event =
+      Map.merge(
+        %{
+          type: :key,
+          timestamp: System.monotonic_time()
+        },
+        key_event
+      )
 
     # Initial accumulator includes the propagation state
     initial_acc = {:ok, manager, :propagate}
@@ -211,10 +213,12 @@ defmodule Raxol.Plugins.EventHandler do
           handle_result_fun.(acc, plugin, callback_name, result)
         rescue
           e ->
+            stacktrace = __STACKTRACE__
+
             Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Plugin "#{inspect(plugin.name)}" raised an exception during #{callback_name} event handling",
+              "[#{__MODULE__}] Plugin #{inspect(plugin.name)} raised an exception during #{callback_name} event handling",
               e,
-              nil,
+              stacktrace,
               %{
                 plugin: plugin.name,
                 callback: callback_name,
@@ -222,14 +226,16 @@ defmodule Raxol.Plugins.EventHandler do
               }
             )
 
-            exception = Exception.normalize(:error, e, __STACKTRACE__)
-            {:halt, {:error, {exception, __STACKTRACE__}}}
+            exception = Exception.normalize(:error, e, stacktrace)
+            {:halt, {:error, {exception, stacktrace}}}
         catch
           kind, value ->
+            stacktrace = __STACKTRACE__
+
             Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Plugin "#{inspect(plugin.name)}" raised an error during #{callback_name} event handling",
+              "[#{__MODULE__}] Plugin #{inspect(plugin.name)} raised an error during #{callback_name} event handling",
               value,
-              nil,
+              stacktrace,
               %{
                 plugin: plugin.name,
                 callback: callback_name,
@@ -238,8 +244,8 @@ defmodule Raxol.Plugins.EventHandler do
               }
             )
 
-            _ = Exception.normalize(:error, value, __STACKTRACE__)
-            {:halt, {:error, {kind, value, __STACKTRACE__}}}
+            _ = Exception.normalize(:error, value, stacktrace)
+            {:halt, {:error, {kind, value, stacktrace}}}
         end
       else
         # Plugin enabled but doesn't implement the required callback, continue
@@ -274,7 +280,9 @@ defmodule Raxol.Plugins.EventHandler do
        ) do
     case plugin_result do
       {:ok, updated_plugin} ->
-        new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
         {:cont, {:ok, new_manager_state}}
 
       {:error, reason} ->
@@ -307,16 +315,25 @@ defmodule Raxol.Plugins.EventHandler do
        ) do
     case plugin_result do
       {:ok, updated_plugin} ->
-        new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
         {:cont, {:ok, new_manager_state, acc_output}}
 
       {:ok, updated_plugin, transformed_output}
       when is_binary(transformed_output) ->
-        new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
         {:cont, {:ok, new_manager_state, transformed_output}}
 
       {:error, reason} ->
-        handle_plugin_error(plugin, callback_name, plugin_result, {:ok, acc_manager, acc_output})
+        handle_plugin_error(
+          plugin,
+          callback_name,
+          plugin_result,
+          {:ok, acc_manager, acc_output}
+        )
 
       other ->
         log_unexpected_result(plugin, callback_name, other)
@@ -343,11 +360,15 @@ defmodule Raxol.Plugins.EventHandler do
        ) do
     case plugin_result do
       {:ok, updated_plugin} ->
-        new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
         {:cont, {:ok, new_manager_state, propagation}}
 
       {:ok, updated_plugin, :halt} ->
-        new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
         {:halt, {:ok, new_manager_state, :halt}}
 
       {:error, reason} ->
@@ -371,15 +392,24 @@ defmodule Raxol.Plugins.EventHandler do
        ) do
     case plugin_result do
       {:ok, updated_plugin} ->
-        new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
         {:cont, {:ok, new_manager_state, propagation}}
 
       {:ok, updated_plugin, :halt} ->
-        new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
         {:halt, {:ok, new_manager_state, :halt}}
 
       {:error, reason} ->
-        handle_plugin_error(plugin, callback_name, plugin_result, {:ok, acc_manager, propagation})
+        handle_plugin_error(
+          plugin,
+          callback_name,
+          plugin_result,
+          {:ok, acc_manager, propagation}
+        )
 
       other ->
         log_unexpected_result(plugin, callback_name, other)
@@ -387,8 +417,13 @@ defmodule Raxol.Plugins.EventHandler do
     end
   end
 
-  defp handle_key_update({:error, _} = error_acc, _plugin, _callback_name, _result),
-    do: {:halt, error_acc}
+  defp handle_key_update(
+         {:error, _} = error_acc,
+         _plugin,
+         _callback_name,
+         _result
+       ),
+       do: {:halt, error_acc}
 
   # Improved logging functions
 
@@ -419,7 +454,10 @@ defmodule Raxol.Plugins.EventHandler do
 
   # Add this helper function
   defp update_plugin_state(acc_manager, plugin, updated_plugin) do
-    %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin)}
+    %{
+      acc_manager
+      | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+    }
   end
 
   # Add this helper function
@@ -428,6 +466,7 @@ defmodule Raxol.Plugins.EventHandler do
       {:error, reason} ->
         log_plugin_error(plugin, callback_name, reason)
         {:halt, {:error, reason}}
+
       other ->
         log_unexpected_result(plugin, callback_name, other)
         {:cont, {:error, "Unexpected result"}}

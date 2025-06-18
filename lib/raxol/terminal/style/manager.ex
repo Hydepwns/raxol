@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Style.Manager do
-  @moduledoc '''
+  @moduledoc """
   Manages text styling and formatting for the terminal emulator.
   This module provides a clean interface for managing text styles, colors, and attributes.
-  '''
+  """
 
   alias Raxol.Terminal.ANSI.TextFormatting
 
@@ -37,145 +37,145 @@ defmodule Raxol.Terminal.Style.Manager do
           hyperlink: String.t() | nil
         }
 
-  @doc '''
+  @doc """
   Creates a new text style with default values.
-  '''
+  """
   @spec new() :: text_style()
   def new do
     TextFormatting.new()
   end
 
-  @doc '''
+  @doc """
   Gets the current style.
-  '''
+  """
   @spec get_current_style(text_style()) :: text_style()
   def get_current_style(style) do
     style
   end
 
-  @doc '''
+  @doc """
   Sets the style to a new value.
-  '''
+  """
   @spec set_style(text_style(), text_style()) :: text_style()
   def set_style(_current_style, new_style) do
     new_style
   end
 
-  @doc '''
+  @doc """
   Applies a text attribute to the style.
-  '''
+  """
   @spec apply_style(text_style(), atom()) :: text_style()
   def apply_style(style, attribute) do
     TextFormatting.apply_attribute(style, attribute)
   end
 
-  @doc '''
+  @doc """
   Resets all text formatting attributes to their default values.
-  '''
+  """
   @spec reset_style(text_style()) :: text_style()
   def reset_style(_style) do
     new()
   end
 
-  @doc '''
+  @doc """
   Sets the foreground color.
-  '''
+  """
   @spec set_foreground(text_style(), color()) :: text_style()
   def set_foreground(style, color) do
     TextFormatting.set_foreground(style, color)
   end
 
-  @doc '''
+  @doc """
   Sets the background color.
-  '''
+  """
   @spec set_background(text_style(), color()) :: text_style()
   def set_background(style, color) do
     TextFormatting.set_background(style, color)
   end
 
-  @doc '''
+  @doc """
   Gets the foreground color.
-  '''
+  """
   @spec get_foreground(text_style()) :: color()
   def get_foreground(style) do
     TextFormatting.get_foreground(style)
   end
 
-  @doc '''
+  @doc """
   Gets the background color.
-  '''
+  """
   @spec get_background(text_style()) :: color()
   def get_background(style) do
     TextFormatting.get_background(style)
   end
 
-  @doc '''
+  @doc """
   Sets double-width mode for the current line.
-  '''
+  """
   @spec set_double_width(text_style()) :: text_style()
   def set_double_width(style) do
     TextFormatting.set_double_width(style)
   end
 
-  @doc '''
+  @doc """
   Sets double-height top half mode for the current line.
-  '''
+  """
   @spec set_double_height_top(text_style()) :: text_style()
   def set_double_height_top(style) do
     TextFormatting.set_double_height_top(style)
   end
 
-  @doc '''
+  @doc """
   Sets double-height bottom half mode for the current line.
-  '''
+  """
   @spec set_double_height_bottom(text_style()) :: text_style()
   def set_double_height_bottom(style) do
     TextFormatting.set_double_height_bottom(style)
   end
 
-  @doc '''
+  @doc """
   Resets to single-width, single-height mode.
-  '''
+  """
   @spec reset_size(text_style()) :: text_style()
   def reset_size(style) do
     TextFormatting.reset_size(style)
   end
 
-  @doc '''
+  @doc """
   Calculates the effective width of a character based on the current style.
-  '''
+  """
   @spec effective_width(text_style(), String.t()) :: integer()
   def effective_width(style, char) do
     TextFormatting.effective_width(style, char)
   end
 
-  @doc '''
+  @doc """
   Gets the hyperlink URI.
-  '''
+  """
   @spec get_hyperlink(text_style()) :: String.t() | nil
   def get_hyperlink(style) do
     TextFormatting.get_hyperlink(style)
   end
 
-  @doc '''
+  @doc """
   Sets a hyperlink URI.
-  '''
+  """
   @spec set_hyperlink(text_style(), String.t() | nil) :: text_style()
   def set_hyperlink(style, url) do
     TextFormatting.set_hyperlink(style, url)
   end
 
-  @doc '''
+  @doc """
   Converts an ANSI color code to a color name.
-  '''
+  """
   @spec ansi_code_to_color_name(integer()) :: color() | nil
   def ansi_code_to_color_name(code) do
     TextFormatting.ansi_code_to_color_name(code)
   end
 
-  @doc '''
+  @doc """
   Formats SGR parameters for DECRQSS responses.
-  '''
+  """
   @spec format_sgr_params(text_style()) :: String.t()
   def format_sgr_params(style) do
     TextFormatting.format_sgr_params(style)

@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Rendering.Scheduler do
-  @moduledoc '''
+  @moduledoc """
   Manages the rendering schedule based on frame rate.
-  '''
+  """
 
   use GenServer
 
@@ -11,7 +11,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
     @moduledoc false
 
     defstruct interval_ms: 16,
-              timer_ref: nil,
+              timer_id: nil,
               enabled: false,
               engine_pid: nil
   end
@@ -56,9 +56,9 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   def handle_cast(:enable, state), do: {:noreply, state}
 
   @impl true
-  def handle_cast(:disable, %State{enabled: true, timer_ref: ref} = state) do
-    if ref, do: Process.cancel_timer(ref)
-    {:noreply, %{state | enabled: false, timer_ref: nil}}
+  def handle_cast(:disable, %State{enabled: true} = state) do
+    # We can't cancel the timer, but we can ignore its message
+    {:noreply, %{state | enabled: false, timer_id: nil}}
   end
 
   # Already disabled
@@ -87,9 +87,22 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
   # --- Private Helpers ---
 
-  defp schedule_render_tick(%State{timer_ref: ref, interval_ms: ms} = state) do
-    if ref, do: Process.cancel_timer(ref)
-    new_timer_ref = Process.send_after(self(), :render_tick, ms)
-    %{state | timer_ref: new_timer_ref}
+  defp schedule_render_tick(%State{interval_ms: ms} = state) do
+    # We can't cancel the timer, but we can ignore its message
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:render_tick, timer_id}, ms)
+    %{state | timer_id: timer_id}
   end
+
+  @impl true
+  def handle_info(
+        {:render_tick, timer_id},
+        %State{enabled: true, timer_id: timer_id} = state
+      ) do
+    GenServer.cast(state.engine_pid, :render_frame)
+    new_state = schedule_render_tick(state)
+    {:noreply, new_state}
+  end
+
+  def handle_info({:render_tick, _other_id}, state), do: {:noreply, state}
 end

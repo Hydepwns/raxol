@@ -1,13 +1,13 @@
 defmodule Raxol.Docs.InteractiveTutorial.Navigation do
-  @moduledoc '''
+  @moduledoc """
   Handles navigation and progress tracking for tutorials.
-  '''
+  """
 
   alias Raxol.Docs.InteractiveTutorial.State
 
-  @doc '''
+  @doc """
   Starts a tutorial by ID.
-  '''
+  """
   def start_tutorial(state, tutorial_id) do
     case Map.get(state.tutorials, tutorial_id) do
       nil ->
@@ -36,9 +36,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
     end
   end
 
-  @doc '''
+  @doc """
   Goes to the next step in the current tutorial.
-  '''
+  """
   def next_step(state) do
     with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
          step_id when not is_nil(step_id) <- state.current_step,
@@ -71,9 +71,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
     end
   end
 
-  @doc '''
+  @doc """
   Goes to the previous step in the current tutorial.
-  '''
+  """
   def previous_step(state) do
     with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
          step_id when not is_nil(step_id) <- state.current_step,
@@ -99,9 +99,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
     end
   end
 
-  @doc '''
+  @doc """
   Jumps to a specific step in the current tutorial.
-  '''
+  """
   def jump_to_step(state, step_id) do
     with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
          tutorial when not is_nil(tutorial) <-
@@ -119,9 +119,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the progress for a tutorial.
-  '''
+  """
   def get_progress(state, tutorial_id) do
     case Map.get(state.tutorials, tutorial_id) do
       nil ->

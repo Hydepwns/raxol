@@ -1,8 +1,8 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
-  @moduledoc '''
+  @moduledoc """
   Core module for managing plugin dependencies and dependency resolution.
   Provides the main public API for dependency checking and load order resolution.
-  '''
+  """
 
   @behaviour Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
 
@@ -24,7 +24,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
           | {:error, :circular_dependency, [String.t()], dependency_chain()}
 
   @impl true
-  @doc '''
+  @doc """
   Checks if a plugin's dependencies are satisfied.
 
   ## Parameters
@@ -40,7 +40,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   * `{:error, :missing_dependencies, missing, chain}` - If any dependencies are missing
   * `{:error, :version_mismatch, mismatches, chain}` - If any dependencies have incompatible versions
   * `{:error, :circular_dependency, cycle, chain}` - If a circular dependency is detected
-  '''
+  """
   def check_dependencies(
         plugin_id,
         plugin_metadata,
@@ -80,6 +80,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   defp format_conflict_result(:ok, _current_chain), do: :ok
+
   defp format_conflict_result({dep_id, dep_list}, current_chain) do
     requirements = extract_requirements(dep_list)
     {:error, :conflicting_requirements, [{dep_id, requirements}], current_chain}
@@ -97,11 +98,22 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     {missing, missing_version, invalid_version_format,
      invalid_version_requirement, version_mismatches,
      optional_missing} =
-      Enum.reduce(dependencies, {[], [], [], [], [], []}, &process_dependency(&1, loaded_plugins, &2))
+      Enum.reduce(
+        dependencies,
+        {[], [], [], [], [], []},
+        &process_dependency(&1, loaded_plugins, &2)
+      )
 
     log_optional_missing(optional_missing, current_chain)
-    check_dependency_errors(missing, missing_version, invalid_version_format,
-                          invalid_version_requirement, version_mismatches, current_chain)
+
+    check_dependency_errors(
+      missing,
+      missing_version,
+      invalid_version_format,
+      invalid_version_requirement,
+      version_mismatches,
+      current_chain
+    )
   end
 
   defp log_optional_missing(optional_missing, current_chain) do
@@ -112,39 +124,61 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     end
   end
 
-  defp check_dependency_errors(missing, missing_version, invalid_version_format,
-                             invalid_version_requirement, version_mismatches, current_chain) do
+  defp check_dependency_errors(
+         missing,
+         missing_version,
+         invalid_version_format,
+         invalid_version_requirement,
+         version_mismatches,
+         current_chain
+       ) do
     cond do
       Enum.any?(missing_version) ->
         {:error, :missing_version, Enum.reverse(missing_version), current_chain}
+
       Enum.any?(missing) ->
         {:error, :missing_dependencies, Enum.reverse(missing), current_chain}
+
       Enum.any?(invalid_version_format) ->
-        {:error, :invalid_version_format, Enum.reverse(invalid_version_format), current_chain}
+        {:error, :invalid_version_format, Enum.reverse(invalid_version_format),
+         current_chain}
+
       Enum.any?(invalid_version_requirement) ->
-        {:error, :invalid_version_requirement, Enum.reverse(invalid_version_requirement), current_chain}
+        {:error, :invalid_version_requirement,
+         Enum.reverse(invalid_version_requirement), current_chain}
+
       Enum.any?(version_mismatches) ->
-        {:error, :version_mismatch, Enum.reverse(version_mismatches), current_chain}
-      true -> :ok
+        {:error, :version_mismatch, Enum.reverse(version_mismatches),
+         current_chain}
+
+      true ->
+        :ok
     end
   end
 
-  defp process_dependency({dep_id, version_req, %{optional: true}}, loaded_plugins, acc) do
+  defp process_dependency(
+         {dep_id, version_req, %{optional: true}},
+         loaded_plugins,
+         acc
+       ) do
     handle_optional_dependency(dep_id, version_req, loaded_plugins, acc)
   end
+
   defp process_dependency({dep_id, version_req}, loaded_plugins, acc) do
     handle_plugin_dependency(dep_id, version_req, loaded_plugins, acc)
   end
+
   defp process_dependency(dep_id, loaded_plugins, acc) when is_binary(dep_id) do
     if Map.has_key?(loaded_plugins, dep_id) do
       acc
     else
-      {elem(acc, 0) ++ [dep_id], elem(acc, 1), elem(acc, 2), elem(acc, 3), elem(acc, 4), elem(acc, 5)}
+      {elem(acc, 0) ++ [dep_id], elem(acc, 1), elem(acc, 2), elem(acc, 3),
+       elem(acc, 4), elem(acc, 5)}
     end
   end
 
   @impl true
-  @doc '''
+  @doc """
   Resolves the load order for a set of plugins based on their dependencies.
   Uses Tarjan's algorithm for efficient cycle detection and component identification.
 
@@ -156,7 +190,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `{:ok, load_order}` - List of plugin IDs in the correct load order
   * `{:error, :circular_dependency, cycle, chain}` - If a circular dependency is detected
-  '''
+  """
   def resolve_load_order(plugins) do
     graph = Graph.build_dependency_graph(plugins)
 
@@ -168,8 +202,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   defp validate_dependencies(graph, plugins) do
     find_self_dependency(graph) and
-    find_conflicting_requirements(graph) and
-    find_version_mismatches(graph, plugins)
+      find_conflicting_requirements(graph) and
+      find_version_mismatches(graph, plugins)
   end
 
   # --- Helper functions for error detection ---
@@ -194,12 +228,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     reqs = Enum.group_by(deps, fn {dep_id, _, _} -> dep_id end)
 
     case Enum.find(reqs, fn {_dep_id, dep_list} ->
-      length(dep_list) > 1 and not compatible_requirements?(dep_list)
-    end) do
+           length(dep_list) > 1 and not compatible_requirements?(dep_list)
+         end) do
       {dep_id, dep_list} ->
         requirements = Enum.map(dep_list, fn {_, req, _} -> req end)
         {:error, [{dep_id, requirements}], [plugin_id, dep_id]}
-      nil -> nil
+
+      nil ->
+        nil
     end
   end
 
@@ -218,18 +254,31 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   defp has_version_mismatch?(dep_id, req, plugins) do
     dep = plugins[dep_id]
     version = dep && Map.get(dep, :version)
-    version && req && match?({:error, _}, Raxol.Core.Runtime.Plugins.DependencyManager.Version.check_version(version, req))
+
+    version && req &&
+      match?(
+        {:error, _},
+        Raxol.Core.Runtime.Plugins.DependencyManager.Version.check_version(
+          version,
+          req
+        )
+      )
   end
 
   defp find_version_mismatches(graph, plugins) do
     Enum.find_value(graph, :ok, fn {plugin_id, deps} ->
       mismatches =
         deps
-        |> Enum.filter(fn {dep_id, req, _} -> has_version_mismatch?(dep_id, req, plugins) end)
-        |> Enum.map(fn {dep_id, req, _} -> {dep_id, plugins[dep_id][:version], req} end)
+        |> Enum.filter(fn {dep_id, req, _} ->
+          has_version_mismatch?(dep_id, req, plugins)
+        end)
+        |> Enum.map(fn {dep_id, req, _} ->
+          {dep_id, plugins[dep_id][:version], req}
+        end)
 
       if mismatches != [] do
-        {:error, mismatches, [plugin_id | Enum.map(mismatches, fn {dep_id, _, _} -> dep_id end)]}
+        {:error, mismatches,
+         [plugin_id | Enum.map(mismatches, fn {dep_id, _, _} -> dep_id end)]}
       else
         nil
       end
@@ -238,9 +287,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   defp handle_optional_dependency(dep_id, version_req, loaded_plugins, acc) do
     case Map.get(loaded_plugins, dep_id) do
-      nil -> acc
+      nil ->
+        acc
+
       %{version: nil} ->
-        {elem(acc, 0), elem(acc, 1) ++ [dep_id], elem(acc, 2), elem(acc, 3), elem(acc, 4), elem(acc, 5)}
+        {elem(acc, 0), elem(acc, 1) ++ [dep_id], elem(acc, 2), elem(acc, 3),
+         elem(acc, 4), elem(acc, 5)}
+
       %{version: version} ->
         check_version_requirement(dep_id, version, version_req, acc)
     end
@@ -248,17 +301,27 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   defp handle_plugin_version(plugin, dep_id, version_req, acc) do
     case plugin do
-      %{version: nil} -> update_acc(acc, 1, dep_id)
-      %{version: version} -> check_version_requirement(dep_id, version, version_req, acc)
-      _ -> update_acc(acc, 1, dep_id)
+      %{version: nil} ->
+        update_acc(acc, 1, dep_id)
+
+      %{version: version} ->
+        check_version_requirement(dep_id, version, version_req, acc)
+
+      _ ->
+        update_acc(acc, 1, dep_id)
     end
   end
 
   defp handle_plugin_dependency(dep_id, version_req, loaded_plugins, acc) do
     case Map.get(loaded_plugins, dep_id) do
-      nil -> update_acc(acc, 0, dep_id)
-      plugin when is_map(plugin) -> handle_plugin_version(plugin, dep_id, version_req, acc)
-      _ -> update_acc(acc, 0, dep_id)
+      nil ->
+        update_acc(acc, 0, dep_id)
+
+      plugin when is_map(plugin) ->
+        handle_plugin_version(plugin, dep_id, version_req, acc)
+
+      _ ->
+        update_acc(acc, 0, dep_id)
     end
   end
 
@@ -270,7 +333,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   defp check_version_requirement(dep_id, version, version_req, acc) do
-    case Raxol.Core.Runtime.Plugins.DependencyManager.Version.check_version(version, version_req) do
+    case Raxol.Core.Runtime.Plugins.DependencyManager.Version.check_version(
+           version,
+           version_req
+         ) do
       :ok -> acc
       {:error, :invalid_version_format} -> update_acc(acc, 2, dep_id)
       {:error, :invalid_requirement_format} -> update_acc(acc, 3, dep_id)
@@ -280,7 +346,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   @impl true
-  @doc '''
+  @doc """
   Resolves dependencies between plugins.
 
   ## Parameters
@@ -292,24 +358,28 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `{:ok, resolved_deps}` - List of resolved dependencies
   * `{:error, reason}` - If dependency resolution fails
-  '''
-  def resolve_dependencies(plugin_metadata, loaded_plugins) do
+  """
+  def resolve_dependencies(plugin_metadata, _loaded_plugins) do
     dependencies = Map.get(plugin_metadata, :dependencies, [])
 
     case validate_dependencies(dependencies) do
       :ok ->
-        resolved = Enum.map(dependencies, fn
-          {dep_id, _ver_req} -> dep_id
-          {dep_id, _ver_req, _opts} -> dep_id
-          dep_id when is_binary(dep_id) -> dep_id
-        end)
+        resolved =
+          Enum.map(dependencies, fn
+            {dep_id, _ver_req} -> dep_id
+            {dep_id, _ver_req, _opts} -> dep_id
+            dep_id when is_binary(dep_id) -> dep_id
+          end)
+
         {:ok, resolved}
-      error -> error
+
+      error ->
+        error
     end
   end
 
   @impl true
-  @doc '''
+  @doc """
   Validates a list of dependencies.
 
   ## Parameters
@@ -320,21 +390,21 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `:ok` - If all dependencies are valid
   * `{:error, reason}` - If any dependencies are invalid
-  '''
+  """
   def validate_dependencies(dependencies) do
     case Enum.find(dependencies, fn
-      {dep_id, _ver_req} when is_binary(dep_id) -> false
-      {dep_id, _ver_req, _opts} when is_binary(dep_id) -> false
-      dep_id when is_binary(dep_id) -> false
-      _ -> true
-    end) do
+           {dep_id, _ver_req} when is_binary(dep_id) -> false
+           {dep_id, _ver_req, _opts} when is_binary(dep_id) -> false
+           dep_id when is_binary(dep_id) -> false
+           _ -> true
+         end) do
       nil -> :ok
       invalid -> {:error, :invalid_dependency_format, invalid}
     end
   end
 
   @impl true
-  @doc '''
+  @doc """
   Checks for circular dependencies in the plugin graph.
 
   ## Parameters
@@ -347,17 +417,22 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   * `:ok` - If no circular dependencies are found
   * `{:error, :circular_dependency, cycle, chain}` - If a circular dependency is detected
-  '''
-  def check_circular_dependencies(plugin_id, dependencies, loaded_plugins) do
-    graph = Graph.build_dependency_graph(%{plugin_id => %{dependencies: dependencies}})
+  """
+  def check_circular_dependencies(plugin_id, dependencies, _loaded_plugins) do
+    graph =
+      Graph.build_dependency_graph(%{plugin_id => %{dependencies: dependencies}})
 
     case Resolver.find_cycles(graph) do
-      {:ok, []} -> :ok
+      {:ok, []} ->
+        :ok
+
       {:ok, cycles} ->
         cycle = hd(cycles)
         chain = [plugin_id | cycle]
         {:error, :circular_dependency, cycle, chain}
-      error -> error
+
+      error ->
+        error
     end
   end
 end

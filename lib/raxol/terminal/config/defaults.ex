@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Config.Defaults do
-  @moduledoc '''
+  @moduledoc """
   Default terminal configuration values.
 
   Provides functions for generating default terminal configurations.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Generates a default configuration map merging all specific defaults.
 
   This map represents the base configuration before any detection or user overrides.
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Config.Defaults do
   ## Returns
 
   A map containing default configuration values for all settings.
-  '''
+  """
   def generate_default_config do
     %{
       # Base settings often detected or overridden
@@ -58,13 +58,13 @@ defmodule Raxol.Terminal.Config.Defaults do
     # Note: ANSI color map is usually part of theme/profile, not base defaults here
   end
 
-  @doc '''
+  @doc """
   Generates a default display configuration.
 
   ## Returns
 
   A map containing default display configuration values.
-  '''
+  """
   def default_display_config do
     %{
       width: 80,
@@ -83,13 +83,13 @@ defmodule Raxol.Terminal.Config.Defaults do
     }
   end
 
-  @doc '''
+  @doc """
   Generates a default rendering configuration.
 
   ## Returns
 
   A map containing default rendering configuration values.
-  '''
+  """
   def default_rendering_config do
     %{
       # Aligned from configuration.ex
@@ -104,13 +104,13 @@ defmodule Raxol.Terminal.Config.Defaults do
     }
   end
 
-  @doc '''
+  @doc """
   Generates a default behavior configuration.
 
   ## Returns
 
   A map containing default behavior configuration values.
-  '''
+  """
   def default_behavior_config do
     %{
       # Aligned from configuration.ex (@default_scrollback_height)
@@ -135,13 +135,13 @@ defmodule Raxol.Terminal.Config.Defaults do
     }
   end
 
-  @doc '''
+  @doc """
   Generates a default system/performance configuration.
 
   ## Returns
 
   A map containing default system/performance configuration values.
-  '''
+  """
   def default_system_config do
     %{
       # Added from configuration.ex
@@ -151,13 +151,13 @@ defmodule Raxol.Terminal.Config.Defaults do
     }
   end
 
-  @doc '''
+  @doc """
   Generates a default background configuration.
 
   ## Returns
 
   A map containing default background configuration values.
-  '''
+  """
   def default_background_config do
     %{
       # Added from configuration.ex
@@ -173,13 +173,13 @@ defmodule Raxol.Terminal.Config.Defaults do
     }
   end
 
-  @doc '''
+  @doc """
   Generates a default animation configuration.
 
   ## Returns
 
   A map containing default animation configuration values.
-  '''
+  """
   def default_animation_config do
     %{
       # Added from configuration.ex

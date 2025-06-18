@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Output.Processor do
-  @moduledoc '''
+  @moduledoc """
   Processes output events for the terminal emulator.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Styles an output event with the current terminal attributes.
-  '''
+  """
   def style_event(event) do
     case event do
       %{type: :text, content: content, style: style} ->

@@ -170,5 +170,4 @@ Raxol works best with modern terminal emulators that support True Color and Unic
 After installation, check out:
 
 - [Quick Start Guide](quick_start.md) to create your first Raxol application
-- [Components & Layout](03_components_and_layout/components/README.md) to learn about building UIs
 - [Examples](../) for sample applications and use cases

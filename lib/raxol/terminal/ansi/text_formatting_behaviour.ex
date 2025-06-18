@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ANSI.TextFormattingBehaviour do
-  @moduledoc '''
+  @moduledoc """
   Defines the behaviour for text formatting in the terminal.
   This includes handling text attributes, colors, and special text modes.
-  '''
+  """
 
   @type color ::
           :black

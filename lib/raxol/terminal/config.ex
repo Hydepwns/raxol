@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Config do
-  @moduledoc '''
+  @moduledoc """
   Handles terminal settings and behavior, including:
   - Terminal dimensions
   - Color settings
@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Config do
   - Terminal state management
   - Configuration validation
   - Configuration persistence
-  '''
+  """
 
   alias Raxol.Terminal.Config.{Validator, Persistence}
 
@@ -31,19 +31,19 @@ defmodule Raxol.Terminal.Config do
             performance: %{},
             mode: %{}
 
-  @doc '''
+  @doc """
   Creates a new terminal configuration with default values.
 
   ## Returns
 
   A new `t:Raxol.Terminal.Config.t/0` struct with default values.
-  '''
+  """
   @spec new() :: t()
   def new do
     %__MODULE__{}
   end
 
-  @doc '''
+  @doc """
   Creates a new terminal configuration with custom dimensions.
 
   ## Parameters
@@ -54,14 +54,14 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   A new `t:Raxol.Terminal.Config.t/0` struct with the specified dimensions.
-  '''
+  """
   @spec new(integer(), integer()) :: t()
   def new(width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     %__MODULE__{width: width, height: height}
   end
 
-  @doc '''
+  @doc """
   Updates the terminal dimensions.
 
   ## Parameters
@@ -73,14 +73,14 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   The updated configuration with new dimensions.
-  '''
+  """
   @spec set_dimensions(t(), integer(), integer()) :: t()
   def set_dimensions(config, width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     %{config | width: width, height: height}
   end
 
-  @doc '''
+  @doc """
   Gets the current terminal dimensions.
 
   ## Parameters
@@ -90,13 +90,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   A tuple `{width, height}` with the current dimensions.
-  '''
+  """
   @spec get_dimensions(t()) :: {integer(), integer()}
   def get_dimensions(config) do
     {config.width, config.height}
   end
 
-  @doc '''
+  @doc """
   Updates the color settings.
 
   ## Parameters
@@ -107,13 +107,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   The updated configuration with new color settings.
-  '''
+  """
   @spec set_colors(t(), map()) :: t()
   def set_colors(config, colors) when is_map(colors) do
     %{config | colors: Map.merge(config.colors, colors)}
   end
 
-  @doc '''
+  @doc """
   Gets the current color settings.
 
   ## Parameters
@@ -123,13 +123,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   A map containing the current color settings.
-  '''
+  """
   @spec get_colors(t()) :: map()
   def get_colors(config) do
     config.colors
   end
 
-  @doc '''
+  @doc """
   Updates the style settings.
 
   ## Parameters
@@ -140,13 +140,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   The updated configuration with new style settings.
-  '''
+  """
   @spec set_styles(t(), map()) :: t()
   def set_styles(config, styles) when is_map(styles) do
     %{config | styles: Map.merge(config.styles, styles)}
   end
 
-  @doc '''
+  @doc """
   Gets the current style settings.
 
   ## Parameters
@@ -156,13 +156,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   A map containing the current style settings.
-  '''
+  """
   @spec get_styles(t()) :: map()
   def get_styles(config) do
     config.styles
   end
 
-  @doc '''
+  @doc """
   Updates the input handling settings.
 
   ## Parameters
@@ -173,13 +173,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   The updated configuration with new input settings.
-  '''
+  """
   @spec set_input(t(), map()) :: t()
   def set_input(config, input) when is_map(input) do
     %{config | input: Map.merge(config.input, input)}
   end
 
-  @doc '''
+  @doc """
   Gets the current input handling settings.
 
   ## Parameters
@@ -189,13 +189,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   A map containing the current input settings.
-  '''
+  """
   @spec get_input(t()) :: map()
   def get_input(config) do
     config.input
   end
 
-  @doc '''
+  @doc """
   Updates the performance settings.
 
   ## Parameters
@@ -206,13 +206,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   The updated configuration with new performance settings.
-  '''
+  """
   @spec set_performance(t(), map()) :: t()
   def set_performance(config, performance) when is_map(performance) do
     %{config | performance: Map.merge(config.performance, performance)}
   end
 
-  @doc '''
+  @doc """
   Gets the current performance settings.
 
   ## Parameters
@@ -222,13 +222,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   A map containing the current performance settings.
-  '''
+  """
   @spec get_performance(t()) :: map()
   def get_performance(config) do
     config.performance
   end
 
-  @doc '''
+  @doc """
   Updates the terminal mode settings.
 
   ## Parameters
@@ -239,13 +239,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   The updated configuration with new mode settings.
-  '''
+  """
   @spec set_mode(t(), map()) :: t()
   def set_mode(config, mode) when is_map(mode) do
     %{config | mode: Map.merge(config.mode, mode)}
   end
 
-  @doc '''
+  @doc """
   Gets the current terminal mode settings.
 
   ## Parameters
@@ -255,13 +255,13 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   A map containing the current mode settings.
-  '''
+  """
   @spec get_mode(t()) :: map()
   def get_mode(config) do
     config.mode
   end
 
-  @doc '''
+  @doc """
   Merges a map of options with the current configuration.
   Validates the options before merging.
 
@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   The updated configuration with merged options.
-  '''
+  """
   def merge_opts(config, opts) when is_map(opts) do
     case validate_config(opts) do
       :ok ->
@@ -284,7 +284,7 @@ defmodule Raxol.Terminal.Config do
     end
   end
 
-  @doc '''
+  @doc """
   Validates a configuration map.
   Checks for required fields and valid values.
 
@@ -295,7 +295,7 @@ defmodule Raxol.Terminal.Config do
   ## Returns
 
   `:ok` if the configuration is valid, `{:error, reason}` otherwise.
-  '''
+  """
   def validate_config(config) when is_map(config) do
     validate_dimensions(config)
     validate_colors(config)
@@ -305,9 +305,9 @@ defmodule Raxol.Terminal.Config do
     validate_mode(config)
   end
 
-  @doc '''
+  @doc """
   Updates the terminal configuration with validation.
-  '''
+  """
   @spec update(t(), map()) :: {:ok, t()} | {:error, term()}
   def update(config, updates) when is_map(updates) do
     case Validator.validate_update(config, updates) do
@@ -320,17 +320,17 @@ defmodule Raxol.Terminal.Config do
     end
   end
 
-  @doc '''
+  @doc """
   Saves the configuration to persistent storage.
-  '''
+  """
   @spec save(t(), String.t()) :: :ok | {:error, term()}
   def save(config, name) do
     Persistence.save_config(config, name)
   end
 
-  @doc '''
+  @doc """
   Loads a configuration from persistent storage.
-  '''
+  """
   @spec load(String.t()) :: {:ok, t()} | {:error, term()}
   def load(name) do
     case Persistence.load_config(name) do
@@ -339,9 +339,9 @@ defmodule Raxol.Terminal.Config do
     end
   end
 
-  @doc '''
+  @doc """
   Lists all saved configurations.
-  '''
+  """
   @spec list_saved() :: {:ok, [String.t()]} | {:error, term()}
   def list_saved do
     Persistence.list_configs()

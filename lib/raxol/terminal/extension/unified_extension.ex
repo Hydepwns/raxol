@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Extension.UnifiedExtension do
-  @moduledoc '''
+  @moduledoc """
   Unified extension system for the Raxol terminal emulator.
   Handles extension management, integration, and communication with the terminal.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -32,79 +32,79 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Loads an extension from a file or directory.
-  '''
+  """
   def load_extension(path, type, opts \\ []) do
     GenServer.call(__MODULE__, {:load_extension, path, type, opts})
   end
 
-  @doc '''
+  @doc """
   Unloads an extension by its ID.
-  '''
+  """
   def unload_extension(extension_id) do
     GenServer.call(__MODULE__, {:unload_extension, extension_id})
   end
 
-  @doc '''
+  @doc """
   Gets the state of an extension.
-  '''
+  """
   def get_extension_state(extension_id) do
     GenServer.call(__MODULE__, {:get_extension_state, extension_id})
   end
 
-  @doc '''
+  @doc """
   Updates an extension's configuration.
-  '''
+  """
   def update_extension_config(extension_id, config) do
     GenServer.call(__MODULE__, {:update_extension_config, extension_id, config})
   end
 
-  @doc '''
+  @doc """
   Activates an extension.
-  '''
+  """
   def activate_extension(extension_id) do
     GenServer.call(__MODULE__, {:activate_extension, extension_id})
   end
 
-  @doc '''
+  @doc """
   Deactivates an extension.
-  '''
+  """
   def deactivate_extension(extension_id) do
     GenServer.call(__MODULE__, {:deactivate_extension, extension_id})
   end
 
-  @doc '''
+  @doc """
   Executes an extension command.
-  '''
+  """
   def execute_command(extension_id, command, args \\ []) do
     GenServer.call(__MODULE__, {:execute_command, extension_id, command, args})
   end
 
-  @doc '''
+  @doc """
   Gets all loaded extensions.
-  '''
+  """
   def get_extensions(opts \\ []) do
     GenServer.call(__MODULE__, {:get_extensions, opts})
   end
 
-  @doc '''
+  @doc """
   Exports an extension to a file or directory.
-  '''
+  """
   def export_extension(extension_id, path) do
     GenServer.call(__MODULE__, {:export_extension, extension_id, path})
   end
 
-  @doc '''
+  @doc """
   Imports an extension from a file or directory.
-  '''
+  """
   def import_extension(path, opts \\ []) do
     GenServer.call(__MODULE__, {:import_extension, path, opts})
   end
 
-  @doc '''
+  @doc """
   Registers a hook for an extension.
-  '''
+  """
   def register_hook(extension_id, hook_name, callback) do
     GenServer.call(
       __MODULE__,
@@ -112,16 +112,16 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     )
   end
 
-  @doc '''
+  @doc """
   Unregisters a hook for an extension.
-  '''
+  """
   def unregister_hook(extension_id, hook_name) do
     GenServer.call(__MODULE__, {:unregister_hook, extension_id, hook_name})
   end
 
-  @doc '''
+  @doc """
   Triggers a hook for all registered extensions.
-  '''
+  """
   def trigger_hook(hook_name, args \\ []) do
     GenServer.call(__MODULE__, {:trigger_hook, hook_name, args})
   end
@@ -420,7 +420,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     # TODO: Implement actual command execution based on extension type
     # This is a placeholder that simulates command execution
     Process.sleep(100)
-    {:ok, "Command "#{command}" executed with args: #{inspect(args)}"}
+    {:ok, "Command #{command} executed with args: #{inspect(args)}"}
   end
 
   defp filter_extensions(extensions, opts) do

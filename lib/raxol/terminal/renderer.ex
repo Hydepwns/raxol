@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Renderer do
-  @moduledoc '''
+  @moduledoc """
   Terminal renderer module.
 
   This module handles rendering of terminal output, including:
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Renderer do
   validation = Validation.validate_input(buffer, 0, 0, "text")
   output = Renderer.render(renderer, validation: validation)
   ```
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
 
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Renderer do
 
   require Logger
 
-  @doc '''
+  @doc """
   Creates a new renderer with the given screen buffer.
 
   ## Examples
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Renderer do
       iex> renderer = Renderer.new(screen_buffer)
       iex> renderer.screen_buffer
       %ScreenBuffer{}
-  '''
+  """
   def new(screen_buffer, theme \\ %{}, font_settings \\ %{}) do
     %__MODULE__{
       screen_buffer: screen_buffer,
@@ -89,23 +89,23 @@ defmodule Raxol.Terminal.Renderer do
     }
   end
 
-  @doc '''
+  @doc """
   Renders the terminal content without additional options.
-  '''
+  """
   def render(%__MODULE__{} = renderer) do
     render(renderer, %{}, %{})
   end
 
-  @doc '''
+  @doc """
   Renders the terminal content.
-  '''
+  """
   def render(%__MODULE__{} = renderer, opts) do
     render(renderer, opts, %{})
   end
 
-  @doc '''
+  @doc """
   Renders the terminal content with additional options.
-  '''
+  """
   def render(%__MODULE__{} = renderer, opts, additional_opts) do
     content =
       renderer.screen_buffer
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.Renderer do
   defp maybe_apply_cursor(content, nil), do: content
   defp maybe_apply_cursor(content, cursor), do: {content, cursor}
 
-  @doc '''
+  @doc """
   Sets the cursor position.
 
   ## Examples
@@ -132,12 +132,12 @@ defmodule Raxol.Terminal.Renderer do
       iex> renderer = Renderer.set_cursor(renderer, {10, 5})
       iex> renderer.cursor
       {10, 5}
-  '''
+  """
   def set_cursor(%__MODULE__{} = renderer, position) do
     %{renderer | cursor: position}
   end
 
-  @doc '''
+  @doc """
   Clears the cursor position.
 
   ## Examples
@@ -148,12 +148,12 @@ defmodule Raxol.Terminal.Renderer do
       iex> renderer = Renderer.clear_cursor(renderer)
       iex> renderer.cursor
       nil
-  '''
+  """
   def clear_cursor(%__MODULE__{} = renderer) do
     %{renderer | cursor: nil}
   end
 
-  @doc '''
+  @doc """
   Updates the theme settings.
 
   ## Examples
@@ -164,12 +164,12 @@ defmodule Raxol.Terminal.Renderer do
       iex> renderer = Renderer.set_theme(renderer, theme)
       iex> renderer.theme
       %{foreground: %{default: "#FFF"}}
-  '''
+  """
   def set_theme(%__MODULE__{} = renderer, theme) do
     %{renderer | theme: theme}
   end
 
-  @doc '''
+  @doc """
   Updates the font settings.
 
   ## Examples
@@ -180,14 +180,14 @@ defmodule Raxol.Terminal.Renderer do
       iex> renderer = Renderer.set_font_settings(renderer, settings)
       iex> renderer.font_settings
       %{family: "Fira Code"}
-  '''
+  """
   def set_font_settings(%__MODULE__{} = renderer, settings) do
     %{renderer | font_settings: settings}
   end
 
-  @doc '''
+  @doc """
   Starts a new renderer process.
-  '''
+  """
   def start_link(opts \\ []) do
     screen_buffer = Keyword.get(opts, :screen_buffer, ScreenBuffer.new(80, 24))
     theme = Keyword.get(opts, :theme, %{})
@@ -197,15 +197,15 @@ defmodule Raxol.Terminal.Renderer do
     {:ok, renderer}
   end
 
-  @doc '''
+  @doc """
   Stops the renderer process.
-  '''
+  """
   def stop(renderer) do
     # Cleanup any resources if needed
     :ok
   end
 
-  @doc '''
+  @doc """
   Gets the current content of the screen buffer.
 
   ## Parameters
@@ -221,7 +221,7 @@ defmodule Raxol.Terminal.Renderer do
   ## Examples
       iex> get_content(renderer)
       {:ok, "Hello, World!"}
-  '''
+  """
   def get_content(%__MODULE__{} = renderer, opts \\ []) do
     include_style = Keyword.get(opts, :include_style, false)
     include_cursor = Keyword.get(opts, :include_cursor, false)

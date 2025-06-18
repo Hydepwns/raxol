@@ -87,7 +87,12 @@ When addressing Dialyzer warnings, consider the following priority order:
 ### 11. **Unmatched Return Values**
 
     - **Solution**: Ensure all expressions that produce values are either assigned to variables or explicitly returned.
-    - **Example**: Capture Process.send_after/3 results with `_timer_ref = Process.send_after(...)`.
+    - **Example**: Use `System.unique_integer([:positive])` for timer IDs instead of capturing Process.send_after/3 results:
+
+    ```elixir
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:message, timer_id}, delay)
+    ```
 
 ### 12. **Missing Module References**
 

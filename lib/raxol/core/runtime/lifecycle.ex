@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
-  @moduledoc 'Manages the application lifecycle, including startup, shutdown, and terminal interaction.'
+  @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -31,7 +31,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               plugin_manager_ready: false
   end
 
-  @doc '''
+  @doc """
   Starts and links a new Raxol application lifecycle manager.
 
   ## Options
@@ -43,7 +43,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:initial_commands` - A list of `Raxol.Core.Runtime.Command` structs to execute on startup.
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
     * Other options are passed to the application module's `init/1` function.
-  '''
+  """
   def start_link(app_module, options \\ []) when is_atom(app_module) do
     name_option = Keyword.get(options, :name, derive_process_name(app_module))
     GenServer.start_link(__MODULE__, {app_module, options}, name: name_option)
@@ -53,10 +53,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     Module.concat(__MODULE__, Atom.to_string(app_module))
   end
 
-  @doc '''
+  @doc """
   Stops the Raxol application lifecycle manager.
   `pid_or_name` can be the PID or the registered name of the Lifecycle GenServer.
-  '''
+  """
   def stop(pid_or_name) do
     GenServer.cast(pid_or_name, :shutdown)
   end
@@ -71,9 +71,19 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     case initialize_components(app_module, options) do
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid} ->
-        state = build_initial_state(app_module, options, pm_pid, registry_table, dispatcher_pid, initialized_model)
+        state =
+          build_initial_state(
+            app_module,
+            options,
+            pm_pid,
+            registry_table,
+            dispatcher_pid,
+            initialized_model
+          )
+
         log_successful_init(app_module, dispatcher_pid)
         {:ok, state}
+
       {:error, reason, cleanup_fun} ->
         cleanup_fun.()
         {:stop, reason}
@@ -83,20 +93,36 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   defp initialize_components(app_module, options) do
     with {:ok, registry_table} <- initialize_registry_table(app_module),
          {:ok, pm_pid} <- start_plugin_manager(options),
-         {:ok, initialized_model} <- initialize_app_model(app_module, get_initial_model_args(options)),
-         {:ok, dispatcher_pid} <- start_dispatcher(app_module, initialized_model, options, pm_pid, registry_table) do
+         {:ok, initialized_model} <-
+           initialize_app_model(app_module, get_initial_model_args(options)),
+         {:ok, dispatcher_pid} <-
+           start_dispatcher(
+             app_module,
+             initialized_model,
+             options,
+             pm_pid,
+             registry_table
+           ) do
       {:ok, registry_table, pm_pid, initialized_model, dispatcher_pid}
     end
   end
 
-  defp build_initial_state(app_module, options, pm_pid, registry_table, dispatcher_pid, initialized_model) do
+  defp build_initial_state(
+         app_module,
+         options,
+         pm_pid,
+         registry_table,
+         dispatcher_pid,
+         initialized_model
+       ) do
     %State{
       app_module: app_module,
       options: options,
       app_name: get_app_name(app_module, options),
       width: Keyword.get(options, :width, 80),
       height: Keyword.get(options, :height, 24),
-      debug_mode: Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
+      debug_mode:
+        Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
       plugin_manager: pm_pid,
       command_registry_table: registry_table,
       initial_commands: Keyword.get(options, :initial_commands, []),
@@ -114,21 +140,35 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp initialize_registry_table(app_module) do
-    registry_table_name = Module.concat(CommandRegistryTable, Atom.to_string(app_module))
-    case :ets.new(registry_table_name, [:set, :protected, :named_table, read_concurrency: true]) do
-      ^registry_table_name -> {:ok, registry_table_name}
-      _ -> {:error, :registry_table_creation_failed, fn -> :ets.delete(registry_table_name) end}
+    registry_table_name =
+      Module.concat(CommandRegistryTable, Atom.to_string(app_module))
+
+    case :ets.new(registry_table_name, [
+           :set,
+           :protected,
+           :named_table,
+           read_concurrency: true
+         ]) do
+      ^registry_table_name ->
+        {:ok, registry_table_name}
+
+      _ ->
+        {:error, :registry_table_creation_failed,
+         fn -> :ets.delete(registry_table_name) end}
     end
   end
 
   defp start_plugin_manager(options) do
     plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
+
     case Manager.start_link(plugin_manager_opts) do
       {:ok, pm_pid} ->
         Raxol.Core.Runtime.Log.info_with_context(
           "[#{__MODULE__}] PluginManager started with PID: #{inspect(pm_pid)}"
         )
+
         {:ok, pm_pid}
+
       {:error, reason} ->
         {:error, {:plugin_manager_start_failed, reason}, fn -> :ok end}
     end
@@ -142,21 +182,31 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     }
   end
 
-  defp start_dispatcher(app_module, initialized_model, options, pm_pid, registry_table) do
+  defp start_dispatcher(
+         app_module,
+         initialized_model,
+         options,
+         pm_pid,
+         registry_table
+       ) do
     dispatcher_initial_state = %{
       app_module: app_module,
       model: initialized_model,
       width: Keyword.get(options, :width, 80),
       height: Keyword.get(options, :height, 24),
-      debug_mode: Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
+      debug_mode:
+        Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false)),
       plugin_manager: pm_pid,
       command_registry_table: registry_table
     }
 
     case Dispatcher.start_link(self(), dispatcher_initial_state) do
-      {:ok, dispatcher_pid} -> {:ok, dispatcher_pid}
+      {:ok, dispatcher_pid} ->
+        {:ok, dispatcher_pid}
+
       {:error, reason} ->
-        {:error, {:dispatcher_start_failed, reason}, fn -> Manager.stop(pm_pid) end}
+        {:error, {:dispatcher_start_failed, reason},
+         fn -> Manager.stop(pm_pid) end}
     end
   end
 
@@ -397,19 +447,19 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   # === Compatibility Wrappers ===
-  @doc '''
+  @doc """
   Initializes the runtime environment. (Stub for test compatibility)
-  '''
+  """
   def initialize_environment(options), do: options
 
-  @doc '''
+  @doc """
   Starts a Raxol application (compatibility wrapper).
-  '''
+  """
   def start_application(app, opts), do: start_link(app, opts)
 
-  @doc '''
+  @doc """
   Stops a Raxol application (compatibility wrapper).
-  '''
+  """
   def stop_application(val), do: stop(val)
 
   def lookup_app(app_id) do
@@ -470,21 +520,5 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       )
 
       {:error, :cleanup_failed}
-  end
-
-  # Private helper functions
-
-  @doc false
-  defp _cleanup_state(_context) do
-    :ok
-  end
-
-  @doc false
-  defp _cleanup_resources(_context) do
-    :ok
-  end
-
-  defp _cleanup_plugins(_context) do
-    :ok
   end
 end

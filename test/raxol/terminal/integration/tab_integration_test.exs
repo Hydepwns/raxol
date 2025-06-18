@@ -9,13 +9,13 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
   end
 
   describe "tab and window integration" do
-    test 'creates tab with window state' do
+    test ~c"creates tab with window state" do
       assert {:ok, tab_id} = UnifiedTab.create_tab()
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
       assert tab_state.window_state != nil
     end
 
-    test 'updates window state through tab' do
+    test ~c"updates window state through tab" do
       assert {:ok, tab_id} = UnifiedTab.create_tab()
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
 
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
       assert visible_content != []
     end
 
-    test 'renders active tab window' do
+    test ~c"renders active tab window" do
       assert {:ok, tab_id} = UnifiedTab.create_tab()
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
 
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
   end
 
   describe "multiple tabs" do
-    test 'manages multiple tab windows' do
+    test ~c"manages multiple tab windows" do
       assert {:ok, tab1} = UnifiedTab.create_tab()
       assert {:ok, tab2} = UnifiedTab.create_tab()
 
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
       assert active_id == tab2
     end
 
-    test 'maintains separate window states' do
+    test ~c"maintains separate window states" do
       assert {:ok, tab1} = UnifiedTab.create_tab()
       assert {:ok, tab2} = UnifiedTab.create_tab()
 
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
   end
 
   describe "tab cleanup" do
-    test 'cleans up window state when closing tab' do
+    test ~c"cleans up window state when closing tab" do
       assert {:ok, tab_id} = UnifiedTab.create_tab()
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
 
@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
       assert {:error, :tab_not_found} = UnifiedTab.get_tab_state(tab_id)
     end
 
-    test 'cleans up all window states on manager cleanup' do
+    test ~c"cleans up all window states on manager cleanup" do
       assert {:ok, tab1} = UnifiedTab.create_tab()
       assert {:ok, tab2} = UnifiedTab.create_tab()
 
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
   end
 
   describe "tab configuration" do
-    test 'applies configuration to new tabs' do
+    test ~c"applies configuration to new tabs" do
       config = %{
         max_tabs: 5,
         tab_width: 100,
@@ -126,7 +126,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
       assert tab_state.window_state != nil
     end
 
-    test 'updates tab configuration affects window state' do
+    test ~c"updates tab configuration affects window state" do
       assert {:ok, tab_id} = UnifiedTab.create_tab()
 
       # Update tab configuration
@@ -145,13 +145,13 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
   end
 
   describe "error handling" do
-    test 'handles invalid tab operations with window state' do
+    test ~c"handles invalid tab operations with window state" do
       assert {:error, :tab_not_found} = UnifiedTab.get_tab_state(999)
       assert {:error, :tab_not_found} = UnifiedTab.update_tab_config(999, %{})
       assert {:error, :tab_not_found} = UnifiedTab.close_tab(999)
     end
 
-    test 'handles window state errors gracefully' do
+    test ~c"handles window state errors gracefully" do
       assert {:ok, tab_id} = UnifiedTab.create_tab()
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
 

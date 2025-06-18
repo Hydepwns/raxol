@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Core do
-  @moduledoc '''
+  @moduledoc """
   Core state struct for the terminal emulator. This struct holds the main state fields used by the emulator state management functions.
-  '''
+  """
 
   defstruct [
     :active_buffer_type,

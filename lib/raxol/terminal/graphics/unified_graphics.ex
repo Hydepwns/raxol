@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
-  @moduledoc '''
+  @moduledoc """
   Provides unified graphics capabilities for the terminal emulator.
   This module handles graphics rendering, image display, and graphics state management.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -19,99 +19,99 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
         }
 
   # Client API
-  @doc '''
+  @doc """
   Starts the graphics manager with the given options.
-  '''
+  """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Creates a new graphics context with the given configuration.
-  '''
+  """
   @spec create_graphics(map()) :: {:ok, graphics_id()} | {:error, term()}
   def create_graphics(config \\ %{}) do
     GenServer.call(__MODULE__, {:create_graphics, config})
   end
 
-  @doc '''
+  @doc """
   Gets the list of all graphics contexts.
-  '''
+  """
   @spec get_graphics() :: list(graphics_id())
   def get_graphics do
     GenServer.call(__MODULE__, :get_graphics)
   end
 
-  @doc '''
+  @doc """
   Gets the active graphics context ID.
-  '''
+  """
   @spec get_active_graphics() ::
           {:ok, graphics_id()} | {:error, :no_active_graphics}
   def get_active_graphics do
     GenServer.call(__MODULE__, :get_active_graphics)
   end
 
-  @doc '''
+  @doc """
   Sets the active graphics context.
-  '''
+  """
   @spec set_active_graphics(graphics_id()) :: :ok | {:error, term()}
   def set_active_graphics(graphics_id) do
     GenServer.call(__MODULE__, {:set_active_graphics, graphics_id})
   end
 
-  @doc '''
+  @doc """
   Gets the state of a specific graphics context.
-  '''
+  """
   @spec get_graphics_state(graphics_id()) :: {:ok, map()} | {:error, term()}
   def get_graphics_state(graphics_id) do
     GenServer.call(__MODULE__, {:get_graphics_state, graphics_id})
   end
 
-  @doc '''
+  @doc """
   Updates the configuration of a specific graphics context.
-  '''
+  """
   @spec update_graphics_config(graphics_id(), graphics_config()) ::
           :ok | {:error, term()}
   def update_graphics_config(graphics_id, config) do
     GenServer.call(__MODULE__, {:update_graphics_config, graphics_id, config})
   end
 
-  @doc '''
+  @doc """
   Renders graphics data to the specified context.
-  '''
+  """
   @spec render_graphics(graphics_id(), binary()) :: :ok | {:error, term()}
   def render_graphics(graphics_id, data) do
     GenServer.call(__MODULE__, {:render_graphics, graphics_id, data})
   end
 
-  @doc '''
+  @doc """
   Clears the graphics context.
-  '''
+  """
   @spec clear_graphics(graphics_id()) :: :ok | {:error, term()}
   def clear_graphics(graphics_id) do
     GenServer.call(__MODULE__, {:clear_graphics, graphics_id})
   end
 
-  @doc '''
+  @doc """
   Closes a graphics context.
-  '''
+  """
   @spec close_graphics(graphics_id()) :: :ok | {:error, term()}
   def close_graphics(graphics_id) do
     GenServer.call(__MODULE__, {:close_graphics, graphics_id})
   end
 
-  @doc '''
+  @doc """
   Updates the graphics manager configuration.
-  '''
+  """
   @spec update_config(map()) :: :ok
   def update_config(config) do
     GenServer.call(__MODULE__, {:update_config, config})
   end
 
-  @doc '''
+  @doc """
   Cleans up resources.
-  '''
+  """
   @spec cleanup() :: :ok
   def cleanup do
     GenServer.call(__MODULE__, :cleanup)

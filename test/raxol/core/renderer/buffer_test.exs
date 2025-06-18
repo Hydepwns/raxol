@@ -1,11 +1,16 @@
 import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
 
 defmodule Raxol.Core.Renderer.BufferTest do
+  @moduledoc """
+  Tests for the renderer buffer, including creation, cell operations,
+  concurrent operations, overflow handling, clearing, buffer swapping,
+  damage tracking, resizing, and content preservation.
+  """
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.Buffer
 
   describe "new/3" do
-    test 'creates a new buffer with default FPS' do
+    test "creates a new buffer with default FPS" do
       buffer = Buffer.new(80, 24)
       assert buffer.fps == 60
       assert buffer.front_buffer.size == {80, 24}
@@ -14,12 +19,12 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert map_size(buffer.back_buffer.cells) == 0
     end
 
-    test 'creates a buffer with custom FPS' do
+    test "creates a buffer with custom FPS" do
       buffer = Buffer.new(80, 24, 30)
       assert buffer.fps == 30
     end
 
-    test 'handles invalid buffer dimensions' do
+    test "handles invalid buffer dimensions" do
       assert_raise ArgumentError, "Buffer width must be positive", fn ->
         Buffer.new(0, 24)
       end
@@ -94,7 +99,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
   end
 
   describe "concurrent operations" do
-    test 'handles concurrent cell updates' do
+    test "handles concurrent cell updates" do
       buffer = Buffer.new(10, 10)
 
       # Simulate concurrent updates by rapidly updating cells
@@ -111,7 +116,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert MapSet.size(updated_buffer.back_buffer.damage) == 100
     end
 
-    test 'handles rapid buffer swaps' do
+    test "handles rapid buffer swaps" do
       buffer = Buffer.new(10, 10)
 
       # Simulate rapid buffer swaps
@@ -125,12 +130,11 @@ defmodule Raxol.Core.Renderer.BufferTest do
           Buffer.swap_buffers(acc)
         end)
 
-      # Verify buffer state is consistent
       assert final_buffer.front_buffer.size == {10, 10}
       assert final_buffer.back_buffer.size == {10, 10}
     end
 
-    test 'handles concurrent resize operations' do
+    test "handles concurrent resize operations" do
       buffer = Buffer.new(10, 10)
 
       # Simulate concurrent resizes
@@ -149,7 +153,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
   end
 
   describe "buffer overflow handling" do
-    test 'handles cell overflow in x direction' do
+    test "handles cell overflow in x direction" do
       buffer = Buffer.new(2, 2)
 
       # Try to write beyond x bounds
@@ -160,7 +164,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert MapSet.size(buffer.back_buffer.damage) == 0
     end
 
-    test 'handles cell overflow in y direction' do
+    test "handles cell overflow in y direction" do
       buffer = Buffer.new(2, 2)
 
       # Try to write beyond y bounds
@@ -171,7 +175,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert MapSet.size(buffer.back_buffer.damage) == 0
     end
 
-    test 'handles negative coordinate overflow' do
+    test "handles negative coordinate overflow" do
       buffer = Buffer.new(2, 2)
 
       # Try to write with negative coordinates
@@ -183,7 +187,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert MapSet.size(buffer.back_buffer.damage) == 0
     end
 
-    test 'handles buffer resize overflow' do
+    test "handles buffer resize overflow" do
       buffer = Buffer.new(2, 2)
 
       # Add cells to original buffer
@@ -203,7 +207,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
   end
 
   describe "clear/1" do
-    test 'clears all cells and marks entire buffer as damaged' do
+    test "clears all cells and marks entire buffer as damaged" do
       buffer =
         Buffer.new(2, 2)
         |> Buffer.put_cell({0, 0}, "a")
@@ -259,7 +263,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
   describe "get_damage/1" do
     # Skipping due to persistent, undiagnosed failure (damage set is empty after swap) - Unskipping, logic seems correct now
     # @tag :skip # REMOVING
-    test 'returns list of damaged cells' do
+    test "returns list of damaged cells" do
       buffer =
         Buffer.new(2, 2)
         |> Buffer.put_cell({0, 0}, "a")
@@ -297,7 +301,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
   end
 
   describe "resize/3" do
-    test 'preserves content when growing buffer' do
+    test "preserves content when growing buffer" do
       buffer =
         Buffer.new(2, 2)
         |> Buffer.put_cell({0, 0}, "a")
@@ -307,25 +311,18 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert buffer.back_buffer.size == {3, 3}
     end
 
-    test 'marks cells as damaged when shrinking buffer' do
+    test "marks cells as damaged when shrinking buffer" do
       buffer =
         Buffer.new(3, 3)
-        # Add cell within bounds too
         |> Buffer.put_cell({0, 0}, "orig_a")
-        # Add cell outside new bounds
         |> Buffer.put_cell({2, 2}, "orig_b")
         |> Buffer.resize(2, 2)
 
-      # Assert new size and that cells within bounds were copied (or defaulted)
       assert buffer.back_buffer.size == {2, 2}
-      # 2x2 = 4 cells expected
       assert map_size(buffer.back_buffer.cells) == 4
-      # Cell {0,0} should exist (copied or defaulted)
       assert Map.has_key?(buffer.back_buffer.cells, {0, 0})
-      # Cell {2,2} should NOT exist
       refute Map.has_key?(buffer.back_buffer.cells, {2, 2})
 
-      # Assert that ALL cells in the new buffer are marked as damaged
       expected_damage = MapSet.new([{0, 0}, {0, 1}, {1, 0}, {1, 1}])
       assert buffer.back_buffer.damage == expected_damage
     end

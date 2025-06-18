@@ -1,12 +1,12 @@
 defmodule Raxol.Benchmarks.Performance.Animation do
-  @moduledoc '''
+  @moduledoc """
   Animation performance benchmark functions for Raxol.
-  '''
+  """
 
   # Alias functions from Rendering module needed here
   alias Raxol.Benchmarks.Performance.Rendering, as: RenderingBenchmark
 
-  @doc '''
+  @doc """
   Benchmarks animation performance and frame rate stability.
 
   Tests:
@@ -14,7 +14,7 @@ defmodule Raxol.Benchmarks.Performance.Animation do
   - Frame time consistency
   - Animation smoothness
   - CPU usage during animation
-  '''
+  """
   def benchmark_animation_performance do
     IO.puts("Benchmarking animation performance...")
 

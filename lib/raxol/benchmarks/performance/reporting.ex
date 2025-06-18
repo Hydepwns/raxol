@@ -1,16 +1,16 @@
 defmodule Raxol.Benchmarks.Performance.Reporting do
-  @moduledoc '''
+  @moduledoc """
   Reporting functions (saving, printing) for Raxol performance benchmarks.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Saves benchmark results to a file.
 
   ## Parameters
 
   * `results` - Benchmark results map
   * `file_path` - Path to save results (default: auto-generated)
-  '''
+  """
   def save_benchmark_results(results, file_path \\ nil) do
     # Ensure the results directory exists
     File.mkdir_p!("_build/benchmark_results")
@@ -123,10 +123,10 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
             case status do
               :pass -> "✓"
               :fail -> "✗"
-              :skip -> "?'
+              :skip -> "?"
             end
 
-          IO.puts('  #{status_icon} #{message}")
+          IO.puts("  #{status_icon} #{message}")
         end)
       else
         IO.puts("  No validation results available")

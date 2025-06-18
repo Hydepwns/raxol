@@ -1,11 +1,11 @@
 defmodule Raxol.Test.BufferHelper do
-  @moduledoc '''
+  @moduledoc """
   Test helper module for the buffer system.
   Provides utilities for setting up test environments, creating test buffers,
   performing buffer operations, and cleaning up after tests.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Sets up a test environment for buffer testing.
 
   ## Options
@@ -15,7 +15,7 @@ defmodule Raxol.Test.BufferHelper do
 
   ## Returns
     * `{:ok, state}` - The test state containing the buffer manager and test buffer
-  '''
+  """
   def setup_buffer_test(opts \\ []) do
     # Start buffer manager
     {:ok, manager} =
@@ -54,12 +54,12 @@ defmodule Raxol.Test.BufferHelper do
     }
   end
 
-  @doc '''
+  @doc """
   Cleans up the buffer test environment.
 
   ## Parameters
     * `state` - The test state returned by `setup_buffer_test/1`
-  '''
+  """
   def cleanup_buffer_test(state) do
     GenServer.stop(state.manager)
 
@@ -68,7 +68,7 @@ defmodule Raxol.Test.BufferHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Creates a test buffer with the specified options.
 
   ## Parameters
@@ -82,7 +82,7 @@ defmodule Raxol.Test.BufferHelper do
   ## Examples
       iex> create_test_buffer(manager, type: :standard, size: {80, 24})
       {:ok, buffer}
-  '''
+  """
   def create_test_buffer(_manager, opts \\ []) do
     Raxol.Terminal.Buffer.Manager.initialize_buffers(
       80,
@@ -95,7 +95,7 @@ defmodule Raxol.Test.BufferHelper do
     )
   end
 
-  @doc '''
+  @doc """
   Writes test data to the buffer.
 
   ## Parameters
@@ -110,12 +110,12 @@ defmodule Raxol.Test.BufferHelper do
   ## Examples
       iex> write_test_data(buffer, "Hello, World!")
       :ok
-  '''
+  """
   def write_test_data(_buffer, data, opts \\ []) do
     Raxol.Terminal.Buffer.Manager.write(data, opts)
   end
 
-  @doc '''
+  @doc """
   Reads test data from the buffer.
 
   ## Parameters
@@ -129,12 +129,12 @@ defmodule Raxol.Test.BufferHelper do
   ## Examples
       iex> read_test_data(buffer)
       {:ok, "Hello, World!"}
-  '''
+  """
   def read_test_data(_buffer, opts \\ []) do
     Raxol.Terminal.Buffer.Manager.read(opts)
   end
 
-  @doc '''
+  @doc """
   Verifies buffer content.
 
   ## Parameters
@@ -149,7 +149,7 @@ defmodule Raxol.Test.BufferHelper do
   ## Examples
       iex> verify_buffer_content(buffer, "Hello, World!")
       :ok
-  '''
+  """
   def verify_buffer_content(buffer, expected_content, opts \\ []) do
     case read_test_data(buffer, opts) do
       {:ok, ^expected_content} -> :ok
@@ -158,7 +158,7 @@ defmodule Raxol.Test.BufferHelper do
     end
   end
 
-  @doc '''
+  @doc """
   Performs a test operation on the buffer.
 
   ## Parameters
@@ -173,7 +173,7 @@ defmodule Raxol.Test.BufferHelper do
   ## Examples
       iex> perform_test_operation(buffer, :write, data: "Hello, World!")
       :ok
-  '''
+  """
   def perform_test_operation(_buffer, operation, opts \\ []) do
     case operation do
       :clear ->

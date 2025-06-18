@@ -1,17 +1,17 @@
 defmodule Raxol.Plugins.Visualization.DrawingUtils do
-  @moduledoc '''
+  @moduledoc """
   Utility functions for drawing basic shapes and text onto a cell grid.
   Used by visualization renderers.
-  '''
+  """
 
   alias Raxol.Terminal.Cell
   alias Raxol.Style
 
-  @doc '''
+  @doc """
   Draws a simple box with optional text centered inside.
   Returns a grid of cells.
   Expects bounds map: %{width: w, height: h}.
-  '''
+  """
   def draw_box_with_text(text, %{width: width, height: height} = _bounds) do
     # Create empty grid
     grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
@@ -23,22 +23,32 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     draw_text_centered(grid, div(height, 2), text)
   end
 
-  @doc '''
+  @doc """
   Draws box borders onto an existing grid.
-  '''
+  """
   def draw_box_borders(grid, y, x, width, height, style) do
     max_y = y + height - 1
     max_x = x + width - 1
 
     Enum.reduce(y..max_y, grid, fn current_y, acc_grid ->
       Enum.reduce(x..max_x, acc_grid, fn current_x, inner_acc_grid ->
-        draw_border_char(inner_acc_grid, current_y, current_x, y, x, max_y, max_x, style)
+        draw_border_char(
+          inner_acc_grid,
+          current_y,
+          current_x,
+          y,
+          x,
+          max_y,
+          max_x,
+          style
+        )
       end)
     end)
   end
 
   defp draw_border_char(grid, current_y, current_x, y, x, max_y, max_x, style) do
     char = get_border_char(current_y, current_x, y, x, max_y, max_x, grid)
+
     if char != " " do
       put_cell(grid, current_y, current_x, %{Cell.new(char) | style: style})
     else
@@ -48,14 +58,19 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
 
   defp get_border_char(current_y, current_x, y, x, max_y, max_x, grid) do
     cond do
-      corner?(current_y, current_x, y, x, max_y, max_x) -> get_corner_char(current_y, current_x, y, x)
-      edge?(current_y, current_x, y, x, max_y, max_x) -> get_edge_char(current_y, current_x, y, x)
-      true -> elem(get_cell(grid, current_y, current_x), 0) || " "
+      corner?(current_y, current_x, y, x, max_y, max_x) ->
+        get_corner_char(current_y, current_x, y, x)
+
+      edge?(current_y, current_x, y, x, max_y, max_x) ->
+        get_edge_char(current_y, current_x, y, x)
+
+      true ->
+        elem(get_cell(grid, current_y, current_x), 0) || " "
     end
   end
 
   defp corner?(current_y, current_x, y, x, max_y, max_x) do
-    (current_y in [y, max_y]) and (current_x in [x, max_x])
+    current_y in [y, max_y] and current_x in [x, max_x]
   end
 
   defp get_corner_char(current_y, current_x, y, x) do
@@ -75,10 +90,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     if current_y == y, do: "─", else: "│"
   end
 
-  @doc '''
+  @doc """
   Draws text centered horizontally on a specific row in the grid.
   Truncates text if it exceeds grid width.
-  '''
+  """
   def draw_text_centered(grid, y, text) do
     height = length(grid)
     width = if height > 0, do: length(List.first(grid)), else: 0
@@ -95,11 +110,11 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Draws text onto a grid at a specific coordinate.
   Truncates if text exceeds grid width.
   Uses optional style.
-  '''
+  """
   def draw_text(grid, y, x, text, style \\ Style.new()) do
     _text_length = String.length(text)
     grid_height = length(grid)
@@ -117,8 +132,12 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   defp draw_chars(grid, chars, y, x, grid_width, style) do
     Enum.reduce(Enum.with_index(chars), grid, fn {char_code, index}, acc_grid ->
       current_x = x + index
+
       if current_x < grid_width do
-        put_cell(acc_grid, y, current_x, %{Cell.new(<<char_code::utf8>>) | style: style})
+        put_cell(acc_grid, y, current_x, %{
+          Cell.new(<<char_code::utf8>>)
+          | style: style
+        })
       else
         {:halt, acc_grid}
       end
@@ -129,10 +148,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Safely puts a cell into the grid (list of lists).
   Handles out-of-bounds coordinates gracefully (no-op).
-  '''
+  """
   def put_cell(grid, y, x, cell) when is_list(grid) and y >= 0 and x >= 0 do
     if y < length(grid) do
       update_row(grid, y, x, cell)
@@ -146,6 +165,7 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
 
   defp update_row(grid, y, x, cell) do
     row = Enum.at(grid, y)
+
     if is_list(row) and x < length(row) do
       List.update_at(grid, y, fn _ -> List.replace_at(row, x, cell) end)
     else
@@ -153,10 +173,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     end
   end
 
-  @doc '''
+  @doc """
   Safely gets a cell from the grid.
   Returns nil if coordinates are out of bounds.
-  '''
+  """
   def get_cell(grid, x, y) do
     # Use Enum.fetch for lists
     case Enum.fetch(grid, y) do

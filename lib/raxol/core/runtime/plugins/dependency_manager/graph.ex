@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
-  @moduledoc '''
+  @moduledoc """
   Handles dependency graph building and cycle detection for plugin dependencies.
   Provides functionality for building dependency graphs and analyzing dependency chains.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Builds a dependency graph from plugin metadata.
 
   ## Parameters
@@ -26,7 +26,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
         "plugin_a" => [{"plugin_b", ">= 1.0.0", %{optional: false}}],
         "plugin_b" => []
       }
-  '''
+  """
   def build_dependency_graph(plugins) do
     Enum.reduce(plugins, %{}, fn {id, metadata}, acc ->
       deps = Map.get(metadata, :dependencies, [])
@@ -42,7 +42,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
     end)
   end
 
-  @doc '''
+  @doc """
   Builds a dependency chain for error reporting.
 
   ## Parameters
@@ -61,13 +61,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
         "plugin_b" => [{"plugin_a", ">= 1.0.0", %{optional: false}}]
       })
       ["plugin_a", "plugin_b", "plugin_a"]
-  '''
+  """
   def build_dependency_chain(cycle, _graph) do
     # Add the first element again to complete the cycle
     cycle ++ [List.first(cycle)]
   end
 
-  @doc '''
+  @doc """
   Gets all dependencies for a plugin, including transitive dependencies.
 
   ## Parameters
@@ -80,7 +80,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
 
   * `{:ok, deps}` - List of all dependencies
   * `{:error, :circular_dependency, cycle}` - If a circular dependency is detected
-  '''
+  """
   def get_all_dependencies(plugin_id, graph, visited \\ MapSet.new()) do
     if MapSet.member?(visited, plugin_id) do
       {:error, :circular_dependency, [plugin_id]}

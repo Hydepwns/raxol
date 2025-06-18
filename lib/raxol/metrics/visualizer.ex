@@ -1,8 +1,8 @@
 defmodule Raxol.Metrics.Visualizer do
-  @moduledoc '''
+  @moduledoc """
   Provides visualization capabilities for Raxol performance metrics.
   Uses Contex to generate charts and graphs for various performance indicators.
-  '''
+  """
 
   alias Contex.BarChart
   alias Contex.Dataset
@@ -10,13 +10,13 @@ defmodule Raxol.Metrics.Visualizer do
   alias Contex.Plot
   alias Contex.PointPlot
 
-  @doc '''
+  @doc """
   Creates a bar chart visualization for event processing times.
 
   ## Parameters
     * data - List of {event_type, processing_time} tuples
     * options - Optional configuration for the chart
-  '''
+  """
   def create_event_timing_chart(data, options \\ []) do
     dataset = Dataset.new(data, ["Event Type", "Processing Time (ms)"])
 
@@ -30,13 +30,13 @@ defmodule Raxol.Metrics.Visualizer do
     |> Plot.to_svg()
   end
 
-  @doc '''
+  @doc """
   Creates a scatter plot for event throughput over time.
 
   ## Parameters
     * data - List of {timestamp, events_per_second} tuples
     * options - Optional configuration for the chart
-  '''
+  """
   def create_throughput_plot(data, options \\ []) do
     dataset = Dataset.new(data, ["Time", "Events/sec"])
 
@@ -50,13 +50,13 @@ defmodule Raxol.Metrics.Visualizer do
     |> Plot.to_svg()
   end
 
-  @doc '''
+  @doc """
   Creates a line chart for memory usage trends.
 
   ## Parameters
     * data - List of {timestamp, memory_usage} tuples
     * options - Optional configuration for the chart
-  '''
+  """
   def create_memory_usage_chart(data, options \\ []) do
     dataset = Dataset.new(data, ["Time", "Memory Usage (MB)"])
 

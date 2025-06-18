@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ScreenBuffer.Theme do
-  @moduledoc '''
+  @moduledoc """
   Manages themes for the screen buffer.
-  '''
+  """
 
   use GenServer
 
@@ -45,16 +45,16 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
     }
   end
 
-  @doc '''
+  @doc """
   Gets the current theme.
-  '''
+  """
   def current do
     GenServer.call(__MODULE__, :current)
   end
 
-  @doc '''
+  @doc """
   Sets the light theme.
-  '''
+  """
   def light do
     GenServer.call(__MODULE__, {:set, light_theme()})
   end

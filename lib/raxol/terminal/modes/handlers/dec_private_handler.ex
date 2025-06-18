@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
-  @moduledoc '''
+  @moduledoc """
   Handles DEC Private mode operations and their side effects.
   Manages the implementation of DEC private mode changes and their effects on the terminal.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
 
-  @doc '''
+  @doc """
   Handles a DEC private mode change and applies its effects to the emulator.
-  '''
+  """
   @spec handle_mode_change(atom(), ModeTypes.mode_value(), Emulator.t()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def handle_mode_change(mode_name, value, emulator) do

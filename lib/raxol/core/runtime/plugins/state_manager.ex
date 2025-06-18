@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.StateManager do
-  @moduledoc '''
+  @moduledoc """
   Manages plugin state and state transitions.
-  '''
+  """
 
   @behaviour Raxol.Core.Runtime.Plugins.StateManager.Behaviour
 
@@ -65,9 +65,9 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
     Map.get(state_maps.plugin_config, plugin_id)
   end
 
-  @doc '''
+  @doc """
   Returns a new default plugin manager state struct.
-  '''
+  """
   def new do
     %State{
       plugins: %{},
@@ -81,16 +81,16 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
     }
   end
 
-  @doc '''
+  @doc """
   Sets the state for a given plugin.
   Alias for update_plugin_state/3.
-  '''
+  """
   def set_plugin_state(plugin_id, new_state, state_maps) do
     update_plugin_state(plugin_id, new_state, state_maps)
   end
 
-  @doc '''
+  @doc """
   Initializes the plugin state. Returns {:ok, state}.
-  '''
+  """
   def initialize(state), do: {:ok, state}
 end

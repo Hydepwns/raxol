@@ -1,5 +1,5 @@
 defmodule Raxol.Docs.InteractiveTutorial do
-  @moduledoc '''
+  @moduledoc """
   Interactive tutorial system for Raxol documentation.
 
   This module provides a framework for creating and displaying interactive
@@ -12,7 +12,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
   * Exercise validation
   * Contextual hints and help
   * Integration with documentation
-  '''
+  """
 
   alias Raxol.Docs.InteractiveTutorial.{
     State,
@@ -25,9 +25,9 @@ defmodule Raxol.Docs.InteractiveTutorial do
   # Process dictionary key for tutorial state
   @state_key :raxol_tutorial_state
 
-  @doc '''
+  @doc """
   Initializes the tutorial system.
-  '''
+  """
   def init do
     initial_state = State.new()
 
@@ -42,18 +42,18 @@ defmodule Raxol.Docs.InteractiveTutorial do
     :ok
   end
 
-  @doc '''
+  @doc """
   Registers a new tutorial.
-  '''
+  """
   def register_tutorial(tutorial, state \\ nil) do
     with_state(state, fn s ->
       %{s | tutorials: Map.put(s.tutorials, tutorial.id, tutorial)}
     end)
   end
 
-  @doc '''
+  @doc """
   Returns a list of all available tutorials.
-  '''
+  """
   def list_tutorials do
     with_state(fn state ->
       tutorials =
@@ -75,54 +75,54 @@ defmodule Raxol.Docs.InteractiveTutorial do
     end)
   end
 
-  @doc '''
+  @doc """
   Starts a tutorial by ID.
-  '''
+  """
   def start_tutorial(tutorial_id) do
     with_state(fn state ->
       Navigation.start_tutorial(state, tutorial_id)
     end)
   end
 
-  @doc '''
+  @doc """
   Goes to the next step in the current tutorial.
-  '''
+  """
   def next_step do
     with_state(fn state ->
       Navigation.next_step(state)
     end)
   end
 
-  @doc '''
+  @doc """
   Goes to the previous step in the current tutorial.
-  '''
+  """
   def previous_step do
     with_state(fn state ->
       Navigation.previous_step(state)
     end)
   end
 
-  @doc '''
+  @doc """
   Jumps to a specific step in the current tutorial.
-  '''
+  """
   def jump_to_step(step_id) do
     with_state(fn state ->
       Navigation.jump_to_step(state, step_id)
     end)
   end
 
-  @doc '''
+  @doc """
   Gets the progress for a tutorial.
-  '''
+  """
   def get_progress(tutorial_id) do
     with_state(fn state ->
       Navigation.get_progress(state, tutorial_id)
     end)
   end
 
-  @doc '''
+  @doc """
   Gets the current position in the tutorial.
-  '''
+  """
   def get_current_position do
     with_state(fn state ->
       case State.get_current_step(state) do
@@ -135,9 +135,9 @@ defmodule Raxol.Docs.InteractiveTutorial do
     end)
   end
 
-  @doc '''
+  @doc """
   Validates a solution for the current step.
-  '''
+  """
   def validate_exercise(solution) do
     with_state(fn state ->
       case State.get_current_step(state) do
@@ -147,9 +147,9 @@ defmodule Raxol.Docs.InteractiveTutorial do
     end)
   end
 
-  @doc '''
+  @doc """
   Gets a hint for the current step.
-  '''
+  """
   def get_hint do
     with_state(fn state ->
       case State.get_current_step(state) do
@@ -165,9 +165,9 @@ defmodule Raxol.Docs.InteractiveTutorial do
     end)
   end
 
-  @doc '''
+  @doc """
   Renders the current step's content.
-  '''
+  """
   def render_current_step do
     with_state(fn state ->
       case State.get_current_step(state) do
@@ -177,9 +177,9 @@ defmodule Raxol.Docs.InteractiveTutorial do
     end)
   end
 
-  @doc '''
+  @doc """
   Renders interactive elements for the current step.
-  '''
+  """
   def render_interactive_elements do
     with_state(fn state ->
       case State.get_current_step(state) do

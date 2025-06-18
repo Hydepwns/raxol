@@ -1,16 +1,16 @@
 defmodule Raxol.UI.Components.Input.TextInput.Renderer do
-  @moduledoc '''
+  @moduledoc """
   Handles rendering logic for the TextInput component.
   This includes display value formatting, style management, and visual feedback.
-  '''
+  """
 
   use Phoenix.Component
 
-  @doc '''
+  @doc """
   Renders the text input component with appropriate styling and visual feedback.
-  '''
+  """
   def render(assigns) do
-    ~H'''
+    ~H"""
     <div class="text-input">
       <input
         type="text"
@@ -37,7 +37,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Renderer do
         </div>
       <% end %>
     </div>
-    '''
+    """
   end
 
   # Private helpers

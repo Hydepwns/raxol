@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Runtime.CommandTest do
+  @moduledoc """
+  Tests for the command runtime system, including creation, mapping,
+  execution, and error handling.
+  """
   use ExUnit.Case, async: false
   alias Raxol.Core.Runtime.Command
   alias Briefly
@@ -10,37 +14,37 @@ defmodule Raxol.Core.Runtime.CommandTest do
   end
 
   describe "command creation" do
-    test 'none/0 creates a no-op command' do
+    test ~c"none/0 creates a no-op command" do
       cmd = Command.none()
       assert %Command{type: :none} = cmd
     end
 
-    test 'task/1 creates a task command' do
+    test ~c"task/1 creates a task command" do
       fun = fn -> :result end
       cmd = Command.task(fun)
       assert %Command{type: :task, data: ^fun} = cmd
     end
 
-    test 'batch/1 creates a batch command' do
+    test ~c"batch/1 creates a batch command" do
       commands = [Command.none(), Command.delay(:msg, 100)]
       cmd = Command.batch(commands)
       assert %Command{type: :batch, data: ^commands} = cmd
     end
 
-    test 'delay/2 creates a delay command' do
+    test ~c"delay/2 creates a delay command" do
       msg = :delayed_message
       delay_ms = 500
       cmd = Command.delay(msg, delay_ms)
       assert %Command{type: :delay, data: {^msg, ^delay_ms}} = cmd
     end
 
-    test 'broadcast/1 creates a broadcast command' do
+    test ~c"broadcast/1 creates a broadcast command" do
       msg = :broadcast_message
       cmd = Command.broadcast(msg)
       assert %Command{type: :broadcast, data: ^msg} = cmd
     end
 
-    test 'system/2 creates a system command' do
+    test ~c"system/2 creates a system command" do
       operation = :file_write
       opts = [path: "test.txt", content: "Hello"]
       cmd = Command.system(operation, opts)
@@ -49,7 +53,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
   end
 
   describe "map/2" do
-    test 'maps over task command result' do
+    test ~c"maps over task command result" do
       cmd = Command.task(fn -> :original end)
       mapper = fn :original -> :mapped end
 
@@ -61,7 +65,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert result == :mapped
     end
 
-    test 'maps over batch command results' do
+    test ~c"maps over batch command results" do
       commands = [
         Command.delay(:msg1, 100),
         Command.broadcast(:msg2)
@@ -82,7 +86,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert broadcast_cmd.data == :mapped2
     end
 
-    test 'maps over delay command message' do
+    test ~c"maps over delay command message" do
       cmd = Command.delay(:original, 200)
       mapper = fn :original -> :mapped end
 
@@ -90,7 +94,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert %Command{type: :delay, data: {:mapped, 200}} = mapped_cmd
     end
 
-    test 'maps over broadcast command message' do
+    test ~c"maps over broadcast command message" do
       cmd = Command.broadcast(:original)
       mapper = fn :original -> :mapped end
 
@@ -98,7 +102,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert %Command{type: :broadcast, data: :mapped} = mapped_cmd
     end
 
-    test 'does nothing for none command' do
+    test ~c"does nothing for none command" do
       cmd = Command.none()
       mapper = fn _ -> :something_else end
 

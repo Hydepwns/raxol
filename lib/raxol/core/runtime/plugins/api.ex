@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.API do
-  @moduledoc '''
+  @moduledoc """
   Public API for Raxol plugins to interact with the core system.
 
   This module provides standardized interfaces for plugins to:
@@ -11,12 +11,12 @@ defmodule Raxol.Core.Runtime.Plugins.API do
 
   Plugin developers should only use these API functions for interacting with
   the Raxol system to ensure forward compatibility when the internal system changes.
-  '''
+  """
 
   # --- Event Management ---
   alias Raxol.Core.Events.Manager, as: EventManager
 
-  @doc '''
+  @doc """
   Subscribe to runtime events.
 
   ## Parameters
@@ -35,13 +35,13 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   ```elixir
   API.subscribe(:key_press, MyPluginHandlers)
   ```
-  '''
+  """
   @spec subscribe(atom(), module(), atom()) :: :ok | {:error, term()}
   def subscribe(event_type, handler, function \\ :handle_event) do
     EventManager.register_handler(event_type, handler, function)
   end
 
-  @doc '''
+  @doc """
   Unsubscribe from runtime events.
 
   ## Parameters
@@ -53,13 +53,13 @@ defmodule Raxol.Core.Runtime.Plugins.API do
 
   - `:ok` if successful
   - `{:error, reason}` if unsubscription failed
-  '''
+  """
   @spec unsubscribe(atom(), module()) :: :ok | {:error, term()}
   def unsubscribe(event_type, handler) do
     EventManager.unregister_handler(event_type, handler, :handle_event)
   end
 
-  @doc '''
+  @doc """
   Broadcast an event to all subscribers.
 
   ## Parameters
@@ -70,13 +70,13 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   ## Returns
 
   - `:ok` if broadcast was successful
-  '''
+  """
   @spec broadcast(atom(), map()) :: :ok
   def broadcast(event_type, payload) do
     EventManager.dispatch({event_type, payload})
   end
 
-  @doc '''
+  @doc """
   Creates a new screen buffer with the specified dimensions.
 
   ## Parameters
@@ -86,7 +86,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
 
   ## Returns
     A new screen buffer instance
-  '''
+  """
   def create_buffer(width, height, options \\ []) do
     Raxol.Core.Runtime.Log.debug(
       "Plugin API: create_buffer(#{width}, #{height}, #{inspect(options)})"
@@ -95,7 +95,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
     Raxol.Terminal.ScreenBuffer.new(width, height)
   end
 
-  @doc '''
+  @doc """
   Get the current application configuration.
 
   ## Parameters
@@ -106,13 +106,13 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   ## Returns
 
   The configuration value or default
-  '''
+  """
   @spec get_config(atom() | String.t(), term()) :: term()
   def get_config(key, default \\ nil) do
     Raxol.Core.Runtime.Application.get_env(:raxol, key, default)
   end
 
-  @doc '''
+  @doc """
   Get the path to the plugin data directory.
 
   ## Parameters
@@ -122,7 +122,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   ## Returns
 
   String path to the plugin's data directory
-  '''
+  """
   @spec plugin_data_dir(String.t()) :: String.t()
   def plugin_data_dir(plugin_id) do
     base_path =
@@ -135,7 +135,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
     Path.join(base_path, plugin_id)
   end
 
-  @doc '''
+  @doc """
   Log a message from a plugin.
 
   ## Parameters
@@ -147,7 +147,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   ## Returns
 
   `:ok`
-  '''
+  """
   @spec log(String.t(), atom(), String.t()) :: :ok
   def log(plugin_id, level, message) do
     prefix = "[Plugin:#{plugin_id}]"

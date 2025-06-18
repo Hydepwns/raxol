@@ -1,13 +1,13 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmark do
-  @moduledoc '''
+  @moduledoc """
   Performance benchmarking tool for visualization components.
   Provides tools to measure rendering time, memory usage, and optimization effectiveness
   for different data sizes and visualization types.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Run a comprehensive benchmark suite for visualization components.
 
   This test will:
@@ -25,11 +25,11 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   * `:iterations` - Number of times to run each test (default: 5)
   * `:cache_test` - Whether to test cache performance (default: true)
   * `:memory_test` - Whether to track memory usage (default: true)
-  '''
+  """
   def run_benchmark(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     output_path = Keyword.get(opts, :output_path, "benchmark_results")
-    dataset_sizes = Keyword.get(opts, :datasets, [10, 100, 1000, 10000])
+    dataset_sizes = Keyword.get(opts, :datasets, [10, 100, 1000, 10_000])
     iterations = Keyword.get(opts, :iterations, 5)
     test_cache = Keyword.get(opts, :cache_test, true)
     test_memory = opts[:test_memory] || false
@@ -70,9 +70,9 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     }
   end
 
-  @doc '''
+  @doc """
   Benchmark chart rendering performance.
-  '''
+  """
   def benchmark_charts(datasets, iterations, test_cache, test_memory) do
     Enum.map(datasets, fn {size, data} ->
       IO.puts("  Benchmarking chart with #{size} data points...")
@@ -88,16 +88,28 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       # Create standard bounds for testing
       bounds = %{x: 0, y: 0, width: 80, height: 24}
 
+      # Create plugin state
+      _plugin_state = %{
+        cache_timeout: :timer.minutes(5),
+        layout_cache: %{},
+        last_chart_hash: nil,
+        last_treemap_hash: nil,
+        cleanup_ref: nil,
+        config: %{
+          chart_style: :line,
+          treemap_style: :compact
+        }
+      }
+
       # Track times for each iteration
       times =
         for i <- 1..iterations do
           # Setup plugin state for each iteration (or before loop if not resetting cache)
           {:ok, _plugin_meta, plugin_state} =
-            if !(test_cache or i == 1) do
+            if test_cache or i == 1 do
+              # Use existing state if testing cache or first iteration
               Raxol.Plugins.VisualizationPlugin.init()
             else
-              # Use existing state if testing cache or first iteration
-              # For simplicity, let's re-init; adjust if precise cache testing needed
               Raxol.Plugins.VisualizationPlugin.init()
             end
 
@@ -154,62 +166,41 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     end)
   end
 
-  @doc '''
+  @doc """
   Benchmark treemap rendering performance.
-  '''
+  """
   def benchmark_treemaps(datasets, iterations, test_cache, test_memory) do
     Enum.map(datasets, fn {size, data} ->
       IO.puts("  Benchmarking treemap with #{size} nodes...")
 
       # Prepare test environment
       if test_memory do
-        # Raxol.RuntimeDebug.start_memory_tracking()
-        # Placeholder for memory tracking return value
         _result = nil
       end
 
       # Create standard bounds for testing
       bounds = %{x: 0, y: 0, width: 80, height: 24}
 
+      # Create plugin state
+      _plugin_state = %{
+        cache_timeout: :timer.minutes(5),
+        layout_cache: %{},
+        last_chart_hash: nil,
+        last_treemap_hash: nil,
+        cleanup_ref: nil,
+        config: %{
+          chart_style: :line,
+          treemap_style: :compact
+        }
+      }
+
       # Track times for each iteration
-      times =
-        for i <- 1..iterations do
-          # Setup plugin state for each iteration (or before loop if not resetting cache)
-          {:ok, _plugin_meta, plugin_state} =
-            if !(test_cache or i == 1) do
-              Raxol.Plugins.VisualizationPlugin.init()
-            else
-              # Use existing state if testing cache or first iteration
-              # For simplicity, let's re-init; adjust if precise cache testing needed
-              Raxol.Plugins.VisualizationPlugin.init()
-            end
-
-          IO.write("    Iteration #{i}/#{iterations}...")
-
-          # Measure treemap rendering time
-          {time, _result} =
-            :timer.tc(fn ->
-              # Call the correct renderer module directly
-              Raxol.Plugins.Visualization.TreemapRenderer.render_treemap_content(
-                data,
-                %{title: "Benchmark TreeMap"},
-                bounds,
-                plugin_state
-              )
-            end)
-
-          # Convert to milliseconds
-          time_ms = time / 1000
-          IO.puts(" #{time_ms}ms")
-          time_ms
-        end
+      times = run_treemap_iterations(data, bounds, iterations, test_cache)
 
       # Collect memory data if requested
       memory_data =
         if test_memory do
-          # Raxol.RuntimeDebug.get_memory_snapshot()
           memory_info = nil
-          # Raxol.RuntimeDebug.stop_memory_tracking()
           memory_info
         else
           nil
@@ -241,6 +232,33 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     end)
   end
 
+  defp run_treemap_iterations(data, bounds, iterations, test_cache) do
+    for i <- 1..iterations do
+      {:ok, _plugin_meta, plugin_state} =
+        if test_cache or i == 1 do
+          Raxol.Plugins.VisualizationPlugin.init()
+        else
+          Raxol.Plugins.VisualizationPlugin.init()
+        end
+
+      IO.write("    Iteration #{i}/#{iterations}...")
+
+      {time, _result} =
+        :timer.tc(fn ->
+          Raxol.Plugins.Visualization.TreemapRenderer.render_treemap_content(
+            data,
+            %{title: "Benchmark TreeMap"},
+            bounds,
+            plugin_state
+          )
+        end)
+
+      time_ms = time / 1000
+      IO.puts(" #{time_ms}ms")
+      time_ms
+    end
+  end
+
   # --- Helper Functions ---
 
   defp generate_chart_datasets(sizes) do
@@ -264,89 +282,94 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
   defp generate_treemap_data(size) do
     cond do
-      # Empty dataset
-      size == 0 ->
-        %{
-          name: "Root",
-          value: 0,
-          children: []
-        }
-
-      # Small dataset - flat structure
-      size <= 10 ->
-        %{
-          name: "Root",
-          value: size * 10,
-          children:
-            for i <- 1..size do
-              %{
-                name: "Item #{i}",
-                value: :rand.uniform(100)
-              }
-            end
-        }
-
-      # Medium dataset - two levels
-      size <= 100 ->
-        num_groups = min(10, div(size, 5))
-        items_per_group = div(size, num_groups)
-        remainder = rem(size, num_groups)
-
-        %{
-          name: "Root",
-          value: size * 10,
-          children:
-            for g <- 1..num_groups do
-              # Add an extra item to early groups if there's a remainder
-              actual_items = items_per_group + if g <= remainder, do: 1, else: 0
-
-              %{
-                name: "Group #{g}",
-                value: actual_items * 10,
-                children:
-                  for i <- 1..actual_items do
-                    %{
-                      name: "Item #{g}.#{i}",
-                      value: :rand.uniform(100)
-                    }
-                  end
-              }
-            end
-        }
-
-      # Large dataset - three levels
-      true ->
-        # Create a three-level hierarchy
-        num_sections = min(10, div(size, 100))
-        num_groups_per_section = min(10, div(size, 50))
-        items_per_group = div(size, num_sections * num_groups_per_section)
-
-        %{
-          name: "Root",
-          value: size * 10,
-          children:
-            for s <- 1..num_sections do
-              %{
-                name: "Section #{s}",
-                value: div(size, num_sections) * 10,
-                children:
-                  for g <- 1..num_groups_per_section do
-                    %{
-                      name: "Group #{s}.#{g}",
-                      value: items_per_group * 10,
-                      children:
-                        for i <- 1..items_per_group do
-                          %{
-                            name: "Item #{s}.#{g}.#{i}",
-                            value: :rand.uniform(100)
-                          }
-                        end
-                    }
-                  end
-              }
-            end
-        }
+      size == 0 -> generate_empty_treemap()
+      size <= 10 -> generate_small_treemap(size)
+      size <= 100 -> generate_medium_treemap(size)
+      true -> generate_large_treemap(size)
     end
+  end
+
+  defp generate_empty_treemap() do
+    %{
+      name: "Root",
+      value: 0,
+      children: []
+    }
+  end
+
+  defp generate_small_treemap(size) do
+    %{
+      name: "Root",
+      value: size * 10,
+      children:
+        for i <- 1..size do
+          %{
+            name: "Item #{i}",
+            value: :rand.uniform(100)
+          }
+        end
+    }
+  end
+
+  defp generate_medium_treemap(size) do
+    num_groups = min(10, div(size, 5))
+    items_per_group = div(size, num_groups)
+    remainder = rem(size, num_groups)
+
+    %{
+      name: "Root",
+      value: size * 10,
+      children:
+        for g <- 1..num_groups do
+          # Add an extra item to early groups if there's a remainder
+          actual_items = items_per_group + if g <= remainder, do: 1, else: 0
+
+          %{
+            name: "Group #{g}",
+            value: actual_items * 10,
+            children:
+              for i <- 1..actual_items do
+                %{
+                  name: "Item #{g}.#{i}",
+                  value: :rand.uniform(100)
+                }
+              end
+          }
+        end
+    }
+  end
+
+  defp generate_large_treemap(size) do
+    # Create a three-level hierarchy
+    num_sections = min(10, div(size, 100))
+    num_groups_per_section = min(10, div(size, 50))
+    items_per_group = div(size, num_sections * num_groups_per_section)
+
+    %{
+      name: "Root",
+      value: size * 10,
+      children:
+        for s <- 1..num_sections do
+          %{
+            name: "Section #{s}",
+            value: div(size, num_sections) * 10,
+            children:
+              for g <- 1..num_groups_per_section do
+                %{
+                  name: "Group #{s}.#{g}",
+                  value: items_per_group * 10,
+                  children:
+                    for i <- 1..items_per_group do
+                      %{
+                        name: "Item #{s}.#{g}.#{i}",
+                        value: :rand.uniform(100)
+                      }
+                    end
+                }
+              end
+          }
+        end
+    }
   end
 
   defp count_nodes(nil), do: 0
@@ -380,7 +403,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
   defp write_results(file, chart_results, treemap_results, opts) do
     # Prepare markdown content
-    content = '''
+    content = """
     # Visualization Performance Benchmark Results
 
     **Date:** #{format_timestamp()}
@@ -413,7 +436,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     ## Conclusions
 
     - #{interpret_performance(chart_results, treemap_results)}
-    '''
+    """
 
     # Write to file
     File.write!(file, content)
@@ -426,19 +449,15 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   end
 
   defp format_chart_results(results) do
-    results
-    |> Enum.map(fn r ->
+    Enum.map_join(results, "\n", fn r ->
       "| #{r.size} | #{Float.round(r.avg_time, 2)} | #{Float.round(r.min_time, 2)} | #{Float.round(r.max_time, 2)} | #{Float.round(r.std_dev, 2)} |"
     end)
-    |> Enum.join("\n")
   end
 
   defp format_treemap_results(results) do
-    results
-    |> Enum.map(fn r ->
+    Enum.map_join(results, "\n", fn r ->
       "| #{r.size} | #{r.node_count} | #{Float.round(r.avg_time, 2)} | #{Float.round(r.min_time, 2)} | #{Float.round(r.max_time, 2)} | #{Float.round(r.std_dev, 2)} |"
     end)
-    |> Enum.join("\n")
   end
 
   defp format_cache_performance(chart_results, treemap_results, opts) do
@@ -446,37 +465,33 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       chart_speedup = calculate_cache_speedup(chart_results)
       treemap_speedup = calculate_cache_speedup(treemap_results)
 
-      '''
+      """
       Cache performance metrics demonstrate the effectiveness of the caching system:
 
       - **Chart Cache Speedup:** #{Float.round(chart_speedup, 2)}x faster after initial render (average)
       - **TreeMap Cache Speedup:** #{Float.round(treemap_speedup, 2)}x faster after initial render (average)
 
       This indicates that the caching system is #{evaluate_cache_effectiveness(chart_speedup, treemap_speedup)}.
-      '''
+      """
     else
       "*Cache testing disabled*"
     end
   end
 
   defp calculate_cache_speedup(results) do
-    # For each dataset, compare first vs. subsequent iterations
-    speedups =
-      results
-      |> Enum.map(fn result ->
-        if length(result.times) > 1 do
-          first_time = Enum.at(result.times, 0)
-          rest_times = Enum.slice(result.times, 1..-1//-1)
-          avg_rest_time = Enum.sum(rest_times) / length(rest_times)
-
-          if avg_rest_time > 0, do: first_time / avg_rest_time, else: 1.0
-        else
-          1.0
-        end
-      end)
-
-    # Calculate average speedup across all dataset sizes
+    speedups = Enum.map(results, &calculate_dataset_speedup/1)
     Enum.sum(speedups) / length(speedups)
+  end
+
+  defp calculate_dataset_speedup(result) do
+    with true <- length(result.times) > 1,
+         first_time <- Enum.at(result.times, 0),
+         rest_times <- Enum.slice(result.times, 1..-1//-1),
+         avg_rest_time <- Enum.sum(rest_times) / length(rest_times) do
+      if avg_rest_time > 0, do: first_time / avg_rest_time, else: 1.0
+    else
+      _ -> 1.0
+    end
   end
 
   defp evaluate_cache_effectiveness(chart_speedup, treemap_speedup) do
@@ -500,7 +515,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     treemap_memory = largest_treemap.memory
 
     if chart_memory && treemap_memory do
-      '''
+      """
       Memory usage metrics for the largest datasets:
 
       **Chart (#{largest_chart.size} data points):**
@@ -510,7 +525,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       **TreeMap (#{largest_treemap.size} data points, #{largest_treemap.node_count} nodes):**
       - Memory Used: #{format_bytes(treemap_memory.memory_used)}
       - GC Runs: #{treemap_memory.gc_count}
-      '''
+      """
     else
       "*Memory data collection failed*"
     end
@@ -527,45 +542,57 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   defp format_bytes(_), do: "unknown"
 
   defp interpret_performance(chart_results, treemap_results) do
-    # Get largest datasets to analyze scalability
-    chart_by_size = Enum.sort_by(chart_results, fn r -> r.size end)
-    treemap_by_size = Enum.sort_by(treemap_results, fn r -> r.size end)
-
-    # Basic analysis - compare small vs large datasets
-    if length(chart_by_size) >= 2 && length(treemap_by_size) >= 2 do
-      small_chart = List.first(chart_by_size)
-      large_chart = List.last(chart_by_size)
-      chart_size_ratio = large_chart.size / small_chart.size
-      chart_time_ratio = large_chart.avg_time / small_chart.avg_time
-
-      small_treemap = List.first(treemap_by_size)
-      large_treemap = List.last(treemap_by_size)
-      treemap_size_ratio = large_treemap.size / small_treemap.size
-      treemap_time_ratio = large_treemap.avg_time / small_treemap.avg_time
-
-      # Analyze scalability
-      chart_efficiency = chart_size_ratio / chart_time_ratio
-      treemap_efficiency = treemap_size_ratio / treemap_time_ratio
-
-      # Interpret results
-      cond do
-        chart_efficiency >= 0.8 && treemap_efficiency >= 0.8 ->
-          "Both chart and treemap visualization components scale very efficiently with larger datasets."
-
-        chart_efficiency >= 0.5 && treemap_efficiency >= 0.5 ->
-          "Both visualizations show good scalability, with sub-linear performance degradation as data size increases."
-
-        chart_efficiency >= 0.5 ->
-          "Chart visualization scales efficiently, but treemap performance could be improved with larger datasets."
-
-        treemap_efficiency >= 0.5 ->
-          "Treemap visualization scales efficiently, but chart performance could be improved with larger datasets."
-
-        true ->
-          "Both visualizations show signs of performance degradation with larger datasets. Additional optimization may be necessary."
-      end
+    with {small_chart, large_chart} <- get_size_extremes(chart_results),
+         {small_treemap, large_treemap} <- get_size_extremes(treemap_results) do
+      analyze_scalability(
+        small_chart,
+        large_chart,
+        small_treemap,
+        large_treemap
+      )
     else
-      "Insufficient data to analyze performance scaling."
+      _ -> "Insufficient data to analyze performance scaling."
     end
+  end
+
+  defp get_size_extremes(results) do
+    sorted = Enum.sort_by(results, & &1.size)
+
+    if length(sorted) >= 2,
+      do: {List.first(sorted), List.last(sorted)},
+      else: nil
+  end
+
+  defp analyze_scalability(
+         small_chart,
+         large_chart,
+         small_treemap,
+         large_treemap
+       ) do
+    chart_efficiency = calculate_efficiency(small_chart, large_chart)
+    treemap_efficiency = calculate_efficiency(small_treemap, large_treemap)
+
+    cond do
+      chart_efficiency >= 0.8 && treemap_efficiency >= 0.8 ->
+        "Both chart and treemap visualization components scale very efficiently with larger datasets."
+
+      chart_efficiency >= 0.5 && treemap_efficiency >= 0.5 ->
+        "Both visualizations show good scalability, with sub-linear performance degradation as data size increases."
+
+      chart_efficiency >= 0.5 ->
+        "Chart visualization scales efficiently, but treemap performance could be improved with larger datasets."
+
+      treemap_efficiency >= 0.5 ->
+        "Treemap visualization scales efficiently, but chart performance could be improved with larger datasets."
+
+      true ->
+        "Both visualizations show signs of performance degradation with larger datasets. Additional optimization may be necessary."
+    end
+  end
+
+  defp calculate_efficiency(small, large) do
+    size_ratio = large.size / small.size
+    time_ratio = large.avg_time / small.avg_time
+    size_ratio / time_ratio
   end
 end

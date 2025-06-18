@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.WindowEvents do
-  @moduledoc '''
+  @moduledoc """
   Handles window events for terminal control.
   Supports window close, minimize, maximize, restore, and other window events.
 
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   * Window activation events
   * Window drag events
   * Window drop events
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.Monitor
@@ -43,9 +43,9 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   @current_event nil
 
-  @doc '''
+  @doc """
   Processes a window event sequence and returns the corresponding event.
-  '''
+  """
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
     try do
@@ -71,18 +71,23 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
       })
     rescue
       e ->
-        Monitor.record_error(sequence, "Error recording window event error: #{inspect(e)}", %{
-          original_error: inspect(error),
-          params: params,
-          stacktrace: Exception.format_stacktrace(stacktrace)
-        })
+        Monitor.record_error(
+          sequence,
+          "Error recording window event error: #{inspect(e)}",
+          %{
+            original_error: inspect(error),
+            params: params,
+            stacktrace: Exception.format_stacktrace(stacktrace)
+          }
+        )
     end
+
     nil
   end
 
-  @doc '''
+  @doc """
   Formats a window event into an ANSI escape sequence.
-  '''
+  """
   def format_event(event) do
     case event do
       {:window_event, type, params} ->
@@ -98,13 +103,35 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   defp get_event_formatter(type) do
     case type do
-      type when type in [:close, :minimize, :maximize, :restore, :focus, :blur, :show, :hide, :activate, :deactivate] ->
+      type
+      when type in [
+             :close,
+             :minimize,
+             :maximize,
+             :restore,
+             :focus,
+             :blur,
+             :show,
+             :hide,
+             :activate,
+             :deactivate
+           ] ->
         fn _ -> "\e[1;#{get_event_code(type)}" end
-      :move -> &format_position_event/1
-      :resize -> &format_resize_event/1
-      :state_change -> &format_state_event/1
-      type when type in [:drag_start, :drag_end, :drop] -> &format_position_event/1
-      _ -> nil
+
+      :move ->
+        &format_position_event/1
+
+      :resize ->
+        &format_resize_event/1
+
+      :state_change ->
+        &format_state_event/1
+
+      type when type in [:drag_start, :drag_end, :drop] ->
+        &format_position_event/1
+
+      _ ->
+        nil
     end
   end
 
@@ -113,7 +140,9 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     "\e[1;#{event_code};#{x};#{y}"
   end
 
-  defp format_resize_event(%{width: width, height: height}), do: "\e[1;z;#{width};#{height}"
+  defp format_resize_event(%{width: width, height: height}),
+    do: "\e[1;z;#{width};#{height}"
+
   defp format_state_event(%{state: state}), do: "\e[1;s;#{state}"
 
   defp get_event_code(type) do
@@ -134,17 +163,17 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     }[type]
   end
 
-  @doc '''
+  @doc """
   Enables window event reporting.
-  '''
+  """
   @spec enable_window_events() :: String.t()
   def enable_window_events do
     "\e[?63h"
   end
 
-  @doc '''
+  @doc """
   Disables window event reporting.
-  '''
+  """
   @spec disable_window_events() :: String.t()
   def disable_window_events do
     "\e[?63l"
@@ -185,7 +214,9 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   defp position_based_handlers do
     %{
       "v" => fn [x, y] -> {:window_event, :move, parse_position(x, y)} end,
-      "z" => fn [width, height] -> {:window_event, :resize, parse_position(width, height)} end,
+      "z" => fn [width, height] ->
+        {:window_event, :resize, parse_position(width, height)}
+      end,
       "D" => fn [x, y] -> {:window_event, :drag_start, parse_position(x, y)} end,
       "E" => fn [x, y] -> {:window_event, :drag_end, parse_position(x, y)} end,
       "p" => fn [x, y] -> {:window_event, :drop, parse_position(x, y)} end
@@ -196,10 +227,10 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     %{x: parse_number(x), y: parse_number(y)}
   end
 
-  @doc '''
+  @doc """
   Processes window-related ANSI escape sequences.
   Returns updated emulator state and any commands that need to be executed.
-  '''
+  """
   def process_window_event(emulator_state, event) do
     case event do
       {:resize, w, h} -> handle_resize(emulator_state, w, h)
@@ -212,10 +243,12 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   defp handle_resize(emulator_state, w, h) do
     updated_state = %{emulator_state | width: w, height: h}
+
     commands = [
       WindowManipulation.clear_screen(),
       WindowManipulation.move_cursor(1, 1)
     ]
+
     {:ok, updated_state, commands}
   end
 

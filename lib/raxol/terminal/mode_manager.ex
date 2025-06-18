@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.ModeManager do
-  @moduledoc '''
+  @moduledoc """
   Manages terminal modes (DEC Private Modes, Standard Modes) and their effects.
 
   This module centralizes the state and logic for various terminal modes,
   handling both simple flag toggles and modes with side effects on the
   emulator state (like screen buffer switching or resizing).
-  '''
+  """
 
   use GenServer
   require Logger
@@ -134,9 +134,9 @@ defmodule Raxol.Terminal.ModeManager do
 
   # --- Mode Lookup ---
 
-  @doc '''
+  @doc """
   Looks up a DEC private mode code and returns the corresponding mode atom.
-  '''
+  """
   @spec lookup_private(integer()) :: mode() | nil
   def lookup_private(code) when is_integer(code) do
     case ModeTypes.lookup_private(code) do
@@ -145,9 +145,9 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  @doc '''
+  @doc """
   Looks up a standard mode code and returns the corresponding mode atom.
-  '''
+  """
   @spec lookup_standard(integer()) :: mode() | nil
   def lookup_standard(code) when is_integer(code) do
     case ModeTypes.lookup_standard(code) do
@@ -158,10 +158,10 @@ defmodule Raxol.Terminal.ModeManager do
 
   # --- Mode Setting/Resetting ---
 
-  @doc '''
+  @doc """
   Sets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
-  '''
+  """
   @spec set_mode(Emulator.t(), [mode()]) ::
           {:ok, Emulator.t()} | {:error, term()}
   def set_mode(emulator, modes) when is_list(modes) do
@@ -173,10 +173,10 @@ defmodule Raxol.Terminal.ModeManager do
     end)
   end
 
-  @doc '''
+  @doc """
   Resets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
-  '''
+  """
   @spec reset_mode(Emulator.t(), [mode()]) ::
           {:ok, Emulator.t()} | {:error, term()}
   def reset_mode(emulator, modes) when is_list(modes) do
@@ -188,25 +188,25 @@ defmodule Raxol.Terminal.ModeManager do
     end)
   end
 
-  @doc '''
+  @doc """
   Checks if a mode is enabled.
-  '''
+  """
   @spec mode_enabled?(t(), mode()) :: boolean()
   def mode_enabled?(state, mode) do
     ModeStateManager.mode_enabled?(state, mode)
   end
 
-  @doc '''
+  @doc """
   Saves the current terminal state.
-  '''
+  """
   @spec save_state(Emulator.t()) :: Emulator.t()
   def save_state(emulator) do
     SavedState.save_state(emulator)
   end
 
-  @doc '''
+  @doc """
   Restores the previously saved terminal state.
-  '''
+  """
   @spec restore_state(Emulator.t()) :: Emulator.t()
   def restore_state(emulator) do
     SavedState.restore_state(emulator)
@@ -257,74 +257,74 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  @doc '''
+  @doc """
   Creates a new instance of the ModeManager.
-  '''
+  """
   @spec new() :: t()
   def new do
     {:ok, pid} = start_link([])
     pid
   end
 
-  @doc '''
+  @doc """
   Gets the mode manager.
-  '''
+  """
   @spec get_manager(t()) :: map()
   def get_manager(_state) do
     %{}
   end
 
-  @doc '''
+  @doc """
   Updates the mode manager.
-  '''
+  """
   @spec update_manager(t(), map()) :: t()
   def update_manager(state, _modes) do
     state
   end
 
-  @doc '''
+  @doc """
   Checks if the given mode is set.
-  '''
+  """
   @spec mode_set?(t(), atom()) :: boolean()
   def mode_set?(_state, _mode) do
     false
   end
 
-  @doc '''
+  @doc """
   Gets the set modes.
-  '''
+  """
   @spec get_set_modes(t()) :: list()
   def get_set_modes(_state) do
     []
   end
 
-  @doc '''
+  @doc """
   Resets all modes.
-  '''
+  """
   @spec reset_all_modes(t()) :: t()
   def reset_all_modes(state) do
     state
   end
 
-  @doc '''
+  @doc """
   Saves the current modes.
-  '''
+  """
   @spec save_modes(t()) :: t()
   def save_modes(state) do
     state
   end
 
-  @doc '''
+  @doc """
   Restores the saved modes.
-  '''
+  """
   @spec restore_modes(t()) :: t()
   def restore_modes(state) do
     state
   end
 
-  @doc '''
+  @doc """
   Sets a mode with a value and private flag.
-  '''
+  """
   @spec set_mode(Emulator.t(), mode(), boolean(), boolean()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def set_mode(emulator, mode, value, private) do
@@ -334,9 +334,9 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  @doc '''
+  @doc """
   Sets a private mode with a value.
-  '''
+  """
   @spec set_private_mode(Emulator.t(), mode(), boolean()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def set_private_mode(emulator, mode, value) do
@@ -346,9 +346,9 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  @doc '''
+  @doc """
   Sets a standard mode with a value.
-  '''
+  """
   @spec set_standard_mode(Emulator.t(), mode(), boolean()) ::
           {:ok, Emulator.t()} | {:error, term()}
   def set_standard_mode(emulator, mode, value) do

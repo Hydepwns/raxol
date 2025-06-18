@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.Config.Capabilities do
-  @moduledoc '''
+  @moduledoc """
   Terminal capability detection and management.
 
   Provides functionality to detect and determine terminal capabilities
   such as color support, unicode support, etc.
-  '''
+  """
 
   alias Raxol.Terminal.Config.Defaults
   alias Raxol.System.EnvironmentAdapterImpl
 
-  @doc '''
+  @doc """
   Detects terminal capabilities based on the environment using a specific adapter.
 
   This examines environment variables, terminal responses, and other indicators
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
   ## Returns
 
   A map of detected capabilities.
-  '''
+  """
   def detect_capabilities(adapter_module) do
     %{
       display: detect_display_capabilities(adapter_module),
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
     }
   end
 
-  @doc '''
+  @doc """
   Merges detected capabilities with configuration using a specific adapter.
 
   Takes a terminal configuration and enhances it with detected capabilities
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
   ## Returns
 
   The configuration enhanced with detected capabilities.
-  '''
+  """
   def apply_capabilities(config, adapter_module) do
     capabilities = detect_capabilities(adapter_module)
 
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
     deep_merge_capabilities(config, capabilities)
   end
 
-  @doc '''
+  @doc """
   Creates an optimized configuration based on detected capabilities using the default adapter.
 
   This generates a configuration that's optimized for the current terminal
@@ -60,12 +60,12 @@ defmodule Raxol.Terminal.Config.Capabilities do
   ## Returns
 
   An optimized configuration for the current terminal.
-  '''
+  """
   def optimized_config do
     optimized_config(EnvironmentAdapterImpl)
   end
 
-  @doc '''
+  @doc """
   Creates an optimized configuration based on detected capabilities using a specific adapter.
 
   ## Parameters
@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
   ## Returns
 
   An optimized configuration for the current terminal.
-  '''
+  """
   def optimized_config(adapter_module) do
     # Start with defaults
     defaults = Defaults.generate_default_config()

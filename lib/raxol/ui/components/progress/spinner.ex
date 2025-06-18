@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Progress.Spinner do
-  @moduledoc '''
+  @moduledoc """
   A spinner component that provides animated loading indicators.
 
   ## Props
@@ -14,7 +14,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
     * `:speed` - Animation speed in milliseconds (default: 80)
     * `:text` - Optional text to display next to the spinner
     * `:text_position` - Position of text relative to spinner (:left or :right, default: :right)
-  '''
+  """
 
   use Raxol.UI.Components.Base.Component
 

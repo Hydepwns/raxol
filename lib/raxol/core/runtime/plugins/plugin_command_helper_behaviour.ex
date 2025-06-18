@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour do
-  @moduledoc '''
+  @moduledoc """
   Defines the behaviour for plugin command registration and dispatch.
 
   This behaviour is responsible for:
@@ -7,11 +7,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour do
   - Registering plugin commands
   - Handling command dispatch
   - Managing command unregistration
-  '''
+  """
 
-  @doc '''
+  @doc """
   Finds the plugin responsible for handling a command.
-  '''
+  """
   @callback find_plugin_for_command(
               command_table :: atom(),
               command_name :: String.t(),
@@ -19,18 +19,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour do
               arity :: integer() | :unknown
             ) :: {:ok, {module(), atom(), integer()}} | :not_found
 
-  @doc '''
+  @doc """
   Registers the commands exposed by a plugin.
-  '''
+  """
   @callback register_plugin_commands(
               plugin_module :: module(),
               plugin_state :: map(),
               command_table :: atom()
             ) :: :ok
 
-  @doc '''
+  @doc """
   Handles the dispatching of a command to the appropriate plugin.
-  '''
+  """
   @callback handle_command(
               command_table :: atom(),
               command_name_str :: String.t(),
@@ -39,9 +39,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour do
               state :: map()
             ) :: {:ok, map()} | :not_found | {:error, any()}
 
-  @doc '''
+  @doc """
   Unregisters all commands associated with a specific plugin module.
-  '''
+  """
   @callback unregister_plugin_commands(
               command_table :: atom(),
               plugin_module :: module()

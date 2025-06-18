@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Modes.Types.ModeTypes do
-  @moduledoc '''
+  @moduledoc """
   Defines types and constants for terminal modes.
   Provides a centralized registry of all terminal modes and their properties.
-  '''
+  """
 
   # Mode categories
   @type mode_category :: :dec_private | :standard | :mouse | :screen_buffer
@@ -199,33 +199,33 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
     }
   }
 
-  @doc '''
+  @doc """
   Looks up a DEC private mode code and returns the corresponding mode definition.
-  '''
+  """
   @spec lookup_private(integer()) :: mode() | nil
   def lookup_private(code) when is_integer(code) do
     @dec_private_modes[code]
   end
 
-  @doc '''
+  @doc """
   Looks up a standard mode code and returns the corresponding mode definition.
-  '''
+  """
   @spec lookup_standard(integer()) :: mode() | nil
   def lookup_standard(code) when is_integer(code) do
     @standard_modes[code]
   end
 
-  @doc '''
+  @doc """
   Returns all registered modes.
-  '''
+  """
   @spec get_all_modes() :: %{integer() => mode()}
   def get_all_modes do
     Map.merge(@dec_private_modes, @standard_modes)
   end
 
-  @doc '''
+  @doc """
   Returns all modes of a specific category.
-  '''
+  """
   @spec get_modes_by_category(mode_category()) :: [mode()]
   def get_modes_by_category(category) do
     get_all_modes()

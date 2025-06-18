@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.Events.Handlers do
-  @moduledoc '''
+  @moduledoc """
   Handles terminal events and dispatches them to appropriate handlers.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.WindowManipulation
 
-  @doc '''
+  @doc """
   Handles window-related events.
-  '''
+  """
   def handle_window_event(emulator_state, event) do
     case event do
       {:resize, w, h} ->
@@ -25,9 +25,9 @@ defmodule Raxol.Terminal.Events.Handlers do
     end
   end
 
-  @doc '''
+  @doc """
   Handles mode change events.
-  '''
+  """
   def handle_mode_event(emulator_state, event) do
     case event do
       {:change, new_mode} ->
@@ -38,9 +38,9 @@ defmodule Raxol.Terminal.Events.Handlers do
     end
   end
 
-  @doc '''
+  @doc """
   Handles mouse events.
-  '''
+  """
   def handle_mouse_event(emulator_state, event) do
     case event do
       {:click, button, x, y} ->
@@ -57,9 +57,9 @@ defmodule Raxol.Terminal.Events.Handlers do
     end
   end
 
-  @doc '''
+  @doc """
   Handles keyboard events.
-  '''
+  """
   def handle_keyboard_event(emulator_state, event) do
     case event do
       {:press, key} ->
@@ -73,9 +73,9 @@ defmodule Raxol.Terminal.Events.Handlers do
     end
   end
 
-  @doc '''
+  @doc """
   Handles focus events.
-  '''
+  """
   def handle_focus_event(emulator_state, event) do
     case event do
       {:gain} ->
@@ -89,9 +89,9 @@ defmodule Raxol.Terminal.Events.Handlers do
     end
   end
 
-  @doc '''
+  @doc """
   Generic event handler that dispatches to appropriate handlers.
-  '''
+  """
   def handle_event(emulator_state, event) do
     case event do
       {:window, window_event} ->

@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.ComponentManager do
-  @moduledoc '''
+  @moduledoc """
   Manages component lifecycle and state in the Raxol runtime system.
 
   This module is responsible for:
@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   * Handling event dispatch to components
   * Managing component subscriptions
   * Coordinating updates and renders
-  '''
+  """
 
   use GenServer
   require Raxol.Core.Runtime.Log
@@ -44,17 +44,17 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     GenServer.cast(__MODULE__, {:dispatch_event, event})
   end
 
-  @doc '''
+  @doc """
   Retrieves the current render queue and clears it.
-  '''
+  """
   @spec get_render_queue() :: list(String.t())
   def get_render_queue() do
     GenServer.call(__MODULE__, :get_and_clear_render_queue)
   end
 
-  @doc '''
+  @doc """
   Retrieves a specific component's data by its ID.
-  '''
+  """
   @spec get_component(String.t()) :: map() | nil
   def get_component(component_id) do
     GenServer.call(__MODULE__, {:get_component, component_id})
@@ -247,9 +247,15 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
         {:schedule, msg, delay} ->
           # Schedule delayed message using Process.send_after
-          _timer_ref =
-            Process.send_after(self(), {:update, component_id, msg}, delay)
+          timer_id = System.unique_integer([:positive])
 
+          Process.send_after(
+            self(),
+            {:update, component_id, msg, timer_id},
+            delay
+          )
+
+          # Store timer_id in state if needed
           acc
 
         {:broadcast, msg} ->

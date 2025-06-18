@@ -1,7 +1,7 @@
 alias Raxol.Style.Colors.Color
 
 defmodule Raxol.Style.Colors.Gradient do
-  @moduledoc '''
+  @moduledoc """
   Creates and manages color gradients for terminal applications.
 
   This module provides functionality for creating gradients between colors and
@@ -32,7 +32,7 @@ defmodule Raxol.Style.Colors.Gradient do
   ]
   multi = Gradient.multi_stop(colors, 15)
   ```
-  '''
+  """
 
   defstruct [
     # List of color stops
@@ -51,7 +51,7 @@ defmodule Raxol.Style.Colors.Gradient do
           type: gradient_type()
         }
 
-  @doc '''
+  @doc """
   Creates a linear gradient between two colors.
 
   ## Parameters
@@ -67,7 +67,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> gradient = Raxol.Style.Colors.Gradient.linear(red, blue, 5)
       iex> length(gradient.colors)
       5
-  '''
+  """
   def linear(%Color{} = start_color, %Color{} = end_color, steps)
       when is_integer(steps) and steps >= 2 do
     colors = generate_gradient_colors(start_color, end_color, steps)
@@ -79,7 +79,7 @@ defmodule Raxol.Style.Colors.Gradient do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a multi-stop gradient with multiple color stops.
 
   ## Parameters
@@ -97,7 +97,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> gradient = Raxol.Style.Colors.Gradient.multi_stop(colors, 10)
       iex> length(gradient.colors)
       10
-  '''
+  """
   def multi_stop(color_stops, steps)
       when is_list(color_stops) and length(color_stops) >= 2 and
              is_integer(steps) and steps >= 2 do
@@ -130,7 +130,7 @@ defmodule Raxol.Style.Colors.Gradient do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a rainbow gradient with the given number of steps.
 
   ## Parameters
@@ -142,7 +142,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> gradient = Raxol.Style.Colors.Gradient.rainbow(6)
       iex> length(gradient.colors)
       6
-  '''
+  """
   def rainbow(steps) when is_integer(steps) and steps >= 2 do
     # Create a list of rainbow colors
     rainbow_colors = [
@@ -167,7 +167,7 @@ defmodule Raxol.Style.Colors.Gradient do
     |> Map.put(:type, :rainbow)
   end
 
-  @doc '''
+  @doc """
   Creates a heat map gradient from cool to hot colors.
 
   ## Parameters
@@ -179,7 +179,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> gradient = Raxol.Style.Colors.Gradient.heat_map(5)
       iex> length(gradient.colors)
       5
-  '''
+  """
   def heat_map(steps) when is_integer(steps) and steps >= 2 do
     # Create a list of heat map colors from cool to hot
     heat_colors = [
@@ -200,7 +200,7 @@ defmodule Raxol.Style.Colors.Gradient do
     |> Map.put(:type, :heat_map)
   end
 
-  @doc '''
+  @doc """
   Gets the color at a specific position in the gradient.
 
   ## Parameters
@@ -216,7 +216,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> color = Raxol.Style.Colors.Gradient.at_position(gradient, 0.5)
       iex> color.hex
       "#800080"  # Purple (mix of red and blue)
-  '''
+  """
   def at_position(%__MODULE__{colors: colors}, position)
       when is_float(position) and position >= 0.0 and position <= 1.0 do
     # Determine the index based on position
@@ -230,7 +230,7 @@ defmodule Raxol.Style.Colors.Gradient do
     Enum.at(colors, index)
   end
 
-  @doc '''
+  @doc """
   Reverses the direction of a gradient.
 
   ## Parameters
@@ -245,12 +245,12 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> reversed = Raxol.Style.Colors.Gradient.reverse(gradient)
       iex> hd(reversed.colors).hex
       "#0000FF"
-  '''
+  """
   def reverse(%__MODULE__{colors: colors} = gradient) do
     %{gradient | colors: Enum.reverse(colors)}
   end
 
-  @doc '''
+  @doc """
   Applies a gradient to text, returning an ANSI-formatted string.
 
   ## Parameters
@@ -265,7 +265,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> gradient = Raxol.Style.Colors.Gradient.linear(red, blue, 5)
       iex> Raxol.Style.Colors.Gradient.apply_to_text(gradient, "Hello")
       "\e[38;2;255;0;0mH\e[0m\e[38;2;191;0;64me\e[0m\e[38;2;128;0;128ml\e[0m\e[38;2;64;0;191ml\e[0m\e[38;2;0;0;255mo\e[0m"
-  '''
+  """
   def apply_to_text(%__MODULE__{colors: colors}, text) when is_binary(text) do
     # Split the text into graphemes
     graphemes = String.graphemes(text)
@@ -282,9 +282,9 @@ defmodule Raxol.Style.Colors.Gradient do
   end
 
   # Also provide to_ansi_sequence as an alias for apply_to_text for API compatibility
-  @doc '''
+  @doc """
   Alias for apply_to_text/2.
-  '''
+  """
   def to_ansi_sequence(gradient, text), do: apply_to_text(gradient, text)
 
   # Private functions

@@ -1,7 +1,7 @@
 defmodule Raxol.Sequence do
-  @moduledoc '''
+  @moduledoc """
   Defines the structure for a sequence of terminal commands.
-  '''
+  """
 
   @type t :: %__MODULE__{
           name: String.t(),

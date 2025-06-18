@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.FocusRing do
-  @moduledoc '''
+  @moduledoc """
   Handles drawing the focus ring around focused components.
 
   This component dynamically styles the focus ring based on:
@@ -7,7 +7,7 @@ defmodule Raxol.UI.Components.FocusRing do
   - User preferences (high contrast, reduced motion)
   - Theming settings
   - Animation effects
-  '''
+  """
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log

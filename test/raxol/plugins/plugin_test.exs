@@ -13,13 +13,13 @@ defmodule Raxol.Plugins.PluginTest do
   }
 
   describe "plugin manager" do
-    test 'creates a new plugin manager' do
+    test "creates a new plugin manager" do
       manager = PluginManager.new()
       assert manager.plugins == %{}
       assert manager.config == %{}
     end
 
-    test 'loads a plugin' do
+    test "loads a plugin" do
       manager = PluginManager.new()
 
       {:ok, updated_manager} =
@@ -29,14 +29,14 @@ defmodule Raxol.Plugins.PluginTest do
       assert Map.has_key?(updated_manager.plugins, "hyperlink")
     end
 
-    test 'unloads a plugin' do
+    test "unloads a plugin" do
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
       {:ok, updated_manager} = PluginManager.unload_plugin(manager, "hyperlink")
       assert updated_manager.plugins == %{}
     end
 
-    test 'enables and disables a plugin' do
+    test "enables and disables a plugin" do
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
       {:ok, manager} = PluginManager.disable_plugin(manager, "hyperlink")
@@ -47,13 +47,13 @@ defmodule Raxol.Plugins.PluginTest do
       assert plugin.enabled == true
     end
 
-    test 'processes input through plugins' do
+    test "processes input through plugins" do
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
       {:ok, _manager} = PluginManager.process_input(manager, "test input")
     end
 
-    test 'processes output through plugins' do
+    test "processes output through plugins" do
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
@@ -61,7 +61,7 @@ defmodule Raxol.Plugins.PluginTest do
         Raxol.Plugins.Manager.Events.process_output(manager, "test output")
     end
 
-    test 'processes mouse events through plugins' do
+    test "processes mouse events through plugins" do
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
@@ -79,14 +79,14 @@ defmodule Raxol.Plugins.PluginTest do
   end
 
   describe "hyperlink plugin" do
-    test 'initializes correctly' do
+    test "initializes correctly" do
       {:ok, plugin} = HyperlinkPlugin.init(%{})
       assert plugin.name == "hyperlink"
       assert plugin.version == "0.1.0"
       assert plugin.enabled == true
     end
 
-    test 'detects and makes URLs clickable' do
+    test "detects and makes URLs clickable" do
       {:ok, plugin} = HyperlinkPlugin.init(%{})
       output = "Check out https://example.com for more info"
 
@@ -99,14 +99,14 @@ defmodule Raxol.Plugins.PluginTest do
   end
 
   describe "plugin metadata" do
-    test 'plugin exposes correct metadata' do
+    test "plugin exposes correct metadata" do
       assert %{id: :test_plugin, version: "1.0.0", dependencies: []} =
                TestPlugin.metadata()
     end
   end
 
   describe "plugin dependencies" do
-    test 'loads plugin with satisfied dependencies' do
+    test "loads plugin with satisfied dependencies" do
       # Simulate loading TestPlugin first, then DependentPlugin
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, TestPlugin)
@@ -114,14 +114,14 @@ defmodule Raxol.Plugins.PluginTest do
       assert Map.has_key?(manager.plugins, "dependent_plugin")
     end
 
-    test 'fails to load plugin with missing dependencies' do
+    test "fails to load plugin with missing dependencies" do
       manager = PluginManager.new()
       # DependentPlugin requires TestPlugin
       assert {:error, msg} = PluginManager.load_plugin(manager, DependentPlugin)
       assert msg =~ "Missing dependency"
     end
 
-    test 'detects dependency cycles' do
+    test "detects dependency cycles" do
       manager = PluginManager.new()
       # CircularDependencyPlugin depends on itself
       assert {:error, msg} =
@@ -132,7 +132,7 @@ defmodule Raxol.Plugins.PluginTest do
   end
 
   describe "plugin command registration and execution" do
-    test 'plugin registers and executes command' do
+    test "plugin registers and executes command" do
       # TestPlugin registers :test_cmd
       {:ok, state} = TestPlugin.init(%{})
       [{cmd, fun, _arity}] = TestPlugin.get_commands()
@@ -145,18 +145,18 @@ defmodule Raxol.Plugins.PluginTest do
   end
 
   describe "plugin error handling" do
-    test 'plugin init returns error' do
+    test "plugin init returns error" do
       # TimeoutPlugin simulates a timeout error
       assert {:error, :timeout_simulated} = TimeoutPlugin.init(%{})
     end
 
-    test 'plugin crashes during init' do
+    test "plugin crashes during init" do
       assert_raise RuntimeError, ~r/Intentional crash/, fn ->
         CrashPlugin.init(%{})
       end
     end
 
-    test 'plugin returns invalid result from handler' do
+    test "plugin returns invalid result from handler" do
       {:ok, state} = BadReturnPlugin.init(%{})
 
       assert :unexpected_return ==
@@ -170,7 +170,7 @@ defmodule Raxol.Plugins.PluginTest do
   end
 
   describe "plugin configuration persistence" do
-    test 'plugin config is persisted and loaded' do
+    test "plugin config is persisted and loaded" do
       manager = PluginManager.new()
       config = %{foo: "bar"}
       {:ok, manager} = PluginManager.load_plugin(manager, TestPlugin, config)

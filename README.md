@@ -93,11 +93,6 @@ end
 - [Visualization Components](examples/guides/03_components_and_layout/components/visualization/README.md)
 - [Database Components](examples/guides/03_components_and_layout/components/database/README.md)
 
-### Development & Testing
-
-- [Development Guide](examples/guides/05_development_and_testing/development/README.md)
-- [Testing Guide](examples/guides/05_development_and_testing/testing/README.md)
-
 ## Performance
 
 Raxol is built for speed and reliability. Automated tests enforce strict performance standards:
@@ -106,13 +101,9 @@ Raxol is built for speed and reliability. Automated tests enforce strict perform
 - **Screen updates**: < 2ms average, < 5ms (95th percentile)
 - **Concurrent operations**: < 5ms average, < 10ms (95th percentile)
 
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ## Support
 

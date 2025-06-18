@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   alias Raxol.Terminal.Cell
 
   describe "new/2" do
-    test 'creates a new scroll buffer with default values' do
+    test ~c"creates a new scroll buffer with default values" do
       scroll = Scroll.new(1000)
       assert scroll.buffer == []
       assert scroll.position == 0
@@ -15,14 +15,14 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       assert scroll.memory_usage == 0
     end
 
-    test 'creates a new scroll buffer with custom memory limit' do
+    test ~c"creates a new scroll buffer with custom memory limit" do
       scroll = Scroll.new(1000, 1_000_000)
       assert scroll.memory_limit == 1_000_000
     end
   end
 
   describe "add_line/2" do
-    test 'adds a line to the scroll buffer' do
+    test ~c"adds a line to the scroll buffer" do
       scroll = Scroll.new(1000)
       line = [Cell.new("A"), Cell.new("B")]
       scroll = Scroll.add_line(scroll, line)
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       assert hd(scroll.buffer) == line
     end
 
-    test 'trims buffer when it exceeds max height' do
+    test ~c"trims buffer when it exceeds max height" do
       # Small max height for testing
       scroll = Scroll.new(2)
 
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   end
 
   describe "get_view/2" do
-    test 'gets a view of the scroll buffer at the current position' do
+    test ~c"gets a view of the scroll buffer at the current position" do
       scroll = Scroll.new(1000)
 
       # Add three lines
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       assert hd(tl(view)) == [Cell.new("B")]
     end
 
-    test 'returns empty list when position is beyond buffer height' do
+    test ~c"returns empty list when position is beyond buffer height" do
       scroll = Scroll.new(1000)
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       # Scroll beyond buffer height
@@ -77,7 +77,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       assert view == []
     end
 
-    test 'returns partial view when near the end of the buffer' do
+    test ~c"returns partial view when near the end of the buffer" do
       scroll = Scroll.new(1000)
 
       # Add three lines
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   end
 
   describe "scroll/2" do
-    test 'scrolls the buffer by the given amount' do
+    test ~c"scrolls the buffer by the given amount" do
       scroll = Scroll.new(1000)
       # Add 5 lines so the buffer height is at least 5
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
@@ -108,7 +108,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       assert scroll.position == 5
     end
 
-    test 'does not scroll beyond buffer bounds' do
+    test ~c"does not scroll beyond buffer bounds" do
       scroll = Scroll.new(1000)
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.scroll(scroll, 10)
@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       assert scroll.position == 1
     end
 
-    test 'handles negative scroll amounts' do
+    test ~c"handles negative scroll amounts" do
       scroll = Scroll.new(1000)
       # Add lines first so height > 0
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
@@ -134,7 +134,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   end
 
   describe "get_position/1" do
-    test 'gets the current scroll position' do
+    test ~c"gets the current scroll position" do
       scroll = Scroll.new(1000)
       # Add 5 lines so the buffer height is at least 5
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
@@ -148,7 +148,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   end
 
   describe "get_height/1" do
-    test 'gets the total height of the scroll buffer' do
+    test ~c"gets the total height of the scroll buffer" do
       scroll = Scroll.new(1000)
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.add_line(scroll, [Cell.new("B")])
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   end
 
   describe "clear/1" do
-    test 'clears the scroll buffer' do
+    test ~c"clears the scroll buffer" do
       scroll = Scroll.new(1000)
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.add_line(scroll, [Cell.new("B")])

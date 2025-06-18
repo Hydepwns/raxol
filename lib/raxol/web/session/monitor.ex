@@ -1,10 +1,10 @@
 defmodule Raxol.Web.Session.Monitor do
-  @moduledoc '''
+  @moduledoc """
   Handles session monitoring for Raxol applications.
 
   This module provides functionality to monitor active sessions, track usage
   patterns, and detect potential issues.
-  '''
+  """
 
   use GenServer
 
@@ -133,7 +133,8 @@ defmodule Raxol.Web.Session.Monitor do
 
   defp schedule_monitoring(state) do
     # Schedule next monitoring run
-    _monitor_timer =
-      Process.send_after(self(), :monitor, state.monitoring_interval)
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:monitor, timer_id}, state.monitoring_interval)
+    # Store timer_id in state if needed
   end
 end

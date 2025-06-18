@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
-  @moduledoc '''
+  @moduledoc """
   Handles color-related OSC commands.
 
   This handler manages terminal colors, including:
@@ -15,55 +15,55 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
   - OSC 12: Set/Query cursor color
   - OSC 17: Set/Query selection background color
   - OSC 19: Set/Query selection foreground color
-  '''
+  """
 
   alias Raxol.Terminal.{Emulator, Colors, Commands.OSCHandlers.ColorParser}
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Handles OSC 10 command to set/query foreground color.
-  '''
+  """
   @spec handle_10(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_10(emulator, data) do
     case data do
-      "?' -> handle_color_query(emulator, 10, &Colors.get_foreground/1)
+      "?" -> handle_color_query(emulator, 10, &Colors.get_foreground/1)
       color_spec -> set_color(emulator, color_spec, &Colors.set_foreground/2)
     end
   end
 
-  @doc '''
+  @doc """
   Handles OSC 11 command to set/query background color.
-  '''
+  """
   @spec handle_11(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_11(emulator, data) do
     case data do
-      '?' -> handle_color_query(emulator, 11, &Colors.get_background/1)
+      ~c"?" -> handle_color_query(emulator, 11, &Colors.get_background/1)
       color_spec -> set_color(emulator, color_spec, &Colors.set_background/2)
     end
   end
 
-  @doc '''
+  @doc """
   Handles OSC 12 command to set/query cursor color.
-  '''
+  """
   @spec handle_12(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_12(emulator, data) do
     case data do
-      '?' -> handle_color_query(emulator, 12, &Colors.get_cursor_color/1)
+      ~c"?" -> handle_color_query(emulator, 12, &Colors.get_cursor_color/1)
       color_spec -> set_color(emulator, color_spec, &Colors.set_cursor_color/2)
     end
   end
 
-  @doc '''
+  @doc """
   Handles OSC 17 command to set/query selection background color.
-  '''
+  """
   @spec handle_17(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_17(emulator, data) do
     case data do
-      '?' ->
+      ~c"?" ->
         handle_color_query(emulator, 17, &Colors.get_selection_background/1)
 
       color_spec ->
@@ -71,14 +71,14 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
     end
   end
 
-  @doc '''
+  @doc """
   Handles OSC 19 command to set/query selection foreground color.
-  '''
+  """
   @spec handle_19(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_19(emulator, data) do
     case data do
-      '?' ->
+      ~c"?" ->
         handle_color_query(emulator, 19, &Colors.get_selection_foreground/1)
 
       color_spec ->
@@ -86,9 +86,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
     end
   end
 
-  @doc '''
+  @doc """
   Handles OSC 110 command to reset foreground color.
-  '''
+  """
   @spec handle_110(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_110(emulator, _data) do
@@ -96,9 +96,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
     {:ok, %{emulator | colors: new_colors}}
   end
 
-  @doc '''
+  @doc """
   Handles OSC 111 command to reset background color.
-  '''
+  """
   @spec handle_111(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_111(emulator, _data) do
@@ -106,9 +106,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
     {:ok, %{emulator | colors: new_colors}}
   end
 
-  @doc '''
+  @doc """
   Handles OSC 112 command to reset cursor color.
-  '''
+  """
   @spec handle_112(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_112(emulator, _data) do
@@ -116,9 +116,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
     {:ok, %{emulator | colors: new_colors}}
   end
 
-  @doc '''
+  @doc """
   Handles OSC 117 command to reset selection background color.
-  '''
+  """
   @spec handle_117(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_117(emulator, _data) do
@@ -126,9 +126,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
     {:ok, %{emulator | colors: new_colors}}
   end
 
-  @doc '''
+  @doc """
   Handles OSC 119 command to reset selection foreground color.
-  '''
+  """
   @spec handle_119(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_119(emulator, _data) do
@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
     else
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning(
-          'Failed to set color: #{inspect(reason)}"
+          "Failed to set color: #{inspect(reason)}"
         )
 
         {:error, reason, emulator}

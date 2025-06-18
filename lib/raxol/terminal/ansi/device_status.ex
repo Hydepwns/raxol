@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.ANSI.DeviceStatus do
-  @moduledoc '''
+  @moduledoc """
   Handles terminal state queries and device status reports.
   This includes cursor position reports, device status reports,
   and terminal identification queries.
-  '''
+  """
 
   @type device_status :: %{
           cursor_position: {integer(), integer()},
@@ -13,9 +13,9 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
           features: MapSet.t()
         }
 
-  @doc '''
+  @doc """
   Creates a new device status map with default values.
-  '''
+  """
   @spec new() :: device_status()
   def new do
     %{
@@ -35,17 +35,17 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
     }
   end
 
-  @doc '''
+  @doc """
   Generates a cursor position report.
-  '''
+  """
   @spec cursor_position_report(device_status()) :: String.t()
   def cursor_position_report(%{cursor_position: {row, col}}) do
     "\e[#{row};#{col}R"
   end
 
-  @doc '''
+  @doc """
   Generates a device status report.
-  '''
+  """
   @spec device_status_report(device_status(), :ok | :malfunction) :: String.t()
   def device_status_report(_status, report_type) do
     case report_type do
@@ -54,43 +54,43 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
     end
   end
 
-  @doc '''
+  @doc """
   Generates a primary device attributes report.
-  '''
+  """
   @spec primary_device_attributes(device_status()) :: String.t()
   def primary_device_attributes(%{device_type: _type, features: features}) do
     feature_codes = features_to_codes(features)
     "\e[?1;#{feature_codes}c"
   end
 
-  @doc '''
+  @doc """
   Generates a secondary device attributes report.
-  '''
+  """
   @spec secondary_device_attributes(device_status()) :: String.t()
   def secondary_device_attributes(%{version: version}) do
     {major, minor, patch} = parse_version(version)
     "\e[>#{major};#{minor}#{patch};0c"
   end
 
-  @doc '''
+  @doc """
   Generates a tertiary device attributes report.
-  '''
+  """
   @spec tertiary_device_attributes(device_status()) :: String.t()
   def tertiary_device_attributes(%{terminal_id: id}) do
     "\eP!|#{id}\e\\"
   end
 
-  @doc '''
+  @doc """
   Generates a fourth device attributes report.
-  '''
+  """
   @spec fourth_device_attributes(device_status()) :: String.t()
   def fourth_device_attributes(%{device_type: type, version: version}) do
     "\eP>|#{type} #{version}\e\\"
   end
 
-  @doc '''
+  @doc """
   Updates the cursor position in the device status.
-  '''
+  """
   @spec update_cursor_position(device_status(), {integer(), integer()}) ::
           device_status()
   def update_cursor_position(status, {row, col}) do

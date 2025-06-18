@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.Scrolling do
-  @moduledoc '''
+  @moduledoc """
   Handles scrolling operations for the terminal screen buffer.
-  '''
+  """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   def scroll_up(buffer, count, _scroll_region, _blank_style) when count <= 0,
     do: buffer
 
-  @doc '''
+  @doc """
   Scrolls the buffer down by the specified number of lines.
 
   ## Parameters
@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   ## Returns
     Updated screen buffer
-  '''
+  """
   @spec scroll_down(
           ScreenBuffer.t(),
           non_neg_integer(),

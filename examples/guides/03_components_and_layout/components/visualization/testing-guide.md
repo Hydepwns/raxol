@@ -252,10 +252,6 @@ When reporting issues, include:
 
 ## Additional Resources
 
-- [Visualization API Documentation](../api/visualization.md)
-- [Performance Guide](../../05_development_and_testing/performance/README.md)
-- [Testing Best Practices](../../05_development_and_testing/testing/README.md)
-
 ---
 
 For questions or support, refer to the documentation or open an issue in the project repository.

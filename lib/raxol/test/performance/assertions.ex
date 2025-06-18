@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Performance.Assertions do
-  @moduledoc '''
+  @moduledoc """
   Provides assertions for performance testing of Raxol components.
 
   This module includes assertions for:
@@ -7,12 +7,12 @@ defmodule Raxol.Test.Performance.Assertions do
   - Memory usage limits
   - Event latency requirements
   - Resource utilization bounds
-  '''
+  """
 
   import ExUnit.Assertions
   alias Raxol.Test.Performance
 
-  @doc '''
+  @doc """
   Asserts that a component renders within a specified time limit.
 
   ## Example
@@ -20,7 +20,7 @@ defmodule Raxol.Test.Performance.Assertions do
       assert_render_time component, fn ->
         render_iterations(component, 1000)
       end, under: 100 # milliseconds
-  '''
+  """
   def assert_render_time(component, operation, opts \\ []) do
     time = Performance.measure_render_time(component, operation)
 
@@ -31,7 +31,7 @@ defmodule Raxol.Test.Performance.Assertions do
            "Render time #{time}ms exceeds threshold of #{threshold}ms"
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's memory usage stays within specified limits.
 
   ## Example
@@ -39,7 +39,7 @@ defmodule Raxol.Test.Performance.Assertions do
       assert_memory_usage component, fn ->
         render_with_large_dataset(component)
       end, under: 1024 * 1024 # 1MB
-  '''
+  """
   def assert_memory_usage(component, operation, opts \\ []) do
     usage = Performance.measure_memory_usage(component, operation)
 
@@ -53,13 +53,13 @@ defmodule Raxol.Test.Performance.Assertions do
     {:ok, usage}
   end
 
-  @doc '''
+  @doc """
   Asserts that event handling latency stays within acceptable bounds.
 
   ## Example
 
       assert_event_latency component, :click, under: 10 # milliseconds
-  '''
+  """
   def assert_event_latency(component, event, opts \\ []) do
     latency = Performance.measure_event_latency(component, event)
 
@@ -70,13 +70,13 @@ defmodule Raxol.Test.Performance.Assertions do
            "Event latency #{latency}ms exceeds threshold of #{threshold}ms"
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's resource utilization remains stable.
 
   ## Example
 
       assert_stable_resource_usage component, duration: 1000
-  '''
+  """
   def assert_stable_resource_usage(component, opts \\ []) do
     duration = Keyword.get(opts, :duration, 1000)
     measurements = Performance.track_resource_utilization(component, duration)
@@ -96,7 +96,7 @@ defmodule Raxol.Test.Performance.Assertions do
     {:ok, %{memory: memory_trend, processes: process_trend}}
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's performance metrics meet all requirements.
 
   ## Example
@@ -106,7 +106,7 @@ defmodule Raxol.Test.Performance.Assertions do
         memory_usage: 1024 * 1024,
         event_latency: 10
       }
-  '''
+  """
   def assert_performance_requirements(component, requirements) do
     results = Performance.run_benchmark_suite(component)
 
@@ -120,13 +120,13 @@ defmodule Raxol.Test.Performance.Assertions do
     {:ok, results}
   end
 
-  @doc '''
+  @doc """
   Asserts that a component's performance hasn't regressed from baseline.
 
   ## Example
 
       assert_no_performance_regression component, "button_baseline"
-  '''
+  """
   def assert_no_performance_regression(component, baseline_name) do
     current = Performance.run_benchmark_suite(component)
     baseline = load_performance_baseline(baseline_name)
@@ -139,12 +139,12 @@ defmodule Raxol.Test.Performance.Assertions do
       threshold = baseline_value * 1.1
 
       assert current_value <= threshold,
-             '''
+             """
              Performance regression detected for #{metric}:
              Current: #{current_value}
              Baseline: #{baseline_value}
              Threshold: #{threshold}
-             '''
+             """
     end)
   end
 

@@ -1,12 +1,12 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
-  @moduledoc '''
+  @moduledoc """
   Handles OSC (Operating System Command) sequences for window operations.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator, as: Emulator
   alias Raxol.Terminal.Window
 
-  @doc 'Handles window title setting (OSC 0)'
+  @doc "Handles window title setting (OSC 0)"
   @spec handle_0(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_0(emulator, title) do
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
     end
   end
 
-  @doc 'Handles window icon name setting (OSC 1)'
+  @doc "Handles window icon name setting (OSC 1)"
   @spec handle_1(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_1(emulator, icon_name) do
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
     end
   end
 
-  @doc 'Handles window title and icon name setting (OSC 2)'
+  @doc "Handles window title and icon name setting (OSC 2)"
   @spec handle_2(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_2(emulator, title) do
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
     end
   end
 
-  @doc 'Handles working directory setting (OSC 7)'
+  @doc "Handles working directory setting (OSC 7)"
   @spec handle_7(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_7(emulator, dir) do
@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
     {:ok, %{emulator | window: new_window}}
   end
 
-  @doc 'Handles window size setting (OSC 8)'
+  @doc "Handles window size setting (OSC 8)"
   @spec handle_8(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_8(emulator, size_str) do
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
     end
   end
 
-  @doc 'Handles window size setting (OSC 1337)'
+  @doc "Handles window size setting (OSC 1337)"
   @spec handle_1337(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_1337(emulator, data) do

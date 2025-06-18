@@ -1,5 +1,5 @@
 defmodule Raxol.Cloud.EdgeComputing do
-  @moduledoc '''
+  @moduledoc """
   Edge computing support for Raxol applications.
 
   This module provides functionality for optimizing Raxol applications
@@ -13,7 +13,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   * Automatic failover between edge and cloud
   * Edge-specific monitoring and diagnostics
   * Edge-to-cloud data streaming
-  '''
+  """
 
   alias Raxol.Cloud.EdgeComputing.{Cache, Queue, SyncManager}
 
@@ -65,7 +65,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   # Process dictionary key for edge computing state
   @edge_key :raxol_edge_computing_state
 
-  @doc '''
+  @doc """
   Initializes the edge computing system.
 
   ## Options
@@ -82,7 +82,7 @@ defmodule Raxol.Cloud.EdgeComputing do
 
       iex> init(mode: :hybrid)
       :ok
-  '''
+  """
   def init(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     state = State.new()
@@ -119,9 +119,9 @@ defmodule Raxol.Cloud.EdgeComputing do
     :ok
   end
 
-  @doc '''
+  @doc """
   Updates the edge computing configuration.
-  '''
+  """
   def update_config(state \\ nil, config) do
     config = if is_map(config), do: Enum.into(config, []), else: config
 
@@ -148,7 +148,7 @@ defmodule Raxol.Cloud.EdgeComputing do
     end)
   end
 
-  @doc '''
+  @doc """
   Executes a function at the edge or in the cloud based on current mode and conditions.
 
   ## Options
@@ -163,7 +163,7 @@ defmodule Raxol.Cloud.EdgeComputing do
 
       iex> execute(fn -> process_data(data) end)
       {:ok, result}
-  '''
+  """
   def execute(func, opts \\ []) when is_function(func, 0) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     state = get_state()
@@ -192,7 +192,7 @@ defmodule Raxol.Cloud.EdgeComputing do
     end
   end
 
-  @doc '''
+  @doc """
   Synchronizes data between edge and cloud.
 
   ## Options
@@ -206,23 +206,23 @@ defmodule Raxol.Cloud.EdgeComputing do
 
       iex> sync(force: true)
       {:ok, %{status: :completed, synced_items: 5}}
-  '''
+  """
   def sync(_opts \\ []) do
     # Sync with cloud
     :ok
   end
 
-  @doc '''
+  @doc """
   Checks if the system is currently operating in offline mode.
-  '''
+  """
   def offline? do
     state = get_state()
     state.cloud_status != :connected
   end
 
-  @doc '''
+  @doc """
   Gets the current status of the edge computing system.
-  '''
+  """
   def status do
     state = get_state()
 
@@ -238,9 +238,9 @@ defmodule Raxol.Cloud.EdgeComputing do
     }
   end
 
-  @doc '''
+  @doc """
   Manually checks the cloud connection status and updates the system state.
-  '''
+  """
   def check_connection do
     state = get_state()
 
@@ -273,9 +273,9 @@ defmodule Raxol.Cloud.EdgeComputing do
     end
   end
 
-  @doc '''
+  @doc """
   Forces the system into a specific mode.
-  '''
+  """
   def force_mode(mode) when mode in [:edge_only, :cloud_only, :hybrid] do
     with_state(fn state ->
       %{state | mode: mode}
@@ -284,17 +284,17 @@ defmodule Raxol.Cloud.EdgeComputing do
     :ok
   end
 
-  @doc '''
+  @doc """
   Gets metrics for the edge computing system.
-  '''
+  """
   def get_metrics do
     state = get_state()
     state.metrics
   end
 
-  @doc '''
+  @doc """
   Clears the edge cache.
-  '''
+  """
   def clear_cache do
     Cache.clear()
     :ok
@@ -687,9 +687,9 @@ defmodule Raxol.Cloud.EdgeComputing.Queue do
     length(queue.operations)
   end
 
-  @doc '''
+  @doc """
   Process all pending operations in the queue.
-  '''
+  """
   def process_pending do
     queue = get_queue()
 

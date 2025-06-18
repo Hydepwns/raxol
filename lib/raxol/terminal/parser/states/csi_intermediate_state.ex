@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
-  @moduledoc '''
+  @moduledoc """
   Handles the :csi_intermediate state of the terminal parser.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.Commands.Executor
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Processes input when the parser is in the :csi_intermediate state.
   Collects intermediate bytes (0x20-0x2F).
-  '''
+  """
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
           | {:finished, Emulator.t(), State.t()}

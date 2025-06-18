@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
-  @moduledoc '''
+  @moduledoc """
   A test implementation of an event source for testing purposes.
-  '''
+  """
 
   use GenServer
   require Logger

@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Support.TestHelper do
-  @moduledoc '''
+  @moduledoc """
   Provides common test utilities and setup functions for Raxol tests.
 
   This module includes:
@@ -7,7 +7,7 @@ defmodule Raxol.Test.Support.TestHelper do
   - Mock data generation
   - Common test scenarios
   - Cleanup utilities
-  '''
+  """
 
   use ExUnit.CaseTemplate
   # Remove unused imports
@@ -16,9 +16,9 @@ defmodule Raxol.Test.Support.TestHelper do
   alias Raxol.Core.Events.{Event}
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Sets up a test environment with necessary services and configurations.
-  '''
+  """
   def setup_test_env do
     # Start any required services
     {:ok, _} = Application.ensure_all_started(:raxol)
@@ -35,9 +35,9 @@ defmodule Raxol.Test.Support.TestHelper do
     {:ok, context}
   end
 
-  @doc '''
+  @doc """
   Creates a mock terminal for testing.
-  '''
+  """
   def setup_test_terminal do
     %{
       width: 80,
@@ -47,9 +47,9 @@ defmodule Raxol.Test.Support.TestHelper do
     }
   end
 
-  @doc '''
+  @doc """
   Generates test events for common scenarios.
-  '''
+  """
   def test_events do
     %{
       keyboard: [
@@ -71,17 +71,17 @@ defmodule Raxol.Test.Support.TestHelper do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a test component with the given module and initial state.
-  '''
+  """
   def create_test_component(module, initial_state \\ %{}) do
     {:ok, pid} = module.start_link(initial_state)
     pid
   end
 
-  @doc '''
+  @doc """
   Cleans up test resources and resets the environment.
-  '''
+  """
   def cleanup_test_env(context) do
     # Clean up any processes started during the test
     if pid = Process.whereis(context.test_id), do: Process.exit(pid, :shutdown)
@@ -92,9 +92,9 @@ defmodule Raxol.Test.Support.TestHelper do
     :ok
   end
 
-  @doc '''
+  @doc """
   Sets up common mocks for a test.
-  '''
+  """
   def setup_common_mocks do
     # Set up default mock implementations
     Raxol.Test.Support.Mocks.setup_mocks()
@@ -106,9 +106,9 @@ defmodule Raxol.Test.Support.TestHelper do
     :ok
   end
 
-  @doc '''
+  @doc """
   Creates a test plugin with the given configuration.
-  '''
+  """
   def create_test_plugin(name, config \\ %{}) do
     %{
       name: name,
@@ -124,9 +124,9 @@ defmodule Raxol.Test.Support.TestHelper do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a test plugin module with the given name and callbacks.
-  '''
+  """
   def create_test_plugin_module(name, callbacks \\ %{}) do
     module_name = String.to_atom("Elixir.Raxol.Test.Plugins.#{name}")
 

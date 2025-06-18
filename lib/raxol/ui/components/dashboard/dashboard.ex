@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Dashboard.Dashboard do
-  @moduledoc '''
+  @moduledoc """
   A component responsible for rendering a grid-based dashboard layout.
   Manages widget placement, drag/drop, and resizing.
-  '''
+  """
   # Removed unused WidgetContainer alias
   # alias Raxol.UI.Components.Dashboard.WidgetContainer
   # Removed unused InfoWidget alias
@@ -18,9 +18,9 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
 
   # --- Model ---
   defmodule Model do
-    @moduledoc '''
+    @moduledoc """
     State for the Dashboard component.
-    '''
+    """
     # List of widget configurations (%{id: _, type: _, title: _, grid_spec: %{}})
     defstruct widgets: [],
               # Grid config (%{parent_bounds: _, cols: _, rows: _, gap: _})
@@ -52,7 +52,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
 
   @spec init_from_saved_layout(list(), map()) ::
           {:ok, Model.t()} | {:error, any()}
-  @doc '''
+  @doc """
   Initializes the Dashboard state from a saved layout.
   If no saved layout exists, returns default widgets with the given grid configuration.
 
@@ -60,7 +60,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   the dashboard model with those widgets and the provided grid_config.
 
   Returns {:ok, model} on success, or {:error, reason} on failure.
-  '''
+  """
   def init_from_saved_layout(default_widgets, grid_config)
       when is_list(default_widgets) and is_map(grid_config) do
     # Try to load saved widgets from file
@@ -96,10 +96,10 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   end
 
   @spec validate_widgets(list() | nil) :: boolean()
-  @doc '''
+  @doc """
   Validates a list of widget configurations to ensure they can be properly rendered.
   Returns true if widgets are valid, false otherwise.
-  '''
+  """
   def validate_widgets(widgets) when is_list(widgets) do
     # Check that all widgets have required fields
     Enum.all?(widgets, fn widget ->
@@ -221,7 +221,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
             # Error case: widget ID from layout not found in widget state map
             # Render an error message in its place
             UI.box title: "Error" do
-              UI.label(content: "Error: Widget "#{widget_id}" not found!")
+              UI.label(content: "Error: Widget #{widget_id} not found!")
             end
         end
       end)

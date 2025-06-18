@@ -1,7 +1,7 @@
 defmodule RaxolWeb.UserSessionController do
-  @moduledoc '''
+  @moduledoc """
   Handles user session management (login/logout).
-  '''
+  """
   use RaxolWeb, :controller
 
   # Use Accounts context
