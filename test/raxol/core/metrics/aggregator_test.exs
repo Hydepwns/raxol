@@ -8,7 +8,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
   end
 
   describe "rule management" do
-    test "adds a new aggregation rule" do
+    test 'adds a new aggregation rule' do
       rule = %{
         type: :mean,
         window: :hour,
@@ -22,7 +22,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
       assert Map.has_key?(rules, rule_id)
     end
 
-    test "validates and normalizes rule fields" do
+    test 'validates and normalizes rule fields' do
       rule = %{
         metric_name: "test_metric"
       }
@@ -176,14 +176,14 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
   end
 
   describe "error handling" do
-    test "returns error for non-existent rule" do
+    test 'returns error for non-existent rule' do
       assert {:error, :rule_not_found} = Aggregator.get_aggregated_metrics(999)
       assert {:error, :rule_not_found} = Aggregator.update_aggregation(999)
     end
   end
 
   describe "statistical calculations" do
-    test "calculates median correctly" do
+    test 'calculates median correctly' do
       rule = %{
         type: :median,
         window: :hour,
@@ -229,7 +229,7 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
       :meck.unload(UnifiedCollector)
     end
 
-    test "calculates percentile correctly" do
+    test 'calculates percentile correctly' do
       rule = %{
         type: :percentile,
         window: :hour,

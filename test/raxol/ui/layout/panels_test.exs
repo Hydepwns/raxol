@@ -4,7 +4,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
   alias Raxol.UI.Layout.Panels
 
   describe "measure/2" do
-    test "measures a simple panel" do
+    test 'measures a simple panel' do
       panel = %{
         type: :panel,
         attrs: %{},
@@ -21,7 +21,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert dimensions.height == 24
     end
 
-    test "measures a panel with specific dimensions" do
+    test 'measures a panel with specific dimensions' do
       panel = %{
         type: :panel,
         attrs: %{width: 40, height: 10},
@@ -36,7 +36,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert dimensions.height == 10
     end
 
-    test "enforces minimum dimensions" do
+    test 'enforces minimum dimensions' do
       panel = %{
         type: :panel,
         attrs: %{width: 2, height: 2},
@@ -54,7 +54,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert dimensions.height >= 3
     end
 
-    test "constrains to available space" do
+    test 'constrains to available space' do
       panel = %{
         type: :panel,
         attrs: %{width: 100, height: 50},
@@ -72,7 +72,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
   end
 
   describe "process/3" do
-    test "processes a panel with no children" do
+    test 'processes a panel with no children' do
       panel = %{
         type: :panel,
         attrs: %{title: "Empty Panel"},
@@ -108,7 +108,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert title != nil
     end
 
-    test "processes a panel with single child" do
+    test 'processes a panel with single child' do
       panel = %{
         type: :panel,
         attrs: %{title: "Panel with Child"},
@@ -138,7 +138,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert child.y < 24
     end
 
-    test "processes a panel with multiple children" do
+    test 'processes a panel with multiple children' do
       panel = %{
         type: :panel,
         attrs: %{title: "Panel with Children"},
@@ -178,7 +178,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert second_child.y > 0
     end
 
-    test "applies different border styles" do
+    test 'applies different border styles' do
       # Test single border
       single_panel = %{
         type: :panel,

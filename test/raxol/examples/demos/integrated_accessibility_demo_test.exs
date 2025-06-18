@@ -4,7 +4,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemoTest do
   alias Raxol.Examples.Demos.IntegratedAccessibilityDemo
 
   describe "IntegratedAccessibilityDemo" do
-    test "initializes and renders without errors" do
+    test 'initializes and renders without errors' do
       # Test init
       assert {:ok, {model, _commands}} = IntegratedAccessibilityDemo.init([])
       assert is_map(model)

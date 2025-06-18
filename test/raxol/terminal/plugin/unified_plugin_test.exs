@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   end
 
   describe "basic operations" do
-    test "loads and unloads plugins" do
+    test 'loads and unloads plugins' do
       # Load theme plugin
       assert {:ok, theme_id} =
                UnifiedPlugin.load_plugin(
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                UnifiedPlugin.get_plugin_state(script_id)
     end
 
-    test "handles plugin configuration" do
+    test 'handles plugin configuration' do
       # Load plugin with config
       config = %{
         colors: %{
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   end
 
   describe "plugin types" do
-    test "handles theme plugins" do
+    test 'handles theme plugins' do
       assert {:ok, plugin_id} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/theme",
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       assert is_map(result)
     end
 
-    test "handles script plugins" do
+    test 'handles script plugins' do
       assert {:ok, plugin_id} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/script",
@@ -127,7 +127,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       assert is_map(result)
     end
 
-    test "handles extension plugins" do
+    test 'handles extension plugins' do
       assert {:ok, plugin_id} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/extension",
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   end
 
   describe "plugin management" do
-    test "lists plugins with filters" do
+    test 'lists plugins with filters' do
       # Load different types of plugins
       assert {:ok, theme_id} =
                UnifiedPlugin.load_plugin(
@@ -181,7 +181,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       assert map_size(active_plugins) == 2
     end
 
-    test "handles plugin dependencies" do
+    test 'handles plugin dependencies' do
       # Load dependent plugin
       assert {:ok, dependent_id} =
                UnifiedPlugin.load_plugin(
@@ -215,7 +215,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   end
 
   describe "error handling" do
-    test "handles invalid plugin types" do
+    test 'handles invalid plugin types' do
       assert {:error, :invalid_plugin_type} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/invalid",
@@ -225,7 +225,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                )
     end
 
-    test "handles invalid plugin formats" do
+    test 'handles invalid plugin formats' do
       assert {:error, :invalid_plugin_format} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/invalid",
@@ -235,7 +235,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                )
     end
 
-    test "handles non-existent plugins" do
+    test 'handles non-existent plugins' do
       assert {:error, :plugin_not_found} =
                UnifiedPlugin.get_plugin_state("non_existent")
 
@@ -246,7 +246,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                UnifiedPlugin.update_plugin_config("non_existent", %{})
     end
 
-    test "handles invalid configurations" do
+    test 'handles invalid configurations' do
       assert {:ok, plugin_id} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/theme",
@@ -261,7 +261,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
   end
 
   describe "plugin reloading" do
-    test "reloads plugins successfully" do
+    test 'reloads plugins successfully' do
       # Load plugin
       assert {:ok, plugin_id} =
                UnifiedPlugin.load_plugin(
@@ -282,7 +282,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       assert plugin_state.status == :active
     end
 
-    test "handles reload errors" do
+    test 'handles reload errors' do
       # Load plugin
       assert {:ok, plugin_id} =
                UnifiedPlugin.load_plugin(

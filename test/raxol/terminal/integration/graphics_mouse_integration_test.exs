@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
   end
 
   describe "graphics and mouse integration" do
-    test "creates graphics and mouse contexts" do
+    test 'creates graphics and mouse contexts' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert mouse_state.config.tracking == :all
     end
 
-    test "processes mouse events with graphics context" do
+    test 'processes mouse events with graphics context' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert mouse_state.button_state == %{left: :pressed}
     end
 
-    test "updates graphics based on mouse position" do
+    test 'updates graphics based on mouse position' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert graphics_state.buffer == data
     end
 
-    test "handles mouse drag with graphics" do
+    test 'handles mouse drag with graphics' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
@@ -126,7 +126,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert mouse_state.button_state == %{}
     end
 
-    test "cleans up graphics and mouse contexts" do
+    test 'cleans up graphics and mouse contexts' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
   end
 
   describe "error handling" do
-    test "handles invalid graphics and mouse operations" do
+    test 'handles invalid graphics and mouse operations' do
       assert {:error, :graphics_not_found} =
                UnifiedGraphics.get_graphics_state(999)
 
@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
   end
 
   describe "performance" do
-    test "handles rapid mouse events efficiently" do
+    test 'handles rapid mouse events efficiently' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert time < 1_000_000
     end
 
-    test "handles rapid graphics updates efficiently" do
+    test 'handles rapid graphics updates efficiently' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
 
       # Generate a sequence of graphics updates
@@ -203,7 +203,7 @@ defmodule Raxol.Terminal.Integration.GraphicsMouseIntegrationTest do
       assert time < 1_000_000
     end
 
-    test "handles concurrent mouse and graphics operations" do
+    test 'handles concurrent mouse and graphics operations' do
       assert {:ok, graphics_id} = UnifiedGraphics.create_graphics()
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 

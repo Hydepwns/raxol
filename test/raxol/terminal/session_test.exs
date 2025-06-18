@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert loaded_state.title == original_state.title
     end
 
-    test "can list saved sessions" do
+    test 'can list saved sessions' do
       # Create and save multiple sessions
       {:ok, pid1} = Session.start_link(id: "session1")
       {:ok, pid2} = Session.start_link(id: "session2")
@@ -105,7 +105,7 @@ defmodule Raxol.Terminal.SessionTest do
       assert recovered_state.height == original_state.height
     end
 
-    test "handles invalid session data gracefully" do
+    test 'handles invalid session data gracefully' do
       # Try to load non-existent session
       assert {:error, _} = Session.load_session("nonexistent")
     end

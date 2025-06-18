@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
   alias Raxol.Core.Runtime.Plugins.DependencyManager.Core
 
   describe "check_dependencies/4" do
-    test "returns :ok when all dependencies are satisfied" do
+    test 'returns :ok when all dependencies are satisfied' do
       plugin_id = "test_plugin"
       plugin_metadata = %{dependencies: [{"dep_plugin", ">= 1.0.0"}]}
       loaded_plugins = %{"dep_plugin" => %{version: "1.1.0"}}
@@ -16,7 +16,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
                )
     end
 
-    test "handles missing dependencies" do
+    test 'handles missing dependencies' do
       plugin_id = "test_plugin"
       plugin_metadata = %{dependencies: [{"missing_plugin", ">= 1.0.0"}]}
       loaded_plugins = %{}
@@ -30,7 +30,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
                )
     end
 
-    test "handles version mismatches" do
+    test 'handles version mismatches' do
       plugin_id = "test_plugin"
       plugin_metadata = %{dependencies: [{"dep_plugin", ">= 2.0.0"}]}
       loaded_plugins = %{"dep_plugin" => %{version: "1.0.0"}}
@@ -44,7 +44,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
                )
     end
 
-    test "handles optional dependencies" do
+    test 'handles optional dependencies' do
       plugin_id = "test_plugin"
 
       plugin_metadata = %{
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
                )
     end
 
-    test "handles simple plugin IDs without version constraints" do
+    test 'handles simple plugin IDs without version constraints' do
       plugin_id = "test_plugin"
       plugin_metadata = %{dependencies: ["dep_plugin"]}
       loaded_plugins = %{"dep_plugin" => %{version: "1.0.0"}}
@@ -74,7 +74,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
                )
     end
 
-    test "handles multiple dependencies" do
+    test 'handles multiple dependencies' do
       plugin_id = "test_plugin"
 
       plugin_metadata = %{
@@ -100,7 +100,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
   end
 
   describe "resolve_load_order/1" do
-    test "resolves simple dependency chain" do
+    test 'resolves simple dependency chain' do
       plugins = %{
         "plugin_a" => %{
           dependencies: [{"plugin_b", ">= 1.0.0"}],
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
       assert load_order == ["plugin_b", "plugin_a"]
     end
 
-    test "resolves complex dependency graph" do
+    test 'resolves complex dependency graph' do
       plugins = %{
         "plugin_a" => %{
           dependencies: [{"plugin_b", ">= 1.0.0"}, {"plugin_c", ">= 1.0.0"}],
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
       assert a_index < d_index
     end
 
-    test "detects circular dependencies" do
+    test 'detects circular dependencies' do
       plugins = %{
         "plugin_a" => %{
           dependencies: [{"plugin_b", ">= 1.0.0"}],
@@ -171,7 +171,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
       assert "plugin_b" in cycle
     end
 
-    test "handles plugins with no dependencies" do
+    test 'handles plugins with no dependencies' do
       plugins = %{
         "plugin_a" => %{dependencies: [], version: "1.0.0"},
         "plugin_b" => %{dependencies: [], version: "1.0.0"}

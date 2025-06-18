@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManagerTest do
       assert manager.performance_metrics != nil
     end
 
-    test "initializes with custom options" do
+    test 'initializes with custom options' do
       opts = [
         compression_algorithm: :zstd,
         compression_level: 9,

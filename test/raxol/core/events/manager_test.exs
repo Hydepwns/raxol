@@ -16,7 +16,7 @@ defmodule Raxol.Core.Events.ManagerTest do
   end
 
   describe "init/0" do
-    test "initializes event handlers registry" do
+    test 'initializes event handlers registry' do
       # Re-init to ensure we have a clean state
       EventManager.init()
 
@@ -26,7 +26,7 @@ defmodule Raxol.Core.Events.ManagerTest do
   end
 
   describe "register_handler/3" do
-    test "registers a handler for an event type" do
+    test 'registers a handler for an event type' do
       # Register a handler
       assert :ok =
                EventManager.register_handler(
@@ -41,7 +41,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       assert handlers[:test_event] == [{__MODULE__, :dummy_handler}]
     end
 
-    test "can register multiple handlers for same event type" do
+    test 'can register multiple handlers for same event type' do
       # Register first handler
       EventManager.register_handler(:test_event, __MODULE__, :dummy_handler)
 
@@ -58,7 +58,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       assert Enum.member?(event_handlers, {__MODULE__, :another_handler})
     end
 
-    test "doesn't register the same handler twice" do
+    test 'doesn't register the same handler twice' do
       # Register same handler twice
       EventManager.register_handler(:test_event, __MODULE__, :dummy_handler)
       EventManager.register_handler(:test_event, __MODULE__, :dummy_handler)
@@ -71,7 +71,7 @@ defmodule Raxol.Core.Events.ManagerTest do
   end
 
   describe "unregister_handler/3" do
-    test "unregisters a handler" do
+    test 'unregisters a handler' do
       # Register a handler
       EventManager.register_handler(:test_event, __MODULE__, :dummy_handler)
 
@@ -88,7 +88,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       assert Map.get(handlers, :test_event) == []
     end
 
-    test "only unregisters the specified handler" do
+    test 'only unregisters the specified handler' do
       # Register two handlers
       EventManager.register_handler(:test_event, __MODULE__, :dummy_handler)
       EventManager.register_handler(:test_event, __MODULE__, :another_handler)
@@ -102,7 +102,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       assert Map.get(handlers, :test_event) == [{__MODULE__, :another_handler}]
     end
 
-    test "does nothing for unregistered handler" do
+    test 'does nothing for unregistered handler' do
       # Unregister a non-existent handler
       assert :ok =
                EventManager.unregister_handler(
@@ -114,7 +114,7 @@ defmodule Raxol.Core.Events.ManagerTest do
   end
 
   describe "dispatch/1" do
-    test "dispatches event to registered handlers" do
+    test 'dispatches event to registered handlers' do
       # Create a temporary process that will receive messages
       parent = self()
 
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       assert_receive ^event, 100
     end
 
-    test "dispatches atom events" do
+    test 'dispatches atom events' do
       # Create a temporary process that will receive messages
       parent = self()
 
@@ -186,14 +186,14 @@ defmodule Raxol.Core.Events.ManagerTest do
       assert_receive ^event, 100
     end
 
-    test "does nothing when no handlers are registered" do
+    test 'does nothing when no handlers are registered' do
       # Dispatch event with no handlers
       assert :ok = EventManager.dispatch({:unhandled_event, %{data: "test"}})
     end
   end
 
   describe "clear_handlers/0" do
-    test "clears all handlers" do
+    test 'clears all handlers' do
       # Register some handlers
       EventManager.register_handler(:test_event, __MODULE__, :dummy_handler)
 

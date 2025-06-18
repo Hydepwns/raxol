@@ -5,7 +5,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
   import Raxol.Test.Visual.Assertions
   alias Raxol.UI.Theming.Theme
 
-  test "handles missing themes" do
+  test 'handles missing themes' do
     element = Helper.create_test_box(0, 0, 5, 5, %{theme: "nonexistent"})
     cells = Renderer.render_to_cells(element)
 
@@ -14,7 +14,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :white, :black)
   end
 
-  test "handles missing theme colors" do
+  test 'handles missing theme colors' do
     theme = Helper.create_test_theme("test", "Test Theme", "Test theme", %{})
     element = Helper.create_test_box(0, 0, 5, 5, %{theme: theme})
     cells = Renderer.render_to_cells(element)
@@ -24,7 +24,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :white, :black)
   end
 
-  test "handles style overrides" do
+  test 'handles style overrides' do
     theme =
       Helper.create_test_theme("test", "Test Theme", "Test theme", %{
         foreground: :red,
@@ -44,7 +44,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :green, :yellow)
   end
 
-  test "handles border style overrides" do
+  test 'handles border style overrides' do
     theme =
       Helper.create_test_theme("test", "Test Theme", "Test theme", %{
         border_style: %{type: :double}
@@ -63,7 +63,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :white, :black, [:single])
   end
 
-  test "handles default border styles" do
+  test 'handles default border styles' do
     element = Helper.create_test_box(0, 0, 5, 5)
     cells = Renderer.render_to_cells(element)
 
@@ -72,7 +72,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :white, :black, [:single])
   end
 
-  test "handles no borders" do
+  test 'handles no borders' do
     element = Helper.create_test_box(0, 0, 5, 5, %{border: false})
     cells = Renderer.render_to_cells(element)
 
@@ -81,7 +81,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :white, :black, [])
   end
 
-  test "handles theme inheritance" do
+  test 'handles theme inheritance' do
     parent_theme =
       Helper.create_test_theme("parent", "Parent Theme", "Parent theme", %{
         foreground: :red,
@@ -106,7 +106,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :green, :blue)
   end
 
-  test "handles theme variants" do
+  test 'handles theme variants' do
     theme =
       Helper.create_test_theme("test", "Test Theme", "Test theme", %{
         variants: %{
@@ -128,7 +128,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     Helper.assert_cell_style(cell, :red, :black)
   end
 
-  test "theme initialization" do
+  test 'theme initialization' do
     theme =
       Helper.create_test_theme(
         "test",
@@ -150,7 +150,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     assert theme.fonts.default.family == "monospace"
   end
 
-  test "theme merging" do
+  test 'theme merging' do
     base_theme =
       Helper.create_test_theme(
         "test",
@@ -190,7 +190,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     assert merged.fonts.default.size == 14
   end
 
-  test "theme inheritance" do
+  test 'theme inheritance' do
     parent_theme =
       Helper.create_test_theme(
         "parent",
@@ -230,7 +230,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
     assert inherited.fonts.default.size == 14
   end
 
-  test "theme access" do
+  test 'theme access' do
     theme =
       Helper.create_test_theme(
         "test",

@@ -111,12 +111,12 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   end
 
   describe "behavior implementation" do
-    test "init/1 sets up initial state" do
+    test 'init/1 sets up initial state' do
       result = TestApp.init(%{})
       assert result == %{count: 0, initialized: true}
     end
 
-    test "update/2 modifies state based on message" do
+    test 'update/2 modifies state based on message' do
       model = %{count: 5, initialized: true}
 
       # Test increment
@@ -135,7 +135,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       assert commands == [{:command, :operation_complete}]
     end
 
-    test "view/1 renders the current state" do
+    test 'view/1 renders the current state' do
       model = %{count: 42, initialized: true}
       result = TestApp.view(model)
 
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       assert string_result =~ "button"
     end
 
-    test "subscribe/1 creates subscriptions based on state" do
+    test 'subscribe/1 creates subscriptions based on state' do
       # State with low count
       model = %{count: 5, initialized: true}
       subscriptions = TestApp.subscribe(model)
@@ -171,7 +171,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   end
 
   describe "default implementations" do
-    test "minimal app has functioning defaults" do
+    test 'minimal app has functioning defaults' do
       # Init
       model = MinimalTestApp.init(%{})
       assert model == %{minimal: true}
@@ -195,7 +195,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   end
 
   describe "helper functions" do
-    test "command/1 creates a command" do
+    test 'command/1 creates a command' do
       cmd = TestApp.command(:test_command)
       assert is_struct(cmd)
 
@@ -205,7 +205,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       assert cmd.type == :test_command
     end
 
-    test "batch/1 creates a batch command" do
+    test 'batch/1 creates a batch command' do
       cmd1 = TestApp.command(:cmd1)
       cmd2 = TestApp.command(:cmd2)
 
@@ -219,7 +219,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       assert length(batch.data) == 2
     end
 
-    test "subscribe_to_events/1 creates event subscription" do
+    test 'subscribe_to_events/1 creates event subscription' do
       events = [:event1, :event2]
       subscription = TestApp.subscribe_to_events(events)
 
@@ -232,7 +232,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       assert subscription.data == events
     end
 
-    test "subscribe_interval/2 creates interval subscription" do
+    test 'subscribe_interval/2 creates interval subscription' do
       subscription = TestApp.subscribe_interval(500, :tick)
 
       assert is_struct(subscription)

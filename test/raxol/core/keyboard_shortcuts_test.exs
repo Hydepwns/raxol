@@ -22,7 +22,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "init/0" do
-    test "initializes keyboard shortcuts registry" do
+    test 'initializes keyboard shortcuts registry' do
       # Re-init for test coverage
       KeyboardShortcuts.init()
 
@@ -37,7 +37,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "cleanup/0" do
-    test "cleans up keyboard shortcuts registry" do
+    test 'cleans up keyboard shortcuts registry' do
       # Ensure we have registry
       assert Process.get(:keyboard_shortcuts) != nil
 
@@ -50,7 +50,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "register_shortcut/4" do
-    test "registers global shortcut" do
+    test 'registers global shortcut' do
       # Store test process pid
       test_pid = self()
 
@@ -81,7 +81,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert key_combo.shift == false
     end
 
-    test "registers context-specific shortcut" do
+    test 'registers context-specific shortcut' do
       # Register a context-specific shortcut
       assert :ok =
                KeyboardShortcuts.register_shortcut(
@@ -112,7 +112,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert key_combo.shift == false
     end
 
-    test "handles complex key combinations" do
+    test 'handles complex key combinations' do
       # Register with complex key combo
       assert :ok =
                KeyboardShortcuts.register_shortcut(
@@ -135,7 +135,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "unregister_shortcut/2" do
-    test "unregisters global shortcut" do
+    test 'unregisters global shortcut' do
       # Register a shortcut
       KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn -> nil end)
 
@@ -151,7 +151,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       refute Map.has_key?(shortcuts.global, :save)
     end
 
-    test "unregisters context-specific shortcut" do
+    test 'unregisters context-specific shortcut' do
       # Register a context-specific shortcut
       KeyboardShortcuts.register_shortcut("Alt+F", :file_menu, fn -> nil end,
         context: :main_menu
@@ -173,7 +173,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "set_context/1 and get_current_context/0" do
-    test "sets and gets current context" do
+    test 'sets and gets current context' do
       # Default should be :global
       assert KeyboardShortcuts.get_current_context() == :global
 
@@ -186,7 +186,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "get_shortcuts_for_context/1" do
-    test "gets global shortcuts" do
+    test 'gets global shortcuts' do
       # Register some global shortcuts
       KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn -> nil end,
         description: "Save document"
@@ -215,7 +215,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert open_shortcut.description == "Open document"
     end
 
-    test "gets context-specific shortcuts" do
+    test 'gets context-specific shortcuts' do
       # Register global shortcut
       KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn -> nil end,
         description: "Save document"
@@ -256,7 +256,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert edit_menu_shortcut.key_combo == "Alt+E"
     end
 
-    test "gets shortcuts for current context when nil is passed" do
+    test 'gets shortcuts for current context when nil is passed' do
       # Register global shortcut
       KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn -> nil end)
 
@@ -277,7 +277,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "show_shortcuts_help/0" do
-    test "generates help message for shortcuts" do
+    test 'generates help message for shortcuts' do
       # Register some shortcuts
       KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn -> nil end,
         description: "Save document"
@@ -302,7 +302,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "trigger_shortcut/2" do
-    test "triggers shortcut callback" do
+    test 'triggers shortcut callback' do
       # Store test process pid
       test_pid = self()
 
@@ -318,13 +318,13 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert_received :save_triggered
     end
 
-    test "returns error for non-existent shortcut" do
+    test 'returns error for non-existent shortcut' do
       # Trigger non-existent shortcut
       assert {:error, :shortcut_not_found} =
                KeyboardShortcuts.trigger_shortcut(:nonexistent)
     end
 
-    test "finds shortcut in specified context" do
+    test 'finds shortcut in specified context' do
       # Store test process pid
       test_pid = self()
 
@@ -345,7 +345,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert_received :file_menu_triggered
     end
 
-    test "finds shortcut in current context when nil is passed" do
+    test 'finds shortcut in current context when nil is passed' do
       # Store test process pid
       test_pid = self()
 
@@ -371,7 +371,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   end
 
   describe "handle_keyboard_event/1" do
-    test "executes callback for matching shortcut" do
+    test 'executes callback for matching shortcut' do
       # Store test process pid
       test_pid = self()
 
@@ -387,7 +387,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert_received :save_triggered
     end
 
-    test "handles context-specific shortcuts" do
+    test 'handles context-specific shortcuts' do
       # Store test process pid
       test_pid = self()
 
@@ -411,7 +411,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert_received :file_menu_triggered
     end
 
-    test "handles multiple modifiers" do
+    test 'handles multiple modifiers' do
       # Store test process pid
       test_pid = self()
 
@@ -427,7 +427,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert_received :cut_triggered
     end
 
-    test "context shortcuts override global shortcuts with same name" do
+    test 'context shortcuts override global shortcuts with same name' do
       # Store test process pid
       test_pid = self()
 
@@ -457,7 +457,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       refute_received :global_save_triggered
     end
 
-    test "respects priority order for shortcuts" do
+    test 'respects priority order for shortcuts' do
       # Store test process pid
       test_pid = self()
 

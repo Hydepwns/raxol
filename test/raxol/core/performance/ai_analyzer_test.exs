@@ -4,7 +4,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
   alias Raxol.Core.Performance.AIAnalyzer
 
   describe "AI Analyzer" do
-    test "analyzes performance metrics" do
+    test 'analyzes performance metrics' do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -33,7 +33,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert is_float(analysis.ai_confidence)
     end
 
-    test "generates text report" do
+    test 'generates text report' do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert String.contains?(report.report, "Expected Impact")
     end
 
-    test "generates JSON report" do
+    test 'generates JSON report' do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -85,7 +85,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert {:ok, _} = Jason.decode(report.report)
     end
 
-    test "generates HTML report" do
+    test 'generates HTML report' do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -113,7 +113,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert String.contains?(report.report, "<style>")
     end
 
-    test "handles custom analysis options" do
+    test 'handles custom analysis options' do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -148,7 +148,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(analysis, :ai_confidence)
     end
 
-    test "handles missing metrics gracefully" do
+    test 'handles missing metrics gracefully' do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -166,7 +166,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(analysis, :ai_confidence)
     end
 
-    test "includes metadata in report" do
+    test 'includes metadata in report' do
       metrics = %{
         fps: 60,
         avg_frame_time: 16.5,

@@ -13,7 +13,7 @@ defmodule Raxol.PerformanceTest do
   @moduletag timeout: 120_000
 
   describe "rendering performance" do
-    test "rendering performance meets requirements" do
+    test 'rendering performance meets requirements' do
       render_results = Rendering.benchmark_rendering()
 
       # Example assertions (adjust thresholds as needed)
@@ -26,7 +26,7 @@ defmodule Raxol.PerformanceTest do
   end
 
   describe "event handling performance" do
-    test "event handling performance meets requirements" do
+    test 'event handling performance meets requirements' do
       event_results = EventHandling.benchmark_event_handling()
 
       # Example assertions
@@ -42,7 +42,7 @@ defmodule Raxol.PerformanceTest do
   end
 
   describe "memory usage" do
-    test "memory usage is efficient" do
+    test 'memory usage is efficient' do
       memory_results = MemoryUsage.benchmark_memory_usage()
 
       # Example assertions
@@ -61,7 +61,7 @@ defmodule Raxol.PerformanceTest do
   end
 
   describe "animation performance" do
-    test "animation performance is smooth" do
+    test 'animation performance is smooth' do
       animation_results = Animation.benchmark_animation_performance()
 
       # Example assertions
@@ -76,7 +76,7 @@ defmodule Raxol.PerformanceTest do
   end
 
   describe "full benchmark suite" do
-    test "full benchmark suite against baseline" do
+    test 'full benchmark suite against baseline' do
       # Run all benchmarks with detailed output
       results = Performance.run_all(detailed: true)
 

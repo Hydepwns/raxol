@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       assert emulator.cursor.style == :bar
     end
 
-    test "set_cursor_visible delegates to Cursor.Style" do
+    test 'set_cursor_visible delegates to Cursor.Style' do
       emulator = Emulator.new(80, 24)
       # Assuming default is visible
       # Check state directly
@@ -52,6 +52,6 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
     end
 
     # DECSC/DECRC tests belong with state stack/ANSI processing, not direct cursor methods.
-    # test "save/restore cursor position (DECSC/DECRC)" do ...
+    # test 'save/restore cursor position (DECSC/DECRC)' do ...
   end
 end

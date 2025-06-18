@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
   describe "text formatting (SGR)" do
     # Tests focus on verifying the emulator's style state after processing SGR sequences.
 
-    test "handles SGR reset (0)" do
+    test 'handles SGR reset (0)' do
       emulator = Emulator.new()
       # Set some attributes
       # Bold, Red FG
@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.underline == false
     end
 
-    test "handles SGR bold (1) and normal intensity (22)" do
+    test 'handles SGR bold (1) and normal intensity (22)' do
       emulator = Emulator.new()
       assert emulator.style.bold == false
       # Set bold
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.bold == false
     end
 
-    test "handles SGR italic (3) and not italic (23)" do
+    test 'handles SGR italic (3) and not italic (23)' do
       emulator = Emulator.new()
       assert emulator.style.italic == false
       {emulator, _} = Emulator.process_input(emulator, "\e[3m")
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.italic == false
     end
 
-    test "handles SGR underline (4) and not underlined (24)" do
+    test 'handles SGR underline (4) and not underlined (24)' do
       emulator = Emulator.new()
       assert emulator.style.underline == false
       assert emulator.style.double_underline == false
@@ -58,7 +58,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.double_underline == false
     end
 
-    test "handles SGR foreground colors (30-37) and default (39)" do
+    test 'handles SGR foreground colors (30-37) and default (39)' do
       emulator = Emulator.new()
       # Blue
       {emulator, _} = Emulator.process_input(emulator, "\e[34m")
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.foreground == nil
     end
 
-    test "handles SGR background colors (40-47) and default (49)" do
+    test 'handles SGR background colors (40-47) and default (49)' do
       emulator = Emulator.new()
       # Green BG
       {emulator, _} = Emulator.process_input(emulator, "\e[42m")
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.background == nil
     end
 
-    test "handles SGR faint (2) - treated as non-bold" do
+    test 'handles SGR faint (2) - treated as non-bold' do
       emulator = Emulator.new()
       # Start with bold ON
       {emulator, _} = Emulator.process_input(emulator, "\e[1m")
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.faint == false, "Faint should be false after SGR 22"
     end
 
-    test "handles SGR blink (5, 6) and not blinking (25)" do
+    test 'handles SGR blink (5, 6) and not blinking (25)' do
       emulator = Emulator.new()
       assert emulator.style.blink == false
       # Slow blink
@@ -113,7 +113,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.blink == false
     end
 
-    test "handles SGR reverse (7) and not reversed (27)" do
+    test 'handles SGR reverse (7) and not reversed (27)' do
       emulator = Emulator.new()
       assert emulator.style.reverse == false
       {emulator, _} = Emulator.process_input(emulator, "\e[7m")
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.reverse == false
     end
 
-    test "handles SGR conceal (8) and reveal (28)" do
+    test 'handles SGR conceal (8) and reveal (28)' do
       emulator = Emulator.new()
       assert emulator.style.conceal == false
       {emulator, _} = Emulator.process_input(emulator, "\e[8m")
@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.conceal == false
     end
 
-    test "handles SGR strikethrough (9) and not strikethrough (29)" do
+    test 'handles SGR strikethrough (9) and not strikethrough (29)' do
       emulator = Emulator.new()
       assert emulator.style.strikethrough == false
       {emulator, _} = Emulator.process_input(emulator, "\e[9m")
@@ -140,7 +140,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.strikethrough == false
     end
 
-    test "handles SGR fraktur (20) and not fraktur (23)" do
+    test 'handles SGR fraktur (20) and not fraktur (23)' do
       emulator = Emulator.new()
       assert emulator.style.fraktur == false
       {emulator, _} = Emulator.process_input(emulator, "\e[20m")
@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.fraktur == false
     end
 
-    test "handles SGR double underline (21) and not underlined (24)" do
+    test 'handles SGR double underline (21) and not underlined (24)' do
       emulator = Emulator.new()
 
       # TEST 1: Ensure SGR 24 correctly sets defaults from scratch
@@ -198,7 +198,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
              "Double underline should be false after second SGR 24"
     end
 
-    test "handles SGR bright foreground colors (90-97)" do
+    test 'handles SGR bright foreground colors (90-97)' do
       emulator = Emulator.new()
       # Bright red (expect red + bold)
       {emulator, _} = Emulator.process_input(emulator, "\e[91m")
@@ -213,7 +213,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.bold == true
     end
 
-    test "handles SGR bright background colors (100-107)" do
+    test 'handles SGR bright background colors (100-107)' do
       emulator = Emulator.new()
       # Bright green background (expect green BG, no bold change)
       {emulator, _} = Emulator.process_input(emulator, "\e[102m")
@@ -227,35 +227,35 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.bold == false
     end
 
-    test "handles SGR 8-bit foreground color (38;5;<n>m)" do
+    test 'handles SGR 8-bit foreground color (38;5;<n>m)' do
       emulator = Emulator.new()
       # Set 8-bit foreground color to index 42
       {emulator, _} = Emulator.process_input(emulator, "\e[38;5;42m")
       assert emulator.style.foreground == {:index, 42}
     end
 
-    test "handles SGR 8-bit background color (48;5;<n>m)" do
+    test 'handles SGR 8-bit background color (48;5;<n>m)' do
       emulator = Emulator.new()
       # Set 8-bit background color to index 99
       {emulator, _} = Emulator.process_input(emulator, "\e[48;5;99m")
       assert emulator.style.background == {:index, 99}
     end
 
-    test "handles SGR 24-bit foreground color (38;2;<r>;<g>;<b>m)" do
+    test 'handles SGR 24-bit foreground color (38;2;<r>;<g>;<b>m)' do
       emulator = Emulator.new()
       # Set 24-bit foreground color to (10, 20, 30)
       {emulator, _} = Emulator.process_input(emulator, "\e[38;2;10;20;30m")
       assert emulator.style.foreground == {:rgb, 10, 20, 30}
     end
 
-    test "handles SGR 24-bit background color (48;2;<r>;<g>;<b>m)" do
+    test 'handles SGR 24-bit background color (48;2;<r>;<g>;<b>m)' do
       emulator = Emulator.new()
       # Set 24-bit background color to (200, 150, 100)
       {emulator, _} = Emulator.process_input(emulator, "\e[48;2;200;150;100m")
       assert emulator.style.background == {:rgb, 200, 150, 100}
     end
 
-    test "handles SGR 51-55 (framed, encircled, overlined, not_framed_encircled, not_overlined)" do
+    test 'handles SGR 51-55 (framed, encircled, overlined, not_framed_encircled, not_overlined)' do
       emulator = Emulator.new()
       {emulator, _} = Emulator.process_input(emulator, "\e[51m")
       assert emulator.style.framed == true
@@ -282,7 +282,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       {"strikethrough", "\e[9m", :strikethrough, true}
     ]
     |> Enum.each(fn {desc, seq, attr, expected} ->
-      test "applies SGR #{desc}" do
+      test 'applies SGR #{desc}' do
         emulator = Emulator.new()
         {emulator, _} = Emulator.process_input(emulator, unquote(seq))
         assert Map.get(emulator.style, unquote(attr)) == unquote(expected)
@@ -291,7 +291,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
   end
 
   describe "SGR sequence followed by text" do
-    test "writes text after SGR and buffer has correct style" do
+    test 'writes text after SGR and buffer has correct style' do
       emulator = Emulator.new()
       # Write SGR for bold red, then text
       {emulator, _} = Emulator.process_input(emulator, "\e[1;31mBold Red")

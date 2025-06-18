@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Input.ManagerTest do
       assert manager.metrics.custom_mappings == 0
     end
 
-    test "creates manager with custom buffer size" do
+    test 'creates manager with custom buffer size' do
       manager = Manager.new(buffer_size: 2048)
       assert manager.buffer.max_size == 2048
     end

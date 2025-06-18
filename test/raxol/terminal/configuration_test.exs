@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
   # alias Raxol.Terminal.Config.Application
 
   describe "new/0 and new/1" do
-    test "creates a configuration with default values" do
+    test 'creates a configuration with default values' do
       config = Configuration.new()
 
       # Assert it's the correct struct type
@@ -21,14 +21,14 @@ defmodule Raxol.Terminal.ConfigurationTest do
     end
 
     # This test seems redundant now as new/1 implicitly tests merging
-    # test "new/0 detects color mode based on terminal capabilities" do
+    # test 'new/0 detects color mode based on terminal capabilities' do
     #   config = Configuration.new()
     #   # This needs mocking Capabilities or running in a known terminal
     #   # assert config.color_mode in [:basic, :true_color, :palette]
     # end
 
     # This test seems redundant
-    # test "new/0 creates a configuration with detected terminal type" do
+    # test 'new/0 creates a configuration with detected terminal type' do
     #   config = Configuration.new()
     #   # Needs mocking Capabilities
     #   # assert config.terminal_type in [
@@ -46,13 +46,13 @@ defmodule Raxol.Terminal.ConfigurationTest do
     # end
 
     # This test seems redundant
-    # test "new/0 sets appropriate scrollback limit based on terminal type" do
+    # test 'new/0 sets appropriate scrollback limit based on terminal type' do
     #   config = Configuration.new()
     #   # Needs mocking Capabilities
     #   # assert is_integer(config.scrollback_limit)
     # end
 
-    test "new/1 merges provided options with defaults" do
+    test 'new/1 merges provided options with defaults' do
       # Options to override defaults
       opts = [
         width: 120,
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
     end
 
     # This test seems redundant
-    # test "new/0 sets appropriate theme based on terminal type and color mode" do
+    # test 'new/0 sets appropriate theme based on terminal type and color mode' do
     #   config = Configuration.new()
     #   # Complex assertion, depends on Defaults, Capabilities, Profiles?
     #   # assert is_map(config.theme)
@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
   end
 
   describe "update/2" do
-    test "updates existing configuration struct" do
+    test 'updates existing configuration struct' do
       config = Configuration.new()
 
       updated_config =

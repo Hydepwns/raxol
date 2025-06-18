@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
   alias Raxol.Terminal.ScreenBuffer
 
   describe "process_extended_sgr/2" do
-    test "handles extended foreground colors" do
+    test 'handles extended foreground colors' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_extended_sgr(["90"], buffer)
       assert buffer.default_style.foreground == 8
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.default_style.foreground == 15
     end
 
-    test "handles extended background colors" do
+    test 'handles extended background colors' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_extended_sgr(["100"], buffer)
       assert buffer.default_style.background == 8
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.default_style.background == 15
     end
 
-    test "handles true color sequences" do
+    test 'handles true color sequences' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_extended_sgr(["38;2;255;0;0"], buffer)
       assert buffer.default_style.foreground == {255, 0, 0}
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.default_style.background == {0, 255, 0}
     end
 
-    test "handles text attributes" do
+    test 'handles text attributes' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_extended_sgr(["1"], buffer)
       assert buffer.default_style.bold == true
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.default_style.italic == false
     end
 
-    test "handles color reset" do
+    test 'handles color reset' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_extended_sgr(["38;2;255;0;0"], buffer)
       buffer = ExtendedSequences.process_extended_sgr(["39"], buffer)
@@ -60,19 +60,19 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
   end
 
   describe "process_true_color/3" do
-    test "handles foreground true color" do
+    test 'handles foreground true color' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_true_color("38", "255;0;0", buffer)
       assert buffer.default_style.foreground == {255, 0, 0}
     end
 
-    test "handles background true color" do
+    test 'handles background true color' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_true_color("48", "0;255;0", buffer)
       assert buffer.default_style.background == {0, 255, 0}
     end
 
-    test "handles invalid color values" do
+    test 'handles invalid color values' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_true_color("38", "invalid", buffer)
       assert buffer.default_style.foreground == nil
@@ -80,13 +80,13 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
   end
 
   describe "process_unicode/2" do
-    test "handles valid Unicode characters" do
+    test 'handles valid Unicode characters' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_unicode("あ", buffer)
       assert ScreenBuffer.get_char(buffer, 0, 0) == "あ"
     end
 
-    test "handles invalid Unicode characters" do
+    test 'handles invalid Unicode characters' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_unicode(<<0xFF, 0xFF>>, buffer)
       assert ScreenBuffer.get_char(buffer, 0, 0) == nil
@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
   end
 
   describe "process_terminal_state/2" do
-    test "handles cursor visibility" do
+    test 'handles cursor visibility' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?25h", buffer)
       assert buffer.cursor_visible == true
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.cursor_visible == false
     end
 
-    test "handles alternate screen" do
+    test 'handles alternate screen' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?47h", buffer)
       assert buffer.alternate_screen == true
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.alternate_screen == false
     end
 
-    test "handles alternate screen buffer" do
+    test 'handles alternate screen buffer' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?1049h", buffer)
       assert buffer.alternate_screen_buffer == true
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
       assert buffer.alternate_screen_buffer == false
     end
 
-    test "handles unknown state" do
+    test 'handles unknown state' do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?999h", buffer)
       assert buffer == buffer

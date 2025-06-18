@@ -87,7 +87,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
   end
 
   describe "component lifecycle" do
-    test "mount adds event to lifecycle" do
+    test 'mount adds event to lifecycle' do
       component = TestComponent.new()
       {mounted, _} = mount(component, %{}, %{})
 
@@ -96,7 +96,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       assert Map.has_key?(mounted, :lifecycle_events)
     end
 
-    test "unmount adds event to lifecycle" do
+    test 'unmount adds event to lifecycle' do
       component = TestComponent.new()
       {unmounted, _} = unmount(component, %{})
 
@@ -105,7 +105,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       assert Map.has_key?(unmounted, :lifecycle_events)
     end
 
-    test "render increases render count" do
+    test 'render increases render count' do
       component = TestComponent.new()
       context = %{theme: test_theme()}
 
@@ -120,7 +120,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       assert Map.has_key?(rendered_element_map, :render_count)
     end
 
-    test "update correctly merges props" do
+    test 'update correctly merges props' do
       component = TestComponent.new(value: "initial")
       updated = TestComponent.update(component, %{value: "updated"}, %{})
 
@@ -134,7 +134,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
   end
 
   describe "event handling" do
-    test "handle_event with update returns updated component" do
+    test 'handle_event with update returns updated component' do
       component = TestComponent.new(value: "initial")
       event = %{type: :test, value: "updated"}
 
@@ -145,7 +145,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       assert Enum.at(updated.lifecycle_events, 0) == {:handle_event, event}
     end
 
-    test "handle_event with handled returns same component" do
+    test 'handle_event with handled returns same component' do
       component = TestComponent.new()
       event = %{type: :no_change}
 
@@ -155,7 +155,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       assert Enum.at(updated.lifecycle_events, 0) == {:handle_event, event}
     end
 
-    test "handle_event with passthrough returns passthrough" do
+    test 'handle_event with passthrough returns passthrough' do
       component = TestComponent.new()
       event = %{type: :unknown}
 
@@ -164,7 +164,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       assert result == :passthrough
     end
 
-    test "multiple event handling updates counters correctly" do
+    test 'multiple event handling updates counters correctly' do
       component = TestComponent.new(value: "initial")
 
       # Handle a series of events
@@ -193,7 +193,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
   end
 
   describe "complete lifecycle flow" do
-    test "full component lifecycle" do
+    test 'full component lifecycle' do
       # Create and mount
       component = TestComponent.new(value: "initial", id: "test-123")
       {mounted, _} = mount(component, %{}, %{})

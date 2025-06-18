@@ -36,7 +36,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
   describe "handle_event/2" do
     # --- Character Input ---
-    test "handles character input event" do
+    test 'handles character input event' do
       state = create_state(["abc"], {0, 3})
       event = Event.key("a")
       # Update assertion to match actual handler behavior
@@ -44,7 +44,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles newline event" do
+    test 'handles newline event' do
       state = create_state(["hello", "world"], {0, 5})
       event = Event.key(:enter)
       # Update assertion
@@ -53,7 +53,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     end
 
     # --- Deletion ---
-    test "handles backspace event" do
+    test 'handles backspace event' do
       state = create_state(["hello"], {0, 3})
       event = Event.key(:backspace)
       # Update assertion
@@ -61,7 +61,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles delete event" do
+    test 'handles delete event' do
       state = create_state(["hello"], {0, 2})
       event = Event.key(:delete)
       # Update assertion
@@ -70,7 +70,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     end
 
     # --- Basic Navigation ---
-    test "handles arrow left event" do
+    test 'handles arrow left event' do
       state = create_state(["hello"], {0, 3})
       event = Event.key(:left)
       # Update assertion
@@ -78,7 +78,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles arrow right event" do
+    test 'handles arrow right event' do
       state = create_state(["hello"], {0, 3})
       event = Event.key(:right)
       # Update assertion
@@ -86,7 +86,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles arrow up event" do
+    test 'handles arrow up event' do
       state = create_state(["line1", "line2"], {1, 3})
       event = Event.key(:up)
       # Update assertion
@@ -94,7 +94,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles arrow down event" do
+    test 'handles arrow down event' do
       state = create_state(["line1", "line2"], {0, 3})
       event = Event.key(:down)
       # Update assertion
@@ -103,7 +103,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     end
 
     # --- Advanced Navigation ---
-    test "handles home event" do
+    test 'handles home event' do
       state = create_state(["hello"], {0, 4})
       event = Event.key(:home)
       # Update assertion
@@ -111,7 +111,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles end event" do
+    test 'handles end event' do
       state = create_state(["hello"], {0, 1})
       event = Event.key_event(:end, :pressed)
       # Update assertion
@@ -120,7 +120,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     end
 
     # Page navigation now properly implemented
-    test "handles pageup event" do
+    test 'handles pageup event' do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {10, 3})
       event = Event.key_event(:pageup, :pressed)
 
@@ -129,7 +129,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles pagedown event" do
+    test 'handles pagedown event' do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {1, 3})
       event = Event.key_event(:pagedown, :pressed)
 
@@ -140,10 +140,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
     # --- Selection Handling ---
     # Remove test that checks state change, as EventHandler doesn't change state
-    # test "clears selection when moving cursor normally" do ... end
+    # test 'clears selection when moving cursor normally' do ... end
 
     # Selection with shift key
-    test "handles shift + arrow left event" do
+    test 'handles shift + arrow left event' do
       state = create_state(["hello"], {0, 3})
       event = Event.key_event(:left, :pressed, [:shift])
 
@@ -151,7 +151,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles shift + arrow right event" do
+    test 'handles shift + arrow right event' do
       state = create_state(["hello"], {0, 3})
       event = Event.key_event(:right, :pressed, [:shift])
 
@@ -159,7 +159,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles shift + arrow up event" do
+    test 'handles shift + arrow up event' do
       state = create_state(["line1", "line2"], {1, 3})
       event = Event.key_event(:up, :pressed, [:shift])
 
@@ -167,7 +167,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
                EventHandler.handle_event(event, state)
     end
 
-    test "handles shift + arrow down event" do
+    test 'handles shift + arrow down event' do
       state = create_state(["line1", "line2"], {0, 3})
       event = Event.key_event(:down, :pressed, [:shift])
 
@@ -176,14 +176,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     end
 
     # --- Other Events ---
-    test "ignores unknown keydown events" do
+    test 'ignores unknown keydown events' do
       state = create_state(["hello"], {0, 1})
       event = Event.key(:f1)
       # No handler for f1, so should return noreply
       assert {:noreply, state, nil} == EventHandler.handle_event(event, state)
     end
 
-    test "handles mouse click event" do
+    test 'handles mouse click event' do
       state = create_state(["hello"], {0, 1})
       # Use a mouse event that matches what the handler expects
       event = Event.mouse_event(:left, {5, 2}, :pressed)
@@ -193,7 +193,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     end
 
     # Test for unhandled non-key/mouse events (e.g., focus gain/loss, resize)
-    test "ignores other event types" do
+    test 'ignores other event types' do
       state = create_state(["hello"], {0, 1})
       event = %Event{type: :focus_gained, data: %{}}
       assert {:noreply, state, nil} == EventHandler.handle_event(event, state)

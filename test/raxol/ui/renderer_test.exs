@@ -64,7 +64,7 @@ defmodule Raxol.UI.RendererTest do
   end
 
   describe "Table Rendering" do
-    test "renders basic table structure" do
+    test 'renders basic table structure' do
       # Setup: Create a sample positioned table element (from Layout)
       positioned_table = %{
         type: :table,
@@ -99,7 +99,7 @@ defmodule Raxol.UI.RendererTest do
       assert elem(data_cell, 2) == "D"
     end
 
-    test "applies theme styles to table header and data rows" do
+    test 'applies theme styles to table header and data rows' do
       # Setup theme and element
       test_theme = Theme.get(:test_theme)
 

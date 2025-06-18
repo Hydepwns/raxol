@@ -6,14 +6,10 @@ defmodule RaxolWeb.TerminalChannelTest do
 
   alias RaxolWeb.TerminalChannel
   alias Raxol.Terminal.Emulator
-  # Add alias for Ecto.UUID
-  alias Ecto.UUID
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Core.Events.Event
-  # Import the real behaviour
   alias Raxol.Terminal.EmulatorBehaviour
-  # Add alias for UserSocket
   alias RaxolWeb.UserSocket
-  # Correct alias for Renderer
   alias Raxol.Terminal.Renderer
 
   # Remove the local dummy behaviour
@@ -30,7 +26,6 @@ defmodule RaxolWeb.TerminalChannelTest do
   defp flush_mailbox do
     receive do
       msg ->
-        IO.inspect(msg, label: "Messages received")
         flush_mailbox()
     after
       100 -> :ok
@@ -78,7 +73,7 @@ defmodule RaxolWeb.TerminalChannelTest do
                socket.assigns.user_id
     end
 
-    test "rejects invalid session topics" do
+    test 'rejects invalid session topics' do
       # Expect new/4 to be called even for invalid topics
       expect(EmulatorMock, :new, fn _width, _height, _opts ->
         {:ok, %EmulatorStruct{}}

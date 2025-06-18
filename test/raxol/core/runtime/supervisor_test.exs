@@ -60,7 +60,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   end
 
   describe "supervisor structure" do
-    test "starts all runtime child processes with mocks" do
+    test 'starts all runtime child processes with mocks' do
       # Define the init args, injecting mock modules
       init_arg = %{
         dispatcher_module: Raxol.Core.Runtime.Events.DispatcherMock,
@@ -96,7 +96,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
       # Explicit verify calls are optional here
     end
 
-    test "uses one_for_all strategy" do
+    test 'uses one_for_all strategy' do
       # Minimal init_arg needed for Supervisor.init/1 to work
       init_arg = %{}
       # Fetch the supervisor spec directly by calling init/1

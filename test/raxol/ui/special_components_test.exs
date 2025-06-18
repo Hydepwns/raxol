@@ -4,7 +4,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
   alias Raxol.UI.RendererTestHelper, as: Helper
   import Raxol.Test.Visual.Assertions
 
-  test "handles tables with varying row lengths" do
+  test 'handles tables with varying row lengths' do
     headers = ["Name", "Age", "City"]
 
     data = [
@@ -20,7 +20,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     assert length(cells) > 0
   end
 
-  test "handles tables with empty data" do
+  test 'handles tables with empty data' do
     headers = ["Name", "Age", "City"]
     data = []
     element = Helper.create_test_table(0, 0, headers, data)
@@ -30,7 +30,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     assert length(cells) > 0
   end
 
-  test "handles tables with empty headers" do
+  test 'handles tables with empty headers' do
     headers = []
     data = [["John", "25", "New York"]]
     element = Helper.create_test_table(0, 0, headers, data)
@@ -40,7 +40,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     assert length(cells) > 0
   end
 
-  test "handles tables with very long content" do
+  test 'handles tables with very long content' do
     headers = ["Name", "Description"]
 
     data = [
@@ -54,7 +54,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     assert length(cells) > 0
   end
 
-  test "handles tables with special characters" do
+  test 'handles tables with special characters' do
     headers = ["Name", "Symbol"]
 
     data = [
@@ -71,7 +71,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     assert length(special_chars) > 0
   end
 
-  test "handles tables with custom column widths" do
+  test 'handles tables with custom column widths' do
     headers = ["Name", "Age", "City"]
     data = [["John", "25", "New York"]]
 
@@ -86,7 +86,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     assert length(cells) > 0
   end
 
-  test "handles tables with custom styles" do
+  test 'handles tables with custom styles' do
     headers = ["Name", "Age"]
     data = [["John", "25"]]
 
@@ -106,7 +106,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     Helper.assert_cell_style(data_cell, :green, :black)
   end
 
-  test "handles tables with sorting" do
+  test 'handles tables with sorting' do
     headers = ["Name", "Age"]
 
     data = [

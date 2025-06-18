@@ -5,26 +5,26 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
 
   describe "diff_trees/2" do
     # --- Basic Cases ---
-    test "returns :no_change for two nils" do
+    test 'returns :no_change for two nils' do
       assert TreeDiffer.diff_trees(nil, nil) == :no_change
     end
 
-    test "returns :replace for nil old tree and new tree" do
+    test 'returns :replace for nil old tree and new tree' do
       new_tree = %{type: :div, children: []}
       assert TreeDiffer.diff_trees(nil, new_tree) == {:replace, new_tree}
     end
 
-    test "returns :replace for old tree and nil new tree" do
+    test 'returns :replace for old tree and nil new tree' do
       old_tree = %{type: :div, children: []}
       assert TreeDiffer.diff_trees(old_tree, nil) == {:replace, nil}
     end
 
-    test "returns :no_change for identical trees" do
+    test 'returns :no_change for identical trees' do
       tree = %{type: :div, children: [%{type: :span, content: "hello"}]}
       assert TreeDiffer.diff_trees(tree, tree) == {:unchanged, tree}
     end
 
-    test "returns :replace when root types differ" do
+    test 'returns :replace when root types differ' do
       old_tree = %{type: :div}
       new_tree = %{type: :span}
       assert TreeDiffer.diff_trees(old_tree, new_tree) == {:replace, new_tree}
@@ -32,7 +32,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
 
     # --- Non-Keyed Children ---
 
-    test "non-keyed: adds a child to an empty list" do
+    test 'non-keyed: adds a child to an empty list' do
       old_tree = %{type: :ul, children: []}
       new_child = %{type: :li, content: "item 1"}
       new_tree = %{type: :ul, children: [new_child]}
@@ -44,7 +44,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "non-keyed: removes a child" do
+    test 'non-keyed: removes a child' do
       old_child = %{type: :li, content: "item 1"}
       old_tree = %{type: :ul, children: [old_child]}
       new_tree = %{type: :ul, children: []}
@@ -55,7 +55,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "non-keyed: updates a child" do
+    test 'non-keyed: updates a child' do
       old_child = %{type: :li, content: "item 1 old"}
       new_child = %{type: :li, content: "item 1 new"}
       old_tree = %{type: :ul, children: [old_child]}
@@ -69,7 +69,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "non-keyed: adds multiple children" do
+    test 'non-keyed: adds multiple children' do
       old_tree = %{type: :ul, children: []}
       child1 = %{type: :li, content: "item 1"}
       child2 = %{type: :li, content: "item 2"}
@@ -88,7 +88,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "non-keyed: no change in children" do
+    test 'non-keyed: no change in children' do
       child1 = %{type: :li, content: "item 1"}
       tree = %{type: :ul, children: [child1]}
       assert TreeDiffer.diff_trees(tree, tree) == :no_change
@@ -96,7 +96,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
 
     # --- Keyed Children ---
 
-    test "keyed: adds a child" do
+    test 'keyed: adds a child' do
       old_tree = %{type: :ul, children: []}
       new_child = %{type: :li, key: "a", content: "item A"}
       new_tree = %{type: :ul, children: [new_child]}
@@ -110,7 +110,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "keyed: removes a child" do
+    test 'keyed: removes a child' do
       old_child = %{type: :li, key: "a", content: "item A"}
       old_tree = %{type: :ul, children: [old_child]}
       new_tree = %{type: :ul, children: []}
@@ -124,7 +124,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "keyed: updates a child's content" do
+    test 'keyed: updates a child's content' do
       old_child_content = %{type: :li, key: "a", content: "old A"}
       new_child_content = %{type: :li, key: "a", content: "new A"}
       old_tree = %{type: :ul, children: [old_child_content]}
@@ -140,7 +140,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "keyed: reorders children" do
+    test 'keyed: reorders children' do
       child_a = %{type: :li, key: "a", content: "A"}
       child_b = %{type: :li, key: "b", content: "B"}
       old_tree = %{type: :ul, children: [child_a, child_b]}
@@ -154,7 +154,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "keyed: complex scenario - add, remove, update, reorder" do
+    test 'keyed: complex scenario - add, remove, update, reorder' do
       c1_old = %{type: :item, key: "1", version: 1}
       c2 = %{type: :item, key: "2", version: 1}
       c3_old = %{type: :item, key: "3", version: 1}
@@ -219,7 +219,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert length(actual_ops) == 5
     end
 
-    test "keyed: no actual changes, only reorder op (idempotent reorder)" do
+    test 'keyed: no actual changes, only reorder op (idempotent reorder)' do
       child_a = %{type: :li, key: "a", content: "A"}
       child_b = %{type: :li, key: "b", content: "B"}
       old_tree = %{type: :ul, children: [child_a, child_b]}
@@ -227,7 +227,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == :no_change
     end
 
-    test "keyed: fallback to non-keyed if new children are not consistently keyed" do
+    test 'keyed: fallback to non-keyed if new children are not consistently keyed' do
       old_child_keyed = %{type: :li, key: "a", content: "item A"}
       old_tree = %{type: :ul, children: [old_child_keyed]}
       new_child_not_keyed = %{type: :li, content: "item B"}
@@ -243,7 +243,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "keyed: fallback to non-keyed if old children are not consistently keyed" do
+    test 'keyed: fallback to non-keyed if old children are not consistently keyed' do
       old_child_not_keyed = %{type: :li, content: "item A"}
       old_tree = %{type: :ul, children: [old_child_not_keyed]}
       new_child_keyed = %{type: :li, key: "b", content: "item B"}
@@ -256,7 +256,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "keyed: empty old children, multiple new keyed children" do
+    test 'keyed: empty old children, multiple new keyed children' do
       old_tree = %{type: :ul, children: []}
       child_a = %{type: :li, key: "a", content: "A"}
       child_b = %{type: :li, key: "b", content: "B"}
@@ -275,7 +275,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert length(actual_ops) == 3
     end
 
-    test "keyed: multiple old keyed children, empty new children" do
+    test 'keyed: multiple old keyed children, empty new children' do
       child_a = %{type: :li, key: "a", content: "A"}
       child_b = %{type: :li, key: "b", content: "B"}
       old_tree = %{type: :ul, children: [child_a, child_b]}
@@ -294,7 +294,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
     end
 
     # Test for when only props of a keyed child change, not the type or structure
-    test "keyed: updates only props of a child" do
+    test 'keyed: updates only props of a child' do
       old_child = %{type: :item, key: "k1", id: 1, value: "old"}
       # Only value changed
       new_child = %{type: :item, key: "k1", id: 1, value: "new"}
@@ -318,7 +318,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
     end
 
     # Test for mixed keyed and non-map children (should trigger non-keyed path)
-    test "keyed: mixed keyed map and non-map child in new list triggers non-keyed diff" do
+    test 'keyed: mixed keyed map and non-map child in new list triggers non-keyed diff' do
       old_child_keyed = %{type: :li, key: "a", content: "item A"}
       old_tree = %{type: :ul, children: [old_child_keyed]}
 
@@ -345,7 +345,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert TreeDiffer.diff_trees(old_tree, new_tree) == expected_diff
     end
 
-    test "keyed: mixed keyed map and map without key in new list triggers non-keyed diff" do
+    test 'keyed: mixed keyed map and map without key in new list triggers non-keyed diff' do
       old_child_keyed = %{type: :li, key: "a", content: "item A"}
       old_tree = %{type: :ul, children: [old_child_keyed]}
 

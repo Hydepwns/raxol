@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   end
 
   describe "new/4" do
-    test "creates a new buffer manager with default values" do
+    test 'creates a new buffer manager with default values' do
       {:ok, state} = UnifiedManager.new(80, 24)
       assert state.width == 80
       assert state.height == 24
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       assert state.memory_limit == 10_000_000
     end
 
-    test "creates a new buffer manager with custom values" do
+    test 'creates a new buffer manager with custom values' do
       {:ok, state} = UnifiedManager.new(100, 30, 2000, 20_000_000)
       assert state.width == 100
       assert state.height == 30

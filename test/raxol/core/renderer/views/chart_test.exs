@@ -19,7 +19,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
   ]
 
   describe "new/1" do
-    test "creates a basic bar chart" do
+    test 'creates a basic bar chart' do
       # Use full name
       view =
         Raxol.Core.Renderer.Views.Chart.new(
@@ -35,7 +35,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert view.children != nil
     end
 
-    test "creates a line chart" do
+    test 'creates a line chart' do
       # Use full name
       view =
         Raxol.Core.Renderer.Views.Chart.new(
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert view.children != nil
     end
 
-    test "creates a sparkline" do
+    test 'creates a sparkline' do
       # Sparkline only uses the first series
       spark_series = [@sample_series |> List.first()]
 
@@ -77,7 +77,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
   # End of describe "new/1"
 
   describe "bar chart features" do
-    test "handles vertical orientation" do
+    test 'handles vertical orientation' do
       # Use full name
       view =
         Raxol.Core.Renderer.Views.Chart.new(
@@ -94,7 +94,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert content.type == :box
     end
 
-    test "handles horizontal orientation" do
+    test 'handles horizontal orientation' do
       # Use full name
       view =
         Raxol.Core.Renderer.Views.Chart.new(
@@ -137,7 +137,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       end
     end
 
-    test "applies colors to bars" do
+    test 'applies colors to bars' do
       # Need to re-create the view within the test as setup context is gone
       view =
         Raxol.Core.Renderer.Views.Chart.new(
@@ -173,7 +173,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       }
     ]
 
-    test "creates points and lines" do
+    test 'creates points and lines' do
       # Define two-series data locally for this test
       local_series_data = [
         %{name: "Series 1", data: [10, 20], color: :blue},
@@ -196,7 +196,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert Enum.count(points, &(is_map(&1) and &1.content == "•")) >= 2
     end
 
-    test "applies colors to lines" do
+    test 'applies colors to lines' do
       # Define two-series data locally for this test
       local_series_data = [
         %{name: "Series 1", data: [10, 20], color: :blue},
@@ -225,7 +225,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
   end
 
   describe "data handling" do
-    test "respects custom min/max" do
+    test 'respects custom min/max' do
       # Use full name
       view =
         Raxol.Core.Renderer.Views.Chart.new(
@@ -243,7 +243,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert view != nil
     end
 
-    test "handles empty data" do
+    test 'handles empty data' do
       view =
         Raxol.Core.Renderer.Views.Chart.new(type: :bar, series: [%{data: []}])
 

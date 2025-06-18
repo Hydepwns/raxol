@@ -16,31 +16,31 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
   end
 
   describe "platform-specific terminal features" do
-    test "terminal type detection" do
+    test 'terminal type detection' do
       term = System.get_env("TERM")
       assert term != nil
       assert is_binary(term)
     end
 
-    test "color support detection" do
+    test 'color support detection' do
       colors = System.get_env("COLORTERM")
       assert colors != nil
       assert is_binary(colors)
     end
 
-    test "terminal size detection" do
+    test 'terminal size detection' do
       {width, height} = :io.columns()
       assert width > 0
       assert height > 0
     end
 
-    test "UTF-8 support" do
+    test 'UTF-8 support' do
       lang = System.get_env("LANG")
       assert lang != nil
       assert String.contains?(lang, "UTF-8")
     end
 
-    test "graphics support detection" do
+    test 'graphics support detection' do
       term_program = System.get_env("TERM_PROGRAM")
       assert term_program != nil
       assert is_binary(term_program)
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
   end
 
   describe "platform-specific rendering" do
-    test "renders with platform-specific colors" do
+    test 'renders with platform-specific colors' do
       html = render_hello_html()
       assert html =~ "<span"
       assert html =~ ">H<"
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
       assert html =~ ">o<"
     end
 
-    test "handles platform-specific terminal features" do
+    test 'handles platform-specific terminal features' do
       html = render_hello_html()
       assert html =~ "<span"
       assert html =~ ">H<"
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
   end
 
   describe "platform-specific input handling" do
-    test "handles platform-specific key codes" do
+    test 'handles platform-specific key codes' do
       html = render_hello_html()
       assert html =~ "<span"
       assert html =~ ">H<"
@@ -77,7 +77,7 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
       assert html =~ ">o<"
     end
 
-    test "handles platform-specific mouse events" do
+    test 'handles platform-specific mouse events' do
       html = render_hello_html()
       assert html =~ "<span"
       assert html =~ ">H<"

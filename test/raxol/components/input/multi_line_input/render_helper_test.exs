@@ -64,7 +64,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   end
 
   describe "Render Helper Functions" do
-    test "render_line/4 applies default style" do
+    test 'render_line/4 applies default style' do
       state = create_state(["hi"])
       line_index = 0
       line_content = "hi"

@@ -19,7 +19,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     :ok
   end
 
-  test "partial render updates buffer for label text change" do
+  test 'partial render updates buffer for label text change' do
     # Initial tree: a view with one label
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Hello"}}]}
     Renderer.render(tree)
@@ -58,7 +58,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert String.starts_with?(content, "World")
   end
 
-  test "partial render updates buffer for multiple labels on different lines" do
+  test 'partial render updates buffer for multiple labels on different lines' do
     tree = %{
       type: :view,
       children: [
@@ -105,7 +105,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert line2 =~ "Changed!"
   end
 
-  test "partial render updates buffer for nested label" do
+  test 'partial render updates buffer for nested label' do
     tree = %{
       type: :view,
       children: [
@@ -167,7 +167,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert line1 =~ "Deeper!"
   end
 
-  test "partial render updates buffer for multiple labels, non-zero index" do
+  test 'partial render updates buffer for multiple labels, non-zero index' do
     tree = %{
       type: :view,
       children: [
@@ -219,7 +219,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert line3 =~ "Z"
   end
 
-  test "partial render updates buffer for deeply nested label" do
+  test 'partial render updates buffer for deeply nested label' do
     tree = %{
       type: :view,
       children: [
@@ -285,7 +285,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert line1 =~ "Changed Deep!"
   end
 
-  test "partial render updates buffer for sibling views with multiple children" do
+  test 'partial render updates buffer for sibling views with multiple children' do
     tree = %{
       type: :view,
       children: [
@@ -352,7 +352,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert Enum.any?(lines, &(&1 =~ "B2 changed"))
   end
 
-  test "partial render ignores unknown node types and only renders labels" do
+  test 'partial render ignores unknown node types and only renders labels' do
     tree = %{
       type: :view,
       children: [
@@ -381,7 +381,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     refute content =~ "123"
   end
 
-  test "partial render updates buffer for wide tree with many labels" do
+  test 'partial render updates buffer for wide tree with many labels' do
     labels = for i <- 1..12, do: %{type: :label, attrs: %{text: "L#{i}"}}
     tree = %{type: :view, children: labels}
     Renderer.render(tree)
@@ -420,7 +420,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert Enum.at(lines, 11) =~ "L12!"
   end
 
-  test "partial render updates buffer for multiple updates in one diff" do
+  test 'partial render updates buffer for multiple updates in one diff' do
     tree = %{
       type: :view,
       children: [

@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.ManagerTest do
     assert_received {:terminal_scroll_event, :down, 5, {0, 0}}
   end
 
-  test "unknown event type does not crash or send messages" do
+  test 'unknown event type does not crash or send messages' do
     # Flush the mailbox to remove any previous messages
     flush()
     # Send an unknown event

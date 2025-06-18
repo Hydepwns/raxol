@@ -17,7 +17,7 @@
 #   # Additionally, the Box and Text components may no longer exist at these paths.
 #
 #   # describe "core component rendering" do
-#   #   test "button component renders with correct styling" do
+#   #   test 'button component renders with correct styling' do
 #   #     platform = Platform.get_current_platform()
 #   #
 #   #     # Capture the rendered output
@@ -51,7 +51,7 @@
 #   #     end
 #   #   end
 #   #
-#   #   test "box component renders borders correctly" do
+#   #   test 'box component renders borders correctly' do
 #   #     platform = Platform.get_current_platform()
 #   #
 #   #     # Capture the rendered output
@@ -94,7 +94,7 @@
 #   #     end
 #   #   end
 #   #
-#   #   test "text component handles unicode correctly" do
+#   #   test 'text component handles unicode correctly' do
 #   #     # Skip test if platform doesn't support unicode
 #   #     if not Platform.supports_feature?(:unicode) do
 #   #       flunk("Skipping test on platforms without Unicode support")
@@ -117,7 +117,7 @@
 #   #     assert output =~ "◇"
 #   #   end
 #   #
-#   #   test "progress bar renders appropriately for platform" do
+#   #   test 'progress bar renders appropriately for platform' do
 #   #     platform = Platform.get_current_platform()
 #   #
 #   #     # Capture the rendered output

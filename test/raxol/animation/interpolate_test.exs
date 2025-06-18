@@ -8,7 +8,7 @@ defmodule Raxol.Animation.InterpolateTest do
   doctest Raxol.Animation.Interpolate
 
   describe "value/3 for Color structs (HSL shortest path hue interpolation)" do
-    test "interpolates hue correctly (short path, diff < 180)" do
+    test 'interpolates hue correctly (short path, diff < 180)' do
       # Red to Orange
       # Red: HSL(0, 1.0, 0.5) -> RGB(255,0,0)
       # Orange: HSL(30, 1.0, 0.5) -> Raxol.Style.Colors.HSL.hsl_to_rgb(30,1.0,0.5) -> {255,128,0}
@@ -27,7 +27,7 @@ defmodule Raxol.Animation.InterpolateTest do
       assert result.b == expected_mid_color.b
     end
 
-    test "interpolates hue correctly (short path, diff > 180, e.g., Red to Purple)" do
+    test 'interpolates hue correctly (short path, diff > 180, e.g., Red to Purple)' do
       # From Red (H:0, S:1, L:0.5)
       # To Purple (H:300, S:1, L:0.5)
       # HSL.hsl_to_rgb(300, 1.0, 0.5) -> {127,0,255}
@@ -49,7 +49,7 @@ defmodule Raxol.Animation.InterpolateTest do
       assert result.b == expected_mid_color.b
     end
 
-    test "interpolates hue correctly (crossing 360/0 boundary, e.g., H:350 to H:10)" do
+    test 'interpolates hue correctly (crossing 360/0 boundary, e.g., H:350 to H:10)' do
       # From H:350 (Pinkish-Red) S:1, L:0.5 -> Raxol.Style.Colors.HSL.hsl_to_rgb(350,1.0,0.5) -> {255,0,42} ??? No, (255, 0, 43) if rounded strictly from calc
       # Let's get an exact from HSL module: Raxol.Style.Colors.HSL.hsl_to_rgb(350, 1.0, 0.5) -> {255, 0, 43}
       # Raxol.Style.Colors.HSL.hsl_to_rgb(10, 1.0, 0.5) -> {255, 43, 0}
@@ -73,7 +73,7 @@ defmodule Raxol.Animation.InterpolateTest do
       assert result.b == expected_mid_color.b
     end
 
-    test "returns from_color when t = 0.0" do
+    test 'returns from_color when t = 0.0' do
       color_from = Color.from_hex("#112233")
       color_to = Color.from_hex("#AABBCC")
       result = Interpolate.value(color_from, color_to, 0.0)
@@ -85,7 +85,7 @@ defmodule Raxol.Animation.InterpolateTest do
       # assert result.hex == color_from.hex
     end
 
-    test "returns to_color when t = 1.0" do
+    test 'returns to_color when t = 1.0' do
       color_from = Color.from_hex("#112233")
       color_to = Color.from_hex("#AABBCC")
       result = Interpolate.value(color_from, color_to, 1.0)
@@ -97,7 +97,7 @@ defmodule Raxol.Animation.InterpolateTest do
       # assert result.hex == color_to.hex
     end
 
-    test "interpolates saturation and lightness correctly" do
+    test 'interpolates saturation and lightness correctly' do
       # From Red (H:0, S:1.0, L:0.5) -> #FF0000
       # To Pinkish (H:0, S:0.5, L:0.75)
       # Raxol.Style.Colors.HSL.hsl_to_rgb(0, 0.5, 0.75) -> {223,159,159}

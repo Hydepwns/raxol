@@ -84,7 +84,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert state.cursor.position == {2, 0}
     end
 
-    test "handles line wrapping" do
+    test 'handles line wrapping' do
       state = Emulator.new(5, 3)
 
       {state, _output} = Emulator.process_input(state, "HelloWorld")
@@ -92,7 +92,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert buffer_text(state.main_screen_buffer) == "Hello\nWorld"
     end
 
-    test "handles screen scrolling" do
+    test 'handles screen scrolling' do
       state = Emulator.new(5, 3)
 
       # Input 4 lines (no final newline), should force one line into scrollback

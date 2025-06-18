@@ -14,7 +14,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
   end
 
   describe "initialization" do
-    test "init creates the capabilities cache" do
+    test 'init creates the capabilities cache' do
       assert Adaptive.init() == :ok
 
       # Test that we can use the cache after initialization
@@ -22,7 +22,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       assert %Color{} = Adaptive.adapt_color(color)
     end
 
-    test "reset_detection clears capability cache" do
+    test 'reset_detection clears capability cache' do
       # First set up a value in the cache by calling a detection function
       assert Adaptive.detect_color_support() in [
                :true_color,
@@ -45,12 +45,12 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
   end
 
   describe "color support detection" do
-    test "detects true color support from COLORTERM" do
+    test 'detects true color support from COLORTERM' do
       set_mock_env(%{"COLORTERM" => "truecolor"})
       assert Adaptive.detect_color_support() == :true_color
     end
 
-    test "detects true color support from terminal name" do
+    test 'detects true color support from terminal name' do
       # Manual mocking instead of set_mock_env for this test
       original_term = System.get_env("TERM")
       original_colorterm = System.get_env("COLORTERM")
@@ -84,12 +84,12 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       end
     end
 
-    test "detects true color support from TERM_PROGRAM" do
+    test 'detects true color support from TERM_PROGRAM' do
       set_mock_env(%{"TERM_PROGRAM" => "iTerm.app"})
       assert Adaptive.detect_color_support() == :true_color
     end
 
-    test "detects true color support from iTerm2 version" do
+    test 'detects true color support from iTerm2 version' do
       set_mock_env(%{
         "TERM_PROGRAM" => "iTerm.app",
         "TERM_PROGRAM_VERSION" => "3.4.0"
@@ -98,29 +98,29 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       assert Adaptive.detect_color_support() == :true_color
     end
 
-    test "detects 256 color support" do
+    test 'detects 256 color support' do
       set_mock_env(%{"TERM" => "xterm-256color"})
       assert Adaptive.detect_color_support() == :ansi_256
     end
 
-    test "detects 16 color support" do
+    test 'detects 16 color support' do
       set_mock_env(%{"TERM" => "xterm"})
       assert Adaptive.detect_color_support() == :ansi_16
     end
 
-    test "detects no color support" do
+    test 'detects no color support' do
       set_mock_env(%{"NO_COLOR" => "1"})
       assert Adaptive.detect_color_support() == :no_color
     end
 
-    test "detects no color support for dumb terminal" do
+    test 'detects no color support for dumb terminal' do
       set_mock_env(%{"TERM" => "dumb"})
       assert Adaptive.detect_color_support() == :no_color
     end
   end
 
   describe "color adaptation" do
-    test "adapt_color with true_color support returns original color" do
+    test 'adapt_color with true_color support returns original color' do
       set_mock_detection(:true_color)
 
       color = Color.from_hex("#FF5500")
@@ -130,7 +130,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       assert adapted.hex == color.hex
     end
 
-    test "adapt_color with ansi_256 support returns closest color" do
+    test 'adapt_color with ansi_256 support returns closest color' do
       set_mock_detection(:ansi_256)
 
       color = Color.from_hex("#FF5500")
@@ -141,7 +141,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       assert is_struct(adapted, Color)
     end
 
-    test "adapt_color with ansi_16 support returns closest color" do
+    test 'adapt_color with ansi_16 support returns closest color' do
       set_mock_detection(:ansi_16)
 
       color = Color.from_hex("#FF5500")
@@ -153,7 +153,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       assert adapted.ansi_code >= 0 and adapted.ansi_code <= 15
     end
 
-    test "adapt_color with no color support returns grayscale" do
+    test 'adapt_color with no color support returns grayscale' do
       set_mock_detection(:no_color)
 
       color = Color.from_hex("#FF5500")
@@ -172,7 +172,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       :ok
     end
 
-    test "adapt_theme adapts the theme's palette" do
+    test 'adapt_theme adapts the theme's palette' do
       set_mock_detection(:ansi_16)
 
       theme =
@@ -199,7 +199,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       assert adapted.name == "Nord (Adapted)"
     end
 
-    test "adapt_theme adapts dark theme to light terminal" do
+    test 'adapt_theme adapts dark theme to light terminal' do
       # Set up mock environment
       set_mock_detection(:true_color)
       set_mock_background(:light)
@@ -231,7 +231,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       assert adapted.dark_mode == dark_theme.dark_mode
     end
 
-    test "adapt_theme adapts light theme to dark terminal" do
+    test 'adapt_theme adapts light theme to dark terminal' do
       # Set up mock environment
       set_mock_detection(:true_color)
       set_mock_background(:dark)
@@ -265,7 +265,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
   end
 
   describe "optimal format" do
-    test "get_optimal_format returns the same as detect_color_support" do
+    test 'get_optimal_format returns the same as detect_color_support' do
       set_mock_detection(:true_color)
       assert Adaptive.get_optimal_format() == :true_color
 

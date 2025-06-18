@@ -36,7 +36,7 @@ defmodule Raxol.Core.UXRefinementTest do
   end
 
   describe "init/0" do
-    test "initializes UXRefinement state" do
+    test 'initializes UXRefinement state' do
       # Re-init to ensure clean state
       UXRefinement.init()
 
@@ -50,27 +50,27 @@ defmodule Raxol.Core.UXRefinementTest do
   end
 
   describe "enable_feature/2" do
-    test "enables focus_management feature" do
+    test 'enables focus_management feature' do
       assert :ok = UXRefinement.enable_feature(:focus_management)
       assert UXRefinement.feature_enabled?(:focus_management)
     end
 
-    test "enables keyboard_navigation feature" do
+    test 'enables keyboard_navigation feature' do
       assert :ok = UXRefinement.enable_feature(:keyboard_navigation)
       assert UXRefinement.feature_enabled?(:keyboard_navigation)
     end
 
-    test "enables hints feature" do
+    test 'enables hints feature' do
       assert :ok = UXRefinement.enable_feature(:hints)
       assert UXRefinement.feature_enabled?(:hints)
     end
 
-    test "enables focus_ring feature" do
+    test 'enables focus_ring feature' do
       assert :ok = UXRefinement.enable_feature(:focus_ring)
       assert UXRefinement.feature_enabled?(:focus_ring)
     end
 
-    test "enables accessibility feature" do
+    test 'enables accessibility feature' do
       stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 
       stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
@@ -81,7 +81,7 @@ defmodule Raxol.Core.UXRefinementTest do
       assert UXRefinement.feature_enabled?(:accessibility)
     end
 
-    test "enables multiple features" do
+    test 'enables multiple features' do
       # Enable features
       UXRefinement.enable_feature(:focus_management)
       UXRefinement.enable_feature(:keyboard_navigation)
@@ -91,7 +91,7 @@ defmodule Raxol.Core.UXRefinementTest do
       assert UXRefinement.feature_enabled?(:keyboard_navigation)
     end
 
-    test "does nothing if feature is already enabled" do
+    test 'does nothing if feature is already enabled' do
       # Enable feature twice
       UXRefinement.enable_feature(:focus_management)
       assert :ok = UXRefinement.enable_feature(:focus_management)
@@ -102,32 +102,32 @@ defmodule Raxol.Core.UXRefinementTest do
   end
 
   describe "disable_feature/1" do
-    test "disables focus_management feature" do
+    test 'disables focus_management feature' do
       UXRefinement.enable_feature(:focus_management)
       assert :ok = UXRefinement.disable_feature(:focus_management)
       refute UXRefinement.feature_enabled?(:focus_management)
     end
 
-    test "disables keyboard_navigation feature" do
+    test 'disables keyboard_navigation feature' do
       UXRefinement.enable_feature(:keyboard_navigation)
       assert :ok = UXRefinement.disable_feature(:keyboard_navigation)
       refute UXRefinement.feature_enabled?(:keyboard_navigation)
     end
 
-    test "disables hints feature" do
+    test 'disables hints feature' do
       # Allow HintDisplay.init to run
       UXRefinement.enable_feature(:hints)
       assert :ok = UXRefinement.disable_feature(:hints)
       refute UXRefinement.feature_enabled?(:hints)
     end
 
-    test "disables focus_ring feature" do
+    test 'disables focus_ring feature' do
       UXRefinement.enable_feature(:focus_ring)
       assert :ok = UXRefinement.disable_feature(:focus_ring)
       refute UXRefinement.feature_enabled?(:focus_ring)
     end
 
-    test "disables accessibility feature" do
+    test 'disables accessibility feature' do
       stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 
       stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
@@ -147,7 +147,7 @@ defmodule Raxol.Core.UXRefinementTest do
       refute UXRefinement.feature_enabled?(:accessibility)
     end
 
-    test "does nothing if feature is already disabled" do
+    test 'does nothing if feature is already disabled' do
       # Disable without enabling
       assert :ok = UXRefinement.disable_feature(:focus_management)
 
@@ -163,7 +163,7 @@ defmodule Raxol.Core.UXRefinementTest do
       :ok
     end
 
-    test "registers and retrieves a hint" do
+    test 'registers and retrieves a hint' do
       # Register a hint
       assert :ok = UXRefinement.register_hint("test_component", "Test hint")
 
@@ -171,11 +171,11 @@ defmodule Raxol.Core.UXRefinementTest do
       assert UXRefinement.get_hint("test_component") == "Test hint"
     end
 
-    test "returns nil for unknown component" do
+    test 'returns nil for unknown component' do
       assert UXRefinement.get_hint("unknown_component") == nil
     end
 
-    test "does nothing when hints feature is disabled" do
+    test 'does nothing when hints feature is disabled' do
       # Register a hint with hints enabled
       UXRefinement.register_hint("test_component", "Test hint")
 
@@ -194,7 +194,7 @@ defmodule Raxol.Core.UXRefinementTest do
       :ok
     end
 
-    test "registers and retrieves a basic component hint" do
+    test 'registers and retrieves a basic component hint' do
       # Register a basic hint
       hint_info = %{basic: "Basic hint"}
 
@@ -206,7 +206,7 @@ defmodule Raxol.Core.UXRefinementTest do
                "Basic hint"
     end
 
-    test "registers and retrieves a detailed component hint" do
+    test 'registers and retrieves a detailed component hint' do
       # Register a detailed hint
       hint_info = %{basic: "Basic hint", detailed: "Detailed hint"}
 
@@ -218,7 +218,7 @@ defmodule Raxol.Core.UXRefinementTest do
                "Detailed hint"
     end
 
-    test "registers and retrieves examples hint" do
+    test 'registers and retrieves examples hint' do
       # Register a hint with examples
       hint_info = %{
         basic: "Basic hint",
@@ -233,7 +233,7 @@ defmodule Raxol.Core.UXRefinementTest do
                "Example usage"
     end
 
-    test "register_component_hint/2 and get_component_hint/2 returns basic hint for unknown hint level" do
+    test 'register_component_hint/2 and get_component_hint/2 returns basic hint for unknown hint level' do
       # Register only a basic hint
       hint_info = %{basic: "Basic hint"}
 
@@ -245,11 +245,11 @@ defmodule Raxol.Core.UXRefinementTest do
                "Basic hint"
     end
 
-    test "returns nil for unknown component" do
+    test 'returns nil for unknown component' do
       assert UXRefinement.get_component_hint("unknown_component", :basic) == nil
     end
 
-    test "does nothing when hints feature is disabled" do
+    test 'does nothing when hints feature is disabled' do
       # Register a hint with hints enabled
       hint_info = %{basic: "Basic hint"}
       UXRefinement.register_component_hint("test_component", hint_info)
@@ -261,7 +261,7 @@ defmodule Raxol.Core.UXRefinementTest do
       assert UXRefinement.get_component_hint("test_component", :basic) == nil
     end
 
-    test "normalizes string hint to basic hint" do
+    test 'normalizes string hint to basic hint' do
       # Register a string hint
       assert :ok =
                UXRefinement.register_component_hint(
@@ -276,7 +276,7 @@ defmodule Raxol.Core.UXRefinementTest do
   end
 
   describe "feature_enabled?/1" do
-    test "returns true for enabled feature" do
+    test 'returns true for enabled feature' do
       # Enable feature
       UXRefinement.enable_feature(:focus_management)
 
@@ -284,7 +284,7 @@ defmodule Raxol.Core.UXRefinementTest do
       assert UXRefinement.feature_enabled?(:focus_management)
     end
 
-    test "returns false for disabled feature" do
+    test 'returns false for disabled feature' do
       # Disable feature
       UXRefinement.disable_feature(:focus_management)
 

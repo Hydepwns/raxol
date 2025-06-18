@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
   end
 
   describe "mouse creation" do
-    test "creates mouse context with default configuration" do
+    test 'creates mouse context with default configuration' do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
       assert {:ok, mouse_state} = UnifiedMouse.get_mouse_state(mouse_id)
       assert mouse_state.config.tracking == :all
@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert mouse_state.config.pixel_mode == false
     end
 
-    test "creates mouse context with custom configuration" do
+    test 'creates mouse context with custom configuration' do
       config = %{
         tracking: :button,
         sgr_mode: false,
@@ -33,7 +33,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert mouse_state.config.pixel_mode == true
     end
 
-    test "first mouse context becomes active" do
+    test 'first mouse context becomes active' do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
       assert {:ok, active_id} = UnifiedMouse.get_active_mouse()
       assert mouse_id == active_id
@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
   end
 
   describe "mouse management" do
-    test "gets list of all mouse contexts" do
+    test 'gets list of all mouse contexts' do
       assert {:ok, mouse1} = UnifiedMouse.create_mouse()
       assert {:ok, mouse2} = UnifiedMouse.create_mouse()
       assert {:ok, mouse3} = UnifiedMouse.create_mouse()
@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert mouse3 in mice
     end
 
-    test "sets active mouse context" do
+    test 'sets active mouse context' do
       assert {:ok, mouse1} = UnifiedMouse.create_mouse()
       assert {:ok, mouse2} = UnifiedMouse.create_mouse()
 
@@ -62,14 +62,14 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert active_id == mouse2
     end
 
-    test "handles non-existent mouse context" do
+    test 'handles non-existent mouse context' do
       assert {:error, :mouse_not_found} = UnifiedMouse.set_active_mouse(999)
       assert {:error, :mouse_not_found} = UnifiedMouse.get_mouse_state(999)
     end
   end
 
   describe "mouse operations" do
-    test "processes mouse event" do
+    test 'processes mouse event' do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
       event = %{
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert mouse_state.modifiers == [:shift]
     end
 
-    test "gets mouse position" do
+    test 'gets mouse position' do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
       event = %{
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert {:ok, {150, 250}} = UnifiedMouse.get_mouse_position(mouse_id)
     end
 
-    test "gets mouse button state" do
+    test 'gets mouse button state' do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
       event = %{
@@ -118,13 +118,13 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert button_state == %{right: :pressed}
     end
 
-    test "closes mouse context" do
+    test 'closes mouse context' do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
       assert :ok = UnifiedMouse.close_mouse(mouse_id)
       assert {:error, :mouse_not_found} = UnifiedMouse.get_mouse_state(mouse_id)
     end
 
-    test "closing active mouse updates active mouse" do
+    test 'closing active mouse updates active mouse' do
       assert {:ok, mouse1} = UnifiedMouse.create_mouse()
       assert {:ok, mouse2} = UnifiedMouse.create_mouse()
 
@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
   end
 
   describe "mouse configuration" do
-    test "updates mouse configuration" do
+    test 'updates mouse configuration' do
       assert {:ok, mouse_id} = UnifiedMouse.create_mouse()
 
       new_config = %{
@@ -152,7 +152,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
       assert mouse_state.config.urxvt_mode == true
     end
 
-    test "updates mouse manager configuration" do
+    test 'updates mouse manager configuration' do
       config = %{
         max_mice: 5,
         default_tracking: :drag,
@@ -166,7 +166,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
   end
 
   describe "cleanup" do
-    test "cleans up all mouse contexts" do
+    test 'cleans up all mouse contexts' do
       assert {:ok, mouse1} = UnifiedMouse.create_mouse()
       assert {:ok, mouse2} = UnifiedMouse.create_mouse()
 
@@ -177,7 +177,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
   end
 
   describe "error handling" do
-    test "handles invalid mouse operations" do
+    test 'handles invalid mouse operations' do
       assert {:error, :mouse_not_found} = UnifiedMouse.set_active_mouse(999)
       assert {:error, :mouse_not_found} = UnifiedMouse.get_mouse_state(999)
 

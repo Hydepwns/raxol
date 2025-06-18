@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
       assert state.cache == %{}
     end
 
-    test "initializes with custom configuration" do
+    test 'initializes with custom configuration' do
       opts = [
         fps: 30,
         theme: %{foreground: :white, background: :black},

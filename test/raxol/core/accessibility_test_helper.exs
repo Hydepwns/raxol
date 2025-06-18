@@ -1,7 +1,7 @@
 defmodule Raxol.Core.AccessibilityTestHelper do
-  @moduledoc """
+  @moduledoc '''
   Helper module for accessibility tests providing common test utilities and fixtures.
-  """
+  '''
 
   alias Raxol.Core.UserPreferences
   import ExUnit.Assertions

@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
-    test "initializes with default values when no props provided" do
+    test 'initializes with default values when no props provided' do
       state = SingleLineInput.init(%{})
       assert state.value == ""
       assert state.placeholder == ""
@@ -17,7 +17,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
       assert state.on_submit == nil
     end
 
-    test "initializes with provided values" do
+    test 'initializes with provided values' do
       props = %{
         id: :my_input,
         initial_value: "test",

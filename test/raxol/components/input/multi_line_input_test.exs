@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
   alias Raxol.UI.Components.Input.TextWrapping
 
   describe "init/1" do
-    test "initializes with default values when no props provided" do
+    test 'initializes with default values when no props provided' do
       state = MultiLineInput.init(%{id: :mle_default})
       assert state.id == :mle_default
       assert state.value == ""
@@ -22,7 +22,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert state.lines == [""]
     end
 
-    test "initializes with provided values" do
+    test 'initializes with provided values' do
       props = %{
         id: :mle_props,
         value: "Hello\nWorld",
@@ -47,7 +47,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert state.lines == ["Hello", "World"]
     end
 
-    test "initializes with provided values and style" do
+    test 'initializes with provided values and style' do
       # Define expected_style before using it
       expected_style = %{
         text_color: :green,
@@ -229,7 +229,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
   end
 
   describe "line wrapping" do
-    test "wrap_line_by_char handles long word correctly (simpler)" do
+    test 'wrap_line_by_char handles long word correctly (simpler)' do
       # 100 chars
       value = String.duplicate("0123456789", 10)
       width = 20
@@ -240,7 +240,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert Enum.all?(lines, &(&1 == expected_line))
     end
 
-    test "wrap_line_by_char handles long word correctly" do
+    test 'wrap_line_by_char handles long word correctly' do
       value =
         "Lopadotemachoselachogaleokranioleipsanodrimhypotrimmatosilphioparaomelitokatakechymenokichlepikossyphophattoperisteralektryonoptekephalliokigklopeleiolagoiosiraiobaphetraganopterygon"
 
@@ -261,7 +261,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert Enum.at(lines, 9) == "erygon"
     end
 
-    test "wraps text by character" do
+    test 'wraps text by character' do
       value = "This is a long line of text"
       width = 10
 
@@ -272,7 +272,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert length(lines) == 3
     end
 
-    test "wraps text by word" do
+    test 'wraps text by word' do
       value = "This is a long line of text"
       width = 10
 
@@ -284,7 +284,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert length(lines) == 3
     end
 
-    test "wraps text by word with long word" do
+    test 'wraps text by word with long word' do
       value =
         "Lopadotemachoselachogaleokranioleipsanodrimhypotrimmatosilphioparaomelitokatakechymenokichlepikossyphophattoperisteralektryonoptekephalliokigklopeleiolagoiosiraiobaphetraganopterygon"
 
@@ -304,7 +304,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert Enum.at(lines, 9) == "erygon"
     end
 
-    test "wraps text by word basic" do
+    test 'wraps text by word basic' do
       value = "This is a long line of text"
       width = 10
 

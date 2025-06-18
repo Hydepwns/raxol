@@ -248,12 +248,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
       result = OSCHandlers.handle_4(emulator, "4;rgb:FFFF/0000/0000")
       emulator = unwrap_ok(result)
       # Then query it
-      result = OSCHandlers.handle_4(emulator, "4;?")
+      result = OSCHandlers.handle_4(emulator, "4;?')
       emulator = unwrap_ok(result)
       output = emulator.output_buffer
 
       # Check that the response is in the correct format
-      assert String.contains?(output, "\e]4;4;rgb:")
+      assert String.contains?(output, '\e]4;4;rgb:")
       assert String.contains?(output, "\e\\")
     end
 
@@ -319,18 +319,18 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
       emulator = unwrap_ok(result)
 
       # Query each color and accumulate output_buffer
-      result = OSCHandlers.handle_4(emulator, "1;?")
+      result = OSCHandlers.handle_4(emulator, "1;?')
       emulator = unwrap_ok(result)
       output = emulator.output_buffer
-      result = OSCHandlers.handle_4(emulator, "2;?")
+      result = OSCHandlers.handle_4(emulator, '2;?')
       emulator = unwrap_ok(result)
       output = output <> emulator.output_buffer
-      result = OSCHandlers.handle_4(emulator, "3;?")
+      result = OSCHandlers.handle_4(emulator, '3;?')
       emulator = unwrap_ok(result)
       output = output <> emulator.output_buffer
 
       # Check that all responses are in the output buffer
-      assert String.contains?(output, "\e]4;1;rgb:")
+      assert String.contains?(output, '\e]4;1;rgb:")
       assert String.contains?(output, "\e]4;2;rgb:")
       assert String.contains?(output, "\e]4;3;rgb:")
     end

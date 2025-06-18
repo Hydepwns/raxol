@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Clipboard.ManagerTest do
       assert manager.metrics.cache_misses == 0
     end
 
-    test "creates a new clipboard manager with custom options" do
+    test 'creates a new clipboard manager with custom options' do
       manager =
         Manager.new(
           history_size: 50,

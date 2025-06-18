@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
     # These tests check the side effects of ANSI sequences handled by Emulator/Parser
     # that utilize the internal state stack (managed by TerminalState).
 
-    test "DECSC/DECRC saves and restores state (ESC 7/8)" do
+    test 'DECSC/DECRC saves and restores state (ESC 7/8)' do
       emulator = Emulator.new(80, 24)
 
       # State 1: pos=(1,1), bold=true, G1=DEC Special Graphics
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
                initial_state_before_second_restore.mode_manager
     end
 
-    test "DEC mode 1048 saves/restores cursor state only (no buffer switch)" do
+    test 'DEC mode 1048 saves/restores cursor state only (no buffer switch)' do
       emulator = Emulator.new(80, 24)
 
       # 1. Setup state on main buffer
@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       # Let's skip this as the main logic is tested above
     end
 
-    test "DEC mode 1047 switches to alternate buffer and restores state" do
+    test 'DEC mode 1047 switches to alternate buffer and restores state' do
       emulator = Emulator.new(80, 24)
       # Write to main buffer
       {emulator, _} = Emulator.process_input(emulator, "MainBuf")
@@ -172,7 +172,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       assert Emulator.get_active_buffer(emulator) == alt_buffer_snapshot
     end
 
-    test "DEC mode 1049 switches to alternate buffer, clears it, and restores state" do
+    test 'DEC mode 1049 switches to alternate buffer, clears it, and restores state' do
       emulator = Emulator.new(80, 24)
       # Write to main buffer
       {emulator, _} = Emulator.process_input(emulator, "MainBuf")

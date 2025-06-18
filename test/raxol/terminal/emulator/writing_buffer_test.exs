@@ -201,7 +201,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       {emulator_after, _output} = Emulator.process_input(emulator, "H")
 
       assert emulator_after.cursor.position == {1, 0},
-             "Cursor after 'H' should be {1, 0}"
+             "Cursor after "H" should be {1, 0}"
     end
 
     # This test needs specific dimensions, so create a new emulator instance here
@@ -283,7 +283,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
         |> Enum.map_join(& &1.char)
 
       assert String.trim_trailing(line0_text_after) == "123456789X",
-             "Line 0 should contain '...9X' after overwrite"
+             "Line 0 should contain "...9X" after overwrite"
 
       # Cursor should be at col 9 (index 9) after writing stopped at the margin
       assert emulator_after_char11.cursor.position == {9, 0},

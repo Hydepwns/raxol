@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
       assert gpu_renderer.performance_metrics != nil
     end
 
-    test "initializes with custom options" do
+    test 'initializes with custom options' do
       screen_buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new(screen_buffer)
       opts = [shader_model: "6.0", max_texture_size: 8192]
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
   end
 
   describe "GPU capabilities" do
-    test "detects shader model" do
+    test 'detects shader model' do
       screen_buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new(screen_buffer)
       gpu_renderer = GPURenderer.new(renderer)
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
       assert is_binary(capabilities.shader_model)
     end
 
-    test "detects max texture size" do
+    test 'detects max texture size' do
       screen_buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new(screen_buffer)
       gpu_renderer = GPURenderer.new(renderer)
@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
       assert capabilities.max_texture_size > 0
     end
 
-    test "detects compute capability" do
+    test 'detects compute capability' do
       screen_buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new(screen_buffer)
       gpu_renderer = GPURenderer.new(renderer)
