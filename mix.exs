@@ -100,7 +100,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2_nif)
-      {:termbox2_nif, path: "lib/termbox2_nif"},
+      # {:termbox2_nif, path: "lib/termbox2_nif"},
 
       # --- Added for Tutorial Loading ---
       # Markdown parser
@@ -175,9 +175,9 @@ defmodule Raxol.MixProject do
       {:hackney, "~> 1.24"},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:toml, "~> 0.7"},
-      {:mimerl, "~> 1.4"},
+      {:mimerl, "~> 1.4"}
       # Use our local version of json parser
-      {:json, path: "lib/json"}
+      # {:json, path: "lib/json"}
     ]
   end
 
@@ -206,9 +206,7 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Raxol - A modern, feature-rich toolkit for building sophisticated terminal user interfaces (TUIs) in Elixir.
-    Provides a comprehensive set of components, styling options, and event handling for creating interactive
-    terminal applications with rich text formatting, keyboard input handling, and dynamic UI updates.
+    Raxol is a modern Elixir toolkit for building advanced terminal user interfaces (TUIs) with components, theming, and event handling.
     """
   end
 
