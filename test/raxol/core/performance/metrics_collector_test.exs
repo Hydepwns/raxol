@@ -1,10 +1,14 @@
 defmodule Raxol.Core.Performance.MetricsCollectorTest do
+  @moduledoc """
+  Tests for the metrics collector, including frame time recording, FPS calculation,
+  memory usage tracking, garbage collection statistics, and error handling.
+  """
   use ExUnit.Case
 
   alias Raxol.Core.Performance.MetricsCollector
 
   describe "Metrics Collector" do
-    test 'creates new collector' do
+    test "creates new collector" do
       collector = MetricsCollector.new()
 
       assert collector.frame_times == []
@@ -13,7 +17,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert collector.last_gc_time == 0
     end
 
-    test 'records frame time' do
+    test "records frame time" do
       collector = MetricsCollector.new()
       collector = MetricsCollector.record_frame(collector, 16)
 
@@ -21,7 +25,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert hd(collector.frame_times) == 16
     end
 
-    test 'maintains frame time history limit' do
+    test "maintains frame time history limit" do
       collector = MetricsCollector.new()
 
       # Record more frames than history limit
@@ -34,7 +38,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert length(collector.frame_times) == 60
     end
 
-    test 'calculates FPS correctly' do
+    test "calculates FPS correctly" do
       collector = MetricsCollector.new()
 
       # Record some frames
@@ -47,14 +51,14 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert_in_delta MetricsCollector.get_fps(collector), 62.5, 0.1
     end
 
-    test 'handles zero frame time in FPS calculation' do
+    test "handles zero frame time in FPS calculation" do
       collector = MetricsCollector.new()
       collector = MetricsCollector.record_frame(collector, 0)
 
       assert MetricsCollector.get_fps(collector) == 0.0
     end
 
-    test 'calculates average frame time correctly' do
+    test "calculates average frame time correctly" do
       collector = MetricsCollector.new()
 
       # Record some frames
@@ -66,14 +70,14 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert_in_delta MetricsCollector.get_avg_frame_time(collector), 20.0, 0.1
     end
 
-    test 'handles empty frame times' do
+    test "handles empty frame times" do
       collector = MetricsCollector.new()
 
       assert MetricsCollector.get_avg_frame_time(collector) == 0.0
       assert MetricsCollector.get_fps(collector) == 0.0
     end
 
-    test 'updates memory usage' do
+    test "updates memory usage" do
       collector = MetricsCollector.new()
 
       # Initial update
@@ -92,7 +96,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert collector.last_gc_time > 0
     end
 
-    test 'tracks memory usage trend' do
+    test "tracks memory usage trend" do
       collector = MetricsCollector.new()
 
       # Initial update
@@ -113,7 +117,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert collector.memory_usage > initial_memory
     end
 
-    test 'collects garbage collection statistics' do
+    test "collects garbage collection statistics" do
       collector = MetricsCollector.new()
 
       # Force some garbage collection

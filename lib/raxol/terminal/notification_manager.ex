@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.NotificationManager do
-  @moduledoc '''
+  @moduledoc """
   Manages terminal notifications, telemetry events, and callbacks.
 
   This module is responsible for:
@@ -7,18 +7,18 @@ defmodule Raxol.Terminal.NotificationManager do
   - Emitting telemetry events
   - Managing callback execution
   - Logging notification events
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Notifies about a focus change event.
 
   ## Parameters
     * `runtime_pid` - The PID of the runtime process to notify
     * `callback_module` - The callback module to execute
     * `focused?` - Whether the terminal is focused
-  '''
+  """
   @spec notify_focus_changed(pid() | nil, module() | nil, boolean()) :: :ok
   def notify_focus_changed(runtime_pid, callback_module, focused?) do
     if runtime_pid,
@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.NotificationManager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Notifies about a terminal resize event.
 
   ## Parameters
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.NotificationManager do
     * `callback_module` - The callback module to execute
     * `width` - The new width
     * `height` - The new height
-  '''
+  """
   @spec notify_resized(pid() | nil, module() | nil, integer(), integer()) :: :ok
   def notify_resized(runtime_pid, callback_module, width, height) do
     if runtime_pid,
@@ -66,14 +66,14 @@ defmodule Raxol.Terminal.NotificationManager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Notifies about a mode change event.
 
   ## Parameters
     * `runtime_pid` - The PID of the runtime process to notify
     * `callback_module` - The callback module to execute
     * `new_mode` - The new mode
-  '''
+  """
   @spec notify_mode_changed(pid() | nil, module() | nil, atom()) :: :ok
   def notify_mode_changed(runtime_pid, callback_module, new_mode) do
     if runtime_pid,
@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.NotificationManager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Notifies about a clipboard event.
 
   ## Parameters
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.NotificationManager do
     * `callback_module` - The callback module to execute
     * `type` - The clipboard operation type
     * `data` - The clipboard data
-  '''
+  """
   @spec notify_clipboard_event(pid() | nil, module() | nil, atom(), any()) ::
           :ok
   def notify_clipboard_event(runtime_pid, callback_module, type, data) do
@@ -124,14 +124,14 @@ defmodule Raxol.Terminal.NotificationManager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Notifies about a selection change event.
 
   ## Parameters
     * `runtime_pid` - The PID of the runtime process to notify
     * `callback_module` - The callback module to execute
     * `selection` - The selection data
-  '''
+  """
   @spec notify_selection_changed(pid() | nil, module() | nil, map()) :: :ok
   def notify_selection_changed(runtime_pid, callback_module, selection) do
     if runtime_pid,
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.NotificationManager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Notifies about a paste event.
 
   ## Parameters
@@ -161,7 +161,7 @@ defmodule Raxol.Terminal.NotificationManager do
     * `callback_module` - The callback module to execute
     * `text` - The pasted text
     * `pos` - The paste position
-  '''
+  """
   @spec notify_paste_event(
           pid() | nil,
           module() | nil,
@@ -195,14 +195,14 @@ defmodule Raxol.Terminal.NotificationManager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Notifies about a cursor event.
 
   ## Parameters
     * `runtime_pid` - The PID of the runtime process to notify
     * `callback_module` - The callback module to execute
     * `cursor` - The cursor data
-  '''
+  """
   @spec notify_cursor_event(pid() | nil, module() | nil, map()) :: :ok
   def notify_cursor_event(runtime_pid, callback_module, cursor) do
     if runtime_pid,
@@ -222,7 +222,7 @@ defmodule Raxol.Terminal.NotificationManager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Notifies about a scroll event.
 
   ## Parameters
@@ -231,7 +231,7 @@ defmodule Raxol.Terminal.NotificationManager do
     * `dir` - The scroll direction
     * `delta` - The scroll delta
     * `pos` - The scroll position
-  '''
+  """
   @spec notify_scroll_event(
           pid() | nil,
           module() | nil,

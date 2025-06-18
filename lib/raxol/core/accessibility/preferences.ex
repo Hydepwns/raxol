@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Accessibility.Preferences do
-  @moduledoc '''
+  @moduledoc """
   Manages accessibility preferences and settings.
-  '''
+  """
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UserPreferences
@@ -10,14 +10,14 @@ defmodule Raxol.Core.Accessibility.Preferences do
   # Default UserPreferences name
   @default_prefs_name Raxol.Core.UserPreferences
 
-  @doc '''
+  @doc """
   Get the default preferences name.
 
   ## Examples
 
       iex> Preferences.default_prefs_name()
       Raxol.Core.UserPreferences
-  '''
+  """
   def default_prefs_name, do: @default_prefs_name
 
   # Helper function to get preference key as a path list
@@ -46,7 +46,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     UserPreferences.set(pref_key(key), value, target_pid_or_name)
   end
 
-  @doc '''
+  @doc """
   Get an accessibility option value.
 
   ## Parameters
@@ -59,7 +59,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       iex> Preferences.get_option(:high_contrast)
       false
-  '''
+  """
   def get_option(key, user_preferences_pid_or_name \\ nil, default \\ nil) do
     # Special case for test environment to ensure consistent returns
     if Mix.env() == :test do
@@ -73,7 +73,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     end
   end
 
-  @doc '''
+  @doc """
   Set an accessibility option value.
 
   ## Parameters
@@ -86,7 +86,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       iex> Preferences.set_option(:high_contrast, true)
       :ok
-  '''
+  """
   def set_option(key, value, user_preferences_pid_or_name \\ nil)
       when is_atom(key) do
     # Use our existing functions for specific settings when available
@@ -109,7 +109,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     send(self(), {:preferences_applied})
   end
 
-  @doc '''
+  @doc """
   Enable or disable high contrast mode.
 
   ## Parameters
@@ -121,7 +121,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       iex> Preferences.set_high_contrast(true)
       :ok
-  '''
+  """
   def set_high_contrast(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
@@ -135,7 +135,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     :ok
   end
 
-  @doc '''
+  @doc """
   Enable or disable reduced motion.
 
   ## Parameters
@@ -147,7 +147,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       iex> Preferences.set_reduced_motion(true)
       :ok
-  '''
+  """
   def set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     set_pref(:reduced_motion, enabled, user_preferences_pid_or_name)
@@ -161,7 +161,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     :ok
   end
 
-  @doc '''
+  @doc """
   Enable or disable large text mode.
 
   ## Parameters
@@ -173,7 +173,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       iex> Preferences.set_large_text(true)
       :ok
-  '''
+  """
   def set_large_text(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     set_pref(:large_text, enabled, user_preferences_pid_or_name)
@@ -191,7 +191,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     :ok
   end
 
-  @doc '''
+  @doc """
   Get the current text scale factor based on the large text setting.
 
   ## Parameters
@@ -202,7 +202,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       iex> Preferences.get_text_scale()
       1.0 # or 1.5 if large_text is enabled
-  '''
+  """
   def get_text_scale(user_preferences_pid_or_name \\ nil) do
     # Calculate based on the :large_text preference directly
     # Explicitly handle test environment to ensure consistent behavior

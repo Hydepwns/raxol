@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Driver.InitializationTest do
   end
 
   describe "init/1" do
-    test 'initializes correctly, configures terminal, and sends initial resize event' do
+    test ~c"initializes correctly, configures terminal, and sends initial resize event" do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Driver.InitializationTest do
   end
 
   describe "terminate/2" do
-    test 'restores terminal settings on exit' do
+    test ~c"restores terminal settings on exit" do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)
 

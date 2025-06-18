@@ -1,10 +1,10 @@
 defmodule Raxol.Cloud.Config do
-  @moduledoc '''
+  @moduledoc """
   Configuration management for Raxol cloud integrations.
 
   Provides centralized configuration management with validation,
   dynamic updates, and multiple source support.
-  '''
+  """
 
   alias Raxol.Cloud.{Core, StateManager}
 
@@ -56,7 +56,7 @@ defmodule Raxol.Cloud.Config do
     }
   }
 
-  @doc '''
+  @doc """
   Initializes the configuration system.
 
   ## Options
@@ -65,7 +65,7 @@ defmodule Raxol.Cloud.Config do
   * `:environment` - Environment to use (:development, :test, :production)
   * `:config_file` - Path to configuration file
   * `:auto_apply` - Whether to automatically apply configuration
-  '''
+  """
   def init(opts \\ []) do
     state = %{
       config: %{},
@@ -101,14 +101,14 @@ defmodule Raxol.Cloud.Config do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current configuration.
 
   ## Options
 
   * `:section` - Specific configuration section to get
   * `:flatten` - Whether to flatten nested maps
-  '''
+  """
   def get(opts \\ []) do
     state = get_state()
     section = Keyword.get(opts, :section)
@@ -128,7 +128,7 @@ defmodule Raxol.Cloud.Config do
     end
   end
 
-  @doc '''
+  @doc """
   Updates the configuration with new values.
 
   ## Options
@@ -137,7 +137,7 @@ defmodule Raxol.Cloud.Config do
   * `:validate` - Whether to validate the configuration
   * `:persist` - Whether to persist changes
   * `:apply` - Whether to apply changes
-  '''
+  """
   def update(new_config, opts \\ []) do
     state = get_state()
     section = Keyword.get(opts, :section)
@@ -197,14 +197,14 @@ defmodule Raxol.Cloud.Config do
     end
   end
 
-  @doc '''
+  @doc """
   Reloads configuration from all sources.
 
   ## Options
 
   * `:sources` - List of sources to reload from
   * `:apply` - Whether to apply the reloaded configuration
-  '''
+  """
   def reload(opts \\ []) do
     state = get_state()
     sources = Keyword.get(opts, :sources, state.sources)
@@ -234,9 +234,9 @@ defmodule Raxol.Cloud.Config do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current status of the configuration system.
-  '''
+  """
   def status do
     state = get_state()
 
@@ -248,9 +248,9 @@ defmodule Raxol.Cloud.Config do
     }
   end
 
-  @doc '''
+  @doc """
   Gets the default configuration value for a key.
-  '''
+  """
   def get_default(key) when is_binary(key) do
     keys = String.split(key, ".")
     get_in(@defaults, Enum.map(keys, &String.to_atom/1))

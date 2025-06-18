@@ -1,19 +1,19 @@
 defmodule Raxol.Plugins.Visualization.ImageRenderer do
-  @moduledoc '''
+  @moduledoc """
   Handles rendering logic for image visualization within the VisualizationPlugin.
   Supports both sixel and kitty protocols for terminal image rendering.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
 
-  @doc '''
+  @doc """
   Public entry point for rendering image content.
   Handles bounds checking and calls the internal drawing logic.
   Expects bounds map: %{width: w, height: h}.
-  '''
+  """
   def render_image_content(
         data,
         opts,
@@ -28,6 +28,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
         "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
         %{}
       )
+
       []
     else
       try do
@@ -39,9 +40,11 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
       rescue
         e ->
           stacktrace = __STACKTRACE__
+
           Raxol.Core.Runtime.Log.error(
             "[ImageRenderer] Error rendering image: #{inspect(e)}\nStacktrace: #{inspect(stacktrace)}"
           )
+
           DrawingUtils.draw_box_with_text("[Render Error]", bounds)
       end
     end
@@ -75,8 +78,12 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
         sixel_data = convert_to_sixel(image_data, bounds)
         # Create cells with sixel escape sequence
         create_sixel_cells(sixel_data, bounds)
+
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("[ImageRenderer] Failed to load image: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "[ImageRenderer] Failed to load image: #{inspect(reason)}"
+        )
+
         draw_placeholder(data, Map.get(opts, :title, "Image"), bounds)
     end
   end
@@ -88,8 +95,12 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
         kitty_data = convert_to_kitty(image_data, bounds)
         # Create cells with kitty escape sequence
         create_kitty_cells(kitty_data, bounds)
+
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("[ImageRenderer] Failed to load image: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "[ImageRenderer] Failed to load image: #{inspect(reason)}"
+        )
+
         draw_placeholder(data, Map.get(opts, :title, "Image"), bounds)
     end
   end
@@ -101,10 +112,12 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
       {:error, reason} -> {:error, reason}
     end
   end
+
   defp load_image_data(_data) when is_binary(_data) do
     # Handle raw image data
     {:ok, _data}
   end
+
   defp load_image_data(_), do: {:error, :invalid_data}
 
   defp convert_to_sixel(image_data, bounds) do
@@ -146,6 +159,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
          resized_image <- resize_image(image, bounds) do
       # Convert to base64 and create kitty escape sequence
       base64_data = Base.encode64(resized_image.path)
+
       "\x1b_Ga=T,f=100,s=#{bounds.width},v=#{bounds.height},m=1;#{base64_data}\x1b\\"
     else
       _ -> "Failed to convert image to kitty format"

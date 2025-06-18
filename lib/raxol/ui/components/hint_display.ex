@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.HintDisplay do
-  @moduledoc '''
+  @moduledoc """
   Displays contextual hints and keyboard shortcuts.
-  '''
+  """
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
@@ -20,7 +20,7 @@ defmodule Raxol.UI.Components.HintDisplay do
 
   # --- Component Behaviour Callbacks ---
 
-  @doc 'Initializes the HintDisplay component state from props.'
+  @doc "Initializes the HintDisplay component state from props."
   @spec init(map()) :: %__MODULE__{}
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
@@ -34,7 +34,7 @@ defmodule Raxol.UI.Components.HintDisplay do
     }
   end
 
-  @doc 'Updates the HintDisplay component state in response to messages.'
+  @doc "Updates the HintDisplay component state in response to messages."
   @spec update(term(), %__MODULE__{}) :: {%__MODULE__{}, list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
@@ -58,7 +58,7 @@ defmodule Raxol.UI.Components.HintDisplay do
     end
   end
 
-  @doc 'Handles events for the HintDisplay component. Typically does not handle direct events.'
+  @doc "Handles events for the HintDisplay component. Typically does not handle direct events."
   @spec handle_event(term(), map(), %__MODULE__{}) :: {%__MODULE__{}, list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
@@ -72,7 +72,7 @@ defmodule Raxol.UI.Components.HintDisplay do
 
   # --- Render Logic ---
 
-  @doc 'Renders the HintDisplay component if visible and hints are present.'
+  @doc "Renders the HintDisplay component if visible and hints are present."
   @spec render(%__MODULE__{}, map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   # Correct arity

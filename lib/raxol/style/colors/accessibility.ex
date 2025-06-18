@@ -1,7 +1,7 @@
 defmodule Raxol.Style.Colors.Accessibility do
-  @moduledoc '''
+  @moduledoc """
   Provides utilities for color accessibility, focusing on WCAG contrast.
-  '''
+  """
 
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Style.Colors.Color
@@ -17,7 +17,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   # AAA level for large text
   @contrast_aaa_large 4.5
 
-  @doc '''
+  @doc """
   Calculates the relative luminance of a color according to WCAG guidelines.
 
   ## Parameters
@@ -35,13 +35,13 @@ defmodule Raxol.Style.Colors.Accessibility do
 
       iex> Raxol.Style.Colors.Accessibility.relative_luminance("#FFFFFF")
       1.0
-  '''
+  """
   def relative_luminance(color) when is_binary(color) do
     # Allow hex string input for convenience
     case Color.from_hex(color) do
       %Color{} = c -> relative_luminance(c)
       # Or handle error? Defaulting to black for invalid hex.
-      _ -> 0.0
+      _ -> +0.0
     end
   end
 
@@ -61,7 +61,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     if v <= 0.03928, do: v / 12.92, else: :math.pow((v + 0.055) / 1.055, 2.4)
   end
 
-  @doc '''
+  @doc """
   Calculates the contrast ratio between two colors according to WCAG guidelines.
 
   ## Parameters
@@ -80,7 +80,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
       iex> Raxol.Style.Colors.Accessibility.contrast_ratio("#777777", "#999999")
       1.3
-  '''
+  """
   def contrast_ratio(color1, color2)
       when is_binary(color1) or is_binary(color2) do
     # Allow hex string input
@@ -102,7 +102,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     contrast_ratio(c1, c2)
   end
 
-  @doc '''
+  @doc """
   Checks if a foreground color is readable on a background color.
 
   ## Parameters
@@ -122,7 +122,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> fg = Raxol.Style.Colors.Color.from_hex("#999999")
       iex> Raxol.Style.Colors.Accessibility.readable?(bg, fg, :aaa)
       false
-  '''
+  """
   @spec readable?(
           Color.t() | String.t(),
           Color.t() | String.t(),
@@ -143,7 +143,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     ratio >= threshold
   end
 
-  @doc '''
+  @doc """
   Suggests an appropriate text color (black or white) for a given background.
 
   Ensures minimum AA contrast.
@@ -159,7 +159,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
       iex> Raxol.Style.Colors.Accessibility.suggest_text_color("#EEEEEE").hex
       "#000000"
-  '''
+  """
   def suggest_text_color(background) do
     bg =
       if is_binary(background), do: Color.from_hex(background), else: background
@@ -167,7 +167,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     Utilities.best_bw_contrast(bg)
   end
 
-  @doc '''
+  @doc """
   Suggests a color with good contrast (at least AA) to the base color.
 
   Prioritizes complementary color, then black/white.
@@ -182,7 +182,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> contrast_color = Raxol.Style.Colors.Accessibility.suggest_contrast_color(color)
       iex> Raxol.Style.Colors.Accessibility.readable?(color, contrast_color)
       true
-  '''
+  """
   def suggest_contrast_color(color) when is_binary(color) do
     case Color.from_hex(color) do
       %Color{} = c -> suggest_contrast_color(c)
@@ -207,7 +207,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  @doc '''
+  @doc """
   Finds an accessible color pair (foreground/background) based on a base color and WCAG level.
 
   Tries to find a contrasting color (black or white first) that meets the desired level.
@@ -221,7 +221,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     and the other is a contrasting color (typically black or white) that meets the
     specified `level`. Returns `nil` if no suitable pair is found immediately
     (further logic might be needed for complex cases).
-  '''
+  """
   def accessible_color_pair(base_color, level \\ :aa)
 
   # @doc false # Silence @doc warning for the first clause
@@ -393,10 +393,13 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   defp extract_options(opts) do
     bg = normalize_color(Keyword.get(opts, :background) || "#FFFFFF")
-    min_ratio = case Keyword.get(opts, :level, :aa) do
-      :aaa -> @contrast_aaa
-      :aa -> @contrast_aa
-    end
+
+    min_ratio =
+      case Keyword.get(opts, :level, :aa) do
+        :aaa -> @contrast_aaa
+        :aa -> @contrast_aa
+      end
+
     {bg, min_ratio}
   end
 
@@ -417,6 +420,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       lightened.hex
     else
       darkened = darken_until_contrast(color, bg, min_ratio)
+
       if valid_adjustment?(darkened, color, bg, min_ratio, :darker) do
         darkened.hex
       else
@@ -432,6 +436,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       darkened.hex
     else
       lightened = lighten_until_contrast(color, bg, min_ratio)
+
       if valid_adjustment?(lightened, color, bg, min_ratio, :lighter) do
         lightened.hex
       else
@@ -442,9 +447,9 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   defp valid_adjustment?(adjusted, original, bg, min_ratio, direction) do
     adjusted &&
-    contrast_ratio(adjusted, bg) >= min_ratio &&
-    luminance_changed?(original, adjusted, direction) &&
-    adjusted.hex != original.hex
+      contrast_ratio(adjusted, bg) >= min_ratio &&
+      luminance_changed?(original, adjusted, direction) &&
+      adjusted.hex != original.hex
   end
 
   @spec generate_accessible_palette(
@@ -506,7 +511,9 @@ defmodule Raxol.Style.Colors.Accessibility do
   def validate_colors(colors, opts) when is_list(opts) do
     bg = extract_background(opts)
     colors_map = normalize_colors_map(colors)
-    issues = find_contrast_issues(colors_map, bg, Keyword.get(opts, :level, :aa))
+
+    issues =
+      find_contrast_issues(colors_map, bg, Keyword.get(opts, :level, :aa))
 
     if Enum.empty?(issues), do: {:ok, colors}, else: {:error, issues}
   end
@@ -534,7 +541,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if two colors have sufficient contrast according to WCAG guidelines.
 
   ## Parameters
@@ -548,7 +555,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   - `{:ok, ratio}` if contrast is sufficient
   - `{:error, {:contrast_too_low, ratio, min_ratio}}` if contrast is insufficient
-  '''
+  """
   def check_contrast(color1, color2, level \\ :aa, size \\ :normal) do
     ratio = contrast_ratio(color1, color2)
 
@@ -567,7 +574,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  @doc '''
+  @doc """
   Adjusts a color palette to ensure all colors are accessible against a background.
 
   ## Parameters
@@ -578,7 +585,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   ## Returns
 
   - Map of adjusted colors
-  '''
+  """
   @spec adjust_palette(map(), Color.t() | String.t()) :: map()
   def adjust_palette(colors, background) do
     bg = normalize_color(background)
@@ -593,7 +600,10 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp adjust_colors(colors, bg) do
     colors
     |> Enum.map(fn {key, color} ->
-      if key == :background, do: {key, color}, else: {key, suggest_accessible_color(color, background: bg.hex, level: :aa)}
+      if key == :background,
+        do: {key, color},
+        else:
+          {key, suggest_accessible_color(color, background: bg.hex, level: :aa)}
     end)
     |> Map.new()
   end
@@ -601,7 +611,9 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp fallback_colors(colors, bg) do
     colors
     |> Enum.map(fn {key, _color} ->
-      if key == :background, do: {key, bg.hex}, else: {key, get_optimal_text_color(bg)}
+      if key == :background,
+        do: {key, bg.hex},
+        else: {key, get_optimal_text_color(bg)}
     end)
     |> Map.new()
   end
@@ -617,11 +629,16 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   defp extract_background(opts) do
     background = Keyword.get(opts, :background)
-    if is_binary(background), do: Color.from_hex(background), else: background || Color.from_hex("#FFFFFF")
+
+    if is_binary(background),
+      do: Color.from_hex(background),
+      else: background || Color.from_hex("#FFFFFF")
   end
 
   defp normalize_colors_map(colors) do
-    Map.new(colors, fn {k, v} -> {k, if(is_binary(v), do: Color.from_hex(v), else: v)} end)
+    Map.new(colors, fn {k, v} ->
+      {k, if(is_binary(v), do: Color.from_hex(v), else: v)}
+    end)
   end
 
   defp find_contrast_issues(colors_map, bg, level) do

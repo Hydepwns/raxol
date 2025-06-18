@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBarTest do
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
-    test 'initializes with default values when no props provided' do
+    test ~c"initializes with default values when no props provided" do
       state = ProgressBar.init(%{})
       assert state.value == 0
       assert state.max == 100
@@ -17,7 +17,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBarTest do
       assert state.show_percentage == false
     end
 
-    test 'initializes with provided values' do
+    test ~c"initializes with provided values" do
       props = %{
         id: :my_bar,
         value: 50,

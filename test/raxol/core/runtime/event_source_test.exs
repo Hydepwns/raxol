@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Runtime.EventSourceTest do
+  @moduledoc """
+  Tests for the event source runtime system, including behavior implementation,
+  initialization, failure handling, event dispatch, and process monitoring.
+  """
   # Must be false due to process monitoring
   use ExUnit.Case, async: false
 

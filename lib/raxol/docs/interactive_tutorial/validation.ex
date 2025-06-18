@@ -1,15 +1,15 @@
 defmodule Raxol.Docs.InteractiveTutorial.Validation do
-  @moduledoc '''
+  @moduledoc """
   Handles validation of tutorial exercises and user input.
-  '''
+  """
 
   alias Raxol.Docs.InteractiveTutorial.Models.Step
 
   @type validation_result :: {:ok, String.t()} | {:error, String.t()}
 
-  @doc '''
+  @doc """
   Validates a user's solution for an exercise.
-  '''
+  """
   def validate_solution(%Step{} = step, solution) when is_binary(solution) do
     case step.exercise do
       nil -> {:error, "No exercise defined for this step"}
@@ -17,9 +17,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
     end
   end
 
-  @doc '''
+  @doc """
   Validates a user's solution for an exercise with custom validation function.
-  '''
+  """
   def validate_solution(%Step{} = step, solution, validation_fn)
       when is_function(validation_fn, 1) do
     case step.exercise do
@@ -28,9 +28,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if a solution matches the expected output.
-  '''
+  """
   def validate_output(solution, expected_output)
       when is_binary(solution) and is_binary(expected_output) do
     solution = String.trim(solution)
@@ -43,9 +43,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
     end
   end
 
-  @doc '''
+  @doc """
   Validates code syntax.
-  '''
+  """
   def validate_syntax(code) when is_binary(code) do
     try do
       Code.string_to_quoted!(code)
@@ -56,9 +56,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
     end
   end
 
-  @doc '''
+  @doc """
   Validates code execution.
-  '''
+  """
   def validate_execution(code) when is_binary(code) do
     try do
       {result, _} = Code.eval_string(code)

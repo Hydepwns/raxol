@@ -1,5 +1,5 @@
 defmodule Raxol.System.Clipboard do
-  @moduledoc '''
+  @moduledoc """
   Provides consolidated access to the system clipboard across different operating systems.
 
   Handles interactions with platform-specific clipboard utilities like `pbcopy`/`pbpaste` (macOS),
@@ -7,15 +7,15 @@ defmodule Raxol.System.Clipboard do
 
   Requires `xclip` to be installed on Linux systems using X11.
   Wayland clipboard access might require different utilities not currently handled.
-  '''
+  """
 
   @behaviour Raxol.Core.Clipboard.Behaviour
 
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Copies the given text to the system clipboard.
-  '''
+  """
   @impl Raxol.Core.Clipboard.Behaviour
   @spec copy(String.t()) :: :ok | {:error, atom() | String.t()}
   def copy(text) when is_binary(text) do
@@ -85,12 +85,12 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
-  @doc '''
+  @doc """
   Retrieves text from the system clipboard.
 
   Returns `{:ok, text}` on success, or `{:error, reason}` on failure.
   An empty clipboard is considered success and returns `{:ok, ""}`.
-  '''
+  """
   @impl Raxol.Core.Clipboard.Behaviour
   @spec paste() :: {:ok, String.t()} | {:error, atom() | String.t()}
   def paste do

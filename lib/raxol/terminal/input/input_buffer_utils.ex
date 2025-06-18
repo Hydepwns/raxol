@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Input.InputBufferUtils do
-  @moduledoc '''
+  @moduledoc """
   Utility functions for Raxol.Terminal.Input.InputBuffer.
-  '''
+  """
 
   # --- Wrapping Logic ---
 

@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Events.Subscription do
-  @moduledoc '''
+  @moduledoc """
   Provides helpers for managing event subscriptions.
 
   This module makes it easy to:
@@ -7,14 +7,14 @@ defmodule Raxol.Core.Events.Subscription do
   * Filter events based on criteria
   * Handle event cleanup
   * Manage multiple subscriptions
-  '''
+  """
 
   alias Raxol.Core.Events.{Manager}
 
   @type subscription_ref :: reference()
   @type subscription_opts :: keyword()
 
-  @doc '''
+  @doc """
   Subscribes to keyboard events with optional key filters.
 
   ## Options
@@ -24,7 +24,7 @@ defmodule Raxol.Core.Events.Subscription do
   ## Example
       subscribe_keyboard(keys: [:enter, :esc])
       subscribe_keyboard(exclude_keys: [:tab])
-  '''
+  """
   def subscribe_keyboard(opts \\ []) do
     keys = Keyword.get(opts, :keys)
     _exclude_keys = Keyword.get(opts, :exclude_keys, [])
@@ -39,7 +39,7 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:key], filter_opts)
   end
 
-  @doc '''
+  @doc """
   Subscribes to mouse events with optional button and position filters.
 
   ## Options
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Events.Subscription do
   ## Example
       subscribe_mouse(buttons: [:left, :right])
       subscribe_mouse(area: {0, 0, 10, 10})
-  '''
+  """
   def subscribe_mouse(opts \\ []) do
     buttons = Keyword.get(opts, :buttons)
     drag_only = Keyword.get(opts, :drag_only, false)
@@ -68,7 +68,7 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:mouse], filter_opts)
   end
 
-  @doc '''
+  @doc """
   Subscribes to window events with optional action filters.
 
   ## Options
@@ -76,7 +76,7 @@ defmodule Raxol.Core.Events.Subscription do
 
   ## Example
       subscribe_window(actions: [:resize])
-  '''
+  """
   def subscribe_window(opts \\ []) do
     actions = Keyword.get(opts, :actions)
 
@@ -90,7 +90,7 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:window], filter_opts)
   end
 
-  @doc '''
+  @doc """
   Subscribes to timer events with optional data matching.
 
   ## Options
@@ -98,7 +98,7 @@ defmodule Raxol.Core.Events.Subscription do
 
   ## Example
       subscribe_timer(match: :tick)
-  '''
+  """
   def subscribe_timer(opts \\ []) do
     match = Keyword.get(opts, :match)
 
@@ -112,7 +112,7 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:timer], filter_opts)
   end
 
-  @doc '''
+  @doc """
   Subscribes to custom events with data matching.
 
   ## Options
@@ -120,7 +120,7 @@ defmodule Raxol.Core.Events.Subscription do
 
   ## Example
       subscribe_custom(match: {:user_action, _})
-  '''
+  """
   def subscribe_custom(opts \\ []) do
     match = Keyword.get(opts, :match)
 
@@ -134,21 +134,21 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:custom], filter_opts)
   end
 
-  @doc '''
+  @doc """
   Unsubscribes from events using the subscription reference.
-  '''
-  def unsubscribe(ref) when is_reference(ref) do
+  """
+  def unsubscribe(ref) when is_integer(ref) do
     Manager.unsubscribe(ref)
   end
 
-  @doc '''
+  @doc """
   Unsubscribes from multiple subscriptions.
-  '''
+  """
   def unsubscribe_all(refs) when is_list(refs) do
     Enum.each(refs, &unsubscribe/1)
   end
 
-  @doc '''
+  @doc """
   Subscribes to a list of event types.
 
   ## Parameters
@@ -161,7 +161,7 @@ defmodule Raxol.Core.Events.Subscription do
 
   - `{:ok, list(subscription_ref())}` on success, containing a list of references for each subscription.
   - `{:error, reason}` if any subscription fails. Successfully created subscriptions before the failure will be automatically unsubscribed.
-  '''
+  """
   def events(event_types) when is_list(event_types) do
     do_subscribe_events(event_types, [])
   end

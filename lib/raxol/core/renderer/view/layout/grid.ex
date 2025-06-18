@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Renderer.View.Layout.Grid do
-  @moduledoc '''
+  @moduledoc """
   Handles grid-based layouts for the Raxol view system.
   Provides functionality for creating and managing grid layouts with customizable columns and rows.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Creates a new grid layout.
 
   ## Options
@@ -19,7 +19,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
       Grid.new(columns: 3, rows: 2)
       Grid.new(columns: [1, 2, 1], rows: ["auto", "1fr"])
-  '''
+  """
   def new(opts \\ []) do
     %{
       type: :grid,
@@ -32,9 +32,9 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     }
   end
 
-  @doc '''
+  @doc """
   Calculates the layout of a grid.
-  '''
+  """
   def calculate_layout(grid, available_size) do
     {width, height} = available_size
     {gap_x, gap_y} = grid.gap
@@ -112,9 +112,9 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     children
   end
 
-  @doc '''
+  @doc """
   Adds a child to the grid at the specified position.
-  '''
+  """
   def add_child(grid, child, {col, row}) do
     # Validate position
     valid_col = col >= 0 and col < length(grid.columns)

@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Selection.DropdownTest do
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
-    test 'initializes with default values when no props provided' do
+    test ~c"initializes with default values when no props provided" do
       state = Dropdown.init(%{id: :dd1})
       assert Map.get(state, :id) == :dd1
       assert Map.get(state, :options) == []
@@ -22,7 +22,7 @@ defmodule Raxol.UI.Components.Selection.DropdownTest do
       assert Map.get(Map.get(state, :list_state), :items) == []
     end
 
-    test 'initializes with provided values' do
+    test ~c"initializes with provided values" do
       on_change_func = fn _ -> :changed end
       options = ["one", "two", "three"]
 

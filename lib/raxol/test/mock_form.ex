@@ -1,11 +1,11 @@
 defmodule Form do
-  @moduledoc '''
+  @moduledoc """
   A simple mock Form component for testing button interactions.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Initialize the form component with default state.
-  '''
+  """
   def init(props \\ %{}) do
     {:ok,
      %{
@@ -16,9 +16,9 @@ defmodule Form do
      }}
   end
 
-  @doc '''
+  @doc """
   Handle events for the form component.
-  '''
+  """
   def handle_event(:clicked, state) do
     {
       %{state | submitted: true, button_clicked: true},
@@ -30,9 +30,9 @@ defmodule Form do
     {state, []}
   end
 
-  @doc '''
+  @doc """
   Render the form component.
-  '''
+  """
   def render(state) do
     # Just a stub for testing
     "Form Component: #{inspect(state)}"

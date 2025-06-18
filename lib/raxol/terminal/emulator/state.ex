@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Emulator.State do
-  @moduledoc '''
+  @moduledoc """
   Handles state management for the terminal emulator.
   Provides functions for managing terminal state, modes, and character sets.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -13,10 +13,10 @@ defmodule Raxol.Terminal.Emulator.State do
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
-  @doc '''
+  @doc """
   Sets a terminal mode.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  '''
+  """
   @spec set_mode(EmulatorStruct.t(), atom(), boolean()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def set_mode(%EmulatorStruct{} = emulator, mode, value)
@@ -34,10 +34,10 @@ defmodule Raxol.Terminal.Emulator.State do
     {:error, "Invalid mode: #{inspect(invalid_mode)}"}
   end
 
-  @doc '''
+  @doc """
   Gets the value of a terminal mode.
   Returns the mode value or nil if not set.
-  '''
+  """
   @spec get_mode(EmulatorStruct.t(), atom()) :: boolean() | nil
   def get_mode(%EmulatorStruct{} = emulator, mode) when is_atom(mode) do
     Map.get(emulator.mode_manager, mode)
@@ -47,10 +47,10 @@ defmodule Raxol.Terminal.Emulator.State do
     {:error, "Invalid mode: #{inspect(invalid_mode)}"}
   end
 
-  @doc '''
+  @doc """
   Sets the character set state.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  '''
+  """
   @spec set_charset_state(EmulatorStruct.t(), CharacterSets.charset_state()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def set_charset_state(%EmulatorStruct{} = emulator, charset_state) do
@@ -63,19 +63,19 @@ defmodule Raxol.Terminal.Emulator.State do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current character set state.
   Returns the current charset state.
-  '''
+  """
   @spec get_charset_state(EmulatorStruct.t()) :: CharacterSets.charset_state()
   def get_charset_state(%EmulatorStruct{} = emulator) do
     emulator.charset_state
   end
 
-  @doc '''
+  @doc """
   Pushes a new state onto the state stack.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  '''
+  """
   @spec push_state(EmulatorStruct.t()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def push_state(%EmulatorStruct{} = emulator) do
@@ -91,10 +91,10 @@ defmodule Raxol.Terminal.Emulator.State do
     end
   end
 
-  @doc '''
+  @doc """
   Pops a state from the state stack.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  '''
+  """
   @spec pop_state(EmulatorStruct.t()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def pop_state(%EmulatorStruct{} = emulator) do
@@ -107,19 +107,19 @@ defmodule Raxol.Terminal.Emulator.State do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the current state from the state stack.
   Returns the current state or nil if stack is empty.
-  '''
+  """
   @spec get_current_state(EmulatorStruct.t()) :: TerminalState.t() | nil
   def get_current_state(%EmulatorStruct{} = emulator) do
     Raxol.Terminal.ANSI.TerminalState.current(emulator.state)
   end
 
-  @doc '''
+  @doc """
   Sets the memory limit for the terminal.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  '''
+  """
   @spec set_memory_limit(EmulatorStruct.t(), non_neg_integer()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def set_memory_limit(%EmulatorStruct{} = emulator, limit)
@@ -131,19 +131,19 @@ defmodule Raxol.Terminal.Emulator.State do
     {:error, "Invalid memory limit: #{inspect(invalid_limit)}"}
   end
 
-  @doc '''
+  @doc """
   Gets the current memory limit.
   Returns the memory limit.
-  '''
+  """
   @spec get_memory_limit(EmulatorStruct.t()) :: non_neg_integer()
   def get_memory_limit(%EmulatorStruct{} = emulator) do
     emulator.memory_limit
   end
 
-  @doc '''
+  @doc """
   Sets the current hyperlink URL.
   Returns {:ok, updated_emulator}.
-  '''
+  """
   @spec set_hyperlink_url(EmulatorStruct.t(), String.t() | nil) ::
           {:ok, EmulatorStruct.t()}
   def set_hyperlink_url(%EmulatorStruct{} = emulator, url)
@@ -155,19 +155,19 @@ defmodule Raxol.Terminal.Emulator.State do
     {:error, "Invalid hyperlink URL: #{inspect(invalid_url)}"}
   end
 
-  @doc '''
+  @doc """
   Gets the current hyperlink URL.
   Returns the current hyperlink URL or nil.
-  '''
+  """
   @spec get_hyperlink_url(EmulatorStruct.t()) :: String.t() | nil
   def get_hyperlink_url(%EmulatorStruct{} = emulator) do
     emulator.current_hyperlink_url
   end
 
-  @doc '''
+  @doc """
   Sets the tab stops for the terminal.
   Returns {:ok, updated_emulator}.
-  '''
+  """
   @spec set_tab_stops(EmulatorStruct.t(), MapSet.t()) ::
           {:ok, EmulatorStruct.t()}
   def set_tab_stops(%EmulatorStruct{} = emulator, tab_stops)
@@ -179,10 +179,10 @@ defmodule Raxol.Terminal.Emulator.State do
     {:error, "Invalid tab stops: #{inspect(invalid_tab_stops)}"}
   end
 
-  @doc '''
+  @doc """
   Gets the current tab stops.
   Returns the current tab stops.
-  '''
+  """
   @spec get_tab_stops(EmulatorStruct.t()) :: MapSet.t()
   def get_tab_stops(%EmulatorStruct{} = emulator) do
     emulator.tab_stops

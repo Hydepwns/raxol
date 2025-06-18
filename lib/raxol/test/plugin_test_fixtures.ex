@@ -1,11 +1,11 @@
 defmodule Raxol.Test.PluginTestFixtures do
-  @moduledoc '''
+  @moduledoc """
   Test fixtures for plugin-related tests.
 
   Each plugin in this module is designed to be isolated and self-contained,
   with clear state management and error handling. Plugins are designed to be
   used in parallel test runs without interference.
-  '''
+  """
 
   # Test plugin that implements the Plugin behaviour correctly
   defmodule TestPlugin do
@@ -207,8 +207,9 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Use a timer to simulate a timeout instead of sleeping forever
-      Process.send_after(self(), :timeout_simulated, 100)
-
+      timer_id = System.unique_integer([:positive])
+      Process.send_after(self(), {:timeout_simulated, timer_id}, 100)
+      # Store timer_id in state if needed
       receive do
         :timeout_simulated -> {:error, :timeout_simulated}
       end

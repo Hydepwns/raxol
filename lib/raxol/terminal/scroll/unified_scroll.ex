@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Scroll.UnifiedScroll do
-  @moduledoc '''
+  @moduledoc """
   Unified scroll management system for the terminal.
 
   This module consolidates all scroll-related functionality including:
@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   - Scroll region handling
   - Memory management
   - Performance optimization
-  '''
+  """
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -37,9 +37,9 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     :cache
   ]
 
-  @doc '''
+  @doc """
   Creates a new scroll buffer with the given dimensions and configuration.
-  '''
+  """
   def new(max_height, memory_limit \\ 5_000_000) do
     %__MODULE__{
       buffer: [],
@@ -54,9 +54,9 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     }
   end
 
-  @doc '''
+  @doc """
   Adds a line to the scroll buffer.
-  '''
+  """
   def add_line(%__MODULE__{} = scroll, line) do
     new_buffer = [line | scroll.buffer]
 
@@ -89,9 +89,9 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     }
   end
 
-  @doc '''
+  @doc """
   Gets a view of the scroll buffer at the current position.
-  '''
+  """
   def get_view(%__MODULE__{} = scroll, view_height) do
     cache_key = {:view, scroll.position, view_height}
 
@@ -106,9 +106,9 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     end
   end
 
-  @doc '''
+  @doc """
   Scrolls the buffer by the given amount.
-  '''
+  """
   def scroll(%__MODULE__{} = scroll, amount) do
     new_position =
       :erlang.max(0, :erlang.min(scroll.position + amount, scroll.height))
@@ -117,9 +117,9 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     %{scroll | position: new_position, cache: %{}}
   end
 
-  @doc '''
+  @doc """
   Scrolls the buffer in the specified direction by the given amount.
-  '''
+  """
   def scroll(%__MODULE__{} = scroll, direction, amount) do
     case direction do
       :up -> scroll(scroll, -amount)
@@ -128,9 +128,9 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     end
   end
 
-  @doc '''
+  @doc """
   Sets the scroll region.
-  '''
+  """
   def set_scroll_region(%__MODULE__{} = scroll, top, bottom)
       when is_integer(top) and is_integer(bottom) and top < bottom do
     %{scroll | scroll_region: {top, bottom}}
@@ -140,30 +140,30 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     scroll
   end
 
-  @doc '''
+  @doc """
   Clears the scroll region.
-  '''
+  """
   def clear_scroll_region(%__MODULE__{} = scroll) do
     %{scroll | scroll_region: nil}
   end
 
-  @doc '''
+  @doc """
   Gets the current scroll position.
-  '''
+  """
   def get_position(%__MODULE__{} = scroll) do
     scroll.position
   end
 
-  @doc '''
+  @doc """
   Gets the total height of the scroll buffer.
-  '''
+  """
   def get_height(%__MODULE__{} = scroll) do
     scroll.height
   end
 
-  @doc '''
+  @doc """
   Gets the visible region of the scroll buffer.
-  '''
+  """
   def get_visible_region(%__MODULE__{} = scroll) do
     case scroll.scroll_region do
       nil -> {0, scroll.height - 1}
@@ -171,16 +171,16 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     end
   end
 
-  @doc '''
+  @doc """
   Clears the scroll buffer.
-  '''
+  """
   def clear(%__MODULE__{} = scroll) do
     %{scroll | buffer: [], position: 0, height: 0, memory_usage: 0, cache: %{}}
   end
 
-  @doc '''
+  @doc """
   Updates the maximum height of the scroll buffer.
-  '''
+  """
   def set_max_height(%__MODULE__{} = scroll, new_max_height)
       when is_integer(new_max_height) and new_max_height >= 0 do
     new_buffer =
@@ -203,24 +203,24 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     }
   end
 
-  @doc '''
+  @doc """
   Resizes the scroll buffer to the new height.
-  '''
+  """
   def resize(%__MODULE__{} = scroll, new_height) do
     %{scroll | height: new_height, cache: %{}}
   end
 
-  @doc '''
+  @doc """
   Updates the scroll buffer with new commands.
-  '''
+  """
   def update(scroll_buffer, _commands) do
     # Implementation for updating scroll buffer
     scroll_buffer
   end
 
-  @doc '''
+  @doc """
   Cleans up the scroll buffer.
-  '''
+  """
   def cleanup(_scroll_buffer) do
     # Implementation for cleanup
     :ok

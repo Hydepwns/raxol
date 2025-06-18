@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Script.Hello do
-  @moduledoc '''
+  @moduledoc """
   A simple hello world script for testing the Raxol terminal emulator.
-  '''
+  """
 
   def hello(name \\ "World") do
     "Hello, #{name}!"

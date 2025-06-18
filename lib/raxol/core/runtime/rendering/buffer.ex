@@ -1,14 +1,14 @@
 defmodule Raxol.Core.Runtime.Rendering.Buffer do
-  @moduledoc '''
+  @moduledoc """
   Provides a screen buffer implementation for efficient rendering in Raxol applications.
 
   This module is responsible for:
   * Maintaining the screen buffer state
   * Calculating diffs between buffer states
   * Optimizing rendering by only updating changed cells
-  '''
+  """
 
-  @typedoc '''
+  @typedoc """
   A cell represents a single character position on the screen.
 
   It is represented as a tuple with the following elements:
@@ -18,14 +18,14 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
   - `fg`: Foreground color
   - `bg`: Background color
   - `attrs`: List of attributes (e.g., :bold, :underline)
-  '''
+  """
   @type cell :: {integer, integer, String.t(), term, term, list}
 
-  @typedoc '''
+  @typedoc """
   A buffer is a map containing cells indexed by their position.
 
   The buffer also contains metadata about its dimensions.
-  '''
+  """
   @type t :: %__MODULE__{
           cells: %{{integer, integer} => {String.t(), term, term, list}},
           width: integer,
@@ -38,7 +38,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
             height: 0,
             dirty: true
 
-  @doc '''
+  @doc """
   Creates a new empty buffer with the given dimensions.
 
   ## Parameters
@@ -47,7 +47,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   A new buffer struct.
-  '''
+  """
   def new(width, height) do
     %__MODULE__{
       cells: %{},
@@ -57,7 +57,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     }
   end
 
-  @doc '''
+  @doc """
   Builds a buffer from a list of cells.
 
   ## Parameters
@@ -67,7 +67,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   A new buffer containing the cells.
-  '''
+  """
   def from_cells(cells, width, height) do
     # Convert list of cells to map for efficient lookup
     cell_map =
@@ -88,7 +88,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     }
   end
 
-  @doc '''
+  @doc """
   Gets the cell at the specified position.
 
   ## Parameters
@@ -98,7 +98,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   The cell tuple if found, nil otherwise.
-  '''
+  """
   def get_cell(buffer, x, y) do
     case Map.get(buffer.cells, {x, y}) do
       nil -> nil
@@ -106,7 +106,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     end
   end
 
-  @doc '''
+  @doc """
   Sets a cell in the buffer.
 
   ## Parameters
@@ -120,7 +120,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   Updated buffer.
-  '''
+  """
   def set_cell(buffer, x, y, ch, fg, bg, attrs \\ []) do
     if x >= 0 and x < buffer.width and y >= 0 and y < buffer.height do
       updated_cells = Map.put(buffer.cells, {x, y}, {ch, fg, bg, attrs})
@@ -131,7 +131,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     end
   end
 
-  @doc '''
+  @doc """
   Clears the buffer by removing all cells.
 
   ## Parameters
@@ -139,12 +139,12 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   Cleared buffer.
-  '''
+  """
   def clear(buffer) do
     %{buffer | cells: %{}, dirty: true}
   end
 
-  @doc '''
+  @doc """
   Resizes the buffer to new dimensions.
 
   Cells outside the new dimensions are discarded.
@@ -156,7 +156,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   Resized buffer.
-  '''
+  """
   def resize(buffer, width, height) do
     # Filter out cells that would be outside the new dimensions
     new_cells =
@@ -169,7 +169,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     %{buffer | cells: new_cells, width: width, height: height, dirty: true}
   end
 
-  @doc '''
+  @doc """
   Computes the diff between two buffers.
 
   The diff contains only the cells that need to be updated.
@@ -180,7 +180,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   List of changed cells.
-  '''
+  """
   def diff(old_buffer, new_buffer) do
     # Start with cells in new_buffer that differ from old_buffer
     changed_cells =
@@ -214,7 +214,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     changed_cells ++ cells_to_clear
   end
 
-  @doc '''
+  @doc """
   Converts the buffer to a flat list of cells.
 
   ## Parameters
@@ -222,7 +222,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   List of cells.
-  '''
+  """
   def to_cells(buffer) do
     buffer.cells
     |> Enum.map(fn {{x, y}, {ch, fg, bg, attrs}} ->
@@ -230,7 +230,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     end)
   end
 
-  @doc '''
+  @doc """
   Merges another buffer's cells into this buffer.
 
   Cells from the other buffer overwrite cells in this buffer.
@@ -243,7 +243,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
 
   ## Returns
   Updated buffer.
-  '''
+  """
   def merge(buffer, other, offset_x \\ 0, offset_y \\ 0) do
     # Transform and merge cells from the other buffer
     merged_cells =

@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Script.UnifiedScript do
-  @moduledoc '''
+  @moduledoc """
   Unified scripting system for the Raxol terminal emulator.
   Handles script execution, management, and integration with the terminal.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -27,86 +27,86 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Loads a script from a file or string source.
-  '''
+  """
   def load_script(source, type, opts \\ []) do
     GenServer.call(__MODULE__, {:load_script, source, type, opts})
   end
 
-  @doc '''
+  @doc """
   Unloads a script by its ID.
-  '''
+  """
   def unload_script(script_id) do
     GenServer.call(__MODULE__, {:unload_script, script_id})
   end
 
-  @doc '''
+  @doc """
   Gets the state of a script.
-  '''
+  """
   def get_script_state(script_id) do
     GenServer.call(__MODULE__, {:get_script_state, script_id})
   end
 
-  @doc '''
+  @doc """
   Updates a script's configuration.
-  '''
+  """
   def update_script_config(script_id, config) do
     GenServer.call(__MODULE__, {:update_script_config, script_id, config})
   end
 
-  @doc '''
+  @doc """
   Executes a script with optional arguments.
-  '''
+  """
   def execute_script(script_id, args \\ []) do
     GenServer.call(__MODULE__, {:execute_script, script_id, args})
   end
 
-  @doc '''
+  @doc """
   Pauses a running script.
-  '''
+  """
   def pause_script(script_id) do
     GenServer.call(__MODULE__, {:pause_script, script_id})
   end
 
-  @doc '''
+  @doc """
   Resumes a paused script.
-  '''
+  """
   def resume_script(script_id) do
     GenServer.call(__MODULE__, {:resume_script, script_id})
   end
 
-  @doc '''
+  @doc """
   Stops a running script.
-  '''
+  """
   def stop_script(script_id) do
     GenServer.call(__MODULE__, {:stop_script, script_id})
   end
 
-  @doc '''
+  @doc """
   Gets the output of a script.
-  '''
+  """
   def get_script_output(script_id) do
     GenServer.call(__MODULE__, {:get_script_output, script_id})
   end
 
-  @doc '''
+  @doc """
   Gets all loaded scripts.
-  '''
+  """
   def get_scripts(opts \\ []) do
     GenServer.call(__MODULE__, {:get_scripts, opts})
   end
 
-  @doc '''
+  @doc """
   Exports a script to a file.
-  '''
+  """
   def export_script(script_id, path) do
     GenServer.call(__MODULE__, {:export_script, script_id, path})
   end
 
-  @doc '''
+  @doc """
   Imports a script from a file.
-  '''
+  """
   def import_script(path, opts \\ []) do
     GenServer.call(__MODULE__, {:import_script, path, opts})
   end

@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
-  @moduledoc '''
+  @moduledoc """
   Handles character set translations and mappings.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Translates a character using the active character set.
-  '''
+  """
   def translate_char(codepoint, active_set, single_shift)
       when is_integer(codepoint) do
     set = single_shift || active_set
@@ -34,9 +34,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     other
   end
 
-  @doc '''
+  @doc """
   Translates a string using the active character set.
-  '''
+  """
   def translate_string(string, active_set, single_shift) do
     string
     |> String.to_charlist()

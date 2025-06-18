@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.Emitter do
-  @moduledoc '''
+  @moduledoc """
   ANSI escape sequence generation module.
 
   Provides functions for generating ANSI escape sequences for terminal control:
@@ -15,9 +15,9 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   * Text attributes (bold, underline, etc.)
   * Color control (foreground, background)
   * Terminal mode control
-  '''
+  """
 
-  @doc '''
+  @doc """
   Generates ANSI sequences for cursor movement.
 
   ## Parameters
@@ -27,7 +27,7 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   ## Returns
 
   The ANSI escape sequence for the requested cursor movement.
-  '''
+  """
   def cursor_up(n \\ 1), do: "\e[#{n}A"
   def cursor_down(n \\ 1), do: "\e[#{n}B"
   def cursor_forward(n \\ 1), do: "\e[#{n}C"
@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   def cursor_show, do: "\e[?25h"
   def cursor_hide, do: "\e[?25l"
 
-  @doc '''
+  @doc """
   Generates ANSI sequences for screen manipulation.
 
   ## Parameters
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   ## Returns
 
   The ANSI escape sequence for the requested screen operation.
-  '''
+  """
   def clear_screen, do: "\e[2J"
   def clear_screen_from_cursor, do: "\e[0J"
   def clear_screen_to_cursor, do: "\e[1J"
@@ -58,13 +58,13 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   def scroll_up_ansi(n \\ 1), do: "\e[#{n}S"
   def scroll_down_ansi(n \\ 1), do: "\e[#{n}T"
 
-  @doc '''
+  @doc """
   Generates ANSI sequences for text attributes.
 
   ## Returns
 
   The ANSI escape sequence for the requested text attribute.
-  '''
+  """
   def reset_attributes, do: "\e[0m"
   def bold, do: "\e[1m"
   def faint, do: "\e[2m"
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   def no_conceal, do: "\e[28m"
   def no_strikethrough, do: "\e[29m"
 
-  @doc '''
+  @doc """
   Generates ANSI sequences for colors.
 
   ## Parameters
@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   ## Returns
 
   The ANSI escape sequence for the requested color.
-  '''
+  """
   def foreground(color_code) when color_code in 0..15,
     do: "\e[38;5;#{color_code}m"
 
@@ -141,9 +141,9 @@ defmodule Raxol.Terminal.ANSI.Emitter do
     "\e[48;2;#{r};#{g};#{b}m"
   end
 
-  @doc '''
+  @doc """
   Generates ANSI sequences for terminal modes.
-  '''
+  """
   def set_mode(mode), do: "\e[?#{mode}h"
   def reset_mode(mode), do: "\e[?#{mode}l"
   def alternate_buffer_on, do: set_mode(1049)

@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Dashboard.Widgets.TextInputWidget do
-  @moduledoc '''
+  @moduledoc """
   A dashboard widget containing a text input.
-  '''
+  """
 
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
@@ -49,13 +49,13 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.TextInputWidget do
     {state, []}
   end
 
-  @doc '''
+  @doc """
   Renders the text input widget content.
 
   Requires props:
   - `widget_config`: The configuration map for the widget (%{id: _, type: _, title: _, ...}).
   - `app_text`: The current text value from the main application model.
-  '''
+  """
   @impl Raxol.UI.Components.Base.Component
   def render(state, _props) do
     UI.box title: state.title, id: state.id, border: :single do

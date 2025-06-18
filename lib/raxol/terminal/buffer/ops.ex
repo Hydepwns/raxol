@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Buffer.Ops do
-  @moduledoc '''
+  @moduledoc """
   Delegates buffer operations to Raxol.Terminal.Buffer.Operations.
   This module exists to resolve undefined function errors for BufferOps.*
-  '''
+  """
 
   alias Raxol.Terminal.Buffer.Operations, as: Impl
 

@@ -8,17 +8,20 @@ defmodule Raxol.Examples.ProgressBarDemo do
 
   @impl Raxol.Component
   def mount(_params, _session, socket) do
-    socket = assign(socket,
-      basic_progress: 0,
-      block_progress: 0,
-      custom_progress: 0,
-      gradient_progress: 0,
-      running: true
-    )
+    socket =
+      assign(socket,
+        basic_progress: 0,
+        block_progress: 0,
+        custom_progress: 0,
+        gradient_progress: 0,
+        running: true
+      )
+
     # Start the timer if running
     if socket.assigns.running do
       schedule_tick()
     end
+
     {:ok, socket}
   end
 
@@ -31,12 +34,14 @@ defmodule Raxol.Examples.ProgressBarDemo do
         # Schedule next tick
         schedule_tick()
         # Update progress
-        new_socket = assign(socket, %{
+        new_socket =
+          assign(socket, %{
             basic_progress: min(socket.assigns.basic_progress + 5, 100),
             block_progress: min(socket.assigns.block_progress + 3, 100),
             custom_progress: min(socket.assigns.custom_progress + 7, 100),
             gradient_progress: min(socket.assigns.gradient_progress + 4, 100)
-        })
+          })
+
         {:noreply, new_socket}
       end
     else
@@ -47,20 +52,23 @@ defmodule Raxol.Examples.ProgressBarDemo do
 
   @impl Raxol.Component
   def handle_event("restart", _params, socket) do
-     new_socket = assign(socket, %{
+    new_socket =
+      assign(socket, %{
         basic_progress: 0,
         block_progress: 0,
         custom_progress: 0,
         gradient_progress: 0,
         running: true
-     })
-     # Schedule the first tick after restart
-     schedule_tick()
+      })
+
+    # Schedule the first tick after restart
+    schedule_tick()
     {:noreply, new_socket}
   end
 
   defp schedule_tick() do
-    Process.send_after(self(), :tick, 100)
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:tick, timer_id}, 100)
   end
 
   @impl Raxol.Component

@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Base.Lifecycle do
-  @moduledoc '''
+  @moduledoc """
   Provides component lifecycle hooks and management for UI components.
 
   This module handles:
@@ -7,11 +7,11 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   - Update propagation to components
   - Component unmounting and cleanup
   - Lifecycle event tracking
-  '''
+  """
 
   alias Raxol.UI.Components.Base.Component
 
-  @doc '''
+  @doc """
   Mounts a component, initializing its state and triggering mount-time effects.
 
   ## Parameters
@@ -23,7 +23,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   ## Returns
 
   The mounted component
-  '''
+  """
   @spec mount(Component.t(), map(), map()) :: Component.t()
   def mount(component, props \\ %{}, context \\ %{}) do
     # Apply initial props
@@ -37,7 +37,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     end
   end
 
-  @doc '''
+  @doc """
   Updates a component with new props.
 
   ## Parameters
@@ -49,7 +49,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   ## Returns
 
   The updated component
-  '''
+  """
   @spec update(Component.t(), map(), map()) :: Component.t()
   def update(component, props, context \\ %{}) do
     # Apply the new props
@@ -63,7 +63,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     end
   end
 
-  @doc '''
+  @doc """
   Unmounts a component, allowing it to clean up resources.
 
   ## Parameters
@@ -74,7 +74,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   ## Returns
 
   The unmounted component, typically for tracking/debugging only
-  '''
+  """
   @spec unmount(Component.t(), map()) :: Component.t()
   def unmount(component, context \\ %{}) do
     # Call component's unmount handler if it exists
@@ -85,7 +85,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     end
   end
 
-  @doc '''
+  @doc """
   Renders a component, creating its view representation.
 
   This is a wrapper around the component's render function that ensures
@@ -99,7 +99,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   ## Returns
 
   The rendered view representation and updated component state
-  '''
+  """
   @spec render(Component.t(), map()) :: {Component.t(), map()}
   def render(component, context) do
     # Call the component's render function
@@ -117,7 +117,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     {debug_component, view}
   end
 
-  @doc '''
+  @doc """
   Processes an event on a component.
 
   ## Parameters
@@ -131,7 +131,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   `{:update, updated_component}` if the component state changed,
   `{:handled, component}` if the event was handled but state didn't change,
   `:passthrough` if the event wasn't handled by the component.
-  '''
+  """
   @spec process_event(Component.t(), map(), map()) ::
           {:update, Component.t()} | {:handled, Component.t()} | :passthrough
   def process_event(component, event, context) do
@@ -147,7 +147,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     debug_component.__struct__.handle_event(debug_component, event, context)
   end
 
-  @doc '''
+  @doc """
   Adds a lifecycle event to the component for debugging purposes.
 
   ## Parameters
@@ -158,7 +158,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   ## Returns
 
   The component with the added lifecycle event
-  '''
+  """
   @spec add_lifecycle_event(Component.t(), term()) :: Component.t()
   def add_lifecycle_event(component, event) do
     lifecycle_events = Map.get(component, :__lifecycle_events__, [])
@@ -168,7 +168,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     ])
   end
 
-  @doc '''
+  @doc """
   Gets the lifecycle events recorded for a component.
 
   ## Parameters
@@ -178,7 +178,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   ## Returns
 
   List of lifecycle events with timestamps
-  '''
+  """
   @spec get_lifecycle_events(Component.t()) :: [{term(), integer()}]
   def get_lifecycle_events(component) do
     Map.get(component, :__lifecycle_events__, [])

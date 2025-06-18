@@ -1,11 +1,11 @@
 defmodule Raxol.Animation.Easing do
-  @moduledoc '''
+  @moduledoc """
   Provides standard easing functions for animations.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Calculates the eased value for a given progress `t` (0.0 to 1.0).
-  '''
+  """
   def calculate_value(:linear, t), do: t
 
   # Quadratic easing functions

@@ -1,5 +1,5 @@
 defmodule Raxol.Examples.FocusRingShowcase do
-  @moduledoc '''
+  @moduledoc """
   Showcase for the enhanced FocusRing component with various styling options.
 
   This example demonstrates:
@@ -7,7 +7,7 @@ defmodule Raxol.Examples.FocusRingShowcase do
   - Component-specific styling (button, text_input, checkbox)
   - State-based styling (normal, active, disabled)
   - Accessibility integration (high contrast mode, reduced motion)
-  '''
+  """
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements

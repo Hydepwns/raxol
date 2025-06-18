@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Metrics.Aggregator do
-  @moduledoc '''
+  @moduledoc """
   Metric aggregation system for the Raxol metrics.
 
   This module handles:
@@ -8,7 +8,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
   - Metric grouping and categorization
   - Aggregation rules and policies
   - Real-time aggregation updates
-  '''
+  """
 
   use GenServer
   alias Raxol.Core.Metrics.UnifiedCollector
@@ -33,44 +33,44 @@ defmodule Raxol.Core.Metrics.Aggregator do
     update_interval: 60
   }
 
-  @doc '''
+  @doc """
   Starts the metric aggregator.
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Adds a new aggregation rule.
-  '''
+  """
   def add_rule(rule) do
     GenServer.call(__MODULE__, {:add_rule, rule})
   end
 
-  @doc '''
+  @doc """
   Gets aggregated metrics for a specific rule.
-  '''
+  """
   def get_aggregated_metrics(rule_id) do
     GenServer.call(__MODULE__, {:get_aggregated_metrics, rule_id})
   end
 
-  @doc '''
+  @doc """
   Updates aggregation for a specific rule.
-  '''
+  """
   def update_aggregation(rule_id) do
     GenServer.call(__MODULE__, {:update_aggregation, rule_id})
   end
 
-  @doc '''
+  @doc """
   Gets all aggregation rules.
-  '''
+  """
   def get_rules do
     GenServer.call(__MODULE__, :get_rules)
   end
 
-  @doc '''
+  @doc """
   Calculates an aggregation of values using the specified method.
-  '''
+  """
   @spec calculate_aggregation(list(number()), atom()) :: number()
   def calculate_aggregation(values, :mean) do
     Enum.sum(values) / length(values)
@@ -199,9 +199,11 @@ defmodule Raxol.Core.Metrics.Aggregator do
   end
 
   defp schedule_update do
+    timer_id = System.unique_integer([:positive])
+
     Process.send_after(
       self(),
-      :update_aggregations,
+      {:aggregate, timer_id},
       @default_options.update_interval * 1000
     )
   end

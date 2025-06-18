@@ -5,7 +5,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
   alias Raxol.Style.Colors.Color
 
   describe "contrast checking" do
-    test 'check_contrast identifies sufficient contrast (AA)' do
+    test ~c"check_contrast identifies sufficient contrast (AA)" do
       # Black on White
       assert {:ok, ratio} = Accessibility.check_contrast("#000000", "#FFFFFF")
       assert ratio >= 4.5
@@ -15,7 +15,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       assert ratio >= 4.5
     end
 
-    test 'check_contrast identifies insufficient contrast (AA)' do
+    test ~c"check_contrast identifies insufficient contrast (AA)" do
       # Gray on Gray
       assert {:error, {:contrast_too_low, ratio, _}} =
                Accessibility.check_contrast("#777777", "#999999")
@@ -23,7 +23,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       assert ratio < 4.5
     end
 
-    test 'check_contrast respects WCAG level parameter' do
+    test ~c"check_contrast respects WCAG level parameter" do
       # Black/White passes AAA
       assert {:ok, _} = Accessibility.check_contrast("#000000", "#FFFFFF", :aaa)
 
@@ -34,7 +34,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       assert {:ok, _} = Accessibility.check_contrast("#767676", "#FFFFFF", :aa)
     end
 
-    test 'check_contrast respects text size parameter' do
+    test ~c"check_contrast respects text size parameter" do
       # Colors that fail AA normal but pass AA large
       fg = "#949494"
       bg = "#FFFFFF"
@@ -44,13 +44,13 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
   end
 
   describe "color suggestions" do
-    test 'suggest_accessible_color returns original color if already accessible' do
+    test ~c"suggest_accessible_color returns original color if already accessible" do
       color = "#000000"
       # Black on white is accessible
       assert ^color = Accessibility.suggest_accessible_color(color, "#FFFFFF")
     end
 
-    test 'suggest_accessible_color suggests darker color for light backgrounds' do
+    test ~c"suggest_accessible_color suggests darker color for light backgrounds" do
       # Light gray
       original = "#AAAAAA"
       suggested = Accessibility.suggest_accessible_color(original, "#FFFFFF")
@@ -63,7 +63,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       assert {:ok, _} = Accessibility.check_contrast(suggested, "#FFFFFF")
     end
 
-    test 'suggest_accessible_color suggests lighter color for dark backgrounds' do
+    test ~c"suggest_accessible_color suggests lighter color for dark backgrounds" do
       # Dark gray, changed from #777777
       original = "#222222"
       suggested = Accessibility.suggest_accessible_color(original, "#000000")
@@ -78,7 +78,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
   end
 
   describe "palette generation" do
-    test 'generate_accessible_palette creates a complete palette' do
+    test ~c"generate_accessible_palette creates a complete palette" do
       palette = Accessibility.generate_accessible_palette("#0077CC", "#FFFFFF")
       assert Map.has_key?(palette, :primary)
       assert Map.has_key?(palette, :secondary)
@@ -86,7 +86,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       # ... check other required keys
     end
 
-    test 'generate_accessible_palette ensures all colors are accessible' do
+    test ~c"generate_accessible_palette ensures all colors are accessible" do
       palette = Accessibility.generate_accessible_palette("#0077CC", "#FFFFFF")
       background = palette.background
 
@@ -97,7 +97,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       end
     end
 
-    test 'generate_accessible_palette adapts to dark backgrounds' do
+    test ~c"generate_accessible_palette adapts to dark backgrounds" do
       palette = Accessibility.generate_accessible_palette("#0077CC", "#000000")
       background = palette.background
 
@@ -114,7 +114,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
   end
 
   describe "color validation" do
-    test 'validate_colors returns ok for accessible combinations' do
+    test ~c"validate_colors returns ok for accessible combinations" do
       colors = %{
         text: "#000000",
         # Accessible link color on white
@@ -124,7 +124,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       assert {:ok, ^colors} = Accessibility.validate_colors(colors, "#FFFFFF")
     end
 
-    test 'validate_colors returns error for inaccessible combinations' do
+    test ~c"validate_colors returns error for inaccessible combinations" do
       colors = %{
         # Low contrast text on white
         text: "#777777",
@@ -140,7 +140,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
   end
 
   describe "palette adjustment" do
-    test 'adjust_palette makes all colors accessible' do
+    test ~c"adjust_palette makes all colors accessible" do
       colors = %{
         text: "#777777",
         link: "#999999",
@@ -163,23 +163,23 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
   end
 
   describe "text suitability" do
-    test 'suitable_for_text? returns true for accessible combinations' do
+    test ~c"suitable_for_text? returns true for accessible combinations" do
       assert Accessibility.suitable_for_text?("#000000", "#FFFFFF")
       assert Accessibility.suitable_for_text?("#FFFFFF", "#000000")
     end
 
-    test 'suitable_for_text? returns false for inaccessible combinations' do
+    test ~c"suitable_for_text? returns false for inaccessible combinations" do
       refute Accessibility.suitable_for_text?("#777777", "#FFFFFF")
     end
   end
 
   describe "optimal text color" do
-    test 'get_optimal_text_color returns black for light backgrounds' do
+    test ~c"get_optimal_text_color returns black for light backgrounds" do
       assert "#000000" == Accessibility.get_optimal_text_color("#FFFFFF")
       assert "#000000" == Accessibility.get_optimal_text_color("#CCCCCC")
     end
 
-    test 'get_optimal_text_color returns white for dark backgrounds' do
+    test ~c"get_optimal_text_color returns white for dark backgrounds" do
       assert "#FFFFFF" == Accessibility.get_optimal_text_color("#000000")
       assert "#FFFFFF" == Accessibility.get_optimal_text_color("#333333")
     end

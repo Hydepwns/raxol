@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.TabBar do
-  @moduledoc '''
+  @moduledoc """
   A tab bar component for Raxol.
 
   A tab bar component for navigating between different sections of a UI.
@@ -38,7 +38,7 @@ defmodule Raxol.UI.Components.TabBar do
 
   @behaviour Raxol.ComponentBehaviour
 
-  @doc \'''
+  @doc \"""
   Renders a tab bar with the given tabs, highlighting the active tab.
 
   ## Parameters
@@ -72,7 +72,7 @@ defmodule Raxol.UI.Components.TabBar do
     active_tab_style: %{fg: :white, bg: :green}
   )
   ```
-  '''
+  """
   def render(tabs, active_tab, on_change, opts \\ []) do
     require Raxol.View.Elements
 
@@ -115,7 +115,7 @@ defmodule Raxol.UI.Components.TabBar do
     end
   end
 
-  @doc '''
+  @doc """
   Creates a tabbed interface with content.
 
   This is a higher-level component that combines the tab bar with
@@ -153,7 +153,7 @@ defmodule Raxol.UI.Components.TabBar do
     &handle_tab_change/2
   )
   ```
-  '''
+  """
   def tabbed_view(tabs, active_tab, on_change, opts \\ []) do
     require Raxol.View.Elements
 

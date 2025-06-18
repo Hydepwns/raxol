@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Plugin.Extension do
-  @moduledoc '''
+  @moduledoc """
   Test extension plugin for the Raxol terminal emulator.
-  '''
+  """
 
   def run_extension(extension_name, args \\ []) do
     # Default extension configuration

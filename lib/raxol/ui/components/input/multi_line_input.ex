@@ -1,11 +1,11 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput do
-  @moduledoc '''
+  @moduledoc """
   A multi-line input component for text editing, supporting line wrapping, scrolling, selection, and accessibility.
 
   **BREAKING:** All styling is now theme-driven. The `style` field and `@default_style` are removed. Use the theme system for all appearance customization.
 
   Harmonized with modern Raxol component standards (style/theme merging, lifecycle hooks, accessibility props).
-  '''
+  """
 
   alias Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
@@ -61,9 +61,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   @spec init(map()) :: __MODULE__.t()
   @impl true
-  @doc '''
+  @doc """
   Initializes the MultiLineInput state, harmonizing style/theme/extra props and splitting lines for editing.
-  '''
+  """
   def init(props) do
     id = props[:id] || Raxol.Core.ID.generate()
     value = props[:value] || ""
@@ -107,16 +107,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     }
   end
 
-  @doc '''
+  @doc """
   Mounts the MultiLineInput component. Performs any setup needed after initialization.
-  '''
+  """
   @spec mount(__MODULE__.t()) :: __MODULE__.t()
   @impl true
   def mount(state), do: state
 
-  @doc '''
+  @doc """
   Unmounts the MultiLineInput component, performing any necessary cleanup.
-  '''
+  """
   @spec unmount(__MODULE__.t()) :: __MODULE__.t()
   @impl true
   def unmount(state), do: state
@@ -488,9 +488,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     {:noreply, state, nil}
   end
 
-  @doc '''
+  @doc """
   Handles events for the MultiLineInput component, such as keypresses, mouse events, and context changes.
-  '''
+  """
   @impl true
   def handle_event(event, _context, state) do
     # Delegate to the legacy EventHandler for translation
@@ -635,9 +635,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     {:noreply, ensure_cursor_visible(final_state), nil}
   end
 
-  @doc '''
+  @doc """
   Renders the MultiLineInput component using the current state and context.
-  '''
+  """
   @spec render(__MODULE__.t(), map()) :: any()
   @impl true
   def render(state, context) do

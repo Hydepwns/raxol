@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.ANSI.CharacterTranslations do
-  @moduledoc '''
+  @moduledoc """
   Provides character translation tables for different character sets.
   Maps characters between different character sets according to ANSI standards.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -430,7 +430,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
     dec_supplementary_graphics: @dec_supplementary_graphics_map
   }
 
-  @doc '''
+  @doc """
   Returns the US ASCII character set translation table.
 
   ## Returns
@@ -441,10 +441,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.us_ascii()
       %{...}
-  '''
+  """
   def us_ascii, do: @us_ascii_map
 
-  @doc '''
+  @doc """
   Returns the UK character set translation table.
 
   ## Returns
@@ -455,10 +455,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.uk()
       %{...}
-  '''
+  """
   def uk, do: @uk_map
 
-  @doc '''
+  @doc """
   Returns the French character set translation table.
 
   ## Returns
@@ -469,10 +469,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.french()
       %{...}
-  '''
+  """
   def french, do: @french_map
 
-  @doc '''
+  @doc """
   Returns the German character set translation table.
 
   ## Returns
@@ -483,10 +483,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.german()
       %{...}
-  '''
+  """
   def german, do: @german_map
 
-  @doc '''
+  @doc """
   Returns the Latin-1 character set translation table.
 
   ## Returns
@@ -497,10 +497,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.latin1()
       %{...}
-  '''
+  """
   def latin1, do: @latin1_map
 
-  @doc '''
+  @doc """
   Returns the DEC Special Graphics character set translation table.
 
   ## Returns
@@ -511,10 +511,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.dec_special()
       %{...}
-  '''
+  """
   def dec_special, do: @dec_special_graphics_map
 
-  @doc '''
+  @doc """
   Returns the DEC Supplementary character set translation table.
 
   ## Returns
@@ -525,10 +525,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.dec_supplementary()
       %{...}
-  '''
+  """
   def dec_supplementary, do: @dec_supplementary_map
 
-  @doc '''
+  @doc """
   Returns the DEC Technical character set translation table.
 
   ## Returns
@@ -539,10 +539,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.dec_technical()
       %{...}
-  '''
+  """
   def dec_technical, do: @dec_technical_map
 
-  @doc '''
+  @doc """
   Returns the DEC Supplementary Graphics character set translation table.
 
   ## Returns
@@ -553,10 +553,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.dec_supplementary_graphics()
       %{...}
-  '''
+  """
   def dec_supplementary_graphics, do: @dec_supplementary_graphics_map
 
-  @doc '''
+  @doc """
   Translates a character from the source character set to the target character set.
 
   ## Parameters
@@ -576,7 +576,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
       iex> Raxol.Terminal.ANSI.CharacterTranslations.translate_char(?a, :us_ascii)
       "a"
-  '''
+  """
   @spec translate_char(char_codepoint :: integer(), charset :: atom()) ::
           binary()
   def translate_char(char, charset) when is_integer(char) do
@@ -597,10 +597,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
     end
   end
 
-  @doc '''
+  @doc """
   Translates a string from the source character set to the target character set.
   Handles invalid bytes gracefully by passing them through as-is.
-  '''
+  """
   @spec translate_string(string :: String.t(), charset :: atom()) :: String.t()
   def translate_string(string, charset) when is_binary(string) do
     case :unicode.characters_to_list(string, :utf8) do
@@ -644,9 +644,9 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
     end
   end
 
-  @doc '''
+  @doc """
   Map of Unicode codepoints to their ANSI terminal equivalents.
-  '''
+  """
   def unicode_to_ansi do
     %{
       # NO-BREAK SPACE

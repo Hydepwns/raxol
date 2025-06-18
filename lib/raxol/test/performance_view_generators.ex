@@ -1,9 +1,9 @@
 # Remove unused import Raxol.Core.Renderer.View
 
 defmodule Raxol.Test.PerformanceViewGenerators do
-  @moduledoc '''
+  @moduledoc """
   Provides helper functions for generating complex view structures for performance tests.
-  '''
+  """
 
   require Raxol.Core.Renderer.View
 

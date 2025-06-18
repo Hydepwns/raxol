@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Visual do
-  @moduledoc '''
+  @moduledoc """
   Provides utilities for visual testing of Raxol components.
 
   This module handles:
@@ -24,7 +24,7 @@ defmodule Raxol.Test.Visual do
           end
         end
       end
-  '''
+  """
 
   alias Raxol.Test.TestHelper
   alias Raxol.Terminal.Buffer.Operations
@@ -36,7 +36,7 @@ defmodule Raxol.Test.Visual do
     end
   end
 
-  @doc '''
+  @doc """
   Sets up a component for visual testing.
 
   This function:
@@ -44,7 +44,7 @@ defmodule Raxol.Test.Visual do
   2. Sets up the render context
   3. Configures the test terminal
   4. Prepares snapshot directories
-  '''
+  """
   def setup_visual_component(module, props \\ %{}) do
     {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module, props)
 
@@ -72,7 +72,7 @@ defmodule Raxol.Test.Visual do
     Map.merge(component, %{render_context: render_context})
   end
 
-  @doc '''
+  @doc """
   Captures the rendered output of a component using a direct rendering pipeline.
   Ensures that the component is rendered in a controlled environment suitable for visual testing.
 
@@ -81,7 +81,7 @@ defmodule Raxol.Test.Visual do
   If `:render_context` or its keys are missing, defaults will be applied.
 
   Returns the terminal output as a string for comparison.
-  '''
+  """
   @spec capture_render(Raxol.Core.Types.Component.t() | map()) :: String.t()
   def capture_render(component_or_map_or_view, opts \\ []) do
     # IO.inspect("MARKER VISUAL_EX TOP CAPTURE_RENDER")
@@ -227,22 +227,22 @@ defmodule Raxol.Test.Visual do
     {view_map, width, height, theme}
   end
 
-  @doc '''
+  @doc """
   Verifies that a component renders as expected.
 
   Takes a function that can make assertions about the rendered output.
-  '''
+  """
   def assert_renders_as(component, assertions)
       when is_function(assertions, 1) do
     output = capture_render(component)
     assertions.(output)
   end
 
-  @doc '''
+  @doc """
   Creates or updates a snapshot of the component's rendered output.
 
   Used for visual regression testing.
-  '''
+  """
   def snapshot_component(component, name, context) do
     output = capture_render(component)
     snapshot_path = Path.join([context.snapshots_dir, "#{name}.snap"])
@@ -253,11 +253,11 @@ defmodule Raxol.Test.Visual do
     output
   end
 
-  @doc '''
+  @doc """
   Compares a component's current render with its snapshot.
 
   Returns a detailed diff if there are differences.
-  '''
+  """
   def compare_with_snapshot(component, name, context) do
     current = capture_render(component)
     snapshot_path = Path.join([context.snapshots_dir, "#{name}.snap"])
@@ -275,11 +275,11 @@ defmodule Raxol.Test.Visual do
     end
   end
 
-  @doc '''
+  @doc """
   Tests a component's rendering across different terminal sizes.
 
   Verifies responsive behavior and layout adaptability.
-  '''
+  """
   def test_responsive_rendering(component, sizes) when is_list(sizes) do
     Enum.map(sizes, fn {width, height} ->
       # Create an updated render_context for this specific size
@@ -301,11 +301,11 @@ defmodule Raxol.Test.Visual do
     end)
   end
 
-  @doc '''
+  @doc """
   Tests a component's rendering with different style themes.
 
   Verifies proper style application and theme switching.
-  '''
+  """
   def test_themed_rendering(component, themes) when is_map(themes) do
     Enum.map(themes, fn {name, partial_theme_map} ->
       # Get the original full theme struct from the component's render_context
@@ -328,11 +328,11 @@ defmodule Raxol.Test.Visual do
     end)
   end
 
-  # @doc '''
+  # @doc """
   # Verifies that a component's layout adapts correctly to its container.
   #
   # Tests proper sizing, positioning, and constraint handling.
-  # '''
+  # """
   # def verify_layout_constraints(component, constraints) do
   #   # Get current layout
   #   layout = get_component_layout(component)
@@ -354,10 +354,10 @@ defmodule Raxol.Test.Visual do
 
   # Private Helpers
 
-  @doc '''
+  @doc """
   Renders a component state within a controlled test environment.
   Accepts an optional context map.
-  '''
+  """
   def render_component(component_map, context \\ default_render_context()) do
     if !(is_map(component_map) and Map.has_key?(component_map, :module) and
            Map.has_key?(component_map, :state)) do

@@ -1,5 +1,5 @@
 defmodule Raxol.Core.UXRefinement do
-  @moduledoc '''
+  @moduledoc """
   User experience refinement module for the Raxol terminal UI.
 
   This module provides comprehensive UX features to enhance the terminal UI experience:
@@ -13,7 +13,7 @@ defmodule Raxol.Core.UXRefinement do
   * Accessibility Features - Screen reader support, high contrast, reduced motion, etc.
 
   All features can be enabled or disabled individually to customize the UX to your needs.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -33,7 +33,7 @@ defmodule Raxol.Core.UXRefinement do
 
   # --- End Module Helpers ---
 
-  @doc '''
+  @doc """
   Initialize the UX refinement system.
 
   This function sets up the basic infrastructure for UX refinement features.
@@ -43,7 +43,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.init()
       :ok
-  '''
+  """
   def init do
     # Initialize enabled features registry
     Process.put(:ux_refinement_features, MapSet.new())
@@ -60,7 +60,7 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  @doc '''
+  @doc """
   Enable a UX refinement feature.
 
   Available features:
@@ -86,7 +86,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.enable_feature(:accessibility, high_contrast: true)
       :ok
-  '''
+  """
   def enable_feature(feature, opts \\ [], user_preferences_pid_or_name)
 
   def enable_feature(:focus_management, _opts, user_preferences_pid_or_name) do
@@ -154,7 +154,7 @@ defmodule Raxol.Core.UXRefinement do
     enable_feature(feature, [], nil)
   end
 
-  @doc '''
+  @doc """
   Disable a previously enabled UX refinement feature.
 
   ## Parameters
@@ -165,7 +165,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.disable_feature(:hints)
       :ok
-  '''
+  """
   def disable_feature(feature)
 
   def disable_feature(:focus_management) do
@@ -244,7 +244,7 @@ defmodule Raxol.Core.UXRefinement do
     {:error, "Unknown feature: #{unknown_feature}"}
   end
 
-  @doc '''
+  @doc """
   Check if a UX refinement feature is enabled.
 
   ## Parameters
@@ -255,13 +255,13 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.feature_enabled?(:focus_management)
       true
-  '''
+  """
   def feature_enabled?(feature) do
     features = Process.get(:ux_refinement_features, MapSet.new())
     MapSet.member?(features, feature)
   end
 
-  @doc '''
+  @doc """
   Register a hint for a component.
 
   ## Parameters
@@ -273,7 +273,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.register_hint("search_button", "Search for content")
       :ok
-  '''
+  """
   def register_hint(component_id, hint) when is_binary(hint) do
     # Ensure hints feature is enabled
     ensure_feature_enabled(:hints, component_id)
@@ -285,7 +285,7 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  @doc '''
+  @doc """
   Register comprehensive hints for a component with multiple detail levels.
 
   ## Parameters
@@ -315,7 +315,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.register_component_hint("simple_button", "Click me")
       :ok
-  '''
+  """
   def register_component_hint(component_id, hint_info_string)
       when is_binary(hint_info_string) do
     register_component_hint(component_id, %{basic: hint_info_string})
@@ -341,7 +341,7 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  @doc '''
+  @doc """
   Get the hint for a component.
 
   This returns the basic hint by default. Use `get_component_hint/2` for
@@ -355,7 +355,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.get_hint("search_button")
       "Search for content"
-  '''
+  """
   def get_hint(component_id) do
     # Ensure hints feature is enabled
     ensure_feature_enabled(:hints, component_id)
@@ -370,7 +370,7 @@ defmodule Raxol.Core.UXRefinement do
     if hint_info, do: hint_info.basic, else: nil
   end
 
-  @doc '''
+  @doc """
   Get a specific hint level for a component.
 
   ## Parameters
@@ -382,7 +382,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.get_component_hint("search_button", :detailed)
       "Search for content in the application using keywords"
-  '''
+  """
   def get_component_hint(component_id, level)
       when level in [:basic, :detailed, :examples] do
     # Ensure hints feature is enabled
@@ -402,7 +402,7 @@ defmodule Raxol.Core.UXRefinement do
     end
   end
 
-  @doc '''
+  @doc """
   Get shortcuts for a component.
 
   ## Parameters
@@ -413,7 +413,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.get_component_shortcuts("search_button")
       [{"Enter", "Execute search"}, {"Alt+S", "Focus search"}]
-  '''
+  """
   def get_component_shortcuts(component_id) do
     # Ensure hints feature is enabled
     ensure_feature_enabled(:hints, component_id)
@@ -428,9 +428,9 @@ defmodule Raxol.Core.UXRefinement do
     if hint_info, do: hint_info.shortcuts, else: []
   end
 
-  @doc '''
+  @doc """
   Get accessibility metadata for a component.
-  '''
+  """
   def get_accessibility_metadata(component_id) do
     if feature_enabled?(:accessibility) do
       accessibility_module().get_element_metadata(component_id)
@@ -564,9 +564,9 @@ defmodule Raxol.Core.UXRefinement do
     )
   end
 
-  @doc '''
+  @doc """
   Display help for available keyboard shortcuts.
-  '''
+  """
   def show_shortcuts_help(user_preferences_pid_or_name) do
     ensure_feature_enabled(:keyboard_shortcuts, user_preferences_pid_or_name)
 
@@ -575,31 +575,31 @@ defmodule Raxol.Core.UXRefinement do
     )
   end
 
-  @doc '''
+  @doc """
   Set the active context for keyboard shortcuts.
-  '''
+  """
   def set_shortcuts_context(context) do
     ensure_feature_enabled(:keyboard_shortcuts, context)
     keyboard_shortcuts_module().set_context(context)
   end
 
-  @doc '''
+  @doc """
   Get all available shortcuts for a given context.
   If no context is provided, returns shortcuts for the current active context.
-  '''
+  """
   def get_available_shortcuts(context \\ nil) do
     ensure_feature_enabled(:keyboard_shortcuts, context)
     keyboard_shortcuts_module().get_shortcuts_for_context(context)
   end
 
-  @doc '''
+  @doc """
   Make an announcement for screen readers.
 
   ## Parameters
   * `message` - The message to announce
   * `opts` - Options for the announcement
   * `user_preferences_pid_or_name` - The PID or registered name of the UserPreferences process to use (required)
-  '''
+  """
   def announce(message, opts \\ [], user_preferences_pid_or_name) do
     if feature_enabled?(:accessibility) do
       accessibility_module().announce(
@@ -616,7 +616,7 @@ defmodule Raxol.Core.UXRefinement do
     end
   end
 
-  @doc '''
+  @doc """
   Register accessibility metadata for a component.
 
   ## Parameters
@@ -628,7 +628,7 @@ defmodule Raxol.Core.UXRefinement do
 
       iex> UXRefinement.register_accessibility_metadata("search_button", %{label: "Search"})
       :ok
-  '''
+  """
   def register_accessibility_metadata(component_id, metadata) do
     # Ensure accessibility feature is enabled or at least initialized for metadata storage
     # This function acts as a convenience wrapper.
@@ -648,9 +648,9 @@ defmodule Raxol.Core.UXRefinement do
     end
   end
 
-  @doc '''
+  @doc """
   Display help for available keyboard shortcuts (no user preferences context).
-  '''
+  """
   def show_shortcuts_help do
     show_shortcuts_help(nil)
   end

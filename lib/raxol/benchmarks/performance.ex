@@ -1,10 +1,10 @@
 defmodule Raxol.Benchmarks.Performance do
-  @moduledoc '''
+  @moduledoc """
   Performance benchmarking and validation tools for Raxol.
 
   This module provides utilities for measuring and validating performance metrics
   including rendering speed, memory usage, and event handling latency.
-  '''
+  """
 
   alias Raxol.System.Platform
   alias Raxol.Benchmarks.Performance.Rendering
@@ -14,7 +14,7 @@ defmodule Raxol.Benchmarks.Performance do
   alias Raxol.Benchmarks.Performance.Validation
   alias Raxol.Benchmarks.Performance.Reporting
 
-  @doc '''
+  @doc """
   Runs all performance benchmarks and returns the results.
 
   ## Options
@@ -36,7 +36,7 @@ defmodule Raxol.Benchmarks.Performance do
     metrics_validation: %{...}
   }
   ```
-  '''
+  """
   def run_all(opts \\ []) do
     ensure_keyword = fn
       kw when is_list(kw) and (kw == [] or is_tuple(hd(kw))) -> kw

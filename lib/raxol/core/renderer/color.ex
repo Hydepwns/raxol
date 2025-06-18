@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Renderer.Color do
-  @moduledoc '''
+  @moduledoc """
   Provides comprehensive color support for terminal rendering.
 
   Supports:
@@ -8,7 +8,7 @@ defmodule Raxol.Core.Renderer.Color do
   * True Color (24-bit)
   * Color themes
   * Terminal background detection
-  '''
+  """
 
   @type color :: ansi_16() | ansi_256() | true_color()
   @type ansi_16 ::
@@ -69,9 +69,9 @@ defmodule Raxol.Core.Renderer.Color do
     bright_white: 15
   }
 
-  @doc '''
+  @doc """
   Converts a color representation to its ANSI foreground escape code.
-  '''
+  """
   def to_ansi(color)
 
   def to_ansi(:default), do: "\e[39m"
@@ -108,9 +108,9 @@ defmodule Raxol.Core.Renderer.Color do
     |> to_ansi()
   end
 
-  @doc '''
+  @doc """
   Converts a color representation to its ANSI background escape code.
-  '''
+  """
   def to_bg_ansi(color)
 
   def to_bg_ansi(:default), do: "\e[49m"
@@ -147,10 +147,10 @@ defmodule Raxol.Core.Renderer.Color do
     |> to_bg_ansi()
   end
 
-  @doc '''
+  @doc """
   Detects the terminal's background color.
   Returns :light or :dark.
-  '''
+  """
   def detect_background do
     case System.get_env("COLORFGBG") do
       nil -> detect_background_fallback()
@@ -158,9 +158,9 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  @doc '''
+  @doc """
   Creates a color theme map.
-  '''
+  """
   def create_theme(colors) when is_map(colors) do
     processed_colors =
       colors
@@ -185,16 +185,16 @@ defmodule Raxol.Core.Renderer.Color do
 
   def create_theme(_), do: raise(ArgumentError, "Theme must be a map")
 
-  @doc '''
+  @doc """
   Returns the default color theme.
-  '''
+  """
   def default_theme do
     Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
   end
 
-  @doc '''
+  @doc """
   Converts a hex color string to RGB.
-  '''
+  """
   def hex_to_rgb("#" <> hex) do
     case String.length(hex) do
       6 ->
@@ -214,9 +214,9 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  @doc '''
+  @doc """
   Converts RGB values to the nearest ANSI 256 color code.
-  '''
+  """
   def rgb_to_ansi256({r, g, b}) do
     # 6x6x6 color cube
     if r == g and g == b do

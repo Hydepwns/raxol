@@ -1,5 +1,5 @@
 defmodule Raxol.Animation.Physics.ForceField do
-  @moduledoc '''
+  @moduledoc """
   Force field implementation for physics simulations.
 
   Force fields apply forces to physics objects within their influence.
@@ -10,7 +10,7 @@ defmodule Raxol.Animation.Physics.ForceField do
   * Vortex (spinning forces)
   * Noise (random forces based on position)
   * Custom (user-defined force function)
-  '''
+  """
 
   alias Raxol.Animation.Physics.Vector
 
@@ -29,14 +29,14 @@ defmodule Raxol.Animation.Physics.ForceField do
 
   defstruct type: :point,
             position: %Vector{},
-            direction: %Vector{x: 0, y: 1, z: 0},
+            direction: %Vector{x: +0.0, y: 1, z: +0.0},
             strength: 1.0,
             radius: 10.0,
             falloff: :quadratic,
             function: nil,
             properties: %{}
 
-  @doc '''
+  @doc """
   Creates a new point force field.
 
   A point force field applies forces radiating from or towards a point.
@@ -48,7 +48,7 @@ defmodule Raxol.Animation.Physics.ForceField do
   * `:strength` - Strength of the field (default: 1.0)
   * `:radius` - Radius of influence (default: 10.0)
   * `:falloff` - How force decreases with distance (:linear, :quadratic, :none) (default: :quadratic)
-  '''
+  """
   def point_field(opts \\ []) do
     %__MODULE__{
       type: :point,
@@ -59,7 +59,7 @@ defmodule Raxol.Animation.Physics.ForceField do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a new directional force field.
 
   A directional force field applies a constant force in a specific direction,
@@ -69,19 +69,19 @@ defmodule Raxol.Animation.Physics.ForceField do
 
   * `:direction` - Direction of the force (default: up)
   * `:strength` - Strength of the field (default: 1.0)
-  '''
+  """
   def directional_field(opts \\ []) do
     %__MODULE__{
       type: :directional,
       direction:
-        Keyword.get(opts, :direction, %Vector{x: 0, y: 1, z: 0})
+        Keyword.get(opts, :direction, %Vector{x: +0.0, y: 1, z: +0.0})
         |> Vector.normalize(),
       strength: Keyword.get(opts, :strength, 1.0),
       radius: :infinity
     }
   end
 
-  @doc '''
+  @doc """
   Creates a new vortex force field.
 
   A vortex force field applies spinning forces around an axis.
@@ -93,7 +93,7 @@ defmodule Raxol.Animation.Physics.ForceField do
   * `:strength` - Strength of the field (default: 1.0)
   * `:radius` - Radius of influence (default: 10.0)
   * `:falloff` - How force decreases with distance (:linear, :quadratic, :none) (default: :linear)
-  '''
+  """
   def vortex_field(opts \\ []) do
     %__MODULE__{
       type: :vortex,
@@ -107,7 +107,7 @@ defmodule Raxol.Animation.Physics.ForceField do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a new noise force field.
 
   A noise force field applies pseudo-random forces based on position.
@@ -117,7 +117,7 @@ defmodule Raxol.Animation.Physics.ForceField do
   * `:strength` - Strength of the field (default: 1.0)
   * `:scale` - Scale of the noise (default: 0.1)
   * `:seed` - Random seed (default: random)
-  '''
+  """
   def noise_field(opts \\ []) do
     %__MODULE__{
       type: :noise,
@@ -130,7 +130,7 @@ defmodule Raxol.Animation.Physics.ForceField do
     }
   end
 
-  @doc '''
+  @doc """
   Creates a new custom force field.
 
   A custom force field uses a user-provided function to calculate forces.
@@ -139,7 +139,7 @@ defmodule Raxol.Animation.Physics.ForceField do
 
   * `:function` - Function to calculate force (fn object, field -> force_vector end)
   * `:properties` - Additional properties for the function (default: %{})
-  '''
+  """
   def custom_field(function, opts \\ []) when is_function(function, 2) do
     %__MODULE__{
       type: :custom,
@@ -149,9 +149,9 @@ defmodule Raxol.Animation.Physics.ForceField do
     }
   end
 
-  @doc '''
+  @doc """
   Calculates the force applied by a field on an object.
-  '''
+  """
   def calculate_force(%__MODULE__{} = field, object) do
     case field.type do
       :point -> calculate_point_force(field, object)

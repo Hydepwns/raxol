@@ -1,12 +1,12 @@
 defmodule Raxol.Benchmarks.Performance.MemoryUsage do
-  @moduledoc '''
+  @moduledoc """
   Memory usage performance benchmark functions for Raxol.
-  '''
+  """
 
   # Alias functions from Rendering module needed here
   alias Raxol.Benchmarks.Performance.Rendering, as: RenderingBenchmark
 
-  @doc '''
+  @doc """
   Benchmarks memory usage patterns for components and rendering cycles.
 
   Measures:
@@ -14,7 +14,7 @@ defmodule Raxol.Benchmarks.Performance.MemoryUsage do
   - Memory growth during rendering
   - GC impact on performance
   - Memory leaks in long-running scenarios
-  '''
+  """
   def benchmark_memory_usage do
     IO.puts("Benchmarking memory usage...")
 

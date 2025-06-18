@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Render.UnifiedRenderer do
-  @moduledoc '''
+  @moduledoc """
   Provides a unified interface for terminal rendering operations.
-  '''
+  """
 
   use GenServer
 
@@ -28,73 +28,73 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the renderer.
-  '''
+  """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Renders the current state.
-  '''
+  """
   @spec render(t()) :: :ok
   def render(state) do
     GenServer.call(__MODULE__, {:render, state})
   end
 
-  @doc '''
+  @doc """
   Renders the current state with a specific renderer ID.
-  '''
+  """
   @spec render(t(), String.t()) :: :ok
   def render(state, _renderer_id) do
     GenServer.call(__MODULE__, {:render, state})
   end
 
-  @doc '''
+  @doc """
   Updates the renderer configuration.
-  '''
+  """
   @spec update_config(t(), map()) :: :ok
   def update_config(state, config) do
     GenServer.call(__MODULE__, {:update_config, state, config})
   end
 
-  @doc '''
+  @doc """
   Updates the renderer configuration with a single argument.
-  '''
+  """
   @spec update_config(map()) :: :ok
   def update_config(config) do
     GenServer.call(__MODULE__, {:update_config, nil, config})
   end
 
-  @doc '''
+  @doc """
   Cleans up resources.
-  '''
+  """
   @spec cleanup(t()) :: :ok
   def cleanup(state) do
     GenServer.call(__MODULE__, {:cleanup, state})
   end
 
-  @doc '''
+  @doc """
   Resizes the renderer.
-  '''
+  """
   @spec resize(non_neg_integer(), non_neg_integer()) :: :ok
   def resize(width, height) do
     GenServer.call(__MODULE__, {:resize, width, height})
   end
 
-  @doc '''
+  @doc """
   Sets cursor visibility.
-  '''
+  """
   @spec set_cursor_visibility(boolean()) :: :ok
   def set_cursor_visibility(visible) do
     GenServer.call(__MODULE__, {:set_cursor_visibility, visible})
   end
 
-  @doc '''
+  @doc """
   Sets the window title.
-  '''
+  """
   @spec set_title(String.t()) :: :ok
   def set_title(title) do
     GenServer.call(__MODULE__, {:set_title, title})

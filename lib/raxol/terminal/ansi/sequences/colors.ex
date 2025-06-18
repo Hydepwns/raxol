@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.ANSI.Sequences.Colors do
-  @moduledoc '''
+  @moduledoc """
   ANSI Color Sequence Handler.
 
   Handles parsing and application of ANSI color control sequences,
   including 16-color mode, 256-color mode, and true color (24-bit) mode.
-  '''
+  """
 
   alias Raxol.Style.Colors.{Color, Advanced}
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
     15 => :bright_white
   }
 
-  @doc '''
+  @doc """
   Returns a map of ANSI color codes.
 
   ## Returns
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
         # ... other colors ...
         reset: "\e[0m"
       }
-  '''
+  """
   def color_codes do
     %{
       black: "\e[30m",
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
     }
   end
 
-  @doc '''
+  @doc """
   Set foreground color using true (24-bit) RGB color.
 
   ## Parameters
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated emulator state
-  '''
+  """
   def set_foreground_true(emulator, r, g, b) do
     color = Color.from_rgb(r, g, b)
 
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
     }
   end
 
-  @doc '''
+  @doc """
   Set background color using true (24-bit) RGB color.
 
   ## Parameters
@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated emulator state
-  '''
+  """
   def set_background_true(emulator, r, g, b) do
     color = Color.from_rgb(r, g, b)
 
@@ -126,7 +126,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
     }
   end
 
-  @doc '''
+  @doc """
   Set foreground color using 256-color mode.
 
   ## Parameters
@@ -137,12 +137,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated emulator state
-  '''
+  """
   def set_foreground_256(emulator, index) do
     %{emulator | attributes: %{emulator.attributes | foreground_256: index}}
   end
 
-  @doc '''
+  @doc """
   Set background color using 256-color mode.
 
   ## Parameters
@@ -153,12 +153,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated emulator state
-  '''
+  """
   def set_background_256(emulator, index) do
     %{emulator | attributes: %{emulator.attributes | background_256: index}}
   end
 
-  @doc '''
+  @doc """
   Set foreground color using basic 16-color mode.
 
   ## Parameters
@@ -169,14 +169,14 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated emulator state
-  '''
+  """
   def set_foreground_basic(emulator, color_code) do
     color_name = Map.get(@colors, color_code)
     new_style = TextFormatting.set_foreground(emulator.style, color_name)
     %{emulator | style: new_style}
   end
 
-  @doc '''
+  @doc """
   Set background color using basic 16-color mode.
 
   ## Parameters
@@ -187,14 +187,14 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated emulator state
-  '''
+  """
   def set_background_basic(emulator, color_code) do
     color_name = Map.get(@colors, color_code)
     new_style = TextFormatting.set_background(emulator.style, color_name)
     %{emulator | style: new_style}
   end
 
-  @doc '''
+  @doc """
   Generate ANSI color code for a given color.
 
   ## Parameters
@@ -205,7 +205,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   ANSI escape sequence as string
-  '''
+  """
   def color_code(%Color{r: r, g: g, b: b}, :foreground) do
     "\e[38;2;#{r};#{g};#{b}m"
   end
@@ -217,7 +217,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   # Return empty string for invalid inputs
   def color_code(_color, _type), do: ""
 
-  @doc '''
+  @doc """
   Parse a color string into a Color struct.
 
   ## Parameters
@@ -227,7 +227,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Color struct or nil if invalid format
-  '''
+  """
   def parse_color(color_str) when is_binary(color_str) do
     cond do
       String.starts_with?(color_str, "rgb:") ->
@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
     end
   end
 
-  @doc '''
+  @doc """
   Set a color at a specific index in the color palette.
 
   ## Parameters
@@ -285,12 +285,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_color(colors, index, color) when index >= 0 and index <= 255 do
     Map.put(colors, index, color)
   end
 
-  @doc '''
+  @doc """
   Set the foreground color.
 
   ## Parameters
@@ -301,12 +301,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_foreground(colors, color) do
     Map.put(colors, :foreground, color)
   end
 
-  @doc '''
+  @doc """
   Set the background color.
 
   ## Parameters
@@ -317,12 +317,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_background(colors, color) do
     Map.put(colors, :background, color)
   end
 
-  @doc '''
+  @doc """
   Set the cursor color.
 
   ## Parameters
@@ -333,12 +333,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_cursor_color(colors, color) do
     Map.put(colors, :cursor, color)
   end
 
-  @doc '''
+  @doc """
   Set the mouse foreground color.
 
   ## Parameters
@@ -349,12 +349,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_mouse_foreground(colors, color) do
     Map.put(colors, :mouse_foreground, color)
   end
 
-  @doc '''
+  @doc """
   Set the mouse background color.
 
   ## Parameters
@@ -365,12 +365,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_mouse_background(colors, color) do
     Map.put(colors, :mouse_background, color)
   end
 
-  @doc '''
+  @doc """
   Set the highlight foreground color.
 
   ## Parameters
@@ -381,12 +381,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_highlight_foreground(colors, color) do
     Map.put(colors, :highlight_foreground, color)
   end
 
-  @doc '''
+  @doc """
   Set the highlight background color.
 
   ## Parameters
@@ -397,12 +397,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_highlight_background(colors, color) do
     Map.put(colors, :highlight_background, color)
   end
 
-  @doc '''
+  @doc """
   Set the highlight cursor color.
 
   ## Parameters
@@ -413,12 +413,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_highlight_cursor(colors, color) do
     Map.put(colors, :highlight_cursor, color)
   end
 
-  @doc '''
+  @doc """
   Set the highlight mouse foreground color.
 
   ## Parameters
@@ -429,12 +429,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_highlight_mouse_foreground(colors, color) do
     Map.put(colors, :highlight_mouse_foreground, color)
   end
 
-  @doc '''
+  @doc """
   Set the highlight mouse background color.
 
   ## Parameters
@@ -445,7 +445,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   ## Returns
 
   Updated color palette
-  '''
+  """
   def set_highlight_mouse_background(colors, color) do
     Map.put(colors, :highlight_mouse_background, color)
   end

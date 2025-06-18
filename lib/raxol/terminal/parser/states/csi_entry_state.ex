@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Parser.States.CSIEntryState do
-  @moduledoc '''
+  @moduledoc """
   Handles the CSI Entry state in the terminal parser.
   This state is entered after receiving an ESC [ sequence.
-  '''
+  """
 
   alias Raxol.Terminal.Parser.States.{
     GroundState,
@@ -10,10 +10,10 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
     CSIState
   }
 
-  @doc '''
+  @doc """
   Handles input in CSI Entry state.
   Returns the next state and any accumulated data.
-  '''
+  """
   @spec handle(byte(), map()) :: {module(), map()}
   def handle(byte, data) do
     case byte do

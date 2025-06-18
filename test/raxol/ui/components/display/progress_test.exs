@@ -21,7 +21,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
   end
 
   describe "init/1" do
-    test 'initializes with default props' do
+    test ~c"initializes with default props" do
       state = init_component()
       assert state.progress == 0.0
       assert state.width == 20
@@ -34,7 +34,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       assert state.tooltip == nil
     end
 
-    test 'initializes with custom props' do
+    test ~c"initializes with custom props" do
       props = %{
         progress: 0.5,
         width: 30,
@@ -59,7 +59,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       assert state.tooltip == "progress info"
     end
 
-    test 'init/1 clamps progress value to valid range' do
+    test ~c"init/1 clamps progress value to valid range" do
       {:ok, below_state} = Progress.init(%{progress: -0.5})
       assert below_state.progress == 0.0
 
@@ -70,7 +70,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       assert within_state.progress == 0.5
     end
 
-    test 'init/1 applies default values' do
+    test ~c"init/1 applies default values" do
       {:ok, state} = Progress.init(%{})
       assert state.progress == 0.0
       assert state.width == 20
@@ -81,14 +81,14 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
   end
 
   describe "lifecycle: mount/1 and unmount/1" do
-    test 'mount returns state and []' do
+    test ~c"mount returns state and []" do
       state = init_component(%{progress: 0.1})
       {mounted, cmds} = Progress.mount(state)
       assert mounted == state
       assert cmds == []
     end
 
-    test 'unmount returns state (no side effects)' do
+    test ~c"unmount returns state (no side effects)" do
       state = init_component(%{progress: 0.1})
       assert Progress.unmount(state) == state
     end
@@ -97,7 +97,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
   describe "style/theme merging and override precedence" do
     defp themed_context(theme), do: %{theme: theme}
 
-    test 'instance style overrides theme style' do
+    test ~c"instance style overrides theme style" do
       theme = %{
         progress: %{fg: :red, bg: :black, border: :white, text: :yellow}
       }
@@ -111,7 +111,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       assert bar_fill.attrs.bg == :black
     end
 
-    test 'theme prop overrides context theme, instance style overrides both' do
+    test ~c"theme prop overrides context theme, instance style overrides both" do
       context_theme = %{progress: %{fg: :red, bg: :black}}
       theme_prop = %{progress: %{fg: :blue, bg: :yellow}}
       style = %{fg: :green}
@@ -124,14 +124,14 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
   end
 
   describe "accessibility and extra props" do
-    test 'renders aria_label and tooltip as attributes on box' do
+    test ~c"renders aria_label and tooltip as attributes on box" do
       state = init_component(%{aria_label: "foo", tooltip: "tip"})
       [box | _] = Progress.render(state, default_context())
       assert box.attrs.aria_label == "foo"
       assert box.attrs.tooltip == "tip"
     end
 
-    test 'does not include nil extra attributes' do
+    test ~c"does not include nil extra attributes" do
       state = init_component()
       [box | _] = Progress.render(state, default_context())
       refute Map.has_key?(box.attrs, :aria_label)
@@ -191,7 +191,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       assert is_list(elements)
     end
 
-    test 'render/2 handles invalid progress values gracefully' do
+    test ~c"render/2 handles invalid progress values gracefully" do
       state = init_component()
       context = default_context()
       below_state = %{state | progress: -0.5}
@@ -204,7 +204,7 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
   end
 
   describe "update/2" do
-    test 'merges style and theme on update' do
+    test ~c"merges style and theme on update" do
       state =
         init_component(%{style: %{fg: :red}, theme: %{progress: %{bg: :blue}}})
 

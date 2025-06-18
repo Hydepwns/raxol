@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
-  @moduledoc '''
+  @moduledoc """
   Handles OSC 4 (Color Palette Set/Query) commands.
 
   This handler manages the terminal's color palette, allowing dynamic
@@ -12,12 +12,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   - #RGB (hex, 1 digit per component)
   - rgb(r,g,b) (decimal, 0-255)
   - rgb(r%,g%,b%) (percentage, 0-100%)
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Handles OSC 4 commands for color palette management.
 
   ## Commands
@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   Where:
   - c is the color index (0-255)
   - spec is the color specification
-  '''
+  """
   @spec handle_4(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_4(emulator, data) do
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
       [index_str, spec] ->
         case Integer.parse(index_str) do
           {index, ""} when index >= 0 and index <= 255 ->
-            if spec == "?' do
+            if spec == "?" do
               {:query, index}
             else
               {:set, index, spec}
@@ -95,7 +95,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
 
   defp parse_color_spec(spec) do
     cond do
-      String.starts_with?(spec, 'rgb:") ->
+      String.starts_with?(spec, "rgb:") ->
         parse_rgb_hex(spec)
 
       String.starts_with?(spec, "#") ->
@@ -204,29 +204,14 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
     end
   end
 
-  defp format_color_response(index, {r, g, b}) do
-    # Format: OSC 4;index;rgb:r/g/b
-    # Scale up to 16-bit range (0-65535)
-    r_scaled =
-      Integer.to_string(div(r * 65_535, 255), 16) |> String.pad_leading(4, "0")
-
-    g_scaled =
-      Integer.to_string(div(g * 65_535, 255), 16) |> String.pad_leading(4, "0")
-
-    b_scaled =
-      Integer.to_string(div(b * 65_535, 255), 16) |> String.pad_leading(4, "0")
-
-    "\e]4;#{index};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}\e\\"
-  end
-
-  # Helper for safe palette access
-  defp get_palette_color(palette, index)
-       when is_integer(index) and index >= 0 and index <= 255 do
+  defp get_palette_color(palette, index) do
     case Map.get(palette, index) do
-      nil -> {:error, :invalid_color_index}
+      nil -> {:error, :not_found}
       color -> {:ok, color}
     end
   end
 
-  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
+  defp format_color_response(index, {r, g, b}) do
+    "4;#{index};rgb:#{:io_lib.format("~2.16.0B", [r])}/#{:io_lib.format("~2.16.0B", [g])}/#{:io_lib.format("~2.16.0B", [b])}"
+  end
 end

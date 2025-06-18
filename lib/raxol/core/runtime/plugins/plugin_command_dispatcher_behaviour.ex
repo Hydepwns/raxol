@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginCommandDispatcher.Behaviour do
-  @moduledoc '''
+  @moduledoc """
   Defines the behaviour for plugin command dispatching.
 
   This behaviour is responsible for:
@@ -7,12 +7,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandDispatcher.Behaviour do
   - Managing command execution flow
   - Handling command results and errors
   - Coordinating command responses
-  '''
+  """
 
-  @doc '''
+  @doc """
   Dispatches a command to the appropriate plugin.
   Returns an updated state and any necessary side effects.
-  '''
+  """
   @callback dispatch_command(
               command_atom :: atom(),
               namespace :: atom(),
@@ -21,9 +21,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandDispatcher.Behaviour do
               state :: map()
             ) :: {:ok, map()} | {:error, any()}
 
-  @doc '''
+  @doc """
   Handles command results from plugins.
-  '''
+  """
   @callback handle_command_result(
               command_atom :: atom(),
               result :: any(),
@@ -31,9 +31,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandDispatcher.Behaviour do
               state :: map()
             ) :: {:ok, map()} | {:error, any()}
 
-  @doc '''
+  @doc """
   Handles command errors from plugins.
-  '''
+  """
   @callback handle_command_error(
               command_atom :: atom(),
               error :: any(),
@@ -41,18 +41,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandDispatcher.Behaviour do
               state :: map()
             ) :: {:ok, map()} | {:error, any()}
 
-  @doc '''
+  @doc """
   Handles command timeouts.
-  '''
+  """
   @callback handle_command_timeout(
               command_atom :: atom(),
               dispatcher_pid :: pid(),
               state :: map()
             ) :: {:ok, map()} | {:error, any()}
 
-  @doc '''
+  @doc """
   Updates the command dispatcher state.
-  '''
+  """
   @callback update_dispatcher_state(
               state :: map(),
               new_state :: map()

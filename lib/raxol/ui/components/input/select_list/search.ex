@@ -1,15 +1,15 @@
 defmodule Raxol.UI.Components.Input.SelectList.Search do
-  @moduledoc '''
+  @moduledoc """
   Handles search and filtering functionality for the SelectList component.
-  '''
+  """
 
   @type option :: {String.t(), any()}
   @type options :: [option()]
 
-  @doc '''
+  @doc """
   Filters options based on search text and optional searchable fields.
   Returns nil if no search text is provided, otherwise returns filtered options.
-  '''
+  """
   def filter_options(options, search_text, searchable_fields) do
     if search_text == "" do
       nil
@@ -23,11 +23,11 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
     end
   end
 
-  @doc '''
+  @doc """
   Checks if an option matches the search text.
   If searchable_fields is provided, only those fields are searched.
   Otherwise, the option label is searched.
-  '''
+  """
   def search_matches?({label, _value}, search_text, nil) do
     String.contains?(String.downcase(label), String.downcase(search_text))
   end
@@ -59,9 +59,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
     label_match or value_match
   end
 
-  @doc '''
+  @doc """
   Updates search-related state based on new search text.
-  '''
+  """
   def update_search_state(state, search_text) do
     %{
       state

@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.CharacterSetsTest do
   end
 
   describe "character set translation" do
-    test 'translates Latin-1 characters' do
+    test ~c"translates Latin-1 characters" do
       # Test control characters (use translate_string for consistency)
       assert CharacterTranslations.translate_string(<<0x00>>, :latin1) == <<0>>
       assert CharacterTranslations.translate_string(<<0x09>>, :latin1) == "\t"
@@ -71,12 +71,12 @@ defmodule Raxol.Terminal.CharacterSetsTest do
       assert CharacterTranslations.translate_string(<<0xE5>>, :latin1) == "å"
     end
 
-    test 'handles unknown character sets' do
+    test ~c"handles unknown character sets" do
       # Test with an unknown character set
       assert CharacterTranslations.translate_string("A", :unknown) == "A"
     end
 
-    test 'handles US-ASCII character set' do
+    test ~c"handles US-ASCII character set" do
       # US-ASCII should return the character as is
       assert CharacterTranslations.translate_string("A", :us_ascii) == "A"
       assert CharacterTranslations.translate_string("a", :us_ascii) == "a"

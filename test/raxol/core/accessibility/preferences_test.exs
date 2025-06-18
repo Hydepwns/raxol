@@ -1,4 +1,8 @@
 defmodule Raxol.Core.Accessibility.PreferencesTest do
+  @moduledoc """
+  Tests for the accessibility preferences system, including high contrast,
+  reduced motion, large text, and feature flag management.
+  """
   use ExUnit.Case, async: false
   import Mox
 

@@ -1,11 +1,11 @@
 defmodule Raxol.Core.TextProcessor do
-  @moduledoc '''
+  @moduledoc """
   Handles text processing and formatting for UI elements.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Processes a text element map and returns a processed version with proper formatting.
-  '''
+  """
   def process_text_element(text_map, space) do
     text = Map.get(text_map, :text, "")
     style = Map.get(text_map, :style, %{})

@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Terminal do
-  @moduledoc '''
+  @moduledoc """
   A terminal component that emulates a standard terminal within the UI.
-  '''
+  """
 
-  @typedoc '''
+  @typedoc """
   State for the Terminal component.
 
   - :id - unique identifier
@@ -11,7 +11,7 @@ defmodule Raxol.UI.Components.Terminal do
   - :height - terminal height
   - :buffer - list of lines
   - :style - style map
-  '''
+  """
   @type t :: %__MODULE__{
           id: any(),
           width: non_neg_integer(),
@@ -38,7 +38,7 @@ defmodule Raxol.UI.Components.Terminal do
 
   # --- Component Behaviour Callbacks ---
 
-  @doc 'Initializes the Terminal component state from props.'
+  @doc "Initializes the Terminal component state from props."
   @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
@@ -54,7 +54,7 @@ defmodule Raxol.UI.Components.Terminal do
     }
   end
 
-  @doc 'Updates the Terminal component state in response to messages. Handles writing, clearing, etc.'
+  @doc "Updates the Terminal component state in response to messages. Handles writing, clearing, etc."
   @spec update(term(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
@@ -67,7 +67,7 @@ defmodule Raxol.UI.Components.Terminal do
     {state, []}
   end
 
-  @doc 'Handles key events for the Terminal component.'
+  @doc "Handles key events for the Terminal component."
   @spec handle_event(map(), map(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   # Use map matching
@@ -95,7 +95,7 @@ defmodule Raxol.UI.Components.Terminal do
 
   # --- Render Logic ---
 
-  @doc 'Renders the Terminal component, displaying the buffer as lines.'
+  @doc "Renders the Terminal component, displaying the buffer as lines."
   @spec render(map(), map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = _props) do

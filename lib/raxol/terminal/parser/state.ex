@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Parser.State do
-  @moduledoc '''
+  @moduledoc """
   Parser state for the terminal emulator.
-  '''
+  """
 
   defstruct state: :ground,
             params: [],

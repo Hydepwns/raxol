@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Window.Registry do
-  @moduledoc '''
+  @moduledoc """
   Registry for managing multiple terminal windows.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -13,74 +13,74 @@ defmodule Raxol.Terminal.Window.Registry do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the window registry.
-  '''
+  """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Registers a new window.
-  '''
+  """
   @spec register_window(Window.t()) :: {:ok, window_id()} | {:error, term()}
   def register_window(%Window{} = window) do
     GenServer.call(__MODULE__, {:register_window, window})
   end
 
-  @doc '''
+  @doc """
   Unregisters a window.
-  '''
+  """
   @spec unregister_window(window_id()) :: :ok | {:error, term()}
   def unregister_window(window_id) do
     GenServer.call(__MODULE__, {:unregister_window, window_id})
   end
 
-  @doc '''
+  @doc """
   Gets a window by ID.
-  '''
+  """
   @spec get_window(window_id()) :: {:ok, Window.t()} | {:error, term()}
   def get_window(window_id) do
     GenServer.call(__MODULE__, {:get_window, window_id})
   end
 
-  @doc '''
+  @doc """
   Lists all registered windows.
-  '''
+  """
   @spec list_windows() :: {:ok, [Window.t()]}
   def list_windows do
     GenServer.call(__MODULE__, :list_windows)
   end
 
-  @doc '''
+  @doc """
   Updates a window's state.
-  '''
+  """
   @spec update_window_state(window_id(), window_state()) ::
           :ok | {:error, term()}
   def update_window_state(window_id, state) do
     GenServer.call(__MODULE__, {:update_window_state, window_id, state})
   end
 
-  @doc '''
+  @doc """
   Gets the active window.
-  '''
+  """
   @spec get_active_window() :: {:ok, Window.t()} | {:error, term()}
   def get_active_window do
     GenServer.call(__MODULE__, :get_active_window)
   end
 
-  @doc '''
+  @doc """
   Sets the active window.
-  '''
+  """
   @spec set_active_window(window_id()) :: :ok | {:error, term()}
   def set_active_window(window_id) do
     GenServer.call(__MODULE__, {:set_active_window, window_id})
   end
 
-  @doc '''
+  @doc """
   Updates a window's properties.
-  '''
+  """
   @spec update_window(String.t(), map()) :: :ok | {:error, term()}
   def update_window(window_id, properties) do
     GenServer.call(__MODULE__, {:update_window, window_id, properties})

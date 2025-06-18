@@ -19,13 +19,13 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
   defp extract_texts(_), do: []
 
   describe "init/1" do
-    test 'initializes with default values when no props provided' do
+    test ~c"initializes with default values when no props provided" do
       assert_raise ArgumentError, "SelectList requires :options prop", fn ->
         SelectList.init(%{})
       end
     end
 
-    test 'initializes with provided values' do
+    test ~c"initializes with provided values" do
       options = [{"Option 1", :opt1}, {"Option 2", :opt2}]
       on_select = fn _ -> :selected end
 
@@ -69,7 +69,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert state.search_timer == nil
     end
 
-    test 'validates option format' do
+    test ~c"validates option format" do
       assert_raise ArgumentError,
                    "SelectList options must be {label, value} or {label, value, style} tuples",
                    fn ->
@@ -693,7 +693,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
   end
 
   describe "theming, style, and lifecycle" do
-    test 'applies style and theme props to container and options' do
+    test ~c"applies style and theme props to container and options" do
       options = [
         {"Styled Option", :styled, %{color: "#990000"}},
         {"Normal Option", :normal}
@@ -758,14 +758,14 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert first_option.props.style.background_color == "#abcdef"
     end
 
-    test 'mount/1 and unmount/1 return state unchanged' do
+    test ~c"mount/1 and unmount/1 return state unchanged" do
       options = [{"A", 1}]
       state = Raxol.UI.Components.Input.SelectList.init(%{options: options})
       assert Raxol.UI.Components.Input.SelectList.mount(state) == state
       assert Raxol.UI.Components.Input.SelectList.unmount(state) == state
     end
 
-    test 'responds to max_height prop dynamically' do
+    test ~c"responds to max_height prop dynamically" do
       options = [{"A", 1}, {"B", 2}]
 
       state =

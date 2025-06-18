@@ -1,9 +1,9 @@
 defmodule Raxol.Terminal.Buffer.Queries.Behaviour do
-  @moduledoc '''
+  @moduledoc """
   Behaviour for terminal buffer querying operations.
   This module defines the callbacks required for querying the state of the screen buffer,
   including dimensions, content, and selection state.
-  '''
+  """
 
   alias Raxol.Terminal.Cell
 

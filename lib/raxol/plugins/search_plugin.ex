@@ -1,7 +1,7 @@
 defmodule Raxol.Plugins.SearchPlugin do
-  @moduledoc '''
+  @moduledoc """
   Plugin for text search functionality.
-  '''
+  """
 
   @behaviour Raxol.Plugins.Plugin
 
@@ -18,18 +18,17 @@ defmodule Raxol.Plugins.SearchPlugin do
           current_result_index: integer()
         }
 
-  defstruct [
-    name: "search",
-    version: "0.1.0",
-    description: "Provides text search functionality within the terminal.",
-    enabled: true,
-    config: %{},
-    dependencies: [],
-    api_version: "1.0.0",
-    search_term: nil,
-    search_results: [],
-    current_result_index: 0
-  ]
+  defstruct name: "search",
+            version: "0.1.0",
+            description:
+              "Provides text search functionality within the terminal.",
+            enabled: true,
+            config: %{},
+            dependencies: [],
+            api_version: "1.0.0",
+            search_term: nil,
+            search_results: [],
+            current_result_index: 0
 
   @impl true
   def init(config \\ %{}) do
@@ -64,6 +63,7 @@ defmodule Raxol.Plugins.SearchPlugin do
         # Convert click position to result index
         result_index = max(0, min(y - 1, length(plugin.search_results) - 1))
         {:ok, %{plugin | current_result_index: result_index}}
+
       _ ->
         {:ok, plugin}
     end
@@ -98,24 +98,36 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   defp start_search(%__MODULE__{} = plugin, search_term) do
     if search_term == "" do
-      {:ok, %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
+      {:ok,
+       %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
     else
       # Search through the current terminal buffer
       results = search_terminal_buffer(search_term)
-      {:ok, %{plugin | search_term: search_term, search_results: results, current_result_index: 0}}
+
+      {:ok,
+       %{
+         plugin
+         | search_term: search_term,
+           search_results: results,
+           current_result_index: 0
+       }}
     end
   end
 
   defp search_terminal_buffer(search_term) do
     # Get the current terminal buffer and search for matches
     case Process.get(:terminal_buffer) do
-      nil -> []
+      nil ->
+        []
+
       buffer ->
         buffer
         |> String.split("\n")
         |> Enum.with_index(1)
         |> Enum.filter(fn {line, _} -> String.contains?(line, search_term) end)
-        |> Enum.map(fn {line, line_num} -> %{line: line, line_number: line_num} end)
+        |> Enum.map(fn {line, line_num} ->
+          %{line: line, line_number: line_num}
+        end)
     end
   end
 
@@ -150,39 +162,39 @@ defmodule Raxol.Plugins.SearchPlugin do
      %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
   end
 
-  @doc '''
+  @doc """
   Highlights the search term in the given text.
-  '''
+  """
   def highlight_search_term(text, search_term)
       when is_binary(text) and is_binary(search_term) and search_term != "" do
     # ANSI escape sequence for highlighting: \e[43m (yellow background)
     String.replace(text, search_term, "\e[43m#{search_term}\e[0m")
   end
 
-  @doc '''
+  @doc """
   Gets the current search term.
-  '''
+  """
   def get_search_term(plugin) do
     plugin.search_term
   end
 
-  @doc '''
+  @doc """
   Gets the current search results.
-  '''
+  """
   def get_search_results(plugin) do
     plugin.search_results
   end
 
-  @doc '''
+  @doc """
   Gets the current result index.
-  '''
+  """
   def get_current_result_index(plugin) do
     plugin.current_result_index
   end
 
-  @doc '''
+  @doc """
   Gets the current search result.
-  '''
+  """
   def get_current_result(plugin) do
     if length(plugin.search_results) > 0 do
       Enum.at(plugin.search_results, plugin.current_result_index)

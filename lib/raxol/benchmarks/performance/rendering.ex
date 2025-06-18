@@ -1,16 +1,16 @@
 defmodule Raxol.Benchmarks.Performance.Rendering do
-  @moduledoc '''
+  @moduledoc """
   Rendering performance benchmark functions for Raxol.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Benchmarks rendering performance for various component types and complexities.
 
   Tests rendering performance for:
   - Simple components (text, buttons)
   - Medium complexity (tables, lists)
   - Complex components (dashboards, multi-panel layouts)
-  '''
+  """
   def benchmark_rendering do
     IO.puts("Benchmarking rendering performance...")
 

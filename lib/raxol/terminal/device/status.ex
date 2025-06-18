@@ -1,11 +1,11 @@
 defmodule Raxol.Terminal.Device.Status do
-  @moduledoc '''
+  @moduledoc """
   Handles device status reporting and attributes for the terminal emulator.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Handles Device Attributes (DA) requests.
-  '''
+  """
   def handle_device_attributes(emulator, params, intermediates) do
     case {params, intermediates} do
       # Primary DA (0)
@@ -33,9 +33,9 @@ defmodule Raxol.Terminal.Device.Status do
     end
   end
 
-  @doc '''
+  @doc """
   Handles Device Status Report (DSR) requests.
-  '''
+  """
   def handle_status_report(emulator, params) do
     case params do
       # Report cursor position

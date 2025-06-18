@@ -1,13 +1,13 @@
 defmodule Raxol.UI.Components.Input.TextWrapping do
-  @moduledoc '''
+  @moduledoc """
   Utility functions for text wrapping.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Wraps a single line of text by character count using recursion.
 
   Handles multi-byte characters correctly.
-  '''
+  """
   def wrap_line_by_char(line, width)
       when is_binary(line) and is_integer(width) and width > 0 do
     # TODO: Investigate persistent off-by-one error with this specific long word.
@@ -53,9 +53,9 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
     do_wrap_char(rest_graphemes, width, [chunk_string | acc])
   end
 
-  @doc '''
+  @doc """
   Wraps a single line of text by word boundaries.
-  '''
+  """
   def wrap_line_by_word(line, width)
       when is_binary(line) and is_integer(width) and width > 0 do
     words = String.split(line, " ")

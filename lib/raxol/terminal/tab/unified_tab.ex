@@ -1,8 +1,8 @@
 defmodule Raxol.Terminal.Tab.UnifiedTab do
-  @moduledoc '''
+  @moduledoc """
   Provides unified tab management functionality for the terminal emulator.
   This module handles tab creation, switching, state management, and configuration.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -22,89 +22,89 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
         }
 
   # Client API
-  @doc '''
+  @doc """
   Starts the tab manager with the given options.
-  '''
+  """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Creates a new tab with the given configuration.
-  '''
+  """
   @spec create_tab(map()) :: {:ok, tab_id()} | {:error, term()}
   def create_tab(config \\ %{}) do
     GenServer.call(__MODULE__, {:create_tab, config})
   end
 
-  @doc '''
+  @doc """
   Gets the list of all tabs.
-  '''
+  """
   @spec get_tabs() :: list(tab_id())
   def get_tabs do
     GenServer.call(__MODULE__, :get_tabs)
   end
 
-  @doc '''
+  @doc """
   Gets the active tab ID.
-  '''
+  """
   @spec get_active_tab() :: {:ok, tab_id()} | {:error, :no_active_tab}
   def get_active_tab do
     GenServer.call(__MODULE__, :get_active_tab)
   end
 
-  @doc '''
+  @doc """
   Sets the active tab.
-  '''
+  """
   @spec set_active_tab(tab_id()) :: :ok | {:error, term()}
   def set_active_tab(tab_id) do
     GenServer.call(__MODULE__, {:set_active_tab, tab_id})
   end
 
-  @doc '''
+  @doc """
   Gets the state of a specific tab.
-  '''
+  """
   @spec get_tab_state(tab_id()) :: {:ok, map()} | {:error, term()}
   def get_tab_state(tab_id) do
     GenServer.call(__MODULE__, {:get_tab_state, tab_id})
   end
 
-  @doc '''
+  @doc """
   Updates the configuration of a specific tab.
-  '''
+  """
   @spec update_tab_config(tab_id(), tab_config()) :: :ok | {:error, term()}
   def update_tab_config(tab_id, config) do
     GenServer.call(__MODULE__, {:update_tab_config, tab_id, config})
   end
 
-  @doc '''
+  @doc """
   Closes a tab and its associated windows.
-  '''
+  """
   @spec close_tab(tab_id()) :: :ok | {:error, term()}
   def close_tab(tab_id) do
     GenServer.call(__MODULE__, {:close_tab, tab_id})
   end
 
-  @doc '''
+  @doc """
   Moves a tab to a new position.
-  '''
+  """
   @spec move_tab(tab_id(), non_neg_integer()) :: :ok | {:error, term()}
   def move_tab(tab_id, position) do
     GenServer.call(__MODULE__, {:move_tab, tab_id, position})
   end
 
-  @doc '''
+  @doc """
   Updates the tab manager configuration.
-  '''
+  """
   @spec update_config(map()) :: :ok
   def update_config(config) do
     GenServer.call(__MODULE__, {:update_config, config})
   end
 
-  @doc '''
+  @doc """
   Cleans up resources.
-  '''
+  """
   @spec cleanup() :: :ok
   def cleanup do
     GenServer.call(__MODULE__, :cleanup)

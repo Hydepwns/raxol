@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.TelemetryMetrics do
-  @moduledoc '''
+  @moduledoc """
   Example integration of Telemetry.Metrics and TelemetryMetricsStatsd for Raxol terminal events.
 
   Add this module to your supervision tree to automatically report terminal metrics to StatsD (or Datadog).
@@ -18,12 +18,12 @@ defmodule Raxol.Terminal.TelemetryMetrics do
   - `summary/2` for scroll delta (average scroll amount)
   - `counter/2` for mode changes, tagged by mode
 
-  '''
+  """
   import Telemetry.Metrics
 
-  @doc '''
+  @doc """
   Returns a list of Telemetry metrics for Raxol terminal events.
-  '''
+  """
   def metrics do
     [
       counter("raxol.terminal.focus_changed"),

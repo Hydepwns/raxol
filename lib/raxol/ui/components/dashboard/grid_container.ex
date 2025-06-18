@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Dashboard.GridContainer do
-  @moduledoc '''
+  @moduledoc """
   Calculates layout bounds for widgets within a grid configuration.
   This module provides functions to determine the position and size of widgets
   based on a grid layout definition (columns, rows, gaps).
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -21,7 +21,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   @spec default_gap() :: integer()
   def default_gap, do: @default_gap
 
-  @doc '''
+  @doc """
   Resolves the effective grid parameters (cols, rows) based on breakpoints
   defined in the grid configuration and the current parent width.
 
@@ -33,7 +33,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
   Returns:
     - `%{cols: integer(), rows: integer()}`
-  '''
+  """
   # Handle when an :ok atom is passed
   def resolve_grid_params(:ok) do
     Raxol.Core.Runtime.Log.warning(
@@ -104,7 +104,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
           width: integer(),
           height: integer()
         }
-  @doc '''
+  @doc """
   Calculates the absolute bounds for a widget within a grid layout.
 
   Parameters:
@@ -114,7 +114,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
   Returns:
     - `%{x: integer(), y: integer(), width: integer(), height: integer()}` representing the absolute bounds.
-  '''
+  """
   # Handle cases where grid_config is :ok or not a map
   def calculate_widget_bounds(_widget_config, :ok) do
     Raxol.Core.Runtime.Log.error(
@@ -190,14 +190,14 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       {cell_width, cell_height} = get_cell_dimensions(grid_config)
 
       # --- Added Debug Logging ---
-      Raxol.Core.Runtime.Log.debug('''
+      Raxol.Core.Runtime.Log.debug("""
       [GridContainer.calculate_widget_bounds] Debug Values:
         Widget ID: #{widget_config.id}
         Grid Spec: #{inspect(widget_config.grid_spec)}
         Cols: #{cols}, Rows: #{rows}, Gap: #{gap}
         Container WxH: #{container_width}x#{container_height}
         Cell WxH: #{cell_width}x#{cell_height}
-      ''')
+      """)
 
       # --- End Debug Logging ---
 
@@ -268,7 +268,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   @spec get_cell_dimensions(any()) :: {integer(), integer()}
-  @doc '''
+  @doc """
   Calculates the dimensions of a single cell in the grid.
 
   Parameters:
@@ -277,7 +277,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
   Returns:
     - `{cell_width, cell_height}` tuple with the dimensions of a single cell.
-  '''
+  """
   # Handle when an :ok atom is passed (which causes the ArithmeticError)
   def get_cell_dimensions(:ok) do
     Raxol.Core.Runtime.Log.error(

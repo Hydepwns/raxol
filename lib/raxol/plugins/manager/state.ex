@@ -1,18 +1,18 @@
 defmodule Raxol.Plugins.Manager.State do
-  @moduledoc '''
+  @moduledoc """
   Handles plugin state management and updates.
   Provides functions for updating plugin state and managing plugin lifecycle states.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.Lifecycle
   alias Raxol.Plugins.Manager.Core
 
-  @doc '''
+  @doc """
   Updates the state of a specific plugin within the manager.
   The `update_fun` receives the current plugin state and should return the new state.
-  '''
+  """
   def update_plugin(%Core{} = manager, name, update_fun)
       when is_binary(name) and is_function(update_fun, 1) do
     case Core.get_plugin(manager, name) do
@@ -41,43 +41,43 @@ defmodule Raxol.Plugins.Manager.State do
     end
   end
 
-  @doc '''
+  @doc """
   Enables a plugin by name.
   Delegates to `Raxol.Plugins.Lifecycle.enable_plugin/2`.
-  '''
+  """
   def enable_plugin(%Core{} = manager, name) when is_binary(name) do
     Lifecycle.enable_plugin(manager, name)
   end
 
-  @doc '''
+  @doc """
   Disables a plugin by name.
   Delegates to `Raxol.Plugins.Lifecycle.disable_plugin/2`.
-  '''
+  """
   def disable_plugin(%Core{} = manager, name) when is_binary(name) do
     Lifecycle.disable_plugin(manager, name)
   end
 
-  @doc '''
+  @doc """
   Loads a plugin module and initializes it with the given configuration.
   Delegates to `Raxol.Plugins.Lifecycle.load_plugin/3`.
-  '''
+  """
   def load_plugin(%Core{} = manager, module, config \\ %{})
       when is_atom(module) do
     Lifecycle.load_plugin(manager, module, config)
   end
 
-  @doc '''
+  @doc """
   Loads multiple plugins in the correct dependency order.
   Delegates to `Raxol.Plugins.Lifecycle.load_plugins/2`.
-  '''
+  """
   def load_plugins(%Core{} = manager, modules) when is_list(modules) do
     Lifecycle.load_plugins(manager, modules)
   end
 
-  @doc '''
+  @doc """
   Unloads a plugin by name.
   Delegates to `Raxol.Plugins.Lifecycle.unload_plugin/2`.
-  '''
+  """
   def unload_plugin(%Core{} = manager, name) when is_binary(name) do
     Lifecycle.unload_plugin(manager, name)
   end

@@ -1,7 +1,7 @@
 defmodule Raxol.Auth.Permission do
-  @moduledoc '''
+  @moduledoc """
   Permission schema for role-based access control.
-  '''
+  """
 
   use Ecto.Schema
   import Ecto.Changeset
@@ -21,9 +21,9 @@ defmodule Raxol.Auth.Permission do
     timestamps()
   end
 
-  @doc '''
+  @doc """
   Creates a changeset for a permission.
-  '''
+  """
   def changeset(permission, attrs) do
     permission
     |> cast(attrs, [:name, :description, :module, :action, :is_system])
@@ -35,9 +35,9 @@ defmodule Raxol.Auth.Permission do
     |> unique_constraint([:module, :action])
   end
 
-  @doc '''
+  @doc """
   Creates a changeset for a system permission.
-  '''
+  """
   def system_changeset(permission, attrs) do
     permission
     |> changeset(attrs)

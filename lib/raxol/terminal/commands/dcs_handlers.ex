@@ -1,12 +1,12 @@
 defmodule Raxol.Terminal.Commands.DCSHandlers do
-  @moduledoc '''
+  @moduledoc """
   Handles Device Control String (DCS) commands for the terminal emulator.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Handles DCS commands.
   Returns {:ok, updated_emulator} or {:error, reason}.
-  '''
+  """
   def handle_dcs(emulator, params, data_string) do
     case params do
       # DECRQSS - Request Status String

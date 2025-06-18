@@ -1,14 +1,14 @@
 if Mix.env() == :test do
   defmodule Raxol.Test.FileWatcherTestHelper do
-    @moduledoc '''
+    @moduledoc """
     Helper functions for testing file watcher functionality.
-    '''
+    """
 
     import Raxol.Test.Support.TestHelper
 
-    @doc '''
+    @doc """
     Creates a valid file stat for testing.
-    '''
+    """
     def valid_file_stat do
       {:ok,
        %File.Stat{
@@ -28,9 +28,9 @@ if Mix.env() == :test do
        }}
     end
 
-    @doc '''
+    @doc """
     Creates a directory stat for testing.
-    '''
+    """
     def directory_stat do
       {:ok,
        %File.Stat{
@@ -50,9 +50,9 @@ if Mix.env() == :test do
        }}
     end
 
-    @doc '''
+    @doc """
     Creates a test state with default values.
-    '''
+    """
     def create_test_state(opts \\ %{}) do
       base = %{
         plugin_dirs: ["test/plugins"],
@@ -81,9 +81,9 @@ if Mix.env() == :test do
       |> Map.put_new(:focused, false)
     end
 
-    @doc '''
+    @doc """
     Starts the Manager process for testing.
-    '''
+    """
     def start_manager do
       {:ok, pid} =
         Raxol.Core.Runtime.Plugins.Manager.start_link(runtime_pid: self())
@@ -91,16 +91,16 @@ if Mix.env() == :test do
       pid
     end
 
-    @doc '''
+    @doc """
     Stops the Manager process.
-    '''
+    """
     def stop_manager(pid) do
       Process.exit(pid, :normal)
     end
 
-    @doc '''
+    @doc """
     Sets up common mocks and processes for file watcher tests.
-    '''
+    """
     def setup_mocks do
       # Set up test environment and mocks
       {:ok, _} = setup_test_env()
@@ -111,9 +111,9 @@ if Mix.env() == :test do
       pid
     end
 
-    @doc '''
+    @doc """
     Creates a test plugin file in the test plugins directory.
-    '''
+    """
     def create_test_plugin(name, content \\ nil) do
       plugin_dir = "test/plugins"
       File.mkdir_p!(plugin_dir)
@@ -123,9 +123,9 @@ if Mix.env() == :test do
       plugin_path
     end
 
-    @doc '''
+    @doc """
     Cleans up test plugin files.
-    '''
+    """
     def cleanup_test_plugins do
       plugin_dir = "test/plugins"
 
@@ -134,11 +134,11 @@ if Mix.env() == :test do
       end
     end
 
-    @doc '''
+    @doc """
     Provides default plugin content for testing.
-    '''
+    """
     def default_plugin_content(name) do
-      '''
+      """
       defmodule Raxol.Test.Plugins.#{name} do
         @behaviour Raxol.Core.Runtime.Plugins.Plugin.Behaviour
 
@@ -168,7 +168,7 @@ if Mix.env() == :test do
           }
         end
       end
-      '''
+      """
     end
   end
 end

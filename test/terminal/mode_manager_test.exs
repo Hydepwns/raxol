@@ -33,7 +33,7 @@ defmodule Raxol.Terminal.ModeManagerTest do
   end
 
   describe "set_mode/2 with state saving" do
-    test 'save_state is called when setting a mode that saves terminal state' do
+    test ~c"save_state is called when setting a mode that saves terminal state" do
       # 1. Arrange: Create an initial emulator state
       main_buffer = ScreenBuffer.new(80, 24, 1000)
       # Alternate buffer usually has no scrollback

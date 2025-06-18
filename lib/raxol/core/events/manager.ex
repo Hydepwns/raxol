@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Events.Manager do
-  @moduledoc '''
+  @moduledoc """
   Event manager for handling and dispatching events in Raxol applications.
 
   This module provides a simple event system that allows:
@@ -26,18 +26,18 @@ defmodule Raxol.Core.Events.Manager do
   # Unsubscribe
   EventManager.unsubscribe(ref)
   ```
-  '''
+  """
 
   @behaviour Raxol.Core.Events.Manager.Behaviour
 
-  @doc '''
+  @doc """
   Initialize the event manager.
 
   ## Examples
 
       iex> EventManager.init()
       :ok
-  '''
+  """
   def init do
     # Initialize event handlers registry and subscriptions
     Process.put(:event_handlers, %{})
@@ -45,7 +45,7 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Register an event handler.
 
   ## Parameters
@@ -58,7 +58,7 @@ defmodule Raxol.Core.Events.Manager do
 
       iex> EventManager.register_handler(:click, MyModule, :handle_click)
       :ok
-  '''
+  """
   def register_handler(event_type, module, function)
       when is_atom(event_type) and is_atom(module) and is_atom(function) do
     # Get current handlers
@@ -82,7 +82,7 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Unregister an event handler.
 
   ## Parameters
@@ -95,7 +95,7 @@ defmodule Raxol.Core.Events.Manager do
 
       iex> EventManager.unregister_handler(:click, MyModule, :handle_click)
       :ok
-  '''
+  """
   def unregister_handler(event_type, module, function)
       when is_atom(event_type) and is_atom(module) and is_atom(function) do
     # Get current handlers
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Subscribe to events with optional filters.
 
   ## Parameters
@@ -130,10 +130,10 @@ defmodule Raxol.Core.Events.Manager do
 
       iex> EventManager.subscribe([:mouse], button: :left)
       {:ok, ref}
-  '''
+  """
   def subscribe(event_types, opts \\ []) when is_list(event_types) do
     # Generate unique subscription reference
-    ref = make_ref()
+    ref = System.unique_integer([:positive])
 
     # Get current subscriptions
     subscriptions = Process.get(:subscriptions) || %{}
@@ -152,15 +152,15 @@ defmodule Raxol.Core.Events.Manager do
     {:ok, ref}
   end
 
-  @doc '''
+  @doc """
   Unsubscribe from events using the subscription reference.
 
   ## Examples
 
       iex> EventManager.unsubscribe(ref)
       :ok
-  '''
-  def unsubscribe(ref) when is_reference(ref) do
+  """
+  def unsubscribe(ref) when is_integer(ref) do
     # Get current subscriptions
     subscriptions = Process.get(:subscriptions) || %{}
 
@@ -171,7 +171,7 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Dispatch an event to all registered handlers and subscribers.
 
   ## Parameters
@@ -185,7 +185,7 @@ defmodule Raxol.Core.Events.Manager do
 
       iex> EventManager.dispatch(:accessibility_high_contrast)
       :ok
-  '''
+  """
   def dispatch(event) do
     # Extract event type from event
     event_type = extract_event_type(event)
@@ -213,14 +213,14 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Broadcast an event to all subscribers.
 
   ## Examples
 
       iex> EventManager.broadcast({:system_event, :shutdown})
       :ok
-  '''
+  """
   def broadcast(event) do
     # Get all subscriptions
     subscriptions = Process.get(:subscriptions) || %{}
@@ -233,44 +233,44 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
-  @doc '''
+  @doc """
   Get all registered event handlers.
 
   ## Examples
 
       iex> EventManager.get_handlers()
       %{click: [{MyModule, :handle_click}]}
-  '''
+  """
   def get_handlers do
     Process.get(:event_handlers) || %{}
   end
 
-  @doc '''
+  @doc """
   Clear all event handlers.
 
   ## Examples
 
       iex> EventManager.clear_handlers()
       :ok
-  '''
+  """
   def clear_handlers do
     Process.put(:event_handlers, %{})
     :ok
   end
 
-  @doc '''
+  @doc """
   Cleans up the event manager state.
-  '''
+  """
   def cleanup() do
     Process.delete(:event_handlers)
     Process.delete(:subscriptions)
     :ok
   end
 
-  @doc '''
+  @doc """
   Triggers an event with a type and payload (alias for dispatch/1).
   This is provided for API compatibility; use dispatch/1 for generic events.
-  '''
+  """
   def trigger(event_type, payload) do
     dispatch({event_type, payload})
   end

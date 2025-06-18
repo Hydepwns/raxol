@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Metrics.Cloud do
-  @moduledoc '''
+  @moduledoc """
   Cloud integration for the Raxol metrics system.
 
   This module handles:
@@ -7,7 +7,7 @@ defmodule Raxol.Core.Metrics.Cloud do
   - Metric aggregation for cloud transmission
   - Cloud service configuration
   - Metric batching and compression
-  '''
+  """
 
   use GenServer
 
@@ -29,30 +29,30 @@ defmodule Raxol.Core.Metrics.Cloud do
     compression: true
   }
 
-  @doc '''
+  @doc """
   Starts the cloud metrics service.
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Configures the cloud metrics service.
-  '''
+  """
   def configure(config) when is_map(config) do
     GenServer.call(__MODULE__, {:configure, config})
   end
 
-  @doc '''
+  @doc """
   Gets the current cloud configuration.
-  '''
+  """
   def get_config do
     GenServer.call(__MODULE__, :get_config)
   end
 
-  @doc '''
+  @doc """
   Manually triggers a metrics flush to the cloud service.
-  '''
+  """
   def flush_metrics do
     GenServer.call(__MODULE__, :flush_metrics)
   end
@@ -213,6 +213,12 @@ defmodule Raxol.Core.Metrics.Cloud do
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
   defp schedule_flush do
-    Process.send_after(self(), :flush_metrics, @default_config.flush_interval)
+    timer_id = System.unique_integer([:positive])
+
+    Process.send_after(
+      self(),
+      {:flush_metrics, timer_id},
+      @default_config.flush_interval
+    )
   end
 end

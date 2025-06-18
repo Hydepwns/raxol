@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Updater do
-  @moduledoc '''
+  @moduledoc """
   Handles calculating differences and applying updates to the Raxol.Terminal.ScreenBuffer.
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
@@ -11,11 +11,11 @@ defmodule Raxol.Terminal.Buffer.Updater do
 
   import Raxol.Terminal.Buffer.State, only: [get_cell_at: 3]
 
-  @doc '''
+  @doc """
   Calculates the difference between the current buffer state and a list of desired cell changes.
   Returns a list of {x, y, cell_map} tuples representing only the cells that need to be updated.
   Input `changes` must be a list of {x, y, map} tuples.
-  '''
+  """
   @spec diff(
           ScreenBuffer.t(),
           list({non_neg_integer(), non_neg_integer(), map()})
@@ -50,11 +50,11 @@ defmodule Raxol.Terminal.Buffer.Updater do
     )
   end
 
-  @doc '''
+  @doc """
   Updates the buffer state by applying a list of cell changes.
   Changes must be in the format {x, y, Cell.t() | map()}.
   Returns the updated buffer.
-  '''
+  """
   @spec update(
           ScreenBuffer.t(),
           list({non_neg_integer(), non_neg_integer(), Cell.t() | map()})

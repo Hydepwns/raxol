@@ -1,5 +1,5 @@
 defmodule Raxol.Test.Performance do
-  @moduledoc '''
+  @moduledoc """
   Provides utilities for performance testing of Raxol components.
 
   This module includes:
@@ -7,7 +7,7 @@ defmodule Raxol.Test.Performance do
   - Memory usage profiling
   - Event handling latency testing
   - Resource utilization tracking
-  '''
+  """
 
   alias Raxol.Test.Visual
 
@@ -23,17 +23,17 @@ defmodule Raxol.Test.Performance do
     end
   end
 
-  @doc '''
+  @doc """
   Sets up a component for performance testing with benchmark configuration.
-  '''
+  """
   def setup_benchmark_component(module, props \\ %{}) do
     component = Visual.setup_visual_component(module, props)
     Map.put(component, :benchmark_config, default_benchmark_config())
   end
 
-  @doc '''
+  @doc """
   Measures the time taken to render a component multiple times.
-  '''
+  """
   def measure_render_time(component, iterations \\ 1000) do
     {time, _} =
       :timer.tc(fn ->
@@ -46,9 +46,9 @@ defmodule Raxol.Test.Performance do
     time / 1_000
   end
 
-  @doc '''
+  @doc """
   Measures memory usage during component operations.
-  '''
+  """
   def measure_memory_usage(component, operation)
       when is_function(operation, 1) do
     initial = :erlang.memory()
@@ -64,9 +64,9 @@ defmodule Raxol.Test.Performance do
     }
   end
 
-  @doc '''
+  @doc """
   Measures event handling latency.
-  '''
+  """
   def measure_event_latency(component, event) do
     {time, _} =
       :timer.tc(fn ->
@@ -77,9 +77,9 @@ defmodule Raxol.Test.Performance do
     time / 1_000
   end
 
-  @doc '''
+  @doc """
   Runs a benchmark suite for a component.
-  '''
+  """
   def run_benchmark_suite(component) do
     %{
       render_time: measure_render_time(component),
@@ -88,9 +88,9 @@ defmodule Raxol.Test.Performance do
     }
   end
 
-  @doc '''
+  @doc """
   Tracks resource utilization over time.
-  '''
+  """
   def track_resource_utilization(_component, duration_ms) do
     # Track memory usage
     initial_memory = :erlang.memory()

@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Supervisor do
-  @moduledoc '''
+  @moduledoc """
   Supervises the core runtime processes of a Raxol application.
 
   This supervisor manages:
@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
   * Render processes
   * State management
   * Plugin system
-  '''
+  """
 
   use Supervisor
   require Raxol.Core.Runtime.Log

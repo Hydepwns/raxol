@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
   describe "CSI editing functions" do
     # Tests focus on buffer manipulation via CSI sequences processed by Emulator
 
-    test 'ICH - Insert Character inserts spaces and shifts content' do
+    test ~c"ICH - Insert Character inserts spaces and shifts content" do
       # 10 wide, 1 high
       emulator = Emulator.new(10, 1)
       {emulator, _} = Emulator.process_input(emulator, "abcdef")
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       end)
     end
 
-    test 'DCH - Delete Character removes characters and shifts content left' do
+    test ~c"DCH - Delete Character removes characters and shifts content left" do
       # 10 wide, 1 high
       emulator = Emulator.new(10, 1)
       {emulator, _} = Emulator.process_input(emulator, "abcdefghij")
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       end)
     end
 
-    test 'IL - Insert Line inserts blank lines within scroll region' do
+    test ~c"IL - Insert Line inserts blank lines within scroll region" do
       # 5 wide, 5 high
       emulator = Emulator.new(5, 5)
       # Use local helper
@@ -94,14 +94,15 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
         actual_line_trimmed = String.trim(line_text)
 
         assert actual_line_trimmed == expected_line_trimmed,
-               "Mismatch at line #{y}: Expected "#{expected_line_trimmed}", got "#{actual_line_trimmed}""
+               # {expected_line_trimmed}", got "#{actual_line_trimmed}""
+               "Mismatch at line #{y}: Expected "
       end)
 
       # Clean up scroll region
       {_emulator, _} = Emulator.process_input(emulator, "\e[r")
     end
 
-    test 'DL - Delete Line deletes current line and shifts lines up' do
+    test ~c"DL - Delete Line deletes current line and shifts lines up" do
       # Revert to using process_input for setup
       emulator = Emulator.new(80, 5)
       # Write to line 0
@@ -139,7 +140,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       assert String.trim(line4_after) == ""
     end
 
-    test 'DL respects count parameter n' do
+    test ~c"DL respects count parameter n" do
       emulator = Emulator.new(80, 5)
       # Use fill_buffer helper
       emulator = fill_buffer(emulator, 0, 5)
@@ -165,7 +166,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       assert String.trim(get_line_text(emulator, 4)) == ""
     end
 
-    test 'DL respects scroll region' do
+    test ~c"DL respects scroll region" do
       emulator = Emulator.new(80, 6)
       emulator = fill_buffer(emulator, 0, 6)
       # Set scroll region line 2 to 4 (index 1 to 3)
@@ -199,7 +200,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       assert get_line_text(emulator, 5) == line5_before
     end
 
-    test 'DL outside scroll region has no effect' do
+    test ~c"DL outside scroll region has no effect" do
       emulator = Emulator.new(80, 5)
       emulator = fill_buffer(emulator, 0, 5)
       # Set scroll region lines 2 to 4 (index 1 to 3)

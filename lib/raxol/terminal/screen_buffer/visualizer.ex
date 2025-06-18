@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ScreenBuffer.Visualizer do
-  @moduledoc '''
+  @moduledoc """
   Handles screen visualization and chart creation.
-  '''
+  """
 
   defstruct [:charts]
 
@@ -9,18 +9,18 @@ defmodule Raxol.Terminal.ScreenBuffer.Visualizer do
           charts: list(map())
         }
 
-  @doc '''
+  @doc """
   Initializes a new visualizer state.
-  '''
+  """
   def init do
     %__MODULE__{
       charts: []
     }
   end
 
-  @doc '''
+  @doc """
   Creates a new chart with the given data and options.
-  '''
+  """
   def create_chart(%__MODULE__{} = state, data, options) do
     chart = %{
       data: data,

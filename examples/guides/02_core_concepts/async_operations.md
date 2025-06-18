@@ -159,14 +159,14 @@ Consider implementing timeouts for operations that might take too long:
 
 ```elixir
 def init(_) do
-  operation_ref = make_ref()
-  Task.async(fn -> load_data(operation_ref) end)
+  operation_id = System.unique_integer([:positive])
+  Task.async(fn -> load_data(operation_id) end)
   # Set a timeout
-  Process.send_after(self(), {:timeout, operation_ref}, 5000)
-  {:ok, %{ref: operation_ref, status: :loading}, []}
+  Process.send_after(self(), {:timeout, operation_id}, 5000)
+  {:ok, %{id: operation_id, status: :loading}, []}
 end
 
-def update({:timeout, ref}, %{ref: ref, status: :loading} = state) do
+def update({:timeout, id}, %{id: id, status: :loading} = state) do
   # Operation timed out
   {:ok, %{state | status: :timeout}, []}
 end

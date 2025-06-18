@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.Config.Validation do
-  @moduledoc '''
+  @moduledoc """
   Validation logic for terminal configuration.
 
   Ensures that configuration values are valid according to their schema.
-  '''
+  """
 
   alias Raxol.Terminal.Config.Schema
 
-  @doc '''
+  @doc """
   Validates a complete terminal configuration.
 
   ## Parameters
@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Config.Validation do
   ## Returns
 
   `{:ok, validated_config}` or `{:error, reason}`
-  '''
+  """
   def validate_config(config) do
     # Implementation of full configuration validation
     validate_config_recursive(config, [], Schema.config_schema())
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Config.Validation do
     validate_type(value, {type, options}, path)
   end
 
-  @doc '''
+  @doc """
   Validates a specific configuration value against its schema.
 
   ## Parameters
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Config.Validation do
   ## Returns
 
   `{:ok, validated_value}` or `{:error, reason}`
-  '''
+  """
   def validate_value(path, value) do
     case Schema.get_type(path) do
       nil ->

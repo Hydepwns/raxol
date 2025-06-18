@@ -1,9 +1,9 @@
 defmodule Raxol.Plugins.VisualizationPlugin do
-  @moduledoc '''
+  @moduledoc """
   Plugin responsible for rendering visualization components like charts and treemaps.
   It receives data structures from the view rendering pipeline and outputs
   actual terminal cells.
-  '''
+  """
   @behaviour Raxol.Plugins.Plugin
 
   alias Raxol.Plugins.Visualization.ChartRenderer

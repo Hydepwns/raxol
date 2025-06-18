@@ -1,20 +1,20 @@
 defmodule Raxol.Core.Runtime.Plugins.Discovery do
-  @moduledoc '''
+  @moduledoc """
   Handles plugin discovery and initialization.
   This module is responsible for:
   - Discovering available plugins in configured directories
   - Initializing the plugin system
   - Managing plugin metadata and paths
   - Handling plugin dependencies
-  '''
+  """
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.{FileWatcher, Loader, StateManager}
 
-  @doc '''
+  @doc """
   Initializes the plugin discovery system.
-  '''
+  """
   def initialize(state) do
     with {:ok, state} <- StateManager.initialize(state),
          {:ok, state} <- FileWatcher.setup_file_watching(state) do
@@ -43,9 +43,9 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end
   end
 
-  @doc '''
+  @doc """
   Discovers plugins in the given state (all plugin_dirs and plugins_dir).
-  '''
+  """
   def discover_plugins(state) do
     plugin_dirs =
       (state.plugin_dirs || []) ++
@@ -61,26 +61,26 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end)
   end
 
-  @doc '''
+  @doc """
   Discovers plugins in a specific directory.
-  '''
+  """
   def discover_plugins_in_dir(dir, state) do
     # Use the private helper directly
     discover_plugins_in_dir_helper(dir, state)
   end
 
-  @doc '''
+  @doc """
   Lists all discovered plugins in load order as {id, metadata}.
-  '''
+  """
   def list_plugins(state) do
     Enum.map(state.load_order || [], fn id ->
       {id, Map.get(state.metadata || %{}, id)}
     end)
   end
 
-  @doc '''
+  @doc """
   Gets a specific plugin by ID.
-  '''
+  """
   def get_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil -> {:error, :not_found}
@@ -98,7 +98,8 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   end
 
   defp load_plugins_in_dir(dir, state) do
-    plugins = dir
+    plugins =
+      dir
       |> File.ls!()
       |> Enum.filter(&String.ends_with?(&1, ".ex"))
       |> Enum.map(&Path.join(dir, &1))
@@ -118,6 +119,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
       "[#{__MODULE__}] Plugin directory not found: #{dir}",
       %{}
     )
+
     {:ok, state}
   end
 
@@ -128,26 +130,49 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
 
   defp load_and_initialize_plugin(plugin_id, plugin_path, state) do
     case state.loader_module.load_plugin(plugin_id, %{}) do
-      {:ok, plugin, metadata} -> initialize_plugin(plugin_id, plugin, metadata, plugin_path, state)
-      {:error, reason} -> handle_load_error(reason, plugin_id)
+      {:ok, plugin, metadata} ->
+        initialize_plugin(plugin_id, plugin, metadata, plugin_path, state)
+
+      {:error, reason} ->
+        handle_load_error(reason, plugin_id)
     end
   end
 
   defp initialize_plugin(plugin_id, plugin, metadata, plugin_path, state) do
     case state.lifecycle_helper_module.initialize_plugin(plugin, %{}) do
-      {:ok, initial_state} -> {:ok, update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state, plugin_path)}
-      {:error, reason} -> handle_init_error(reason, plugin_id)
+      {:ok, initial_state} ->
+        {:ok,
+         update_state_with_plugin(
+           state,
+           plugin_id,
+           plugin,
+           metadata,
+           initial_state,
+           plugin_path
+         )}
+
+      {:error, reason} ->
+        handle_init_error(reason, plugin_id)
     end
   end
 
-  defp update_state_with_plugin(state, plugin_id, plugin, metadata, initial_state, plugin_path) do
-    %{state |
-      plugins: Map.put(state.plugins, plugin_id, plugin),
-      metadata: Map.put(state.metadata, plugin_id, metadata),
-      plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
-      plugin_paths: Map.put(state.plugin_paths, plugin_id, plugin_path),
-      reverse_plugin_paths: Map.put(state.reverse_plugin_paths, plugin_path, plugin_id),
-      load_order: [plugin_id | state.load_order]
+  defp update_state_with_plugin(
+         state,
+         plugin_id,
+         plugin,
+         metadata,
+         initial_state,
+         plugin_path
+       ) do
+    %{
+      state
+      | plugins: Map.put(state.plugins, plugin_id, plugin),
+        metadata: Map.put(state.metadata, plugin_id, metadata),
+        plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
+        plugin_paths: Map.put(state.plugin_paths, plugin_id, plugin_path),
+        reverse_plugin_paths:
+          Map.put(state.reverse_plugin_paths, plugin_path, plugin_id),
+        load_order: [plugin_id | state.load_order]
     }
   end
 
@@ -158,6 +183,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
       nil,
       %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
     )
+
     {:error, reason}
   end
 
@@ -168,6 +194,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
       nil,
       %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
     )
+
     {:error, reason}
   end
 end

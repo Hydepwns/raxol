@@ -1,17 +1,17 @@
 defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
-  @moduledoc '''
+  @moduledoc """
   Handles the :designate_charset state of the terminal parser.
-  '''
+  """
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.ANSI.CharacterSets
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Processes input when the parser is in the :designate_charset state.
   Expects a single character designating the character set.
-  '''
+  """
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()}
           | {:finished, Emulator.t(), State.t()}

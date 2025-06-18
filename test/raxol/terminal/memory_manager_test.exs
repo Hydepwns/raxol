@@ -16,22 +16,22 @@ defmodule Raxol.Terminal.MemoryManagerTest do
   end
 
   describe "estimate_memory_usage/1" do
-    test 'returns 0 when both buffer_manager and scroll_buffer are missing' do
+    test ~c"returns 0 when both buffer_manager and scroll_buffer are missing" do
       state = %MockState{}
       assert MemoryManager.estimate_memory_usage(state) == 0
     end
 
-    test 'returns buffer_manager memory_usage when only buffer_manager is present' do
+    test ~c"returns buffer_manager memory_usage when only buffer_manager is present" do
       state = %MockState{buffer_manager: %MockBufferManager{memory_usage: 1000}}
       assert MemoryManager.estimate_memory_usage(state) == 1000
     end
 
-    test 'returns scroll_buffer memory_usage when only scroll_buffer is present' do
+    test ~c"returns scroll_buffer memory_usage when only scroll_buffer is present" do
       state = %MockState{scroll_buffer: %MockScrollBuffer{memory_usage: 2000}}
       assert MemoryManager.estimate_memory_usage(state) == 2000
     end
 
-    test 'returns sum of buffer_manager and scroll_buffer memory_usage when both are present' do
+    test ~c"returns sum of buffer_manager and scroll_buffer memory_usage when both are present" do
       state = %MockState{
         buffer_manager: %MockBufferManager{memory_usage: 1500},
         scroll_buffer: %MockScrollBuffer{memory_usage: 2500}
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
       assert MemoryManager.estimate_memory_usage(state) == 4000
     end
 
-    test 'handles missing memory_usage fields gracefully' do
+    test ~c"handles missing memory_usage fields gracefully" do
       state = %MockState{
         buffer_manager: %{},
         scroll_buffer: %{}
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
   end
 
   describe "estimate_memory_usage/1 (integration)" do
-    test 'returns correct sum for real State with default config' do
+    test ~c"returns correct sum for real State with default config" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
 
       behavior_keys =
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
       assert MemoryManager.estimate_memory_usage(state) == expected
     end
 
-    test 'returns correct sum for State with custom memory_usage values' do
+    test ~c"returns correct sum for State with custom memory_usage values" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
 
       behavior_keys =
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
       assert MemoryManager.estimate_memory_usage(state) == 3333
     end
 
-    test 'returns correct value if only buffer_manager has memory_usage' do
+    test ~c"returns correct value if only buffer_manager has memory_usage" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
 
       behavior_keys =
@@ -105,7 +105,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
       assert MemoryManager.estimate_memory_usage(state) == 555
     end
 
-    test 'returns correct value if only scroll_buffer has memory_usage' do
+    test ~c"returns correct value if only scroll_buffer has memory_usage" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
 
       behavior_keys =

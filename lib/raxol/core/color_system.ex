@@ -1,5 +1,5 @@
 defmodule Raxol.Core.ColorSystem do
-  @moduledoc '''
+  @moduledoc """
   Core color system for Raxol.
 
   This module provides a unified interface for managing colors and themes
@@ -11,7 +11,7 @@ defmodule Raxol.Core.ColorSystem do
   - Theme management with semantic color naming
   - Color format conversion and validation
   - Accessibility checks and adjustments
-  '''
+  """
 
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Accessibility.ThemeIntegration
@@ -19,7 +19,7 @@ defmodule Raxol.Core.ColorSystem do
   alias Raxol.Style.Colors.{Color, Utilities}
   require Raxol.Core.Runtime.Log
 
-  @doc '''
+  @doc """
   Creates a new theme with the given name and colors.
 
   ## Examples
@@ -31,7 +31,7 @@ defmodule Raxol.Core.ColorSystem do
       ...> })
       iex> theme.name
       "dark"
-  '''
+  """
   def create_theme(name, colors) when is_binary(name) and is_map(colors) do
     # Convert hex colors to Color structs
     colors =
@@ -44,7 +44,7 @@ defmodule Raxol.Core.ColorSystem do
     }
   end
 
-  @doc '''
+  @doc """
   Gets a color from the theme by its semantic name.
 
   ## Examples
@@ -52,12 +52,12 @@ defmodule Raxol.Core.ColorSystem do
       iex> theme = create_theme("dark", %{primary: "#FF0000"})
       iex> get_color(theme, :primary)
       %Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
-  '''
+  """
   def get_color(theme, name) when is_map(theme) and is_atom(name) do
     get_in(theme, [:colors, name])
   end
 
-  @doc '''
+  @doc """
   Checks if two colors meet WCAG contrast requirements.
 
   ## Examples
@@ -68,7 +68,7 @@ defmodule Raxol.Core.ColorSystem do
       ...> })
       iex> meets_contrast_requirements?(theme, :text, :background, :AA, :normal)
       true
-  '''
+  """
   def meets_contrast_requirements?(theme, foreground, background, level, size) do
     fg = get_color(theme, foreground)
     bg = get_color(theme, background)
@@ -76,7 +76,7 @@ defmodule Raxol.Core.ColorSystem do
     Utilities.meets_contrast_requirements?(fg, bg, level, size)
   end
 
-  @doc '''
+  @doc """
   Converts a color to its ANSI representation.
 
   ## Examples
@@ -84,13 +84,13 @@ defmodule Raxol.Core.ColorSystem do
       iex> theme = create_theme("dark", %{primary: "#FF0000"})
       iex> to_ansi(theme, :primary, :foreground)
       196
-  '''
+  """
   def to_ansi(theme, color_name, type) do
     color = get_color(theme, color_name)
     Color.to_ansi(color, type)
   end
 
-  @doc '''
+  @doc """
   Adjusts a color to meet contrast requirements with another color.
 
   ## Examples
@@ -102,7 +102,7 @@ defmodule Raxol.Core.ColorSystem do
       iex> adjusted = adjust_for_contrast(theme, :text, :background, :AA, :normal)
       iex> meets_contrast_requirements?(adjusted, :text, :background, :AA, :normal)
       true
-  '''
+  """
   def adjust_for_contrast(theme, foreground, background, level, size) do
     fg = get_color(theme, foreground)
     bg = get_color(theme, background)
@@ -116,7 +116,7 @@ defmodule Raxol.Core.ColorSystem do
     end
   end
 
-  @doc '''
+  @doc """
   Gets the effective color value for a given semantic color name.
 
   It retrieves the color from the specified theme (by ID), automatically considering
@@ -127,7 +127,7 @@ defmodule Raxol.Core.ColorSystem do
     - `color_name`: The semantic name of the color (e.g., :primary, :background).
 
   Returns the color value (e.g., :red, {:rgb, r, g, b}) or nil if not found.
-  '''
+  """
   @spec get(atom(), atom()) :: Raxol.Style.Colors.color_value() | nil
   def get(theme_id, color_name)
       when is_atom(theme_id) and is_atom(color_name) do
@@ -162,7 +162,7 @@ defmodule Raxol.Core.ColorSystem do
       end
     else
       Raxol.Core.Runtime.Log.warning_with_context(
-        "ColorSystem: Theme with ID "#{theme_id}" not found. Falling back.",
+        "ColorSystem: Theme with ID #{theme_id} not found. Falling back.",
         %{}
       )
 
@@ -170,7 +170,7 @@ defmodule Raxol.Core.ColorSystem do
     end
   end
 
-  @doc '''
+  @doc """
   Gets a color value and ensures it's returned in a specific format (e.g., RGB tuple).
   Useful when a specific color representation is required for rendering.
 
@@ -180,7 +180,7 @@ defmodule Raxol.Core.ColorSystem do
     - `format`: The desired output format (:rgb_tuple, :hex_string, :term).
 
   Supported formats: :rgb_tuple, :hex_string, :term
-  '''
+  """
   @spec get_as(atom(), atom(), atom()) :: any() | nil
   def get_as(theme_id, color_name, format \\ :term)
       when is_atom(theme_id) and is_atom(color_name) and is_atom(format) do

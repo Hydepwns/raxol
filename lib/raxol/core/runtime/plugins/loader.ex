@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.Loader do
-  @moduledoc '''
+  @moduledoc """
   Manages plugin loading operations.
-  '''
+  """
 
   use GenServer
   require Logger
@@ -21,48 +21,48 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # Client API
 
-  @doc '''
+  @doc """
   Starts the plugin loader.
-  '''
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc '''
+  @doc """
   Loads a plugin from the given path.
-  '''
+  """
   @impl true
   def load_plugin(plugin_path) when is_binary(plugin_path) do
     GenServer.call(__MODULE__, {:load_plugin, plugin_path})
   end
 
-  @doc '''
+  @doc """
   Unloads a plugin.
-  '''
+  """
   @impl true
   def unload_plugin(plugin) do
     GenServer.call(__MODULE__, {:unload_plugin, plugin})
   end
 
-  @doc '''
+  @doc """
   Reloads a plugin.
-  '''
+  """
   @impl true
   def reload_plugin(plugin) do
     GenServer.call(__MODULE__, {:reload_plugin, plugin})
   end
 
-  @doc '''
+  @doc """
   Gets the list of loaded plugins.
-  '''
+  """
   @impl true
   def get_loaded_plugins do
     GenServer.call(__MODULE__, :get_loaded_plugins)
   end
 
-  @doc '''
+  @doc """
   Checks if a plugin is loaded.
-  '''
+  """
   @impl true
   def is_plugin_loaded?(plugin) do
     GenServer.call(__MODULE__, {:is_plugin_loaded?, plugin})
@@ -71,7 +71,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     state = %__MODULE__{
       loaded_plugins: %{},
       plugin_configs: %{},
@@ -130,13 +130,16 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   defp do_load_plugin(plugin_path, state) do
     with {:ok, plugin_module} <- Code.compile_file(plugin_path),
          {:ok, plugin_metadata} <- extract_metadata(plugin_module),
-         {:ok, initial_state} <- initialize_plugin(plugin_module, %{}) do
+         {:ok, _initial_state} <- initialize_plugin(plugin_module, %{}) do
       new_state = %{
         state
-        | loaded_plugins: Map.put(state.loaded_plugins, plugin_path, plugin_module),
+        | loaded_plugins:
+            Map.put(state.loaded_plugins, plugin_path, plugin_module),
           plugin_configs: Map.put(state.plugin_configs, plugin_path, %{}),
-          plugin_metadata: Map.put(state.plugin_metadata, plugin_path, plugin_metadata)
+          plugin_metadata:
+            Map.put(state.plugin_metadata, plugin_path, plugin_metadata)
       }
+
       {:ok, new_state}
     else
       {:error, reason} -> {:error, reason}
@@ -145,15 +148,19 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   defp do_unload_plugin(plugin, state) do
     case Map.get(state.loaded_plugins, plugin) do
-      nil -> {:error, :plugin_not_found}
+      nil ->
+        {:error, :plugin_not_found}
+
       plugin_module ->
         :code.purge(plugin_module)
+
         new_state = %{
           state
           | loaded_plugins: Map.delete(state.loaded_plugins, plugin),
             plugin_configs: Map.delete(state.plugin_configs, plugin),
             plugin_metadata: Map.delete(state.plugin_metadata, plugin)
         }
+
         {:ok, new_state}
     end
   end

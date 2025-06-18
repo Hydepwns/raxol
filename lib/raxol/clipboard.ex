@@ -1,13 +1,13 @@
 defmodule Raxol.Clipboard do
-  @moduledoc '''
+  @moduledoc """
   Handles clipboard operations across different platforms.
   Provides a unified interface for copy/paste functionality.
-  '''
+  """
 
-  @doc '''
+  @doc """
   Sets text to the system clipboard.
   Returns :ok on success, {:error, reason} on failure.
-  '''
+  """
   @spec set_text(String.t()) :: :ok | {:error, term()}
   def set_text(text) do
     case :os.type() do
@@ -51,10 +51,10 @@ defmodule Raxol.Clipboard do
     end
   end
 
-  @doc '''
+  @doc """
   Gets text from the system clipboard.
   Returns {:ok, text} on success, {:error, reason} on failure.
-  '''
+  """
   @spec get_text() :: {:ok, String.t()} | {:error, term()}
   def get_text do
     case :os.type() do
