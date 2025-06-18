@@ -22,7 +22,27 @@ defmodule Raxol.Terminal.ScreenBuffer.Cloud do
   end
 
   def init(config) do
-    {:ok, config}
+    %__MODULE__{
+      sync_enabled: Keyword.get(config, :sync_enabled, false),
+      auto_sync: Keyword.get(config, :auto_sync, true),
+      sync_interval: Keyword.get(config, :sync_interval, 5000)
+    }
+  end
+
+  def init do
+    %__MODULE__{
+      sync_enabled: false,
+      auto_sync: true,
+      sync_interval: 5000
+    }
+  end
+
+  defp default_config do
+    %__MODULE__{
+      sync_enabled: false,
+      auto_sync: true,
+      sync_interval: 5000
+    }
   end
 
   @doc """
@@ -45,13 +65,5 @@ defmodule Raxol.Terminal.ScreenBuffer.Cloud do
 
   def handle_call({:set_config, config}, _from, _state) do
     {:reply, config, config}
-  end
-
-  defp default_config do
-    %__MODULE__{
-      sync_enabled: false,
-      auto_sync: false,
-      sync_interval: 300
-    }
   end
 end

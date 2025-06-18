@@ -23,24 +23,26 @@
         phx-change="validate"
         class="settings-form"
       >
-        <.input
-          field={@changeset[:email]}
-          type="email"
+        <.form_group
+          name="email"
           label="Email"
+          type="email"
+          value={@changeset[:email].value}
           required
         />
-        <.input
-          field={@changeset[:username]}
-          type="text"
+        <.form_group
+          name="username"
           label="Username"
+          type="text"
+          value={@changeset[:username].value}
           required
         />
 
-        <:actions>
+        <div class="mt-4">
           <.button type="submit" class="settings-button">
             Update Profile
           </.button>
-        </:actions>
+        </div>
       </.form>
     </div>
 
@@ -53,30 +55,33 @@
         phx-change="validate"
         class="settings-form"
       >
-        <.input
-          field={@changeset[:current_password]}
-          type="password"
+        <.form_group
+          name="current_password"
           label="Current Password"
+          type="password"
+          value={@changeset[:current_password].value}
           required
         />
-        <.input
-          field={@changeset[:password]}
-          type="password"
+        <.form_group
+          name="password"
           label="New Password"
+          type="password"
+          value={@changeset[:password].value}
           required
         />
-        <.input
-          field={@changeset[:password_confirmation]}
-          type="password"
+        <.form_group
+          name="password_confirmation"
           label="Confirm New Password"
+          type="password"
+          value={@changeset[:password_confirmation].value}
           required
         />
 
-        <:actions>
+        <div class="mt-4">
           <.button type="submit" class="settings-button">
             Update Password
           </.button>
-        </:actions>
+        </div>
       </.form>
     </div>
 

@@ -1,4 +1,7 @@
 defmodule Raxol.Terminal.Command.Manager do
+  use GenServer
+  require Logger
+
   @moduledoc """
   Manages terminal command state, history, and execution.
   """
@@ -17,11 +20,121 @@ defmodule Raxol.Terminal.Command.Manager do
     history_index: integer()
   }
 
-  @doc """
-  Creates a new command manager instance.
-  """
-  def new do
-    %__MODULE__{}
+  # --- Client API ---
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  def new(opts \\ []) do
+    %{
+      commands: %{},
+      history: [],
+      current_command: nil,
+      status: :idle,
+      error: nil
+    }
+  end
+
+  def execute_command(pid \\ __MODULE__, command) do
+    GenServer.call(pid, {:execute_command, command})
+  end
+
+  def get_command_history(manager \\ %__MODULE__{}) do
+    GenServer.call(manager, :get_command_history)
+  end
+
+  def clear_command_history(pid \\ __MODULE__) do
+    GenServer.call(pid, :clear_command_history)
+  end
+
+  def get_current_command(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_current_command)
+  end
+
+  def set_current_command(pid \\ __MODULE__, command) do
+    GenServer.call(pid, {:set_current_command, command})
+  end
+
+  def get_command_buffer(manager \\ %__MODULE__{}) do
+    GenServer.call(manager, :get_command_buffer)
+  end
+
+  def clear_command_buffer(pid \\ __MODULE__) do
+    GenServer.call(pid, :clear_command_buffer)
+  end
+
+  def get_command_state(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_command_state)
+  end
+
+  def set_command_state(pid \\ __MODULE__, state) do
+    GenServer.call(pid, {:set_command_state, state})
+  end
+
+  # --- Server Callbacks ---
+
+  @impl true
+  def init(opts) do
+    state = new(opts)
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:execute_command, command}, _from, state) do
+    case Map.get(state.commands, command) do
+      nil ->
+        {:reply, {:error, :command_not_found}, state}
+      command_fn ->
+        result = command_fn.()
+        new_history = [command | Enum.take(state.history, state.max_history - 1)]
+        new_state = %{state | history: new_history}
+        {:reply, {:ok, result}, new_state}
+    end
+  end
+
+  @impl true
+  def handle_call(:get_command_history, _from, state) do
+    {:reply, state.history, state}
+  end
+
+  @impl true
+  def handle_call(:clear_command_history, _from, state) do
+    new_state = %{state | history: []}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_current_command, _from, state) do
+    {:reply, state.current_command, state}
+  end
+
+  @impl true
+  def handle_call({:set_current_command, command}, _from, state) do
+    new_state = %{state | current_command: command}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_command_buffer, _from, state) do
+    {:reply, state.command_buffer, state}
+  end
+
+  @impl true
+  def handle_call(:clear_command_buffer, _from, state) do
+    new_state = %{state | command_buffer: []}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_command_state, _from, state) do
+    {:reply, state.command_state, state}
+  end
+
+  @impl true
+  def handle_call({:set_command_state, new_state}, _from, state) do
+    new_state = %{state | command_state: new_state}
+    {:reply, :ok, new_state}
   end
 
   @doc """
@@ -91,7 +204,7 @@ defmodule Raxol.Terminal.Command.Manager do
 
       {:key, :backspace} ->
         if state.command_buffer != "" do
-          %{state | command_buffer: String.slice(state.command_buffer, 0..-2)}
+          %{state | command_buffer: String.slice(state.command_buffer, 0..-2//-1)}
         else
           state
         end

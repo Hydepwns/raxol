@@ -17,35 +17,21 @@ defmodule Raxol.Terminal.Emulator do
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
-  alias Raxol.Terminal.{
-    ScreenBuffer,
-    Cell
-  }
-
-  alias Raxol.Terminal.{
-    Cursor.Manager,
-    ModeManager,
-    Plugins.Manager.Core,
-    Buffer.Manager,
-    Command.Manager,
-    Buffer.Operations,
-    Tab.Manager,
-    Output.Manager,
-    Window.Manager,
-    Hyperlink.Manager,
-    Color.Manager,
-    State.Manager,
-    Scrollback.Manager,
-    ScreenManager,
-    Parser.StateManager,
-    Plugin.Manager,
-    Charset.Manager,
-    Formatting.Manager,
-    TerminalState.Manager,
-    Emulator.Struct
-  }
-
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Buffer.Operations, as: BufferOps
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Tab.Manager, as: TabManager
+  alias Raxol.Terminal.OutputManager
+  alias Raxol.Terminal.WindowManager
+  alias Raxol.Terminal.HyperlinkManager
+  alias Raxol.Terminal.ColorManager
+  alias Raxol.Terminal.FormattingManager
+  alias Raxol.Terminal.CharsetManager
+  alias Raxol.Terminal.State.Manager, as: TerminalStateManager
+  alias Raxol.Terminal.ScrollbackManager
+  alias Raxol.Terminal.ScreenManager
   alias Raxol.Terminal.Parser.StateManager, as: ParserStateManager
+  alias Raxol.Terminal.Emulator.Struct
 
   @type cursor_style_type ::
           :blinking_block
@@ -432,10 +418,10 @@ defmodule Raxol.Terminal.Emulator do
     as: :search_history
 
   # Delegate tab operations to Tab.Manager
-  defdelegate set_horizontal_tab(emulator), to: Tab.Manager
-  defdelegate clear_tab_stop(emulator), to: Tab.Manager
-  defdelegate clear_all_tab_stops(emulator), to: Tab.Manager
-  defdelegate get_next_tab_stop(emulator), to: Tab.Manager
+  defdelegate set_horizontal_tab(emulator), to: TabManager
+  defdelegate clear_tab_stop(emulator), to: TabManager
+  defdelegate clear_all_tab_stops(emulator), to: TabManager
+  defdelegate get_next_tab_stop(emulator), to: TabManager
 
   # Delegate output operations to OutputManager
   defdelegate enqueue_output(emulator, output), to: OutputManager
@@ -601,5 +587,164 @@ defmodule Raxol.Terminal.Emulator do
   def write_to_output(%Struct{} = emulator, output) when is_binary(output) do
     {new_emulator, _} = process_input(emulator, output)
     new_emulator
+  end
+
+  # --- Client API ---
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  def move_cursor(pid \\ __MODULE__, direction, count \\ 1) do
+    GenServer.call(pid, {:move_cursor, direction, count})
+  end
+
+  def get_cursor_position(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_cursor_position)
+  end
+
+  def set_cursor_position(pid \\ __MODULE__, {row, col}) do
+    GenServer.call(pid, {:set_cursor_position, row, col})
+  end
+
+  def get_cursor_visibility(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_cursor_visibility)
+  end
+
+  def set_cursor_visibility(pid \\ __MODULE__, visible) do
+    GenServer.call(pid, {:set_cursor_visibility, visible})
+  end
+
+  def get_cursor_style(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_cursor_style)
+  end
+
+  def set_cursor_style(pid \\ __MODULE__, style) do
+    GenServer.call(pid, {:set_cursor_style, style})
+  end
+
+  def get_cursor_blink(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_cursor_blink)
+  end
+
+  def set_cursor_blink(pid \\ __MODULE__, blink) do
+    GenServer.call(pid, {:set_cursor_blink, blink})
+  end
+
+  # --- Server Callbacks ---
+
+  @impl true
+  def init(opts) do
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+    buffer = ScreenBuffer.new(width, height)
+    cursor = CursorManager.new()
+    screen = ScreenBuffer.new(width, height)
+
+    state = %{
+      buffer: buffer,
+      cursor: cursor,
+      screen: screen,
+      width: width,
+      height: height
+    }
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:move_cursor, direction, count}, _from, state) do
+    {new_cursor, new_buffer} = case direction do
+      :up -> move_up(state.cursor, state.buffer, count)
+      :down -> move_down(state.cursor, state.buffer, count)
+      :left -> move_left(state.cursor, state.buffer, count)
+      :right -> move_right(state.cursor, state.buffer, count)
+      _ -> {state.cursor, state.buffer}
+    end
+
+    new_state = %{state | cursor: new_cursor, buffer: new_buffer}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_cursor_position, _from, state) do
+    position = CursorManager.get_position(state.cursor)
+    {:reply, position, state}
+  end
+
+  @impl true
+  def handle_call({:set_cursor_position, row, col}, _from, state) do
+    new_cursor = CursorManager.move_to(state.cursor, {row, col})
+    new_state = %{state | cursor: new_cursor}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_cursor_visibility, _from, state) do
+    visible = CursorManager.is_visible?(state.cursor)
+    {:reply, visible, state}
+  end
+
+  @impl true
+  def handle_call({:set_cursor_visibility, visible}, _from, state) do
+    new_cursor = CursorManager.set_visibility(state.cursor, visible)
+    new_state = %{state | cursor: new_cursor}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_cursor_style, _from, state) do
+    style = CursorManager.get_style(state.cursor)
+    {:reply, style, state}
+  end
+
+  @impl true
+  def handle_call({:set_cursor_style, style}, _from, state) do
+    new_cursor = CursorManager.set_style(state.cursor, style)
+    new_state = %{state | cursor: new_cursor}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_cursor_blink, _from, state) do
+    blink = CursorManager.get_blink(state.cursor)
+    {:reply, blink, state}
+  end
+
+  @impl true
+  def handle_call({:set_cursor_blink, blink}, _from, state) do
+    new_cursor = CursorManager.set_blink(state.cursor, blink)
+    new_state = %{state | cursor: new_cursor}
+    {:reply, :ok, new_state}
+  end
+
+  # --- Private Functions ---
+
+  defp move_up(cursor, buffer, count) do
+    {row, col} = CursorManager.get_position(cursor)
+    new_row = max(0, row - count)
+    new_cursor = CursorManager.move_to(cursor, {new_row, col})
+    {new_cursor, buffer}
+  end
+
+  defp move_down(cursor, buffer, count) do
+    {row, col} = CursorManager.get_position(cursor)
+    new_row = min(buffer.height - 1, row + count)
+    new_cursor = CursorManager.move_to(cursor, {new_row, col})
+    {new_cursor, buffer}
+  end
+
+  defp move_left(cursor, buffer, count) do
+    {row, col} = CursorManager.get_position(cursor)
+    new_col = max(0, col - count)
+    new_cursor = CursorManager.move_to(cursor, {row, new_col})
+    {new_cursor, buffer}
+  end
+
+  defp move_right(cursor, buffer, count) do
+    {row, col} = CursorManager.get_position(cursor)
+    new_col = min(buffer.width - 1, col + count)
+    new_cursor = CursorManager.move_to(cursor, {row, new_col})
+    {new_cursor, buffer}
   end
 end

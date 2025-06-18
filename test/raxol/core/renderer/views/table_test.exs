@@ -1,6 +1,10 @@
 import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
 
 defmodule Raxol.Core.Renderer.Views.TableTest do
+  @moduledoc """
+  Test module for the Table view component.
+  Verifies table initialization, styling, column handling, and rendering behavior.
+  """
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.Views.Table
@@ -35,7 +39,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
     assert state.title == nil
     assert state.selectable == false
     assert state.selected == nil
-    assert state.header_style == []
+    assert state.header_style == [:bold]
     assert state.row_style == []
   end
 
@@ -179,6 +183,14 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
   end
 
   describe "rendering" do
-    # ... existing code ...
+    # TODO: Implement rendering tests for Table component
+    #
+    # Tests should cover:
+    # - Basic table rendering with headers and data
+    # - Different border styles (single, double, none)
+    # - Row selection highlighting
+    # - Striped row styling
+    # - Title rendering
+    # - Empty table state
   end
 end

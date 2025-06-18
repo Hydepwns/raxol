@@ -112,6 +112,26 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   Characters to the right of the insertion point are shifted right.
   Characters shifted off the end of the line are discarded.
   Uses the provided default style for new characters.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `row` - The row to insert characters in
+  * `col` - The column to start inserting at
+  * `count` - The number of characters to insert
+  * `default_style` - The style to apply to new characters
+
+  ## Returns
+
+  The updated screen buffer.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> style = %{fg: :red, bg: :blue}
+      iex> buffer = CharEditor.insert_characters(buffer, 0, 0, 5, style)
+      iex> CharEditor.get_char(buffer, 0, 0)
+      " "
   """
   @spec insert_characters(
           Raxol.Terminal.ScreenBuffer.t(),
@@ -130,7 +150,30 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     end
   end
 
-  defp insert_into_line(line, col, count, default_style) do
+  @doc """
+  Inserts characters into a line at the specified position.
+
+  ## Parameters
+
+  * `line` - The line to modify
+  * `col` - The column to start inserting at
+  * `count` - The number of characters to insert
+  * `default_style` - The style to apply to new characters
+
+  ## Returns
+
+  The updated line with inserted characters.
+
+  ## Examples
+
+      iex> line = List.duplicate(%Cell{}, 10)
+      iex> style = %{fg: :red, bg: :blue}
+      iex> new_line = CharEditor.insert_into_line(line, 5, 3, style)
+      iex> length(new_line)
+      10
+  """
+  @spec insert_into_line(list(Cell.t()), non_neg_integer(), non_neg_integer(), Raxol.Terminal.ANSI.TextFormatting.text_style()) :: list(Cell.t())
+  def insert_into_line(line, col, count, default_style) do
     {left_part, right_part} = Enum.split(line, col)
     blank_cell = %Cell{
       char: " ",
@@ -147,6 +190,26 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   Deletes a specified number of characters starting from the given position.
   Characters to the right of the deleted characters are shifted left.
   Blank characters are added at the end of the line using the provided default style.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `row` - The row to delete characters from
+  * `col` - The column to start deleting from
+  * `count` - The number of characters to delete
+  * `default_style` - The style to apply to new characters
+
+  ## Returns
+
+  The updated screen buffer.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> style = %{fg: :red, bg: :blue}
+      iex> buffer = CharEditor.delete_characters(buffer, 0, 0, 5, style)
+      iex> CharEditor.get_char(buffer, 0, 0)
+      " "
   """
   @spec delete_characters(
           Raxol.Terminal.ScreenBuffer.t(),

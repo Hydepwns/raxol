@@ -10,7 +10,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
     :line_height,
     :scrollback_size,
     :tab_width,
-    :word_wrap
+    :word_wrap,
+    :auto_wrap,
+    :cursor_style,
+    :cursor_blink
   ]
 
   @type t :: %__MODULE__{
@@ -18,7 +21,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
           line_height: non_neg_integer(),
           scrollback_size: non_neg_integer(),
           tab_width: non_neg_integer(),
-          word_wrap: boolean()
+          word_wrap: boolean(),
+          auto_wrap: boolean(),
+          cursor_style: atom(),
+          cursor_blink: boolean()
         }
 
   def start_link(_) do
@@ -26,7 +32,33 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
   end
 
   def init(preferences) do
-    {:ok, preferences}
+    %__MODULE__{
+      scrollback_size: Keyword.get(preferences, :scrollback_size, 1000),
+      tab_width: Keyword.get(preferences, :tab_width, 8),
+      auto_wrap: Keyword.get(preferences, :auto_wrap, true),
+      cursor_style: Keyword.get(preferences, :cursor_style, :block),
+      cursor_blink: Keyword.get(preferences, :cursor_blink, true)
+    }
+  end
+
+  def init do
+    %__MODULE__{
+      scrollback_size: 1000,
+      tab_width: 8,
+      auto_wrap: true,
+      cursor_style: :block,
+      cursor_blink: true
+    }
+  end
+
+  defp default_preferences do
+    %__MODULE__{
+      scrollback_size: 1000,
+      tab_width: 8,
+      auto_wrap: true,
+      cursor_style: :block,
+      cursor_blink: true
+    }
   end
 
   @doc """
@@ -49,15 +81,5 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
 
   def handle_call({:set, preferences}, _from, _state) do
     {:reply, preferences, preferences}
-  end
-
-  defp default_preferences do
-    %__MODULE__{
-      font_size: 12,
-      line_height: 20,
-      scrollback_size: 1000,
-      tab_width: 8,
-      word_wrap: true
-    }
   end
 end

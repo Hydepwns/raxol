@@ -144,8 +144,8 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   end
 
   defp shift_lines(buffer, target_start, source_start, count) do
-    {before, _region} = Enum.split(buffer.cells, target_start)
-    {_region, after_part} = Enum.split(_region, count)
+    {before, region} = Enum.split(buffer.cells, target_start)
+    {region, after_part} = Enum.split(region, count)
     {_, source_region} = Enum.split(buffer.cells, source_start)
     {source_region, _} = Enum.split(source_region, count)
     updated_cells = before ++ source_region ++ after_part

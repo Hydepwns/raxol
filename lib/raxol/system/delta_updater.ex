@@ -33,42 +33,30 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   def apply_delta_update(delta_url, target_version) do
-    # Generate a temporary directory path component
     random_suffix = :rand.uniform(1_000_000)
 
-    case @system_adapter.system_tmp_dir() do
-      {:error, reason_systmp} ->
-        {:error, reason_systmp}
+    with {:ok, base_tmp_dir} <- @system_adapter.system_tmp_dir(),
+         tmp_dir_path = Path.join(base_tmp_dir, "raxol_update_#{random_suffix}"),
+         :ok <- @system_adapter.file_mkdir_p(tmp_dir_path) do
+      try do
+        perform_update(tmp_dir_path, delta_url, target_version)
+      after
+        @system_adapter.file_rm_rf(tmp_dir_path)
+      end
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-      {:ok, base_tmp_dir} ->
-        tmp_dir_path = Path.join(base_tmp_dir, "raxol_update_#{random_suffix}")
-
-        case @system_adapter.file_mkdir_p(tmp_dir_path) do
-          :ok ->
-            # Temporary directory created. Proceed with operations and ensure cleanup.
-            try do
-              with {:ok, current_exe} <- get_current_executable(),
-                   delta_file = Path.join(tmp_dir_path, "update.delta"),
-                   :ok <- download_delta(delta_url, delta_file),
-                   new_exe = Path.join(tmp_dir_path, "raxol.new"),
-                   :ok <- apply_binary_delta(current_exe, delta_file, new_exe),
-                   :ok <- verify_patched_executable(new_exe, target_version),
-                   :ok <- replace_executable(current_exe, new_exe) do
-                {:ok, :update_applied}
-              else
-                error_term ->
-                  # Pass through any error from the 'with' chain
-                  error_term
-              end
-            after
-              # Cleanup the temporary directory
-              @system_adapter.file_rm_rf(tmp_dir_path)
-            end
-
-          {:error, reason_mkdir} ->
-            # Failed to create the specific temporary directory
-            {:error, reason_mkdir}
-        end
+  defp perform_update(tmp_dir_path, delta_url, target_version) do
+    with {:ok, current_exe} <- get_current_executable(),
+         delta_file = Path.join(tmp_dir_path, "update.delta"),
+         :ok <- download_delta(delta_url, delta_file),
+         new_exe = Path.join(tmp_dir_path, "raxol.new"),
+         :ok <- apply_binary_delta(current_exe, delta_file, new_exe),
+         :ok <- verify_patched_executable(new_exe, target_version),
+         :ok <- replace_executable(current_exe, new_exe) do
+      {:ok, :update_applied}
     end
   end
 
@@ -142,27 +130,19 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   defp verify_patched_executable(exe_path, expected_version) do
-    with :ok <- @system_adapter.file_chmod(exe_path, 0o755) do
-      # Run the new executable with --version to verify it reports the correct version
-      case @system_adapter.system_cmd(exe_path, ["--version"],
-             stderr_to_stdout: true
-           ) do
-        {output, 0} ->
-          if String.contains?(output, expected_version) do
-            :ok
-          else
-            # Return error tuple
-            {:error, :version_verification_failed}
-          end
-
-        {error_output, _exit_status} ->
-          # Return error tuple
-          {:error, {:verify_failed_to_run, error_output}}
-      end
-    else
+    case @system_adapter.file_chmod(exe_path, 0o755) do
+      :ok -> check_version(exe_path, expected_version)
       {:error, reason} -> {:error, {:chmod_failed, reason}}
-      # Catch any other unexpected error from file_chmod
       error -> error
+    end
+  end
+
+  defp check_version(exe_path, expected_version) do
+    case @system_adapter.system_cmd(exe_path, ["--version"], stderr_to_stdout: true) do
+      {output, 0} ->
+        if String.contains?(output, expected_version), do: :ok, else: {:error, :version_verification_failed}
+      {error_output, _exit_status} ->
+        {:error, {:verify_failed_to_run, error_output}}
     end
   end
 

@@ -244,7 +244,7 @@ defmodule Raxol.Terminal.Session do
     new_state =
       try do
         case EmulatorStruct.process_input(state.emulator, input) do
-          {new_emulator, output}
+          {new_emulator, _output}
           when is_struct(new_emulator, EmulatorStruct) ->
             %{state | emulator: new_emulator}
 

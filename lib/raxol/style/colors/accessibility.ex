@@ -253,32 +253,21 @@ defmodule Raxol.Style.Colors.Accessibility do
     # Call the new helper function
     min_ratio = min_contrast(level)
 
-    cond do
-      contrast_with_white >= min_ratio ->
-        # White text on base_color background
-        {white, base_color}
-
-      contrast_with_black >= min_ratio ->
+    if contrast_with_white >= min_ratio do
+      # White text on base_color background
+      {white, base_color}
+    else
+      if contrast_with_black >= min_ratio do
         # Black text on base_color background
         {black, base_color}
-
-      # Same check, interpretation differs
-      contrast_with_white >= min_ratio ->
-        # Base_color text on white background
-        {base_color, white}
-
-      # Same check, interpretation differs
-      contrast_with_black >= min_ratio ->
-        # Base_color text on black background
-        {base_color, black}
-
-      true ->
+      else
         Raxol.Core.Runtime.Log.debug(
           "Could not find accessible pair for color: #{inspect(base_color)}"
         )
 
         # Could not find a simple black/white contrast pair
         nil
+      end
     end
   end
 
@@ -332,22 +321,20 @@ defmodule Raxol.Style.Colors.Accessibility do
     orig_lum = relative_luminance(color)
     adj_lum = relative_luminance(adjusted)
 
-    cond do
-      contrast_ratio(adjusted, background) >= target_ratio and
-          ((direction == :lighter and adj_lum > orig_lum) or
-             (direction == :darker and adj_lum < orig_lum)) ->
-        adjusted
-
-      true ->
-        do_adjust_until_contrast(
-          adjusted,
-          background,
-          target_ratio,
-          adjust_fun,
-          direction,
-          steps - 1,
-          min(step * 1.5, 1.0)
-        )
+    if contrast_ratio(adjusted, background) >= target_ratio and
+         ((direction == :lighter and adj_lum > orig_lum) or
+            (direction == :darker and adj_lum < orig_lum)) do
+      adjusted
+    else
+      do_adjust_until_contrast(
+        adjusted,
+        background,
+        target_ratio,
+        adjust_fun,
+        direction,
+        steps - 1,
+        min(step * 1.5, 1.0)
+      )
     end
   end
 
@@ -387,89 +374,73 @@ defmodule Raxol.Style.Colors.Accessibility do
           Color.t() | String.t() | Keyword.t()
         ) :: String.t()
   def suggest_accessible_color(color, opts) when is_list(opts) do
-    # Convert color to Color struct if it's a hex string
-    color = if is_binary(color), do: Color.from_hex(color), else: color
+    color = normalize_color(color)
+    {bg, min_ratio} = extract_options(opts)
 
-    # Extract options
-    level = Keyword.get(opts, :level, :aa)
-    background = Keyword.get(opts, :background)
-    _prefer = Keyword.get(opts, :prefer, :auto)
-
-    # Convert background
-    bg =
-      if is_binary(background),
-        do: Color.from_hex(background),
-        else: background || Color.from_hex("#FFFFFF")
-
-    # Get minimum contrast ratio based on level
-    min_ratio =
-      case level do
-        :aaa -> @contrast_aaa
-        :aa -> @contrast_aa
-      end
-
-    # If the original color is already accessible, return it
-    case check_contrast(color, bg, level) do
-      {:ok, _} ->
-        color.hex
-
-      _ ->
-        bg_lum = relative_luminance(bg)
-
-        # Try to adjust the color
-        suggested =
-          if bg_lum < 0.5 do
-            # Dark background, try lightening then darkening
-            lightened = lighten_until_contrast(color, bg, min_ratio)
-
-            if lightened && Utilities.contrast_ratio(lightened, bg) >= min_ratio &&
-                 luminance_changed?(color, lightened, :lighter) &&
-                 lightened.hex != color.hex do
-              lightened.hex
-            else
-              darkened = darken_until_contrast(color, bg, min_ratio)
-
-              if darkened && Utilities.contrast_ratio(darkened, bg) >= min_ratio &&
-                   luminance_changed?(color, darkened, :darker) &&
-                   darkened.hex != color.hex do
-                darkened.hex
-              else
-                nil
-              end
-            end
-          else
-            # Light background, try darkening then lightening
-            darkened = darken_until_contrast(color, bg, min_ratio)
-
-            if darkened && Utilities.contrast_ratio(darkened, bg) >= min_ratio &&
-                 luminance_changed?(color, darkened, :darker) &&
-                 darkened.hex != color.hex do
-              darkened.hex
-            else
-              lightened = lighten_until_contrast(color, bg, min_ratio)
-
-              if lightened &&
-                   Utilities.contrast_ratio(lightened, bg) >= min_ratio &&
-                   luminance_changed?(color, lightened, :lighter) &&
-                   lightened.hex != color.hex do
-                lightened.hex
-              else
-                nil
-              end
-            end
-          end
-
-        # Unconditional fallback: if no adjustment worked or the result is the original, return fallback
-        if is_nil(suggested) or suggested == color.hex do
-          if bg_lum < 0.5, do: "#FFFFFF", else: "#000000"
-        else
-          suggested
-        end
+    case check_contrast(color, bg, Keyword.get(opts, :level, :aa)) do
+      {:ok, _} -> color.hex
+      _ -> find_accessible_color(color, bg, min_ratio)
     end
   end
 
-  def suggest_accessible_color(color, background) when is_binary(background) do
-    suggest_accessible_color(color, background: background)
+  defp normalize_color(color) do
+    if is_binary(color), do: Color.from_hex(color), else: color
+  end
+
+  defp extract_options(opts) do
+    bg = normalize_color(Keyword.get(opts, :background) || "#FFFFFF")
+    min_ratio = case Keyword.get(opts, :level, :aa) do
+      :aaa -> @contrast_aaa
+      :aa -> @contrast_aa
+    end
+    {bg, min_ratio}
+  end
+
+  defp find_accessible_color(color, bg, min_ratio) do
+    bg_lum = relative_luminance(bg)
+
+    if bg_lum < 0.5 do
+      try_lighten_then_darken(color, bg, min_ratio)
+    else
+      try_darken_then_lighten(color, bg, min_ratio)
+    end
+  end
+
+  defp try_lighten_then_darken(color, bg, min_ratio) do
+    lightened = lighten_until_contrast(color, bg, min_ratio)
+
+    if valid_adjustment?(lightened, color, bg, min_ratio, :lighter) do
+      lightened.hex
+    else
+      darkened = darken_until_contrast(color, bg, min_ratio)
+      if valid_adjustment?(darkened, color, bg, min_ratio, :darker) do
+        darkened.hex
+      else
+        "#FFFFFF"
+      end
+    end
+  end
+
+  defp try_darken_then_lighten(color, bg, min_ratio) do
+    darkened = darken_until_contrast(color, bg, min_ratio)
+
+    if valid_adjustment?(darkened, color, bg, min_ratio, :darker) do
+      darkened.hex
+    else
+      lightened = lighten_until_contrast(color, bg, min_ratio)
+      if valid_adjustment?(lightened, color, bg, min_ratio, :lighter) do
+        lightened.hex
+      else
+        "#000000"
+      end
+    end
+  end
+
+  defp valid_adjustment?(adjusted, original, bg, min_ratio, direction) do
+    adjusted &&
+    contrast_ratio(adjusted, bg) >= min_ratio &&
+    luminance_changed?(original, adjusted, direction) &&
+    adjusted.hex != original.hex
   end
 
   @spec generate_accessible_palette(
@@ -529,37 +500,11 @@ defmodule Raxol.Style.Colors.Accessibility do
   @spec validate_colors(map(), Color.t() | String.t() | Keyword.t()) ::
           {:ok, map()} | {:error, Keyword.t()}
   def validate_colors(colors, opts) when is_list(opts) do
-    # Extract options
-    level = Keyword.get(opts, :level, :aa)
-    background = Keyword.get(opts, :background)
+    bg = extract_background(opts)
+    colors_map = normalize_colors_map(colors)
+    issues = find_contrast_issues(colors_map, bg, Keyword.get(opts, :level, :aa))
 
-    # Convert background and colors
-    bg =
-      if is_binary(background),
-        do: Color.from_hex(background),
-        else: background || Color.from_hex("#FFFFFF")
-
-    colors_map =
-      Map.new(colors, fn {k, v} ->
-        {k, if(is_binary(v), do: Color.from_hex(v), else: v)}
-      end)
-
-    # Validate each color against the background
-    issues =
-      colors_map
-      |> Enum.reject(fn {key, _} -> key == :background end)
-      |> Enum.flat_map(fn {key, color} ->
-        case check_contrast(color, bg, level) do
-          {:ok, _} -> []
-          {:error, _} -> [{key, :insufficient_contrast}]
-        end
-      end)
-
-    if Enum.empty?(issues) do
-      {:ok, colors}
-    else
-      {:error, issues}
-    end
+    if Enum.empty?(issues), do: {:ok, colors}, else: {:error, issues}
   end
 
   def validate_colors(colors, background) when is_binary(background) do
@@ -632,53 +577,57 @@ defmodule Raxol.Style.Colors.Accessibility do
   """
   @spec adjust_palette(map(), Color.t() | String.t()) :: map()
   def adjust_palette(colors, background) do
-    bg =
-      if is_binary(background), do: Color.from_hex(background), else: background
+    bg = normalize_color(background)
+    adjusted = adjust_colors(colors, bg)
 
-    # First try to make each color accessible while preserving its character
-    adjusted =
-      colors
-      |> Enum.map(fn {key, color} ->
-        if key == :background do
-          {key, color}
-        else
-          # Try to adjust while preserving hue
-          adjusted_color =
-            suggest_accessible_color(color, background: bg.hex, level: :aa)
-
-          {key, adjusted_color}
-        end
-      end)
-      |> Map.new()
-
-    # Validate the adjusted colors
     case validate_colors(adjusted, background: bg.hex, level: :aa) do
-      {:ok, _} ->
-        adjusted
-
-      {:error, _} ->
-        # If still not accessible, use more aggressive adjustments
-        colors
-        |> Enum.map(fn {key, _color} ->
-          if key == :background do
-            {key, background}
-          else
-            # Use black or white based on background luminance
-            bg_lum = relative_luminance(bg)
-            new_color = if bg_lum < 0.5, do: "#FFFFFF", else: "#000000"
-            {key, new_color}
-          end
-        end)
-        |> Map.new()
+      {:ok, _} -> adjusted
+      {:error, _} -> fallback_colors(colors, bg)
     end
   end
 
-  @spec is_suitable_for_text?(Color.t() | String.t(), Color.t() | String.t()) ::
+  defp adjust_colors(colors, bg) do
+    colors
+    |> Enum.map(fn {key, color} ->
+      if key == :background, do: {key, color}, else: {key, suggest_accessible_color(color, background: bg.hex, level: :aa)}
+    end)
+    |> Map.new()
+  end
+
+  defp fallback_colors(colors, bg) do
+    colors
+    |> Enum.map(fn {key, _color} ->
+      if key == :background, do: {key, bg.hex}, else: {key, get_optimal_text_color(bg)}
+    end)
+    |> Map.new()
+  end
+
+  @spec suitable_for_text?(Color.t() | String.t(), Color.t() | String.t()) ::
           boolean()
-  def is_suitable_for_text?(color, background) do
+  def suitable_for_text?(color, background) do
     case check_contrast(color, background, :aa) do
       {:ok, _} -> true
       _ -> false
     end
+  end
+
+  defp extract_background(opts) do
+    background = Keyword.get(opts, :background)
+    if is_binary(background), do: Color.from_hex(background), else: background || Color.from_hex("#FFFFFF")
+  end
+
+  defp normalize_colors_map(colors) do
+    Map.new(colors, fn {k, v} -> {k, if(is_binary(v), do: Color.from_hex(v), else: v)} end)
+  end
+
+  defp find_contrast_issues(colors_map, bg, level) do
+    colors_map
+    |> Enum.reject(fn {key, _} -> key == :background end)
+    |> Enum.flat_map(fn {key, color} ->
+      case check_contrast(color, bg, level) do
+        {:ok, _} -> []
+        {:error, _} -> [{key, :insufficient_contrast}]
+      end
+    end)
   end
 end

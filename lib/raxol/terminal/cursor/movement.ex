@@ -162,6 +162,24 @@ defmodule Raxol.Terminal.Cursor.Movement do
   end
 
   @doc """
+  Moves the cursor to a specific position with row bounds.
+  """
+  def move_to(cursor, row, col, min_row, max_row) do
+    {_, current_col} = Manager.get_position(cursor)
+    new_row = max(min_row, min(max_row, row))
+    Manager.move_to(cursor, new_row, current_col)
+  end
+
+  @doc """
+  Moves the cursor to a specific position with both row and column bounds.
+  """
+  def move_to(cursor, row, col, min_row, max_row, min_col, max_col) do
+    new_row = max(min_row, min(max_row, row))
+    new_col = max(min_col, min(max_col, col))
+    Manager.move_to(cursor, new_row, new_col)
+  end
+
+  @doc """
   Moves the cursor to the home position (0, 0).
 
   ## Examples

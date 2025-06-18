@@ -38,7 +38,6 @@ defmodule Raxol.Core.Events.Manager do
       iex> EventManager.init()
       :ok
   """
-  @impl true
   def init do
     # Initialize event handlers registry and subscriptions
     Process.put(:event_handlers, %{})
@@ -60,7 +59,6 @@ defmodule Raxol.Core.Events.Manager do
       iex> EventManager.register_handler(:click, MyModule, :handle_click)
       :ok
   """
-  @impl true
   def register_handler(event_type, module, function)
       when is_atom(event_type) and is_atom(module) and is_atom(function) do
     # Get current handlers

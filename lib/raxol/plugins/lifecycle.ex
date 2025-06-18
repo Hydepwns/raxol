@@ -23,16 +23,118 @@ defmodule Raxol.Plugins.Lifecycle do
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugin(%Core{} = manager, module, config \\ %{}) when is_atom(module) do
     plugin_name = get_plugin_name(module)
-    merged_config = get_merged_config(manager, plugin_name, module, config)
 
-    with {:ok, plugin} <- module.init(merged_config),
-         :ok <- check_api_compatibility(plugin, manager),
-         :ok <- check_dependencies(plugin, manager) do
-      handle_successful_load(manager, plugin, plugin_name, merged_config)
+    with {:ok, plugin, merged_config} <- initialize_plugin_with_config(manager, plugin_name, module, config),
+         {:ok, updated_manager} <- update_manager_with_plugin(manager, plugin, plugin_name, merged_config) do
+      {:ok, updated_manager}
     else
-      error -> handle_load_error(error, module)
+      {:error, reason} -> {:error, format_error(reason, module)}
     end
   end
+
+  # --- Plugin Initialization ---
+
+  defp initialize_plugin_with_config(manager, plugin_name, module, config) do
+    with :ok <- validate_plugin_module(module),
+         {:ok, merged_config} <- get_and_validate_config(manager, plugin_name, module, config),
+         {:ok, plugin} <- initialize_plugin(module, merged_config),
+         :ok <- validate_plugin_state(plugin),
+         :ok <- validate_plugin_compatibility(plugin, manager) do
+      {:ok, plugin, merged_config}
+    end
+  end
+
+  defp validate_plugin_module(module) do
+    cond do
+      not Code.ensure_loaded?(module) ->
+        {:error, :module_not_found}
+      not function_exported?(module, :init, 1) ->
+        {:error, :missing_init}
+      not function_exported?(module, :cleanup, 1) ->
+        {:error, :missing_cleanup}
+      true ->
+        :ok
+    end
+  end
+
+  defp get_and_validate_config(manager, plugin_name, module, config) do
+    merged_config = get_merged_config(manager, plugin_name, module, config)
+    validate_config_structure(merged_config)
+  end
+
+  defp validate_config_structure(config) when is_map(config), do: {:ok, config}
+  defp validate_config_structure(_), do: {:error, :invalid_config}
+
+  defp initialize_plugin(module, config) do
+    try do
+      case module.init(config) do
+        {:ok, plugin} -> {:ok, plugin}
+        {:error, reason} -> {:error, reason}
+        other -> {:error, {:invalid_init_return, other}}
+      end
+    rescue
+      error ->
+        log_plugin_init_error(module, error)
+        {:error, :init_failed}
+    end
+  end
+
+  defp validate_plugin_state(plugin) do
+    case validate_required_fields(plugin) do
+      :ok -> validate_field_types(plugin)
+      error -> error
+    end
+  end
+
+  defp validate_required_fields(plugin) do
+    required_fields = [:name, :version, :enabled, :config, :api_version]
+    missing = Enum.filter(required_fields, &(Map.get(plugin, &1) == nil))
+
+    if Enum.empty?(missing), do: :ok, else: {:error, {:missing_fields, missing}}
+  end
+
+  defp validate_field_types(plugin) do
+    with :ok <- validate_string_field(plugin.name, :name),
+         :ok <- validate_string_field(plugin.version, :version),
+         :ok <- validate_boolean_field(plugin.enabled, :enabled),
+         :ok <- validate_map_field(plugin.config, :config),
+         :ok <- validate_string_field(plugin.api_version, :api_version) do
+      :ok
+    end
+  end
+
+  defp validate_plugin_compatibility(plugin, manager) do
+    with :ok <- check_api_compatibility(plugin, manager),
+         :ok <- check_dependencies(plugin, manager) do
+      :ok
+    end
+  end
+
+  # --- Manager Update ---
+
+  defp update_manager_with_plugin(manager, plugin, plugin_name, merged_config) do
+    case save_plugin_config(manager.config, plugin_name, merged_config) do
+      {:ok, saved_config} ->
+        {:ok, update_manager_state(manager, plugin, saved_config)}
+      {:error, reason} ->
+        log_config_save_error(plugin_name, reason)
+        {:ok, update_manager_state(manager, plugin, manager.config)}
+    end
+  end
+
+  defp save_plugin_config(config, plugin_name, merged_config) do
+    updated_config = PluginConfig.update_plugin_config(config, plugin_name, merged_config)
+    PluginConfig.save(updated_config)
+  end
+
+  defp update_manager_state(manager, plugin, config) do
+    %{manager |
+      plugins: Map.put(manager.plugins, plugin.name, plugin),
+      config: config
+    }
+  end
+
+  # --- Helper Functions ---
 
   defp get_plugin_name(module) do
     Atom.to_string(module)
@@ -74,23 +176,24 @@ defmodule Raxol.Plugins.Lifecycle do
     )
   end
 
-  defp handle_successful_load(manager, plugin, plugin_name, merged_config) do
-    updated_config = PluginConfig.update_plugin_config(manager.config, plugin_name, merged_config)
+  # --- Error Handling and Logging ---
 
-    case PluginConfig.save(updated_config) do
-      {:ok, saved_config} ->
-        {:ok, %{manager | plugins: Map.put(manager.plugins, plugin.name, plugin), config: saved_config}}
-      {:error, reason} ->
-        log_config_save_error(plugin_name, reason)
-        {:ok, %{manager | plugins: Map.put(manager.plugins, plugin.name, plugin), config: manager.config}}
-    end
+  defp format_error(:module_not_found, module), do: "Module #{module} does not exist"
+  defp format_error(:missing_init, module), do: "Module #{module} does not implement init/1"
+  defp format_error(:missing_cleanup, module), do: "Module #{module} does not implement cleanup/1"
+  defp format_error(:invalid_config, _module), do: "Invalid configuration structure"
+  defp format_error(:init_failed, module), do: "Plugin initialization failed for #{module}"
+  defp format_error({:missing_fields, fields}, module), do: "Missing required fields: #{Enum.join(fields, ", ")} for plugin #{module}"
+  defp format_error({:invalid_init_return, value}, module), do: "Invalid init return value: #{inspect(value)} for plugin #{module}"
+  defp format_error({:error, reason}, module), do: "Failed to initialize plugin #{module}: #{inspect(reason)}"
+  defp format_error(reason, module), do: "Unknown error for plugin #{module}: #{inspect(reason)}"
+
+  defp log_plugin_init_error(module, error) do
+    Raxol.Core.Runtime.Log.error(
+      "Plugin initialization failed: #{inspect(error)}",
+      %{module: module}
+    )
   end
-
-  defp handle_load_error({:error, :api_incompatible}, module), do: {:error, "API version mismatch for plugin #{module}"}
-  defp handle_load_error({:error, :dependency_missing, missing}, module), do: {:error, "Missing dependency #{missing} for plugin #{module}"}
-  defp handle_load_error({:error, :dependency_cycle, cycle}, _module), do: {:error, "Dependency cycle detected: #{inspect(cycle)}"}
-  defp handle_load_error({:error, reason}, module), do: {:error, "Failed to initialize plugin #{module}: #{inspect(reason)}"}
-  defp handle_load_error({:error, :missing_version, missing, _chain}, module), do: {:error, "Missing version for dependency(ies): #{Enum.join(missing, ", ")} for plugin #{module}"}
 
   defp log_config_save_error(plugin_name, reason) do
     Raxol.Core.Runtime.Log.warning_with_context(
@@ -98,6 +201,17 @@ defmodule Raxol.Plugins.Lifecycle do
       %{}
     )
   end
+
+  # --- Field Validation Helpers ---
+
+  defp validate_string_field(value, _field) when is_binary(value), do: :ok
+  defp validate_string_field(_value, field), do: {:error, {:invalid_field, field, :string}}
+
+  defp validate_boolean_field(value, _field) when is_boolean(value), do: :ok
+  defp validate_boolean_field(_value, field), do: {:error, {:invalid_field, field, :boolean}}
+
+  defp validate_map_field(value, _field) when is_map(value), do: :ok
+  defp validate_map_field(_value, field), do: {:error, {:invalid_field, field, :map}}
 
   @doc """
   Loads multiple plugins in the correct dependency order.
@@ -323,5 +437,41 @@ defmodule Raxol.Plugins.Lifecycle do
     module_str = "Elixir.Raxol.Plugins." <>
       Enum.map_join(String.split(plugin_name, "_"), "", &String.capitalize/1)
     String.to_existing_atom(module_str)
+  end
+
+  defp handle_plugin_error(plugin, callback_name, plugin_result, _acc) do
+    case plugin_result do
+      {:error, reason} ->
+        log_plugin_error(plugin, callback_name, reason)
+        {:halt, {:error, reason}}
+      other ->
+        log_unexpected_result(plugin, callback_name, other)
+        {:cont, {:error, "Unexpected result"}}
+    end
+  end
+
+  defp log_plugin_error(plugin, callback_name, reason) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "Plugin #{plugin.name} failed during #{callback_name}",
+      reason,
+      nil,
+      %{
+        plugin: plugin.name,
+        callback: callback_name,
+        module: __MODULE__
+      }
+    )
+  end
+
+  defp log_unexpected_result(plugin, callback_name, result) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Plugin #{plugin.name} returned unexpected value from #{callback_name}",
+      %{
+        plugin: plugin.name,
+        callback: callback_name,
+        value: result,
+        module: __MODULE__
+      }
+    )
   end
 end

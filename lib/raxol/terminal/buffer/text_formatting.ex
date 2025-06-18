@@ -146,4 +146,6 @@ defmodule Raxol.Terminal.Buffer.TextFormatting do
   defp get_attribute(%Cell{} = cell, key) do
     Map.get(cell.attributes, key, false)
   end
+
+  def new, do: %{}
 end

@@ -19,7 +19,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
     saved_style: nil,
     saved_visible: nil,
     saved_blinking: nil,
-    saved_color: nil
+    saved_color: nil,
+    top_margin: 0,
+    bottom_margin: 24
   ]
 
   @type cursor_style :: :block | :underline | :bar
@@ -37,7 +39,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
     saved_style: cursor_style() | nil,
     saved_visible: boolean() | nil,
     saved_blinking: boolean() | nil,
-    saved_color: color() | nil
+    saved_color: color() | nil,
+    top_margin: non_neg_integer(),
+    bottom_margin: non_neg_integer()
   }
 
   # Client API
@@ -63,69 +67,170 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Gets the current cursor position.
   """
-  def get_position(%__MODULE__{} = state) do
-    {state.x, state.y}
+  def get_position(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_position)
   end
 
   @doc """
   Sets the cursor position.
   """
-  def set_position(%__MODULE__{} = state, x, y)
-      when is_integer(x) and x >= 0
-      and is_integer(y) and y >= 0 do
-    %{state | x: x, y: y}
+  def set_position(pid \\ __MODULE__, {row, col}) do
+    GenServer.call(pid, {:set_position, row, col})
   end
 
   @doc """
   Moves the cursor relative to its current position.
   """
-  def move_cursor(%__MODULE__{} = state, dx, dy)
-      when is_integer(dx) and is_integer(dy) do
-    new_x = max(0, state.x + dx)
-    new_y = max(0, state.y + dy)
-    %{state | x: new_x, y: new_y}
+  def move_cursor(pid \\ __MODULE__, direction, count \\ 1) do
+    GenServer.call(pid, {:move_cursor, direction, count})
   end
 
   @doc """
   Gets the cursor visibility state.
   """
-  def is_visible?(%__MODULE__{} = state) do
-    state.visible
+  def get_visibility(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_visibility)
   end
 
   @doc """
-  Sets the cursor visibility.
+  Sets the cursor visibility state.
   """
-  def set_visibility(%__MODULE__{} = state, visible) when is_boolean(visible) do
-    %{state | visible: visible}
+  def set_visibility(pid \\ __MODULE__, visible) do
+    GenServer.call(pid, {:set_visibility, visible})
+  end
+
+  @doc """
+  Moves the cursor to a specific position.
+  """
+  def move_to(cursor, row, col) do
+    %{cursor | x: row, y: col}
+  end
+
+  @doc """
+  Moves the cursor up by the specified number of lines.
+  """
+  def move_up(cursor, lines, _width, _height) do
+    new_y = max(cursor.top_margin, cursor.y - lines)
+    %{cursor | y: new_y}
+  end
+
+  @doc """
+  Moves the cursor down by the specified number of lines.
+  """
+  def move_down(cursor, lines, _width, _height) do
+    new_y = min(cursor.bottom_margin, cursor.y + lines)
+    %{cursor | y: new_y}
+  end
+
+  @doc """
+  Moves the cursor left by the specified number of columns.
+  """
+  def move_left(cursor, cols, _width, _height) do
+    new_x = max(0, cursor.x - cols)
+    %{cursor | x: new_x}
+  end
+
+  @doc """
+  Moves the cursor right by the specified number of columns.
+  """
+  def move_right(cursor, cols, _width, _height) do
+    new_x = cursor.x + cols
+    %{cursor | x: new_x}
+  end
+
+  @doc """
+  Moves the cursor to the beginning of the line.
+  """
+  def move_to_line_start(cursor) do
+    %{cursor | x: 0}
+  end
+
+  @doc """
+  Moves the cursor to the end of the line.
+  """
+  def move_to_line_end(cursor, line_width) do
+    %{cursor | x: line_width - 1}
+  end
+
+  @doc """
+  Moves the cursor to the specified column.
+  """
+  def move_to_column(cursor, column) do
+    %{cursor | x: column}
+  end
+
+  @doc """
+  Moves the cursor to the specified line.
+  """
+  def move_to_line(cursor, line) do
+    %{cursor | y: line}
+  end
+
+  @doc """
+  Moves the cursor to the home position (0, 0).
+  """
+  def move_home(cursor, _width, _height) do
+    %{cursor | x: 0, y: 0}
+  end
+
+  @doc """
+  Moves the cursor to the next tab stop.
+  """
+  def move_to_next_tab(cursor, tab_size, width, _height) do
+    next_tab = div(cursor.x + tab_size, tab_size) * tab_size
+    new_x = min(next_tab, width - 1)
+    %{cursor | x: new_x}
+  end
+
+  @doc """
+  Moves the cursor to the previous tab stop.
+  """
+  def move_to_prev_tab(cursor, tab_size, _width, _height) do
+    prev_tab = div(cursor.x - 1, tab_size) * tab_size
+    new_x = max(prev_tab, 0)
+    %{cursor | x: new_x}
+  end
+
+  @doc """
+  Sets the cursor margins.
+  """
+  def set_margins(cursor, top, bottom) do
+    %{cursor | top_margin: top, bottom_margin: bottom}
+  end
+
+  @doc """
+  Gets the cursor margins.
+  """
+  def get_margins(cursor) do
+    {cursor.top_margin, cursor.bottom_margin}
   end
 
   @doc """
   Gets the cursor blinking state.
   """
-  def is_blinking?(%__MODULE__{} = state) do
-    state.blinking
+  def get_blink(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_blink)
   end
 
   @doc """
   Sets the cursor blinking state.
   """
-  def set_blinking(%__MODULE__{} = state, blinking) when is_boolean(blinking) do
-    %{state | blinking: blinking}
+  def set_blink(pid \\ __MODULE__, blink) do
+    GenServer.call(pid, {:set_blink, blink})
   end
 
   @doc """
   Gets the cursor style.
   """
-  def get_style(%__MODULE__{} = state) do
-    state.style
+  def get_style(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_style)
   end
 
   @doc """
   Sets the cursor style.
   """
-  def set_style(%__MODULE__{} = state, style) when style in [:block, :underline, :bar] do
-    %{state | style: style}
+  def set_style(pid \\ __MODULE__, style) do
+    GenServer.call(pid, {:set_style, style})
   end
 
   @doc """
@@ -197,136 +302,39 @@ defmodule Raxol.Terminal.Cursor.Manager do
     }
   end
 
-  # GenServer API functions
-  def visible?(pid \\ __MODULE__) do
-    GenServer.call(pid, :is_visible?)
+  @doc """
+  Sets the cursor state based on a state atom.
+  Supported states: :visible, :hidden
+  """
+  def set_state(%__MODULE__{} = state, :visible) do
+    set_visibility(state, true)
   end
 
-  def style(pid \\ __MODULE__) do
-    GenServer.call(pid, :get_style)
+  def set_state(%__MODULE__{} = state, :hidden) do
+    set_visibility(state, false)
   end
 
-  def blinking?(pid \\ __MODULE__) do
-    GenServer.call(pid, :is_blinking?)
+  def set_custom_shape(pid \\ __MODULE__, shape, params) do
+    GenServer.call(pid, {:set_custom_shape, shape, params})
   end
 
-  def get_position(pid \\ __MODULE__) do
-    GenServer.call(pid, :get_position)
+  def update_position(pid \\ __MODULE__, {row, col}) do
+    GenServer.call(pid, {:update_position, row, col})
   end
 
-  def set_position(pid \\ __MODULE__, {row, col}) do
-    GenServer.call(pid, {:set_position, row, col})
+  def reset_position(pid \\ __MODULE__) do
+    GenServer.call(pid, :reset_position)
   end
 
-  def set_visibility(pid \\ __MODULE__, visible) do
-    GenServer.call(pid, {:set_visibility, visible})
-  end
-
-  def set_style(pid \\ __MODULE__, style) do
-    GenServer.call(pid, {:set_style, style})
-  end
-
-  def set_blink(pid \\ __MODULE__, blinking) do
-    GenServer.call(pid, {:set_blink, blinking})
-  end
-
-  def move_to(pid \\ __MODULE__, row, col)
-
-  def move_to(pid, row, col) do
-    GenServer.call(pid, {:move_to, row, col})
-  end
-
-  def move_to(pid \\ __MODULE__, row, col, min_row, max_row)
-
-  def move_to(pid, row, col, min_row, max_row) do
-    GenServer.call(pid, {:move_to, row, col, min_row, max_row})
-  end
-
-  def move_to(pid \\ __MODULE__, row, col, min_row, max_row, min_col, max_col)
-
-  def move_to(pid, row, col, min_row, max_row, min_col, max_col) do
-    GenServer.call(
-      pid,
-      {:move_to, row, col, min_row, max_row, min_col, max_col}
-    )
-  end
-
-  def move_up(pid \\ __MODULE__, lines, min_row, max_row)
-
-  def move_up(pid, lines, min_row, max_row) do
-    GenServer.call(pid, {:move_up, lines, min_row, max_row})
-  end
-
-  def move_down(pid \\ __MODULE__, lines, min_row, max_row)
-
-  def move_down(pid, lines, min_row, max_row) do
-    GenServer.call(pid, {:move_down, lines, min_row, max_row})
-  end
-
-  def move_left(pid \\ __MODULE__, cols, min_col, max_col)
-
-  def move_left(pid, cols, min_col, max_col) do
-    GenServer.call(pid, {:move_left, cols, min_col, max_col})
-  end
-
-  def move_right(pid \\ __MODULE__, cols, min_col, max_col)
-
-  def move_right(pid, cols, min_col, max_col) do
-    GenServer.call(pid, {:move_right, cols, min_col, max_col})
-  end
-
-  def move_to_column(pid \\ __MODULE__, col, min_col, max_col)
-
-  def move_to_column(pid, col, min_col, max_col) do
-    GenServer.call(pid, {:move_to_column, col, min_col, max_col})
-  end
-
-  def move_to_line_start(pid \\ __MODULE__)
-
-  def move_to_line_start(pid) do
-    GenServer.call(pid, :move_to_line_start)
-  end
-
-  def constrain_position(pid \\ __MODULE__, min_bounds, max_bounds)
-
-  def constrain_position(pid, min_bounds, max_bounds) do
-    GenServer.call(pid, {:constrain_position, min_bounds, max_bounds})
+  def update_blink(pid \\ __MODULE__) do
+    GenServer.call(pid, :update_blink)
   end
 
   # Server Callbacks
 
   @impl true
   def init(_opts) do
-    {:ok,
-     %{
-       x: 0,
-       y: 0,
-       visible: true,
-       blinking: true,
-       style: :block,
-       color: nil,
-       saved_x: nil,
-       saved_y: nil,
-       saved_style: nil,
-       saved_visible: nil,
-       saved_blinking: nil,
-       saved_color: nil
-     }}
-  end
-
-  @impl true
-  def handle_call(:visible?, _from, state) do
-    {:reply, state.visible, state}
-  end
-
-  @impl true
-  def handle_call(:get_style, _from, state) do
-    {:reply, state.style, state}
-  end
-
-  @impl true
-  def handle_call(:blinking?, _from, state) do
-    {:reply, state.blinking, state}
+    {:ok, new()}
   end
 
   @impl true
@@ -336,12 +344,37 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl true
   def handle_call({:set_position, row, col}, _from, state) do
-    {:reply, :ok, %{state | x: row, y: col}}
+    new_state = %{state | x: row, y: col}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:move_cursor, direction, count}, _from, state) do
+    new_state =
+      case direction do
+        :up -> move_up(state, count, 80, 24)
+        :down -> move_down(state, count, 80, 24)
+        :left -> move_left(state, count, 80, 24)
+        :right -> move_right(state, count, 80, 24)
+      end
+
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_visibility, _from, state) do
+    {:reply, state.visible, state}
   end
 
   @impl true
   def handle_call({:set_visibility, visible}, _from, state) do
-    {:reply, :ok, %{state | visible: visible}}
+    new_state = %{state | visible: visible}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_style, _from, state) do
+    {:reply, state.style, state}
   end
 
   @impl true
@@ -350,88 +383,67 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl true
-  def handle_call({:set_blink, blinking}, _from, state) do
-    {:reply, :ok, %{state | blinking: blinking}}
+  def handle_call(:get_blink, _from, state) do
+    {:reply, state.blinking, state}
   end
 
   @impl true
-  def handle_call({:move_to, row, col}, _from, state) do
+  def handle_call({:set_blink, blink}, _from, state) do
+    new_state = %{state | blinking: blink}
+    if blink do
+      schedule_blink()
+    else
+      cancel_blink(state.blink_timer)
+    end
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:set_custom_shape, shape, params}, _from, state) do
+    {:reply, :ok, %{state | style: shape, color: params}}
+  end
+
+  @impl true
+  def handle_call({:update_position, row, col}, _from, state) do
     {:reply, :ok, %{state | x: row, y: col}}
   end
 
   @impl true
-  def handle_call({:move_to, row, col, min_row, max_row}, _from, state) do
-    {_, current_col} = {state.x, state.y}
-    new_row = max(min_row, min(max_row, row))
-    {:reply, :ok, %{state | x: new_row, y: current_col}}
+  def handle_call(:reset_position, _from, state) do
+    {:reply, :ok, %{state | x: 0, y: 0}}
   end
 
   @impl true
-  def handle_call(
-        {:move_to, row, col, min_row, max_row, min_col, max_col},
-        _from,
-        state
-      ) do
-    new_row = max(min_row, min(max_row, row))
-    new_col = max(min_col, min(max_col, col))
-    {:reply, :ok, %{state | x: new_row, y: new_col}}
+  def handle_call(:update_blink, _from, state) do
+    new_blink_state = !state.blinking
+    new_state = %{state | blinking: new_blink_state}
+    {:reply, new_blink_state, new_state}
   end
 
   @impl true
-  def handle_call({:move_up, lines, _min_row, _max_row}, _from, state) do
-    {row, col} = {state.x, state.y}
-    new_row = max(0, row - lines)
-    {:reply, :ok, %{state | x: new_row, y: col}}
-  end
-
-  @impl true
-  def handle_call({:move_down, lines, _min_row, _max_row}, _from, state) do
-    {row, col} = {state.x, state.y}
-    new_row = min(row + lines, 0)
-    {:reply, :ok, %{state | x: new_row, y: col}}
-  end
-
-  @impl true
-  def handle_call({:move_left, cols, _min_col, _max_col}, _from, state) do
-    {row, col} = {state.x, state.y}
-    new_col = max(0, col - cols)
-    {:reply, :ok, %{state | x: row, y: new_col}}
-  end
-
-  @impl true
-  def handle_call({:move_right, cols, _min_col, _max_col}, _from, state) do
-    {row, col} = {state.x, state.y}
-    new_col = min(col + cols, 0)
-    {:reply, :ok, %{state | x: row, y: new_col}}
-  end
-
-  @impl true
-  def handle_call({:move_to_column, col, _min_col, _max_col}, _from, state) do
-    {row, _} = {state.x, state.y}
-    {:reply, :ok, %{state | x: row, y: col}}
-  end
-
-  @impl true
-  def handle_call(:move_to_line_start, _from, state) do
-    {row, _} = {state.x, state.y}
-    {:reply, :ok, %{state | x: row, y: 0}}
-  end
-
-  @impl true
-  def handle_call(
-        {:constrain_position, {min_row, min_col}, {max_row, max_col}},
-        _from,
-        state
-      ) do
-    {row, col} = {state.x, state.y}
-    new_row = max(min_row, min(max_row, row))
-    new_col = max(min_col, min(max_col, col))
-    {:reply, :ok, %{state | x: new_row, y: new_col}}
+  def handle_info(:blink, state) do
+    if state.blinking do
+      new_blink_state = !state.blinking
+      new_state = %{state | blinking: new_blink_state}
+      schedule_blink()
+      {:noreply, new_state}
+    else
+      {:noreply, state}
+    end
   end
 
   @impl true
   def handle_call(request, _from, state) do
-    Logger.warning("Unhandled call: #{inspect(request)}")
-    {:reply, {:error, :unknown_call}, state}
+    Logger.warning("Unknown request: #{inspect(request)}")
+    {:reply, {:error, :unknown_request}, state}
   end
+
+  # --- Private Functions ---
+
+  defp schedule_blink do
+    Process.send_after(self(), :blink, 500)
+  end
+
+  defp cancel_blink(nil), do: :ok
+  defp cancel_blink(timer), do: Process.cancel_timer(timer)
 end
