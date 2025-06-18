@@ -1,5 +1,18 @@
 # Raxol Component Style Guide
 
+> See also: [Component Architecture](./component_architecture.md) for component lifecycle and patterns.
+
+## Table of Contents
+
+1. [Component Structure](#component-structure)
+2. [Naming Conventions](#naming-conventions)
+3. [Code Style](#code-style)
+4. [Component Design](#component-design)
+5. [Testing Style](#testing-style)
+6. [Documentation Style](#documentation-style)
+7. [Accessibility Guidelines](#accessibility-guidelines)
+8. [Performance Guidelines](#performance-guidelines)
+
 ## Component Structure
 
 ### Module Organization
@@ -7,18 +20,23 @@
 1. **Module Documentation**
 
    ```elixir
-   defmodule MyComponent do
+   defmodule Raxol.UI.Components.Input.TextInput do
      @moduledoc """
-     A clear, concise description of the component's purpose and functionality.
+     A text input component with validation and formatting support.
 
      ## Features
-     * Feature 1
-     * Feature 2
-     * Feature 3
+     * Real-time validation
+     * Custom formatting
+     * Error handling
+     * Accessibility support
 
      ## Props
-     * `:prop1` - Description of prop1
-     * `:prop2` - Description of prop2
+     * `:id` - Unique identifier for the component
+     * `:value` - Current input value
+     * `:placeholder` - Placeholder text
+     * `:disabled` - Whether the input is disabled
+     * `:on_change` - Callback for value changes
+     * `:on_submit` - Callback for form submission
      """
    ```
 
@@ -27,12 +45,19 @@
    ```elixir
    @type props :: %{
      required(:id) => String.t(),
-     optional(:theme) => map()
+     required(:value) => String.t(),
+     optional(:placeholder) => String.t(),
+     optional(:disabled) => boolean(),
+     optional(:on_change) => (String.t() -> term()),
+     optional(:on_submit) => (String.t() -> term())
    }
 
    @type state :: %{
      id: String.t(),
-     theme: map()
+     value: String.t(),
+     error: String.t() | nil,
+     focused: boolean(),
+     dirty: boolean()
    }
    ```
 
@@ -47,30 +72,67 @@
    @type state :: ...
 
    # 3. Constants
-   @default_width 100
-   @default_theme %{...}
+   @default_theme %{
+     colors: %{
+       text: "#000000",
+       background: "#FFFFFF",
+       error: "#FF0000"
+     }
+   }
 
    # 4. Callbacks
    @impl true
-   def init(props) do ... end
+   def init(props) do
+     validate_props(props)
+     %{
+       id: props[:id],
+       value: props[:value] || "",
+       error: nil,
+       focused: false,
+       dirty: false
+     }
+   end
 
    @impl true
-   def mount(state) do ... end
+   def mount(state) do
+     # Setup resources
+     {state, []}
+   end
 
    @impl true
-   def update(message, state) do ... end
+   def update({:set_value, value}, state) do
+     {put_in(state, [:value], value), []}
+   end
 
    @impl true
-   def render(state, context) do ... end
+   def render(state) do
+     %{
+       type: :text_input,
+       id: state.id,
+       value: state.value,
+       error: state.error,
+       focused: state.focused
+     }
+   end
 
    @impl true
-   def handle_event(event, state) do ... end
+   def handle_event(%{type: :change, value: value}, state) do
+     {put_in(state, [:value], value), []}
+   end
 
    @impl true
-   def unmount(state) do ... end
+   def unmount(state) do
+     # Cleanup resources
+     state
+   end
 
    # 5. Private functions
-   defp helper_function(...) do ... end
+   defp validate_props(props) do
+     with :ok <- validate_required(props, [:id]),
+          :ok <- validate_types(props, @prop_types) do
+       :ok
+     end
+   end
    ```
 
 ## Naming Conventions
@@ -107,15 +169,21 @@
    Handles text input changes.
 
    ## Parameters
-     * `event` - The input change event
+     * `event` - The input change event containing:
+       * `:type` - Event type (`:change`, `:focus`, `:blur`)
+       * `:value` - New input value
      * `state` - Current component state
 
    ## Returns
      * `{new_state, commands}` - Updated state and commands
+
+   ## Examples
+       iex> handle_event(%{type: :change, value: "new value"}, %{value: "old"})
+       {%{value: "new value"}, []}
    """
    @impl true
-   def handle_event(%{type: :text_change} = event, state) do
-     # Implementation
+   def handle_event(%{type: :change, value: value}, state) do
+     {put_in(state, [:value], value), []}
    end
    ```
 
@@ -132,8 +200,18 @@
    end
 
    # Use guard clauses for type checking
-   def update({:set_value, value}, state) when is_number(value) do
-     # Handle numeric value
+   def update({:set_value, value}, state) when is_binary(value) do
+     {put_in(state, [:value], value), []}
+   end
+
+   # Use with for complex validations
+   def update({:set_value, value}, state) do
+     with :ok <- validate_value(value),
+          :ok <- check_length(value) do
+       {put_in(state, [:value], value), []}
+     else
+       {:error, reason} -> {put_in(state, [:error], reason), []}
+     end
    end
    ```
 
@@ -149,6 +227,11 @@
    def update_state(state, key, value) do
      Map.put(state, key, value)
    end
+
+   # Use put_in for nested updates
+   def update_nested_state(state, path, value) do
+     put_in(state, path, value)
+   end
    ```
 
 ## Component Design
@@ -161,14 +244,18 @@
 
    # Optional props with defaults
    @default_props %{
-     theme: %{},
-     disabled: false
+     theme: @default_theme,
+     disabled: false,
+     placeholder: "",
+     on_change: fn _ -> :ok end,
+     on_submit: fn _ -> :ok end
    }
 
    # Props validation
    def validate_props(props) do
      with :ok <- validate_required(props, @required_props),
-          :ok <- validate_types(props, @prop_types) do
+          :ok <- validate_types(props, @prop_types),
+          :ok <- validate_callbacks(props) do
        :ok
      end
    end
@@ -182,13 +269,22 @@
      %{
        id: props[:id],
        value: props[:value],
-       # Only include necessary state
+       error: nil,
+       focused: false,
+       dirty: false
      }
    end
 
    # Use immutable updates
    def update_state(state, key, value) do
      Map.put(state, key, value)
+   end
+
+   # Batch related updates
+   def batch_update(state, updates) do
+     Enum.reduce(updates, state, fn {key, value}, acc ->
+       Map.put(acc, key, value)
+     end)
    end
    ```
 
@@ -204,6 +300,17 @@
    def handle_event(_event, state) do
      {state, []}
    end
+
+   # Handle errors gracefully
+   def handle_event(event, state) do
+     try do
+       process_event(event, state)
+     rescue
+       error ->
+         Raxol.Core.Runtime.Log.error("Event handling error: #{inspect(error)}")
+         {put_in(state, [:error], "An error occurred"), []}
+     end
+   end
    ```
 
 ## Testing Style
@@ -211,23 +318,35 @@
 1. **Test Organization**
 
    ```elixir
-   describe "Component Lifecycle" do
-     test "initializes with props" do
-       # Test initialization
+   defmodule Raxol.UI.Components.Input.TextInputTest do
+     use ExUnit.Case, async: true
+     import Raxol.ComponentTestHelpers
+
+     describe "Component Lifecycle" do
+       test "initializes with props" do
+         component = create_test_component(TextInput, %{id: "test", value: "initial"})
+         assert component.state.value == "initial"
+       end
+
+       test "mounts correctly" do
+         component = create_test_component(TextInput, %{id: "test"})
+         {mounted, _} = simulate_lifecycle(component, &(&1))
+         assert mounted.state.mounted
+       end
      end
 
-     test "mounts correctly" do
-       # Test mounting
-     end
-   end
+     describe "Event Handling" do
+       test "handles valid events" do
+         component = create_test_component(TextInput, %{id: "test"})
+         {updated, _} = simulate_event(component, %{type: :change, value: "new"})
+         assert updated.state.value == "new"
+       end
 
-   describe "Event Handling" do
-     test "handles valid events" do
-       # Test event handling
-     end
-
-     test "handles invalid events" do
-       # Test error cases
+       test "handles invalid events" do
+         component = create_test_component(TextInput, %{id: "test"})
+         {updated, _} = simulate_event(component, %{type: :invalid})
+         assert updated.state == component.state
+       end
      end
    end
    ```
@@ -243,6 +362,11 @@
    # Use helper functions for assertions
    defp assert_component_mounted(component) do
      # Assert component is mounted
+   end
+
+   # Use helper functions for event simulation
+   defp simulate_event(component, event) do
+     # Simulate event
    end
    ```
 
@@ -285,41 +409,33 @@
    """
    ```
 
-## Error Handling
+## Accessibility Guidelines
 
-1. **Input Validation**
+1. **Keyboard Navigation**
 
    ```elixir
-   # Validate props
-   def validate_props(props) do
-     with :ok <- validate_required(props, @required_props),
-          :ok <- validate_types(props, @prop_types) do
-       :ok
+   # Handle keyboard events
+   def handle_event(%{type: :key} = event, state) do
+     case event.data.key do
+       :tab -> handle_tab_navigation(state)
+       :enter -> handle_enter(state)
+       :escape -> handle_escape(state)
+       _ -> {state, []}
      end
-   end
-
-   # Handle validation errors
-   def handle_validation_error(error) do
-     Raxol.Core.Runtime.Log.error("Validation error: #{inspect(error)}")
-     {:error, error}
    end
    ```
 
-2. **Error Recovery**
-
+2. **Screen Reader Support**
    ```elixir
-   # Provide fallback UI
-   def render_error(state, error) do
+   # Provide ARIA attributes
+   def render(state, context) do
      {state, %{
-       type: :error,
-       message: error.message
+       type: :component,
+       "aria-label": state.label,
+       "aria-describedby": state.description_id,
+       "aria-invalid": state.error != nil,
+       "aria-disabled": state.disabled
      }}
-   end
-
-   # Handle component errors
-   def handle_component_error(error) do
-     Raxol.Core.Runtime.Log.error("Component error: #{inspect(error)}")
-     {:error, error}
    end
    ```
 
@@ -362,63 +478,8 @@
    end
    ```
 
-## Accessibility Guidelines
+## Related Documentation
 
-1. **Keyboard Navigation**
-
-   ```elixir
-   # Handle keyboard events
-   def handle_event(%{type: :key} = event, state) do
-     case event.data.key do
-       :tab -> handle_tab_navigation(state)
-       :enter -> handle_enter(state)
-       _ -> {state, []}
-     end
-   end
-   ```
-
-2. **Screen Reader Support**
-   ```elixir
-   # Provide ARIA attributes
-   def render(state, context) do
-     {state, %{
-       type: :component,
-       "aria-label": state.label,
-       "aria-describedby": state.description_id
-     }}
-   end
-   ```
-
-## Component Composition
-
-1. **Parent-Child Relationships**
-
-   ```elixir
-   # Handle child events
-   def handle_event(%{type: :child_event} = event, state) do
-     # Handle child event
-     {new_state, commands}
-   end
-
-   # Update child state
-   def update_child(child_id, new_state, state) do
-     # Update child state
-     {new_state, []}
-   end
-   ```
-
-2. **Component Communication**
-
-   ```elixir
-   # Broadcast events
-   def broadcast_event(event, state) do
-     # Broadcast event to children
-     {state, [{:broadcast, event}]}
-   end
-
-   # Handle broadcast events
-   def handle_event(%{type: :broadcast} = event, state) do
-     # Handle broadcast event
-     {new_state, []}
-   end
-   ```
+- [Component Architecture](./component_architecture.md)
+- [Component Testing Guide](./testing.md)
+- [Component Composition Patterns](./composition.md)
