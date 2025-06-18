@@ -94,6 +94,9 @@ end
 2. **Handle Errors**: Always handle potential errors from async operations
 3. **Cancellation**: Consider how to handle cancellation of long-running operations
 4. **Rate Limiting**: Prevent spamming of async operations (e.g., debounce user input)
+5. **Resource Cleanup**: Ensure proper cleanup of resources when operations complete or fail
+6. **State Management**: Keep track of operation state in your application model
+7. **Error Recovery**: Implement retry mechanisms for failed operations when appropriate
 
 ## Using Tasks
 
@@ -146,8 +149,8 @@ defmodule MyApp.Worker do
     send(state.caller, {:operation_result, result})
     # GenServer can terminate after sending result
     {:stop, :normal, state}
-    end
   end
+end
 ```
 
 ## Timeouts and Cancellation
@@ -169,4 +172,80 @@ def update({:timeout, ref}, %{ref: ref, status: :loading} = state) do
 end
 ```
 
-For more complex scenarios, consider using `Task.Supervisor` for proper task management and cancellation.
+For more complex scenarios, consider using `Task.Supervisor` for proper task management and cancellation:
+
+```elixir
+defmodule MyApp.TaskSupervisor do
+  use Task.Supervisor
+
+  def start_link(init_arg) do
+    Task.Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
+  end
+
+  def init(_init_arg) do
+    %{strategy: :one_for_one}
+  end
+
+  def start_task(fun) do
+    Task.Supervisor.start_child(__MODULE__, fun)
+  end
+end
+```
+
+## Error Handling
+
+Always implement proper error handling for async operations:
+
+```elixir
+def update({:task_result, _ref, {:ok, result}}, state) do
+  {:ok, %{state | data: result, status: :loaded}, []}
+end
+
+def update({:task_result, _ref, {:error, reason}}, state) do
+  {:ok, %{state | error: reason, status: :error}, []}
+end
+
+def update({:task_result, _ref, :exit}, state) do
+  {:ok, %{state | error: "Task crashed", status: :error}, []}
+end
+```
+
+## Resource Management
+
+For operations that require resource cleanup:
+
+```elixir
+defmodule MyApp.ResourceManager do
+  use GenServer
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
+  end
+
+  def init(opts) do
+    {:ok, %{resources: %{}, caller: opts.caller}}
+  end
+
+  def handle_cast({:start_operation, id, args}, state) do
+    # Start operation and track resource
+    resource = acquire_resource()
+    task = Task.async(fn -> do_work(resource, args) end)
+
+    new_resources = Map.put(state.resources, id, {task, resource})
+    {:noreply, %{state | resources: new_resources}}
+  end
+
+  def handle_info({:task_result, task_ref, result}, state) do
+    # Find and cleanup resource
+    {id, {^task_ref, resource}} = Enum.find(state.resources, fn {_, {t, _}} -> t.ref == task_ref end)
+    release_resource(resource)
+
+    # Send result to caller
+    send(state.caller, {:operation_complete, id, result})
+
+    # Remove from tracking
+    new_resources = Map.delete(state.resources, id)
+    {:noreply, %{state | resources: new_resources}}
+  end
+end
+```

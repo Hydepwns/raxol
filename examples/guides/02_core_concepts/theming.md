@@ -1,7 +1,7 @@
 ---
 title: Theming Guide
 description: How to define, use, and customize themes in Raxol.
-date: 2025-05-10
+date: 2025-06-18
 author: Raxol Team
 section: guides
 tags: [theming, themes, styling, guides]
@@ -19,19 +19,20 @@ This guide explains how to work with themes in the Raxol Terminal Emulator, incl
 
 ## 2. Theme Structure
 
-- **Definition:** Typically a `Raxol.UI.Theming.Theme` struct or a map matching its structure.
-- **Core Attributes:**
-  - `id`: Unique identifier (e.g., `:dark_theme`).
-  - `name`: User-friendly name (e.g., "Dark Theme").
-  - `description`: Brief description.
-  - `colors`: Map of semantic color names to `Color` structs.
-  - `component_styles`: Map defining styles for specific UI components.
-  - `variants`: Map of theme variants (e.g., `:high_contrast`).
-  - `metadata`: Additional theme information.
+- **Definition:** A `Raxol.UI.Theming.Theme` struct with the following attributes:
+  - `id`: Unique identifier (e.g., `:dark_theme`)
+  - `name`: User-friendly name (e.g., "Dark Theme")
+  - `description`: Brief description
+  - `colors`: Map of semantic color names to `Color` structs
+  - `component_styles`: Map defining styles for specific UI components
+  - `variants`: Map of theme variants (e.g., `:high_contrast`)
+  - `metadata`: Additional theme information
+  - `fonts`: Font definitions for the theme
+  - `ui_mappings`: Maps UI roles to semantic color names
 
 ## 3. Color System Integration
 
-The theming system integrates with the new centralized color system:
+The theming system integrates with the centralized color system:
 
 ### Core Color Representation (`Raxol.Style.Colors.Color`)
 
@@ -39,22 +40,23 @@ The theming system integrates with the new centralized color system:
 # Basic color operations
 color = Raxol.Style.Colors.Color.from_hex("#FF0000")
 lighter = Raxol.Style.Colors.Color.lighten(color, 0.2)
+darker = Raxol.Style.Colors.Color.darken(color, 0.2)
 ```
 
 ### Color System (`Raxol.Core.ColorSystem`)
 
 ```elixir
-# Theme-aware color retrieval
-primary_color = Raxol.Core.ColorSystem.get_color(:primary)
+# Initialize the color system
+Raxol.Core.ColorSystem.init()
+
+# Get a semantic color (respects accessibility settings)
+color = Raxol.Core.ColorSystem.get_color(:primary)
+
+# Get a specific color variation
 hover_color = Raxol.Core.ColorSystem.get_color(:primary, :hover)
-```
 
-### UI Colors (`Raxol.UI.Theming.Colors`)
-
-```elixir
-# UI-specific color operations
-button_color = Raxol.UI.Theming.Colors.get_ui_color(theme, :button)
-text_color = Raxol.UI.Theming.Colors.get_text_color(theme, :primary)
+# Get UI-specific colors
+button_color = Raxol.Core.ColorSystem.get_ui_color(:primary_button)
 ```
 
 ### Color Utilities (`Raxol.Style.Colors.Utilities`)
@@ -67,122 +69,213 @@ is_readable = Raxol.Style.Colors.Utilities.meets_contrast_requirements?(
   :AA,
   :normal
 )
-```
 
-### Palette Manager (`Raxol.Style.Colors.PaletteManager`)
-
-```elixir
-# Palette operations
-palette = Raxol.Style.Colors.PaletteManager.get_palette(:primary)
-scale = Raxol.Style.Colors.PaletteManager.generate_scale("#0077CC", 9)
+# Color manipulation
+adjusted_color = Raxol.Style.Colors.Utilities.adjust_for_contrast(
+  text_color,
+  background_color,
+  :AA,
+  :normal
+)
 ```
 
 ## 4. Using Themes
 
-- **Defaults:** Raxol includes built-in themes (e.g., `:default`).
-- **Application:** The `ColorSystem` manages the active theme state. The `Renderer` applies the active theme's styles when drawing UI elements.
-- **Selection:** Configured at application startup (runtime options). User preference integration is planned.
-- **Accessing Colors:** Use `Raxol.Core.ColorSystem.get_color/2` for retrieving theme colors programmatically.
-  - Example: `ColorSystem.get_color(:primary)` fetches the primary color.
-  - Handles high-contrast mode automatically based on system/user settings.
+### Default Themes
+
+Raxol includes several built-in themes:
+
+```elixir
+# Get the default theme
+default_theme = Raxol.UI.Theming.Theme.default_theme()
+
+# Get the dark theme
+dark_theme = Raxol.UI.Theming.Theme.dark_theme()
+
+# Get a theme by ID
+theme = Raxol.UI.Theming.Theme.get(:custom_theme)
+```
+
+### Applying Themes
+
+```elixir
+# Apply a theme
+Raxol.Core.ColorSystem.apply_theme(:dark)
+
+# Apply with high contrast
+Raxol.Core.ColorSystem.apply_theme(:dark, high_contrast: true)
+```
+
+### Accessing Theme Colors
+
+```elixir
+# Get a color from the current theme
+color = Raxol.Core.ColorSystem.get_color(:primary)
+
+# Get a UI-specific color
+button_color = Raxol.Core.ColorSystem.get_ui_color(:primary_button)
+
+# Get all UI colors
+all_colors = Raxol.Core.ColorSystem.get_all_ui_colors()
+```
 
 ## 5. Customizing Themes
 
-- **Modification:** Adjust colors or component styles within an existing theme's definition.
-- **Variants:** Create custom variants by defining a new map/struct that overrides specific colors or styles of a base theme.
-- **Example:**
-  ```elixir
-  theme = Raxol.UI.Theming.Theme.new(%{
-    id: :custom_theme,
-    name: "Custom Theme",
-    colors: %{
-      primary: Raxol.Style.Colors.Color.from_hex("#0077CC"),
-      background: Raxol.Style.Colors.Color.from_hex("#FFFFFF"),
-      text: Raxol.Style.Colors.Color.from_hex("#333333")
-    },
-    variants: %{
-      high_contrast: %{
-        colors: %{
-          primary: Raxol.Style.Colors.Color.from_hex("#0000FF"),
-          background: Raxol.Style.Colors.Color.from_hex("#000000"),
-          text: Raxol.Style.Colors.Color.from_hex("#FFFFFF")
-        }
-      }
-    }
-  })
-  ```
-
-## 6. Creating New Themes
-
-- **Definition:** Create an Elixir module returning a `Raxol.UI.Theming.Theme` struct.
-- **Loading:** Make the theme available via application configuration.
-- **Example:**
-  ```elixir
-  defmodule MyApp.Themes.CustomTheme do
-    def theme do
-      Raxol.UI.Theming.Theme.new(%{
-        id: :custom,
-        name: "Custom Theme",
-        description: "A custom theme for my application",
-        colors: %{
-          primary: Raxol.Style.Colors.Color.from_hex("#0077CC"),
-          secondary: Raxol.Style.Colors.Color.from_hex("#666666"),
-          background: Raxol.Style.Colors.Color.from_hex("#FFFFFF"),
-          text: Raxol.Style.Colors.Color.from_hex("#333333")
-        },
-        component_styles: %{
-          panel: %{
-            border: :single,
-            padding: 1
-          },
-          button: %{
-            padding: {0, 1},
-            text_style: [:bold]
-          }
-        },
-        variants: %{},
-        metadata: %{
-          author: "My Name",
-          version: "1.0.0"
-        }
-      })
-    end
-  end
-  ```
-
-## 7. Theming and Accessibility
-
-- **High Contrast:** Implemented as a theme variant automatically applied when high contrast mode is enabled.
-- **Integration:** `Raxol.Core.Accessibility.ThemeIntegration` monitors accessibility settings and informs the `ColorSystem`.
-- **Design:** Ensure sufficient color contrast ratios (WCAG AA minimum: 4.5:1 for normal text, 3:1 for large text) when defining palettes.
-
-## 8. Advanced Topics
-
-- **Dynamic Switching:** Update the theme state in the `ColorSystem` and trigger a re-render.
-- **Inheritance:** Define full styles per theme/variant.
-- **Performance:** Use the `PaletteManager` for efficient color operations and caching.
-
-## 9. Examples
+### Creating a Custom Theme
 
 ```elixir
-# Example Theme Definition
+defmodule MyApp.Themes.CustomTheme do
+  def theme do
+    Raxol.UI.Theming.Theme.new(%{
+      id: :custom,
+      name: "Custom Theme",
+      description: "A custom theme for my application",
+      colors: %{
+        primary: Raxol.Style.Colors.Color.from_hex("#0077CC"),
+        secondary: Raxol.Style.Colors.Color.from_hex("#666666"),
+        background: Raxol.Style.Colors.Color.from_hex("#FFFFFF"),
+        text: Raxol.Style.Colors.Color.from_hex("#333333")
+      },
+      component_styles: %{
+        panel: %{
+          border: :single,
+          padding: 1
+        },
+        button: %{
+          padding: {0, 1},
+          text_style: [:bold]
+        }
+      },
+      variants: %{
+        high_contrast: %{
+          colors: %{
+            primary: Raxol.Style.Colors.Color.from_hex("#0000FF"),
+            background: Raxol.Style.Colors.Color.from_hex("#000000"),
+            text: Raxol.Style.Colors.Color.from_hex("#FFFFFF")
+          }
+        }
+      },
+      ui_mappings: %{
+        app_background: :background,
+        surface_background: :surface,
+        primary_button: :primary,
+        secondary_button: :secondary,
+        text: :text
+      },
+      metadata: %{
+        author: "My Name",
+        version: "1.0.0"
+      }
+    })
+  end
+end
+```
+
+### Registering a Custom Theme
+
+```elixir
+# Register a theme
+Raxol.Core.ColorSystem.register_theme(%{
+  primary: "#0077CC",
+  secondary: "#00AAFF",
+  background: "#001133",
+  foreground: "#FFFFFF",
+  accent: "#FF9900"
+})
+```
+
+## 6. Theming and Accessibility
+
+### High Contrast Mode
+
+```elixir
+# Create a high contrast variant
+high_contrast_theme = Raxol.UI.Theming.Theme.create_high_contrast_variant(theme)
+
+# Apply high contrast mode
+Raxol.Core.ColorSystem.apply_theme(:dark, high_contrast: true)
+```
+
+### Accessibility Integration
+
+The color system automatically integrates with the accessibility system:
+
+- Monitors system accessibility settings
+- Applies high contrast mode when enabled
+- Ensures sufficient color contrast ratios
+- Provides alternative color schemes for color blindness
+
+## 7. Component-Specific Styling
+
+```elixir
+# Define component styles in a theme
+component_styles: %{
+  panel: %{
+    border: :single,
+    padding: 1,
+    background: :surface,
+    foreground: :text
+  },
+  button: %{
+    padding: {0, 1},
+    text_style: [:bold],
+    background: :primary,
+    foreground: :white
+  },
+  text_field: %{
+    border: :single,
+    padding: {0, 1},
+    background: :surface,
+    foreground: :text
+  }
+}
+```
+
+## 8. Best Practices
+
+1. **Semantic Colors**: Use semantic color names (e.g., `:primary`, `:secondary`) instead of specific colors
+2. **Accessibility**: Always provide high contrast variants and ensure sufficient contrast ratios
+3. **Component Styles**: Define styles for all UI components in your theme
+4. **UI Mappings**: Use `ui_mappings` to map UI roles to semantic colors
+5. **Theme Variants**: Create variants for different use cases (e.g., dark mode, high contrast)
+6. **Color System**: Use the color system for all color operations to ensure consistency
+7. **Testing**: Test themes with different accessibility settings and color schemes
+
+## 9. Example: Complete Theme Definition
+
+```elixir
 theme = Raxol.UI.Theming.Theme.new(%{
   id: :dark,
   name: "Dark Theme",
+  description: "A dark theme for Raxol applications",
   colors: %{
     primary: Raxol.Style.Colors.Color.from_hex("#0077CC"),
     secondary: Raxol.Style.Colors.Color.from_hex("#666666"),
     background: Raxol.Style.Colors.Color.from_hex("#1E1E1E"),
-    text: Raxol.Style.Colors.Color.from_hex("#FFFFFF")
+    surface: Raxol.Style.Colors.Color.from_hex("#2D2D2D"),
+    text: Raxol.Style.Colors.Color.from_hex("#FFFFFF"),
+    error: Raxol.Style.Colors.Color.from_hex("#FF5555"),
+    warning: Raxol.Style.Colors.Color.from_hex("#FFB86C"),
+    success: Raxol.Style.Colors.Color.from_hex("#50FA7B")
   },
   component_styles: %{
     panel: %{
       border: :single,
-      padding: 1
+      padding: 1,
+      background: :surface,
+      foreground: :text
     },
     button: %{
       padding: {0, 1},
-      text_style: [:bold]
+      text_style: [:bold],
+      background: :primary,
+      foreground: :white
+    },
+    text_field: %{
+      border: :single,
+      padding: {0, 1},
+      background: :surface,
+      foreground: :text
     }
   },
   variants: %{
@@ -193,6 +286,16 @@ theme = Raxol.UI.Theming.Theme.new(%{
         text: Raxol.Style.Colors.Color.from_hex("#FFFFFF")
       }
     }
+  },
+  ui_mappings: %{
+    app_background: :background,
+    surface_background: :surface,
+    primary_button: :primary,
+    secondary_button: :secondary,
+    text: :text,
+    error_text: :error,
+    warning_text: :warning,
+    success_text: :success
   },
   metadata: %{
     author: "Raxol Team",

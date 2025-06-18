@@ -1,8 +1,14 @@
 # Raxol Database Documentation
 
-This document provides information about the database setup, configuration, and how to troubleshoot common issues.
+This document provides comprehensive information about Raxol's database system, including setup, configuration, operations, and troubleshooting.
+
+## Overview
+
+Raxol uses Ecto with PostgreSQL for data persistence, providing a robust and flexible database layer with enhanced error handling, connection management, and performance optimizations.
 
 ## Configuration
+
+### Configuration Files
 
 The database configuration is stored in the following files:
 
@@ -11,7 +17,7 @@ The database configuration is stored in the following files:
 - `config/test.exs` - Test environment configuration
 - `config/prod.exs` - Production environment configuration
 
-The default development configuration is:
+### Default Configuration
 
 ```elixir
 config :raxol, Raxol.Repo,
@@ -21,153 +27,285 @@ config :raxol, Raxol.Repo,
   database: "raxol_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  pool_size: 10,
+  timeout: 15_000,
+  idle_timeout: 30_000,
+  retry_interval: 1_000,
+  max_retries: 5
 ```
+
+### Environment Variables
 
 You can override these settings using environment variables:
 
-- `RAXOL_DB_NAME` - Database name
-- `RAXOL_DB_USER` - Database username
-- `RAXOL_DB_PASS` - Database password
-- `RAXOL_DB_HOST` - Database hostname
+```bash
+# Database Configuration
+RAXOL_DB_NAME=my_database
+RAXOL_DB_USER=my_user
+RAXOL_DB_PASS=my_password
+RAXOL_DB_HOST=localhost
+
+# Connection Settings
+RAXOL_DB_POOL_SIZE=20
+RAXOL_DB_TIMEOUT=30000
+RAXOL_DB_IDLE_TIMEOUT=60000
+```
 
 ## Database Setup
 
 ### Initial Setup
 
-Run the setup script to create the database and run migrations:
-
 ```bash
+# Create database and run migrations
 ./scripts/setup_db.sh
-```
 
-### Reset Database
-
-To reset the database (drop and recreate):
-
-```bash
+# Reset database (drop and recreate)
 ./scripts/setup_db.sh --reset
+
+# Run migrations only
+mix ecto.migrate
+
+# Rollback migrations
+mix ecto.rollback
 ```
 
 ### Diagnostic Tools
 
-The following scripts are available to diagnose database issues:
+```bash
+# Check database connection
+./scripts/check_db.exs
 
-- `scripts/check_db.exs` - Simple standalone database connection check
-- `scripts/diagnose_db.exs` - Full diagnostic tool (requires application startup)
+# Run full diagnostics
+./scripts/diagnose_db.exs
+
+# Check connection pool status
+mix raxol.db.pool_status
+```
 
 ## Architecture
 
 ### Connection Management
 
-Raxol uses a robust connection management system to handle database connections:
+Raxol implements a sophisticated connection management system:
 
-- `Raxol.Database.ConnectionManager` - Manages database connections with retry logic
-- `Raxol.Database` - Provides a safe interface for database operations
-- `Raxol.Repo` - Ecto repository with enhanced logging and error handling
+```elixir
+# Connection Manager
+Raxol.Database.ConnectionManager.start_link(opts)
+Raxol.Database.ConnectionManager.get_connection()
+Raxol.Database.ConnectionManager.release_connection(conn)
+
+# Health Checks
+Raxol.Database.ConnectionManager.check_health()
+Raxol.Database.ConnectionManager.get_metrics()
+```
 
 Key features:
 
-1. **Connection Retries**: Automatic retries for transient database errors
-2. **Error Classification**: Categorizes errors as retryable or non-retryable
-3. **Exponential Backoff**: Uses exponential backoff for connection retries
-4. **Health Checks**: Periodic health checks to ensure database connectivity
-5. **Detailed Logging**: Enhanced logging for database operations
-6. **Safe Interfaces**: Wraps database operations with error handling
+1. **Connection Pooling**
+
+   - Dynamic pool sizing
+   - Connection reuse
+   - Automatic cleanup
+
+2. **Error Handling**
+
+   - Automatic retries
+   - Error classification
+   - Detailed logging
+
+3. **Health Monitoring**
+   - Connection health checks
+   - Performance metrics
+   - Resource usage tracking
 
 ### Database Operations
 
-All database operations should use the `Raxol.Database` module, which provides safe functions with retry logic:
+The `Raxol.Database` module provides a safe interface for all database operations:
 
 ```elixir
-# Create a record
+# Basic Operations
 Raxol.Database.create(MySchema, attrs)
-
-# Get a record
 Raxol.Database.get(MySchema, id)
-
-# Update a record
 Raxol.Database.update(MySchema, record, attrs)
-
-# Delete a record
 Raxol.Database.delete(record)
 
-# Execute a transaction
+# Query Operations
+Raxol.Database.all(MySchema)
+Raxol.Database.get_by(MySchema, conditions)
+Raxol.Database.first(MySchema, conditions)
+Raxol.Database.last(MySchema, conditions)
+
+# Transactions
 Raxol.Database.transaction(fn ->
   # transaction operations
 end)
+
+# Multi-step Operations
+Raxol.Database.multi(fn multi ->
+  multi
+  |> Raxol.Database.insert(:user, user_attrs)
+  |> Raxol.Database.insert(:profile, profile_attrs)
+end)
+```
+
+### Schema Definition
+
+Example schema with common features:
+
+```elixir
+defmodule MyApp.User do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "users" do
+    field :email, :string
+    field :name, :string
+    field :age, :integer
+    field :active, :boolean, default: true
+    timestamps()
+  end
+
+  def changeset(user, attrs) do
+    user
+    |> cast(attrs, [:email, :name, :age, :active])
+    |> validate_required([:email, :name])
+    |> validate_format(:email, ~r/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+    |> validate_number(:age, greater_than: 0)
+    |> unique_constraint(:email)
+  end
+end
 ```
 
 ## Common Issues
 
-### Could not connect to database
+### Connection Issues
 
 **Symptoms**:
 
 - "Could not connect to database" error
-- Postgrex connection errors
-
-**Possible Causes**:
-
-1. PostgreSQL service is not running
-2. Incorrect database credentials
-3. Database does not exist
-4. Network connectivity issues
+- Connection timeouts
+- Pool exhaustion
 
 **Solutions**:
 
-1. Start PostgreSQL: `brew services start postgresql`
-2. Check credentials in `config/dev.exs`
-3. Run setup script: `./scripts/setup_db.sh`
-4. Check network connectivity and firewall settings
+1. Check PostgreSQL service: `brew services status postgresql`
+2. Verify credentials in config
+3. Check network connectivity
+4. Adjust pool size and timeouts
 
-### Connection Pooling Issues
+### Performance Issues
 
 **Symptoms**:
 
-- "Connection refused" errors under load
-- Timeouts during peak usage
-
-**Possible Causes**:
-
-1. Pool size too small
-2. Long-running queries
-3. Connection leaks
+- Slow queries
+- High CPU usage
+- Connection pool exhaustion
 
 **Solutions**:
 
-1. Increase pool size in config
-2. Optimize queries
-3. Run the diagnostic script to check for connection issues
+1. Add appropriate indexes
+2. Optimize query patterns
+3. Use preloading for associations
+4. Monitor and adjust pool size
 
-### Migration Errors
+### Migration Issues
 
 **Symptoms**:
 
-- "Migration failed" errors
-- Table/column does not exist errors
+- Failed migrations
+- Schema inconsistencies
+- Data type mismatches
 
 **Solutions**:
 
-1. Reset database: `./scripts/setup_db.sh --reset`
-2. Check migration files for errors
-3. Run migrations manually: `mix ecto.migrate`
+1. Check migration files
+2. Use `mix ecto.migrations` to verify
+3. Reset database if needed
+4. Review schema changes
 
-## Adding New Schemas
+## Best Practices
 
-When adding new schemas or migrations:
+1. **Schema Design**
 
-1. Create a migration file with `mix ecto.gen.migration`
-2. Define the schema in a dedicated module
-3. Add context functions in the appropriate context module
-4. Use `Raxol.Database` functions for all database operations
-5. Run tests to verify the schema works as expected
-6. Document the schema in this file
+   - Use appropriate data types
+   - Add necessary indexes
+   - Define proper constraints
+   - Use timestamps for all records
 
-## Performance Tips
+2. **Query Optimization**
 
-1. Use `Ecto.Multi` for transactional operations
-2. Add indexes for frequently queried fields
-3. Use preloading for associations to avoid N+1 queries
-4. Consider using database views for complex reports
-5. Monitor query performance with the provided logging
+   - Use preloading for associations
+   - Add indexes for frequent queries
+   - Use transactions for related operations
+   - Monitor query performance
+
+3. **Error Handling**
+
+   - Use transactions for atomic operations
+   - Implement proper error handling
+   - Log database errors
+   - Use retry logic for transient errors
+
+4. **Security**
+   - Use parameterized queries
+   - Validate input data
+   - Implement proper access control
+   - Secure sensitive data
+
+## Monitoring and Maintenance
+
+### Performance Monitoring
+
+```elixir
+# Get database metrics
+Raxol.Database.get_metrics()
+
+# Monitor query performance
+Raxol.Database.enable_query_logging()
+
+# Check connection pool status
+Raxol.Database.get_pool_status()
+```
+
+### Maintenance Tasks
+
+```bash
+# Vacuum database
+mix raxol.db.vacuum
+
+# Analyze tables
+mix raxol.db.analyze
+
+# Check for deadlocks
+mix raxol.db.check_deadlocks
+```
+
+## Adding New Features
+
+When adding new database features:
+
+1. Create a new migration
+2. Define the schema
+3. Add context functions
+4. Write tests
+5. Update documentation
+6. Add monitoring
+
+Example migration:
+
+```elixir
+defmodule MyApp.Repo.Migrations.AddUserPreferences do
+  use Ecto.Migration
+
+  def change do
+    create table(:user_preferences) do
+      add :user_id, references(:users, on_delete: :delete_all)
+      add :theme, :string
+      add :notifications_enabled, :boolean, default: true
+      timestamps()
+    end
+
+    create index(:user_preferences, [:user_id])
+  end
+end
+```

@@ -9,7 +9,7 @@ tags: [documentation, overview, library, tui, elixir]
 
 # 📚 Raxol Documentation
 
-Welcome! This is your starting point for all things Raxol—a powerful toolkit for building interactive terminal (TUI) applications in Elixir.
+Welcome! This is your starting point for all things Raxol—a modern, feature-rich toolkit for building sophisticated terminal user interfaces (TUIs) in Elixir. Raxol provides a comprehensive set of components, styling options, and event handling for creating interactive terminal applications with rich text formatting, keyboard input handling, and dynamic UI updates.
 
 ## 📈 Project Status
 
@@ -25,13 +25,13 @@ Welcome! This is your starting point for all things Raxol—a powerful toolkit f
 
 ## Subsystems
 
-- [Terminal](../lib/raxol/terminal/README.md)
-- [Core](../lib/raxol/core/README.md)
-- [Plugins](../lib/raxol/plugins/README.md)
-- [Style](../lib/raxol/style/README.md)
-- [UI](../lib/raxol/ui/README.md)
-- [AI](../lib/raxol/ai/README.md)
-- [Animation](../lib/raxol/animation/README.md)
+- [Terminal](../lib/raxol/terminal/README.md): Low-level terminal I/O and buffer management
+- [Core](../lib/raxol/core/README.md): Application lifecycle and state management
+- [Plugins](../lib/raxol/plugins/README.md): Extensible plugin architecture
+- [Style](../lib/raxol/style/README.md): Rich text formatting and styling system
+- [UI](../lib/raxol/ui/README.md): Component system and layout management
+- [AI](../lib/raxol/ai/README.md): AI-powered features and enhancements
+- [Animation](../lib/raxol/animation/README.md): Dynamic UI animations and transitions
 
 ## 📦 Static Assets
 

@@ -1,137 +1,105 @@
 ---
-title: Cross-Platform Support
-description: Documentation for cross-platform support in Raxol Terminal Emulator
-date: 2023-04-04
+title: Installation Guide
+description: How to install and set up Raxol on your system
+date: 2025-06-18
 author: Raxol Team
-section: installation
-tags: [installation, cross-platform, support]
+section: guides
+tags: [installation, setup, getting started]
 ---
 
-## Installation
+# Installation Guide
 
-Raxol is designed to work seamlessly across multiple platforms including macOS, Linux, and Windows. This document outlines platform-specific considerations and optimizations.
+This guide will help you install Raxol and its dependencies on your system. Raxol is designed to work seamlessly across multiple platforms including macOS, Linux, and Windows.
 
-## System Dependency Installation
+## Prerequisites
 
-Before building Raxol from source, you need to install the core system dependencies. The main requirements are Elixir, Erlang, and potentially Node.js/npm if you plan to work with frontend components.
+Before installing Raxol, ensure you have the following installed:
 
-### Linux (Debian/Ubuntu Example)
+- **Elixir** (1.14 or later)
+- **Erlang/OTP** (24 or later)
+- **Mix** (comes with Elixir)
 
-```bash
-# Install Elixir and Erlang
-sudo apt-get update
-sudo apt-get install elixir erlang
+## Installation Methods
 
-# Install Node.js and npm (if needed)
-curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-sudo apt-get install -y nodejs
+### 1. Using Mix (Recommended)
+
+Add Raxol to your dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:raxol, "~> 0.4.2"}
+  ]
+end
 ```
 
-_(Adapt package manager commands for other distributions like Fedora, Arch, etc.)_
-
-### macOS
+Then fetch the dependencies:
 
 ```bash
-# Install Elixir and Erlang using Homebrew
-brew install elixir erlang
-
-# Install Node.js and npm (if needed)
-brew install node
+mix deps.get
 ```
 
-### Windows
+### 2. Platform-Specific Installation
 
-1. Install [Elixir](https://elixir-lang.org/install.html#windows) (includes Erlang)
-2. Install [Node.js](https://nodejs.org/en/download/) (includes npm, if needed)
+#### macOS
 
-_(Ensure the installers add the commands to your system's PATH.)_
+Using Homebrew:
 
-## Platform Matrix
+```bash
+brew install hydepwns/raxol/raxol
+```
 
-| Platform              | Architecture          | Status             | Notes                 |
-| --------------------- | --------------------- | ------------------ | --------------------- |
-| macOS                 | x86_64 (Intel)        | ✅ Fully supported |                       |
-| macOS                 | arm64 (Apple Silicon) | ✅ Fully supported | Native performance    |
-| Linux (Debian/Ubuntu) | x86_64                | ✅ Fully supported |                       |
-| Linux (Debian/Ubuntu) | arm64                 | ✅ Fully supported |                       |
-| Linux (RHEL/Fedora)   | x86_64                | ✅ Fully supported |                       |
-| Linux (Arch)          | x86_64                | ✅ Fully supported | AUR package available |
-| Windows               | x86_64                | ✅ Fully supported |                       |
+#### Linux
 
-## Platform-Specific Considerations
+**Debian/Ubuntu:**
 
-### macOS
+```bash
+# Add the repository
+curl -fsSL https://deb.raxol.dev/gpg | sudo gpg --dearmor -o /usr/share/keyrings/raxol-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/raxol-archive-keyring.gpg] https://deb.raxol.dev stable main" | sudo tee /etc/apt/sources.list.d/raxol.list
 
-#### Terminal Support
+# Install Raxol
+sudo apt update
+sudo apt install raxol
+```
 
-- **Terminal.app**: Fully supported with True Color
-- **iTerm2**: Recommended for best experience with advanced features
-- **Alacritty**: Excellent performance with True Color support
-- **Kitty**: Full feature support including ligatures and True Color
+**Arch Linux:**
 
-#### Installation Options
+```bash
+yay -S raxol
+```
 
-- Homebrew: `brew install hydepwns/raxol/raxol`
-- Direct download: DMG installer available
-- Source build: Full support for both architectures
+#### Windows
 
-#### Apple Silicon Optimization
+Using Windows Package Manager:
 
-Raxol has been optimized for Apple Silicon (M1/M2/M3) processors, providing:
+```bash
+winget install raxol
+```
 
-- Native ARM64 binaries for maximum performance
-- Reduced memory usage compared to Rosetta 2 translation
-- Optimized rendering pipeline for Apple GPU architecture
+## Platform Support
 
-### Linux
+Raxol is fully supported on the following platforms:
 
-#### Terminal Support
+| Platform | Architecture          | Status             |
+| -------- | --------------------- | ------------------ |
+| macOS    | x86_64 (Intel)        | ✅ Fully supported |
+| macOS    | arm64 (Apple Silicon) | ✅ Fully supported |
+| Linux    | x86_64                | ✅ Fully supported |
+| Linux    | arm64                 | ✅ Fully supported |
+| Windows  | x86_64                | ✅ Fully supported |
 
-- **GNOME Terminal**: Full True Color and Unicode support
-- **Konsole**: Excellent KDE integration with all features
-- **XFCE Terminal**: Lightweight with good compatibility
-- **Terminator**: Full support for split panes and True Color
-- **Alacritty/Kitty**: Recommended for best performance
+## Terminal Compatibility
 
-#### Distribution Packages
+Raxol works best with modern terminal emulators that support True Color and Unicode:
 
-- **Debian/Ubuntu**: `.deb` packages with automatic dependency resolution
-- **RHEL/Fedora/CentOS**: `.rpm` packages available
-- **Arch Linux**: Available in the AUR
-- **NixOS**: Nix package available
+### Recommended Terminals
 
-#### Wayland Considerations
+- **macOS**: iTerm2, Alacritty, Kitty
+- **Linux**: GNOME Terminal, Konsole, Alacritty, Kitty
+- **Windows**: Windows Terminal
 
-Raxol fully supports Wayland display servers, with:
-
-- Proper handling of HiDPI displays
-- Clipboard integration
-- Touch input support where available
-
-### Windows
-
-#### Terminal Support
-
-- **Windows Terminal**: Recommended for best experience
-- **PowerShell**: Supported with some rendering limitations
-- **Command Prompt**: Basic support with limited color capabilities
-- **ConEmu/Cmder**: Full support with proper configuration
-
-#### Installation Options
-
-- Windows Installer (.exe)
-- Portable ZIP archive
-- Windows Package Manager: `winget install raxol`
-
-#### WSL Integration
-
-Raxol can be used within Windows Subsystem for Linux with:
-
-- Full performance on both WSL1 and WSL2
-- Proper rendering in Windows Terminal
-- Integration with VS Code Remote WSL
-
-## Feature Compatibility Matrix
+## Feature Support
 
 | Feature               | macOS | Linux | Windows |
 | --------------------- | ----- | ----- | ------- |
@@ -140,41 +108,67 @@ Raxol can be used within Windows Subsystem for Linux with:
 | Mouse support         | ✅    | ✅    | ✅      |
 | Keyboard shortcuts    | ✅    | ✅    | ✅      |
 | Clipboard integration | ✅    | ✅    | ✅      |
-| Auto-update           | ✅    | ✅    | ✅      |
 | HiDPI support         | ✅    | ✅    | ✅      |
 
-## Building for Multiple Platforms
+## Troubleshooting
 
-Raxol uses Burrito to build native executables for each platform. To build for a specific platform:
+### Common Issues
 
-```bash
-# Build for all platforms
-mix run scripts/release.exs --env prod --all
+1. **Missing Dependencies**
 
-# Build for a specific platform
-mix run scripts/release.exs --env prod --platform [macos|linux|windows]
-```
+   ```bash
+   # Linux
+   sudo apt install libssl-dev libncurses5-dev
 
-## Troubleshooting Platform-Specific Issues
+   # macOS
+   brew install openssl ncurses
+   ```
 
-### macOS
+2. **Permission Issues**
 
-- **Permission issues**: Run `chmod +x /path/to/raxol` to make executable
-- **"App is damaged"**: Run `xattr -d com.apple.quarantine /path/to/raxol`
-- **Terminal.app color issues**: Enable "Use bright colors for bold text" in Terminal preferences
+   ```bash
+   # Make executable
+   chmod +x /path/to/raxol
+   ```
 
-### Linux
+3. **Terminal Color Issues**
+   - Enable "Use bright colors for bold text" in terminal preferences
+   - Verify your terminal supports True Color
 
-- **Missing libraries**: Install `libssl` and `libncurses` packages
-- **Permission denied**: Ensure executable permission with `chmod +x ./raxol`
-- **Rendering issues**: Verify your terminal supports UTF-8 with `locale`
+### Platform-Specific Notes
 
-### Windows
+#### macOS
 
-- **PATH issues**: Ensure installation directory is in your PATH
-- **Color rendering**: Use Windows Terminal for best experience
-- **Unicode problems**: Set PowerShell to UTF-8 with `[console]::OutputEncoding = [System.Text.Encoding]::UTF8`
+- For Apple Silicon (M1/M2/M3) users, Raxol provides native ARM64 binaries
+- If you see "App is damaged" warning, run:
 
-```bash
-mix deps.get
-```
+  ```bash
+  xattr -d com.apple.quarantine /path/to/raxol
+  ```
+
+#### Linux
+
+- For Wayland users, ensure your terminal emulator has proper Wayland support
+- Set your locale to UTF-8:
+
+  ```bash
+  locale-gen en_US.UTF-8
+  update-locale LANG=en_US.UTF-8
+  ```
+
+#### Windows
+
+- Use Windows Terminal for the best experience
+- If using PowerShell, set UTF-8 encoding:
+
+  ```powershell
+  [console]::OutputEncoding = [System.Text.Encoding]::UTF8
+  ```
+
+## Next Steps
+
+After installation, check out:
+
+- [Quick Start Guide](quick_start.md) to create your first Raxol application
+- [Components & Layout](03_components_and_layout/components/README.md) to learn about building UIs
+- [Examples](../) for sample applications and use cases

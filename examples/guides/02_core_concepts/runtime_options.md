@@ -32,18 +32,20 @@ Starting the application directly under your own supervisor is more complex and 
 
 These options are passed as a keyword list (the second argument) to `Raxol.Core.Runtime.Lifecycle.start_application/2`.
 
+### Core Options
+
 - `:title`
 
   - **Optional**
   - Sets the title displayed in the terminal window border (if the terminal emulator supports it).
-  - Defaults to `"Raxol Application"` (based on `Lifecycle` docstring, though guide previously said `nil`).
+  - Defaults to `"Raxol Application"`.
 
 - `:quit_keys`
 
   - **Optional**
   - A list of keys or event patterns that will cause the application to exit gracefully.
   - Events are matched against the `Raxol.Core.Events.Event` struct.
-  - Defaults to `[:ctrl_c]` (which likely corresponds to an internal event pattern).
+  - Defaults to `[{:ctrl, ?c}]`.
   - You can add more keys like `"q"` or event patterns.
 
 - `:fps`
@@ -71,99 +73,117 @@ These options are passed as a keyword list (the second argument) to `Raxol.Core.
   - Default: `24`
   - Sets the initial terminal height assumption.
 
-Other options might be available for specific internal configuration. Refer to the `Raxol.Core.Runtime.Lifecycle` module documentation for the most current details.
-
-# Runtime Options
-
-This guide covers the runtime configuration options available when starting a Raxol application.
-
-## Starting a Raxol Application
-
-There are several ways to start a Raxol application:
-
-```elixir
-# Start with default options
-Raxol.start_link(MyApp)
-
-# Start with custom options
-Raxol.start_link(MyApp, options)
-
-# Start within a supervision tree (recommended for production)
-children = [
-  {Raxol, application: MyApp, options: [theme: :dark]}
-]
-Supervisor.start_link(children, strategy: :one_for_one)
-```
-
-## Core Runtime Options
-
-| Option                | Type      | Default                            | Description                                                                                               |
-| --------------------- | --------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `theme`               | `atom`    | `:light`                           | The initial theme to use (`%Raxol.UI.Theming.Theme{}`). Core options: `:light`, `:dark`, `:high_contrast` |
-| `render_interval`     | `integer` | `33`                               | The time in milliseconds between render cycles (lower = higher FPS, but more CPU usage)                   |
-| `max_fps`             | `integer` | `30`                               | Maximum frames per second to render (alternative to `render_interval`)                                    |
-| `plugins`             | `list`    | `[]`                               | List of plugin modules to load at startup                                                                 |
-| `persist_preferences` | `boolean` | `true`                             | Whether to persist user preferences between sessions                                                      |
-| `preferences_path`    | `string`  | `~/.config/raxol/preferences.json` | Path to store preferences                                                                                 |
-| `input_timeout`       | `integer` | `100`                              | Timeout in milliseconds for input processing                                                              |
-| `enable_mouse`        | `boolean` | `true`                             | Enable mouse support                                                                                      |
-| `accessibility`       | `keyword` | See below                          | Accessibility options                                                                                     |
-
 ### Accessibility Options
 
-The `accessibility` option takes a keyword list with the following options:
+The `:accessibility` option takes a keyword list with the following options:
 
 ```elixir
 [
-  high_contrast: false,      # Enable high contrast mode
-  reduced_motion: false,     # Reduce or disable animations
-  screen_reader: :auto,      # :auto, :enabled, or :disabled
-  key_repeat_delay: 500,     # Delay before key repeat in ms
-  key_repeat_rate: 50,       # Key repeat rate in ms
-  focus_highlight: true      # Highlight focused element
+  screen_reader: true,      # Enable screen reader support
+  high_contrast: false,     # Enable high contrast mode
+  large_text: false,        # Enable large text mode
+  reduced_motion: false,    # Reduce or disable animations
+  key_repeat_delay: 500,    # Delay before key repeat in ms
+  key_repeat_rate: 50,      # Key repeat rate in ms
+  focus_highlight: true     # Highlight focused element
 ]
 ```
 
-## Terminal Options
+### Terminal Options
 
-| Option                 | Type      | Default   | Description                                                              |
-| ---------------------- | --------- | --------- | ------------------------------------------------------------------------ |
-| `terminal_type`        | `atom`    | `:auto`   | The terminal type (`:ansi`, `:ascii`, `:auto`)                           |
-| `enable_colors`        | `boolean` | `true`    | Enable color output                                                      |
-| `color_depth`          | `atom`    | `:auto`   | Color depth (`:ansi_8`, `:ansi_16`, `:ansi_256`, `:true_color`, `:auto`) |
-| `enable_utf8`          | `boolean` | `true`    | Enable UTF-8 support                                                     |
-| `output_mode`          | `atom`    | `:buffer` | Output mode (`:direct`, `:buffer`)                                       |
-| `use_alternate_screen` | `boolean` | `true`    | Use alternate screen buffer                                              |
-| `respect_term_size`    | `boolean` | `true`    | Respect terminal size constraints                                        |
-| `sixel_support`        | `boolean` | `:auto`   | Enable Sixel graphics if supported                                       |
+- `:terminal_type`
 
-## Debug Options
+  - **Optional**
+  - Default: `:auto`
+  - The terminal type (`:ansi`, `:ascii`, `:auto`).
 
-| Option                | Type      | Default | Description                                      |
-| --------------------- | --------- | ------- | ------------------------------------------------ |
-| `debug`               | `boolean` | `false` | Enable debug mode                                |
-| `log_level`           | `atom`    | `:info` | Log level (`:debug`, `:info`, `:warn`, `:error`) |
-| `debug_rendering`     | `boolean` | `false` | Show rendering debug information                 |
-| `performance_metrics` | `boolean` | `false` | Collect performance metrics                      |
-| `profile`             | `boolean` | `false` | Enable profiling                                 |
+- `:enable_colors`
 
-## Example Configuration
+  - **Optional**
+  - Default: `true`
+  - Enable color output.
 
-```elixir
-Raxol.start_link(MyApp, [
-  theme: :dark,
-  render_interval: 16,                      # ~60 FPS
-  plugins: [Raxol.Plugins.ClipboardPlugin, MyCustomPlugin],
-  accessibility: [
-    high_contrast: true,
-    reduced_motion: true
-  ],
-  terminal_type: :ansi,
-  color_depth: :ansi_256,
-  debug: true,
-  log_level: :debug
-])
-```
+- `:color_depth`
+
+  - **Optional**
+  - Default: `:auto`
+  - Color depth (`:ansi_8`, `:ansi_16`, `:ansi_256`, `:true_color`, `:auto`).
+
+- `:enable_utf8`
+
+  - **Optional**
+  - Default: `true`
+  - Enable UTF-8 support.
+
+- `:output_mode`
+
+  - **Optional**
+  - Default: `:buffer`
+  - Output mode (`:direct`, `:buffer`).
+
+- `:use_alternate_screen`
+
+  - **Optional**
+  - Default: `true`
+  - Use alternate screen buffer.
+
+- `:respect_term_size`
+
+  - **Optional**
+  - Default: `true`
+  - Respect terminal size constraints.
+
+- `:sixel_support`
+  - **Optional**
+  - Default: `:auto`
+  - Enable Sixel graphics if supported.
+
+### Plugin Options
+
+- `:plugins`
+
+  - **Optional**
+  - Default: `[]`
+  - List of plugin modules to load at startup.
+
+- `:plugin_manager_opts`
+  - **Optional**
+  - Default: `[]`
+  - Options to pass to the PluginManager's start_link function.
+
+### Debug Options
+
+- `:log_level`
+
+  - **Optional**
+  - Default: `:info`
+  - Log level (`:debug`, `:info`, `:warn`, `:error`).
+
+- `:debug_rendering`
+
+  - **Optional**
+  - Default: `false`
+  - Show rendering debug information.
+
+- `:performance_metrics`
+
+  - **Optional**
+  - Default: `false`
+  - Collect performance metrics.
+
+- `:profile`
+  - **Optional**
+  - Default: `false`
+  - Enable profiling.
+
+## Environment Variables
+
+Raxol also respects these environment variables:
+
+- `RAXOL_THEME`: Set the default theme
+- `RAXOL_NO_COLOR`: Disable colors if set to `1` or `true`
+- `RAXOL_DEBUG`: Enable debug mode if set to `1` or `true`
+- `RAXOL_LOG_LEVEL`: Set the log level
 
 ## Runtime Customization
 
@@ -179,12 +199,3 @@ Raxol.set_accessibility_option(:reduced_motion, true)
 # Change log level
 Raxol.set_log_level(:debug)
 ```
-
-## Environment Variables
-
-Raxol also respects these environment variables:
-
-- `RAXOL_THEME`: Set the default theme
-- `RAXOL_NO_COLOR`: Disable colors if set to `1` or `true`
-- `RAXOL_DEBUG`: Enable debug mode if set to `1` or `true`
-- `RAXOL_LOG_LEVEL`: Set the log level
