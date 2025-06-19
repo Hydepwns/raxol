@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.TerminalTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Raxol.UI.Components.Terminal
   alias Raxol.Core.Events.Event
 
@@ -8,7 +8,7 @@ defmodule Raxol.UI.Components.TerminalTest do
   end
 
   describe "Terminal component" do
-    test 'initializes with default values' do
+    test "initializes with default values" do
       terminal = initial_terminal_state()
 
       assert terminal.id == nil
@@ -18,7 +18,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       assert terminal.style == %{}
     end
 
-    test 'handles resize events (updates width/height)' do
+    test "handles resize events (updates width/height)" do
       terminal = initial_terminal_state()
       event = %Event{type: :resize, data: %{cols: 100, rows: 50}}
 
@@ -29,7 +29,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       assert new_terminal_state.height == 24
     end
 
-    test "switches to insert mode on "i" key (Placeholder - checks buffer)" do
+    test "switches to insert mode on 'i' key (Placeholder - checks buffer)" do
       terminal = initial_terminal_state()
       event = %Event{type: :key, data: %{key: :i}}
 
@@ -49,7 +49,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       assert new_terminal_state.buffer == ["Key: :colon"]
     end
 
-    test 'handles character input in insert mode (Placeholder - checks buffer)' do
+    test "handles character input in insert mode (Placeholder - checks buffer)" do
       terminal = initial_terminal_state()
 
       insert_mode_event = %Event{type: :key, data: %{key: :i}}
@@ -65,7 +65,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       assert final_state.buffer == ["Key: :i", "Key: \"a\""]
     end
 
-    test 'exits insert mode on escape key (Placeholder - checks buffer)' do
+    test "exits insert mode on escape key (Placeholder - checks buffer)" do
       terminal = initial_terminal_state()
 
       insert_mode_event = %Event{type: :key, data: %{key: :i}}
@@ -83,7 +83,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       assert final_state.buffer == ["Key: :i", "Key: :escape"]
     end
 
-    test 'renders visible portion of buffer' do
+    test "renders visible portion of buffer" do
       terminal = initial_terminal_state(buffer: ["Line 1", "Line 2"])
       rendered = Terminal.render(terminal, %{})
 

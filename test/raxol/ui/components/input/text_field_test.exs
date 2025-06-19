@@ -11,7 +11,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
   end
 
   describe "theming, style, and lifecycle" do
-    test ~c"applies style and theme props to text field" do
+    test "applies style and theme props to text field" do
       theme_map = %{
         text_field: %{
           border: "2px solid #00ff00",
@@ -40,7 +40,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
       assert Map.get(actual_merged_style, :border) == nil
     end
 
-    test ~c"mount/1 and unmount/1 return state unchanged" do
+    test "mount/1 and unmount/1 return state unchanged" do
       state = create_state(%{value: "foo"})
       assert TextField.mount(state) == state
       assert TextField.unmount(state) == state
@@ -48,7 +48,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
   end
 
   describe "render/2" do
-    test ~c"renders value and placeholder" do
+    test "renders value and placeholder" do
       state = create_state(%{value: "Hello"})
 
       rendered =
@@ -70,7 +70,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
       assert :italic in (text_elem2.attributes[:text_decoration] || [])
     end
 
-    test ~c"renders masked value if secret is true" do
+    test "renders masked value if secret is true" do
       state = create_state(%{value: "secret", secret: true})
 
       rendered =

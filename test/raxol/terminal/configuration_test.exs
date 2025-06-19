@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
   # alias Raxol.Terminal.Config.Application
 
   describe "new/0 and new/1" do
-    test ~c"creates a configuration with default values" do
+    test "creates a configuration with default values" do
       config = Configuration.new()
 
       # Assert it's the correct struct type
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
     #   # assert is_integer(config.scrollback_limit)
     # end
 
-    test ~c"new/1 merges provided options with defaults" do
+    test "new/1 merges provided options with defaults" do
       # Options to override defaults
       opts = [
         width: 120,
@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
   end
 
   describe "update/2" do
-    test ~c"updates existing configuration struct" do
+    test "updates existing configuration struct" do
       config = Configuration.new()
 
       updated_config =

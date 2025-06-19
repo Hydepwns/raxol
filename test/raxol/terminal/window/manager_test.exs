@@ -9,14 +9,14 @@ defmodule Raxol.Terminal.Window.ManagerTest do
   end
 
   describe "window creation" do
-    test ~c"creates a window with config" do
+    test "creates a window with config" do
       config = %Config{width: 80, height: 24}
       assert {:ok, window} = Manager.create_window(config)
       assert window.width == 80
       assert window.height == 24
     end
 
-    test ~c"creates a window with dimensions" do
+    test "creates a window with dimensions" do
       assert {:ok, window} = Manager.create_window(100, 50)
       assert window.width == 100
       assert window.height == 50
@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.Window.ManagerTest do
       assert retrieved_parent.id == parent.id
     end
 
-    test ~c"returns error for window without parent" do
+    test "returns error for window without parent" do
       {:ok, window} = Manager.create_window(80, 24)
       assert {:error, :no_parent} = Manager.get_parent_window(window.id)
     end

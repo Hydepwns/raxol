@@ -136,7 +136,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   end
 
   describe "Component Hierarchy" do
-    test ~c"parent-child relationship" do
+    test "parent-child relationship" do
       # Set up parent and child components
       parent = create_test_component(ParentComponent)
 
@@ -155,7 +155,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       assert child.state.parent_id == parent.state.id
     end
 
-    test ~c"event propagation up the hierarchy" do
+    test "event propagation up the hierarchy" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
@@ -188,7 +188,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       assert updated_parent.state.events == [{child.state.id, 1}]
     end
 
-    test ~c"state updates down the hierarchy" do
+    test "state updates down the hierarchy" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
@@ -217,7 +217,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   end
 
   describe "Component Communication" do
-    test ~c"broadcast events" do
+    test "broadcast events" do
       # Set up multiple components
       parent = create_test_component(ParentComponent)
 
@@ -248,7 +248,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       assert updated_child2.state.value == 1
     end
 
-    test ~c"component state synchronization" do
+    test "component state synchronization" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
@@ -274,7 +274,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   end
 
   describe "Component Lifecycle in Hierarchy" do
-    test ~c"mounting order" do
+    test "mounting order" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
@@ -298,7 +298,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       assert mounted_child.state.parent_id == mounted_parent.state.id
     end
 
-    test ~c"unmounting order" do
+    test "unmounting order" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
@@ -327,7 +327,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   end
 
   describe "Error Handling in Hierarchy" do
-    test ~c"handles child errors gracefully" do
+    test "handles child errors gracefully" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
@@ -349,7 +349,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       assert updated_parent.state == parent.state
     end
 
-    test ~c"handles parent errors gracefully" do
+    test "handles parent errors gracefully" do
       # Set up components
       parent = create_test_component(ParentComponent)
 

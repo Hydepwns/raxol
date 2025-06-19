@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.ButtonVisualTest do
   alias Raxol.UI.Components.Input.Button
 
   describe "visual tests for Button component" do
-    test ~c"renders default button" do
+    test "renders default button" do
       component = setup_visual_component(Button, %{label: "Click Me"})
 
       assert_renders_as(component, fn output ->
@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.Input.ButtonVisualTest do
       end)
     end
 
-    # Example of a snapshot test (can be uncommented and adapted)
+    # TODO: Example of a snapshot test (can be uncommented and adapted)
     # test 'matches snapshot' do
     #   component = setup_visual_component(Button, %{label: "Snapshot Button"})
     #   context = %{snapshots_dir: "test/snapshots/button"} # Ensure this directory exists

@@ -4,7 +4,7 @@ defmodule Raxol.UI.Layout.TableTest do
   alias Raxol.UI.Layout.Table
 
   describe "Column Width Calculation" do
-    test ~c"respects fixed column widths" do
+    test "respects fixed column widths" do
       # Define a table element as it would come from Elements.table
       table_element = %{
         type: :table,
@@ -42,7 +42,7 @@ defmodule Raxol.UI.Layout.TableTest do
       assert final_height == 3
     end
 
-    test ~c"clamps width when content exceeds available space" do
+    test "clamps width when content exceeds available space" do
       table_element = %{
         type: :table,
         attrs: %{

@@ -1,13 +1,13 @@
 defmodule Raxol.ColorSystemTest do
   use ExUnit.Case, async: false
 
-  import Raxol.AccessibilityTestHelpers
+  # TODO: Implement tests for ColorSystem with accessibility integration
 
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
-  alias Raxol.Style.Colors.PaletteManager
+  alias Raxol.Style.Colors.PaletteManager, as: PaletteManager
   alias Raxol.Style.Colors.System, as: ColorSystem
-  alias Raxol.Animation.Framework
+  alias Raxol.Animation.Framework, as: Framework
   require Raxol.Core.Runtime.Log
 
   setup do

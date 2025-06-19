@@ -1,28 +1,14 @@
-defmodule Raxol.RuntimeTest do
-  # Use async: false for tests involving process linking/monitoring/receiving
-  use ExUnit.Case, async: false
-  require Raxol.Core.Runtime.Log
-  import Raxol.Test.Support.TestHelper
+# Use async: false for tests involving process linking/monitoring/receiving
+use ExUnit.Case, async: false
 
-  alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
-  alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
-  alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
-  alias Raxol.Terminal.Driver, as: TerminalDriver
+alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
+alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
+alias Raxol.Core.Runtime.Events.Dispatcher
+alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
+alias Raxol.Terminal.Driver, as: TerminalDriver
 
-  setup do
-    # Set up test environment and mocks
-    {:ok, context} = setup_test_env()
-    setup_common_mocks()
-
-    # Verify on exit
-    :verify_on_exit!
-
-    {:ok, context}
-  end
-
-  # --- Mock Application ---
-  defmodule MockApp do
+# --- Mock Application ---
+defmodule MockApp do
     @behaviour Raxol.Core.Runtime.Application
     alias Raxol.Core.Events.Event
     alias Raxol.Core.Runtime.Command
@@ -248,10 +234,7 @@ defmodule Raxol.RuntimeTest do
     assert is_pid(Process.whereis(Dispatcher))
     assert is_pid(Process.whereis(RenderingEngine))
     assert is_pid(Process.whereis(TerminalDriver))
-    # Check added child
     assert is_pid(Process.whereis(Raxol.Core.UserPreferences))
-
-    # TODO: Verify initial render/commands
   end
 
   # Helper for asserting model state via Dispatcher
@@ -498,7 +481,6 @@ defmodule Raxol.RuntimeTest do
         id == Raxol.Core.Runtime.Events.Dispatcher
       end)
 
-    # ADDED CHECK FOR NIL
     if !new_dispatcher_info do
       Raxol.Core.Runtime.Log.warning(
         "[TEST supervisor restart] Supervisor children: #{inspect(Supervisor.which_children(supervisor_pid))}"
@@ -542,7 +524,6 @@ defmodule Raxol.RuntimeTest do
 
   # --- Test Setup Helpers ---
 
-  # Changed context to _context as it's not used now
   defp setup_runtime_environment(_context) do
     # Explicitly stop any existing Dispatcher and its Registry
     disp_pid = Process.whereis(Raxol.Core.Runtime.Events.Dispatcher)

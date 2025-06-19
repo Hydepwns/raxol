@@ -9,20 +9,20 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
   end
 
   describe "component registration" do
-    test ~c"registers a new component" do
+    test "registers a new component" do
       assert :ok == Manager.register_component("test_split", :split)
       assert :ok == Manager.register_component("test_window", :window)
       assert :ok == Manager.register_component("test_tab", :tab)
     end
 
-    test ~c"prevents duplicate registration" do
+    test "prevents duplicate registration" do
       assert :ok == Manager.register_component("test_component", :split)
 
       assert {:error, :already_registered} ==
                Manager.register_component("test_component", :split)
     end
 
-    test ~c"unregisters a component" do
+    test "unregisters a component" do
       assert :ok == Manager.register_component("test_component", :split)
       assert :ok == Manager.unregister_component("test_component")
 
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
   end
 
   describe "state synchronization" do
-    test ~c"syncs state for a registered component" do
+    test "syncs state for a registered component" do
       # Register component
       assert :ok == Manager.register_component("test_split", :split)
 
@@ -44,12 +44,12 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
       assert {:ok, ^state} = Manager.get_state("test_split")
     end
 
-    test ~c"handles sync for non-existent component" do
+    test "handles sync for non-existent component" do
       state = %{content: "test content"}
       assert {:error, :not_found} == Manager.sync_state("nonexistent", state)
     end
 
-    test ~c"updates state with new values" do
+    test "updates state with new values" do
       # Register component
       assert :ok == Manager.register_component("test_window", :window)
 
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
   end
 
   describe "consistency levels" do
-    test ~c"enforces strong consistency for splits" do
+    test "enforces strong consistency for splits" do
       # Register split
       assert :ok == Manager.register_component("test_split", :split)
 
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
       assert {:ok, ^initial_state} = Manager.get_state("test_split")
     end
 
-    test ~c"allows eventual consistency for tabs" do
+    test "allows eventual consistency for tabs" do
       # Register tab
       assert :ok == Manager.register_component("test_tab", :tab)
 
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
   end
 
   describe "component statistics" do
-    test ~c"tracks component statistics" do
+    test "tracks component statistics" do
       # Register component
       assert :ok == Manager.register_component("test_component", :split)
 
@@ -120,13 +120,13 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
       assert is_integer(stats.last_sync)
     end
 
-    test ~c"handles stats for non-existent component" do
+    test "handles stats for non-existent component" do
       assert {:error, :not_found} == Manager.get_component_stats("nonexistent")
     end
   end
 
   describe "multiple components" do
-    test ~c"manages multiple components independently" do
+    test "manages multiple components independently" do
       # Register multiple components
       assert :ok == Manager.register_component("split1", :split)
       assert :ok == Manager.register_component("window1", :window)

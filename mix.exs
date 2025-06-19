@@ -100,7 +100,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2_nif)
-      # {:termbox2_nif, path: "lib/termbox2_nif"},
+      {:termbox2_nif, path: "lib/termbox2_nif"},
 
       # --- Added for Tutorial Loading ---
       # Markdown parser

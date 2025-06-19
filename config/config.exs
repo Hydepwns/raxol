@@ -60,13 +60,13 @@ config :raxol, RaxolWeb.Endpoint,
     esbuild: {
       Esbuild,
       :install_and_run,
-      [:default, ~w(--sourcemap=inline --watch), version: "0.8"]
+      [:default, ~w(--sourcemap=inline --watch), version: "0.25.0"]
     },
     # Configure dart_sass version
     sass: {
       DartSass,
       :install_and_run,
-      [:default, ~w(--watch), version: "0.7"]
+      [:default, ~w(--watch), version: "1.61.0"]
     }
   ]
 

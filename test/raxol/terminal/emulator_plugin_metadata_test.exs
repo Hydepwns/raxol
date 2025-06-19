@@ -20,8 +20,4 @@ defmodule Raxol.Terminal.EmulatorPluginMetadataTest do
     on_exit(fn -> :ets.delete(:test_command_registry) end)
     {:ok, %{emulator: emulator}}
   end
-
-  describe "plugin metadata" do
-    # (describe block intentionally left empty for now)
-  end
 end
