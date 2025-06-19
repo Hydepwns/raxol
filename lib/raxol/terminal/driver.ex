@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Driver do
 
   Responsibilities:
   - Setting terminal mode (raw, echo)
-  - Reading input events via rrex_termbox NIF v2.0.1
+  - Reading input events via termbox2_nif NIF
   - Parsing input events into `Raxol.Core.Events.Event` structs
   - Detecting terminal resize events
   - Sending parsed events to the `Dispatcher`
@@ -24,14 +24,21 @@ defmodule Raxol.Terminal.Driver do
   # Add import for real_tty? from TerminalUtils
   import Raxol.Terminal.TerminalUtils, only: [real_tty?: 0]
 
+  # Constants for retry logic
+  @max_init_retries 3
+  @init_retry_delay 1000 # ms
+
   # Allow nil initially
   @type dispatcher_pid :: pid() | nil
   @type original_stty :: String.t()
+  @type termbox_state :: :uninitialized | :initialized | :failed
 
   defmodule State do
     @moduledoc false
     defstruct dispatcher_pid: nil,
-              original_stty: nil
+              original_stty: nil,
+              termbox_state: :uninitialized,
+              init_retries: 0
   end
 
   # --- Public API ---
@@ -66,6 +73,13 @@ defmodule Raxol.Terminal.Driver do
         {_, _} -> "80 24"
       end
 
+    state = %State{
+      dispatcher_pid: dispatcher_pid,
+      original_stty: output,
+      termbox_state: :uninitialized,
+      init_retries: 0
+    }
+
     # Initialize terminal in raw mode only if attached to a TTY
     if Mix.env() != :test do
       if real_tty?() do
@@ -87,22 +101,34 @@ defmodule Raxol.Terminal.Driver do
       send(self(), {:driver_ready, self()})
     end
 
-    {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: output}}
+    {:ok, state}
   end
 
   @impl true
-  def handle_info({:system_event, _pid, :sigwinch}, state) do
-    Raxol.Core.Runtime.Log.debug(
-      "Ignoring legacy :system_event :sigwinch message."
-    )
+  def handle_info(:retry_init, %{init_retries: retries} = state) when retries < @max_init_retries do
+    case initialize_termbox() do
+      :ok ->
+        Raxol.Core.Runtime.Log.info("Successfully initialized termbox on retry")
+        {:noreply, %{state | termbox_state: :initialized}}
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to initialize termbox on retry #{retries + 1}: #{inspect(reason)}"
+        )
+        Process.send_after(self(), :retry_init, @init_retry_delay)
+        {:noreply, %{state | init_retries: retries + 1}}
+    end
+  end
 
-    # Keep the function clause but make it do nothing
+  @impl true
+  def handle_info(:retry_init, state) do
+    Raxol.Core.Runtime.Log.error(
+      "Failed to initialize termbox after #{@max_init_retries} attempts. Terminal features will be disabled."
+    )
     {:noreply, state}
   end
 
-  # --- Handle events from rrex_termbox NIF ---
   @impl true
-  def handle_info({:termbox_event, event_map}, state) do
+  def handle_info({:termbox_event, event_map}, %{termbox_state: :initialized} = state) do
     Raxol.Core.Runtime.Log.debug(
       "Received termbox event: #{inspect(event_map)}"
     )
@@ -112,29 +138,55 @@ defmodule Raxol.Terminal.Driver do
         # Only send if dispatcher_pid is known
         if state.dispatcher_pid,
           do: GenServer.cast(state.dispatcher_pid, {:dispatch, event})
+        {:noreply, state}
 
       :ignore ->
         # Event type we don't care about or couldn't translate
-        :ok
+        {:noreply, state}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Failed to translate termbox event: #{inspect(reason)}. Event: #{inspect(event_map)}",
           %{}
         )
+        {:noreply, state}
     end
+  end
 
+  @impl true
+  def handle_info({:termbox_event, _event_map}, state) do
+    # Ignore events if termbox is not initialized
     {:noreply, state}
   end
 
-  # --- Handle rrex_termbox errors ---
   @impl true
   def handle_info({:termbox_error, reason}, state) do
     Raxol.Core.Runtime.Log.error(
-      "Received termbox error: #{inspect(reason)}. Stopping driver."
+      "Received termbox error: #{inspect(reason)}. Attempting recovery..."
     )
 
-    {:stop, {:termbox_error, reason}, state}
+    case state.termbox_state do
+      :initialized -> handle_termbox_recovery(reason, state)
+      _ -> {:stop, {:termbox_error, reason}, state}
+    end
+  end
+
+  defp handle_termbox_recovery(reason, state) do
+    case Termbox2Nif.tb_shutdown() do
+      :ok ->
+        case initialize_termbox() do
+          :ok ->
+            Raxol.Core.Runtime.Log.info("Successfully recovered from termbox error")
+            {:noreply, state}
+          {:error, init_reason} ->
+            Raxol.Core.Runtime.Log.error(
+              "Failed to recover from termbox error: #{inspect(init_reason)}"
+            )
+            {:stop, {:termbox_error, reason}, state}
+        end
+      _ ->
+        {:stop, {:termbox_error, reason}, state}
+    end
   end
 
   # --- Handle dispatcher registration ---
@@ -197,7 +249,7 @@ defmodule Raxol.Terminal.Driver do
   end
 
   @impl true
-  def terminate(_reason, _state) do
+  def terminate(_reason, %{termbox_state: :initialized} = _state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
     # Only attempt shutdown if not in test environment
     if Mix.env() != :test do
@@ -206,6 +258,12 @@ defmodule Raxol.Terminal.Driver do
       end
     end
 
+    :ok
+  end
+
+  @impl true
+  def terminate(_reason, _state) do
+    Raxol.Core.Runtime.Log.info("Terminal Driver terminating (not initialized).")
     :ok
   end
 
@@ -236,6 +294,14 @@ defmodule Raxol.Terminal.Driver do
 
   # --- Private Helpers ---
 
+  defp initialize_termbox do
+    case Termbox2Nif.tb_init() do
+      0 -> :ok
+      -1 -> {:error, :init_failed}
+      other -> {:error, {:unexpected_result, other}}
+    end
+  end
+
   defp get_terminal_size do
     cond do
       Mix.env() == :test ->
@@ -245,49 +311,28 @@ defmodule Raxol.Terminal.Driver do
         stty_size_fallback()
 
       true ->
-        width = Termbox2Nif.tb_width()
-        height = Termbox2Nif.tb_height()
-
-        if valid_dimensions?(width, height),
-          do: {:ok, width, height},
-          else: stty_size_fallback()
+        try do
+          width = Termbox2Nif.tb_width()
+          height = Termbox2Nif.tb_height()
+          if width > 0 and height > 0 do
+            {:ok, width, height}
+          else
+            stty_size_fallback()
+          end
+        rescue
+          _ -> stty_size_fallback()
+        end
     end
-  end
-
-  defp valid_dimensions?(width, height) do
-    is_integer(width) and is_integer(height) and width > 0 and height > 0
   end
 
   defp stty_size_fallback do
-    try do
-      {output, 0} = System.cmd("stty", ["size"])
-      parse_stty_output(String.trim(output))
-    catch
-      type, reason ->
-        log_stty_error(type, reason)
-        {:error, reason}
-    end
-  end
-
-  defp parse_stty_output(output) do
-    case String.split(output) do
-      [rows, cols] ->
-        {:ok, String.to_integer(cols), String.to_integer(rows)}
-
+    case System.cmd("stty", ["size"]) do
+      {output, 0} ->
+        [height, width] = String.split(String.trim(output), " ")
+        {:ok, String.to_integer(width), String.to_integer(height)}
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Unexpected output from stty size: #{inspect(output)}",
-          %{}
-        )
-
-        {:error, :invalid_format}
+        {:ok, 80, 24}
     end
-  end
-
-  defp log_stty_error(type, reason) do
-    Raxol.Core.Runtime.Log.error(
-      "Error getting terminal size via stty size: #{type}: #{inspect(reason)}"
-    )
   end
 
   defp send_initial_resize_event(dispatcher_pid) do

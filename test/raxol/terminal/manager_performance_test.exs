@@ -1,7 +1,6 @@
 defmodule Raxol.Terminal.ManagerPerformanceTest do
   use ExUnit.Case
   use Raxol.Test.PerformanceHelper
-  import Raxol.Test.PerformanceHelper
 
   alias Raxol.Terminal.Manager
   alias Raxol.Terminal.Emulator
@@ -51,10 +50,6 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
         min_iterations: 100
       )
 
-      # Log results for analysis
-      Raxol.Core.Runtime.Log.info(
-        "Terminal Manager Event Processing Performance:\n#{format_benchmark_results(results)}"
-      )
     end
 
     test "handles screen updates efficiently", %{
@@ -84,10 +79,6 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
         min_iterations: 100
       )
 
-      # Log results for analysis
-      Raxol.Core.Runtime.Log.info(
-        "Terminal Manager Screen Update Performance:\n#{format_benchmark_results(results)}"
-      )
     end
 
     test "handles concurrent operations efficiently", %{manager: manager} do
@@ -114,18 +105,12 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
         # 5ms for concurrent operations
         max_average_time: 5000,
         # 10ms for 95th percentile
-        max_p95_time: 10000,
+        max_p95_time: 10_000,
         min_iterations: 100
       )
 
-      # Log results for analysis
-      Raxol.Core.Runtime.Log.info(
-        "Terminal Manager Concurrent Operations Performance:\n#{format_benchmark_results(results)}"
-      )
     end
   end
-
-  # Helper functions
 
   defp generate_test_events(count) do
     for _ <- 1..count do

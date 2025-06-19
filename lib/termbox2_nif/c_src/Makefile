@@ -35,10 +35,10 @@ SRC = termbox2_nif.c termbox2/termbox_impl.c
 OBJ = termbox2_nif.o termbox2/termbox_impl.o
 
 # Set target library name
-LIB_NAME = termbox2_nif.so
+TARGET = termbox2_nif.so
 
 # Default target
-all: $(LIB_NAME)
+all: $(TARGET)
 
 # Compile termbox2_nif.c
 termbox2_nif.o: termbox2_nif.c
@@ -49,11 +49,13 @@ termbox2/termbox_impl.o: termbox2/termbox_impl.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link object files into shared library
-$(LIB_NAME): $(OBJ)
+$(TARGET): $(OBJ)
 	$(CC) $(LDFLAGS) $(ERL_LDFLAGS) $^ -o $@
+	mkdir -p ../priv
+	cp $(TARGET) ../priv/
 
 # Clean build artifacts
 clean:
-	rm -f $(OBJ) $(LIB_NAME)
+	rm -f $(OBJ) $(TARGET)
 
 .PHONY: all clean

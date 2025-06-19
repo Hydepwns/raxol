@@ -6,7 +6,7 @@ defmodule RaxolWeb.TerminalLiveTest do
   # Ensure ConnCase helpers are imported
   import RaxolWeb.ConnCase
 
-  # Add setup block for authentication
+  # TODO: Add setup block for authentication
   setup %{conn: conn} do
     # Dummy user
     user = %{id: 1, role: :user}
@@ -15,7 +15,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     {:ok, conn: conn, user: user}
   end
 
-  # Comment out or remove the old bypass_auth helper
+  # TODO: Comment out or remove the old bypass_auth helper
   # defp bypass_auth(%{conn: conn}) do
   #   conn =
   #     Plug.Test.init_test_session(conn, %{})
@@ -25,11 +25,11 @@ defmodule RaxolWeb.TerminalLiveTest do
   #   {:ok, conn: conn}
   # end
 
-  # Remove old setup helpers if they exist
+  # TODO: Remove old setup helpers if they exist
   # setup :start_endpoint # Keep this if endpoint needs starting
   # setup :bypass_auth # Remove this if it exists
 
-  # Helper to bypass auth pipeline
+  # TODO: Helper to bypass auth pipeline
   # defp bypass_auth(context) do
   #   conn = Plug.Test.init_test_session(context.conn, %{})
   #   user = %{id: 1} # Example user
@@ -55,7 +55,7 @@ defmodule RaxolWeb.TerminalLiveTest do
       assert view.assigns.dimensions == %{width: 80, height: 24}
       assert view.assigns.scroll_offset == 0
       assert view.assigns.theme
-      # Connect test happens implicitly or via separate setup if needed
+      # TODO: Connect test happens implicitly or via separate setup if needed
     end
   end
 

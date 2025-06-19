@@ -17,85 +17,66 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
           | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :dcs_entry} = parser_state, input) do
     case input do
-      <<>> ->
-        # Incomplete DCS sequence - return current state
-        {:incomplete, emulator, parser_state}
-
-      # Parameter byte
-      <<param_byte, rest_after_param::binary>>
-      when param_byte >= ?0 and param_byte <= ?9 ->
-        # Accumulate parameter directly
-        next_parser_state = %{
-          parser_state
-          | params_buffer: parser_state.params_buffer <> <<param_byte>>
-        }
-
-        # Stay in dcs_entry while collecting params/intermediates
-        {:continue, emulator, next_parser_state, rest_after_param}
-
-      # Semicolon parameter separator
-      <<?;, rest_after_param::binary>> ->
-        # Accumulate separator directly
-        next_parser_state = %{
-          parser_state
-          | params_buffer: parser_state.params_buffer <> <<?;>>
-        }
-
-        {:continue, emulator, next_parser_state, rest_after_param}
-
-      # Intermediate byte
-      <<intermediate_byte, rest_after_intermediate::binary>>
-      when intermediate_byte >= 0x20 and intermediate_byte <= 0x2F ->
-        # Collect intermediate directly
-        next_parser_state = %{
-          parser_state
-          | intermediates_buffer:
-              parser_state.intermediates_buffer <> <<intermediate_byte>>
-        }
-
-        {:continue, emulator, next_parser_state, rest_after_intermediate}
-
-      # Final byte (ends DCS header, moves to passthrough)
-      <<final_byte, rest_after_final::binary>>
-      when final_byte >= 0x40 and final_byte <= 0x7E ->
-        next_parser_state = %{
-          parser_state
-          | state: :dcs_passthrough,
-            final_byte: final_byte,
-            payload_buffer: ""
-        }
-
-        {:continue, emulator, next_parser_state, rest_after_final}
-
-      # Ignored byte in DCS Entry (e.g., CAN, SUB)
-      <<ignored_byte, rest_after_ignored::binary>>
-      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
-        Raxol.Core.Runtime.Log.debug("Ignoring CAN/SUB byte in DCS Entry")
-        # Abort sequence, go to ground
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_ignored}
-
-      # Other ignored bytes (0-1F excluding CAN/SUB, 7F)
-      <<ignored_byte, rest_after_ignored::binary>>
-      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and
-              ignored_byte != 0x1A) or
-             (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
-        Raxol.Core.Runtime.Log.debug(
-          "Ignoring C0/DEL byte #{ignored_byte} in DCS Entry"
-        )
-
-        # Stay in state, ignore byte
-        {:continue, emulator, parser_state, rest_after_ignored}
-
-      # Unhandled byte - go to ground
-      <<_unhandled_byte, rest_after_unhandled::binary>> ->
-        msg =
-          "Unhandled byte #{_unhandled_byte} in DCS Entry state, returning to ground."
-
-        Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
-
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_unhandled}
+      <<>> -> {:incomplete, emulator, parser_state}
+      <<byte, rest::binary>> -> handle_byte(emulator, parser_state, byte, rest)
     end
+  end
+
+  defp handle_byte(emulator, parser_state, byte, rest) do
+    cond do
+      param_byte?(byte) -> handle_param_byte(emulator, parser_state, byte, rest)
+      byte == ?; -> handle_separator(emulator, parser_state, rest)
+      intermediate_byte?(byte) -> handle_intermediate_byte(emulator, parser_state, byte, rest)
+      final_byte?(byte) -> handle_final_byte(emulator, parser_state, byte, rest)
+      can_sub?(byte) -> handle_can_sub(emulator, parser_state, rest)
+      ignored_byte?(byte) -> handle_ignored_byte(emulator, parser_state, byte, rest)
+      true -> handle_unhandled_byte(emulator, parser_state, byte, rest)
+    end
+  end
+
+  defp param_byte?(byte), do: byte >= ?0 and byte <= ?9
+  defp intermediate_byte?(byte), do: byte >= 0x20 and byte <= 0x2F
+  defp final_byte?(byte), do: byte >= 0x40 and byte <= 0x7E
+  defp can_sub?(byte), do: byte == 0x18 or byte == 0x1A
+  defp ignored_byte?(byte), do: (byte >= 0 and byte <= 23 and byte != 0x18 and byte != 0x1A) or (byte >= 27 and byte <= 31) or byte == 127
+
+  defp handle_param_byte(emulator, parser_state, byte, rest) do
+    next_state = %{parser_state | params_buffer: parser_state.params_buffer <> <<byte>>}
+    {:continue, emulator, next_state, rest}
+  end
+
+  defp handle_separator(emulator, parser_state, rest) do
+    next_state = %{parser_state | params_buffer: parser_state.params_buffer <> <<?;>>}
+    {:continue, emulator, next_state, rest}
+  end
+
+  defp handle_intermediate_byte(emulator, parser_state, byte, rest) do
+    next_state = %{parser_state | intermediates_buffer: parser_state.intermediates_buffer <> <<byte>>}
+    {:continue, emulator, next_state, rest}
+  end
+
+  defp handle_final_byte(emulator, parser_state, byte, rest) do
+    next_state = %{parser_state | state: :dcs_passthrough, final_byte: byte, payload_buffer: ""}
+    {:continue, emulator, next_state, rest}
+  end
+
+  defp handle_can_sub(emulator, parser_state, rest) do
+    Raxol.Core.Runtime.Log.debug("Ignoring CAN/SUB byte in DCS Entry")
+    next_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_state, rest}
+  end
+
+  defp handle_ignored_byte(emulator, parser_state, byte, rest) do
+    Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte #{byte} in DCS Entry")
+    {:continue, emulator, parser_state, rest}
+  end
+
+  defp handle_unhandled_byte(emulator, parser_state, byte, rest) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Unhandled byte #{byte} in DCS Entry state, returning to ground.",
+      %{}
+    )
+    next_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_state, rest}
   end
 end

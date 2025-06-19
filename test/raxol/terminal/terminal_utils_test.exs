@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.TerminalUtilsTest do
     # which uses multiple fallbacks (IO, termbox, stty).
     # It's better to test the internal components like detect_with_io.
     @tag :flaky
-    test ~c"returns map with width and height (using real detection)" do
+    test "returns map with width and height (using real detection)" do
       dimensions = TerminalUtils.get_dimensions_map()
 
       assert is_map(dimensions)
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.TerminalUtilsTest do
   describe "get_bounds_map/0" do
     # Similar to above, this relies on real detection.
     @tag :flaky
-    test ~c"returns map with x, y, width, and height (using real detection)" do
+    test "returns map with x, y, width, and height (using real detection)" do
       bounds = TerminalUtils.get_bounds_map()
 
       assert is_map(bounds)

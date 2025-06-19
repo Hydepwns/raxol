@@ -279,4 +279,4 @@ static ErlNifFunc nif_funcs[] = {
     {"tb_set_title", 1, tb_set_title, 0},
     {"tb_set_position", 2, tb_set_position, 0}};
 
-ERL_NIF_INIT(Elixir.Termbox2Nif, nif_funcs, NULL, NULL, NULL, NULL)
+ERL_NIF_INIT(termbox2_nif, nif_funcs, NULL, NULL, NULL, NULL)

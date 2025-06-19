@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Manager do
   @moduledoc """
-  Manages terminal buffer operations and state.
+  Manages terminal buffers including active buffer, alternate buffer, and scrollback.
+  This module is responsible for buffer operations and state management.
   """
 
   use GenServer
@@ -8,7 +9,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour}
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker, ScrollbackManager}
-  alias Raxol.Terminal.{MemoryManager, ScreenBuffer}
+  alias Raxol.Terminal.{MemoryManager, ScreenBuffer, Emulator, Buffer}
   alias Raxol.Terminal.Integration.Renderer
 
   @behaviour Behaviour
@@ -418,5 +419,126 @@ defmodule Raxol.Terminal.Buffer.Manager do
     else
       _ -> {:error, :invalid_state}
     end
+  end
+
+  @doc """
+  Creates a new buffer manager.
+  """
+  @spec new() :: Buffer.t()
+  def new do
+    %Buffer{
+      active: nil,
+      alternate: nil,
+      scrollback: [],
+      scrollback_size: 1000
+    }
+  end
+
+  @doc """
+  Gets the active buffer.
+  Returns the active buffer or nil.
+  """
+  @spec get_active_buffer(Emulator.t()) :: Buffer.t() | nil
+  def get_active_buffer(emulator) do
+    emulator.buffer.active
+  end
+
+  @doc """
+  Sets the active buffer.
+  Returns the updated emulator.
+  """
+  @spec set_active_buffer(Emulator.t(), Buffer.t()) :: Emulator.t()
+  def set_active_buffer(emulator, buffer) do
+    %{emulator | buffer: %{emulator.buffer | active: buffer}}
+  end
+
+  @doc """
+  Gets the alternate buffer.
+  Returns the alternate buffer or nil.
+  """
+  @spec get_alternate_buffer(Emulator.t()) :: Buffer.t() | nil
+  def get_alternate_buffer(emulator) do
+    emulator.buffer.alternate
+  end
+
+  @doc """
+  Sets the alternate buffer.
+  Returns the updated emulator.
+  """
+  @spec set_alternate_buffer(Emulator.t(), Buffer.t()) :: Emulator.t()
+  def set_alternate_buffer(emulator, buffer) do
+    %{emulator | buffer: %{emulator.buffer | alternate: buffer}}
+  end
+
+  @doc """
+  Switches between active and alternate buffers.
+  Returns the updated emulator.
+  """
+  @spec switch_buffers(Emulator.t()) :: Emulator.t()
+  def switch_buffers(emulator) do
+    %{emulator | buffer: %{emulator.buffer |
+      active: emulator.buffer.alternate,
+      alternate: emulator.buffer.active
+    }}
+  end
+
+  @doc """
+  Gets the scrollback buffer.
+  Returns the list of scrollback buffers.
+  """
+  @spec get_scrollback(Emulator.t()) :: [Buffer.t()]
+  def get_scrollback(emulator) do
+    emulator.buffer.scrollback
+  end
+
+  @doc """
+  Adds a buffer to the scrollback.
+  Returns the updated emulator.
+  """
+  @spec add_to_scrollback(Emulator.t(), Buffer.t()) :: Emulator.t()
+  def add_to_scrollback(emulator, buffer) do
+    scrollback = [buffer | emulator.buffer.scrollback]
+    scrollback = Enum.take(scrollback, emulator.buffer.scrollback_size)
+    %{emulator | buffer: %{emulator.buffer | scrollback: scrollback}}
+  end
+
+  @doc """
+  Gets the scrollback size.
+  Returns the maximum number of scrollback buffers.
+  """
+  @spec get_scrollback_size(Emulator.t()) :: non_neg_integer()
+  def get_scrollback_size(emulator) do
+    emulator.buffer.scrollback_size
+  end
+
+  @doc """
+  Sets the scrollback size.
+  Returns the updated emulator.
+  """
+  @spec set_scrollback_size(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def set_scrollback_size(emulator, size) when is_integer(size) and size >= 0 do
+    scrollback = Enum.take(emulator.buffer.scrollback, size)
+    %{emulator | buffer: %{emulator.buffer |
+      scrollback: scrollback,
+      scrollback_size: size
+    }}
+  end
+
+  @doc """
+  Clears the scrollback buffer.
+  Returns the updated emulator.
+  """
+  @spec clear_scrollback(Emulator.t()) :: Emulator.t()
+  def clear_scrollback(emulator) do
+    %{emulator | buffer: %{emulator.buffer | scrollback: []}}
+  end
+
+  @doc """
+  Resets the buffer manager to its initial state.
+  Returns the updated emulator.
+  """
+  @spec reset_buffer_manager(Emulator.t()) :: Emulator.t()
+  def reset_buffer_manager(emulator) do
+    %{emulator | buffer: new()}
   end
 end

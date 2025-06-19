@@ -4,13 +4,7 @@ defmodule Raxol.Terminal.ManagerTest do
   alias Raxol.Terminal.Manager
   alias Raxol.Core.Events.Event
 
-  @moduledoc false
-  defmodule DummyEmulator do
-    defstruct []
-    def process_input(emulator, _event), do: {emulator, :ok}
-    def get_active_buffer(_emulator), do: %{}
-    def update_active_buffer(emulator, _buffer), do: emulator
-  end
+
 
   setup do
     emulator = Raxol.Terminal.Emulator.new(80, 24)
@@ -106,7 +100,7 @@ defmodule Raxol.Terminal.ManagerTest do
     assert_received {:terminal_scroll_event, :down, 5, {0, 0}}
   end
 
-  test ~c"unknown event type does not crash or send messages" do
+  test "unknown event type does not crash or send messages" do
     # Flush the mailbox to remove any previous messages
     flush()
     # Send an unknown event

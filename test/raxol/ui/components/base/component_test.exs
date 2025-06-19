@@ -93,7 +93,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
   end
 
   describe "Component Lifecycle" do
-    test ~c"complete lifecycle flow" do
+    test "complete lifecycle flow" do
       component = create_test_component(TestComponent, %{})
 
       {final_component, events} =
@@ -121,12 +121,12 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       assert length(events) > 0
     end
 
-    test ~c"mount with initial props" do
+    test "mount with initial props" do
       component = create_test_component(TestComponent, %{counter: 5})
       assert component.state.counter == 5
     end
 
-    test ~c"unmount cleanup" do
+    test "unmount cleanup" do
       component = create_test_component(TestComponent, %{})
       {final, _} = simulate_lifecycle(component, & &1)
       assert final.state.unmounted
@@ -134,7 +134,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
   end
 
   describe "State Management" do
-    test ~c"state updates through events" do
+    test "state updates through events" do
       component = create_test_component(TestComponent, %{})
 
       updated =
@@ -146,7 +146,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       assert updated.state.events == ["test2", "test1"]
     end
 
-    test ~c"state updates through commands" do
+    test "state updates through commands" do
       component = create_test_component(TestComponent, %{})
 
       {updated, commands} =
@@ -158,7 +158,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
   end
 
   describe "Rendering" do
-    test ~c"renders with different contexts" do
+    test "renders with different contexts" do
       component = create_test_component(TestComponent, %{})
 
       contexts = [
@@ -173,7 +173,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       assert Enum.all?(rendered, &(&1.type == :test_component))
     end
 
-    test ~c"render count tracking" do
+    test "render count tracking" do
       component = create_test_component(TestComponent, %{})
 
       {final, _} =
@@ -194,7 +194,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
   end
 
   describe "Event Handling" do
-    test ~c"handles known events" do
+    test "handles known events" do
       component = create_test_component(TestComponent, %{})
 
       {updated, commands} =
@@ -204,7 +204,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       assert commands == [{:command, :event_handled}]
     end
 
-    test ~c"ignores unknown events" do
+    test "ignores unknown events" do
       component = create_test_component(TestComponent, %{})
 
       {updated, commands} =
@@ -214,7 +214,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       assert commands == []
     end
 
-    test ~c"event sequence handling" do
+    test "event sequence handling" do
       component = create_test_component(TestComponent, %{})
 
       events = [
@@ -230,7 +230,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
   end
 
   describe "Accessibility" do
-    test ~c"renders with accessibility context" do
+    test "renders with accessibility context" do
       component = create_test_component(TestComponent, %{})
 
       # Use canonical accessibility helpers
@@ -250,7 +250,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
   end
 
   describe "Error Handling" do
-    test ~c"handles invalid events gracefully" do
+    test "handles invalid events gracefully" do
       component = create_test_component(TestComponent, %{})
 
       {updated, commands} =
@@ -260,7 +260,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       assert commands == []
     end
 
-    test ~c"handles missing optional callbacks" do
+    test "handles missing optional callbacks" do
       # Create a component without mount/unmount
       defmodule MinimalComponent do
         @behaviour Raxol.UI.Components.Base.Component

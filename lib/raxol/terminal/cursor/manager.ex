@@ -7,6 +7,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
   use GenServer
   require Logger
 
+  alias Raxol.Terminal.{Emulator, ScreenBuffer}
+  require Raxol.Core.Runtime.Log
+
   defstruct x: 0,
             y: 0,
             visible: true,
@@ -331,6 +334,148 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   def update_blink(pid \\ __MODULE__) do
     GenServer.call(pid, :update_blink)
+  end
+
+  @doc """
+  Updates the cursor position after a resize operation.
+  Returns the updated emulator.
+  """
+  @spec update_cursor_position(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  def update_cursor_position(emulator, new_width, new_height) do
+    cursor = emulator.cursor
+    x = min(cursor.x, new_width - 1)
+    y = min(cursor.y, new_height - 1)
+    %{emulator | cursor: %{cursor | x: x, y: y}}
+  end
+
+  @doc """
+  Updates the scroll region after a resize operation.
+  Returns the updated emulator.
+  """
+  @spec update_scroll_region_for_resize(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def update_scroll_region_for_resize(emulator, new_height) do
+    scroll_region = emulator.scroll_region
+    top = min(scroll_region.top, new_height - 1)
+    bottom = min(scroll_region.bottom, new_height - 1)
+    %{emulator | scroll_region: %{scroll_region | top: top, bottom: bottom}}
+  end
+
+  @doc """
+  Moves the cursor up by the specified number of lines.
+  Returns the updated emulator.
+  """
+  @spec move_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_up(emulator, count \\ 1) do
+    cursor = emulator.cursor
+    y = max(0, cursor.y - count)
+    %{emulator | cursor: %{cursor | y: y}}
+  end
+
+  @doc """
+  Moves the cursor down by the specified number of lines.
+  Returns the updated emulator.
+  """
+  @spec move_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_down(emulator, count \\ 1) do
+    cursor = emulator.cursor
+    y = min(emulator.height - 1, cursor.y + count)
+    %{emulator | cursor: %{cursor | y: y}}
+  end
+
+  @doc """
+  Moves the cursor left by the specified number of columns.
+  Returns the updated emulator.
+  """
+  @spec move_left(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_left(emulator, count \\ 1) do
+    cursor = emulator.cursor
+    x = max(0, cursor.x - count)
+    %{emulator | cursor: %{cursor | x: x}}
+  end
+
+  @doc """
+  Moves the cursor right by the specified number of columns.
+  Returns the updated emulator.
+  """
+  @spec move_right(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_right(emulator, count \\ 1) do
+    cursor = emulator.cursor
+    x = min(emulator.width - 1, cursor.x + count)
+    %{emulator | cursor: %{cursor | x: x}}
+  end
+
+  @doc """
+  Gets the current cursor position.
+  Returns {x, y}.
+  """
+  @spec get_position(Emulator.t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_position(emulator) do
+    {emulator.cursor.x, emulator.cursor.y}
+  end
+
+  @doc """
+  Sets the cursor position.
+  Returns the updated emulator.
+  """
+  @spec set_position(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  def set_position(emulator, x, y) do
+    x = max(0, min(x, emulator.width - 1))
+    y = max(0, min(y, emulator.height - 1))
+    %{emulator | cursor: %{emulator.cursor | x: x, y: y}}
+  end
+
+  @doc """
+  Gets the current cursor style.
+  Returns the cursor style.
+  """
+  @spec get_style(Emulator.t()) :: atom()
+  def get_style(emulator) do
+    emulator.cursor.style
+  end
+
+  @doc """
+  Sets the cursor style.
+  Returns the updated emulator.
+  """
+  @spec set_style(Emulator.t(), atom()) :: Emulator.t()
+  def set_style(emulator, style) do
+    %{emulator | cursor: %{emulator.cursor | style: style}}
+  end
+
+  @doc """
+  Gets the cursor visibility state.
+  Returns true if the cursor is visible.
+  """
+  @spec is_visible?(Emulator.t()) :: boolean()
+  def is_visible?(emulator) do
+    emulator.cursor.visible
+  end
+
+  @doc """
+  Sets the cursor visibility.
+  Returns the updated emulator.
+  """
+  @spec set_visibility(Emulator.t(), boolean()) :: Emulator.t()
+  def set_visibility(emulator, visible) do
+    %{emulator | cursor: %{emulator.cursor | visible: visible}}
+  end
+
+  @doc """
+  Gets the cursor blink state.
+  Returns true if the cursor is blinking.
+  """
+  @spec is_blinking?(Emulator.t()) :: boolean()
+  def is_blinking?(emulator) do
+    emulator.cursor.blinking
+  end
+
+  @doc """
+  Sets the cursor blink state.
+  Returns the updated emulator.
+  """
+  @spec set_blink(Emulator.t(), boolean()) :: Emulator.t()
+  def set_blink(emulator, blinking) do
+    %{emulator | cursor: %{emulator.cursor | blinking: blinking}}
   end
 
   # Server Callbacks

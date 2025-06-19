@@ -1,15 +1,8 @@
 defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
   use ExUnit.Case
-  import Raxol.Test.EventAssertions
 
   alias Raxol.Core.Runtime.Plugins.Manager
-  alias Raxol.Plugins.HyperlinkPlugin
   alias Raxol.Terminal.Emulator
-  alias Raxol.Test.MockPlugins.MockDependencyPlugin
-  alias Raxol.Test.MockPlugins.MockDependentPlugin
-  alias Raxol.Test.MockPlugins.MockIncompatibleVersionPlugin
-  alias Raxol.Test.MockPlugins.MockOnInitCrashPlugin
-  alias Raxol.Test.MockPlugins.MockOnTerminateCrashPlugin
 
   setup context do
     reloading_enabled =

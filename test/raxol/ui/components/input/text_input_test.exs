@@ -15,7 +15,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
   end
 
   describe "init/1" do
-    test ~c"creates a text input with default state" do
+    test "creates a text input with default state" do
       state = create_component_state()
       assert state.value == ""
       assert state.cursor_pos == 0
@@ -25,7 +25,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert state.validator == nil
     end
 
-    test ~c"creates a text input and stores initial props in state" do
+    test "creates a text input and stores initial props in state" do
       props = %{
         value: "Initial",
         max_length: 10,
@@ -44,16 +44,16 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
   end
 
   describe "update/2" do
-    # Remove tests for update/2 as it doesn't seem to exist
+    # TODO: Remove tests for update/2 as it doesn't seem to exist
     # test 'updates value from props' do ... end
     # test 'updates props' do ... end
     # test 'maintains cursor position when value doesn't change' do ... end
   end
 
   describe "handle_event/3" do
-    # ... (setup callback helper) ...
+    # TODO: ... (setup callback helper) ...
 
-    test ~c"handles character input" do
+    test "handles character input" do
       state = create_component_state(%{value: "Hello"})
       # Set cursor to end of string before inserting
       state = %{state | cursor_pos: 5}
@@ -65,7 +65,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert updated_state.cursor_pos == 6
     end
 
-    test ~c"handles backspace" do
+    test "handles backspace" do
       state = create_component_state(%{value: "Hello"})
       state = %{state | cursor_pos: 5}
 
@@ -76,7 +76,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert updated_state.cursor_pos == 4
     end
 
-    test ~c"handles delete" do
+    test "handles delete" do
       state = create_component_state(%{value: "Hello"})
       state = %{state | cursor_pos: 2}
 
@@ -88,7 +88,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert updated_state.cursor_pos == 2
     end
 
-    test ~c"handles cursor movement" do
+    test "handles cursor movement" do
       state = create_component_state(%{value: "Hello"})
       state = %{state | cursor_pos: 2}
       {state_left, _} = TextInput.handle_event(state, Event.key(:left), %{})
@@ -108,7 +108,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert state_end.cursor_pos == 5
     end
 
-    test ~c"handles enter key" do
+    test "handles enter key" do
       parent_pid = self()
       callback = fn value -> send(parent_pid, {:submitted, value}) end
       state = create_component_state(%{value: "Submit me", on_submit: callback})
@@ -119,7 +119,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert_receive {:submitted, "Submit me"}
     end
 
-    test ~c"handles escape key (blur)" do
+    test "handles escape key (blur)" do
       state = create_component_state()
       state = %{state | focused: true}
 
@@ -129,7 +129,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert updated_state.focused == false
     end
 
-    test ~c"handles mouse click (focus)" do
+    test "handles mouse click (focus)" do
       state = create_component_state()
       mouse_event = Event.mouse(:left, {0, 0})
 
@@ -139,7 +139,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert updated_state.focused == true
     end
 
-    test ~c"respects max_length constraint" do
+    test "respects max_length constraint" do
       state = create_component_state(%{value: "12345", max_length: 5})
       state = %{state | cursor_pos: 5}
 
@@ -151,7 +151,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert updated_state.cursor_pos == 5
     end
 
-    test ~c"handles validation function" do
+    test "handles validation function" do
       validate = fn value -> String.match?(value, ~r/^\d*$/) end
       state = create_component_state(%{value: "123", validator: validate})
       state = %{state | cursor_pos: 3}
@@ -169,37 +169,37 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
   end
 
   describe "render/2" do
-    test ~c"renders input box with text" do
+    test "renders input box with text" do
       state = create_component_state(%{value: "Hello"})
       elements = TextInput.render(state, %{})
       assert elements.text == "Hello"
       assert elements.type == :text_input
     end
 
-    test ~c"renders placeholder when value is empty" do
+    test "renders placeholder when value is empty" do
       state = create_component_state(%{placeholder: "Type here"})
       elements = TextInput.render(state, %{})
       assert elements.text == "Type here"
     end
 
-    test ~c"renders password input as masked" do
+    test "renders password input as masked" do
       state = create_component_state(%{value: "secret", mask_char: "*"})
       elements = TextInput.render(state, %{})
       assert elements.text == "******"
     end
 
-    test ~c"renders cursor when focused" do
+    test "renders cursor when focused" do
       state = create_component_state(%{value: "Hello"})
       state = %{state | focused: true, cursor_pos: 3}
       elements = TextInput.render(state, %{})
       assert elements.focused == true
       assert elements.cursor_pos == 3
-      # Actual cursor rendering might be handled higher up
+      # TODO: Actual cursor rendering might be handled higher up
     end
   end
 
   describe "theming, style, and lifecycle" do
-    test ~c"applies style and theme props to input" do
+    test "applies style and theme props to input" do
       theme = %{input: %{border: "2px solid #00ff00", color: "#123456"}}
       style = %{input: %{border_radius: "8px", color: "#654321"}}
 
@@ -213,7 +213,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert Map.get(rendered.style, :color) == "#654321"
     end
 
-    test ~c"mount/1 and unmount/1 return state unchanged" do
+    test "mount/1 and unmount/1 return state unchanged" do
       state = create_component_state(%{value: "foo"})
       assert TextInput.mount(state) == state
       assert TextInput.unmount(state) == state

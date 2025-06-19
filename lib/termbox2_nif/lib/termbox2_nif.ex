@@ -1,4 +1,4 @@
-defmodule Termbox2Nif do
+defmodule :termbox2_nif do
   @moduledoc """
   Termbox2 NIF for Elixir - A terminal UI library.
   """
@@ -6,10 +6,15 @@ defmodule Termbox2Nif do
   @on_load :load_nif
 
   def load_nif do
-    :erlang.load_nif(
-      Path.join(:code.priv_dir(:termbox2_nif), "termbox2_nif"),
-      0
-    )
+    priv_dir = :code.priv_dir(:termbox2_nif)
+    nif_path = Path.join(priv_dir, "termbox2_nif")
+
+    case :erlang.load_nif(nif_path, 0) do
+      :ok -> :ok
+      {:error, reason} ->
+        IO.puts("Failed to load Termbox2 NIF: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   @doc """

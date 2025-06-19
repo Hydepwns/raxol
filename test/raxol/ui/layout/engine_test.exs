@@ -5,7 +5,7 @@ defmodule Raxol.UI.Layout.EngineTest do
   alias Raxol.UI.Layout.{Grid, Panels, Containers}
 
   describe "apply_layout/2" do
-    test ~c"applies layout to a simple view" do
+    test "applies layout to a simple view" do
       view = %{
         type: :view,
         children: [
@@ -28,7 +28,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert text_element.y == 0
     end
 
-    test ~c"applies layout to a view with a panel" do
+    test "applies layout to a view with a panel" do
       view = %{
         type: :view,
         children: [
@@ -81,7 +81,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert content_element.y == box_element.y + 1
     end
 
-    test ~c"applies layout to a view with a panel without title" do
+    test "applies layout to a view with a panel without title" do
       view = %{
         type: :view,
         children: [
@@ -111,7 +111,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert title_element == nil
     end
 
-    test ~c"applies layout to nested containers" do
+    test "applies layout to nested containers" do
       view = %{
         type: :view,
         children: [
@@ -182,7 +182,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert bottom_left.x < bottom_right.x
     end
 
-    test ~c"layout engine handles nested elements with flex properties" do
+    test "layout engine handles nested elements with flex properties" do
       view = %{
         type: :view,
         children: [
@@ -211,7 +211,7 @@ defmodule Raxol.UI.Layout.EngineTest do
   end
 
   describe "measure_element/2" do
-    test ~c"measures a label element" do
+    test "measures a label element" do
       element = %{type: :label, attrs: [content: "Test Label"]}
       available_space = %{width: 80, height: 24}
 
@@ -222,7 +222,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 1
     end
 
-    test ~c"measures a button element" do
+    test "measures a button element" do
       element = %{type: :button, attrs: %{label: "Click Me"}}
       available_space = %{width: 80, height: 24}
 
@@ -233,7 +233,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 3
     end
 
-    test ~c"measures a text input element" do
+    test "measures a text input element" do
       element = %{type: :text_input, attrs: %{value: "Hello"}}
       available_space = %{width: 80, height: 24}
 
@@ -244,7 +244,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 3
     end
 
-    test ~c"measures a box element" do
+    test "measures a box element" do
       element = %{type: :box, attrs: %{width: 20, height: 10}}
       available_space = %{width: 80, height: 24}
       dimensions = Engine.measure_element(element, available_space)
@@ -252,7 +252,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 10
     end
 
-    test ~c"measures a checkbox element" do
+    test "measures a checkbox element" do
       element = %{type: :checkbox, attrs: %{label: "Option 1"}}
       available_space = %{width: 80, height: 24}
       dimensions = Engine.measure_element(element, available_space)
@@ -261,7 +261,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 1
     end
 
-    test ~c"measures a panel element based on children" do
+    test "measures a panel element based on children" do
       element = %{
         type: :panel,
         attrs: %{},
@@ -279,7 +279,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 3
     end
 
-    test ~c"measures a panel element with explicit size" do
+    test "measures a panel element with explicit size" do
       element = %{
         type: :panel,
         attrs: %{width: 30, height: 5},
@@ -292,7 +292,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 5
     end
 
-    test ~c"measures a grid element based on children" do
+    test "measures a grid element based on children" do
       element = %{
         type: :grid,
         attrs: %{columns: 2, gap_x: 1, gap_y: 1},
@@ -320,7 +320,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 3
     end
 
-    test ~c"constrains element size to available space" do
+    test "constrains element size to available space" do
       # Create a label with very long text
       element = %{type: :label, attrs: [content: String.duplicate("A", 100)]}
       available_space = %{width: 50, height: 24}

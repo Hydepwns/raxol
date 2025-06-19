@@ -3,8 +3,12 @@ defmodule Raxol.Terminal.Command.Manager do
   require Logger
 
   @moduledoc """
-  Manages terminal command state, history, and execution.
+  Manages terminal command processing and execution.
+  This module is responsible for handling command parsing, validation, and execution.
   """
+
+  alias Raxol.Terminal.{Emulator, Command}
+  require Raxol.Core.Runtime.Log
 
   defstruct command_buffer: "",
             command_history: [],
@@ -24,13 +28,15 @@ defmodule Raxol.Terminal.Command.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def new(opts \\ []) do
-    %{
-      commands: %{},
+  @doc """
+  Creates a new command manager.
+  """
+  @spec new() :: Command.t()
+  def new do
+    %Command{
       history: [],
-      current_command: nil,
-      status: :idle,
-      error: nil
+      current: nil,
+      max_history: 100
     }
   end
 
@@ -266,5 +272,78 @@ defmodule Raxol.Terminal.Command.Manager do
   def search_history(%__MODULE__{} = state, pattern) when is_binary(pattern) do
     matches = Enum.filter(state.command_history, &String.contains?(&1, pattern))
     if Enum.empty?(matches), do: {:error, :not_found}, else: {:ok, matches}
+  end
+
+  @doc """
+  Processes a command string.
+  Returns the updated emulator and any output.
+  """
+  @spec process_command(Emulator.t(), String.t()) :: {Emulator.t(), any()}
+  def process_command(emulator, command) do
+    case parse_command(command) do
+      {:ok, parsed_command} ->
+        execute_command(emulator, parsed_command)
+      {:error, reason} ->
+        {emulator, {:error, reason}}
+    end
+  end
+
+  @doc """
+  Adds a command to the history.
+  Returns the updated emulator.
+  """
+  @spec add_to_history(Emulator.t(), String.t()) :: Emulator.t()
+  def add_to_history(emulator, command) do
+    history = [command | emulator.command.history]
+    history = Enum.take(history, emulator.command.max_history)
+    %{emulator | command: %{emulator.command | history: history}}
+  end
+
+  @doc """
+  Gets the command history.
+  Returns the list of commands.
+  """
+  @spec get_history(Emulator.t()) :: [String.t()]
+  def get_history(emulator) do
+    emulator.command.history
+  end
+
+  @doc """
+  Clears the command history.
+  Returns the updated emulator.
+  """
+  @spec clear_history(Emulator.t()) :: Emulator.t()
+  def clear_history(emulator) do
+    %{emulator | command: %{emulator.command | history: []}}
+  end
+
+  @doc """
+  Gets the current command.
+  Returns the current command or nil.
+  """
+  @spec get_current(Emulator.t()) :: String.t() | nil
+  def get_current(emulator) do
+    emulator.command.current
+  end
+
+  @doc """
+  Sets the current command.
+  Returns the updated emulator.
+  """
+  @spec set_current(Emulator.t(), String.t()) :: Emulator.t()
+  def set_current(emulator, command) do
+    %{emulator | command: %{emulator.command | current: command}}
+  end
+
+  # Private helper functions
+
+  defp parse_command(command) do
+    # TODO: Implement command parsing
+    {:ok, command}
+  end
+
+  defp execute_command(emulator, command) do
+    # TODO: Implement command execution
+    {emulator, nil}
   end
 end

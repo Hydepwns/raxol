@@ -63,7 +63,7 @@ defmodule Raxol.I18nAccessibilityTest do
   end
 
   describe "I18n and Accessibility Integration" do
-    test ~c"correct accessibility settings are applied for RTL locales" do
+    test "correct accessibility settings are applied for RTL locales" do
       # Test RTL locales
       with_locale("he", fn ->
         settings = Raxol.accessibility_settings()
@@ -80,7 +80,7 @@ defmodule Raxol.I18nAccessibilityTest do
       end)
     end
 
-    test ~c"correct accessibility settings are applied for LTR locales" do
+    test "correct accessibility settings are applied for LTR locales" do
       # Test LTR locales
       with_locale("en", fn ->
         settings = Raxol.accessibility_settings()
@@ -97,7 +97,7 @@ defmodule Raxol.I18nAccessibilityTest do
       end)
     end
 
-    test ~c"accessibility announcements use translated strings" do
+    test "accessibility announcements use translated strings" do
       locale = "es"
       key = "alert.item_deleted"
 
@@ -118,7 +118,7 @@ defmodule Raxol.I18nAccessibilityTest do
       end)
     end
 
-    test ~c"component hints use translated strings" do
+    test "component hints use translated strings" do
       locale = "fr"
       component_id = :save_button
       hint_level = :basic
@@ -138,7 +138,7 @@ defmodule Raxol.I18nAccessibilityTest do
       end)
     end
 
-    test ~c"datetime formatting respects locale" do
+    test "datetime formatting respects locale" do
       datetime = ~U[2024-04-19 10:30:00Z]
 
       with_locale("en", fn ->
@@ -159,7 +159,7 @@ defmodule Raxol.I18nAccessibilityTest do
       end)
     end
 
-    test ~c"currency formatting respects locale" do
+    test "currency formatting respects locale" do
       amount = 1234.56
 
       with_locale("en", fn ->

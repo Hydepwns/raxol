@@ -172,7 +172,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   end
 
   describe "Performance Edge Cases" do
-    test ~c"handles large data sets" do
+    test "handles large data sets" do
       component = create_test_component(HeavyComponent, %{})
 
       # Measure performance with large data set
@@ -194,7 +194,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       # (If you want to check total time for multiple iterations, use measure_average_time)
     end
 
-    test ~c"handles rapid state updates" do
+    test "handles rapid state updates" do
       component = create_test_component(HeavyComponent, %{})
 
       # Simulate rapid state updates
@@ -208,7 +208,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       assert updated.state.computation_time > 0
     end
 
-    test ~c"handles memory usage" do
+    test "handles memory usage" do
       component = create_test_component(HeavyComponent, %{})
 
       # Simulate memory-intensive operations
@@ -225,7 +225,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   end
 
   describe "Error Handling Edge Cases" do
-    test ~c"handles render errors gracefully" do
+    test "handles render errors gracefully" do
       component = create_test_component(ErrorProneComponent, %{})
 
       # Trigger render errors
@@ -238,7 +238,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       end
     end
 
-    test ~c"handles event handling errors gracefully" do
+    test "handles event handling errors gracefully" do
       component = create_test_component(ErrorProneComponent, %{})
 
       # Trigger event handling error
@@ -250,7 +250,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       end
     end
 
-    test ~c"recovers from errors" do
+    test "recovers from errors" do
       component = create_test_component(ErrorProneComponent, %{})
 
       # Trigger and recover from error
@@ -273,7 +273,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   end
 
   describe "State Management Edge Cases" do
-    test ~c"handles nil state values" do
+    test "handles nil state values" do
       component = create_test_component(ErrorProneComponent, %{last_error: nil})
 
       # Verify component handles nil values
@@ -286,7 +286,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       assert updated.state.last_error == :simulated_error
     end
 
-    test ~c"handles invalid state updates" do
+    test "handles invalid state updates" do
       component = create_test_component(ErrorProneComponent, %{})
 
       # Attempt invalid state update
@@ -299,7 +299,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       assert updated.state == component.state
     end
 
-    test ~c"handles state type mismatches" do
+    test "handles state type mismatches" do
       component = create_test_component(ErrorProneComponent, %{})
 
       # Attempt to update with wrong type
@@ -314,7 +314,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   end
 
   describe "Lifecycle Edge Cases" do
-    test ~c"handles multiple mount/unmount cycles" do
+    test "handles multiple mount/unmount cycles" do
       component = create_test_component(ErrorProneComponent, %{})
 
       # Simulate multiple mount/unmount cycles
@@ -324,7 +324,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       end)
     end
 
-    test ~c"handles mount errors" do
+    test "handles mount errors" do
       # Create component with invalid mount
       defmodule InvalidMountComponent do
         @behaviour Raxol.UI.Components.Base.Component

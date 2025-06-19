@@ -4,19 +4,19 @@ defmodule Raxol.Terminal.CellTest do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   describe "Cell" do
-    test 'new/0 creates an empty cell' do
+    test "new/0 creates an empty cell" do
       cell = Cell.new()
       assert cell.char == " "
       assert cell.style == TextFormatting.new()
     end
 
-    test 'new/1 creates a cell with a character' do
+    test "new/1 creates a cell with a character" do
       cell = Cell.new("A")
       assert cell.char == "A"
       assert cell.style == TextFormatting.new()
     end
 
-    test 'new/2 creates a new cell with character and style' do
+    test "new/2 creates a new cell with character and style" do
       style =
         TextFormatting.new()
         |> TextFormatting.apply_attribute(:bold)
@@ -29,19 +29,19 @@ defmodule Raxol.Terminal.CellTest do
       assert Cell.has_attribute?(cell, :reverse)
     end
 
-    test 'get_char/1 returns the cell's character' do
+    test "get_char/1 returns the cell's character" do
       cell = Cell.new("A")
       assert Cell.get_char(cell) == "A"
     end
 
-    test 'get_style/1 returns the cell's style' do
+    test "get_style/1 returns the cell's style" do
       style = TextFormatting.new()
       # Use space as default char
       cell = Cell.new(" ", style)
       assert Cell.get_style(cell) == style
     end
 
-    test 'set_char/2 updates the cell's character' do
+    test "set_char/2 updates the cell's character" do
       cell = Cell.new()
       new_cell = Cell.set_char(cell, "B")
       assert new_cell.char == "B"
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.CellTest do
       assert new_cell.style == cell.style
     end
 
-    test 'set_style/2 updates the cell's style' do
+    test "set_style/2 updates the cell's style" do
       cell = Cell.new("A")
 
       new_style =
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.CellTest do
       assert Cell.has_attribute?(new_cell, :underline)
     end
 
-    test 'merge_style/2 merges the given style into the cell's style' do
+    test "merge_style/2 merges the given style into the cell's style" do
       initial_style =
         TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
 
@@ -77,14 +77,14 @@ defmodule Raxol.Terminal.CellTest do
       assert Cell.has_attribute?(merged_cell, :underline)
     end
 
-    test 'has_attribute?/2 checks if the cell has a specific attribute' do
+    test "has_attribute?/2 checks if the cell has a specific attribute" do
       style = TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
       cell = Cell.new("A", style)
       assert Cell.has_attribute?(cell, :bold)
       refute Cell.has_attribute?(cell, :underline)
     end
 
-    test 'double_width?/1 checks if the cell is double width' do
+    test "double_width?/1 checks if the cell is double width" do
       double_width_style =
         TextFormatting.new() |> TextFormatting.set_double_width()
 
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.CellTest do
       refute Cell.double_width?(default_cell)
     end
 
-    test 'double_height?/1 checks if the cell is double height' do
+    test "double_height?/1 checks if the cell is double height" do
       double_height_style =
         TextFormatting.new() |> TextFormatting.set_double_height_top()
 
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.CellTest do
       refute Cell.double_height?(default_cell)
     end
 
-    test 'is_empty?/1 checks if the cell is empty' do
+    test "is_empty?/1 checks if the cell is empty" do
       empty_cell = Cell.new()
       assert Cell.is_empty?(empty_cell)
 
@@ -134,7 +134,7 @@ defmodule Raxol.Terminal.CellTest do
       refute Cell.is_empty?(non_empty_cell_style)
     end
 
-    test 'with_attributes/2 returns a new cell with merged attributes' do
+    test "with_attributes/2 returns a new cell with merged attributes" do
       initial_style =
         TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
 
@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.CellTest do
       refute Cell.has_attribute?(cell, :underline)
     end
 
-    test 'with_char/2 returns a new cell with the specified character' do
+    test "with_char/2 returns a new cell with the specified character" do
       style = TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
       cell = Cell.new("A", style)
       new_cell = Cell.with_char(cell, "B")
@@ -163,7 +163,7 @@ defmodule Raxol.Terminal.CellTest do
       assert cell.char == "A"
     end
 
-    test 'copy/1 creates a deep copy of the cell' do
+    test "copy/1 creates a deep copy of the cell" do
       original_style =
         TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
 
@@ -202,7 +202,7 @@ defmodule Raxol.Terminal.CellTest do
       refute Cell.has_attribute?(modified_original_cell, :reverse)
     end
 
-    test 'equals?/2 compares cells based on character and style' do
+    test "equals?/2 compares cells based on character and style" do
       style1 = TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
       style2 = TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
 
