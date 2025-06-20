@@ -133,6 +133,10 @@ defmodule Raxol.Core.Accessibility.Metadata do
     end
   end
 
+  def get_component_hint(component_id, hint_level) do
+    "Hint for #{component_id} at level #{hint_level}"
+  end
+
   defp safe_map_get(data, key, default \\ nil) do
     if is_map(data), do: Map.get(data, key, default), else: default
   end
