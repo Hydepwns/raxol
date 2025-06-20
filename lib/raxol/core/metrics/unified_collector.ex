@@ -135,6 +135,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
       last_update: System.monotonic_time(),
       collectors: Keyword.get(opts, :collectors, %{})
     }
+
     {:ok, state}
   end
 
@@ -142,11 +143,14 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   def handle_cast({:record_metric, name, type, value, opts}, state) do
     tags = Keyword.get(opts, :tags, %{})
     metric_key = {name, type, tags}
+
     metrics =
       Map.update(state.metrics, metric_key, [value], fn current ->
         [value | current]
       end)
-    {:noreply, %{state | metrics: metrics, last_update: System.monotonic_time()}}
+
+    {:noreply,
+     %{state | metrics: metrics, last_update: System.monotonic_time()}}
   end
 
   @impl true
@@ -174,7 +178,10 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
       |> Enum.filter(fn {{name, _type, metric_tags}, _values} ->
         name == metric_name and Map.equal?(metric_tags, tags)
       end)
-      |> Enum.map(fn {key, values} -> %{key: key, values: Enum.reverse(values)} end)
+      |> Enum.map(fn {key, values} ->
+        %{key: key, values: Enum.reverse(values)}
+      end)
+
     {:reply, {:ok, result}, state}
   end
 
@@ -186,7 +193,10 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
       |> Enum.filter(fn {{_name, metric_type, _tags}, _values} ->
         metric_type == type
       end)
-      |> Enum.map(fn {key, values} -> %{key: key, values: Enum.reverse(values)} end)
+      |> Enum.map(fn {key, values} ->
+        %{key: key, values: Enum.reverse(values)}
+      end)
+
     {:reply, {:ok, result}, state}
   end
 end

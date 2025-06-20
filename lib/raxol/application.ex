@@ -84,10 +84,17 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     # Add UserPreferences for tests, ensuring it starts in test mode
     user_preferences_child_spec =
       {Raxol.Core.UserPreferences, [test_mode?: true]}
+
     # Add Accounts for tests
     accounts_child_spec = Raxol.Accounts
 
-    children = [pubsub_child_spec, repo_child_spec, user_preferences_child_spec, accounts_child_spec]
+    children = [
+      pubsub_child_spec,
+      repo_child_spec,
+      user_preferences_child_spec,
+      accounts_child_spec
+    ]
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

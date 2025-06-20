@@ -69,7 +69,11 @@ defmodule Raxol.Core.I18n do
     translations = Process.get(:i18n_translations)
     config = Process.get(:i18n_config)
     fallback_locale = Map.get(config, :fallback_locale)
-    template = get_in(translations, [locale, key]) || get_in(translations, [fallback_locale, key]) || key
+
+    template =
+      get_in(translations, [locale, key]) ||
+        get_in(translations, [fallback_locale, key]) || key
+
     EEx.eval_string(template, bindings: bindings)
   end
 
@@ -130,9 +134,15 @@ defmodule Raxol.Core.I18n do
   @doc """
   Format a currency amount according to the current locale.
   """
-  def format_currency(amount, currency_code) when is_number(amount) and is_binary(currency_code) do
+  def format_currency(amount, currency_code)
+      when is_number(amount) and is_binary(currency_code) do
     locale = get_locale()
-    case Cldr.Number.to_string(amount, currency: currency_code, backend: Raxol.Cldr, locale: locale) do
+
+    case Cldr.Number.to_string(amount,
+           currency: currency_code,
+           backend: Raxol.Cldr,
+           locale: locale
+         ) do
       {:ok, formatted} -> formatted
       {:error, {exception, _}} -> raise exception
     end
@@ -143,6 +153,7 @@ defmodule Raxol.Core.I18n do
   """
   def format_datetime(datetime) when is_struct(datetime, DateTime) do
     locale = get_locale()
+
     case Cldr.DateTime.to_string(datetime, backend: Raxol.Cldr, locale: locale) do
       {:ok, formatted} -> formatted
       {:error, {exception, _}} -> raise exception
@@ -162,6 +173,7 @@ defmodule Raxol.Core.I18n do
             "hello_name" => "Bonjour, %{name}!",
             "test_announcement" => "Ceci est une annonce de test"
           }
+
         _ ->
           %{
             "welcome_message" => "Welcome!",
@@ -170,7 +182,11 @@ defmodule Raxol.Core.I18n do
           }
       end
 
-    Process.put(:i18n_translations, Map.put(Process.get(:i18n_translations), locale, translations))
+    Process.put(
+      :i18n_translations,
+      Map.put(Process.get(:i18n_translations), locale, translations)
+    )
+
     :ok
   end
 

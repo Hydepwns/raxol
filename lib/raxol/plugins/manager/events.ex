@@ -141,7 +141,8 @@ defmodule Raxol.Plugins.Manager.Events do
   Unloads a plugin from the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  def unload_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+  def unload_plugin(%Core{} = manager, plugin_name)
+      when is_binary(plugin_name) do
     Core.unload_plugin(manager, plugin_name)
   end
 
@@ -149,13 +150,22 @@ defmodule Raxol.Plugins.Manager.Events do
   Enables a plugin in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  def enable_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+  def enable_plugin(%Core{} = manager, plugin_name)
+      when is_binary(plugin_name) do
     case get_plugin(manager, plugin_name) do
       {:ok, plugin} ->
         updated_plugin = %{plugin | enabled: true}
-        updated_manager = Core.update_plugins(manager, Map.put(manager.plugins, plugin_name, updated_plugin))
+
+        updated_manager =
+          Core.update_plugins(
+            manager,
+            Map.put(manager.plugins, plugin_name, updated_plugin)
+          )
+
         {:ok, updated_manager}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -163,13 +173,22 @@ defmodule Raxol.Plugins.Manager.Events do
   Disables a plugin in the manager.
   Returns `{:ok, updated_manager}` or `{:error, reason}`.
   """
-  def disable_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+  def disable_plugin(%Core{} = manager, plugin_name)
+      when is_binary(plugin_name) do
     case get_plugin(manager, plugin_name) do
       {:ok, plugin} ->
         updated_plugin = %{plugin | enabled: false}
-        updated_manager = Core.update_plugins(manager, Map.put(manager.plugins, plugin_name, updated_plugin))
+
+        updated_manager =
+          Core.update_plugins(
+            manager,
+            Map.put(manager.plugins, plugin_name, updated_plugin)
+          )
+
         {:ok, updated_manager}
-      error -> error
+
+      error ->
+        error
     end
   end
 
