@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # Configure the CLDR backend
 config :raxol, Raxol.Cldr,
