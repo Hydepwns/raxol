@@ -285,11 +285,18 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   defp update_component_in_broadcast(id, msg, state) do
     case Map.get(state.components, id) do
-      nil -> state
+      nil ->
+        state
+
       component ->
-        {updated_comp_state, _commands} = component.module.update(msg, component.state)
+        {updated_comp_state, _commands} =
+          component.module.update(msg, component.state)
+
         updated_component = %{component | state: updated_comp_state}
-        state_with_updated_comp = put_in(state.components[id], updated_component)
+
+        state_with_updated_comp =
+          put_in(state.components[id], updated_component)
+
         update_in(state_with_updated_comp.render_queue, &[id | &1])
     end
   end
@@ -302,23 +309,31 @@ defmodule Raxol.Core.Runtime.ComponentManager do
       {:unsubscribe, sub_id} ->
         handle_unsubscribe_command(sub_id, state)
 
-      _ -> state
+      _ ->
+        state
     end
   end
 
   defp handle_subscription_command(events, component_id, state) do
-    {:ok, sub_id} = Subscription.start(%Subscription{type: :events, data: events}, %{pid: self()})
+    {:ok, sub_id} =
+      Subscription.start(%Subscription{type: :events, data: events}, %{
+        pid: self()
+      })
+
     put_in(state.subscriptions[sub_id], component_id)
   end
 
   defp handle_unsubscribe_command(sub_id, state) do
     case Subscription.stop(sub_id) do
-      :ok -> update_in(state.subscriptions, &Map.delete(&1, sub_id))
+      :ok ->
+        update_in(state.subscriptions, &Map.delete(&1, sub_id))
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}",
           %{}
         )
+
         update_in(state.subscriptions, &Map.delete(&1, sub_id))
     end
   end

@@ -63,12 +63,13 @@ defmodule Raxol.Core.Metrics.Config do
   @doc """
   Sets a specific configuration value.
   """
-  def set(key, value) when key in [
-         :retention_period,
-         :max_samples,
-         :flush_interval,
-         :enabled_metrics
-       ] do
+  def set(key, value)
+      when key in [
+             :retention_period,
+             :max_samples,
+             :flush_interval,
+             :enabled_metrics
+           ] do
     GenServer.call(__MODULE__, {:set, key, value})
   end
 
@@ -155,6 +156,8 @@ defmodule Raxol.Core.Metrics.Config do
          :ok <- validate_flush_interval(config.flush_interval),
          :ok <- validate_enabled_metrics(config.enabled_metrics) do
       :ok
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 

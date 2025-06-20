@@ -159,6 +159,7 @@ defmodule Raxol.Core.Metrics.Cloud do
       :datadog -> send_to_datadog(config, metrics)
       :prometheus -> send_to_prometheus(config, metrics)
       :cloudwatch -> send_to_cloudwatch(config, metrics)
+      _ -> {:error, :invalid_service}
     end
   end
 
@@ -187,6 +188,8 @@ defmodule Raxol.Core.Metrics.Cloud do
          :ok <- validate_batch_size(config_with_defaults.batch_size),
          :ok <- validate_flush_interval(config_with_defaults.flush_interval) do
       :ok
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 

@@ -183,16 +183,23 @@ defmodule Raxol.Core.Renderer.Color do
       |> Enum.map(fn
         {key, "#" <> _ = hex} ->
           {key, hex_to_rgb(hex)}
+
         {key, value} when is_atom(value) and value in @ansi_16_atoms ->
           {key, value}
+
         {key, {r, g, b}} when r in 0..255 and g in 0..255 and b in 0..255 ->
           {key, {r, g, b}}
+
         {_key, value} ->
           msg =
-            if is_binary(value), do: "Invalid color in theme: #{value}", else: "Invalid color in theme: #{inspect(value)}"
+            if is_binary(value),
+              do: "Invalid color in theme: #{value}",
+              else: "Invalid color in theme: #{inspect(value)}"
+
           raise(ArgumentError, msg)
       end)
       |> Map.new()
+
     default = default_theme()
     %{colors: Map.merge(default.colors, processed_colors)}
   end
@@ -201,7 +208,8 @@ defmodule Raxol.Core.Renderer.Color do
   Returns the default color theme.
   """
   def default_theme do
-    theme = Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
+    theme =
+      Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
 
     # Convert Theme struct colors to simple RGB tuples
     colors =
@@ -216,8 +224,19 @@ defmodule Raxol.Core.Renderer.Color do
       |> Map.new()
 
     required_keys = [
-      :foreground, :background, :primary, :secondary, :accent, :error, :warning, :success, :surface, :text, :info
+      :foreground,
+      :background,
+      :primary,
+      :secondary,
+      :accent,
+      :error,
+      :warning,
+      :success,
+      :surface,
+      :text,
+      :info
     ]
+
     default_values = %{
       foreground: {0, 0, 0},
       background: {255, 255, 255},
@@ -232,9 +251,10 @@ defmodule Raxol.Core.Renderer.Color do
       info: {0, 153, 204}
     }
 
-    merged_colors = Enum.reduce(required_keys, colors, fn key, acc ->
-      Map.put_new(acc, key, default_values[key])
-    end)
+    merged_colors =
+      Enum.reduce(required_keys, colors, fn key, acc ->
+        Map.put_new(acc, key, default_values[key])
+      end)
 
     %{colors: merged_colors}
   end
@@ -270,15 +290,20 @@ defmodule Raxol.Core.Renderer.Color do
       case size do
         2 ->
           <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
-          {:ok, {String.to_integer(r, 16), String.to_integer(g, 16), String.to_integer(b, 16)}}
+
+          {:ok,
+           {String.to_integer(r, 16), String.to_integer(g, 16),
+            String.to_integer(b, 16)}}
 
         1 ->
           <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
-          {:ok, {
-            String.to_integer(r <> r, 16),
-            String.to_integer(g <> g, 16),
-            String.to_integer(b <> b, 16)
-          }}
+
+          {:ok,
+           {
+             String.to_integer(r <> r, 16),
+             String.to_integer(g <> g, 16),
+             String.to_integer(b <> b, 16)
+           }}
       end
     rescue
       _ -> {:error, :invalid_hex}
@@ -288,7 +313,8 @@ defmodule Raxol.Core.Renderer.Color do
   @doc """
   Converts RGB values to the nearest ANSI 256 color code.
   """
-  def rgb_to_ansi256({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def rgb_to_ansi256({r, g, b})
+      when r in 0..255 and g in 0..255 and b in 0..255 do
     # 6x6x6 color cube
     if r == g and g == b do
       # Grayscale ramp
@@ -306,7 +332,8 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  def rgb_to_ansi256({r, g, b}) when r < 0 or r > 255 or g < 0 or g > 255 or b < 0 or b > 255 do
+  def rgb_to_ansi256({r, g, b})
+      when r < 0 or r > 255 or g < 0 or g > 255 or b < 0 or b > 255 do
     raise ArgumentError, "RGB values must be between 0 and 255"
   end
 
