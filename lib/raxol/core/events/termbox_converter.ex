@@ -37,6 +37,54 @@ defmodule Raxol.Core.Events.TermboxConverter do
   @f11 275
   @f12 276
 
+  # Key code to atom mapping
+  @key_mapping %{
+    @arrow_up => :up,
+    @arrow_down => :down,
+    @arrow_left => :left,
+    @arrow_right => :right,
+    @home => :home,
+    @end_key => :end,
+    @page_up => :page_up,
+    @page_down => :page_down,
+    @delete => :delete,
+    @backspace => :backspace,
+    @tab => :tab,
+    @enter => :enter,
+    @esc => :esc,
+    @space => :space,
+    @f1 => :f1,
+    @f2 => :f2,
+    @f3 => :f3,
+    @f4 => :f4,
+    @f5 => :f5,
+    @f6 => :f6,
+    @f7 => :f7,
+    @f8 => :f8,
+    @f9 => :f9,
+    @f10 => :f10,
+    @f11 => :f11,
+    @f12 => :f12,
+    0 => :char
+  }
+
+  # Mouse button code to atom mapping
+  @button_mapping %{
+    0 => :left,
+    1 => :middle,
+    2 => :right,
+    3 => :release,
+    4 => :wheel_up,
+    5 => :wheel_down
+  }
+
+  # Button to action mapping
+  @action_mapping %{
+    :wheel_up => :scroll_up,
+    :wheel_down => :scroll_down,
+    :release => :release
+  }
+
   @doc """
   Converts a rrex_termbox v2.0.1 event map to a Raxol Event struct.
 
@@ -53,100 +101,54 @@ defmodule Raxol.Core.Events.TermboxConverter do
   @spec convert(map()) :: {:ok, Event.t()} | :ignore | {:error, term()}
   def convert(event_map) do
     try do
-      case event_map do
-        %{type: :key, key: key_code, char: char_code, mod: mod_code} ->
-          event = %Event{
-            type: :key,
-            data: %{
-              key: translate_key(key_code),
-              char: if(char_code > 0, do: <<char_code::utf8>>, else: nil),
-              ctrl: (mod_code &&& 2) > 0,
-              alt: (mod_code &&& 4) > 0,
-              shift: (mod_code &&& 1) > 0
-            }
-          }
-
-          {:ok, event}
-
-        %{type: :resize, width: w, height: h} ->
-          {:ok, %Event{type: :resize, data: %{width: w, height: h}}}
-
-        %{type: :mouse, x: x, y: y, button: button_code} ->
-          mouse_event = translate_mouse_event(x, y, button_code)
-          {:ok, %Event{type: :mouse, data: mouse_event}}
-
-        _ ->
-          :ignore
-      end
+      handle_event(event_map)
     catch
       kind, reason ->
         {:error, {kind, reason, __STACKTRACE__}}
     end
   end
 
+  defp handle_event(%{type: :key, key: key_code, char: char_code, mod: mod_code}) do
+    event = %Event{
+      type: :key,
+      data: %{
+        key: translate_key(key_code),
+        char: if(char_code > 0, do: <<char_code::utf8>>, else: nil),
+        ctrl: (mod_code &&& 2) > 0,
+        alt: (mod_code &&& 4) > 0,
+        shift: (mod_code &&& 1) > 0
+      }
+    }
+
+    {:ok, event}
+  end
+
+  defp handle_event(%{type: :resize, width: w, height: h}) do
+    {:ok, %Event{type: :resize, data: %{width: w, height: h}}}
+  end
+
+  defp handle_event(%{type: :mouse, x: x, y: y, button: button_code}) do
+    mouse_event = translate_mouse_event(x, y, button_code)
+    {:ok, %Event{type: :mouse, data: mouse_event}}
+  end
+
+  defp handle_event(_), do: :ignore
+
   # Translates termbox key codes to Raxol key atoms
   defp translate_key(key_code) do
-    case key_code do
-      c when c in [@arrow_up] -> :up
-      c when c in [@arrow_down] -> :down
-      c when c in [@arrow_left] -> :left
-      c when c in [@arrow_right] -> :right
-      c when c in [@home] -> :home
-      c when c in [@end_key] -> :end
-      c when c in [@page_up] -> :page_up
-      c when c in [@page_down] -> :page_down
-      c when c in [@delete] -> :delete
-      c when c in [@backspace] -> :backspace
-      c when c in [@tab] -> :tab
-      c when c in [@enter] -> :enter
-      c when c in [@esc] -> :esc
-      c when c in [@space] -> :space
-      c when c in [@f1] -> :f1
-      c when c in [@f2] -> :f2
-      c when c in [@f3] -> :f3
-      c when c in [@f4] -> :f4
-      c when c in [@f5] -> :f5
-      c when c in [@f6] -> :f6
-      c when c in [@f7] -> :f7
-      c when c in [@f8] -> :f8
-      c when c in [@f9] -> :f9
-      c when c in [@f10] -> :f10
-      c when c in [@f11] -> :f11
-      c when c in [@f12] -> :f12
-      # When key is 0, it's a regular character input
-      0 -> :char
-      _ -> :unknown
-    end
+    Map.get(@key_mapping, key_code, :unknown)
   end
 
   # Translates termbox mouse events to Raxol mouse event maps
   defp translate_mouse_event(x, y, button_code) do
-    # Simple example mapping - will need to be expanded based on actual rrex_termbox codes
-    button =
-      case button_code do
-        0 -> :left
-        1 -> :middle
-        2 -> :right
-        3 -> :release
-        4 -> :wheel_up
-        5 -> :wheel_down
-        _ -> :unknown
-      end
-
-    action =
-      case button do
-        :wheel_up -> :scroll_up
-        :wheel_down -> :scroll_down
-        :release -> :release
-        _ -> :press
-      end
+    button = Map.get(@button_mapping, button_code, :unknown)
+    action = Map.get(@action_mapping, button, :press)
 
     %{
       x: x,
       y: y,
       button: button,
       action: action,
-      # These would come from mod flags in a real implementation
       ctrl: false,
       alt: false,
       shift: false
