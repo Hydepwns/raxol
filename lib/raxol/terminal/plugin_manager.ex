@@ -30,14 +30,16 @@ defmodule Raxol.Terminal.PluginManager do
   Initializes a plugin with the given configuration.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec initialize_plugin(Emulator.t(), String.t(), map()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec initialize_plugin(Emulator.t(), String.t(), map()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def initialize_plugin(emulator, plugin_name, config) do
     case Manager.initialize_plugin(emulator.plugin_manager, plugin_name, config) do
       {:ok, new_manager} ->
         {:ok, update_manager(emulator, new_manager)}
 
       {:error, reason} ->
-        {:error, "Failed to initialize plugin #{plugin_name}: #{inspect(reason)}"}
+        {:error,
+         "Failed to initialize plugin #{plugin_name}: #{inspect(reason)}"}
     end
   end
 
@@ -48,12 +50,18 @@ defmodule Raxol.Terminal.PluginManager do
   @spec call_hook(Emulator.t(), String.t(), String.t(), list()) ::
           {:ok, Emulator.t(), any()} | {:error, String.t()}
   def call_hook(emulator, plugin_name, hook_name, args) do
-    case Manager.call_hook(emulator.plugin_manager, plugin_name, hook_name, args) do
+    case Manager.call_hook(
+           emulator.plugin_manager,
+           plugin_name,
+           hook_name,
+           args
+         ) do
       {:ok, new_manager, result} ->
         {:ok, update_manager(emulator, new_manager), result}
 
       {:error, reason} ->
-        {:error, "Failed to call hook #{hook_name} on plugin #{plugin_name}: #{inspect(reason)}"}
+        {:error,
+         "Failed to call hook #{hook_name} on plugin #{plugin_name}: #{inspect(reason)}"}
     end
   end
 
@@ -79,7 +87,8 @@ defmodule Raxol.Terminal.PluginManager do
   Unloads a plugin.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec unload_plugin(Emulator.t(), String.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec unload_plugin(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def unload_plugin(emulator, plugin_name) do
     case Manager.unload_plugin(emulator.plugin_manager, plugin_name) do
       {:ok, new_manager} ->
@@ -94,11 +103,16 @@ defmodule Raxol.Terminal.PluginManager do
   Gets a plugin's configuration.
   Returns {:ok, config} or {:error, reason}.
   """
-  @spec get_plugin_config(Emulator.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
+  @spec get_plugin_config(Emulator.t(), String.t()) ::
+          {:ok, map()} | {:error, String.t()}
   def get_plugin_config(emulator, plugin_name) do
     case Manager.get_plugin_config(emulator.plugin_manager, plugin_name) do
-      {:ok, config} -> {:ok, config}
-      {:error, reason} -> {:error, "Failed to get config for plugin #{plugin_name}: #{inspect(reason)}"}
+      {:ok, config} ->
+        {:ok, config}
+
+      {:error, reason} ->
+        {:error,
+         "Failed to get config for plugin #{plugin_name}: #{inspect(reason)}"}
     end
   end
 
@@ -106,14 +120,20 @@ defmodule Raxol.Terminal.PluginManager do
   Updates a plugin's configuration.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec update_plugin_config(Emulator.t(), String.t(), map()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec update_plugin_config(Emulator.t(), String.t(), map()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def update_plugin_config(emulator, plugin_name, config) do
-    case Manager.update_plugin_config(emulator.plugin_manager, plugin_name, config) do
+    case Manager.update_plugin_config(
+           emulator.plugin_manager,
+           plugin_name,
+           config
+         ) do
       {:ok, new_manager} ->
         {:ok, update_manager(emulator, new_manager)}
 
       {:error, reason} ->
-        {:error, "Failed to update config for plugin #{plugin_name}: #{inspect(reason)}"}
+        {:error,
+         "Failed to update config for plugin #{plugin_name}: #{inspect(reason)}"}
     end
   end
 
@@ -124,8 +144,11 @@ defmodule Raxol.Terminal.PluginManager do
   @spec validate_plugin_config(String.t(), map()) :: :ok | {:error, String.t()}
   def validate_plugin_config(plugin_name, config) do
     case Manager.validate_plugin_config(plugin_name, config) do
-      :ok -> :ok
-      {:error, reason} -> {:error, "Invalid config for plugin #{plugin_name}: #{inspect(reason)}"}
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        {:error, "Invalid config for plugin #{plugin_name}: #{inspect(reason)}"}
     end
   end
 end

@@ -23,7 +23,9 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
+    GenServer.start_link(__MODULE__, opts,
+      name: Keyword.get(opts, :name, __MODULE__)
+    )
   end
 
   # Server Callbacks
@@ -44,7 +46,8 @@ defmodule Raxol.Terminal.State.Manager do
   end
 
   @impl true
-  def handle_cast({:update_state, update_fun}, state) when is_function(update_fun, 1) do
+  def handle_cast({:update_state, update_fun}, state)
+      when is_function(update_fun, 1) do
     {:noreply, update_fun.(state)}
   end
 
@@ -121,8 +124,13 @@ defmodule Raxol.Terminal.State.Manager do
   def pop_state(emulator) do
     case emulator.state.state_stack do
       [state | rest] ->
-        new_emulator = %{emulator | state: %{emulator.state | state_stack: rest}}
+        new_emulator = %{
+          emulator
+          | state: %{emulator.state | state_stack: rest}
+        }
+
         {new_emulator, state}
+
       [] ->
         {emulator, nil}
     end

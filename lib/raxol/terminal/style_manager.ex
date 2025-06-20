@@ -79,9 +79,21 @@ defmodule Raxol.Terminal.StyleManager do
   Applies a style to a region.
   Returns the updated emulator.
   """
-  @spec apply_style_to_region(Emulator.t(), {integer(), integer()}, {integer(), integer()}, map()) :: Emulator.t()
+  @spec apply_style_to_region(
+          Emulator.t(),
+          {integer(), integer()},
+          {integer(), integer()},
+          map()
+        ) :: Emulator.t()
   def apply_style_to_region(emulator, start, end_, style) do
-    buffer = StyleBuffer.apply_style_to_region(emulator.style_buffer, start, end_, style)
+    buffer =
+      StyleBuffer.apply_style_to_region(
+        emulator.style_buffer,
+        start,
+        end_,
+        style
+      )
+
     update_buffer(emulator, buffer)
   end
 

@@ -7,16 +7,31 @@ defmodule Raxol.Terminal.Cursor.Style do
   """
 
   # Define the behavior for cursor style operations
-  @callback set_block(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback set_underline(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback set_bar(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback set_custom(cursor :: Raxol.Terminal.Cursor.Manager.t(), shape :: atom(), dimensions :: map()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback show(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback hide(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback toggle_visibility(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback toggle_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback set_blink_rate(cursor :: Raxol.Terminal.Cursor.Manager.t(), rate :: integer()) :: Raxol.Terminal.Cursor.Manager.t()
-  @callback update_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: {Raxol.Terminal.Cursor.Manager.t(), boolean()}
+  @callback set_block(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback set_underline(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback set_bar(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback set_custom(
+              cursor :: Raxol.Terminal.Cursor.Manager.t(),
+              shape :: atom(),
+              dimensions :: map()
+            ) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback show(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback hide(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback toggle_visibility(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback toggle_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback set_blink_rate(
+              cursor :: Raxol.Terminal.Cursor.Manager.t(),
+              rate :: integer()
+            ) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback update_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              {Raxol.Terminal.Cursor.Manager.t(), boolean()}
   @callback get_state(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: atom()
   @callback get_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: boolean()
 
@@ -85,7 +100,12 @@ defmodule Raxol.Terminal.Cursor.Style do
       "█"
   """
   def set_custom(%Manager{} = cursor, shape, dimensions) do
-    %{cursor | style: :custom, custom_shape: shape, custom_dimensions: dimensions}
+    %{
+      cursor
+      | style: :custom,
+        custom_shape: shape,
+        custom_dimensions: dimensions
+    }
   end
 
   @impl true

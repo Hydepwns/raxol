@@ -24,13 +24,26 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
 
   defp handle_byte(emulator, parser_state, byte, rest) do
     cond do
-      param_byte?(byte) -> handle_param_byte(emulator, parser_state, byte, rest)
-      byte == ?; -> handle_separator(emulator, parser_state, rest)
-      intermediate_byte?(byte) -> handle_intermediate_byte(emulator, parser_state, byte, rest)
-      final_byte?(byte) -> handle_final_byte(emulator, parser_state, byte, rest)
-      can_sub?(byte) -> handle_can_sub(emulator, parser_state, rest)
-      ignored_byte?(byte) -> handle_ignored_byte(emulator, parser_state, byte, rest)
-      true -> handle_unhandled_byte(emulator, parser_state, byte, rest)
+      param_byte?(byte) ->
+        handle_param_byte(emulator, parser_state, byte, rest)
+
+      byte == ?; ->
+        handle_separator(emulator, parser_state, rest)
+
+      intermediate_byte?(byte) ->
+        handle_intermediate_byte(emulator, parser_state, byte, rest)
+
+      final_byte?(byte) ->
+        handle_final_byte(emulator, parser_state, byte, rest)
+
+      can_sub?(byte) ->
+        handle_can_sub(emulator, parser_state, rest)
+
+      ignored_byte?(byte) ->
+        handle_ignored_byte(emulator, parser_state, byte, rest)
+
+      true ->
+        handle_unhandled_byte(emulator, parser_state, byte, rest)
     end
   end
 
@@ -38,25 +51,47 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
   defp intermediate_byte?(byte), do: byte >= 0x20 and byte <= 0x2F
   defp final_byte?(byte), do: byte >= 0x40 and byte <= 0x7E
   defp can_sub?(byte), do: byte == 0x18 or byte == 0x1A
-  defp ignored_byte?(byte), do: (byte >= 0 and byte <= 23 and byte != 0x18 and byte != 0x1A) or (byte >= 27 and byte <= 31) or byte == 127
+
+  defp ignored_byte?(byte),
+    do:
+      (byte >= 0 and byte <= 23 and byte != 0x18 and byte != 0x1A) or
+        (byte >= 27 and byte <= 31) or byte == 127
 
   defp handle_param_byte(emulator, parser_state, byte, rest) do
-    next_state = %{parser_state | params_buffer: parser_state.params_buffer <> <<byte>>}
+    next_state = %{
+      parser_state
+      | params_buffer: parser_state.params_buffer <> <<byte>>
+    }
+
     {:continue, emulator, next_state, rest}
   end
 
   defp handle_separator(emulator, parser_state, rest) do
-    next_state = %{parser_state | params_buffer: parser_state.params_buffer <> <<?;>>}
+    next_state = %{
+      parser_state
+      | params_buffer: parser_state.params_buffer <> <<?;>>
+    }
+
     {:continue, emulator, next_state, rest}
   end
 
   defp handle_intermediate_byte(emulator, parser_state, byte, rest) do
-    next_state = %{parser_state | intermediates_buffer: parser_state.intermediates_buffer <> <<byte>>}
+    next_state = %{
+      parser_state
+      | intermediates_buffer: parser_state.intermediates_buffer <> <<byte>>
+    }
+
     {:continue, emulator, next_state, rest}
   end
 
   defp handle_final_byte(emulator, parser_state, byte, rest) do
-    next_state = %{parser_state | state: :dcs_passthrough, final_byte: byte, payload_buffer: ""}
+    next_state = %{
+      parser_state
+      | state: :dcs_passthrough,
+        final_byte: byte,
+        payload_buffer: ""
+    }
+
     {:continue, emulator, next_state, rest}
   end
 
@@ -76,6 +111,7 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
       "Unhandled byte #{byte} in DCS Entry state, returning to ground.",
       %{}
     )
+
     next_state = %{parser_state | state: :ground}
     {:continue, emulator, next_state, rest}
   end
