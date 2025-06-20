@@ -274,6 +274,20 @@ defmodule Raxol.Style.Colors.Color do
   end
 
   @doc """
+  Alias for blend/3. Blends two colors with the specified alpha value.
+
+  ## Examples
+
+      iex> Color.alpha_blend(Color.from_hex("#FF0000"), Color.from_hex("#0000FF"), 0.5)
+      %Color{r: 128, g: 0, b: 128, hex: "#800080"}
+  """
+  @spec alpha_blend(t(), t(), float()) :: t()
+  def alpha_blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
+      when is_float(alpha) and alpha >= 0.0 and alpha <= 1.0 do
+    blend(color1, color2, alpha)
+  end
+
+  @doc """
   Returns the complementary color.
 
   ## Examples

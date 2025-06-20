@@ -7,8 +7,6 @@ section: components
 tags: [api, components, documentation]
 ---
 
-# Component API Reference
-
 ## Base Component Behaviour
 
 All components in Raxol implement the `Raxol.UI.Components.Base.Component` behaviour. Components are reusable, stateful modules that support a clear lifecycle:

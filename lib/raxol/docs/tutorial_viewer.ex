@@ -4,6 +4,7 @@ defmodule Raxol.Docs.TutorialViewer do
   """
 
   use Raxol.Core.Runtime.Application
+  @behaviour Raxol.Core.Runtime.Application
   require Raxol.View.Elements
 
   defstruct status: :selecting_tutorial,

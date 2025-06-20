@@ -8,6 +8,7 @@ defmodule Raxol.Style.Colors.HotReload do
   """
 
   use GenServer
+  @behaviour GenServer
 
   alias Raxol.Style.Colors.Persistence
 
