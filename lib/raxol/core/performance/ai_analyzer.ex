@@ -92,12 +92,49 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
         "Several components are re-rendering unnecessarily"
       ],
       recommendations: [
-        "Consider implementing React.memo for pure components",
-        "Review component lifecycle methods",
-        "Optimize state management patterns"
+        %{
+          priority: "high",
+          area: "Component Optimization",
+          description: "Consider implementing React.memo for pure components",
+          impact: "High performance improvement",
+          effort: "Low"
+        },
+        %{
+          priority: "medium",
+          area: "Lifecycle Management",
+          description: "Review component lifecycle methods",
+          impact: "Medium performance improvement",
+          effort: "Medium"
+        },
+        %{
+          priority: "medium",
+          area: "State Management",
+          description: "Optimize state management patterns",
+          impact: "Medium performance improvement",
+          effort: "High"
+        }
       ],
       risk_level: :medium,
-      confidence: 0.85
+      confidence: 0.85,
+      risk_assessment: %{
+        overall_risk: "medium",
+        areas: [
+          {"Rendering Performance", "high"},
+          {"Memory Usage", "medium"},
+          {"State Management", "low"}
+        ],
+        trends: [
+          {"Performance", "declining"},
+          {"Memory", "stable"},
+          {"Complexity", "increasing"}
+        ]
+      },
+      optimization_impact: [
+        {"Performance", "15-25% improvement"},
+        {"Memory Usage", "10-15% reduction"},
+        {"User Experience", "Significant improvement"}
+      ],
+      ai_confidence: 0.85
     }
   end
 

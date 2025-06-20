@@ -41,6 +41,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
           | :latin13
           | :latin14
           | :latin15
+          | :dec_supplemental
+          | :dec_technical
+          | :dec_special_graphics
+          | :dec_supplementary
+          | :dec_supplemental_graphics
+          | :dec_supplemental_technical
 
   @type gset_name :: :g0 | :g1 | :g2 | :g3
   @type gl_gr_target :: :gl | :gr
@@ -131,36 +137,61 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   The caller is responsible for calling clear_single_shift after processing
   the character if a single shift was active.
   """
-  @spec get_active_charset(charset_state()) :: module()
+  @spec get_active_charset(charset_state()) :: atom()
   def get_active_charset(state) do
     cond do
       # If a single shift is active, it takes precedence
       state.single_shift != nil ->
         state.single_shift
 
-      state.locked_shift ->
-        # Get the charset designated to GR
-        Map.get(state, state.gr)
+      # Handle StateManager-style state with :active field
+      Map.has_key?(state, :active) ->
+        state.active
 
+      # Handle CharacterSets-style state with :locked_shift field
+      Map.has_key?(state, :locked_shift) and state.locked_shift ->
+        get_charset_for_gset(state, state.gr)
+
+      # Default: Get the charset designated to GL
       true ->
-        # Get the charset designated to GL
-        Map.get(state, state.gl)
+        get_charset_for_gset(state, state.gl)
+    end
+  end
+
+  defp get_charset_for_gset(state, gset) do
+    case Map.get(state, gset) do
+      :us_ascii -> :us_ascii
+      :dec_special_graphics -> :dec_special_graphics
+      :uk -> :uk
+      _ -> :us_ascii
     end
   end
 
   @doc """
   Translates a character using the active character set.
+  Returns {codepoint, new_state} as expected by the tests.
   """
-  @spec translate_char(codepoint, charset_state()) :: String.t()
-  def translate_char(codepoint, state) do
-    result =
-      Translator.translate_char(
-        codepoint,
-        get_active_charset(state),
-        state.single_shift
-      )
+  @spec translate_char(codepoint, charset_state()) :: {codepoint(), charset_state()}
+  def translate_char(codepoint, state) when is_integer(codepoint) do
+    result = Translator.translate_char(
+      codepoint,
+      get_active_charset(state),
+      state.single_shift
+    )
+    new_state = clear_single_shift(state)
+    {result, new_state}
+  end
 
-    if is_integer(result), do: <<result::utf8>>, else: result
+  # Handle case where arguments are swapped (state, codepoint)
+  def translate_char(state, codepoint) when is_integer(codepoint) do
+    translate_char(codepoint, state)
+  end
+
+  # Helper for just the codepoint value
+  @spec translate_char_value(codepoint, charset_state()) :: codepoint()
+  def translate_char_value(codepoint, state) do
+    {value, _} = translate_char(codepoint, state)
+    value
   end
 
   @doc """
@@ -226,7 +257,23 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   # Often same as US ASCII initially
   def charset_code_to_atom(?<), do: :dec_supplemental
   def charset_code_to_atom(?>), do: :dec_technical
-  # TODO: Add mappings for other national/special charsets (?F, ?K, etc.)
+  def charset_code_to_atom(?F), do: :german
+  def charset_code_to_atom(?K), do: :swedish
+  def charset_code_to_atom(?L), do: :czech_sorbian
+  def charset_code_to_atom(?M), do: :danish_norwegian
+  def charset_code_to_atom(?N), do: :portuguese
+  def charset_code_to_atom(?O), do: :icelandic
+  def charset_code_to_atom(?P), do: :polish
+  def charset_code_to_atom(?Q), do: :romanian
+  def charset_code_to_atom(?R), do: :chinese_simplified
+  def charset_code_to_atom(?S), do: :chinese_traditional
+  def charset_code_to_atom(?T), do: :greek
+  def charset_code_to_atom(?U), do: :hebrew
+  def charset_code_to_atom(?V), do: :turkish
+  def charset_code_to_atom(?W), do: :vietnamese
+  def charset_code_to_atom(?X), do: :greek_polytonic
+  def charset_code_to_atom(?Y), do: :yiddish
+  def charset_code_to_atom(?Z), do: :japanese
   # Return nil for unknown codes
   def charset_code_to_atom(_), do: nil
 

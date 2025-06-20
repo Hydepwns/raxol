@@ -46,7 +46,14 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     {:ok, %{emulator | cursor: new_cursor}}
   end
 
-  @doc "Handles Cursor Up (CUU - \'A\') - alias for handle_A"
+  @doc "Handles Cursor Position (CUP - 'H') - alias for handle_cup"
+  @spec handle_H(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_H(emulator, params) do
+    handle_cup(emulator, params)
+  end
+
+  @doc "Handles Cursor Up (CUU - \'A\')"
   @spec handle_A(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_A(emulator, params) do
@@ -153,6 +160,13 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
       )
 
     {:ok, %{emulator | cursor: new_cursor}}
+  end
+
+  @doc "Handles Cursor Vertical Absolute (VPA - 'd') - alias for handle_decvpa"
+  @spec handle_d(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_d(emulator, params) do
+    handle_decvpa(emulator, params)
   end
 
   # Private helper functions

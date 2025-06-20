@@ -24,7 +24,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
             Enum.reduce(0..2, buffer, fn y, acc ->
               Enum.reduce(0..9, acc, fn x, acc ->
-                cell = Cell.new("W#{writer_id}", TextFormatting.new(fg: :red))
+                cell = Cell.new("W", TextFormatting.new(fg: :red))
                 Buffer.set_cell(acc, start_x + x, start_y + y, cell)
               end)
             end)
@@ -52,7 +52,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
           Task.async(fn ->
             Enum.reduce(0..4, buffer, fn y, acc ->
               Enum.reduce(0..4, acc, fn x, acc ->
-                cell = Cell.new("W#{writer_id}", TextFormatting.new(fg: :blue))
+                cell = Cell.new("W", TextFormatting.new(fg: :blue))
                 Buffer.set_cell(acc, x, y, cell)
               end)
             end)
@@ -95,7 +95,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
             Enum.reduce(1..100, buffer, fn i, acc ->
               x = :rand.uniform(80) - 1
               y = :rand.uniform(24) - 1
-              cell = Cell.new("W#{writer_id}", TextFormatting.new(fg: :green))
+              cell = Cell.new("W", TextFormatting.new(fg: :green))
               Buffer.set_cell(acc, x, y, cell)
             end)
           end)
@@ -194,7 +194,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
               Enum.reduce(1..50, buffer, fn j, acc ->
                 x = :rand.uniform(80) - 1
                 y = :rand.uniform(24) - 1
-                cell = Cell.new("W#{i}", TextFormatting.new(fg: :blue))
+                cell = Cell.new("W", TextFormatting.new(fg: :blue))
                 Buffer.set_cell(acc, x, y, cell)
               end)
             end)

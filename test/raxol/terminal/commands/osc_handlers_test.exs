@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
 
   setup do
     emulator = %Raxol.Terminal.Emulator.Struct{
-      window_manager: Window.Manager.new(),
+      window_manager: Raxol.Terminal.Window.Manager.new_for_test(),
       active_buffer: %{width: 80, height: 24}
     }
 

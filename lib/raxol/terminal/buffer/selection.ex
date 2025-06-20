@@ -12,6 +12,14 @@ defmodule Raxol.Terminal.Buffer.Selection do
   alias Raxol.Terminal.ScreenBuffer
 
   @doc """
+  Creates a new selection with start and end positions.
+  """
+  @spec new({non_neg_integer(), non_neg_integer()}, {non_neg_integer(), non_neg_integer()}) :: {non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()}
+  def new({start_x, start_y}, {end_x, end_y}) do
+    {start_x, start_y, end_x, end_y}
+  end
+
+  @doc """
   Starts a text selection at the specified position.
   """
   @spec start(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::

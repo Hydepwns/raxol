@@ -7,12 +7,16 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTestV2 do
   describe "CharacterSets" do
     test ~c"translates characters using active character set" do
       state = StateManager.new()
-      assert CharacterSets.translate_char(?a, state) == ?a
-      assert CharacterSets.translate_char(?_, state) == ?_
+      {value, _} = CharacterSets.translate_char(?a, state)
+      assert value == ?a
+      {value, _} = CharacterSets.translate_char(?_, state)
+      assert value == ?_
 
       state = StateManager.set_active(state, :dec_special_graphics)
-      assert CharacterSets.translate_char(?_, state) == ?─
-      assert CharacterSets.translate_char(?`, state) == ?◆
+      {value, _} = CharacterSets.translate_char(?_, state)
+      assert value == ?─
+      {value, _} = CharacterSets.translate_char(?`, state)
+      assert value == ?◆
     end
 
     test ~c"translates strings using active character set" do
@@ -26,14 +30,16 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTestV2 do
     test ~c"handles single shift character sets" do
       state = StateManager.new()
       state = StateManager.set_single_shift(state, :dec_special_graphics)
-      assert CharacterSets.translate_char(?_, state) == ?─
-      assert CharacterSets.translate_char(?a, state) == ?a
+      {value, new_state} = CharacterSets.translate_char(95, state)
+      assert value == 9472
+      {value, _} = CharacterSets.translate_char(97, new_state)
+      assert value == 97
     end
 
     test ~c"clears single shift after use" do
       state = StateManager.new()
       state = StateManager.set_single_shift(state, :dec_special_graphics)
-      {_, new_state} = CharacterSets.translate_char(state, ?_)
+      {_, new_state} = CharacterSets.translate_char(?_, state)
       assert StateManager.get_single_shift(new_state) == nil
     end
   end

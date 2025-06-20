@@ -93,6 +93,15 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   end
 
   @doc """
+  Clears the scroll region, resetting to full screen.
+  Alias for clear/1 for backward compatibility.
+  """
+  @spec clear_region(ScreenBuffer.t()) :: ScreenBuffer.t()
+  def clear_region(buffer) do
+    clear(buffer)
+  end
+
+  @doc """
   Gets the current scroll region boundaries.
 
   ## Parameters

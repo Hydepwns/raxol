@@ -92,6 +92,27 @@ defmodule Raxol.Terminal.Buffer do
   end
 
   @doc """
+  Gets a cell from the buffer at the specified coordinates.
+  Delegates to ScreenBuffer.get_cell/3.
+  """
+  @spec get_cell(t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
+  def get_cell(buffer, x, y) do
+    screen_buffer = to_screen_buffer(buffer)
+    ScreenBuffer.get_cell(screen_buffer, x, y)
+  end
+
+  @doc """
+  Resizes the buffer to the specified width and height.
+  Delegates to ScreenBuffer.resize/3.
+  """
+  @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def resize(buffer, width, height) do
+    screen_buffer = to_screen_buffer(buffer)
+    resized_screen_buffer = ScreenBuffer.resize(screen_buffer, width, height)
+    from_screen_buffer(resized_screen_buffer, buffer)
+  end
+
+  @doc """
   Writes data to the buffer at the current cursor position.
   """
   @spec write(t(), String.t(), keyword()) :: t()
@@ -227,6 +248,17 @@ defmodule Raxol.Terminal.Buffer do
   @spec add(t(), String.t()) :: t()
   def add(buffer, content) do
     write(buffer, content)
+  end
+
+  @doc """
+  Fills a region of the buffer with a specified cell.
+  Delegates to ScreenBuffer.fill_region/6.
+  """
+  @spec fill_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), Cell.t()) :: t()
+  def fill_region(buffer, x, y, width, height, cell) do
+    screen_buffer = to_screen_buffer(buffer)
+    filled_screen_buffer = ScreenBuffer.fill_region(screen_buffer, x, y, width, height, cell)
+    from_screen_buffer(filled_screen_buffer, buffer)
   end
 
   # Private functions

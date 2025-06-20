@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.Tab.WindowIntegrationTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.{Tab.Manager, Tab.WindowIntegration, Window.Manager}
+  alias Raxol.Terminal.{Tab.Manager, Tab.WindowIntegration}
 
   setup do
     tab_manager = Manager.new()
-    window_manager = Window.Manager.new()
+    window_manager = Raxol.Terminal.Window.Manager.new_for_test()
     {:ok, %{tab_manager: tab_manager, window_manager: window_manager}}
   end
 

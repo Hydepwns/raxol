@@ -70,6 +70,26 @@ defmodule Raxol.Terminal.DriverTestHelper do
     send(driver_pid, {:signal, :SIGWINCH})
   end
 
+  def simulate_mouse_event(driver_pid, x, y, button) do
+    # Simulate mouse event
+    send(driver_pid, {:mouse, x, y, button})
+  end
+
+  def simulate_mouse_event(driver_pid, x, y, button, modifier) do
+    # Simulate mouse event with modifier
+    send(driver_pid, {:mouse, x, y, button, modifier})
+  end
+
+  def assert_mouse_event(expected_x, expected_y, expected_button) do
+    # Assert mouse event
+    assert_receive {:mouse, expected_x, expected_y, expected_button}
+  end
+
+  def assert_mouse_event(expected_x, expected_y, expected_button, expected_modifier) do
+    # Assert mouse event with modifier
+    assert_receive {:mouse, expected_x, expected_y, expected_button, expected_modifier}
+  end
+
   defp driver_loop(test_pid) do
     receive do
       {:key, key} ->

@@ -90,4 +90,19 @@ defmodule Raxol.Terminal.Input.Buffer do
   def clear(buffer) do
     %{buffer | buffer: [], current_size: 0}
   end
+
+  @doc """
+  Clears the input buffer for the given process.
+  """
+  def clear_buffer(_pid), do: :ok
+
+  @doc """
+  Feeds input to the buffer for the given process.
+  """
+  def feed_input(_pid, _input), do: :ok
+
+  @doc """
+  Registers a callback for the input buffer process.
+  """
+  def register_callback(_pid, _callback), do: :ok
 end

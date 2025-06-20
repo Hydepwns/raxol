@@ -14,32 +14,32 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
 
     test ~c"handles basic CSI sequence (Cursor Up)" do
       emulator = Emulator.new(80, 24)
-      # Move cursor down first
-      emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 0, 5)}
-      assert emulator.cursor.position == {0, 5}
+      # Move cursor down first by processing a cursor down sequence
+      {emulator, ""} = Emulator.process_input(emulator, "\e[5B")
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 5}
 
       # Process CSI A (Cursor Up)
       {emulator, ""} = Emulator.process_input(emulator, "\e[A")
-      assert emulator.cursor.position == {0, 4}
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 4}
     end
 
     test ~c"handles parameterized CSI sequence (Cursor Down 5)" do
       emulator = Emulator.new(80, 24)
-      assert emulator.cursor.position == {0, 0}
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 0}
 
       # Process CSI 5 B (Cursor Down 5)
       {emulator, ""} = Emulator.process_input(emulator, "\e[5B")
-      assert emulator.cursor.position == {0, 5}
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 5}
     end
 
     test ~c"handles multi-parameter CSI sequence (Cursor Position 10, 20)" do
       emulator = Emulator.new(80, 24)
-      assert emulator.cursor.position == {0, 0}
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 0}
 
       # Process CSI 20;10 H (Cursor Position row 20, col 10)
       {emulator, ""} = Emulator.process_input(emulator, "\e[20;10H")
       # Remember: row/col are 1-based in sequence, state is {col, row} 0-based
-      assert emulator.cursor.position == {9, 19}
+      assert Emulator.get_cursor_position_struct(emulator) == {9, 19}
     end
 
     test ~c"handles mixed printable text and CSI sequences" do
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert ScreenBuffer.get_cell_at(buffer, 5, 0).char == "W"
       assert ScreenBuffer.get_cell_at(buffer, 9, 0).char == "d"
       # Final cursor position
-      assert emulator.cursor.position == {10, 0}
+      assert Emulator.get_cursor_position_struct(emulator) == {10, 0}
     end
 
     test ~c"handles OSC sequence (Set Window Title)" do
@@ -72,13 +72,13 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
 
     test ~c"handles simple ESC sequence (Index)" do
       emulator = Emulator.new(80, 24)
-      # Position cursor
-      emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 5, 5)}
-      assert emulator.cursor.position == {5, 5}
+      # Position cursor by using cursor position sequence
+      {emulator, ""} = Emulator.process_input(emulator, "\e[6;6H")
+      assert Emulator.get_cursor_position_struct(emulator) == {5, 5}
 
       # Process ESC D (Index - move down one line, same column)
       {emulator, ""} = Emulator.process_input(emulator, "\eD")
-      assert emulator.cursor.position == {5, 6}
+      assert Emulator.get_cursor_position_struct(emulator) == {5, 6}
     end
 
     test ~c"handles basic DCS sequence" do
@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       # Assert the sequence is consumed
       assert remaining == ""
       # Assert cursor visibility state change (DECTCEM enables cursor)
-      assert emulator.mode_manager.cursor_visible == true
+      assert Emulator.get_mode_manager_cursor_visible(emulator) == true
     end
 
     test ~c"handles incomplete CSI sequence correctly" do
@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert remaining2 == ""
       # We can check the final cursor position after the completed sequence
       # Assuming initial {0,0} and Up clamps
-      assert emulator.cursor.position == {0, 0}
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 0}
     end
 
     test ~c"resets state after incomplete sequence followed by text" do
@@ -155,17 +155,17 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       # Check buffer for "Hello" and cursor position
       buffer = Emulator.get_active_buffer(emulator)
       assert ScreenBuffer.get_cell_at(buffer, 0, 0).char == "H"
-      assert emulator.cursor.position == {5, 0}
+      assert Emulator.get_cursor_position_struct(emulator) == {5, 0}
     end
 
     test ~c"handles alternate screen buffer mode correctly" do
       emulator = Emulator.new(80, 24)
       # Assuming DECTCEM (Cursor Enable Mode) is handled
       {emulator, _} = Emulator.process_input(emulator, "\e[?25h")
-      assert emulator.mode_manager.cursor_visible == true
+      assert Emulator.get_mode_manager_cursor_visible(emulator) == true
 
       {emulator, _} = Emulator.process_input(emulator, "\e[?25l")
-      assert emulator.mode_manager.cursor_visible == false
+      assert Emulator.get_mode_manager_cursor_visible(emulator) == false
     end
   end
 end

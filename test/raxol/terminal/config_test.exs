@@ -185,7 +185,9 @@ defmodule Raxol.Terminal.ConfigTest do
         _ -> nil
       end)
       |> expect(:cmd, fn
-        "tput", ["colors"], _ -> {"256", 0}
+        "tput", ["colors"], [stderr_to_stdout: true] -> {"256", 0}
+        "tput", ["cols"], [stderr_to_stdout: true] -> {"120", 0}
+        "tput", ["lines"], [stderr_to_stdout: true] -> {"40", 0}
         "tput", _, _ -> {"", 1}
       end)
 
