@@ -60,6 +60,7 @@ defmodule Raxol.UI.Theming.Theme do
           Enum.into(colors, %{}, fn
             {k, v} when is_binary(v) ->
               {k, Raxol.Style.Colors.Color.from_hex(v)}
+
             {k, v} ->
               {k, v}
           end)
@@ -72,12 +73,16 @@ defmodule Raxol.UI.Theming.Theme do
     attrs =
       attrs
       |> Map.update(:component_styles, %{}, fn
-        nil -> %{}
+        nil ->
+          %{}
+
         map ->
           Map.put_new(map, :button, %{background: "#000000"})
       end)
       |> Map.update(:styles, %{}, fn
-        nil -> %{}
+        nil ->
+          %{}
+
         map ->
           Map.put_new(map, :button, %{background: "#000000"})
       end)
@@ -388,12 +393,19 @@ defmodule Raxol.UI.Theming.Theme do
   """
   def merge(%__MODULE__{} = base_theme, %__MODULE__{} = override_theme) do
     merged_colors = Map.merge(base_theme.colors, override_theme.colors)
-    merged_component_styles = deep_merge(base_theme.component_styles, override_theme.component_styles)
+
+    merged_component_styles =
+      deep_merge(base_theme.component_styles, override_theme.component_styles)
+
     merged_fonts = deep_merge(base_theme.fonts, override_theme.fonts)
     merged_variants = deep_merge(base_theme.variants, override_theme.variants)
     merged_metadata = deep_merge(base_theme.metadata, override_theme.metadata)
-    merged_ui_mappings = deep_merge(base_theme.ui_mappings, override_theme.ui_mappings)
+
+    merged_ui_mappings =
+      deep_merge(base_theme.ui_mappings, override_theme.ui_mappings)
+
     merged_styles = merged_component_styles
+
     %__MODULE__{
       id: override_theme.id || base_theme.id,
       name: override_theme.name || base_theme.name,
@@ -431,24 +443,30 @@ defmodule Raxol.UI.Theming.Theme do
   defp normalize_key(:styles), do: :component_styles
   defp normalize_key(key), do: key
 
-  defp process_value(value, _key, _rest) when is_map(value), do: ensure_button_background(value, _rest)
+  defp process_value(value, _key, _rest) when is_map(value),
+    do: ensure_button_background(value, _rest)
+
   defp process_value(:default, key, rest), do: handle_missing_value(key, rest)
   defp process_value(nil, key, rest), do: handle_missing_value(key, rest)
   defp process_value(value, _key, _rest), do: value
 
   defp ensure_button_background(value, rest) do
-    if Enum.any?(rest, &(&1 == :button)) and not Map.has_key?(value, :background) do
+    if Enum.any?(rest, &(&1 == :button)) and
+         not Map.has_key?(value, :background) do
       Map.put(value, :background, "#000000")
     else
       value
     end
   end
 
-  defp handle_missing_value(:component_styles, [:button | _]), do: %{background: "#000000"}
+  defp handle_missing_value(:component_styles, [:button | _]),
+    do: %{background: "#000000"}
+
   defp handle_missing_value(:colors, rest) when length(rest) > 0 do
     color_key = List.last(rest)
     get_color_fallback(color_key)
   end
+
   defp handle_missing_value(_, _), do: nil
 
   defp get_color_fallback(:white), do: :white

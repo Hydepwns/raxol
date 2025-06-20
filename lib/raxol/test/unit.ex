@@ -103,7 +103,8 @@ defmodule Raxol.Test.Unit do
     result = component.module.handle_event(event, component.state, %{})
     IO.puts("handle_event result: #{inspect(result)}")
 
-    {new_state_map, commands} = parse_handle_event_result(result, component.state)
+    {new_state_map, commands} =
+      parse_handle_event_result(result, component.state)
 
     updated_component = %{component | state: new_state_map}
     IO.puts("Final component state: #{inspect(updated_component.state)}")
@@ -118,13 +119,26 @@ defmodule Raxol.Test.Unit do
 
   defp parse_handle_event_result(result, current_state) do
     case result do
-      {:update, updated_state, cmds} -> {updated_state, cmds}
-      {:update, updated_state} -> {updated_state, []}
-      {:noreply, state} -> {state, []}
-      {:handled, state} -> {state, []}
-      :passthrough -> {current_state, []}
-      {state, cmds} when is_map(state) and is_list(cmds) -> {state, cmds}
-      other -> raise "Unexpected return value from handle_event/3: #{inspect(other)}"
+      {:update, updated_state, cmds} ->
+        {updated_state, cmds}
+
+      {:update, updated_state} ->
+        {updated_state, []}
+
+      {:noreply, state} ->
+        {state, []}
+
+      {:handled, state} ->
+        {state, []}
+
+      :passthrough ->
+        {current_state, []}
+
+      {state, cmds} when is_map(state) and is_list(cmds) ->
+        {state, cmds}
+
+      other ->
+        raise "Unexpected return value from handle_event/3: #{inspect(other)}"
     end
   end
 
