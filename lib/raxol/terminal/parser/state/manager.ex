@@ -539,11 +539,20 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   # Functions expected by tests
   def transition_to(manager, new_state) do
     case new_state do
-      :csi_entry -> %{manager | state: :csi_entry, params: [], intermediate: []}
-      :csi_param -> %{manager | state: :csi_param, params: [], intermediate: []}
-      :csi_intermediate -> %{manager | state: :csi_intermediate, params: [], intermediate: []}
-      :escape -> %{manager | state: :escape, intermediate: []}
-      _ -> %{manager | state: new_state}
+      :csi_entry ->
+        %{manager | state: :csi_entry, params: [], intermediate: []}
+
+      :csi_param ->
+        %{manager | state: :csi_param, params: [], intermediate: []}
+
+      :csi_intermediate ->
+        %{manager | state: :csi_intermediate, params: [], intermediate: []}
+
+      :escape ->
+        %{manager | state: :escape, intermediate: []}
+
+      _ ->
+        %{manager | state: new_state}
     end
   end
 

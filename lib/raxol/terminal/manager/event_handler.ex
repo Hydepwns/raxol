@@ -155,15 +155,31 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp process_window_event(event, state) do
     case event.data do
       %{action: :resize, width: width, height: height} ->
-        NotificationManager.notify_resized(state.runtime_pid, state.callback_module, width, height)
+        NotificationManager.notify_resized(
+          state.runtime_pid,
+          state.callback_module,
+          width,
+          height
+        )
+
         {:ok, state}
 
       %{action: :focus, focused: focused} ->
-        NotificationManager.notify_focus_changed(state.runtime_pid, state.callback_module, focused)
+        NotificationManager.notify_focus_changed(
+          state.runtime_pid,
+          state.callback_module,
+          focused
+        )
+
         {:ok, state}
 
       %{action: :blur} ->
-        NotificationManager.notify_focus_changed(state.runtime_pid, state.callback_module, false)
+        NotificationManager.notify_focus_changed(
+          state.runtime_pid,
+          state.callback_module,
+          false
+        )
+
         {:ok, state}
 
       _ ->
@@ -174,7 +190,12 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp process_mode_event(event, state) do
     case event.data do
       %{mode: mode} ->
-        NotificationManager.notify_mode_changed(state.runtime_pid, state.callback_module, mode)
+        NotificationManager.notify_mode_changed(
+          state.runtime_pid,
+          state.callback_module,
+          mode
+        )
+
         {:ok, state}
 
       _ ->
@@ -185,7 +206,12 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp process_focus_event(event, state) do
     case event.data do
       %{focused: focused} ->
-        NotificationManager.notify_focus_changed(state.runtime_pid, state.callback_module, focused)
+        NotificationManager.notify_focus_changed(
+          state.runtime_pid,
+          state.callback_module,
+          focused
+        )
+
         {:ok, state}
 
       _ ->
@@ -196,7 +222,13 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp process_clipboard_event(event, state) do
     case event.data do
       %{op: op, content: content} ->
-        NotificationManager.notify_clipboard_event(state.runtime_pid, state.callback_module, op, content)
+        NotificationManager.notify_clipboard_event(
+          state.runtime_pid,
+          state.callback_module,
+          op,
+          content
+        )
+
         {:ok, state}
 
       _ ->
@@ -208,7 +240,13 @@ defmodule Raxol.Terminal.Manager.EventHandler do
     case event.data do
       %{start_pos: start_pos, end_pos: end_pos, text: text} ->
         selection = %{start_pos: start_pos, end_pos: end_pos, text: text}
-        NotificationManager.notify_selection_changed(state.runtime_pid, state.callback_module, selection)
+
+        NotificationManager.notify_selection_changed(
+          state.runtime_pid,
+          state.callback_module,
+          selection
+        )
+
         {:ok, state}
 
       _ ->
@@ -219,7 +257,13 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp process_paste_event(event, state) do
     case event.data do
       %{text: text, position: position} ->
-        NotificationManager.notify_paste_event(state.runtime_pid, state.callback_module, text, position)
+        NotificationManager.notify_paste_event(
+          state.runtime_pid,
+          state.callback_module,
+          text,
+          position
+        )
+
         {:ok, state}
 
       _ ->
@@ -230,8 +274,19 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp process_cursor_event(event, state) do
     case event.data do
       %{visible: visible, style: style, blink: blink, position: position} ->
-        cursor = %{visible: visible, style: style, blink: blink, position: position}
-        NotificationManager.notify_cursor_event(state.runtime_pid, state.callback_module, cursor)
+        cursor = %{
+          visible: visible,
+          style: style,
+          blink: blink,
+          position: position
+        }
+
+        NotificationManager.notify_cursor_event(
+          state.runtime_pid,
+          state.callback_module,
+          cursor
+        )
+
         {:ok, state}
 
       _ ->
@@ -242,7 +297,14 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   defp process_scroll_event(event, state) do
     case event.data do
       %{direction: direction, delta: delta, position: position} ->
-        NotificationManager.notify_scroll_event(state.runtime_pid, state.callback_module, direction, delta, position)
+        NotificationManager.notify_scroll_event(
+          state.runtime_pid,
+          state.callback_module,
+          direction,
+          delta,
+          position
+        )
+
         {:ok, state}
 
       _ ->

@@ -82,29 +82,14 @@ defmodule Raxol.Terminal.Config.AnimationCache do
                metadata: metadata
              ) do
           :ok ->
-            if original_size > 0 do
-              compression_ratio =
-                round((1 - compressed_size / original_size) * 100)
-
-              IO.puts(
-                "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
-              )
-            else
-              IO.puts(
-                "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
-              )
-            end
-
-            :ok
+            handle_cache_success(animation_path, compressed_size, original_size)
 
           error ->
-            IO.puts("Failed to cache animation: #{inspect(error)}")
-            error
+            handle_cache_error(error)
         end
 
       {:error, reason} ->
-        IO.puts("Failed to cache animation: #{inspect(reason)}")
-        {:error, reason}
+        handle_file_error(reason)
     end
   end
 
@@ -191,6 +176,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
            miss_count: Map.get(stats, :miss_count, 0),
            hit_ratio: Map.get(stats, :hit_ratio, 0.0)
          }}
+
       _ ->
         {:ok,
          %{
@@ -215,23 +201,48 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     * `animation_path` - Path to the animation file
   """
   def preload_animation(animation_path) do
-    if File.exists?(animation_path) do
-      animation_type = determine_animation_type(animation_path)
+    cond do
+      not File.exists?(animation_path) ->
+        {:error, :file_not_found}
 
-      if animation_type do
+      animation_type = determine_animation_type(animation_path) ->
         case cache_animation(animation_path, animation_type) do
           :ok -> {:ok, animation_type}
           error -> error
         end
-      else
+
+      true ->
         {:error, :unsupported_animation_type}
-      end
-    else
-      {:error, :file_not_found}
     end
   end
 
   # Private Functions
+
+  defp handle_cache_success(animation_path, compressed_size, original_size) do
+    if original_size > 0 do
+      compression_ratio = round((1 - compressed_size / original_size) * 100)
+
+      IO.puts(
+        "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
+      )
+    else
+      IO.puts(
+        "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
+      )
+    end
+
+    :ok
+  end
+
+  defp handle_cache_error(error) do
+    IO.puts("Failed to cache animation: #{inspect(error)}")
+    error
+  end
+
+  defp handle_file_error(reason) do
+    IO.puts("Failed to cache animation: #{inspect(reason)}")
+    {:error, reason}
+  end
 
   defp compress_animation(animation_data, _animation_type) do
     :zlib.compress(animation_data)
@@ -240,19 +251,23 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   defp find_animation_files(directory) do
     case File.ls(directory) do
       {:ok, files} ->
-        Enum.reduce(files, [], fn file, acc ->
-          path = Path.join(directory, file)
-
-          if File.regular?(path) do
-            type = determine_animation_type(path)
-            if type, do: [{path, type} | acc], else: acc
-          else
-            acc
-          end
-        end)
+        Enum.flat_map(files, &process_animation_file(&1, directory))
 
       _ ->
         []
+    end
+  end
+
+  defp process_animation_file(file, directory) do
+    path = Path.join(directory, file)
+
+    if File.regular?(path) do
+      case determine_animation_type(path) do
+        nil -> []
+        type -> [{path, type}]
+      end
+    else
+      []
     end
   end
 

@@ -156,7 +156,13 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def move_to(cursor, row, col, width, height) do
     clamped_row = max(0, min(row, height - 1))
     clamped_col = max(0, min(col, width - 1))
-    %{cursor | x: clamped_row, y: clamped_col, position: {clamped_row, clamped_col}}
+
+    %{
+      cursor
+      | x: clamped_row,
+        y: clamped_col,
+        position: {clamped_row, clamped_col}
+    }
   end
 
   @doc """
@@ -377,9 +383,20 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Sets a custom cursor shape.
   """
-  def set_custom_shape(%__MODULE__{} = state, shape, params), do: %{state | style: :custom, custom_shape: shape, custom_dimensions: params, shape: params}
-  def set_custom_shape(pid, shape, params), do: GenServer.call(pid, {:set_custom_shape, shape, params})
-  def set_custom_shape(shape, params), do: set_custom_shape(__MODULE__, shape, params)
+  def set_custom_shape(%__MODULE__{} = state, shape, params),
+    do: %{
+      state
+      | style: :custom,
+        custom_shape: shape,
+        custom_dimensions: params,
+        shape: params
+    }
+
+  def set_custom_shape(pid, shape, params),
+    do: GenServer.call(pid, {:set_custom_shape, shape, params})
+
+  def set_custom_shape(shape, params),
+    do: set_custom_shape(__MODULE__, shape, params)
 
   def update_position(pid \\ __MODULE__, {row, col}) do
     GenServer.call(pid, {:update_position, row, col})
@@ -397,6 +414,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
     new_state = %{state | blink: new_blink_state}
     {new_state, new_state.visible}
   end
+
   def update_blink(pid), do: GenServer.call(pid, :update_blink)
   def update_blink(), do: update_blink(__MODULE__)
 
@@ -411,7 +429,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Updates the cursor position after a resize operation.
   Returns the updated emulator.
   """
-  @spec update_cursor_position(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  @spec update_cursor_position(
+          Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Emulator.t()
   def update_cursor_position(emulator, new_width, new_height) do
     cursor = emulator.cursor
     x = min(cursor.x, new_width - 1)
@@ -423,7 +445,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Updates the scroll region after a resize operation.
   Returns the updated emulator.
   """
-  @spec update_scroll_region_for_resize(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  @spec update_scroll_region_for_resize(Emulator.t(), non_neg_integer()) ::
+          Emulator.t()
   def update_scroll_region_for_resize(emulator, new_height) do
     scroll_region = emulator.scroll_region
     top = min(scroll_region.top, new_height - 1)
@@ -475,12 +498,17 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %{emulator | cursor: %{cursor | x: x}}
   end
 
-  @spec get_emulator_position(Emulator.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_emulator_position(Emulator.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_emulator_position(emulator) do
     {emulator.cursor.x, emulator.cursor.y}
   end
 
-  @spec set_emulator_position(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  @spec set_emulator_position(
+          Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Emulator.t()
   def set_emulator_position(emulator, x, y) do
     x = max(0, min(x, emulator.width - 1))
     y = max(0, min(y, emulator.height - 1))
@@ -521,7 +549,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Saves the current cursor position.
   """
   def save_position(%__MODULE__{} = state) do
-    %{state | saved_x: state.x, saved_y: state.y, saved_position: state.position}
+    %{
+      state
+      | saved_x: state.x,
+        saved_y: state.y,
+        saved_position: state.position
+    }
   end
 
   @doc """
@@ -529,7 +562,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def restore_position(%__MODULE__{} = state) do
     if state.saved_x && state.saved_y do
-      %{state | x: state.saved_x, y: state.saved_y, position: {state.saved_x, state.saved_y}}
+      %{
+        state
+        | x: state.saved_x,
+          y: state.saved_y,
+          position: {state.saved_x, state.saved_y}
+      }
     else
       state
     end
@@ -548,6 +586,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
       state: state.state,
       position: state.position
     }
+
     %{state | history: [history_entry | state.history]}
   end
 
@@ -557,16 +596,18 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def restore_from_history(%__MODULE__{} = state) do
     case state.history do
       [entry | rest] ->
-        %{state |
-          x: entry.x,
-          y: entry.y,
-          style: entry.style,
-          visible: entry.visible,
-          blinking: entry.blinking,
-          state: entry.state,
-          position: entry.position,
-          history: rest
+        %{
+          state
+          | x: entry.x,
+            y: entry.y,
+            style: entry.style,
+            visible: entry.visible,
+            blinking: entry.blinking,
+            state: entry.state,
+            position: entry.position,
+            history: rest
         }
+
       [] ->
         state
     end
@@ -599,6 +640,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
         :left -> move_left(state, count, 80, 24)
         :right -> move_right(state, count, 80, 24)
       end
+
     {:reply, :ok, new_state}
   end
 
@@ -631,17 +673,26 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @impl true
   def handle_call({:set_blink, blink}, _from, state) do
     new_state = %{state | blinking: blink}
+
     if blink do
       schedule_blink()
     else
       cancel_blink(state.blink_timer)
     end
+
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_call({:set_custom_shape, shape, params}, _from, state) do
-    {:reply, :ok, %{state | style: :custom, custom_shape: shape, custom_dimensions: params, shape: params}}
+    {:reply, :ok,
+     %{
+       state
+       | style: :custom,
+         custom_shape: shape,
+         custom_dimensions: params,
+         shape: params
+     }}
   end
 
   @impl true

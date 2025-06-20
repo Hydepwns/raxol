@@ -5,46 +5,44 @@ defmodule Raxol.Terminal.StyleBuffer do
   """
 
   @type style :: %{
-    foreground: String.t() | nil,
-    background: String.t() | nil,
-    bold: boolean(),
-    italic: boolean(),
-    underline: boolean(),
-    attributes: [atom()]
-  }
+          foreground: String.t() | nil,
+          background: String.t() | nil,
+          bold: boolean(),
+          italic: boolean(),
+          underline: boolean(),
+          attributes: [atom()]
+        }
 
   @type position :: {non_neg_integer(), non_neg_integer()}
   @type region :: {position(), position()}
 
   @type t :: %__MODULE__{
-    current_style: style(),
-    default_style: style(),
-    style_map: %{position() => style()},
-    width: non_neg_integer(),
-    height: non_neg_integer()
-  }
+          current_style: style(),
+          default_style: style(),
+          style_map: %{position() => style()},
+          width: non_neg_integer(),
+          height: non_neg_integer()
+        }
 
-  defstruct [
-    current_style: %{
-      foreground: nil,
-      background: nil,
-      bold: false,
-      italic: false,
-      underline: false,
-      attributes: []
-    },
-    default_style: %{
-      foreground: nil,
-      background: nil,
-      bold: false,
-      italic: false,
-      underline: false,
-      attributes: []
-    },
-    style_map: %{},
-    width: 80,
-    height: 24
-  ]
+  defstruct current_style: %{
+              foreground: nil,
+              background: nil,
+              bold: false,
+              italic: false,
+              underline: false,
+              attributes: []
+            },
+            default_style: %{
+              foreground: nil,
+              background: nil,
+              bold: false,
+              italic: false,
+              underline: false,
+              attributes: []
+            },
+            style_map: %{},
+            width: 80,
+            height: 24
 
   @doc """
   Creates a new style buffer with the given dimensions.
@@ -119,10 +117,20 @@ defmodule Raxol.Terminal.StyleBuffer do
   @doc """
   Applies a style to a rectangular region.
   """
-  @spec apply_style_to_region(t(), style(), {non_neg_integer(), non_neg_integer()}, {non_neg_integer(), non_neg_integer()}) :: t()
+  @spec apply_style_to_region(
+          t(),
+          style(),
+          {non_neg_integer(), non_neg_integer()},
+          {non_neg_integer(), non_neg_integer()}
+        ) :: t()
   def apply_style_to_region(buffer, style, {x1, y1}, {x2, y2}) do
     coords = for x <- x1..x2, y <- y1..y2, do: {x, y}
-    new_map = Enum.reduce(coords, buffer.style_map, fn pos, acc -> Map.put(acc, pos, style) end)
+
+    new_map =
+      Enum.reduce(coords, buffer.style_map, fn pos, acc ->
+        Map.put(acc, pos, style)
+      end)
+
     %{buffer | style_map: new_map}
   end
 
@@ -154,7 +162,17 @@ defmodule Raxol.Terminal.StyleBuffer do
   @spec validate_style(style()) :: :ok | {:error, String.t()}
   def validate_style(style) when is_map(style) do
     # Basic validation - check for known style keys
-    valid_keys = [:foreground, :background, :bold, :italic, :underline, :blink, :reverse, :hidden, :strikethrough]
+    valid_keys = [
+      :foreground,
+      :background,
+      :bold,
+      :italic,
+      :underline,
+      :blink,
+      :reverse,
+      :hidden,
+      :strikethrough
+    ]
 
     invalid_keys = Map.keys(style) -- valid_keys
 

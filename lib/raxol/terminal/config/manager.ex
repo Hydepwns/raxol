@@ -23,7 +23,9 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
+    GenServer.start_link(__MODULE__, opts,
+      name: Keyword.get(opts, :name, __MODULE__)
+    )
   end
 
   # Server Callbacks
@@ -78,6 +80,7 @@ defmodule Raxol.Terminal.Config.Manager do
   @spec get_setting(Emulator.t(), atom()) :: any()
   def get_setting(emulator, setting) when is_atom(setting) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+
     case setting do
       :width -> config.width
       :height -> config.height
@@ -101,11 +104,13 @@ defmodule Raxol.Terminal.Config.Manager do
     %{emulator | config: updated_config}
   end
 
-  defp update_config_setting(config, :width, value) when is_integer(value) and value > 0 do
+  defp update_config_setting(config, :width, value)
+       when is_integer(value) and value > 0 do
     %{config | width: value}
   end
 
-  defp update_config_setting(config, :height, value) when is_integer(value) and value > 0 do
+  defp update_config_setting(config, :height, value)
+       when is_integer(value) and value > 0 do
     %{config | height: value}
   end
 
@@ -169,7 +174,8 @@ defmodule Raxol.Terminal.Config.Manager do
   Returns the updated emulator.
   """
   @spec set_environment(Emulator.t(), String.t(), String.t()) :: Emulator.t()
-  def set_environment(emulator, key, value) when is_binary(key) and is_binary(value) do
+  def set_environment(emulator, key, value)
+      when is_binary(key) and is_binary(value) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     input = Map.put(config.input, key, value)
     %{emulator | config: %{config | input: input}}
@@ -189,7 +195,8 @@ defmodule Raxol.Terminal.Config.Manager do
   Sets multiple environment variables.
   Returns the updated emulator.
   """
-  @spec set_environment_variables(Emulator.t(), %{String.t() => String.t()}) :: Emulator.t()
+  @spec set_environment_variables(Emulator.t(), %{String.t() => String.t()}) ::
+          Emulator.t()
   def set_environment_variables(emulator, variables) when is_map(variables) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     input = Map.merge(config.input, variables)

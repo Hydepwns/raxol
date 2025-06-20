@@ -20,7 +20,8 @@ defmodule Raxol.Terminal.ConfigManager do
   Sets a specific configuration value.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_config_value(Emulator.t(), list(), any()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec set_config_value(Emulator.t(), list(), any()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def set_config_value(emulator, path, value) do
     updated_config = put_in(emulator.config, path, value)
 
