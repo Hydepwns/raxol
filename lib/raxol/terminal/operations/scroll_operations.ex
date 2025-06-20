@@ -57,7 +57,8 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
     target_line = max(top, min(line, bottom))
 
     # Shift region so that target_line is at the top
-    new_buffer = ScreenBuffer.shift_region_to_line(buffer, {top, bottom}, target_line)
+    new_buffer =
+      ScreenBuffer.shift_region_to_line(buffer, {top, bottom}, target_line)
 
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end

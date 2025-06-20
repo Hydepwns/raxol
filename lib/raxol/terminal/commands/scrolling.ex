@@ -47,7 +47,11 @@ defmodule Raxol.Terminal.Commands.Scrolling do
         |> fill_blank_lines(effective_top, region_height, blank_style)
 
       # Update scroll position
-      %{new_buffer | scroll_position: min(buffer.scroll_position + actual_scroll_count, effective_bottom)}
+      %{
+        new_buffer
+        | scroll_position:
+            min(buffer.scroll_position + actual_scroll_count, effective_bottom)
+      }
     else
       buffer
     end
@@ -100,6 +104,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
     if count > 0 and region_height > 0 do
       actual_scroll_count = min(count, region_height)
+
       new_buffer =
         buffer
         |> shift_lines_down(
@@ -110,7 +115,11 @@ defmodule Raxol.Terminal.Commands.Scrolling do
         |> fill_blank_lines(effective_top, region_height, blank_style)
 
       # Update scroll position
-      %{new_buffer | scroll_position: max(buffer.scroll_position - actual_scroll_count, effective_top)}
+      %{
+        new_buffer
+        | scroll_position:
+            max(buffer.scroll_position - actual_scroll_count, effective_top)
+      }
     else
       buffer
     end
@@ -146,18 +155,22 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     cells = buffer.cells
     region_end = region_start + count - 1
     n = region_start_plus_n - region_start
+
     new_cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, idx} ->
         cond do
           idx >= region_start and idx <= region_end - n ->
             Enum.at(cells, idx + n)
+
           idx > region_end - n and idx <= region_end ->
             nil
+
           true ->
             line
         end
       end)
+
     %{buffer | cells: new_cells}
   end
 
@@ -178,24 +191,29 @@ defmodule Raxol.Terminal.Commands.Scrolling do
             # Get content from the line that was n positions earlier
             source_idx = idx - n
             Enum.at(cells, source_idx)
+
           # Lines at the top of the region that become blank
           idx >= region_start and idx < region_start + n ->
             nil
+
           # Lines outside the region remain unchanged
           true ->
             line
         end
       end)
+
     %{buffer | cells: new_cells}
   end
 
   defp fill_blank_lines(buffer, _start_line, _count, style) do
     empty_line = List.duplicate(Cell.new(" ", style), buffer.width)
+
     updated_cells =
       Enum.map(buffer.cells, fn
         nil -> empty_line
         line -> line
       end)
+
     %{buffer | cells: updated_cells}
   end
 end

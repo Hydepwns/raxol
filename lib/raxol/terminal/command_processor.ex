@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.CommandProcessor do
     Parser,
     ParameterValidation
   }
+
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
@@ -16,7 +17,8 @@ defmodule Raxol.Terminal.CommandProcessor do
   Processes a command string and executes it on the emulator.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec process_command(Emulator.t(), String.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec process_command(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def process_command(emulator, command) when is_binary(command) do
     case Parser.parse(command) do
       {:ok, parsed_command} ->
@@ -31,7 +33,8 @@ defmodule Raxol.Terminal.CommandProcessor do
   Executes a parsed command on the emulator.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec execute_command(Emulator.t(), map()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec execute_command(Emulator.t(), map()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def execute_command(emulator, %{type: :csi} = command) do
     Executor.execute_csi_command(
       emulator,
@@ -65,7 +68,8 @@ defmodule Raxol.Terminal.CommandProcessor do
   Validates command parameters against the emulator's current state.
   Returns {:ok, validated_params} or {:error, reason}.
   """
-  @spec validate_parameters(Emulator.t(), list(), atom()) :: {:ok, list()} | {:error, String.t()}
+  @spec validate_parameters(Emulator.t(), list(), atom()) ::
+          {:ok, list()} | {:error, String.t()}
   def validate_parameters(emulator, params, command_type) do
     case command_type do
       :cursor ->
@@ -89,7 +93,8 @@ defmodule Raxol.Terminal.CommandProcessor do
   Handles command execution errors.
   Returns {:ok, updated_emulator} with error state or {:error, reason}.
   """
-  @spec handle_command_error(Emulator.t(), String.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec handle_command_error(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def handle_command_error(emulator, reason) do
     Raxol.Core.Runtime.Log.error("Command execution error: #{reason}")
     {:ok, emulator}

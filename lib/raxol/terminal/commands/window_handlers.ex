@@ -35,7 +35,8 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   @doc """
   Handles window operations (op parameter).
   """
-  @spec handle_t(Emulator.t(), list(integer())) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  @spec handle_t(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_t(emulator, params) do
     op = Enum.at(params, 0, 0)
 

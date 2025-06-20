@@ -92,9 +92,12 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_E(emulator, params) do
     amount = Enum.at(params, 0, 1)
+
     emulator
     |> handle_cursor_movement(&CursorManager.move_down/4, amount)
-    |> (fn {:ok, emu} -> handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0) end).()
+    |> (fn {:ok, emu} ->
+          handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0)
+        end).()
   end
 
   @doc """
@@ -104,9 +107,12 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_f(emulator, params) do
     amount = Enum.at(params, 0, 1)
+
     emulator
     |> handle_cursor_movement(&CursorManager.move_up/4, amount)
-    |> (fn {:ok, emu} -> handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0) end).()
+    |> (fn {:ok, emu} ->
+          handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0)
+        end).()
   end
 
   @doc """
@@ -125,7 +131,12 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g(emulator, params) do
     column = Enum.at(params, 0, 1)
-    handle_cursor_movement(emulator, &CursorManager.move_to_column/4, column - 1)
+
+    handle_cursor_movement(
+      emulator,
+      &CursorManager.move_to_column/4,
+      column - 1
+    )
   end
 
   @doc """
