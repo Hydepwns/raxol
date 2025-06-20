@@ -55,8 +55,10 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Creates a new window with dimensions.
   """
-  @spec create_window(integer(), integer()) :: {:ok, Window.t()} | {:error, term()}
-  def create_window(width, height) when is_integer(width) and is_integer(height) do
+  @spec create_window(integer(), integer()) ::
+          {:ok, Window.t()} | {:error, term()}
+  def create_window(width, height)
+      when is_integer(width) and is_integer(height) do
     config = %Config{width: width, height: height}
     Operations.create_window_with_config(config)
   end
@@ -106,7 +108,8 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Sets the window title.
   """
-  @spec set_window_title(window_id(), String.t()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec set_window_title(window_id(), String.t()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def set_window_title(id, title) do
     Operations.update_window_property(id, :title, title)
   end
@@ -114,7 +117,8 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Sets the window position.
   """
-  @spec set_window_position(window_id(), integer(), integer()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec set_window_position(window_id(), integer(), integer()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def set_window_position(id, x, y) do
     Operations.update_window_property(id, :position, {x, y})
   end
@@ -122,7 +126,8 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Sets the window size.
   """
-  @spec set_window_size(window_id(), integer(), integer()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec set_window_size(window_id(), integer(), integer()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def set_window_size(id, width, height) do
     Operations.update_window_property(id, :size, {width, height})
   end
@@ -130,7 +135,8 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Sets the window state.
   """
-  @spec set_window_state(window_id(), window_state()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec set_window_state(window_id(), window_state()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def set_window_state(id, state) do
     Operations.update_window_property(id, :state, state)
   end
@@ -138,7 +144,8 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Creates a child window.
   """
-  @spec create_child_window(window_id(), Config.t()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec create_child_window(window_id(), Config.t()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def create_child_window(parent_id, config) do
     Operations.create_child_window(parent_id, config)
   end
@@ -146,7 +153,8 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Gets child windows.
   """
-  @spec get_child_windows(window_id()) :: {:ok, [Window.t()]} | {:error, :not_found}
+  @spec get_child_windows(window_id()) ::
+          {:ok, [Window.t()]} | {:error, :not_found}
   def get_child_windows(parent_id) do
     Operations.get_child_windows(parent_id)
   end
@@ -154,7 +162,8 @@ defmodule Raxol.Terminal.Window.Manager do
   @doc """
   Gets parent window.
   """
-  @spec get_parent_window(window_id()) :: {:ok, Window.t()} | {:error, :no_parent}
+  @spec get_parent_window(window_id()) ::
+          {:ok, Window.t()} | {:error, :no_parent}
   def get_parent_window(child_id) do
     Operations.get_parent_window(child_id)
   end
@@ -166,7 +175,14 @@ defmodule Raxol.Terminal.Window.Manager do
   def create_tab(tab_manager) do
     tab_id = generate_tab_id()
     tab_config = %{id: tab_id, title: "Tab #{tab_id}", active: false}
-    updated_manager = Map.put(tab_manager, :tabs, Map.put(tab_manager.tabs || %{}, tab_id, tab_config))
+
+    updated_manager =
+      Map.put(
+        tab_manager,
+        :tabs,
+        Map.put(tab_manager.tabs || %{}, tab_id, tab_config)
+      )
+
     {:ok, tab_id, updated_manager}
   end
 

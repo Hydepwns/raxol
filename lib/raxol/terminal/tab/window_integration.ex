@@ -8,12 +8,19 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
   @doc """
   Creates a window for an existing tab.
   """
-  @spec create_window_for_tab(t(), String.t(), map(), map()) :: {:ok, String.t()} | {:error, term()}
-  def create_window_for_tab(tab_manager, _window_manager, tab_id, _window_config) do
+  @spec create_window_for_tab(t(), String.t(), map(), map()) ::
+          {:ok, String.t()} | {:error, term()}
+  def create_window_for_tab(
+        tab_manager,
+        _window_manager,
+        tab_id,
+        _window_config
+      ) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, _tab_config} ->
         window_id = generate_window_id()
         {:ok, window_id}
+
       {:error, :not_found} ->
         {:error, :tab_not_found}
     end
@@ -22,12 +29,14 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
   @doc """
   Creates a window for an existing tab (3-arity version).
   """
-  @spec create_window_for_tab(t(), String.t(), map()) :: {:ok, String.t()} | {:error, term()}
+  @spec create_window_for_tab(t(), String.t(), map()) ::
+          {:ok, String.t()} | {:error, term()}
   def create_window_for_tab(tab_manager, tab_id, _window_config) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, _tab_config} ->
         window_id = generate_window_id()
         {:ok, window_id}
+
       {:error, :not_found} ->
         {:error, :tab_not_found}
     end
@@ -36,11 +45,13 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
   @doc """
   Destroys the window for an existing tab.
   """
-  @spec destroy_window_for_tab(t(), String.t(), map()) :: {:ok, String.t()} | {:error, term()}
+  @spec destroy_window_for_tab(t(), String.t(), map()) ::
+          {:ok, String.t()} | {:error, term()}
   def destroy_window_for_tab(tab_manager, _window_manager, tab_id) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, _tab_config} ->
         {:ok, "destroyed_window_id"}
+
       {:error, :not_found} ->
         {:error, :tab_not_found}
     end
@@ -49,11 +60,13 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
   @doc """
   Switches to an existing tab and its window.
   """
-  @spec switch_to_tab(t(), map(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  @spec switch_to_tab(t(), map(), String.t()) ::
+          {:ok, String.t()} | {:error, term()}
   def switch_to_tab(tab_manager, _window_manager, tab_id) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, _tab_config} ->
         {:ok, "switched_window_id"}
+
       {:error, :not_found} ->
         {:error, :tab_not_found}
     end
@@ -62,11 +75,13 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
   @doc """
   Gets the window ID for an existing tab.
   """
-  @spec get_window_for_tab(t(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  @spec get_window_for_tab(t(), String.t()) ::
+          {:ok, String.t()} | {:error, term()}
   def get_window_for_tab(tab_manager, tab_id) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, _tab_config} ->
         {:ok, "window_id_for_tab"}
+
       {:error, :not_found} ->
         {:error, :tab_not_found}
     end
@@ -75,11 +90,18 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
   @doc """
   Updates the window configuration for an existing tab.
   """
-  @spec update_window_for_tab(t(), String.t(), map(), map()) :: {:ok, String.t()} | {:error, term()}
-  def update_window_for_tab(tab_manager, _window_manager, tab_id, _window_config) do
+  @spec update_window_for_tab(t(), String.t(), map(), map()) ::
+          {:ok, String.t()} | {:error, term()}
+  def update_window_for_tab(
+        tab_manager,
+        _window_manager,
+        tab_id,
+        _window_config
+      ) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, _tab_config} ->
         {:ok, "updated_window_id"}
+
       {:error, :not_found} ->
         {:error, :tab_not_found}
     end

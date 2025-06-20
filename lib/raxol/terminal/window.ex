@@ -175,6 +175,7 @@ defmodule Raxol.Terminal.Window do
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     previous_size = window.size
     emulator = Emulator.resize(window.emulator, width, height)
+
     {:ok,
      %{
        window

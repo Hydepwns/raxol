@@ -12,9 +12,11 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   @doc """
   Creates a window with configuration.
   """
-  @spec create_window_with_config(Config.t()) :: {:ok, Window.t()} | {:error, term()}
+  @spec create_window_with_config(Config.t()) ::
+          {:ok, Window.t()} | {:error, term()}
   def create_window_with_config(%Config{} = config) do
     window = Window.new(config)
+
     case Registry.register_window(window) do
       {:ok, window_id} ->
         # Get the full window with ID from registry
@@ -22,14 +24,17 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
           {:ok, full_window} -> {:ok, full_window}
           {:error, reason} -> {:error, {:get_window_failed, reason}}
         end
-      {:error, reason} -> {:error, {:register_failed, reason}}
+
+      {:error, reason} ->
+        {:error, {:register_failed, reason}}
     end
   end
 
   @doc """
   Gets a window by ID with proper error handling.
   """
-  @spec get_window_by_id(window_id()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec get_window_by_id(window_id()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def get_window_by_id(id) do
     case Registry.get_window(id) do
       {:ok, window} -> {:ok, window}
@@ -67,6 +72,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
     case get_window_by_id(id) do
       {:ok, _window} ->
         Registry.set_active_window(id)
+
       {:error, :not_found} ->
         {:error, :not_found}
     end
@@ -86,7 +92,8 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   @doc """
   Updates a window property.
   """
-  @spec update_window_property(window_id(), atom(), any()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec update_window_property(window_id(), atom(), any()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def update_window_property(id, property, value) do
     case get_window_by_id(id) do
       {:ok, window} ->
@@ -97,8 +104,11 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
               {:ok, updated_window} -> {:ok, updated_window}
               {:error, _} -> {:error, :not_found}
             end
-          {:error, _} -> {:error, :not_found}
+
+          {:error, _} ->
+            {:error, :not_found}
         end
+
       {:error, :not_found} ->
         {:error, :not_found}
     end
@@ -107,16 +117,19 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   @doc """
   Creates a child window.
   """
-  @spec create_child_window(window_id(), Config.t()) :: {:ok, Window.t()} | {:error, :not_found}
+  @spec create_child_window(window_id(), Config.t()) ::
+          {:ok, Window.t()} | {:error, :not_found}
   def create_child_window(parent_id, %Config{} = config) do
     case get_window_by_id(parent_id) do
       {:ok, parent_window} ->
         case create_window_with_config(config) do
           {:ok, child_window} ->
             setup_parent_child_relationship(parent_window, child_window)
+
           {:error, reason} ->
             {:error, reason}
         end
+
       {:error, :not_found} ->
         {:error, :not_found}
     end
@@ -125,12 +138,14 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   @doc """
   Gets child windows for a parent.
   """
-  @spec get_child_windows(window_id()) :: {:ok, [Window.t()]} | {:error, :not_found}
+  @spec get_child_windows(window_id()) ::
+          {:ok, [Window.t()]} | {:error, :not_found}
   def get_child_windows(parent_id) do
     case get_window_by_id(parent_id) do
       {:ok, parent_window} ->
         children = fetch_child_windows(parent_window.children || [])
         {:ok, children}
+
       {:error, :not_found} ->
         {:error, :not_found}
     end
@@ -139,7 +154,8 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   @doc """
   Gets the parent window for a child.
   """
-  @spec get_parent_window(window_id()) :: {:ok, Window.t()} | {:error, :no_parent}
+  @spec get_parent_window(window_id()) ::
+          {:ok, Window.t()} | {:error, :no_parent}
   def get_parent_window(child_id) do
     case get_window_by_id(child_id) do
       {:ok, child_window} ->
@@ -147,6 +163,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
           nil -> {:error, :no_parent}
           parent_id -> get_window_by_id(parent_id)
         end
+
       {:error, :not_found} ->
         {:error, :not_found}
     end
@@ -154,14 +171,15 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
 
   # Private helper functions
 
-  @spec setup_parent_child_relationship(Window.t(), Window.t()) :: {:ok, Window.t()}
+  @spec setup_parent_child_relationship(Window.t(), Window.t()) ::
+          {:ok, Window.t()}
   defp setup_parent_child_relationship(parent_window, child_window) do
     # Update child with parent reference
     Registry.update_window(child_window.id, %{parent: parent_window.id})
 
     # Update parent with child reference
     Registry.update_window(parent_window.id, %{
-      children: [child_window.id | (parent_window.children || [])]
+      children: [child_window.id | parent_window.children || []]
     })
 
     # Get the updated child window

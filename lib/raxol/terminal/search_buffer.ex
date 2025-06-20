@@ -3,16 +3,21 @@ defmodule Raxol.Terminal.SearchBuffer do
   Manages search state, options, matches, and history for terminal search operations.
   """
 
-  @type match :: %{line: integer(), start: integer(), length: integer(), text: String.t()}
+  @type match :: %{
+          line: integer(),
+          start: integer(),
+          length: integer(),
+          text: String.t()
+        }
   @type options :: %{case_sensitive: boolean(), regex: boolean()}
 
   @type t :: %__MODULE__{
-    pattern: String.t() | nil,
-    options: options(),
-    matches: [match()],
-    current_index: integer(),
-    history: [String.t()]
-  }
+          pattern: String.t() | nil,
+          options: options(),
+          matches: [match()],
+          current_index: integer(),
+          history: [String.t()]
+        }
 
   defstruct pattern: nil,
             options: %{case_sensitive: false, regex: false},
@@ -36,6 +41,7 @@ defmodule Raxol.Terminal.SearchBuffer do
           current_index: -1,
           history: add_pattern_to_history(buffer.history, pattern)
       }
+
       {:ok, new_buffer}
     end
   end
@@ -44,8 +50,11 @@ defmodule Raxol.Terminal.SearchBuffer do
   Finds the next match in the search.
   """
   @spec find_next(t()) :: {:ok, t(), match()} | {:error, term()}
-  def find_next(%__MODULE__{matches: [], pattern: nil} = buffer), do: {:error, :no_search}
+  def find_next(%__MODULE__{matches: [], pattern: nil} = buffer),
+    do: {:error, :no_search}
+
   def find_next(%__MODULE__{matches: []} = buffer), do: {:error, :no_matches}
+
   def find_next(%__MODULE__{matches: matches, current_index: idx} = buffer) do
     new_idx = rem(idx + 1, length(matches))
     {:ok, %{buffer | current_index: new_idx}, Enum.at(matches, new_idx)}
@@ -55,8 +64,12 @@ defmodule Raxol.Terminal.SearchBuffer do
   Finds the previous match in the search.
   """
   @spec find_previous(t()) :: {:ok, t(), match()} | {:error, term()}
-  def find_previous(%__MODULE__{matches: [], pattern: nil} = buffer), do: {:error, :no_search}
-  def find_previous(%__MODULE__{matches: []} = buffer), do: {:error, :no_matches}
+  def find_previous(%__MODULE__{matches: [], pattern: nil} = buffer),
+    do: {:error, :no_search}
+
+  def find_previous(%__MODULE__{matches: []} = buffer),
+    do: {:error, :no_matches}
+
   def find_previous(%__MODULE__{matches: matches, current_index: idx} = buffer) do
     new_idx = rem(idx - 1 + length(matches), length(matches))
     {:ok, %{buffer | current_index: new_idx}, Enum.at(matches, new_idx)}
@@ -137,6 +150,7 @@ defmodule Raxol.Terminal.SearchBuffer do
   # Helper
   defp add_pattern_to_history(history, pattern) do
     [pattern | Enum.reject(history, &(&1 == pattern))]
-    |> Enum.take(20) # Limit history size
+    # Limit history size
+    |> Enum.take(20)
   end
 end

@@ -26,7 +26,8 @@ defmodule Raxol.Terminal.Driver do
 
   # Constants for retry logic
   @max_init_retries 3
-  @init_retry_delay 1000 # ms
+  # ms
+  @init_retry_delay 1000
 
   # Allow nil initially
   @type dispatcher_pid :: pid() | nil
@@ -105,15 +106,18 @@ defmodule Raxol.Terminal.Driver do
   end
 
   @impl true
-  def handle_info(:retry_init, %{init_retries: retries} = state) when retries < @max_init_retries do
+  def handle_info(:retry_init, %{init_retries: retries} = state)
+      when retries < @max_init_retries do
     case initialize_termbox() do
       :ok ->
         Raxol.Core.Runtime.Log.info("Successfully initialized termbox on retry")
         {:noreply, %{state | termbox_state: :initialized}}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Failed to initialize termbox on retry #{retries + 1}: #{inspect(reason)}"
         )
+
         Process.send_after(self(), :retry_init, @init_retry_delay)
         {:noreply, %{state | init_retries: retries + 1}}
     end
@@ -124,11 +128,15 @@ defmodule Raxol.Terminal.Driver do
     Raxol.Core.Runtime.Log.error(
       "Failed to initialize termbox after #{@max_init_retries} attempts. Terminal features will be disabled."
     )
+
     {:noreply, state}
   end
 
   @impl true
-  def handle_info({:termbox_event, event_map}, %{termbox_state: :initialized} = state) do
+  def handle_info(
+        {:termbox_event, event_map},
+        %{termbox_state: :initialized} = state
+      ) do
     Raxol.Core.Runtime.Log.debug(
       "Received termbox event: #{inspect(event_map)}"
     )
@@ -138,6 +146,7 @@ defmodule Raxol.Terminal.Driver do
         # Only send if dispatcher_pid is known
         if state.dispatcher_pid,
           do: GenServer.cast(state.dispatcher_pid, {:dispatch, event})
+
         {:noreply, state}
 
       :ignore ->
@@ -149,6 +158,7 @@ defmodule Raxol.Terminal.Driver do
           "Failed to translate termbox event: #{inspect(reason)}. Event: #{inspect(event_map)}",
           %{}
         )
+
         {:noreply, state}
     end
   end
@@ -176,14 +186,20 @@ defmodule Raxol.Terminal.Driver do
       :ok ->
         case initialize_termbox() do
           :ok ->
-            Raxol.Core.Runtime.Log.info("Successfully recovered from termbox error")
+            Raxol.Core.Runtime.Log.info(
+              "Successfully recovered from termbox error"
+            )
+
             {:noreply, state}
+
           {:error, init_reason} ->
             Raxol.Core.Runtime.Log.error(
               "Failed to recover from termbox error: #{inspect(init_reason)}"
             )
+
             {:stop, {:termbox_error, reason}, state}
         end
+
       _ ->
         {:stop, {:termbox_error, reason}, state}
     end
@@ -263,7 +279,10 @@ defmodule Raxol.Terminal.Driver do
 
   @impl true
   def terminate(_reason, _state) do
-    Raxol.Core.Runtime.Log.info("Terminal Driver terminating (not initialized).")
+    Raxol.Core.Runtime.Log.info(
+      "Terminal Driver terminating (not initialized)."
+    )
+
     :ok
   end
 
@@ -314,6 +333,7 @@ defmodule Raxol.Terminal.Driver do
         try do
           width = Termbox2Nif.tb_width()
           height = Termbox2Nif.tb_height()
+
           if width > 0 and height > 0 do
             {:ok, width, height}
           else
@@ -330,6 +350,7 @@ defmodule Raxol.Terminal.Driver do
       {output, 0} ->
         [height, width] = String.split(String.trim(output), " ")
         {:ok, String.to_integer(width), String.to_integer(height)}
+
       _ ->
         {:ok, 80, 24}
     end

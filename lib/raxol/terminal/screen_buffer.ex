@@ -92,18 +92,33 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl true
   def resize(buffer, new_width, new_height) do
     # Create a new ScreenBuffer with the new dimensions
-    default_cell = %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+    default_cell = %Raxol.Terminal.Cell{
+      char: " ",
+      style: nil,
+      dirty: nil,
+      is_wide_placeholder: false
+    }
 
     # Create new cells array with the new dimensions
-    new_cells = List.duplicate(List.duplicate(default_cell, new_width), new_height)
+    new_cells =
+      List.duplicate(List.duplicate(default_cell, new_width), new_height)
 
     # Copy existing content, truncating or padding as needed
-    new_cells = Enum.reduce(0..min(buffer.height - 1, new_height - 1), new_cells, fn row, acc ->
-      Enum.reduce(0..min(buffer.width - 1, new_width - 1), acc, fn col, row_acc ->
-        existing_cell = Enum.at(Enum.at(buffer.cells, row, []), col) || default_cell
-        List.replace_at(row_acc, row, List.replace_at(Enum.at(row_acc, row), col, existing_cell))
+    new_cells =
+      Enum.reduce(0..min(buffer.height - 1, new_height - 1), new_cells, fn row,
+                                                                           acc ->
+        Enum.reduce(0..min(buffer.width - 1, new_width - 1), acc, fn col,
+                                                                     row_acc ->
+          existing_cell =
+            Enum.at(Enum.at(buffer.cells, row, []), col) || default_cell
+
+          List.replace_at(
+            row_acc,
+            row,
+            List.replace_at(Enum.at(row_acc, row), col, existing_cell)
+          )
+        end)
       end)
-    end)
 
     %{buffer | width: new_width, height: new_height, cells: new_cells}
   end
@@ -219,7 +234,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Sets the scroll region with individual top and bottom parameters.
   """
-  def set_scroll_region(buffer, top, bottom) when is_integer(top) and is_integer(bottom) do
+  def set_scroll_region(buffer, top, bottom)
+      when is_integer(top) and is_integer(bottom) do
     Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
   end
 
@@ -565,7 +581,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
     ScrollRegion.get_scroll_position(buffer)
   end
 
-  defdelegate shift_region_to_line(buffer, region, target_line), to: ScrollRegion
+  defdelegate shift_region_to_line(buffer, region, target_line),
+    to: ScrollRegion
 
   @doc """
   Gets the estimated memory usage of the screen buffer.
@@ -579,22 +596,27 @@ defmodule Raxol.Terminal.ScreenBuffer do
     scrollback_usage = calculate_cells_memory_usage(buffer.scrollback)
 
     # Calculate memory usage for other components
-    selection_usage = if buffer.selection, do: 32, else: 0  # 4 integers * 8 bytes
-    scroll_region_usage = if buffer.scroll_region, do: 16, else: 0  # 2 integers * 8 bytes
-    damage_regions_usage = length(buffer.damage_regions) * 32  # 4 integers * 8 bytes per region
+    # 4 integers * 8 bytes
+    selection_usage = if buffer.selection, do: 32, else: 0
+    # 2 integers * 8 bytes
+    scroll_region_usage = if buffer.scroll_region, do: 16, else: 0
+    # 4 integers * 8 bytes per region
+    damage_regions_usage = length(buffer.damage_regions) * 32
 
     # Base struct overhead and other fields
-    base_usage = 256  # Rough estimate for struct overhead and other fields
+    # Rough estimate for struct overhead and other fields
+    base_usage = 256
 
     cells_usage + scrollback_usage + selection_usage + scroll_region_usage +
-    damage_regions_usage + base_usage
+      damage_regions_usage + base_usage
   end
 
   # Private helper to calculate memory usage for a grid of cells
   defp calculate_cells_memory_usage(cells) when is_list(cells) do
-    total_cells = Enum.reduce(cells, 0, fn row, acc ->
-      acc + length(row)
-    end)
+    total_cells =
+      Enum.reduce(cells, 0, fn row, acc ->
+        acc + length(row)
+      end)
 
     # Rough estimate: each cell is about 64 bytes (including overhead)
     total_cells * 64
@@ -606,7 +628,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Erases part or all of the current line based on the cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
   """
-  @spec erase_in_line(t(), {non_neg_integer(), non_neg_integer()}, atom()) :: t()
+  @spec erase_in_line(t(), {non_neg_integer(), non_neg_integer()}, atom()) ::
+          t()
   def erase_in_line(buffer, {x, y}, type) do
     case type do
       :to_end -> erase_line_to_end(buffer, x, y)
@@ -618,7 +641,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   defp erase_line_to_end(buffer, x, y) do
     line = Enum.at(buffer.cells, y, [])
-    cleared_line = List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+
+    cleared_line =
+      List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
     %{buffer | cells: new_cells}
   end
@@ -631,7 +657,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   defp erase_entire_line(buffer, y) do
-    new_cells = List.replace_at(buffer.cells, y, List.duplicate(%{}, buffer.width))
+    new_cells =
+      List.replace_at(buffer.cells, y, List.duplicate(%{}, buffer.width))
+
     %{buffer | cells: new_cells}
   end
 
@@ -639,7 +667,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Erases part or all of the display based on the cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
   """
-  @spec erase_in_display(t(), {non_neg_integer(), non_neg_integer()}, atom()) :: t()
+  @spec erase_in_display(t(), {non_neg_integer(), non_neg_integer()}, atom()) ::
+          t()
   def erase_in_display(buffer, {x, y}, type) do
     case type do
       :to_end ->
@@ -682,7 +711,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Scrolls the buffer down by the specified number of lines with additional parameters.
   """
-  def scroll_down(buffer, lines, count) when is_integer(lines) and is_integer(count) do
+  def scroll_down(buffer, lines, count)
+      when is_integer(lines) and is_integer(count) do
     Raxol.Terminal.Commands.Scrolling.scroll_down(
       buffer,
       lines,

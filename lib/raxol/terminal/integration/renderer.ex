@@ -16,7 +16,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
   def init_terminal do
     # Check if we're in test mode
     if Application.get_env(:raxol, :terminal_test_mode, false) do
-      IO.puts("[Renderer] Test mode detected, skipping actual terminal initialization")
+      IO.puts(
+        "[Renderer] Test mode detected, skipping actual terminal initialization"
+      )
+
       :ok
     else
       IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
@@ -68,7 +71,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
   def shutdown_terminal do
     # Check if we're in test mode
     if Application.get_env(:raxol, :terminal_test_mode, false) do
-      IO.puts("[Renderer] Test mode detected, skipping actual terminal shutdown")
+      IO.puts(
+        "[Renderer] Test mode detected, skipping actual terminal shutdown"
+      )
+
       :ok
     else
       IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")

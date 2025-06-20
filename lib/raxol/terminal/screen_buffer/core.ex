@@ -150,11 +150,20 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   # --- Clear Operations ---
   def clear(buffer, _style) do
-    default_cell = %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+    default_cell = %Raxol.Terminal.Cell{
+      char: " ",
+      style: nil,
+      dirty: nil,
+      is_wide_placeholder: false
+    }
+
     %{
       buffer
       | cells:
-          List.duplicate(List.duplicate(default_cell, buffer.width), buffer.height)
+          List.duplicate(
+            List.duplicate(default_cell, buffer.width),
+            buffer.height
+          )
     }
   end
 
