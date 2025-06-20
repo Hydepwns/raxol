@@ -9,7 +9,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   import Raxol.Test.ClipboardAssertions
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
-  alias Raxol.Test.Mocks.ClipboardMock
+  alias Raxol.Terminal.ClipboardMock
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!

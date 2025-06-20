@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
   alias Raxol.Terminal.ANSI.SixelParser
 
   describe "new/0" do
-    test 'creates a new Sixel state with default values' do
+    test "creates a new Sixel state with default values" do
       state = Raxol.Terminal.ANSI.SixelGraphics.new()
       assert state.current_color == 0
       assert state.position == {0, 0}
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
   end
 
   describe "Sixel Palette" do
-    test 'initialize_palette/0 initializes the default Sixel color palette' do
+    test "initialize_palette/0 initializes the default Sixel color palette" do
       palette = SixelPalette.initialize_palette()
       assert is_map(palette)
       assert palette[0] == {0, 0, 0}
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
   end
 
   describe "process_sequence/2" do
-    test 'processes basic Sixel data' do
+    test "processes basic Sixel data" do
       state = SixelGraphics.new()
       input = "\ePq#1A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert new_state.pixel_buffer == expected_pixels
     end
 
-    test 'processes color selection and data' do
+    test "processes color selection and data" do
       state = SixelGraphics.new()
       input = "\ePq#1~\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
@@ -55,7 +55,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert new_state.pixel_buffer == expected_pixels
     end
 
-    test 'processes carriage return ($)' do
+    test "processes carriage return ($)" do
       state = SixelGraphics.new()
       input = "\ePq#0A$#0A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert new_state.pixel_buffer == expected_pixels
     end
 
-    test 'processes line feed (-)' do
+    test "processes line feed (-)" do
       state = SixelGraphics.new()
       input = "\ePq-A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
@@ -87,14 +87,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert elem(new_state.position, 1) == 6
     end
 
-    test 'handles non-Sixel DCS sequences gracefully' do
+    test "handles non-Sixel DCS sequences gracefully" do
       state = SixelGraphics.new()
       input = "\eP!pSomeData\e\\"
       {_new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == {:error, :missing_or_misplaced_q}
     end
 
-    test 'processes complex Sixel sequence with attributes' do
+    test "processes complex Sixel sequence with attributes" do
       state = SixelGraphics.new()
       input = "\ePq\"1;1;100;50#1;1;66;50;100!3A$-A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
@@ -126,7 +126,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert elem(new_state.position, 1) == 6
     end
 
-    test 'handles DCS Sixel termination correctly' do
+    test "handles DCS Sixel termination correctly" do
       state = SixelGraphics.new()
 
       # Test exact termination
@@ -148,7 +148,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert response_embedded == :ok
 
       # Test missing ST
-      input_missing = "\ePq?'
+      input_missing = "\ePq?'"
 
       {_new_state_missing, response_missing} =
         SixelGraphics.process_sequence(state, input_missing)
@@ -157,8 +157,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     end
   end
 
-  describe 'internal parsing functions" do
-    test 'consume_integer_params extracts parameters correctly' do
+  describe "internal parsing functions" do
+    test "consume_integer_params extracts parameters correctly" do
       assert SixelParser.consume_integer_params("1;2;3rest") ==
                {:ok, [1, 2, 3], "rest"}
 
@@ -174,7 +174,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
                {:ok, [1, 0], "a;3rest"}
     end
 
-    test 'hls_to_rgb converts correctly' do
+    test "hls_to_rgb converts correctly" do
       # Red
       assert SixelPalette.hls_to_rgb(0.0, 0.5, 1.0) == {:ok, {255, 0, 0}}
       # Green

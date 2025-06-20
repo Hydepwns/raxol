@@ -12,8 +12,9 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Use ScreenBuffer functions for dimensions -> use main_screen_buffer
       assert ScreenBuffer.get_width(Emulator.get_active_buffer(emulator)) == 80
       assert ScreenBuffer.get_height(Emulator.get_active_buffer(emulator)) == 24
-      # Access cursor position field directly
-      assert emulator.cursor.position == {0, 0}
+      # Get cursor struct from PID and access position field
+      cursor = Emulator.get_cursor_struct(emulator)
+      assert cursor.position == {0, 0}
       # Access screen_buffer field directly -> use main_screen_buffer
       assert is_struct(Emulator.get_active_buffer(emulator), ScreenBuffer)
       buffer = Emulator.get_active_buffer(emulator)
@@ -22,7 +23,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Access field on returned struct
       assert buffer.height == 24
       # Assert against the Manager struct
-      assert is_struct(emulator.cursor, CursorManager)
+      assert is_struct(cursor, CursorManager)
       # Access scroll_region field directly
       assert emulator.scroll_region == nil
       # Access style field directly and compare with default using constructor
@@ -38,83 +39,64 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
 
     test ~c"move_cursor moves cursor and clamps within bounds" do
       emulator = Emulator.new(80, 24)
+      cursor = Emulator.get_cursor_struct(emulator)
       # Use the aliased Manager module function
-      emulator = %{
-        emulator
-        | cursor: CursorManager.move_to(emulator.cursor, 10, 5)
-      }
+      new_cursor = CursorManager.move_to(cursor, 10, 5)
 
       # Use direct access
-      assert emulator.cursor.position == {10, 5}
+      assert new_cursor.position == {10, 5}
 
       # Use the aliased Manager module function
-      emulator = %{
-        emulator
-        | cursor: CursorManager.move_to(emulator.cursor, 90, 30)
-      }
+      new_cursor = CursorManager.move_to(new_cursor, 90, 30)
 
       # Use direct access - Check clamping logic (CursorManager.move_to doesn't clamp)
       # Assert actual non-clamped values
-      assert emulator.cursor.position == {90, 30}
+      assert new_cursor.position == {90, 30}
 
       # Use the aliased Manager module function
-      emulator = %{
-        emulator
-        | cursor: CursorManager.move_to(emulator.cursor, -5, -2)
-      }
+      new_cursor = CursorManager.move_to(new_cursor, -5, -2)
 
       # Use direct access - move_to doesn't clamp negative, but later stages might
       # For this test, assert the direct result of move_to
-      assert emulator.cursor.position == {-5, -2}
+      assert new_cursor.position == {-5, -2}
     end
 
     test ~c"move_cursor_up/down/left/right delegate to Cursor.Movement" do
       emulator = Emulator.new(80, 24)
+      cursor = Emulator.get_cursor_struct(emulator)
       # Initial position {0, 0}
-      {x, y} = emulator.cursor.position
+      {x, y} = cursor.position
 
       # Test down
       # Use the aliased Manager module function
-      emulator = %{
-        emulator
-        | cursor: CursorManager.move_to(emulator.cursor, x, y + 2)
-      }
+      new_cursor = CursorManager.move_to(cursor, x, y + 2)
 
       # Use direct access
-      assert emulator.cursor.position == {0, 2}
+      assert new_cursor.position == {0, 2}
       # Test right
       # Get current pos {0, 2}
-      {x, y} = emulator.cursor.position
+      {x, y} = new_cursor.position
       # Use the aliased Manager module function
-      emulator = %{
-        emulator
-        | cursor: CursorManager.move_to(emulator.cursor, x + 5, y)
-      }
+      new_cursor = CursorManager.move_to(new_cursor, x + 5, y)
 
       # Use direct access
-      assert emulator.cursor.position == {5, 2}
+      assert new_cursor.position == {5, 2}
       # Test up
       # Get current pos {5, 2}
-      {x, y} = emulator.cursor.position
+      {x, y} = new_cursor.position
       # Use the aliased Manager module function
-      emulator = %{
-        emulator
-        | cursor: CursorManager.move_to(emulator.cursor, x, y - 1)
-      }
+      new_cursor = CursorManager.move_to(new_cursor, x, y - 1)
 
       # Use direct access
-      assert emulator.cursor.position == {5, 1}
+      assert new_cursor.position == {5, 1}
       # Test left
       # Get current pos {5, 1}
-      {x, y} = emulator.cursor.position
+      {x, y} = new_cursor.position
       # Use the aliased Manager module function
-      emulator = %{
-        emulator
-        | cursor: CursorManager.move_to(emulator.cursor, x - 3, y)
-      }
+      new_cursor = CursorManager.move_to(new_cursor, x - 3, y)
 
       # Use direct access
-      assert emulator.cursor.position == {2, 1}
+      assert new_cursor.position == {2, 1}
     end
   end
 end

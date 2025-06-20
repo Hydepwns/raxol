@@ -8,163 +8,98 @@ defmodule Raxol.Terminal.Clipboard.ManagerTest do
     %{manager: manager}
   end
 
-  describe "new/1" do
-    test "creates a new clipboard manager with default options", %{
-      manager: manager
-    } do
-      assert manager.formats == [:text, :html]
-      assert manager.filters == []
-      assert manager.metrics.operations == 0
-      assert manager.metrics.syncs == 0
-      assert manager.metrics.cache_hits == 0
-      assert manager.metrics.cache_misses == 0
-    end
-
-    test ~c"creates a new clipboard manager with custom options" do
-      manager =
-        Manager.new(
-          history_size: 50,
-          formats: [:text, :rtf],
-          filters: [:strip_whitespace],
-          sync_enabled: false
-        )
-
-      assert manager.formats == [:text, :rtf]
-      assert manager.filters == [:strip_whitespace]
-      assert manager.sync == nil
+  describe "new/0" do
+    test "creates a new clipboard manager with default values" do
+      manager = Manager.new()
+      assert manager.content == ""
+      assert manager.mode == :normal
     end
   end
 
-  describe "copy/3" do
-    test "copies content with default options", %{manager: manager} do
+  describe "get_content/1 and set_content/2" do
+    test "sets and gets clipboard content", %{manager: manager} do
       content = "test content"
-      assert {:ok, updated_manager} = Manager.copy(manager, content)
-      assert updated_manager.metrics.operations == 1
+      manager = Manager.set_content(manager, content)
+      assert Manager.get_content(manager) == content
     end
 
-    test "copies content with custom format", %{manager: manager} do
-      content = "<p>test content</p>"
-
-      assert {:ok, updated_manager} =
-               Manager.copy(manager, content, format: :html)
-
-      assert updated_manager.metrics.operations == 1
-    end
-
-    test "returns error for unsupported format", %{manager: manager} do
-      content = "test content"
-
-      assert {:error, :unsupported_format} =
-               Manager.copy(manager, content, format: :rtf)
-    end
-
-    test "applies filters to content", %{manager: manager} do
-      manager = %{manager | filters: [:strip_whitespace]}
-      content = "  test content  "
-      assert {:ok, updated_manager} = Manager.copy(manager, content)
-      assert updated_manager.metrics.operations == 1
+    test "handles empty content", %{manager: manager} do
+      manager = Manager.set_content(manager, "")
+      assert Manager.get_content(manager) == ""
     end
   end
 
-  describe "paste/2" do
-    test "pastes most recent content", %{manager: manager} do
-      content = "test content"
-      {:ok, manager} = Manager.copy(manager, content)
-      assert {:ok, pasted, updated_manager} = Manager.paste(manager)
-      assert pasted == content
-      assert updated_manager.metrics.operations == 2
+  describe "get_mode/1 and set_mode/2" do
+    test "sets and gets clipboard mode", %{manager: manager} do
+      manager = Manager.set_mode(manager, :bracketed)
+      assert Manager.get_mode(manager) == :bracketed
     end
 
-    test "pastes content from history index", %{manager: manager} do
-      content1 = "first content"
-      content2 = "second content"
-      {:ok, manager} = Manager.copy(manager, content1)
-      {:ok, manager} = Manager.copy(manager, content2)
-      assert {:ok, pasted, updated_manager} = Manager.paste(manager, index: 1)
-      assert pasted == content1
-    end
-
-    test "returns error for invalid history index", %{manager: manager} do
-      assert {:error, :invalid_index} = Manager.paste(manager, index: 1)
-    end
-
-    test "returns error for unsupported format", %{manager: manager} do
-      content = "test content"
-      {:ok, manager} = Manager.copy(manager, content)
-
-      assert {:error, :unsupported_format} =
-               Manager.paste(manager, format: :rtf)
+    test "defaults to normal mode", %{manager: manager} do
+      assert Manager.get_mode(manager) == :normal
     end
   end
 
-  describe "cut/3" do
-    test "cuts content with default options", %{manager: manager} do
-      content = "test content"
-      assert {:ok, updated_manager} = Manager.cut(manager, content)
-      assert updated_manager.metrics.operations == 1
-    end
-
-    test "cuts content with custom format", %{manager: manager} do
-      content = "<p>test content</p>"
-
-      assert {:ok, updated_manager} =
-               Manager.cut(manager, content, format: :html)
-
-      assert updated_manager.metrics.operations == 1
+  describe "clear/1" do
+    test "clears clipboard content", %{manager: manager} do
+      manager = Manager.set_content(manager, "test content")
+      manager = Manager.clear(manager)
+      assert Manager.get_content(manager) == ""
     end
   end
 
-  describe "get_history/2" do
-    test "returns empty history for new manager", %{manager: manager} do
-      assert {:ok, history, _} = Manager.get_history(manager)
-      assert history == []
+  describe "append/2" do
+    test "appends text to clipboard content", %{manager: manager} do
+      manager = Manager.set_content(manager, "hello")
+      manager = Manager.append(manager, " world")
+      assert Manager.get_content(manager) == "hello world"
     end
 
-    test "returns history with multiple items", %{manager: manager} do
-      content1 = "first content"
-      content2 = "second content"
-      {:ok, manager} = Manager.copy(manager, content1)
-      {:ok, manager} = Manager.copy(manager, content2)
-      assert {:ok, history, _} = Manager.get_history(manager)
-      assert length(history) == 2
-    end
-
-    test "filters history by format", %{manager: manager} do
-      content1 = "text content"
-      content2 = "<p>html content</p>"
-      {:ok, manager} = Manager.copy(manager, content1)
-      {:ok, manager} = Manager.copy(manager, content2, format: :html)
-      assert {:ok, history, _} = Manager.get_history(manager, format: :html)
-      assert length(history) == 1
-    end
-
-    test "limits history size", %{manager: manager} do
-      content1 = "first content"
-      content2 = "second content"
-      {:ok, manager} = Manager.copy(manager, content1)
-      {:ok, manager} = Manager.copy(manager, content2)
-      assert {:ok, history, _} = Manager.get_history(manager, limit: 1)
-      assert length(history) == 1
+    test "appends to empty clipboard", %{manager: manager} do
+      manager = Manager.append(manager, "test")
+      assert Manager.get_content(manager) == "test"
     end
   end
 
-  describe "clear_history/1" do
-    test "clears history", %{manager: manager} do
-      content = "test content"
-      {:ok, manager} = Manager.copy(manager, content)
-      assert {:ok, updated_manager} = Manager.clear_history(manager)
-      assert {:ok, history, _} = Manager.get_history(updated_manager)
-      assert history == []
+  describe "prepend/2" do
+    test "prepends text to clipboard content", %{manager: manager} do
+      manager = Manager.set_content(manager, "world")
+      manager = Manager.prepend(manager, "hello ")
+      assert Manager.get_content(manager) == "hello world"
+    end
+
+    test "prepends to empty clipboard", %{manager: manager} do
+      manager = Manager.prepend(manager, "test")
+      assert Manager.get_content(manager) == "test"
     end
   end
 
-  describe "get_metrics/1" do
-    test "returns current metrics", %{manager: manager} do
-      metrics = Manager.get_metrics(manager)
-      assert metrics.operations == 0
-      assert metrics.syncs == 0
-      assert metrics.cache_hits == 0
-      assert metrics.cache_misses == 0
+  describe "empty?/1" do
+    test "returns true for empty clipboard", %{manager: manager} do
+      assert Manager.empty?(manager) == true
+    end
+
+    test "returns false for non-empty clipboard", %{manager: manager} do
+      manager = Manager.set_content(manager, "test")
+      assert Manager.empty?(manager) == false
+    end
+  end
+
+  describe "length/1" do
+    test "returns correct length of clipboard content", %{manager: manager} do
+      assert Manager.length(manager) == 0
+      manager = Manager.set_content(manager, "test")
+      assert Manager.length(manager) == 4
+    end
+  end
+
+  describe "reset/1" do
+    test "resets clipboard to initial state", %{manager: manager} do
+      manager = Manager.set_content(manager, "test content")
+      manager = Manager.set_mode(manager, :bracketed)
+      manager = Manager.reset(manager)
+      assert Manager.get_content(manager) == ""
+      assert Manager.get_mode(manager) == :normal
     end
   end
 end

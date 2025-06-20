@@ -1,4 +1,3 @@
-
 defmodule Raxol.Terminal.DriverTestHelper do
   @moduledoc """
   Helper module for terminal driver tests providing common test utilities and fixtures.

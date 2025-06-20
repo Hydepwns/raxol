@@ -1,12 +1,13 @@
-# Disable async because we are manipulating GenServers
-use ExUnit.Case, async: false
+defmodule Raxol.AnimationTest do
+  use ExUnit.Case, async: false
+  import Raxol.AccessibilityTestHelpers
 
-# TODO: Implement tests for Animation Framework with accessibility integration
+  # TODO: Implement tests for Animation Framework with accessibility integration
 
-alias Raxol.Animation.{Framework, Animation, StateManager}
-alias Raxol.Core.Accessibility
-alias Raxol.Core.UserPreferences
-alias Raxol.Test.EventAssertions
+  alias Raxol.Animation.{Framework, Animation, StateManager}
+  alias Raxol.Core.Accessibility
+  alias Raxol.Core.UserPreferences
+  alias Raxol.Test.EventAssertions
 
 
   # Helper to wait for animation completion

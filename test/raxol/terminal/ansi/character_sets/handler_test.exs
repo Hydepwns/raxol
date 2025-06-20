@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
 
   describe "handle_sequence/2" do
-    test 'handles G0 character set designation' do
+    test "handles G0 character set designation" do
       state = StateManager.new()
       # US ASCII
       state = Handler.handle_sequence(state, [?/, ?B])
@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       assert StateManager.get_gset(state, :g0) == :dec_special_graphics
     end
 
-    test 'handles G1 character set designation' do
+    test "handles G1 character set designation" do
       state = StateManager.new()
       # US ASCII
       state = Handler.handle_sequence(state, [?), ?B])
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       assert StateManager.get_gset(state, :g1) == :uk
     end
 
-    test 'handles G2 character set designation' do
+    test "handles G2 character set designation" do
       state = StateManager.new()
       # US ASCII
       state = Handler.handle_sequence(state, [?*, ?B])
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       assert StateManager.get_gset(state, :g2) == :german
     end
 
-    test 'handles G3 character set designation' do
+    test "handles G3 character set designation" do
       state = StateManager.new()
       # US ASCII
       state = Handler.handle_sequence(state, [?+, ?B])
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       assert StateManager.get_gset(state, :g3) == :french
     end
 
-    test 'handles locking shift sequences' do
+    test "handles locking shift sequences" do
       state = StateManager.new()
 
       # Locking Shift G0
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       assert StateManager.get_gl(state) == :g3
     end
 
-    test 'handles single shift sequences' do
+    test "handles single shift sequences" do
       state = StateManager.new()
 
       # Single Shift G2
@@ -84,7 +84,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
                StateManager.get_gset(state, :g3)
     end
 
-    test 'handles invoke sequences' do
+    test "handles invoke sequences" do
       state = StateManager.new()
 
       # Invoke G0
@@ -104,7 +104,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       assert StateManager.get_gl(state) == :g3
     end
 
-    test 'ignores unknown sequences' do
+    test "ignores unknown sequences" do
       state = StateManager.new()
       original_state = state
       state = Handler.handle_sequence(state, [?X])
@@ -113,7 +113,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   end
 
   describe "designate_charset/3" do
-    test 'designates valid character sets' do
+    test "designates valid character sets" do
       state = StateManager.new()
 
       # Designate US ASCII to G0
@@ -133,14 +133,14 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       assert StateManager.get_gset(state, :g3) == :french
     end
 
-    test 'ignores invalid character set codes' do
+    test "ignores invalid character set codes" do
       state = StateManager.new()
       original_state = state
       state = Handler.designate_charset(state, 0, ?X)
       assert state == original_state
     end
 
-    test 'ignores invalid G-set indices' do
+    test "ignores invalid G-set indices" do
       state = StateManager.new()
       original_state = state
       state = Handler.designate_charset(state, 4, ?B)
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   end
 
   describe "set_locking_shift/2" do
-    test 'sets GL to specified G-set' do
+    test "sets GL to specified G-set" do
       state = StateManager.new()
 
       # Set GL to G0
@@ -171,7 +171,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   end
 
   describe "set_single_shift/2" do
-    test 'sets single shift to specified G-set's charset' do
+    test "sets single shift to specified G-set's charset" do
       state = StateManager.new()
 
       # Set single shift to G2's charset
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   end
 
   describe "invoke_charset/2" do
-    test 'invokes specified G-set into GL' do
+    test "invokes specified G-set into GL" do
       state = StateManager.new()
 
       # Invoke G0

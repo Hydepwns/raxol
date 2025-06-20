@@ -3,7 +3,7 @@ defmodule Raxol.Style.Colors.ColorTest do
   alias Raxol.Style.Colors.Color
 
   describe "from_hex/1" do
-    test 'creates a color from a 6-digit hex string with #' do
+    test "creates a color from a 6-digit hex string with #" do
       color = Color.from_hex("#FF0000")
       assert color.r == 255
       assert color.g == 0
@@ -11,7 +11,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.hex == "#FF0000"
     end
 
-    test 'creates a color from a 6-digit hex string without #' do
+    test "creates a color from a 6-digit hex string without #" do
       color = Color.from_hex("00FF00")
       assert color.r == 0
       assert color.g == 255
@@ -19,7 +19,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.hex == "#00FF00"
     end
 
-    test 'creates a color from a 3-digit hex string with #' do
+    test "creates a color from a 3-digit hex string with #" do
       color = Color.from_hex("#F00")
       assert color.r == 255
       assert color.g == 0
@@ -27,7 +27,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.hex == "#FF0000"
     end
 
-    test 'creates a color from a 3-digit hex string without #' do
+    test "creates a color from a 3-digit hex string without #" do
       color = Color.from_hex("0F0")
       assert color.r == 0
       assert color.g == 255
@@ -35,7 +35,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.hex == "#00FF00"
     end
 
-    test 'raises error for invalid hex formats' do
+    test "raises error for invalid hex formats" do
       assert Color.from_hex("#12") == {:error, :invalid_hex}
       assert Color.from_hex("12345") == {:error, :invalid_hex}
       assert Color.from_hex("#GGHHII") == {:error, :invalid_hex}
@@ -43,19 +43,19 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "to_hex/1" do
-    test 'converts color to hex string' do
+    test "converts color to hex string" do
       color = Color.from_rgb(255, 0, 0)
       assert Color.to_hex(color) == "#FF0000"
     end
 
-    test 'handles zero values correctly' do
+    test "handles zero values correctly" do
       color = Color.from_rgb(0, 0, 0)
       assert Color.to_hex(color) == "#000000"
     end
   end
 
   describe "from_rgb/3" do
-    test 'creates a color from RGB values' do
+    test "creates a color from RGB values" do
       color = Color.from_rgb(255, 0, 0)
       assert color.r == 255
       assert color.g == 0
@@ -63,7 +63,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.hex == "#FF0000"
     end
 
-    test 'handles zero values correctly' do
+    test "handles zero values correctly" do
       color = Color.from_rgb(0, 0, 0)
       assert color.r == 0
       assert color.g == 0
@@ -73,7 +73,7 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "from_ansi/1" do
-    test 'creates a color from ANSI code 0 (black)' do
+    test "creates a color from ANSI code 0 (black)" do
       color = Color.from_ansi(0)
       assert color.r == 0
       assert color.g == 0
@@ -82,7 +82,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.ansi_code == 0
     end
 
-    test 'creates a color from ANSI code 9 (bright red)' do
+    test "creates a color from ANSI code 9 (bright red)" do
       color = Color.from_ansi(9)
       assert color.r == 255
       assert color.g == 0
@@ -93,12 +93,12 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "to_ansi_16/1" do
-    test 'converts a color to the closest ANSI 16 code' do
+    test "converts a color to the closest ANSI 16 code" do
       color = Color.from_rgb(255, 0, 0)
       assert Color.to_ansi_16(color) == 9
     end
 
-    test 'finds closest match for non-exact colors' do
+    test "finds closest match for non-exact colors" do
       # A dark red that should match basic red (code 1)
       color = Color.from_rgb(150, 20, 20)
       assert Color.to_ansi_16(color) == 1
@@ -106,7 +106,7 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "lighten/2" do
-    test 'lightens a color by specified amount' do
+    test "lightens a color by specified amount" do
       color = Color.from_rgb(100, 100, 100)
       lightened = Color.lighten(color, 0.5)
       assert lightened.r == 178
@@ -114,7 +114,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert lightened.b == 178
     end
 
-    test 'lightening by 1.0 produces white' do
+    test "lightening by 1.0 produces white" do
       color = Color.from_rgb(0, 0, 0)
       white = Color.lighten(color, 1.0)
       assert white.r == 255
@@ -122,7 +122,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert white.b == 255
     end
 
-    test 'lightening by 0.0 doesn't change the color' do
+    test "lightening by 0.0 doesn't change the color" do
       original = Color.from_rgb(100, 150, 200)
       lightened = Color.lighten(original, 0.0)
       assert lightened.r == 100
@@ -132,7 +132,7 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "darken/2" do
-    test 'darkens a color by specified amount' do
+    test "darkens a color by specified amount" do
       color = Color.from_rgb(200, 200, 200)
       darkened = Color.darken(color, 0.5)
       assert darkened.r == 100
@@ -140,7 +140,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert darkened.b == 100
     end
 
-    test 'darkening by 1.0 produces black' do
+    test "darkening by 1.0 produces black" do
       color = Color.from_rgb(255, 255, 255)
       black = Color.darken(color, 1.0)
       assert black.r == 0
@@ -148,7 +148,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert black.b == 0
     end
 
-    test 'darkening by 0.0 doesn't change the color' do
+    test "darkening by 0.0 doesn't change the color" do
       original = Color.from_rgb(100, 150, 200)
       darkened = Color.darken(original, 0.0)
       assert darkened.r == 100
@@ -158,7 +158,7 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "alpha_blend/3" do
-    test 'blends two colors with 0.5 alpha' do
+    test "blends two colors with 0.5 alpha" do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       blended = Color.alpha_blend(color1, color2, 0.5)
@@ -167,7 +167,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert blended.b == 127
     end
 
-    test 'alpha 0.0 returns first color' do
+    test "alpha 0.0 returns first color" do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       blended = Color.alpha_blend(color1, color2, 0.0)
@@ -176,7 +176,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert blended.b == 0
     end
 
-    test 'alpha 1.0 returns second color' do
+    test "alpha 1.0 returns second color" do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       blended = Color.alpha_blend(color1, color2, 1.0)
@@ -187,7 +187,7 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "complement/1" do
-    test 'returns complementary color' do
+    test "returns complementary color" do
       color = Color.from_rgb(255, 0, 0)
       complement = Color.complement(color)
       assert complement.r == 0
@@ -195,7 +195,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert complement.b == 255
     end
 
-    test 'applying complement twice returns original color values' do
+    test "applying complement twice returns original color values" do
       original = Color.from_rgb(123, 45, 67)
       complement = Color.complement(original)
       double_complement = Color.complement(complement)
@@ -206,7 +206,7 @@ defmodule Raxol.Style.Colors.ColorTest do
   end
 
   describe "mix/3" do
-    test 'mixes two colors with default weight' do
+    test "mixes two colors with default weight" do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       mixed = Color.mix(color1, color2)
@@ -215,7 +215,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert mixed.b == 127
     end
 
-    test 'mixes two colors with custom weight' do
+    test "mixes two colors with custom weight" do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       mixed = Color.mix(color1, color2, 0.25)
@@ -224,7 +224,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert mixed.b == 63
     end
 
-    test 'weight 0.0 returns first color' do
+    test "weight 0.0 returns first color" do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       mixed = Color.mix(color1, color2, 0.0)
@@ -233,7 +233,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert mixed.b == 0
     end
 
-    test 'weight 1.0 returns second color' do
+    test "weight 1.0 returns second color" do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       mixed = Color.mix(color1, color2, 1.0)

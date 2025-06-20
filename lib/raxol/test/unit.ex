@@ -97,44 +97,35 @@ defmodule Raxol.Test.Unit do
   Returns the updated state and any emitted commands.
   """
   def simulate_event(component, %Event{} = event) do
-    # Call handle_event/3, passing empty map as opts for now
     IO.puts("Simulating event: #{inspect(event)}")
     IO.puts("Initial component state: #{inspect(component.state)}")
-    result = component.module.handle_event(component.state, event, %{})
+
+    result = component.module.handle_event(event, component.state, %{})
     IO.puts("handle_event result: #{inspect(result)}")
 
-    {new_state_map, commands} =
-      case result do
-        {:update, updated_state, cmds} ->
-          {updated_state, cmds}
+    {new_state_map, commands} = parse_handle_event_result(result, component.state)
 
-        # Assume no commands if not specified
-        {:update, updated_state} ->
-          {updated_state, []}
-
-        {:noreply, state} ->
-          {state, []}
-
-        {:handled, state} ->
-          {state, []}
-
-        # State unchanged, no commands
-        :passthrough ->
-          {component.state, []}
-
-        other ->
-          raise "Unexpected return value from handle_event/3: #{inspect(other)}"
-      end
-
-    # Update component map with new state
     updated_component = %{component | state: new_state_map}
-    # Log final state
     IO.puts("Final component state: #{inspect(updated_component.state)}")
 
     # Track commands for assertions
-    send(self(), {:commands, commands})
+    Enum.each(commands, fn command ->
+      send(self(), {:commands, command})
+    end)
 
     {updated_component, commands}
+  end
+
+  defp parse_handle_event_result(result, current_state) do
+    case result do
+      {:update, updated_state, cmds} -> {updated_state, cmds}
+      {:update, updated_state} -> {updated_state, []}
+      {:noreply, state} -> {state, []}
+      {:handled, state} -> {state, []}
+      :passthrough -> {current_state, []}
+      {state, cmds} when is_map(state) and is_list(cmds) -> {state, cmds}
+      other -> raise "Unexpected return value from handle_event/3: #{inspect(other)}"
+    end
   end
 
   # Allow simulate_event to accept plain maps as events for test convenience

@@ -175,4 +175,11 @@ defmodule Raxol.Test.Support.TestHelper do
 
     module_name
   end
+
+  @doc """
+  Creates a test emulator instance for testing.
+  """
+  def create_test_emulator do
+    Raxol.Terminal.Emulator.new(80, 24)
+  end
 end

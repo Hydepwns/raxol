@@ -9,15 +9,11 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
   # Default char dimensions from WindowHandlers for calculations
   @default_char_width_px WindowHandlers.default_char_width_px()
   @default_char_height_px WindowHandlers.default_char_height_px()
-  @default_desktop_cols WindowHandlers.default_desktop_cols()
-  @default_desktop_rows WindowHandlers.default_desktop_rows()
+  @default_desktop_cols 160  # Hardcoded default desktop columns
+  @default_desktop_rows 60   # Hardcoded default desktop rows
 
   setup do
-    emulator = %Emulator{
-      window_manager: Window.Manager.new(),
-      active_buffer: %{width: 80, height: 24}
-    }
-
+    emulator = Emulator.new()
     {:ok, emulator: emulator}
   end
 

@@ -39,14 +39,15 @@ defmodule Raxol.Terminal.ModeManagerTest do
       # Alternate buffer usually has no scrollback
       alt_buffer = ScreenBuffer.new(80, 24, 0)
 
-      initial_emulator_state = Emulator.new(80, 24)
+      initial_emulator_state = Emulator.new()
 
       initial_emulator_state = %{
         initial_emulator_state
         | state_stack: [],
           cursor: %CursorManager{
-            position: {0, 0},
-            state: :visible,
+            x: 0,
+            y: 0,
+            visible: true,
             style: :block
           },
           style: TextFormatting.new(),

@@ -81,17 +81,21 @@ if System.get_env("RAXOL_SKIP_TERMINAL_INIT") != "true" and
        System.argv(),
        &String.contains?(&1, "csi_handlers_test.exs")
      ) do
-  IO.puts("[TestHelper] Initializing terminal...")
-  init_result = Raxol.Terminal.Integration.Renderer.init_terminal()
+  IO.puts("[TestHelper] Initializing terminal (test mode)...")
 
-  if init_result != :ok do
-    raise "Terminal failed to initialize in test_helper.exs: #{inspect(init_result)}"
-  end
+  # In test mode, we don't actually initialize the real terminal
+  # Instead, we just set up the test environment
+  Application.put_env(:raxol, :terminal_test_mode, true)
+
+  # Mock the terminal initialization for tests
+  # This prevents the actual termbox2_nif.tb_init() call that hangs in test environments
+  :ok
 
   # Shutdown the terminal after the test suite
   System.at_exit(fn _exit_status ->
-    IO.puts("[TestHelper] Shutting down terminal...")
-    Raxol.Terminal.Integration.Renderer.shutdown_terminal()
+    IO.puts("[TestHelper] Shutting down terminal (test mode)...")
+    # In test mode, we don't need to actually shutdown the terminal
+    :ok
   end)
 else
   IO.puts("[TestHelper] Skipping terminal initialization and shutdown.")

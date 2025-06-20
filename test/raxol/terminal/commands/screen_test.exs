@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Assert that the specific cell (8,0) is "X" before clearing
       assert ScreenBuffer.get_cell(emulator.main_screen_buffer, 8, 0).char ==
                "X",
-             "Cell (8,0) should be "X" before clear_screen (mode 1) is called"
+             "Cell (8,0) should be \"X\" before clear_screen (mode 1) is called"
 
       # Clear from beginning of screen to cursor (2,2)
       emulator_after_clear = Screen.clear_screen(emulator, 1)
@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
             ScreenBuffer.get_cell(emulator_after_clear.main_screen_buffer, x, y)
 
           assert cell.char == "X",
-                 "Expected cell at (#{x},#{y}) to be "X", got: #{inspect(cell)}"
+                 "Expected cell at (#{x},#{y}) to be \"X\", got: #{inspect(cell)}"
         end
       end
     end
@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Check that all cells are cleared
       assert_entire_buffer_cleared(result.main_screen_buffer)
 
-      # TODO: Add check for scrollback buffer if it\\'s implemented and accessible
+      # TODO: Add check for scrollback buffer if it's implemented and accessible
     end
   end
 
@@ -240,7 +240,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
         cell = ScreenBuffer.get_cell(result.main_screen_buffer, x, 2)
 
         assert cell.char == "X",
-               "Expected cell at (#{x},2) to be "X", got: #{inspect(cell)}"
+               "Expected cell at (#{x},2) to be \"X\", got: #{inspect(cell)}"
       end
     end
 

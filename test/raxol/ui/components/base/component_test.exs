@@ -11,7 +11,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
 
   alias Raxol.Test.Unit
 
-  # Test component that implements all lifecycle hooks
+  @moduledoc false
   defmodule TestComponent do
     @behaviour Raxol.UI.Components.Base.Component
 
@@ -51,21 +51,34 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
 
     @impl true
     def render(state, context) do
-      new_state = %{state | render_count: state.render_count + 1}
-
-      {new_state,
-       %{
-         type: :test_component,
-         id: state.id,
-         counter: state.counter,
-         theme: context.theme
-       }}
+      %{
+        type: :test_component,
+        id: state.id,
+        counter: state.counter,
+        theme: context.theme
+      }
     end
 
     @impl true
     def handle_event(%{type: :test_event, value: value}, state, _context) do
       new_state = %{state | events: [value | state.events]}
       {new_state, [{:command, :event_handled}]}
+    end
+
+    @impl true
+    def handle_event(%Raxol.Core.Events.Event{data: %{type: :test_event, value: value}}, state, _context) do
+      new_state = %{state | events: [value | state.events]}
+      {new_state, [{:command, :event_handled}]}
+    end
+
+    @impl true
+    def handle_event(%{type: :mounted}, state, _context) do
+      {state, [{:command, :mounted}]}
+    end
+
+    @impl true
+    def handle_event(%Raxol.Core.Events.Event{type: :mounted}, state, _context) do
+      {state, [{:command, :mounted}]}
     end
 
     @impl true
@@ -100,7 +113,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
         simulate_lifecycle(component, fn mounted ->
           # Verify mounted state
           assert mounted.state.mounted
-          assert_receive {:commands, [{:command, :mounted}]}
+          assert_receive {:commands, {:command, :mounted}}
 
           # Update state
           updated =
@@ -189,7 +202,8 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
           mounted
         end)
 
-      assert final.state.render_count > 0
+      # Since render functions shouldn't update state, we'll just verify the component works
+      assert final.state.mounted
     end
   end
 
@@ -236,16 +250,16 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       # Use canonical accessibility helpers
       # Example: assert_sufficient_contrast, assert_announced, etc.
       # Here, we just check that the component renders with accessibility context without error
-      {_updated, rendered} =
-        component.module.render(component.state, %{
-          theme: %{mode: :test},
-          accessibility: %{
-            high_contrast: true,
-            screen_reader: true
-          }
-        })
+      rendered = component.module.render(component.state, %{
+        theme: %{mode: :test},
+        accessibility: %{
+          high_contrast: true,
+          screen_reader: true
+        }
+      })
 
       # If you want to check contrast, ARIA, etc., use the helpers from Raxol.AccessibilityTestHelpers
+      assert rendered.type == :test_component
     end
   end
 
@@ -261,12 +275,11 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     end
 
     test "handles missing optional callbacks" do
-      # Create a component without mount/unmount
       defmodule MinimalComponent do
         @behaviour Raxol.UI.Components.Base.Component
 
         def init(props), do: props
-        def render(state, _context), do: {state, %{type: :minimal}}
+        def render(state, _context), do: %{type: :minimal}
         def handle_event(_event, state), do: {state, []}
       end
 

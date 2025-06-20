@@ -7,12 +7,8 @@ defmodule Raxol.Terminal.ManagerTest do
 
 
   setup do
-    emulator = Raxol.Terminal.Emulator.new(80, 24)
-
-    pid =
-      start_supervised!({Manager, [terminal: emulator, runtime_pid: self()]})
-
-    %{pid: pid}
+    emulator = Raxol.Terminal.Emulator.new()
+    {:ok, %{emulator: emulator}}
   end
 
   test "window resize event triggers notify_resized", %{pid: pid} do

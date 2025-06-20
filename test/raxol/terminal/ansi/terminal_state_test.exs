@@ -8,13 +8,13 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   alias Raxol.Terminal.Cursor.Manager
 
   defp create_test_emulator(
-         cursor_pos,
+         {x, y},
          style,
          scroll_region \\ nil,
          cursor_style \\ :blinking_block
        ) do
     emulator = Emulator.new(80, 24)
-    cursor = Raxol.Terminal.Cursor.Manager.new(position: cursor_pos)
+    cursor = Raxol.Terminal.Cursor.Manager.new(%{x: x, y: y})
 
     emulator = %{
       emulator
@@ -54,7 +54,8 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert TerminalState.count(stack) == 1
 
       [saved_state | _] = stack
-      assert saved_state.cursor == %Manager{position: {10, 5}}
+      assert saved_state.cursor.x == 10
+      assert saved_state.cursor.y == 5
       assert saved_state.style == initial_style
 
       assert saved_state.charset_state ==
@@ -81,10 +82,12 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert TerminalState.count(stack) == 2
 
       [saved_state2, saved_state1 | _] = stack
-      assert saved_state2.cursor == %Manager{position: {20, 10}}
+      assert saved_state2.cursor.x == 20
+      assert saved_state2.cursor.y == 10
       assert saved_state2.style == style2
       assert saved_state2.cursor_style == :steady_block
-      assert saved_state1.cursor == %Manager{position: {10, 5}}
+      assert saved_state1.cursor.x == 10
+      assert saved_state1.cursor.y == 5
       assert saved_state1.style == style1
       assert saved_state1.cursor_style == :blinking_block
     end
@@ -103,7 +106,8 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       {stack, restored_state} = TerminalState.restore_state(stack)
 
       assert TerminalState.empty?(stack) == true
-      assert restored_state.cursor == %Manager{position: {10, 5}}
+      assert restored_state.cursor.x == 10
+      assert restored_state.cursor.y == 5
       assert restored_state.style == initial_style
       assert restored_state.scroll_region == {5, 15}
       assert restored_state.cursor_style == :blinking_block
@@ -132,12 +136,14 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       stack = TerminalState.save_state(stack, emulator_state2)
 
       {stack, restored_state2} = TerminalState.restore_state(stack)
-      assert restored_state2.cursor == %Manager{position: {20, 10}}
+      assert restored_state2.cursor.x == 20
+      assert restored_state2.cursor.y == 10
       assert restored_state2.style == style2
       assert restored_state2.cursor_style == :steady_block
 
       {stack, restored_state1} = TerminalState.restore_state(stack)
-      assert restored_state1.cursor == %Manager{position: {10, 5}}
+      assert restored_state1.cursor.x == 10
+      assert restored_state1.cursor.y == 5
       assert restored_state1.style == style1
       assert restored_state1.cursor_style == :blinking_block
 

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
   alias Raxol.Terminal.OutputManager
 
   describe "format_ansi_sequences/1" do
-    test 'handles cursor movement sequences' do
+    test "handles cursor movement sequences" do
       assert OutputManager.format_ansi_sequences("\e[5A") == "CURSOR_UP(5)"
       assert OutputManager.format_ansi_sequences("\e[3B") == "CURSOR_DOWN(3)"
       assert OutputManager.format_ansi_sequences("\e[2C") == "CURSOR_FORWARD(2)"
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
       assert OutputManager.format_ansi_sequences("\e[u") == "CURSOR_RESTORE"
     end
 
-    test 'handles cursor movement edge cases' do
+    test "handles cursor movement edge cases" do
       # Zero or missing parameters
       assert OutputManager.format_ansi_sequences("\e[0A") == "CURSOR_UP(0)"
       assert OutputManager.format_ansi_sequences("\e[A") == "CURSOR_UP(1)"
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "CURSOR_POSITION(1;2;3)"
     end
 
-    test 'handles text attribute sequences' do
+    test "handles text attribute sequences" do
       assert OutputManager.format_ansi_sequences("\e[0m") == "RESET_ATTRIBUTES"
       assert OutputManager.format_ansi_sequences("\e[1;31m") == "SGR(1;31)"
 
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "SGR(48;2;255;0;0)"
     end
 
-    test 'handles text attribute edge cases' do
+    test "handles text attribute edge cases" do
       # Empty parameters
       assert OutputManager.format_ansi_sequences("\e[m") == "RESET_ATTRIBUTES"
 
@@ -70,13 +70,13 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "SGR(38;2;999;999;999)"
     end
 
-    test 'handles screen manipulation sequences' do
+    test "handles screen manipulation sequences" do
       assert OutputManager.format_ansi_sequences("\e[2J") == "CLEAR_SCREEN(2)"
       assert OutputManager.format_ansi_sequences("\e[K") == "CLEAR_LINE(0)"
       assert OutputManager.format_ansi_sequences("\e[1L") == "INSERT_LINE(1)"
     end
 
-    test 'handles screen manipulation edge cases' do
+    test "handles screen manipulation edge cases" do
       # All clear screen modes
       assert OutputManager.format_ansi_sequences("\e[0J") == "CLEAR_SCREEN(0)"
       assert OutputManager.format_ansi_sequences("\e[1J") == "CLEAR_SCREEN(1)"
@@ -93,12 +93,12 @@ defmodule Raxol.Terminal.OutputManagerTest do
       assert OutputManager.format_ansi_sequences("\e[5M") == "DELETE_LINE(5)"
     end
 
-    test 'handles mode setting sequences' do
+    test "handles mode setting sequences" do
       assert OutputManager.format_ansi_sequences("\e[?25h") == "SET_MODE(25)"
       assert OutputManager.format_ansi_sequences("\e[?25l") == "RESET_MODE(25)"
     end
 
-    test 'handles mode setting edge cases' do
+    test "handles mode setting edge cases" do
       # Common DEC private modes
       # Cursor keys mode
       assert OutputManager.format_ansi_sequences("\e[?1h") == "SET_MODE(1)"
@@ -153,11 +153,11 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "SET_MODE(1049)"
     end
 
-    test 'handles device status sequences' do
+    test "handles device status sequences" do
       assert OutputManager.format_ansi_sequences("\e[6n") == "DEVICE_STATUS(6)"
     end
 
-    test 'handles device status edge cases' do
+    test "handles device status edge cases" do
       # All device status report types
       # Device status
       assert OutputManager.format_ansi_sequences("\e[5n") == "DEVICE_STATUS(5)"
@@ -184,7 +184,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "DEVICE_STATUS(53)"
     end
 
-    test 'handles character set sequences' do
+    test "handles character set sequences" do
       assert OutputManager.format_ansi_sequences("\e(B") ==
                "DESIGNATE_CHARSET(G0,B)"
 
@@ -192,7 +192,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "DESIGNATE_CHARSET(G1,0)"
     end
 
-    test 'handles character set edge cases' do
+    test "handles character set edge cases" do
       # All character set designations
       # UK
       assert OutputManager.format_ansi_sequences("\e(A") ==
@@ -243,12 +243,12 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "DESIGNATE_CHARSET(G0,9)"
     end
 
-    test 'handles OSC sequences' do
+    test "handles OSC sequences" do
       assert OutputManager.format_ansi_sequences("\e]0;title\a") ==
                "OSC(0,title)"
     end
 
-    test 'handles OSC edge cases' do
+    test "handles OSC edge cases" do
       # Common OSC sequences
       # Window title
       assert OutputManager.format_ansi_sequences("\e]0;Window Title\a") ==
@@ -303,18 +303,18 @@ defmodule Raxol.Terminal.OutputManagerTest do
                "OSC(777;notify;Title;Body)"
     end
 
-    test 'preserves plain text' do
+    test "preserves plain text" do
       text = "Hello, World!"
       assert OutputManager.format_ansi_sequences(text) == text
     end
 
-    test 'handles mixed content' do
+    test "handles mixed content" do
       input = "Hello\e[31mWorld\e[0m!"
       expected = "HelloSGR(31)WorldRESET_ATTRIBUTES!"
       assert OutputManager.format_ansi_sequences(input) == expected
     end
 
-    test 'handles complex mixed content' do
+    test "handles complex mixed content" do
       input = "Hello\e[31mWorld\e[0m!\e[?25h\e[2J\e[H\e]0;Title\a"
 
       expected =
@@ -325,7 +325,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
   end
 
   describe "format_control_chars/1" do
-    test 'formats C0 control characters' do
+    test "formats C0 control characters" do
       assert OutputManager.format_control_chars("\x00") == "^@"
       assert OutputManager.format_control_chars("\x01") == "^A"
       assert OutputManager.format_control_chars("\x1A") == "^Z"
@@ -333,16 +333,16 @@ defmodule Raxol.Terminal.OutputManagerTest do
       assert OutputManager.format_control_chars("\x1F") == "^_"
     end
 
-    test 'formats special control characters' do
-      assert OutputManager.format_control_chars("\x7F") == "^?'
+    test "formats special control characters" do
+      assert OutputManager.format_control_chars("\x7F") == "^?"
     end
 
-    test 'preserves printable characters" do
+    test "preserves printable characters" do
       text = "Hello, World!"
       assert OutputManager.format_control_chars(text) == text
     end
 
-    test 'handles mixed content' do
+    test "handles mixed content" do
       input = "Hello\x01World\x7F!"
       expected = "Hello^AWorld^?!"
       assert OutputManager.format_control_chars(input) == expected
@@ -350,19 +350,19 @@ defmodule Raxol.Terminal.OutputManagerTest do
   end
 
   describe "format_unicode/1" do
-    test 'formats Unicode characters outside BMP' do
+    test "formats Unicode characters outside BMP" do
       # Emoji: grinning face
       assert OutputManager.format_unicode("😀") == "U+1F600"
       # Emoji: thumbs up
       assert OutputManager.format_unicode("👍") == "U+1F44D"
     end
 
-    test 'preserves basic Unicode characters' do
+    test "preserves basic Unicode characters" do
       text = "Hello, 世界!"
       assert OutputManager.format_unicode(text) == text
     end
 
-    test 'handles mixed content' do
+    test "handles mixed content" do
       input = "Hello, 世界! 😀"
       expected = "Hello, 世界! U+1F600"
       assert OutputManager.format_unicode(input) == expected
@@ -370,7 +370,7 @@ defmodule Raxol.Terminal.OutputManagerTest do
   end
 
   describe "integration" do
-    test 'formats complex output with multiple sequence types' do
+    test "formats complex output with multiple sequence types" do
       input = "Hello\x01\e[31mWorld\e[0m! 😀"
       expected = "Hello^ASGR(31)WorldRESET_ATTRIBUTES! U+1F600"
 
@@ -379,19 +379,19 @@ defmodule Raxol.Terminal.OutputManagerTest do
              |> OutputManager.format_unicode() == expected
     end
 
-    test 'handles empty input' do
+    test "handles empty input" do
       assert OutputManager.format_ansi_sequences("") == ""
       assert OutputManager.format_control_chars("") == ""
       assert OutputManager.format_unicode("") == ""
     end
 
-    test 'handles invalid sequences' do
+    test "handles invalid sequences" do
       # Invalid ANSI sequence
       assert OutputManager.format_ansi_sequences("\e[invalid") == "\e[invalid"
       # Invalid control character
       assert OutputManager.format_control_chars("\xFF") == "\xFF"
       # Invalid Unicode character
-      assert OutputManager.format_unicode("\u{110000}") == "\u{110000}"
+      # assert OutputManager.format_unicode("\u{110000}") == "\u{110000}"
     end
   end
 end

@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
+defmodule Raxol.Terminal.ANSI.CharacterSetsTestV2 do
   use ExUnit.Case
 
   alias Raxol.Terminal.ANSI.CharacterSets

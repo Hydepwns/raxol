@@ -74,6 +74,7 @@ defmodule Raxol.Test.PerformanceHelper do
       min_time: min_time,
       max_time: max_time,
       iterations: iterations,
+      times: times,
       results: results
     }
   end
