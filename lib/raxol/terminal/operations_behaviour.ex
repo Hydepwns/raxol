@@ -22,7 +22,8 @@ defmodule Raxol.Terminal.OperationsBehaviour do
 
   # --- Cursor Operations ---
   @callback get_cursor_position(t()) :: position()
-  @callback set_cursor_position(t(), non_neg_integer(), non_neg_integer()) :: t()
+  @callback set_cursor_position(t(), non_neg_integer(), non_neg_integer()) ::
+              t()
   @callback get_cursor_style(t()) :: atom()
   @callback set_cursor_style(t(), atom()) :: t()
   @callback is_cursor_visible?(t()) :: boolean()
@@ -51,8 +52,20 @@ defmodule Raxol.Terminal.OperationsBehaviour do
   @callback prepend_lines(t(), non_neg_integer()) :: t()
 
   # --- Text Operations ---
-  @callback write_string(t(), non_neg_integer(), non_neg_integer(), String.t(), style()) :: t()
-  @callback get_text_in_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: String.t()
+  @callback write_string(
+              t(),
+              non_neg_integer(),
+              non_neg_integer(),
+              String.t(),
+              style()
+            ) :: t()
+  @callback get_text_in_region(
+              t(),
+              non_neg_integer(),
+              non_neg_integer(),
+              non_neg_integer(),
+              non_neg_integer()
+            ) :: String.t()
   @callback get_content(t()) :: list(list(Cell.t()))
   @callback get_line(t(), non_neg_integer()) :: list(Cell.t())
   @callback get_cell_at(t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
@@ -66,7 +79,8 @@ defmodule Raxol.Terminal.OperationsBehaviour do
   @callback update_selection(t(), non_neg_integer(), non_neg_integer()) :: t()
   @callback clear_selection(t()) :: t()
   @callback selection_active?(t()) :: boolean()
-  @callback in_selection?(t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  @callback in_selection?(t(), non_neg_integer(), non_neg_integer()) ::
+              boolean()
 
   # --- Scroll Operations ---
   @callback get_scroll_region(t()) :: scroll_region()
