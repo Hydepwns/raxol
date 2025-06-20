@@ -22,6 +22,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
     end
   end
 
+  @doc """
+  Handles DCS commands with additional parameters.
+  Returns {:ok, updated_emulator} or {:error, reason}.
+  """
+  def handle_dcs(emulator, params, data_string, _intermediate, _final) do
+    handle_dcs(emulator, params, data_string)
+  end
+
   defp handle_decrqss(emulator, data_string) do
     case data_string do
       # SGR

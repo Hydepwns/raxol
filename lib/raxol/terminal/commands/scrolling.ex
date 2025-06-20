@@ -37,17 +37,17 @@ defmodule Raxol.Terminal.Commands.Scrolling do
       preserved_lines_source_start = effective_top + actual_scroll_count
       preserved_lines_count = region_height - actual_scroll_count
 
-      buffer
-      |> shift_lines_up(
-        effective_top,
-        preserved_lines_source_start,
-        preserved_lines_count
-      )
-      |> fill_blank_lines(
-        effective_top + preserved_lines_count,
-        actual_scroll_count,
-        blank_style
-      )
+      new_buffer =
+        buffer
+        |> shift_lines_up(
+          effective_top,
+          preserved_lines_source_start,
+          preserved_lines_count
+        )
+        |> fill_blank_lines(effective_top, region_height, blank_style)
+
+      # Update scroll position
+      %{new_buffer | scroll_position: min(buffer.scroll_position + actual_scroll_count, effective_bottom)}
     else
       buffer
     end
@@ -95,19 +95,24 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   def scroll_down(%{__struct__: _} = buffer, count, scroll_region, blank_style)
       when count > 0 do
-    case Operations.scroll_down(buffer, count,
-           scroll_region: scroll_region,
-           blank_style: blank_style
-         ) do
-      {:ok, new_buffer} ->
-        new_buffer
+    {effective_top, effective_bottom} = get_scroll_region(buffer, scroll_region)
+    region_height = effective_bottom - effective_top + 1
 
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to scroll down: #{inspect(reason)}"
-        )
-
+    if count > 0 and region_height > 0 do
+      actual_scroll_count = min(count, region_height)
+      new_buffer =
         buffer
+        |> shift_lines_down(
+          effective_top + actual_scroll_count,
+          effective_top,
+          region_height
+        )
+        |> fill_blank_lines(effective_top, region_height, blank_style)
+
+      # Update scroll position
+      %{new_buffer | scroll_position: max(buffer.scroll_position - actual_scroll_count, effective_top)}
+    else
+      buffer
     end
   end
 
@@ -127,36 +132,70 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     case scroll_region do
       {top, bottom}
       when is_integer(top) and is_integer(bottom) and top >= 0 and
-             bottom < buffer.height ->
+             bottom <= buffer.height ->
         {top, bottom}
 
       _ ->
-        {0, buffer.height - 1}
+        Raxol.Terminal.Buffer.ScrollRegion.get_region(buffer)
     end
   end
 
-  defp shift_lines_up(buffer, target_start, source_start, count) do
-    shift_lines(buffer, target_start, source_start, count)
+  defp shift_lines_up(buffer, region_start, region_start_plus_n, count) do
+    # Shift lines in the region up by N (count):
+    # lines at region_start+N..region_start+count-1 move to region_start..region_start+count-N-1
+    cells = buffer.cells
+    region_end = region_start + count - 1
+    n = region_start_plus_n - region_start
+    new_cells =
+      Enum.with_index(cells)
+      |> Enum.map(fn {line, idx} ->
+        cond do
+          idx >= region_start and idx <= region_end - n ->
+            Enum.at(cells, idx + n)
+          idx > region_end - n and idx <= region_end ->
+            nil
+          true ->
+            line
+        end
+      end)
+    %{buffer | cells: new_cells}
   end
 
-  defp shift_lines_down(buffer, target_start, source_start, count) do
-    shift_lines(buffer, target_start, source_start, count)
+  defp shift_lines_down(buffer, region_start_plus_n, region_start, count) do
+    # Shift lines in the region down by N (count):
+    # lines at region_start..region_end-n move to region_start+n..region_end
+    cells = buffer.cells
+    region_height = count
+    n = region_start_plus_n - region_start
+    region_end = region_start + region_height - 1
+
+    new_cells =
+      Enum.with_index(cells)
+      |> Enum.map(fn {line, idx} ->
+        cond do
+          # Lines that should be shifted down (moved from earlier position)
+          idx >= region_start + n and idx <= region_end ->
+            # Get content from the line that was n positions earlier
+            source_idx = idx - n
+            Enum.at(cells, source_idx)
+          # Lines at the top of the region that become blank
+          idx >= region_start and idx < region_start + n ->
+            nil
+          # Lines outside the region remain unchanged
+          true ->
+            line
+        end
+      end)
+    %{buffer | cells: new_cells}
   end
 
-  defp shift_lines(buffer, target_start, source_start, count) do
-    {before, region} = Enum.split(buffer.cells, target_start)
-    {region, after_part} = Enum.split(region, count)
-    {_, source_region} = Enum.split(buffer.cells, source_start)
-    {source_region, _} = Enum.split(source_region, count)
-    updated_cells = before ++ source_region ++ after_part
-    %{buffer | cells: updated_cells}
-  end
-
-  defp fill_blank_lines(buffer, start_line, count, style) do
-    empty_line = List.duplicate(Cell.new(style), buffer.width)
-    empty_lines = List.duplicate(empty_line, count)
-    {before, after_part} = Enum.split(buffer.cells, start_line)
-    updated_cells = before ++ empty_lines ++ after_part
+  defp fill_blank_lines(buffer, _start_line, _count, style) do
+    empty_line = List.duplicate(Cell.new(" ", style), buffer.width)
+    updated_cells =
+      Enum.map(buffer.cells, fn
+        nil -> empty_line
+        line -> line
+      end)
     %{buffer | cells: updated_cells}
   end
 end

@@ -49,6 +49,8 @@ defmodule Raxol.Terminal.Window do
           state: window_state(),
           position: window_position(),
           size: window_size(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
           previous_size: window_size() | nil,
           parent: String.t() | nil,
           children: [String.t()]
@@ -66,6 +68,8 @@ defmodule Raxol.Terminal.Window do
     state: :inactive,
     position: {0, 0},
     size: {80, 24},
+    width: 80,
+    height: 24,
     previous_size: nil,
     parent: nil,
     children: []
@@ -97,7 +101,9 @@ defmodule Raxol.Terminal.Window do
     %__MODULE__{
       config: config,
       emulator: emulator,
-      size: {width, height}
+      size: {width, height},
+      width: width,
+      height: height
     }
   end
 
@@ -168,13 +174,13 @@ defmodule Raxol.Terminal.Window do
   def set_size(%__MODULE__{} = window, width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     previous_size = window.size
-
     emulator = Emulator.resize(window.emulator, width, height)
-
     {:ok,
      %{
        window
        | size: {width, height},
+         width: width,
+         height: height,
          previous_size: previous_size,
          emulator: emulator
      }}

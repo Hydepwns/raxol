@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.ConfigManager do
   """
   @spec get_emulator_config(Emulator.t()) :: map()
   def get_emulator_config(emulator) do
-    emulator.config
+    Raxol.Terminal.Emulator.get_config_struct(emulator)
   end
 
   # Private Functions

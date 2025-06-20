@@ -108,4 +108,27 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
 
     %{state | active_buffer: new_active_buffer}
   end
+
+  @doc """
+  Gets the memory usage of the state.
+  """
+  def get_memory_usage(%__MODULE__{} = state) do
+    active_usage = ScreenBuffer.get_memory_usage(state.active_buffer)
+    back_usage = ScreenBuffer.get_memory_usage(state.back_buffer)
+    scrollback_usage = Scrollback.get_memory_usage(state.scrollback)
+
+    active_usage + back_usage + scrollback_usage
+  end
+
+  @doc """
+  Cleans up the state and its components.
+  """
+  def cleanup(%__MODULE__{} = state) do
+    ScreenBuffer.cleanup(state.active_buffer)
+    ScreenBuffer.cleanup(state.back_buffer)
+    Scrollback.cleanup(state.scrollback)
+    DamageTracker.cleanup(state.damage_tracker)
+
+    state
+  end
 end

@@ -99,4 +99,21 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
       max(y2, ry2)
     }
   end
+
+  @doc """
+  Gets the memory usage of the damage tracker.
+  """
+  @spec get_memory_usage(t()) :: non_neg_integer()
+  def get_memory_usage(%__MODULE__{} = tracker) do
+    # Each region is a 4-tuple, roughly 32 bytes
+    length(tracker.regions) * 32
+  end
+
+  @doc """
+  Cleans up the damage tracker.
+  """
+  @spec cleanup(t()) :: t()
+  def cleanup(%__MODULE__{} = tracker) do
+    clear_regions(tracker)
+  end
 end

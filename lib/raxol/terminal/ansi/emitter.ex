@@ -152,4 +152,14 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   def bracketed_paste_off, do: reset_mode(2004)
   def auto_wrap_on, do: set_mode(7)
   def auto_wrap_off, do: reset_mode(7)
+
+  @doc """
+  Alias for scroll_up_ansi/1 for backward compatibility.
+  """
+  def scroll_up(n \\ 1), do: scroll_up_ansi(n)
+
+  @doc """
+  Alias for scroll_down_ansi/1 for backward compatibility.
+  """
+  def scroll_down(n \\ 1), do: scroll_down_ansi(n)
 end

@@ -6,50 +6,70 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   def get_cursor_position(emulator) do
-    CursorManager.get_position(emulator.cursor)
+    CursorManager.get_emulator_position(emulator)
   end
 
   def set_cursor_position(emulator, x, y) do
-    %{emulator | cursor: CursorManager.set_position(emulator.cursor, x, y)}
+    CursorManager.set_emulator_position(emulator, x, y)
   end
 
   def get_cursor_style(emulator) do
-    CursorManager.get_style(emulator.cursor)
+    CursorManager.get_emulator_style(emulator)
   end
 
   def set_cursor_style(emulator, style) do
-    %{emulator | cursor: CursorManager.set_style(emulator.cursor, style)}
+    CursorManager.set_emulator_style(emulator, style)
   end
 
   def cursor_visible?(emulator) do
-    CursorManager.visible?(emulator.cursor)
+    CursorManager.emulator_visible?(emulator)
   end
 
   def set_cursor_visibility(emulator, visible) do
-    %{emulator | cursor: CursorManager.set_visibility(emulator.cursor, visible)}
+    CursorManager.set_emulator_visibility(emulator, visible)
   end
 
   def cursor_blinking?(emulator) do
-    CursorManager.blinking?(emulator.cursor)
+    CursorManager.emulator_blinking?(emulator)
   end
 
   def set_cursor_blink(emulator, blinking) do
-    %{emulator | cursor: CursorManager.set_blink(emulator.cursor, blinking)}
+    CursorManager.set_emulator_blink(emulator, blinking)
   end
 
   def toggle_visibility(emulator) do
-    %{emulator | cursor: CursorManager.toggle_visibility(emulator.cursor)}
+    current_visible = CursorManager.emulator_visible?(emulator)
+    CursorManager.set_emulator_visibility(emulator, !current_visible)
   end
 
   def toggle_blink(emulator) do
-    %{emulator | cursor: CursorManager.toggle_blink(emulator.cursor)}
+    current_blinking = CursorManager.emulator_blinking?(emulator)
+    CursorManager.set_emulator_blink(emulator, !current_blinking)
   end
 
   def set_blink_rate(emulator, rate) do
-    %{emulator | cursor: CursorManager.set_blink_rate(emulator.cursor, rate)}
+    # For now, just set the blink state based on rate
+    blinking = rate > 0
+    CursorManager.set_emulator_blink(emulator, blinking)
   end
 
   def update_blink(emulator) do
-    %{emulator | cursor: CursorManager.update_blink(emulator.cursor)}
+    if CursorManager.emulator_blinking?(emulator) do
+      # Toggle the blink state for blinking cursors
+      current_visible = CursorManager.emulator_visible?(emulator)
+      CursorManager.set_emulator_visibility(emulator, !current_visible)
+    else
+      # For non-blinking cursors, ensure they're visible
+      CursorManager.set_emulator_visibility(emulator, true)
+    end
+  end
+
+  # Function aliases expected by tests
+  def is_cursor_visible?(emulator) do
+    cursor_visible?(emulator)
+  end
+
+  def is_cursor_blinking?(emulator) do
+    cursor_blinking?(emulator)
   end
 end

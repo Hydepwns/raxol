@@ -3,6 +3,52 @@ defmodule Raxol.Terminal.Input.Buffer do
   Manages input buffering for the terminal emulator.
   """
 
+  use GenServer
+
+  # Client API
+
+  @doc """
+  Starts the input buffer.
+  """
+  @spec start_link() :: GenServer.on_start()
+  def start_link do
+    start_link([])
+  end
+
+  @doc """
+  Starts the input buffer with options.
+  """
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
+  end
+
+  # Server Callbacks
+
+  @impl true
+  def init(opts) do
+    max_size = Keyword.get(opts, :max_size, 1024)
+    {:ok, new(max_size)}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl true
+  def handle_cast({:add_event, event}, state) do
+    case add(state, event) do
+      {:ok, new_state} -> {:noreply, new_state}
+      {:error, _reason} -> {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info(_msg, state) do
+    {:noreply, state}
+  end
+
   @doc """
   Creates a new input buffer with the given size.
   """

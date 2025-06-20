@@ -11,8 +11,19 @@ defmodule Raxol.Terminal.Config do
 
   alias Raxol.Terminal.Config.{Validator, Persistence}
 
+  defstruct [
+    :version,
+    :width,
+    :height,
+    :colors,
+    :styles,
+    :input,
+    :performance,
+    :mode
+  ]
+
   @type t :: %__MODULE__{
-          version: non_neg_integer(),
+          version: integer(),
           width: non_neg_integer(),
           height: non_neg_integer(),
           colors: map(),
@@ -21,15 +32,6 @@ defmodule Raxol.Terminal.Config do
           performance: map(),
           mode: map()
         }
-
-  defstruct version: 1,
-            width: 80,
-            height: 24,
-            colors: %{},
-            styles: %{},
-            input: %{},
-            performance: %{},
-            mode: %{}
 
   @doc """
   Creates a new terminal configuration with default values.

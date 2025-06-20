@@ -48,16 +48,25 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> buffer = ScrollRegion.set_region(buffer, 15, 5)  # Invalid region
       iex> ScrollRegion.get_region(buffer)
-      nil
+      {5, 15}
   """
   @spec set_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
-  def set_region(buffer, top, bottom)
-      when top >= 0 and bottom < buffer.height and top < bottom do
-    %{buffer | scroll_region: {top, bottom}}
-  end
+  def set_region(buffer, top, bottom) do
+    # Clamp coordinates to screen bounds
+    top = max(0, min(top, buffer.height))
+    bottom = max(0, min(bottom, buffer.height))
 
-  def set_region(buffer, _top, _bottom), do: %{buffer | scroll_region: nil}
+    # Swap if top > bottom
+    {top, bottom} = if top > bottom, do: {bottom, top}, else: {top, bottom}
+
+    # Ensure we have at least one line
+    if top < bottom do
+      %{buffer | scroll_region: {top, bottom}, scroll_position: top}
+    else
+      %{buffer | scroll_region: nil, scroll_position: 0}
+    end
+  end
 
   @doc """
   Clears the scroll region, resetting to full screen.
@@ -92,14 +101,14 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
   ## Returns
 
-  A tuple {top, bottom} representing the scroll region boundaries,
-  or nil if no region is set.
+  A tuple {top, bottom} representing the scroll region boundaries.
+  Returns {0, height-1} if no region is set.
 
   ## Examples
 
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> ScrollRegion.get_region(buffer)
-      nil
+      {0, 23}
 
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> buffer = ScrollRegion.set_region(buffer, 5, 15)
@@ -107,8 +116,14 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       {5, 15}
   """
   @spec get_region(ScreenBuffer.t()) ::
-          {non_neg_integer(), non_neg_integer()} | nil
-  def get_region(%ScreenBuffer{scroll_region: region}), do: region
+          {non_neg_integer(), non_neg_integer()}
+  def get_region(%ScreenBuffer{scroll_region: nil, height: height}) do
+    {0, height}
+  end
+
+  def get_region(%ScreenBuffer{scroll_region: {top, bottom}}) do
+    {top, bottom}
+  end
 
   @doc """
   Gets the current scroll region boundaries.
@@ -304,5 +319,45 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       _ ->
         {0, height - 1}
     end
+  end
+
+  def scroll_to(buffer, top, bottom, line) do
+    {top, bottom} = clamp_region({top, bottom}, buffer.height)
+    line = max(top, min(line, bottom))
+    %{buffer | scroll_position: line}
+  end
+
+  @doc """
+  Gets the current scroll position within the scroll region.
+  """
+  @spec get_scroll_position(ScreenBuffer.t()) :: non_neg_integer()
+  def get_scroll_position(%ScreenBuffer{scroll_position: position}) do
+    position
+  end
+
+  @doc """
+  Shifts the content in the scroll region so that the content of the given target line appears at the top of the region.
+  Fills with blank lines as needed if the shift would go out of bounds.
+  """
+  @spec shift_region_to_line(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, non_neg_integer()) :: ScreenBuffer.t()
+  def shift_region_to_line(buffer, {top, bottom}, target_line) do
+    {top, bottom} = clamp_region({top, bottom}, buffer.height)
+    region_height = bottom - top + 1
+    # Clamp target_line to [top, bottom]
+    target_line = max(top, min(target_line, bottom))
+
+    # Calculate how many lines to shift up so that target_line is at the top
+    shift = target_line - top
+
+    {before, region} = Enum.split(buffer.cells, top)
+    {region, after_part} = Enum.split(region, region_height)
+
+    # Shift region content up by 'shift' lines
+    {to_shift, remaining} = Enum.split(region, shift)
+    empty_line = List.duplicate(%Raxol.Terminal.Cell{}, buffer.width)
+    new_region = remaining ++ List.duplicate(empty_line, length(to_shift))
+
+    new_cells = before ++ new_region ++ after_part
+    %{buffer | cells: new_cells, scroll_position: target_line}
   end
 end

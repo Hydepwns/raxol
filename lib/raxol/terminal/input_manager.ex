@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.InputManager do
     case command do
       {:clear_screen, _} ->
         {emulator, nil}
-      {:move_cursor, x, y} ->
+      {:move_cursor, _x, _y} ->
         {emulator, nil}
       {:set_style, _style} ->
         {emulator, nil}

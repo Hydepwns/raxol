@@ -44,6 +44,43 @@ defmodule Raxol.Terminal.Buffer.Manager do
     )
   end
 
+  @doc """
+  Creates a new buffer manager with default dimensions.
+  """
+  def new do
+    {:ok, pid} = start_link()
+    GenServer.call(pid, :get_state)
+  end
+
+  @doc """
+  Creates a new buffer manager with specified width and height.
+  """
+  def new(width, height) do
+    {:ok, pid} = start_link(width: width, height: height)
+    GenServer.call(pid, :get_state)
+  end
+
+  @doc """
+  Creates a new buffer manager with specified width, height, and options.
+  """
+  def new(width, height, opts) do
+    {:ok, pid} = start_link([width: width, height: height] ++ opts)
+    GenServer.call(pid, :get_state)
+  end
+
+  @doc """
+  Creates a new buffer manager with specified width, height, scrollback height, and memory limit.
+  """
+  def new(width, height, scrollback_height, memory_limit) do
+    {:ok, pid} = start_link([
+      width: width,
+      height: height,
+      scrollback_height: scrollback_height,
+      memory_limit: memory_limit
+    ])
+    GenServer.call(pid, :get_state)
+  end
+
   @impl true
   def init(opts) do
     {:ok, memory_manager} = MemoryManager.start_link()
@@ -134,6 +171,11 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(__MODULE__, {:set_cursor, cursor})
   end
 
+  def set_cursor(%__MODULE__{} = manager, {x, y})
+      when is_integer(x) and is_integer(y) do
+    %{manager | cursor_position: {x, y}}
+  end
+
   def get_attributes do
     GenServer.call(__MODULE__, :get_attributes)
   end
@@ -193,14 +235,42 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:ok, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]}
   end
 
-  def set_cursor(%__MODULE__{} = manager, {x, y})
-      when is_integer(x) and is_integer(y) do
-    %{manager | cursor_position: {x, y}}
+  @doc """
+  Marks a region as damaged for rendering optimization.
+  """
+  def mark_damaged(%__MODULE__{} = manager, x, y, width, height) do
+    %{manager | damage_tracker: DamageTracker.mark_damaged(manager.damage_tracker, x, y, width, height)}
   end
 
-  @impl true
-  def clear_damage do
-    GenServer.call(__MODULE__, :clear_damage)
+  @doc """
+  Gets all damage regions for rendering optimization.
+  """
+  def get_damage_regions(%__MODULE__{} = manager) do
+    DamageTracker.get_damage_regions(manager.damage_tracker)
+  end
+
+  @doc """
+  Clears all damage regions.
+  """
+  def clear_damage(%__MODULE__{} = manager) do
+    %{manager | damage_tracker: DamageTracker.clear_damage(manager.damage_tracker)}
+  end
+
+  @doc """
+  Updates memory usage tracking.
+  """
+  def update_memory_usage(%__MODULE__{} = manager) do
+    memory_usage = MemoryManager.get_usage(manager.memory_manager)
+    %{manager | metrics: Map.put(manager.metrics, :memory_usage, memory_usage)}
+  end
+
+  @doc """
+  Checks if the buffer is within memory limits.
+  """
+  def within_memory_limits?(%__MODULE__{} = manager) do
+    current_usage = manager.metrics.memory_usage
+    limit = MemoryManager.get_limit(manager.memory_manager)
+    current_usage <= limit
   end
 
   # Server callbacks
@@ -378,10 +448,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   @impl true
-  def handle_call(:clear_damage, _from, state) do
-    new_damage_tracker = DamageTracker.clear_regions(state.damage_tracker)
-    new_state = %{state | damage_tracker: new_damage_tracker}
-    {:reply, :ok, new_state}
+  def handle_call(:get_icon_title, _from, state) do
+    icon_title = BufferImpl.get_icon_title(state.buffer)
+    {:reply, icon_title, state}
   end
 
   @impl true
@@ -401,46 +470,22 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:reply, state.metrics, state}
   end
 
+  @impl GenServer
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl GenServer
+  def handle_call({:get, key, default}, _from, state) do
+    value = Map.get(state, key, default)
+    {:reply, value, state}
+  end
+
   # Private functions
 
   defp update_metrics(state, operation) do
     metrics = Map.update(state.metrics, operation, 1, &(&1 + 1))
     %{state | metrics: metrics}
-  end
-
-  defp validate_state(%__MODULE__{} = state) do
-    with true <- is_map(state.buffer),
-         true <- is_map(state.damage_tracker),
-         true <- is_map(state.memory_manager),
-         true <- is_map(state.metrics),
-         true <- is_map(state.renderer),
-         true <- is_map(state.scrollback_manager) do
-      :ok
-    else
-      _ -> {:error, :invalid_state}
-    end
-  end
-
-  @doc """
-  Creates a new buffer manager.
-  """
-  @spec new() :: Buffer.t()
-  def new do
-    %Buffer{
-      active: nil,
-      alternate: nil,
-      scrollback: [],
-      scrollback_size: 1000
-    }
-  end
-
-  @doc """
-  Gets the active buffer.
-  Returns the active buffer or nil.
-  """
-  @spec get_active_buffer(Emulator.t()) :: Buffer.t() | nil
-  def get_active_buffer(emulator) do
-    emulator.buffer.active
   end
 
   @doc """

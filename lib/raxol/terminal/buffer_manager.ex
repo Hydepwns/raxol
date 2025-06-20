@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.BufferManager do
   """
   @spec initialize_buffers(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           {:ok, {ScreenBuffer.t(), ScreenBuffer.t()}}
-  def initialize_buffers(width, height, scrollback_limit) do
+  def initialize_buffers(width, height, _scrollback_limit) do
     main_buffer = ScreenBuffer.new(width, height)
     alternate_buffer = ScreenBuffer.new(width, height)
     {:ok, {main_buffer, alternate_buffer}}

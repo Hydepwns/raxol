@@ -155,9 +155,32 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
       grey = round(l * 255)
       {:ok, {grey, grey, grey}}
     else
-      {r1, g1, b1} = calculate_rgb_components(h, l, s)
-      {r, g, b} = scale_and_clamp_rgb(r1, g1, b1, l)
-      {:ok, {r, g, b}}
+      # Handle hue = 360.0 by treating it as 0.0
+      h = if h == 360.0, do: 0.0, else: h
+
+      c = (1.0 - abs(2.0 * l - 1.0)) * s
+      h_prime = h / 60.0
+      x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
+      m = l - c / 2.0
+
+      {r_prime, g_prime, b_prime} =
+        cond do
+          h_prime >= 0.0 and h_prime < 1.0 -> {c, x, 0.0}
+          h_prime >= 1.0 and h_prime < 2.0 -> {x, c, 0.0}
+          h_prime >= 2.0 and h_prime < 3.0 -> {0.0, c, x}
+          h_prime >= 3.0 and h_prime < 4.0 -> {0.0, x, c}
+          h_prime >= 4.0 and h_prime < 5.0 -> {x, 0.0, c}
+          h_prime >= 5.0 and h_prime < 6.0 -> {c, 0.0, x}
+          # Should not happen with valid h
+          true -> {0.0, 0.0, 0.0}
+        end
+
+      r = round((r_prime + m) * 255)
+      g = round((g_prime + m) * 255)
+      b = round((b_prime + m) * 255)
+
+      # Clamp values just in case of float inaccuracies
+      {:ok, {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}}
     end
   end
 
@@ -168,7 +191,7 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     m = l - c / 2.0
 
     {r1, g1, b1} = get_rgb_from_hue(h_prime, c, x)
-    {r1 + m, g1 + m, b1 + m}
+    {r1, g1, b1}
   end
 
   defp get_hue_segments do
@@ -187,7 +210,9 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     Map.get(get_hue_segments(), segment, fn _, _ -> {0.0, 0.0, 0.0} end).(c, x)
   end
 
-  defp scale_and_clamp_rgb(r1, g1, b1, m) do
+  defp scale_and_clamp_rgb(r1, g1, b1, l) do
+    c = (1.0 - abs(2.0 * l - 1.0)) * 1.0  # s = 1.0 for full saturation
+    m = l - c / 2.0
     r = max(0, min(255, round((r1 + m) * 255)))
     g = max(0, min(255, round((g1 + m) * 255)))
     b = max(0, min(255, round((b1 + m) * 255)))

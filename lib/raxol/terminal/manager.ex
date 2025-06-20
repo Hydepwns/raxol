@@ -208,6 +208,59 @@ defmodule Raxol.Terminal.Manager do
     GenServer.call(pid, {:unmonitor_session, session_id})
   end
 
+  @doc """
+  Processes a terminal event.
+
+  ## Examples
+
+      iex> {:ok, pid} = Manager.start_link()
+      iex> event = %Raxol.Core.Events.Event{type: :focus, data: %{focused: true}}
+      iex> :ok = Manager.process_event(pid, event)
+  """
+  def process_event(pid \\ __MODULE__, event) do
+    GenServer.call(pid, {:process_event, event})
+  end
+
+  @doc """
+  Gets the current terminal state.
+
+  ## Examples
+
+      iex> {:ok, pid} = Manager.start_link(terminal: %{width: 80, height: 24})
+      iex> state = Manager.get_terminal_state(pid)
+      iex> state.width
+      80
+  """
+  def get_terminal_state(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_terminal_state)
+  end
+
+  @doc """
+  Updates the terminal screen.
+
+  ## Examples
+
+      iex> {:ok, pid} = Manager.start_link()
+      iex> update = %{type: :clear_screen}
+      iex> :ok = Manager.update_screen(pid, update)
+  """
+  def update_screen(pid \\ __MODULE__, update) do
+    GenServer.call(pid, {:update_screen, update})
+  end
+
+  @doc """
+  Updates the terminal screen with multiple updates in a batch.
+
+  ## Examples
+
+      iex> {:ok, pid} = Manager.start_link()
+      iex> updates = [%{type: :clear_screen}, %{type: :set_cursor, x: 0, y: 0}]
+      iex> :ok = Manager.batch_update_screen(pid, updates)
+  """
+  def batch_update_screen(pid \\ __MODULE__, updates) do
+    GenServer.call(pid, {:batch_update_screen, updates})
+  end
+
   # Callbacks
 
   @impl true

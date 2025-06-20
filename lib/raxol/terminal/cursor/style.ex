@@ -6,7 +6,19 @@ defmodule Raxol.Terminal.Cursor.Style do
   visibility, and managing cursor blinking.
   """
 
-  @behaviour Raxol.Terminal.Cursor.Style
+  # Define the behavior for cursor style operations
+  @callback set_block(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback set_underline(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback set_bar(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback set_custom(cursor :: Raxol.Terminal.Cursor.Manager.t(), shape :: atom(), dimensions :: map()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback show(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback hide(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback toggle_visibility(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback toggle_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback set_blink_rate(cursor :: Raxol.Terminal.Cursor.Manager.t(), rate :: integer()) :: Raxol.Terminal.Cursor.Manager.t()
+  @callback update_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: {Raxol.Terminal.Cursor.Manager.t(), boolean()}
+  @callback get_state(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: atom()
+  @callback get_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: boolean()
 
   alias Raxol.Terminal.Cursor.Manager
 
@@ -23,7 +35,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       :block
   """
   def set_block(%Manager{} = cursor) do
-    Manager.set_style(cursor, :block)
+    %{cursor | style: :block}
   end
 
   @impl true
@@ -39,7 +51,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       :underline
   """
   def set_underline(%Manager{} = cursor) do
-    Manager.set_style(cursor, :underline)
+    %{cursor | style: :underline}
   end
 
   @impl true
@@ -55,7 +67,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       :bar
   """
   def set_bar(%Manager{} = cursor) do
-    Manager.set_style(cursor, :bar)
+    %{cursor | style: :bar}
   end
 
   @impl true
@@ -73,7 +85,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       "█"
   """
   def set_custom(%Manager{} = cursor, shape, dimensions) do
-    Manager.set_custom_shape(cursor, shape, dimensions)
+    %{cursor | style: :custom, custom_shape: shape, custom_dimensions: dimensions}
   end
 
   @impl true
@@ -90,7 +102,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       :visible
   """
   def show(%Manager{} = cursor) do
-    Manager.set_state(cursor, :visible)
+    %{cursor | visible: true, state: :visible}
   end
 
   @impl true
@@ -106,7 +118,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       :hidden
   """
   def hide(%Manager{} = cursor) do
-    Manager.set_state(cursor, :hidden)
+    %{cursor | visible: false, state: :hidden}
   end
 
   @impl true
@@ -122,7 +134,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       :blinking
   """
   def blink(%Manager{} = cursor) do
-    Manager.set_state(cursor, :blinking)
+    %{cursor | blinking: true, blink: true, state: :blinking}
   end
 
   @impl true
@@ -156,7 +168,9 @@ defmodule Raxol.Terminal.Cursor.Style do
       true
   """
   def update_blink(%Manager{} = cursor) do
-    Manager.update_blink(cursor)
+    new_blink_state = !cursor.blinking
+    new_cursor = %{cursor | blinking: new_blink_state, blink: new_blink_state}
+    {new_cursor, new_blink_state}
   end
 
   @impl true
@@ -243,7 +257,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       iex> alias Raxol.Terminal.Cursor.{Manager, Style}
       iex> cursor = Manager.new()
       iex> Style.get_blink(cursor)
-      :none
+      true
   """
   def get_blink(%Manager{} = cursor) do
     cursor.blink

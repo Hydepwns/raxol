@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
   parameters, returning the updated emulator state.
   """
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.{Emulator, OutputManager}
   require Raxol.Core.Runtime.Log
 
   @doc "Handles Device Status Report (DSR - 'n')"
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     response = generate_dsr_response(code, emulator)
 
     if response do
-      {:ok, %{emulator | output_buffer: emulator.output_buffer <> response}}
+      {:ok, OutputManager.write(emulator, response)}
     else
       {:error, :unknown_dsr_code, emulator}
     end
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     response = generate_da_response(intermediates_buffer)
 
     if response do
-      {:ok, %{emulator | output_buffer: emulator.output_buffer <> response}}
+      {:ok, OutputManager.write(emulator, response)}
     else
       {:error, :invalid_da_response, emulator}
     end

@@ -17,6 +17,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
   @spec start(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def start(buffer, x, y) do
+    # Clear any existing selection first
+    buffer = clear(buffer)
     %{buffer | selection: {x, y, x, y}}
   end
 
@@ -100,26 +102,38 @@ defmodule Raxol.Terminal.Buffer.Selection do
           non_neg_integer()
         ) :: String.t()
   def get_text_in_region(buffer, start_x, start_y, end_x, end_y) do
-    # Ensure start coordinates are less than or equal to end coordinates
-    {start_x, end_x} = {min(start_x, end_x), max(start_x, end_x)}
-    {start_y, end_y} = {min(start_y, end_y), max(start_y, end_y)}
+    # Check if coordinates are out of bounds
+    if start_x >= buffer.width or end_x >= buffer.width or
+       start_y >= buffer.height or end_y >= buffer.height or
+       start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0 do
+      ""
+    else
+      # Ensure start coordinates are less than or equal to end coordinates
+      {start_x, end_x} = {min(start_x, end_x), max(start_x, end_x)}
+      {start_y, end_y} = {min(start_y, end_y), max(start_y, end_y)}
 
-    # Get the text from each line in the region
-    text =
-      for y <- start_y..end_y do
-        line = Enum.at(buffer.cells, y) || []
+      # Handle empty region (same start and end coordinates)
+      if start_x == end_x and start_y == end_y do
+        ""
+      else
+        # Get the text from each line in the region
+        text =
+          for y <- start_y..end_y do
+            line = Enum.at(buffer.cells, y) || []
 
-        chars =
-          for x <- start_x..end_x do
-            cell = Enum.at(line, x)
-            if cell, do: cell.char, else: " "
+            chars =
+              for x <- start_x..end_x do
+                cell = Enum.at(line, x)
+                if cell, do: cell.char, else: " "
+              end
+
+            Enum.join(chars)
           end
 
-        Enum.join(chars)
+        # Join all lines with newlines
+        Enum.join(text, "\n")
       end
-
-    # Join all lines with newlines
-    Enum.join(text, "\n")
+    end
   end
 
   @doc """
@@ -157,7 +171,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
           {non_neg_integer(), non_neg_integer()} | nil
   def get_end_position(buffer) do
     case buffer.selection do
-      {_, _, end_x, end_y} -> {end_x, end_y}
+      {start_x, start_y, end_x, end_y} ->
+        if start_x == end_x and start_y == end_y, do: nil, else: {end_x, end_y}
       nil -> nil
     end
   end

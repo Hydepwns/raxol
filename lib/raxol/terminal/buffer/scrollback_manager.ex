@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
   """
 
   use GenServer
+  @behaviour GenServer
 
   @type t :: %__MODULE__{
           max_lines: non_neg_integer(),

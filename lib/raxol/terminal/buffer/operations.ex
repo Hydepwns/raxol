@@ -666,4 +666,75 @@ defmodule Raxol.Terminal.Buffer.Operations do
       end
     end)
   end
+
+  @doc """
+  Gets a cell from the buffer at the specified coordinates.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer
+  * `x` - The x coordinate (column)
+  * `y` - The y coordinate (row)
+
+  ## Returns
+
+  The cell at the specified coordinates, or a default cell if out of bounds.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> Operations.get_cell(buffer, 0, 0)
+      %Cell{char: "", style: %{}}
+  """
+  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
+  def get_cell(buffer, x, y) when is_list(buffer) and is_integer(x) and is_integer(y) do
+    case get_in(buffer, [Access.at(y), Access.at(x)]) do
+      nil -> Cell.new()
+      cell -> cell
+    end
+  end
+
+  @doc """
+  Fills a region of the buffer with a specified cell.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `x` - The starting x coordinate
+  * `y` - The starting y coordinate
+  * `width` - The width of the region
+  * `height` - The height of the region
+  * `cell` - The cell to fill the region with
+
+  ## Returns
+
+  The modified buffer with the region filled.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> cell = %Cell{char: "X", style: %{bold: true}}
+      iex> Operations.fill_region(buffer, 0, 0, 10, 5, cell)
+      [%Cell{char: "X", style: %{bold: true}}, ...]
+  """
+  @spec fill_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), Cell.t()) :: ScreenBuffer.t()
+  def fill_region(buffer, x, y, width, height, cell) when is_list(buffer) do
+    buffer
+    |> Enum.with_index()
+    |> Enum.map(fn {row, row_y} ->
+      if row_y >= y and row_y < y + height do
+        row
+        |> Enum.with_index()
+        |> Enum.map(fn {col_cell, col_x} ->
+          if col_x >= x and col_x < x + width do
+            cell
+          else
+            col_cell
+          end
+        end)
+      else
+        row
+      end
+    end)
+  end
 end

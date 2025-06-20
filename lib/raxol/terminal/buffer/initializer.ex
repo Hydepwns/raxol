@@ -27,6 +27,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
       scrollback_limit: scrollback_limit,
       selection: nil,
       scroll_region: nil,
+      scroll_position: 0,
       width: width,
       height: height
     }
@@ -51,7 +52,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
   defp create_empty_grid(width, height) do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do
-        # Create empty cell
+        Cell.new()
       end
     end
   end

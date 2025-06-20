@@ -66,4 +66,18 @@ defmodule Raxol.Terminal.Configuration do
   def apply_restored_data(state, _data, _opts) do
     state
   end
+
+  @doc """
+  Updates the configuration with new values.
+  """
+  @spec update(t(), map()) :: t()
+  def update(config, updates) when is_map(updates) do
+    Map.merge(config, updates)
+  end
+
+  def update(config, updates) when is_list(updates) do
+    Enum.reduce(updates, config, fn {key, value}, acc ->
+      Map.put(acc, key, value)
+    end)
+  end
 end

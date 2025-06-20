@@ -197,4 +197,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
         default
     end
   end
+
+  # Alias for uppercase function names used in tests
+  def handle_J(emulator, params), do: handle_j(emulator, params)
+  def handle_K(emulator, params), do: handle_k(emulator, params)
 end

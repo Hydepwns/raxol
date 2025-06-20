@@ -64,6 +64,14 @@ defmodule Raxol.Terminal.Sync.Manager do
     )
   end
 
+  @doc """
+  Syncs a component's state with default options.
+  """
+  @spec sync_state(String.t(), term()) :: :ok
+  def sync_state(component_id, new_state) do
+    sync_state(component_id, :split, new_state, [])
+  end
+
   def get_state(component_id) do
     GenServer.call(__MODULE__, {:get_state, component_id})
   end

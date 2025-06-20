@@ -4,13 +4,13 @@ defmodule Raxol.Terminal.EmulatorFactory do
   This module is responsible for initializing and configuring new emulator instances.
   """
 
-  alias Raxol.Terminal.{Emulator, ScreenManager, ParserStateManager}
+  alias Raxol.Terminal.{ScreenManager, ParserStateManager}
   alias Raxol.Terminal.Emulator.Struct
 
   @doc """
   Creates a new terminal emulator with the given options.
   """
-  @spec create(non_neg_integer(), non_neg_integer(), keyword()) :: Emulator.t()
+  @spec create(non_neg_integer(), non_neg_integer(), keyword()) :: Struct.t()
   def create(width, height, opts) do
     opts = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
     scrollback_limit = ScreenManager.parse_scrollback_limit(opts)
@@ -35,8 +35,7 @@ defmodule Raxol.Terminal.EmulatorFactory do
       last_col_exceeded: false,
       icon_name: nil,
       current_hyperlink_url: nil,
-      parser_state: ParserStateManager.reset_parser_state(%Emulator{}),
-      input_mode: :normal
+      parser_state: ParserStateManager.reset_parser_state(%Struct{})
     }
   end
 end

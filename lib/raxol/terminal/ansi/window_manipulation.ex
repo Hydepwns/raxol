@@ -100,6 +100,29 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   }
 
   @doc """
+  Creates a new window manipulation state with default values.
+  """
+  def new() do
+    %{
+      position: {0, 0},
+      size: {80, 24},
+      state: :normal,
+      title: "",
+      icon: "",
+      focused: true,
+      border_style: :single,
+      border_color: {0, 0, 0},
+      border_width: 1,
+      border_radius: 0,
+      shadow: false,
+      shadow_color: {0, 0, 0},
+      shadow_blur: 0,
+      shadow_offset: {0, 0},
+      transparency: 1.0
+    }
+  end
+
+  @doc """
   Processes a window manipulation sequence and returns the corresponding event.
   """
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil

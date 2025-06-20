@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Formatting do
     update_style(state, %{background: color})
   end
 
-  def reset_all(state) do
+  def reset_all(_state) do
     init()
   end
 

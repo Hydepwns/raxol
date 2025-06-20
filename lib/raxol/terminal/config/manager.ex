@@ -4,18 +4,61 @@ defmodule Raxol.Terminal.Config.Manager do
   This module is responsible for handling configuration operations and state.
   """
 
+  use GenServer
   alias Raxol.Terminal.{Emulator, Config}
   require Raxol.Core.Runtime.Log
+
+  # Client API
+
+  @doc """
+  Starts the config manager.
+  """
+  @spec start_link() :: GenServer.on_start()
+  def start_link do
+    start_link([])
+  end
+
+  @doc """
+  Starts the config manager with options.
+  """
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
+  end
+
+  # Server Callbacks
+
+  @impl true
+  def init(opts) do
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+    {:ok, new(width, height)}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  # Private functions
 
   @doc """
   Creates a new config manager.
   """
   @spec new() :: Config.t()
-  def new do
+  defp new do
+    new(80, 24)
+  end
+
+  @doc """
+  Creates a new config manager with width and height.
+  """
+  @spec new(non_neg_integer(), non_neg_integer()) :: Config.t()
+  defp new(width, height) do
     %Config{
       version: 1,
-      width: 80,
-      height: 24,
+      width: width,
+      height: height,
       colors: %{},
       styles: %{},
       input: %{},
@@ -30,14 +73,15 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec get_setting(Emulator.t(), atom()) :: any()
   def get_setting(emulator, setting) when is_atom(setting) do
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     case setting do
-      :width -> emulator.config.width
-      :height -> emulator.config.height
-      :colors -> emulator.config.colors
-      :styles -> emulator.config.styles
-      :input -> emulator.config.input
-      :performance -> emulator.config.performance
-      :mode -> emulator.config.mode
+      :width -> config.width
+      :height -> config.height
+      :colors -> config.colors
+      :styles -> config.styles
+      :input -> config.input
+      :performance -> config.performance
+      :mode -> config.mode
       _ -> nil
     end
   end
@@ -48,23 +92,24 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec set_setting(Emulator.t(), atom(), any()) :: Emulator.t()
   def set_setting(emulator, setting, value) when is_atom(setting) do
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     config = case setting do
       :width when is_integer(value) and value > 0 ->
-        %{emulator.config | width: value}
+        %{config | width: value}
       :height when is_integer(value) and value > 0 ->
-        %{emulator.config | height: value}
+        %{config | height: value}
       :colors when is_map(value) ->
-        %{emulator.config | colors: Map.merge(emulator.config.colors, value)}
+        %{config | colors: Map.merge(config.colors, value)}
       :styles when is_map(value) ->
-        %{emulator.config | styles: Map.merge(emulator.config.styles, value)}
+        %{config | styles: Map.merge(config.styles, value)}
       :input when is_map(value) ->
-        %{emulator.config | input: Map.merge(emulator.config.input, value)}
+        %{config | input: Map.merge(config.input, value)}
       :performance when is_map(value) ->
-        %{emulator.config | performance: Map.merge(emulator.config.performance, value)}
+        %{config | performance: Map.merge(config.performance, value)}
       :mode when is_map(value) ->
-        %{emulator.config | mode: Map.merge(emulator.config.mode, value)}
+        %{config | mode: Map.merge(config.mode, value)}
       _ ->
-        emulator.config
+        config
     end
     %{emulator | config: config}
   end
@@ -75,7 +120,8 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec get_preference(Emulator.t(), atom()) :: any()
   def get_preference(emulator, preference) when is_atom(preference) do
-    get_in(emulator.config.mode, [preference])
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+    get_in(config.mode, [preference])
   end
 
   @doc """
@@ -84,8 +130,9 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec set_preference(Emulator.t(), atom(), any()) :: Emulator.t()
   def set_preference(emulator, preference, value) when is_atom(preference) do
-    mode = Map.put(emulator.config.mode, preference, value)
-    %{emulator | config: %{emulator.config | mode: mode}}
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+    mode = Map.put(config.mode, preference, value)
+    %{emulator | config: %{config | mode: mode}}
   end
 
   @doc """
@@ -94,7 +141,8 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec get_environment(Emulator.t(), String.t()) :: String.t() | nil
   def get_environment(emulator, key) when is_binary(key) do
-    get_in(emulator.config.input, [key])
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+    get_in(config.input, [key])
   end
 
   @doc """
@@ -103,8 +151,9 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec set_environment(Emulator.t(), String.t(), String.t()) :: Emulator.t()
   def set_environment(emulator, key, value) when is_binary(key) and is_binary(value) do
-    input = Map.put(emulator.config.input, key, value)
-    %{emulator | config: %{emulator.config | input: input}}
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+    input = Map.put(config.input, key, value)
+    %{emulator | config: %{config | input: input}}
   end
 
   @doc """
@@ -113,7 +162,8 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec get_all_environment(Emulator.t()) :: %{String.t() => String.t()}
   def get_all_environment(emulator) do
-    emulator.config.input
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+    config.input
   end
 
   @doc """
@@ -122,8 +172,9 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec set_environment_variables(Emulator.t(), %{String.t() => String.t()}) :: Emulator.t()
   def set_environment_variables(emulator, variables) when is_map(variables) do
-    input = Map.merge(emulator.config.input, variables)
-    %{emulator | config: %{emulator.config | input: input}}
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+    input = Map.merge(config.input, variables)
+    %{emulator | config: %{config | input: input}}
   end
 
   @doc """
@@ -132,7 +183,8 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec clear_environment(Emulator.t()) :: Emulator.t()
   def clear_environment(emulator) do
-    %{emulator | config: %{emulator.config | input: %{}}}
+    config = Raxol.Terminal.Emulator.get_config_struct(emulator)
+    %{emulator | config: %{config | input: %{}}}
   end
 
   @doc """
