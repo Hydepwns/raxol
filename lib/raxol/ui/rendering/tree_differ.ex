@@ -52,11 +52,12 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
       are_children_consistently_keyed?(old_children) &&
         are_children_consistently_keyed?(new_children)
 
-    children_diff_result = if attempt_keyed_diff do
-      perform_keyed_children_diff(old_children, new_children, path)
-    else
-      perform_non_keyed_children_diff(old_children, new_children, path)
-    end
+    children_diff_result =
+      if attempt_keyed_diff do
+        perform_keyed_children_diff(old_children, new_children, path)
+      else
+        perform_non_keyed_children_diff(old_children, new_children, path)
+      end
 
     case children_diff_result do
       :no_change -> :no_change
@@ -146,21 +147,30 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
          new_children_list,
          path_to_parent
        ) do
-    old_children_map_by_key = build_children_map_by_key(old_children_list, "old_children_list")
-    new_children_map_by_key = build_children_map_by_key(new_children_list, "new_children_list")
+    old_children_map_by_key =
+      build_children_map_by_key(old_children_list, "old_children_list")
+
+    new_children_map_by_key =
+      build_children_map_by_key(new_children_list, "new_children_list")
 
     old_keys_set = Map.keys(old_children_map_by_key) |> MapSet.new()
     new_keys_set = Map.keys(new_children_map_by_key) |> MapSet.new()
     new_keys_ordered = Enum.map(new_children_list || [], & &1[:key])
 
-    ops = build_keyed_operations(
-      old_children_map_by_key,
-      new_children_list,
-      old_keys_set,
-      new_keys_set
-    )
+    ops =
+      build_keyed_operations(
+        old_children_map_by_key,
+        new_children_list,
+        old_keys_set,
+        new_keys_set
+      )
 
-    determine_keyed_diff_result(ops, old_children_list, new_keys_ordered, path_to_parent)
+    determine_keyed_diff_result(
+      ops,
+      old_children_list,
+      new_keys_ordered,
+      path_to_parent
+    )
   end
 
   defp build_children_map_by_key(children_list, list_name) do
@@ -170,19 +180,29 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     end)
   end
 
-  defp build_keyed_operations(old_children_map_by_key, new_children_list, old_keys_set, new_keys_set) do
-    add_and_update_ops = build_add_and_update_operations(
-      old_children_map_by_key,
-      new_children_list,
-      old_keys_set
-    )
+  defp build_keyed_operations(
+         old_children_map_by_key,
+         new_children_list,
+         old_keys_set,
+         new_keys_set
+       ) do
+    add_and_update_ops =
+      build_add_and_update_operations(
+        old_children_map_by_key,
+        new_children_list,
+        old_keys_set
+      )
 
     remove_ops = build_remove_operations(old_keys_set, new_keys_set)
 
     add_and_update_ops ++ remove_ops
   end
 
-  defp build_add_and_update_operations(old_children_map_by_key, new_children_list, old_keys_set) do
+  defp build_add_and_update_operations(
+         old_children_map_by_key,
+         new_children_list,
+         old_keys_set
+       ) do
     Enum.reduce(new_children_list || [], [], fn new_child_node, acc ->
       key = new_child_node[:key]
 
@@ -214,7 +234,12 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     end)
   end
 
-  defp determine_keyed_diff_result(ops, old_children_list, new_keys_ordered, path_to_parent) do
+  defp determine_keyed_diff_result(
+         ops,
+         old_children_list,
+         new_keys_ordered,
+         path_to_parent
+       ) do
     has_structural_changes = ops != []
     old_keys_ordered = Enum.map(old_children_list || [], & &1[:key])
     order_changed = old_keys_ordered != new_keys_ordered
@@ -224,7 +249,8 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
         :no_change
 
       !has_structural_changes && order_changed ->
-        {:update, path_to_parent, %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
+        {:update, path_to_parent,
+         %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
 
       true ->
         all_ops = ops ++ [{:key_reorder, new_keys_ordered}]
