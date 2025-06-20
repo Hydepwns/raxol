@@ -79,7 +79,7 @@ graph LR
 
     subgraph UI["UI Components Layer"]
         direction TB
-        Basic[Basic Components (Button, TextInput, Table, Modal, TabBar, Progress)]
+        Basic["Basic Components (Button, TextInput, Table, Modal, TabBar, Progress)"]
         Layout[Layout Components]
         Focus[Focus Management]
         Accessibility[Accessibility]
@@ -145,7 +145,7 @@ graph TB
 ```mermaid
 graph TB
     subgraph UI["UI Components Layer"]
-        Basic[Basic Components (Button, TextInput, Table, Modal, TabBar, Progress)]
+        Basic["Basic Components (Button, TextInput, Table, Modal, TabBar, Progress)"]
         Layout[Layout Components]
         Focus[Focus Management]
         Accessibility[Accessibility]
