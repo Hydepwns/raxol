@@ -178,11 +178,14 @@ defmodule Raxol.Core.Metrics.Cloud do
   end
 
   defp validate_cloud_config(config) do
-    with :ok <- validate_service(config.service),
-         :ok <- validate_endpoint(config.endpoint),
-         :ok <- validate_api_key(config.api_key),
-         :ok <- validate_batch_size(config.batch_size),
-         :ok <- validate_flush_interval(config.flush_interval) do
+    # Merge with defaults to ensure all required fields are present
+    config_with_defaults = Map.merge(@default_config, config)
+
+    with :ok <- validate_service(config_with_defaults.service),
+         :ok <- validate_endpoint(config_with_defaults.endpoint),
+         :ok <- validate_api_key(config_with_defaults.api_key),
+         :ok <- validate_batch_size(config_with_defaults.batch_size),
+         :ok <- validate_flush_interval(config_with_defaults.flush_interval) do
       :ok
     end
   end

@@ -138,6 +138,7 @@ config :raxol, :environment_adapter_impl, Raxol.Mocks.EnvironmentAdapterMock
 config :raxol, :system_interaction_impl, SystemInteractionMock
 config :raxol, :focus_manager_impl, Raxol.Mocks.FocusManagerMock
 config :raxol, :accessibility_impl, Raxol.Mocks.AccessibilityMock
+config :raxol, :event_manager, Raxol.Mocks.EventManagerMock
 
 # Configure Mox mocks for testing
 config :raxol,

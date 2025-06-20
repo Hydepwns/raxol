@@ -136,4 +136,51 @@ defmodule Raxol.Plugins.Manager.Events do
   def new do
     Core.new()
   end
+
+  @doc """
+  Unloads a plugin from the manager.
+  Returns `{:ok, updated_manager}` or `{:error, reason}`.
+  """
+  def unload_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+    Core.unload_plugin(manager, plugin_name)
+  end
+
+  @doc """
+  Enables a plugin in the manager.
+  Returns `{:ok, updated_manager}` or `{:error, reason}`.
+  """
+  def enable_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+    case get_plugin(manager, plugin_name) do
+      {:ok, plugin} ->
+        updated_plugin = %{plugin | enabled: true}
+        updated_manager = Core.update_plugins(manager, Map.put(manager.plugins, plugin_name, updated_plugin))
+        {:ok, updated_manager}
+      error -> error
+    end
+  end
+
+  @doc """
+  Disables a plugin in the manager.
+  Returns `{:ok, updated_manager}` or `{:error, reason}`.
+  """
+  def disable_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+    case get_plugin(manager, plugin_name) do
+      {:ok, plugin} ->
+        updated_plugin = %{plugin | enabled: false}
+        updated_manager = Core.update_plugins(manager, Map.put(manager.plugins, plugin_name, updated_plugin))
+        {:ok, updated_manager}
+      error -> error
+    end
+  end
+
+  @doc """
+  Gets a plugin by name from the manager.
+  Returns `{:ok, plugin}` or `{:error, :not_found}`.
+  """
+  def get_plugin(%Core{} = manager, plugin_name) when is_binary(plugin_name) do
+    case Map.get(manager.plugins, plugin_name) do
+      nil -> {:error, :not_found}
+      plugin -> {:ok, plugin}
+    end
+  end
 end

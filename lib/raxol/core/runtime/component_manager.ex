@@ -275,62 +275,51 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   defp broadcast_update(msg, source_component_id, state) do
     Enum.reduce(Map.keys(state.components), state, fn id, acc_state ->
-      # Skip update for the component that initiated the broadcast
       if id == source_component_id do
         acc_state
       else
-        case Map.get(acc_state.components, id) do
-          nil ->
-            acc_state
-
-          component ->
-            # Directly call component update
-            {updated_comp_state, _commands} =
-              component.module.update(msg, component.state)
-
-            # Update component in state
-            updated_component = %{component | state: updated_comp_state}
-
-            state_with_updated_comp =
-              put_in(acc_state.components[id], updated_component)
-
-            # Add to render queue
-            update_in(state_with_updated_comp.render_queue, &[id | &1])
-        end
+        update_component_in_broadcast(id, msg, acc_state)
       end
     end)
+  end
+
+  defp update_component_in_broadcast(id, msg, state) do
+    case Map.get(state.components, id) do
+      nil -> state
+      component ->
+        {updated_comp_state, _commands} = component.module.update(msg, component.state)
+        updated_component = %{component | state: updated_comp_state}
+        state_with_updated_comp = put_in(state.components[id], updated_component)
+        update_in(state_with_updated_comp.render_queue, &[id | &1])
+    end
   end
 
   defp handle_component_command(command, component_id, state) do
     case command do
       {:subscribe, events} when is_list(events) ->
-        # Set up event subscription using aliased Subscription module
-        # Assuming start/2 is the correct function
-        {:ok, sub_id} =
-          Subscription.start(%Subscription{type: :events, data: events}, %{
-            pid: self()
-          })
-
-        state = put_in(state.subscriptions[sub_id], component_id)
-        state
+        handle_subscription_command(events, component_id, state)
 
       {:unsubscribe, sub_id} ->
-        # Remove subscription using aliased Subscription module
-        case Subscription.stop(sub_id) do
-          :ok ->
-            update_in(state.subscriptions, &Map.delete(&1, sub_id))
+        handle_unsubscribe_command(sub_id, state)
 
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}",
-              %{}
-            )
+      _ -> state
+    end
+  end
 
-            update_in(state.subscriptions, &Map.delete(&1, sub_id))
-        end
+  defp handle_subscription_command(events, component_id, state) do
+    {:ok, sub_id} = Subscription.start(%Subscription{type: :events, data: events}, %{pid: self()})
+    put_in(state.subscriptions[sub_id], component_id)
+  end
 
-      _ ->
-        state
+  defp handle_unsubscribe_command(sub_id, state) do
+    case Subscription.stop(sub_id) do
+      :ok -> update_in(state.subscriptions, &Map.delete(&1, sub_id))
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}",
+          %{}
+        )
+        update_in(state.subscriptions, &Map.delete(&1, sub_id))
     end
   end
 
