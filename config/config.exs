@@ -1,12 +1,12 @@
 # This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
+# and its dependencies with the aid of the Config module.
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
 
-# General application configuration
-use Mix.Config
+import Config
 
+# General application configuration
 config :raxol,
   ecto_repos: [Raxol.Repo],
   generators: [binary_id: true]
@@ -31,7 +31,7 @@ config :phoenix, :json_library, Jason
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
-import_config "#{Mix.env()}.exs"
+import_config "#{config_env()}.exs"
 import_config "cldr.exs"
 
 # Configure the database
@@ -50,7 +50,7 @@ config :raxol,
 # Configuration from the imported file will override the ones defined
 # here (which is why it is important to import them last).
 #
-#     import_config "#{Mix.env}.exs"
+#     import_config "#{config_env()}.exs"
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
