@@ -13,6 +13,11 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   end
 
   @impl true
+  def terminate(_reason, _state) do
+    :ok
+  end
+
+  @impl true
   def get_commands do
     [
       :clipboard_write,
