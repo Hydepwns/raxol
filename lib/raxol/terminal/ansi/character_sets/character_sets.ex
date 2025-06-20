@@ -171,13 +171,16 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   Translates a character using the active character set.
   Returns {codepoint, new_state} as expected by the tests.
   """
-  @spec translate_char(codepoint, charset_state()) :: {codepoint(), charset_state()}
+  @spec translate_char(codepoint, charset_state()) ::
+          {codepoint(), charset_state()}
   def translate_char(codepoint, state) when is_integer(codepoint) do
-    result = Translator.translate_char(
-      codepoint,
-      get_active_charset(state),
-      state.single_shift
-    )
+    result =
+      Translator.translate_char(
+        codepoint,
+        get_active_charset(state),
+        state.single_shift
+      )
+
     new_state = clear_single_shift(state)
     {result, new_state}
   end

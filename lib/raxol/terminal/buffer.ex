@@ -254,10 +254,20 @@ defmodule Raxol.Terminal.Buffer do
   Fills a region of the buffer with a specified cell.
   Delegates to ScreenBuffer.fill_region/6.
   """
-  @spec fill_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), Cell.t()) :: t()
+  @spec fill_region(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          Cell.t()
+        ) :: t()
   def fill_region(buffer, x, y, width, height, cell) do
     screen_buffer = to_screen_buffer(buffer)
-    filled_screen_buffer = ScreenBuffer.fill_region(screen_buffer, x, y, width, height, cell)
+
+    filled_screen_buffer =
+      ScreenBuffer.fill_region(screen_buffer, x, y, width, height, cell)
+
     from_screen_buffer(filled_screen_buffer, buffer)
   end
 

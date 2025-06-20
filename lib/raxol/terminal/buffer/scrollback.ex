@@ -148,9 +148,10 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   @spec get_memory_usage(t()) :: non_neg_integer()
   def get_memory_usage(%__MODULE__{} = scrollback) do
     # Estimate memory usage based on number of lines and average line length
-    total_cells = Enum.reduce(scrollback.lines, 0, fn line, acc ->
-      acc + length(line)
-    end)
+    total_cells =
+      Enum.reduce(scrollback.lines, 0, fn line, acc ->
+        acc + length(line)
+      end)
 
     # Rough estimate: each cell is about 64 bytes (including overhead)
     total_cells * 64

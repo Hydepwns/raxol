@@ -273,19 +273,45 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @spec apply_attribute(text_style(), atom()) :: text_style()
   def apply_attribute(style, attribute) do
     case attribute do
-      :reset -> new()
-      :no_bold -> %{style | bold: false}
-      :no_italic -> %{style | italic: false}
-      :no_underline -> %{style | underline: false}
-      :no_blink -> %{style | blink: false}
-      :no_reverse -> %{style | reverse: false}
-      :no_conceal -> %{style | conceal: false}
-      :no_strikethrough -> %{style | strikethrough: false}
-      :no_fraktur -> %{style | fraktur: false}
-      :no_double_underline -> %{style | double_underline: false}
-      :no_framed -> %{style | framed: false}
-      :no_encircled -> %{style | encircled: false}
-      :no_overlined -> %{style | overlined: false}
+      :reset ->
+        new()
+
+      :no_bold ->
+        %{style | bold: false}
+
+      :no_italic ->
+        %{style | italic: false}
+
+      :no_underline ->
+        %{style | underline: false}
+
+      :no_blink ->
+        %{style | blink: false}
+
+      :no_reverse ->
+        %{style | reverse: false}
+
+      :no_conceal ->
+        %{style | conceal: false}
+
+      :no_strikethrough ->
+        %{style | strikethrough: false}
+
+      :no_fraktur ->
+        %{style | fraktur: false}
+
+      :no_double_underline ->
+        %{style | double_underline: false}
+
+      :no_framed ->
+        %{style | framed: false}
+
+      :no_encircled ->
+        %{style | encircled: false}
+
+      :no_overlined ->
+        %{style | overlined: false}
+
       _ ->
         case Map.get(@attribute_handlers, attribute) do
           nil -> style
@@ -493,7 +519,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @doc """
   Applies the given color to the text style with explicit foreground/background parameters.
   """
-  @spec apply_color(text_style(), :foreground | :background, atom()) :: text_style()
+  @spec apply_color(text_style(), :foreground | :background, atom()) ::
+          text_style()
   def apply_color(style, :foreground, color) do
     %{style | foreground: color}
   end
@@ -535,7 +562,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   def effective_width(style, text) do
     base_width =
       case text do
-        "你" -> 2  # Wide Unicode character
+        # Wide Unicode character
+        "你" -> 2
         _ -> String.length(text)
       end
 
@@ -691,33 +719,61 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   defp handle_integer_param(code, style) do
     cond do
       # Basic attributes
-      code == 1 -> %{style | bold: true}
-      code == 2 -> %{style | faint: true}
-      code == 3 -> %{style | italic: true}
-      code == 4 -> %{style | underline: true}
-      code == 5 -> %{style | blink: true}
-      code == 7 -> %{style | reverse: true}
-      code == 8 -> %{style | conceal: true}
-      code == 9 -> %{style | strikethrough: true}
+      code == 1 ->
+        %{style | bold: true}
+
+      code == 2 ->
+        %{style | faint: true}
+
+      code == 3 ->
+        %{style | italic: true}
+
+      code == 4 ->
+        %{style | underline: true}
+
+      code == 5 ->
+        %{style | blink: true}
+
+      code == 7 ->
+        %{style | reverse: true}
+
+      code == 8 ->
+        %{style | conceal: true}
+
+      code == 9 ->
+        %{style | strikethrough: true}
 
       # Advanced attributes
-      code == 51 -> %{style | framed: true}
-      code == 52 -> %{style | encircled: true}
-      code == 53 -> %{style | overlined: true}
-      code == 54 -> %{style | framed: false, encircled: false}
-      code == 55 -> %{style | overlined: false}
+      code == 51 ->
+        %{style | framed: true}
+
+      code == 52 ->
+        %{style | encircled: true}
+
+      code == 53 ->
+        %{style | overlined: true}
+
+      code == 54 ->
+        %{style | framed: false, encircled: false}
+
+      code == 55 ->
+        %{style | overlined: false}
 
       # Colors
       code in [30, 31, 32, 33, 34, 35, 36, 37] ->
         %{style | foreground: ansi_code_to_color_name(code - 30)}
+
       code in [90, 91, 92, 93, 94, 95, 96, 97] ->
         %{style | foreground: ansi_code_to_color_name(code - 90)}
+
       code in [40, 41, 42, 43, 44, 45, 46, 47] ->
         %{style | background: ansi_code_to_color_name(code - 40)}
+
       code in [100, 101, 102, 103, 104, 105, 106, 107] ->
         %{style | background: ansi_code_to_color_name(code - 100)}
 
-      true -> style
+      true ->
+        style
     end
   end
 

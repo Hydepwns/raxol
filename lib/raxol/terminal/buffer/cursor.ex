@@ -401,7 +401,11 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   @doc """
   Sets the cursor position on the ScreenBuffer struct.
   """
-  @spec set_cursor_position(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec set_cursor_position(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def set_cursor_position(buffer, x, y) do
     %{buffer | cursor_position: {x, y}}
   end
@@ -409,7 +413,8 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   @doc """
   Gets the cursor position from the ScreenBuffer struct.
   """
-  @spec get_cursor_position(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()} | nil
+  @spec get_cursor_position(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_cursor_position(buffer) do
     buffer.cursor_position
   end

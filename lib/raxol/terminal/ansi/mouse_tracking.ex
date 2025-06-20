@@ -84,13 +84,20 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   @spec parse_mouse_sequence(String.t()) :: mouse_event() | nil
   def parse_mouse_sequence(sequence) do
     try do
-      IO.puts("parse_mouse_sequence: sequence=#{inspect(sequence)}, bytes=#{inspect(:erlang.binary_to_list(sequence))}")
+      IO.puts(
+        "parse_mouse_sequence: sequence=#{inspect(sequence)}, bytes=#{inspect(:erlang.binary_to_list(sequence))}"
+      )
+
       case sequence do
         <<"\e[M", button, x, y>> ->
           b = button - 32
           xx = x - 32
           yy = y - 32
-          IO.puts("parse_mouse_sequence: b=#{inspect(b)}, xx=#{inspect(xx)}, yy=#{inspect(yy)}")
+
+          IO.puts(
+            "parse_mouse_sequence: b=#{inspect(b)}, xx=#{inspect(xx)}, yy=#{inspect(yy)}"
+          )
+
           parse_mouse_event(b, xx, yy)
 
         <<"\e[<", rest::binary>> ->
@@ -155,7 +162,9 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   defp parse_mouse_event(3, x, y), do: {:left, :release, x, y}
   defp parse_mouse_event(32, x, y), do: {:left, :move, x, y}
   defp parse_mouse_event(35, x, y), do: {:left, :drag, x, y}
-  defp parse_mouse_event(button_code, x, y), do: parse_mouse_event_fallback(button_code, x, y)
+
+  defp parse_mouse_event(button_code, x, y),
+    do: parse_mouse_event_fallback(button_code, x, y)
 
   defp parse_mouse_event_fallback(button_code, x, y) do
     import Bitwise
@@ -165,7 +174,11 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   end
 
   defp parse_sgr_mouse_event(rest) do
-    rest_str = if is_binary(rest), do: :erlang.binary_to_list(rest) |> to_string(), else: rest
+    rest_str =
+      if is_binary(rest),
+        do: :erlang.binary_to_list(rest) |> to_string(),
+        else: rest
+
     case Regex.run(~r/^([0-9]+);([0-9]+);([0-9]+)([mM])/, rest_str) do
       [_, button, x, y, kind] ->
         button = String.to_integer(button)
@@ -173,6 +186,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
         y = String.to_integer(y)
         event = parse_mouse_event(button, x, y)
         if kind == "m" and event, do: put_elem(event, 1, :release), else: event
+
       _ ->
         nil
     end
