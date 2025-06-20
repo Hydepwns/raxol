@@ -17,9 +17,16 @@ defmodule Raxol.Terminal.TestHelper do
   defdelegate setup_test_env(), to: Raxol.Test.Support.TestHelper
   defdelegate setup_test_terminal(), to: Raxol.Test.Support.TestHelper
   defdelegate test_events(), to: Raxol.Test.Support.TestHelper
-  defdelegate create_test_component(module, initial_state \\ %{}), to: Raxol.Test.Support.TestHelper
+
+  defdelegate create_test_component(module, initial_state \\ %{}),
+    to: Raxol.Test.Support.TestHelper
+
   defdelegate cleanup_test_env(context), to: Raxol.Test.Support.TestHelper
   defdelegate setup_common_mocks(), to: Raxol.Test.Support.TestHelper
-  defdelegate create_test_plugin(name, config \\ %{}), to: Raxol.Test.Support.TestHelper
-  defdelegate create_test_plugin_module(name, callbacks \\ %{}), to: Raxol.Test.Support.TestHelper
+
+  defdelegate create_test_plugin(name, config \\ %{}),
+    to: Raxol.Test.Support.TestHelper
+
+  defdelegate create_test_plugin_module(name, callbacks \\ %{}),
+    to: Raxol.Test.Support.TestHelper
 end

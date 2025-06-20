@@ -30,7 +30,8 @@ defmodule Raxol.Terminal.SearchManager do
   Starts a new search with the given pattern.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec start_search(Emulator.t(), String.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec start_search(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def start_search(emulator, pattern) do
     case SearchBuffer.start_search(emulator.search_buffer, pattern) do
       {:ok, new_buffer} ->
@@ -45,7 +46,8 @@ defmodule Raxol.Terminal.SearchManager do
   Finds the next match in the search.
   Returns {:ok, updated_emulator, match} or {:error, reason}.
   """
-  @spec find_next(Emulator.t()) :: {:ok, Emulator.t(), map()} | {:error, String.t()}
+  @spec find_next(Emulator.t()) ::
+          {:ok, Emulator.t(), map()} | {:error, String.t()}
   def find_next(emulator) do
     case SearchBuffer.find_next(emulator.search_buffer) do
       {:ok, new_buffer, match} ->
@@ -60,7 +62,8 @@ defmodule Raxol.Terminal.SearchManager do
   Finds the previous match in the search.
   Returns {:ok, updated_emulator, match} or {:error, reason}.
   """
-  @spec find_previous(Emulator.t()) :: {:ok, Emulator.t(), map()} | {:error, String.t()}
+  @spec find_previous(Emulator.t()) ::
+          {:ok, Emulator.t(), map()} | {:error, String.t()}
   def find_previous(emulator) do
     case SearchBuffer.find_previous(emulator.search_buffer) do
       {:ok, new_buffer, match} ->

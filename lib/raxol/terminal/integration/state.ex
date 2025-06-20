@@ -67,13 +67,16 @@ defmodule Raxol.Terminal.Integration.State do
   Creates a new integration state with specified width, height, and config.
   """
   @spec new(non_neg_integer(), non_neg_integer(), map()) :: t()
-  def new(width, height, config) when is_integer(width) and is_integer(height) and is_map(config) do
+  def new(width, height, config)
+      when is_integer(width) and is_integer(height) and is_map(config) do
     # Create a new integration state with specific dimensions
     {:ok, _window_id} =
       UnifiedWindow.create_window(%{
         title: "Raxol Terminal",
-        width: width * 8,  # Approximate pixel width
-        height: height * 16  # Approximate pixel height
+        # Approximate pixel width
+        width: width * 8,
+        # Approximate pixel height
+        height: height * 16
       })
 
     %__MODULE__{

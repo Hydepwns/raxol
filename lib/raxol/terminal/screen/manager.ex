@@ -105,7 +105,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the scroll region from the active buffer.
   """
-  @spec get_scroll_region(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_scroll_region(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_scroll_region(buffer) do
     ScreenBuffer.get_scroll_region(buffer)
   end
@@ -113,7 +114,10 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Sets the scroll region on the buffer.
   """
-  @spec set_scroll_region(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}) ::
+  @spec set_scroll_region(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()}
+        ) ::
           ScreenBuffer.t()
   def set_scroll_region(buffer, {top, bottom}) do
     ScreenBuffer.set_scroll_region(buffer, {top, bottom})
@@ -148,7 +152,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the selection start coordinates.
   """
-  @spec get_selection_start(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()} | nil
+  @spec get_selection_start(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_selection_start(buffer) do
     ScreenBuffer.get_selection_start(buffer)
   end
@@ -156,7 +161,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the selection end coordinates.
   """
-  @spec get_selection_end(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()} | nil
+  @spec get_selection_end(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_selection_end(buffer) do
     ScreenBuffer.get_selection_end(buffer)
   end
@@ -164,7 +170,10 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the selection boundaries as {start, end} tuple.
   """
-  @spec get_selection_boundaries(ScreenBuffer.t()) :: {{non_neg_integer(), non_neg_integer()}, {non_neg_integer(), non_neg_integer()}} | nil
+  @spec get_selection_boundaries(ScreenBuffer.t()) ::
+          {{non_neg_integer(), non_neg_integer()},
+           {non_neg_integer(), non_neg_integer()}}
+          | nil
   def get_selection_boundaries(buffer) do
     ScreenBuffer.get_selection_boundaries(buffer)
   end
@@ -172,7 +181,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Starts a selection at the specified position.
   """
-  @spec start_selection(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec start_selection(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def start_selection(buffer, x, y) do
     ScreenBuffer.start_selection(buffer, x, y)
   end
@@ -180,7 +190,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Updates the selection end position.
   """
-  @spec update_selection(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec update_selection(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def update_selection(buffer, x, y) do
     ScreenBuffer.update_selection(buffer, x, y)
   end
@@ -204,7 +215,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Checks if a position is within the current selection.
   """
-  @spec in_selection?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  @spec in_selection?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          boolean()
   def in_selection?(buffer, x, y) do
     ScreenBuffer.in_selection?(buffer, x, y)
   end
@@ -212,7 +224,13 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Writes a string to the buffer at the given position with the given style.
   """
-  @spec write_string(Raxol.Terminal.ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), String.t(), map()) :: Raxol.Terminal.ScreenBuffer.t()
+  @spec write_string(
+          Raxol.Terminal.ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          map()
+        ) :: Raxol.Terminal.ScreenBuffer.t()
   def write_string(buffer, x, y, string, style) do
     Raxol.Terminal.ScreenBuffer.write_string(buffer, x, y, string, style)
   end

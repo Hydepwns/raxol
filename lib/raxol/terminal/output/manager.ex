@@ -5,33 +5,33 @@ defmodule Raxol.Terminal.Output.Manager do
   """
 
   @type style :: %{
-    foreground: String.t() | nil,
-    background: String.t() | nil,
-    bold: boolean(),
-    italic: boolean(),
-    underline: boolean()
-  }
+          foreground: String.t() | nil,
+          background: String.t() | nil,
+          bold: boolean(),
+          italic: boolean(),
+          underline: boolean()
+        }
 
   @type event :: %{
-    content: String.t(),
-    style: String.t(),
-    timestamp: integer(),
-    priority: integer()
-  }
+          content: String.t(),
+          style: String.t(),
+          timestamp: integer(),
+          priority: integer()
+        }
 
   @type format_rule :: (String.t() -> String.t())
 
   @type metrics :: %{
-    processed_events: non_neg_integer(),
-    batch_count: non_neg_integer(),
-    format_applications: non_neg_integer(),
-    style_applications: non_neg_integer()
-  }
+          processed_events: non_neg_integer(),
+          batch_count: non_neg_integer(),
+          format_applications: non_neg_integer(),
+          style_applications: non_neg_integer()
+        }
 
   @type buffer :: %{
-    events: [event()],
-    max_size: non_neg_integer()
-  }
+          events: [event()],
+          max_size: non_neg_integer()
+        }
 
   defstruct buffer: %{events: [], max_size: 1024 * 1024},
             format_rules: [],
@@ -45,12 +45,12 @@ defmodule Raxol.Terminal.Output.Manager do
             }
 
   @type t :: %__MODULE__{
-    buffer: buffer(),
-    format_rules: [format_rule()],
-    style_map: %{String.t() => style()},
-    batch_size: pos_integer(),
-    metrics: metrics()
-  }
+          buffer: buffer(),
+          format_rules: [format_rule()],
+          style_map: %{String.t() => style()},
+          batch_size: pos_integer(),
+          metrics: metrics()
+        }
 
   @doc """
   Creates a new output manager instance.
@@ -89,17 +89,25 @@ defmodule Raxol.Terminal.Output.Manager do
     case validate_event(event) do
       :ok ->
         processed_event = apply_formatting_rules(manager, event)
+
         updated_manager = %{
           manager
           | buffer: add_event_to_buffer(manager.buffer, processed_event),
             metrics: update_metrics(manager.metrics, :processed_events)
         }
+
         # Increment format_applications if any formatting rules exist
-        updated_manager = if length(manager.format_rules) > 0 do
-          %{updated_manager | metrics: update_metrics(updated_manager.metrics, :format_applications)}
-        else
-          updated_manager
-        end
+        updated_manager =
+          if length(manager.format_rules) > 0 do
+            %{
+              updated_manager
+              | metrics:
+                  update_metrics(updated_manager.metrics, :format_applications)
+            }
+          else
+            updated_manager
+          end
+
         {:ok, updated_manager}
 
       :error ->
@@ -112,7 +120,8 @@ defmodule Raxol.Terminal.Output.Manager do
   Returns {:ok, updated_manager} or {:error, :invalid_event}.
   """
   @spec process_batch(t(), [event()]) :: {:ok, t()} | {:error, :invalid_event}
-  def process_batch(%__MODULE__{} = manager, events) when length(events) > manager.batch_size do
+  def process_batch(%__MODULE__{} = manager, events)
+      when length(events) > manager.batch_size do
     {:error, :invalid_event}
   end
 
@@ -124,9 +133,15 @@ defmodule Raxol.Terminal.Output.Manager do
       end
     end)
     |> case do
-      {:error, :invalid_event} -> {:error, :invalid_event}
+      {:error, :invalid_event} ->
+        {:error, :invalid_event}
+
       updated_manager ->
-        {:ok, %{updated_manager | metrics: update_metrics(updated_manager.metrics, :batch_count)}}
+        {:ok,
+         %{
+           updated_manager
+           | metrics: update_metrics(updated_manager.metrics, :batch_count)
+         }}
     end
   end
 
@@ -135,7 +150,8 @@ defmodule Raxol.Terminal.Output.Manager do
   Returns the updated manager.
   """
   @spec add_style(t(), String.t(), style()) :: t()
-  def add_style(%__MODULE__{} = manager, style_name, style) when is_binary(style_name) do
+  def add_style(%__MODULE__{} = manager, style_name, style)
+      when is_binary(style_name) do
     %{
       manager
       | style_map: Map.put(manager.style_map, style_name, style),
@@ -148,7 +164,8 @@ defmodule Raxol.Terminal.Output.Manager do
   Returns the updated manager.
   """
   @spec add_format_rule(t(), format_rule()) :: t()
-  def add_format_rule(%__MODULE__{} = manager, rule) when is_function(rule, 1) do
+  def add_format_rule(%__MODULE__{} = manager, rule)
+      when is_function(rule, 1) do
     %{
       manager
       | format_rules: [rule | manager.format_rules],
@@ -176,7 +193,12 @@ defmodule Raxol.Terminal.Output.Manager do
   # Private functions
 
   @spec validate_event(event()) :: :ok | :error
-  defp validate_event(%{content: content, style: style, timestamp: timestamp, priority: priority}) do
+  defp validate_event(%{
+         content: content,
+         style: style,
+         timestamp: timestamp,
+         priority: priority
+       }) do
     cond do
       not is_binary(content) -> :error
       not is_binary(style) -> :error
@@ -190,15 +212,19 @@ defmodule Raxol.Terminal.Output.Manager do
 
   @spec apply_formatting_rules(t(), event()) :: event()
   defp apply_formatting_rules(%__MODULE__{} = manager, event) do
-    processed_content = Enum.reduce(manager.format_rules, event.content, fn rule, content ->
-      rule.(content)
-    end)
+    processed_content =
+      Enum.reduce(manager.format_rules, event.content, fn rule, content ->
+        rule.(content)
+      end)
 
     %{event | content: processed_content}
   end
 
   @spec add_event_to_buffer(buffer(), event()) :: buffer()
-  defp add_event_to_buffer(%{events: events, max_size: max_size} = buffer, event) do
+  defp add_event_to_buffer(
+         %{events: events, max_size: max_size} = buffer,
+         event
+       ) do
     new_events = [event | events]
 
     # Simple size check - in a real implementation, you might want more sophisticated buffering
@@ -237,7 +263,9 @@ defmodule Raxol.Terminal.Output.Manager do
   defp apply_basic_formatting(content) do
     # Basic formatting - could be expanded with more sophisticated rules
     content
-    |> String.replace(~r/\*\*(.*?)\*\*/, "\\1")  # Remove markdown bold
-    |> String.replace(~r/\*(.*?)\*/, "\\1")      # Remove markdown italic
+    # Remove markdown bold
+    |> String.replace(~r/\*\*(.*?)\*\*/, "\\1")
+    # Remove markdown italic
+    |> String.replace(~r/\*(.*?)\*/, "\\1")
   end
 end

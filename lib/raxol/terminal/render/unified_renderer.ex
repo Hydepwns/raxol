@@ -276,6 +276,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
       theme: %{foreground: :white, background: :black},
       font_settings: %{size: 12}
     }
+
     {:reply, :ok, %{renderer | config: default_config}}
   end
 
