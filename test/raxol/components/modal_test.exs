@@ -34,7 +34,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert state.buttons == [{"Yes", :yes_msg}, {"No", :no_msg}]
   end
 
-  test ~c"update handles basic show/hide" do
+  test "update handles basic show/hide" do
     # Use Modal.init/1 with a props map to ensure all required fields are present
     props = Modal.alert(:my_alert, "Alert!", "X", visible: false)
     state = Modal.init(Map.new(props))
@@ -57,7 +57,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert hide_cmds == []
   end
 
-  test ~c"update handles simple button click" do
+  test "update handles simple button click" do
     props = Modal.alert(:my_alert, "Alert!", "X")
     state = Modal.init(Map.new(props))
     assert state.visible
@@ -69,7 +69,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   # --- Prompt Modal Tests ---
 
-  test ~c"init initializes prompt modal" do
+  test "init initializes prompt modal" do
     props =
       Modal.prompt(
         :my_prompt,
@@ -106,7 +106,7 @@ defmodule Raxol.UI.Components.ModalTest do
            ]
   end
 
-  test ~c"prompt update handles :field_update" do
+  test "prompt update handles :field_update" do
     props = Modal.prompt(:my_prompt, "Enter Value", "Your Name:")
     state = Modal.init(Map.new(props))
 
@@ -117,7 +117,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert new_state.form_state.fields |> hd() |> Map.get(:value) == "New Value"
   end
 
-  test ~c"prompt handle_event submits on Enter" do
+  test "prompt handle_event submits on Enter" do
     props =
       Modal.prompt(:my_prompt, "Enter Value", "Your Name:", :prompt_submit)
 
@@ -137,7 +137,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert commands == [{:prompt_submit, expected_payload}]
   end
 
-  test ~c"prompt handle_event cancels on Escape" do
+  test "prompt handle_event cancels on Escape" do
     props =
       Modal.prompt(:my_prompt, "Enter Value", "Name", :submit, :prompt_cancel)
 
@@ -171,7 +171,7 @@ defmodule Raxol.UI.Components.ModalTest do
     Modal.form(:my_form, "Test Form", fields, :form_submitted, :form_canceled)
   end
 
-  test ~c"form init initializes form modal state correctly" do
+  test "form init initializes form modal state correctly" do
     props = default_form_props()
     state = Modal.init(Map.new(props))
 
@@ -196,7 +196,7 @@ defmodule Raxol.UI.Components.ModalTest do
            ]
   end
 
-  test ~c"form render generates form fields" do
+  test "form render generates form fields" do
     props = default_form_props()
     state = Modal.init(Map.new(props))
     view = Modal.render(state, %{})
@@ -274,7 +274,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert input3_map.type == Raxol.UI.Components.Selection.Dropdown
   end
 
-  test ~c"form update handles :field_update for text_input" do
+  test "form update handles :field_update for text_input" do
     props = default_form_props()
     state = Modal.init(Map.new(props))
 
@@ -291,7 +291,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert new_state.form_state.fields |> Enum.at(2) |> Map.get(:value) == "b"
   end
 
-  test ~c"form update handles :field_update for checkbox" do
+  test "form update handles :field_update for checkbox" do
     props = default_form_props()
     state = Modal.init(Map.new(props))
     {new_state, commands} = Modal.update({:field_update, :agree, true}, state)
@@ -300,7 +300,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert new_state.form_state.fields |> Enum.at(1) |> Map.get(:value) == true
   end
 
-  test ~c"form update handles :field_update for dropdown" do
+  test "form update handles :field_update for dropdown" do
     props = default_form_props()
     state = Modal.init(Map.new(props))
     {new_state, commands} = Modal.update({:field_update, :option, "a"}, state)
@@ -309,7 +309,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert new_state.form_state.fields |> Enum.at(2) |> Map.get(:value) == "a"
   end
 
-  test ~c"form update handles focus changes" do
+  test "form update handles focus changes" do
     props = default_form_props()
     initial_state = Modal.init(Map.new(props))
     assert initial_state.form_state.focus_index == 0
@@ -335,7 +335,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert commands_prev == [{:set_focus, "my_form.option"}]
   end
 
-  test ~c"form handle_event triggers focus changes on Tab/Shift+Tab" do
+  test "form handle_event triggers focus changes on Tab/Shift+Tab" do
     props = default_form_props()
     initial_state = Modal.init(Map.new(props))
     # Props might be needed if handle_event uses them
@@ -370,7 +370,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert commands_prev == [{:set_focus, "my_form.option"}]
   end
 
-  test ~c"form handle_event submits form on Enter when valid" do
+  test "form handle_event submits form on Enter when valid" do
     # Single valid field
     fields = [
       %{id: :name, type: :text_input, label: "Name", value: "Final Name"}
@@ -391,7 +391,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert commands == [{:form_submitted, expected_payload}]
   end
 
-  test ~c"form handle_event cancels form on Escape" do
+  test "form handle_event cancels form on Escape" do
     props = default_form_props()
     state = Modal.init(Map.new(props))
     props_map = %{}
@@ -407,7 +407,7 @@ defmodule Raxol.UI.Components.ModalTest do
 
   # --- Validation Tests ---
 
-  test ~c"form validation prevents submission and shows errors on Enter" do
+  test "form validation prevents submission and shows errors on Enter" do
     fields = [
       # Required
       %{
@@ -505,7 +505,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert Keyword.get(error2_label_map.attrs, :content) == "Invalid input"
   end
 
-  test ~c"form validation allows submission when fixed" do
+  test "form validation allows submission when fixed" do
     fields = [
       %{
         id: :name,
@@ -546,7 +546,7 @@ defmodule Raxol.UI.Components.ModalTest do
   end
 
   # --- Edge Case Tests ---
-  test ~c"form with no fields initializes and submits correctly" do
+  test "form with no fields initializes and submits correctly" do
     props =
       Modal.form(:no_fields_form, "No Fields", [], :submit_empty, :cancel_empty)
 
@@ -564,7 +564,7 @@ defmodule Raxol.UI.Components.ModalTest do
     assert commands == [{:submit_empty, %{}}]
   end
 
-  test ~c"modal without id handles focus correctly" do
+  test "modal without id handles focus correctly" do
     props =
       Modal.form(
         nil,

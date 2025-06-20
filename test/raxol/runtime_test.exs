@@ -1,12 +1,3 @@
-# Use async: false for tests involving process linking/monitoring/receiving
-use ExUnit.Case, async: false
-
-alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
-alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
-alias Raxol.Core.Runtime.Events.Dispatcher
-alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
-alias Raxol.Terminal.Driver, as: TerminalDriver
-
 # --- Mock Application ---
 defmodule MockApp do
     @behaviour Raxol.Core.Runtime.Application
@@ -115,15 +106,15 @@ defmodule MockApp do
     end
   end
 
-  # --- Mock GenServers (Optional, for deeper isolation) ---
-  # Example Mock Dispatcher
-  # defmodule MockDispatcher do
-  #   use GenServer
-  #   def start_link(runtime_pid, _init_args), do: GenServer.start_link(__MODULE__, runtime_pid, name: Dispatcher)
-  #   def init(runtime_pid), do: {:ok, runtime_pid}
-  #   def handle_cast({:dispatch, event}, state), do: # store event or send to test pid
-  #   def handle_call(:get_model, _from, state), do: {:reply, {:ok, %{mock: true}}, state}
-  # end
+# --- All test code below ---
+defmodule Raxol.RuntimeTest do
+  use ExUnit.Case, async: false
+
+  alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
+  alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
+  alias Raxol.Core.Runtime.Events.Dispatcher
+  alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
+  alias Raxol.Terminal.Driver, as: TerminalDriver
 
   setup context do
     # Call the cleanup helper at the beginning of setup
@@ -652,7 +643,7 @@ defmodule MockApp do
             do_wait_for_model(dispatcher_pid, expected, start, timeout)
           else
             flunk(
-              "Model did not reach expected state within \\#{timeout}ms. Last: \\#{inspect(model)}"
+              "Model did not reach expected state within \#{timeout}ms. Last: \#{inspect(model)}"
             )
           end
         end
@@ -662,7 +653,7 @@ defmodule MockApp do
           Process.sleep(20)
           do_wait_for_model(dispatcher_pid, expected, start, timeout)
         else
-          flunk("Model did not become available within \\#{timeout}ms")
+          flunk("Model did not reach expected state within \#{timeout}ms.")
         end
     end
   end

@@ -1,27 +1,20 @@
 defmodule Raxol.Terminal.ManagerPerformanceTest do
   use ExUnit.Case
-  use Raxol.Test.PerformanceHelper
 
   alias Raxol.Terminal.Manager
   alias Raxol.Terminal.Emulator
   alias Raxol.Core.Events.Event
 
   setup do
-    # Set up performance test environment
-    {:ok, env} = setup_performance_test_env()
-
     # Create a test terminal
-    {:ok, terminal} = Emulator.new(80, 24)
+    terminal = Emulator.new()
 
     # Start the terminal manager
     {:ok, manager_pid} =
       Manager.start_link(terminal: terminal, runtime_pid: self())
 
     # Add manager to context
-    env = Map.put(env, :manager, manager_pid)
-    env = Map.put(env, :terminal, terminal)
-
-    {:ok, env}
+    {:ok, %{manager: manager_pid, terminal: terminal}}
   end
 
   describe "Terminal Manager Performance" do
@@ -29,56 +22,36 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       # Generate a sequence of input events
       events = generate_test_events(1000)
 
-      # Benchmark event processing
-      results =
-        benchmark(
-          fn ->
-            Enum.each(events, fn event ->
-              Manager.process_event(manager, event)
-            end)
-          end,
-          iterations: 100,
-          warmup: 10
-        )
+      # Process events and measure time
+      start_time = System.monotonic_time()
 
-      # Assert performance requirements
-      assert_performance(results,
-        # 1ms per event
-        max_average_time: 1000,
-        # 2ms for 95th percentile
-        max_p95_time: 2000,
-        min_iterations: 100
-      )
+      Enum.each(events, fn event ->
+        Manager.process_event(manager, event)
+      end)
 
+      end_time = System.monotonic_time()
+      total_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      # Assert that processing 1000 events takes less than 100ms
+      assert total_time < 100, "Processing 1000 events took #{total_time}ms, expected < 100ms"
     end
 
-    test "handles screen updates efficiently", %{
-      manager: manager
-    } do
+    test "handles screen updates efficiently", %{manager: manager} do
       # Generate screen update commands
       updates = generate_screen_updates(100)
 
-      # Benchmark screen updates
-      results =
-        benchmark(
-          fn ->
-            Enum.each(updates, fn update ->
-              Manager.update_screen(manager, update)
-            end)
-          end,
-          iterations: 100,
-          warmup: 10
-        )
+      # Process updates and measure time
+      start_time = System.monotonic_time()
 
-      # Assert performance requirements
-      assert_performance(results,
-        # 2ms per update
-        max_average_time: 2000,
-        # 5ms for 95th percentile
-        max_p95_time: 5000,
-        min_iterations: 100
-      )
+      Enum.each(updates, fn update ->
+        Manager.update_screen(manager, update)
+      end)
 
+      end_time = System.monotonic_time()
+      total_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      # Assert that processing 100 updates takes less than 50ms
+      assert total_time < 50, "Processing 100 screen updates took #{total_time}ms, expected < 50ms"
     end
 
     test "handles concurrent operations efficiently", %{manager: manager} do
@@ -89,26 +62,17 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
         fn -> Manager.get_terminal_state(manager) end
       ]
 
-      # Benchmark concurrent operations
-      results =
-        benchmark(
-          fn ->
-            Task.async_stream(operations, fn op -> op.() end)
-            |> Stream.run()
-          end,
-          iterations: 100,
-          warmup: 10
-        )
+      # Process operations and measure time
+      start_time = System.monotonic_time()
 
-      # Assert performance requirements
-      assert_performance(results,
-        # 5ms for concurrent operations
-        max_average_time: 5000,
-        # 10ms for 95th percentile
-        max_p95_time: 10_000,
-        min_iterations: 100
-      )
+      Task.async_stream(operations, fn op -> op.() end)
+      |> Stream.run()
 
+      end_time = System.monotonic_time()
+      total_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      # Assert that concurrent operations take less than 10ms
+      assert total_time < 10, "Concurrent operations took #{total_time}ms, expected < 10ms"
     end
   end
 

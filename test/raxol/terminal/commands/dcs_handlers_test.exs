@@ -169,7 +169,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       assert updated_emulator.output_buffer == "\eP1!|4 q\e\\"
     end
 
-    test 'handles unknown DECRQSS request type gracefully' do
+    test "handles unknown DECRQSS request type gracefully" do
       emulator = new_emulator()
       params = []
       intermediates = "!"
@@ -202,7 +202,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
   end
 
   describe "handle_dcs/5 - Sixel Graphics" do
-    test 'processes a simple Sixel sequence and updates screen buffer and sixel_state' do
+    test "processes a simple Sixel sequence and updates screen buffer and sixel_state" do
       # Initial emulator state
       # Test with a non-origin cursor
       initial_cursor_pos = {5, 5}
@@ -221,21 +221,21 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # The blit_sixel_to_buffer will then take this and update the screen.
 
       # Color 1, sixel '?'
-      sixel_data_string = '#1?'
+      sixel_data_string = "#1?"
 
       # Sixel params are usually parsed by SixelGraphics from the data string itself or are defaults
       params = []
       # No intermediates specified for common Sixel like DCS q data ST
-      intermediates = '"
+      intermediates = "\""
       final_byte = ?q
 
       # Mock SixelGraphics.process_sequence to return a predictable state
       # This makes the test more robust to changes in SixelGraphics internal parsing
-      # and focuses on DCSHandlers' integration logic.
+      # and focuses on the integration logic of DCSHandlers.
       # However, direct mocking isn't straightforward without a mocking library here.
       # So, we'll test the integration, assuming SixelGraphics produces expected output for simple input.
       # If SixelGraphics.new() initializes palette with color 1 as blue {0,0,255}:
-      # And if SixelGraphics.process_sequence("#1?') creates pixel_buffer %{{0,0} => 1}
+      # And if SixelGraphics.process_sequence("#1?") creates pixel_buffer %{{0,0} => 1}
 
       updated_emulator =
         unwrap_ok(
@@ -250,7 +250,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       # 1. Check if sixel_state on emulator is updated
       refute is_nil(updated_emulator.sixel_state),
-             'Emulator sixel_state should be initialized/updated"
+             "Emulator sixel_state should be initialized/updated"
 
       # A more specific check would be on updated_emulator.sixel_state.pixel_buffer or .palette
       # but this depends heavily on Raxol.Terminal.ANSI.SixelGraphics.process_sequence behavior for "#1?'
@@ -266,7 +266,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       cell_at_cursor = BufferOps.get_cell(active_buffer, cx, cy)
 
       refute is_nil(cell_at_cursor),
-             'Cell at cursor should exist after Sixel blit"
+             "Cell at cursor should exist after Sixel blit"
 
       # Cell content is a space, style contains background color
       assert cell_at_cursor.char == " ", "Sixel cell char should be a space"
@@ -279,7 +279,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
              "Cell background should match Sixel color. Expected blue, got #{inspect(cell_at_cursor.style.background)}"
     end
 
-    test 'initializes sixel_state if nil on emulator' do
+    test "initializes sixel_state if nil on emulator" do
       emulator = new_emulator(sixel_state: nil)
       # Empty data, just to trigger the handler
       sixel_data_string = ""
@@ -294,7 +294,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       assert updated_emulator.sixel_state.position == {0, 0}
     end
 
-    test 'uses existing sixel_state if present on emulator' do
+    test "uses existing sixel_state if present on emulator" do
       initial_sixel_state = %Raxol.Terminal.ANSI.SixelGraphics{
         palette: %{99 => {1, 2, 3}},
         sixel_cursor_pos: {10, 10}
@@ -325,7 +325,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
   end
 
   describe "handle_dcs/5 - DECDLD (Downloadable Character Set)" do
-    test 'logs warning and does not crash for DECDLD sequence, returns emulator' do
+    test "logs warning and does not crash for DECDLD sequence, returns emulator" do
       emulator = new_emulator()
       # DECDLD expects codepoint
       final_byte = ?p

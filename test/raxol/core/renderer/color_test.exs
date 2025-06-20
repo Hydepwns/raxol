@@ -158,14 +158,14 @@ defmodule Raxol.Core.Renderer.ColorTest do
           accent: :blue
         })
 
-      assert theme.primary == {255, 0, 0}
-      assert theme.secondary == {0, 255, 0}
-      assert theme.accent == :blue
+      assert theme.colors.primary == {255, 0, 0}
+      assert theme.colors.secondary == {0, 255, 0}
+      assert theme.colors.accent == :blue
     end
 
     test "merges with default theme" do
       theme = Color.create_theme(%{primary: "#FF0000"})
-      assert theme.primary == {255, 0, 0}
+      assert theme.colors.primary == {255, 0, 0}
       assert Map.has_key?(theme.colors, :background)
       assert Map.has_key?(theme.colors, :foreground)
     end

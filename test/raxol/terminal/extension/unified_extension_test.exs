@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Extension.UnifiedExtension
 
   setup do
@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   end
 
   describe "basic operations" do
-    test 'loads and unloads extensions' do
+    test "loads and unloads extensions" do
       # Load extension
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                UnifiedExtension.get_extension_state(extension_id)
     end
 
-    test 'handles extension configuration' do
+    test "handles extension configuration" do
       # Load extension with config
       config = %{
         theme: %{
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   end
 
   describe "extension activation" do
-    test 'activates and deactivates extensions' do
+    test "activates and deactivates extensions" do
       # Load extension
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       assert extension_state.status == :idle
     end
 
-    test 'handles invalid activation states' do
+    test "handles invalid activation states" do
       # Load extension
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   end
 
   describe "extension commands" do
-    test 'executes extension commands' do
+    test "executes extension commands" do
       # Load extension with commands
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -162,7 +162,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                  "arg2"
                ])
 
-      assert result =~ "Command "run" executed with args:"
+      assert result =~ "Command \"run\" executed with args:"
 
       # Try to execute non-existent command
       assert {:error, :command_not_found} =
@@ -171,7 +171,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   end
 
   describe "extension management" do
-    test 'lists extensions with filters' do
+    test "lists extensions with filters" do
       # Load different extensions
       assert {:ok, theme_id} =
                UnifiedExtension.load_extension(
@@ -204,7 +204,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       assert map_size(idle_extensions) == 2
     end
 
-    test 'exports and imports extensions' do
+    test "exports and imports extensions" do
       # Load extension
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -237,7 +237,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   end
 
   describe "extension hooks" do
-    test 'registers and unregisters hooks' do
+    test "registers and unregisters hooks" do
       # Load extension with hooks
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -264,7 +264,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       assert {:ok, []} = UnifiedExtension.trigger_hook("init", ["test"])
     end
 
-    test 'handles hook errors' do
+    test "handles hook errors" do
       # Load extension with hooks
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -287,7 +287,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   end
 
   describe "error handling" do
-    test 'handles invalid extension types' do
+    test "handles invalid extension types" do
       assert {:error, :invalid_extension_type} =
                UnifiedExtension.load_extension(
                  "test/fixtures/extensions/invalid",
@@ -296,7 +296,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                )
     end
 
-    test 'handles invalid configurations' do
+    test "handles invalid configurations" do
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
                  "test/fixtures/extensions/theme",
@@ -311,7 +311,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                )
     end
 
-    test 'handles invalid dependencies' do
+    test "handles invalid dependencies" do
       assert {:error, :invalid_extension_dependencies} =
                UnifiedExtension.load_extension(
                  "test/fixtures/extensions/theme",
@@ -321,7 +321,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                )
     end
 
-    test 'handles non-existent extensions' do
+    test "handles non-existent extensions" do
       assert {:error, :extension_not_found} =
                UnifiedExtension.get_extension_state("non_existent")
 
@@ -332,7 +332,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                UnifiedExtension.update_extension_config("non_existent", %{})
     end
 
-    test 'handles invalid hook names' do
+    test "handles invalid hook names" do
       # Load extension
       assert {:ok, extension_id} =
                UnifiedExtension.load_extension(
@@ -351,7 +351,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   end
 
   describe "extension types" do
-    test 'handles different extension types' do
+    test "handles different extension types" do
       # Theme extension
       assert {:ok, theme_id} =
                UnifiedExtension.load_extension(

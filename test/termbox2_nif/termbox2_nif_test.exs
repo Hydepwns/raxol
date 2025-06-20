@@ -31,11 +31,7 @@ defmodule Termbox2NifTest do
   describe "terminal dimensions" do
     setup do
       assert Termbox2Nif.tb_init() == 0
-      :ok
-    end
-
-    teardown do
-      assert Termbox2Nif.tb_shutdown() == :ok
+      on_exit(fn -> assert Termbox2Nif.tb_shutdown() == :ok end)
       :ok
     end
 
@@ -50,11 +46,7 @@ defmodule Termbox2NifTest do
   describe "terminal operations" do
     setup do
       assert Termbox2Nif.tb_init() == 0
-      :ok
-    end
-
-    teardown do
-      assert Termbox2Nif.tb_shutdown() == :ok
+      on_exit(fn -> assert Termbox2Nif.tb_shutdown() == :ok end)
       :ok
     end
 
@@ -83,11 +75,7 @@ defmodule Termbox2NifTest do
   describe "terminal configuration" do
     setup do
       assert Termbox2Nif.tb_init() == 0
-      :ok
-    end
-
-    teardown do
-      assert Termbox2Nif.tb_shutdown() == :ok
+      on_exit(fn -> assert Termbox2Nif.tb_shutdown() == :ok end)
       :ok
     end
 
@@ -113,11 +101,7 @@ defmodule Termbox2NifTest do
   describe "error handling" do
     setup do
       assert Termbox2Nif.tb_init() == 0
-      :ok
-    end
-
-    teardown do
-      assert Termbox2Nif.tb_shutdown() == :ok
+      on_exit(fn -> assert Termbox2Nif.tb_shutdown() == :ok end)
       :ok
     end
 

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
   alias Raxol.Terminal.Window.UnifiedWindow
 
   setup do
-    {:ok, pid} = UnifiedWindow.start_link(%{name: :test_window_manager})
+    {:ok, pid} = UnifiedWindow.start_link()
     %{pid: pid}
   end
 

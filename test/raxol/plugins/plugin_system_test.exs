@@ -10,7 +10,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
   alias Raxol.Plugins.ImagePlugin
   alias Raxol.Plugins.SearchPlugin
   alias Raxol.Plugins.ThemePlugin
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Plugins.Lifecycle
   alias Raxol.Plugins.EventHandler
 

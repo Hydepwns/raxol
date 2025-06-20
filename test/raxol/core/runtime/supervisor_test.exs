@@ -5,6 +5,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   """
   use ExUnit.Case, async: false
   require Mox
+  import Mox
   import Raxol.Test.Support.TestHelper
 
   alias Raxol.Core.Runtime.Supervisor

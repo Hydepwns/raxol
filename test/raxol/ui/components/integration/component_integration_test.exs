@@ -58,13 +58,14 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
 
     def handle_event(
           %{type: :child_event, child_id: child_id, value: value},
-          state
+          state,
+          _context
         ) do
       new_state = %{state | events: [{child_id, value} | state.events]}
       {new_state, [{:command, {:child_event, child_id, value}}]}
     end
 
-    def handle_event(_event, state) do
+    def handle_event(_event, state, _context) do
       {state, []}
     end
 
@@ -121,12 +122,12 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
        }}
     end
 
-    def handle_event(%{type: :click}, state) do
+    def handle_event(%{type: :click}, state, _context) do
       new_state = %{state | value: state.value + 1}
       {new_state, [{:command, {:notify_parent, new_state}}]}
     end
 
-    def handle_event(_event, state) do
+    def handle_event(_event, state, _context) do
       {state, []}
     end
 

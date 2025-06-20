@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.IntegrationTest do
+defmodule Raxol.Terminal.IntegrationTestV2 do
   use ExUnit.Case, async: false
 
   alias Raxol.Test.{

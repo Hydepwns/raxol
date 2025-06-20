@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.italic == true
     end
 
-    test "removes a text attribute using its "no_" counterpart" do
+    test "removes a text attribute using its \"no_\" counterpart" do
       style = TextFormatting.new()
       # Add bold
       style = TextFormatting.apply_attribute(style, :bold)
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.blink == true
     end
 
-    test "removes a text decoration using its "no_" counterpart" do
+    test "removes a text decoration using its \"no_\" counterpart" do
       style = TextFormatting.new()
       # Add underline
       style = TextFormatting.apply_attribute(style, :underline)

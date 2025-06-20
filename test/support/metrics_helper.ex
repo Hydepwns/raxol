@@ -307,7 +307,7 @@ defmodule Raxol.Test.MetricsHelper do
   Clears all metrics from the collector.
   """
   def clear_metrics(collector) do
-    %{collector | metrics: %{}, last_update: System.monotonic_time()}
+    Raxol.Core.Metrics.UnifiedCollector.clear_metrics(collector)
   end
 
   @doc """
@@ -386,5 +386,32 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def get_total_runtime(collector) do
     System.monotonic_time() - collector.start_time
+  end
+
+  @doc """
+  Verifies multiple metrics at once.
+
+  ## Parameters
+    * `collector` - The metrics collector
+    * `expected_metrics` - List of expected metrics with their values
+
+  ## Returns
+    * `:ok` - If all metrics match the expected values
+    * `{:error, reason}` - If any metric doesn't match
+
+  ## Examples
+      iex> verify_metrics(collector, [
+      ...>   {"buffer_operations", :performance, 42},
+      ...>   {"cursor_movements", :performance, 10}
+      ...> ])
+      :ok
+  """
+  def verify_metrics(_collector, expected_metrics) do
+    Enum.reduce_while(expected_metrics, :ok, fn {name, type, expected_value}, _acc ->
+      case verify_metric(name, type, expected_value) do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, {name, reason}}}
+      end
+    end)
   end
 end

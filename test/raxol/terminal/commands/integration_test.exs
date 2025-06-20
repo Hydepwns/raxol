@@ -5,16 +5,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
   alias Raxol.Terminal.Commands.{CSIHandlers, OSCHandlers}
 
   setup do
-    emulator = %Emulator{
-      window_manager: Window.Manager.new(),
-      active_buffer: %{width: 80, height: 24},
-      text_attributes: %{},
-      cursor: %{x: 0, y: 0},
-      scroll_offset: 0,
-      insert_mode: false,
-      cursor_visible: true
-    }
-
+    emulator = Emulator.new()
     {:ok, emulator: emulator}
   end
 

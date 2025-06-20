@@ -39,7 +39,7 @@ defmodule Raxol.UI.Components.TerminalTest do
       assert new_terminal_state.buffer == ["Key: :i"]
     end
 
-    test "switches to command mode on ":" key (Placeholder - checks buffer)" do
+    test "switches to command mode on \"\x3A\" key (Placeholder - checks buffer)" do
       terminal = initial_terminal_state()
       event = %Event{type: :key, data: %{key: :colon}}
 
