@@ -46,6 +46,7 @@ defmodule Raxol.Terminal.Command.Manager do
   @spec new(keyword()) :: Command.t()
   def new(opts) do
     max_history = Keyword.get(opts, :max_history, 100)
+
     %Command{
       history: [],
       current: nil,
@@ -58,9 +59,11 @@ defmodule Raxol.Terminal.Command.Manager do
   end
 
   def get_command_history(manager \\ %__MODULE__{})
+
   def get_command_history(%__MODULE__{} = state) do
     state.command_history
   end
+
   def get_command_history(pid) do
     GenServer.call(pid, :get_command_history)
   end
@@ -78,9 +81,11 @@ defmodule Raxol.Terminal.Command.Manager do
   end
 
   def get_command_buffer(manager \\ %__MODULE__{})
+
   def get_command_buffer(%__MODULE__{} = state) do
     state.command_buffer
   end
+
   def get_command_buffer(pid) do
     GenServer.call(pid, :get_command_buffer)
   end
@@ -210,11 +215,21 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Processes a key event and updates the command buffer accordingly.
   """
-  def process_key_event(%__MODULE__{} = state, {:key, :enter}), do: handle_enter(state)
-  def process_key_event(%__MODULE__{} = state, {:key, :backspace}), do: handle_backspace(state)
-  def process_key_event(%__MODULE__{} = state, {:key, :up}), do: handle_up(state)
-  def process_key_event(%__MODULE__{} = state, {:key, :down}), do: handle_down(state)
-  def process_key_event(%__MODULE__{} = state, {:char, char}), do: handle_char(state, char)
+  def process_key_event(%__MODULE__{} = state, {:key, :enter}),
+    do: handle_enter(state)
+
+  def process_key_event(%__MODULE__{} = state, {:key, :backspace}),
+    do: handle_backspace(state)
+
+  def process_key_event(%__MODULE__{} = state, {:key, :up}),
+    do: handle_up(state)
+
+  def process_key_event(%__MODULE__{} = state, {:key, :down}),
+    do: handle_down(state)
+
+  def process_key_event(%__MODULE__{} = state, {:char, char}),
+    do: handle_char(state, char)
+
   def process_key_event(state, _), do: state
 
   defp handle_enter(state) do
@@ -247,18 +262,21 @@ defmodule Raxol.Terminal.Command.Manager do
   defp handle_down(state) do
     if state.history_index > -1 do
       new_index = state.history_index - 1
+
       command =
         case new_index do
           -1 -> ""
           _ -> Enum.at(state.command_history, new_index)
         end
+
       %{state | command_buffer: command, history_index: new_index}
     else
       state
     end
   end
 
-  defp handle_char(state, char), do: %{state | command_buffer: state.command_buffer <> char}
+  defp handle_char(state, char),
+    do: %{state | command_buffer: state.command_buffer <> char}
 
   @doc """
   Gets a command from history by index.
@@ -289,6 +307,7 @@ defmodule Raxol.Terminal.Command.Manager do
     case parse_command(command) do
       {:ok, parsed_command} ->
         execute_command_internal(emulator, parsed_command)
+
       {:error, reason} ->
         {emulator, {:error, reason}}
     end

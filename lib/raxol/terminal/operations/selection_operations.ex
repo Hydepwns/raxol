@@ -28,6 +28,7 @@ defmodule Raxol.Terminal.Operations.SelectionOperations do
 
   def get_selection_boundaries(emulator) do
     buffer = ScreenManager.get_active_buffer(emulator)
+
     case ScreenManager.get_selection_boundaries(buffer) do
       {start_x, start_y, end_x, end_y} -> {{start_x, start_y}, {end_x, end_y}}
       nil -> nil

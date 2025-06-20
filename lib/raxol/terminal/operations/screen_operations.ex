@@ -22,14 +22,20 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   def erase_display(emulator, mode) do
     buffer = ScreenManager.get_active_buffer(emulator)
     cursor_pos = ScreenBuffer.get_cursor_position(buffer)
-    new_buffer = ScreenBuffer.erase_in_display(buffer, cursor_pos, mode_to_type(mode))
+
+    new_buffer =
+      ScreenBuffer.erase_in_display(buffer, cursor_pos, mode_to_type(mode))
+
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
   def erase_in_display(emulator, mode) do
     buffer = ScreenManager.get_active_buffer(emulator)
     cursor_pos = ScreenBuffer.get_cursor_position(buffer)
-    new_buffer = ScreenBuffer.erase_in_display(buffer, cursor_pos, mode_to_type(mode))
+
+    new_buffer =
+      ScreenBuffer.erase_in_display(buffer, cursor_pos, mode_to_type(mode))
+
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
