@@ -10,12 +10,12 @@ defmodule Raxol.Terminal.Input.Manager do
   alias Raxol.Terminal.InputManager
 
   @type t :: %__MODULE__{
-    buffer: map(),
-    processor: module(),
-    key_mappings: map(),
-    validation_rules: list(),
-    metrics: map()
-  }
+          buffer: map(),
+          processor: module(),
+          key_mappings: map(),
+          validation_rules: list(),
+          metrics: map()
+        }
 
   defstruct [
     :buffer,
@@ -62,16 +62,22 @@ defmodule Raxol.Terminal.Input.Manager do
   end
 
   # Validation functions
-  defp validate_key(%{key: key}) when is_binary(key) and byte_size(key) > 0, do: :ok
+  defp validate_key(%{key: key}) when is_binary(key) and byte_size(key) > 0,
+    do: :ok
+
   defp validate_key(_), do: :error
 
   defp validate_modifiers(%{modifiers: modifiers}) when is_list(modifiers) do
     valid_modifiers = [:shift, :ctrl, :alt, :meta]
     if Enum.all?(modifiers, &(&1 in valid_modifiers)), do: :ok, else: :error
   end
+
   defp validate_modifiers(_), do: :error
 
-  defp validate_timestamp(%{timestamp: timestamp}) when is_integer(timestamp) and timestamp > 0, do: :ok
+  defp validate_timestamp(%{timestamp: timestamp})
+       when is_integer(timestamp) and timestamp > 0,
+       do: :ok
+
   defp validate_timestamp(_), do: :error
 
   @doc """
@@ -104,16 +110,22 @@ defmodule Raxol.Terminal.Input.Manager do
     case event do
       %{key: :enter} ->
         handle_enter(emulator)
+
       %{key: :backspace} ->
         handle_backspace(emulator)
+
       %{key: :tab} ->
         handle_tab(emulator)
+
       %{key: :escape} ->
         handle_escape(emulator)
+
       %{key: key} when is_atom(key) ->
         handle_special_key(emulator, key)
+
       %{char: char} when is_integer(char) ->
         handle_character(emulator, char)
+
       _ ->
         {emulator, nil}
     end
@@ -144,9 +156,11 @@ defmodule Raxol.Terminal.Input.Manager do
   # Private helper functions
 
   defp handle_input_result(emulator, nil), do: {emulator, nil}
+
   defp handle_input_result(emulator, output) when is_binary(output) do
     {emulator, output}
   end
+
   defp handle_input_result(emulator, {:command, command}) do
     handle_command(emulator, command)
   end
@@ -155,10 +169,13 @@ defmodule Raxol.Terminal.Input.Manager do
     case command do
       {:clear_screen, _} ->
         {emulator, nil}
+
       {:move_cursor, _x, _y} ->
         {emulator, nil}
+
       {:set_style, _style} ->
         {emulator, nil}
+
       _ ->
         {emulator, nil}
     end
@@ -210,19 +227,31 @@ defmodule Raxol.Terminal.Input.Manager do
   @doc """
   Processes a key event.
   """
-  @spec process_key_event(t(), map()) :: {:ok, t()} | {:error, :validation_failed}
+  @spec process_key_event(t(), map()) ::
+          {:ok, t()} | {:error, :validation_failed}
   def process_key_event(manager, event) do
     case validate_event(manager, event) do
       :ok ->
-        updated_manager = %{manager |
-          buffer: %{manager.buffer | events: [event | manager.buffer.events]},
-          metrics: %{manager.metrics | processed_events: manager.metrics.processed_events + 1}
+        updated_manager = %{
+          manager
+          | buffer: %{manager.buffer | events: [event | manager.buffer.events]},
+            metrics: %{
+              manager.metrics
+              | processed_events: manager.metrics.processed_events + 1
+            }
         }
+
         {:ok, updated_manager}
+
       :error ->
-        updated_manager = %{manager |
-          metrics: %{manager.metrics | validation_failures: manager.metrics.validation_failures + 1}
+        updated_manager = %{
+          manager
+          | metrics: %{
+              manager.metrics
+              | validation_failures: manager.metrics.validation_failures + 1
+            }
         }
+
         {:error, :validation_failed}
     end
   end
@@ -233,9 +262,14 @@ defmodule Raxol.Terminal.Input.Manager do
   @spec add_key_mapping(t(), String.t(), String.t()) :: t()
   def add_key_mapping(manager, from_key, to_key) do
     updated_mappings = Map.put(manager.key_mappings, from_key, to_key)
-    %{manager |
-      key_mappings: updated_mappings,
-      metrics: %{manager.metrics | custom_mappings: manager.metrics.custom_mappings + 1}
+
+    %{
+      manager
+      | key_mappings: updated_mappings,
+        metrics: %{
+          manager.metrics
+          | custom_mappings: manager.metrics.custom_mappings + 1
+        }
     }
   end
 
@@ -284,7 +318,9 @@ defmodule Raxol.Terminal.Input.Manager do
         events
         |> Enum.map(fn %{char: char} -> <<char>> end)
         |> Enum.join("")
-      _ -> ""
+
+      _ ->
+        ""
     end
   end
 
@@ -318,7 +354,10 @@ defmodule Raxol.Terminal.Input.Manager do
   """
   @spec process_keyboard(t(), String.t()) :: t()
   def process_keyboard(manager, key) do
-    events = manager.buffer.events ++ [%{char: String.to_integer(key), timestamp: System.system_time()}]
+    events =
+      manager.buffer.events ++
+        [%{char: String.to_integer(key), timestamp: System.system_time()}]
+
     %{manager | buffer: %{manager.buffer | events: events}}
   end
 
