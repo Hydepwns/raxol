@@ -99,10 +99,12 @@ defmodule Raxol.Terminal.ManagerTest do
     # Flush the mailbox to remove any previous messages
     flush()
     # Create a separate manager for this test - handle already started case
-    pid = case Manager.start_link([]) do
-      {:ok, pid} -> pid
-      {:error, {:already_started, pid}} -> pid
-    end
+    pid =
+      case Manager.start_link([]) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+      end
+
     # Send an unknown event
     event = %Raxol.Core.Events.Event{type: :unknown_event, data: %{}}
     Manager.process_event(pid, event)
@@ -121,12 +123,13 @@ defmodule Raxol.Terminal.ManagerTest do
 
   test "missing terminal returns error", _ do
     # Create a separate manager without a terminal for this test
-    {:ok, pid} = GenServer.start_link(Raxol.Terminal.Manager, %{
-      sessions: %{},
-      terminal: nil,
-      runtime_pid: self(),
-      callback_module: nil
-    })
+    {:ok, pid} =
+      GenServer.start_link(Raxol.Terminal.Manager, %{
+        sessions: %{},
+        terminal: nil,
+        runtime_pid: self(),
+        callback_module: nil
+      })
 
     event = %Event{
       type: :window,

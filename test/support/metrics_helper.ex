@@ -407,7 +407,8 @@ defmodule Raxol.Test.MetricsHelper do
       :ok
   """
   def verify_metrics(_collector, expected_metrics) do
-    Enum.reduce_while(expected_metrics, :ok, fn {name, type, expected_value}, _acc ->
+    Enum.reduce_while(expected_metrics, :ok, fn {name, type, expected_value},
+                                                _acc ->
       case verify_metric(name, type, expected_value) do
         :ok -> {:cont, :ok}
         {:error, reason} -> {:halt, {:error, {name, reason}}}

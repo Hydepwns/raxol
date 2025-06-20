@@ -1,4 +1,3 @@
-
 defmodule Raxol.Terminal.Operations.TextOperationsTest do
   use ExUnit.Case
   alias Raxol.Terminal.{Operations.TextOperations, TestHelper}

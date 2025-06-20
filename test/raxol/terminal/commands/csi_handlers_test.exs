@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     {:ok, emulator: emulator}
   end
 
-  test 'diagnostic test' do
+  test ~c"diagnostic test" do
     IO.puts("DIAGNOSTIC TEST RUNNING")
     assert 1 == 1
   end
@@ -172,7 +172,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     # Test based on the current simplified implementation in CSIHandlers.ex
     # which uses integer codes and only affects charset_state.active
 
-    test "sets G0 to ASCII with param '0' (actually '?(0'), final_byte '('", %{emulator: emulator} do
+    test "sets G0 to ASCII with param '0' (actually '?(0'), final_byte '('", %{
+      emulator: emulator
+    } do
       # Original test expected :us_ascii for active. Param "0" -> charset_code ?(0.
       # CharacterSets.charset_code_to_module(?(0) maps to CharacterSets.DEC (for DEC Special Graphics).
       # final_byte ?(( targets :g0.
@@ -180,7 +182,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       assert result.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.DEC
     end
 
-    test "sets G1 to ASCII with param '0' (actually '?(0'), final_byte ')'", %{emulator: emulator} do
+    test "sets G1 to ASCII with param '0' (actually '?(0'), final_byte ')'", %{
+      emulator: emulator
+    } do
       # Original test expected :us_ascii for active. Param "0" -> charset_code ?(0.
       # CharacterSets.charset_code_to_module(?(0) maps to CharacterSets.DEC.
       # final_byte ?(( targets :g1.
@@ -188,7 +192,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       assert result.charset_state.g1 == Raxol.Terminal.ANSI.CharacterSets.DEC
     end
 
-    test "sets G0 with param '1' (actually '?(1'), final_byte '('", %{emulator: emulator} do
+    test "sets G0 with param '1' (actually '?(1'), final_byte '('", %{
+      emulator: emulator
+    } do
       # Param "1" -> charset_code ?(1.
       # CharacterSets.charset_code_to_module(?(1) maps to CharacterSets.UK (for UK National).
       # final_byte ?(( targets :g0.
@@ -196,7 +202,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       assert result.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.UK
     end
 
-    test "sets G0 with param '16' (actually '?(16'), final_byte '('", %{emulator: emulator} do
+    test "sets G0 with param '16' (actually '?(16'), final_byte '('", %{
+      emulator: emulator
+    } do
       # Param "16" -> charset_code ?(16.
       # CharacterSets.charset_code_to_module(?(16) maps to CharacterSets.DEC (for DEC Special Graphics).
       # final_byte ?(( targets :g0.
@@ -204,7 +212,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       assert result.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.DEC
     end
 
-    test "designates G0 with specific char codes, final_byte '('", %{emulator: emulator} do
+    test "designates G0 with specific char codes, final_byte '('", %{
+      emulator: emulator
+    } do
       # Test for :dec_technical using its actual code (e.g., ?(>, assuming it maps to CharacterSets.DEC for now)
       # If CharacterSets.charset_code_to_module(?(>) returns CharacterSets.DEC
       # Assuming this is the code for DECTechnical
@@ -236,7 +246,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       assert result_A.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.UK
     end
 
-    test "handles unknown code/final_byte combination gracefully", %{emulator: emulator} do
+    test "handles unknown code/final_byte combination gracefully", %{
+      emulator: emulator
+    } do
       initial_charset_state = emulator.charset_state
       # Unknown code ("99" -> charset_code ?(9 -> module nil)
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "99", 40))

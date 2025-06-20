@@ -17,6 +17,7 @@ defmodule Raxol.Terminal.TestHelper do
   """
   def create_test_emulator(opts) do
     emulator = create_test_emulator()
+
     Enum.reduce(opts, emulator, fn {key, value}, acc ->
       case key do
         :settings -> set_settings(acc, value)

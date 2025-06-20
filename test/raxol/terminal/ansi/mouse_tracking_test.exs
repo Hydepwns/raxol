@@ -56,27 +56,35 @@ defmodule Raxol.Terminal.ANSI.MouseTrackingTest do
 
   describe "parse_mouse_sequence/1" do
     test ~c"parses normal mouse press" do
-      assert MouseTracking.parse_mouse_sequence(<<27, 77, 32, 32, 32>>) == {:left, :press, 0, 0}
+      assert MouseTracking.parse_mouse_sequence(<<27, 77, 32, 32, 32>>) ==
+               {:left, :press, 0, 0}
     end
 
     test ~c"parses normal mouse release" do
-      assert MouseTracking.parse_mouse_sequence(<<27, 77, 35, 32, 32>>) == {:left, :release, 0, 0}
+      assert MouseTracking.parse_mouse_sequence(<<27, 77, 35, 32, 32>>) ==
+               {:left, :release, 0, 0}
     end
 
     test ~c"parses normal mouse move" do
-      assert MouseTracking.parse_mouse_sequence(<<27, 77, 64, 32, 32>>) == {:left, :move, 0, 0}
+      assert MouseTracking.parse_mouse_sequence(<<27, 77, 64, 32, 32>>) ==
+               {:left, :move, 0, 0}
     end
 
     test ~c"parses normal mouse drag" do
-      assert MouseTracking.parse_mouse_sequence(<<27, 77, 67, 32, 32>>) == {:left, :drag, 0, 0}
+      assert MouseTracking.parse_mouse_sequence(<<27, 77, 67, 32, 32>>) ==
+               {:left, :drag, 0, 0}
     end
 
     test ~c"parses SGR mouse press" do
-      assert MouseTracking.parse_mouse_sequence(<<27, 91, 60, 48, 59, 51, 50, 59, 51, 50, 77>>) == {:left, :press, 32, 32}
+      assert MouseTracking.parse_mouse_sequence(
+               <<27, 91, 60, 48, 59, 51, 50, 59, 51, 50, 77>>
+             ) == {:left, :press, 32, 32}
     end
 
     test ~c"parses SGR mouse release" do
-      assert MouseTracking.parse_mouse_sequence(<<27, 91, 60, 48, 59, 51, 50, 59, 51, 50, 109>>) == {:left, :release, 32, 32}
+      assert MouseTracking.parse_mouse_sequence(
+               <<27, 91, 60, 48, 59, 51, 50, 59, 51, 50, 109>>
+             ) == {:left, :release, 32, 32}
     end
 
     test ~c"handles invalid sequence" do

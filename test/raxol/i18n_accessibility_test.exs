@@ -72,7 +72,10 @@ defmodule Raxol.I18nAccessibilityTest do
 
   describe "I18n and Accessibility Integration" do
     test "correct accessibility settings are applied for RTL locales" do
-      expect(EventManagerMock, :broadcast, fn {:locale_changed, "en", "he"} -> :ok end)
+      expect(EventManagerMock, :broadcast, fn {:locale_changed, "en", "he"} ->
+        :ok
+      end)
+
       expect(EventManagerMock, :broadcast, fn {:rtl_changed, true} -> :ok end)
       expect(AccessibilityMock, :set_option, fn :direction, :rtl -> :ok end)
 
@@ -81,13 +84,19 @@ defmodule Raxol.I18nAccessibilityTest do
 
     test "correct accessibility settings are applied for LTR locales" do
       # Set initial locale to RTL, and expect the calls for it.
-      expect(EventManagerMock, :broadcast, fn {:locale_changed, "en", "he"} -> :ok end)
+      expect(EventManagerMock, :broadcast, fn {:locale_changed, "en", "he"} ->
+        :ok
+      end)
+
       expect(EventManagerMock, :broadcast, fn {:rtl_changed, true} -> :ok end)
       expect(AccessibilityMock, :set_option, fn :direction, :rtl -> :ok end)
       I18n.set_locale("he")
 
       # Now test the transition to LTR
-      expect(EventManagerMock, :broadcast, fn {:locale_changed, "he", "en"} -> :ok end)
+      expect(EventManagerMock, :broadcast, fn {:locale_changed, "he", "en"} ->
+        :ok
+      end)
+
       expect(EventManagerMock, :broadcast, fn {:rtl_changed, false} -> :ok end)
       expect(AccessibilityMock, :set_option, fn :direction, :ltr -> :ok end)
 

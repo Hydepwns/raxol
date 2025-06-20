@@ -1,110 +1,110 @@
 # --- Mock Application ---
 defmodule MockApp do
-    @behaviour Raxol.Core.Runtime.Application
-    alias Raxol.Core.Events.Event
-    alias Raxol.Core.Runtime.Command
+  @behaviour Raxol.Core.Runtime.Application
+  alias Raxol.Core.Events.Event
+  alias Raxol.Core.Runtime.Command
 
-    @impl Raxol.Core.Runtime.Application
-    def init(_initial_state_map, initial_model) do
-      # No initial commands
-      {:ok, initial_model, []}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def update({:event, %Event{type: :key, data: %{char: "+"}}}, model) do
-      new_count = model.count + 1
-      new_model = %{model | count: new_count}
-      {new_model, []}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    # Ctrl+Q
-    def update({:event, %Event{type: :key, data: %{char: <<17>>}}}, model) do
-      Raxol.Core.Runtime.Log.debug(
-        "[MockApp.update] Matched Ctrl+Q (char <<17>>)"
-      )
-
-      {model, [%Command{type: :quit}]}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    # Ctrl+V
-    def update({:event, %Event{type: :key, data: %{char: <<22>>}}}, model) do
-      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+V")
-      {model, [%Command{type: :clipboard_read}]}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    # Ctrl+X
-    def update({:event, %Event{type: :key, data: %{char: <<24>>}}}, model) do
-      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+X")
-      {model, [%Command{type: :clipboard_write, data: "copied from mock"}]}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    # Ctrl+N
-    def update({:event, %Event{type: :key, data: %{char: <<14>>}}}, model) do
-      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+N")
-      {model, [%Command{type: :notify, data: {"MockApp notification", ""}}]}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def update({:command_result, {:clipboard_read, {:ok, content}}}, model) do
-      Raxol.Core.Runtime.Log.debug(
-        "[MockApp.update] Received clipboard content: #{content}"
-      )
-
-      {%{model | last_clipboard: content}, []}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def update({:command_result, {:clipboard_read, {:error, reason}}}, model) do
-      Raxol.Core.Runtime.Log.error(
-        "[MockApp.update] Error reading clipboard: #{inspect(reason)}"
-      )
-
-      {model, []}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def update(event_tuple, model) do
-      Raxol.Core.Runtime.Log.debug(
-        "[MockApp.update] Fell into default case for event_tuple: #{inspect(event_tuple)}"
-      )
-
-      {model, []}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def handle_tick(model) do
-      # Raxol.Core.Runtime.Log.debug("[MockApp.handle_tick] Tick, model: #{inspect(model)}")
-      # No commands on tick for mock
-      {model, []}
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def terminate(reason, model) do
-      Raxol.Core.Runtime.Log.debug(
-        "[MockApp.terminate] Terminating. Reason: #{inspect(reason)}, Model: #{inspect(model)}"
-      )
-
-      :ok
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def view(model) do
-      # Simple view for testing
-      [
-        :text,
-        "Count: #{model.count}, Clipboard: #{inspect(model.last_clipboard)}"
-      ]
-    end
-
-    @impl Raxol.Core.Runtime.Application
-    def subscriptions(_model) do
-      []
-    end
+  @impl Raxol.Core.Runtime.Application
+  def init(_initial_state_map, initial_model) do
+    # No initial commands
+    {:ok, initial_model, []}
   end
+
+  @impl Raxol.Core.Runtime.Application
+  def update({:event, %Event{type: :key, data: %{char: "+"}}}, model) do
+    new_count = model.count + 1
+    new_model = %{model | count: new_count}
+    {new_model, []}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  # Ctrl+Q
+  def update({:event, %Event{type: :key, data: %{char: <<17>>}}}, model) do
+    Raxol.Core.Runtime.Log.debug(
+      "[MockApp.update] Matched Ctrl+Q (char <<17>>)"
+    )
+
+    {model, [%Command{type: :quit}]}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  # Ctrl+V
+  def update({:event, %Event{type: :key, data: %{char: <<22>>}}}, model) do
+    Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+V")
+    {model, [%Command{type: :clipboard_read}]}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  # Ctrl+X
+  def update({:event, %Event{type: :key, data: %{char: <<24>>}}}, model) do
+    Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+X")
+    {model, [%Command{type: :clipboard_write, data: "copied from mock"}]}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  # Ctrl+N
+  def update({:event, %Event{type: :key, data: %{char: <<14>>}}}, model) do
+    Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+N")
+    {model, [%Command{type: :notify, data: {"MockApp notification", ""}}]}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def update({:command_result, {:clipboard_read, {:ok, content}}}, model) do
+    Raxol.Core.Runtime.Log.debug(
+      "[MockApp.update] Received clipboard content: #{content}"
+    )
+
+    {%{model | last_clipboard: content}, []}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def update({:command_result, {:clipboard_read, {:error, reason}}}, model) do
+    Raxol.Core.Runtime.Log.error(
+      "[MockApp.update] Error reading clipboard: #{inspect(reason)}"
+    )
+
+    {model, []}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def update(event_tuple, model) do
+    Raxol.Core.Runtime.Log.debug(
+      "[MockApp.update] Fell into default case for event_tuple: #{inspect(event_tuple)}"
+    )
+
+    {model, []}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def handle_tick(model) do
+    # Raxol.Core.Runtime.Log.debug("[MockApp.handle_tick] Tick, model: #{inspect(model)}")
+    # No commands on tick for mock
+    {model, []}
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def terminate(reason, model) do
+    Raxol.Core.Runtime.Log.debug(
+      "[MockApp.terminate] Terminating. Reason: #{inspect(reason)}, Model: #{inspect(model)}"
+    )
+
+    :ok
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def view(model) do
+    # Simple view for testing
+    [
+      :text,
+      "Count: #{model.count}, Clipboard: #{inspect(model.last_clipboard)}"
+    ]
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def subscriptions(_model) do
+    []
+  end
+end
 
 # --- All test code below ---
 defmodule Raxol.RuntimeTest do

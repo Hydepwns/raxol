@@ -25,8 +25,11 @@ defmodule Raxol.Terminal.Operations.CursorOperationsTest do
     test "clamps cursor position to screen bounds" do
       emulator = TestHelper.create_test_emulator()
       emulator = CursorOperations.set_cursor_position(emulator, 100, 100)
-      {width, height} = {80, 24} # Default terminal size
-      assert CursorOperations.get_cursor_position(emulator) == {width - 1, height - 1}
+      # Default terminal size
+      {width, height} = {80, 24}
+
+      assert CursorOperations.get_cursor_position(emulator) ==
+               {width - 1, height - 1}
     end
   end
 

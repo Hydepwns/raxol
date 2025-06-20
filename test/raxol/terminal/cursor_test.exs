@@ -336,7 +336,6 @@ defmodule Raxol.Terminal.CursorTest do
       # DECTCEM - Hide Cursor
       assert EscapeSequence.parse("\e[?25l") ==
                {:ok, {:set_mode, :dec_private, 25, false}, ""}
-
     end
 
     test "parse correctly identifies terminal mode sequences" do
@@ -347,7 +346,6 @@ defmodule Raxol.Terminal.CursorTest do
       # DECRST 1049 - Use Normal Screen Buffer
       assert EscapeSequence.parse("\e[?1049l") ==
                {:ok, {:set_mode, :dec_private, 1049, false}, ""}
-
     end
   end
 
@@ -357,7 +355,8 @@ defmodule Raxol.Terminal.CursorTest do
       cursor = Manager.set_state(cursor, :blinking)
       {updated_cursor, visible} = Manager.update_blink(cursor)
       assert visible == true
-      assert updated_cursor.blink == false  # blink should be toggled from true to false
+      # blink should be toggled from true to false
+      assert updated_cursor.blink == false
     end
   end
 end

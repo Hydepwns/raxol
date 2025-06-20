@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
   # end
 
   describe "clear_screen/2" do
-    test 'clears from cursor to end of screen (mode 0)' do
+    test ~c"clears from cursor to end of screen (mode 0)" do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       end
     end
 
-    test 'clears from beginning of screen to cursor (mode 1)' do
+    test ~c"clears from beginning of screen to cursor (mode 1)" do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -138,7 +138,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       end
     end
 
-    test 'clears entire screen (mode 2)' do
+    test ~c"clears entire screen (mode 2)" do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -161,7 +161,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       assert_entire_buffer_cleared(result.main_screen_buffer)
     end
 
-    test 'clears entire screen and scrollback (mode 3)' do
+    test ~c"clears entire screen and scrollback (mode 3)" do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -187,7 +187,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
   end
 
   describe "clear_line/2" do
-    test 'clears from cursor to end of line (mode 0)' do
+    test ~c"clears from cursor to end of line (mode 0)" do
       initial_emulator = Emulator.new(10, 5)
       {emulator, _output} = Emulator.process_input(initial_emulator, "\e[3;3H")
 
@@ -210,7 +210,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       end
     end
 
-    test 'clears from beginning of line to cursor (mode 1)' do
+    test ~c"clears from beginning of line to cursor (mode 1)" do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed
@@ -244,7 +244,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       end
     end
 
-    test 'clears entire line (mode 2)' do
+    test ~c"clears entire line (mode 2)" do
       # Setup: Create emulator and move cursor to (2,2)
       initial_emulator = Emulator.new(10, 5)
       # Move to (2, 2) zero-indexed

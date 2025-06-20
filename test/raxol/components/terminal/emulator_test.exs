@@ -61,7 +61,8 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
 
   test ~c"processes basic input", %{initial_state: initial_state} do
     # Process input and verify it returns a tuple
-    {updated_state, output} = EmulatorComponent.process_input("Hello", initial_state)
+    {updated_state, output} =
+      EmulatorComponent.process_input("Hello", initial_state)
 
     # Verify the structure
     assert is_map(updated_state)
