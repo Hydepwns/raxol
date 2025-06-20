@@ -20,14 +20,17 @@ graph TB
         View[View Layer]
         Runtime[Runtime Layer]
         Terminal[Terminal Layer]
+        UI[UI Components Layer]
     end
 
     App --> View
     View --> Runtime
     Runtime --> Terminal
+    Runtime --> UI
+    UI --> Terminal
 
     classDef layer fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:16px,padding:8px;
-    class App,View,Runtime,Terminal layer;
+    class App,View,Runtime,Terminal,UI layer;
 ```
 
 ### Layer Responsibilities
@@ -43,27 +46,54 @@ graph LR
 
     subgraph View["View Layer"]
         direction TB
-        UI[UI Composition]
-        Style[Styling System]
-        UI --> Style
+        UIComp[UI Composition]
+        Style[Styling & Theming System]
+        UIComp --> Style
     end
 
     subgraph Runtime["Runtime Layer"]
         direction TB
         Events[Event System]
         Render[Renderer]
-        Events --> Render
+        Plugins[Plugin System]
+        Lifecycle[Lifecycle Manager]
+        Config[Configuration Manager]
+        Metrics[Metrics System]
+        Events --> Plugins
+        Events --> Lifecycle
+        Lifecycle --> Render
+        Render --> Config
+        Render --> Metrics
     end
 
     subgraph Terminal["Terminal Layer"]
         direction TB
         IO[I/O Management]
         Buffer[Buffer System]
+        Cursor[Cursor Manager]
+        Formatter[Text Formatter]
         IO --> Buffer
+        Buffer --> Cursor
+        Buffer --> Formatter
+    end
+
+    subgraph UI["UI Components Layer"]
+        direction TB
+        Basic[Basic Components (Button, TextInput, Table, Modal, TabBar, Progress)]
+        Layout[Layout Components]
+        Focus[Focus Management]
+        Accessibility[Accessibility]
+        Theming[Theming]
+        Animation[Animation System]
+        Basic --> Layout
+        Layout --> Focus
+        Focus --> Accessibility
+        Accessibility --> Theming
+        Theming --> Animation
     end
 
     classDef layer fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class App,View,Runtime,Terminal layer;
+    class App,View,Runtime,Terminal,UI layer;
 ```
 
 ## Core Subsystems
@@ -76,15 +106,15 @@ graph TB
         Buffer[Buffer Manager]
         Cursor[Cursor Manager]
         IO[I/O Manager]
-        Format[Text Formatter]
+        Formatter[Text Formatter]
     end
 
     Buffer --> Cursor
-    Buffer --> Format
+    Buffer --> Formatter
     IO --> Buffer
 
     classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Buffer,Cursor,IO,Format component;
+    class Buffer,Cursor,IO,Formatter component;
 ```
 
 ### Runtime Layer
@@ -96,34 +126,41 @@ graph TB
         Plugins[Plugin System]
         Render[Renderer]
         Lifecycle[Lifecycle Manager]
+        Config[Configuration Manager]
+        Metrics[Metrics System]
     end
 
     Events --> Plugins
     Events --> Lifecycle
     Lifecycle --> Render
+    Render --> Config
+    Render --> Metrics
 
     classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Events,Plugins,Render,Lifecycle component;
+    class Events,Plugins,Render,Lifecycle,Config,Metrics component;
 ```
 
-### Component Layer
+### UI Components Layer
 
 ```mermaid
 graph TB
-    subgraph Components["Component Layer"]
-        Basic[Basic Components]
-        Input[Input Components]
+    subgraph UI["UI Components Layer"]
+        Basic[Basic Components (Button, TextInput, Table, Modal, TabBar, Progress)]
         Layout[Layout Components]
-        Advanced[Advanced Components]
+        Focus[Focus Management]
+        Accessibility[Accessibility]
+        Theming[Theming]
+        Animation[Animation System]
     end
 
-    Basic --> Render
-    Input --> Render
-    Layout --> Render
-    Advanced --> Render
+    Basic --> Layout
+    Layout --> Focus
+    Focus --> Accessibility
+    Accessibility --> Theming
+    Theming --> Animation
 
     classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Basic,Input,Layout,Advanced component;
+    class Basic,Layout,Focus,Accessibility,Theming,Animation component;
 ```
 
 ### Plugin System
@@ -165,12 +202,14 @@ sequenceDiagram
     participant ED as Event Dispatcher
     participant App as Application
     participant View as View
+    participant UI as UI Components
     participant TB as Terminal Buffer
 
     TI->>ED: Raw Input
     ED->>App: handle_event
     App->>View: Update
-    View->>TB: Render
+    View->>UI: Compose
+    UI->>TB: Render
 ```
 
 ## Performance Requirements
@@ -213,7 +252,10 @@ graph TB
 - **Adapter pattern for system/test**: e.g. `Raxol.Core.Runtime.System.Adapter`
 - **Event-based async testing**: e.g. `Raxol.Core.Runtime.Events.Event`
 - **Comprehensive test infrastructure**: e.g. `Raxol.Core.Runtime.Testing.Test`
-- **Centralized color system**: e.g. `Raxol.Core.ColorSystem`
+- **Centralized color/theming system**: e.g. `Raxol.Core.ColorSystem`, theming modules
+- **Accessibility and focus management**: e.g. `Raxol.Core.Accessibility`, `Raxol.UI.Components.FocusRing`
+- **Configuration and metrics**: e.g. `Raxol.Core.Config`, `Raxol.Core.Metrics`
+- **Animation system**: e.g. `Raxol.Terminal.Animation`
 
 ## References
 
