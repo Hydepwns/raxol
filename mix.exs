@@ -175,9 +175,15 @@ defmodule Raxol.MixProject do
       {:hackney, "~> 1.24"},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:toml, "~> 0.7"},
-      {:mimerl, "~> 1.4"}
+      {:mimerl, "~> 1.4"},
       # Use our local version of json parser
-      # {:json, path: "lib/json"}
+      # {:json, path: "lib/json"},
+
+      # CLDR for internationalization
+      {:ex_cldr, "~> 2.15"},
+      {:ex_cldr_numbers, "~> 2.12"},
+      {:ex_cldr_currencies, "~> 2.5"},
+      {:ex_cldr_dates_times, "~> 2.14"}
     ]
   end
 

@@ -1,5 +1,6 @@
 defmodule Raxol.Application do
   use Application
+  @behaviour Application
   require Raxol.Core.Runtime.Log
 
   @impl true
@@ -57,6 +58,7 @@ end
 # Create a mock application supervisor for testing
 defmodule Raxol.Test.MockApplicationSupervisor do
   use Supervisor
+  @behaviour Supervisor
   require Raxol.Core.Runtime.Log
 
   def start_link(_args) do
@@ -82,8 +84,10 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     # Add UserPreferences for tests, ensuring it starts in test mode
     user_preferences_child_spec =
       {Raxol.Core.UserPreferences, [test_mode?: true]}
+    # Add Accounts for tests
+    accounts_child_spec = Raxol.Accounts
 
-    children = [pubsub_child_spec, repo_child_spec, user_preferences_child_spec]
+    children = [pubsub_child_spec, repo_child_spec, user_preferences_child_spec, accounts_child_spec]
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

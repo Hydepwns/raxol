@@ -47,10 +47,29 @@ defmodule Raxol.Core.Metrics.Config do
   end
 
   @doc """
+  Gets all current configuration values.
+  """
+  def get_all do
+    GenServer.call(__MODULE__, :get_all)
+  end
+
+  @doc """
   Updates the configuration with the given key-value pairs.
   """
   def update(config_updates) when is_map(config_updates) do
     GenServer.call(__MODULE__, {:update, config_updates})
+  end
+
+  @doc """
+  Sets a specific configuration value.
+  """
+  def set(key, value) when key in [
+         :retention_period,
+         :max_samples,
+         :flush_interval,
+         :enabled_metrics
+       ] do
+    GenServer.call(__MODULE__, {:set, key, value})
   end
 
   @doc """
@@ -87,8 +106,19 @@ defmodule Raxol.Core.Metrics.Config do
   end
 
   @impl GenServer
+  def handle_call(:get_all, _from, state) do
+    {:reply, {:ok, state}, state}
+  end
+
+  @impl GenServer
   def handle_call({:update, config_updates}, _from, state) do
     new_state = Map.merge(state, config_updates)
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:set, key, value}, _from, state) do
+    new_state = Map.put(state, key, value)
     {:reply, :ok, new_state}
   end
 

@@ -1,5 +1,6 @@
 defmodule RaxolWeb.Telemetry do
   use Supervisor
+  @behaviour Supervisor
   import Telemetry.Metrics
 
   def start_link(arg) do

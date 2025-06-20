@@ -1,5 +1,6 @@
 defmodule Raxol.System.Updater do
   use GenServer
+  @behaviour GenServer
   require Logger
 
   @moduledoc """

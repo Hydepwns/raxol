@@ -835,4 +835,40 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Implement plugin loading logic here
     {:ok, %{name: name, config: config}}
   end
+
+  @doc """
+  Gets all available commands from loaded plugins.
+  """
+  @spec get_commands(map()) :: list(map())
+  def get_commands(state) do
+    # Return empty list for now - implement based on actual command registry
+    []
+  end
+
+  @doc """
+  Gets metadata for all loaded plugins.
+  """
+  @spec get_metadata(map()) :: map()
+  def get_metadata(state) do
+    # Return empty map for now - implement based on actual metadata
+    %{}
+  end
+
+  @doc """
+  Handles a command from a plugin.
+  """
+  @spec handle_command(map(), atom(), any()) :: {:ok, any()} | {:error, any()}
+  def handle_command(state, command, args) do
+    # Implement command handling logic here
+    {:ok, :command_handled}
+  end
+
+  @doc """
+  Handles an event from a plugin.
+  """
+  @spec handle_event(map(), any()) :: {:ok, map()} | {:error, any()}
+  def handle_event(state, event) do
+    # Implement event handling logic here
+    {:ok, state}
+  end
 end
