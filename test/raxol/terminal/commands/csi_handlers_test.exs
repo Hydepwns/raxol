@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     IO.puts("SETUP RUNNING")
 
     emulator = %Emulator{
-      window_manager: Raxol.Terminal.Window.Manager.new()
+      window_manager: Raxol.Terminal.Window.Manager.new_for_test()
     }
 
     # Ensure saved_cursor is initially nil as per recent Emulator.ex changes

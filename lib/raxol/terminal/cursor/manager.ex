@@ -91,6 +91,17 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
+  Creates a new cursor manager with specified x and y coordinates.
+  """
+  def new(x, y) when is_integer(x) and is_integer(y) do
+    %__MODULE__{
+      x: x,
+      y: y,
+      position: {x, y}
+    }
+  end
+
+  @doc """
   Gets the current cursor position.
   """
   def get_position(pid \\ __MODULE__) do

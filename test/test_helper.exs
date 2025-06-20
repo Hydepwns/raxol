@@ -50,7 +50,7 @@ Mox.defmock(Raxol.Terminal.ClipboardMock,
 
 # Start ExUnit
 IO.puts("[TestHelper] Starting ExUnit...")
-ExUnit.start()
+ExUnit.start(max_failures: 10)
 
 # Start the application for testing
 IO.puts("[TestHelper] Starting application for testing...")

@@ -149,5 +149,5 @@ defmodule Raxol.Terminal.Config.Schema do
 
   defp get_type_from_path(_schema, _path), do: nil
 
-  def schema(), do: %{}
+  def schema(), do: config_schema()
 end

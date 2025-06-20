@@ -44,18 +44,23 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   end
 
   defp do_diff_trees(
-         %{type: _type, children: old_children} = _old,
-         %{type: _type, children: new_children} = _new,
+         %{type: _type, children: old_children} = old,
+         %{type: _type, children: new_children} = new,
          path
        ) do
     attempt_keyed_diff =
       are_children_consistently_keyed?(old_children) &&
         are_children_consistently_keyed?(new_children)
 
-    if attempt_keyed_diff do
+    children_diff_result = if attempt_keyed_diff do
       perform_keyed_children_diff(old_children, new_children, path)
     else
       perform_non_keyed_children_diff(old_children, new_children, path)
+    end
+
+    case children_diff_result do
+      :no_change -> :no_change
+      other -> other
     end
   end
 
@@ -117,6 +122,8 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
       |> Enum.reject(&is_nil/1)
 
     if child_diffs == [] do
+      # We need to return the unchanged tree, but we only have the children here
+      # This should be handled by the caller
       :no_change
     else
       # `path` here is path_to_parent.
@@ -139,58 +146,76 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
          new_children_list,
          path_to_parent
        ) do
-    old_children_map_by_key =
-      Map.new(old_children_list || [], fn child ->
-        validate_child_has_key!(child, "old_children_list for keyed diff")
-        {child[:key], child}
-      end)
-
-    new_children_map_by_key =
-      Map.new(new_children_list || [], fn child ->
-        validate_child_has_key!(child, "new_children_list for keyed diff")
-        {child[:key], child}
-      end)
+    old_children_map_by_key = build_children_map_by_key(old_children_list, "old_children_list")
+    new_children_map_by_key = build_children_map_by_key(new_children_list, "new_children_list")
 
     old_keys_set = Map.keys(old_children_map_by_key) |> MapSet.new()
     new_keys_set = Map.keys(new_children_map_by_key) |> MapSet.new()
     new_keys_ordered = Enum.map(new_children_list || [], & &1[:key])
-    _ops = []
 
-    ops =
-      Enum.reduce(
-        Enum.with_index(new_children_list || []),
-        [],
-        fn {new_child_node, _new_idx}, acc ->
-          key = new_child_node[:key]
+    ops = build_keyed_operations(
+      old_children_map_by_key,
+      new_children_list,
+      old_keys_set,
+      new_keys_set
+    )
 
-          if MapSet.member?(old_keys_set, key) do
-            old_child_node = old_children_map_by_key[key]
-            # Diff children relative to themselves, so path is [].
-            # Any paths *inside* child_diff will be relative to the child.
-            child_diff = do_diff_trees(old_child_node, new_child_node, [])
+    determine_keyed_diff_result(ops, old_children_list, new_keys_ordered, path_to_parent)
+  end
 
-            if child_diff != :no_change do
-              [{:key_update, key, child_diff} | acc]
-            else
-              acc
-            end
-          else
-            [{:key_add, key, new_child_node} | acc]
-          end
-        end
-      )
+  defp build_children_map_by_key(children_list, list_name) do
+    Map.new(children_list || [], fn child ->
+      validate_child_has_key!(child, list_name)
+      {child[:key], child}
+    end)
+  end
 
-    ops =
-      Enum.reduce(MapSet.to_list(old_keys_set), ops, fn old_key, acc ->
-        if !MapSet.member?(new_keys_set, old_key) do
-          [{:key_remove, old_key} | acc]
-        else
-          acc
-        end
-      end)
+  defp build_keyed_operations(old_children_map_by_key, new_children_list, old_keys_set, new_keys_set) do
+    add_and_update_ops = build_add_and_update_operations(
+      old_children_map_by_key,
+      new_children_list,
+      old_keys_set
+    )
 
-    final_ops_reversed = ops
-    has_structural_changes = Enum.any?(final_ops_reversed, fn _ -> true end)
+    remove_ops = build_remove_operations(old_keys_set, new_keys_set)
+
+    add_and_update_ops ++ remove_ops
+  end
+
+  defp build_add_and_update_operations(old_children_map_by_key, new_children_list, old_keys_set) do
+    Enum.reduce(new_children_list || [], [], fn new_child_node, acc ->
+      key = new_child_node[:key]
+
+      if MapSet.member?(old_keys_set, key) do
+        handle_existing_key(old_children_map_by_key, new_child_node, key, acc)
+      else
+        [{:key_add, key, new_child_node} | acc]
+      end
+    end)
+  end
+
+  defp handle_existing_key(old_children_map_by_key, new_child_node, key, acc) do
+    old_child_node = old_children_map_by_key[key]
+    child_diff = do_diff_trees(old_child_node, new_child_node, [])
+
+    case child_diff do
+      :no_change -> acc
+      _ -> [{:key_update, key, child_diff} | acc]
+    end
+  end
+
+  defp build_remove_operations(old_keys_set, new_keys_set) do
+    Enum.reduce(MapSet.to_list(old_keys_set), [], fn old_key, acc ->
+      if !MapSet.member?(new_keys_set, old_key) do
+        [{:key_remove, old_key} | acc]
+      else
+        acc
+      end
+    end)
+  end
+
+  defp determine_keyed_diff_result(ops, old_children_list, new_keys_ordered, path_to_parent) do
+    has_structural_changes = ops != []
     old_keys_ordered = Enum.map(old_children_list || [], & &1[:key])
     order_changed = old_keys_ordered != new_keys_ordered
 
@@ -199,39 +224,11 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
         :no_change
 
       !has_structural_changes && order_changed ->
-        {:update, path_to_parent,
-         %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
+        {:update, path_to_parent, %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
 
       true ->
-        current_ops_in_processing_order = Enum.reverse(final_ops_reversed)
-
-        all_ops_for_payload =
-          if order_changed do
-            current_ops_in_processing_order ++
-              [{:key_reorder, new_keys_ordered}]
-          else
-            if current_ops_in_processing_order != [] do
-              # Even if order hasn't changed, include reorder op if other ops exist,
-              # simplifies consumer logic that might expect it.
-              current_ops_in_processing_order ++
-                [{:key_reorder, new_keys_ordered}]
-            else
-              # Should be empty, leading to :no_change
-              current_ops_in_processing_order
-            end
-          end
-
-        if all_ops_for_payload == [] && !order_changed do
-          :no_change
-        else
-          if all_ops_for_payload == [{:key_reorder, new_keys_ordered}] &&
-               !has_structural_changes && !order_changed do
-            :no_change
-          else
-            {:update, path_to_parent,
-             %{type: :keyed_children, ops: all_ops_for_payload}}
-          end
-        end
+        all_ops = ops ++ [{:key_reorder, new_keys_ordered}]
+        {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
     end
   end
 

@@ -20,6 +20,21 @@ defmodule Raxol.Terminal.Window.Manager do
   end
 
   @doc """
+  Creates a new window manager instance for testing.
+  Returns a simple map structure instead of a process.
+  """
+  @spec new_for_test() :: map()
+  def new_for_test() do
+    %{
+      title: "",
+      icon_name: "",
+      icon_title: "",
+      windows: %{},
+      active_window: nil
+    }
+  end
+
+  @doc """
   Starts the window manager (compatibility function for Emulator.new/2).
   This is a no-op since the module now works with the Registry instead of being a GenServer.
   """

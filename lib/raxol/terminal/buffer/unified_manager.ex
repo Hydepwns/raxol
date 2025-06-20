@@ -367,30 +367,34 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       state = update_metrics(state, :get_cell_invalid, duration)
       {:reply, {:ok, default_cell}, state}
     else
-      cache_key = {x, y, 1, 1}
+      {cell, updated_state} = get_cell_with_cache(state, x, y, start_time)
+      {:reply, {:ok, cell}, updated_state}
+    end
+  end
 
-      case safe_cache_get(cache_key, :buffer) do
-        {:ok, cached_cell} ->
-          # Return cell with dirty: nil for external API
-          clean_cell = %{cached_cell | dirty: nil}
-          duration = System.monotonic_time() - start_time
-          state = update_metrics(state, :get_cell_cache_hit, duration)
-          {:reply, {:ok, clean_cell}, state}
+  defp get_cell_with_cache(state, x, y, start_time) do
+    cache_key = {x, y, 1, 1}
 
-        {:error, _} ->
-          cell = ScreenBuffer.get_cell(state.active_buffer, x, y)
-          clean_cell =
-            cond do
-              is_nil(cell) or cell == %{} -> %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
-              true -> %{cell | dirty: nil}
-            end
-          duration = System.monotonic_time() - start_time
+    case safe_cache_get(cache_key, :buffer) do
+      {:ok, cached_cell} ->
+        clean_cell = %{cached_cell | dirty: nil}
+        duration = System.monotonic_time() - start_time
+        updated_state = update_metrics(state, :get_cell_cache_hit, duration)
+        {clean_cell, updated_state}
 
-          safe_cache_put(cache_key, clean_cell, :buffer)
+      {:error, _} ->
+        cell = ScreenBuffer.get_cell(state.active_buffer, x, y)
+        clean_cell = if is_nil(cell) or cell == %{} do
+          %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+        else
+          %{cell | dirty: nil}
+        end
+        duration = System.monotonic_time() - start_time
 
-          state = update_metrics(state, :get_cell_cache_miss, duration)
-          {:reply, {:ok, clean_cell}, state}
-      end
+        safe_cache_put(cache_key, clean_cell, :buffer)
+
+        updated_state = update_metrics(state, :get_cell_cache_miss, duration)
+        {clean_cell, updated_state}
     end
   end
 
@@ -439,13 +443,26 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   def handle_call({:scroll_region, x, y, width, height, amount}, _from, state) do
     start_time = System.monotonic_time()
 
+    {new_active_buffer, new_scrollback_buffer} = process_scroll_region(state, x, y, width, height, amount)
+
+    # Clear cache for the scrolled region
+    safe_cache_clear(:buffer)
+
+    duration = System.monotonic_time() - start_time
+    state = %{state |
+      active_buffer: new_active_buffer,
+      scrollback_buffer: new_scrollback_buffer
+    }
+    state = update_metrics(state, :scroll_region, duration)
+    state = update_memory_usage(state)
+    {:reply, {:ok, state}, state}
+  end
+
+  defp process_scroll_region(state, x, y, width, height, amount) do
     # Only handle scroll up for scrollback (amount > 0)
     lines_to_scrollback = if amount > 0 do
       Enum.map(0..(amount - 1), fn offset ->
-        Enum.map(x..(x + width - 1), fn col ->
-          ScreenBuffer.get_cell(state.active_buffer, col, y + offset) ||
-            %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
-        end)
+        extract_line_cells(state.active_buffer, x, y + offset, width)
       end)
     else
       []
@@ -465,17 +482,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       ScreenBuffer.scroll_down(state.active_buffer, abs(amount))
     end
 
-    # Clear cache for the scrolled region
-    safe_cache_clear(:buffer)
+    {new_active_buffer, new_scrollback_buffer}
+  end
 
-    duration = System.monotonic_time() - start_time
-    state = %{state |
-      active_buffer: new_active_buffer,
-      scrollback_buffer: new_scrollback_buffer
-    }
-    state = update_metrics(state, :scroll_region, duration)
-    state = update_memory_usage(state)
-    {:reply, {:ok, state}, state}
+  defp extract_line_cells(buffer, x, y, width) do
+    Enum.map(x..(x + width - 1), fn col ->
+      ScreenBuffer.get_cell(buffer, col, y) ||
+        %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+    end)
   end
 
   @impl true

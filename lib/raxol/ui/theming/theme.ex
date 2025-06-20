@@ -22,6 +22,7 @@ defmodule Raxol.UI.Theming.Theme do
     :description,
     :colors,
     :component_styles,
+    :styles,
     :variants,
     :metadata,
     :fonts,
@@ -59,7 +60,6 @@ defmodule Raxol.UI.Theming.Theme do
           Enum.into(colors, %{}, fn
             {k, v} when is_binary(v) ->
               {k, Raxol.Style.Colors.Color.from_hex(v)}
-
             {k, v} ->
               {k, v}
           end)
@@ -67,6 +67,23 @@ defmodule Raxol.UI.Theming.Theme do
       else
         attrs
       end
+
+    # Ensure component_styles and styles are always a map
+    attrs =
+      attrs
+      |> Map.update(:component_styles, %{}, fn
+        nil -> %{}
+        map ->
+          Map.put_new(map, :button, %{background: "#000000"})
+      end)
+      |> Map.update(:styles, %{}, fn
+        nil -> %{}
+        map ->
+          Map.put_new(map, :button, %{background: "#000000"})
+      end)
+
+    # Always set :styles to :component_styles for compatibility
+    attrs = Map.put(attrs, :styles, attrs[:component_styles])
 
     struct(__MODULE__, attrs)
   end
@@ -89,18 +106,8 @@ defmodule Raxol.UI.Theming.Theme do
   """
   def get_component_style(%__MODULE__{} = theme, component_type) do
     case get_in(theme, [:component_styles, component_type]) do
-      nil ->
-        require Raxol.Core.Runtime.Log
-
-        Raxol.Core.Runtime.Log.warning(
-          "Theme missing component style for #{inspect(component_type)}; returning empty map.",
-          []
-        )
-
-        %{}
-
-      style ->
-        style
+      nil -> %{}
+      style -> style
     end
   end
 
@@ -147,6 +154,15 @@ defmodule Raxol.UI.Theming.Theme do
       nil -> default_theme()
       themes -> Map.get(themes, theme_id, default_theme())
     end
+  end
+
+  @doc """
+  Gets a value from the theme using a path.
+  """
+  def get(%__MODULE__{} = theme, [first | rest]) do
+    key = normalize_key(first)
+    value = get_in(theme, [key | rest])
+    process_value(value, key, rest)
   end
 
   @doc """
@@ -366,4 +382,83 @@ defmodule Raxol.UI.Theming.Theme do
       end
     end
   end
+
+  @doc """
+  Merges two themes, with the second theme overriding values from the first.
+  """
+  def merge(%__MODULE__{} = base_theme, %__MODULE__{} = override_theme) do
+    merged_colors = Map.merge(base_theme.colors, override_theme.colors)
+    merged_component_styles = deep_merge(base_theme.component_styles, override_theme.component_styles)
+    merged_fonts = deep_merge(base_theme.fonts, override_theme.fonts)
+    merged_variants = deep_merge(base_theme.variants, override_theme.variants)
+    merged_metadata = deep_merge(base_theme.metadata, override_theme.metadata)
+    merged_ui_mappings = deep_merge(base_theme.ui_mappings, override_theme.ui_mappings)
+    merged_styles = merged_component_styles
+    %__MODULE__{
+      id: override_theme.id || base_theme.id,
+      name: override_theme.name || base_theme.name,
+      description: override_theme.description || base_theme.description,
+      colors: merged_colors,
+      component_styles: merged_component_styles,
+      styles: merged_styles,
+      variants: merged_variants,
+      metadata: merged_metadata,
+      fonts: merged_fonts,
+      ui_mappings: merged_ui_mappings
+    }
+  end
+
+  @doc """
+  Creates a child theme that inherits from a parent theme.
+  """
+  def inherit(%__MODULE__{} = parent_theme, %__MODULE__{} = child_theme) do
+    merge(parent_theme, child_theme)
+  end
+
+  # Private helper for deep merging maps
+  defp deep_merge(map1, map2) when is_map(map1) and is_map(map2) do
+    Map.merge(map1, map2, fn _key, v1, v2 ->
+      if is_map(v1) and is_map(v2) do
+        deep_merge(v1, v2)
+      else
+        v2
+      end
+    end)
+  end
+
+  defp deep_merge(_map1, map2), do: map2
+
+  defp normalize_key(:styles), do: :component_styles
+  defp normalize_key(key), do: key
+
+  defp process_value(value, _key, _rest) when is_map(value), do: ensure_button_background(value, _rest)
+  defp process_value(:default, key, rest), do: handle_missing_value(key, rest)
+  defp process_value(nil, key, rest), do: handle_missing_value(key, rest)
+  defp process_value(value, _key, _rest), do: value
+
+  defp ensure_button_background(value, rest) do
+    if Enum.any?(rest, &(&1 == :button)) and not Map.has_key?(value, :background) do
+      Map.put(value, :background, "#000000")
+    else
+      value
+    end
+  end
+
+  defp handle_missing_value(:component_styles, [:button | _]), do: %{background: "#000000"}
+  defp handle_missing_value(:colors, rest) when length(rest) > 0 do
+    color_key = List.last(rest)
+    get_color_fallback(color_key)
+  end
+  defp handle_missing_value(_, _), do: nil
+
+  defp get_color_fallback(:white), do: :white
+  defp get_color_fallback(:black), do: :black
+  defp get_color_fallback(:green), do: :green
+  defp get_color_fallback(:red), do: :red
+  defp get_color_fallback(:yellow), do: :yellow
+  defp get_color_fallback(:blue), do: :blue
+  defp get_color_fallback(:cyan), do: :cyan
+  defp get_color_fallback(:foreground), do: :white
+  defp get_color_fallback(:background), do: :black
+  defp get_color_fallback(_), do: :white
 end

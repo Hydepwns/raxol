@@ -23,7 +23,9 @@ defmodule Raxol.Terminal.Integration.State do
           buffer: any(),
           input: any(),
           output: any(),
-          cursor_manager: any()
+          cursor_manager: any(),
+          width: non_neg_integer(),
+          height: non_neg_integer()
         }
 
   defstruct buffer_manager: nil,
@@ -36,7 +38,9 @@ defmodule Raxol.Terminal.Integration.State do
             buffer: nil,
             input: nil,
             output: nil,
-            cursor_manager: nil
+            cursor_manager: nil,
+            width: 80,
+            height: 24
 
   @doc """
   Creates a new integration state with the given options.
@@ -52,6 +56,30 @@ defmodule Raxol.Terminal.Integration.State do
       })
 
     %__MODULE__{
+      window: nil,
+      buffer: nil,
+      input: nil,
+      output: nil
+    }
+  end
+
+  @doc """
+  Creates a new integration state with specified width, height, and config.
+  """
+  @spec new(non_neg_integer(), non_neg_integer(), map()) :: t()
+  def new(width, height, config) when is_integer(width) and is_integer(height) and is_map(config) do
+    # Create a new integration state with specific dimensions
+    {:ok, _window_id} =
+      UnifiedWindow.create_window(%{
+        title: "Raxol Terminal",
+        width: width * 8,  # Approximate pixel width
+        height: height * 16  # Approximate pixel height
+      })
+
+    %__MODULE__{
+      width: width,
+      height: height,
+      config: config,
       window: nil,
       buffer: nil,
       input: nil,

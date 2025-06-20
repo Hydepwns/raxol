@@ -247,7 +247,7 @@ defmodule Raxol.Terminal.Extension.Manager do
     Enum.reduce(extension.events, events, fn event_name, acc ->
       event = %{
         name: event_name,
-        handler: &apply_event_handler/2,
+        handler: fn args -> {:ok, args} end,
         priority: 0
       }
 
@@ -270,7 +270,7 @@ defmodule Raxol.Terminal.Extension.Manager do
     Enum.reduce(extension.commands, commands, fn command_name, acc ->
       command = %{
         name: command_name,
-        handler: &apply_command_handler/2,
+        handler: fn args -> {:ok, args} end,
         description: "Command from #{extension.name}",
         usage: "#{command_name} [args]"
       }

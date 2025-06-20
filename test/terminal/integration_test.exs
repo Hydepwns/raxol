@@ -315,6 +315,11 @@ defmodule Raxol.Terminal.IntegrationTest do
   end
 
   describe "sixel graphics integration" do
+    setup do
+      initial_emulator_state = Emulator.new(80, 24)
+      %{state: initial_emulator_state, ansi: %{}}
+    end
+
     test "handles sixel graphics", %{state: initial_state} do
       # Enable SIXEL mode
       {state, _output} = Emulator.process_input(initial_state, "\e[?80h")

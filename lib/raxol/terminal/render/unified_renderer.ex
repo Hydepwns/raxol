@@ -15,7 +15,9 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     :screen,
     :style,
     :cursor_visible,
-    :title
+    :title,
+    :termbox_initialized,
+    :config
   ]
 
   @type t :: %__MODULE__{
@@ -23,7 +25,9 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
           screen: Screen.t(),
           style: Style.t(),
           cursor_visible: boolean(),
-          title: String.t()
+          title: String.t(),
+          termbox_initialized: boolean(),
+          config: map()
         }
 
   # Client API
@@ -100,6 +104,46 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     GenServer.call(__MODULE__, {:set_title, title})
   end
 
+  @doc """
+  Gets the current window title.
+  """
+  @spec get_title() :: String.t()
+  def get_title do
+    GenServer.call(__MODULE__, :get_title)
+  end
+
+  @doc """
+  Initializes the terminal.
+  """
+  @spec init_terminal() :: :ok
+  def init_terminal do
+    GenServer.call(__MODULE__, :init_terminal)
+  end
+
+  @doc """
+  Shuts down the terminal.
+  """
+  @spec shutdown_terminal() :: :ok
+  def shutdown_terminal do
+    GenServer.call(__MODULE__, :shutdown_terminal)
+  end
+
+  @doc """
+  Sets a specific configuration value.
+  """
+  @spec set_config_value(atom(), any()) :: :ok
+  def set_config_value(key, value) do
+    GenServer.call(__MODULE__, {:set_config_value, key, value})
+  end
+
+  @doc """
+  Resets the configuration to defaults.
+  """
+  @spec reset_config() :: :ok
+  def reset_config do
+    GenServer.call(__MODULE__, :reset_config)
+  end
+
   # Server Callbacks
 
   @impl true
@@ -115,7 +159,9 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
       screen: screen,
       style: style,
       cursor_visible: cursor_visible,
-      title: title
+      title: title,
+      termbox_initialized: false,
+      config: nil
     }
 
     {:ok, state}
@@ -196,6 +242,41 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
 
     {:reply, :ok, %{renderer | title: title}}
+  end
+
+  @impl true
+  def handle_call(:get_title, _from, renderer) do
+    {:reply, renderer.title, renderer}
+  end
+
+  @impl true
+  def handle_call(:init_terminal, _from, renderer) do
+    # Initialize termbox
+    :termbox2_nif.tb_init()
+    {:reply, :ok, %{renderer | termbox_initialized: true}}
+  end
+
+  @impl true
+  def handle_call(:shutdown_terminal, _from, renderer) do
+    # Shutdown termbox
+    :termbox2_nif.tb_shutdown()
+    {:reply, :ok, %{renderer | termbox_initialized: false}}
+  end
+
+  @impl true
+  def handle_call({:set_config_value, key, value}, _from, renderer) do
+    new_config = Map.put(renderer.config || %{}, key, value)
+    {:reply, :ok, %{renderer | config: new_config}}
+  end
+
+  @impl true
+  def handle_call(:reset_config, _from, renderer) do
+    default_config = %{
+      fps: 60,
+      theme: %{foreground: :white, background: :black},
+      font_settings: %{size: 12}
+    }
+    {:reply, :ok, %{renderer | config: default_config}}
   end
 
   # Private functions

@@ -45,9 +45,13 @@ defmodule Raxol.Terminal.Config.Manager do
   @doc """
   Creates a new config manager.
   """
-  @spec new() :: Config.t()
-  defp new do
-    new(80, 24)
+  @spec new() :: map()
+  def new do
+    %{
+      settings: %{},
+      preferences: %{},
+      environment: %{}
+    }
   end
 
   @doc """
@@ -93,25 +97,40 @@ defmodule Raxol.Terminal.Config.Manager do
   @spec set_setting(Emulator.t(), atom(), any()) :: Emulator.t()
   def set_setting(emulator, setting, value) when is_atom(setting) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
-    config = case setting do
-      :width when is_integer(value) and value > 0 ->
-        %{config | width: value}
-      :height when is_integer(value) and value > 0 ->
-        %{config | height: value}
-      :colors when is_map(value) ->
-        %{config | colors: Map.merge(config.colors, value)}
-      :styles when is_map(value) ->
-        %{config | styles: Map.merge(config.styles, value)}
-      :input when is_map(value) ->
-        %{config | input: Map.merge(config.input, value)}
-      :performance when is_map(value) ->
-        %{config | performance: Map.merge(config.performance, value)}
-      :mode when is_map(value) ->
-        %{config | mode: Map.merge(config.mode, value)}
-      _ ->
-        config
-    end
-    %{emulator | config: config}
+    updated_config = update_config_setting(config, setting, value)
+    %{emulator | config: updated_config}
+  end
+
+  defp update_config_setting(config, :width, value) when is_integer(value) and value > 0 do
+    %{config | width: value}
+  end
+
+  defp update_config_setting(config, :height, value) when is_integer(value) and value > 0 do
+    %{config | height: value}
+  end
+
+  defp update_config_setting(config, :colors, value) when is_map(value) do
+    %{config | colors: Map.merge(config.colors, value)}
+  end
+
+  defp update_config_setting(config, :styles, value) when is_map(value) do
+    %{config | styles: Map.merge(config.styles, value)}
+  end
+
+  defp update_config_setting(config, :input, value) when is_map(value) do
+    %{config | input: Map.merge(config.input, value)}
+  end
+
+  defp update_config_setting(config, :performance, value) when is_map(value) do
+    %{config | performance: Map.merge(config.performance, value)}
+  end
+
+  defp update_config_setting(config, :mode, value) when is_map(value) do
+    %{config | mode: Map.merge(config.mode, value)}
+  end
+
+  defp update_config_setting(config, _setting, _value) do
+    config
   end
 
   @doc """

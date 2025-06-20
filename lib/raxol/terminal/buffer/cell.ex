@@ -43,11 +43,11 @@ defmodule Raxol.Terminal.Buffer.Cell do
   def new(char, style) when is_binary(char) and is_map(style) do
     %__MODULE__{
       char: char,
-      foreground: Map.get(style, :foreground, 7),
-      background: Map.get(style, :background, 0),
-      attributes: Map.get(style, :attributes, %{}),
-      hyperlink: Map.get(style, :hyperlink, nil),
-      width: Map.get(style, :width, 1)
+      foreground: extract_foreground(style),
+      background: extract_background(style),
+      attributes: extract_attributes(style),
+      hyperlink: extract_hyperlink(style),
+      width: extract_width(style)
     }
   end
 
@@ -202,6 +202,10 @@ defmodule Raxol.Terminal.Buffer.Cell do
     String.match?(color, ~r/^#[0-9A-Fa-f]{6}$/)
   end
 
+  defp valid_color?(color) when is_integer(color) do
+    color >= 0 and color <= 255
+  end
+
   defp valid_color?(_), do: false
 
   defp valid_attributes?(attrs) when is_map(attrs) do
@@ -212,4 +216,55 @@ defmodule Raxol.Terminal.Buffer.Cell do
   end
 
   defp valid_attributes?(_), do: false
+
+  defp extract_foreground(style) do
+    case Map.get(style, :foreground) do
+      nil ->
+        case style do
+          %{foreground: fg} when not is_nil(fg) -> fg
+          _ -> 7  # Default white
+        end
+      fg -> fg
+    end
+  end
+
+  defp extract_background(style) do
+    case Map.get(style, :background) do
+      nil ->
+        case style do
+          %{background: bg} when not is_nil(bg) -> bg
+          _ -> 0  # Default black
+        end
+      bg -> bg
+    end
+  end
+
+  defp extract_attributes(style) do
+    case Map.get(style, :attributes) do
+      nil -> %{}
+      attrs -> attrs
+    end
+  end
+
+  defp extract_hyperlink(style) do
+    case Map.get(style, :hyperlink) do
+      nil ->
+        case style do
+          %{hyperlink: link} -> link
+          _ -> nil
+        end
+      link -> link
+    end
+  end
+
+  defp extract_width(style) do
+    case Map.get(style, :width) do
+      nil ->
+        case style do
+          %{width: w} when not is_nil(w) -> w
+          _ -> 1
+        end
+      w -> w
+    end
+  end
 end

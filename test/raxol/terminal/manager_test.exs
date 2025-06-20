@@ -4,11 +4,10 @@ defmodule Raxol.Terminal.ManagerTest do
   alias Raxol.Terminal.Manager
   alias Raxol.Core.Events.Event
 
-
-
   setup do
     emulator = Raxol.Terminal.Emulator.new()
-    {:ok, %{emulator: emulator}}
+    {:ok, pid} = Manager.start_link(terminal: emulator, runtime_pid: self())
+    {:ok, %{pid: pid}}
   end
 
   test "window resize event triggers notify_resized", %{pid: pid} do
@@ -99,11 +98,17 @@ defmodule Raxol.Terminal.ManagerTest do
   test "unknown event type does not crash or send messages" do
     # Flush the mailbox to remove any previous messages
     flush()
+    # Create a separate manager for this test - handle already started case
+    pid = case Manager.start_link([]) do
+      {:ok, pid} -> pid
+      {:error, {:already_started, pid}} -> pid
+    end
     # Send an unknown event
     event = %Raxol.Core.Events.Event{type: :unknown_event, data: %{}}
-    Raxol.Terminal.Manager.process_event(self(), event)
-    # Assert that no message is received
-    refute_receive _
+    Manager.process_event(pid, event)
+    # Assert that an error message is received for unknown event type
+    assert_received {:terminal_error, :unknown_event_type,
+                     %{action: :process_event, event: ^event}}
   end
 
   defp flush do
@@ -114,13 +119,14 @@ defmodule Raxol.Terminal.ManagerTest do
     end
   end
 
-  defp normalize_already_started({:ok, pid}), do: {:ok, pid}
-
-  defp normalize_already_started({:error, {:already_started, pid}}),
-    do: {:ok, pid}
-
   test "missing terminal returns error", _ do
-    {:ok, pid} = Manager.start_link([]) |> normalize_already_started()
+    # Create a separate manager without a terminal for this test
+    {:ok, pid} = GenServer.start_link(Raxol.Terminal.Manager, %{
+      sessions: %{},
+      terminal: nil,
+      runtime_pid: self(),
+      callback_module: nil
+    })
 
     event = %Event{
       type: :window,

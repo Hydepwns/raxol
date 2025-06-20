@@ -101,6 +101,28 @@ defmodule Raxol.Terminal.Config.Validation do
     end
   end
 
+  @doc """
+  Validates configuration updates against the schema.
+
+  ## Parameters
+
+  * `config` - The current configuration
+  * `updates` - The updates to validate
+
+  ## Returns
+
+  `:ok` or `{:error, reason}`
+  """
+  def validate_update(config, updates) when is_map(updates) do
+    # For now, just validate that the updates are valid configuration keys
+    # This is a simplified validation - in a real implementation, you'd want
+    # to validate the actual values against the schema
+    case validate_config(updates) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   # Private validation functions for different types
   defp validate_type(value, :integer, _path) when is_integer(value),
     do: {:ok, value}

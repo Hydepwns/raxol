@@ -216,6 +216,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
   end
 
+  @doc """
+  Sets the scroll region with individual top and bottom parameters.
+  """
+  def set_scroll_region(buffer, top, bottom) when is_integer(top) and is_integer(bottom) do
+    Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
+  end
+
   # === Dimension Operations ===
 
   @impl true
@@ -602,29 +609,30 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @spec erase_in_line(t(), {non_neg_integer(), non_neg_integer()}, atom()) :: t()
   def erase_in_line(buffer, {x, y}, type) do
     case type do
-      :to_end ->
-        # Erase from cursor to end of line
-        line = Enum.at(buffer.cells, y, [])
-        cleared_line = List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
-        new_cells = List.replace_at(buffer.cells, y, cleared_line)
-        %{buffer | cells: new_cells}
-
-      :to_beginning ->
-        # Erase from start of line to cursor
-        line = Enum.at(buffer.cells, y, [])
-        cleared_line = List.duplicate(%{}, x + 1) ++ Enum.drop(line, x + 1)
-        new_cells = List.replace_at(buffer.cells, y, cleared_line)
-        %{buffer | cells: new_cells}
-
-      :all ->
-        # Erase entire line
-        new_cells = List.replace_at(buffer.cells, y, List.duplicate(%{}, buffer.width))
-        %{buffer | cells: new_cells}
-
-      _ ->
-        # Default to :to_end
-        erase_in_line(buffer, {x, y}, :to_end)
+      :to_end -> erase_line_to_end(buffer, x, y)
+      :to_beginning -> erase_line_to_beginning(buffer, x, y)
+      :all -> erase_entire_line(buffer, y)
+      _ -> erase_line_to_end(buffer, x, y)
     end
+  end
+
+  defp erase_line_to_end(buffer, x, y) do
+    line = Enum.at(buffer.cells, y, [])
+    cleared_line = List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+    new_cells = List.replace_at(buffer.cells, y, cleared_line)
+    %{buffer | cells: new_cells}
+  end
+
+  defp erase_line_to_beginning(buffer, x, y) do
+    line = Enum.at(buffer.cells, y, [])
+    cleared_line = List.duplicate(%{}, x + 1) ++ Enum.drop(line, x + 1)
+    new_cells = List.replace_at(buffer.cells, y, cleared_line)
+    %{buffer | cells: new_cells}
+  end
+
+  defp erase_entire_line(buffer, y) do
+    new_cells = List.replace_at(buffer.cells, y, List.duplicate(%{}, buffer.width))
+    %{buffer | cells: new_cells}
   end
 
   @doc """
@@ -660,5 +668,26 @@ defmodule Raxol.Terminal.ScreenBuffer do
     {x, y} = buffer.cursor_position || {0, 0}
     height = buffer.height || 24
     erase_from_cursor_to_end(buffer, x, y, 0, height)
+  end
+
+  # Higher-arity delete_characters for command handlers
+  @doc """
+  Deletes a specified number of characters starting from the given position in the buffer.
+  Delegates to CharEditor.delete_characters/5.
+  """
+  def delete_characters(buffer, row, col, count, default_style) do
+    CharEditor.delete_characters(buffer, row, col, count, default_style)
+  end
+
+  @doc """
+  Scrolls the buffer down by the specified number of lines with additional parameters.
+  """
+  def scroll_down(buffer, lines, count) when is_integer(lines) and is_integer(count) do
+    Raxol.Terminal.Commands.Scrolling.scroll_down(
+      buffer,
+      lines,
+      buffer.scroll_region,
+      %{}
+    )
   end
 end

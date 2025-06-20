@@ -21,7 +21,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
 
     test "returns :no_change for identical trees" do
       tree = %{type: :div, children: [%{type: :span, content: "hello"}]}
-      assert TreeDiffer.diff_trees(tree, tree) == {:unchanged, tree}
+      assert TreeDiffer.diff_trees(tree, tree) == :no_change
     end
 
     test "returns :replace when root types differ" do
@@ -174,48 +174,37 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       assert update_details.type == :keyed_children
       actual_ops = update_details.ops
 
-      # Expected operations (order of adds/updates/removes might vary from internal list construction, but reorder is last)
-      expected_structural_ops_map = %{
-        add: [%{key: "5", content: c5_new}],
-        update: [%{key: "3", diff: diff_for_c3}],
-        remove: [%{key: "1"}, %{key: "4"}]
-      }
-
-      expected_reorder_op = {:key_reorder, ["5", "3", "2"]}
-
-      # Verify structural operations (flexible order for adds, updates, removes)
+      # Find ops by arity and type
       found_add_5 =
-        Enum.find(actual_ops, fn {op_type, key, _content} ->
-          op_type == :key_add && key == "5"
+        Enum.find(actual_ops, fn
+          {:key_add, "5", ^c5_new} -> true
+          _ -> false
         end)
-
       assert found_add_5 == {:key_add, "5", c5_new}
 
       found_update_3 =
-        Enum.find(actual_ops, fn {op_type, key, _diff} ->
-          op_type == :key_update && key == "3"
+        Enum.find(actual_ops, fn
+          {:key_update, "3", ^diff_for_c3} -> true
+          _ -> false
         end)
-
       assert found_update_3 == {:key_update, "3", diff_for_c3}
 
       found_remove_1 =
-        Enum.find(actual_ops, fn {op_type, key} ->
-          op_type == :key_remove && key == "1"
+        Enum.find(actual_ops, fn
+          {:key_remove, "1"} -> true
+          _ -> false
         end)
-
       assert found_remove_1 == {:key_remove, "1"}
 
       found_remove_4 =
-        Enum.find(actual_ops, fn {op_type, key} ->
-          op_type == :key_remove && key == "4"
+        Enum.find(actual_ops, fn
+          {:key_remove, "4"} -> true
+          _ -> false
         end)
-
       assert found_remove_4 == {:key_remove, "4"}
 
-      # Verify reorder operation
+      expected_reorder_op = {:key_reorder, ["5", "3", "2"]}
       assert Enum.member?(actual_ops, expected_reorder_op)
-
-      # Verify total number of operations
       assert length(actual_ops) == 5
     end
 
@@ -281,12 +270,10 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       old_tree = %{type: :ul, children: [child_a, child_b]}
       new_tree = %{type: :ul, children: []}
 
-      actual_diff_result = TreeDiffer.diff_trees(old_tree, new_tree)
-      assert Map.get(actual_diff_result, :path) == []
-      update_details = Map.get(actual_diff_result, :update_details)
-      assert Map.get(update_details, :type) == :keyed_children
-      actual_ops = Map.get(update_details, :ops)
-
+      {:update, path, update_details} = TreeDiffer.diff_trees(old_tree, new_tree)
+      assert path == []
+      assert update_details.type == :keyed_children
+      actual_ops = update_details.ops
       assert Enum.member?(actual_ops, {:key_remove, "a"})
       assert Enum.member?(actual_ops, {:key_remove, "b"})
       assert Enum.member?(actual_ops, {:key_reorder, []})
