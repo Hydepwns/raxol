@@ -12,12 +12,12 @@ defmodule Raxol.Terminal.Input do
   ]
 
   @type t :: %__MODULE__{
-    buffer: list(),
-    state: atom(),
-    last_click: {integer(), integer(), atom()} | nil,
-    last_drag: {integer(), integer(), atom()} | nil,
-    last_release: {integer(), integer(), atom()} | nil
-  }
+          buffer: list(),
+          state: atom(),
+          last_click: {integer(), integer(), atom()} | nil,
+          last_drag: {integer(), integer(), atom()} | nil,
+          last_release: {integer(), integer(), atom()} | nil
+        }
 
   @doc """
   Creates a new input handler.

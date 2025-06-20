@@ -11,7 +11,8 @@ defmodule Raxol.Terminal.EventHandler do
   Processes a mouse event.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec handle_mouse_event(Emulator.t(), map()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec handle_mouse_event(Emulator.t(), map()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def handle_mouse_event(emulator, %{type: :mouse_press} = event) do
     handle_mouse_press(emulator, event.button, event.x, event.y)
   end
@@ -32,7 +33,8 @@ defmodule Raxol.Terminal.EventHandler do
   Processes a keyboard event.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec handle_keyboard_event(Emulator.t(), map()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec handle_keyboard_event(Emulator.t(), map()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def handle_keyboard_event(emulator, %{type: :key_press} = event) do
     handle_key_press(emulator, event.key, event.modifiers)
   end
@@ -49,7 +51,8 @@ defmodule Raxol.Terminal.EventHandler do
   Processes a focus event.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec handle_focus_event(Emulator.t(), atom()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec handle_focus_event(Emulator.t(), atom()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def handle_focus_event(emulator, :focus_gain) do
     handle_focus_gain(emulator)
   end

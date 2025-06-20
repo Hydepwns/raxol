@@ -5,10 +5,10 @@ defmodule Raxol.Terminal.HistoryBuffer do
   """
 
   @type t :: %__MODULE__{
-    commands: list(String.t()),
-    position: integer(),
-    max_size: non_neg_integer()
-  }
+          commands: list(String.t()),
+          position: integer(),
+          max_size: non_neg_integer()
+        }
 
   defstruct commands: [], position: 0, max_size: 1000
 
@@ -35,8 +35,10 @@ defmodule Raxol.Terminal.HistoryBuffer do
   @doc """
   Gets the command at the specified index.
   """
-  @spec get_command_at(t(), integer()) :: {:ok, String.t()} | {:error, String.t()}
-  def get_command_at(buffer, index) when index >= 0 and index < length(buffer.commands) do
+  @spec get_command_at(t(), integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  def get_command_at(buffer, index)
+      when index >= 0 and index < length(buffer.commands) do
     case Enum.at(buffer.commands, index) do
       nil -> {:error, "Index out of bounds"}
       command -> {:ok, command}
@@ -55,7 +57,8 @@ defmodule Raxol.Terminal.HistoryBuffer do
   Sets the history position.
   """
   @spec set_position(t(), integer()) :: t()
-  def set_position(buffer, position) when position >= 0 and position <= length(buffer.commands) do
+  def set_position(buffer, position)
+      when position >= 0 and position <= length(buffer.commands) do
     %{buffer | position: position}
   end
 
@@ -69,11 +72,14 @@ defmodule Raxol.Terminal.HistoryBuffer do
     case buffer.position > 0 do
       true ->
         new_position = buffer.position - 1
+
         case get_command_at(buffer, new_position) do
           {:ok, command} -> {:ok, set_position(buffer, new_position), command}
           {:error, reason} -> {:error, reason}
         end
-      false -> {:error, "Already at the most recent command"}
+
+      false ->
+        {:error, "Already at the most recent command"}
     end
   end
 
@@ -85,11 +91,14 @@ defmodule Raxol.Terminal.HistoryBuffer do
     case buffer.position < length(buffer.commands) do
       true ->
         new_position = buffer.position + 1
+
         case get_command_at(buffer, new_position - 1) do
           {:ok, command} -> {:ok, set_position(buffer, new_position), command}
           {:error, reason} -> {:error, reason}
         end
-      false -> {:error, "Already at the oldest command"}
+
+      false ->
+        {:error, "Already at the oldest command"}
     end
   end
 
@@ -153,7 +162,9 @@ defmodule Raxol.Terminal.HistoryBuffer do
           commands = String.split(content, "\n", trim: true)
           commands = Enum.take(commands, buffer.max_size)
           {:ok, %{buffer | commands: commands, position: 0}}
-        {:error, reason} -> {:error, "Failed to read file: #{inspect(reason)}"}
+
+        {:error, reason} ->
+          {:error, "Failed to read file: #{inspect(reason)}"}
       end
     rescue
       e -> {:error, "Failed to load history: #{inspect(e)}"}

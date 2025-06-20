@@ -38,16 +38,22 @@ defmodule Raxol.Terminal.InputManager do
     case event do
       %{key: :enter} ->
         handle_enter(emulator)
+
       %{key: :backspace} ->
         handle_backspace(emulator)
+
       %{key: :tab} ->
         handle_tab(emulator)
+
       %{key: :escape} ->
         handle_escape(emulator)
+
       %{key: key} when is_atom(key) ->
         handle_special_key(emulator, key)
+
       %{char: char} when is_integer(char) ->
         handle_character(emulator, char)
+
       _ ->
         {emulator, nil}
     end
@@ -78,9 +84,11 @@ defmodule Raxol.Terminal.InputManager do
   # Private helper functions
 
   defp handle_input_result(emulator, nil), do: {emulator, nil}
+
   defp handle_input_result(emulator, output) when is_binary(output) do
     {emulator, output}
   end
+
   defp handle_input_result(emulator, {:command, command}) do
     handle_command(emulator, command)
   end
@@ -89,10 +97,13 @@ defmodule Raxol.Terminal.InputManager do
     case command do
       {:clear_screen, _} ->
         {emulator, nil}
+
       {:move_cursor, _x, _y} ->
         {emulator, nil}
+
       {:set_style, _style} ->
         {emulator, nil}
+
       _ ->
         {emulator, nil}
     end

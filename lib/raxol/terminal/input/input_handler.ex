@@ -6,21 +6,19 @@ defmodule Raxol.Terminal.Input.InputHandler do
   and modifier key states.
   """
 
-  defstruct [
-    buffer: "",
-    mode: :normal,
-    mouse_enabled: false,
-    mouse_buttons: MapSet.new(),
-    mouse_position: {0, 0},
-    input_history: [],
-    history_index: nil,
-    modifier_state: %{
-      ctrl: false,
-      alt: false,
-      shift: false,
-      meta: false
-    }
-  ]
+  defstruct buffer: "",
+            mode: :normal,
+            mouse_enabled: false,
+            mouse_buttons: MapSet.new(),
+            mouse_position: {0, 0},
+            input_history: [],
+            history_index: nil,
+            modifier_state: %{
+              ctrl: false,
+              alt: false,
+              shift: false,
+              meta: false
+            }
 
   @type t :: %__MODULE__{}
 
@@ -45,29 +43,31 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec process_special_key(t(), atom()) :: t()
   def process_special_key(%__MODULE__{} = handler, key) do
-    sequence = case key do
-      :up -> "\e[A"
-      :down -> "\e[B"
-      :right -> "\e[C"
-      :left -> "\e[D"
-      :home -> "\e[H"
-      :end -> "\e[F"
-      :page_up -> "\e[5~"
-      :page_down -> "\e[6~"
-      :f1 -> "\eOP"
-      :f2 -> "\eOQ"
-      :f3 -> "\eOR"
-      :f4 -> "\eOS"
-      :f5 -> "\e[15~"
-      :f6 -> "\e[17~"
-      :f7 -> "\e[18~"
-      :f8 -> "\e[19~"
-      :f9 -> "\e[20~"
-      :f10 -> "\e[21~"
-      :f11 -> "\e[23~"
-      :f12 -> "\e[24~"
-      _ -> ""
-    end
+    sequence =
+      case key do
+        :up -> "\e[A"
+        :down -> "\e[B"
+        :right -> "\e[C"
+        :left -> "\e[D"
+        :home -> "\e[H"
+        :end -> "\e[F"
+        :page_up -> "\e[5~"
+        :page_down -> "\e[6~"
+        :f1 -> "\eOP"
+        :f2 -> "\eOQ"
+        :f3 -> "\eOR"
+        :f4 -> "\eOS"
+        :f5 -> "\e[15~"
+        :f6 -> "\e[17~"
+        :f7 -> "\e[18~"
+        :f8 -> "\e[19~"
+        :f9 -> "\e[20~"
+        :f10 -> "\e[21~"
+        :f11 -> "\e[23~"
+        :f12 -> "\e[24~"
+        _ -> ""
+      end
+
     # Clear buffer and set to sequence for special keys
     %{handler | buffer: sequence}
   end
@@ -77,13 +77,15 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec update_modifier(t(), String.t(), boolean()) :: t()
   def update_modifier(%__MODULE__{} = handler, modifier, state) do
-    modifier_key = case modifier do
-      "Control" -> :ctrl
-      "Alt" -> :alt
-      "Shift" -> :shift
-      "Meta" -> :meta
-      _ -> :ctrl
-    end
+    modifier_key =
+      case modifier do
+        "Control" -> :ctrl
+        "Alt" -> :alt
+        "Shift" -> :shift
+        "Meta" -> :meta
+        _ -> :ctrl
+      end
+
     modifier_state = Map.put(handler.modifier_state, modifier_key, state)
     %{handler | modifier_state: modifier_state}
   end
@@ -95,22 +97,35 @@ defmodule Raxol.Terminal.Input.InputHandler do
   def process_key_with_modifiers(%__MODULE__{} = handler, key) do
     # Calculate modifier code as sum of bit flags: ctrl=1, shift=2, alt=4, meta=8
     code =
-      (if handler.modifier_state.ctrl, do: 1, else: 0) +
-      (if handler.modifier_state.shift, do: 2, else: 0) +
-      (if handler.modifier_state.alt, do: 4, else: 0) +
-      (if handler.modifier_state.meta, do: 8, else: 0)
+      if(handler.modifier_state.ctrl, do: 1, else: 0) +
+        if(handler.modifier_state.shift, do: 2, else: 0) +
+        if(handler.modifier_state.alt, do: 4, else: 0) +
+        if handler.modifier_state.meta, do: 8, else: 0
+
     modifier_code = if code > 0, do: Integer.to_string(code), else: ""
 
-    sequence = case key do
-      "ArrowUp" -> "\e[#{modifier_code};A"
-      "ArrowDown" -> "\e[#{modifier_code};B"
-      "ArrowRight" -> "\e[#{modifier_code};C"
-      "ArrowLeft" -> "\e[#{modifier_code};D"
-      _ when is_binary(key) and byte_size(key) == 1 ->
-        char_code = :binary.first(key)
-        "\e[#{modifier_code};#{char_code}"
-      _ -> ""
-    end
+    sequence =
+      case key do
+        "ArrowUp" ->
+          "\e[#{modifier_code};A"
+
+        "ArrowDown" ->
+          "\e[#{modifier_code};B"
+
+        "ArrowRight" ->
+          "\e[#{modifier_code};C"
+
+        "ArrowLeft" ->
+          "\e[#{modifier_code};D"
+
+        _ when is_binary(key) and byte_size(key) == 1 ->
+          char_code = :binary.first(key)
+          "\e[#{modifier_code};#{char_code}"
+
+        _ ->
+          ""
+      end
+
     %{handler | buffer: sequence}
   end
 
@@ -120,24 +135,28 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @spec process_mouse(t(), tuple()) :: t()
   def process_mouse(%__MODULE__{} = handler, {action, button, x, y}) do
     if handler.mouse_enabled do
-      action_code = case action do
-        :press -> "M"
-        :release -> "m"
-        :drag -> "M"
-        _ -> ""
-      end
+      action_code =
+        case action do
+          :press -> "M"
+          :release -> "m"
+          :drag -> "M"
+          _ -> ""
+        end
 
       sequence = "\e[<#{button};#{x + 1};#{y + 1}#{action_code}"
-      mouse_buttons = case action do
-        :press -> MapSet.put(handler.mouse_buttons, button)
-        :release -> MapSet.delete(handler.mouse_buttons, button)
-        _ -> handler.mouse_buttons
-      end
 
-      %{handler |
-        buffer: sequence,
-        mouse_position: {x, y},
-        mouse_buttons: mouse_buttons
+      mouse_buttons =
+        case action do
+          :press -> MapSet.put(handler.mouse_buttons, button)
+          :release -> MapSet.delete(handler.mouse_buttons, button)
+          _ -> handler.mouse_buttons
+        end
+
+      %{
+        handler
+        | buffer: sequence,
+          mouse_position: {x, y},
+          mouse_buttons: mouse_buttons
       }
     else
       handler
@@ -219,7 +238,8 @@ defmodule Raxol.Terminal.Input.InputHandler do
       new_handler = %{handler | buffer: entry, history_index: 0}
       {new_handler, entry}
     else
-      if handler.history_index != nil and handler.history_index < length(handler.input_history) - 1 do
+      if handler.history_index != nil and
+           handler.history_index < length(handler.input_history) - 1 do
         new_index = handler.history_index + 1
         entry = Enum.at(handler.input_history, new_index)
         new_handler = %{handler | buffer: entry, history_index: new_index}

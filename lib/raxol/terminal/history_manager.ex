@@ -40,11 +40,15 @@ defmodule Raxol.Terminal.HistoryManager do
   Gets the command at the specified index.
   Returns {:ok, command} or {:error, reason}.
   """
-  @spec get_command_at(Emulator.t(), integer()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec get_command_at(Emulator.t(), integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def get_command_at(emulator, index) do
     case HistoryBuffer.get_command_at(emulator.history_buffer, index) do
-      {:ok, command} -> {:ok, command}
-      {:error, reason} -> {:error, "Failed to get command at index #{index}: #{inspect(reason)}"}
+      {:ok, command} ->
+        {:ok, command}
+
+      {:error, reason} ->
+        {:error, "Failed to get command at index #{index}: #{inspect(reason)}"}
     end
   end
 
@@ -71,7 +75,8 @@ defmodule Raxol.Terminal.HistoryManager do
   Moves to the next command in history.
   Returns {:ok, updated_emulator, command} or {:error, reason}.
   """
-  @spec next_command(Emulator.t()) :: {:ok, Emulator.t(), String.t()} | {:error, String.t()}
+  @spec next_command(Emulator.t()) ::
+          {:ok, Emulator.t(), String.t()} | {:error, String.t()}
   def next_command(emulator) do
     case HistoryBuffer.next_command(emulator.history_buffer) do
       {:ok, new_buffer, command} ->
@@ -86,7 +91,8 @@ defmodule Raxol.Terminal.HistoryManager do
   Moves to the previous command in history.
   Returns {:ok, updated_emulator, command} or {:error, reason}.
   """
-  @spec previous_command(Emulator.t()) :: {:ok, Emulator.t(), String.t()} | {:error, String.t()}
+  @spec previous_command(Emulator.t()) ::
+          {:ok, Emulator.t(), String.t()} | {:error, String.t()}
   def previous_command(emulator) do
     case HistoryBuffer.previous_command(emulator.history_buffer) do
       {:ok, new_buffer, command} ->
@@ -151,8 +157,11 @@ defmodule Raxol.Terminal.HistoryManager do
   @spec save_to_file(Emulator.t(), String.t()) :: :ok | {:error, String.t()}
   def save_to_file(emulator, file_path) do
     case HistoryBuffer.save_to_file(emulator.history_buffer, file_path) do
-      :ok -> :ok
-      {:error, reason} -> {:error, "Failed to save history to file: #{inspect(reason)}"}
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        {:error, "Failed to save history to file: #{inspect(reason)}"}
     end
   end
 
@@ -160,7 +169,8 @@ defmodule Raxol.Terminal.HistoryManager do
   Loads history from a file.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec load_from_file(Emulator.t(), String.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
+  @spec load_from_file(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
   def load_from_file(emulator, file_path) do
     case HistoryBuffer.load_from_file(emulator.history_buffer, file_path) do
       {:ok, new_buffer} ->
