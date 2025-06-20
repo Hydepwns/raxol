@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   """
 
   use GenServer
+  @behaviour GenServer
   require Logger
 
   # Types

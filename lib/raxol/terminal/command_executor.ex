@@ -102,25 +102,23 @@ defmodule Raxol.Terminal.CommandExecutor do
   @doc """
   Executes a DCS (Device Control String) command.
 
-  DEPRECATED: Use Raxol.Terminal.Commands.Executor.execute_dcs_command/5 instead.
+  DEPRECATED: Use Raxol.Terminal.Commands.Executor.execute_dcs_command/4 instead.
   """
   @spec execute_dcs_command(
           Emulator.t(),
           String.t(),
           String.t(),
-          non_neg_integer(),
           String.t()
         ) :: Emulator.t()
   def execute_dcs_command(
         emulator,
         params_buffer,
         intermediates_buffer,
-        final_byte,
-        payload
+        data_string
       ) do
     Raxol.Core.Runtime.Log.warning_with_context(
-      "Raxol.Terminal.CommandExecutor.execute_dcs_command/5 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Executor.execute_dcs_command/5 instead.",
+      "Raxol.Terminal.CommandExecutor.execute_dcs_command/4 is deprecated. " <>
+        "Use Raxol.Terminal.Commands.Executor.execute_dcs_command/4 instead.",
       []
     )
 
@@ -128,8 +126,7 @@ defmodule Raxol.Terminal.CommandExecutor do
       emulator,
       params_buffer,
       intermediates_buffer,
-      final_byte,
-      payload
+      data_string
     )
   end
 end

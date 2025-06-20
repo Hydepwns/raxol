@@ -46,75 +46,88 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     {:ok, %{emulator | cursor: new_cursor}}
   end
 
-  @doc "Handles Cursor Up (CUU - \'A\")"
-  @spec handle_a(Emulator.t(), list(integer())) ::
+  @doc "Handles Cursor Up (CUU - \'A\') - alias for handle_A"
+  @spec handle_A(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_a(emulator, params) do
-    amount = get_valid_non_neg_param(params, 0, 1)
+  def handle_A(emulator, params) do
+    amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_up/4, amount)
   end
 
-  @doc "Handles Cursor Down (CUD - \'B\")"
-  @spec handle_b(Emulator.t(), list(integer())) ::
+  @doc "Handles Cursor Down (CUD - \'B\') - alias for handle_B"
+  @spec handle_B(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_b(emulator, params) do
-    amount = get_valid_non_neg_param(params, 0, 1)
+  def handle_B(emulator, params) do
+    amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_down/4, amount)
   end
 
-  @doc "Handles Cursor Forward (CUF - \'C\")"
-  @spec handle_c(Emulator.t(), list(integer())) ::
+  @doc "Handles Cursor Forward (CUF - \'C\') - alias for handle_C"
+  @spec handle_C(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_c(emulator, params) do
-    amount = get_valid_non_neg_param(params, 0, 1)
+  def handle_C(emulator, params) do
+    amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_right/4, amount)
   end
 
-  @doc "Handles Cursor Backward (CUB - \'D\")"
-  @spec handle_d(Emulator.t(), list(integer())) ::
+  @doc "Handles Cursor Backward (CUB - \'D\') - alias for handle_D"
+  @spec handle_D(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_d(emulator, params) do
-    amount = get_valid_non_neg_param(params, 0, 1)
+  def handle_D(emulator, params) do
+    amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_left/4, amount)
   end
 
-  @doc "Handles Cursor Next Line (CNL - \'E\")"
-  @spec handle_e(Emulator.t(), list(integer())) ::
+  @doc """
+  Handles Cursor Next Line (CNL - 'E').
+  """
+  @spec handle_E(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_e(emulator, params) do
-    amount = get_valid_non_neg_param(params, 0, 1)
-
+  def handle_E(emulator, params) do
+    amount = Enum.at(params, 0, 1)
     emulator
     |> handle_cursor_movement(&CursorManager.move_down/4, amount)
-    |> (fn {:ok, emu} ->
-          handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0)
-        end).()
+    |> (fn {:ok, emu} -> handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0) end).()
   end
 
-  @doc "Handles Cursor Previous Line (CPL - \'F\")"
+  @doc """
+  Handles Cursor Previous Line (CPL - 'F').
+  """
   @spec handle_f(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_f(emulator, params) do
-    amount = get_valid_non_neg_param(params, 0, 1)
-
+    amount = Enum.at(params, 0, 1)
     emulator
     |> handle_cursor_movement(&CursorManager.move_up/4, amount)
-    |> (fn {:ok, emu} ->
-          handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0)
-        end).()
+    |> (fn {:ok, emu} -> handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0) end).()
   end
 
-  @doc "Handles Cursor Horizontal Absolute (CHA - \'G\")"
+  @doc """
+  Handles Cursor Previous Line (CPL - 'F') - alias for handle_f.
+  """
+  @spec handle_F(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_F(emulator, params) do
+    handle_f(emulator, params)
+  end
+
+  @doc """
+  Handles Cursor Horizontal Absolute (CHA - 'G').
+  """
   @spec handle_g(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g(emulator, params) do
-    column = get_valid_pos_param(params, 0, 1)
+    column = Enum.at(params, 0, 1)
+    handle_cursor_movement(emulator, &CursorManager.move_to_column/4, column - 1)
+  end
 
-    handle_cursor_movement(
-      emulator,
-      &CursorManager.move_to_column/4,
-      column - 1
-    )
+  @doc """
+  Handles Cursor Horizontal Absolute (CHA - 'G') - alias for handle_g.
+  """
+  @spec handle_G(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_G(emulator, params) do
+    handle_g(emulator, params)
   end
 
   @doc "Handles Cursor Vertical Absolute (VPA - \'d\")"

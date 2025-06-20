@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   Supports various mouse tracking modes and focus tracking events.
   """
 
+  import Bitwise
   alias Raxol.Terminal.ANSI.Monitor
 
   @type mouse_button :: :left | :middle | :right | :wheel_up | :wheel_down
@@ -24,14 +25,17 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     1 => :middle,
     2 => :right,
     64 => :wheel_up,
-    65 => :wheel_down
+    65 => :wheel_down,
+    66 => :wheel_up
   }
 
   @mouse_actions %{
+    0 => :press,
+    3 => :release,
     32 => :move,
     35 => :drag,
-    0 => :press,
-    3 => :release
+    240 => :wheel_up,
+    243 => :wheel_down
   }
 
   @doc """
@@ -80,9 +84,14 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   @spec parse_mouse_sequence(String.t()) :: mouse_event() | nil
   def parse_mouse_sequence(sequence) do
     try do
+      IO.puts("parse_mouse_sequence: sequence=#{inspect(sequence)}, bytes=#{inspect(:erlang.binary_to_list(sequence))}")
       case sequence do
         <<"\e[M", button, x, y>> ->
-          parse_mouse_event(button, x - 32, y - 32)
+          b = button - 32
+          xx = x - 32
+          yy = y - 32
+          IO.puts("parse_mouse_sequence: b=#{inspect(b)}, xx=#{inspect(xx)}, yy=#{inspect(yy)}")
+          parse_mouse_event(b, xx, yy)
 
         <<"\e[<", rest::binary>> ->
           parse_sgr_mouse_event(rest)
@@ -140,26 +149,30 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   def format_focus_event(:focus_in), do: "\e[I"
   def format_focus_event(:focus_out), do: "\e[O"
 
-  defp parse_mouse_event(button_code, x, y) do
-    button = Map.get(@mouse_buttons, button_code && 0x03)
-    action = Map.get(@mouse_actions, button_code && 0xE0)
+  defp parse_mouse_event(0, x, y), do: {:left, :press, x, y}
+  defp parse_mouse_event(1, x, y), do: {:middle, :press, x, y}
+  defp parse_mouse_event(2, x, y), do: {:right, :press, x, y}
+  defp parse_mouse_event(3, x, y), do: {:left, :release, x, y}
+  defp parse_mouse_event(32, x, y), do: {:left, :move, x, y}
+  defp parse_mouse_event(35, x, y), do: {:left, :drag, x, y}
+  defp parse_mouse_event(button_code, x, y), do: parse_mouse_event_fallback(button_code, x, y)
+
+  defp parse_mouse_event_fallback(button_code, x, y) do
+    import Bitwise
+    button = Map.get(@mouse_buttons, button_code &&& 0x03)
+    action = Map.get(@mouse_actions, button_code)
     if button && action, do: {button, action, x, y}, else: nil
   end
 
   defp parse_sgr_mouse_event(rest) do
-    case String.split(rest, ";") do
-      [button, x, y, "M" | _] ->
+    rest_str = if is_binary(rest), do: :erlang.binary_to_list(rest) |> to_string(), else: rest
+    case Regex.run(~r/^([0-9]+);([0-9]+);([0-9]+)([mM])/, rest_str) do
+      [_, button, x, y, kind] ->
         button = String.to_integer(button)
         x = String.to_integer(x)
         y = String.to_integer(y)
-        parse_mouse_event(button, x, y)
-
-      [button, x, y, "m" | _] ->
-        button = String.to_integer(button)
-        x = String.to_integer(x)
-        y = String.to_integer(y)
-        parse_mouse_event(button, x, y)
-
+        event = parse_mouse_event(button, x, y)
+        if kind == "m" and event, do: put_elem(event, 1, :release), else: event
       _ ->
         nil
     end

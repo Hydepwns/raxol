@@ -192,47 +192,37 @@ defmodule Raxol.Terminal.EventHandler do
     end
   end
 
-  defp process_normal_key_release(emulator, key, modifiers) do
-    # Handle key release in normal mode
+  defp process_normal_key_release(emulator, _key, _modifiers) do
     {:ok, emulator}
   end
 
-  defp process_application_key_release(emulator, key, modifiers) do
-    # Handle key release in application mode
+  defp process_application_key_release(emulator, _key, _modifiers) do
     {:ok, emulator}
   end
 
   # Helper Functions
 
-  defp convert_to_terminal_coordinates(emulator, x, y) do
-    # Convert screen coordinates to terminal coordinates
-    # This might involve scaling and offset calculations
+  defp convert_to_terminal_coordinates(_emulator, x, y) do
     {x, y}
   end
 
-  defp generate_mouse_command(type, button, x, y) do
-    # Generate appropriate mouse command string
-    # This would depend on the terminal's mouse reporting mode
+  defp generate_mouse_command(_type, _button, _x, _y) do
     ""
   end
 
-  defp generate_mouse_any_command(type, button, x, y) do
-    # Generate mouse command for "any" mode
+  defp generate_mouse_any_command(_type, _button, _x, _y) do
     ""
   end
 
-  defp generate_mouse_move_command(x, y) do
-    # Generate mouse movement command
+  defp generate_mouse_move_command(_x, _y) do
     ""
   end
 
-  defp generate_normal_key_command(key, modifiers) do
-    # Generate key command for normal mode
+  defp generate_normal_key_command(_key, _modifiers) do
     ""
   end
 
-  defp generate_application_key_command(key, modifiers) do
-    # Generate key command for application mode
+  defp generate_application_key_command(_key, _modifiers) do
     ""
   end
 end

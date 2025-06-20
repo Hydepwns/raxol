@@ -98,7 +98,9 @@ defmodule Raxol.Terminal.Buffer.Content do
       row
       |> Enum.map(& &1.char)
       |> Enum.join()
+      |> String.trim_trailing()
     end)
+    |> Enum.filter(&(&1 != ""))
     |> Enum.join("\n")
   end
 

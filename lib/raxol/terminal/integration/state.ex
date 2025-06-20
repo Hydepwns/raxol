@@ -22,7 +22,8 @@ defmodule Raxol.Terminal.Integration.State do
           window: any(),
           buffer: any(),
           input: any(),
-          output: any()
+          output: any(),
+          cursor_manager: any()
         }
 
   defstruct buffer_manager: nil,
@@ -34,7 +35,8 @@ defmodule Raxol.Terminal.Integration.State do
             window: nil,
             buffer: nil,
             input: nil,
-            output: nil
+            output: nil,
+            cursor_manager: nil
 
   @doc """
   Creates a new integration state with the given options.

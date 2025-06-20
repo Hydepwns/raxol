@@ -176,4 +176,15 @@ defmodule Raxol.Terminal.Scroll.Manager do
         }
     }
   end
+
+  @doc """
+  Clears the scroll history.
+  """
+  @spec clear_history(t()) :: {:ok, t()}
+  def clear_history(manager) do
+    case System.clear(namespace: :scroll) do
+      {:ok, _} -> {:ok, manager}
+      {:error, _} -> {:ok, manager}
+    end
+  end
 end

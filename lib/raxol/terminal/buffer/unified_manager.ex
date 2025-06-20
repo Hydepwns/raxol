@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   """
 
   use GenServer
+  @behaviour GenServer
   require Logger
   require Raxol.Core.Runtime.Log
 
@@ -13,58 +14,68 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     ScreenBuffer,
     Buffer.MemoryManager,
     Buffer.Scroll,
-    Cache.System
+    Cache.System,
+    Buffer.Manager.State,
+    Buffer.DamageTracker
   }
 
   @type t :: %__MODULE__{
           active_buffer: ScreenBuffer.t(),
           back_buffer: ScreenBuffer.t(),
           scrollback_buffer: Scroll.t(),
-          memory_usage: non_neg_integer(),
-          memory_limit: non_neg_integer(),
-          metrics: map(),
+          damage_tracker: DamageTracker.t(),
           width: non_neg_integer(),
           height: non_neg_integer(),
-          scrollback_limit: non_neg_integer()
+          scrollback_limit: non_neg_integer(),
+          memory_limit: non_neg_integer(),
+          memory_usage: non_neg_integer(),
+          metrics: map()
         }
 
   defstruct [
     :active_buffer,
     :back_buffer,
     :scrollback_buffer,
-    memory_usage: 0,
+    :damage_tracker,
+    width: 80,
+    height: 24,
+    scrollback_limit: 1000,
     memory_limit: 10_000_000,
+    memory_usage: 0,
     metrics: %{
       operations: %{},
       memory: %{},
       performance: %{}
-    },
-    width: 80,
-    height: 24,
-    scrollback_limit: 1000
+    }
   ]
 
   @doc """
-  Creates a new unified buffer manager with the specified dimensions.
+  Creates a new unified buffer manager.
 
   ## Parameters
     * `width` - The width of the buffer
     * `height` - The height of the buffer
-    * `scrollback_limit` - Maximum number of scrollback lines (default: 1000)
-    * `memory_limit` - Maximum memory usage in bytes (default: 10_000_000)
+    * `scrollback_limit` - The maximum number of scrollback lines
+    * `memory_limit` - The maximum memory usage in bytes
 
   ## Returns
-    * `{:ok, state}` - The initialized buffer manager state
+    * `{:ok, state}` - The new buffer manager state
   """
   def new(width, height, scrollback_limit \\ 1000, memory_limit \\ 10_000_000) do
     state = %__MODULE__{
-      active_buffer: ScreenBuffer.new(width, height, scrollback_limit),
-      back_buffer: ScreenBuffer.new(width, height, scrollback_limit),
+      active_buffer: ScreenBuffer.new(width, height),
+      back_buffer: ScreenBuffer.new(width, height),
       scrollback_buffer: Scroll.new(scrollback_limit),
+      damage_tracker: DamageTracker.new(),
       width: width,
       height: height,
       scrollback_limit: scrollback_limit,
-      memory_limit: memory_limit
+      memory_limit: memory_limit,
+      metrics: %{
+        operations: %{},
+        memory: %{},
+        performance: %{}
+      }
     }
 
     {:ok, state}
@@ -98,8 +109,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, cell}` - The cell at the specified position
   """
-  def get_cell(%__MODULE__{} = state, x, y) do
-    GenServer.call(state, {:get_cell, x, y})
+  def get_cell(pid, x, y) when is_pid(pid) do
+    GenServer.call(pid, {:get_cell, x, y})
   end
 
   @doc """
@@ -114,8 +125,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def set_cell(%__MODULE__{} = state, x, y, cell) do
-    GenServer.call(state, {:set_cell, x, y, cell})
+  def set_cell(pid, x, y, cell) when is_pid(pid) do
+    GenServer.call(pid, {:set_cell, x, y, cell})
   end
 
   @doc """
@@ -132,8 +143,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def fill_region(%__MODULE__{} = state, x, y, width, height, cell) do
-    GenServer.call(state, {:fill_region, x, y, width, height, cell})
+  def fill_region(pid, x, y, width, height, cell) when is_pid(pid) do
+    GenServer.call(pid, {:fill_region, x, y, width, height, cell})
   end
 
   @doc """
@@ -150,8 +161,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def scroll_region(%__MODULE__{} = state, x, y, width, height, amount) do
-    GenServer.call(state, {:scroll_region, x, y, width, height, amount})
+  def scroll_region(pid, x, y, width, height, amount) when is_pid(pid) do
+    GenServer.call(pid, {:scroll_region, x, y, width, height, amount})
   end
 
   @doc """
@@ -163,8 +174,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def clear(%__MODULE__{} = state) do
-    GenServer.call(state, :clear)
+  def clear(pid) when is_pid(pid) do
+    GenServer.call(pid, :clear)
   end
 
   @doc """
@@ -178,8 +189,37 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def resize(%__MODULE__{} = state, width, height) do
-    GenServer.call(state, {:resize, width, height})
+  def resize(pid, width, height) when is_pid(pid) do
+    GenServer.call(pid, {:resize, width, height})
+  end
+
+  @doc """
+  Scrolls up in the buffer.
+
+  ## Parameters
+    * `state` - The buffer manager state
+    * `amount` - The number of lines to scroll up
+
+  ## Returns
+    * `{:ok, new_state}` - The updated buffer manager state
+  """
+  def scroll_up(pid, amount) when is_pid(pid) do
+    GenServer.call(pid, {:scroll_up, amount})
+  end
+
+  @doc """
+  Gets the history of the buffer.
+
+  ## Parameters
+    * `state` - The buffer manager state
+    * `start_line` - The starting line
+    * `count` - The number of lines to get
+
+  ## Returns
+    * `{:ok, history}` - The history of the buffer
+  """
+  def get_history(pid, start_line, count) when is_pid(pid) do
+    GenServer.call(pid, {:get_history, start_line, count})
   end
 
   @doc """
@@ -213,7 +253,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   Gets the visible content of the buffer.
   """
   def get_visible_content(%__MODULE__{} = state) do
-    {:ok, ScreenBuffer.get_visible_content(state.active_buffer)}
+    {:ok, ScreenBuffer.get_content(state.active_buffer)}
   end
 
   @doc """
@@ -248,12 +288,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   Gets the memory usage of the buffer.
   """
   def get_memory_usage(%__MODULE__{} = state) do
-    active_usage = ScreenBuffer.get_memory_usage(state.active_buffer)
-    back_usage = ScreenBuffer.get_memory_usage(state.back_buffer)
-    scrollback_usage = Scroll.get_memory_usage(state.scrollback_buffer)
+    memory =
+      ScreenBuffer.get_memory_usage(state.active_buffer) +
+        ScreenBuffer.get_memory_usage(state.back_buffer) +
+        Scroll.get_memory_usage(state.scrollback_buffer)
 
-    total_usage = active_usage + back_usage + scrollback_usage
-    {:ok, total_usage}
+    {:ok, memory}
   end
 
   @doc """
@@ -270,17 +310,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     ScreenBuffer.cleanup(state.active_buffer)
     ScreenBuffer.cleanup(state.back_buffer)
     Scroll.cleanup(state.scrollback_buffer)
-
-    new_state = %{
-      state
-      | metrics: %{
-          operations: %{},
-          memory: %{},
-          performance: %{}
-        }
-    }
-
-    {:ok, new_state}
+    Buffer.DamageTracker.cleanup(state.damage_tracker)
+    :ok
   end
 
   @doc """
@@ -291,7 +322,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   def get_visible_content(manager, buffer_id) do
     case Map.get(manager.buffers, buffer_id) do
       nil -> {:error, :buffer_not_found}
-      buffer -> {:ok, buffer.cells}
+      buffer -> {:ok, ScreenBuffer.get_content(buffer)}
     end
   end
 
@@ -308,49 +339,97 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:ok, state}
   end
 
+  # Safe cache wrapper functions - completely disable cache when not available
+  defp safe_cache_get(_key, _namespace) do
+    {:error, :cache_not_available}
+  end
+
+  defp safe_cache_put(_key, _value, _namespace) do
+    {:error, :cache_not_available}
+  end
+
+  defp safe_cache_clear(_namespace) do
+    {:error, :cache_not_available}
+  end
+
+  defp safe_cache_invalidate(_key, _namespace) do
+    {:error, :cache_not_available}
+  end
+
   @impl true
   def handle_call({:get_cell, x, y}, _from, state) do
     start_time = System.monotonic_time()
 
-    cache_key = {x, y, 1, 1}
+    # Validate coordinates - return default cell for invalid coordinates
+    if x < 0 or y < 0 or x >= state.active_buffer.width or y >= state.active_buffer.height do
+      default_cell = %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+      duration = System.monotonic_time() - start_time
+      state = update_metrics(state, :get_cell_invalid, duration)
+      {:reply, {:ok, default_cell}, state}
+    else
+      cache_key = {x, y, 1, 1}
 
-    case System.get(cache_key, namespace: :buffer) do
-      {:ok, cell} ->
-        duration = System.monotonic_time() - start_time
-        state = update_metrics(state, :get_cell_cache_hit, duration)
-        {:reply, {:ok, cell}, state}
+      case safe_cache_get(cache_key, :buffer) do
+        {:ok, cached_cell} ->
+          # Return cell with dirty: nil for external API
+          clean_cell = %{cached_cell | dirty: nil}
+          duration = System.monotonic_time() - start_time
+          state = update_metrics(state, :get_cell_cache_hit, duration)
+          {:reply, {:ok, clean_cell}, state}
 
-      {:error, _} ->
-        cell = ScreenBuffer.get_cell(state.active_buffer, x, y)
-        duration = System.monotonic_time() - start_time
+        {:error, _} ->
+          cell = ScreenBuffer.get_cell(state.active_buffer, x, y)
+          clean_cell =
+            cond do
+              is_nil(cell) or cell == %{} -> %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+              true -> %{cell | dirty: nil}
+            end
+          duration = System.monotonic_time() - start_time
 
-        System.put(cache_key, cell, namespace: :buffer)
+          safe_cache_put(cache_key, clean_cell, :buffer)
 
-        state = update_metrics(state, :get_cell_cache_miss, duration)
-        {:reply, {:ok, cell}, state}
+          state = update_metrics(state, :get_cell_cache_miss, duration)
+          {:reply, {:ok, clean_cell}, state}
+      end
     end
   end
 
   @impl true
   def handle_call({:set_cell, x, y, cell}, _from, state) do
-    {new_buffer, duration} = update_cell(state.active_buffer, x, y, cell)
-    new_state = update_state_after_cell_change(state, new_buffer, duration)
-    {:reply, {:ok, new_state}, new_state}
+    start_time = System.monotonic_time()
+
+    cache_key = {x, y, 1, 1}
+
+    case safe_cache_get(cache_key, :buffer) do
+      {:ok, cached_cell} ->
+        duration = System.monotonic_time() - start_time
+        state = update_metrics(state, :get_cell_cache_hit, duration)
+        {:reply, {:ok, state}, state}
+
+      {:error, _} ->
+        new_active_buffer = ScreenBuffer.write_char(state.active_buffer, x, y, cell.char, cell.style)
+        duration = System.monotonic_time() - start_time
+
+        safe_cache_put(cache_key, cell, :buffer)
+
+        state = update_metrics(state, :get_cell_cache_miss, duration)
+        state = %{state | active_buffer: new_active_buffer}
+        state = update_memory_usage(state)
+        {:reply, {:ok, state}, state}
+    end
   end
 
   @impl true
   def handle_call({:fill_region, x, y, width, height, cell}, _from, state) do
     start_time = System.monotonic_time()
 
-    # Update buffer
-    new_buffer =
-      ScreenBuffer.fill_region(state.active_buffer, x, y, width, height, cell)
+    new_active_buffer = fill_region_with_cell(state.active_buffer, x, y, width, height, cell)
 
-    # Invalidate cache for the entire region
-    invalidate_region_cache(x, y, width, height)
+    # Clear cache for the filled region
+    safe_cache_clear(:buffer)
 
     duration = System.monotonic_time() - start_time
-    state = %{state | active_buffer: new_buffer}
+    state = %{state | active_buffer: new_active_buffer}
     state = update_metrics(state, :fill_region, duration)
     state = update_memory_usage(state)
     {:reply, {:ok, state}, state}
@@ -360,23 +439,40 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   def handle_call({:scroll_region, x, y, width, height, amount}, _from, state) do
     start_time = System.monotonic_time()
 
-    # Update buffers
-    {new_buffer, scrollback} =
-      ScreenBuffer.scroll_region(
-        state.active_buffer,
-        state.scrollback_buffer,
-        x,
-        y,
-        width,
-        height,
-        amount
-      )
+    # Only handle scroll up for scrollback (amount > 0)
+    lines_to_scrollback = if amount > 0 do
+      Enum.map(0..(amount - 1), fn offset ->
+        Enum.map(x..(x + width - 1), fn col ->
+          ScreenBuffer.get_cell(state.active_buffer, col, y + offset) ||
+            %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+        end)
+      end)
+    else
+      []
+    end
 
-    # Invalidate cache for the entire region
-    invalidate_region_cache(x, y, width, height)
+    # Add lines to scrollback if scrolling up
+    new_scrollback_buffer = if amount > 0 and lines_to_scrollback != [] do
+      Scroll.add_content(state.scrollback_buffer, lines_to_scrollback)
+    else
+      state.scrollback_buffer
+    end
+
+    # Use ScreenBuffer's scroll operations
+    new_active_buffer = if amount > 0 do
+      ScreenBuffer.scroll_up(state.active_buffer, amount)
+    else
+      ScreenBuffer.scroll_down(state.active_buffer, abs(amount))
+    end
+
+    # Clear cache for the scrolled region
+    safe_cache_clear(:buffer)
 
     duration = System.monotonic_time() - start_time
-    state = %{state | active_buffer: new_buffer, scrollback_buffer: scrollback}
+    state = %{state |
+      active_buffer: new_active_buffer,
+      scrollback_buffer: new_scrollback_buffer
+    }
     state = update_metrics(state, :scroll_region, duration)
     state = update_memory_usage(state)
     {:reply, {:ok, state}, state}
@@ -386,14 +482,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   def handle_call(:clear, _from, state) do
     start_time = System.monotonic_time()
 
-    # Update buffer
-    new_buffer = ScreenBuffer.clear(state.active_buffer)
+    new_active_buffer = ScreenBuffer.clear(state.active_buffer, nil)
+    new_back_buffer = ScreenBuffer.clear(state.back_buffer, nil)
 
-    # Clear entire cache
-    System.clear(namespace: :buffer)
+    # Clear all cache
+    safe_cache_clear(:buffer)
 
     duration = System.monotonic_time() - start_time
-    state = %{state | active_buffer: new_buffer}
+    state = %{state | active_buffer: new_active_buffer, back_buffer: new_back_buffer}
     state = update_metrics(state, :clear, duration)
     state = update_memory_usage(state)
     {:reply, {:ok, state}, state}
@@ -403,39 +499,93 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   def handle_call({:resize, width, height}, _from, state) do
     start_time = System.monotonic_time()
 
-    # Initialize new buffers
-    {new_active, new_back} =
-      initialize_buffers(width, height, state.scrollback_limit)
+    # Validate dimensions
+    if width <= 0 or height <= 0 do
+      {:reply, {:error, :invalid_dimensions}, state}
+    else
+      # Resize buffers
+      new_active_buffer = ScreenBuffer.resize(state.active_buffer, height, width)
+      new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
 
-    # Clear cache for new dimensions
-    System.clear(namespace: :buffer)
+      # Clear the resized buffers to ensure they start with empty content
+      new_active_buffer = ScreenBuffer.clear(new_active_buffer, nil)
+      new_back_buffer = ScreenBuffer.clear(new_back_buffer, nil)
 
-    duration = System.monotonic_time() - start_time
+      # Clear cache
+      safe_cache_clear(:buffer)
 
-    state = %{
-      state
-      | active_buffer: new_active,
-        back_buffer: new_back,
+      duration = System.monotonic_time() - start_time
+      state = %{state |
+        active_buffer: new_active_buffer,
+        back_buffer: new_back_buffer,
         width: width,
         height: height
-    }
+      }
+      state = update_metrics(state, :resize, duration)
+      state = update_memory_usage(state)
+      {:reply, {:ok, state}, state}
+    end
+  end
 
-    # Record metrics using unified collector
-    Raxol.Core.Metrics.UnifiedCollector.record_performance(
-      :buffer_resize,
-      duration
-    )
+  @impl true
+  def handle_call({:scroll_up, amount}, _from, state) do
+    start_time = System.monotonic_time()
 
-    Raxol.Core.Metrics.UnifiedCollector.record_operation(:buffer_resize, 1,
-      tags: [:buffer, :resize]
-    )
+    # Scroll the scrollback buffer
+    new_scrollback_buffer = Scroll.scroll(state.scrollback_buffer, :up, amount)
 
+    # Clear cache for the visible area
+    safe_cache_clear(:buffer)
+
+    duration = System.monotonic_time() - start_time
+    state = %{state | scrollback_buffer: new_scrollback_buffer}
+    state = update_metrics(state, :scroll_up, duration)
+    state = update_memory_usage(state)
     {:reply, {:ok, state}, state}
+  end
+
+  @impl true
+  def handle_call({:get_history, start_line, count}, _from, state) do
+    start_time = System.monotonic_time()
+
+    # Get history from scrollback buffer
+    history = Scroll.get_view(state.scrollback_buffer, count)
+
+    duration = System.monotonic_time() - start_time
+    state = update_metrics(state, :get_history, duration)
+    {:reply, {:ok, history}, state}
+  end
+
+  @impl true
+  def handle_call(:get_metrics, _from, state) do
+    {:reply, {:ok, state.metrics}, state}
+  end
+
+  @impl true
+  def handle_call({:add_scrollback, content}, _from, state) do
+    start_time = System.monotonic_time()
+
+    new_scrollback_buffer = Scroll.add_content(state.scrollback_buffer, content)
+
+    # Clear scrollback cache
+    safe_cache_clear(:scrollback)
+
+    duration = System.monotonic_time() - start_time
+    state = %{state | scrollback_buffer: new_scrollback_buffer}
+    state = update_metrics(state, :add_scrollback, duration)
+    state = update_memory_usage(state)
+    {:reply, {:ok, state}, state}
+  end
+
+  @impl true
+  def handle_call(:get_memory_usage, _from, state) do
+    updated_state = update_memory_usage(state)
+    {:reply, {:ok, updated_state.memory_usage}, updated_state}
   end
 
   defp update_cell(buffer, x, y, cell) do
     start_time = System.monotonic_time()
-    new_buffer = ScreenBuffer.set_cell(buffer, x, y, cell)
+    new_buffer = ScreenBuffer.write_char(buffer, x, y, cell.char, cell.style)
     duration = System.monotonic_time() - start_time
     {new_buffer, duration}
   end
@@ -448,49 +598,74 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp initialize_buffers(width, height, scrollback_limit) do
-    main_buffer = ScreenBuffer.new(width, height, scrollback_limit)
-    alt_buffer = ScreenBuffer.new(width, height, scrollback_limit)
+    main_buffer = State.new(width, height)
+    alt_buffer = State.new(width, height)
     {main_buffer, alt_buffer}
   end
 
   defp update_metrics(state, operation, duration) do
     # Record performance metric
-    Raxol.Core.Metrics.UnifiedCollector.record_performance(
-      String.to_atom("buffer_#{operation}"),
-      duration,
-      tags: [:buffer, operation]
-    )
+    # Raxol.Core.Metrics.UnifiedCollector.record_performance(
+    #   String.to_atom("buffer_#{operation}"),
+    #   duration,
+    #   tags: [:buffer, operation]
+    # )
 
     # Record operation metric
-    Raxol.Core.Metrics.UnifiedCollector.record_operation(
-      String.to_atom("buffer_#{operation}"),
-      1,
-      tags: [:buffer, operation]
-    )
+    # Raxol.Core.Metrics.UnifiedCollector.record_operation(
+    #   String.to_atom("buffer_#{operation}"),
+    #   1,
+    #   tags: [:buffer, operation]
+    # )
 
     state
   end
 
   defp update_memory_usage(state) do
-    # Optimize memory usage calculation by sampling
-    usage =
-      if rem(System.system_time(:millisecond), 1000) == 0 do
-        memory =
-          MemoryManager.get_total_usage(state.active_buffer, state.back_buffer)
+    # Calculate memory usage based on buffer dimensions and content
+    active_memory = calculate_buffer_memory(state.active_buffer)
+    back_memory = calculate_buffer_memory(state.back_buffer)
+    scrollback_memory = calculate_scrollback_memory(state.scrollback_buffer)
 
-        # Record memory usage metric
-        Raxol.Core.Metrics.UnifiedCollector.record_resource(
-          :buffer_memory_usage,
-          memory,
-          tags: [:buffer, :memory]
-        )
+    memory = active_memory + back_memory + scrollback_memory
 
-        memory
-      else
-        state.memory_usage
-      end
+    # Record memory usage metric
+    # Raxol.Core.Metrics.UnifiedCollector.record_resource(
+    #   :buffer_memory_usage,
+    #   memory,
+    #   tags: [:buffer, :memory]
+    # )
 
-    %{state | memory_usage: usage}
+    # Update state with memory usage
+    %{state | memory_usage: memory}
+  end
+
+  # Helper function to calculate memory usage for a ScreenBuffer
+  defp calculate_buffer_memory(buffer) do
+    # Estimate memory usage based on dimensions and content
+    # Each cell is roughly 64 bytes (including overhead)
+    # Plus some overhead for the struct itself
+    cell_count = buffer.width * buffer.height
+    cell_memory = cell_count * 64
+
+    # Add overhead for the struct and other fields
+    struct_overhead = 1024
+
+    cell_memory + struct_overhead
+  end
+
+  # Helper function to calculate memory usage for a Scroll buffer
+  defp calculate_scrollback_memory(scrollback) do
+    # Estimate memory usage based on scrollback content
+    # Each line is roughly 80 * 64 bytes (assuming 80 columns)
+    # Plus some overhead for the struct itself
+    line_count = length(scrollback.buffer)
+    line_memory = line_count * 80 * 64
+
+    # Add overhead for the struct and other fields
+    struct_overhead = 512
+
+    line_memory + struct_overhead
   end
 
   defp invalidate_region_cache(x, y, width, height) do
@@ -503,5 +678,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   defp process_command(state, command) do
     Raxol.Terminal.Buffer.CommandHandler.handle_command(state, command)
+  end
+
+  # Add helper function for filling regions
+  defp fill_region_with_cell(buffer, x, y, width, height, cell) do
+    Enum.reduce(y..(y + height - 1), buffer, fn row, acc ->
+      Enum.reduce(x..(x + width - 1), acc, fn col, cell_acc ->
+        ScreenBuffer.write_char(cell_acc, col, row, cell.char, cell.style)
+      end)
+    end)
   end
 end

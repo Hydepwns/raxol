@@ -99,6 +99,22 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   end
 
   @doc """
+  Processes a mouse event from an event map.
+  The event map should contain: button, action, modifiers, x, y
+  """
+  @spec process_mouse_event(mouse_id(), map()) :: :ok | {:error, term()}
+  def process_mouse_event(mouse_id, %{} = event) do
+    button = Map.get(event, :button, :left)
+    action = Map.get(event, :action, :press)
+    modifiers = Map.get(event, :modifiers, [])
+    x = Map.get(event, :x, 0)
+    y = Map.get(event, :y, 0)
+    position = {x, y}
+
+    process_mouse_event(mouse_id, action, button, position, modifiers)
+  end
+
+  @doc """
   Gets the current mouse position.
   """
   @spec get_mouse_position(mouse_id()) ::

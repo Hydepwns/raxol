@@ -4,8 +4,54 @@ defmodule Raxol.Terminal.State.Manager do
   This module is responsible for maintaining and updating the terminal's state.
   """
 
+  use GenServer
   alias Raxol.Terminal.{Emulator, State}
   require Raxol.Core.Runtime.Log
+
+  # Client API
+
+  @doc """
+  Starts the state manager.
+  """
+  @spec start_link() :: GenServer.on_start()
+  def start_link do
+    start_link([])
+  end
+
+  @doc """
+  Starts the state manager with options.
+  """
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
+  end
+
+  # Server Callbacks
+
+  @impl true
+  def init(_opts) do
+    {:ok, new()}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl true
+  def handle_call({:set_state, new_state}, _from, _state) do
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_cast({:update_state, update_fun}, state) when is_function(update_fun, 1) do
+    {:noreply, update_fun.(state)}
+  end
+
+  @impl true
+  def handle_info(_msg, state) do
+    {:noreply, state}
+  end
 
   @doc """
   Creates a new state manager.

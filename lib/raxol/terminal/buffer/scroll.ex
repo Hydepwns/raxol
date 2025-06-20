@@ -225,6 +225,38 @@ defmodule Raxol.Terminal.Buffer.Scroll do
     %{scroll | height: new_height}
   end
 
+  @doc """
+  Gets the size of the scroll buffer.
+  """
+  def get_size(%__MODULE__{} = scroll) do
+    scroll.height
+  end
+
+  @doc """
+  Adds content (multiple lines) to the scroll buffer.
+  """
+  def add_content(%__MODULE__{} = scroll, content) when is_list(content) do
+    Enum.reduce(content, scroll, fn line, acc ->
+      add_line(acc, line)
+    end)
+  end
+
+  def add_content(%__MODULE__{} = scroll, _), do: scroll
+
+  @doc """
+  Gets the memory usage of the scroll buffer.
+  """
+  def get_memory_usage(%__MODULE__{} = scroll) do
+    scroll.memory_usage
+  end
+
+  @doc """
+  Cleans up the scroll buffer.
+  """
+  def cleanup(%__MODULE__{} = scroll) do
+    %{scroll | buffer: [], position: 0, height: 0, memory_usage: 0}
+  end
+
   # Private functions
 
   defp calculate_memory_usage(buffer) do

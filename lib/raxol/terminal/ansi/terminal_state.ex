@@ -155,6 +155,27 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   def restore_state([state | stack]), do: {state, stack}
   def restore_state([]), do: {nil, []}
 
+  @doc """
+  Gets the count of states in the state stack.
+  """
+  def count(stack) when is_list(stack) do
+    length(stack)
+  end
+
+  @doc """
+  Checks if the state stack is empty.
+  """
+  def empty?(stack) when is_list(stack) do
+    stack == []
+  end
+
+  @doc """
+  Clears the terminal state stack.
+  """
+  def clear_state(stack) when is_list(stack) do
+    []
+  end
+
   defp default_state do
     %{
       cursor_visible: true,

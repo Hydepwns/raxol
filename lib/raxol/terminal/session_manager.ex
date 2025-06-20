@@ -104,7 +104,7 @@ defmodule Raxol.Terminal.SessionManager do
       id: session_id,
       user_id: user_id,
       token: token,
-      emulator: Emulator.new(80, 24, scrollback: scrollback_limit),
+      emulator: Emulator.new(),
       created_at: DateTime.utc_now(),
       last_active: DateTime.utc_now()
     }

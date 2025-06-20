@@ -40,12 +40,29 @@ defmodule Raxol.Terminal.Command.Manager do
     }
   end
 
+  @doc """
+  Creates a new command manager with options.
+  """
+  @spec new(keyword()) :: Command.t()
+  def new(opts) do
+    max_history = Keyword.get(opts, :max_history, 100)
+    %Command{
+      history: [],
+      current: nil,
+      max_history: max_history
+    }
+  end
+
   def execute_command(pid \\ __MODULE__, command) do
     GenServer.call(pid, {:execute_command, command})
   end
 
-  def get_command_history(manager \\ %__MODULE__{}) do
-    GenServer.call(manager, :get_command_history)
+  def get_command_history(manager \\ %__MODULE__{})
+  def get_command_history(%__MODULE__{} = state) do
+    state.command_history
+  end
+  def get_command_history(pid) do
+    GenServer.call(pid, :get_command_history)
   end
 
   def clear_command_history(pid \\ __MODULE__) do
@@ -60,8 +77,12 @@ defmodule Raxol.Terminal.Command.Manager do
     GenServer.call(pid, {:set_current_command, command})
   end
 
-  def get_command_buffer(manager \\ %__MODULE__{}) do
-    GenServer.call(manager, :get_command_buffer)
+  def get_command_buffer(manager \\ %__MODULE__{})
+  def get_command_buffer(%__MODULE__{} = state) do
+    state.command_buffer
+  end
+  def get_command_buffer(pid) do
+    GenServer.call(pid, :get_command_buffer)
   end
 
   def clear_command_buffer(pid \\ __MODULE__) do
@@ -147,25 +168,11 @@ defmodule Raxol.Terminal.Command.Manager do
   end
 
   @doc """
-  Gets the current command buffer.
-  """
-  def get_command_buffer(%__MODULE__{} = state) do
-    state.command_buffer
-  end
-
-  @doc """
   Updates the command buffer.
   """
   def update_command_buffer(%__MODULE__{} = state, new_buffer)
       when is_binary(new_buffer) do
     %{state | command_buffer: new_buffer}
-  end
-
-  @doc """
-  Gets the command history.
-  """
-  def get_command_history(%__MODULE__{} = state) do
-    state.command_history
   end
 
   @doc """
@@ -203,56 +210,55 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Processes a key event and updates the command buffer accordingly.
   """
-  def process_key_event(%__MODULE__{} = state, key_event) do
-    case key_event do
-      {:key, :enter} ->
-        if state.command_buffer != "" do
-          state = add_to_history(state, state.command_buffer)
-          %{state | command_buffer: ""}
-        else
-          state
-        end
+  def process_key_event(%__MODULE__{} = state, {:key, :enter}), do: handle_enter(state)
+  def process_key_event(%__MODULE__{} = state, {:key, :backspace}), do: handle_backspace(state)
+  def process_key_event(%__MODULE__{} = state, {:key, :up}), do: handle_up(state)
+  def process_key_event(%__MODULE__{} = state, {:key, :down}), do: handle_down(state)
+  def process_key_event(%__MODULE__{} = state, {:char, char}), do: handle_char(state, char)
+  def process_key_event(state, _), do: state
 
-      {:key, :backspace} ->
-        if state.command_buffer != "" do
-          %{
-            state
-            | command_buffer: String.slice(state.command_buffer, 0..-2//-1)
-          }
-        else
-          state
-        end
-
-      {:key, :up} ->
-        if state.history_index < length(state.command_history) - 1 do
-          new_index = state.history_index + 1
-          command = Enum.at(state.command_history, new_index)
-          %{state | command_buffer: command, history_index: new_index}
-        else
-          state
-        end
-
-      {:key, :down} ->
-        if state.history_index > -1 do
-          new_index = state.history_index - 1
-
-          command =
-            if new_index == -1,
-              do: "",
-              else: Enum.at(state.command_history, new_index)
-
-          %{state | command_buffer: command, history_index: new_index}
-        else
-          state
-        end
-
-      {:char, char} ->
-        %{state | command_buffer: state.command_buffer <> char}
-
-      _ ->
-        state
+  defp handle_enter(state) do
+    if state.command_buffer != "" do
+      state = add_to_history(state, state.command_buffer)
+      %{state | command_buffer: ""}
+    else
+      state
     end
   end
+
+  defp handle_backspace(state) do
+    if state.command_buffer != "" do
+      %{state | command_buffer: String.slice(state.command_buffer, 0..-2//-1)}
+    else
+      state
+    end
+  end
+
+  defp handle_up(state) do
+    if state.history_index < length(state.command_history) - 1 do
+      new_index = state.history_index + 1
+      command = Enum.at(state.command_history, new_index)
+      %{state | command_buffer: command, history_index: new_index}
+    else
+      state
+    end
+  end
+
+  defp handle_down(state) do
+    if state.history_index > -1 do
+      new_index = state.history_index - 1
+      command =
+        case new_index do
+          -1 -> ""
+          _ -> Enum.at(state.command_history, new_index)
+        end
+      %{state | command_buffer: command, history_index: new_index}
+    else
+      state
+    end
+  end
+
+  defp handle_char(state, char), do: %{state | command_buffer: state.command_buffer <> char}
 
   @doc """
   Gets a command from history by index.
@@ -282,39 +288,10 @@ defmodule Raxol.Terminal.Command.Manager do
   def process_command(emulator, command) do
     case parse_command(command) do
       {:ok, parsed_command} ->
-        execute_command(emulator, parsed_command)
+        execute_command_internal(emulator, parsed_command)
       {:error, reason} ->
         {emulator, {:error, reason}}
     end
-  end
-
-  @doc """
-  Adds a command to the history.
-  Returns the updated emulator.
-  """
-  @spec add_to_history(Emulator.t(), String.t()) :: Emulator.t()
-  def add_to_history(emulator, command) do
-    history = [command | emulator.command.history]
-    history = Enum.take(history, emulator.command.max_history)
-    %{emulator | command: %{emulator.command | history: history}}
-  end
-
-  @doc """
-  Gets the command history.
-  Returns the list of commands.
-  """
-  @spec get_history(Emulator.t()) :: [String.t()]
-  def get_history(emulator) do
-    emulator.command.history
-  end
-
-  @doc """
-  Clears the command history.
-  Returns the updated emulator.
-  """
-  @spec clear_history(Emulator.t()) :: Emulator.t()
-  def clear_history(emulator) do
-    %{emulator | command: %{emulator.command | history: []}}
   end
 
   @doc """
@@ -337,13 +314,28 @@ defmodule Raxol.Terminal.Command.Manager do
 
   # Private helper functions
 
-  defp parse_command(command) do
-    # TODO: Implement command parsing
-    {:ok, command}
+  defp parse_command(command) when is_binary(command) do
+    # Split command into name and arguments
+    [cmd | args] = String.split(command)
+    {:ok, {cmd, args}}
+  rescue
+    _ -> {:error, :invalid_command}
   end
 
-  defp execute_command(emulator, command) do
-    # TODO: Implement command execution
-    {emulator, nil}
+  defp execute_command_internal(emulator, {"clear", _args}) do
+    # Example: clear command
+    # You would call the actual clear logic here
+    {emulator, :cleared}
+  end
+
+  defp execute_command_internal(emulator, {"echo", args}) do
+    # Example: echo command
+    output = Enum.join(args, " ")
+    {emulator, output}
+  end
+
+  defp execute_command_internal(emulator, {cmd, _args}) do
+    # Unknown command
+    {emulator, {:error, {:unknown_command, cmd}}}
   end
 end

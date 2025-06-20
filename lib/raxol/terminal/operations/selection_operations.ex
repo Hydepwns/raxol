@@ -5,6 +5,12 @@ defmodule Raxol.Terminal.Operations.SelectionOperations do
 
   alias Raxol.Terminal.ScreenManager
 
+  def write_string(emulator, x, y, string, style) do
+    buffer = ScreenManager.get_active_buffer(emulator)
+    new_buffer = ScreenManager.write_string(buffer, x, y, string, style)
+    ScreenManager.update_active_buffer(emulator, new_buffer)
+  end
+
   def get_selection(emulator) do
     buffer = ScreenManager.get_active_buffer(emulator)
     ScreenManager.get_selection(buffer)
@@ -22,7 +28,10 @@ defmodule Raxol.Terminal.Operations.SelectionOperations do
 
   def get_selection_boundaries(emulator) do
     buffer = ScreenManager.get_active_buffer(emulator)
-    ScreenManager.get_selection_boundaries(buffer)
+    case ScreenManager.get_selection_boundaries(buffer) do
+      {start_x, start_y, end_x, end_y} -> {{start_x, start_y}, {end_x, end_y}}
+      nil -> nil
+    end
   end
 
   def start_selection(emulator, x, y) do

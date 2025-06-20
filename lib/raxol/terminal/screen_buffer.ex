@@ -59,11 +59,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
     :scrollback_limit,
     :selection,
     :scroll_region,
+    :scroll_position,
     :width,
     :height,
-    :cursor_position,
     :damage_regions,
-    :default_style
+    :default_style,
+    cursor_position: {0, 0}
   ]
 
   @type t :: %__MODULE__{
@@ -72,6 +73,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
           scrollback_limit: non_neg_integer(),
           selection: {integer(), integer(), integer(), integer()} | nil,
           scroll_region: {integer(), integer()} | nil,
+          scroll_position: non_neg_integer(),
           width: non_neg_integer(),
           height: non_neg_integer(),
           cursor_position: {non_neg_integer(), non_neg_integer()},
@@ -88,7 +90,23 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate new(width, height, scrollback_limit \\ 1000), to: Initializer
 
   @impl true
-  defdelegate resize(buffer, new_width, new_height), to: Operations
+  def resize(buffer, new_width, new_height) do
+    # Create a new ScreenBuffer with the new dimensions
+    default_cell = %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
+
+    # Create new cells array with the new dimensions
+    new_cells = List.duplicate(List.duplicate(default_cell, new_width), new_height)
+
+    # Copy existing content, truncating or padding as needed
+    new_cells = Enum.reduce(0..min(buffer.height - 1, new_height - 1), new_cells, fn row, acc ->
+      Enum.reduce(0..min(buffer.width - 1, new_width - 1), acc, fn col, row_acc ->
+        existing_cell = Enum.at(Enum.at(buffer.cells, row, []), col) || default_cell
+        List.replace_at(row_acc, row, List.replace_at(Enum.at(row_acc, row), col, existing_cell))
+      end)
+    end)
+
+    %{buffer | width: new_width, height: new_height, cells: new_cells}
+  end
 
   # === Content Operations ===
 
@@ -162,14 +180,41 @@ defmodule Raxol.Terminal.ScreenBuffer do
     )
   end
 
+  # Additional scroll functions for ScrollOperations
+  def scroll_up(buffer, top, bottom, lines) do
+    Raxol.Terminal.Commands.Scrolling.scroll_up(
+      buffer,
+      lines,
+      {top, bottom},
+      %{}
+    )
+  end
+
+  def scroll_down(buffer, top, bottom, lines) do
+    Raxol.Terminal.Commands.Scrolling.scroll_down(
+      buffer,
+      lines,
+      {top, bottom},
+      %{}
+    )
+  end
+
+  def scroll_to(buffer, top, bottom, line) do
+    ScrollRegion.scroll_to(buffer, top, bottom, line)
+  end
+
+  def reset_scroll_region(buffer) do
+    Raxol.Terminal.Buffer.ScrollRegion.clear(buffer)
+  end
+
   @impl true
   defdelegate get_scroll_top(buffer), to: ScrollRegion
   @impl true
   defdelegate get_scroll_bottom(buffer), to: ScrollRegion
   @impl true
-  defdelegate get_scroll_region(buffer), to: ScrollRegion
-  @impl true
-  defdelegate set_scroll_region(buffer, region), to: ScrollRegion
+  def set_scroll_region(buffer, {top, bottom}) do
+    Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
+  end
 
   # === Dimension Operations ===
 
@@ -310,7 +355,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # === Scrollback Operations ===
 
   @impl true
-  defdelegate get_scroll_position(buffer), to: Scrollback, as: :size
+  defdelegate get_scroll_position(buffer), to: ScrollRegion
 
   # === Cleanup ===
 
@@ -503,5 +548,117 @@ defmodule Raxol.Terminal.ScreenBuffer do
       height,
       reason
     )
+  end
+
+  def get_scroll_region(buffer) do
+    Raxol.Terminal.Buffer.ScrollRegion.get_region(buffer)
+  end
+
+  def get_scroll_position(buffer) do
+    ScrollRegion.get_scroll_position(buffer)
+  end
+
+  defdelegate shift_region_to_line(buffer, region, target_line), to: ScrollRegion
+
+  @doc """
+  Gets the estimated memory usage of the screen buffer.
+  """
+  @spec get_memory_usage(t()) :: non_neg_integer()
+  def get_memory_usage(%__MODULE__{} = buffer) do
+    # Calculate memory usage for main cells grid
+    cells_usage = calculate_cells_memory_usage(buffer.cells)
+
+    # Calculate memory usage for scrollback
+    scrollback_usage = calculate_cells_memory_usage(buffer.scrollback)
+
+    # Calculate memory usage for other components
+    selection_usage = if buffer.selection, do: 32, else: 0  # 4 integers * 8 bytes
+    scroll_region_usage = if buffer.scroll_region, do: 16, else: 0  # 2 integers * 8 bytes
+    damage_regions_usage = length(buffer.damage_regions) * 32  # 4 integers * 8 bytes per region
+
+    # Base struct overhead and other fields
+    base_usage = 256  # Rough estimate for struct overhead and other fields
+
+    cells_usage + scrollback_usage + selection_usage + scroll_region_usage +
+    damage_regions_usage + base_usage
+  end
+
+  # Private helper to calculate memory usage for a grid of cells
+  defp calculate_cells_memory_usage(cells) when is_list(cells) do
+    total_cells = Enum.reduce(cells, 0, fn row, acc ->
+      acc + length(row)
+    end)
+
+    # Rough estimate: each cell is about 64 bytes (including overhead)
+    total_cells * 64
+  end
+
+  defp calculate_cells_memory_usage(_), do: 0
+
+  @doc """
+  Erases part or all of the current line based on the cursor position and type.
+  Type can be :to_end, :to_beginning, or :all.
+  """
+  @spec erase_in_line(t(), {non_neg_integer(), non_neg_integer()}, atom()) :: t()
+  def erase_in_line(buffer, {x, y}, type) do
+    case type do
+      :to_end ->
+        # Erase from cursor to end of line
+        line = Enum.at(buffer.cells, y, [])
+        cleared_line = List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+        new_cells = List.replace_at(buffer.cells, y, cleared_line)
+        %{buffer | cells: new_cells}
+
+      :to_beginning ->
+        # Erase from start of line to cursor
+        line = Enum.at(buffer.cells, y, [])
+        cleared_line = List.duplicate(%{}, x + 1) ++ Enum.drop(line, x + 1)
+        new_cells = List.replace_at(buffer.cells, y, cleared_line)
+        %{buffer | cells: new_cells}
+
+      :all ->
+        # Erase entire line
+        new_cells = List.replace_at(buffer.cells, y, List.duplicate(%{}, buffer.width))
+        %{buffer | cells: new_cells}
+
+      _ ->
+        # Default to :to_end
+        erase_in_line(buffer, {x, y}, :to_end)
+    end
+  end
+
+  @doc """
+  Erases part or all of the display based on the cursor position and type.
+  Type can be :to_end, :to_beginning, or :all.
+  """
+  @spec erase_in_display(t(), {non_neg_integer(), non_neg_integer()}, atom()) :: t()
+  def erase_in_display(buffer, {x, y}, type) do
+    case type do
+      :to_end ->
+        # Erase from cursor to end of display
+        erase_from_cursor_to_end(buffer, x, y, 0, buffer.height)
+
+      :to_beginning ->
+        # Erase from start of display to cursor
+        erase_from_start_to_cursor(buffer, x, y, 0, buffer.height)
+
+      :all ->
+        # Erase entire display
+        erase_all(buffer)
+
+      _ ->
+        # Default to :to_end
+        erase_in_display(buffer, {x, y}, :to_end)
+    end
+  end
+
+  @doc """
+  Erases from the cursor to the end of the screen using the current cursor position.
+  """
+  @spec erase_from_cursor_to_end(t()) :: t()
+  def erase_from_cursor_to_end(buffer) do
+    {x, y} = buffer.cursor_position || {0, 0}
+    height = buffer.height || 24
+    erase_from_cursor_to_end(buffer, x, y, 0, height)
   end
 end

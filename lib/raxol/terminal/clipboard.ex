@@ -106,4 +106,27 @@ defmodule Raxol.Terminal.Clipboard do
   def clear do
     Manager.clear()
   end
+
+  @doc """
+  Gets the content from a clipboard instance.
+
+  ## Parameters
+
+    * `clipboard` - The clipboard instance
+
+  ## Returns
+
+    * `String.t()` - The clipboard content
+
+  ## Examples
+
+      iex> clipboard = Manager.new()
+      iex> clipboard = Manager.set_content(clipboard, "Hello, World!")
+      iex> Clipboard.get_content(clipboard)
+      "Hello, World!"
+  """
+  @spec get_content(Manager.t()) :: String.t()
+  def get_content(clipboard) do
+    Manager.get_content(clipboard)
+  end
 end

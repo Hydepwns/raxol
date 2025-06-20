@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   }
 
   defstruct [
-    :content,
+    :cells,
     :width,
     :height,
     :charset_state,
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   ]
 
   @type t :: %__MODULE__{
-          content: list(list(map())),
+          cells: list(list(map())),
           width: non_neg_integer(),
           height: non_neg_integer(),
           charset_state: map(),
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @impl true
   def new(width, height, _scrollback \\ 1000) do
     %__MODULE__{
-      content: List.duplicate(List.duplicate(%{}, width), height),
+      cells: List.duplicate(List.duplicate(%{}, width), height),
       width: width,
       height: height,
       charset_state: Charset.init(),
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def get_char(buffer, x, y) do
-    case get_in(buffer.content, [y, x]) do
+    case get_in(buffer.cells, [y, x]) do
       %{char: char} -> char
       _ -> " "
     end
@@ -104,17 +104,23 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl true
   def get_cell(buffer, x, y) do
-    get_in(buffer.content, [y, x]) || %{}
+    get_in(buffer.cells, [y, x]) || %{}
   end
 
   @impl true
-  def write_char(buffer, x, y, char, style \\ nil) do
-    cell = %{
-      char: char,
-      style: style || buffer.formatting_state.current_style
-    }
+  def write_char(buffer, x, y, char, style) do
+    cell = %{char: char, style: style}
 
-    put_in(buffer.content, [y, x], cell)
+    case get_in(buffer.cells, [y, x]) do
+      nil ->
+        # Cell doesn't exist, create it
+        put_in(buffer.cells, [y, x], cell)
+
+      existing_cell ->
+        # Cell exists, update it
+        updated_cell = Map.merge(existing_cell, cell)
+        put_in(buffer.cells, [y, x], updated_cell)
+    end
   end
 
   @impl true
@@ -144,43 +150,44 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   # --- Clear Operations ---
   def clear(buffer, _style) do
+    default_cell = %Raxol.Terminal.Cell{char: " ", style: nil, dirty: nil, is_wide_placeholder: false}
     %{
       buffer
-      | content:
-          List.duplicate(List.duplicate(%{}, buffer.width), buffer.height)
+      | cells:
+          List.duplicate(List.duplicate(default_cell, buffer.width), buffer.height)
     }
   end
 
   def clear_line(buffer, line, _style \\ nil) do
     new_content =
-      List.update_at(buffer.content, line, fn _ ->
+      List.update_at(buffer.cells, line, fn _ ->
         List.duplicate(%{}, buffer.width)
       end)
 
-    %{buffer | content: new_content}
+    %{buffer | cells: new_content}
   end
 
   # --- Line Operations ---
   def insert_lines(buffer, count) do
     empty_line = List.duplicate(%{}, buffer.width)
     new_lines = List.duplicate(empty_line, count)
-    new_content = new_lines ++ buffer.content
-    %{buffer | content: Enum.take(new_content, buffer.height)}
+    new_content = new_lines ++ buffer.cells
+    %{buffer | cells: Enum.take(new_content, buffer.height)}
   end
 
   def delete_lines(buffer, count) do
     empty_line = List.duplicate(%{}, buffer.width)
     new_lines = List.duplicate(empty_line, count)
-    new_content = buffer.content ++ new_lines
-    %{buffer | content: Enum.take(new_content, buffer.height)}
+    new_content = buffer.cells ++ new_lines
+    %{buffer | cells: Enum.take(new_content, buffer.height)}
   end
 
   # --- Character Operations ---
   def insert_chars(buffer, count) do
     %{
       buffer
-      | content:
-          Enum.map(buffer.content, fn line ->
+      | cells:
+          Enum.map(buffer.cells, fn line ->
             empty_cells = List.duplicate(%{}, count)
             empty_cells ++ Enum.take(line, buffer.width - count)
           end)
@@ -190,8 +197,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   def delete_chars(buffer, count) do
     %{
       buffer
-      | content:
-          Enum.map(buffer.content, fn line ->
+      | cells:
+          Enum.map(buffer.cells, fn line ->
             empty_cells = List.duplicate(%{}, count)
             Enum.drop(line, count) ++ empty_cells
           end)
@@ -201,8 +208,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   def erase_chars(buffer, count) do
     %{
       buffer
-      | content:
-          Enum.map(buffer.content, fn line ->
+      | cells:
+          Enum.map(buffer.cells, fn line ->
             empty_cells = List.duplicate(%{}, count)
             Enum.take(line, buffer.width - count) ++ empty_cells
           end)
@@ -278,11 +285,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   # --- Region Operations ---
   def erase_region(buffer, x, y, width, height) do
     new_content =
-      Enum.reduce(y..(y + height - 1), buffer.content, fn row, acc ->
+      Enum.reduce(y..(y + height - 1), buffer.cells, fn row, acc ->
         List.update_at(acc, row, &erase_line_region(&1, x, width))
       end)
 
-    %{buffer | content: new_content}
+    %{buffer | cells: new_content}
   end
 
   defp erase_line_region(line, x, width) do
@@ -341,13 +348,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   # --- Buffer Operations ---
   def pop_bottom_lines(buffer, count) do
-    {lines, new_content} = Enum.split(buffer.content, -count)
-    {lines, %{buffer | content: new_content}}
+    {lines, new_content} = Enum.split(buffer.cells, -count)
+    {lines, %{buffer | cells: new_content}}
   end
 
   def push_top_lines(buffer, lines) do
-    new_content = lines ++ buffer.content
-    %{buffer | content: Enum.take(new_content, buffer.height)}
+    new_content = lines ++ buffer.cells
+    %{buffer | cells: new_content}
   end
 
   # --- Charset Operations ---

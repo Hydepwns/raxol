@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
     GenServer.start_link(__MODULE__, opts,
-      name: Keyword.get(opts, :name, __MODULE__)
+      name: Map.get(opts, :name, __MODULE__)
     )
   end
 
@@ -175,18 +175,35 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     :ok
   end
 
+  # Functions expected by tests
+  @doc """
+  Maximizes a window.
+  """
+  @spec maximize(window_id()) :: :ok | {:error, String.t()}
+  def maximize(window_id) do
+    set_maximized(window_id, true)
+  end
+
+  @doc """
+  Restores a window from maximized state.
+  """
+  @spec restore(window_id()) :: :ok | {:error, String.t()}
+  def restore(window_id) do
+    set_maximized(window_id, false)
+  end
+
   # Server Callbacks
 
   @impl true
   def init(opts) do
-    config = Map.merge(%__MODULE__{}.config, opts)
-    {:ok, %__MODULE__{config: config}}
+    default_state = %__MODULE__{}
+    config = Map.merge(default_state.config, opts)
+    {:ok, %{default_state | config: config}}
   end
 
-  @impl true
-  def handle_call({:create_window, opts}, _from, state) do
+  # Internal helper to create a window (used only inside GenServer callbacks)
+  defp do_create_window(opts, state) do
     window_id = "window_#{state.next_id}"
-
     window_state = %{
       id: window_id,
       title: Map.get(opts, :title, ""),
@@ -203,18 +220,51 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
       buffer_id: Map.get(opts, :buffer_id),
       renderer_id: Map.get(opts, :renderer_id)
     }
-
     new_state = %{
       state
       | windows: Map.put(state.windows, window_id, window_state),
         next_id: state.next_id + 1,
         active_window:
-          if(state.active_window == nil,
-            do: window_id,
-            else: state.active_window
-          )
+          if(state.active_window == nil, do: window_id, else: state.active_window)
     }
+    {window_id, new_state}
+  end
 
+  defp do_close_window(window_id, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:error, state}
+      window ->
+        # Recursively close child windows
+        new_state = Enum.reduce(window.children, state, fn child_id, acc ->
+          case do_close_window(child_id, acc) do
+            {:ok, acc2} -> acc2
+            {:error, acc2} -> acc2
+          end
+        end)
+        # Remove window from parent's children list
+        new_state =
+          if window.parent_id do
+            parent = Map.get(new_state.windows, window.parent_id)
+            updated_parent = %{parent | children: List.delete(parent.children, window_id)}
+            %{new_state | windows: Map.put(new_state.windows, window.parent_id, updated_parent)}
+          else
+            new_state
+          end
+        # Remove window from windows map
+        new_state = %{
+          new_state
+          | windows: Map.delete(new_state.windows, window_id),
+            active_window:
+              if(new_state.active_window == window_id, do: nil, else: new_state.active_window)
+        }
+        {:ok, new_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:create_window, opts}, _from, state) do
+    {window_id, new_state} = do_create_window(opts, state)
     {:reply, {:ok, window_id}, new_state}
   end
 
@@ -223,81 +273,35 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, "Window not found"}, state}
-
       window ->
-        # Create new window for split
-        {:ok, new_window_id} =
-          create_window(%{
-            size: window.size,
-            position: window.position,
-            buffer_id: Map.get(state.config, :default_buffer_id),
-            renderer_id: Map.get(state.config, :default_renderer_id)
-          })
-
+        # Create new window for split (use internal helper)
+        {new_window_id, state1} = do_create_window(%{
+          size: window.size,
+          position: window.position,
+          buffer_id: Map.get(state.config, :default_buffer_id),
+          renderer_id: Map.get(state.config, :default_renderer_id)
+        }, state)
         # Update parent window
-        updated_window = %{
-          window
-          | split_type: direction,
-            children: [new_window_id | window.children]
-        }
-
+        updated_window = %{window | split_type: direction, children: [new_window_id | window.children]}
         # Update new window
-        new_window = Map.get(state.windows, new_window_id)
+        new_window = Map.get(state1.windows, new_window_id)
         updated_new_window = %{new_window | parent_id: window_id}
-
         new_state = %{
-          state
+          state1
           | windows:
-              state.windows
+              state1.windows
               |> Map.put(window_id, updated_window)
               |> Map.put(new_window_id, updated_new_window)
         }
-
         {:reply, {:ok, new_window_id}, new_state}
     end
   end
 
   @impl true
   def handle_call({:close_window, window_id}, _from, state) do
-    case Map.get(state.windows, window_id) do
-      nil ->
-        {:reply, {:error, "Window not found"}, state}
-
-      window ->
-        # Recursively close child windows
-        Enum.each(window.children, &close_window/1)
-
-        # Remove window from parent's children list
-        new_state =
-          if window.parent_id do
-            parent = Map.get(state.windows, window.parent_id)
-
-            updated_parent = %{
-              parent
-              | children: List.delete(parent.children, window_id)
-            }
-
-            %{
-              state
-              | windows:
-                  Map.put(state.windows, window.parent_id, updated_parent)
-            }
-          else
-            state
-          end
-
-        # Remove window from windows map
-        new_state = %{
-          new_state
-          | windows: Map.delete(new_state.windows, window_id),
-            active_window:
-              if(new_state.active_window == window_id,
-                do: nil,
-                else: new_state.active_window
-              )
-        }
-
-        {:reply, :ok, new_state}
+    case do_close_window(window_id, state) do
+      {:ok, new_state} -> {:reply, :ok, new_state}
+      {:error, _} -> {:reply, {:error, "Window not found"}, state}
     end
   end
 

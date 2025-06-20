@@ -216,4 +216,14 @@ defmodule Raxol.Terminal.CharacterHandling do
       {acc, <<char::utf8, rest::binary>>}
     end
   end
+
+  @doc """
+  Alias for wide_char?/1 for backward compatibility.
+  """
+  def is_wide_char?(char), do: wide_char?(char)
+
+  @doc """
+  Alias for combining_char?/1 for backward compatibility.
+  """
+  def is_combining_char?(char), do: combining_char?(char)
 end

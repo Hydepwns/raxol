@@ -399,49 +399,18 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   end
 
   @doc """
-  Gets the cursor position as a tuple of {row, col}.
-
-  ## Parameters
-
-  * `cursor` - The cursor to query
-
-  ## Returns
-
-  A tuple {row, col} representing the cursor position.
-
-  ## Examples
-
-      iex> cursor = Cursor.init()
-      iex> Cursor.get_cursor_position(cursor)
-      {0, 0}
+  Sets the cursor position on the ScreenBuffer struct.
   """
-  @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
-  def get_cursor_position(cursor) do
-    cursor.position
+  @spec set_cursor_position(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def set_cursor_position(buffer, x, y) do
+    %{buffer | cursor_position: {x, y}}
   end
 
   @doc """
-  Sets the cursor position.
-
-  ## Parameters
-
-  * `cursor` - The cursor to modify
-  * `row` - The row position
-  * `col` - The column position
-
-  ## Returns
-
-  The updated cursor with new position.
-
-  ## Examples
-
-      iex> cursor = Cursor.init()
-      iex> cursor = Cursor.set_cursor_position(cursor, 5, 10)
-      iex> Cursor.get_cursor_position(cursor)
-      {5, 10}
+  Gets the cursor position from the ScreenBuffer struct.
   """
-  @spec set_cursor_position(t(), non_neg_integer(), non_neg_integer()) :: t()
-  def set_cursor_position(cursor, row, col) do
-    %{cursor | position: {row, col}}
+  @spec get_cursor_position(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()} | nil
+  def get_cursor_position(buffer) do
+    buffer.cursor_position
   end
 end

@@ -5,9 +5,10 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
 
   use GenServer
+  @behaviour GenServer
   require Logger
 
-  alias Raxol.Terminal.{Emulator, ScreenBuffer}
+  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   defstruct x: 0,
@@ -24,7 +25,18 @@ defmodule Raxol.Terminal.Cursor.Manager do
             saved_color: nil,
             top_margin: 0,
             bottom_margin: 24,
-            blink_timer: nil
+            blink_timer: nil,
+            state: :visible,
+            position: {0, 0},
+            blink: true,
+            custom_shape: nil,
+            custom_dimensions: nil,
+            blink_rate: 530,
+            saved_position: nil,
+            history: [],
+            history_index: 0,
+            history_limit: 100,
+            shape: {1, 1}
 
   @type cursor_style :: :block | :underline | :bar
   @type color :: {non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
@@ -44,7 +56,18 @@ defmodule Raxol.Terminal.Cursor.Manager do
           saved_color: color() | nil,
           top_margin: non_neg_integer(),
           bottom_margin: non_neg_integer(),
-          blink_timer: non_neg_integer() | nil
+          blink_timer: non_neg_integer() | nil,
+          state: atom(),
+          position: {non_neg_integer(), non_neg_integer()},
+          blink: boolean(),
+          custom_shape: atom() | nil,
+          custom_dimensions: {non_neg_integer(), non_neg_integer()} | nil,
+          blink_rate: non_neg_integer(),
+          saved_position: {non_neg_integer(), non_neg_integer()} | nil,
+          history: list(),
+          history_index: non_neg_integer(),
+          history_limit: non_neg_integer(),
+          shape: {non_neg_integer(), non_neg_integer()}
         }
 
   # Client API
@@ -105,8 +128,24 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Moves the cursor to a specific position.
   """
+  def move_to(cursor, {x, y}) do
+    %{cursor | x: x, y: y, position: {x, y}}
+  end
+
+  @doc """
+  Moves the cursor to a specific position.
+  """
   def move_to(cursor, row, col) do
-    %{cursor | x: row, y: col}
+    %{cursor | x: row, y: col, position: {row, col}}
+  end
+
+  @doc """
+  Moves the cursor to a specific position with bounds clamping.
+  """
+  def move_to(cursor, row, col, width, height) do
+    clamped_row = max(0, min(row, height - 1))
+    clamped_col = max(0, min(col, width - 1))
+    %{cursor | x: clamped_row, y: clamped_col, position: {clamped_row, clamped_col}}
   end
 
   @doc """
@@ -232,9 +271,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Sets the cursor style.
   """
-  def set_style(pid \\ __MODULE__, style) do
-    GenServer.call(pid, {:set_style, style})
-  end
+  def set_style(%__MODULE__{} = state, style), do: %{state | style: style}
+  def set_style(pid, style), do: GenServer.call(pid, {:set_style, style})
+  def set_style(style), do: set_style(__MODULE__, style)
 
   @doc """
   Gets the cursor color.
@@ -310,19 +349,26 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Sets the cursor state based on a state atom.
-  Supported states: :visible, :hidden
+  Supported states: :visible, :hidden, :blinking
   """
   def set_state(%__MODULE__{} = state, :visible) do
-    set_visibility(state, true)
+    %{state | visible: true, state: :visible}
   end
 
   def set_state(%__MODULE__{} = state, :hidden) do
-    set_visibility(state, false)
+    %{state | visible: false, state: :hidden}
   end
 
-  def set_custom_shape(pid \\ __MODULE__, shape, params) do
-    GenServer.call(pid, {:set_custom_shape, shape, params})
+  def set_state(%__MODULE__{} = state, :blinking) do
+    %{state | blinking: true, blink: true, state: :blinking}
   end
+
+  @doc """
+  Sets a custom cursor shape.
+  """
+  def set_custom_shape(%__MODULE__{} = state, shape, params), do: %{state | style: :custom, custom_shape: shape, custom_dimensions: params, shape: params}
+  def set_custom_shape(pid, shape, params), do: GenServer.call(pid, {:set_custom_shape, shape, params})
+  def set_custom_shape(shape, params), do: set_custom_shape(__MODULE__, shape, params)
 
   def update_position(pid \\ __MODULE__, {row, col}) do
     GenServer.call(pid, {:update_position, row, col})
@@ -332,8 +378,22 @@ defmodule Raxol.Terminal.Cursor.Manager do
     GenServer.call(pid, :reset_position)
   end
 
-  def update_blink(pid \\ __MODULE__) do
-    GenServer.call(pid, :update_blink)
+  @doc """
+  Updates the cursor blink state.
+  """
+  def update_blink(%__MODULE__{} = state) do
+    new_blink_state = !state.blink
+    new_state = %{state | blink: new_blink_state}
+    {new_state, new_state.visible}
+  end
+  def update_blink(pid), do: GenServer.call(pid, :update_blink)
+  def update_blink(), do: update_blink(__MODULE__)
+
+  # Struct-based version for tests (should match before GenServer version)
+  def update_blink(%__MODULE__{} = state) do
+    new_blink_state = !state.blink
+    new_state = %{state | blink: new_blink_state}
+    {new_state, new_state.visible}
   end
 
   @doc """
@@ -404,78 +464,101 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %{emulator | cursor: %{cursor | x: x}}
   end
 
-  @doc """
-  Gets the current cursor position.
-  Returns {x, y}.
-  """
-  @spec get_position(Emulator.t()) :: {non_neg_integer(), non_neg_integer()}
-  def get_position(emulator) do
+  @spec get_emulator_position(Emulator.t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_emulator_position(emulator) do
     {emulator.cursor.x, emulator.cursor.y}
   end
 
-  @doc """
-  Sets the cursor position.
-  Returns the updated emulator.
-  """
-  @spec set_position(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
-  def set_position(emulator, x, y) do
+  @spec set_emulator_position(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  def set_emulator_position(emulator, x, y) do
     x = max(0, min(x, emulator.width - 1))
     y = max(0, min(y, emulator.height - 1))
     %{emulator | cursor: %{emulator.cursor | x: x, y: y}}
   end
 
-  @doc """
-  Gets the current cursor style.
-  Returns the cursor style.
-  """
-  @spec get_style(Emulator.t()) :: atom()
-  def get_style(emulator) do
+  @spec get_emulator_style(Emulator.t()) :: atom()
+  def get_emulator_style(emulator) do
     emulator.cursor.style
   end
 
-  @doc """
-  Sets the cursor style.
-  Returns the updated emulator.
-  """
-  @spec set_style(Emulator.t(), atom()) :: Emulator.t()
-  def set_style(emulator, style) do
+  @spec set_emulator_style(Emulator.t(), atom()) :: Emulator.t()
+  def set_emulator_style(emulator, style) do
     %{emulator | cursor: %{emulator.cursor | style: style}}
   end
 
-  @doc """
-  Gets the cursor visibility state.
-  Returns true if the cursor is visible.
-  """
-  @spec is_visible?(Emulator.t()) :: boolean()
-  def is_visible?(emulator) do
+  @spec emulator_visible?(Emulator.t()) :: boolean()
+  def emulator_visible?(emulator) do
     emulator.cursor.visible
   end
 
-  @doc """
-  Sets the cursor visibility.
-  Returns the updated emulator.
-  """
-  @spec set_visibility(Emulator.t(), boolean()) :: Emulator.t()
-  def set_visibility(emulator, visible) do
+  @spec set_emulator_visibility(Emulator.t(), boolean()) :: Emulator.t()
+  def set_emulator_visibility(emulator, visible) do
     %{emulator | cursor: %{emulator.cursor | visible: visible}}
   end
 
-  @doc """
-  Gets the cursor blink state.
-  Returns true if the cursor is blinking.
-  """
-  @spec is_blinking?(Emulator.t()) :: boolean()
-  def is_blinking?(emulator) do
+  @spec emulator_blinking?(Emulator.t()) :: boolean()
+  def emulator_blinking?(emulator) do
     emulator.cursor.blinking
   end
 
-  @doc """
-  Sets the cursor blink state.
-  Returns the updated emulator.
-  """
-  @spec set_blink(Emulator.t(), boolean()) :: Emulator.t()
-  def set_blink(emulator, blinking) do
+  @spec set_emulator_blink(Emulator.t(), boolean()) :: Emulator.t()
+  def set_emulator_blink(emulator, blinking) do
     %{emulator | cursor: %{emulator.cursor | blinking: blinking}}
+  end
+
+  @doc """
+  Saves the current cursor position.
+  """
+  def save_position(%__MODULE__{} = state) do
+    %{state | saved_x: state.x, saved_y: state.y, saved_position: state.position}
+  end
+
+  @doc """
+  Restores the saved cursor position.
+  """
+  def restore_position(%__MODULE__{} = state) do
+    if state.saved_x && state.saved_y do
+      %{state | x: state.saved_x, y: state.saved_y, position: {state.saved_x, state.saved_y}}
+    else
+      state
+    end
+  end
+
+  @doc """
+  Adds the current cursor state to history.
+  """
+  def add_to_history(%__MODULE__{} = state) do
+    history_entry = %{
+      x: state.x,
+      y: state.y,
+      style: state.style,
+      visible: state.visible,
+      blinking: state.blinking,
+      state: state.state,
+      position: state.position
+    }
+    %{state | history: [history_entry | state.history]}
+  end
+
+  @doc """
+  Restores cursor state from history.
+  """
+  def restore_from_history(%__MODULE__{} = state) do
+    case state.history do
+      [entry | rest] ->
+        %{state |
+          x: entry.x,
+          y: entry.y,
+          style: entry.style,
+          visible: entry.visible,
+          blinking: entry.blinking,
+          state: entry.state,
+          position: entry.position,
+          history: rest
+        }
+      [] ->
+        state
+    end
   end
 
   # Server Callbacks
@@ -505,7 +588,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
         :left -> move_left(state, count, 80, 24)
         :right -> move_right(state, count, 80, 24)
       end
-
     {:reply, :ok, new_state}
   end
 
@@ -538,19 +620,17 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @impl true
   def handle_call({:set_blink, blink}, _from, state) do
     new_state = %{state | blinking: blink}
-
     if blink do
       schedule_blink()
     else
       cancel_blink(state.blink_timer)
     end
-
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_call({:set_custom_shape, shape, params}, _from, state) do
-    {:reply, :ok, %{state | style: shape, color: params}}
+    {:reply, :ok, %{state | style: :custom, custom_shape: shape, custom_dimensions: params, shape: params}}
   end
 
   @impl true
@@ -565,21 +645,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl true
   def handle_call(:update_blink, _from, state) do
-    new_blink_state = !state.blinking
-    new_state = %{state | blinking: new_blink_state}
+    new_blink_state = !state.blink
+    new_state = %{state | blink: new_blink_state}
     {:reply, new_blink_state, new_state}
   end
 
   @impl true
-  def handle_info({:blink, timer_id}, state) do
-    if state.blinking do
-      new_blink_state = !state.blinking
-      new_state = %{state | blinking: new_blink_state}
-      schedule_blink()
-      {:noreply, new_state}
-    else
-      {:noreply, state}
-    end
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
   end
 
   @impl true
@@ -588,13 +661,39 @@ defmodule Raxol.Terminal.Cursor.Manager do
     {:reply, {:error, :unknown_request}, state}
   end
 
+  @impl true
+  def handle_info({:blink, _timer_id}, state) do
+    if state.blinking do
+      new_blink_state = !state.blink
+      new_state = %{state | blink: new_blink_state}
+      schedule_blink()
+      {:noreply, new_state}
+    else
+      {:noreply, state}
+    end
+  end
+
   # --- Private Functions ---
 
   defp schedule_blink do
-    _timer_id = System.unique_integer([:positive])
-    Process.send_after(self(), {:blink, _timer_id}, 500)
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:blink, timer_id}, 500)
   end
 
   defp cancel_blink(nil), do: :ok
   defp cancel_blink(timer_id), do: Process.cancel_timer(timer_id)
+
+  @doc """
+  Gets the cursor position as a tuple {x, y}.
+  """
+  def get_position_tuple(cursor) do
+    {cursor.x, cursor.y}
+  end
+
+  @doc """
+  Gets the current cursor position as a tuple.
+  """
+  def get_position(%__MODULE__{} = cursor) do
+    cursor.position
+  end
 end

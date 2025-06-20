@@ -71,6 +71,14 @@ defmodule Raxol.Terminal.MemoryManager do
     end
   end
 
+  @doc """
+  Estimates memory usage for the given state.
+  Returns the estimated memory usage in bytes.
+  """
+  def estimate_memory_usage(state) do
+    calculate_memory_usage(state)
+  end
+
   # Server Callbacks
 
   @impl true
