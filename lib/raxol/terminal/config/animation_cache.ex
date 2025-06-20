@@ -30,7 +30,34 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   end
 
   @doc """
-  Caches an animation.
+  Caches animation data directly (for testing and in-memory usage).
+
+  ## Parameters
+    * `animation_key` - Key to store the animation under
+    * `animation_data` - Animation data to cache
+  """
+  def cache_animation_data(animation_key, animation_data) do
+    case System.put(animation_key, animation_data,
+           namespace: :animation,
+           metadata: %{
+             type: :data,
+             size: byte_size(:erlang.term_to_binary(animation_data)),
+             original_size: byte_size(:erlang.term_to_binary(animation_data)),
+             compressed: false
+           }
+         ) do
+      :ok ->
+        IO.puts("Animation data cached: #{animation_key}")
+        :ok
+
+      error ->
+        IO.puts("Failed to cache animation data: #{inspect(error)}")
+        error
+    end
+  end
+
+  @doc """
+  Caches an animation from a file.
 
   ## Parameters
     * `animation_path` - Path to the animation file
@@ -144,33 +171,40 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   def get_animation_cache_stats do
     case System.stats(namespace: :animation) do
       {:ok, stats} ->
-        %{
-          count: stats.size,
-          total_size: stats.size,
-          # We don't track original size in unified cache
-          total_original_size: stats.size,
-          average_size:
-            if(stats.size > 0, do: div(stats.size, stats.size), else: 0),
-          # We don't track compression ratio in unified cache
-          compression_ratio: 0,
-          max_size: stats.max_size,
-          used_percent:
-            if(stats.max_size > 0,
-              do: round(stats.size / stats.max_size * 100),
-              else: 0
-            )
-        }
-
+        {:ok,
+         %{
+           count: stats.size,
+           total_size: stats.size,
+           # We don't track original size in unified cache
+           total_original_size: stats.size,
+           average_size:
+             if(stats.size > 0, do: div(stats.size, stats.size), else: 0),
+           # We don't track compression ratio in unified cache
+           compression_ratio: 0,
+           max_size: stats.max_size,
+           used_percent:
+             if(stats.max_size > 0,
+               do: round(stats.size / stats.max_size * 100),
+               else: 0
+             ),
+           hit_count: Map.get(stats, :hit_count, 0),
+           miss_count: Map.get(stats, :miss_count, 0),
+           hit_ratio: Map.get(stats, :hit_ratio, 0.0)
+         }}
       _ ->
-        %{
-          count: 0,
-          total_size: 0,
-          total_original_size: 0,
-          average_size: 0,
-          compression_ratio: 0,
-          max_size: 0,
-          used_percent: 0
-        }
+        {:ok,
+         %{
+           count: 0,
+           total_size: 0,
+           total_original_size: 0,
+           average_size: 0,
+           compression_ratio: 0,
+           max_size: 0,
+           used_percent: 0,
+           hit_count: 0,
+           miss_count: 0,
+           hit_ratio: 0.0
+         }}
     end
   end
 

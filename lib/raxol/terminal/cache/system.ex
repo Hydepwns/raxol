@@ -333,7 +333,8 @@ defmodule Raxol.Terminal.Cache.System do
     |> Enum.reduce(%{}, fn namespace, acc ->
       config = Map.get(configs, namespace, %{})
       max_size = Map.get(config, :max_size, default_max_size)
-      Map.put(acc, namespace, %{default_namespace | max_size: max_size})
+      namespace_state = Map.put(default_namespace, :namespace, namespace)
+      Map.put(acc, namespace, %{namespace_state | max_size: max_size})
     end)
   end
 

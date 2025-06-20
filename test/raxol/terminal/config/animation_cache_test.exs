@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
         default_ttl: 3600,
         eviction_policy: :lru,
         namespace_configs: %{
-          animation: %{max_size: 256 * 1024}
+          animation: %{max_size: 10 * 1024 * 1024} # 10MB for test
         }
       )
 
@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
   describe "animation caching" do
     test "caches animation data", %{animation_data: animation_data} do
       # Cache animation
-      :ok = AnimationCache.cache_animation("test_anim", animation_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", animation_data)
 
       # Retrieve from cache
       {:ok, cached_data} = AnimationCache.get_cached_animation("test_anim")
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
                AnimationCache.get_cached_animation("nonexistent")
 
       # Cache animation
-      :ok = AnimationCache.cache_animation("test_anim", animation_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", animation_data)
 
       # Verify it's now in cache
       {:ok, cached_data} = AnimationCache.get_cached_animation("test_anim")
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
     test "updates existing animation", %{animation_data: animation_data} do
       # Cache initial animation
-      :ok = AnimationCache.cache_animation("test_anim", animation_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", animation_data)
 
       # Update animation
       updated_data = %{
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
         | frames: [%{content: "New Frame", duration: 200}]
       }
 
-      :ok = AnimationCache.cache_animation("test_anim", updated_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", updated_data)
 
       # Verify update
       {:ok, cached_data} = AnimationCache.get_cached_animation("test_anim")
@@ -80,8 +80,8 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
   describe "cache management" do
     test "clears animation cache", %{animation_data: animation_data} do
       # Cache some animations
-      :ok = AnimationCache.cache_animation("anim1", animation_data)
-      :ok = AnimationCache.cache_animation("anim2", animation_data)
+      :ok = AnimationCache.cache_animation_data("anim1", animation_data)
+      :ok = AnimationCache.cache_animation_data("anim2", animation_data)
 
       # Clear cache
       :ok = AnimationCache.clear_animation_cache()
@@ -105,10 +105,10 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       }
 
       # Cache large animation
-      :ok = AnimationCache.cache_animation("large_anim", large_data)
+      :ok = AnimationCache.cache_animation_data("large_anim", large_data)
 
       # Cache another animation
-      :ok = AnimationCache.cache_animation("small_anim", animation_data)
+      :ok = AnimationCache.cache_animation_data("small_anim", animation_data)
 
       # Verify both are cached
       {:ok, cached_large} = AnimationCache.get_cached_animation("large_anim")
@@ -121,8 +121,8 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
   describe "cache statistics" do
     test "tracks cache statistics", %{animation_data: animation_data} do
       # Cache some animations
-      :ok = AnimationCache.cache_animation("anim1", animation_data)
-      :ok = AnimationCache.cache_animation("anim2", animation_data)
+      :ok = AnimationCache.cache_animation_data("anim1", animation_data)
+      :ok = AnimationCache.cache_animation_data("anim2", animation_data)
 
       # Access animations multiple times
       for _ <- 1..5 do
@@ -148,7 +148,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       end
 
       # Cache an animation
-      :ok = AnimationCache.cache_animation("test_anim", animation_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", animation_data)
 
       # Get cache stats
       {:ok, stats} = AnimationCache.get_animation_cache_stats()
@@ -161,7 +161,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
   describe "metadata handling" do
     test "preserves animation metadata", %{animation_data: animation_data} do
       # Cache animation with metadata
-      :ok = AnimationCache.cache_animation("test_anim", animation_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", animation_data)
 
       # Retrieve and verify metadata
       {:ok, cached_data} = AnimationCache.get_cached_animation("test_anim")
@@ -173,7 +173,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
     test "updates metadata on cache update", %{animation_data: animation_data} do
       # Cache initial animation
-      :ok = AnimationCache.cache_animation("test_anim", animation_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", animation_data)
 
       # Update with new metadata
       updated_data = %{
@@ -185,7 +185,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
           }
       }
 
-      :ok = AnimationCache.cache_animation("test_anim", updated_data)
+      :ok = AnimationCache.cache_animation_data("test_anim", updated_data)
 
       # Verify metadata update
       {:ok, cached_data} = AnimationCache.get_cached_animation("test_anim")
