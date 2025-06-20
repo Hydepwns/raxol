@@ -22,7 +22,10 @@ defmodule ElixirMake.Downloader.Httpc do
     if proxy = System.get_env("HTTPS_PROXY") || System.get_env("https_proxy") do
       Mix.shell().info("Using HTTPS_PROXY: #{proxy}")
       %{host: host, port: port} = URI.parse(proxy)
-      :httpc.set_options([{:https_proxy, {{String.to_charlist(host), port}, []}}])
+
+      :httpc.set_options([
+        {:https_proxy, {{String.to_charlist(host), port}, []}}
+      ])
     end
 
     # https://erlef.github.io/security-wg/secure_coding_and_deployment_hardening/inets
@@ -54,7 +57,10 @@ defmodule ElixirMake.Downloader.Httpc do
         [cacertfile: path]
 
       path = System.get_env("ELIXIR_MAKE_CACERT") ->
-        IO.warn("Setting ELIXIR_MAKE_CACERT is deprecated, please set HEX_CACERTS_PATH instead")
+        IO.warn(
+          "Setting ELIXIR_MAKE_CACERT is deprecated, please set HEX_CACERTS_PATH instead"
+        )
+
         [cacertfile: path]
 
       certs = otp_cacerts() ->

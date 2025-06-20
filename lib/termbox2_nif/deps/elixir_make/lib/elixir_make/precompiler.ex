@@ -61,7 +61,8 @@ defmodule ElixirMake.Precompiler do
 
   Returns `:ok` if the requested target has successfully compiled.
   """
-  @callback precompile(OptionParser.argv(), target) :: :ok | {:error, String.t()}
+  @callback precompile(OptionParser.argv(), target) ::
+              :ok | {:error, String.t()}
 
   @doc """
   Optional post actions to run after each precompilation target is archived.
@@ -99,7 +100,9 @@ defmodule ElixirMake.Precompiler do
   """
   @callback unavailable_target(String.t()) :: :compile | :ignore
 
-  @optional_callbacks post_precompile: 0, unavailable_target: 1, post_precompile_target: 1
+  @optional_callbacks post_precompile: 0,
+                      unavailable_target: 1,
+                      post_precompile_target: 1
 
   @doc """
   Invoke the regular Mix toolchain compilation.

@@ -6,5 +6,6 @@ defmodule ElixirMake.Downloader do
   @doc """
   This callback should download the artefact from the given URL.
   """
-  @callback download(url :: String.t()) :: {:ok, iolist() | binary()} | {:error, String.t()}
+  @callback download(url :: String.t()) ::
+              {:ok, iolist() | binary()} | {:error, String.t()}
 end

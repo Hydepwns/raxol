@@ -36,7 +36,12 @@ defmodule ElixirMake.Artefact do
   def checksum(basename, contents) do
     hash = :crypto.hash(checksum_algo(), contents)
     checksum = Base.encode16(hash, case: :lower)
-    %Artefact{basename: basename, checksum: checksum, checksum_algo: checksum_algo()}
+
+    %Artefact{
+      basename: basename,
+      checksum: checksum,
+      checksum_algo: checksum_algo()
+    }
   end
 
   @doc """
@@ -129,7 +134,10 @@ defmodule ElixirMake.Artefact do
 
         case checksum(basename, contents) do
           %Artefact{checksum: ^checksum, checksum_algo: ^algo} ->
-            case :erl_tar.extract({:binary, contents}, [:compressed, {:cwd, app_priv}]) do
+            case :erl_tar.extract({:binary, contents}, [
+                   :compressed,
+                   {:cwd, app_priv}
+                 ]) do
               :ok ->
                 :ok
 
@@ -139,14 +147,16 @@ defmodule ElixirMake.Artefact do
             end
 
           _ ->
-            {:error, "precompiled #{inspect(basename)} does not match its checksum"}
+            {:error,
+             "precompiled #{inspect(basename)} does not match its checksum"}
         end
 
       checksum when checksum == %{} ->
         {:error, "missing checksum.exs file"}
 
       _checksum ->
-        {:error, "precompiled #{inspect(basename)} does not exist in checksum.exs"}
+        {:error,
+         "precompiled #{inspect(basename)} does not exist in checksum.exs"}
     end
   end
 
@@ -229,11 +239,16 @@ defmodule ElixirMake.Artefact do
             end
 
           if available? do
-            archive_filename = archive_filename(config, target, nif_version_for_target)
+            archive_filename =
+              archive_filename(config, target, nif_version_for_target)
 
             [
               {{target, nif_version_for_target},
-               String.replace(url_template, "@{artefact_filename}", archive_filename)}
+               String.replace(
+                 url_template,
+                 "@{artefact_filename}",
+                 archive_filename
+               )}
               | acc
             ]
           else
@@ -255,13 +270,16 @@ defmodule ElixirMake.Artefact do
           config[:make_precompiler_nif_versions] ||
             [versions: []]
 
-        versions = get_versions_for_target(nif_versions[:versions], current_target)
+        versions =
+          get_versions_for_target(nif_versions[:versions], current_target)
 
         nif_version_to_use =
           if current_nif_version in versions do
             current_nif_version
           else
-            fallback_version = nif_versions[:fallback_version] || (&fallback_version/1)
+            fallback_version =
+              nif_versions[:fallback_version] || (&fallback_version/1)
+
             opts = %{target: current_target, versions: versions}
             fallback_version.(opts)
           end
@@ -274,7 +292,8 @@ defmodule ElixirMake.Artefact do
             {:ok, current_target, nif_version_to_use, download_url}
 
           nil ->
-            available_targets = Enum.map(available_urls, fn {target, _url} -> target end)
+            available_targets =
+              Enum.map(available_urls, fn {target, _url} -> target end)
 
             {:error,
              {:unavailable_target, current_target,
@@ -287,7 +306,9 @@ defmodule ElixirMake.Artefact do
   end
 
   def download(config, url) do
-    downloader = config[:make_precompiler_downloader] || ElixirMake.Downloader.Httpc
+    downloader =
+      config[:make_precompiler_downloader] || ElixirMake.Downloader.Httpc
+
     downloader.download(url)
   end
 end

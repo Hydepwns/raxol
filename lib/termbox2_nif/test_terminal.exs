@@ -25,8 +25,8 @@ defmodule TerminalTest do
       :termbox2_nif.tb_clear()
 
       # Draw a simple pattern
-      for y <- 0..(height-1) do
-        for x <- 0..(width-1) do
+      for y <- 0..(height - 1) do
+        for x <- 0..(width - 1) do
           ch = if rem(x + y, 2) == 0, do: ?#, else: ?.
           :termbox2_nif.tb_set_cell(x, y, ch, 0xFFFFFF, 0x000000)
         end
