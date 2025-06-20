@@ -75,7 +75,11 @@ defmodule ElixirMake.Compiler do
     env = default_env(config, env)
 
     cwd = Keyword.get(config, :make_cwd, ".") |> Path.expand(File.cwd!())
-    error_msg = Keyword.get(config, :make_error_message, :default) |> os_specific_error_msg()
+
+    error_msg =
+      Keyword.get(config, :make_error_message, :default)
+      |> os_specific_error_msg()
+
     custom_args = Keyword.get(config, :make_args, [])
 
     if String.contains?(cwd, " ") do
@@ -127,7 +131,10 @@ defmodule ElixirMake.Compiler do
   end
 
   defp raise_build_error(exec, exit_status, error_msg) do
-    Mix.raise(~s{Could not compile with "#{exec}" (exit status: #{exit_status}).\n} <> error_msg)
+    Mix.raise(
+      ~s{Could not compile with "#{exec}" (exit status: #{exit_status}).\n} <>
+        error_msg
+    )
   end
 
   defp os_specific_executable(exec) when is_binary(exec) do
@@ -209,7 +216,8 @@ defmodule ElixirMake.Compiler do
         # erlang.mk naming
         "ERTS_INCLUDE_DIR" => env("ERTS_INCLUDE_DIR", erts_include_dir),
         "ERL_INTERFACE_LIB_DIR" => env("ERL_INTERFACE_LIB_DIR", erl_ei_lib_dir),
-        "ERL_INTERFACE_INCLUDE_DIR" => env("ERL_INTERFACE_INCLUDE_DIR", erl_ei_include_dir),
+        "ERL_INTERFACE_INCLUDE_DIR" =>
+          env("ERL_INTERFACE_INCLUDE_DIR", erl_ei_include_dir),
 
         # Disable default erlang values
         "BINDIR" => nil,

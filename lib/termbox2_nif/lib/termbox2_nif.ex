@@ -10,7 +10,9 @@ defmodule :termbox2_nif do
     nif_path = Path.join(priv_dir, "termbox2_nif")
 
     case :erlang.load_nif(nif_path, 0) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         IO.puts("Failed to load Termbox2 NIF: #{inspect(reason)}")
         {:error, reason}

@@ -42,7 +42,8 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
         Enum.map(targets, fn target ->
           case precompiler.precompile(args, target) do
             :ok ->
-              precompiled_artefacts = create_precompiled_archive(config, target, paths)
+              precompiled_artefacts =
+                create_precompiled_archive(config, target, paths)
 
               if function_exported?(precompiler, :post_precompile_target, 1) do
                 precompiler.post_precompile_target(target)
@@ -75,7 +76,8 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
   end
 
   defp create_precompiled_archive(config, target, paths) do
-    archive_path = Artefact.archive_path(config, target, :erlang.system_info(:nif_version))
+    archive_path =
+      Artefact.archive_path(config, target, :erlang.system_info(:nif_version))
 
     Mix.shell().info("Creating precompiled archive: #{archive_path}")
     Mix.shell().info("Paths to archive from priv directory: #{inspect(paths)}")

@@ -139,7 +139,11 @@ defmodule Mix.Tasks.Compile.ElixirMake do
 
     force_build =
       pre_release?(version) or Keyword.get(config, :make_force_build, false) or
-        Keyword.get(Application.get_env(:elixir_make, :force_build, []), app, false)
+        Keyword.get(
+          Application.get_env(:elixir_make, :force_build, []),
+          app,
+          false
+        )
 
     {precompiler_type, precompiler} = config[:make_precompiler] || {nil, nil}
 
@@ -166,7 +170,8 @@ defmodule Mix.Tasks.Compile.ElixirMake do
         load_path = Path.join(app_priv, rootname <> extname)
 
         with false <- File.exists?(load_path),
-             {:error, message} <- download_or_reuse_nif(config, precompiler, app_priv) do
+             {:error, message} <-
+               download_or_reuse_nif(config, precompiler, app_priv) do
           recover =
             case message do
               {:unavailable_target, current_target, _description} ->
@@ -197,7 +202,9 @@ defmodule Mix.Tasks.Compile.ElixirMake do
   end
 
   defp raise_unknown_precompiler_type(precompiler_type) do
-    Mix.raise("Unknown precompiler type: #{inspect(precompiler_type)} (expected :nif or :port)")
+    Mix.raise(
+      "Unknown precompiler type: #{inspect(precompiler_type)} (expected :nif or :port)"
+    )
   end
 
   # This is called by Elixir when `mix clean` runs
@@ -223,10 +230,13 @@ defmodule Mix.Tasks.Compile.ElixirMake do
 
     case Artefact.current_target_url(config, precompiler, nif_version) do
       {:ok, target, nif_version_to_use, url} ->
-        archived_fullpath = Artefact.archive_path(config, target, nif_version_to_use)
+        archived_fullpath =
+          Artefact.archive_path(config, target, nif_version_to_use)
 
         unless File.exists?(archived_fullpath) do
-          Mix.shell().info("Downloading precompiled NIF to #{archived_fullpath}")
+          Mix.shell().info(
+            "Downloading precompiled NIF to #{archived_fullpath}"
+          )
 
           with {:ok, archived_data} <- Artefact.download(config, url) do
             File.mkdir_p(Path.dirname(archived_fullpath))

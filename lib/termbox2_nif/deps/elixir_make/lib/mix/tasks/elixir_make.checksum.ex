@@ -56,7 +56,11 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
         Keyword.get(options, :only_local) ->
           current_nif_version = "#{:erlang.system_info(:nif_version)}"
 
-          case Artefact.current_target_url(config, precompiler, current_nif_version) do
+          case Artefact.current_target_url(
+                 config,
+                 precompiler,
+                 current_nif_version
+               ) do
             {:ok, target, nif_version_to_use, url} ->
               [{{target, nif_version_to_use}, url}]
 
@@ -81,14 +85,18 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
           end
 
         true ->
-          Mix.raise("you need to specify either \"--all\" or \"--only-local\" flags")
+          Mix.raise(
+            "you need to specify either \"--all\" or \"--only-local\" flags"
+          )
       end
 
     artefacts = download_and_checksum_all(config, urls, options)
 
     if Keyword.get(options, :print, false) do
       artefacts
-      |> Enum.map(fn %Artefact{basename: basename, checksum: checksum} -> {basename, checksum} end)
+      |> Enum.map(fn %Artefact{basename: basename, checksum: checksum} ->
+        {basename, checksum}
+      end)
       |> Enum.sort()
       |> Enum.map_join("\n", fn {file, checksum} -> "#{checksum}  #{file}" end)
       |> IO.puts()
@@ -150,10 +158,14 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
 
           result ->
             if ignore_unavailable? do
-              msg = "Skipped unavailable NIF artifact. Reason: #{inspect(result)}"
+              msg =
+                "Skipped unavailable NIF artifact. Reason: #{inspect(result)}"
+
               Mix.shell().info(msg)
             else
-              msg = "Could not finish the download of NIF artifacts. Reason: #{inspect(result)}"
+              msg =
+                "Could not finish the download of NIF artifacts. Reason: #{inspect(result)}"
+
               Mix.shell().error(msg)
             end
 
