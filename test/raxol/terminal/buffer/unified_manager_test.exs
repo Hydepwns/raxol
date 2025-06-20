@@ -427,10 +427,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     test "handles invalid resize parameters", %{pid: pid} do
       # Test negative dimensions
-      {:ok, _} = UnifiedManager.resize(pid, 1, 1)  # Should work with valid dimensions
+      # Should work with valid dimensions
+      {:ok, _} = UnifiedManager.resize(pid, 1, 1)
 
       # Test zero dimensions
-      {:ok, _} = UnifiedManager.resize(pid, 1, 1)  # Should work with valid dimensions
+      # Should work with valid dimensions
+      {:ok, _} = UnifiedManager.resize(pid, 1, 1)
     end
   end
 

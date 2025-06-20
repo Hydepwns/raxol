@@ -16,7 +16,10 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   describe "handle_J/2 (Erase in Display)" do
     test "erases from cursor to end of screen (mode 0)", %{emulator: emulator} do
       # Set cursor to middle of screen
-      emulator = %{emulator | cursor: CursorManager.set_position(emulator.cursor, {5, 5})}
+      emulator = %{
+        emulator
+        | cursor: CursorManager.set_position(emulator.cursor, {5, 5})
+      }
 
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
@@ -24,14 +27,22 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       result = unwrap_ok(EraseHandlers.handle_J(emulator, [0]))
 
       # Check that content from cursor to end is erased
-      assert_cell_at(emulator, 5, 5, " ")  # Cursor position should be erased
-      assert_cell_at(emulator, 79, 23, " ")  # End of screen should be erased
-      assert_cell_at(emulator, 4, 4, "X")  # Before cursor should remain
+      # Cursor position should be erased
+      assert_cell_at(emulator, 5, 5, " ")
+      # End of screen should be erased
+      assert_cell_at(emulator, 79, 23, " ")
+      # Before cursor should remain
+      assert_cell_at(emulator, 4, 4, "X")
     end
 
-    test "erases from beginning of screen to cursor (mode 1)", %{emulator: emulator} do
+    test "erases from beginning of screen to cursor (mode 1)", %{
+      emulator: emulator
+    } do
       # Set cursor to middle of screen
-      emulator = %{emulator | cursor: CursorManager.set_position(emulator.cursor, {5, 5})}
+      emulator = %{
+        emulator
+        | cursor: CursorManager.set_position(emulator.cursor, {5, 5})
+      }
 
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
@@ -39,9 +50,12 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       result = unwrap_ok(EraseHandlers.handle_J(emulator, [1]))
 
       # Check that content from beginning to cursor is erased
-      assert_cell_at(emulator, 0, 0, " ")  # Beginning should be erased
-      assert_cell_at(emulator, 5, 5, " ")  # Cursor position should be erased
-      assert_cell_at(emulator, 6, 6, "X")  # After cursor should remain
+      # Beginning should be erased
+      assert_cell_at(emulator, 0, 0, " ")
+      # Cursor position should be erased
+      assert_cell_at(emulator, 5, 5, " ")
+      # After cursor should remain
+      assert_cell_at(emulator, 6, 6, "X")
     end
 
     test "erases entire screen (mode 2)", %{emulator: emulator} do
@@ -63,8 +77,10 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       result = unwrap_ok(EraseHandlers.handle_J(emulator, []))
 
       # Should default to mode 0 (erase from cursor to end)
-      assert_cell_at(emulator, 0, 0, "X")  # Before cursor should remain
-      assert_cell_at(emulator, 79, 23, " ")  # End should be erased
+      # Before cursor should remain
+      assert_cell_at(emulator, 0, 0, "X")
+      # End should be erased
+      assert_cell_at(emulator, 79, 23, " ")
     end
 
     test "erases scrollback buffer (mode 3)", %{emulator: emulator} do
@@ -82,7 +98,10 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   describe "handle_K/2 (Erase in Line)" do
     test "erases from cursor to end of line (mode 0)", %{emulator: emulator} do
       # Set cursor to middle of line
-      emulator = %{emulator | cursor: CursorManager.set_position(emulator.cursor, {5, 0})}
+      emulator = %{
+        emulator
+        | cursor: CursorManager.set_position(emulator.cursor, {5, 0})
+      }
 
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
@@ -90,14 +109,22 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       result = unwrap_ok(EraseHandlers.handle_K(emulator, [0]))
 
       # Check that content from cursor to end of line is erased
-      assert_cell_at(emulator, 4, 0, "X")  # Before cursor should remain
-      assert_cell_at(emulator, 5, 0, " ")  # Cursor position should be erased
-      assert_cell_at(emulator, 79, 0, " ")  # End of line should be erased
+      # Before cursor should remain
+      assert_cell_at(emulator, 4, 0, "X")
+      # Cursor position should be erased
+      assert_cell_at(emulator, 5, 0, " ")
+      # End of line should be erased
+      assert_cell_at(emulator, 79, 0, " ")
     end
 
-    test "erases from beginning of line to cursor (mode 1)", %{emulator: emulator} do
+    test "erases from beginning of line to cursor (mode 1)", %{
+      emulator: emulator
+    } do
       # Set cursor to middle of line
-      emulator = %{emulator | cursor: CursorManager.set_position(emulator.cursor, {5, 0})}
+      emulator = %{
+        emulator
+        | cursor: CursorManager.set_position(emulator.cursor, {5, 0})
+      }
 
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
@@ -105,9 +132,12 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       result = unwrap_ok(EraseHandlers.handle_K(emulator, [1]))
 
       # Check that content from beginning to cursor is erased
-      assert_cell_at(emulator, 0, 0, " ")  # Beginning should be erased
-      assert_cell_at(emulator, 5, 0, " ")  # Cursor position should be erased
-      assert_cell_at(emulator, 6, 0, "X")  # After cursor should remain
+      # Beginning should be erased
+      assert_cell_at(emulator, 0, 0, " ")
+      # Cursor position should be erased
+      assert_cell_at(emulator, 5, 0, " ")
+      # After cursor should remain
+      assert_cell_at(emulator, 6, 0, "X")
     end
 
     test "erases entire line (mode 2)", %{emulator: emulator} do
@@ -129,8 +159,10 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       result = unwrap_ok(EraseHandlers.handle_K(emulator, []))
 
       # Should default to mode 0 (erase from cursor to end of line)
-      assert_cell_at(emulator, 0, 0, "X")  # Beginning should remain
-      assert_cell_at(emulator, 79, 0, " ")  # End should be erased
+      # Beginning should remain
+      assert_cell_at(emulator, 0, 0, "X")
+      # End should be erased
+      assert_cell_at(emulator, 79, 0, " ")
     end
   end
 

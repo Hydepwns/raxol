@@ -9,7 +9,6 @@ defmodule Raxol.AnimationTest do
   alias Raxol.Core.UserPreferences
   alias Raxol.Test.EventAssertions
 
-
   # Helper to wait for animation completion
   defp wait_for_animation_completion(element_id, animation_name, timeout \\ 500) do
     assert_receive {:animation_completed, ^element_id, ^animation_name}, timeout

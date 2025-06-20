@@ -180,6 +180,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
           {:key_add, "5", ^c5_new} -> true
           _ -> false
         end)
+
       assert found_add_5 == {:key_add, "5", c5_new}
 
       found_update_3 =
@@ -187,6 +188,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
           {:key_update, "3", ^diff_for_c3} -> true
           _ -> false
         end)
+
       assert found_update_3 == {:key_update, "3", diff_for_c3}
 
       found_remove_1 =
@@ -194,6 +196,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
           {:key_remove, "1"} -> true
           _ -> false
         end)
+
       assert found_remove_1 == {:key_remove, "1"}
 
       found_remove_4 =
@@ -201,6 +204,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
           {:key_remove, "4"} -> true
           _ -> false
         end)
+
       assert found_remove_4 == {:key_remove, "4"}
 
       expected_reorder_op = {:key_reorder, ["5", "3", "2"]}
@@ -270,7 +274,9 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       old_tree = %{type: :ul, children: [child_a, child_b]}
       new_tree = %{type: :ul, children: []}
 
-      {:update, path, update_details} = TreeDiffer.diff_trees(old_tree, new_tree)
+      {:update, path, update_details} =
+        TreeDiffer.diff_trees(old_tree, new_tree)
+
       assert path == []
       assert update_details.type == :keyed_children
       actual_ops = update_details.ops

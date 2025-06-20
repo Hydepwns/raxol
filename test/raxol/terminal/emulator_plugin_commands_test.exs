@@ -20,5 +20,4 @@ defmodule Raxol.Terminal.EmulatorPluginCommandsTest do
     on_exit(fn -> :ets.delete(:test_command_registry) end)
     {:ok, %{emulator: emulator}}
   end
-
 end

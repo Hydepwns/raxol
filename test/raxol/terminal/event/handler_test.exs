@@ -48,10 +48,12 @@ defmodule Raxol.Terminal.Event.HandlerTest do
     test "calls registered handler with event data" do
       emulator = TestHelper.create_test_emulator()
       test_pid = self()
+
       handler = fn emulator, data ->
         send(test_pid, {:event_handled, data})
         emulator
       end
+
       emulator = Handler.register_handler(emulator, :test_event, handler)
       emulator = Handler.dispatch_event(emulator, :test_event, "test_data")
       assert_receive {:event_handled, "test_data"}
@@ -76,10 +78,12 @@ defmodule Raxol.Terminal.Event.HandlerTest do
     test "processes all queued events" do
       emulator = TestHelper.create_test_emulator()
       test_pid = self()
+
       handler = fn emulator, data ->
         send(test_pid, {:event_handled, data})
         emulator
       end
+
       emulator = Handler.register_handler(emulator, :test_event, handler)
       emulator = Handler.queue_event(emulator, :test_event, "test_data1")
       emulator = Handler.queue_event(emulator, :test_event, "test_data2")

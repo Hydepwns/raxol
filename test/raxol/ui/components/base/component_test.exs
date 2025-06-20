@@ -66,7 +66,11 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     end
 
     @impl true
-    def handle_event(%Raxol.Core.Events.Event{data: %{type: :test_event, value: value}}, state, _context) do
+    def handle_event(
+          %Raxol.Core.Events.Event{data: %{type: :test_event, value: value}},
+          state,
+          _context
+        ) do
       new_state = %{state | events: [value | state.events]}
       {new_state, [{:command, :event_handled}]}
     end
@@ -250,13 +254,14 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       # Use canonical accessibility helpers
       # Example: assert_sufficient_contrast, assert_announced, etc.
       # Here, we just check that the component renders with accessibility context without error
-      rendered = component.module.render(component.state, %{
-        theme: %{mode: :test},
-        accessibility: %{
-          high_contrast: true,
-          screen_reader: true
-        }
-      })
+      rendered =
+        component.module.render(component.state, %{
+          theme: %{mode: :test},
+          accessibility: %{
+            high_contrast: true,
+            screen_reader: true
+          }
+        })
 
       # If you want to check contrast, ARIA, etc., use the helpers from Raxol.AccessibilityTestHelpers
       assert rendered.type == :test_component

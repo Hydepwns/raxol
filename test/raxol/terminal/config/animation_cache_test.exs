@@ -11,7 +11,8 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
         default_ttl: 3600,
         eviction_policy: :lru,
         namespace_configs: %{
-          animation: %{max_size: 10 * 1024 * 1024} # 10MB for test
+          # 10MB for test
+          animation: %{max_size: 10 * 1024 * 1024}
         }
       )
 

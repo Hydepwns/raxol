@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Test new/0
-  test 'new/0 creates a new text style with default values' do
+  test ~c"new/0 creates a new text style with default values" do
     style = TextFormatting.new()
     # Check default boolean attributes
     assert style.bold == false
@@ -27,13 +27,13 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
   # Test apply_attribute/2
   describe "apply_attribute/2" do
-    test 'adds a text attribute to the style' do
+    test ~c"adds a text attribute to the style" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :bold)
       assert style.bold == true
     end
 
-    test 'can add multiple attributes' do
+    test ~c"can add multiple attributes" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :bold)
       style = TextFormatting.apply_attribute(style, :italic)
@@ -51,13 +51,13 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.bold == false
     end
 
-    test 'adds a text decoration' do
+    test ~c"adds a text decoration" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :underline)
       assert style.underline == true
     end
 
-    test 'adds framed, encircled, and overlined attributes' do
+    test ~c"adds framed, encircled, and overlined attributes" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :framed)
       assert style.framed == true
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.overlined == true
     end
 
-    test 'removes framed, encircled, and overlined attributes' do
+    test ~c"removes framed, encircled, and overlined attributes" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :framed)
       style = TextFormatting.apply_attribute(style, :encircled)
@@ -82,7 +82,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.overlined == false
     end
 
-    test 'can add multiple decorations' do
+    test ~c"can add multiple decorations" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :underline)
       style = TextFormatting.apply_attribute(style, :blink)
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.double_underline == false
     end
 
-    test 'resets all formatting to default values with :reset' do
+    test ~c"resets all formatting to default values with :reset" do
       style = TextFormatting.new()
       # Apply various attributes
       style = TextFormatting.apply_attribute(style, :bold)
@@ -118,19 +118,19 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
   # Test apply_color/3
   describe "apply_color/3" do
-    test 'sets foreground color' do
+    test ~c"sets foreground color" do
       style = TextFormatting.new()
       style = TextFormatting.apply_color(style, :foreground, :red)
       assert style.foreground == :red
     end
 
-    test 'sets background color' do
+    test ~c"sets background color" do
       style = TextFormatting.new()
       style = TextFormatting.apply_color(style, :background, :blue)
       assert style.background == :blue
     end
 
-    test 'resets foreground color with :default_fg via apply_attribute' do
+    test ~c"resets foreground color with :default_fg via apply_attribute" do
       style =
         TextFormatting.new() |> TextFormatting.apply_color(:foreground, :red)
 
@@ -138,7 +138,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.foreground == nil
     end
 
-    test 'resets background color with :default_bg via apply_attribute' do
+    test ~c"resets background color with :default_bg via apply_attribute" do
       style =
         TextFormatting.new() |> TextFormatting.apply_color(:background, :blue)
 
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
   # Test size functions
   describe "size functions" do
-    test 'set_double_width/1 enables double-width mode' do
+    test ~c"set_double_width/1 enables double-width mode" do
       style = TextFormatting.new()
       style = TextFormatting.set_double_width(style)
       assert style.double_width == true
@@ -157,13 +157,13 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.double_height == :none
     end
 
-    test 'disables double-width mode via apply_attribute' do
+    test ~c"disables double-width mode via apply_attribute" do
       style = TextFormatting.new() |> TextFormatting.set_double_width()
       style = TextFormatting.apply_attribute(style, :no_double_width)
       assert style.double_width == false
     end
 
-    test 'set_double_height_top/1 enables double-height top mode' do
+    test ~c"set_double_height_top/1 enables double-height top mode" do
       style = TextFormatting.new()
       style = TextFormatting.set_double_height_top(style)
       assert style.double_height == :top
@@ -171,7 +171,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.double_width == true
     end
 
-    test 'set_double_height_bottom/1 enables double-height bottom mode' do
+    test ~c"set_double_height_bottom/1 enables double-height bottom mode" do
       style = TextFormatting.new()
       style = TextFormatting.set_double_height_bottom(style)
       assert style.double_height == :bottom
@@ -179,13 +179,13 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.double_width == true
     end
 
-    test 'disables double-height mode via apply_attribute' do
+    test ~c"disables double-height mode via apply_attribute" do
       style = TextFormatting.new() |> TextFormatting.set_double_height_top()
       style = TextFormatting.apply_attribute(style, :no_double_height)
       assert style.double_height == :none
     end
 
-    test 'reset_size/1 resets both double width and height' do
+    test ~c"reset_size/1 resets both double width and height" do
       style = TextFormatting.new()
       style = TextFormatting.set_double_height_top(style)
       style = TextFormatting.reset_size(style)
@@ -196,18 +196,18 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
   # Test effective_width/2
   describe "effective_width/2" do
-    test 'returns 2 for double-width characters' do
+    test ~c"returns 2 for double-width characters" do
       style = TextFormatting.new() |> TextFormatting.set_double_width()
       assert TextFormatting.effective_width(style, "A") == 2
     end
 
-    test 'returns 2 for wide Unicode characters' do
+    test ~c"returns 2 for wide Unicode characters" do
       style = TextFormatting.new()
       # Example: Chinese character (often wide)
       assert TextFormatting.effective_width(style, "你") == 2
     end
 
-    test 'returns 1 for standard ASCII characters' do
+    test ~c"returns 1 for standard ASCII characters" do
       style = TextFormatting.new()
       assert TextFormatting.effective_width(style, "A") == 1
     end
@@ -215,47 +215,47 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
   # Test needs_paired_line?/1 and paired_line_type/1
   describe "double-height line pairing" do
-    test 'needs_paired_line? returns true for double-height top' do
+    test ~c"needs_paired_line? returns true for double-height top" do
       style = TextFormatting.new() |> TextFormatting.set_double_height_top()
       assert TextFormatting.needs_paired_line?(style) == true
     end
 
-    test 'needs_paired_line? returns true for double-height bottom' do
+    test ~c"needs_paired_line? returns true for double-height bottom" do
       style = TextFormatting.new() |> TextFormatting.set_double_height_bottom()
       assert TextFormatting.needs_paired_line?(style) == true
     end
 
-    test 'needs_paired_line? returns false for single height' do
+    test ~c"needs_paired_line? returns false for single height" do
       style = TextFormatting.new()
       assert TextFormatting.needs_paired_line?(style) == false
     end
 
-    test 'paired_line_type returns :bottom for :top' do
+    test ~c"paired_line_type returns :bottom for :top" do
       style = TextFormatting.new() |> TextFormatting.set_double_height_top()
       assert TextFormatting.get_paired_line_type(style) == :bottom
     end
 
-    test 'paired_line_type returns :top for :bottom' do
+    test ~c"paired_line_type returns :top for :bottom" do
       style = TextFormatting.new() |> TextFormatting.set_double_height_bottom()
       assert TextFormatting.get_paired_line_type(style) == :top
     end
 
-    test 'paired_line_type returns nil for :none' do
+    test ~c"paired_line_type returns nil for :none" do
       style = TextFormatting.new()
       assert TextFormatting.get_paired_line_type(style) == nil
     end
 
-    test 'double-height line pairing get_paired_line_type returns :top for :bottom' do
+    test ~c"double-height line pairing get_paired_line_type returns :top for :bottom" do
       style = TextFormatting.new() |> TextFormatting.set_double_height_bottom()
       assert TextFormatting.get_paired_line_type(style) == :top
     end
 
-    test 'double-height line pairing get_paired_line_type returns nil for :none' do
+    test ~c"double-height line pairing get_paired_line_type returns nil for :none" do
       style = TextFormatting.new()
       assert TextFormatting.get_paired_line_type(style) == nil
     end
 
-    test 'apply_attribute/2 adds a text attribute to the style' do
+    test ~c"apply_attribute/2 adds a text attribute to the style" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :bold)
       assert style.bold == true
@@ -266,43 +266,43 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
   # are removed as they are not present in the current text_formatting.ex
 
   describe "parse_sgr_param/2 (test-only public)" do
-    test 'parses attribute SGR code (bold)' do
+    test ~c"parses attribute SGR code (bold)" do
       style = TextFormatting.new()
       style = TextFormatting.parse_sgr_param(1, style)
       assert style.bold == true
     end
 
-    test 'parses color SGR code (foreground red)' do
+    test ~c"parses color SGR code (foreground red)" do
       style = TextFormatting.new()
       style = TextFormatting.parse_sgr_param(31, style)
       assert style.foreground == :red
     end
 
-    test 'parses bright color SGR code (bright blue foreground)' do
+    test ~c"parses bright color SGR code (bright blue foreground)" do
       style = TextFormatting.new()
       style = TextFormatting.parse_sgr_param(94, style)
       assert style.foreground == :blue or style.foreground == :bright_blue
     end
 
-    test 'parses 8-bit foreground color SGR code' do
+    test ~c"parses 8-bit foreground color SGR code" do
       style = TextFormatting.new()
       style = TextFormatting.parse_sgr_param({:fg_8bit, 42}, style)
       assert style.foreground == {:index, 42}
     end
 
-    test 'parses 24-bit RGB background color SGR code' do
+    test ~c"parses 24-bit RGB background color SGR code" do
       style = TextFormatting.new()
       style = TextFormatting.parse_sgr_param({:bg_rgb, 10, 20, 30}, style)
       assert style.background == {:rgb, 10, 20, 30}
     end
 
-    test 'returns unchanged style for unknown code' do
+    test ~c"returns unchanged style for unknown code" do
       style = TextFormatting.new()
       style2 = TextFormatting.parse_sgr_param(999, style)
       assert style2 == style
     end
 
-    test 'parses SGR 51-55 (framed, encircled, overlined, not_framed_encircled, not_overlined)' do
+    test ~c"parses SGR 51-55 (framed, encircled, overlined, not_framed_encircled, not_overlined)" do
       style = TextFormatting.new()
       style = TextFormatting.parse_sgr_param(51, style)
       assert style.framed == true

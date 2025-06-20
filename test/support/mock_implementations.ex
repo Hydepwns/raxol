@@ -74,32 +74,82 @@ defmodule Raxol.Test.Support.MockImplementations do
     @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
 
     @impl true
-    def load_plugin(plugin_id_or_module, config, plugins, metadata, plugin_states, load_order, command_table, plugin_config) do
+    def load_plugin(
+          plugin_id_or_module,
+          config,
+          plugins,
+          metadata,
+          plugin_states,
+          load_order,
+          command_table,
+          plugin_config
+        ) do
       {:ok, %{}}
     end
 
     @impl true
-    def unload_plugin(plugin_id, plugins, metadata, plugin_states, load_order, command_table) do
+    def unload_plugin(
+          plugin_id,
+          plugins,
+          metadata,
+          plugin_states,
+          load_order,
+          command_table
+        ) do
       {:ok, %{}}
     end
 
     @impl true
-    def reload_plugin(plugin_id, plugins, metadata, plugin_states, load_order, command_table, plugin_config) do
+    def reload_plugin(
+          plugin_id,
+          plugins,
+          metadata,
+          plugin_states,
+          load_order,
+          command_table,
+          plugin_config
+        ) do
       {:ok, %{}}
     end
 
     @impl true
-    def initialize_plugins(plugin_specs, manager_pid, plugin_registry, command_registry_table, api_version, app_config, env) do
+    def initialize_plugins(
+          plugin_specs,
+          manager_pid,
+          plugin_registry,
+          command_registry_table,
+          api_version,
+          app_config,
+          env
+        ) do
       {:ok, {[], []}}
     end
 
     @impl true
-    def reload_plugin_from_disk(plugin_id, current_state, plugin_spec, manager_pid, plugin_registry, command_registry_table, api_version, loaded_plugins_paths) do
+    def reload_plugin_from_disk(
+          plugin_id,
+          current_state,
+          plugin_spec,
+          manager_pid,
+          plugin_registry,
+          command_registry_table,
+          api_version,
+          loaded_plugins_paths
+        ) do
       {:ok, %{}}
     end
 
     @impl true
-    def load_plugin_by_module(plugin_module, config, plugins, metadata, plugin_states, load_order, command_table, plugin_config) do
+    def load_plugin_by_module(
+          plugin_module,
+          config,
+          plugins,
+          metadata,
+          plugin_states,
+          load_order,
+          command_table,
+          plugin_config
+        ) do
       {:ok, %{}}
     end
 
@@ -130,7 +180,7 @@ defmodule Raxol.Test.Support.MockImplementations do
 
     @impl true
     def httpc_request(method, url_with_headers, http_options, stream_options) do
-      {:ok, {{'HTTP/1.1', 200, 'OK'}, [], 'test content'}}
+      {:ok, {{~c"HTTP/1.1", 200, ~c"OK"}, [], ~c"test content"}}
     end
 
     @impl true
@@ -264,11 +314,19 @@ defmodule Raxol.Test.Support.MockImplementations do
     def new(width, height), do: %{mock: :emulator, width: width, height: height}
 
     @impl true
-    def new(width, height, opts), do: %{mock: :emulator, width: width, height: height, opts: opts}
+    def new(width, height, opts),
+      do: %{mock: :emulator, width: width, height: height, opts: opts}
 
     @impl true
     def new(width, height, session_id, client_options) do
-      {:ok, %{mock: :emulator, width: width, height: height, session_id: session_id, client_options: client_options}}
+      {:ok,
+       %{
+         mock: :emulator,
+         width: width,
+         height: height,
+         session_id: session_id,
+         client_options: client_options
+       }}
     end
 
     @impl true

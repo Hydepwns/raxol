@@ -30,10 +30,13 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       end)
 
       end_time = System.monotonic_time()
-      total_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      total_time =
+        System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
       # Assert that processing 1000 events takes less than 100ms
-      assert total_time < 100, "Processing 1000 events took #{total_time}ms, expected < 100ms"
+      assert total_time < 100,
+             "Processing 1000 events took #{total_time}ms, expected < 100ms"
     end
 
     test "handles screen updates efficiently", %{manager: manager} do
@@ -48,10 +51,13 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       end)
 
       end_time = System.monotonic_time()
-      total_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      total_time =
+        System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
       # Assert that processing 100 updates takes less than 50ms
-      assert total_time < 50, "Processing 100 screen updates took #{total_time}ms, expected < 50ms"
+      assert total_time < 50,
+             "Processing 100 screen updates took #{total_time}ms, expected < 50ms"
     end
 
     test "handles concurrent operations efficiently", %{manager: manager} do
@@ -69,10 +75,13 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       |> Stream.run()
 
       end_time = System.monotonic_time()
-      total_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      total_time =
+        System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
       # Assert that concurrent operations take less than 10ms
-      assert total_time < 10, "Concurrent operations took #{total_time}ms, expected < 10ms"
+      assert total_time < 10,
+             "Concurrent operations took #{total_time}ms, expected < 10ms"
     end
   end
 

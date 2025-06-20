@@ -53,7 +53,10 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
   describe "erase_in_line/1" do
     test "erases from cursor to end of line" do
       emulator = TestHelper.create_test_emulator()
-      emulator = ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
+      emulator =
+        ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
       emulator = ScreenOperations.set_cursor_position(emulator, 5, 0)
       emulator = ScreenOperations.erase_in_line(emulator)
       assert ScreenOperations.get_line(emulator, 0) == "test1"
@@ -75,7 +78,10 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
   describe "erase_from_start_to_cursor/1" do
     test "erases from start to cursor" do
       emulator = TestHelper.create_test_emulator()
-      emulator = ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
+      emulator =
+        ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
       emulator = ScreenOperations.set_cursor_position(emulator, 5, 0)
       emulator = ScreenOperations.erase_from_start_to_cursor(emulator)
       assert ScreenOperations.get_line(emulator, 0) == "test2"
@@ -85,7 +91,10 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
   describe "erase_chars/2" do
     test "erases specified number of characters" do
       emulator = TestHelper.create_test_emulator()
-      emulator = ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
+      emulator =
+        ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
       emulator = ScreenOperations.set_cursor_position(emulator, 5, 0)
       emulator = ScreenOperations.erase_chars(emulator, 3)
       assert ScreenOperations.get_line(emulator, 0) == "test1st2"
@@ -95,7 +104,10 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
   describe "delete_chars/2" do
     test "deletes specified number of characters" do
       emulator = TestHelper.create_test_emulator()
-      emulator = ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
+      emulator =
+        ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
       emulator = ScreenOperations.set_cursor_position(emulator, 5, 0)
       emulator = ScreenOperations.delete_chars(emulator, 3)
       assert ScreenOperations.get_line(emulator, 0) == "test1st2"
@@ -105,7 +117,10 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
   describe "insert_chars/2" do
     test "inserts specified number of spaces" do
       emulator = TestHelper.create_test_emulator()
-      emulator = ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
+      emulator =
+        ScreenOperations.write_string(emulator, 0, 0, "test1 test2", %{})
+
       emulator = ScreenOperations.set_cursor_position(emulator, 5, 0)
       emulator = ScreenOperations.insert_chars(emulator, 3)
       assert ScreenOperations.get_line(emulator, 0) == "test1   test2"
