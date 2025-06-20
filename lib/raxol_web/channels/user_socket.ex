@@ -1,5 +1,6 @@
 defmodule RaxolWeb.UserSocket do
   use Phoenix.Socket
+  @behaviour Phoenix.Socket
   require Raxol.Core.Runtime.Log
 
   # Channels

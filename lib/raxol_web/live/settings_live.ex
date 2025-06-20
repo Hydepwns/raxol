@@ -1,5 +1,6 @@
 defmodule RaxolWeb.SettingsLive do
   use RaxolWeb, :live_view
+  @behaviour Phoenix.LiveView
   # Use Accounts context
   alias Raxol.Accounts
   alias Raxol.UI.Theming.Theme

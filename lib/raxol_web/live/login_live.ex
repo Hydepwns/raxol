@@ -1,5 +1,6 @@
 defmodule RaxolWeb.LoginLive do
   use RaxolWeb, :live_view
+  @behaviour Phoenix.LiveView
   alias Raxol.Accounts
 
   @impl true
