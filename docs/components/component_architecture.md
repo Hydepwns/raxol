@@ -245,6 +245,13 @@ sequenceDiagram
 - Use typed events and proper error handling
 - Minimize state updates and use efficient data structures
 
+### Performance State Management
+
+- Use immutable updates with `Map.put/3` and `Map.update/4`
+- Batch related state updates
+- Minimize state size and complexity
+- Use efficient data structures
+
 ### Component Design
 
 - Single Responsibility Principle
@@ -399,13 +406,6 @@ end
 ```
 
 ## Performance Considerations
-
-### State Management
-
-- Use immutable updates with `Map.put/3` and `Map.update/4`
-- Batch related state updates
-- Minimize state size and complexity
-- Use efficient data structures
 
 ### Rendering
 

@@ -65,7 +65,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
   # Returns a flat list: [%{x:, y:, width:, height:, name:, value:, depth:}, ...]
   defp layout_treemap_nodes(
          node,
-         %{x: bx, y: by, width: bw, height: bh} = bounds,
+         %{x: _bx, y: _by, width: bw, height: bh} = bounds,
          depth,
          _total_value_for_level
        ) do
