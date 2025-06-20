@@ -1,5 +1,6 @@
 defmodule RaxolWeb.MonitoringLive do
   use RaxolWeb, :live_view
+  @behaviour Phoenix.LiveView
   alias Raxol.Metrics
 
   @impl true
