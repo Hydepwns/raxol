@@ -6,23 +6,41 @@ A modern, feature-rich toolkit for building sophisticated terminal user interfac
 
 ### Core Features
 
-- **Component-Based Architecture**: Build UIs using reusable components with their own state management
-- **Flexible View Definition**: Choose between HEEx-like syntax or programmatic component functions
-- **Rich Text Formatting**: Support for colors, styles, and dynamic content updates
+- **Terminal Emulator**: Full-featured terminal emulator with ANSI escape sequence support, buffer management, and cursor handling
+- **Component-Based Architecture**: Build UIs using reusable components with their own state management and lifecycle
+- **Event System**: Comprehensive event handling for keyboard, mouse, window resize, and custom events
+- **Buffer Management**: Advanced terminal buffer system with scrollback, selection, and history support
+- **Input Processing**: Robust input handling with buffer management and event routing
+- **Theme Support**: Customizable styling and theming capabilities with color system integration
+- **Accessibility**: Built-in support for screen readers, keyboard navigation, and focus management
+
+### Terminal Features
+
+- **ANSI Support**: Complete ANSI escape sequence parsing and rendering (colors, styles, cursor movement)
+- **Mouse Tracking**: Full mouse event support with click, drag, and scroll detection
+- **Window Management**: Dynamic window resizing, focus handling, and tab support
+- **Command Processing**: Terminal command execution with CSI, DCS, and escape sequence handling
+- **Buffer Operations**: Text insertion, deletion, scrolling, and selection operations
+- **History Management**: Command history with search and navigation capabilities
+- **Plugin System**: Extensible architecture for custom terminal functionality
+
+### UI Components
+
+- **Basic Components**: Button, text input, table, modal, and tab bar components
+- **Progress Indicators**: Multiple progress visualization options (bars, spinners, circular)
 - **Layout System**: Flexbox-inspired layout engine for responsive terminal UIs
-- **Event Handling**: Comprehensive event system for keyboard and mouse interactions
-- **Theme Support**: Customizable styling and theming capabilities
-- **Accessibility**: Built-in support for screen readers and keyboard navigation
+- **Rendering Engine**: High-performance rendering with tree diffing and optimization
+- **Focus Management**: Comprehensive focus handling with keyboard navigation
+- **Text Formatting**: Rich text support with colors, styles, and markdown rendering
 
 ### Advanced Features
 
-- **Data Visualization**: Charts, graphs, and TreeMaps for data representation
-- **Animation System**: Smooth transitions and dynamic UI updates
-- **Plugin System**: Extensible architecture for custom functionality
-- **Cloud Integration**: Monitoring, configuration, and service discovery
-- **Performance Optimization**: Advanced caching and rendering optimizations
+- **Animation System**: Smooth transitions and dynamic UI updates with caching support
+- **Performance Optimization**: Advanced caching, metrics collection, and rendering optimizations
+- **Internationalization**: Multi-language support with i18n integration
+- **Cloud Integration**: Monitoring, configuration, and service discovery capabilities
 - **Metrics System**: Comprehensive performance monitoring and visualization
-- **Progress Indicators**: Multiple progress visualization options including bars, spinners, and circular indicators
+- **Configuration Management**: Flexible configuration system with runtime updates
 
 ## Installation
 
@@ -96,7 +114,7 @@ end
 - [Components Overview](examples/guides/03_components_and_layout/components/README.md)
 - [Visualization Components](examples/guides/03_components_and_layout/components/visualization/README.md)
 - [Database Components](examples/guides/03_components_and_layout/components/database/README.md)
-- [Progress Components](examples/guides/03_components_and_layout/components/README.md)
+- [Snippets](examples/snippets/README.md)
 
 ## Performance
 
@@ -114,6 +132,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 - [Documentation](docs/README.md)
 - [Issue Tracker](https://github.com/Hydepwns/raxol/issues)
-- [Discussions](https://github.com/Hydepwns/raxol/discussions)
 
 ---
