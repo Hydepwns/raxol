@@ -340,7 +340,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Inserts lines at a specific position.
   """
-  @spec insert_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec insert_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def insert_lines(buffer, position, count) do
     if position >= 0 and position < length(buffer.cells) and count > 0 do
       do_insert_lines(buffer, position, count, length(buffer.cells) - 1)
@@ -352,7 +353,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Deletes lines at a specific position.
   """
-  @spec delete_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec delete_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def delete_lines(buffer, position, count) do
     if position >= 0 and position < length(buffer.cells) and count > 0 do
       {before, after_cursor} = Enum.split(buffer.cells, position)
@@ -368,7 +370,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Sets a line at a specific position.
   """
-  @spec set_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
+  @spec set_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
+          ScreenBuffer.t()
   def set_line(buffer, position, new_line) do
     if position >= 0 and position < length(buffer.cells) do
       new_cells = List.replace_at(buffer.cells, position, new_line)

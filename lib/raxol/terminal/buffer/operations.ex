@@ -686,8 +686,10 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> Operations.get_cell(buffer, 0, 0)
       %Cell{char: "", style: %{}}
   """
-  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
-  def get_cell(buffer, x, y) when is_list(buffer) and is_integer(x) and is_integer(y) do
+  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          Cell.t()
+  def get_cell(buffer, x, y)
+      when is_list(buffer) and is_integer(x) and is_integer(y) do
     case get_in(buffer, [Access.at(y), Access.at(x)]) do
       nil -> Cell.new()
       cell -> cell
@@ -717,7 +719,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
       iex> Operations.fill_region(buffer, 0, 0, 10, 5, cell)
       [%Cell{char: "X", style: %{bold: true}}, ...]
   """
-  @spec fill_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), Cell.t()) :: ScreenBuffer.t()
+  @spec fill_region(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          Cell.t()
+        ) :: ScreenBuffer.t()
   def fill_region(buffer, x, y, width, height, cell) when is_list(buffer) do
     buffer
     |> Enum.with_index()

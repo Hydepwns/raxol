@@ -14,7 +14,12 @@ defmodule Raxol.Terminal.Buffer.Selection do
   @doc """
   Creates a new selection with start and end positions.
   """
-  @spec new({non_neg_integer(), non_neg_integer()}, {non_neg_integer(), non_neg_integer()}) :: {non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()}
+  @spec new(
+          {non_neg_integer(), non_neg_integer()},
+          {non_neg_integer(), non_neg_integer()}
+        ) ::
+          {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+           non_neg_integer()}
   def new({start_x, start_y}, {end_x, end_y}) do
     {start_x, start_y, end_x, end_y}
   end
@@ -112,8 +117,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
   def get_text_in_region(buffer, start_x, start_y, end_x, end_y) do
     # Check if coordinates are out of bounds
     if start_x >= buffer.width or end_x >= buffer.width or
-       start_y >= buffer.height or end_y >= buffer.height or
-       start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0 do
+         start_y >= buffer.height or end_y >= buffer.height or
+         start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0 do
       ""
     else
       # Ensure start coordinates are less than or equal to end coordinates
@@ -181,7 +186,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
     case buffer.selection do
       {start_x, start_y, end_x, end_y} ->
         if start_x == end_x and start_y == end_y, do: nil, else: {end_x, end_y}
-      nil -> nil
+
+      nil ->
+        nil
     end
   end
 end

@@ -9,13 +9,18 @@ defmodule Raxol.Terminal.BufferManager do
     ScreenBuffer,
     ScrollbackManager
   }
+
   require Raxol.Core.Runtime.Log
 
   @doc """
   Initializes the terminal buffers with the given dimensions.
   Returns {:ok, {main_buffer, alternate_buffer}}.
   """
-  @spec initialize_buffers(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+  @spec initialize_buffers(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) ::
           {:ok, {ScreenBuffer.t(), ScreenBuffer.t()}}
   def initialize_buffers(width, height, _scrollback_limit) do
     main_buffer = ScreenBuffer.new(width, height)
@@ -45,7 +50,10 @@ defmodule Raxol.Terminal.BufferManager do
     %{emulator | main_screen_buffer: new_buffer}
   end
 
-  def update_active_buffer(%{active_buffer_type: :alternate} = emulator, new_buffer) do
+  def update_active_buffer(
+        %{active_buffer_type: :alternate} = emulator,
+        new_buffer
+      ) do
     %{emulator | alternate_screen_buffer: new_buffer}
   end
 
@@ -55,7 +63,9 @@ defmodule Raxol.Terminal.BufferManager do
   """
   @spec switch_buffer(Emulator.t()) :: Emulator.t()
   def switch_buffer(emulator) do
-    new_type = if emulator.active_buffer_type == :main, do: :alternate, else: :main
+    new_type =
+      if emulator.active_buffer_type == :main, do: :alternate, else: :main
+
     %{emulator | active_buffer_type: new_type}
   end
 
@@ -81,10 +91,18 @@ defmodule Raxol.Terminal.BufferManager do
   Resizes all buffers to the new dimensions.
   Returns the updated emulator.
   """
-  @spec resize_buffers(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  @spec resize_buffers(Emulator.t(), non_neg_integer(), non_neg_integer()) ::
+          Emulator.t()
   def resize_buffers(emulator, new_width, new_height) do
-    main_buffer = ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
-    alternate_buffer = ScreenBuffer.resize(emulator.alternate_screen_buffer, new_width, new_height)
+    main_buffer =
+      ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
+
+    alternate_buffer =
+      ScreenBuffer.resize(
+        emulator.alternate_screen_buffer,
+        new_width,
+        new_height
+      )
 
     %{
       emulator
@@ -120,7 +138,10 @@ defmodule Raxol.Terminal.BufferManager do
         update_active_buffer(emulator, new_buffer)
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning("Failed to scroll up: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to scroll up: #{inspect(reason)}"
+        )
+
         emulator
     end
   end
@@ -139,7 +160,10 @@ defmodule Raxol.Terminal.BufferManager do
         update_active_buffer(emulator, new_buffer)
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning("Failed to scroll down: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to scroll down: #{inspect(reason)}"
+        )
+
         emulator
     end
   end

@@ -348,7 +348,11 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   Shifts the content in the scroll region so that the content of the given target line appears at the top of the region.
   Fills with blank lines as needed if the shift would go out of bounds.
   """
-  @spec shift_region_to_line(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, non_neg_integer()) :: ScreenBuffer.t()
+  @spec shift_region_to_line(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()},
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def shift_region_to_line(buffer, {top, bottom}, target_line) do
     {top, bottom} = clamp_region({top, bottom}, buffer.height)
     region_height = bottom - top + 1

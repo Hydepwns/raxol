@@ -222,9 +222,12 @@ defmodule Raxol.Terminal.Buffer.Cell do
       nil ->
         case style do
           %{foreground: fg} when not is_nil(fg) -> fg
-          _ -> 7  # Default white
+          # Default white
+          _ -> 7
         end
-      fg -> fg
+
+      fg ->
+        fg
     end
   end
 
@@ -233,9 +236,12 @@ defmodule Raxol.Terminal.Buffer.Cell do
       nil ->
         case style do
           %{background: bg} when not is_nil(bg) -> bg
-          _ -> 0  # Default black
+          # Default black
+          _ -> 0
         end
-      bg -> bg
+
+      bg ->
+        bg
     end
   end
 
@@ -253,7 +259,9 @@ defmodule Raxol.Terminal.Buffer.Cell do
           %{hyperlink: link} -> link
           _ -> nil
         end
-      link -> link
+
+      link ->
+        link
     end
   end
 
@@ -264,7 +272,9 @@ defmodule Raxol.Terminal.Buffer.Cell do
           %{width: w} when not is_nil(w) -> w
           _ -> 1
         end
-      w -> w
+
+      w ->
+        w
     end
   end
 end

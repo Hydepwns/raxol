@@ -211,7 +211,8 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   end
 
   defp scale_and_clamp_rgb(r1, g1, b1, l) do
-    c = (1.0 - abs(2.0 * l - 1.0)) * 1.0  # s = 1.0 for full saturation
+    # s = 1.0 for full saturation
+    c = (1.0 - abs(2.0 * l - 1.0)) * 1.0
     m = l - c / 2.0
     r = max(0, min(255, round((r1 + m) * 255)))
     g = max(0, min(255, round((g1 + m) * 255)))

@@ -72,12 +72,14 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Creates a new buffer manager with specified width, height, scrollback height, and memory limit.
   """
   def new(width, height, scrollback_height, memory_limit) do
-    {:ok, pid} = start_link([
-      width: width,
-      height: height,
-      scrollback_height: scrollback_height,
-      memory_limit: memory_limit
-    ])
+    {:ok, pid} =
+      start_link(
+        width: width,
+        height: height,
+        scrollback_height: scrollback_height,
+        memory_limit: memory_limit
+      )
+
     GenServer.call(pid, :get_state)
   end
 
@@ -239,7 +241,17 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Marks a region as damaged for rendering optimization.
   """
   def mark_damaged(%__MODULE__{} = manager, x, y, width, height) do
-    %{manager | damage_tracker: DamageTracker.mark_damaged(manager.damage_tracker, x, y, width, height)}
+    %{
+      manager
+      | damage_tracker:
+          DamageTracker.mark_damaged(
+            manager.damage_tracker,
+            x,
+            y,
+            width,
+            height
+          )
+    }
   end
 
   @doc """
@@ -253,7 +265,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Clears all damage regions.
   """
   def clear_damage(%__MODULE__{} = manager) do
-    %{manager | damage_tracker: DamageTracker.clear_damage(manager.damage_tracker)}
+    %{
+      manager
+      | damage_tracker: DamageTracker.clear_damage(manager.damage_tracker)
+    }
   end
 
   @doc """
@@ -521,10 +536,14 @@ defmodule Raxol.Terminal.Buffer.Manager do
   """
   @spec switch_buffers(Emulator.t()) :: Emulator.t()
   def switch_buffers(emulator) do
-    %{emulator | buffer: %{emulator.buffer |
-      active: emulator.buffer.alternate,
-      alternate: emulator.buffer.active
-    }}
+    %{
+      emulator
+      | buffer: %{
+          emulator.buffer
+          | active: emulator.buffer.alternate,
+            alternate: emulator.buffer.active
+        }
+    }
   end
 
   @doc """
@@ -563,10 +582,15 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @spec set_scrollback_size(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def set_scrollback_size(emulator, size) when is_integer(size) and size >= 0 do
     scrollback = Enum.take(emulator.buffer.scrollback, size)
-    %{emulator | buffer: %{emulator.buffer |
-      scrollback: scrollback,
-      scrollback_size: size
-    }}
+
+    %{
+      emulator
+      | buffer: %{
+          emulator.buffer
+          | scrollback: scrollback,
+            scrollback_size: size
+        }
+    }
   end
 
   @doc """

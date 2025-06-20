@@ -303,6 +303,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
     Enum.reduce(Enum.with_index(chars), line, fn {char, index}, acc_line ->
       pos = col + index
+
       if pos < width do
         List.replace_at(acc_line, pos, %Cell{char: char})
       else
@@ -351,6 +352,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         background: :default,
         attributes: []
       }
+
       insert_characters(buffer, row, col, count, default_style)
     end
   end
@@ -389,6 +391,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         background: :default,
         attributes: []
       }
+
       delete_characters(buffer, row, col, count, default_style)
     end
   end
