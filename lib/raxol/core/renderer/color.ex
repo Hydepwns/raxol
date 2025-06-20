@@ -108,6 +108,10 @@ defmodule Raxol.Core.Renderer.Color do
     |> to_ansi()
   end
 
+  def to_ansi(_invalid) do
+    raise ArgumentError, "Invalid color format"
+  end
+
   @doc """
   Converts a color representation to its ANSI background escape code.
   """
@@ -147,6 +151,10 @@ defmodule Raxol.Core.Renderer.Color do
     |> to_bg_ansi()
   end
 
+  def to_bg_ansi(_invalid) do
+    raise ArgumentError, "Invalid color format"
+  end
+
   @doc """
   Detects the terminal's background color.
   Returns :light or :dark.
@@ -161,35 +169,74 @@ defmodule Raxol.Core.Renderer.Color do
   @doc """
   Creates a color theme map.
   """
+  def create_theme(input) when not is_map(input) do
+    raise ArgumentError, "Theme must be a map"
+  end
+
+  def create_theme(%{colors: colors}) when not is_map(colors) do
+    raise ArgumentError, "Theme colors must be a map"
+  end
+
   def create_theme(colors) when is_map(colors) do
     processed_colors =
       colors
       |> Enum.map(fn
         {key, "#" <> _ = hex} ->
           {key, hex_to_rgb(hex)}
-
         {key, value} when is_atom(value) and value in @ansi_16_atoms ->
           {key, value}
-
         {key, {r, g, b}} when r in 0..255 and g in 0..255 and b in 0..255 ->
           {key, {r, g, b}}
-
         {_key, value} ->
-          raise(ArgumentError, "Invalid color in theme: #{inspect(value)}")
+          msg =
+            if is_binary(value), do: "Invalid color in theme: #{value}", else: "Invalid color in theme: #{inspect(value)}"
+          raise(ArgumentError, msg)
       end)
       |> Map.new()
-
     default = default_theme()
-    Map.merge(default.colors, processed_colors)
+    %{colors: Map.merge(default.colors, processed_colors)}
   end
-
-  def create_theme(_), do: raise(ArgumentError, "Theme must be a map")
 
   @doc """
   Returns the default color theme.
   """
   def default_theme do
-    Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
+    theme = Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
+
+    # Convert Theme struct colors to simple RGB tuples
+    colors =
+      theme.colors
+      |> Enum.map(fn {key, color} ->
+        case color do
+          %Raxol.Style.Colors.Color{r: r, g: g, b: b} -> {key, {r, g, b}}
+          hex when is_binary(hex) -> {key, hex_to_rgb(hex)}
+          other -> {key, other}
+        end
+      end)
+      |> Map.new()
+
+    required_keys = [
+      :foreground, :background, :primary, :secondary, :accent, :error, :warning, :success, :surface, :text, :info
+    ]
+    default_values = %{
+      foreground: {0, 0, 0},
+      background: {255, 255, 255},
+      primary: {0, 119, 204},
+      secondary: {102, 102, 102},
+      accent: {255, 153, 0},
+      error: {204, 0, 0},
+      warning: {255, 153, 0},
+      success: {0, 153, 0},
+      surface: {245, 245, 245},
+      text: {51, 51, 51},
+      info: {0, 153, 204}
+    }
+
+    merged_colors = Enum.reduce(required_keys, colors, fn key, acc ->
+      Map.put_new(acc, key, default_values[key])
+    end)
+
+    %{colors: merged_colors}
   end
 
   @doc """
@@ -198,26 +245,50 @@ defmodule Raxol.Core.Renderer.Color do
   def hex_to_rgb("#" <> hex) do
     case String.length(hex) do
       6 ->
-        <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
-
-        {String.to_integer(r, 16), String.to_integer(g, 16),
-         String.to_integer(b, 16)}
+        case parse_hex_components(hex, 2) do
+          {:ok, {r, g, b}} -> {r, g, b}
+          {:error, _} -> raise ArgumentError, "Invalid hex color format"
+        end
 
       3 ->
-        <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
+        case parse_hex_components(hex, 1) do
+          {:ok, {r, g, b}} -> {r, g, b}
+          {:error, _} -> raise ArgumentError, "Invalid hex color format"
+        end
 
-        {
-          String.to_integer(r <> r, 16),
-          String.to_integer(g <> g, 16),
-          String.to_integer(b <> b, 16)
-        }
+      _ ->
+        raise ArgumentError, "Invalid hex color format"
+    end
+  end
+
+  def hex_to_rgb(_invalid) do
+    raise ArgumentError, "Invalid hex color format"
+  end
+
+  defp parse_hex_components(hex, size) do
+    try do
+      case size do
+        2 ->
+          <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
+          {:ok, {String.to_integer(r, 16), String.to_integer(g, 16), String.to_integer(b, 16)}}
+
+        1 ->
+          <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
+          {:ok, {
+            String.to_integer(r <> r, 16),
+            String.to_integer(g <> g, 16),
+            String.to_integer(b <> b, 16)
+          }}
+      end
+    rescue
+      _ -> {:error, :invalid_hex}
     end
   end
 
   @doc """
   Converts RGB values to the nearest ANSI 256 color code.
   """
-  def rgb_to_ansi256({r, g, b}) do
+  def rgb_to_ansi256({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
     # 6x6x6 color cube
     if r == g and g == b do
       # Grayscale ramp
@@ -233,6 +304,14 @@ defmodule Raxol.Core.Renderer.Color do
       ib = div(b * 6, 256)
       16 + 36 * ir + 6 * ig + ib
     end
+  end
+
+  def rgb_to_ansi256({r, g, b}) when r < 0 or r > 255 or g < 0 or g > 255 or b < 0 or b > 255 do
+    raise ArgumentError, "RGB values must be between 0 and 255"
+  end
+
+  def rgb_to_ansi256(_invalid) do
+    raise ArgumentError, "Invalid RGB tuple"
   end
 
   # Private Helpers
