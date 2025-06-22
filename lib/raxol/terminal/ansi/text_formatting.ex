@@ -777,7 +777,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     end
   end
 
-  defp handle_tuple_param({:fg_8bit, color_code}, style) do
+  defp handle_tuple_param({:fg_8bit, color_code}, style) when is_integer(color_code) do
     %{style | foreground: {:index, color_code}}
   end
 

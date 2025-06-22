@@ -1,4 +1,5 @@
 defmodule Raxol.Terminal.ControlCodes do
+  import Raxol.Guards
   @moduledoc """
   Handles C0 control codes and simple ESC sequences.
 
@@ -193,7 +194,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
     case emulator.scroll_region do
       {top, bottom}
-      when is_integer(top) and top >= 0 and is_integer(bottom) and bottom > top ->
+      when integer?(top) and top >= 0 and integer?(bottom) and bottom > top ->
         {top, min(bottom, buffer_height - 1)}
 
       _ ->

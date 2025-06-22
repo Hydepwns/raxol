@@ -194,7 +194,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   # Server Callbacks
 
-  @impl true
   def init(opts) do
     default_state = %__MODULE__{}
     config = Map.merge(default_state.config, opts)
@@ -285,13 +284,11 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:create_window, opts}, _from, state) do
     {window_id, new_state} = do_create_window(opts, state)
     {:reply, {:ok, window_id}, new_state}
   end
 
-  @impl true
   def handle_call({:split_window, window_id, direction}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -333,7 +330,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:close_window, window_id}, _from, state) do
     case do_close_window(window_id, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
@@ -341,7 +337,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:set_title, window_id, title}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -359,7 +354,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:set_icon_name, window_id, name}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -377,7 +371,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:resize, window_id, width, height}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -403,7 +396,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:move, window_id, x, y}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -421,7 +413,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:set_stacking_order, window_id, order}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -439,7 +430,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:set_maximized, window_id, maximized}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -469,7 +459,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:set_active_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -481,7 +470,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call({:get_window_state, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -492,12 +480,10 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  @impl true
   def handle_call(:get_active_window, _from, state) do
     {:reply, state.active_window, state}
   end
 
-  @impl true
   def handle_call({:update_config, config}, _from, state) do
     new_config = Map.merge(state.config, config)
     {:reply, :ok, %{state | config: new_config}}

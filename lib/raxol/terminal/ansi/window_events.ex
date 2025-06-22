@@ -116,10 +116,10 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
              :activate,
              :deactivate
            ] ->
-        fn _ -> "\e[1;#{get_event_code(type)}" end
+        fn _ -> "\e[?#{get_event_code(type)}" end
 
       :move ->
-        &format_position_event/1
+        fn params -> format_position_event(:move, params) end
 
       :resize ->
         &format_resize_event/1
@@ -128,22 +128,22 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
         &format_state_event/1
 
       type when type in [:drag_start, :drag_end, :drop] ->
-        &format_position_event/1
+        fn params -> format_position_event(type, params) end
 
       _ ->
-        nil
+        fn _ -> "" end
     end
   end
 
-  defp format_position_event(%{x: x, y: y}) do
-    event_code = get_event_code(@current_event)
-    "\e[1;#{event_code};#{x};#{y}"
+  defp format_position_event(event_type, %{x: x, y: y}) do
+    event_code = get_event_code(event_type)
+    "\e[?#{event_code};#{x};#{y}"
   end
 
   defp format_resize_event(%{width: width, height: height}),
-    do: "\e[1;z;#{width};#{height}"
+    do: "\e[?z;#{width};#{height}"
 
-  defp format_state_event(%{state: state}), do: "\e[1;s;#{state}"
+  defp format_state_event(%{state: state}), do: "\e[?s;#{state}"
 
   defp get_event_code(type) do
     %{
@@ -157,6 +157,7 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
       hide: "h",
       activate: "a",
       deactivate: "d",
+      move: "v",
       drag_start: "D",
       drag_end: "E",
       drop: "p"
@@ -215,7 +216,7 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
     %{
       "v" => fn [x, y] -> {:window_event, :move, parse_position(x, y)} end,
       "z" => fn [width, height] ->
-        {:window_event, :resize, parse_position(width, height)}
+        {:window_event, :resize, parse_resize(width, height)}
       end,
       "D" => fn [x, y] -> {:window_event, :drag_start, parse_position(x, y)} end,
       "E" => fn [x, y] -> {:window_event, :drag_end, parse_position(x, y)} end,
@@ -225,6 +226,10 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   defp parse_position(x, y) do
     %{x: parse_number(x), y: parse_number(y)}
+  end
+
+  defp parse_resize(width, height) do
+    %{width: parse_number(width), height: parse_number(height)}
   end
 
   @doc """

@@ -9,6 +9,8 @@ defmodule Raxol.Terminal.Commands.History do
   - Managing history size limits
   """
 
+  import Raxol.Guards
+
   @type command_history :: [String.t()]
   @type command_history_config :: %{
           max_size: non_neg_integer(),
@@ -39,7 +41,7 @@ defmodule Raxol.Terminal.Commands.History do
       1000
   """
   @spec new(non_neg_integer()) :: t()
-  def new(max_size) when is_integer(max_size) and max_size > 0 do
+  def new(max_size) when integer?(max_size) and max_size > 0 do
     %__MODULE__{
       commands: [],
       current_index: -1,
@@ -59,7 +61,7 @@ defmodule Raxol.Terminal.Commands.History do
       ["ls -la"]
   """
   @spec add(t(), String.t()) :: t()
-  def add(%__MODULE__{} = history, command) when is_binary(command) do
+  def add(%__MODULE__{} = history, command) when binary?(command) do
     commands = [command | history.commands]
     commands = Enum.take(commands, history.max_size)
 
@@ -131,7 +133,7 @@ defmodule Raxol.Terminal.Commands.History do
       "ls -l"
   """
   @spec save_input(t(), String.t()) :: t()
-  def save_input(%__MODULE__{} = history, input) when is_binary(input) do
+  def save_input(%__MODULE__{} = history, input) when binary?(input) do
     %{history | current_input: input}
   end
 
@@ -190,7 +192,7 @@ defmodule Raxol.Terminal.Commands.History do
 
   @spec maybe_add_to_history(Emulator.t(), integer()) :: Emulator.t()
   def maybe_add_to_history(emulator, char)
-      when is_integer(char) and char >= 32 and char <= 0x10FFFF do
+      when integer?(char) and char >= 32 and char <= 0x10FFFF do
     # Append printable character to current_command_buffer
     new_buffer = emulator.current_command_buffer <> <<char::utf8>>
     %{emulator | current_command_buffer: new_buffer}
@@ -204,7 +206,7 @@ defmodule Raxol.Terminal.Commands.History do
   """
   @spec update_size(t(), non_neg_integer()) :: t()
   def update_size(%__MODULE__{} = history, new_size)
-      when is_integer(new_size) and new_size > 0 do
+      when integer?(new_size) and new_size > 0 do
     commands = Enum.take(history.commands, new_size)
 
     %{

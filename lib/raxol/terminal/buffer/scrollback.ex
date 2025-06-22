@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Buffer.Scrollback do
+  import Raxol.Guards
+
   @moduledoc """
   Handles scrollback buffer operations for the screen buffer.
   This module manages the history of lines that have scrolled off the screen,
@@ -12,7 +14,7 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   Adds a line to the scrollback buffer.
   """
   @spec add_line(ScreenBuffer.t(), list(Cell.t())) :: ScreenBuffer.t()
-  def add_line(buffer, line) when is_list(line) do
+  def add_line(buffer, line) when list?(line) do
     scrollback = [line | buffer.scrollback]
     scrollback = trim_scrollback(scrollback, buffer.scrollback_limit)
     %{buffer | scrollback: scrollback}
@@ -24,7 +26,7 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   Adds multiple lines to the scrollback buffer.
   """
   @spec add_lines(ScreenBuffer.t(), list(list(Cell.t()))) :: ScreenBuffer.t()
-  def add_lines(buffer, lines) when is_list(lines) do
+  def add_lines(buffer, lines) when list?(lines) do
     scrollback = lines ++ buffer.scrollback
     scrollback = trim_scrollback(scrollback, buffer.scrollback_limit)
     %{buffer | scrollback: scrollback}

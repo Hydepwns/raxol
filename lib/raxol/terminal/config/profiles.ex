@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Config.Profiles do
+  import Raxol.Guards
+
   @moduledoc """
   Terminal configuration profile management.
 
@@ -178,7 +180,7 @@ defmodule Raxol.Terminal.Config.Profiles do
     Path.join(@profiles_dir, "#{name}#{@profile_ext}")
   end
 
-  defp validate_profile_name(name) when is_binary(name) do
+  defp validate_profile_name(name) when binary?(name) do
     cond do
       String.length(name) < 1 ->
         {:error, "Profile name can't be empty"}

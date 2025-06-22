@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Config.Capabilities do
+  import Raxol.Guards
+
   @moduledoc """
   Terminal capability detection and management.
 
@@ -170,10 +172,10 @@ defmodule Raxol.Terminal.Config.Capabilities do
           term == "xterm-256color" ->
             256
 
-          is_binary(term) && String.contains?(term, "256") ->
+          binary?(term) && String.contains?(term, "256") ->
             256
 
-          is_binary(term) && String.contains?(term, "color") ->
+          binary?(term) && String.contains?(term, "color") ->
             16
 
           true ->
@@ -209,8 +211,8 @@ defmodule Raxol.Terminal.Config.Capabilities do
     lang = adapter_module.get_env("LANG")
 
     cond do
-      is_binary(lang) && String.contains?(lang, "UTF-8") -> true
-      is_binary(lang) && String.contains?(lang, "utf8") -> true
+      binary?(lang) && String.contains?(lang, "UTF-8") -> true
+      binary?(lang) && String.contains?(lang, "utf8") -> true
       true -> false
     end
   end
@@ -221,9 +223,9 @@ defmodule Raxol.Terminal.Config.Capabilities do
     term = adapter_module.get_env("TERM")
 
     cond do
-      is_binary(term) && String.contains?(term, "xterm") -> true
-      is_binary(term) && String.contains?(term, "screen") -> true
-      is_binary(term) && String.contains?(term, "tmux") -> true
+      binary?(term) && String.contains?(term, "xterm") -> true
+      binary?(term) && String.contains?(term, "screen") -> true
+      binary?(term) && String.contains?(term, "tmux") -> true
       true -> false
     end
   end
@@ -258,11 +260,11 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   # Recursively merge capabilities into configuration
   defp deep_merge_capabilities(config, capabilities)
-       when is_map(config) and is_map(capabilities) do
+       when map?(config) and map?(capabilities) do
     Map.merge(config, capabilities, fn
       # If both values are maps, merge them recursively
       _, config_value, capability_value
-      when is_map(config_value) and is_map(capability_value) ->
+      when map?(config_value) and map?(capability_value) ->
         deep_merge_capabilities(config_value, capability_value)
 
       # For any other case, keep the config value (don't override explicit configuration)

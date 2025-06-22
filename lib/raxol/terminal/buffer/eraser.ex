@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   This module handles operations like clearing the screen, lines, and regions.
   """
 
+  import Raxol.Guards
+
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -277,7 +279,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     )
   end
 
-  def clear_screen(buffer, _style) when is_tuple(buffer) do
+  def clear_screen(buffer, _style) when tuple?(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -319,7 +321,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
             buffer
         end
 
-      _ when is_tuple(buffer) ->
+      _ when tuple?(buffer) ->
         raise ArgumentError,
               "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
     end
@@ -363,7 +365,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
             buffer
         end
 
-      _ when is_tuple(buffer) ->
+      _ when tuple?(buffer) ->
         raise ArgumentError,
               "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
     end

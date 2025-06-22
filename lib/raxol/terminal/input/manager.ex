@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Input.Manager do
+  import Raxol.Guards
+
   @moduledoc """
   Manages terminal input processing including character input, key events, and input mode handling.
   This module is responsible for processing all input events and converting them into appropriate
@@ -62,12 +64,12 @@ defmodule Raxol.Terminal.Input.Manager do
   end
 
   # Validation functions
-  defp validate_key(%{key: key}) when is_binary(key) and byte_size(key) > 0,
+  defp validate_key(%{key: key}) when binary?(key) and byte_size(key) > 0,
     do: :ok
 
   defp validate_key(_), do: :error
 
-  defp validate_modifiers(%{modifiers: modifiers}) when is_list(modifiers) do
+  defp validate_modifiers(%{modifiers: modifiers}) when list?(modifiers) do
     valid_modifiers = [:shift, :ctrl, :alt, :meta]
     if Enum.all?(modifiers, &(&1 in valid_modifiers)), do: :ok, else: :error
   end
@@ -75,7 +77,7 @@ defmodule Raxol.Terminal.Input.Manager do
   defp validate_modifiers(_), do: :error
 
   defp validate_timestamp(%{timestamp: timestamp})
-       when is_integer(timestamp) and timestamp > 0,
+       when integer?(timestamp) and timestamp > 0,
        do: :ok
 
   defp validate_timestamp(_), do: :error
@@ -120,10 +122,10 @@ defmodule Raxol.Terminal.Input.Manager do
       %{key: :escape} ->
         handle_escape(emulator)
 
-      %{key: key} when is_atom(key) ->
+      %{key: key} when atom?(key) ->
         handle_special_key(emulator, key)
 
-      %{char: char} when is_integer(char) ->
+      %{char: char} when integer?(char) ->
         handle_character(emulator, char)
 
       _ ->
@@ -157,7 +159,7 @@ defmodule Raxol.Terminal.Input.Manager do
 
   defp handle_input_result(emulator, nil), do: {emulator, nil}
 
-  defp handle_input_result(emulator, output) when is_binary(output) do
+  defp handle_input_result(emulator, output) when binary?(output) do
     {emulator, output}
   end
 

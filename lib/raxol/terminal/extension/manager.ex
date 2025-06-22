@@ -135,7 +135,7 @@ defmodule Raxol.Terminal.Extension.Manager do
   """
   @spec emit_event(t(), String.t(), [term()]) ::
           {:ok, [term()], t()} | {:error, term()}
-  def emit_event(manager, event_name, args \\ []) do
+  def emit_event(manager, event_name, _args \\ []) do
     case Map.get(manager.events, event_name) do
       nil ->
         {:error, :event_not_found}
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Extension.Manager do
       events ->
         results =
           Enum.map(events, fn event ->
-            apply_event_handler(event, args)
+            apply_event_handler(event, _args)
           end)
 
         updated_manager = %{
@@ -160,13 +160,13 @@ defmodule Raxol.Terminal.Extension.Manager do
   """
   @spec execute_command(t(), String.t(), [term()]) ::
           {:ok, term(), t()} | {:error, term()}
-  def execute_command(manager, command_name, args \\ []) do
+  def execute_command(manager, command_name, _args \\ []) do
     case Map.get(manager.commands, command_name) do
       nil ->
         {:error, :command_not_found}
 
       command ->
-        result = apply_command_handler(command, args)
+        result = apply_command_handler(command, _args)
 
         updated_manager = %{
           manager

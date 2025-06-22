@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Charset.Manager do
   Manages terminal character sets and encoding operations.
   """
 
+  import Raxol.Guards
+
   alias Raxol.Terminal.Charset.{Types, Maps, Operations}
 
   defstruct g_sets: %{
@@ -49,7 +51,7 @@ defmodule Raxol.Terminal.Charset.Manager do
   @doc """
   Updates the state of the charset manager.
   """
-  def update_state(%__MODULE__{} = state, new_state) when is_map(new_state) do
+  def update_state(%__MODULE__{} = state, new_state) when map?(new_state) do
     Map.merge(state, new_state)
   end
 

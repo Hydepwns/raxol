@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.Config do
   """
 
   alias Raxol.Terminal.Config.{Validator, Persistence}
+  import Raxol.Guards
 
   defstruct [
     :version,
@@ -59,7 +60,7 @@ defmodule Raxol.Terminal.Config do
   """
   @spec new(integer(), integer()) :: t()
   def new(width, height)
-      when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
+      when integer?(width) and integer?(height) and width > 0 and height > 0 do
     %__MODULE__{width: width, height: height}
   end
 
@@ -78,7 +79,7 @@ defmodule Raxol.Terminal.Config do
   """
   @spec set_dimensions(t(), integer(), integer()) :: t()
   def set_dimensions(config, width, height)
-      when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
+      when integer?(width) and integer?(height) and width > 0 and height > 0 do
     %{config | width: width, height: height}
   end
 
@@ -111,7 +112,7 @@ defmodule Raxol.Terminal.Config do
   The updated configuration with new color settings.
   """
   @spec set_colors(t(), map()) :: t()
-  def set_colors(config, colors) when is_map(colors) do
+  def set_colors(config, colors) when map?(colors) do
     %{config | colors: Map.merge(config.colors, colors)}
   end
 
@@ -144,7 +145,7 @@ defmodule Raxol.Terminal.Config do
   The updated configuration with new style settings.
   """
   @spec set_styles(t(), map()) :: t()
-  def set_styles(config, styles) when is_map(styles) do
+  def set_styles(config, styles) when map?(styles) do
     %{config | styles: Map.merge(config.styles, styles)}
   end
 
@@ -177,7 +178,7 @@ defmodule Raxol.Terminal.Config do
   The updated configuration with new input settings.
   """
   @spec set_input(t(), map()) :: t()
-  def set_input(config, input) when is_map(input) do
+  def set_input(config, input) when map?(input) do
     %{config | input: Map.merge(config.input, input)}
   end
 
@@ -210,7 +211,7 @@ defmodule Raxol.Terminal.Config do
   The updated configuration with new performance settings.
   """
   @spec set_performance(t(), map()) :: t()
-  def set_performance(config, performance) when is_map(performance) do
+  def set_performance(config, performance) when map?(performance) do
     %{config | performance: Map.merge(config.performance, performance)}
   end
 
@@ -243,7 +244,7 @@ defmodule Raxol.Terminal.Config do
   The updated configuration with new mode settings.
   """
   @spec set_mode(t(), map()) :: t()
-  def set_mode(config, mode) when is_map(mode) do
+  def set_mode(config, mode) when map?(mode) do
     %{config | mode: Map.merge(config.mode, mode)}
   end
 
@@ -276,7 +277,7 @@ defmodule Raxol.Terminal.Config do
 
   The updated configuration with merged options.
   """
-  def merge_opts(config, opts) when is_map(opts) do
+  def merge_opts(config, opts) when map?(opts) do
     case validate_config(opts) do
       :ok ->
         do_merge_opts(config, opts)
@@ -298,7 +299,7 @@ defmodule Raxol.Terminal.Config do
 
   `:ok` if the configuration is valid, `{:error, reason}` otherwise.
   """
-  def validate_config(config) when is_map(config) do
+  def validate_config(config) when map?(config) do
     validate_dimensions(config)
     validate_colors(config)
     validate_styles(config)
@@ -311,7 +312,7 @@ defmodule Raxol.Terminal.Config do
   Updates the terminal configuration with validation.
   """
   @spec update(t(), map()) :: {:ok, t()} | {:error, term()}
-  def update(config, updates) when is_map(updates) do
+  def update(config, updates) when map?(updates) do
     case Validator.validate_update(config, updates) do
       :ok ->
         updated_config = update_config_fields(config, updates)
@@ -373,7 +374,7 @@ defmodule Raxol.Terminal.Config do
         :ok
 
       {width, height}
-      when is_integer(width) and is_integer(height) and width > 0 and height > 0 ->
+      when integer?(width) and integer?(height) and width > 0 and height > 0 ->
         :ok
 
       _ ->
@@ -384,7 +385,7 @@ defmodule Raxol.Terminal.Config do
   defp validate_colors(config) do
     case Map.get(config, :colors) do
       nil -> :ok
-      colors when is_map(colors) -> :ok
+      colors when map?(colors) -> :ok
       _ -> {:error, :invalid_colors}
     end
   end
@@ -392,7 +393,7 @@ defmodule Raxol.Terminal.Config do
   defp validate_styles(config) do
     case Map.get(config, :styles) do
       nil -> :ok
-      styles when is_map(styles) -> :ok
+      styles when map?(styles) -> :ok
       _ -> {:error, :invalid_styles}
     end
   end
@@ -400,7 +401,7 @@ defmodule Raxol.Terminal.Config do
   defp validate_input(config) do
     case Map.get(config, :input) do
       nil -> :ok
-      input when is_map(input) -> :ok
+      input when map?(input) -> :ok
       _ -> {:error, :invalid_input}
     end
   end
@@ -408,7 +409,7 @@ defmodule Raxol.Terminal.Config do
   defp validate_performance(config) do
     case Map.get(config, :performance) do
       nil -> :ok
-      performance when is_map(performance) -> :ok
+      performance when map?(performance) -> :ok
       _ -> {:error, :invalid_performance}
     end
   end
@@ -416,7 +417,7 @@ defmodule Raxol.Terminal.Config do
   defp validate_mode(config) do
     case Map.get(config, :mode) do
       nil -> :ok
-      mode when is_map(mode) -> :ok
+      mode when map?(mode) -> :ok
       _ -> {:error, :invalid_mode}
     end
   end
@@ -425,25 +426,25 @@ defmodule Raxol.Terminal.Config do
     Enum.reduce(updates, config, &update_field/2)
   end
 
-  defp update_field({:width, value}, acc) when is_integer(value) and value > 0,
+  defp update_field({:width, value}, acc) when integer?(value) and value > 0,
     do: %{acc | width: value}
 
-  defp update_field({:height, value}, acc) when is_integer(value) and value > 0,
+  defp update_field({:height, value}, acc) when integer?(value) and value > 0,
     do: %{acc | height: value}
 
-  defp update_field({:colors, value}, acc) when is_map(value),
+  defp update_field({:colors, value}, acc) when map?(value),
     do: %{acc | colors: Map.merge(acc.colors, value)}
 
-  defp update_field({:styles, value}, acc) when is_map(value),
+  defp update_field({:styles, value}, acc) when map?(value),
     do: %{acc | styles: Map.merge(acc.styles, value)}
 
-  defp update_field({:input, value}, acc) when is_map(value),
+  defp update_field({:input, value}, acc) when map?(value),
     do: %{acc | input: Map.merge(acc.input, value)}
 
-  defp update_field({:performance, value}, acc) when is_map(value),
+  defp update_field({:performance, value}, acc) when map?(value),
     do: %{acc | performance: Map.merge(acc.performance, value)}
 
-  defp update_field({:mode, value}, acc) when is_map(value),
+  defp update_field({:mode, value}, acc) when map?(value),
     do: %{acc | mode: Map.merge(acc.mode, value)}
 
   defp update_field(_, acc), do: acc

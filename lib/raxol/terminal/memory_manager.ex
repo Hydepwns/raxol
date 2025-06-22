@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.MemoryManager do
   """
 
   use GenServer
+  import Raxol.Guards
 
   @type t :: %__MODULE__{
           max_memory: non_neg_integer(),
@@ -81,26 +82,22 @@ defmodule Raxol.Terminal.MemoryManager do
 
   # Server Callbacks
 
-  @impl true
   def init(_) do
     {:ok, %__MODULE__{}}
   end
 
-  @impl true
   def handle_call({:within_limits, state}, _from, memory_manager) do
     current_memory = calculate_memory_usage(state)
     within_limits = current_memory <= memory_manager.memory_limit
     {:reply, within_limits, %{memory_manager | current_memory: current_memory}}
   end
 
-  @impl true
   def handle_call({:should_scroll, state}, _from, memory_manager) do
     current_memory = calculate_memory_usage(state)
     should_scroll = current_memory > memory_manager.memory_limit * 0.8
     {:reply, should_scroll, %{memory_manager | current_memory: current_memory}}
   end
 
-  @impl true
   def handle_call(:get_memory_usage, _from, memory_manager) do
     {:reply, memory_manager.current_memory, memory_manager}
   end
@@ -118,7 +115,7 @@ defmodule Raxol.Terminal.MemoryManager do
 
   defp calculate_buffer_usage(state) do
     case state do
-      %{buffer: buffer} when not is_nil(buffer) ->
+      %{buffer: buffer} when not nil?(buffer) ->
         Raxol.Terminal.Buffer.MemoryManager.calculate_buffer_usage(buffer)
 
       _ ->
@@ -128,7 +125,7 @@ defmodule Raxol.Terminal.MemoryManager do
 
   defp calculate_scrollback_usage(state) do
     case state do
-      %{scrollback: scrollback} when not is_nil(scrollback) ->
+      %{scrollback: scrollback} when not nil?(scrollback) ->
         Raxol.Terminal.Buffer.MemoryManager.calculate_buffer_usage(scrollback)
 
       _ ->
@@ -152,7 +149,7 @@ defmodule Raxol.Terminal.MemoryManager do
   defp cleanup_memory(state) do
     # Trim scrollback history to reduce memory usage
     case state do
-      %{scrollback: scrollback} when not is_nil(scrollback) ->
+      %{scrollback: scrollback} when not nil?(scrollback) ->
         trimmed_scrollback =
           Raxol.Terminal.Buffer.MemoryManager.trim_scrollback(scrollback)
 

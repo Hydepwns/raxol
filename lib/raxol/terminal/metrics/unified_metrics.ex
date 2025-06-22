@@ -124,7 +124,6 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   # Server Callbacks
 
-  @impl true
   def init(opts) do
     # 24 hours
     retention_period = Keyword.get(opts, :retention_period, 24 * 60 * 60 * 1000)
@@ -149,7 +148,6 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:record_metric, name, value, opts}, _from, state) do
     type = Keyword.get(opts, :type, :gauge)
     labels = Keyword.get(opts, :labels, %{})
@@ -172,7 +170,6 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     {:reply, :ok, updated_state}
   end
 
-  @impl true
   def handle_call({:get_metric, name, opts}, _from, state) do
     case Map.get(state.metrics, name) do
       nil ->
@@ -185,7 +182,6 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     end
   end
 
-  @impl true
   def handle_call({:record_error, error, opts}, _from, state) do
     severity = Keyword.get(opts, :severity, :error)
     context = Keyword.get(opts, :context, %{})
@@ -207,14 +203,12 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     {:reply, :ok, updated_state}
   end
 
-  @impl true
   def handle_call({:get_error_stats, opts}, _from, state) do
     filtered_errors = filter_errors(state.errors, opts)
     stats = calculate_error_stats(filtered_errors)
     {:reply, {:ok, stats}, state}
   end
 
-  @impl true
   def handle_call({:export_metrics, opts}, _from, state) do
     format = Keyword.get(opts, :format, state.config.export_format)
     time_range = Keyword.get(opts, :time_range)
@@ -225,7 +219,6 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     {:reply, {:ok, exported}, state}
   end
 
-  @impl true
   def handle_call({:cleanup_metrics, opts}, _from, state) do
     before =
       Keyword.get(
@@ -240,7 +233,6 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     {:reply, :ok, updated_state}
   end
 
-  @impl true
   def handle_info({:aggregate_metrics, timer_id}, state) do
     updated_metrics = aggregate_all_metrics(state.metrics)
 

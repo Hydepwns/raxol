@@ -19,9 +19,9 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
     # Save cursor state
     cursor_state = %{
       position: Cursor.get_position(emulator.cursor),
-      visible: Cursor.is_visible?(emulator.cursor),
+      visible: Cursor.visible?(emulator.cursor),
       style: Cursor.get_style(emulator.cursor),
-      blink: Cursor.is_blinking?(emulator.cursor)
+      blink: Cursor.blinking?(emulator.cursor)
     }
 
     # Save screen state

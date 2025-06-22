@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   @behaviour GenServer
   require Logger
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   alias Raxol.Terminal.{
     ScreenBuffer,
@@ -94,7 +95,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     * `{:ok, pid}` - The process ID of the started buffer manager
   """
   def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
     GenServer.start_link(__MODULE__, opts)
   end
 
@@ -109,7 +110,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, cell}` - The cell at the specified position
   """
-  def get_cell(pid, x, y) when is_pid(pid) do
+  def get_cell(pid, x, y) when pid?(pid) do
     GenServer.call(pid, {:get_cell, x, y})
   end
 
@@ -125,7 +126,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def set_cell(pid, x, y, cell) when is_pid(pid) do
+  def set_cell(pid, x, y, cell) when pid?(pid) do
     GenServer.call(pid, {:set_cell, x, y, cell})
   end
 
@@ -143,7 +144,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def fill_region(pid, x, y, width, height, cell) when is_pid(pid) do
+  def fill_region(pid, x, y, width, height, cell) when pid?(pid) do
     GenServer.call(pid, {:fill_region, x, y, width, height, cell})
   end
 
@@ -161,7 +162,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def scroll_region(pid, x, y, width, height, amount) when is_pid(pid) do
+  def scroll_region(pid, x, y, width, height, amount) when pid?(pid) do
     GenServer.call(pid, {:scroll_region, x, y, width, height, amount})
   end
 
@@ -174,7 +175,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def clear(pid) when is_pid(pid) do
+  def clear(pid) when pid?(pid) do
     GenServer.call(pid, :clear)
   end
 
@@ -189,7 +190,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def resize(pid, width, height) when is_pid(pid) do
+  def resize(pid, width, height) when pid?(pid) do
     GenServer.call(pid, {:resize, width, height})
   end
 
@@ -203,7 +204,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def scroll_up(pid, amount) when is_pid(pid) do
+  def scroll_up(pid, amount) when pid?(pid) do
     GenServer.call(pid, {:scroll_up, amount})
   end
 
@@ -218,7 +219,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, history}` - The history of the buffer
   """
-  def get_history(pid, start_line, count) when is_pid(pid) do
+  def get_history(pid, start_line, count) when pid?(pid) do
     GenServer.call(pid, {:get_history, start_line, count})
   end
 
@@ -232,7 +233,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   @doc """
   Updates the buffer with new commands.
   """
-  def update(%__MODULE__{} = state, commands) when is_list(commands) do
+  def update(%__MODULE__{} = state, commands) when list?(commands) do
     Enum.reduce(commands, {:ok, state}, fn command, {:ok, current_state} ->
       case process_command(current_state, command) do
         {:ok, new_state} -> {:ok, new_state}
@@ -328,7 +329,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   # Server Callbacks
 
-  @impl true
   def init(opts) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
@@ -356,7 +356,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:error, :cache_not_available}
   end
 
-  @impl true
   def handle_call({:get_cell, x, y}, _from, state) do
     start_time = System.monotonic_time()
 
@@ -367,7 +366,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
         char: " ",
         style: nil,
         dirty: nil,
-        is_wide_placeholder: false
+        wide_placeholder: false
       }
 
       duration = System.monotonic_time() - start_time
@@ -383,22 +382,21 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     cache_key = {x, y, 1, 1}
 
     case safe_cache_get(cache_key, :buffer) do
-      {:ok, cached_cell} ->
-        clean_cell = %{cached_cell | dirty: nil}
+      {:ok, _cached_cell} ->
         duration = System.monotonic_time() - start_time
-        updated_state = update_metrics(state, :get_cell_cache_hit, duration)
-        {clean_cell, updated_state}
+        state = update_metrics(state, :get_cell_cache_hit, duration)
+        {:reply, {:ok, state}, state}
 
       {:error, _} ->
         cell = ScreenBuffer.get_cell(state.active_buffer, x, y)
 
         clean_cell =
-          if is_nil(cell) or cell == %{} do
+          if nil?(cell) or cell == %{} do
             %Raxol.Terminal.Cell{
               char: " ",
               style: nil,
               dirty: nil,
-              is_wide_placeholder: false
+              wide_placeholder: false
             }
           else
             %{cell | dirty: nil}
@@ -413,14 +411,13 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end
   end
 
-  @impl true
   def handle_call({:set_cell, x, y, cell}, _from, state) do
     start_time = System.monotonic_time()
 
     cache_key = {x, y, 1, 1}
 
     case safe_cache_get(cache_key, :buffer) do
-      {:ok, cached_cell} ->
+      {:ok, _cached_cell} ->
         duration = System.monotonic_time() - start_time
         state = update_metrics(state, :get_cell_cache_hit, duration)
         {:reply, {:ok, state}, state}
@@ -446,7 +443,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end
   end
 
-  @impl true
   def handle_call({:fill_region, x, y, width, height, cell}, _from, state) do
     start_time = System.monotonic_time()
 
@@ -463,7 +459,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:reply, {:ok, state}, state}
   end
 
-  @impl true
   def handle_call({:scroll_region, x, y, width, height, amount}, _from, state) do
     start_time = System.monotonic_time()
 
@@ -486,7 +481,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:reply, {:ok, state}, state}
   end
 
-  defp process_scroll_region(state, x, y, width, height, amount) do
+  defp process_scroll_region(state, x, y, width, _height, amount) do
     # Only handle scroll up for scrollback (amount > 0)
     lines_to_scrollback =
       if amount > 0 do
@@ -523,12 +518,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
           char: " ",
           style: nil,
           dirty: nil,
-          is_wide_placeholder: false
+          wide_placeholder: false
         }
     end)
   end
 
-  @impl true
   def handle_call(:clear, _from, state) do
     start_time = System.monotonic_time()
 
@@ -551,7 +545,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:reply, {:ok, state}, state}
   end
 
-  @impl true
   def handle_call({:resize, width, height}, _from, state) do
     start_time = System.monotonic_time()
 
@@ -588,7 +581,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end
   end
 
-  @impl true
   def handle_call({:scroll_up, amount}, _from, state) do
     start_time = System.monotonic_time()
 
@@ -605,8 +597,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:reply, {:ok, state}, state}
   end
 
-  @impl true
-  def handle_call({:get_history, start_line, count}, _from, state) do
+  def handle_call({:get_history, _start_line, count}, _from, state) do
     start_time = System.monotonic_time()
 
     # Get history from scrollback buffer
@@ -617,12 +608,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:reply, {:ok, history}, state}
   end
 
-  @impl true
   def handle_call(:get_metrics, _from, state) do
     {:reply, {:ok, state.metrics}, state}
   end
 
-  @impl true
   def handle_call({:add_scrollback, content}, _from, state) do
     start_time = System.monotonic_time()
 
@@ -638,7 +627,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:reply, {:ok, state}, state}
   end
 
-  @impl true
   def handle_call(:get_memory_usage, _from, state) do
     updated_state = update_memory_usage(state)
     {:reply, {:ok, updated_state.memory_usage}, updated_state}
@@ -658,13 +646,13 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     |> update_memory_usage()
   end
 
-  defp initialize_buffers(width, height, scrollback_limit) do
+  defp initialize_buffers(width, height, _scrollback_limit) do
     main_buffer = State.new(width, height)
     alt_buffer = State.new(width, height)
     {main_buffer, alt_buffer}
   end
 
-  defp update_metrics(state, operation, duration) do
+  defp update_metrics(state, _operation, _duration) do
     # Record performance metric
     # Raxol.Core.Metrics.UnifiedCollector.record_performance(
     #   String.to_atom("buffer_#{operation}"),

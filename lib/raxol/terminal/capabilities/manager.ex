@@ -41,13 +41,11 @@ defmodule Raxol.Terminal.Capabilities.Manager do
     GenServer.call(__MODULE__, {:enable_capability, capability})
   end
 
-  @impl true
   def init(_opts) do
     state = %Types{}
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:detect_capability, capability, value}, _from, state) do
     new_state = %{
       state
@@ -57,7 +55,6 @@ defmodule Raxol.Terminal.Capabilities.Manager do
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:query_capability, capability}, _from, state) do
     case Map.get(state.supported, capability) do
       nil -> {:reply, {:error, :unsupported}, state}
@@ -65,7 +62,6 @@ defmodule Raxol.Terminal.Capabilities.Manager do
     end
   end
 
-  @impl true
   def handle_call({:enable_capability, capability}, _from, state) do
     case Map.get(state.supported, capability) do
       nil ->

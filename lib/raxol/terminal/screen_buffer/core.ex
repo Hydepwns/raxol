@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
       char: " ",
       style: nil,
       dirty: nil,
-      is_wide_placeholder: false
+      wide_placeholder: false
     }
 
     %{
@@ -565,7 +565,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   # --- Cell Operations ---
   @impl true
-  def is_empty?(cell) when is_map(cell) do
+  def empty?(cell) when is_map(cell) do
     is_nil(cell.char) or cell.char == " "
   end
 

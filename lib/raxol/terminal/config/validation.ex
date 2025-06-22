@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Config.Validation do
+  import Raxol.Guards
+
   @moduledoc """
   Validation logic for terminal configuration.
 
@@ -25,7 +27,7 @@ defmodule Raxol.Terminal.Config.Validation do
 
   # Recursive validation of configuration against schema
   defp validate_config_recursive(config, path, schema)
-       when is_map(config) and is_map(schema) do
+       when map?(config) and map?(schema) do
     # Get all keys from both config and schema
     config_keys = Map.keys(config)
     schema_keys = Map.keys(schema)
@@ -61,7 +63,7 @@ defmodule Raxol.Terminal.Config.Validation do
 
   # Validate a value against its schema
   defp validate_value_with_schema(value, path, schema)
-       when is_map(schema) and is_map(value) do
+       when map?(schema) and map?(value) do
     # For nested maps, recursively validate
     validate_config_recursive(value, path, schema)
   end
@@ -113,7 +115,7 @@ defmodule Raxol.Terminal.Config.Validation do
 
   `:ok` or `{:error, reason}`
   """
-  def validate_update(config, updates) when is_map(updates) do
+  def validate_update(config, updates) when map?(updates) do
     # For now, just validate that the updates are valid configuration keys
     # This is a simplified validation - in a real implementation, you'd want
     # to validate the actual values against the schema
@@ -124,16 +126,16 @@ defmodule Raxol.Terminal.Config.Validation do
   end
 
   # Private validation functions for different types
-  defp validate_type(value, :integer, _path) when is_integer(value),
+  defp validate_type(value, :integer, _path) when integer?(value),
     do: {:ok, value}
 
-  defp validate_type(value, :float, _path) when is_float(value),
+  defp validate_type(value, :float, _path) when float?(value),
     do: {:ok, value}
 
-  defp validate_type(value, :boolean, _path) when is_boolean(value),
+  defp validate_type(value, :boolean, _path) when boolean?(value),
     do: {:ok, value}
 
-  defp validate_type(value, :string, _path) when is_binary(value),
+  defp validate_type(value, :string, _path) when binary?(value),
     do: {:ok, value}
 
   defp validate_type(value, {:enum, options}, path) do

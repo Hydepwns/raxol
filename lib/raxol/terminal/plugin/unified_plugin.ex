@@ -66,10 +66,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   @doc """
   Executes a plugin function.
   """
-  def execute_plugin_function(plugin_id, function, args \\ []) do
+  def execute_plugin_function(plugin_id, function, _args \\ []) do
     GenServer.call(
       __MODULE__,
-      {:execute_plugin_function, plugin_id, function, args}
+      {:execute_plugin_function, plugin_id, function, _args}
     )
   end
 
@@ -81,7 +81,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   # Server Callbacks
-  @impl true
   def init(opts) do
     opts_map = Map.new(opts)
 
@@ -99,7 +98,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:load_plugin, path, type, opts}, _from, state) do
     case do_load_plugin(path, type, opts, state) do
       {:ok, plugin_id, plugin_state} ->
@@ -111,7 +109,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  @impl true
   def handle_call({:unload_plugin, plugin_id}, _from, state) do
     case do_unload_plugin(plugin_id, state) do
       {:ok, new_state} ->
@@ -122,7 +119,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  @impl true
   def handle_call({:get_plugin_state, plugin_id}, _from, state) do
     case Map.get(state.plugins, plugin_id) do
       nil -> {:reply, {:error, :plugin_not_found}, state}
@@ -130,13 +126,11 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  @impl true
   def handle_call({:get_plugins, opts}, _from, state) do
     plugins = filter_plugins(state.plugins, opts)
     {:reply, {:ok, plugins}, state}
   end
 
-  @impl true
   def handle_call({:update_plugin_config, plugin_id, config}, _from, state) do
     case do_update_plugin_config(plugin_id, config, state) do
       {:ok, new_state} ->
@@ -147,7 +141,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  @impl true
   def handle_call(
         {:execute_plugin_function, plugin_id, function, args},
         _from,
@@ -162,7 +155,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  @impl true
   def handle_call({:reload_plugin, plugin_id}, _from, state) do
     case do_reload_plugin(plugin_id, state) do
       {:ok, new_state} ->

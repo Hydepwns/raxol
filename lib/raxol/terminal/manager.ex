@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.Manager do
 
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, session_id} = Manager.create_session(pid, %{width: 80, height: 24})
-      iex> is_binary(session_id)
+      iex> binary?(session_id)
       true
   """
   def create_session(pid \\ __MODULE__, opts \\ []) do
@@ -263,7 +263,6 @@ defmodule Raxol.Terminal.Manager do
 
   # Callbacks
 
-  @impl true
   def init(state) do
     {:ok,
      Map.merge(
@@ -272,7 +271,6 @@ defmodule Raxol.Terminal.Manager do
      )}
   end
 
-  @impl true
   def handle_call({:create_session, opts}, _from, state) do
     case SessionHandler.create_session(opts, state) do
       {:ok, session_id, new_state} -> {:reply, {:ok, session_id}, new_state}
@@ -280,7 +278,6 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call({:destroy_session, session_id}, _from, state) do
     case SessionHandler.destroy_session(session_id, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
@@ -288,7 +285,6 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call({:get_session, session_id}, _from, state) do
     case SessionHandler.get_session(session_id, state) do
       {:ok, session_state} -> {:reply, {:ok, session_state}, state}
@@ -296,19 +292,16 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call(:list_sessions, _from, state) do
     sessions = SessionHandler.list_sessions(state)
     {:reply, sessions, state}
   end
 
-  @impl true
   def handle_call(:count_sessions, _from, state) do
     count = SessionHandler.count_sessions(state)
     {:reply, count, state}
   end
 
-  @impl true
   def handle_call({:monitor_session, session_id}, _from, state) do
     case SessionHandler.monitor_session(session_id, state) do
       :ok -> {:reply, :ok, state}
@@ -316,7 +309,6 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call({:unmonitor_session, session_id}, _from, state) do
     case SessionHandler.unmonitor_session(session_id, state) do
       :ok -> {:reply, :ok, state}
@@ -324,7 +316,6 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call({:process_event, event}, _from, state) do
     case EventHandler.process_event(event, state) do
       {:ok, new_state} ->
@@ -343,7 +334,6 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call({:update_screen, update}, _from, state) do
     case ScreenHandler.process_update(update, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
@@ -351,7 +341,6 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call({:batch_update_screen, updates}, _from, state) do
     case ScreenHandler.process_batch_updates(updates, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
@@ -359,7 +348,6 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  @impl true
   def handle_call(:get_terminal_state, _from, state) do
     if state.runtime_pid do
       send(state.runtime_pid, {:terminal_state_queried, state.terminal})
@@ -368,7 +356,6 @@ defmodule Raxol.Terminal.Manager do
     {:reply, state.terminal, state}
   end
 
-  @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     new_state = SessionHandler.handle_session_down(pid, state)
     {:noreply, new_state}

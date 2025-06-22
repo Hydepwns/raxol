@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   invalid.
   """
 
+  import Raxol.Guards
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -43,7 +44,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
         ) :: integer()
   def get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
-      value when is_integer(value) and value >= min and value <= max ->
+      value when integer?(value) and value >= min and value <= max ->
         value
 
       _ ->
@@ -161,17 +162,17 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
 
   defp get_dimension(emulator, key, tuple_index) do
     cond do
-      is_map(emulator) -> Map.get(emulator, key, 10)
-      is_tuple(emulator) -> elem(emulator, tuple_index)
+      map?(emulator) -> Map.get(emulator, key, 10)
+      tuple?(emulator) -> elem(emulator, tuple_index)
       true -> 10
     end
   end
 
   defp validate_coordinate(value, max) do
     cond do
-      is_integer(value) and value < 0 -> 0
-      is_integer(value) and value > max -> max
-      is_integer(value) -> value
+      integer?(value) and value < 0 -> 0
+      integer?(value) and value > max -> max
+      integer?(value) -> value
       true -> 0
     end
   end
@@ -181,9 +182,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   """
   def validate_count(_emulator, params) do
     case Enum.at(params, 0) do
-      v when is_integer(v) and v >= 1 and v <= 10 -> v
-      v when is_integer(v) and v < 1 -> 1
-      v when is_integer(v) and v > 10 -> 10
+      v when integer?(v) and v >= 1 and v <= 10 -> v
+      v when integer?(v) and v < 1 -> 1
+      v when integer?(v) and v > 10 -> 10
       _ -> 1
     end
   end
@@ -203,9 +204,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   """
   def validate_color(params) do
     case Enum.at(params, 0) do
-      v when is_integer(v) and v >= 0 and v <= 255 -> v
-      v when is_integer(v) and v < 0 -> 0
-      v when is_integer(v) and v > 255 -> 255
+      v when integer?(v) and v >= 0 and v <= 255 -> v
+      v when integer?(v) and v < 0 -> 0
+      v when integer?(v) and v > 255 -> 255
       _ -> 0
     end
   end
@@ -241,6 +242,6 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   @spec validate_range(list(integer() | nil), integer(), integer()) :: integer()
   def validate_range(params, min, max) do
     value = Enum.at(params, 0)
-    if is_integer(value), do: max(min, min(value, max)), else: min
+    if integer?(value), do: max(min, min(value, max)), else: min
   end
 end

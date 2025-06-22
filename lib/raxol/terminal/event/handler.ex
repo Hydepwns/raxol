@@ -94,7 +94,6 @@ defmodule Raxol.Terminal.Event.Handler do
   end
 
   # Server Callbacks
-  @impl true
   def init(_opts) do
     {:ok, %Event{handlers: %{}, queue: :queue.new()}}
   end

@@ -301,10 +301,6 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     :error
   end
 
-  defp add_to_pool(pool, _buffer) do
-    pool
-  end
-
   defp update_performance_metrics(
          metrics,
          start_time,
@@ -345,7 +341,122 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     end
   end
 
-  defp apply_optimizations(state, _metrics) do
-    state
+  defp add_to_pool(pool, buffer) do
+    # Assume buffer has width and height fields
+    key = {buffer.width, buffer.height}
+    buffers = Map.get(pool.buffers, key, [])
+
+    # Add the buffer to the front of the list for this size
+    new_buffers = [buffer | buffers]
+
+    # If we exceed max_size, drop the oldest buffer
+    all_buffers_count =
+      pool.buffers
+      |> Map.values()
+      |> Enum.map(&length/1)
+      |> Enum.sum()
+
+    {final_buffers, updated_buffers_map} =
+      if all_buffers_count >= pool.max_size do
+        # Find the oldest buffer to evict (from the largest list)
+        {evict_key, evict_list} =
+          pool.buffers
+          |> Enum.max_by(fn {_k, v} -> length(v) end, fn -> {key, new_buffers} end)
+
+        # Remove the last buffer from the evict_list
+        updated_evict_list = Enum.drop(evict_list, -1)
+        updated_map = Map.put(pool.buffers, evict_key, updated_evict_list)
+        {new_buffers, Map.put(updated_map, key, new_buffers)}
+      else
+        {new_buffers, Map.put(pool.buffers, key, new_buffers)}
+      end
+
+    %{pool | buffers: updated_buffers_map}
+  end
+
+  defp apply_optimizations(state, metrics) do
+    # Analyze recent performance data
+    avg_update_time = calculate_average_time(metrics.update_times)
+    avg_compression_time = calculate_average_time(metrics.compression_times)
+    update_count = metrics.operation_counts.updates
+    compression_count = metrics.operation_counts.compressions
+
+    # Determine if we need to optimize based on performance patterns
+    cond do
+      # If updates are slow, reduce compression overhead
+      avg_update_time > 50 and compression_count > 0 ->
+        optimize_for_speed(state, metrics)
+
+      # If memory usage is high, increase compression
+      compression_count < update_count * 0.1 ->
+        optimize_for_memory(state, metrics)
+
+      # If compression is too slow, reduce compression level
+      avg_compression_time > 100 ->
+        reduce_compression_level(state)
+
+      # If everything is working well, fine-tune based on patterns
+      true ->
+        fine_tune_compression(state, metrics)
+    end
+  end
+
+  defp calculate_average_time(times) when is_list(times) and length(times) > 0 do
+    Enum.sum(times) / length(times)
+  end
+
+  defp calculate_average_time(_), do: 0
+
+  defp optimize_for_speed(state, _metrics) do
+    # Reduce compression level and threshold for faster updates
+    %{
+      state
+      | level: Kernel.max(state.level - 1, 1),
+        threshold: Kernel.min(state.threshold * 2, 4096)
+    }
+  end
+
+  defp optimize_for_memory(state, _metrics) do
+    # Increase compression level and reduce threshold for better memory usage
+    %{
+      state
+      | level: Kernel.min(state.level + 1, 9),
+        threshold: Kernel.max(state.threshold div 2, 256)
+    }
+  end
+
+  defp reduce_compression_level(state) do
+    # Reduce compression level to improve speed
+    %{state | level: Kernel.max(state.level - 2, 1)}
+  end
+
+  defp fine_tune_compression(state, metrics) do
+    # Fine-tune based on recent performance trends
+    recent_update_times = Enum.take(metrics.update_times, 10)
+    recent_compression_times = Enum.take(metrics.compression_times, 10)
+
+    case {recent_update_times, recent_compression_times} do
+      {updates, compressions} when length(updates) >= 5 and length(compressions) >= 3 ->
+        avg_recent_update = calculate_average_time(updates)
+        avg_recent_compression = calculate_average_time(compressions)
+
+        cond do
+          # If recent updates are getting slower, reduce compression
+          avg_recent_update > 30 ->
+            %{state | level: Kernel.max(state.level - 1, 1)}
+
+          # If recent compression is getting faster, we can increase it slightly
+          avg_recent_compression < 20 ->
+            %{state | level: Kernel.min(state.level + 1, 9)}
+
+          # Otherwise, keep current settings
+          true ->
+            state
+        end
+
+      _ ->
+        # Not enough data for fine-tuning, keep current settings
+        state
+    end
   end
 end

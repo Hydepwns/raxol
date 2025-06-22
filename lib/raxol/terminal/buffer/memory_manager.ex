@@ -38,8 +38,8 @@ defmodule Raxol.Terminal.Buffer.MemoryManager do
   @doc """
   Checks if the given memory usage is within the specified limit.
   """
-  @spec is_within_limit?(non_neg_integer(), non_neg_integer()) :: boolean()
-  def is_within_limit?(current_usage, memory_limit) do
+  @spec within_limit?(non_neg_integer(), non_neg_integer()) :: boolean()
+  def within_limit?(current_usage, memory_limit) do
     current_usage <= memory_limit
   end
 

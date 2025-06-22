@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Buffer.LineOperations do
+  import Raxol.Guards
+
   @moduledoc """
   Provides line-level operations for the screen buffer.
   This module handles operations like inserting, deleting, and manipulating lines.
@@ -13,7 +15,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   Lines below the cursor are shifted down, and lines shifted off the bottom are discarded.
   """
   @spec insert_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
-  def insert_lines(buffer, count) when is_integer(count) and count > 0 do
+  def insert_lines(buffer, count) when integer?(count) and count > 0 do
     {_, y} = Raxol.Terminal.Cursor.get_position(buffer)
 
     {top, bottom} =

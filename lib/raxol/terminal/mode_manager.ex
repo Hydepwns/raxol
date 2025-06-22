@@ -24,6 +24,7 @@ defmodule Raxol.Terminal.ModeManager do
 
   alias Raxol.Terminal.Modes.Types.ModeTypes
   alias Raxol.Terminal.ModeManager.{SavedState}
+  import Raxol.Guards
 
   @screen_buffer_module Application.compile_env(
                           :raxol,
@@ -82,47 +83,56 @@ defmodule Raxol.Terminal.ModeManager do
 
   @type t :: %__MODULE__{}
 
-  @impl true
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
-  @impl true
   def init(_init_arg) do
     {:ok, ModeStateManager.new()}
   end
 
-  @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
-  def handle_call({:set_mode, _mode, _value}, _from, state) do
-    {:reply, :ok, state}
+  def handle_call({:set_mode, mode_name, value}, _from, state) do
+    case ModeStateManager.set_mode(state, mode_name, value) do
+      {:ok, new_state} -> {:reply, :ok, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 
-  @impl true
-  def handle_call({:get_mode, _mode}, _from, state) do
-    {:reply, false, state}
+  def handle_call({:reset_mode, mode_name}, _from, state) do
+    case ModeStateManager.reset_mode(state, mode_name) do
+      {:ok, new_state} -> {:reply, :ok, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 
-  @impl true
+  def handle_call({:get_mode, mode_name}, _from, state) do
+    value = ModeStateManager.mode_enabled?(state, mode_name)
+    {:reply, value, state}
+  end
+
+  def handle_call({:set_cursor_visible, visible}, _from, state) do
+    case ModeStateManager.set_mode(state, :dectcem, visible) do
+      {:ok, new_state} -> {:reply, :ok, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
+  end
+
   def handle_call(:save_state, _from, state) do
     {:reply, :ok, state}
   end
 
-  @impl true
   def handle_call(:restore_state, _from, state) do
     {:reply, :ok, state}
   end
 
-  @impl true
   def handle_info(:tick, state) do
     {:noreply, state}
   end
 
-  @impl true
   def terminate(reason, _state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Terminating (Reason: #{inspect(reason)})",
@@ -138,7 +148,7 @@ defmodule Raxol.Terminal.ModeManager do
   Looks up a DEC private mode code and returns the corresponding mode atom.
   """
   @spec lookup_private(integer()) :: mode() | nil
-  def lookup_private(code) when is_integer(code) do
+  def lookup_private(code) when integer?(code) do
     case ModeTypes.lookup_private(code) do
       nil -> nil
       mode_def -> mode_def.name
@@ -149,7 +159,7 @@ defmodule Raxol.Terminal.ModeManager do
   Looks up a standard mode code and returns the corresponding mode atom.
   """
   @spec lookup_standard(integer()) :: mode() | nil
-  def lookup_standard(code) when is_integer(code) do
+  def lookup_standard(code) when integer?(code) do
     case ModeTypes.lookup_standard(code) do
       nil -> nil
       mode_def -> mode_def.name
@@ -164,7 +174,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec set_mode(Emulator.t(), [mode()]) ::
           {:ok, Emulator.t()} | {:error, term()}
-  def set_mode(emulator, modes) when is_list(modes) do
+  def set_mode(emulator, modes) when list?(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
       case do_set_mode(mode, emu) do
         {:ok, new_emu} -> {:cont, {:ok, new_emu}}
@@ -179,7 +189,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec reset_mode(Emulator.t(), [mode()]) ::
           {:ok, Emulator.t()} | {:error, term()}
-  def reset_mode(emulator, modes) when is_list(modes) do
+  def reset_mode(emulator, modes) when list?(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
       case do_reset_mode(mode, emu) do
         {:ok, new_emu} -> {:cont, {:ok, new_emu}}

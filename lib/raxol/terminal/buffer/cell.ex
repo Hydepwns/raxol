@@ -3,8 +3,6 @@ defmodule Raxol.Terminal.Buffer.Cell do
   Manages terminal cell operations and attributes.
   """
 
-  alias Raxol.Terminal.ANSI.TextFormatting
-
   defstruct [
     :char,
     :foreground,

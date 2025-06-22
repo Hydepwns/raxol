@@ -14,6 +14,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   - rgb(r%,g%,b%) (percentage, 0-100%)
   """
 
+  import Raxol.Guards
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
@@ -157,7 +158,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
 
   defp parse_rgb_decimal("rgb(" <> rest) do
     case String.trim_trailing(rest, ")") do
-      rest when is_binary(rest) ->
+      rest when binary?(rest) ->
         case String.split(rest, ",") do
           [r, g, b] ->
             with {r_val, ""} <- Integer.parse(String.trim(r)),

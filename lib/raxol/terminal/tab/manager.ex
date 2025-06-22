@@ -241,9 +241,18 @@ defmodule Raxol.Terminal.Tab.Manager do
   """
   @spec set_horizontal_tab(t()) :: t()
   def set_horizontal_tab(manager) do
-    # TODO: Implement actual tab stop setting based on cursor position
-    next_tab = get_next_tab_stop(manager)
-    %{manager | tab_stops: MapSet.put(manager.tab_stops, next_tab)}
+    # Set tab stop at current position (assume position 0 if not provided)
+    # In a real implementation, this would receive the current cursor position
+    current_position = 0
+    %{manager | tab_stops: MapSet.put(manager.tab_stops, current_position)}
+  end
+
+  @doc """
+  Sets a horizontal tab stop at the specified position.
+  """
+  @spec set_horizontal_tab(t(), non_neg_integer()) :: t()
+  def set_horizontal_tab(manager, position) when is_integer(position) and position >= 0 do
+    %{manager | tab_stops: MapSet.put(manager.tab_stops, position)}
   end
 
   @doc """
@@ -268,18 +277,31 @@ defmodule Raxol.Terminal.Tab.Manager do
   """
   @spec get_next_tab_stop(t()) :: pos_integer()
   def get_next_tab_stop(manager) do
-    # TODO: Implement actual tab stop calculation
-    8
+    # Calculate next tab stop based on current position (assume position 0 if not provided)
+    # In a real implementation, this would receive the current cursor position
+    current_position = 0
+    find_next_tab_stop(current_position, manager.tab_stops)
+  end
+
+  @doc """
+  Gets the next tab stop position from a specific current position.
+  """
+  @spec get_next_tab_stop(t(), non_neg_integer()) :: pos_integer()
+  def get_next_tab_stop(manager, current_position)
+      when is_integer(current_position) and current_position >= 0 do
+    find_next_tab_stop(current_position, manager.tab_stops)
   end
 
   # Server Callbacks
-  @impl true
-  def init(_opts) do
-    {:ok, %__MODULE__{}}
+  @impl GenServer
+  def init(opts) do
+    state = %__MODULE__{
+      default_tab_width: Keyword.get(opts, :default_tab_width, 8)
+    }
+    {:ok, state}
   end
 
-  @impl true
-  def handle_call({:create_tab, _config}, _from, state) do
+  def handle_call({:create_tab, config}, _from, state) do
     tab_id = generate_tab_id(state)
 
     default_config = %{
@@ -290,7 +312,7 @@ defmodule Raxol.Terminal.Tab.Manager do
       window_id: nil
     }
 
-    config = Map.merge(default_config, _config)
+    config = Map.merge(default_config, config)
 
     updated_state = %{
       state
@@ -301,7 +323,6 @@ defmodule Raxol.Terminal.Tab.Manager do
     {:reply, {:ok, tab_id}, updated_state}
   end
 
-  @impl true
   def handle_call({:delete_tab, tab_id}, _from, state) do
     case Map.has_key?(state.tabs, tab_id) do
       true ->
@@ -319,7 +340,6 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @impl true
   def handle_call({:switch_tab, tab_id}, _from, state) do
     case Map.has_key?(state.tabs, tab_id) do
       true ->
@@ -331,7 +351,6 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @impl true
   def handle_call({:get_tab_config, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil -> {:reply, {:error, :tab_not_found}, state}
@@ -339,7 +358,6 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @impl true
   def handle_call({:update_tab_config, tab_id, config_updates}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
@@ -357,37 +375,31 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  @impl true
   def handle_call(:list_tabs, _from, state) do
     {:reply, state.tabs, state}
   end
 
-  @impl true
   def handle_call(:get_active_tab, _from, state) do
     {:reply, state.active_tab, state}
   end
 
-  @impl true
   def handle_call({:set_horizontal_tab, position}, _from, state) do
     updated_stops = MapSet.put(state.tab_stops, position)
     updated_state = %{state | tab_stops: updated_stops}
     {:reply, {:ok, updated_state}, updated_state}
   end
 
-  @impl true
   def handle_call({:clear_tab_stop, position}, _from, state) do
     updated_stops = MapSet.delete(state.tab_stops, position)
     updated_state = %{state | tab_stops: updated_stops}
     {:reply, {:ok, updated_state}, updated_state}
   end
 
-  @impl true
   def handle_call(:clear_all_tab_stops, _from, state) do
     updated_state = %{state | tab_stops: MapSet.new()}
     {:reply, {:ok, updated_state}, updated_state}
   end
 
-  @impl true
   def handle_call({:get_next_tab_stop, current_position}, _from, state) do
     next_stop = find_next_tab_stop(current_position, state.tab_stops)
     {:reply, next_stop, state}

@@ -117,3 +117,10 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
     clear_regions(tracker)
   end
 end
+
+defmodule Buffer.DamageTracker do
+  @moduledoc """
+  Simplified damage tracker for basic cleanup operations.
+  """
+  def cleanup(_), do: :ok
+end

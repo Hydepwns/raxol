@@ -38,7 +38,6 @@ defmodule Raxol.Terminal.Split.Sync do
 
   # Server Callbacks
 
-  @impl true
   def init(_opts) do
     state = %{
       subscribers: %{},
@@ -49,7 +48,6 @@ defmodule Raxol.Terminal.Split.Sync do
     {:ok, state}
   end
 
-  @impl true
   def handle_cast({:broadcast_event, split_id, event_type, payload}, state) do
     event = %{
       split_id: split_id,
@@ -69,25 +67,21 @@ defmodule Raxol.Terminal.Split.Sync do
     {:noreply, %{state | event_history: new_history}}
   end
 
-  @impl true
   def handle_call({:subscribe, split_id, callback}, _from, state) do
     new_subscribers = Map.put(state.subscribers, split_id, callback)
     {:reply, :ok, %{state | subscribers: new_subscribers}}
   end
 
-  @impl true
   def handle_call({:unsubscribe, split_id}, _from, state) do
     new_subscribers = Map.delete(state.subscribers, split_id)
     {:reply, :ok, %{state | subscribers: new_subscribers}}
   end
 
-  @impl true
   def handle_call({:get_shared_state, split_id}, _from, state) do
     shared_state = Map.get(state.shared_states, split_id, %{})
     {:reply, shared_state, state}
   end
 
-  @impl true
   def handle_call({:update_shared_state, split_id, state_updates}, _from, state) do
     current_state = Map.get(state.shared_states, split_id, %{})
     new_state = Map.merge(current_state, state_updates)

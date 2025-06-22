@@ -146,28 +146,24 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   # Server Callbacks
 
-  @impl true
+  @doc """
+  Initializes the GenServer with default state.
+  """
+  @impl GenServer
   def init(opts) do
-    buffer = Keyword.get(opts, :buffer)
-    screen = Keyword.get(opts, :screen)
-    style = Keyword.get(opts, :style)
-    cursor_visible = Keyword.get(opts, :cursor_visible, true)
-    title = Keyword.get(opts, :title, "")
-
-    state = %__MODULE__{
-      buffer: buffer,
-      screen: screen,
-      style: style,
-      cursor_visible: cursor_visible,
-      title: title,
+    initial_state = %__MODULE__{
+      buffer: opts[:buffer] || Buffer.new(),
+      screen: opts[:screen] || %{},
+      style: opts[:style] || %{},
+      cursor_visible: opts[:cursor_visible] || true,
+      title: opts[:title] || "",
       termbox_initialized: false,
-      config: nil
+      config: opts[:config] || %{}
     }
 
-    {:ok, state}
+    {:ok, initial_state}
   end
 
-  @impl true
   def handle_call({:render, state}, _from, renderer) do
     # Initialize termbox if not already initialized
     :termbox2_nif.tb_init()
@@ -196,7 +192,6 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     {:reply, :ok, renderer}
   end
 
-  @impl true
   def handle_call({:update_config, _state, config}, _from, renderer) do
     new_state = %{
       renderer
@@ -208,14 +203,12 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:cleanup, _state}, _from, renderer) do
     # Cleanup termbox
     :termbox2_nif.tb_shutdown()
     {:reply, :ok, renderer}
   end
 
-  @impl true
   def handle_call({:resize, width, height}, _from, renderer) do
     # Resize termbox
     :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
@@ -224,7 +217,6 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     {:reply, :ok, renderer}
   end
 
-  @impl true
   def handle_call({:set_cursor_visibility, visible}, _from, renderer) do
     if visible do
       {x, y} = Buffer.get_cursor_position(renderer.buffer)
@@ -236,7 +228,6 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     {:reply, :ok, %{renderer | cursor_visible: visible}}
   end
 
-  @impl true
   def handle_call({:set_title, title}, _from, renderer) do
     # Set window title
     :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
@@ -244,32 +235,27 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     {:reply, :ok, %{renderer | title: title}}
   end
 
-  @impl true
   def handle_call(:get_title, _from, renderer) do
     {:reply, renderer.title, renderer}
   end
 
-  @impl true
   def handle_call(:init_terminal, _from, renderer) do
     # Initialize termbox
     :termbox2_nif.tb_init()
     {:reply, :ok, %{renderer | termbox_initialized: true}}
   end
 
-  @impl true
   def handle_call(:shutdown_terminal, _from, renderer) do
     # Shutdown termbox
     :termbox2_nif.tb_shutdown()
     {:reply, :ok, %{renderer | termbox_initialized: false}}
   end
 
-  @impl true
   def handle_call({:set_config_value, key, value}, _from, renderer) do
     new_config = Map.put(renderer.config || %{}, key, value)
     {:reply, :ok, %{renderer | config: new_config}}
   end
 
-  @impl true
   def handle_call(:reset_config, _from, renderer) do
     default_config = %{
       fps: 60,

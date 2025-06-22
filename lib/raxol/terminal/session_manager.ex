@@ -86,12 +86,10 @@ defmodule Raxol.Terminal.SessionManager do
 
   # Server Callbacks
 
-  @impl true
   def init(_) do
     {:ok, %{}}
   end
 
-  @impl true
   def handle_call({:create_session, user_id}, _from, sessions) do
     session_id = generate_session_id()
     token = generate_token()
@@ -113,7 +111,6 @@ defmodule Raxol.Terminal.SessionManager do
     {:reply, {:ok, session}, sessions}
   end
 
-  @impl true
   def handle_call({:get_session, session_id}, _from, sessions) do
     case Map.get(sessions, session_id) do
       nil -> {:reply, {:error, :not_found}, sessions}
@@ -121,7 +118,6 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl true
   def handle_call({:authenticate, session_id, token}, _from, sessions) do
     case Map.get(sessions, session_id) do
       nil ->
@@ -138,13 +134,11 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl true
   def handle_call({:cleanup, session_id}, _from, sessions) do
     sessions = Map.delete(sessions, session_id)
     {:reply, :ok, sessions}
   end
 
-  @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end

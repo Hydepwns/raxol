@@ -111,7 +111,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
   end
 
   # Server Callbacks
-  @impl true
   def init(opts) do
     state = %{
       tabs: %{},
@@ -123,7 +122,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:create_tab, config}, _from, state) do
     tab_id = state.next_id
     window_state = State.new(config)
@@ -152,12 +150,10 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     {:reply, {:ok, tab_id}, new_state}
   end
 
-  @impl true
   def handle_call(:get_tabs, _from, state) do
     {:reply, Map.keys(state.tabs), state}
   end
 
-  @impl true
   def handle_call(:get_active_tab, _from, state) do
     case state.active_tab do
       nil -> {:reply, {:error, :no_active_tab}, state}
@@ -165,7 +161,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  @impl true
   def handle_call({:set_active_tab, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
@@ -177,7 +172,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  @impl true
   def handle_call({:get_tab_state, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil -> {:reply, {:error, :tab_not_found}, state}
@@ -185,7 +179,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  @impl true
   def handle_call({:update_tab_config, tab_id, config}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
@@ -199,7 +192,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  @impl true
   def handle_call({:close_tab, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
@@ -229,7 +221,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  @impl true
   def handle_call({:move_tab, tab_id, position}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
@@ -259,14 +250,12 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  @impl true
   def handle_call({:update_config, config}, _from, state) do
     new_config = Map.merge(state.config, config)
     new_state = %{state | config: new_config}
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call(:cleanup, _from, state) do
     # Clean up all tab states
     Enum.each(state.tabs, fn {_id, tab_state} ->

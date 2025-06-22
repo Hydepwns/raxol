@@ -61,6 +61,15 @@ defmodule Raxol.Terminal.ScreenManager do
   end
 
   @doc """
+  Initializes both main and alternate screen buffers with default scrollback limit.
+  """
+  @spec initialize_buffers(non_neg_integer(), non_neg_integer()) ::
+          {ScreenBuffer.t(), ScreenBuffer.t()}
+  def initialize_buffers(width, height) do
+    initialize_buffers(width, height, 1000)
+  end
+
+  @doc """
   Resizes both screen buffers.
   """
   @spec resize_buffers(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) ::
@@ -233,5 +242,13 @@ defmodule Raxol.Terminal.ScreenManager do
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def write_string(buffer, x, y, string, style) do
     Raxol.Terminal.ScreenBuffer.write_string(buffer, x, y, string, style)
+  end
+
+  @doc """
+  Parses scrollback limit from options, defaulting to 1000.
+  """
+  @spec parse_scrollback_limit(keyword()) :: non_neg_integer()
+  def parse_scrollback_limit(opts) do
+    Keyword.get(opts, :scrollback_limit, 1000)
   end
 end

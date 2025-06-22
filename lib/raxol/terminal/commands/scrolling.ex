@@ -3,6 +3,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   Handles scrolling operations for the terminal screen buffer.
   """
 
+  import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Buffer.Operations
@@ -17,7 +18,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   # Handles invalid region {top, bottom} where top > bottom
   def scroll_up(buffer, _count, {region_top, region_bottom}, _blank_style)
-      when is_integer(region_top) and is_integer(region_bottom) and
+      when integer?(region_top) and integer?(region_bottom) and
              region_top > region_bottom do
     Raxol.Core.Runtime.Log.debug(
       "Scroll Up: Invalid region (top > bottom). Region: #{inspect({region_top, region_bottom})}. No scroll."
@@ -58,7 +59,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   end
 
   def scroll_up(buffer, _count, _scroll_region, _blank_style)
-      when is_tuple(buffer) do
+      when tuple?(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -88,7 +89,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   # Handles invalid region {top, bottom} where top > bottom
   def scroll_down(buffer, _count, {region_top, region_bottom}, _blank_style)
-      when is_integer(region_top) and is_integer(region_bottom) and
+      when integer?(region_top) and integer?(region_bottom) and
              region_top > region_bottom do
     Raxol.Core.Runtime.Log.debug(
       "Scroll Down: Invalid region (top > bottom). Region: #{inspect({region_top, region_bottom})}. No scroll."
@@ -126,7 +127,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   end
 
   def scroll_down(buffer, _count, _scroll_region, _blank_style)
-      when is_tuple(buffer) do
+      when tuple?(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -140,7 +141,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   defp get_scroll_region(buffer, scroll_region) do
     case scroll_region do
       {top, bottom}
-      when is_integer(top) and is_integer(bottom) and top >= 0 and
+      when integer?(top) and integer?(bottom) and top >= 0 and
              bottom <= buffer.height ->
         {top, bottom}
 

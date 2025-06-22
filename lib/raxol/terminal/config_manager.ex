@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.ConfigManager do
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   @doc """
   Gets a specific configuration value.
@@ -95,10 +96,10 @@ defmodule Raxol.Terminal.ConfigManager do
 
   defp validate_behavior(behavior) do
     cond do
-      !is_map(behavior) ->
+      !map?(behavior) ->
         {:error, "Behavior must be a map"}
 
-      !is_integer(behavior.scrollback_limit) or behavior.scrollback_limit < 0 ->
+      !integer?(behavior.scrollback_limit) or behavior.scrollback_limit < 0 ->
         {:error, "Invalid scrollback limit"}
 
       true ->
@@ -108,7 +109,7 @@ defmodule Raxol.Terminal.ConfigManager do
 
   defp validate_memory_limit(limit) do
     cond do
-      !is_integer(limit) or limit < 0 ->
+      !integer?(limit) or limit < 0 ->
         {:error, "Invalid memory limit"}
 
       true ->
@@ -118,13 +119,13 @@ defmodule Raxol.Terminal.ConfigManager do
 
   defp validate_rendering(rendering) do
     cond do
-      !is_map(rendering) ->
+      !map?(rendering) ->
         {:error, "Rendering must be a map"}
 
-      !is_boolean(rendering.antialiasing) ->
+      !boolean?(rendering.antialiasing) ->
         {:error, "Antialiasing must be a boolean"}
 
-      !is_integer(rendering.font_size) or rendering.font_size < 1 ->
+      !integer?(rendering.font_size) or rendering.font_size < 1 ->
         {:error, "Invalid font size"}
 
       true ->

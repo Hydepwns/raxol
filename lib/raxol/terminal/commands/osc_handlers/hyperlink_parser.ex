@@ -8,6 +8,8 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.HyperlinkParser do
   - Clear: "id;"
   """
 
+  import Raxol.Guards
+
   @doc """
   Parses hyperlink data from an OSC command.
 
@@ -27,12 +29,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.HyperlinkParser do
       "?'" ->
         {:query, "'"}
 
-      str when is_binary(str) ->
+      str when binary?(str) ->
         case String.split(str, ";") do
           [id, ""] ->
             {:clear, id}
 
-          [id, url] when is_binary(id) and is_binary(url) ->
+          [id, url] when binary?(id) and binary?(url) ->
             {:set, id, url}
 
           _ ->

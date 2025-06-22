@@ -1,4 +1,5 @@
 defmodule Raxol.Terminal.Configuration do
+  import Raxol.Guards
   @moduledoc """
   Configuration management for the terminal emulator.
   """
@@ -71,11 +72,11 @@ defmodule Raxol.Terminal.Configuration do
   Updates the configuration with new values.
   """
   @spec update(t(), map()) :: t()
-  def update(config, updates) when is_map(updates) do
+  def update(config, updates) when map?(updates) do
     Map.merge(config, updates)
   end
 
-  def update(config, updates) when is_list(updates) do
+  def update(config, updates) when list?(updates) do
     Enum.reduce(updates, config, fn {key, value}, acc ->
       Map.put(acc, key, value)
     end)

@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.ModeState do
   """
 
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   # DEC Private Mode codes and their corresponding mode atoms
   @dec_private_modes %{
@@ -98,7 +99,7 @@ defmodule Raxol.Terminal.ModeState do
   Looks up a DEC private mode code and returns the corresponding mode atom.
   """
   @spec lookup_private(integer()) :: atom() | nil
-  def lookup_private(code) when is_integer(code) do
+  def lookup_private(code) when integer?(code) do
     Map.get(@dec_private_modes, code)
   end
 
@@ -106,7 +107,7 @@ defmodule Raxol.Terminal.ModeState do
   Looks up a standard mode code and returns the corresponding mode atom.
   """
   @spec lookup_standard(integer()) :: atom() | nil
-  def lookup_standard(code) when is_integer(code) do
+  def lookup_standard(code) when integer?(code) do
     Map.get(@standard_modes, code)
   end
 

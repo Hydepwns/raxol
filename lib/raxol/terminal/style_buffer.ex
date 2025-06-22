@@ -24,6 +24,8 @@ defmodule Raxol.Terminal.StyleBuffer do
           height: non_neg_integer()
         }
 
+  import Raxol.Guards
+
   defstruct current_style: %{
               foreground: nil,
               background: nil,
@@ -87,7 +89,7 @@ defmodule Raxol.Terminal.StyleBuffer do
   Sets text attributes (list of atoms).
   """
   @spec set_attributes(t(), [atom()]) :: t()
-  def set_attributes(buffer, attrs) when is_list(attrs) do
+  def set_attributes(buffer, attrs) when list?(attrs) do
     %{buffer | current_style: Map.put(buffer.current_style, :attributes, attrs)}
   end
 
@@ -160,7 +162,7 @@ defmodule Raxol.Terminal.StyleBuffer do
   Validates a style map.
   """
   @spec validate_style(style()) :: :ok | {:error, String.t()}
-  def validate_style(style) when is_map(style) do
+  def validate_style(style) when map?(style) do
     # Basic validation - check for known style keys
     valid_keys = [
       :foreground,
