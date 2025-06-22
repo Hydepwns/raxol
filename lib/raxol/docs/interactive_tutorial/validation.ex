@@ -1,4 +1,6 @@
 defmodule Raxol.Docs.InteractiveTutorial.Validation do
+  import Raxol.Guards
+
   @moduledoc """
   Handles validation of tutorial exercises and user input.
   """
@@ -10,7 +12,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   @doc """
   Validates a user's solution for an exercise.
   """
-  def validate_solution(%Step{} = step, solution) when is_binary(solution) do
+  def validate_solution(%Step{} = step, solution) when binary?(solution) do
     case step.exercise do
       nil -> {:error, "No exercise defined for this step"}
       exercise -> do_validate(exercise, solution)
@@ -21,7 +23,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   Validates a user's solution for an exercise with custom validation function.
   """
   def validate_solution(%Step{} = step, solution, validation_fn)
-      when is_function(validation_fn, 1) do
+      when function?(validation_fn, 1) do
     case step.exercise do
       nil -> {:error, "No exercise defined for this step"}
       _exercise -> validation_fn.(solution)
@@ -32,7 +34,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   Checks if a solution matches the expected output.
   """
   def validate_output(solution, expected_output)
-      when is_binary(solution) and is_binary(expected_output) do
+      when binary?(solution) and binary?(expected_output) do
     solution = String.trim(solution)
     expected = String.trim(expected_output)
 
@@ -46,7 +48,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   @doc """
   Validates code syntax.
   """
-  def validate_syntax(code) when is_binary(code) do
+  def validate_syntax(code) when binary?(code) do
     try do
       Code.string_to_quoted!(code)
       {:ok, "Code syntax is valid"}
@@ -59,7 +61,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   @doc """
   Validates code execution.
   """
-  def validate_execution(code) when is_binary(code) do
+  def validate_execution(code) when binary?(code) do
     try do
       {result, _} = Code.eval_string(code)
       {:ok, "Code executed successfully", result}
@@ -81,10 +83,10 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
         nil ->
           {:ok, "Code executed successfully"}
 
-        validation_fn when is_function(validation_fn, 1) ->
+        validation_fn when function?(validation_fn, 1) ->
           validation_fn.(result)
 
-        expected when is_binary(expected) ->
+        expected when binary?(expected) ->
           validate_output(to_string(result), expected)
 
         _ ->
@@ -98,10 +100,10 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
       nil ->
         {:ok, "Text submitted successfully"}
 
-      validation_fn when is_function(validation_fn, 1) ->
+      validation_fn when function?(validation_fn, 1) ->
         validation_fn.(solution)
 
-      expected when is_binary(expected) ->
+      expected when binary?(expected) ->
         validate_output(solution, expected)
 
       _ ->
@@ -114,7 +116,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
       nil ->
         {:error, "No validation configured for multiple choice"}
 
-      correct_answer when is_binary(correct_answer) ->
+      correct_answer when binary?(correct_answer) ->
         if solution == correct_answer do
           {:ok, "Correct answer selected"}
         else

@@ -1,4 +1,4 @@
-alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
+alias Raxol.Docs.ComponentCatalog.{Component}
 
 %Component{
   id: :modal,

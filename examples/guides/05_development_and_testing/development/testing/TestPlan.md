@@ -71,7 +71,7 @@ Based on the test run on [Insert Date Here], the following modules have signific
 
 - `Raxol.Style.Colors.UtilitiesTest` (Multiple failures, investigation details below):
   - **Doctest `UndefinedFunctionError`**: Likely due to missing `alias Raxol.Style.Colors.Utilities` _before_ examples in the main `@moduledoc` of `utilities.ex`. Attempted fix was unsuccessful due to apply errors (the automated edit tool had difficulty inserting the `alias` correctly within the multi-line `@moduledoc` block).
-  - **`readable?/3` (vs `is_readable?`)**: The function is public and named `readable?`. The plan's note about potential privacy (`is_readable?`) was incorrect.
+  - **`readable?/3` (vs `readable?`)**: The function is public and named `readable?`. The plan's note about potential privacy (`readable?`) was incorrect.
   - **`Accessibility.check_contrast`**: Was called with incorrect arity (2 vs 4, although defaults exist) in `darken/lighten_until_contrast` tests. Added missing `alias Raxol.Style.Colors.Accessibility` and corrected calls in `utilities_test.exs`.
   - \*\*Specific Test/Doctest Failures (9 total from `mix test test/raxol/style/colors/utilities_test.exs` run):
     - `lighten_until_contrast`: Fails to lighten color (returns original hex `#777777` instead of expected `#CCCCCC`), both in tests and doctest. Potentially due to stream/Enum.find logic needing adjustment (e.g., `Stream.drop(1)`).

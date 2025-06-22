@@ -1,5 +1,5 @@
 # Defining structs inline requires aliasing
-alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
+alias Raxol.Docs.ComponentCatalog.{Component, Example}
 # Also need view helper for preview_fn
 import Raxol.View.Elements
 

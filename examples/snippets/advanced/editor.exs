@@ -44,7 +44,7 @@ defmodule EditorExample do # Renamed module
         {:ok, %{model | text: model.text <> @spacebar}, []}
 
       # Check for printable character
-      %Event{type: :key, data: %{key: :char, char: char}} when not is_nil(char) and String.length(char) == 1 ->
+      %Event{type: :key, data: %{key: :char, char: char}} when not nil(char) and String.length(char) == 1 ->
           # Append printable chars (basic check)
           {:ok, %{model | text: model.text <> char}, []}
 

@@ -1,6 +1,6 @@
 # Placeholder for Table Component Definition
 
-alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
+alias Raxol.Docs.ComponentCatalog.{Component, Example}
 
 %Component{
   id: :table,

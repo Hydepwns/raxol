@@ -111,14 +111,14 @@ defmodule Raxol.Test.Assertions.PluginAssertions do
   def assert_valid_plugin(plugin) do
     assert plugin.id
     assert plugin.version
-    assert is_list(plugin.dependencies)
+    assert list?(plugin.dependencies)
     assert_valid_dependencies(plugin.dependencies)
   end
 
   def assert_valid_dependencies(dependencies) do
     Enum.each(dependencies, fn {id, version} ->
-      assert is_binary(id)
-      assert is_binary(version)
+      assert binary?(id)
+      assert binary?(version)
       assert_valid_version_constraint(version)
     end)
   end
@@ -136,7 +136,7 @@ defmodule Raxol.Test.Assertions.EventAssertions do
   end
 
   def assert_valid_payload(payload) do
-    assert is_map(payload)
+    assert map?(payload)
     assert Map.has_key?(payload, :timestamp)
   end
 end

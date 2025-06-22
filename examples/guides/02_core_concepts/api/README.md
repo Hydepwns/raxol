@@ -35,7 +35,7 @@ Raxol.Terminal.set_title(title)
 
 # Terminal state
 Raxol.Terminal.get_state()
-Raxol.Terminal.is_alternate_screen?()
+Raxol.Terminal.alternate_screen?()
 ```
 
 ### Component API
@@ -68,7 +68,7 @@ Raxol.Core.Runtime.Plugins.stop(plugin)
 # Plugin management
 Raxol.Core.Runtime.Plugins.list()
 Raxol.Core.Runtime.Plugins.get(plugin_id)
-Raxol.Core.Runtime.Plugins.is_enabled?(plugin_id)
+Raxol.Core.Runtime.Plugins.enabled?(plugin_id)
 ```
 
 ### Event System

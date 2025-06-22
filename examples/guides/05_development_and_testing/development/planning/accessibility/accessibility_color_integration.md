@@ -57,7 +57,7 @@ hover_color = Raxol.Core.ColorSystem.get_color(:primary, :hover, respect_accessi
 
 ```elixir
 # Accessibility checks and adjustments
-is_readable = Raxol.Style.Colors.Utilities.meets_contrast_requirements?(
+readable = Raxol.Style.Colors.Utilities.meets_contrast_requirements?(
   text_color,
   background_color,
   :AA,
@@ -140,7 +140,7 @@ assert_sufficient_contrast(foreground_color, background_color)
 
 # In application code
 contrast_ratio = Raxol.Style.Colors.Utilities.contrast_ratio(foreground, background)
-is_accessible = contrast_ratio >= 4.5 # WCAG AA standard for normal text
+accessible = contrast_ratio >= 4.5 # WCAG AA standard for normal text
 ```
 
 ## Implementation Details

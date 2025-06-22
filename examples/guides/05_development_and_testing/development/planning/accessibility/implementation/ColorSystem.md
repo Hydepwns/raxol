@@ -35,14 +35,14 @@ defmodule Raxol.Style.Colors.Color do
   Represents a color in various formats with conversion utilities.
   Supports ANSI 16/256 colors and True Color (24-bit).
   """
-  
+
   defstruct [
     :r, :g, :b,      # RGB components (0-255)
     :ansi_code,      # ANSI color code if applicable
     :hex,            # Hex representation
     :name            # Optional name for predefined colors
   ]
-  
+
   @type t :: %__MODULE__{
     r: integer(),
     g: integer(),
@@ -51,7 +51,7 @@ defmodule Raxol.Style.Colors.Color do
     hex: String.t(),
     name: String.t() | nil
   }
-  
+
   # Conversion functions
   def from_hex(hex_string)
   def to_hex(color)
@@ -59,7 +59,7 @@ defmodule Raxol.Style.Colors.Color do
   def to_ansi_16(color)
   def to_ansi_256(color)
   def from_ansi(code)
-  
+
   # Color operations
   def lighten(color, amount)
   def darken(color, amount)
@@ -77,7 +77,7 @@ defmodule Raxol.Style.Colors.Palette do
   Manages collections of related colors as palettes.
   Provides standard palettes and custom palette creation.
   """
-  
+
   defstruct [
     :name,
     :colors,          # Map of color names to Color structs
@@ -87,21 +87,21 @@ defmodule Raxol.Style.Colors.Palette do
     :background,      # Background color
     :foreground       # Foreground color
   ]
-  
+
   # Standard palettes
   def standard_16()
   def ansi_256()
   def solarized()
   def nord()
   def dracula()
-  
+
   # Palette generation
   def from_base_color(base_color)
   def complementary(base_color)
   def triadic(base_color)
   def analogous(base_color)
   def monochromatic(base_color, steps)
-  
+
   # Palette operations
   def get_color(palette, name)
   def add_color(palette, name, color)
@@ -117,19 +117,19 @@ defmodule Raxol.Style.Colors.Gradient do
   @moduledoc """
   Creates and manages color gradients for terminal applications.
   """
-  
+
   defstruct [
     :colors,          # List of color stops
     :steps,           # Number of discrete steps
     :type             # Linear, radial, etc.
   ]
-  
+
   # Gradient creation
   def linear(start_color, end_color, steps)
   def multi_stop(color_stops, steps)
   def rainbow(steps)
   def heat_map(steps)
-  
+
   # Gradient operations
   def at_position(gradient, position)
   def reverse(gradient)
@@ -144,7 +144,7 @@ defmodule Raxol.Style.Colors.Theme do
   @moduledoc """
   Manages complete color themes with support for hot-swapping.
   """
-  
+
   defstruct [
     :name,
     :palette,
@@ -152,19 +152,19 @@ defmodule Raxol.Style.Colors.Theme do
     :dark_mode,       # Boolean indicating dark/light theme
     :high_contrast    # Boolean for high contrast mode
   ]
-  
+
   # Theme management
   def apply_theme(theme)
   def switch_theme(theme_name)
   def register_theme(theme)
   def current_theme()
-  
+
   # Theme creation
   def from_palette(palette, name)
   def light_variant(theme)
   def dark_variant(theme)
   def high_contrast_variant(theme)
-  
+
   # Theme persistence
   def save_theme(theme, path)
   def load_theme(path)
@@ -178,14 +178,14 @@ defmodule Raxol.Style.Colors.Adaptive do
   @moduledoc """
   Detects terminal capabilities and adapts color schemes accordingly.
   """
-  
+
   # Capability detection
   def detect_color_support()
   def supports_true_color?()
   def supports_256_colors?()
   def terminal_background()
-  def is_dark_terminal?()
-  
+  def dark_terminal?()
+
   # Adaptive operations
   def adapt_color(color)
   def adapt_palette(palette)
@@ -201,18 +201,18 @@ defmodule Raxol.Style.Colors.Utilities do
   @moduledoc """
   Provides color manipulation and accessibility utilities.
   """
-  
+
   # Color analysis
   def contrast_ratio(color1, color2)
-  def is_readable?(background, foreground, level \\ :aa)
+  def readable?(background, foreground, level \\ :aa)
   def brightness(color)
   def luminance(color)
-  
+
   # Color suggestions
   def suggest_text_color(background)
   def suggest_contrast_color(color)
   def accessible_color_pair(base_color, level \\ :aa)
-  
+
   # Color palettes
   def analogous_colors(color, count \\ 3)
   def complementary_colors(color)
@@ -342,4 +342,4 @@ end
 
 - Prompt color handling: https://hexdocs.pm/prompt/Prompt.html#module-basic-usage
 - Lip Gloss color system: https://github.com/charmbracelet/lipgloss
-- WCAG contrast guidelines: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html 
+- WCAG contrast guidelines: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html

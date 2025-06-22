@@ -207,9 +207,9 @@ defmodule DocumentationBrowser do
         docs
 
       {:docs_v1, _annotation, :elixir, _format, docs_map, _meta}
-      when is_map(docs_map) ->
+      when map?(docs_map) ->
         # Handle cases where default lang might not be 'en'
-        elem(Map.to_list(docs_map) |> List.first(), 1)
+        elem(List.first(Map.to_list(docs_map)), 1)
 
       nil ->
         "(No documentation found for \#{inspect(selected)})"

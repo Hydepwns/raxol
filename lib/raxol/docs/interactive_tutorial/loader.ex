@@ -1,4 +1,6 @@
 defmodule Raxol.Docs.InteractiveTutorial.Loader do
+  import Raxol.Guards
+
   @moduledoc """
   Handles loading and parsing of tutorials from markdown files.
   """
@@ -14,7 +16,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     |> Path.join("**/*.md")
     |> Path.wildcard()
     |> Enum.map(&load_tutorial/1)
-    |> Enum.reject(&is_nil/1)
+    |> Enum.reject(&nil?/1)
   end
 
   @doc """
@@ -82,7 +84,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
   """
   def parse_step(step_content) do
     [title | content_parts] = String.split(step_content, "\n", parts: 2)
-    content = List.first(content_parts) || ""
+    content = hd(content_parts) || ""
 
     # Extract step ID from title
     id =

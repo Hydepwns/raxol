@@ -72,12 +72,12 @@ When addressing Dialyzer warnings, consider the following priority order:
 ### 8. **Pattern Matching That Can Never Succeed**
 
 - **Solution**: Use conditional logic (`cond`, `if`) with explicit type checks instead of pattern matching.
-- **Example**: Replace pattern matching on struct types with a `cond` block that explicitly checks types using `is_struct/2`.
+- **Example**: Replace pattern matching on struct types with a `cond` block that explicitly checks types using `struct/2`.
 
 ### 9. **Guard Failures with Complex Types**
 
-- **Solution**: Use safer type checking with `is_struct/2` for struct types instead of relying on pattern guards.
-- **Example**: Replace `when buffer === nil` with an explicit `if is_struct(buffer, ScreenBuffer)` check.
+- **Solution**: Use safer type checking with `struct/2` for struct types instead of relying on pattern guards.
+- **Example**: Replace `when buffer === nil` with an explicit `if struct?(buffer, ScreenBuffer)` check.
 
 ### 10. **Robust Error Handling around Problematic Calls**
 

@@ -56,7 +56,7 @@ Raxol.Core.UXRefinement.enable_feature(:keyboard_shortcuts)
 You can customize the accessibility options when enabling the feature:
 
 ```elixir
-Raxol.Core.UXRefinement.enable_feature(:accessibility, 
+Raxol.Core.UXRefinement.enable_feature(:accessibility,
   high_contrast: true,
   reduced_motion: true,
   large_text: true
@@ -74,8 +74,8 @@ You can make screen reader announcements using the `announce/2` function:
 Raxol.Core.UXRefinement.announce("File saved successfully")
 
 # High priority announcement that interrupts other announcements
-Raxol.Core.UXRefinement.announce("Error occurred", 
-  priority: :high, 
+Raxol.Core.UXRefinement.announce("Error occurred",
+  priority: :high,
   interrupt: true
 )
 ```
@@ -121,7 +121,7 @@ High contrast mode increases the color contrast to improve visibility for users 
 Raxol.Core.Accessibility.set_high_contrast(true)
 
 # Check if high contrast is enabled
-is_high_contrast = Raxol.Core.Accessibility.high_contrast_enabled?()
+high_contrast = Raxol.Core.Accessibility.high_contrast_enabled?()
 ```
 
 ### Large Text
@@ -145,7 +145,7 @@ Reduced motion mode minimizes animations for users who are sensitive to motion:
 Raxol.Core.Accessibility.set_reduced_motion(true)
 
 # Check if reduced motion is enabled
-is_reduced_motion = Raxol.Core.Accessibility.reduced_motion_enabled?()
+reduced_motion = Raxol.Core.Accessibility.reduced_motion_enabled?()
 ```
 
 ### Focus Ring
@@ -174,13 +174,13 @@ Register keyboard shortcuts to provide quick access to functionality:
 
 ```elixir
 # Register global shortcut
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
+Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn ->
   save_document()
   Raxol.Core.UXRefinement.announce("Document saved")
 end, description: "Save document")
 
 # Register context-specific shortcut
-Raxol.Core.UXRefinement.register_shortcut("Alt+F", :file_menu, fn -> 
+Raxol.Core.UXRefinement.register_shortcut("Alt+F", :file_menu, fn ->
   open_file_menu()
 end, context: :main_menu, description: "Open file menu")
 ```
@@ -227,7 +227,7 @@ defmodule MyApp do
   def init do
     # Initialize UX refinement
     UXRefinement.init()
-    
+
     # Enable required features
     UXRefinement.enable_feature(:focus_management)
     UXRefinement.enable_feature(:keyboard_navigation)
@@ -235,33 +235,33 @@ defmodule MyApp do
     UXRefinement.enable_feature(:focus_ring)
     UXRefinement.enable_feature(:accessibility)
     UXRefinement.enable_feature(:keyboard_shortcuts)
-    
+
     # Configure focus ring
     FocusRing.configure(
       style: :solid,
       color: :blue,
       animation: :pulse
     )
-    
+
     # Register components
     setup_components()
-    
+
     # Make initial announcement
     UXRefinement.announce("Application loaded. Use Tab to navigate.", priority: :high)
-    
+
     # Set initial focus
     FocusManager.set_focus("main_menu")
-    
+
     # Start event loop
     event_loop()
   end
-  
+
   defp setup_components do
     # Register focusable components
     FocusManager.register_focusable("main_menu", tab_order: 1)
     FocusManager.register_focusable("search_box", tab_order: 2)
     FocusManager.register_focusable("settings_button", tab_order: 3)
-    
+
     # Register accessibility metadata
     UXRefinement.register_accessibility_metadata("main_menu", %{
       announce: "Main menu. Use arrow keys to navigate menu items.",
@@ -269,21 +269,21 @@ defmodule MyApp do
       label: "Main Menu",
       shortcut: "Alt+M"
     })
-    
+
     UXRefinement.register_accessibility_metadata("search_box", %{
       announce: "Search box. Type to search.",
       role: :searchbox,
       label: "Search",
       shortcut: "Alt+S"
     })
-    
+
     UXRefinement.register_accessibility_metadata("settings_button", %{
       announce: "Settings button. Press Enter to open settings.",
       role: :button,
       label: "Settings",
       shortcut: "Alt+T"
     })
-    
+
     # Register hints
     UXRefinement.register_component_hint("search_box", %{
       basic: "Search for content",
@@ -294,22 +294,22 @@ defmodule MyApp do
         {"Alt+S", "Focus search box"}
       ]
     })
-    
+
     # Register shortcuts
     UXRefinement.register_shortcut("Alt+C", :toggle_high_contrast, fn ->
       current = Accessibility.high_contrast_enabled?()
       Accessibility.set_high_contrast(!current)
-      
+
       message = if !current do
         "High contrast mode enabled"
       else
         "High contrast mode disabled"
       end
-      
+
       UXRefinement.announce(message, priority: :medium)
     end, description: "Toggle high contrast mode")
   end
-  
+
   defp event_loop do
     # Implementation of event handling and UI update loop
     # ...
@@ -331,57 +331,57 @@ Example test for accessibility features:
 ```elixir
 defmodule MyAppTest do
   use ExUnit.Case
-  
+
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UXRefinement
-  
+
   setup do
     UXRefinement.init()
     UXRefinement.enable_feature(:accessibility)
-    
+
     on_exit(fn ->
       UXRefinement.disable_feature(:accessibility)
     end)
-    
+
     :ok
   end
-  
+
   test "high contrast mode changes color scheme" do
     # Enable high contrast
     Accessibility.set_high_contrast(true)
-    
+
     # Get color scheme
     colors = Accessibility.get_color_scheme()
-    
+
     # Verify high contrast colors
     assert colors.background == :black
     assert colors.foreground == :white
     assert colors.accent == :yellow
-    
+
     # Disable high contrast
     Accessibility.set_high_contrast(false)
-    
+
     # Get standard colors
     colors = Accessibility.get_color_scheme()
-    
+
     # Verify standard colors
     assert colors.background != :black
     assert colors.foreground != :white
   end
-  
+
   test "announcements are queued correctly" do
     # Make announcements
     UXRefinement.announce("First announcement")
     UXRefinement.announce("Second announcement")
-    
+
     # Get next announcement
     next = Accessibility.get_next_announcement()
     assert next == "First announcement"
-    
+
     # Get next announcement
     next = Accessibility.get_next_announcement()
     assert next == "Second announcement"
-    
+
     # Queue should be empty now
     next = Accessibility.get_next_announcement()
     assert next == nil
@@ -391,4 +391,4 @@ end
 
 ---
 
-By following these guidelines and implementing the accessibility features provided by Raxol, you can create terminal UI applications that are accessible to a wide range of users, including those with disabilities. 
+By following these guidelines and implementing the accessibility features provided by Raxol, you can create terminal UI applications that are accessible to a wide range of users, including those with disabilities.
