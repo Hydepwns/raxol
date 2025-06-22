@@ -1,5 +1,6 @@
 defmodule Raxol.Plugins.PluginSystemTest do
   use ExUnit.Case
+  import Raxol.Guards
 
   @moduledoc """
   Tests for the plugin system functionality including plugin loading, configuration,
@@ -259,7 +260,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       {:ok, plugin} = ThemePlugin.init()
       assert plugin.name == "theme"
       assert plugin.enabled == true
-      assert is_map(plugin.current_theme.colors)
+      assert map?(plugin.current_theme.colors)
 
       assert plugin.current_theme.colors.background ==
                Raxol.UI.Theming.Theme.default_theme().colors.background
@@ -337,7 +338,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
     test "get_theme/1 returns the current theme struct" do
       {:ok, plugin} = ThemePlugin.init()
       theme = ThemePlugin.get_theme(plugin)
-      assert is_map(theme)
+      assert map?(theme)
       assert Map.has_key?(theme, :colors)
     end
   end

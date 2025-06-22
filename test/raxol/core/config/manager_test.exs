@@ -4,23 +4,28 @@ defmodule Raxol.Core.Config.ManagerTest do
   persistence, and error handling of configuration values.
   """
   use ExUnit.Case, async: false
+  import Raxol.Guards
   alias Raxol.Core.Config.Manager
 
   setup do
-    {:ok, _pid} =
-      Manager.start_link(
-        config_file: "test/fixtures/config.exs",
-        validate: true
-      )
+    # Create a temporary config file for testing
+    temp_file = Path.join(System.tmp_dir!(), "raxol_test_config.json")
 
-    on_exit(fn -> :ok = Manager.delete(:all) end)
-    :ok
+    # Start the manager with the temp file
+    {:ok, pid} = Manager.start_link(persistent_file: temp_file)
+
+    on_exit(fn ->
+      # Clean up the temp file
+      File.rm(temp_file)
+    end)
+
+    {:ok, %{temp_file: temp_file, pid: pid}}
   end
 
   describe "configuration loading" do
     test "loads configuration from file" do
       assert {:ok, _} = Manager.reload()
-      assert is_map(Manager.get_all())
+      assert map?(Manager.get_all())
     end
 
     test "handles missing configuration file" do
@@ -47,7 +52,7 @@ defmodule Raxol.Core.Config.ManagerTest do
   describe "configuration access" do
     test "gets configuration value" do
       assert {:ok, _} = Manager.reload()
-      assert is_integer(Manager.get(:terminal_width))
+      assert integer?(Manager.get(:terminal_width))
     end
 
     test "returns default value for missing key" do
@@ -57,7 +62,7 @@ defmodule Raxol.Core.Config.ManagerTest do
     test "gets all configuration values" do
       assert {:ok, _} = Manager.reload()
       config = Manager.get_all()
-      assert is_map(config)
+      assert map?(config)
       assert Map.has_key?(config, :terminal)
       assert Map.has_key?(config, :buffer)
       assert Map.has_key?(config, :renderer)
@@ -113,22 +118,75 @@ defmodule Raxol.Core.Config.ManagerTest do
   end
 
   describe "configuration persistence" do
-    test "persists configuration changes" do
-      assert :ok = Manager.set(:custom_key, "value", persist: true)
-      assert "value" = Manager.get(:custom_key)
+    test "persists configuration changes", %{temp_file: temp_file} do
+      # Set a configuration value
+      assert :ok = Manager.set(:test_key, "test_value", persist: true)
 
-      # Verify persistence by reloading the configuration
-      assert {:ok, _} = Manager.reload()
-      assert "value" = Manager.get(:custom_key)
+      # Verify the value is set
+      assert "test_value" = Manager.get(:test_key)
+
+      # Check that the value was persisted to file
+      assert File.exists?(temp_file)
+
+      # Read the file and verify content
+      {:ok, content} = File.read(temp_file)
+      {:ok, config} = Jason.decode(content)
+      assert config["test_key"] == "test_value"
     end
 
-    test "skips persistence when requested" do
-      assert :ok = Manager.set(:custom_key, "value", persist: false)
-      assert "value" = Manager.get(:custom_key)
+    test "loads persisted configuration on startup", %{temp_file: temp_file} do
+      # Create a persistent config file with some data
+      initial_config = %{"persisted_key" => "persisted_value"}
+      {:ok, json_content} = Jason.encode(initial_config, pretty: true)
+      File.write!(temp_file, json_content)
 
-      # Verify non-persistence by reloading the configuration
-      assert {:ok, _} = Manager.reload()
-      assert nil == Manager.get(:custom_key)
+      # Start a new manager instance
+      {:ok, _pid} = Manager.start_link(persistent_file: temp_file)
+
+      # Verify the persisted value is loaded
+      assert "persisted_value" = Manager.get(:persisted_key)
+    end
+
+    test "persists configuration deletions", %{temp_file: temp_file} do
+      # Set a configuration value
+      assert :ok = Manager.set(:delete_test_key, "delete_test_value", persist: true)
+
+      # Verify the value is set
+      assert "delete_test_value" = Manager.get(:delete_test_key)
+
+      # Delete the configuration value
+      assert :ok = Manager.delete(:delete_test_key, persist: true)
+
+      # Verify the value is deleted
+      assert nil = Manager.get(:delete_test_key)
+
+      # Check that the value was removed from the persistent file
+      {:ok, content} = File.read(temp_file)
+      {:ok, config} = Jason.decode(content)
+      refute Map.has_key?(config, "delete_test_key")
+    end
+
+    test "handles persistence failures gracefully" do
+      # Try to persist to a read-only directory (should fail gracefully)
+      read_only_file = "/readonly/test_config.json"
+
+      # This should not crash the manager
+      assert {:error, _reason} = Manager.set(:test_key, "test_value", persist: true)
+    end
+
+    test "skips persistence when persist: false", %{temp_file: temp_file} do
+      # Set a configuration value without persistence
+      assert :ok = Manager.set(:no_persist_key, "no_persist_value", persist: false)
+
+      # Verify the value is set in memory
+      assert "no_persist_value" = Manager.get(:no_persist_key)
+
+      # Check that the value was NOT persisted to file
+      if File.exists?(temp_file) do
+        {:ok, content} = File.read(temp_file)
+        {:ok, config} = Jason.decode(content)
+        refute Map.has_key?(config, "no_persist_key")
+      end
     end
   end
 

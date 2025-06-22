@@ -1,9 +1,7 @@
 defmodule Raxol.Style.Colors.PersistenceTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.Style.Colors.{Color, Persistence}
-  alias Raxol.Style.Colors.Theme, as: Theme
-  alias Raxol.UI.Theming.Theme
+  alias Raxol.Style.Colors.Persistence
 
   @test_theme %{
     name: "Test Theme",

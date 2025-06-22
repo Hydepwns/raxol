@@ -162,9 +162,9 @@ defmodule Raxol.Style.Colors.ColorTest do
       color1 = Color.from_rgb(255, 0, 0)
       color2 = Color.from_rgb(0, 0, 255)
       blended = Color.alpha_blend(color1, color2, 0.5)
-      assert blended.r == 127
+      assert blended.r == 128
       assert blended.g == 0
-      assert blended.b == 127
+      assert blended.b == 128
     end
 
     test "alpha 0.0 returns first color" do

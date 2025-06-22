@@ -4,6 +4,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
   memory usage tracking, garbage collection statistics, and error handling.
   """
   use ExUnit.Case
+  import Raxol.Guards
 
   alias Raxol.Core.Performance.MetricsCollector
 
@@ -130,7 +131,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       # Check GC stats
       gc_stats = MetricsCollector.get_gc_stats(collector)
 
-      assert is_map(gc_stats)
+      assert map?(gc_stats)
       assert Map.has_key?(gc_stats, :number_of_gcs)
       assert Map.has_key?(gc_stats, :words_reclaimed)
       assert Map.has_key?(gc_stats, :heap_size)

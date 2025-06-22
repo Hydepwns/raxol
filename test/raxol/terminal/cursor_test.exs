@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.CursorTest do
   use ExUnit.Case
+  import Raxol.Guards
   doctest Raxol.Terminal.Cursor.Manager
   doctest Raxol.Terminal.Cursor.Movement
   doctest Raxol.Terminal.Cursor.Style

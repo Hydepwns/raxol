@@ -131,7 +131,7 @@ defmodule VisualizationTest do
     |> Enum.each(fn {x, y, cell} ->
       char =
         case cell.char do
-          c when is_integer(c) -> <<c::utf8>>
+          c when integer?(c) -> <<c::utf8>>
           other -> inspect(other)
         end
 

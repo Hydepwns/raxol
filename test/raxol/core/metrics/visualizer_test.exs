@@ -4,6 +4,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   retrieval, export, and time range filtering.
   """
   use ExUnit.Case, async: true
+  import Raxol.Guards
   alias Raxol.Core.Metrics.Visualizer
 
   setup do
@@ -174,7 +175,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
       assert {:ok, json_data} = Visualizer.export_chart(chart_id, :json)
-      assert is_binary(json_data)
+      assert binary?(json_data)
       assert {:ok, _} = Jason.decode(json_data)
     end
 
@@ -188,7 +189,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
       assert {:ok, csv_data} = Visualizer.export_chart(chart_id, :csv)
-      assert is_binary(csv_data)
+      assert binary?(csv_data)
       assert String.contains?(csv_data, "Timestamp,Value")
     end
 

@@ -1,4 +1,5 @@
 import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
+import Raxol.Guards
 
 defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   use ExUnit.Case, async: true
@@ -154,7 +155,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
         # [series] = cell_chart.series
         # assert series.name == "Sales"
         # assert series.color == :blue
-        # assert is_list(series.data)
+        # assert list?(series.data)
       end)
 
       # Verify status indicators by checking the 'Status' column cells (index 3)
@@ -497,15 +498,23 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       # Selected index is 0
       selected_data_row_map = Enum.at(data_row_maps, 0)
 
-      assert is_map(selected_data_row_map),
+      assert map?(selected_data_row_map),
              "Selected data row map not found or not a map"
 
       assert selected_data_row_map.type == :row
       # table is the original Table.new struct
       assert Enum.count(selected_data_row_map.children) == length(table.columns)
 
-      # TODO: Add assertion for selected row style if styling logic is confirmed
-      # Example: check style of selected_data_row_map or its children
+      # Verify selected row has expected structure
+      assert selected_data_row_map.type == :row
+      assert list?(selected_data_row_map.children)
+      assert length(selected_data_row_map.children) > 0
+
+      # Verify selected row has expected content
+      [id_cell, name_cell, status_cell] = selected_data_row_map.children
+      assert id_cell.content == "0"
+      assert name_cell.content == "Product A"
+      assert status_cell.content == "up"
     end
 
     test ~c"creates tabbed view container" do
@@ -616,20 +625,12 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           end
         end
 
-      IO.inspect(view,
-        label: "View structure BEFORE Layout.apply_layout",
-        depth: :infinity,
-        structs: false,
-        pretty: true,
-        width: 120
-      )
-
       context = %{width: 80, height: 20}
       alias Raxol.Renderer.Layout
       rendered_view = Layout.apply_layout(view, context)
 
       # Verify outer border
-      assert is_map(rendered_view),
+      assert map?(rendered_view),
              "Layout.apply_layout should return a single map for a root border. Got: #{inspect(rendered_view)}"
 
       assert rendered_view.type == :border
@@ -649,7 +650,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       assert length(table.data) == 3
 
       # Verify table content
-      assert is_list(table.children) and table.children != [],
+      assert list?(table.children) and table.children != [],
              "Table children (rows) should not be empty"
 
       [header, separator_row | rows] = table.children
@@ -704,17 +705,17 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       alias Raxol.Renderer.Layout
       rendered_view = Layout.apply_layout(view, context)
 
-      assert is_map(rendered_view),
+      assert map?(rendered_view),
              "Layout.apply_layout (wide context) should return a single map for a root grid. Got: #{inspect(rendered_view)}"
 
       # Verify grid structure
       assert rendered_view.type == :grid
-      assert is_list(rendered_view.children)
+      assert list?(rendered_view.children)
       assert length(rendered_view.children) == 3
 
       # Verify each chart in the grid
       Enum.each(rendered_view.children, fn chart_as_box ->
-        assert is_map(chart_as_box)
+        assert map?(chart_as_box)
         assert chart_as_box.type == :box
 
         # Original assertions for chart properties might need to target children of this box
@@ -730,14 +731,14 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       rendered_view_narrow = Layout.apply_layout(view, context_narrow)
 
       # Verify grid structure with narrow width
-      assert is_map(rendered_view_narrow),
+      assert map?(rendered_view_narrow),
              "Layout.apply_layout (narrow context) should return a single map for a root grid. Got: #{inspect(rendered_view_narrow)}"
 
       assert rendered_view_narrow.type == :grid
 
       # Verify charts are properly scaled down
       Enum.each(rendered_view_narrow.children, fn chart_as_box ->
-        assert is_map(chart_as_box)
+        assert map?(chart_as_box)
         assert chart_as_box.type == :box
 
         # Original assertions for chart properties might need to target children of this box
@@ -813,10 +814,8 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       alias Raxol.Renderer.Layout
       rendered_view = Layout.apply_layout(view, context)
 
-      # IO.inspect(rendered_view, depth: :infinity, label: "Rendered View in Failing Test (713)") # DEBUG - Comment out for now
-
       # Check outer border properties
-      assert is_map(rendered_view),
+      assert map?(rendered_view),
              "Layout.apply_layout should return a single map for a root border. Got: #{inspect(rendered_view)}"
 
       assert rendered_view.type == :border
@@ -843,7 +842,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       assert table_view.border == :none
 
       # Now access table's children (rows)
-      assert is_list(table_view.children) and table_view.children != [],
+      assert list?(table_view.children) and table_view.children != [],
              "Table should have rendered rows as children"
 
       # This is the list of [header_row, separator_row, data_row1, ...]

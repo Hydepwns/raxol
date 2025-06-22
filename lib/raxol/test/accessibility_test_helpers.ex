@@ -40,6 +40,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   alias Raxol.Core.Events.Manager, as: EventManager
 
   import ExUnit.Assertions
+  import Raxol.Guards
 
   @doc """
   Run a test with a spy on screen reader announcements.
@@ -59,7 +60,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       end)
   """
   def with_screen_reader_spy(pid, fun)
-      when is_pid(pid) and is_function(fun, 0) do
+      when pid?(pid) and function?(fun, 0) do
     # Initialize announcement spy
     Process.put(:accessibility_test_announcements, [])
     # Register spy handler
@@ -119,7 +120,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       end
     else
       cond do
-        is_binary(expected) ->
+        binary?(expected) ->
           if not Enum.any?(announcements, &String.contains?(&1, expected)) do
             flunk(
               "Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
@@ -415,7 +416,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def with_reduced_motion(fun_or_pid, fun \\ nil) do
     case {fun_or_pid, fun} do
-      {pid, fun} when is_pid(pid) and is_function(fun, 0) ->
+      {pid, fun} when pid?(pid) and function?(fun, 0) ->
         previous = Accessibility.get_option(:reduced_motion, pid)
         Accessibility.set_option(:reduced_motion, true, pid)
 
@@ -425,7 +426,7 @@ defmodule Raxol.AccessibilityTestHelpers do
           Accessibility.set_option(:reduced_motion, previous, pid)
         end
 
-      {fun, nil} when is_function(fun, 0) ->
+      {fun, nil} when function?(fun, 0) ->
         previous = Accessibility.get_option(:reduced_motion, nil)
         Accessibility.set_option(:reduced_motion, true, nil)
 
@@ -461,7 +462,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   end
 
   # Helper function to parse shortcut string (e.g., "Ctrl+Shift+A") into event tuple
-  defp parse_shortcut_string(shortcut_string) when is_binary(shortcut_string) do
+  defp parse_shortcut_string(shortcut_string) when binary?(shortcut_string) do
     parts = String.split(shortcut_string, "+")
     key_str = List.last(parts)
     modifier_strs = Enum.take(parts, length(parts) - 1)
@@ -482,7 +483,7 @@ defmodule Raxol.AccessibilityTestHelpers do
         # Ignore unknown modifiers
         _ -> nil
       end)
-      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(&nil?/1)
 
     {:key, key, modifiers}
   end

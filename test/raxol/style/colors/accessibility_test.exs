@@ -2,7 +2,6 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Style.Colors.Accessibility
-  alias Raxol.Style.Colors.Color
 
   describe "contrast checking" do
     test ~c"check_contrast identifies sufficient contrast (AA)" do
@@ -83,7 +82,13 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       assert Map.has_key?(palette, :primary)
       assert Map.has_key?(palette, :secondary)
       assert Map.has_key?(palette, :accent)
-      # ... check other required keys
+      assert Map.has_key?(palette, :text)
+      assert Map.has_key?(palette, :background)
+      assert Map.has_key?(palette, :link)
+      assert Map.has_key?(palette, :success)
+      assert Map.has_key?(palette, :warning)
+      assert Map.has_key?(palette, :error)
+      assert Map.has_key?(palette, :info)
     end
 
     test ~c"generate_accessible_palette ensures all colors are accessible" do

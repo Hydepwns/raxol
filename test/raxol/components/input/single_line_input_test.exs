@@ -1,5 +1,6 @@
 defmodule Raxol.UI.Components.Input.SingleLineInputTest do
   use ExUnit.Case, async: true
+  import Raxol.Guards
 
   alias Raxol.UI.Components.Input.SingleLineInput
   alias Raxol.Core.Events.Event
@@ -34,8 +35,8 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
       assert state.style == %{color: :blue}
       assert state.focused == false
       assert state.cursor_pos == 4
-      assert is_function(state.on_change, 1)
-      assert is_function(state.on_submit, 1)
+      assert function?(state.on_change, 1)
+      assert function?(state.on_submit, 1)
     end
   end
 

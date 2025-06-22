@@ -7,6 +7,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   require Mox
   import Mox
   import Raxol.Test.Support.TestHelper
+  import Raxol.Guards
 
   alias Raxol.Core.Runtime.Supervisor
 
@@ -111,7 +112,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
       # Assert on the strategy option
       assert opts[:strategy] == :one_for_all
       # Optionally assert on children if needed, e.g., check count or types
-      assert is_list(children_spec)
+      assert list?(children_spec)
     end
   end
 end

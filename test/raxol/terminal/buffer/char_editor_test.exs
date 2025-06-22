@@ -211,14 +211,17 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
   defp get_char(buffer, x, y) do
     case get_in(buffer.cells, [y, x]) do
       nil -> nil
-      cell -> Raxol.Terminal.Cell.get_char(cell)
+      cell -> extract_char(cell)
     end
   end
 
   defp get_line_text(buffer, y) do
     buffer.cells
     |> Enum.at(y)
-    |> Enum.map(&Raxol.Terminal.Cell.get_char/1)
-    |> Enum.join()
+    |> Enum.map_join("", &extract_char/1)
   end
+
+  # Helper to extract char from only Raxol.Terminal.Cell
+  defp extract_char(%Raxol.Terminal.Cell{char: char}), do: char
+  defp extract_char(_), do: " "
 end

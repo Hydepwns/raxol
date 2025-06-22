@@ -334,16 +334,18 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       # Clear mocks first before restoring
       Enum.each(relevant_vars, &System.delete_env/1)
       # Restore original values
-      Enum.each(original_values, fn {key, original_value} ->
-        case original_value do
-          # Already cleared
-          nil -> :ok
-          _ -> System.put_env(key, original_value)
-        end
-      end)
+      Enum.each(original_values, &restore_env_var/1)
 
       # Important: Reset detection again after restoring env vars
       Adaptive.reset_detection()
     end)
+  end
+
+  # Helper function to restore environment variable
+  defp restore_env_var({key, original_value}) do
+    case original_value do
+      nil -> :ok
+      _ -> System.put_env(key, original_value)
+    end
   end
 end

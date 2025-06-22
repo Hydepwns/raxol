@@ -31,6 +31,7 @@ defmodule Raxol.Test.Integration do
 
   import ExUnit.Assertions
   alias Raxol.Core.Events.{Event, Subscription}
+  import Raxol.Guards
 
   defmacro __using__(_opts) do
     quote do
@@ -58,7 +59,7 @@ defmodule Raxol.Test.Integration do
   3. Configures component relationships
   4. Establishes test monitoring
   """
-  def setup_test_scenario(components) when is_map(components) do
+  def setup_test_scenario(components) when map?(components) do
     # Initialize each component
     initialized_components =
       Enum.map(components, fn {name, module} ->
@@ -145,7 +146,7 @@ defmodule Raxol.Test.Integration do
       end
 
     case event do
-      events when is_list(events) ->
+      events when list?(events) ->
         Enum.each(events, &dispatch_event(component, &1))
 
       event ->
@@ -220,7 +221,7 @@ defmodule Raxol.Test.Integration do
           parent: Map.get(routing_info, :parent),
           child: Map.get(routing_info, :child)
         }
-        |> Enum.filter(fn {_k, v} -> !is_nil(v) end)
+        |> Enum.filter(fn {_k, v} -> not nil?(v) end)
         |> Enum.into(%{})
 
       {new_state, commands} =

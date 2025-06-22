@@ -5,6 +5,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
   """
   # Must be false due to process monitoring and timers
   use ExUnit.Case, async: false
+  import Raxol.Guards
   alias Raxol.Core.Runtime.Subscription
 
   describe "new/2" do
@@ -174,7 +175,7 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
 
       sub = Subscription.file_watch(test_file)
       assert {:ok, {:file_watch, pid}} = Subscription.start(sub, context)
-      assert is_pid(pid)
+      assert pid?(pid)
 
       on_exit(fn ->
         if Process.alive?(pid), do: Process.exit(pid, :normal)

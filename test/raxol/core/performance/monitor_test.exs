@@ -5,6 +5,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
   and jank detection.
   """
   use ExUnit.Case
+  import Raxol.Guards
 
   alias Raxol.Core.Performance.Monitor
 
@@ -29,7 +30,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert metrics.memory_usage > 0
 
       # :erlang.statistics(:garbage_collection) returns a tuple {Count, Reclaimed, StackReclaimed}
-      assert is_tuple(metrics.gc_stats)
+      assert tuple?(metrics.gc_stats)
       assert tuple_size(metrics.gc_stats) == 3
       # Check GC count is non-negative integer
       assert elem(metrics.gc_stats, 0) >= 0
@@ -67,7 +68,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       initial_metrics = Monitor.get_metrics(monitor)
       initial_memory = initial_metrics.memory_usage
       # Assert that the value exists, even if it's 0 in test env
-      assert is_integer(initial_memory)
+      assert integer?(initial_memory)
 
       # Simulate memory allocation (e.g., create a large binary)
       # Allocate 1MB
@@ -81,7 +82,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       updated_memory = updated_metrics.memory_usage
 
       # Assert that memory usage value exists after update
-      assert is_integer(updated_memory)
+      assert integer?(updated_memory)
 
       GenServer.stop(monitor)
     end
@@ -129,7 +130,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
 
       initial_metrics = Monitor.get_metrics(monitor)
       # Assert initial GC stats structure
-      assert is_tuple(initial_metrics.gc_stats)
+      assert tuple?(initial_metrics.gc_stats)
       assert tuple_size(initial_metrics.gc_stats) == 3
       {initial_gc_count, _, _} = initial_metrics.gc_stats
       assert initial_gc_count >= 0
@@ -143,7 +144,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert_receive {:memory_check, _}, 400
 
       updated_metrics = Monitor.get_metrics(monitor)
-      assert is_tuple(updated_metrics.gc_stats)
+      assert tuple?(updated_metrics.gc_stats)
       assert tuple_size(updated_metrics.gc_stats) == 3
       {updated_gc_count, _, _} = updated_metrics.gc_stats
       assert updated_gc_count >= initial_gc_count

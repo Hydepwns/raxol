@@ -9,6 +9,8 @@ defmodule Raxol.Test.Visual.Matchers do
   - Component structure patterns
   """
 
+  import Raxol.Guards
+
   @doc """
   Matches ANSI color codes in the output.
 
@@ -18,7 +20,7 @@ defmodule Raxol.Test.Visual.Matchers do
       |> matches_color(:red, "Error message")
       |> matches_color(:green, "Success")
   """
-  def matches_color(output, color, content) when is_binary(output) do
+  def matches_color(output, color, content) when binary?(output) do
     color_code = ansi_color_code(color)
 
     pattern =
@@ -40,7 +42,7 @@ defmodule Raxol.Test.Visual.Matchers do
       |> matches_style(:bold, "Important")
       |> matches_style(:underline, "Link")
   """
-  def matches_style(output, style, content) when is_binary(output) do
+  def matches_style(output, style, content) when binary?(output) do
     style_code = ansi_style_code(style)
 
     pattern =
@@ -62,7 +64,7 @@ defmodule Raxol.Test.Visual.Matchers do
       |> matches_box_edges()
       |> matches_box_corners()
   """
-  def matches_box_edges(output) when is_binary(output) do
+  def matches_box_edges(output) when binary?(output) do
     horizontal = "─"
     vertical = "│"
 
@@ -95,7 +97,7 @@ defmodule Raxol.Test.Visual.Matchers do
   """
   def matches_layout(output, layout, opts \\ [])
 
-  def matches_layout(output, :centered, _opts) when is_binary(output) do
+  def matches_layout(output, :centered, _opts) when binary?(output) do
     lines = String.split(output, "\n")
     max_length = Enum.map(lines, &String.length/1) |> Enum.max()
 
@@ -112,7 +114,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  def matches_layout(output, :padded, opts) when is_binary(output) do
+  def matches_layout(output, :padded, opts) when binary?(output) do
     padding = Keyword.get(opts, :padding, 1)
     lines = String.split(output, "\n")
 
@@ -140,7 +142,7 @@ defmodule Raxol.Test.Visual.Matchers do
   """
   def matches_component(output, type, opts \\ [])
 
-  def matches_component(output, :button, label) when is_binary(output) do
+  def matches_component(output, :button, label) when binary?(output) do
     pattern = ~r/\[#{Regex.escape(label)}\]/
 
     if Regex.match?(pattern, output) do
@@ -150,7 +152,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  def matches_component(output, :input, opts) when is_binary(output) do
+  def matches_component(output, :input, opts) when binary?(output) do
     placeholder = Keyword.get(opts, :placeholder, "")
     pattern = ~r/\[#{Regex.escape(placeholder)}_+\]/
 
@@ -170,7 +172,7 @@ defmodule Raxol.Test.Visual.Matchers do
       |> matches_alignment(:left)
       |> matches_alignment(:right, width: 80)
   """
-  def matches_alignment(output, alignment, opts \\ []) when is_binary(output) do
+  def matches_alignment(output, alignment, opts \\ []) when binary?(output) do
     width = Keyword.get(opts, :width, 80)
     lines = String.split(output, "\n")
 

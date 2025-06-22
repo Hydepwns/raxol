@@ -39,6 +39,9 @@ defmodule Raxol.Test.PluginTestFixtures do
       }
     end
 
+    # Alias for backward compatibility
+    def metadata, do: get_metadata()
+
     # Added Behaviour Callbacks
     def handle_input(_input, state), do: {:ok, state}
     def handle_output(_output, state), do: {:ok, state}

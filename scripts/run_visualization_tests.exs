@@ -333,7 +333,7 @@ defmodule Raxol.RunVisualizationTests do
   defp count_nodes(nil), do: 0
   defp count_nodes(%{children: nil}), do: 1
   defp count_nodes(%{children: []}), do: 1
-  defp count_nodes(%{children: children}) when is_list(children) do
+  defp count_nodes(%{children: children}) when list?(children) do
     1 + Enum.sum(Enum.map(children, &count_nodes/1))
   end
   defp count_nodes(_), do: 1
