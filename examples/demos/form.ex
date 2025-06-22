@@ -13,6 +13,7 @@ defmodule Raxol.Examples.Form do
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
+  import Raxol.Guards
 
   defstruct form_data: %{username: "", password: ""}, submitted: false, id: :form_example
 
@@ -83,10 +84,10 @@ defmodule Raxol.Examples.Form do
           UI.label("Username:"),
           UI.text_input(id: :username_input, value: state.form_data.username),
           UI.label("Password:"),
-          UI.text_input(id: :password_input, value: state.form_data.password, is_password: true),
+          UI.text_input(id: :password_input, value: state.form_data.password, password: true),
           UI.button(id: :submit_button, label: "Submit"),
           (if state.submitted, do: UI.label("Submitted!"), else: nil)
-        ] |> Enum.reject(&is_nil(&1))
+        ] |> Enum.reject(&nil?/1)
       end
     end
   end

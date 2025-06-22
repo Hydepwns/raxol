@@ -1,7 +1,7 @@
 # Placeholder for Checkbox Component Definition
 # This file should return a %Raxol.Docs.ComponentCatalog.Component{} struct
 
-alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
+alias Raxol.Docs.ComponentCatalog.{Component, Example}
 
 %Component{
   id: :checkbox,

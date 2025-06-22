@@ -62,7 +62,7 @@ defmodule CommandsExample do
     Raxol.Core.Runtime.Log.debug("CommandsExample: view/1")
 
     active_commands_data = for {id, {status, result}} <- commands, status == :processing, do: %{id: id, status: status, result: result || "N/A"}
-    finished_commands_data = for {id, {_status, result}} <- commands, not is_nil(result), do: %{id: id, result: result}
+    finished_commands_data = for {id, {_status, result}} <- commands, not nil(result), do: %{id: id, result: result}
 
     view do
       column style: %{gap: 1} do

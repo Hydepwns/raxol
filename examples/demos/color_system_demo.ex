@@ -12,6 +12,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
   alias Raxol.Style.Colors.{Color, Utilities}
   # Adaptive module alias might be needed later
   alias Raxol.Style.Colors.Adaptive
+  import Raxol.Guards
 
   # Define application state to hold the demo theme
   defstruct theme: nil
@@ -52,32 +53,41 @@ defmodule Raxol.Examples.ColorSystemDemo do
           # Theme Info Section
           UI.box border: :single do
             UI.column do
-              ([UI.label(content: "--- Theme Info ---")] ++
-                 Enum.map(render_theme_info(theme), fn str -> %{type: :label, attrs: [content: str]} end))
+              [UI.label(content: "--- Theme Info ---")] ++
+                Enum.map(render_theme_info(theme), fn str ->
+                  %{type: :label, attrs: [content: str]}
+                end)
             end
           end,
 
           # Palette View Section
           UI.box border: :single do
             UI.column do
-              ([UI.label(content: "--- Palette View ---")] ++
-                 Enum.map(render_palette_view(theme.colors), fn str -> %{type: :label, attrs: [content: str]} end))
+              [UI.label(content: "--- Palette View ---")] ++
+                Enum.map(render_palette_view(theme.colors), fn str ->
+                  %{type: :label, attrs: [content: str]}
+                end)
             end
           end,
 
           # Color Adaptation Section
           UI.box border: :single do
             UI.column do
-              ([UI.label(content: "--- Color Adaptation ---")] ++
-                 Enum.map(render_color_adaptation_view(theme, adapted_theme), fn str -> %{type: :label, attrs: [content: str]} end))
+              [UI.label(content: "--- Color Adaptation ---")] ++
+                Enum.map(
+                  render_color_adaptation_view(theme, adapted_theme),
+                  fn str -> %{type: :label, attrs: [content: str]} end
+                )
             end
           end,
 
           # Accessibility View Section
           UI.box border: :single do
             UI.column do
-              ([UI.label(content: "--- Accessibility View ---")] ++
-                 Enum.map(render_accessibility_view(theme), fn str -> %{type: :label, attrs: [content: str]} end))
+              [UI.label(content: "--- Accessibility View ---")] ++
+                Enum.map(render_accessibility_view(theme), fn str ->
+                  %{type: :label, attrs: [content: str]}
+                end)
             end
           end
         ]
@@ -117,7 +127,10 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   @impl Raxol.Core.Runtime.Application
   def terminate(reason, _state) do
-    Raxol.Core.Runtime.Log.info("Terminating Color System Demo: #{inspect(reason)}")
+    Raxol.Core.Runtime.Log.info(
+      "Terminating Color System Demo: #{inspect(reason)}"
+    )
+
     :ok
   end
 
@@ -162,7 +175,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
   defp render_color_list(colors) do
     colors
     |> Enum.map(fn {name, color} ->
-      hex = if is_struct(color, Color), do: color.hex, else: inspect(color)
+      hex = if struct?(color, Color), do: color.hex, else: inspect(color)
       "  #{name}: #{hex}"
     end)
   end

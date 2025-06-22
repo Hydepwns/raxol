@@ -1,4 +1,6 @@
 defmodule Raxol.Docs.ComponentCatalog do
+  import Raxol.Guards
+
   @moduledoc """
   Visual component catalog for Raxol documentation.
 
@@ -255,7 +257,7 @@ defmodule Raxol.Docs.ComponentCatalog do
       # Fetch the actual components
       related_ids
       |> Enum.map(&get_component/1)
-      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(&nil?/1)
     else
       []
     end
@@ -380,7 +382,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   defp parse_prop_descriptions(nil), do: %{}
 
   defp parse_prop_descriptions({_, _line, _sigs, %{"en" => docstring}, _meta})
-       when is_binary(docstring) do
+       when binary?(docstring) do
     Regex.scan(~r/^\s*\*\s*`:(?<name>\w+)`\s*-\s*(?<desc>.*)$/m, docstring)
     |> Enum.reduce(%{}, fn [_, name, desc], acc ->
       Map.put(acc, String.to_atom(name), String.trim(desc))
@@ -398,7 +400,7 @@ defmodule Raxol.Docs.ComponentCatalog do
         introspected_desc = Map.get(introspected_descs, prop.name)
 
         if introspected_desc &&
-             (is_nil(prop.description) || prop.description == "") do
+             (nil?(prop.description) || prop.description == "") do
           %{prop | description: introspected_desc}
         else
           # Keep the static property data
@@ -409,7 +411,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   end
 
   # Helper to fetch introspectable data from a module
-  defp fetch_introspected_data(module) when is_atom(module) do
+  defp fetch_introspected_data(module) when atom?(module) do
     # Ensure the module is loaded before fetching docs
     Code.ensure_loaded?(module)
 
@@ -435,9 +437,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   defp fetch_introspected_data(_), do: %{}
 
   defp build_props_str(props) do
-    props
-    |> Enum.map(fn {key, value} -> ":#{key}: #{inspect(value)}" end)
-    |> Enum.join(", ")
+    Enum.map_join(props, ", ", fn {key, value} -> ":#{key}: #{inspect(value)}" end)
   end
 
   defp get_main_arg(props) do

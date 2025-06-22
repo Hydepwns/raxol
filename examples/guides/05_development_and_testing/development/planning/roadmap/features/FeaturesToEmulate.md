@@ -18,7 +18,7 @@ Prompt provides an elegant API for handling user input in command-line applicati
 ### Input Handling
 
 - **Text Input**: Clean interface for collecting free-form text (`TextInput` component exists, refined)
-- **Password Input**: Masked input for sensitive information (`TextInput` with `:is_password` flag)
+- **Password Input**: Masked input for sensitive information (`TextInput` with `:password` flag)
 - **Confirmation Prompts**: Yes/No interactions with customizable defaults (`Modal.confirmation` enhanced with defaults)
 - **Custom Choice Selection**: Support for custom confirmation choices beyond Yes/No (`SelectList` component implemented)
 - **Selection Lists**: Numbered menu options with easy selection (Partially covered by `SelectList`, could be enhanced)

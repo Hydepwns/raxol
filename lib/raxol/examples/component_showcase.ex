@@ -7,6 +7,7 @@ defmodule Raxol.Examples.ComponentShowcase do
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   import Raxol.View.Elements
+  import Raxol.Guards
 
   @impl Raxol.UI.Components.Base.Component
   def init(_props) do
@@ -31,8 +32,8 @@ defmodule Raxol.Examples.ComponentShowcase do
         "Longer Option D"
       ],
       selected_option: nil,
-      is_loading: false,
-      is_modal_open: false
+      loading?: false,
+      modal_open?: false
     }
 
     initial_assigns
@@ -71,17 +72,17 @@ defmodule Raxol.Examples.ComponentShowcase do
   end
 
   def handle_event("toggle_loading", _params, state) do
-    new_state = Map.put(state, :is_loading, !state.is_loading)
+    new_state = Map.put(state, :loading?, !state.loading?)
     {new_state, []}
   end
 
   def handle_event("open_modal", _params, state) do
-    new_state = Map.put(state, :is_modal_open, true)
+    new_state = Map.put(state, :modal_open?, true)
     {new_state, []}
   end
 
   def handle_event("close_modal", _params, state) do
-    new_state = Map.put(state, :is_modal_open, false)
+    new_state = Map.put(state, :modal_open?, false)
     {new_state, []}
   end
 
@@ -102,7 +103,7 @@ defmodule Raxol.Examples.ComponentShowcase do
     theme = get_theme_preview_colors(assigns.theme_id)
 
     [
-      if assigns.is_modal_open do
+      if assigns.modal_open? do
         %{
           type: Raxol.UI.Components.Modal,
           id: "my_modal",
@@ -184,7 +185,7 @@ defmodule Raxol.Examples.ComponentShowcase do
         end
       end
     ]
-    |> Enum.reject(&is_nil/1)
+    |> Enum.reject(&nil?/1)
   end
 
   defp style_for_tab(tab_id, active_tab, theme) do
@@ -253,7 +254,7 @@ defmodule Raxol.Examples.ComponentShowcase do
           label(content: "Spinner:", style: [:bold])
 
           row gap: 1, align: :center do
-            if assigns.is_loading do
+            if assigns.loading? do
               %{
                 type: Raxol.UI.Components.Display.Spinner,
                 id: :spinner_loading,

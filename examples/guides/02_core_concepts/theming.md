@@ -63,7 +63,7 @@ button_color = Raxol.Core.ColorSystem.get_ui_color(:primary_button)
 
 ```elixir
 # Accessibility checks
-is_readable = Raxol.Style.Colors.Utilities.meets_contrast_requirements?(
+readable = Raxol.Style.Colors.Utilities.meets_contrast_requirements?(
   text_color,
   background_color,
   :AA,

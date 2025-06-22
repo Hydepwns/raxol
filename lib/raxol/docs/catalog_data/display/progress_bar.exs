@@ -1,6 +1,6 @@
 # Placeholder for ProgressBar Component Definition
 
-alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
+alias Raxol.Docs.ComponentCatalog.{Component, Example}
 
 %Component{
   id: :progress_bar,
