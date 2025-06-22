@@ -1,5 +1,5 @@
 {application,json,
-             [{config_mtime,1750254435},
+             [{config_mtime,1750285812},
               {optional_applications,[]},
               {applications,[kernel,stdlib,elixir]},
               {description,"Raxol's fork of the JSON parser and generator in pure Elixir"},

@@ -1,6 +1,6 @@
 defmodule Raxol.Sequence do
   @moduledoc """
-  Defines the structure for a sequence of terminal commands.
+  Manages sequences and animations.
   """
 
   @type t :: %__MODULE__{

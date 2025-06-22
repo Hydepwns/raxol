@@ -7,6 +7,8 @@ defmodule Raxol.Plugins.EventHandler do
   Updates the plugin manager state based on the results returned by the plugins.
   """
 
+  import Raxol.Guards
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.Manager.Core
@@ -321,13 +323,13 @@ defmodule Raxol.Plugins.EventHandler do
         {:cont, {:ok, new_manager_state, acc_output}}
 
       {:ok, updated_plugin, transformed_output}
-      when is_binary(transformed_output) ->
+      when binary?(transformed_output) ->
         new_manager_state =
           update_plugin_state(acc_manager, plugin, updated_plugin)
 
         {:cont, {:ok, new_manager_state, transformed_output}}
 
-      {:error, reason} ->
+      {:error, _reason} ->
         handle_plugin_error(
           plugin,
           callback_name,
@@ -403,7 +405,7 @@ defmodule Raxol.Plugins.EventHandler do
 
         {:halt, {:ok, new_manager_state, :halt}}
 
-      {:error, reason} ->
+      {:error, _reason} ->
         handle_plugin_error(
           plugin,
           callback_name,

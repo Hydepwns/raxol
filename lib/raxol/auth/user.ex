@@ -14,7 +14,7 @@ defmodule Raxol.Auth.User do
     field :username, :string
     field :password_hash, :string
     field :password, :string, virtual: true
-    field :is_active, :boolean, default: true
+    field :active, :boolean, default: true
     field :last_login, :utc_datetime
     field :failed_login_attempts, :integer, default: 0
     field :locked_until, :utc_datetime
@@ -40,7 +40,7 @@ defmodule Raxol.Auth.User do
       :email,
       :username,
       :password,
-      :is_active,
+      :active,
       :last_login,
       :failed_login_attempts,
       :locked_until,

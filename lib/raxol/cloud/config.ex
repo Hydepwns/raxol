@@ -1,4 +1,6 @@
 defmodule Raxol.Cloud.Config do
+  import Raxol.Guards
+
   @moduledoc """
   Configuration management for Raxol cloud integrations.
 
@@ -15,8 +17,8 @@ defmodule Raxol.Cloud.Config do
   @defaults %{
     edge: %{
       mode: :auto,
-      sync_interval: 60000,
-      connection_check_interval: 30000,
+      sync_interval: 60_000,
+      connection_check_interval: 30_000,
       retry_limit: 3,
       compression: true,
       # 100MB
@@ -24,14 +26,14 @@ defmodule Raxol.Cloud.Config do
     },
     monitoring: %{
       active: true,
-      metrics_interval: 10000,
-      health_check_interval: 60000,
+      metrics_interval: 10_000,
+      health_check_interval: 60_000,
       error_sample_rate: 1.0,
       metrics_batch_size: 100,
       backends: [],
       alert_thresholds: %{
         error_rate: 0.05,
-        response_time: 1000,
+        response_time: 1_000,
         memory_usage: 0.9
       }
     },
@@ -141,23 +143,11 @@ defmodule Raxol.Cloud.Config do
   def update(new_config, opts \\ []) do
     state = get_state()
     section = Keyword.get(opts, :section)
-
-    # Ensure new_config is a map
     new_config = if is_map(new_config), do: new_config, else: %{}
 
-    # Update configuration
     updated_config =
       if section do
-        Map.update(
-          state.config,
-          section,
-          new_config,
-          fn existing ->
-            if is_map(existing),
-              do: Map.merge(existing, new_config),
-              else: new_config
-          end
-        )
+        update_config_section(state, section, new_config)
       else
         deep_merge(state.config, new_config)
       end
@@ -326,25 +316,26 @@ defmodule Raxol.Cloud.Config do
   end
 
   defp load_from_source(:file, opts) do
-    # Load configuration from file
     config_file = Keyword.get(opts, :config_file, "config/cloud.json")
 
     if File.exists?(config_file) do
-      case File.read(config_file) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, config} ->
-              {:ok, atomize_keys(config)}
-
-            {:error, reason} ->
-              {:error, {:file_parse_error, config_file, reason}}
-          end
-
-        {:error, reason} ->
-          {:error, {:file_read_error, config_file, reason}}
-      end
+      parse_config_file(config_file)
     else
       {:error, {:file_not_found, config_file}}
+    end
+  end
+
+  defp parse_config_file(config_file) do
+    case File.read(config_file) do
+      {:ok, content} -> parse_json_content(content)
+      {:error, reason} -> {:error, {:file_read_error, config_file, reason}}
+    end
+  end
+
+  defp parse_json_content(content) do
+    case Jason.decode(content) do
+      {:ok, config} -> {:ok, atomize_keys(config)}
+      {:error, reason} -> {:error, {:file_parse_error, reason}}
     end
   end
 
@@ -421,24 +412,31 @@ defmodule Raxol.Cloud.Config do
   end
 
   defp convert_env_value(key, value) do
-    # Simple type conversion based on key pattern
     cond do
-      String.ends_with?(key, "interval") or String.ends_with?(key, "timeout") or
-          String.ends_with?(key, "limit") ->
-        String.to_integer(value)
-
-      String.ends_with?(key, "rate") or String.ends_with?(key, "ratio") ->
-        String.to_float(value)
-
-      value in ["true", "false"] ->
-        value == "true"
-
-      String.ends_with?(key, "mode") or String.ends_with?(key, "strategy") ->
-        String.to_atom(value)
-
-      true ->
-        value
+      interval_key?(key) -> String.to_integer(value)
+      rate_key?(key) -> String.to_float(value)
+      boolean_value?(value) -> value == "true"
+      mode_key?(key) -> String.to_atom(value)
+      true -> value
     end
+  end
+
+  defp interval_key?(key) do
+    String.ends_with?(key, "interval") or
+      String.ends_with?(key, "timeout") or
+      String.ends_with?(key, "limit")
+  end
+
+  defp rate_key?(key) do
+    String.ends_with?(key, "rate") or String.ends_with?(key, "ratio")
+  end
+
+  defp boolean_value?(value) do
+    value in ["true", "false"]
+  end
+
+  defp mode_key?(key) do
+    String.ends_with?(key, "mode") or String.ends_with?(key, "strategy")
   end
 
   defp flatten_map(map, prefix \\ "") do
@@ -480,7 +478,7 @@ defmodule Raxol.Cloud.Config do
     |> Enum.into(%{})
   end
 
-  defp atomize_keys(list) when is_list(list) do
+  defp atomize_keys(list) when list?(list) do
     Enum.map(list, &atomize_keys/1)
   end
 
@@ -676,5 +674,22 @@ defmodule Raxol.Cloud.Config do
   def clear_backup_stats do
     # Implementation for clearing backup stats
     :ok
+  end
+
+  defp update_config_section(state, section, new_config) do
+    Map.update(
+      state.config,
+      section,
+      new_config,
+      &merge_existing_config(&1, new_config)
+    )
+  end
+
+  defp merge_existing_config(existing, new_config) do
+    if is_map(existing) do
+      Map.merge(existing, new_config)
+    else
+      new_config
+    end
   end
 end

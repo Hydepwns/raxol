@@ -1,4 +1,6 @@
 defmodule Raxol.Cloud.Monitoring do
+  import Raxol.Guards
+
   @moduledoc """
   Cloud monitoring system for Raxol applications.
 
@@ -428,7 +430,7 @@ defmodule Raxol.Cloud.Monitoring do
 
   defp with_state(arg1, arg2 \\ nil) do
     {state, fun} =
-      if is_function(arg1) do
+      if function?(arg1) do
         {get_state(), arg1}
       else
         {arg1 || get_state(), arg2}
@@ -436,7 +438,7 @@ defmodule Raxol.Cloud.Monitoring do
 
     result = fun.(state)
 
-    if is_map(result) and Map.has_key?(result, :active) do
+    if map?(result) and Map.has_key?(result, :active) do
       # If a state map is returned, update the state
       Process.put(@monitoring_key, result)
       result

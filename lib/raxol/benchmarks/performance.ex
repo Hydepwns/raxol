@@ -1,4 +1,5 @@
 defmodule Raxol.Benchmarks.Performance do
+  import Raxol.Guards
   @moduledoc """
   Performance benchmarking and validation tools for Raxol.
 
@@ -38,65 +39,69 @@ defmodule Raxol.Benchmarks.Performance do
   ```
   """
   def run_all(opts \\ []) do
-    ensure_keyword = fn
-      kw when is_list(kw) and (kw == [] or is_tuple(hd(kw))) -> kw
-      m when is_map(m) -> Map.to_list(m)
-      _ -> []
-    end
+    execute_benchmark_suite(normalize_opts(opts))
+  end
 
-    opts =
-      Keyword.merge(
-        ensure_keyword.(
-          save_results: true,
-          compare_with_baseline: true,
-          detailed: false
-        ),
-        ensure_keyword.(opts)
-      )
-
+  defp execute_benchmark_suite(opts) do
     start_time = System.monotonic_time(:millisecond)
     IO.puts("\n=== Raxol Performance Benchmark Suite ===\n")
 
-    # Run individual benchmarks
-    render_results = Rendering.benchmark_rendering()
-    event_results = EventHandling.benchmark_event_handling()
-    memory_results = MemoryUsage.benchmark_memory_usage()
-    animation_results = Animation.benchmark_animation_performance()
+    results = run_benchmarks(start_time)
+    validated_results = validate_results(results, opts)
 
-    # Compile all results
-    results = %{
-      timestamp: DateTime.utc_now(),
-      platform: Platform.get_platform_info(),
-      runtime_info: get_runtime_info(),
-      render_performance: render_results,
-      event_latency: event_results,
-      memory_usage: memory_results,
-      animation_fps: animation_results,
-      execution_time: System.monotonic_time(:millisecond) - start_time
-    }
-
-    # Validate against baseline metrics
-    validated_results =
-      if opts[:compare_with_baseline] do
-        baseline = Validation.get_baseline_metrics()
-        validation = Validation.validate_metrics(results, baseline)
-        Map.put(results, :metrics_validation, validation)
-      else
-        results
-      end
-
-    # Save results if requested
-    if opts[:save_results] do
-      _ = Reporting.save_benchmark_results(validated_results)
-    end
-
-    # Print summary
+    maybe_save_results(validated_results, opts)
     Reporting.print_summary(validated_results, opts[:detailed])
 
     validated_results
   end
 
-  # Private helper functions
+  defp maybe_save_results(results, opts) do
+    opts[:save_results] && Reporting.save_benchmark_results(results)
+  end
+
+  defp normalize_opts(opts) do
+    default_opts = [save_results: true, compare_with_baseline: true, detailed: false]
+    Keyword.merge(default_opts, normalize_to_keyword(opts))
+  end
+
+  defp normalize_to_keyword(opts) when list?(opts) and opts == [] do
+    []
+  end
+
+  defp normalize_to_keyword(opts) when list?(opts) and tuple?(hd(opts)) do
+    opts
+  end
+
+  defp normalize_to_keyword(opts) when is_map(opts) do
+    Map.to_list(opts)
+  end
+
+  defp normalize_to_keyword(_) do
+    []
+  end
+
+  defp run_benchmarks(start_time) do
+    %{
+      timestamp: DateTime.utc_now(),
+      platform: Platform.get_platform_info(),
+      runtime_info: get_runtime_info(),
+      render_performance: Rendering.benchmark_rendering(),
+      event_latency: EventHandling.benchmark_event_handling(),
+      memory_usage: MemoryUsage.benchmark_memory_usage(),
+      animation_fps: Animation.benchmark_animation_performance(),
+      execution_time: System.monotonic_time(:millisecond) - start_time
+    }
+  end
+
+  defp validate_results(results, opts) do
+    if opts[:compare_with_baseline] do
+      baseline = Validation.get_baseline_metrics()
+      validation = Validation.validate_metrics(results, baseline)
+      Map.put(results, :metrics_validation, validation)
+    else
+      results
+    end
+  end
 
   defp get_runtime_info do
     %{

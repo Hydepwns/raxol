@@ -1,4 +1,5 @@
 defmodule Raxol.Animation.Gestures do
+  import Raxol.Guards
   @moduledoc """
   Gesture-driven interactions for Raxol animations.
 
@@ -25,7 +26,7 @@ defmodule Raxol.Animation.Gestures do
       :touch_history,
       :start_time,
       :current_time,
-      :is_active,
+      :active,
       :gesture_type,
       :velocity,
       :handlers,
@@ -39,7 +40,7 @@ defmodule Raxol.Animation.Gestures do
         touch_history: [],
         start_time: nil,
         current_time: nil,
-        is_active: false,
+        active: false,
         gesture_type: nil,
         velocity: %Vector{},
         handlers: %{},
@@ -74,7 +75,7 @@ defmodule Raxol.Animation.Gestures do
       iex> register_handler(:swipe, fn %{direction: :left} -> handle_left_swipe() end)
       :ok
   """
-  def register_handler(gesture_type, handler) when is_function(handler, 1) do
+  def register_handler(gesture_type, handler) when function?(handler, 1) do
     with_state(fn state ->
       handlers =
         Map.update(
@@ -102,7 +103,7 @@ defmodule Raxol.Animation.Gestures do
           touch_history: [position],
           start_time: time,
           current_time: time,
-          is_active: true,
+          active: true,
           gesture_type: nil
       }
     end)
@@ -115,7 +116,7 @@ defmodule Raxol.Animation.Gestures do
   """
   def touch_move(position, time \\ System.monotonic_time(:millisecond)) do
     with_state(fn state ->
-      if state.is_active do
+      if state.active do
         # Calculate velocity based on time difference
         time_diff = max(1, time - state.current_time)
         {prev_x, prev_y} = state.touch_current
@@ -150,7 +151,7 @@ defmodule Raxol.Animation.Gestures do
   """
   def touch_up(position, time \\ System.monotonic_time(:millisecond)) do
     with_state(fn state ->
-      if state.is_active do
+      if state.active do
         gesture_type = detect_gesture_type(state, :up)
         gesture_data = prepare_gesture_data(state, position, time)
         call_handlers(gesture_type, gesture_data)
@@ -170,7 +171,7 @@ defmodule Raxol.Animation.Gestures do
             touch_history: [],
             start_time: nil,
             current_time: nil,
-            is_active: false,
+            active: false,
             gesture_type: nil,
             velocity: %Vector{},
             active_animations: active_animations

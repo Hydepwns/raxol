@@ -7,6 +7,7 @@ defmodule RaxolWeb.SettingsLive do
   alias Raxol.Core.UserPreferences
   alias Raxol.System.Updater
   alias Raxol.Cloud.Config
+  import Raxol.Guards
 
   @impl true
   def mount(%{"token" => _token}, _session, socket) do
@@ -18,7 +19,7 @@ defmodule RaxolWeb.SettingsLive do
     user_id = connect_params["user_id"]
 
     case user_id && Accounts.get_user(user_id) do
-      user when not is_nil(user) ->
+      user when not nil?(user) ->
         # Get user preferences
         preferences = UserPreferences.default_preferences()
 

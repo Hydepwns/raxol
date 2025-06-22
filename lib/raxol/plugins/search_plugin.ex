@@ -1,4 +1,6 @@
 defmodule Raxol.Plugins.SearchPlugin do
+  import Raxol.Guards
+
   @moduledoc """
   Plugin for text search functionality.
   """
@@ -166,7 +168,7 @@ defmodule Raxol.Plugins.SearchPlugin do
   Highlights the search term in the given text.
   """
   def highlight_search_term(text, search_term)
-      when is_binary(text) and is_binary(search_term) and search_term != "" do
+      when binary?(text) and binary?(search_term) and search_term != "" do
     # ANSI escape sequence for highlighting: \e[43m (yellow background)
     String.replace(text, search_term, "\e[43m#{search_term}\e[0m")
   end

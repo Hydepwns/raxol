@@ -1,4 +1,6 @@
 defmodule Raxol.Plugins.HyperlinkPlugin do
+  import Raxol.Guards
+
   @moduledoc """
   Plugin that detects URLs in terminal output and makes them clickable.
   """
@@ -94,7 +96,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
   defp handle_left_click(plugin_state, x, y, rendered_cells) do
     case Map.get(rendered_cells, {x, y}) do
-      %{style: %{hyperlink: url}} when is_binary(url) and url != "" ->
+      %{style: %{hyperlink: url}} when binary?(url) and url != "" ->
         Raxol.Core.Runtime.Log.debug(
           "[HyperlinkPlugin] Clicked on hyperlink: #{url}"
         )
@@ -155,7 +157,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
         Raxol.Core.Runtime.Log.info("[HyperlinkPlugin] Opened URL: #{url}")
         :ok
 
-      {output, exit_code} ->
+      {_output, _exit_code} ->
         Raxol.Core.Runtime.Log.error(
           # {url}" with command "#{command}". Exit code: #{exit_code}, Output: #{output}"
           "[HyperlinkPlugin] Failed to open URL "

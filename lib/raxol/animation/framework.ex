@@ -1,4 +1,6 @@
 defmodule Raxol.Animation.Framework do
+  import Raxol.Guards
+
   @moduledoc """
   Coordinates the lifecycle of animations within Raxol.
 
@@ -296,14 +298,14 @@ defmodule Raxol.Animation.Framework do
         # Already fully qualified
         animation_def
 
-      [property] when is_atom(property) or is_binary(property) ->
+      [property] when atom?(property) or binary?(property) ->
         Map.put(animation_def, :target_path, [
           :elements,
           to_string(element_id),
           property
         ])
 
-      path when is_list(path) ->
+      path when list?(path) ->
         qualify_path(animation_def, path, element_id)
 
       _ ->
@@ -314,7 +316,7 @@ defmodule Raxol.Animation.Framework do
   defp qualify_path(animation_def, path, element_id) do
     case path do
       [:elements, id | _] ->
-        id_str = if is_binary(id), do: id, else: to_string(id)
+        id_str = if binary?(id), do: id, else: to_string(id)
         elem_id_str = to_string(element_id)
 
         if id == element_id or id_str == elem_id_str do
@@ -615,7 +617,7 @@ defmodule Raxol.Animation.Framework do
 
   # Helper function to set value in nested state (might move later)
   # Consider using Kernel.put_in/3 with Access syntax if paths are lists of keys
-  defp set_in_state(state, path, value) when is_list(path) do
+  defp set_in_state(state, path, value) when list?(path) do
     # Use Kernel.put_in for list paths
     put_in(state, path, value)
   catch
@@ -632,12 +634,12 @@ defmodule Raxol.Animation.Framework do
 
   # Handle potential non-list paths if necessary
   defp set_in_state(state, key, value)
-       when not is_list(key) and is_map(state) do
+       when not list?(key) and map?(state) do
     Map.put(state, key, value)
   end
 
   defp set_in_state(state, key, _value)
-       when not is_list(key) and not is_map(state) do
+       when not list?(key) and not map?(state) do
     # If key is not a list and state is not a map, we cannot proceed
     # This might happen if the path is incorrect or points to a scalar value
     Raxol.Core.Runtime.Log.warning_with_context(

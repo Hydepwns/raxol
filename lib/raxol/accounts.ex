@@ -1,7 +1,6 @@
 defmodule Raxol.Accounts do
   @moduledoc """
-  The Accounts context.
-  Manages user accounts and registration.
+  Manages user accounts and authentication.
   (Currently uses an in-memory Agent for storage)
   """
 

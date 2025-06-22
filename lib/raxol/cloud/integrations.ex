@@ -1,6 +1,6 @@
 defmodule Raxol.Cloud.Integrations do
   @moduledoc """
-  Cloud integration utilities for Raxol applications.
+  Manages cloud integrations and external service connections.
 
   This module provides integration utilities for connecting various cloud services
   with Raxol applications, focusing on edge computing, monitoring, and service discovery.

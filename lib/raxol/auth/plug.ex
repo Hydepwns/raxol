@@ -45,7 +45,9 @@ defmodule Raxol.Auth.Plug do
         |> put_session(:user_id, user.id)
         |> configure_session(renew: true)
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning("Authentication failed for user: #{inspect(reason)}")
+
         conn
         |> put_flash(:error, "Invalid email or password")
         |> redirect(to: "/login")
@@ -61,7 +63,7 @@ defmodule Raxol.Auth.Plug do
     |> redirect(to: "/")
   end
 
-  defguard is_admin?(conn) when conn.assigns.current_user.role == :admin
+  defguard admin?(conn) when conn.assigns.current_user.role == :admin
 
   @spec require_permission(
           Plug.Conn.t(),
@@ -70,23 +72,22 @@ defmodule Raxol.Auth.Plug do
         ) ::
           Plug.Conn.t()
   def require_permission(conn, module, action) do
-    _user = conn.assigns.current_user
+    user = conn.assigns.current_user
 
-    # TODO: Implement Raxol.Accounts.has_permission?/3
-    # if Accounts.has_permission?(user, module, action) do
-    #   conn
-    # else
-    #   Raxol.Core.Runtime.Log.warning("Authorization failed for user #{user.id} on #{inspect(module)}.#{action}")
-    #   conn
-    #   |> put_status(:forbidden)
-    #   |> text("Forbidden")
-    #   |> halt()
-    # end
-    Raxol.Core.Runtime.Log.debug(
-      "Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented."
-    )
+    # Permission checking is currently disabled - Raxol.Accounts.has_permission?/3 needs implementation
+    if Accounts.has_permission?(user, module, action) do
+      Raxol.Core.Runtime.Log.debug(
+        "Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented."
+      )
 
-    conn
+      conn
+    else
+      Raxol.Core.Runtime.Log.warning("Authorization failed for user #{user.id} on #{inspect(module)}.#{action}")
+      conn
+      |> put_status(:forbidden)
+      |> text("Forbidden")
+      |> halt()
+    end
   end
 
   @doc """

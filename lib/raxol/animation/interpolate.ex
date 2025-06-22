@@ -1,4 +1,6 @@
 defmodule Raxol.Animation.Interpolate do
+  import Raxol.Guards
+
   @moduledoc """
   Provides interpolation functions for different data types.
   """
@@ -9,13 +11,13 @@ defmodule Raxol.Animation.Interpolate do
   @doc """
   Interpolates between two values based on progress `t` (0.0 to 1.0).
   """
-  def value(from, to, t) when is_number(from) and is_number(to) do
+  def value(from, to, t) when number?(from) and number?(to) do
     from + (to - from) * t
   end
 
   # Handle tuples of size 2 and 3 with a simpler implementation
   def value(from_tuple, to_tuple, t)
-      when is_tuple(from_tuple) and is_tuple(to_tuple) do
+      when tuple?(from_tuple) and tuple?(to_tuple) do
     if tuple_size(from_tuple) == tuple_size(to_tuple) and
          numeric_tuple?(from_tuple) and numeric_tuple?(to_tuple) do
       values =
@@ -32,7 +34,7 @@ defmodule Raxol.Animation.Interpolate do
   end
 
   def value(from_list, to_list, t)
-      when is_list(from_list) and is_list(to_list) and
+      when list?(from_list) and list?(to_list) and
              length(from_list) == length(to_list) do
     if valid_number_lists?(from_list, to_list) do
       Enum.zip(from_list, to_list)
@@ -51,7 +53,7 @@ defmodule Raxol.Animation.Interpolate do
     Color.from_rgb(r, g, b)
   end
 
-  def value(from_map, to_map, t) when is_map(from_map) and is_map(to_map) do
+  def value(from_map, to_map, t) when map?(from_map) and map?(to_map) do
     Map.new(from_map, fn {key, from_value} ->
       case Map.fetch(to_map, key) do
         {:ok, to_value} ->
@@ -64,7 +66,7 @@ defmodule Raxol.Animation.Interpolate do
   end
 
   # Ensure final value is returned when t >= 1.0
-  def value(_from, to, t) when is_float(t) and t >= 1.0 do
+  def value(_from, to, t) when float?(t) and t >= 1.0 do
     to
   end
 
@@ -74,14 +76,14 @@ defmodule Raxol.Animation.Interpolate do
   end
 
   defp valid_number_lists?(from_list, to_list) do
-    Enum.all?(from_list, &is_number/1) and Enum.all?(to_list, &is_number/1)
+    Enum.all?(from_list, &number?/1) and Enum.all?(to_list, &number?/1)
   end
 
   # Helper function to check if all elements in a tuple are numbers
   defp numeric_tuple?(tuple) do
     tuple
     |> Tuple.to_list()
-    |> Enum.all?(&is_number/1)
+    |> Enum.all?(&number?/1)
   end
 
   defp interpolate_hsl({h1, s1, l1}, {h2, s2, l2}, t) do

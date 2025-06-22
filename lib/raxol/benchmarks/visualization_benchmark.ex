@@ -1,4 +1,6 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmark do
+  import Raxol.Guards
+
   @moduledoc """
   Performance benchmarking tool for visualization components.
   Provides tools to measure rendering time, memory usage, and optimization effectiveness
@@ -27,7 +29,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   * `:memory_test` - Whether to track memory usage (default: true)
   """
   def run_benchmark(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
     output_path = Keyword.get(opts, :output_path, "benchmark_results")
     dataset_sizes = Keyword.get(opts, :datasets, [10, 100, 1000, 10_000])
     iterations = Keyword.get(opts, :iterations, 5)
@@ -376,7 +378,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   defp count_nodes(%{children: nil}), do: 1
   defp count_nodes(%{children: []}), do: 1
 
-  defp count_nodes(%{children: children}) when is_list(children) do
+  defp count_nodes(%{children: children}) when list?(children) do
     1 + Enum.sum(Enum.map(children, &count_nodes/1))
   end
 
@@ -556,7 +558,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   end
 
   defp get_size_extremes(results) do
-    sorted = Enum.sort_by(results, & &1.size)
+    sorted = Enum.sort_by(results, &(&1.size))
 
     if length(sorted) >= 2,
       do: {List.first(sorted), List.last(sorted)},

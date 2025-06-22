@@ -4,6 +4,8 @@ defmodule Raxol.Plugins.Manager.Hooks do
   Provides functions for running various plugin hooks and collecting their results.
   """
 
+  import Raxol.Guards
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.Manager.Core
@@ -33,7 +35,7 @@ defmodule Raxol.Plugins.Manager.Hooks do
 
   defp handle_render_hook(module, plugin, acc_manager, acc_commands) do
     case module.handle_render(plugin) do
-      {:ok, updated_plugin, command} when not is_nil(command) ->
+      {:ok, updated_plugin, command} when not nil?(command) ->
         updated_manager =
           Core.update_plugins(
             acc_manager,
@@ -51,7 +53,7 @@ defmodule Raxol.Plugins.Manager.Hooks do
 
         {:ok, updated_manager, acc_commands}
 
-      command when is_binary(command) ->
+      command when binary?(command) ->
         {:ok, acc_manager, [command | acc_commands]}
 
       _ ->

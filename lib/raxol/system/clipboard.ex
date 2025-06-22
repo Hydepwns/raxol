@@ -11,6 +11,7 @@ defmodule Raxol.System.Clipboard do
 
   @behaviour Raxol.Core.Clipboard.Behaviour
 
+  import Raxol.Guards
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -18,7 +19,7 @@ defmodule Raxol.System.Clipboard do
   """
   @impl Raxol.Core.Clipboard.Behaviour
   @spec copy(String.t()) :: :ok | {:error, atom() | String.t()}
-  def copy(text) when is_binary(text) do
+  def copy(text) when binary?(text) do
     case :os.type() do
       {:unix, :darwin} ->
         # macOS uses pbcopy

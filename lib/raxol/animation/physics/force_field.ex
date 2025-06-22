@@ -1,4 +1,5 @@
 defmodule Raxol.Animation.Physics.ForceField do
+  import Raxol.Guards
   @moduledoc """
   Force field implementation for physics simulations.
 
@@ -140,7 +141,7 @@ defmodule Raxol.Animation.Physics.ForceField do
   * `:function` - Function to calculate force (fn object, field -> force_vector end)
   * `:properties` - Additional properties for the function (default: %{})
   """
-  def custom_field(function, opts \\ []) when is_function(function, 2) do
+  def custom_field(function, opts \\ []) when function?(function, 2) do
     %__MODULE__{
       type: :custom,
       function: function,

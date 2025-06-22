@@ -6,6 +6,7 @@ defmodule Raxol.System.DeltaUpdater do
   require Raxol.Core.Runtime.Log
   # Called via adapter now
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl
+  import Raxol.Guards
 
   @system_adapter Application.compile_env(
                     :raxol,
@@ -63,7 +64,7 @@ defmodule Raxol.System.DeltaUpdater do
 
   # Private functions
 
-  defp extract_assets(%{"assets" => assets}) when is_list(assets),
+  defp extract_assets(%{"assets" => assets}) when list?(assets),
     do: {:ok, assets}
 
   defp extract_assets(_), do: {:error, "No assets found in release data"}
@@ -105,7 +106,7 @@ defmodule Raxol.System.DeltaUpdater do
 
     exe = exe_path_env || List.first(argv)
 
-    if is_nil(exe) do
+    if nil?(exe) do
       # Return error tuple
       {:error, :cannot_determine_executable_path}
     else

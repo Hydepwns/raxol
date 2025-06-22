@@ -1,4 +1,6 @@
 defmodule Raxol.Plugins.Visualization.ImageRenderer do
+  import Raxol.Guards
+
   @moduledoc """
   Handles rendering logic for image visualization within the VisualizationPlugin.
   Supports both sixel and kitty protocols for terminal image rendering.
@@ -7,7 +9,6 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
-  alias Raxol.Style
 
   @doc """
   Public entry point for rendering image content.
@@ -17,13 +18,13 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   def render_image_content(
         data,
         opts,
-        %{width: _width, height: _height} = bounds,
+        %{width: width, height: height} = bounds,
         state
       ) do
     title = Map.get(opts, :title, "Image")
     protocol = Map.get(opts, :protocol, detect_protocol(state))
 
-    if _width < 1 or _height < 1 do
+    if width < 1 or height < 1 do
       Raxol.Core.Runtime.Log.warning_with_context(
         "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
         %{}
@@ -60,13 +61,13 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   defp supports_kitty?(state) do
     # Check for kitty protocol support
-    term_program = get_in(state, [:terminal, :program])
-    term_program == "kitty" or String.contains?(term_program || "", "kitty")
+    _term_program = get_in(state, [:terminal, :program])
+    _term_program == "kitty" or String.contains?(_term_program || "", "kitty")
   end
 
   defp supports_sixel?(state) do
     # Check for sixel support
-    term_program = get_in(state, [:terminal, :program])
+    _term_program = get_in(state, [:terminal, :program])
     term_features = get_in(state, [:terminal, :features]) || []
     "sixel" in term_features
   end
@@ -105,17 +106,17 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     end
   end
 
-  defp load_image_data(_data) when is_binary(_data) do
+  defp load_image_data(data) when binary?(data) do
     # Handle file path
-    case File.read(_data) do
+    case File.read(data) do
       {:ok, content} -> {:ok, content}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp load_image_data(_data) when is_binary(_data) do
+  defp load_image_data(data) when binary?(data) do
     # Handle raw image data
-    {:ok, _data}
+    {:ok, data}
   end
 
   defp load_image_data(_), do: {:error, :invalid_data}
@@ -147,7 +148,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     |> Mogrify.save()
   end
 
-  defp encode_sixel(image) do
+  defp encode_sixel(_image) do
     # Convert image to sixel format using sixel encoder
     # This is a placeholder - you'll need to implement or use a sixel encoder library
     # For now, return a basic sixel pattern

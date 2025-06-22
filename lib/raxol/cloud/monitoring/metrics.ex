@@ -1,5 +1,7 @@
 # Metrics implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Metrics do
+  # import Raxol.Guards (remove if not used)
+
   @moduledoc false
 
   # Process dictionary key for metrics
@@ -64,35 +66,44 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   def get(name, opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
     metrics_state = get_metrics_state()
 
-    limit = Keyword.get(opts, :limit, 100)
-
-    since =
-      Keyword.get(
-        opts,
-        :since,
-        DateTime.add(DateTime.utc_now(), -60 * 60, :second)
-      )
-
-    until = Keyword.get(opts, :until, DateTime.utc_now())
-    tags = Keyword.get(opts, :tags)
-
     case Map.get(metrics_state.metrics, name) do
-      nil ->
-        []
-
-      metrics ->
-        metrics
-        |> Enum.filter(fn metric ->
-          DateTime.compare(metric.timestamp, since) in [:gt, :eq] &&
-            DateTime.compare(metric.timestamp, until) in [:lt, :eq] &&
-            (tags == nil || Enum.all?(tags, &(&1 in Map.get(metric, :tags, []))))
-        end)
-        |> Enum.take(limit)
+      nil -> []
+      metrics -> filter_metrics(metrics, opts)
     end
   end
+
+  defp normalize_opts(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+
+    %{
+      limit: Keyword.get(opts, :limit, 100),
+      since: Keyword.get(opts, :since, DateTime.add(DateTime.utc_now(), -60 * 60, :second)),
+      until: Keyword.get(opts, :until, DateTime.utc_now()),
+      tags: Keyword.get(opts, :tags)
+    }
+  end
+
+  defp filter_metrics(metrics, opts) do
+    metrics
+    |> Enum.filter(&metric_matches?(&1, opts))
+    |> Enum.take(opts.limit)
+  end
+
+  defp metric_matches?(metric, opts) do
+    time_in_range?(metric.timestamp, opts.since, opts.until) &&
+      tags_match?(metric, opts.tags)
+  end
+
+  defp time_in_range?(timestamp, since, until) do
+    DateTime.compare(timestamp, since) in [:gt, :eq] &&
+      DateTime.compare(timestamp, until) in [:lt, :eq]
+  end
+
+  defp tags_match?(_metric, nil), do: true
+  defp tags_match?(metric, tags), do: Enum.all?(tags, &(&1 in Map.get(metric, :tags, [])))
 
   def count() do
     metrics_state = get_metrics_state()
@@ -103,17 +114,15 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
     |> Enum.sum()
   end
 
-  # Private helpers
-
   defp get_metrics_state() do
     Process.get(@metrics_key) ||
       %{metrics: %{}, config: %{}, batch: [], last_flush: DateTime.utc_now()}
   end
 
   defp flush_metrics(batch, config) do
-    # In a real implementation, this would send metrics to monitoring backends
+    # FEAT: In a real implementation, this would send metrics to monitoring backends
     Enum.each(config.backends, fn backend ->
-      # This would call the appropriate backend module
+      # FEAT: This would call the appropriate backend module
       case backend do
         :datadog -> send_to_datadog(batch)
         :prometheus -> send_to_prometheus(batch)
@@ -124,17 +133,17 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   defp send_to_datadog(_batch) do
-    # This would use the Datadog API to send metrics
+    # FEAT: This would use the Datadog API to send metrics
     :ok
   end
 
   defp send_to_prometheus(_batch) do
-    # This would use Prometheus client to send metrics
+    # FEAT: This would use Prometheus client to send metrics
     :ok
   end
 
   defp send_to_cloudwatch(_batch) do
-    # This would use AWS SDK to send metrics to CloudWatch
+    # FEAT: This would use AWS SDK to send metrics to CloudWatch
     :ok
   end
 end
