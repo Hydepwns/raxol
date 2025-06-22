@@ -48,8 +48,7 @@ defmodule Raxol.I18nTestHelpers do
 
       assert_translation_exists("fr", "buttons.save")
   """
-  def assert_translation_exists(locale, key)
-      when is_binary(locale) and is_binary(key) do
+  def assert_translation_exists(locale, key) when is_binary(locale) and is_binary(key) do
     translated = Gettext.t(key, %{}, locale: locale, default: key)
 
     assert translated != key,
@@ -64,8 +63,7 @@ defmodule Raxol.I18nTestHelpers do
 
       assert_translation("fr", "buttons.save", "Enregistrer")
   """
-  def assert_translation(locale, key, expected)
-      when is_binary(locale) and is_binary(key) do
+  def assert_translation(locale, key, expected) when is_binary(locale) and is_binary(key) do
     actual = Gettext.t(key, %{}, locale)
 
     assert actual == expected,
@@ -87,8 +85,7 @@ defmodule Raxol.I18nTestHelpers do
       end
   """
   def with_locale_announcements(locale, user_preferences_pid, fun)
-      when is_binary(locale) and is_pid(user_preferences_pid) and
-             is_function(fun, 0) do
+      when is_binary(locale) and is_pid(user_preferences_pid) and is_function(fun, 0) do
     with_locale(locale, fn ->
       with_screen_reader_spy(user_preferences_pid, fun)
     end)
@@ -123,8 +120,7 @@ defmodule Raxol.I18nTestHelpers do
 
       assert_accessibility_translations_complete("fr")
   """
-  def assert_accessibility_translations_complete(locale)
-      when is_binary(locale) do
+  def assert_accessibility_translations_complete(locale) when is_binary(locale) do
     essential_keys = [
       "accessibility.high_contrast_enabled",
       "accessibility.high_contrast_disabled",
@@ -185,8 +181,7 @@ defmodule Raxol.I18nTestHelpers do
       assert_component_accessibility_labels("fr", button, ["label", "hint"])
   """
   def assert_component_accessibility_labels(locale, component_id, label_types)
-      when is_binary(locale) and is_binary(component_id) and
-             is_list(label_types) do
+      when is_binary(locale) and is_binary(component_id) and is_list(label_types) do
     with_locale(locale, fn ->
       metadata = get_mock_element_metadata(component_id) || %{}
 
@@ -290,7 +285,7 @@ defmodule Raxol.I18nTestHelpers do
       # Mock implementation for tests
       settings = get_mock_locale_accessibility_settings()
 
-      assert is_map(settings),
+      assert is_map(settings)
              # {locale}""
              "Expected locale-specific accessibility settings for "
     end)

@@ -3,6 +3,7 @@ defmodule Raxol.Core.Events.EventTest do
   Tests for the event system, including event creation, validation, and handling.
   """
   use ExUnit.Case, async: true
+  import Raxol.Guards
   alias Raxol.Core.Events.Event
 
   describe "new/2" do
@@ -10,7 +11,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.new(:test, :data)
       assert %Event{} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert event.type == :test
@@ -23,7 +24,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.key_event(:enter, :pressed)
       assert %Event{type: :key} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
@@ -37,7 +38,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.key_event("a", :released, [:shift, :ctrl])
       assert %Event{type: :key} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
@@ -62,7 +63,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.mouse(:left, {10, 20})
       assert %Event{type: :mouse} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
@@ -77,7 +78,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.mouse_event(:left, {10, 20}, :pressed, [:shift])
       assert %Event{type: :mouse} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
@@ -112,7 +113,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.window_event(0, 0, :focus)
       assert %Event{type: :window} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
@@ -126,7 +127,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.window_event(80, 24, :resize)
       assert %Event{type: :window} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
@@ -155,7 +156,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.custom_event(:shutdown)
       assert %Event{type: :custom} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert event.data == :shutdown
@@ -166,7 +167,7 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.custom_event(custom_data)
       assert %Event{type: :custom} = event
 
-      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+      assert (struct?(event) or map?(event)) and Map.has_key?(event, :type),
              "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert event.data == custom_data

@@ -10,6 +10,7 @@ defmodule Raxol.ComponentTestHelpers do
   """
 
   alias Raxol.Test.Unit
+  import Raxol.Guards
 
   @doc """
   Simulates a sequence of events on a component.
@@ -23,7 +24,7 @@ defmodule Raxol.ComponentTestHelpers do
 
   The updated component after processing all events
   """
-  def simulate_event_sequence(component, events) when is_list(events) do
+  def simulate_event_sequence(component, events) when list?(events) do
     Enum.reduce(events, component, fn event, acc ->
       {updated, _commands} = Unit.simulate_event(acc, event)
       updated
@@ -69,7 +70,7 @@ defmodule Raxol.ComponentTestHelpers do
 
   List of rendered elements
   """
-  def validate_rendering(component, contexts) when is_list(contexts) do
+  def validate_rendering(component, contexts) when list?(contexts) do
     Enum.map(contexts, fn context ->
       component.module.render(component.state, context)
     end)

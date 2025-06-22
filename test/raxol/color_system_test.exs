@@ -2,8 +2,6 @@ defmodule Raxol.ColorSystemTest do
   use ExUnit.Case, async: false
   import Raxol.AccessibilityTestHelpers
 
-  # TODO: Implement tests for ColorSystem with accessibility integration
-
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Style.Colors.PaletteManager, as: PaletteManager
@@ -42,7 +40,7 @@ defmodule Raxol.ColorSystemTest do
 
     on_exit(fn ->
       # Cleanup
-      File.rm(UserPreferences.preference_file_path(local_user_prefs_name))
+      File.rm(Raxol.Core.Preferences.Persistence.preferences_path())
     end)
 
     :ok
@@ -138,18 +136,14 @@ defmodule Raxol.ColorSystemTest do
 
       # Verify each color in the scale has sufficient contrast with the background
       Enum.each(scale, fn color ->
-        # TODO: Review scale generation - #003333 has very low contrast (1.02) vs #121212
-        # Skip check for this specific known issue for now.
-        if color != "#003333" do
-          ratio = calculate_contrast_ratio(color, dark_bg)
+        ratio = calculate_contrast_ratio(color, dark_bg)
 
-          # Convert ratio to float for comparison
-          {ratio_value, _} = Float.parse(ratio)
+        # Convert ratio to float for comparison
+        {ratio_value, _} = Float.parse(ratio)
 
-          # Verify contrast is at least 3.0 (AA for large text)
-          assert ratio_value >= 3.0,
-                 "Color #{color} has insufficient contrast with dark background (Ratio: #{ratio_value})"
-        end
+        # Verify contrast is at least 3.0 (AA for large text)
+        assert ratio_value >= 3.0,
+               "Color #{color} has insufficient contrast with dark background (Ratio: #{ratio_value})"
       end)
     end
 
@@ -185,8 +179,7 @@ defmodule Raxol.ColorSystemTest do
     end
 
     test "color system integrates with user preferences" do
-      # TODO: Implement automatic theme application on preference change
-      # Manually apply theme for now to test the effect
+      # Test theme application with different high contrast settings
       # --- Test 1: Apply dark theme without high contrast ---
       ColorSystem.apply_theme(:dark, high_contrast: false)
 
@@ -194,33 +187,21 @@ defmodule Raxol.ColorSystemTest do
       assert ColorSystem.get_color(:primary) == "#0d6efd",
              "Expected dark theme primary color"
 
-      refute Accessibility.get_option(:high_contrast)
+      refute Accessibility.get_option(:high_contrast, false)
 
       # --- Test 2: Apply dark theme WITH high contrast ---
       ColorSystem.apply_theme(:dark, high_contrast: true)
-
-      # Verify high contrast preference is now enabled (This test doesn't check pref persistence)
-      # assert Accessibility.get_option(:high_contrast) == true,
-      #  "Expected high contrast option to be true after apply_theme"
 
       # Verify colors returned by ColorSystem respect high contrast
       primary = ColorSystem.get_color(:primary)
       background = ColorSystem.get_color(:background)
 
-      # Assert the *high contrast* color is returned (check default_themes for value)
-      # Assuming high contrast for dark primary is #FFFF00 based on register_standard_themes
-      # Let's re-check the high_contrast theme definition...
-      # High contrast theme primary IS #FFFF00, but generate_high_contrast_colors is used for *other* themes
-      # when high_contrast is true. For dark theme bg (#212529), generate func darkens colors.
-      # Let's check the generated color instead of hardcoding #FFFF00.
+      # Verify colors change in high contrast mode
       assert primary != "#0d6efd",
              "Expected primary color to change in high contrast mode"
 
       assert background != "#212529",
              "Expected background color to change in high contrast mode"
-
-      # Contrast check is likely complex here, maybe remove for now or adjust?
-      # Utilities.assert_sufficient_contrast(primary, background)
     end
 
     test "themes have sufficient contrast for accessibility" do
@@ -287,36 +268,38 @@ defmodule Raxol.ColorSystemTest do
   end
 
   defp relative_luminance(hex) do
-    # Parse hex color
     hex = String.replace(hex, ~r/^#/, "")
+    {r, g, b} = parse_hex_components(hex)
+    {r_lum, g_lum, b_lum} = calculate_luminance_components(r, g, b)
 
+    0.2126 * r_lum + 0.7152 * g_lum + 0.0722 * b_lum
+  end
+
+  defp parse_hex_components(hex) do
     r = String.slice(hex, 0..1) |> String.to_integer(16)
     g = String.slice(hex, 2..3) |> String.to_integer(16)
     b = String.slice(hex, 4..5) |> String.to_integer(16)
+    {r, g, b}
+  end
 
-    # Convert to sRGB
+  defp calculate_luminance_components(r, g, b) do
     r_srgb = r / 255
     g_srgb = g / 255
     b_srgb = b / 255
 
-    # Calculate luminance components
-    r_lum =
-      if r_srgb <= 0.03928,
-        do: r_srgb / 12.92,
-        else: :math.pow((r_srgb + 0.055) / 1.055, 2.4)
+    r_lum = convert_to_linear(r_srgb)
+    g_lum = convert_to_linear(g_srgb)
+    b_lum = convert_to_linear(b_srgb)
 
-    g_lum =
-      if g_srgb <= 0.03928,
-        do: g_srgb / 12.92,
-        else: :math.pow((g_srgb + 0.055) / 1.055, 2.4)
+    {r_lum, g_lum, b_lum}
+  end
 
-    b_lum =
-      if b_srgb <= 0.03928,
-        do: b_srgb / 12.92,
-        else: :math.pow((b_srgb + 0.055) / 1.055, 2.4)
-
-    # Calculate relative luminance
-    0.2126 * r_lum + 0.7152 * g_lum + 0.0722 * b_lum
+  defp convert_to_linear(value) do
+    if value <= 0.03928 do
+      value / 12.92
+    else
+      :math.pow((value + 0.055) / 1.055, 2.4)
+    end
   end
 
   defp setup_accessibility_and_prefs() do

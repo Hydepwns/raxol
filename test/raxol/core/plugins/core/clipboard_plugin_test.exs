@@ -11,13 +11,13 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
   alias Raxol.Terminal.ClipboardMock
 
-  # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
 
-  setup do
+  setup context do
+    # Set up the default state with our mock
     # Set up the default state with our mock
     {:ok, state} = ClipboardPlugin.init(clipboard_impl: ClipboardMock)
-    %{state: state}
+    %{context | state: state}
   end
 
   describe "terminate/2" do

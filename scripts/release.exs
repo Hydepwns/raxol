@@ -57,19 +57,19 @@ defmodule Raxol.Release do
 
   defp build_for_platform(platform, env) do
     IO.puts "\n=== Building for #{platform} in #{env} mode ==="
-    
+
     # Set environment variable for Burrito to detect platform
     System.put_env("BURRITO_TARGET", to_string(platform))
     System.put_env("MIX_ENV", env)
-    
+
     # Run the build command
     command = "mix burrito.build --env #{env}"
     IO.puts "Executing: #{command}"
-    
+
     case System.cmd("sh", ["-c", command], into: IO.stream(:stdio, :line)) do
-      {_, 0} -> 
+      {_, 0} ->
         IO.puts "✅ Successfully built #{@app_name} for #{platform} in #{env} mode"
-      {_, error_code} -> 
+      {_, error_code} ->
         IO.puts "❌ Failed to build #{@app_name} for #{platform} with exit code #{error_code}"
     end
   end
@@ -77,7 +77,7 @@ defmodule Raxol.Release do
   defp get_platforms(opts) do
     case {opts[:platform], opts[:all]} do
       {nil, true} -> [:macos, :linux, :windows]
-      {platform, _} when not is_nil(platform) -> [String.to_atom(platform)]
+      {platform, _} when not nil?(platform) -> [String.to_atom(platform)]
       _ -> [current_platform()]
     end
   end
@@ -99,35 +99,35 @@ defmodule Raxol.Release do
 
   defp create_version_tag do
     IO.puts "Creating git tag for version #{@version}..."
-    
+
     commands = [
       "git add .",
       "git commit -m \"Release v#{@version}\"",
       "git tag -a v#{@version} -m \"Version #{@version}\"",
       "git push origin v#{@version}"
     ]
-    
+
     for command <- commands do
       IO.puts "Executing: #{command}"
       case System.cmd("sh", ["-c", command], into: IO.stream(:stdio, :line)) do
         {_, 0} -> :ok
-        {_, error_code} -> 
+        {_, error_code} ->
           IO.puts "❌ Command failed with exit code #{error_code}"
           IO.puts "Aborting version tagging process."
           System.halt(1)
       end
     end
-    
+
     IO.puts "✅ Version #{@version} tagged and pushed successfully"
   end
 
   defp print_help do
     """
     Raxol Release Script
-    
+
     Usage:
       mix run scripts/release.exs [options]
-    
+
     Options:
       -h, --help             Show this help message
       -e, --env ENV          Set build environment (dev, prod) [default: dev]
@@ -135,17 +135,17 @@ defmodule Raxol.Release do
       -a, --all              Build for all platforms
       -c, --clean            Clean build directories
       -t, --tag              Create and push git tag for current version
-    
+
     Examples:
       # Build for current platform in development mode
       mix run scripts/release.exs
-    
+
       # Build production release for all platforms
       mix run scripts/release.exs --env prod --all
-    
+
       # Clean build directory and build for macOS
       mix run scripts/release.exs --clean --platform macos
-    
+
       # Create a version tag and push to remote
       mix run scripts/release.exs --tag
     """
@@ -154,4 +154,4 @@ defmodule Raxol.Release do
 end
 
 # Execute the script
-Raxol.Release.main(System.argv()) 
+Raxol.Release.main(System.argv())

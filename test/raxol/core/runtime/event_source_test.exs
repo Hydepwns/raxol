@@ -5,6 +5,7 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
   """
   # Must be false due to process monitoring
   use ExUnit.Case, async: false
+  import Raxol.Guards
 
   describe "EventSource behaviour" do
     setup do
@@ -15,7 +16,7 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
     test "starts and initializes successfully", %{context: context} do
       args = %{data: :test_data}
       assert {:ok, pid} = TestEventSource.start_link(args, context)
-      assert is_pid(pid)
+      assert pid?(pid)
 
       on_exit(fn ->
         if Process.alive?(pid), do: Process.exit(pid, :normal)

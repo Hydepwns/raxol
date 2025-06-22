@@ -1,5 +1,6 @@
 defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemoTest do
   use ExUnit.Case, async: true
+  import Raxol.Guards
 
   alias Raxol.Examples.Demos.IntegratedAccessibilityDemo
 
@@ -7,7 +8,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemoTest do
     test "initializes and renders without errors" do
       # Test init
       assert {:ok, {model, _commands}} = IntegratedAccessibilityDemo.init([])
-      assert is_map(model)
+      assert map?(model)
 
       # Test view
       # The view function returns a structure that the Layout engine would process.
@@ -15,11 +16,11 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemoTest do
       view_structure = IntegratedAccessibilityDemo.view(model)
 
       # Basic check on the returned view structure
-      assert is_map(view_structure)
+      assert map?(view_structure)
       assert Map.has_key?(view_structure, :type)
       # Based on the demo's top-level View.column
       assert view_structure.type == :flex
-      assert is_list(view_structure.children)
+      assert list?(view_structure.children)
     end
   end
 end

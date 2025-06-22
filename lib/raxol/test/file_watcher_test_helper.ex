@@ -4,8 +4,6 @@ if Mix.env() == :test do
     Helper functions for testing file watcher functionality.
     """
 
-    import Raxol.Test.Support.TestHelper
-
     @doc """
     Creates a valid file stat for testing.
     """
@@ -103,8 +101,8 @@ if Mix.env() == :test do
     """
     def setup_mocks do
       # Set up test environment and mocks
-      {:ok, _} = setup_test_env()
-      setup_common_mocks()
+      {:ok, _} = Raxol.Test.Support.TestHelper.setup_test_env()
+      Raxol.Test.Support.TestHelper.setup_common_mocks()
 
       # Start Manager process
       pid = start_manager()

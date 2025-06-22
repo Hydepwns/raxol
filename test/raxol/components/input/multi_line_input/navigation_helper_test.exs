@@ -1,5 +1,6 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   use ExUnit.Case, async: true
+  import Raxol.Guards
 
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
@@ -7,7 +8,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   # Utility to normalize dimensions
   defp normalize_dimensions(%{width: _, height: _} = dims), do: dims
 
-  defp normalize_dimensions({w, h}) when is_integer(w) and is_integer(h),
+  defp normalize_dimensions({w, h}) when integer?(w) and integer?(h),
     do: %{width: w, height: h}
 
   defp normalize_dimensions(_), do: %{width: 10, height: 5}
@@ -216,28 +217,28 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
     end
   end
 
-  describe "is_line_in_selection?/3" do
+  describe "line_in_selection?/3" do
     test ~c"returns true if line index is within normalized range" do
-      assert NavigationHelper.is_line_in_selection?(1, {0, 1}, {2, 3}) == true
-      assert NavigationHelper.is_line_in_selection?(0, {0, 1}, {2, 3}) == true
-      assert NavigationHelper.is_line_in_selection?(2, {0, 1}, {2, 3}) == true
+      assert NavigationHelper.line_in_selection?(1, {0, 1}, {2, 3}) == true
+      assert NavigationHelper.line_in_selection?(0, {0, 1}, {2, 3}) == true
+      assert NavigationHelper.line_in_selection?(2, {0, 1}, {2, 3}) == true
     end
 
     test ~c"returns true if line index is within swapped range" do
-      assert NavigationHelper.is_line_in_selection?(1, {2, 3}, {0, 1}) == true
-      assert NavigationHelper.is_line_in_selection?(0, {2, 3}, {0, 1}) == true
-      assert NavigationHelper.is_line_in_selection?(2, {2, 3}, {0, 1}) == true
+      assert NavigationHelper.line_in_selection?(1, {2, 3}, {0, 1}) == true
+      assert NavigationHelper.line_in_selection?(0, {2, 3}, {0, 1}) == true
+      assert NavigationHelper.line_in_selection?(2, {2, 3}, {0, 1}) == true
     end
 
     test ~c"returns false if line index is outside range" do
-      assert NavigationHelper.is_line_in_selection?(3, {0, 1}, {2, 3}) == false
-      assert NavigationHelper.is_line_in_selection?(-1, {0, 1}, {2, 3}) == false
+      assert NavigationHelper.line_in_selection?(3, {0, 1}, {2, 3}) == false
+      assert NavigationHelper.line_in_selection?(-1, {0, 1}, {2, 3}) == false
     end
 
     test ~c"returns false if selection is nil" do
-      assert NavigationHelper.is_line_in_selection?(1, nil, {2, 3}) == false
-      assert NavigationHelper.is_line_in_selection?(1, {0, 1}, nil) == false
-      assert NavigationHelper.is_line_in_selection?(1, nil, nil) == false
+      assert NavigationHelper.line_in_selection?(1, nil, {2, 3}) == false
+      assert NavigationHelper.line_in_selection?(1, {0, 1}, nil) == false
+      assert NavigationHelper.line_in_selection?(1, nil, nil) == false
     end
   end
 

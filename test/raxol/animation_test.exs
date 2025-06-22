@@ -2,12 +2,9 @@ defmodule Raxol.AnimationTest do
   use ExUnit.Case, async: false
   import Raxol.AccessibilityTestHelpers
 
-  # TODO: Implement tests for Animation Framework with accessibility integration
-
   alias Raxol.Animation.{Framework, Animation, StateManager}
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
-  alias Raxol.Test.EventAssertions
 
   # Helper to wait for animation completion
   defp wait_for_animation_completion(element_id, animation_name, timeout \\ 500) do
@@ -769,22 +766,10 @@ defmodule Raxol.AnimationTest do
     # Be cautious if this process is globally shared.
     ref = Process.monitor(pid)
     Process.exit(pid, :shutdown)
-    # Wait for the process to exit, or timeout
     receive do
       {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
-    after
-      500 ->
-        IO.puts(
-          "Warning: UserPreferences process #{inspect(pid)} did not shut down cleanly in cleanup_accessibility"
-        )
     end
-
-    :ok
   catch
-    # Ignore if process already exited
     :exit, _ -> :ok
   end
-
-  # Ignore if pid is not valid
-  defp cleanup_accessibility(_), do: :ok
 end

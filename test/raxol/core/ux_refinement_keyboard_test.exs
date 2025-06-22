@@ -1,6 +1,7 @@
 defmodule Raxol.Core.UXRefinementKeyboardTest do
   use ExUnit.Case, async: false
   import Mox
+  import Raxol.Guards
   require Raxol.Core.Runtime.Log
 
   # Aliases for mocks will be used directly, e.g., Raxol.Mocks.AccessibilityMock
@@ -232,7 +233,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
       shortcut_callback = Process.get(callback_ref)
 
-      if !is_function(shortcut_callback, 0) do
+      if !function?(shortcut_callback, 0) do
         flunk(
           "Shortcut callback was not captured. KeyboardShortcuts.register_shortcut mock might not have been called correctly."
         )

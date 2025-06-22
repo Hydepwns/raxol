@@ -1,5 +1,6 @@
 defmodule Raxol.Test.Platform.PlatformDetectionTest do
   use ExUnit.Case, async: true
+  import Raxol.Guards
 
   alias Raxol.System.Platform
   require Raxol.Core.Runtime.Log
@@ -29,7 +30,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       platform_info = Platform.get_platform_info()
 
       # All platforms should have these basic fields
-      assert is_map(platform_info)
+      assert map?(platform_info)
       assert Map.has_key?(platform_info, :name)
       assert Map.has_key?(platform_info, :version)
       assert Map.has_key?(platform_info, :architecture)
@@ -53,8 +54,8 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       capabilities = Raxol.System.TerminalPlatform.get_terminal_capabilities()
 
       # Check for required fields in a more flexible way
-      assert is_map(capabilities)
-      assert is_list(capabilities.features)
+      assert map?(capabilities)
+      assert list?(capabilities.features)
     end
 
     test ~c"returns correct file extension for current platform" do
@@ -80,7 +81,7 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
         Raxol.System.TerminalPlatform.get_terminal_capabilities()
 
       # Check structure in a more flexible way
-      assert is_map(terminal_features)
+      assert map?(terminal_features)
       assert Map.has_key?(terminal_features, :colors)
       assert Map.has_key?(terminal_features, :unicode)
       assert Map.has_key?(terminal_features, :input)
@@ -88,11 +89,11 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       assert Map.has_key?(terminal_features, :features)
 
       # Check that colors map has expected structure
-      assert is_map(terminal_features.colors)
+      assert map?(terminal_features.colors)
       assert Map.has_key?(terminal_features.colors, :true_color)
 
       # Check unicode support property
-      assert is_map(terminal_features.unicode)
+      assert map?(terminal_features.unicode)
       assert Map.has_key?(terminal_features.unicode, :support)
     end
   end

@@ -11,6 +11,7 @@ defmodule Raxol.Test.Integration.Assertions do
   """
 
   import ExUnit.Assertions
+  import Raxol.Guards
 
   @doc """
   Asserts that a child component received an event from its parent.
@@ -132,7 +133,7 @@ defmodule Raxol.Test.Integration.Assertions do
       end
   """
   def assert_event_propagation(components, event, verification_fn)
-      when is_list(components) do
+      when list?(components) do
     # Track event propagation
     ref = System.unique_integer([:positive])
     Process.put(ref, [])
@@ -182,7 +183,7 @@ defmodule Raxol.Test.Integration.Assertions do
       end
   """
   def assert_state_synchronized(components, state_check)
-      when is_list(components) do
+      when list?(components) do
     states = Enum.map(components, & &1.state)
 
     assert state_check.(states),
@@ -196,7 +197,7 @@ defmodule Raxol.Test.Integration.Assertions do
 
       assert_system_events_handled component, [:resize, :focus, :blur]
   """
-  def assert_system_events_handled(component, events) when is_list(events) do
+  def assert_system_events_handled(component, events) when list?(events) do
     Enum.each(events, fn event ->
       {updated, initial, _commands} =
         Raxol.Test.Integration.assert_handles_system_event(component, event)

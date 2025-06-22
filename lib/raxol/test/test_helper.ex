@@ -13,6 +13,7 @@ defmodule Raxol.Test.TestHelper do
   import ExUnit.Assertions
   alias Raxol.Core.Events.{Event}
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   @doc """
   Sets up a test environment with necessary services and configurations.
@@ -97,8 +98,8 @@ defmodule Raxol.Test.TestHelper do
 
             attrs =
               cond do
-                is_list(attrs) -> Map.new(attrs)
-                is_map(attrs) -> attrs
+                list?(attrs) -> Map.new(attrs)
+                map?(attrs) -> attrs
                 true -> %{}
               end
 
@@ -116,7 +117,7 @@ defmodule Raxol.Test.TestHelper do
   @doc """
   Simulates a sequence of events on a component.
   """
-  def simulate_event_sequence(component, events) when is_list(events) do
+  def simulate_event_sequence(component, events) when list?(events) do
     Enum.reduce(events, {component, []}, fn event, {comp, all_commands} ->
       {updated_comp, commands} = Raxol.Test.Unit.simulate_event(comp, event)
       {updated_comp, all_commands ++ commands}
@@ -187,7 +188,7 @@ defmodule Raxol.Test.TestHelper do
   @doc """
   Captures all terminal output during a test.
   """
-  def capture_terminal_output(fun) when is_function(fun, 0) do
+  def capture_terminal_output(fun) when function?(fun, 0) do
     original_group_leader = Process.group_leader()
     {:ok, capture_pid} = StringIO.open("")
     Process.group_leader(self(), capture_pid)

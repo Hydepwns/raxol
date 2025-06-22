@@ -1,18 +1,20 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   use ExUnit.Case, async: true
+  import Raxol.Guards
 
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper
 
   defp normalize_dimensions(%{width: _, height: _} = dims), do: dims
 
-  defp normalize_dimensions({w, h}) when is_integer(w) and is_integer(h),
+  defp normalize_dimensions({w, h}) when integer?(w) and integer?(h),
     do: %{width: w, height: h}
 
   defp normalize_dimensions(_), do: %{width: 10, height: 5}
 
   defp create_state(
          lines,
+         cursor_pos \\ {0, 0},
          dimensions \\ {10, 1},
          scroll_offset \\ {0, 0},
          selection_range \\ nil
@@ -23,7 +25,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
       value: Enum.join(lines, "\n"),
       width: dims.width,
       height: dims.height,
-      cursor_pos: {0, 0},
+      cursor_pos: cursor_pos,
       scroll_offset: scroll_offset,
       selection_start:
         if(selection_range, do: elem(selection_range, 0), else: nil),
@@ -49,8 +51,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
 
   defp extract_style(attrs) do
     cond do
-      is_list(attrs) -> Keyword.get(attrs, :style)
-      is_map(attrs) -> Map.get(attrs, :style)
+      list?(attrs) -> Keyword.get(attrs, :style)
+      map?(attrs) -> Map.get(attrs, :style)
       true -> nil
     end
   end
@@ -118,7 +120,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     end
 
     test "cursor at end of line", %{theme: theme} do
-      state = create_state(["abc"]) |> Map.put(:focused, true)
+      state = create_state(["abc"], {0, 3}) |> Map.put(:focused, true)
       line = "abc"
 
       result =
@@ -134,7 +136,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     end
 
     test "selection within single line", %{theme: theme} do
-      state = create_state(["abcdef"], {{0, 1}, {0, 3}})
+      state = create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 1}, {0, 3}})
       line = "abcdef"
 
       result =
@@ -152,7 +154,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     test "selection across multiple lines, only highlights this line's part", %{
       theme: theme
     } do
-      state = create_state(["abcdef"], {{0, 2}, {2, 1}})
+      state = create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 2}, {2, 1}})
       line = "abcdef"
 
       result =
@@ -183,10 +185,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     end
 
     test "out-of-bounds cursor/selection does not crash", %{theme: theme} do
-      state =
-        create_state(["abc"], {0, 10}, {0, 0}, {{0, 20}, {0, 25}})
-        |> Map.put(:focused, true)
-
+      state = create_state(["abc"], {0, 10}, {10, 1}, {0, 0}, {{0, 20}, {0, 25}}) |> Map.put(:focused, true)
       line = "abc"
 
       result =
@@ -197,12 +196,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
           theme
         )
 
-      assert Enum.count(result) >= 1
       assert Enum.at(result, 0).content == "abc"
     end
 
     test "selection within single line, inspect second label", %{theme: theme} do
-      state = create_state(["abcdef"], {{0, 1}, {0, 3}})
+      state = create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 1}, {0, 3}})
       line = "abcdef"
 
       result =

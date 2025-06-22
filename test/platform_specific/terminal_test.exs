@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.PlatformSpecificTest do
   use ExUnit.Case
+  import Raxol.Guards
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
 
   defp render_hello_html do
@@ -19,13 +20,13 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
     test ~c"terminal type detection" do
       term = System.get_env("TERM")
       assert term != nil
-      assert is_binary(term)
+      assert binary?(term)
     end
 
     test ~c"color support detection" do
       colors = System.get_env("COLORTERM")
       assert colors != nil
-      assert is_binary(colors)
+      assert binary?(colors)
     end
 
     test ~c"terminal size detection" do
@@ -43,7 +44,7 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
     test ~c"graphics support detection" do
       term_program = System.get_env("TERM_PROGRAM")
       assert term_program != nil
-      assert is_binary(term_program)
+      assert binary?(term_program)
     end
   end
 

@@ -121,7 +121,7 @@ defmodule TerminalDimensionVerifier do
   end
 
   defp parse_command_output(output, cmd)
-       when is_binary(cmd) and cmd =~ "powershell" do
+       when binary?(cmd) and cmd =~ "powershell" do
     # Parse PowerShell output which typically looks like:
     # Width : 120
     # Height: 30

@@ -6,6 +6,7 @@ defmodule Raxol.Core.Renderer.ColorTest do
   color detection.
   """
   use ExUnit.Case, async: true
+  import Raxol.Guards
   alias Raxol.Core.Renderer.Color
 
   describe "to_ansi/1" do
@@ -201,7 +202,7 @@ defmodule Raxol.Core.Renderer.ColorTest do
     test "returns a complete theme map" do
       theme = Color.default_theme()
 
-      assert is_map(theme)
+      assert map?(theme)
       assert Map.has_key?(theme.colors, :background)
       assert Map.has_key?(theme.colors, :foreground)
       assert Map.has_key?(theme.colors, :primary)
@@ -217,9 +218,9 @@ defmodule Raxol.Core.Renderer.ColorTest do
 
       # Verify all colors are valid
       Enum.each(theme.colors, fn {_key, value} ->
-        assert is_tuple(value) or is_atom(value)
+        assert tuple?(value) or atom?(value)
 
-        if is_tuple(value) do
+        if tuple?(value) do
           assert tuple_size(value) == 3
           {r, g, b} = value
           assert r >= 0 and r <= 255
@@ -233,19 +234,19 @@ defmodule Raxol.Core.Renderer.ColorTest do
   describe "detect_background/0" do
     test "returns a valid background color" do
       background = Color.detect_background()
-      assert is_tuple(background) or is_atom(background)
+      assert tuple?(background) or atom?(background)
     end
 
     test "returns a valid RGB tuple or ANSI color" do
       background = Color.detect_background()
 
-      if is_tuple(background) do
+      if tuple?(background) do
         {r, g, b} = background
         assert r >= 0 and r <= 255
         assert g >= 0 and g <= 255
         assert b >= 0 and b <= 255
       else
-        assert is_atom(background)
+        assert atom?(background)
         assert background in [:black, :white, :default]
       end
     end

@@ -2,6 +2,7 @@ defmodule Raxol.Test.WindowTestHelper do
   @moduledoc """
   Helper functions for window-related tests.
   """
+  import Raxol.Guards
 
   @doc """
   Creates a test emulator with default window state.
@@ -9,7 +10,7 @@ defmodule Raxol.Test.WindowTestHelper do
   def create_test_emulator do
     emu = Raxol.Terminal.Emulator.new(80, 24)
 
-    if is_map(emu),
+    if map?(emu),
       do:
         emu
         |> Map.put_new(:style, %{})

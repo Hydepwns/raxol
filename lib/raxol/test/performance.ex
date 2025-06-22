@@ -10,6 +10,7 @@ defmodule Raxol.Test.Performance do
   """
 
   alias Raxol.Test.Visual
+  import Raxol.Guards
 
   defmacro __using__(_opts) do
     quote do
@@ -50,7 +51,7 @@ defmodule Raxol.Test.Performance do
   Measures memory usage during component operations.
   """
   def measure_memory_usage(component, operation)
-      when is_function(operation, 1) do
+      when function?(operation, 1) do
     initial = :erlang.memory()
     operation.(component)
     final = :erlang.memory()

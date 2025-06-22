@@ -28,6 +28,7 @@ defmodule Raxol.Test.Visual do
 
   alias Raxol.Test.TestHelper
   alias Raxol.Terminal.Buffer.Operations
+  import Raxol.Guards
 
   defmacro __using__(_opts) do
     quote do
@@ -49,7 +50,7 @@ defmodule Raxol.Test.Visual do
     {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module, props)
 
     # Defensive check: ensure component is a map with :module and :state
-    if !(is_map(component) and Map.has_key?(component, :module) and
+    if !(map?(component) and Map.has_key?(component, :module) and
            Map.has_key?(component, :state)) do
       raise ArgumentError,
             "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
@@ -88,7 +89,7 @@ defmodule Raxol.Test.Visual do
 
     # If a pre-rendered view_map is passed, use it directly
     {view_map, width, height, theme} =
-      if is_map(component_or_map_or_view) &&
+      if map?(component_or_map_or_view) &&
            Map.has_key?(component_or_map_or_view, :type) do
         # This is likely a view_map already, extract details or use defaults
         extract_render_details_from_view_map(component_or_map_or_view, opts)
@@ -98,7 +99,7 @@ defmodule Raxol.Test.Visual do
       end
 
     # Ensure elements to layout is a list
-    elements_to_layout = if is_list(view_map), do: view_map, else: [view_map]
+    elements_to_layout = if list?(view_map), do: view_map, else: [view_map]
 
     # Log dimensions being used for layout
     # Raxol.Core.Runtime.Log.info("[VisualTest] Layout Dimensions: W=#{width}, H=#{height}")
@@ -115,7 +116,7 @@ defmodule Raxol.Test.Visual do
     # IO.inspect(raw_cells, label: "CR_RAW_CELLS")
 
     # Ensure raw_cells is a list, even if it's empty or contains non-cell data (error case)
-    cells_list = if is_list(raw_cells), do: raw_cells, else: []
+    cells_list = if list?(raw_cells), do: raw_cells, else: []
 
     # Populate the screen buffer with raw cells
     initial_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
@@ -124,7 +125,7 @@ defmodule Raxol.Test.Visual do
       Enum.reduce(cells_list, initial_buffer, fn
         {x, y, char, fg, bg, attrs}, acc_buffer ->
           # Default to space if nil
-          actual_char = if is_nil(char), do: ~c" ", else: char
+          actual_char = if nil?(char), do: ~c" ", else: char
 
           # IO.inspect(unexpected_cell_data, label: "UNEXPECTED_RAW_CELL_DATA_IN_REDUCE") # This was an error, it should be the tuple {x,y,char...}
           Operations.write_char(acc_buffer, x, y, actual_char, %{
@@ -181,7 +182,7 @@ defmodule Raxol.Test.Visual do
     {view_map, width, height, theme}
   end
 
-  defp extract_render_details(component_or_map) when is_map(component_or_map) do
+  defp extract_render_details(component_or_map) when map?(component_or_map) do
     # IO.inspect("MARKER VISUAL_EX TOP EXTRACT_RENDER_DETAILS")
     # Extract or default the rendering context
     render_context_from_component = Map.get(component_or_map, :render_context)
@@ -233,7 +234,7 @@ defmodule Raxol.Test.Visual do
   Takes a function that can make assertions about the rendered output.
   """
   def assert_renders_as(component, assertions)
-      when is_function(assertions, 1) do
+      when function?(assertions, 1) do
     output = capture_render(component)
     assertions.(output)
   end
@@ -280,7 +281,7 @@ defmodule Raxol.Test.Visual do
 
   Verifies responsive behavior and layout adaptability.
   """
-  def test_responsive_rendering(component, sizes) when is_list(sizes) do
+  def test_responsive_rendering(component, sizes) when list?(sizes) do
     Enum.map(sizes, fn {width, height} ->
       # Create an updated render_context for this specific size
       updated_render_context =
@@ -306,7 +307,7 @@ defmodule Raxol.Test.Visual do
 
   Verifies proper style application and theme switching.
   """
-  def test_themed_rendering(component, themes) when is_map(themes) do
+  def test_themed_rendering(component, themes) when map?(themes) do
     Enum.map(themes, fn {name, partial_theme_map} ->
       # Get the original full theme struct from the component's render_context
       original_full_theme_struct = get_in(component.render_context.theme)
@@ -359,8 +360,7 @@ defmodule Raxol.Test.Visual do
   Accepts an optional context map.
   """
   def render_component(component_map, context \\ default_render_context()) do
-    if !(is_map(component_map) and Map.has_key?(component_map, :module) and
-           Map.has_key?(component_map, :state)) do
+    if !(map?(component_map) and Map.has_key?(component_map, :state)) do
       raise ArgumentError,
             "render_component/2 expected a map with :module and :state keys, got: #{inspect(component_map)}"
     end

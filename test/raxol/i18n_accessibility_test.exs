@@ -168,6 +168,7 @@ defmodule Raxol.I18nAccessibilityTest do
   # Add a stub for I18n.format_currency/2 if not implemented
   if !function_exported?(I18n, :format_currency, 2) do
     defmodule I18n do
+      @moduledoc false
       def format_currency(amount, currency) do
         "#{currency} #{amount}"
       end

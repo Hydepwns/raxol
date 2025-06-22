@@ -5,6 +5,7 @@ defmodule Raxol.Test.EmulatorHelpers do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
+  import Raxol.Guards
 
   @doc """
   Fills a region of the emulator buffer with identifiable line text.
@@ -48,7 +49,7 @@ defmodule Raxol.Test.EmulatorHelpers do
   def unwrap_ok({:ok, value}), do: value
   def unwrap_ok({:error, _, value}), do: value
 
-  def unwrap_ok(value) when is_map(value) and not is_struct(value) do
+  def unwrap_ok(value) when map?(value) and not struct?(value) do
     # If it's a plain map (and not a struct, since structs are maps), return as is.
     # This case might be hit if some code legitimately returns a map that needs unwrapping.
     # However, if it was intended to be an emulator and became a map, that's an issue elsewhere.

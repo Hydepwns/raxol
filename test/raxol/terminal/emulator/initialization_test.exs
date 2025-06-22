@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Modes.ModeStateManager
 
   describe "Emulator Initialization" do
     test ~c"new creates a new terminal emulator instance with defaults" do
@@ -28,8 +29,9 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       assert emulator.scroll_region == nil
       # Access style field directly and compare with default using constructor
       assert emulator.style == TextFormatting.new()
-      # Access mode_state field directly
-      assert emulator.mode_manager == Raxol.Terminal.ModeManager.new()
+      # Use proper accessor function instead of direct struct access
+      mode_manager = Emulator.get_mode_manager_struct(emulator)
+      assert mode_manager == ModeStateManager.new()
 
       # Direct access ok
       assert is_list(emulator.state_stack)

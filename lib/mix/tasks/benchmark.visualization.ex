@@ -25,49 +25,22 @@ defmodule Mix.Tasks.Benchmark.Visualization do
     # Helper function to summarize chart results
     summarize_chart_results = fn results ->
       results
-      |> Enum.map(fn r ->
+      |> Enum.map_join("\n", fn r ->
         "  - #{r.size} points: #{Float.round(r.avg_time, 2)}ms avg (#{Float.round(r.min_time, 2)}ms min, #{Float.round(r.max_time, 2)}ms max)"
       end)
-      |> Enum.join("\n")
     end
 
     # Helper function to summarize treemap results
     summarize_treemap_results = fn results ->
       results
-      |> Enum.map(fn r ->
+      |> Enum.map_join("\n", fn r ->
         "  - #{r.size} dataset (#{r.node_count} nodes): #{Float.round(r.avg_time, 2)}ms avg (#{Float.round(r.min_time, 2)}ms min, #{Float.round(r.max_time, 2)}ms max)"
       end)
-      |> Enum.join("\n")
     end
 
-    # Determine test size based on args
-    test_size =
-      cond do
-        "--small" in args -> :small
-        "--medium" in args -> :medium
-        "--large" in args -> :large
-        "--production" in args -> :production
-        # Default to small
-        true -> :small
-      end
+    # Get benchmark configuration
+    {datasets, iterations, title, test_size} = get_benchmark_config(args)
 
-    # Configure dataset sizes and iterations based on test size
-    {datasets, iterations, title} =
-      case test_size do
-        :small ->
-          {[10, 50, 100], 3, "Small Test"}
-
-        :medium ->
-          {[10, 100, 500, 1000], 5, "Medium Test"}
-
-        :large ->
-          {[10, 100, 1000, 5000, 10_000], 3, "Large Test"}
-
-        :production ->
-          {[10, 100, 1000, 5000, 10_000, 50_000], 10, "Production Benchmark"}
-      end
-
-    # Set output directory
     output_dir =
       "test/performance/benchmark_results/visualization/#{Atom.to_string(test_size)}"
 
@@ -119,5 +92,42 @@ defmodule Mix.Tasks.Benchmark.Visualization do
     To view full results, open:
     #{Path.expand(results.output_file)}
     """)
+  end
+
+  defp get_benchmark_config(args) do
+    test_size = get_test_size(args)
+    config = get_config_for_size(test_size)
+    {config.datasets, config.iterations, config.title, test_size}
+  end
+
+  defp get_test_size(args) do
+    cond do
+      "--small" in args -> :small
+      "--medium" in args -> :medium
+      "--large" in args -> :large
+      "--production" in args -> :production
+      true -> :small
+    end
+  end
+
+  defp get_config_for_size(test_size) do
+    %{
+      small: %{datasets: [10, 50, 100], iterations: 3, title: "Small Test"},
+      medium: %{
+        datasets: [10, 100, 500, 1000],
+        iterations: 5,
+        title: "Medium Test"
+      },
+      large: %{
+        datasets: [10, 100, 1000, 5000, 10_000],
+        iterations: 3,
+        title: "Large Test"
+      },
+      production: %{
+        datasets: [10, 100, 1000, 5000, 10_000, 50_000],
+        iterations: 10,
+        title: "Production Benchmark"
+      }
+    }[test_size]
   end
 end

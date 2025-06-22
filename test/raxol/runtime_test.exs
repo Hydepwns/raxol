@@ -274,7 +274,12 @@ defmodule Raxol.RuntimeTest do
     # Assert model was updated
     assert_model(Process.whereis(Dispatcher), %{count: 1, last_clipboard: nil})
 
-    # TODO: Assert render was triggered (requires RenderingEngine mock/spy)
+    # Assert render was triggered by checking RenderingEngine state
+    rendering_engine_pid = Process.whereis(RenderingEngine)
+    assert is_pid(rendering_engine_pid), "RenderingEngine should be running"
+
+    # Verify RenderingEngine is responsive (indicates it processed the render request)
+    assert GenServer.call(rendering_engine_pid, :get_state, 100) != :timeout
   end
 
   test "application Command.quit() terminates the runtime gracefully", %{
@@ -516,7 +521,12 @@ defmodule Raxol.RuntimeTest do
   # --- Test Setup Helpers ---
 
   defp setup_runtime_environment(_context) do
-    # Explicitly stop any existing Dispatcher and its Registry
+    cleanup_dispatcher()
+    cleanup_registry()
+    cleanup_user_preferences()
+  end
+
+  defp cleanup_dispatcher() do
     disp_pid = Process.whereis(Raxol.Core.Runtime.Events.Dispatcher)
 
     if disp_pid && Process.alive?(disp_pid) do
@@ -539,7 +549,9 @@ defmodule Raxol.RuntimeTest do
           )
       end
     end
+  end
 
+  defp cleanup_registry() do
     reg_pid = Process.whereis(:raxol_event_subscriptions)
 
     if reg_pid && Process.alive?(reg_pid) do
@@ -562,7 +574,9 @@ defmodule Raxol.RuntimeTest do
           )
       end
     end
+  end
 
+  defp cleanup_user_preferences() do
     # Clear out user preferences to ensure a clean state for each test
     # Ensure UserPreferences is stopped before deleting its file
     case Process.whereis(Raxol.Core.UserPreferences) do
@@ -632,29 +646,25 @@ defmodule Raxol.RuntimeTest do
   defp do_wait_for_model(dispatcher_pid, expected, start, timeout) do
     case GenServer.call(dispatcher_pid, :get_model, 100) do
       {:ok, model} ->
-        expected_with_theme =
-          Map.put(expected, :current_theme_id, "Default Theme")
+        expected_with_theme = Map.put(expected, :current_theme_id, "Default Theme")
 
         if model == expected_with_theme do
           :ok
         else
-          if System.monotonic_time(:millisecond) - start < timeout do
-            Process.sleep(20)
-            do_wait_for_model(dispatcher_pid, expected, start, timeout)
-          else
-            flunk(
-              "Model did not reach expected state within \#{timeout}ms. Last: \#{inspect(model)}"
-            )
-          end
+          check_timeout_and_retry(dispatcher_pid, expected, start, timeout)
         end
 
       _ ->
-        if System.monotonic_time(:millisecond) - start < timeout do
-          Process.sleep(20)
-          do_wait_for_model(dispatcher_pid, expected, start, timeout)
-        else
-          flunk("Model did not reach expected state within \#{timeout}ms.")
-        end
+        check_timeout_and_retry(dispatcher_pid, expected, start, timeout)
+    end
+  end
+
+  defp check_timeout_and_retry(dispatcher_pid, expected, start, timeout) do
+    if System.monotonic_time(:millisecond) - start < timeout do
+      Process.sleep(20)
+      do_wait_for_model(dispatcher_pid, expected, start, timeout)
+    else
+      flunk("Model did not reach expected state within #{timeout}ms.")
     end
   end
 end

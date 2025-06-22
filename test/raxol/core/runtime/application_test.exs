@@ -5,6 +5,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   """
   # Must be false due to process monitoring and subscriptions
   use ExUnit.Case, async: false
+  import Raxol.Guards
 
   # Test implementation of Application behavior
   defmodule TestApp do
@@ -144,7 +145,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       result = TestApp.view(model)
 
       # Test that view generates correct structure
-      assert is_map(result)
+      assert map?(result)
       assert Map.has_key?(result, :type)
       assert result[:type] == :box
 
@@ -187,7 +188,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
       # View returns a default view
       view = MinimalTestApp.view(model)
-      assert is_map(view)
+      assert map?(view)
       assert Map.has_key?(view, :type)
       assert view[:type] == :text
       string_view = inspect(view)
@@ -201,7 +202,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   describe "helper functions" do
     test ~c"command/1 creates a command" do
       cmd = TestApp.command(:test_command)
-      assert is_struct(cmd)
+      assert struct?(cmd)
 
       assert Map.has_key?(cmd, :type),
              "Expected cmd to be a struct or map with :type key, got: #{inspect(cmd)}"
@@ -214,7 +215,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       cmd2 = TestApp.command(:cmd2)
 
       batch = TestApp.batch([cmd1, cmd2])
-      assert is_struct(batch)
+      assert struct?(batch)
 
       assert Map.has_key?(batch, :type),
              "Expected batch to be a struct or map with :type key, got: #{inspect(batch)}"
@@ -227,7 +228,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       events = [:event1, :event2]
       subscription = TestApp.subscribe_to_events(events)
 
-      assert is_struct(subscription)
+      assert struct?(subscription)
 
       assert Map.has_key?(subscription, :type),
              "Expected subscription to be a struct or map with :type key, got: #{inspect(subscription)}"
@@ -239,7 +240,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     test ~c"subscribe_interval/2 creates interval subscription" do
       subscription = TestApp.subscribe_interval(500, :tick)
 
-      assert is_struct(subscription)
+      assert struct?(subscription)
 
       assert Map.has_key?(subscription, :type),
              "Expected subscription to be a struct or map with :type key, got: #{inspect(subscription)}"

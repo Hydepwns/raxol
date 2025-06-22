@@ -89,12 +89,12 @@ defmodule Raxol.UI.RendererTest do
       assert length(rendered_cells) > 0
 
       # Verify header cells
-      header_cell = find_cell(rendered_cells, 1, 2)
+      header_cell = find_cell(rendered_cells, 2, 2)
       assert header_cell != nil
       assert elem(header_cell, 2) == "H"
 
       # Verify data cells
-      data_cell = find_cell(rendered_cells, 1, 4)
+      data_cell = find_cell(rendered_cells, 2, 4)
       assert data_cell != nil
       assert elem(data_cell, 2) == "D"
     end
@@ -122,14 +122,14 @@ defmodule Raxol.UI.RendererTest do
       rendered_cells = Renderer.render_to_cells([positioned_table], test_theme)
 
       # Assert header style
-      header_cell = find_cell(rendered_cells, 1, 2)
+      header_cell = find_cell(rendered_cells, 2, 2)
       assert header_cell != nil
       {_, _, "H", fg, bg, _} = header_cell
       assert fg == :cyan
       assert bg == :default
 
       # Assert data row style
-      data_cell = find_cell(rendered_cells, 1, 4)
+      data_cell = find_cell(rendered_cells, 2, 4)
       assert data_cell != nil
       {_, _, "D", fg, bg, _} = data_cell
       assert fg == :default

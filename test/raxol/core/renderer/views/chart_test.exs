@@ -1,4 +1,5 @@
 import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
+import Raxol.Guards
 
 defmodule Raxol.Core.Renderer.Views.ChartTest do
   @moduledoc """
@@ -6,8 +7,6 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
   data handling, and axes/labels.
   """
   use ExUnit.Case
-
-  alias Raxol.Core.Renderer.View
 
   @sample_series [
     %{
@@ -33,7 +32,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           height: 10
         )
 
-      assert is_map(view)
+      assert map?(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
       assert view.children != nil
@@ -49,7 +48,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           height: 10
         )
 
-      assert is_map(view)
+      assert map?(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
       assert view.children != nil
@@ -67,7 +66,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           width: 20
         )
 
-      assert is_map(view)
+      assert map?(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
       text_view = view.children
@@ -93,7 +92,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       content = view
-      assert is_map(content)
+      assert map?(content)
       assert Map.has_key?(content, :type)
       assert content.type == :box
     end
@@ -110,7 +109,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       content = view
-      assert is_map(content)
+      assert map?(content)
       assert Map.has_key?(content, :type)
       assert content.type == :box
     end
@@ -124,8 +123,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       end
     end
 
-    defp process_children(children) when is_list(children) do
-      if Enum.all?(children, &is_list/1) do
+    defp process_children(children) when list?(children) do
+      if Enum.all?(children, &list?/1) do
         children
         |> List.flatten()
         |> Enum.flat_map(&find_all_text_children/1)
@@ -150,8 +149,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       bars = find_all_text_children(view)
-      assert Enum.any?(bars, fn bar -> is_map(bar) and bar.fg == :blue end)
-      assert Enum.any?(bars, fn bar -> is_map(bar) and bar.fg == :red end)
+      assert Enum.any?(bars, fn bar -> map?(bar) and bar.fg == :blue end)
+      assert Enum.any?(bars, fn bar -> map?(bar) and bar.fg == :red end)
     end
   end
 
@@ -195,7 +194,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       content = view
       points = find_all_text_children(content)
       # Check for at least 2 points
-      assert Enum.count(points, &(is_map(&1) and &1.content == "•")) >= 2
+      assert Enum.count(points, &(map?(&1) and &1.content == "•")) >= 2
     end
 
     test "applies colors to lines" do
@@ -217,8 +216,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       # Find points (represented by •) and check colors
       content = view
       points = find_all_text_children(content)
-      assert Enum.any?(points, &(is_map(&1) and &1.fg == :blue))
-      assert Enum.any?(points, &(is_map(&1) and &1.fg == :red))
+      assert Enum.any?(points, &(map?(&1) and &1.fg == :blue))
+      assert Enum.any?(points, &(map?(&1) and &1.fg == :red))
     end
   end
 
@@ -240,7 +239,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       # Add assertions to verify min/max impact if possible
-      assert is_map(view)
+      assert map?(view)
       assert Map.has_key?(view, :type)
       assert view != nil
     end
@@ -250,25 +249,17 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         Raxol.Core.Renderer.Views.Chart.new(type: :bar, series: [%{data: []}])
 
       # Verify the structure returned for empty data
-      assert is_map(view)
+      assert map?(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
 
       # The child should be the empty flex container returned by create_vertical_bars
       # Chart.new likely wraps content in a box
       content_view = view.children
-      assert is_map(content_view)
+      assert map?(content_view)
       assert Map.has_key?(content_view, :type)
       assert content_view.type == :flex
       assert content_view.children == []
     end
   end
-
-  defp find_child(view, criteria_fun) do
-    # Helper function requires careful traversal
-    # This simple version might not work for nested structures
-    Enum.find(view.children |> List.flatten(), criteria_fun)
-  end
 end
-
-# End of defmodule
