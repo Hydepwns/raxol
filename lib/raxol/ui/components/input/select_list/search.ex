@@ -3,6 +3,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   Handles search and filtering functionality for the SelectList component.
   """
 
+  import Raxol.Guards
+
   @type option :: {String.t(), any()}
   @type options :: [option()]
 
@@ -39,7 +41,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
 
     # Search specified fields in the value if it's a map
     value_match =
-      if is_map(value) do
+      if map?(value) do
         Enum.any?(searchable_fields, fn field ->
           case Map.get(value, field) do
             nil ->
@@ -66,12 +68,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
     %{
       state
       | search_text: search_text,
-        is_filtering: search_text != "",
+        filtering: search_text != "",
         filtered_options:
           filter_options(state.options, search_text, state.searchable_fields),
-        # Reset focus to first matching item
         focused_index: 0,
-        # Reset scroll position
         scroll_offset: 0
     }
   end

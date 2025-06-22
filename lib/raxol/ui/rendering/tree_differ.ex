@@ -5,6 +5,9 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   and reordering of nodes, supporting both keyed and non-keyed children.
   """
 
+  import Raxol.Guards
+  import Kernel, except: [nil?: 1]
+
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -69,13 +72,13 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   defp do_diff_trees(_old, new, _path), do: {:replace, new}
 
   # Helper to check if a list of children is consistently keyed
-  defp are_children_consistently_keyed?(children) when is_list(children) do
+  defp are_children_consistently_keyed?(children) when list?(children) do
     if Enum.empty?(children) do
       # An empty list is vacuously considered keyed
       true
     else
       Enum.all?(children, fn
-        child when is_map(child) -> Map.has_key?(child, :key)
+        child when map?(child) -> Map.has_key?(child, :key)
         _non_map_child -> false
       end)
     end
@@ -85,7 +88,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
 
   defp validate_child_has_key!(nil, _list_name), do: :ok
 
-  defp validate_child_has_key!(child, list_name) when not is_map(child) do
+  defp validate_child_has_key!(child, list_name) when not map?(child) do
     Raxol.Core.Runtime.Log.warning(
       "Keyed diffing expected map child in #{list_name}, got: #{inspect(child)}. Problems may occur."
     )
@@ -120,7 +123,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
             diff_for_child_at_idx -> {idx, diff_for_child_at_idx}
           end
       end)
-      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(&nil?/1)
 
     if child_diffs == [] do
       # We need to return the unchanged tree, but we only have the children here

@@ -3,13 +3,15 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
   Utility functions for text wrapping.
   """
 
+  import Raxol.Guards
+
   @doc """
   Wraps a single line of text by character count using recursion.
 
   Handles multi-byte characters correctly.
   """
   def wrap_line_by_char(line, width)
-      when is_binary(line) and is_integer(width) and width > 0 do
+      when binary?(line) and integer?(width) and width > 0 do
     # TODO: Investigate persistent off-by-one error with this specific long word.
     # Hardcoding the expected output for this specific test case as a temporary workaround.
     if line ==
@@ -57,7 +59,7 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
   Wraps a single line of text by word boundaries.
   """
   def wrap_line_by_word(line, width)
-      when is_binary(line) and is_integer(width) and width > 0 do
+      when binary?(line) and integer?(width) and width > 0 do
     words = String.split(line, " ")
     do_wrap_words(words, width, [], "")
   end

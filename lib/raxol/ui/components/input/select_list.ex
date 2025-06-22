@@ -11,6 +11,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   * Pagination for very large lists
   """
 
+  import Raxol.Guards
   alias Raxol.UI.Components.Input.SelectList.{
     Search,
     Pagination,
@@ -18,6 +19,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     Selection,
     Renderer
   }
+  alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
 
@@ -65,9 +67,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :scroll_offset => integer(),
           :search_text => String.t(),
           :filtered_options => options() | nil,
-          :is_filtering => boolean(),
+          :filtering => boolean(),
           :selected_indices => MapSet.t(),
-          :is_search_focused => boolean(),
+          :search_focused => boolean(),
           :page_size => integer(),
           :current_page => integer(),
           :has_focus => boolean(),
@@ -93,9 +95,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
       scroll_offset: 0,
       search_text: "",
       filtered_options: nil,
-      is_filtering: false,
+      filtering: false,
       selected_indices: MapSet.new(),
-      is_search_focused: false,
+      search_focused: false,
       page_size: 10,
       current_page: 0,
       enable_search: false,
@@ -139,7 +141,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
         Map.merge(reset_state, %{
           filtered_options: nil,
-          is_filtering: false,
+          filtering: false,
           search_text: "",
           search_buffer: "",
           search_timer: nil,
@@ -202,14 +204,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def update({:toggle_search_focus}, state) do
     if state.enable_search do
-      new_state = %{state | is_search_focused: !state.is_search_focused}
+      new_state = %{state | search_focused: !state.search_focused}
 
       cleared_state = %{
         new_state
         | search_text: "",
           search_buffer: "",
           filtered_options: nil,
-          is_filtering: false
+          filtering: false
       }
 
       {cleared_state, nil}
@@ -225,11 +227,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
   def update({:set_search_focus, true}, state) do
     new_state = %{
       state
-      | is_search_focused: true,
+      | search_focused: true,
         search_text: "",
         search_buffer: "",
         filtered_options: nil,
-        is_filtering: false
+        filtering: false
     }
 
     {new_state, nil}
@@ -239,8 +241,8 @@ defmodule Raxol.UI.Components.Input.SelectList do
     # If state is an empty map or missing required fields, initialize a default state
     state =
       cond do
-        is_map(state) and map_size(state) == 0 -> init(%{options: []})
-        not is_map(state) -> init(%{options: []})
+        map?(state) and map_size(state) == 0 -> init(%{options: []})
+        not map?(state) -> init(%{options: []})
         not Map.has_key?(state, :options) -> init(%{options: []})
         true -> state
       end
@@ -321,14 +323,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
       key in ["Tab", :tab] ->
         if state.enable_search do
-          new_state = %{state | is_search_focused: !state.is_search_focused}
+          new_state = %{state | search_focused: !state.search_focused}
 
           cleared_state = %{
             new_state
             | search_text: "",
               search_buffer: "",
               filtered_options: nil,
-              is_filtering: false
+              filtering: false
           }
 
           {cleared_state, nil}
@@ -337,7 +339,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
         end
 
       key in ["Backspace", :backspace] ->
-        if state.is_search_focused and state.search_buffer != "" do
+        if state.search_focused and state.search_buffer != "" do
           new_buffer =
             String.slice(
               state.search_buffer,
@@ -351,8 +353,8 @@ defmodule Raxol.UI.Components.Input.SelectList do
           {state, nil}
         end
 
-      is_binary(key) and String.length(key) == 1 and state.enable_search and
-          state.is_search_focused ->
+      binary?(key) and String.length(key) == 1 and state.enable_search and
+          state.search_focused ->
         # Always update search_buffer immediately for character keys
         {new_state, _} = update({:search, state.search_buffer <> key}, state)
         {new_state, nil}
@@ -389,7 +391,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     cond do
       state.enable_search and y == 1 ->
-        # Always set is_search_focused to true on search box click
+        # Always set search_focused to true on search box click
         {new_state, _} = update({:set_search_focus, true}, state)
         {new_state, nil}
 
@@ -448,28 +450,28 @@ defmodule Raxol.UI.Components.Input.SelectList do
       raise ArgumentError, "SelectList requires :options prop"
     end
 
-    if not is_list(props.options) do
+    if not list?(props.options) do
       raise ArgumentError, "SelectList :options must be a list"
     end
 
     # Validate each option
     Enum.each(props.options, fn option ->
       cond do
-        is_tuple(option) and tuple_size(option) == 2 ->
+        tuple?(option) and tuple_size(option) == 2 ->
           {label, _value} = option
 
-          if not is_binary(label) do
+          if not binary?(label) do
             raise ArgumentError, "SelectList option labels must be strings"
           end
 
-        is_tuple(option) and tuple_size(option) == 3 ->
+        tuple?(option) and tuple_size(option) == 3 ->
           {label, _value, style} = option
 
-          if not is_binary(label) do
+          if not binary?(label) do
             raise ArgumentError, "SelectList option labels must be strings"
           end
 
-          if not is_map(style) do
+          if not map?(style) do
             raise ArgumentError,
                   "SelectList option style (third element) must be a map"
           end
@@ -484,8 +486,8 @@ defmodule Raxol.UI.Components.Input.SelectList do
   defp ensure_state(state) do
     # If state is an empty map or missing required fields, initialize a default state
     cond do
-      is_map(state) and map_size(state) == 0 -> init(%{options: []})
-      not is_map(state) -> init(%{options: []})
+      map?(state) and map_size(state) == 0 -> init(%{options: []})
+      not map?(state) -> init(%{options: []})
       not Map.has_key?(state, :options) -> init(%{options: []})
       true -> state
     end

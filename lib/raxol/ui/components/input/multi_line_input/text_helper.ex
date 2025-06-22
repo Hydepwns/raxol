@@ -7,6 +7,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   # --- Line Splitting and Wrapping ---
 
@@ -114,10 +115,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     )
 
     # Text After: Needs to start AT the index for insertion, AFTER for deletion/replace
-    is_insertion = start_pos_tuple == end_pos_tuple and replacement != ""
+    insertion_mode? = start_pos_tuple == end_pos_tuple and replacement != ""
 
     slice_after_start_index =
-      if is_insertion do
+      if insertion_mode? do
         # Slice from the insertion point
         clamped_start
       else
@@ -142,7 +143,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
     # Replaced Text Calculation - uses exclusive end index logic
     replaced_length =
-      if is_insertion do
+      if insertion_mode? do
         0
       else
         if clamped_start <= clamped_end do
@@ -177,8 +178,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     # Convert input char/codepoint to binary string
     char_binary =
       case char_or_codepoint do
-        cp when is_integer(cp) -> <<cp::utf8>>
-        bin when is_binary(bin) -> bin
+        cp when integer?(cp) -> <<cp::utf8>>
+        bin when binary?(bin) -> bin
         # Ignore invalid input for now
         _ -> ""
       end

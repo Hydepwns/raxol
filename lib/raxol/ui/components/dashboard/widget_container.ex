@@ -13,6 +13,7 @@ defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
   require Raxol.View.Elements
   # Use UI alias
   alias Raxol.View.Elements, as: UI
+  import Raxol.Guards
 
   # --- Component Behaviour Placeholders ---
 
@@ -78,7 +79,7 @@ defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
 
   # Renders the resize handle at the bottom-right corner if bounds allow.
   defp render_resize_handle(bounds)
-       when is_map(bounds) and bounds.width > 0 and bounds.height > 1 do
+       when map?(bounds) and bounds.width > 0 and bounds.height > 1 do
     handle_x = bounds.width - 1
     handle_y = bounds.height - 1
 

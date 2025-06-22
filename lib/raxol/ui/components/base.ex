@@ -6,6 +6,9 @@ defmodule Raxol.UI.Components.Base do
   including common validation, styling, and event handling patterns.
   """
 
+  import Raxol.Guards
+  alias Raxol.UI.Theming.Theme
+
   @type state :: map()
 
   @doc """
@@ -101,10 +104,10 @@ defmodule Raxol.UI.Components.Base do
   end
 
   defp validate_type(_value, nil), do: :ok
-  defp validate_type(value, :string) when is_binary(value), do: :ok
-  defp validate_type(value, :boolean) when is_boolean(value), do: :ok
-  defp validate_type(value, :integer) when is_integer(value), do: :ok
-  defp validate_type(value, :atom) when is_atom(value), do: :ok
+  defp validate_type(value, :string) when binary?(value), do: :ok
+  defp validate_type(value, :boolean) when boolean?(value), do: :ok
+  defp validate_type(value, :integer) when integer?(value), do: :ok
+  defp validate_type(value, :atom) when atom?(value), do: :ok
 
   defp validate_type(value, {:one_of, options}),
     do:

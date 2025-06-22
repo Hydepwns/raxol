@@ -4,6 +4,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   """
 
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   # User-specific config dir
   @layout_file Path.expand("~/.raxol/dashboard_layout.bin")
@@ -15,7 +16,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   `:id`, `:type`, `:title`, `:grid_spec`, `:component_opts`, `:data`.
   """
   @spec save_layout(list(map())) :: :ok | {:error, term()}
-  def save_layout(widgets) when is_list(widgets) do
+  def save_layout(widgets) when list?(widgets) do
     layout_file = @layout_file
 
     try do
@@ -74,7 +75,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
             )
 
             # Basic validation: is it a list?
-            if is_list(layout_data), do: layout_data, else: nil
+            if list?(layout_data), do: layout_data, else: nil
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.error(

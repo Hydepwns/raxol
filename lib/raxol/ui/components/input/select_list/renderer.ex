@@ -3,6 +3,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   Handles rendering functionality for the SelectList component.
   """
 
+  import Raxol.Guards
+
   alias Raxol.UI.Components.Input.SelectList.Pagination
 
   @doc """
@@ -56,7 +58,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         render_pagination_controls(state)
       end
     ]
-    |> Enum.reject(&is_nil/1)
+    |> Enum.reject(&nil?/1)
   end
 
   @doc """
@@ -144,7 +146,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
       Enum.with_index(visible_options)
       |> Enum.map(fn {option, index} ->
         cond do
-          is_tuple(option) and tuple_size(option) == 3 ->
+          tuple?(option) and tuple_size(option) == 3 ->
             # {label, value, opt_style}
             {label, value, opt_style} = option
 
@@ -156,7 +158,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
               opt_style
             )
 
-          is_tuple(option) and tuple_size(option) == 2 ->
+          tuple?(option) and tuple_size(option) == 2 ->
             # {label, value} (value may be a map or any type)
             {label, value} = option
             render_option(state, label, value, index + state.scroll_offset, %{})
@@ -179,15 +181,15 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   Renders a single option.
   """
   def render_option(state, label, _value, index, opt_style) do
-    is_selected = MapSet.member?(state.selected_indices, index)
-    is_focused = index == state.focused_index
+    selected = MapSet.member?(state.selected_indices, index)
+    focused = index == state.focused_index
 
     merged_style =
       Map.merge(
         %{
           padding: "0.5rem",
           background_color:
-            if(is_focused,
+            if(focused,
               do:
                 state.theme[:focused_bg] || state.style[:focused_bg] ||
                   "#e6f3ff",
@@ -216,9 +218,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         %{
           type: :text,
           props: %{
-            content: if(is_selected, do: "✓ #{label}", else: "  #{label}"),
+            content: if(selected, do: "✓ #{label}", else: "  #{label}"),
             style:
-              if is_selected do
+              if selected do
                 Map.merge(
                   Map.merge(
                     %{

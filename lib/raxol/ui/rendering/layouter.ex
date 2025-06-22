@@ -1,4 +1,9 @@
 defmodule Raxol.UI.Rendering.Layouter do
+  @moduledoc """
+  Handles layout of UI components.
+  """
+
+  import Raxol.Guards
   require Raxol.Core.Runtime.Log
 
   @spec layout_tree(diff_result :: any(), new_tree_for_reference :: map() | nil) ::
@@ -50,7 +55,7 @@ defmodule Raxol.UI.Rendering.Layouter do
         end
 
       _otherwise ->
-        if is_map(diff_result) do
+        if map?(diff_result) do
           Raxol.Core.Runtime.Log.debug(
             "Layout Stage: Input is a map, treating as full layout: #{inspect(diff_result)}"
           )
@@ -70,7 +75,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   defp do_layout_node_and_children(nil, _diff), do: nil
 
   defp do_layout_node_and_children(node_content, _diff_for_this_node)
-       when not is_map(node_content) do
+       when not map?(node_content) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Layout Engine: Encountered non-map node content: #{inspect(node_content)}. Passing through.",
       %{}
@@ -80,11 +85,11 @@ defmodule Raxol.UI.Rendering.Layouter do
   end
 
   defp do_layout_node_and_children(node_content, diff_for_this_node)
-       when is_map(node_content) do
+       when map?(node_content) do
     current_node_actual_content =
       case diff_for_this_node do
         {:replace, new_content_for_this_node}
-        when is_map(new_content_for_this_node) ->
+        when map?(new_content_for_this_node) ->
           new_content_for_this_node
 
         {:replace, _} ->
@@ -110,7 +115,7 @@ defmodule Raxol.UI.Rendering.Layouter do
       case diff_for_this_node do
         {:replace, _} ->
           Enum.map(
-            if(is_map(node_with_own_layout),
+            if(map?(node_with_own_layout),
               do: Map.get(node_with_own_layout, :children, []),
               else: []
             ),
@@ -119,7 +124,7 @@ defmodule Raxol.UI.Rendering.Layouter do
 
         :no_change ->
           Enum.map(
-            if(is_map(node_with_own_layout),
+            if(map?(node_with_own_layout),
               do: Map.get(node_with_own_layout, :children, []),
               else: []
             ),
@@ -128,7 +133,7 @@ defmodule Raxol.UI.Rendering.Layouter do
 
         {:update_children, child_changes_list} ->
           children =
-            if is_map(node_with_own_layout),
+            if map?(node_with_own_layout),
               do: Map.get(node_with_own_layout, :children, []),
               else: []
 
@@ -136,12 +141,12 @@ defmodule Raxol.UI.Rendering.Layouter do
 
         _unknown_diff ->
           Raxol.Core.Runtime.Log.warning_with_context(
-            "Layout Engine: Unhandled diff for node, doing full child relayout: #{inspect(diff_for_this_node)} on node #{inspect(if is_map(node_with_own_layout), do: Map.get(node_with_own_layout, :type, :unknown), else: :unknown)}",
+            "Layout Engine: Unhandled diff for node, doing full child relayout: #{inspect(diff_for_this_node)} on node #{inspect(if map?(node_with_own_layout), do: Map.get(node_with_own_layout, :type, :unknown), else: :unknown)}",
             %{}
           )
 
           Enum.map(
-            if(is_map(node_with_own_layout),
+            if(map?(node_with_own_layout),
               do: Map.get(node_with_own_layout, :children, []),
               else: []
             ),
@@ -170,7 +175,7 @@ defmodule Raxol.UI.Rendering.Layouter do
 
   defp path_to_access_path([]), do: []
 
-  defp path_to_access_path(path_indices) when is_list(path_indices) do
+  defp path_to_access_path(path_indices) when list?(path_indices) do
     Enum.reduce(path_indices, [], fn idx, acc ->
       acc ++ [:children, idx]
     end)
@@ -183,7 +188,7 @@ defmodule Raxol.UI.Rendering.Layouter do
       width: 10,
       height: 1,
       node_type:
-        if(is_map(node_content),
+        if(map?(node_content),
           do: Map.get(node_content, :type, :unknown),
           else: :unknown
         ),

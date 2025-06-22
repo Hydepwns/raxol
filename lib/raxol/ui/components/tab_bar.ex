@@ -86,11 +86,11 @@ defmodule Raxol.UI.Components.TabBar do
     Raxol.View.Elements.row style: style, id: focus_key do
       tab_buttons =
         Enum.map(tabs, fn %{id: id, label: label} = tab ->
-          is_active = id == active_tab
+          active? = id == active_tab
 
           # Compute final style for this tab
           final_style =
-            if is_active do
+            if active? do
               Map.merge(tab_style, active_tab_style)
             else
               tab_style

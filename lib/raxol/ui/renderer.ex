@@ -6,6 +6,9 @@ defmodule Raxol.UI.Renderer do
   into styled characters at specific coordinates.
   """
 
+  import Raxol.Guards
+  alias Raxol.UI.Theming.Theme
+
   require Raxol.Core.Runtime.Log
 
   # Map representing an element with x, y, width, height, type, attrs, etc.
@@ -44,12 +47,12 @@ defmodule Raxol.UI.Renderer do
       )
 
   # Clause for list of elements
-  def render_to_cells(elements, theme) when is_list(elements) do
+  def render_to_cells(elements, theme) when list?(elements) do
     Enum.flat_map(elements, &render_element(&1, theme))
   end
 
   # Clause for single element
-  def render_to_cells(element, theme) when is_map(element) do
+  def render_to_cells(element, theme) when map?(element) do
     render_element(element, theme)
   end
 
@@ -60,7 +63,7 @@ defmodule Raxol.UI.Renderer do
     []
   end
 
-  defp render_element(element, theme) when is_map(element) do
+  defp render_element(element, theme) when map?(element) do
     # Dispatch based on element type found in the layout engine output
     case element do
       # Element type :text - expect :text, :x, :y. attrs is optional.
@@ -77,21 +80,37 @@ defmodule Raxol.UI.Renderer do
 
       # Element type :table
       %{type: :table, x: x, y: y} = table_element ->
-        # Default width if not specified
         width = Map.get(table_element, :width, 80)
-        # Default height if not specified
         height = Map.get(table_element, :height, 24)
+        attrs = Map.get(table_element, :attrs, %{})
 
-        attrs = %{
-          _headers: Map.get(table_element, :headers, []),
-          _data: Map.get(table_element, :data, []),
-          _col_widths: Map.get(table_element, :col_widths, []),
-          _component_type: :table,
-          # Pass style from element
-          style: Map.get(table_element, :style, %{})
+        headers =
+          Map.get(table_element, :headers) ||
+            Map.get(attrs, :headers) ||
+            Map.get(attrs, :_headers, [])
+
+        data =
+          Map.get(table_element, :data) ||
+            Map.get(attrs, :data) ||
+            Map.get(attrs, :_data, [])
+
+        col_widths =
+          Map.get(table_element, :col_widths) ||
+            Map.get(attrs, :col_widths) ||
+            Map.get(attrs, :_col_widths, [])
+
+        component_type = Map.get(attrs, :_component_type, :table)
+        style = Map.get(attrs, :style, %{})
+
+        table_attrs = %{
+          _headers: headers,
+          _data: data,
+          _col_widths: col_widths,
+          _component_type: component_type,
+          style: style
         }
 
-        render_table(x, y, width, height, attrs, theme)
+        render_table(x, y, width, height, table_attrs, theme)
 
       # Match necessary keys for panel rendering. attrs is optional.
       %{type: :panel, x: x, y: y, width: w, height: h} = panel_element ->
@@ -123,7 +142,7 @@ defmodule Raxol.UI.Renderer do
     end
   end
 
-  defp render_text(x, y, text, attrs, theme) when is_binary(text) do
+  defp render_text(x, y, text, attrs, theme) when binary?(text) do
     # Determine component type from attrs for specific styling
     component_type =
       Map.get(attrs, :component_type) || Map.get(attrs, :original_type)
@@ -494,12 +513,12 @@ defmodule Raxol.UI.Renderer do
     raw_explicit_style = Map.get(attrs, :style, [])
 
     explicit_style_attrs =
-      if is_list(raw_explicit_style), do: raw_explicit_style, else: []
+      if list?(raw_explicit_style), do: raw_explicit_style, else: []
 
     raw_component_style = Map.get(component_styles, :style, [])
 
     component_style_attrs =
-      if is_list(raw_component_style), do: raw_component_style, else: []
+      if list?(raw_component_style), do: raw_component_style, else: []
 
     # Merge: explicit attrs take precedence (simple list concatenation for now)
     # A proper merge might be needed depending on how styles are defined
@@ -510,7 +529,7 @@ defmodule Raxol.UI.Renderer do
   end
 
   # Clause to handle nil theme (fallback to defaults)
-  defp resolve_styles(attrs, _component_type, nil) when is_map(attrs) do
+  defp resolve_styles(attrs, _component_type, nil) when map?(attrs) do
     fg_color = Map.get(attrs, :fg, @default_fg)
     bg_color = Map.get(attrs, :bg, @default_bg)
     style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
@@ -518,7 +537,7 @@ defmodule Raxol.UI.Renderer do
   end
 
   # Catch-all clause for other cases
-  defp resolve_styles(attrs, _component_type, _theme) when is_map(attrs) do
+  defp resolve_styles(attrs, _component_type, _theme) when map?(attrs) do
     fg_color = Map.get(attrs, :fg, @default_fg)
     bg_color = Map.get(attrs, :bg, @default_bg)
     style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()

@@ -335,7 +335,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   end
 
   # Checks if the given line index is within the selection
-  def is_line_in_selection?(line_index, start_pos, end_pos) do
+  def line_in_selection?(line_index, start_pos, end_pos) do
     case {start_pos, end_pos} do
       {nil, _} ->
         false

@@ -9,6 +9,9 @@ defmodule Raxol.UI.Layout.Panels do
   * Panel-specific spacing and constraints
   """
 
+  import Raxol.Guards
+  import Kernel, except: [nil?: 1]
+  alias Raxol.UI.Theming.Theme
   alias Raxol.UI.Layout.Engine
   require Raxol.Core.Runtime.Log
 
@@ -104,11 +107,11 @@ defmodule Raxol.UI.Layout.Panels do
         nil ->
           []
 
-        c when is_list(c) ->
+        c when list?(c) ->
           c
 
         # Wrap single child map in a list
-        c when is_map(c) ->
+        c when map?(c) ->
           [c]
 
         _ ->
@@ -179,14 +182,14 @@ defmodule Raxol.UI.Layout.Panels do
 
     # Default to available space if no explicit size and no (or zero-sized) children
     base_width =
-      if children_size.width == 0 and is_nil(explicit_width) do
+      if children_size.width == 0 and nil?(explicit_width) do
         available_space.width
       else
         content_width
       end
 
     base_height =
-      if children_size.height == 0 and is_nil(explicit_height) do
+      if children_size.height == 0 and nil?(explicit_height) do
         available_space.height
       else
         content_height

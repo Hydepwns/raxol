@@ -9,6 +9,8 @@ defmodule Raxol.UI.Layout.Grid do
   * Grid-specific spacing and constraints
   """
 
+  import Raxol.Guards
+  alias Raxol.UI.Theming.Theme
   alias Raxol.UI.Layout.Engine
 
   @doc """
@@ -25,7 +27,7 @@ defmodule Raxol.UI.Layout.Grid do
   A list of positioned elements with absolute coordinates.
   """
   def process(%{type: :grid, attrs: attrs, children: children}, space, acc)
-      when is_list(children) do
+      when list?(children) do
     # Skip if no children
     if children == [] do
       acc

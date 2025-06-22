@@ -167,38 +167,22 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   # --- Internal Helpers ---
 
   defp handle_key_event(key_data, state) do
-    msg =
-      case key_data do
-        %{key: k, modifiers: []} when is_binary(k) and byte_size(k) == 1 ->
-          {:insert_char, k}
-
-        %{key: "Enter", modifiers: []} ->
-          :submit
-
-        %{key: "Backspace", modifiers: []} ->
-          :backspace
-
-        %{key: "Delete", modifiers: []} ->
-          :delete
-
-        %{key: "Left", modifiers: []} ->
-          :move_cursor_left
-
-        %{key: "Right", modifiers: []} ->
-          :move_cursor_right
-
-        %{key: "Home", modifiers: []} ->
-          :move_cursor_start
-
-        %{key: "End", modifiers: []} ->
-          :move_cursor_end
-
-        _ ->
-          nil
-      end
-
+    msg = map_key_to_message(key_data)
     if msg, do: update(msg, state), else: {state, []}
   end
+
+  defp map_key_to_message(%{key: k, modifiers: []}) when is_binary(k) and byte_size(k) == 1 do
+    {:insert_char, k}
+  end
+
+  defp map_key_to_message(%{key: "Enter", modifiers: []}), do: :submit
+  defp map_key_to_message(%{key: "Backspace", modifiers: []}), do: :backspace
+  defp map_key_to_message(%{key: "Delete", modifiers: []}), do: :delete
+  defp map_key_to_message(%{key: "Left", modifiers: []}), do: :move_cursor_left
+  defp map_key_to_message(%{key: "Right", modifiers: []}), do: :move_cursor_right
+  defp map_key_to_message(%{key: "Home", modifiers: []}), do: :move_cursor_start
+  defp map_key_to_message(%{key: "End", modifiers: []}), do: :move_cursor_end
+  defp map_key_to_message(_), do: nil
 
   defp insert_char(char, state) do
     new_value =
