@@ -1,4 +1,6 @@
 defmodule Raxol.Core.ColorSystem do
+  import Raxol.Guards
+
   @moduledoc """
   Core color system for Raxol.
 
@@ -32,7 +34,7 @@ defmodule Raxol.Core.ColorSystem do
       iex> theme.name
       "dark"
   """
-  def create_theme(name, colors) when is_binary(name) and is_map(colors) do
+  def create_theme(name, colors) when binary?(name) and map?(colors) do
     # Convert hex colors to Color structs
     colors =
       Map.new(colors, fn {key, value} -> {key, Color.from_hex(value)} end)
@@ -53,7 +55,7 @@ defmodule Raxol.Core.ColorSystem do
       iex> get_color(theme, :primary)
       %Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
   """
-  def get_color(theme, name) when is_map(theme) and is_atom(name) do
+  def get_color(theme, name) when map?(theme) and atom?(name) do
     get_in(theme, [:colors, name])
   end
 
@@ -130,7 +132,7 @@ defmodule Raxol.Core.ColorSystem do
   """
   @spec get(atom(), atom()) :: Raxol.Style.Colors.color_value() | nil
   def get(theme_id, color_name)
-      when is_atom(theme_id) and is_atom(color_name) do
+      when atom?(theme_id) and atom?(color_name) do
     # Get the theme struct using the correct alias
     theme = Theme.get(theme_id)
 
@@ -183,7 +185,7 @@ defmodule Raxol.Core.ColorSystem do
   """
   @spec get_as(atom(), atom(), atom()) :: any() | nil
   def get_as(theme_id, color_name, format \\ :term)
-      when is_atom(theme_id) and is_atom(color_name) and is_atom(format) do
+      when atom?(theme_id) and atom?(color_name) and atom?(format) do
     # Pass theme_id to get/2
     color_value = get(theme_id, color_name)
 
@@ -237,6 +239,6 @@ defmodule Raxol.Core.ColorSystem do
   end
 
   defp safe_map_get(data, key, default \\ nil) do
-    if is_map(data), do: Map.get(data, key, default), else: default
+    if map?(data), do: Map.get(data, key, default), else: default
   end
 end

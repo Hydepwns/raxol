@@ -1,4 +1,6 @@
 defmodule Raxol.Core.UserPreferences do
+  import Raxol.Guards
+
   @moduledoc """
   Manages user preferences for the terminal emulator.
 
@@ -170,7 +172,7 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   # Cancels a Process.send_after timer if it exists
-  defp cancel_save_timer(timer_id) when is_integer(timer_id) do
+  defp cancel_save_timer(timer_id) when integer?(timer_id) do
     # We can't actually cancel the timer, but we can ignore its message
     # when it arrives by checking the timer_id
     :ok
@@ -212,7 +214,7 @@ defmodule Raxol.Core.UserPreferences do
 
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
-      if is_map(val1) and is_map(val2) do
+      if map?(val1) and map?(val2) do
         deep_merge(val1, val2)
       else
         # Value from map2 overrides map1
@@ -222,11 +224,11 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   # Helper to normalize key paths to a list of atoms
-  defp normalize_path(path) when is_atom(path), do: [path]
+  defp normalize_path(path) when atom?(path), do: [path]
   # Assume list is already correct
-  defp normalize_path(path) when is_list(path), do: path
+  defp normalize_path(path) when list?(path), do: path
 
-  defp normalize_path(path) when is_binary(path) do
+  defp normalize_path(path) when binary?(path) do
     String.split(path, ".")
     # Use existing_atom for safety
     |> Enum.map(&String.to_existing_atom/1)
@@ -247,10 +249,10 @@ defmodule Raxol.Core.UserPreferences do
     theme = get([:theme, :active_id], pid_or_name) || get(:theme, pid_or_name)
 
     cond do
-      is_atom(theme) ->
+      atom?(theme) ->
         theme
 
-      is_binary(theme) ->
+      binary?(theme) ->
         try do
           String.to_existing_atom(theme)
         rescue

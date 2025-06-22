@@ -9,6 +9,8 @@ defmodule Raxol.Core.Renderer.Element do
   * Optional children forming a tree structure
   """
 
+  import Raxol.Guards
+
   @type t :: %__MODULE__{
           tag: atom(),
           attributes: [{atom(), term()}],
@@ -31,13 +33,13 @@ defmodule Raxol.Core.Renderer.Element do
   def new(tag, attrs, opts \\ []) do
     attrs =
       cond do
-        is_list(attrs) -> attrs
-        is_map(attrs) -> Map.to_list(attrs)
+        list?(attrs) -> attrs
+        map?(attrs) -> Map.to_list(attrs)
         true -> []
       end
 
     children = Keyword.get(opts, :do, [])
-    children = if is_list(children), do: children, else: [children]
+    children = if list?(children), do: children, else: [children]
 
     %__MODULE__{
       tag: tag,
@@ -57,7 +59,7 @@ defmodule Raxol.Core.Renderer.Element do
   @doc """
   Adds children to an existing element.
   """
-  def add_children(%__MODULE__{} = element, children) when is_list(children) do
+  def add_children(%__MODULE__{} = element, children) when list?(children) do
     %{element | children: element.children ++ children}
   end
 

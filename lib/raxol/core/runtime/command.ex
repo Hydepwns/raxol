@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Runtime.Command do
+  import Raxol.Guards
+
   @moduledoc """
   Provides a way to handle side effects in a pure functional way.
 
@@ -97,14 +99,14 @@ defmodule Raxol.Core.Runtime.Command do
   The function should return a message that will be sent back to the update
   function when the task completes.
   """
-  def task(fun) when is_function(fun, 0) do
+  def task(fun) when function?(fun, 0) do
     new(:task, fun)
   end
 
   @doc """
   Creates a command that will execute multiple commands in sequence.
   """
-  def batch(commands) when is_list(commands) do
+  def batch(commands) when list?(commands) do
     new(:batch, commands)
   end
 
@@ -112,7 +114,7 @@ defmodule Raxol.Core.Runtime.Command do
   Creates a command that will send a message after the specified delay
   in milliseconds.
   """
-  def delay(msg, delay_ms) when is_integer(delay_ms) and delay_ms >= 0 do
+  def delay(msg, delay_ms) when integer?(delay_ms) and delay_ms >= 0 do
     new(:delay, {msg, delay_ms})
   end
 
@@ -139,7 +141,7 @@ defmodule Raxol.Core.Runtime.Command do
   @doc """
   Creates a command to write text to the system clipboard.
   """
-  def clipboard_write(text) when is_binary(text) do
+  def clipboard_write(text) when binary?(text) do
     new(:clipboard_write, text)
   end
 
@@ -155,7 +157,7 @@ defmodule Raxol.Core.Runtime.Command do
   @doc """
   Creates a command to send a system notification.
   """
-  def notify(title, body) when is_binary(title) and is_binary(body) do
+  def notify(title, body) when binary?(title) and binary?(body) do
     new(:notify, {title, body})
   end
 
@@ -171,7 +173,7 @@ defmodule Raxol.Core.Runtime.Command do
       |> Command.map(fn {:data, result} -> {:processed_data, process(result)} end)
   """
   def map(%__MODULE__{type: :task, data: fun} = cmd, mapper)
-      when is_function(mapper, 1) do
+      when function?(mapper, 1) do
     mapped_fun = fn ->
       fun.() |> mapper.()
     end

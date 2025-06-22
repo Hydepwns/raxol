@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Renderer.View do
+  import Raxol.Guards
+
   @moduledoc """
   Provides view-related functionality for rendering UI components.
   """
@@ -721,11 +723,11 @@ defmodule Raxol.Core.Renderer.View do
   defmacro ensure_keyword(opts) do
     quote do
       cond do
-        is_list(unquote(opts)) and length(unquote(opts)) > 0 and
-            is_tuple(hd(unquote(opts))) ->
+        list?(unquote(opts)) and length(unquote(opts)) > 0 and
+            tuple?(hd(unquote(opts))) ->
           unquote(opts)
 
-        is_map(unquote(opts)) ->
+        map?(unquote(opts)) ->
           Map.to_list(unquote(opts))
 
         true ->
@@ -765,7 +767,7 @@ defmodule Raxol.Core.Renderer.View do
         # Calculate width based on flex grow
         trunc(constraints.available_width * (flex / constraints.total_flex))
 
-      %{width: width} when is_integer(width) ->
+      %{width: width} when integer?(width) ->
         # Fixed width
         width
 
@@ -781,13 +783,82 @@ defmodule Raxol.Core.Renderer.View do
         # Calculate height based on flex grow
         trunc(constraints.available_height * (flex / constraints.total_flex))
 
-      %{height: height} when is_integer(height) ->
+      %{height: height} when integer?(height) ->
         # Fixed height
         height
 
       _ ->
         # Default to available height
         constraints.available_height
+    end
+  end
+
+  @doc """
+  Creates a shadow effect for a view.
+
+  ## Options
+    * `:offset` - Shadow offset as a string or tuple {x, y}
+    * `:blur` - Shadow blur radius
+    * `:color` - Shadow color
+    * `:opacity` - Shadow opacity (0.0 to 1.0)
+
+  ## Examples
+
+      View.shadow(offset: "2px 2px", blur: 4, color: :black)
+      View.shadow(offset: {1, 1}, color: :gray, opacity: 0.5)
+  """
+  def shadow(opts \\ []) do
+    offset = parse_offset(Keyword.get(opts, :offset, {1, 1}))
+    blur = Keyword.get(opts, :blur, 2)
+    color = Keyword.get(opts, :color, :black)
+    opacity = Keyword.get(opts, :opacity, 0.3)
+
+    %{
+      type: :shadow,
+      offset: offset,
+      blur: blur,
+      color: color,
+      opacity: opacity
+    }
+  end
+
+  defp parse_offset(offset) do
+    case offset do
+      {x, y} when integer?(x) and integer?(y) -> {x, y}
+      {x, y} when number?(x) and number?(y) -> {trunc(x), trunc(y)}
+      str when binary?(str) -> parse_offset_string(str)
+      _ -> {1, 1}
+    end
+  end
+
+  defp parse_offset_string(str) do
+    parts = String.split(str, ~r/\s+/)
+    parse_offset_parts(parts)
+  end
+
+  defp parse_offset_parts([x_str, y_str]) do
+    x = parse_offset_value(x_str)
+    y = parse_offset_value(y_str)
+    {x, y}
+  end
+
+  defp parse_offset_parts(_) do
+    {1, 1}
+  end
+
+  defp parse_offset_value(str) do
+    cleaned_str = str |> String.replace("px", "") |> String.trim()
+
+    case cleaned_str do
+      "" -> 1
+      val -> parse_integer_or_default(val)
+    end
+  end
+
+  defp parse_integer_or_default(val) do
+    case Integer.parse(val) do
+      {int, _} -> int
+      :error -> 1
     end
   end
 end

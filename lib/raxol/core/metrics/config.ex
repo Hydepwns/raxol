@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Metrics.Config do
+  import Raxol.Guards
+
   @moduledoc """
   Configuration management for the Raxol metrics system.
 
@@ -56,7 +58,7 @@ defmodule Raxol.Core.Metrics.Config do
   @doc """
   Updates the configuration with the given key-value pairs.
   """
-  def update(config_updates) when is_map(config_updates) do
+  def update(config_updates) when map?(config_updates) do
     GenServer.call(__MODULE__, {:update, config_updates})
   end
 
@@ -161,23 +163,23 @@ defmodule Raxol.Core.Metrics.Config do
     end
   end
 
-  defp validate_retention_period(period) when is_integer(period) and period > 0,
+  defp validate_retention_period(period) when integer?(period) and period > 0,
     do: :ok
 
   defp validate_retention_period(_), do: {:error, :invalid_retention_period}
 
-  defp validate_max_samples(samples) when is_integer(samples) and samples > 0,
+  defp validate_max_samples(samples) when integer?(samples) and samples > 0,
     do: :ok
 
   defp validate_max_samples(_), do: {:error, :invalid_max_samples}
 
   defp validate_flush_interval(interval)
-       when is_integer(interval) and interval > 0,
+       when integer?(interval) and interval > 0,
        do: :ok
 
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
-  defp validate_enabled_metrics(metrics) when is_list(metrics) do
+  defp validate_enabled_metrics(metrics) when list?(metrics) do
     if Enum.all?(
          metrics,
          &(&1 in [:performance, :resource, :operation, :system, :custom])

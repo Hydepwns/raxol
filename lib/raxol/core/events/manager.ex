@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Events.Manager do
+  import Raxol.Guards
+
   @moduledoc """
   Event manager for handling and dispatching events in Raxol applications.
 
@@ -60,7 +62,7 @@ defmodule Raxol.Core.Events.Manager do
       :ok
   """
   def register_handler(event_type, module, function)
-      when is_atom(event_type) and is_atom(module) and is_atom(function) do
+      when atom?(event_type) and atom?(module) and atom?(function) do
     # Get current handlers
     handlers = Process.get(:event_handlers) || %{}
 
@@ -97,7 +99,7 @@ defmodule Raxol.Core.Events.Manager do
       :ok
   """
   def unregister_handler(event_type, module, function)
-      when is_atom(event_type) and is_atom(module) and is_atom(function) do
+      when atom?(event_type) and atom?(module) and atom?(function) do
     # Get current handlers
     handlers = Process.get(:event_handlers) || %{}
 
@@ -131,7 +133,7 @@ defmodule Raxol.Core.Events.Manager do
       iex> EventManager.subscribe([:mouse], button: :left)
       {:ok, ref}
   """
-  def subscribe(event_types, opts \\ []) when is_list(event_types) do
+  def subscribe(event_types, opts \\ []) when list?(event_types) do
     # Generate unique subscription reference
     ref = System.unique_integer([:positive])
 
@@ -160,7 +162,7 @@ defmodule Raxol.Core.Events.Manager do
       iex> EventManager.unsubscribe(ref)
       :ok
   """
-  def unsubscribe(ref) when is_integer(ref) do
+  def unsubscribe(ref) when integer?(ref) do
     # Get current subscriptions
     subscriptions = Process.get(:subscriptions) || %{}
 
@@ -277,9 +279,9 @@ defmodule Raxol.Core.Events.Manager do
 
   # Private functions
 
-  defp extract_event_type(event) when is_atom(event), do: event
+  defp extract_event_type(event) when atom?(event), do: event
 
-  defp extract_event_type({event_type, _data}) when is_atom(event_type),
+  defp extract_event_type({event_type, _data}) when atom?(event_type),
     do: event_type
 
   defp extract_event_type(_), do: :unknown
@@ -289,7 +291,7 @@ defmodule Raxol.Core.Events.Manager do
   defp matches_filters?(event, filters) do
     Enum.all?(filters, fn {key, value} ->
       case event do
-        {_type, data} when is_map(data) -> Map.get(data, key) == value
+        {_type, data} when map?(data) -> Map.get(data, key) == value
         _ -> false
       end
     end)

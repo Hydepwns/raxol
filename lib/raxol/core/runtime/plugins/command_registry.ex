@@ -3,6 +3,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   Manages command registration and execution for plugins.
   """
 
+  import Raxol.Guards
+
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
 
   require Raxol.Core.Runtime.Log
@@ -178,7 +180,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   defp get_plugin_commands(plugin_module) do
     case plugin_module.commands() do
-      commands when is_list(commands) -> {:ok, commands}
+      commands when list?(commands) -> {:ok, commands}
       _ -> {:error, :invalid_commands}
     end
   end
@@ -200,14 +202,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   defp validate_command_handler(handler) do
-    if is_function(handler, 2),
+    if function?(handler, 2),
       do: :ok,
       else: {:error, :invalid_command_handler}
   end
 
   defp validate_command_metadata(metadata) do
     cond do
-      not is_map(metadata) -> {:error, :invalid_metadata}
+      not map?(metadata) -> {:error, :invalid_metadata}
       not valid_metadata_fields?(metadata) -> {:error, :invalid_metadata_fields}
       true -> :ok
     end
@@ -216,10 +218,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   defp valid_metadata_fields?(metadata) do
     Enum.all?(metadata, fn {key, value} ->
       case key do
-        :description -> is_binary(value)
-        :usage -> is_binary(value)
-        :aliases -> is_list(value) and Enum.all?(value, &is_binary/1)
-        :timeout -> is_integer(value) and value > 0
+        :description -> binary?(value)
+        :usage -> binary?(value)
+        :aliases -> list?(value) and Enum.all?(value, &binary?/1)
+        :timeout -> integer?(value) and value > 0
         _ -> false
       end
     end)

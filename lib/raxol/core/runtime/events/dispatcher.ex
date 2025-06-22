@@ -16,6 +16,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Runtime.Command
   alias Raxol.Core.Events.Event
   alias Raxol.Core.UserPreferences
+  import Raxol.Guards
 
   @registry_name :raxol_event_subscriptions
 
@@ -96,7 +97,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp process_app_update(state, message, event) do
     case Application.delegate_update(state.app_module, message, state.model) do
       {updated_model, commands}
-      when is_map(updated_model) and is_list(commands) ->
+      when map?(updated_model) and list?(commands) ->
         process_successful_update(state, updated_model, commands)
 
       {:error, reason} ->
@@ -204,20 +205,20 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- Public API for PubSub ---
 
   @doc "Subscribes the calling process to a specific event topic."
-  @spec subscribe(atom()) :: :ok | {:error, term()}
-  def subscribe(topic) when is_atom(topic) do
+    @spec subscribe(atom()) :: :ok | {:error, term()}
+  def subscribe(topic) when atom?(topic) do
     Registry.register(@registry_name, topic, {})
   end
 
   @doc "Unsubscribes the calling process from a specific event topic."
   @spec unsubscribe(atom()) :: :ok | {:error, term()}
-  def unsubscribe(topic) when is_atom(topic) do
+  def unsubscribe(topic) when atom?(topic) do
     Registry.unregister(@registry_name, topic)
   end
 
   @doc "Broadcasts an event payload to all subscribers of a topic."
   @spec broadcast(atom(), map()) :: :ok | {:error, term()}
-  def broadcast(topic, payload) when is_atom(topic) and is_map(payload) do
+  def broadcast(topic, payload) when atom?(topic) and map?(payload) do
     Raxol.Core.Runtime.Log.debug(
       # {topic}": #{inspect(payload)}"
       "[#{__MODULE__}] Broadcasting on topic "
@@ -248,7 +249,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       {:ok, new_state, _commands} ->
         # Broadcast event globally if successfully handled by app logic
         # Ensure event.type and event.data are appropriate for broadcast
-        if is_atom(event.type) and is_map(event.data) do
+        if atom?(event.type) and map?(event.data) do
           Raxol.Core.Runtime.Log.debug(
             "[Dispatcher] Broadcasting event: #{inspect(event.type)} via internal broadcast"
           )
@@ -322,7 +323,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp process_command_result(state, message) do
     case Application.delegate_update(state.app_module, message, state.model) do
       {updated_model, commands}
-      when is_map(updated_model) and is_list(commands) ->
+      when map?(updated_model) and list?(commands) ->
         process_command_commands(state, updated_model, commands)
 
       {:error, reason} ->
@@ -425,7 +426,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     else
       filtered_event = apply_plugin_filters(event, state)
 
-      if is_nil(filtered_event) do
+      if nil?(filtered_event) do
         {:ok, state}
       else
         handle_event(filtered_event, state)
@@ -473,7 +474,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Command Processing ---
 
-  defp process_commands(commands, context) when is_list(commands) do
+  defp process_commands(commands, context) when list?(commands) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher.process_commands] Processing commands: #{inspect(commands)} with context: #{inspect(context)}"
     )

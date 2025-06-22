@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Accessibility do
+  import Raxol.Guards
+
   @behaviour Raxol.Core.Accessibility.Behaviour
 
   @moduledoc """
@@ -89,8 +91,8 @@ defmodule Raxol.Core.Accessibility do
     ]
 
     ensure_keyword = fn
-      kw when is_list(kw) and (kw == [] or is_tuple(hd(kw))) -> kw
-      m when is_map(m) -> Map.to_list(m)
+      kw when list?(kw) and (kw == [] or tuple?(hd(kw))) -> kw
+      m when map?(m) -> Map.to_list(m)
       _ -> []
     end
 
@@ -299,7 +301,7 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def set_high_contrast(enabled, user_preferences_pid_or_name \\ nil)
-      when is_boolean(enabled) do
+      when boolean?(enabled) do
     Preferences.set_high_contrast(enabled, user_preferences_pid_or_name)
   end
 
@@ -317,7 +319,7 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)
-      when is_boolean(enabled) do
+      when boolean?(enabled) do
     Preferences.set_reduced_motion(enabled, user_preferences_pid_or_name)
   end
 
@@ -335,7 +337,7 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def set_large_text(enabled, user_preferences_pid_or_name \\ nil)
-      when is_boolean(enabled) do
+      when boolean?(enabled) do
     Preferences.set_large_text(enabled, user_preferences_pid_or_name)
   end
 
@@ -381,7 +383,7 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def register_element_metadata(element_id, metadata)
-      when is_binary(element_id) and is_map(metadata) do
+      when binary?(element_id) and map?(metadata) do
     Metadata.register_element_metadata(element_id, metadata)
   end
 
@@ -401,7 +403,7 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.get_element_metadata("search_button")
       %{label: "Search"}
   """
-  def get_element_metadata(element_id) when is_binary(element_id) do
+  def get_element_metadata(element_id) when binary?(element_id) do
     Metadata.get_element_metadata(element_id)
   end
 
@@ -419,7 +421,7 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def register_component_style(component_type, style)
-      when is_atom(component_type) and is_map(style) do
+      when atom?(component_type) and map?(style) do
     Metadata.register_component_style(component_type, style)
   end
 
@@ -439,7 +441,7 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.get_component_style(:button)
       %{background: :blue}
   """
-  def get_component_style(component_type) when is_atom(component_type) do
+  def get_component_style(component_type) when atom?(component_type) do
     Metadata.get_component_style(component_type)
   end
 
@@ -503,6 +505,13 @@ defmodule Raxol.Core.Accessibility do
     Preferences.set_option(key, value, nil)
   end
 
+  @doc """
+  Sets an accessibility option value with a specific user preferences PID or name.
+  """
+  def set_option(key, value, user_preferences_pid_or_name) do
+    Preferences.set_option(key, value, user_preferences_pid_or_name)
+  end
+
   @doc false
   def screen_reader_enabled?(_opts) do
     get_option(:screen_reader, false)
@@ -530,6 +539,9 @@ defmodule Raxol.Core.Accessibility do
     Metadata.get_component_hint(component_id, hint_level)
   end
 
+  @doc """
+  Get the focus history.
+  """
   def get_focus_history() do
     []
   end

@@ -10,7 +10,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   require Raxol.Core.Runtime.Log
   use GenServer
-
+  import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
   alias Raxol.UI.Renderer, as: UIRenderer
@@ -34,7 +34,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   @doc "Starts the Rendering Engine process."
   @impl true
-  def start_link(initial_state_map) when is_map(initial_state_map) do
+  def start_link(initial_state_map) when map?(initial_state_map) do
     GenServer.start_link(__MODULE__, initial_state_map, name: __MODULE__)
   end
 
@@ -162,10 +162,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       )
 
       # 4. Apply plugin transforms (if any)
-      # TODO: Implement apply_plugin_transforms if needed
-      # final_cells = apply_plugin_transforms(cells, state.plugin_manager)
-      # Placeholder
-      final_cells = cells
+      final_cells = apply_plugin_transforms(cells, state)
 
       # 5. Send to the appropriate output backend
       Raxol.Core.Runtime.Log.debug(
@@ -226,9 +223,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Terminal output generated (length: #{String.length(output_string)})"
     )
 
-    # TODO: Actually send 'output' to the terminal IO
-    # For now, just log it
-    # Use IO.write to send the rendered output (ANSI codes) to stdout
+    # Send rendered output (ANSI codes) to stdout
     # This assumes the process running this code has direct access to the terminal stdout.
     # In a more complex setup, this might involve sending to a dedicated IO process.
     Raxol.Core.Runtime.Log.debug(
@@ -275,7 +270,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         }
       end)
 
-    # TODO: Handle other modes if necessary
+    # Note: Additional rendering modes can be added here as needed
 
     # Commented out as StdioInterface is likely obsolete
     # Raxol.StdioInterface.send_message(%{
@@ -288,46 +283,39 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     :ok
   end
 
-  defp convert_color_to_vscode(color) do
-    cond do
-      is_integer(color) ->
-        # Handle terminal color codes
-        case color do
-          0 -> "black"
-          1 -> "red"
-          2 -> "green"
-          3 -> "yellow"
-          4 -> "blue"
-          5 -> "magenta"
-          6 -> "cyan"
-          7 -> "white"
-          8 -> "brightBlack"
-          9 -> "brightRed"
-          10 -> "brightGreen"
-          11 -> "brightYellow"
-          12 -> "brightBlue"
-          13 -> "brightMagenta"
-          14 -> "brightCyan"
-          15 -> "brightWhite"
-          _ -> "default"
-        end
+  # Terminal color code mapping
+  @terminal_color_map %{
+    0 => "black",
+    1 => "red",
+    2 => "green",
+    3 => "yellow",
+    4 => "blue",
+    5 => "magenta",
+    6 => "cyan",
+    7 => "white",
+    8 => "brightBlack",
+    9 => "brightRed",
+    10 => "brightGreen",
+    11 => "brightYellow",
+    12 => "brightBlue",
+    13 => "brightMagenta",
+    14 => "brightCyan",
+    15 => "brightWhite"
+  }
 
-      is_tuple(color) and tuple_size(color) == 3 ->
-        # Handle RGB colors
-        {r, g, b} = color
-        "rgb(#{r},#{g},#{b})"
-
-      is_binary(color) ->
-        # Pass through named colors or hex strings
-        color
-
-      true ->
-        "default"
-    end
+  defp convert_color_to_vscode(color) when integer?(color) do
+    @terminal_color_map[color] || "default"
   end
 
+  defp convert_color_to_vscode({r, g, b}) when integer?(r) and integer?(g) and integer?(b) do
+    "rgb(#{r},#{g},#{b})"
+  end
+
+  defp convert_color_to_vscode(color) when binary?(color), do: color
+  defp convert_color_to_vscode(_), do: "default"
+
   # Helper to transform cell format
-  defp transform_cells_for_update(cells) when is_list(cells) do
+  defp transform_cells_for_update(cells) when list?(cells) do
     Enum.map(cells, fn {x, y, char, fg, bg, attrs_list} ->
       # Simpler version: Assume format is correct, remove case
       attrs_map = Enum.into(attrs_list || [], %{}, fn atom -> {atom, true} end)
@@ -343,5 +331,116 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       cell = %Raxol.Terminal.Cell{char: char, style: cell_attrs}
       {x, y, cell}
     end)
+  end
+
+  defp apply_plugin_transforms(cells, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "Rendering Engine: Applying plugin transforms to #{length(cells)} cells"
+    )
+
+    # Get the plugin manager from the dispatcher
+    case get_plugin_manager_from_dispatcher(state.dispatcher_pid) do
+      {:ok, plugin_manager} ->
+        # Create emulator state context for plugins
+        emulator_state = %{
+          width: state.width,
+          height: state.height,
+          environment: state.environment,
+          buffer: state.buffer
+        }
+
+        # Process cells through plugins using CellProcessor
+        case Raxol.Plugins.CellProcessor.process(plugin_manager, cells, emulator_state) do
+          {:ok, updated_manager, processed_cells, collected_commands} ->
+            # Execute any collected commands (like escape sequences)
+            execute_plugin_commands(collected_commands)
+
+            # Update plugin manager state in dispatcher if needed
+            update_plugin_manager_in_dispatcher(state.dispatcher_pid, updated_manager)
+
+            Raxol.Core.Runtime.Log.debug(
+              "Rendering Engine: Plugin transforms applied. Processed cells: #{length(processed_cells)}, Commands: #{length(collected_commands)}"
+            )
+
+            processed_cells
+
+          {:error, reason} ->
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "Rendering Engine: Plugin transform error",
+              reason,
+              nil,
+              %{module: __MODULE__, cells_count: length(cells)}
+            )
+
+            # Return original cells on error
+            cells
+        end
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Rendering Engine: Could not get plugin manager for transforms",
+          %{reason: reason, module: __MODULE__}
+        )
+
+        # Return original cells if plugin manager unavailable
+        cells
+    end
+  end
+
+  # Helper function to get plugin manager from dispatcher
+  defp get_plugin_manager_from_dispatcher(dispatcher_pid) when pid?(dispatcher_pid) do
+    try do
+      case GenServer.call(dispatcher_pid, :get_plugin_manager, 5000) do
+        {:ok, plugin_manager} -> {:ok, plugin_manager}
+        {:error, reason} -> {:error, reason}
+        _ -> {:error, :unexpected_response}
+      end
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Rendering Engine: Error getting plugin manager from dispatcher",
+          e,
+          nil,
+          %{dispatcher_pid: dispatcher_pid}
+        )
+        {:error, :dispatcher_error}
+    end
+  end
+
+  defp get_plugin_manager_from_dispatcher(_), do: {:error, :invalid_dispatcher}
+
+  # Helper function to execute plugin commands (like escape sequences)
+  defp execute_plugin_commands(commands) when list?(commands) and length(commands) > 0 do
+    Raxol.Core.Runtime.Log.debug(
+      "Rendering Engine: Executing #{length(commands)} plugin commands"
+    )
+
+    Enum.each(commands, fn command ->
+      if binary?(command) do
+        # Write escape sequences or other commands directly to output
+        IO.write(command)
+      else
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Rendering Engine: Unknown plugin command format",
+          %{command: command}
+        )
+      end
+    end)
+  end
+
+  # Helper function to update plugin manager state in dispatcher
+  defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)
+       when pid?(dispatcher_pid) do
+    try do
+      GenServer.cast(dispatcher_pid, {:update_plugin_manager, updated_manager})
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Rendering Engine: Error updating plugin manager in dispatcher",
+          e,
+          nil,
+          %{dispatcher_pid: dispatcher_pid}
+        )
+    end
   end
 end

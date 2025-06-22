@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Accessibility.ThemeIntegration do
+  import Raxol.Guards
+
   @moduledoc """
   Manages the integration between accessibility settings and the active theme.
 
@@ -96,7 +98,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   reflect the persisted preferences.
   Accepts a keyword list of options (e.g., `[high_contrast: true, ...]`).
   """
-  def apply_settings(options) when is_list(options) do
+  def apply_settings(options) when list?(options) do
     # Get settings directly from the passed options
     high_contrast = Keyword.get(options, :high_contrast, false)
     reduced_motion = Keyword.get(options, :reduced_motion, false)
@@ -138,9 +140,9 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   @spec get_accessibility_mode() :: atom()
   def get_accessibility_mode() do
     # Read using UserPreferences
-    is_high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
+    high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
 
-    if is_high_contrast do
+    if high_contrast do
       :high_contrast
     else
       :normal
@@ -208,5 +210,60 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   @spec get_active_variant() :: atom()
   def get_active_variant do
     get_accessibility_mode()
+  end
+
+  @doc """
+  Get the current color scheme based on accessibility settings.
+
+  ## Examples
+
+      iex> ThemeIntegration.get_color_scheme()
+      %{bg: :black, fg: :white}  # Returns high contrast colors when enabled
+  """
+  @spec get_color_scheme() :: map()
+  def get_color_scheme do
+    mode = get_accessibility_mode()
+
+    case mode do
+      :high_contrast ->
+        %{
+          bg: :black,
+          fg: :white,
+          accent: :yellow,
+          error: :red,
+          success: :green,
+          warning: :yellow
+        }
+
+      :normal ->
+        %{
+          bg: :default,
+          fg: :default,
+          accent: :blue,
+          error: :red,
+          success: :green,
+          warning: :yellow
+        }
+    end
+  end
+
+  @doc """
+  Get the current text scale based on accessibility settings.
+
+  ## Examples
+
+      iex> ThemeIntegration.get_text_scale()
+      1.5  # Returns scale factor for large text mode
+  """
+  @spec get_text_scale() :: float()
+  def get_text_scale do
+    # Read using UserPreferences
+    large_text = UserPreferences.get(pref_key(:large_text)) || false
+
+    if large_text do
+      1.5
+    else
+      1.0
+    end
   end
 end

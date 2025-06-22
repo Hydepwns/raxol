@@ -10,7 +10,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
 
   alias Raxol.Core.Runtime.Plugins.CommandHelper
   require Raxol.Core.Runtime.Log
-
+  import Raxol.Guards
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
 
   @doc """
@@ -106,7 +106,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
       {command_atom, data} ->
         handle_command(command_atom, :default, data, self(), state)
 
-      command_atom when is_atom(command_atom) ->
+      command_atom when atom?(command_atom) ->
         handle_command(command_atom, :default, %{}, self(), state)
 
       _ ->

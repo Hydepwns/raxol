@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Events.Event do
+  import Raxol.Guards
+
   @moduledoc """
   Defines the structure for events in the Raxol system, providing a standardized format
   for key presses, mouse actions, and other UI events that components need to process.
@@ -57,7 +59,7 @@ defmodule Raxol.Core.Events.Event do
   def key_event(key, state, modifiers \\ [])
 
   def key_event(key, state, modifiers)
-      when state in [:pressed, :released, :repeat] and is_list(modifiers) do
+      when state in [:pressed, :released, :repeat] and list?(modifiers) do
     new(:key, %{
       key: key,
       state: state,
@@ -103,8 +105,8 @@ defmodule Raxol.Core.Events.Event do
   def mouse_event(button, position, state, modifiers)
       when button in [:left, :right, :middle] and
              state in [:pressed, :released, :double_click] and
-             is_tuple(position) and
-             is_list(modifiers) do
+             tuple?(position) and
+             list?(modifiers) do
     new(:mouse, %{
       button: button,
       position: position,
@@ -155,7 +157,7 @@ defmodule Raxol.Core.Events.Event do
     * `action` - The window action (:resize, :focus, :blur)
   """
   def window_event(width, height, action)
-      when is_integer(width) and is_integer(height) and
+      when integer?(width) and integer?(height) and
              action in [:resize, :focus, :blur] do
     new(:window, %{
       width: width,
@@ -252,7 +254,7 @@ defmodule Raxol.Core.Events.Event do
     * `position` - Current scroll position
   """
   def scroll_event(direction, delta, position)
-      when direction in [:vertical, :horizontal] and is_integer(delta) do
+      when direction in [:vertical, :horizontal] and integer?(delta) do
     new(:scroll, %{
       direction: direction,
       delta: delta,
@@ -277,8 +279,8 @@ defmodule Raxol.Core.Events.Event do
     * `position` - Cursor position
   """
   def cursor_event(visible, style, blink, position)
-      when is_boolean(visible) and style in [:block, :line, :underscore] and
-             is_boolean(blink) and is_tuple(position) do
+      when boolean?(visible) and style in [:block, :line, :underscore] and
+             boolean?(blink) and tuple?(position) do
     new(:cursor, %{
       visible: visible,
       style: style,
@@ -302,7 +304,7 @@ defmodule Raxol.Core.Events.Event do
     * `text` - Selected text
   """
   def selection_event(start_pos, end_pos, text)
-      when is_tuple(start_pos) and is_tuple(end_pos) and is_binary(text) do
+      when tuple?(start_pos) and tuple?(end_pos) and binary?(text) do
     new(:selection, %{
       start_pos: start_pos,
       end_pos: end_pos,
@@ -322,7 +324,7 @@ defmodule Raxol.Core.Events.Event do
     * `text` - Pasted text
     * `position` - Paste position
   """
-  def paste_event(text, position) when is_binary(text) and is_tuple(position) do
+  def paste_event(text, position) when binary?(text) and tuple?(position) do
     new(:paste, %{
       text: text,
       position: position

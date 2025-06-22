@@ -10,6 +10,7 @@ defmodule Raxol.Core.Renderer.Manager do
   """
 
   use GenServer
+  import Raxol.Guards
 
   alias Raxol.Core.Renderer.Buffer
   alias Raxol.Core.Events.Manager
@@ -85,7 +86,7 @@ defmodule Raxol.Core.Renderer.Manager do
     components =
       Enum.map(component_ids, &ComponentManager.get_component/1)
       # Filter out any nil results if a component disappeared
-      |> Enum.reject(&is_nil(&1))
+      |> Enum.reject(&nil?(&1))
 
     # Clear back buffer
     buffer = Buffer.clear(state.buffer)
@@ -156,7 +157,7 @@ defmodule Raxol.Core.Renderer.Manager do
     view = component.module.view(component.state)
 
     # Ensure view is correctly defined and contains the expected data
-    if view && is_map(view) do
+    if view && map?(view) do
       # Convert view to buffer cells
       render_view(view, buffer)
     else
@@ -232,7 +233,7 @@ defmodule Raxol.Core.Renderer.Manager do
   defp bg_to_ansi(:cyan), do: IO.ANSI.color(46)
   defp bg_to_ansi(:white), do: IO.ANSI.color(47)
 
-  defp bg_to_ansi(code) when is_integer(code) and code >= 0 and code <= 7,
+  defp bg_to_ansi(code) when integer?(code) and code >= 0 and code <= 7,
     do: IO.ANSI.color(code + 40)
 
   # Bright backgrounds
@@ -245,7 +246,7 @@ defmodule Raxol.Core.Renderer.Manager do
   defp bg_to_ansi(:bright_cyan), do: IO.ANSI.color(106)
   defp bg_to_ansi(:bright_white), do: IO.ANSI.color(107)
 
-  defp bg_to_ansi(code) when is_integer(code) and code >= 100 and code <= 107,
+  defp bg_to_ansi(code) when integer?(code) and code >= 100 and code <= 107,
     do: IO.ANSI.color(code)
 
   # Default to no background color
