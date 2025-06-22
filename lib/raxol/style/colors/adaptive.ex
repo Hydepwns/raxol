@@ -29,6 +29,8 @@ defmodule Raxol.Style.Colors.Adaptive do
   ```
   """
 
+  # import Raxol.Guards (remove if not used)
+
   alias Raxol.Style.Colors.{Color, Utilities}
 
   # Cache for capabilities to avoid repeated detection

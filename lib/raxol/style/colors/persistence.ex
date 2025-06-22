@@ -1,4 +1,6 @@
 defmodule Raxol.Style.Colors.Persistence do
+  import Raxol.Guards
+
   @moduledoc """
   Handles persistence of color themes and user preferences.
 
@@ -45,10 +47,10 @@ defmodule Raxol.Style.Colors.Persistence do
     # Robustly get the theme name (prefer id over name for filename)
     theme_name =
       cond do
-        is_map(theme) and Map.has_key?(theme, :id) -> theme[:id]
-        is_map(theme) and Map.has_key?(theme, "id") -> theme["id"]
-        is_map(theme) and Map.has_key?(theme, :name) -> theme[:name]
-        is_map(theme) and Map.has_key?(theme, "name") -> theme["name"]
+        map?(theme) and Map.has_key?(theme, :id) -> theme[:id]
+        map?(theme) and Map.has_key?(theme, "id") -> theme["id"]
+        map?(theme) and Map.has_key?(theme, :name) -> theme[:name]
+        map?(theme) and Map.has_key?(theme, "name") -> theme["name"]
         true -> raise "Theme missing id or name key"
       end
 
@@ -259,7 +261,7 @@ defmodule Raxol.Style.Colors.Persistence do
   defp to_atom_key(k) when is_binary(k), do: String.to_atom(k)
   defp to_atom_key(k), do: k
 
-  # Helper to normalize color values in both colors and variants
+ # Helper to normalize color values in both colors and variants
   defp normalize_color_value(v) do
     cond do
       is_map(v) and Map.has_key?(v, :hex) -> Color.from_hex(v["hex"] || v.hex)

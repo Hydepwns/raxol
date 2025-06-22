@@ -1,4 +1,5 @@
 alias Raxol.Style.Colors.Color
+import Raxol.Guards
 
 defmodule Raxol.Style.Colors.HSL do
   @moduledoc """
@@ -17,8 +18,8 @@ defmodule Raxol.Style.Colors.HSL do
   @spec rgb_to_hsl(integer(), integer(), integer()) ::
           {float(), float(), float()}
   def rgb_to_hsl(r, g, b)
-      when is_integer(r) and r >= 0 and r <= 255 and is_integer(g) and g >= 0 and
-             g <= 255 and is_integer(b) and b >= 0 and b <= 255 do
+      when integer?(r) and r >= 0 and r <= 255 and integer?(g) and g >= 0 and
+             g <= 255 and integer?(b) and b >= 0 and b <= 255 do
     r_norm = r / 255
     g_norm = g / 255
     b_norm = b / 255
@@ -65,8 +66,8 @@ defmodule Raxol.Style.Colors.HSL do
   @spec hsl_to_rgb(number(), float(), float()) ::
           {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l)
-      when is_number(h) and h >= 0 and h < 360 and is_float(s) and s >= 0.0 and
-             s <= 1.0 and is_float(l) and l >= 0.0 and l <= 1.0 do
+      when number?(h) and h >= 0 and h < 360 and float?(s) and s >= 0.0 and
+             s <= 1.0 and float?(l) and l >= 0.0 and l <= 1.0 do
     c = (1.0 - abs(2.0 * l - 1.0)) * s
     h_prime = h / 60.0
     x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
@@ -105,7 +106,7 @@ defmodule Raxol.Style.Colors.HSL do
   - A Color struct representing the rotated color
   """
   @spec rotate_hue(Color.t(), number()) :: Color.t()
-  def rotate_hue(%Color{} = color, degrees) when is_number(degrees) do
+  def rotate_hue(%Color{} = color, degrees) when number?(degrees) do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     # Ensure calculations are float, then fix rem args: use round/1
     new_h = rem(round(h + degrees + 360.0), 360)
@@ -127,7 +128,7 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec lighten(Color.t(), float()) :: Color.t()
   def lighten(%Color{} = color, amount)
-      when is_float(amount) and amount >= 0.0 do
+      when float?(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = min(l + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
@@ -148,7 +149,7 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec darken(Color.t(), float()) :: Color.t()
   def darken(%Color{} = color, amount)
-      when is_float(amount) and amount >= 0.0 do
+      when float?(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = max(l - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
@@ -169,7 +170,7 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec saturate(Color.t(), float()) :: Color.t()
   def saturate(%Color{} = color, amount)
-      when is_float(amount) and amount >= 0.0 do
+      when float?(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = min(s + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)
@@ -190,7 +191,7 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec desaturate(Color.t(), float()) :: Color.t()
   def desaturate(%Color{} = color, amount)
-      when is_float(amount) and amount >= 0.0 do
+      when float?(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = max(s - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)
