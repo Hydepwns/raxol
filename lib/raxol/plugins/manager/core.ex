@@ -5,6 +5,7 @@ defmodule Raxol.Plugins.Manager.Core do
   """
 
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   alias Raxol.Plugins.{
     Plugin,
@@ -59,7 +60,7 @@ defmodule Raxol.Plugins.Manager.Core do
   @doc """
   Gets a plugin by name.
   """
-  def get_plugin(%__MODULE__{} = manager, name) when is_binary(name) do
+  def get_plugin(%__MODULE__{} = manager, name) when binary?(name) do
     Map.get(manager.plugins, name)
   end
 
@@ -80,7 +81,7 @@ defmodule Raxol.Plugins.Manager.Core do
   @doc """
   Updates the plugins map in the manager and keeps loaded_plugins in sync.
   """
-  def update_plugins(%__MODULE__{} = manager, plugins) when is_map(plugins) do
+  def update_plugins(%__MODULE__{} = manager, plugins) when map?(plugins) do
     %{manager | plugins: plugins, loaded_plugins: plugins}
   end
 
@@ -94,7 +95,7 @@ defmodule Raxol.Plugins.Manager.Core do
   @doc """
   Loads a plugin module and initializes it. Delegates to Raxol.Plugins.Lifecycle.load_plugin/3.
   """
-  def load_plugin(%__MODULE__{} = manager, module) when is_atom(module) do
+  def load_plugin(%__MODULE__{} = manager, module) when atom?(module) do
     Raxol.Plugins.Lifecycle.load_plugin(manager, module)
   end
 
@@ -103,7 +104,15 @@ defmodule Raxol.Plugins.Manager.Core do
   Delegates to Raxol.Plugins.Lifecycle.load_plugin/3.
   """
   def load_plugin(%__MODULE__{} = manager, module, config)
-      when is_atom(module) and is_map(config) do
+      when atom?(module) and map?(config) do
     Raxol.Plugins.Lifecycle.load_plugin(manager, module, config)
+  end
+
+  @doc """
+  Unloads a plugin by name and cleans up its resources.
+  Delegates to Raxol.Plugins.Lifecycle.unload_plugin/2.
+  """
+  def unload_plugin(%__MODULE__{} = manager, plugin_name) when binary?(plugin_name) do
+    Raxol.Plugins.Lifecycle.unload_plugin(manager, plugin_name)
   end
 end

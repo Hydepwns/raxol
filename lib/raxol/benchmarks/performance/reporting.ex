@@ -193,12 +193,12 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
     recommendations
   end
 
-  defp calculate_average_performance(results) do
+  defp calculate_average_performance(_results) do
     # Calculate average performance metrics
     85.0
   end
 
-  defp calculate_overall_score(results) do
+  defp calculate_overall_score(_results) do
     # Calculate overall performance score
     90.0
   end

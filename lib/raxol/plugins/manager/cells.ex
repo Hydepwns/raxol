@@ -4,6 +4,8 @@ defmodule Raxol.Plugins.Manager.Cells do
   Provides functions for processing and transforming cells through plugins.
   """
 
+  import Raxol.Guards
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.CellProcessor
@@ -15,10 +17,10 @@ defmodule Raxol.Plugins.Manager.Cells do
 
   Returns `{:ok, updated_manager, processed_cells, collected_commands}`.
   """
-  def handle_cells(%Core{} = manager, cells, _emulator_state)
-      when is_list(cells) do
+  def handle_cells(%Core{} = manager, cells, emulator_state)
+      when list?(cells) do
     # Delegate to the CellProcessor module
-    CellProcessor.process(manager, cells, _emulator_state)
+    CellProcessor.process(manager, cells, emulator_state)
   end
 
   @doc """
@@ -118,7 +120,7 @@ defmodule Raxol.Plugins.Manager.Cells do
 
         {:ok, updated_manager, acc_commands}
 
-      commands when is_list(commands) ->
+      commands when list?(commands) ->
         {:ok, acc_manager, commands ++ acc_commands}
     end
   end

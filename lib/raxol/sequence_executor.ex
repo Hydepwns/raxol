@@ -1,6 +1,6 @@
 defmodule Raxol.SequenceExecutor do
   @moduledoc """
-  Handles the execution of sequences of terminal commands.
+  Executes sequences of commands and animations.
   """
 
   alias Raxol.Terminal.Emulator

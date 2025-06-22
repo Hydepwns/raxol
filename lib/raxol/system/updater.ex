@@ -1,6 +1,7 @@
 defmodule Raxol.System.Updater do
   use GenServer
   @behaviour GenServer
+  import Raxol.Guards
   require Logger
 
   @moduledoc """
@@ -233,7 +234,7 @@ defmodule Raxol.System.Updater do
   end
 
   def update(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
     force = Keyword.get(opts, :force, false)
     use_delta = Keyword.get(opts, :use_delta, true)
     version = Keyword.get(opts, :version)
@@ -269,6 +270,14 @@ defmodule Raxol.System.Updater do
     }
 
     {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:install_update, version}, _from, state) do
+    case perform_install_update(version, state) do
+      {:ok, new_state} -> {:reply, :ok, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 
   @impl true
@@ -454,7 +463,7 @@ defmodule Raxol.System.Updater do
   end
 
   defp get_update_version(version) do
-    if is_nil(version) do
+    if nil?(version) do
       case fetch_latest_version() do
         {:ok, latest} -> {:ok, latest}
         {:error, reason} -> {:error, reason}
@@ -467,7 +476,7 @@ defmodule Raxol.System.Updater do
   def self_update(version \\ nil, opts \\ []) do
     use_delta = Keyword.get(opts, :use_delta, true)
 
-    if is_binary(version) do
+    if binary?(version) do
       with {:ok, target_version} <- get_update_version(version) do
         case @version == target_version do
           false -> do_version_update(target_version, use_delta)
@@ -533,7 +542,7 @@ defmodule Raxol.System.Updater do
       iex> Raxol.System.Updater.set_auto_check(false)
       :ok
   """
-  def set_auto_check(enabled) when is_boolean(enabled) do
+  def set_auto_check(enabled) when boolean?(enabled) do
     with {:ok, settings} <- get_update_settings() do
       settings = Map.put(settings, "auto_check", enabled)
       save_update_settings(settings)
@@ -636,8 +645,7 @@ defmodule Raxol.System.Updater do
       # Get the current executable path
       current_exe =
         System.get_env("BURRITO_EXECUTABLE_PATH") ||
-          System.argv() |> List.first() ||
-          throw({:error, "Cannot determine executable path"})
+          System.argv() |> List.first()
 
       # Find the new executable in the extracted files
       new_exe = find_executable(tmp_dir, platform)

@@ -1,4 +1,6 @@
 defmodule Raxol.Plugins.ClipboardPlugin do
+  import Raxol.Guards
+
   @moduledoc """
   Plugin for clipboard operations in Raxol.
   """
@@ -58,8 +60,8 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     if :ctrl in mods do
       Raxol.Core.Runtime.Log.debug("[Clipboard] Ctrl+C detected.")
       # Check for finalized selection and stored cells
-      if is_tuple(state.selection_start) and is_tuple(state.selection_end) and
-           is_map(state.last_cells_at_selection) do
+      if tuple?(state.selection_start) and tuple?(state.selection_end) and
+           map?(state.last_cells_at_selection) do
         Raxol.Core.Runtime.Log.debug("[Clipboard] Triggering yank_selection.")
         result = yank_selection(state)
         new_state = clear_selection(state)
@@ -159,9 +161,9 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   defp valid_selection?(start_pos, end_pos, cells) do
-    is_tuple(start_pos) and tuple_size(start_pos) == 2 and
-      is_tuple(end_pos) and tuple_size(end_pos) == 2 and
-      is_map(cells)
+    tuple?(start_pos) and tuple_size(start_pos) == 2 and
+      tuple?(end_pos) and tuple_size(end_pos) == 2 and
+      map?(cells)
   end
 
   defp get_selection_bounds({sx, sy}, {ex, ey}) do
@@ -179,11 +181,11 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     for x <- min_x..max_x do
       process_cell(Map.get(cells, {x, y}))
     end
-    |> Enum.reject(&is_nil/1)
+    |> Enum.reject(&nil?/1)
     |> Enum.join()
   end
 
-  defp process_cell(%{char: char}) when is_integer(char), do: <<char::utf8>>
+  defp process_cell(%{char: char}) when integer?(char), do: <<char::utf8>>
   defp process_cell(_), do: nil
 
   defp clear_selection(state) do

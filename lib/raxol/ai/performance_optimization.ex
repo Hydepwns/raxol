@@ -1,4 +1,5 @@
 defmodule Raxol.AI.PerformanceOptimization do
+  import Raxol.Guards
   @moduledoc """
   Runtime AI features for intelligent performance optimization.
 
@@ -64,7 +65,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def init(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
 
     if UXRefinement.feature_enabled?(:ai_performance_optimization) do
       state = State.new()
@@ -216,7 +217,7 @@ defmodule Raxol.AI.PerformanceOptimization do
   defp predictive_render_decision(_metrics, component_name, context, state) do
     Map.get(context, :visible, true) and
       (Map.get(context, :in_viewport, true) or
-         ComponentUtils.is_important_component?(component_name, state))
+         ComponentUtils.important_component?(component_name, state))
   end
 
   defp update_usage_patterns(usage_patterns, component_name, result, context) do
@@ -285,23 +286,21 @@ defmodule Raxol.AI.PerformanceOptimization do
       ["user_settings", "user_activity"]
   """
   def get_prefetch_recommendations(current_component) do
-    # Default to empty list if optimization is off
     if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       []
     else
       with_state(fn state ->
-        # This would use a more sophisticated predictive model in a real implementation
-        # For now, just return a simple recommendation based on component usage
-        recommendations =
-          state.component_usage
-          |> Enum.filter(fn {name, _} -> name != current_component end)
-          |> Enum.sort_by(fn {_, usage} -> usage.count end, :desc)
-          |> Enum.take(3)
-          |> Enum.map(fn {name, _} -> name end)
-
-        {state, recommendations}
+        {state, build_recommendations(state.component_usage, current_component)}
       end)
     end
+  end
+
+  defp build_recommendations(component_usage, current_component) do
+    component_usage
+    |> Enum.filter(fn {name, _} -> name != current_component end)
+    |> Enum.sort_by(fn {_, usage} -> usage.count end, :desc)
+    |> Enum.take(3)
+    |> Enum.map(fn {name, _} -> name end)
   end
 
   @doc """

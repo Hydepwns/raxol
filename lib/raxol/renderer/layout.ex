@@ -1,4 +1,5 @@
 defmodule Raxol.Renderer.Layout do
+  import Raxol.Guards
   import Kernel, except: [to_string: 1]
   require Raxol.Core.Renderer.View
 
@@ -73,12 +74,12 @@ defmodule Raxol.Renderer.Layout do
 
     # Process the view tree
     result = process_element(normalized_view, available_space, [])
-    flat = List.flatten(result) |> Enum.reject(&is_nil/1)
+    flat = List.flatten(result) |> Enum.reject(&nil?/1)
 
     # If the result is a single map, return it directly.
     # Otherwise, return the list (for multi-root, empty, or already correctly processed lists).
     case flat do
-      [single_map] when is_map(single_map) -> single_map
+      [single_map] when map?(single_map) -> single_map
       # Handles [], [map1, map2], etc.
       _ -> flat
     end
@@ -86,7 +87,7 @@ defmodule Raxol.Renderer.Layout do
 
   # Process element functions
   defp process_element(%{type: :view, children: children}, space, acc)
-       when is_list(children) do
+       when list?(children) do
     # Process children with the available space
     process_children(children, space, acc)
   end
@@ -101,7 +102,7 @@ defmodule Raxol.Renderer.Layout do
          space,
          acc
        )
-       when is_list(children) do
+       when list?(children) do
     # Apply panel specific layout (add border, title, etc)
     panel_space = apply_panel_layout(space, attrs)
 
@@ -262,10 +263,10 @@ defmodule Raxol.Renderer.Layout do
             # Format and create cell element
             cell_element =
               cond do
-                is_function(Map.get(col_def, :format), 1) ->
+                function?(Map.get(col_def, :format), 1) ->
                   col_def.format.(raw_value)
 
-                is_struct(raw_value) ->
+                struct?(raw_value) ->
                   raw_value
                   |> Map.from_struct()
                   |> Map.put(
@@ -277,7 +278,7 @@ defmodule Raxol.Renderer.Layout do
                     |> String.to_atom()
                   )
 
-                is_map(raw_value) and Map.has_key?(raw_value, :type) ->
+                map?(raw_value) and Map.has_key?(raw_value, :type) ->
                   raw_value
 
                 true ->
@@ -319,7 +320,7 @@ defmodule Raxol.Renderer.Layout do
          space,
          acc
        )
-       when is_list(children) do
+       when list?(children) do
     # Extract scroll configuration
     {ox, oy} = Map.get(scroll_map, :offset, {0, 0})
     scrollbar_thickness = Map.get(scroll_map, :scrollbar_thickness, 1)
@@ -417,9 +418,9 @@ defmodule Raxol.Renderer.Layout do
     # Calculate box size
     size =
       case Map.get(element_map, :size) do
-        {w, h} when is_integer(w) and is_integer(h) -> {max(0, w), max(0, h)}
-        {w, :auto} when is_integer(w) -> {max(0, w), max(0, space.height)}
-        {:auto, h} when is_integer(h) -> {max(0, space.width), max(0, h)}
+        {w, h} when integer?(w) and integer?(h) -> {max(0, w), max(0, h)}
+        {w, :auto} when integer?(w) -> {max(0, w), max(0, space.height)}
+        {:auto, h} when integer?(h) -> {max(0, space.width), max(0, h)}
         :auto -> {max(0, space.width), max(0, space.height)}
         _ -> {max(0, space.width), max(0, space.height)}
       end
@@ -434,7 +435,7 @@ defmodule Raxol.Renderer.Layout do
     }
 
     # Process children if any
-    if is_list(children) and children != [] do
+    if list?(children) and children != [] do
       inner_space = %{
         x: space.x,
         y: space.y,
@@ -450,7 +451,7 @@ defmodule Raxol.Renderer.Layout do
   end
 
   defp process_element(%{type: flex_type} = element_map, space, acc)
-       when flex_type == :flex and is_map(element_map) do
+       when flex_type == :flex and map?(element_map) do
     children = Map.get(element_map, :children, [])
     direction = Map.get(element_map, :direction, :column)
     wrap = Map.get(element_map, :wrap, false)
@@ -460,7 +461,7 @@ defmodule Raxol.Renderer.Layout do
     child_sizes =
       Enum.map(children, fn child ->
         case Map.get(child, :size) do
-          {w, h} when is_integer(w) and is_integer(h) and w >= 0 and h >= 0 ->
+          {w, h} when integer?(w) and integer?(h) and w >= 0 and h >= 0 ->
             {w, h}
 
           _ ->
@@ -790,15 +791,15 @@ defmodule Raxol.Renderer.Layout do
   end
 
   # Helper to normalize spacing values
-  defp normalize_spacing_value(value) when is_integer(value) and value >= 0,
+  defp normalize_spacing_value(value) when integer?(value) and value >= 0,
     do: {value, value, value, value}
 
   defp normalize_spacing_value({v, h})
-       when is_integer(v) and is_integer(h) and v >= 0 and h >= 0,
+       when integer?(v) and integer?(h) and v >= 0 and h >= 0,
        do: {v, h, v, h}
 
   defp normalize_spacing_value({t, r, b, l})
-       when is_integer(t) and is_integer(r) and is_integer(b) and is_integer(l) and
+       when integer?(t) and integer?(r) and integer?(b) and integer?(l) and
               t >= 0 and r >= 0 and b >= 0 and l >= 0,
        do: {t, r, b, l}
 
@@ -807,158 +808,134 @@ defmodule Raxol.Renderer.Layout do
   # --- RECURSIVE NORMALIZATION FOR ALL CHILDREN ---
   # Helper to deeply normalize a child (struct, map, keyword, atom, etc)
   defp deep_normalize_child(child, space, default_type, for_layout) do
-    # Helper function to normalize children
-    normalize_children = fn children ->
-      case children do
-        list when is_list(list) ->
-          Enum.flat_map(list, &deep_normalize_child(&1, space, :box, true))
+    normalized = normalize_child_by_type(child, space, default_type, for_layout)
+    List.wrap(normalized)
+  end
 
-        nil ->
-          []
-
-        single_item ->
-          deep_normalize_child(single_item, space, :box, true)
-      end
-    end
-
-    # Helper function to resolve type
-    resolve_type = fn map, struct_name ->
-      cond do
-        Map.has_key?(map, :type) -> map.type
-        struct_name == "chart" -> :chart
-        struct_name == "table" -> :table
-        struct_name == "border" -> :border
-        struct_name == "grid" -> :grid
-        true -> String.to_atom(struct_name)
-      end
-    end
-
+  defp normalize_child_by_type(child, space, default_type, for_layout) do
     cond do
-      is_struct(child) ->
-        map = Map.from_struct(child)
-
-        struct_name =
-          child.__struct__
-          |> Module.split()
-          |> List.last()
-          |> Macro.underscore()
-
-        intended_type = resolve_type.(map, struct_name)
-
-        map
-        |> Map.put(:type, intended_type)
-        |> then(fn m ->
-          if intended_type in @container_types,
-            do: Map.put_new(m, :children, []),
-            else: m
-        end)
-        |> then(fn m ->
-          if Map.has_key?(m, :children),
-            do: Map.put(m, :children, normalize_children.(m.children)),
-            else: m
-        end)
-        |> then(&ensure_required_keys(&1, space))
-        |> List.wrap()
-
-      is_list(child) and Keyword.keyword?(child) and for_layout ->
-        child
-        |> Enum.into(%{})
-        |> Map.put_new(:type, default_type)
-        |> Map.put_new(:position, {space.x, space.y})
-        |> Map.put_new(:size, {space.width, space.height})
-        |> then(fn m ->
-          if Map.has_key?(m, :children),
-            do: Map.put(m, :children, normalize_children.(m.children)),
-            else: Map.put_new(m, :children, [])
-        end)
-        |> then(fn m ->
-          if Map.get(m, :type) in @container_types,
-            do: Map.put_new(m, :children, []),
-            else: m
-        end)
-        |> then(&ensure_required_keys(&1, space))
-        |> List.wrap()
-
-      is_list(child) ->
-        child
-        |> List.flatten()
-        |> Enum.flat_map(&deep_normalize_child(&1, space, :box, true))
-
-      is_map(child) ->
-        child
-        |> Map.put_new(:position, {space.x, space.y})
-        |> Map.put_new(:size, {space.width, space.height})
-        |> then(fn m ->
-          if Map.has_key?(m, :children),
-            do: Map.put(m, :children, normalize_children.(m.children)),
-            else: m
-        end)
-        |> then(fn m ->
-          type = Map.get(m, :type, default_type)
-
-          if type in @container_types,
-            do: Map.put_new(m, :children, []),
-            else: m
-        end)
-        |> then(fn m ->
-          final_type =
-            cond do
-              Map.has_key?(child, :__struct__) ->
-                struct_name =
-                  child.__struct__
-                  |> Module.split()
-                  |> List.last()
-                  |> Macro.underscore()
-
-                resolve_type.(m, struct_name)
-
-              Map.has_key?(m, :type) ->
-                m.type
-
-              true ->
-                default_type
-            end
-
-          Map.put(m, :type, final_type)
-        end)
-        |> then(&ensure_required_keys(&1, space))
-        |> List.wrap()
-
-      is_atom(child) and for_layout ->
-        if child in @valid_types do
-          [ensure_required_keys(%{type: child, children: []}, space)]
-        else
-          [nil]
-        end
-
-      is_atom(child) and not for_layout ->
-        [%{type: child}]
-
-      is_binary(child) and not for_layout ->
-        [%{type: child}]
-
-      is_number(child) and not for_layout ->
-        [%{type: child}]
-
-      true ->
-        if for_layout do
-          [
-            ensure_required_keys(
-              %{type: :unknown, value: child, children: []},
-              space
-            )
-          ]
-        else
-          [%{type: child}]
-        end
+      struct?(child) -> normalize_struct(child, space, default_type)
+      list?(child) and Keyword.keyword?(child) and for_layout -> normalize_keyword(child, space, default_type)
+      list?(child) -> normalize_list(child, space, default_type)
+      map?(child) -> normalize_map(child, space, default_type)
+      atom?(child) and for_layout -> normalize_atom_for_layout(child, space)
+      atom?(child) -> [%{type: child}]
+      binary?(child) -> [%{type: child}]
+      number?(child) -> [%{type: child}]
+      true -> normalize_unknown(child, space, for_layout)
     end
+  end
+
+  defp normalize_struct(child, space, _default_type) do
+    map = Map.from_struct(child)
+    struct_name = get_struct_name(child)
+    intended_type = resolve_type(map, struct_name)
+
+    map
+    |> Map.put(:type, intended_type)
+    |> add_children_if_container(intended_type, space)
+    |> ensure_required_keys(space)
+  end
+
+  defp normalize_keyword(child, space, default_type) do
+    child
+    |> Enum.into(%{})
+    |> Map.put_new(:type, default_type)
+    |> Map.put_new(:position, {space.x, space.y})
+    |> Map.put_new(:size, {space.width, space.height})
+    |> add_children_if_needed(space)
+    |> ensure_required_keys(space)
+  end
+
+  defp normalize_list(child, space, default_type) do
+    child
+    |> List.flatten()
+    |> Enum.flat_map(&deep_normalize_child(&1, space, :box, true))
+  end
+
+  defp normalize_map(child, space, default_type) do
+    child
+    |> Map.put_new(:position, {space.x, space.y})
+    |> Map.put_new(:size, {space.width, space.height})
+    |> add_children_if_needed(space)
+    |> resolve_final_type(default_type)
+    |> ensure_required_keys(space)
+  end
+
+  defp normalize_atom_for_layout(child, space) do
+    if child in @valid_types do
+      [ensure_required_keys(%{type: child, children: []}, space)]
+    else
+      [nil]
+    end
+  end
+
+  defp normalize_unknown(child, space, for_layout) do
+    if for_layout do
+      [ensure_required_keys(%{type: :unknown, value: child, children: []}, space)]
+    else
+      [%{type: child}]
+    end
+  end
+
+  defp get_struct_name(child) do
+    child.__struct__
+    |> Module.split()
+    |> List.last()
+    |> Macro.underscore()
+  end
+
+  defp resolve_type(map, struct_name) do
+    cond do
+      Map.has_key?(map, :type) -> map.type
+      struct_name == "chart" -> :chart
+      struct_name == "table" -> :table
+      struct_name == "border" -> :border
+      struct_name == "grid" -> :grid
+      true -> String.to_atom(struct_name)
+    end
+  end
+
+  defp add_children_if_container(map, type, space) do
+    if type in @container_types do
+      Map.put_new(map, :children, [])
+    else
+      map
+    end
+  end
+
+  defp add_children_if_needed(map, space) do
+    if Map.has_key?(map, :children) do
+      Map.put(map, :children, normalize_children(map.children, space))
+    else
+      map
+    end
+  end
+
+  defp normalize_children(children, space) do
+    case children do
+      list when list?(list) -> Enum.flat_map(list, &deep_normalize_child(&1, space, :box, true))
+      nil -> []
+      single_item -> deep_normalize_child(single_item, space, :box, true)
+    end
+  end
+
+  defp resolve_final_type(map, default_type) do
+    final_type = cond do
+      Map.has_key?(map, :__struct__) ->
+        struct_name = get_struct_name(map)
+        resolve_type(map, struct_name)
+      Map.has_key?(map, :type) -> map.type
+      true -> default_type
+    end
+    Map.put(map, :type, final_type)
   end
 
   # Ensure a map has :type, :position, :size, and :children (default []) if it is a container type
   defp ensure_required_keys(map_candidate, space) do
     map_candidate
     |> then(fn m ->
-      if is_map(m) do
+      if map?(m) do
         m
         |> Map.put_new(:type, :unknown)
         |> Map.put_new(:position, {space.x, space.y})
@@ -1000,12 +977,12 @@ defmodule Raxol.Renderer.Layout do
   end
 
   # Re-add the missing process_children/3 function
-  defp process_children(children, space, acc) when is_list(children) do
+  defp process_children(children, space, acc) when list?(children) do
     # Process each child and flatten the results, then add to the accumulator
     new_child_elements =
       Enum.flat_map(children, fn child_node ->
         normalized_child =
-          if is_map(child_node) and Map.has_key?(child_node, :type) and
+          if map?(child_node) and Map.has_key?(child_node, :type) and
                Map.has_key?(child_node, :position) and
                Map.has_key?(child_node, :size) do
             child_node
@@ -1024,7 +1001,7 @@ defmodule Raxol.Renderer.Layout do
   # Single child map passed
   defp process_children(child, space, acc) do
     normalized_child =
-      if is_map(child) and Map.has_key?(child, :type) and
+      if map?(child) and Map.has_key?(child, :type) and
            Map.has_key?(child, :position) and Map.has_key?(child, :size) do
         child
       else

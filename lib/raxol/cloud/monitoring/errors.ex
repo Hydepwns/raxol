@@ -1,5 +1,7 @@
 # Errors implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Errors do
+  import Raxol.Guards
+
   @moduledoc false
 
   # Process dictionary key for errors
@@ -16,7 +18,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   def record(error, opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
     errors_state = get_errors_state()
 
     # Create error entry
@@ -44,7 +46,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   def get(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
     errors_state = get_errors_state()
 
     limit = Keyword.get(opts, :limit, 100)
@@ -83,14 +85,14 @@ defmodule Raxol.Cloud.Monitoring.Errors do
 
   defp get_error_message(error) do
     cond do
-      is_exception(error) && Map.has_key?(error, :message) -> error.message
-      is_binary(error) -> error
+      Exception.exception?(error) && Map.has_key?(error, :message) -> error.message
+      binary?(error) -> error
       true -> inspect(error)
     end
   end
 
   defp get_stacktrace(opts) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
 
     Keyword.get(
       opts,
@@ -113,17 +115,17 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   defp send_to_sentry(_error) do
-    # This would use the Sentry client to send errors
+    # FEAT: This would use the Sentry client to send errors
     :ok
   end
 
   defp send_to_bugsnag(_error) do
-    # This would use the Bugsnag client to send errors
+    # FEAT: This would use the Bugsnag client to send errors
     :ok
   end
 
   defp send_to_honeybadger(_error) do
-    # This would use the Honeybadger client to send errors
+    # FEAT: This would use the Honeybadger client to send errors
     :ok
   end
 end

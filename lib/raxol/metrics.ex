@@ -13,6 +13,7 @@ defmodule Raxol.Metrics do
   """
 
   use GenServer
+  import Raxol.Guards
   alias Raxol.Repo
   require Raxol.Core.Runtime.Log
 
@@ -40,7 +41,7 @@ defmodule Raxol.Metrics do
 
       Raxol.Metrics.gauge("raxol.chart_render_time", 42.5)
   """
-  def gauge(name, value) when is_binary(name) do
+  def gauge(name, value) when binary?(name) do
     try do
       GenServer.cast(__MODULE__, {:gauge, name, value})
     rescue
@@ -65,7 +66,7 @@ defmodule Raxol.Metrics do
 
       Raxol.Metrics.increment("raxol.chart_cache_hits")
   """
-  def increment(name) when is_binary(name) do
+  def increment(name) when binary?(name) do
     try do
       GenServer.cast(__MODULE__, {:increment, name})
     rescue
@@ -111,7 +112,7 @@ defmodule Raxol.Metrics do
     {:noreply, Map.put(state, :counters, updated_counters)}
   end
 
-  def handle_info({:collect_metrics, timer_id}, state) do
+  def handle_info({:collect_metrics, _timer_id}, state) do
     new_state = %{
       cpu_usage: get_cpu_usage(),
       memory_usage: get_memory_usage(),
@@ -143,11 +144,11 @@ defmodule Raxol.Metrics do
   end
 
   defp schedule_metrics_collection do
-    _timer_id = System.unique_integer([:positive])
+    timer_id = System.unique_integer([:positive])
 
     Process.send_after(
       self(),
-      {:collect_metrics, _timer_id},
+      {:collect_metrics, timer_id},
       @collection_interval
     )
   end
@@ -187,7 +188,7 @@ defmodule Raxol.Metrics do
   def get_active_sessions do
     case Registry.lookup(Raxol.TerminalRegistry, :sessions) do
       [] -> 0
-      [{_pid, sessions}] when is_map(sessions) -> Kernel.map_size(sessions)
+      [{_pid, sessions}] when map?(sessions) -> Kernel.map_size(sessions)
       _ -> 0
     end
   end
@@ -224,5 +225,9 @@ defmodule Raxol.Metrics do
         # Simulate some error rate fluctuation
         max(0.0, min(1.0, current_rate + :rand.uniform() * 0.1 - 0.05))
     end
+  end
+
+  def handle_exit(_exit_code) do
+    # TODO: Handle exit code
   end
 end

@@ -13,7 +13,7 @@ defmodule Raxol.Auth.Permission do
     field :description, :string
     field :module, :string
     field :action, :string
-    field :is_system, :boolean, default: false
+    field :system, :boolean, default: false
 
     # Associations
     many_to_many :roles, Role, join_through: "role_permissions"
@@ -26,7 +26,7 @@ defmodule Raxol.Auth.Permission do
   """
   def changeset(permission, attrs) do
     permission
-    |> cast(attrs, [:name, :description, :module, :action, :is_system])
+    |> cast(attrs, [:name, :description, :module, :action, :system])
     |> validate_required([:name, :module, :action])
     |> validate_length(:name, min: 3, max: 50)
     |> validate_length(:description, max: 500)
@@ -41,6 +41,6 @@ defmodule Raxol.Auth.Permission do
   def system_changeset(permission, attrs) do
     permission
     |> changeset(attrs)
-    |> put_change(:is_system, true)
+    |> put_change(:system, true)
   end
 end

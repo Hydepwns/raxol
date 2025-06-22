@@ -1,4 +1,6 @@
 defmodule Raxol.Cloud.EdgeComputing do
+  import Raxol.Guards
+
   @moduledoc """
   Edge computing support for Raxol applications.
 
@@ -84,7 +86,7 @@ defmodule Raxol.Cloud.EdgeComputing do
       :ok
   """
   def init(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
     state = State.new()
 
     # Override defaults with provided options
@@ -123,7 +125,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   Updates the edge computing configuration.
   """
   def update_config(state \\ nil, config) do
-    config = if is_map(config), do: Enum.into(config, []), else: config
+    config = if map?(config), do: Enum.into(config, []), else: config
 
     with_state(state, fn s ->
       # Merge new config with existing config
@@ -164,8 +166,8 @@ defmodule Raxol.Cloud.EdgeComputing do
       iex> execute(fn -> process_data(data) end)
       {:ok, result}
   """
-  def execute(func, opts \\ []) when is_function(func, 0) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+  def execute(func, opts \\ []) when function?(func, 0) do
+    opts = if map?(opts), do: Enum.into(opts, []), else: opts
     state = get_state()
 
     execute_location = determine_execution_location(state, opts)
@@ -304,7 +306,7 @@ defmodule Raxol.Cloud.EdgeComputing do
 
   defp with_state(arg1, arg2 \\ nil) do
     {state, fun} =
-      if is_function(arg1) do
+      if function?(arg1) do
         {get_state(), arg1}
       else
         {arg1 || get_state(), arg2}
@@ -312,7 +314,7 @@ defmodule Raxol.Cloud.EdgeComputing do
 
     result = fun.(state)
 
-    if is_map(result) and Map.has_key?(result, :mode) do
+    if map?(result) and Map.has_key?(result, :mode) do
       # If a state map is returned, update the state
       Process.put(@edge_key, result)
       result
@@ -350,7 +352,7 @@ defmodule Raxol.Cloud.EdgeComputing do
         :edge
 
       # If hybrid, check if function is prioritized for edge
-      state.mode == :hybrid and is_prioritized_for_edge?(opts[:function_name]) ->
+      state.mode == :hybrid and prioritized_for_edge?(opts[:function_name]) ->
         :edge
 
       # If hybrid, check resource availability for optimal execution
@@ -363,7 +365,7 @@ defmodule Raxol.Cloud.EdgeComputing do
     end
   end
 
-  defp is_prioritized_for_edge?(function_name) do
+  defp prioritized_for_edge?(function_name) do
     state = get_state()
 
     function_name && function_name in state.config.priority_functions

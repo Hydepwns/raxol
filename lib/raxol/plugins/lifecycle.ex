@@ -7,6 +7,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
 
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   # Alias necessary modules
   alias Raxol.Plugins.{PluginConfig, PluginDependency, Manager.Core}
@@ -22,7 +23,7 @@ defmodule Raxol.Plugins.Lifecycle do
   @spec load_plugin(Core.t(), atom(), map()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugin(%Core{} = manager, module, config \\ %{})
-      when is_atom(module) do
+      when atom?(module) do
     plugin_name = get_plugin_name(module)
 
     with {:ok, plugin, merged_config} <-
@@ -74,7 +75,7 @@ defmodule Raxol.Plugins.Lifecycle do
     validate_config_structure(merged_config)
   end
 
-  defp validate_config_structure(config) when is_map(config), do: {:ok, config}
+  defp validate_config_structure(config) when map?(config), do: {:ok, config}
   defp validate_config_structure(_), do: {:error, :invalid_config}
 
   defp initialize_plugin(module, config) do
@@ -173,7 +174,7 @@ defmodule Raxol.Plugins.Lifecycle do
   defp get_default_config(module) do
     if function_exported?(module, :get_metadata, 0) do
       case module.get_metadata() do
-        %{default_config: dc} when is_map(dc) -> dc
+        %{default_config: dc} when map?(dc) -> dc
         _ -> %{}
       end
     else
@@ -243,17 +244,17 @@ defmodule Raxol.Plugins.Lifecycle do
 
   # --- Field Validation Helpers ---
 
-  defp validate_string_field(value, _field) when is_binary(value), do: :ok
+  defp validate_string_field(value, _field) when binary?(value), do: :ok
 
   defp validate_string_field(_value, field),
     do: {:error, {:invalid_field, field, :string}}
 
-  defp validate_boolean_field(value, _field) when is_boolean(value), do: :ok
+  defp validate_boolean_field(value, _field) when boolean?(value), do: :ok
 
   defp validate_boolean_field(_value, field),
     do: {:error, {:invalid_field, field, :boolean}}
 
-  defp validate_map_field(value, _field) when is_map(value), do: :ok
+  defp validate_map_field(value, _field) when map?(value), do: :ok
 
   defp validate_map_field(_value, field),
     do: {:error, {:invalid_field, field, :map}}
@@ -267,7 +268,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec load_plugins(Core.t(), list(atom())) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def load_plugins(%Core{} = manager, modules) when is_list(modules) do
+  def load_plugins(%Core{} = manager, modules) when list?(modules) do
     with {:ok, initialized_plugins} <- initialize_all_plugins(manager, modules),
          {:ok, sorted_plugin_names} <-
            resolve_plugin_order(initialized_plugins),
@@ -312,7 +313,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec unload_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def unload_plugin(%Core{} = manager, name) when is_binary(name) do
+  def unload_plugin(%Core{} = manager, name) when binary?(name) do
     case Map.get(manager.plugins, name) do
       nil ->
         {:error, "Plugin #{name} not found"}
@@ -366,7 +367,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec enable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def enable_plugin(%Core{} = manager, name) when is_binary(name) do
+  def enable_plugin(%Core{} = manager, name) when binary?(name) do
     with {:ok, plugin} <- get_plugin(manager, name),
          :ok <- check_plugin_dependencies(plugin, manager),
          {:ok, updated_config} <- update_and_save_config(manager, name, :enable) do
@@ -427,7 +428,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec disable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def disable_plugin(%Core{} = manager, name) when is_binary(name) do
+  def disable_plugin(%Core{} = manager, name) when binary?(name) do
     with {:ok, plugin} <- get_plugin(manager, name),
          {:ok, updated_config} <-
            update_and_save_config(manager, name, :disable) do
@@ -482,7 +483,7 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp find_and_load_plugin(plugin_name, acc_manager, initialized_plugins) do
-    with plugin when not is_nil(plugin) <-
+    with plugin when not nil?(plugin) <-
            Enum.find(initialized_plugins, &(&1.name == plugin_name)),
          plugin_module <- get_plugin_module(plugin_name) do
       load_plugin(acc_manager, plugin_module)

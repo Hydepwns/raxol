@@ -1,4 +1,6 @@
 defmodule Raxol.Plugins.Visualization.DrawingUtils do
+  import Raxol.Guards
+
   @moduledoc """
   Utility functions for drawing basic shapes and text onto a cell grid.
   Used by visualization renderers.
@@ -86,7 +88,7 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     current_y in [y, max_y] or current_x in [x, max_x]
   end
 
-  defp get_edge_char(current_y, current_x, y, _x) do
+  defp get_edge_char(current_y, _current_x, y, _x) do
     if current_y == y, do: "─", else: "│"
   end
 
@@ -152,7 +154,7 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   Safely puts a cell into the grid (list of lists).
   Handles out-of-bounds coordinates gracefully (no-op).
   """
-  def put_cell(grid, y, x, cell) when is_list(grid) and y >= 0 and x >= 0 do
+  def put_cell(grid, y, x, cell) when list?(grid) and y >= 0 and x >= 0 do
     if y < length(grid) do
       update_row(grid, y, x, cell)
     else
@@ -166,7 +168,7 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   defp update_row(grid, y, x, cell) do
     row = Enum.at(grid, y)
 
-    if is_list(row) and x < length(row) do
+    if list?(row) and x < length(row) do
       List.update_at(grid, y, fn _ -> List.replace_at(row, x, cell) end)
     else
       grid
@@ -180,7 +182,7 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   def get_cell(grid, x, y) do
     # Use Enum.fetch for lists
     case Enum.fetch(grid, y) do
-      {:ok, row} when is_list(row) -> Enum.fetch(row, x)
+      {:ok, row} when list?(row) -> Enum.fetch(row, x)
       _ -> {:error, :out_of_bounds}
     end
   end

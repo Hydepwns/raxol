@@ -11,7 +11,7 @@ defmodule Raxol.Auth.Role do
   schema "roles" do
     field :name, :string
     field :description, :string
-    field :is_system, :boolean, default: false
+    field :system, :boolean, default: false
 
     # Associations
     has_many :users, User
@@ -25,7 +25,7 @@ defmodule Raxol.Auth.Role do
   """
   def changeset(role, attrs) do
     role
-    |> cast(attrs, [:name, :description, :is_system])
+    |> cast(attrs, [:name, :description, :system])
     |> validate_required([:name])
     |> validate_length(:name, min: 3, max: 50)
     |> validate_length(:description, max: 500)
@@ -38,6 +38,6 @@ defmodule Raxol.Auth.Role do
   def system_changeset(role, attrs) do
     role
     |> changeset(attrs)
-    |> put_change(:is_system, true)
+    |> put_change(:system, true)
   end
 end

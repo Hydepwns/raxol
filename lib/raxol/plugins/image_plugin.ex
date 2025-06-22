@@ -1,4 +1,6 @@
 defmodule Raxol.Plugins.ImagePlugin do
+  import Raxol.Guards
+
   @moduledoc """
   Plugin that enables displaying images in the terminal using the iTerm2 image protocol.
   Supports various image formats and provides options for image display.
@@ -45,7 +47,7 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   # @impl true
-  # def handle_output(%__MODULE__{} = plugin, output) when is_binary(output) do
+  # def handle_output(%__MODULE__{} = plugin, output) when binary?(output) do
   #   # Check if the output contains an image marker
   #   if String.contains?(output, "<<IMAGE:") do
   #     # Extract image data and parameters
@@ -109,8 +111,7 @@ defmodule Raxol.Plugins.ImagePlugin do
     )
 
     case placeholder_cell do
-      %{type: :placeholder, value: :image} = cell
-      when is_map_key(cell, :type) and is_map_key(cell, :value) ->
+      %{type: :placeholder, value: :image} = _cell ->
         handle_image_placeholder(plugin)
 
       _ ->
@@ -188,8 +189,8 @@ defmodule Raxol.Plugins.ImagePlugin do
 
   defp get_dimension(params, dimension) do
     cond do
-      is_map(params) -> Map.get(params, dimension, 0)
-      is_tuple(params) -> elem(params, if(dimension == :width, do: 0, else: 1))
+      map?(params) -> Map.get(params, dimension, 0)
+      tuple?(params) -> elem(params, if(dimension == :width, do: 0, else: 1))
       true -> 0
     end
   end

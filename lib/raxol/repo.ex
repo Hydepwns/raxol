@@ -1,4 +1,8 @@
 defmodule Raxol.Repo do
+  @moduledoc """
+  Database repository for Raxol.
+  """
+
   use Ecto.Repo,
     otp_app: :raxol,
     adapter: Ecto.Adapters.Postgres

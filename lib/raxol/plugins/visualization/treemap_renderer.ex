@@ -1,4 +1,6 @@
 defmodule Raxol.Plugins.Visualization.TreemapRenderer do
+  import Raxol.Guards
+
   @moduledoc """
   Handles rendering logic for treemap visualizations within the VisualizationPlugin.
   Uses a squarified layout algorithm.
@@ -23,7 +25,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
     title = Map.get(opts, :title, "Treemap")
 
     # Basic validation for bounds and data
-    if width < 1 or height < 1 or is_nil(data) or not is_map(data) or
+    if width < 1 or height < 1 or nil?(data) or not map?(data) or
          map_size(data) == 0 do
       Raxol.Core.Runtime.Log.warning_with_context(
         "[TreemapRenderer] Invalid data or bounds too small for treemap: #{inspect(bounds)}, data: #{inspect(data)}",

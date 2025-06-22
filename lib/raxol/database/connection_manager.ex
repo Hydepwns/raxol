@@ -207,7 +207,7 @@ defmodule Raxol.Database.ConnectionManager do
     Raxol.Core.Runtime.Log.error("Postgres message: #{error.postgres.message}")
 
     # Check if the error is retryable (connection-related)
-    is_retryable =
+    retryable =
       case error.postgres.code do
         # Connection errors
         # connection_exception
@@ -245,7 +245,7 @@ defmodule Raxol.Database.ConnectionManager do
         _ -> false
       end
 
-    if is_retryable and attempt < max_retries do
+    if retryable and attempt < max_retries do
       # Exponential backoff for connection errors
       backoff_ms = retry_delay_ms * :math.pow(2, attempt)
 
@@ -256,7 +256,7 @@ defmodule Raxol.Database.ConnectionManager do
       Process.sleep(round(backoff_ms))
       retry_operation(operation, attempt + 1, max_retries, retry_delay_ms)
     else
-      if not is_retryable do
+      if not retryable do
         Raxol.Core.Runtime.Log.error(
           "Non-retryable Postgres error, giving up immediately"
         )

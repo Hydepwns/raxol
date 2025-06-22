@@ -1,4 +1,5 @@
 defmodule Raxol.Animation.Easing do
+  import Raxol.Guards
   @moduledoc """
   Provides standard easing functions for animations.
   """
@@ -129,7 +130,7 @@ defmodule Raxol.Animation.Easing do
 
   # Default fallback
   # Default to linear if unknown
-  def calculate_value(_, t) when is_float(t), do: t
+  def calculate_value(_, t) when float?(t), do: t
   # Fallback for invalid input
   def calculate_value(_, _), do: 0.0
 

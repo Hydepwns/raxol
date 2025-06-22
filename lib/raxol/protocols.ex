@@ -1,6 +1,6 @@
 defmodule Raxol.Protocols do
   @moduledoc """
-  Protocols module for managing protocols.
+  Defines protocols for the Raxol framework.
   """
 
   alias Raxol.Protocols.Protocol

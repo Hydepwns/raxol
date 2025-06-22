@@ -1,4 +1,6 @@
 defmodule Raxol.CLI.Commands.UpdateCmd do
+  import Raxol.Guards
+
   @moduledoc """
   CLI command for managing Raxol updates.
 
@@ -136,7 +138,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     use_delta = Keyword.get(opts, :use_delta, true)
 
     check_result =
-      if is_nil(version) do
+      if nil?(version) do
         IO.puts("Checking for updates...")
         Updater.check_for_updates(opts)
       else
@@ -178,7 +180,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
 
   defp show_delta_info(version, opts) do
     # If no specific version is provided, check for latest
-    if is_nil(version) do
+    if nil?(version) do
       IO.puts("Checking for updates...")
 
       case Updater.check_for_updates(opts) do

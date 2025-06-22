@@ -123,10 +123,10 @@ defmodule Raxol.System.Platform do
           :terminal => String.t(),
           optional(:console_type) => String.t(),
           optional(:distribution) => String.t(),
-          optional(:is_apple_silicon) => boolean(),
-          optional(:is_wayland) => boolean(),
-          optional(:is_windows_terminal) => boolean(),
-          optional(:is_wsl) => boolean(),
+          optional(:apple_silicon) => boolean(),
+          optional(:wayland) => boolean(),
+          optional(:windows_terminal) => boolean(),
+          optional(:wsl) => boolean(),
           optional(:terminal_app) => String.t()
         }
   def get_platform_info do
@@ -236,7 +236,7 @@ defmodule Raxol.System.Platform do
 
   defp get_macos_info do
     %{
-      is_apple_silicon: apple_silicon?(),
+      apple_silicon: apple_silicon?(),
       terminal_app: detect_macos_terminal()
     }
   end
@@ -244,14 +244,14 @@ defmodule Raxol.System.Platform do
   defp get_linux_info do
     %{
       distribution: detect_linux_distribution(),
-      is_wsl: wsl?(),
-      is_wayland: wayland?()
+      wsl: wsl?(),
+      wayland: wayland?()
     }
   end
 
   defp get_windows_info do
     %{
-      is_windows_terminal: windows_terminal?(),
+      windows_terminal: windows_terminal?(),
       console_type: detect_windows_console_type()
     }
   end

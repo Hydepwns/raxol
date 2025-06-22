@@ -16,6 +16,7 @@ defmodule RaxolWeb.TerminalChannel do
   alias Raxol.Terminal.Input
   require Raxol.Core.Runtime.Log
   require Logger
+  import Raxol.Guards
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
@@ -177,7 +178,7 @@ defmodule RaxolWeb.TerminalChannel do
   @impl Phoenix.Channel
   def handle_in("set_scrollback_limit", %{"limit" => limit}, socket) do
     state = socket.assigns.terminal_state
-    limit = if is_integer(limit), do: limit, else: String.to_integer("#{limit}")
+    limit = if integer?(limit), do: limit, else: String.to_integer("#{limit}")
     emulator = %{state.emulator | scrollback_limit: limit}
     new_state = %{state | emulator: emulator}
     socket = assign(socket, :terminal_state, new_state)

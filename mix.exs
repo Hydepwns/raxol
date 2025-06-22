@@ -183,7 +183,8 @@ defmodule Raxol.MixProject do
       {:ex_cldr, "~> 2.15"},
       {:ex_cldr_numbers, "~> 2.12"},
       {:ex_cldr_currencies, "~> 2.5"},
-      {:ex_cldr_dates_times, "~> 2.14"}
+      {:ex_cldr_dates_times, "~> 2.14"},
+      {:earmark, "~> 1.4", only: :dev}
     ]
   end
 

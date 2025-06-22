@@ -1,4 +1,6 @@
 defmodule Raxol.Cloud.StateManager do
+  import Raxol.Guards
+
   @moduledoc """
   Centralized state management for Raxol cloud components.
 
@@ -36,7 +38,7 @@ defmodule Raxol.Cloud.StateManager do
   @doc """
   Updates a value in the state.
   """
-  def update(server \\ __MODULE__, key, fun) when is_function(fun, 1) do
+  def update(server \\ __MODULE__, key, fun) when function?(fun, 1) do
     GenServer.call(server, {:update, key, fun})
   end
 

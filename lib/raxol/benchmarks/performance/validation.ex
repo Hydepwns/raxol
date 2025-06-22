@@ -1,4 +1,5 @@
 defmodule Raxol.Benchmarks.Performance.Validation do
+  import Raxol.Guards
   @moduledoc """
   Validation functions for Raxol performance benchmarks.
   """
@@ -18,7 +19,13 @@ defmodule Raxol.Benchmarks.Performance.Validation do
   Map containing validation results and pass/fail status for each metric
   """
   def validate_metrics(results, baseline) do
-    # Define validators for each metric category
+    validations = run_all_validators(results, baseline)
+    overall_status = calculate_overall_status(validations)
+
+    Map.put(validations, :overall, overall_status)
+  end
+
+  defp run_all_validators(results, baseline) do
     validators = %{
       render_performance: &validate_render_metrics/2,
       event_latency: &validate_event_metrics/2,
@@ -26,48 +33,50 @@ defmodule Raxol.Benchmarks.Performance.Validation do
       animation_fps: &validate_animation_metrics/2
     }
 
-    # Run each validator
-    validations =
-      Enum.map(validators, fn {category, validator_fn} ->
-        result_metrics = Map.get(results, category, %{})
-        baseline_metrics = Map.get(baseline, category, %{})
+    Enum.map(validators, fn {category, validator_fn} ->
+      result_metrics = Map.get(results, category, %{})
+      baseline_metrics = Map.get(baseline, category, %{})
+      {category, validator_fn.(result_metrics, baseline_metrics)}
+    end)
+    |> Enum.into(%{})
+  end
 
-        {category, validator_fn.(result_metrics, baseline_metrics)}
-      end)
-      |> Enum.into(%{})
+  defp calculate_overall_status(validations) do
+    all_validations = extract_all_validations(validations)
+    {passed, total} = count_passed_validations(all_validations)
+    pass_percentage = calculate_pass_percentage(passed, total)
 
-    # Calculate overall pass/fail status
-    all_validations =
-      validations
-      |> Enum.flat_map(fn {_, category_validations} ->
-        Map.values(category_validations)
-      end)
-
-    passed_validations =
-      Enum.count(all_validations, fn {status, _} -> status == :pass end)
-
-    total_validations = length(all_validations)
-
-    pass_percentage =
-      if total_validations > 0,
-        do: passed_validations / total_validations * 100,
-        else: 0
-
-    overall_status =
-      cond do
-        pass_percentage >= 95 -> :excellent
-        pass_percentage >= 80 -> :good
-        pass_percentage >= 60 -> :acceptable
-        true -> :failed
-      end
-
-    # Add overall results to validations
-    Map.put(validations, :overall, %{
-      status: overall_status,
+    %{
+      status: determine_status(pass_percentage),
       pass_percentage: pass_percentage,
-      passed_validations: passed_validations,
-      total_validations: total_validations
-    })
+      passed_validations: passed,
+      total_validations: total
+    }
+  end
+
+  defp extract_all_validations(validations) do
+    validations
+    |> Enum.flat_map(fn {_, category_validations} ->
+      Map.values(category_validations)
+    end)
+  end
+
+  defp count_passed_validations(all_validations) do
+    passed = Enum.count(all_validations, fn {status, _} -> status == :pass end)
+    {passed, length(all_validations)}
+  end
+
+  defp calculate_pass_percentage(passed, total) do
+    if total > 0, do: passed / total * 100, else: 0
+  end
+
+  defp determine_status(pass_percentage) do
+    cond do
+      pass_percentage >= 95 -> :excellent
+      pass_percentage >= 80 -> :good
+      pass_percentage >= 60 -> :acceptable
+      true -> :failed
+    end
   end
 
   @doc """
@@ -167,10 +176,10 @@ defmodule Raxol.Benchmarks.Performance.Validation do
 
       validation_result =
         cond do
-          is_nil(result_value) ->
+          nil?(result_value) ->
             {:skip, "Metric not measured"}
 
-          is_nil(baseline_value) ->
+          nil?(baseline_value) ->
             {:skip, "No baseline for comparison"}
 
           comparator.(result_value, baseline_value) ->

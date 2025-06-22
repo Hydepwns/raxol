@@ -66,7 +66,7 @@ defmodule Raxol.Metrics.Visualizer do
 
     Plot.new(options[:width] || 600, options[:height] || 400, chart)
     |> Plot.titles("Memory Usage Over Time", nil)
-    |> Plot.axis_labels(labels[:x], labels[:y])
+    |> Plot.axlabels(labels[:x], labels[:y])
     |> Plot.to_svg()
   end
 end

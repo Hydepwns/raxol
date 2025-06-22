@@ -157,55 +157,103 @@ defmodule Raxol.Benchmarks.Performance.Animation do
        ) do
     current_time = System.monotonic_time(:millisecond)
 
-    if current_time < end_time do
-      # Calculate target time for this frame
-      target_time = start_time + frame_count * frame_duration
-
-      # Check if we're late
-      is_late = current_time > target_time + frame_duration
-
-      # If we're late, count as dropped and move to next frame time
-      if is_late do
-        # Skip this frame
-        frames_to_skip = trunc((current_time - target_time) / frame_duration)
-        next_frame_count = frame_count + frames_to_skip
-        next_dropped = dropped_count + frames_to_skip
-
-        count_timely_frames(
-          start_time,
-          end_time,
-          frame_duration,
-          next_frame_count,
-          next_dropped
-        )
-      else
-        # Render the frame
-        frame_start = System.monotonic_time(:millisecond)
-        component = RenderingBenchmark.generate_test_component(:medium)
-        RenderingBenchmark.render_component(component)
-        _render_time = System.monotonic_time(:millisecond) - frame_start
-
-        # Sleep if time remains
-        remaining =
-          max(
-            0,
-            target_time + frame_duration - System.monotonic_time(:millisecond)
-          )
-
-        if remaining > 0, do: Process.sleep(trunc(remaining))
-
-        # Continue to next frame
-        count_timely_frames(
-          start_time,
-          end_time,
-          frame_duration,
-          frame_count + 1,
-          dropped_count
-        )
-      end
-    else
+    if current_time >= end_time do
       {frame_count, dropped_count}
+    else
+      handle_frame_timing(
+        start_time,
+        end_time,
+        frame_duration,
+        frame_count,
+        dropped_count,
+        current_time
+      )
     end
+  end
+
+  defp handle_frame_timing(
+         start_time,
+         end_time,
+         frame_duration,
+         frame_count,
+         dropped_count,
+         current_time
+       ) do
+    target_time = start_time + frame_count * frame_duration
+    late = current_time > target_time + frame_duration
+
+    if late do
+      handle_late_frame(
+        start_time,
+        end_time,
+        frame_duration,
+        frame_count,
+        dropped_count,
+        current_time,
+        target_time
+      )
+    else
+      render_and_continue(
+        start_time,
+        end_time,
+        frame_duration,
+        frame_count,
+        dropped_count,
+        target_time
+      )
+    end
+  end
+
+  defp handle_late_frame(
+         start_time,
+         end_time,
+         frame_duration,
+         frame_count,
+         dropped_count,
+         current_time,
+         target_time
+       ) do
+    frames_to_skip = trunc((current_time - target_time) / frame_duration)
+    next_frame_count = frame_count + frames_to_skip
+    next_dropped = dropped_count + frames_to_skip
+
+    count_timely_frames(
+      start_time,
+      end_time,
+      frame_duration,
+      next_frame_count,
+      next_dropped
+    )
+  end
+
+  defp render_and_continue(
+         start_time,
+         end_time,
+         frame_duration,
+         frame_count,
+         dropped_count,
+         target_time
+       ) do
+    frame_start = System.monotonic_time(:millisecond)
+    component = RenderingBenchmark.generate_test_component(:medium)
+    RenderingBenchmark.render_component(component)
+    _render_time = System.monotonic_time(:millisecond) - frame_start
+
+    remaining =
+      max(
+        0,
+        target_time + frame_duration - System.monotonic_time(:millisecond)
+      )
+
+    if remaining > 0, do: Process.sleep(trunc(remaining))
+
+    count_timely_frames(
+      start_time,
+      end_time,
+      frame_duration,
+      frame_count + 1,
+      dropped_count
+    )
   end
 
   defp measure_cpu_during_animation(seconds) do
