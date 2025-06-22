@@ -3,6 +3,8 @@ defmodule Raxol.Style.Layout do
   Handles layout styling for Raxol components.
   """
 
+  import Raxol.Guards
+
   @type t :: %__MODULE__{
           margin:
             {non_neg_integer(), non_neg_integer(), non_neg_integer(),
@@ -164,7 +166,7 @@ defmodule Raxol.Style.Layout do
   @doc """
   Sets the flex properties for a layout style.
   """
-  def set_flex(style, flex) when is_map(flex) do
+  def set_flex(style, flex) when map?(flex) do
     %{style | flex: flex}
   end
 
@@ -178,7 +180,7 @@ defmodule Raxol.Style.Layout do
   @doc """
   Sets the grid properties for a layout style.
   """
-  def set_grid(style, grid) when is_map(grid) do
+  def set_grid(style, grid) when map?(grid) do
     %{style | grid: grid}
   end
 

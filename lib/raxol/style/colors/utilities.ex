@@ -9,6 +9,8 @@ defmodule Raxol.Style.Colors.Utilities do
   conversions.
   """
 
+  import Raxol.Guards
+
   @doc """
   Calculates the relative luminance of a color according to WCAG 2.0.
 
@@ -231,7 +233,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
   A tuple {r, g, b} where each component is in the range 0-255
   """
-  def hsl_to_rgb(h, s, l) when is_number(h) and is_number(s) and is_number(l) do
+  def hsl_to_rgb(h, s, l) when number?(h) and number?(s) and number?(l) do
     h = rem(h + 360, 360)
     s = max(0, min(1, s))
     l = max(0, min(1, l))

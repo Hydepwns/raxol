@@ -350,22 +350,47 @@ defmodule Raxol.Style.Colors.Advanced do
   end
 
   defp maybe_preserve_brightness(color, true) do
-    # TODO: Implement brightness preservation logic
-    color
+    # Calculate perceived brightness using luminance formula
+    %{l: original_l} = rgb_to_hsl(color)
+
+    # If brightness is too low, adjust lightness while preserving hue and saturation
+    if original_l < 30 do
+      %{h: h, s: s} = rgb_to_hsl(color)
+      hsl_to_rgb({h, s, 0.3})  # Increase lightness to 30%
+    else
+      color
+    end
   end
 
   defp maybe_preserve_brightness(color, false), do: color
 
   defp maybe_enhance_contrast(color, true) do
-    # TODO: Implement contrast enhancement logic
-    color
+    # Enhance contrast by adjusting lightness
+    %{h: h, s: s, l: l} = rgb_to_hsl(color)
+
+    # If lightness is in middle range, push towards extremes
+    adjusted_l = cond do
+      l > 40 and l < 60 -> l + 20  # Lighten mid-tones
+      l < 40 -> l - 10              # Darken dark tones
+      true -> l                     # Keep extreme values
+    end
+
+    hsl_to_rgb({h, s, adjusted_l / 100})
   end
 
   defp maybe_enhance_contrast(color, false), do: color
 
   defp maybe_make_color_blind_safe(color, true) do
-    # TODO: Implement color blind safety logic
-    color
+    # Ensure sufficient contrast for color blind users
+    %{h: h, s: s, l: l} = rgb_to_hsl(color)
+
+    # Increase saturation for better distinction
+    adjusted_s = min(100, s * 1.2)
+
+    # Ensure minimum lightness for visibility
+    adjusted_l = max(20, l)
+
+    hsl_to_rgb({h, adjusted_s / 100, adjusted_l / 100})
   end
 
   defp maybe_make_color_blind_safe(color, false), do: color

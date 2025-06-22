@@ -36,6 +36,8 @@ defmodule Raxol.Style.Colors.System do
   ```
   """
 
+  import Raxol.Guards
+
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Style.Colors.Color
