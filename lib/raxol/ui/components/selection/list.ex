@@ -134,8 +134,8 @@ defmodule Raxol.UI.Components.Selection.List do
     item_elements =
       Enum.with_index(visible_items, state.scroll_offset)
       |> Enum.map(fn {item, index} ->
-        is_selected = index == state.selected_index
-        render_item(item, is_selected, state)
+        selected? = index == state.selected_index
+        render_item(item, selected?, state)
       end)
 
     dsl_result =
@@ -152,13 +152,13 @@ defmodule Raxol.UI.Components.Selection.List do
 
   # --- Internal Render Helpers ---
 
-  defp render_item(item_data, is_selected, state) do
+  defp render_item(item_data, selected?, state) do
     # Ensure item fills width
     base_style = %{width: :fill}
     selected_style = %{bg: :blue, fg: :white}
 
     style =
-      if is_selected and state.focused,
+      if selected? and state.focused,
         do: Map.merge(base_style, selected_style),
         else: base_style
 
@@ -169,7 +169,6 @@ defmodule Raxol.UI.Components.Selection.List do
     display_content =
       cond do
         is_binary(content) -> Raxol.View.Elements.label(content: content)
-        # Assume valid element
         is_map(content) and Map.has_key?(content, :type) -> content
         # Default fallback
         true -> Raxol.View.Elements.label(content: to_string(content))

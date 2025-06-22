@@ -18,7 +18,9 @@ defmodule Raxol.UI.Components.TextInput do
   ```
   """
 
+  import Raxol.Guards
   alias Raxol.Style
+  alias Raxol.UI.Theming.Theme
 
   @type t :: map()
 
@@ -320,7 +322,7 @@ defmodule Raxol.UI.Components.TextInput do
   #   value
   # end
 
-  defp get_input_style(style_atom, disabled, valid) when is_atom(style_atom) do
+  defp get_input_style(style_atom, disabled, valid) when atom?(style_atom) do
     base_style =
       Style.new(
         padding: [0, 1],
@@ -344,7 +346,7 @@ defmodule Raxol.UI.Components.TextInput do
   end
 
   defp get_input_style(custom_style, disabled, valid)
-       when is_map(custom_style) do
+       when map?(custom_style) do
     # Define a base style if needed, or assume custom_style provides all defaults
     base_style =
       Style.new(

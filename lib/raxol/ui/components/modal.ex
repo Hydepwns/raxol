@@ -274,13 +274,13 @@ defmodule Raxol.UI.Components.Modal do
     validator = field.validate
     value = field.value
 
-    is_valid =
+    valid? =
       case validator do
         # No validation rule
         nil ->
           true
 
-        regex when is_struct(regex, Regex) ->
+        regex when is_struct(regex) ->
           Regex.match?(regex, to_string(value))
 
         fun when is_function(fun, 1) ->
@@ -295,7 +295,7 @@ defmodule Raxol.UI.Components.Modal do
           true
       end
 
-    if is_valid do
+    if valid? do
       # Clear any previous error
       %{field | error: nil}
     else
@@ -506,7 +506,7 @@ defmodule Raxol.UI.Components.Modal do
               button_elements
             end
           ]
-          |> Enum.reject(&is_nil(&1))
+          |> Enum.reject(&is_nil/1)
         end
       end
 
@@ -534,8 +534,8 @@ defmodule Raxol.UI.Components.Modal do
 
   defp render_field({field, index}, state) do
     field_full_id = get_field_full_id(field, state)
-    is_focused = index == state.form_state.focus_index
-    common_props = get_common_props(field, field_full_id, is_focused)
+    focused? = index == state.form_state.focus_index
+    common_props = get_common_props(field, field_full_id, focused?)
 
     input_element = render_input_element(field, common_props)
     render_field_container(field, input_element)
@@ -547,10 +547,10 @@ defmodule Raxol.UI.Components.Modal do
       else: field.id
   end
 
-  defp get_common_props(field, field_full_id, is_focused) do
+  defp get_common_props(field, field_full_id, focused?) do
     Map.merge(field.props || %{}, %{
       id: field_full_id,
-      focused: is_focused
+      focused: focused?
     })
   end
 

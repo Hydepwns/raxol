@@ -8,9 +8,11 @@ defmodule Raxol.UI.Layout.Engine do
   * Managing the layout pipeline
   """
 
+  import Raxol.Guards
   require Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Layout.{Grid, Panels, Containers, Table, Elements, Inputs}
+  alias Raxol.UI.Theming.Theme
 
   @doc """
   Applies layout to a view, calculating absolute positions for all elements.
@@ -43,7 +45,7 @@ defmodule Raxol.UI.Layout.Engine do
 
   # Process a view element
   def process_element(%{type: :view, children: children}, space, acc)
-      when is_list(children) do
+      when list?(children) do
     # Process children with the available space
     process_children(children, space, acc)
   end
@@ -77,7 +79,7 @@ defmodule Raxol.UI.Layout.Engine do
   def process_element(%{type: type, attrs: attrs} = _element, space, acc)
       when type in [:label, :text] do
     # Convert keyword list to map if needed
-    attrs_map = if is_list(attrs), do: Map.new(attrs), else: attrs
+    attrs_map = if list?(attrs), do: Map.new(attrs), else: attrs
 
     # Create a text element at the given position
     text_element = %{
@@ -149,7 +151,7 @@ defmodule Raxol.UI.Layout.Engine do
         y: space.y + 1,
         text: display_text,
         # Pass component_attrs; Renderer can check :value == "" and use placeholder style
-        attrs: Map.merge(component_attrs, %{is_placeholder: value == ""})
+        attrs: Map.merge(component_attrs, %{placeholder: value == ""})
       }
     ]
 
@@ -204,7 +206,7 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # Process children of a container element (Helper)
-  defp process_children(children, space, acc) when is_list(children) do
+  defp process_children(children, space, acc) when list?(children) do
     # Placeholder: needs proper handling based on container type (row, col, etc.)
     # For now, just process each child in the same space (will overlap)
     Enum.reduce(children, acc, fn child, current_acc ->
@@ -236,9 +238,9 @@ defmodule Raxol.UI.Layout.Engine do
 
   # Handles valid elements (maps with :type and :attrs)
   def measure_element(%{type: type, attrs: attrs} = element, available_space)
-      when is_atom(type) do
+      when atom?(type) do
     # Convert keyword list to map if needed
-    attrs_map = if is_list(attrs), do: Map.new(attrs), else: attrs
+    attrs_map = if list?(attrs), do: Map.new(attrs), else: attrs
     measure_element_by_type(type, element, attrs_map, available_space)
   end
 

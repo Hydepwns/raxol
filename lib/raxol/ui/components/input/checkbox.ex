@@ -7,6 +7,8 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   implements robust lifecycle hooks, and supports accessibility/extra props.
   """
 
+  import Raxol.Guards
+
   # use Raxol.UI.Components.Base
   # alias Raxol.UI.Components.Base.Component
   # alias Raxol.UI.Style
@@ -107,7 +109,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   """
   @impl true
   @spec update(map(), t()) :: {:ok, t(), list()}
-  def update(props, state) when is_map(props) do
+  def update(props, state) when map?(props) do
     # Merge new props into state, with style/theme merged as in other components
     merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
     merged_theme = Map.merge(state.theme || %{}, Map.get(props, :theme, %{}))
@@ -150,7 +152,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     new_state = %{state | checked: new_checked_state}
 
     commands =
-      if is_function(state.on_toggle, 1),
+      if function?(state.on_toggle, 1),
         do:
           (
             state.on_toggle.(new_checked_state)
@@ -201,7 +203,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
         required: state.required,
         tooltip: state.tooltip
       }
-      |> Enum.reject(fn {_k, v} -> is_nil(v) or v == false end)
+      |> Enum.reject(fn {_k, v} -> nil?(v) or v == false end)
       |> Enum.into(%{})
 
     Element.new(

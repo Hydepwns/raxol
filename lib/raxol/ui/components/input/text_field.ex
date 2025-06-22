@@ -4,6 +4,7 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   It supports validation, placeholders, masks, and styling.
   """
+  import Raxol.Guards
   alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
@@ -141,7 +142,7 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, state}
   end
 
-  defp handle_keypress(state, key, _modifiers, context) when is_binary(key) do
+  defp handle_keypress(state, key, _modifiers, context) when binary?(key) do
     _context = context
     # Insert character
     {left, right} = String.split_at(state.value, state.cursor_pos)

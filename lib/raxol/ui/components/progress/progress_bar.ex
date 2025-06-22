@@ -129,7 +129,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
                   else: nil
                 )
               ]
-              |> Enum.reject(&is_nil(&1))
+              |> Enum.reject(&is_nil/1)
             end
 
             Raxol.View.Elements.row do
@@ -162,7 +162,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
                   else: nil
                 )
               ]
-              |> Enum.reject(&is_nil(&1))
+              |> Enum.reject(&is_nil/1)
             end
           end
 
@@ -189,7 +189,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
                 else: nil
               )
             ]
-            |> Enum.reject(&is_nil(&1))
+            |> Enum.reject(&is_nil/1)
           end
       end
 

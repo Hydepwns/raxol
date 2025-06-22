@@ -11,6 +11,8 @@ defmodule Raxol.UI.Components.Input.TextInput do
   * Event callbacks
   """
 
+  import Raxol.Guards
+
   alias Raxol.UI.Components.Base.Component
   alias Raxol.Core.Events.Event
   alias Raxol.UI.Components.Input.TextInput.KeyHandler

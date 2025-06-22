@@ -6,6 +6,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   """
 
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   # Default grid dimensions and gap
   @default_cols 12
@@ -44,7 +45,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   # Handle other non-map inputs
-  def resolve_grid_params(invalid_input) when not is_map(invalid_input) do
+  def resolve_grid_params(invalid_input) when not map?(invalid_input) do
     Raxol.Core.Runtime.Log.warning(
       "Invalid input to resolve_grid_params: #{inspect(invalid_input)}"
     )
@@ -60,7 +61,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
     # If we have breakpoints defined, try to find the most appropriate one
     # based on the current parent width
-    if is_map(grid_config[:breakpoints]) and is_map(grid_config[:parent_bounds]) do
+    if map?(grid_config[:breakpoints]) and map?(grid_config[:parent_bounds]) do
       current_width = grid_config.parent_bounds.width
       breakpoints = grid_config.breakpoints
 
@@ -126,7 +127,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   def calculate_widget_bounds(_widget_config, invalid_grid_config)
-      when not is_map(invalid_grid_config) do
+      when not map?(invalid_grid_config) do
     Raxol.Core.Runtime.Log.error(
       "Invalid grid_config in calculate_widget_bounds: #{inspect(invalid_grid_config)}"
     )
@@ -148,7 +149,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   def calculate_widget_bounds(_widget_config, %{} = grid_config)
-      when not is_map_key(grid_config, :parent_bounds) do
+      when not map_key?(grid_config, :parent_bounds) do
     Raxol.Core.Runtime.Log.warning(
       "calculate_widget_bounds received grid_config without parent_bounds: #{inspect(grid_config)}"
     )
@@ -161,7 +162,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         widget_config,
         %{parent_bounds: parent_bounds} = grid_config
       )
-      when is_map(parent_bounds) do
+      when map?(parent_bounds) do
     # --- Log the grid_config RECEIVED --- >
     Raxol.Core.Runtime.Log.debug(
       "[GridContainer.calculate_widget_bounds] Received: widget_id=#{Map.get(widget_config, :id, :unknown)}, grid_config=#{inspect(grid_config)}"
@@ -175,8 +176,8 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     gap = grid_config[:gap] || @default_gap
 
     # Check if width or height are invalid (non-numeric values like :ok)
-    if not is_number(parent_bounds[:width]) or
-         not is_number(parent_bounds[:height]) do
+    if not number?(parent_bounds[:width]) or
+         not number?(parent_bounds[:height]) do
       Raxol.Core.Runtime.Log.error(
         "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(parent_bounds[:width])}, container_height=#{inspect(parent_bounds[:height])}"
       )
@@ -202,11 +203,11 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       # --- End Debug Logging ---
 
       # Validate parent_bounds values
-      if !(is_map(parent_bounds) and
-             is_number(Map.get(parent_bounds, :x)) and
-             is_number(Map.get(parent_bounds, :y)) and
-             is_number(container_width) and
-             is_number(container_height)) do
+      if !(map?(parent_bounds) and
+             number?(Map.get(parent_bounds, :x)) and
+             number?(Map.get(parent_bounds, :y)) and
+             number?(container_width) and
+             number?(container_height)) do
         Raxol.Core.Runtime.Log.error(
           "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}"
         )
@@ -237,7 +238,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
           end
 
         # Validate cell dimensions
-        if !(is_number(cell_width) and is_number(cell_height)) do
+        if !(number?(cell_width) and number?(cell_height)) do
           Raxol.Core.Runtime.Log.error(
             "Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}"
           )
@@ -289,7 +290,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   # Handle other non-map inputs
-  def get_cell_dimensions(invalid_input) when not is_map(invalid_input) do
+  def get_cell_dimensions(invalid_input) when not map?(invalid_input) do
     Raxol.Core.Runtime.Log.error(
       "Invalid input to get_cell_dimensions: #{inspect(invalid_input)}"
     )
@@ -309,7 +310,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   def get_cell_dimensions(%{} = grid_config)
-      when not is_map_key(grid_config, :parent_bounds) do
+      when not map_key?(grid_config, :parent_bounds) do
     Raxol.Core.Runtime.Log.warning(
       "get_cell_dimensions received grid_config without parent_bounds: #{inspect(grid_config)}"
     )
@@ -320,7 +321,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
   # Original function with guard to ensure parent_bounds exists and is a map
   def get_cell_dimensions(%{parent_bounds: parent_bounds} = grid_config)
-      when is_map(parent_bounds) do
+      when map?(parent_bounds) do
     # Extract grid parameters with defaults
     # Resolve cols/rows based on breakpoints and parent width
     %{cols: cols, rows: rows} = resolve_grid_params(grid_config)
@@ -328,10 +329,10 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
     # Check for required width/height fields in parent_bounds
     with true <-
-           is_map_key(parent_bounds, :width) and
-             is_map_key(parent_bounds, :height),
+           map_key?(parent_bounds, :width) and
+             map_key?(parent_bounds, :height),
          true <-
-           is_number(parent_bounds.width) and is_number(parent_bounds.height) do
+           number?(parent_bounds.width) and number?(parent_bounds.height) do
       container_width = parent_bounds.width
       container_height = parent_bounds.height
 

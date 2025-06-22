@@ -13,7 +13,9 @@ defmodule Raxol.UI.Theming.Colors do
   - Accessibility checks
   """
 
+  import Raxol.Guards
   alias Raxol.Style.Colors.{Color, Utilities}
+  alias Raxol.UI.Theming.PaletteRegistry
 
   # Format: "#RRGGBB" or "#RRGGBBAA"
   @type color_hex :: String.t()
@@ -50,7 +52,7 @@ defmodule Raxol.UI.Theming.Colors do
       iex> hex_to_rgb("#FF0000")
       {255, 0, 0}
   """
-  def hex_to_rgb(hex) when is_binary(hex) do
+  def hex_to_rgb(hex) when binary?(hex) do
     color = Color.from_hex(hex)
     {color.r, color.g, color.b}
   end
@@ -103,12 +105,12 @@ defmodule Raxol.UI.Theming.Colors do
       "#FF8080"
   """
   def lighten(color, amount)
-      when is_integer(amount) and amount >= 0 and amount <= 100 do
+      when integer?(amount) and amount >= 0 and amount <= 100 do
     lighten(color, amount / 100)
   end
 
   def lighten(color, amount)
-      when is_float(amount) and amount >= 0 and amount <= 1 do
+      when float?(amount) and amount >= 0 and amount <= 1 do
     hex = to_hex(color)
 
     case hex_to_rgb(hex) do
@@ -135,12 +137,12 @@ defmodule Raxol.UI.Theming.Colors do
       "#800000"
   """
   def darken(color, amount)
-      when is_integer(amount) and amount >= 0 and amount <= 100 do
+      when integer?(amount) and amount >= 0 and amount <= 100 do
     darken(color, amount / 100)
   end
 
   def darken(color, amount)
-      when is_float(amount) and amount >= 0 and amount <= 1 do
+      when float?(amount) and amount >= 0 and amount <= 1 do
     hex = to_hex(color)
 
     case hex_to_rgb(hex) do
@@ -254,8 +256,8 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def to_rgb(color) do
     case color do
-      hex when is_binary(hex) -> hex_to_rgb(hex)
-      name when is_atom(name) -> hex_to_rgb(@color_names[name])
+      hex when binary?(hex) -> hex_to_rgb(hex)
+      name when atom?(name) -> hex_to_rgb(@color_names[name])
       {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 -> {r, g, b}
     end
   end
@@ -273,10 +275,10 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def to_hex(color) do
     case color do
-      hex when is_binary(hex) ->
+      hex when binary?(hex) ->
         hex
 
-      name when is_atom(name) ->
+      name when atom?(name) ->
         @color_names[name]
 
       {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 ->
@@ -408,10 +410,10 @@ defmodule Raxol.UI.Theming.Colors do
     |> elem(0)
   end
 
-  def convert_to_basic(color) when is_tuple(color),
+  def convert_to_basic(color) when tuple?(color),
     do: find_closest_basic_color(color)
 
-  def convert_to_basic(theme) when is_map(theme) do
+  def convert_to_basic(theme) when map?(theme) do
     Map.new(theme, fn {key, value} ->
       {key, convert_to_basic(value)}
     end)
@@ -427,11 +429,11 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def convert_to_palette(value, palette_name \\ :xterm256)
 
-  def convert_to_palette(color, palette_name) when is_tuple(color) do
+  def convert_to_palette(color, palette_name) when tuple?(color) do
     find_closest_palette_color(color, palette_name)
   end
 
-  def convert_to_palette(theme, palette_name) when is_map(theme) do
+  def convert_to_palette(theme, palette_name) when map?(theme) do
     Map.new(theme, fn {key, value} ->
       {key, convert_to_palette(value, palette_name)}
     end)
@@ -439,14 +441,120 @@ defmodule Raxol.UI.Theming.Colors do
 
   def convert_to_palette(value, _palette_name), do: value
 
-  # Helper function
+  # Additional color palettes
+  @xterm_colors @ansi_256_colors
+
+  @linux_colors [
+    # Linux console colors (16 colors)
+    {0, {0, 0, 0}}, {1, {170, 0, 0}}, {2, {0, 170, 0}}, {3, {170, 85, 0}},
+    {4, {0, 0, 170}}, {5, {170, 0, 170}}, {6, {0, 170, 170}}, {7, {170, 170, 170}},
+    {8, {85, 85, 85}}, {9, {255, 85, 85}}, {10, {85, 255, 85}}, {11, {255, 255, 85}},
+    {12, {85, 85, 255}}, {13, {255, 85, 255}}, {14, {85, 255, 255}}, {15, {255, 255, 255}}
+  ]
+
+  @mac_colors [
+    # macOS Terminal colors (16 colors)
+    {0, {0, 0, 0}}, {1, {194, 54, 33}}, {2, {37, 188, 36}}, {3, {173, 173, 39}},
+    {4, {73, 46, 225}}, {5, {211, 56, 211}}, {6, {51, 187, 200}}, {7, {203, 204, 205}},
+    {8, {129, 131, 131}}, {9, {252, 57, 31}}, {10, {49, 231, 34}}, {11, {234, 236, 35}},
+    {12, {88, 51, 255}}, {13, {249, 53, 248}}, {14, {20, 240, 240}}, {15, {233, 235, 235}}
+  ]
+
+  @windows_colors [
+    # Windows Terminal colors (16 colors)
+    {0, {12, 12, 12}}, {1, {197, 15, 31}}, {2, {19, 161, 14}}, {3, {193, 156, 0}},
+    {4, {0, 55, 218}}, {5, {136, 23, 152}}, {6, {58, 150, 221}}, {7, {204, 204, 204}},
+    {8, {118, 118, 118}}, {9, {231, 72, 86}}, {10, {22, 198, 12}}, {11, {249, 241, 165}},
+    {12, {59, 120, 255}}, {13, {180, 0, 158}}, {14, {97, 214, 214}}, {15, {242, 242, 242}}
+  ]
+
+  # Custom palette registry
+  @custom_palettes %{}
+
+  @doc """
+  Registers a custom color palette for use with convert_to_palette/2.
+
+  ## Examples
+
+      iex> register_custom_palette(:my_palette, [{0, {0, 0, 0}}, {1, {255, 255, 255}}])
+      :ok
+  """
+  def register_custom_palette(name, colors) when atom?(name) and list?(colors) do
+    # Validate color format
+    case validate_palette_colors(colors) do
+      :ok ->
+        Raxol.UI.Theming.PaletteRegistry.register(name, colors)
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Unregisters a custom color palette.
+
+  ## Examples
+
+      iex> unregister_custom_palette(:my_palette)
+      :ok
+  """
+  def unregister_custom_palette(name) when atom?(name) do
+    Raxol.UI.Theming.PaletteRegistry.unregister(name)
+  end
+
+  @doc """
+  Lists all registered custom palettes.
+
+  ## Examples
+
+      iex> list_custom_palettes()
+      [:my_palette, :another_palette]
+  """
+  def list_custom_palettes do
+    Raxol.UI.Theming.PaletteRegistry.list()
+  end
+
+  @doc """
+  Gets a custom palette by name.
+
+  ## Examples
+
+      iex> get_custom_palette(:my_palette)
+      [{0, {0, 0, 0}}, {1, {255, 255, 255}}]
+  """
+  def get_custom_palette(name) when atom?(name) do
+    Raxol.UI.Theming.PaletteRegistry.get(name)
+  end
+
+  defp validate_palette_colors(colors) do
+    if Enum.all?(colors, &valid_palette_color?/1) do
+      :ok
+    else
+      {:error, :invalid_color_format}
+    end
+  end
+
+  defp valid_palette_color?({index, {r, g, b}}) when integer?(index) and
+                                                     r in 0..255 and
+                                                     g in 0..255 and
+                                                     b in 0..255 do
+    true
+  end
+  defp valid_palette_color?(_), do: false
+
   defp find_closest_palette_color(rgb, palette_name) do
     palette =
       case palette_name do
         :xterm256 -> @ansi_256_colors
         :basic -> @ansi_basic_colors
-        # TODO: Add support for other palettes or custom palettes
-        # Default to 256
+        :linux -> @linux_colors
+        :mac -> @mac_colors
+        :windows -> @windows_colors
+        :xterm -> @xterm_colors
+        custom when atom?(custom) ->
+          case Raxol.UI.Theming.PaletteRegistry.get(custom) do
+            {:ok, colors} -> colors
+            {:error, _} -> @ansi_256_colors
+          end
         _ -> @ansi_256_colors
       end
 

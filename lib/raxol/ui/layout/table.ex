@@ -3,6 +3,9 @@ defmodule Raxol.UI.Layout.Table do
   Handles measurement and positioning logic for Table elements within the LayoutEngine.
   """
 
+  import Raxol.Guards
+  alias Raxol.UI.Theming.Theme
+
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -161,7 +164,7 @@ defmodule Raxol.UI.Layout.Table do
     Enum.map(columns, fn column ->
       # Get explicit width if specified
       case Map.get(column, :width) do
-        width when is_integer(width) -> width
+        width when integer?(width) -> width
         :auto -> calculate_auto_width(column, data)
         _ -> calculate_auto_width(column, data)
       end
@@ -184,10 +187,10 @@ defmodule Raxol.UI.Layout.Table do
     max(header_width, data_width) + 2
   end
 
-  defp get_column_value(row, %{key: key}) when is_function(key, 1),
+  defp get_column_value(row, %{key: key}) when function?(key, 1),
     do: key.(row)
 
-  defp get_column_value(row, %{key: key}) when is_atom(key),
+  defp get_column_value(row, %{key: key}) when atom?(key),
     do: Map.get(row, key)
 
   defp get_column_value(row, _), do: ""

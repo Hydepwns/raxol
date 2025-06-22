@@ -4,6 +4,8 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   This includes length validation, pattern matching, and error message generation.
   """
 
+  import Raxol.Guards
+
   @doc """
   Validates the input value against the component's constraints.
   Returns a new state with any validation errors.
@@ -29,14 +31,14 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   @doc """
   Checks if adding a character would exceed the maximum length.
   """
-  def would_exceed_max_length?(state, char) when is_integer(char) do
+    def would_exceed_max_length?(state, char) when integer?(char) do
     case state.max_length do
       nil -> false
       max -> String.length(state.value) >= max
     end
   end
 
-  def would_exceed_max_length?(state, text) when is_binary(text) do
+  def would_exceed_max_length?(state, text) when binary?(text) do
     case state.max_length do
       nil -> false
       max -> String.length(text) > max
@@ -47,7 +49,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   Validates a value against a pattern.
   Returns :ok if valid, {:error, reason} if invalid.
   """
-  def validate_pattern(value, pattern) when is_binary(pattern) do
+  def validate_pattern(value, pattern) when binary?(pattern) do
     if Regex.match?(~r/^#{pattern}$/, value) do
       :ok
     else
@@ -60,7 +62,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   Returns :ok if valid, {:error, reason} if invalid.
   """
   def validate_length(value, max_length)
-      when is_integer(max_length) and max_length > 0 do
+      when integer?(max_length) and max_length > 0 do
     if String.length(value) <= max_length do
       :ok
     else

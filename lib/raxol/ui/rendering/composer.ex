@@ -1,4 +1,9 @@
 defmodule Raxol.UI.Rendering.Composer do
+  @moduledoc """
+  Handles composition of UI rendering trees.
+  """
+
+  import Raxol.Guards
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -25,12 +30,12 @@ defmodule Raxol.UI.Rendering.Composer do
 
   # Renamed and modified do_compose_node to be recursive and diff-aware
   defp do_compose_recursive(current_layout_node, previous_composed_node)
-       when is_map(current_layout_node) do
+       when map?(current_layout_node) do
     # Check if we can reuse previous_composed_node
     can_reuse =
-      is_map(current_layout_node[:layout_attrs]) &&
+      map?(current_layout_node[:layout_attrs]) &&
         current_layout_node[:layout_attrs][:processed_with_diff] == :no_change &&
-        is_map(previous_composed_node) &&
+        map?(previous_composed_node) &&
         current_layout_node_type(current_layout_node) ==
           previous_composed_node[:original_type]
 
@@ -42,9 +47,9 @@ defmodule Raxol.UI.Rendering.Composer do
       previous_composed_node
     else
       # Log details if not reusing and previous_composed_node was available
-      if is_map(previous_composed_node) do
+      if map?(previous_composed_node) do
         cond do
-          not is_map(current_layout_node[:layout_attrs]) ->
+          not map?(current_layout_node[:layout_attrs]) ->
             Raxol.Core.Runtime.Log.debug(
               "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - missing layout_attrs."
             )
@@ -82,7 +87,7 @@ defmodule Raxol.UI.Rendering.Composer do
         |> Enum.with_index()
         |> Enum.map(fn {child_layout_node, idx} ->
           prev_child_composed_node =
-            if is_map(previous_composed_node) &&
+            if map?(previous_composed_node) &&
                  previous_composed_node[:children] do
               Enum.at(previous_composed_node[:children], idx)
             else
@@ -105,7 +110,7 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp do_compose_recursive(current_layout_node, _previous_composed_node)
-       when not is_map(current_layout_node) do
+       when not map?(current_layout_node) do
     Raxol.Core.Runtime.Log.debug(
       "Composition Stage: Passing through non-map primitive node: #{inspect(current_layout_node)}"
     )
@@ -122,6 +127,6 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp current_layout_node_type(node) do
-    if is_map(node), do: Map.get(node, :type, nil), else: nil
+    if map?(node), do: Map.get(node, :type, nil), else: nil
   end
 end

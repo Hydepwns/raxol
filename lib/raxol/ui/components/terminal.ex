@@ -42,14 +42,17 @@ defmodule Raxol.UI.Components.Terminal do
   @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
+    # Convert keyword list to map if needed
+    props_map = if Keyword.keyword?(props), do: Map.new(props), else: props
+
     # Initialize terminal state using props, providing defaults
     %__MODULE__{
-      id: Map.get(props, :id, nil),
-      width: props[:width] || 80,
-      height: props[:height] || 24,
+      id: Map.get(props_map, :id, nil),
+      width: Map.get(props_map, :width, 80),
+      height: Map.get(props_map, :height, 24),
       # Use buffer from props or default to []
-      buffer: props[:buffer] || [],
-      style: props[:style] || %{}
+      buffer: Map.get(props_map, :buffer, []),
+      style: Map.get(props_map, :style, %{})
       # Initialize other relevant fields if added later
     }
   end
@@ -102,8 +105,8 @@ defmodule Raxol.UI.Components.Terminal do
     # Generate label elements
     label_elements =
       Enum.map(state.buffer, fn line_content ->
-        # Still use label macro for consistency, or build map directly
-        Raxol.View.Elements.label(content: line_content)
+        # Build label element with attrs as a map
+        %{type: :label, attrs: %{content: line_content}}
       end)
 
     # Create column element map explicitly
@@ -118,13 +121,13 @@ defmodule Raxol.UI.Components.Terminal do
     # Create box element map explicitly, using column as child
     box_element = %{
       type: :box,
-      # Ensure attrs is a Keyword list as expected by test
-      attrs: [
+      # Make attrs a map instead of keyword list
+      attrs: %{
         id: Map.get(state, :id, nil),
         width: state.width,
         height: state.height,
         style: state.style
-      ],
+      },
       # Assign the column map
       children: column_element
     }

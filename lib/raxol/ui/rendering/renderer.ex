@@ -4,7 +4,9 @@ defmodule Raxol.UI.Rendering.Renderer do
   Receives commands from the rendering pipeline and coordinates rendering actions.
   """
 
+  import Raxol.Guards
   use GenServer
+  require Raxol.Core.Runtime.Log
 
   # Public API
 

@@ -21,6 +21,8 @@ defmodule Raxol.UI.Components.Display.Progress do
   # alias Raxol.View.Style
   # alias Raxol.View.Fragment
 
+  import Raxol.Guards
+
   @behaviour Component
 
   @type props :: %{
@@ -181,7 +183,7 @@ defmodule Raxol.UI.Components.Display.Progress do
         aria_label: state.aria_label,
         tooltip: state.tooltip
       }
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Enum.reject(fn {_k, v} -> nil?(v) end)
       |> Enum.into(%{})
 
     # Elements list
@@ -336,9 +338,9 @@ defmodule Raxol.UI.Components.Display.Progress do
   end
 
   # Deep merge helper for nested maps (used for theme)
-  defp deep_merge(map1, map2) when is_map(map1) and is_map(map2) do
+  defp deep_merge(map1, map2) when map?(map1) and map?(map2) do
     Map.merge(map1, map2, fn _k, v1, v2 ->
-      if is_map(v1) and is_map(v2), do: deep_merge(v1, v2), else: v2
+      if map?(v1) and map?(v2), do: deep_merge(v1, v2), else: v2
     end)
   end
 

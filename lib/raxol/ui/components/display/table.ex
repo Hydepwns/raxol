@@ -4,6 +4,7 @@ defmodule Raxol.UI.Components.Display.Table do
   """
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
+  import Raxol.Guards
 
   # alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
@@ -332,7 +333,7 @@ defmodule Raxol.UI.Components.Display.Table do
   # Needs border calculation too if borders take space
   # Corrected: Ensure height is at least 1 if set
   # Adjust for header, ensure min 1
-  defp visible_height(%{max_height: h}) when is_integer(h) and h >= 1,
+  defp visible_height(%{max_height: h}) when integer?(h) and h >= 1,
     do: max(1, h - 1)
 
   # Minimum 1 row if height is set
@@ -348,7 +349,7 @@ defmodule Raxol.UI.Components.Display.Table do
         [] ->
           []
 
-        columns when is_list(columns) ->
+        columns when list?(columns) ->
           Enum.map(columns, fn col ->
             String.length(Map.get(col, :header, ""))
           end)
@@ -365,7 +366,7 @@ defmodule Raxol.UI.Components.Display.Table do
         [] ->
           []
 
-        data when is_list(data) ->
+        data when list?(data) ->
           Enum.reduce(data, List.duplicate(0, length(state.columns)), fn row,
                                                                          acc ->
             Enum.zip_with(acc, state.columns, fn max_width, col ->
@@ -415,10 +416,10 @@ defmodule Raxol.UI.Components.Display.Table do
   # Helper to get theme style for either Theme type
   defp get_theme_style(theme, component_type) do
     cond do
-      is_struct(theme, Raxol.UI.Theming.Theme) ->
+      struct?(theme, Raxol.UI.Theming.Theme) ->
         Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
 
-      is_map(theme) and Map.has_key?(theme, :component_styles) ->
+      map?(theme) and Map.has_key?(theme, :component_styles) ->
         Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
 
       true ->
@@ -442,7 +443,7 @@ defmodule Raxol.UI.Components.Display.Table do
     %{style | border: %{style.border | style: :double, width: 1}}
   end
 
-  defp apply_border_style(style, custom_border) when is_map(custom_border) do
+  defp apply_border_style(style, custom_border) when map?(custom_border) do
     %{style | border: Map.merge(style.border, custom_border)}
   end
 
@@ -465,7 +466,7 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   defp ensure_disabled_focused(element, state) do
-    if is_map(element) do
+    if map?(element) do
       element
       |> Map.put_new(:disabled, Map.get(state, :disabled, false))
       |> Map.put_new(:focused, Map.get(state, :focused, false))

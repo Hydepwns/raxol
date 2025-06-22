@@ -7,6 +7,7 @@ defmodule Raxol.UI.Components.Input.Button do
 
   alias Raxol.UI.Components.Base.Component
   # alias Raxol.Core.Events.Event # REMOVE ALIAS
+  import Raxol.Guards
 
   @behaviour Component
 
@@ -30,7 +31,7 @@ defmodule Raxol.UI.Components.Input.Button do
   Creates a new Button state map, applying defaults.
   Expects opts to be a Map.
   """
-  def new(opts) when is_map(opts) do
+  def new(opts) when map?(opts) do
     # Use Map.get for accessing options from the map
     id = Map.get(opts, :id, "button-#{System.unique_integer([:positive])}")
     label = Map.get(opts, :label, "Button")

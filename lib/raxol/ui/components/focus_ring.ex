@@ -15,6 +15,9 @@ defmodule Raxol.UI.Components.FocusRing do
   # Require View Elements macros
   require Raxol.View.Elements
 
+  # Import guards
+  import Raxol.Guards
+
   # Define state struct with enhanced styling options
   defstruct visible: true,
             # {x, y, width, height} of focused element
@@ -47,7 +50,7 @@ defmodule Raxol.UI.Components.FocusRing do
 
   @spec init(map()) :: %__MODULE__{}
   @impl true
-  def init(opts) when is_map(opts) do
+  def init(opts) when map?(opts) do
     # Initialize state from props, merging with defaults
     defaults = %{
       visible: true,
@@ -131,7 +134,7 @@ defmodule Raxol.UI.Components.FocusRing do
          commands}
 
       # Allow external configuration updates
-      {:configure, opts} when is_map(opts) ->
+      {:configure, opts} when map?(opts) ->
         new_state = Map.merge(state, opts)
 
         # Start animation if needed
@@ -188,7 +191,7 @@ defmodule Raxol.UI.Components.FocusRing do
   # --- Internal Render Helper ---
 
   defp render_focus_ring(state, props) do
-    if state.visible and is_tuple(state.position) do
+    if state.visible and tuple?(state.position) do
       # Extract position and apply offset
       {x, y, width, height} = state.position
       {offset_x, offset_y} = state.offset

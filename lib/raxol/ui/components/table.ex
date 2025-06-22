@@ -113,6 +113,7 @@ defmodule Raxol.UI.Components.Table do
   @doc """
   Initializes the table component with the given props.
   """
+  @impl Raxol.UI.Components.Base.Component
   def init(props) do
     id = Map.get(props, :id, :table)
     columns = Map.get(props, :columns, [])
@@ -149,6 +150,7 @@ defmodule Raxol.UI.Components.Table do
   end
 
   @spec mount(map()) :: {map(), list()}
+  @impl Raxol.UI.Components.Base.Component
   def mount(state) do
     {state, []}
   end
@@ -157,6 +159,7 @@ defmodule Raxol.UI.Components.Table do
   @doc """
   Updates the table state based on the given message.
   """
+  @impl Raxol.UI.Components.Base.Component
   def update({:filter, term}, state) do
     new_state = %{state | filter_term: term, current_page: 1, scroll_top: 0}
     {:ok, new_state}
@@ -242,6 +245,7 @@ defmodule Raxol.UI.Components.Table do
   @doc """
   Handles events for the table component.
   """
+  @impl Raxol.UI.Components.Base.Component
   def handle_event({:key, {:arrow_down, _}}, _context, state) do
     new_index = min(state.selected_row + 1, length(state.data) - 1)
     {:ok, %{state | selected_row: new_index}}
@@ -317,6 +321,7 @@ defmodule Raxol.UI.Components.Table do
   def handle_event(_event, _context, state), do: {:ok, state}
 
   @spec unmount(map()) :: map()
+  @impl Raxol.UI.Components.Base.Component
   def unmount(state) do
     state
   end
@@ -398,35 +403,37 @@ defmodule Raxol.UI.Components.Table do
     selected_row_style = Map.get(theme, :selected_row, %{bg: :blue, fg: :white})
 
     Enum.map(Enum.with_index(data), fn {row, index} ->
-      cells =
-        Enum.map(columns, fn column ->
-          value = row[column.id]
-
-          formatted =
-            if column.format, do: column.format.(value), else: to_string(value)
-
-          # Compose cell style: theme.row + column.style + selected override
-          base_style = Map.merge(row_style, Map.get(column, :style, %{}))
-
-          style =
-            if index == selected_row do
-              Map.merge(base_style, selected_row_style)
-            else
-              base_style
-            end
-
-          Raxol.Core.Renderer.View.text(
-            formatted,
-            align: column.align,
-            style: Enum.uniq(Keyword.keys(style))
-          )
-        end)
+      cells = create_cells(row, columns, index, selected_row, row_style, selected_row_style)
 
       Raxol.Core.Renderer.View.flex(
         direction: :row,
         do: cells
       )
     end)
+  end
+
+  defp create_cells(row, columns, index, selected_row, row_style, selected_row_style) do
+    Enum.map(columns, fn column ->
+      value = row[column.id]
+      formatted = if column.format, do: column.format.(value), else: to_string(value)
+      style = determine_cell_style(column, row_style, selected_row_style, index, selected_row)
+
+      Raxol.Core.Renderer.View.text(
+        formatted,
+        align: column.align,
+        style: Enum.uniq(Keyword.keys(style))
+      )
+    end)
+  end
+
+  defp determine_cell_style(column, row_style, selected_row_style, index, selected_row) do
+    base_style = Map.merge(row_style, Map.get(column, :style, %{}))
+
+    if index == selected_row do
+      Map.merge(base_style, selected_row_style)
+    else
+      base_style
+    end
   end
 
   defp create_pagination(state) do

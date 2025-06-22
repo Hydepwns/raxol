@@ -6,7 +6,9 @@ defmodule Raxol.UI.Components.CodeBlock do
   Uses HTML output from Makeup.
   """
   use Raxol.UI.Components.Base.Component
-  # Removed import Raxol.View.Elements
+
+  import Raxol.Guards
+  alias Raxol.UI.Theming.Theme
 
   @doc """
   Renders the code block.
@@ -41,8 +43,8 @@ defmodule Raxol.UI.Components.CodeBlock do
         style =
           cond do
             # Assuming Makeup.Style.style_for/1 doesn't exist or changed, use default
-            # is_atom(style_opt) -> ...
-            is_atom(style_opt) && Code.ensure_loaded?(style_opt) -> style_opt
+            # atom?(style_opt) -> ...
+            atom?(style_opt) && Code.ensure_loaded?(style_opt) -> style_opt
             # Default style
             true -> Makeup.Styles.GithubLight
           end
