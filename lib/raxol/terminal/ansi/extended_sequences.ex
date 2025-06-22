@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.ANSI.ExtendedSequences do
+  import Raxol.Guards
+
   @moduledoc """
   Handles extended ANSI sequences and provides improved integration with the screen buffer.
   This module adds support for:
@@ -207,11 +209,11 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     end
   end
 
-  defp update_style(buffer, attr, value) when is_atom(attr) do
+  defp update_style(buffer, attr, value) when atom?(attr) do
     %{buffer | default_style: Map.put(buffer.default_style, attr, value)}
   end
 
-  defp update_style(buffer, attrs, value) when is_list(attrs) do
+  defp update_style(buffer, attrs, value) when list?(attrs) do
     style = Enum.reduce(attrs, buffer.default_style, &Map.put(&2, &1, value))
     %{buffer | default_style: style}
   end

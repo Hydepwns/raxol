@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Cell do
   - Cell state
   """
 
+  import Raxol.Guards
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @typedoc """
@@ -20,14 +21,14 @@ defmodule Raxol.Terminal.Cell do
           char: String.t() | nil,
           style: TextFormatting.text_style() | nil,
           dirty: boolean(),
-          is_wide_placeholder: boolean()
+          wide_placeholder: boolean()
         }
 
   defstruct [
     :char,
     :style,
     :dirty,
-    is_wide_placeholder: false
+    wide_placeholder: false
   ]
 
   @doc """
@@ -36,7 +37,7 @@ defmodule Raxol.Terminal.Cell do
   ## Examples
 
       iex> cell = Cell.new()
-      iex> Cell.is_empty?(cell)
+      iex> Cell.empty?(cell)
       true
 
       iex> cell = Cell.new("A")
@@ -55,7 +56,7 @@ defmodule Raxol.Terminal.Cell do
       char: char || " ",
       style: style,
       dirty: true,
-      is_wide_placeholder: false
+      wide_placeholder: false
     }
   end
 
@@ -69,7 +70,7 @@ defmodule Raxol.Terminal.Cell do
       char: " ",
       style: style,
       dirty: true,
-      is_wide_placeholder: true
+      wide_placeholder: true
     }
   end
 
@@ -138,7 +139,7 @@ defmodule Raxol.Terminal.Cell do
       %{bold: true, underline: true} # Note: :bold remains, :underline added
   """
   def merge_style(%__MODULE__{} = cell, style_to_merge)
-      when is_map(style_to_merge) do
+      when map?(style_to_merge) do
     default_style = TextFormatting.new()
 
     # Iterate through the style map we want to merge in.
@@ -222,15 +223,6 @@ defmodule Raxol.Terminal.Cell do
     char == nil or char == " " or char == ""
   end
 
-  # Function expected by tests
-  @doc """
-  Checks if the cell is empty (alias for empty?/1).
-  """
-  @spec is_empty?(t()) :: boolean()
-  def is_empty?(cell) do
-    empty?(cell)
-  end
-
   @doc """
   Creates a copy of a cell with new attributes applied.
 
@@ -251,7 +243,7 @@ defmodule Raxol.Terminal.Cell do
 
   """
   def with_attributes(%__MODULE__{} = cell, attributes)
-      when is_list(attributes) do
+      when list?(attributes) do
     # Reduce the list of attribute atoms into the cell's *existing* style
     # This ensures we build upon the current style, not just defaults.
     new_style =
@@ -263,7 +255,7 @@ defmodule Raxol.Terminal.Cell do
   end
 
   def with_attributes(%__MODULE__{} = cell, attributes)
-      when is_map(attributes) do
+    when map?(attributes) do
     # When merging a map, use the refined merge_style logic
     merge_style(cell, attributes)
   end
@@ -332,7 +324,7 @@ defmodule Raxol.Terminal.Cell do
   """
   def equals?(%__MODULE__{} = cell1, %__MODULE__{} = cell2) do
     cell1.char == cell2.char && cell1.style == cell2.style &&
-      cell1.is_wide_placeholder == cell2.is_wide_placeholder
+      cell1.wide_placeholder == cell2.wide_placeholder
   end
 
   def equals?(nil, nil), do: true
@@ -341,23 +333,21 @@ defmodule Raxol.Terminal.Cell do
 
   @doc """
   Creates a Cell struct from a map representation, typically from rendering.
-  Expects a map like %{char: integer_codepoint, style: map, is_wide_placeholder: boolean | nil}.
+  Expects a map like %{char: integer_codepoint, style: map, wide_placeholder: boolean | nil}.
   Returns nil if the map is invalid.
   """
   @spec from_map(map()) :: t() | nil
   def from_map(%{char: char_code, style: style} = map)
-      when is_integer(char_code) and is_map(style) do
+      when integer?(char_code) and map?(style) do
     # Convert integer code point back to string for storing in the struct
     char_str = <<char_code::utf8>>
-    is_wide = Map.get(map, :is_wide_placeholder, false)
+    wide_placeholder = Map.get(map, :wide_placeholder, false)
 
     %__MODULE__{
       char: char_str,
-      # Assign style directly, assuming it's valid from renderer
-      # style: TextFormatting.normalize_style(style),
       style: style,
       dirty: true,
-      is_wide_placeholder: is_wide
+      wide_placeholder: wide_placeholder
     }
   end
 

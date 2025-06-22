@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.Emulator do
   This module delegates to specialized manager modules for different aspects of terminal functionality.
   """
 
+  import Raxol.Guards
+
   alias Raxol.Terminal.{
     Event.Handler,
     Buffer.Manager,
@@ -66,7 +68,8 @@ defmodule Raxol.Terminal.Emulator do
     output_buffer: "",
     style: %{},
     scrollback_limit: 1000,
-    window_title: nil
+    window_title: nil,
+    plugin_manager: nil
   ]
 
   @type t :: %__MODULE__{
@@ -86,7 +89,8 @@ defmodule Raxol.Terminal.Emulator do
           output_buffer: String.t(),
           style: map(),
           scrollback_limit: non_neg_integer(),
-          window_title: String.t() | nil
+          window_title: String.t() | nil,
+          plugin_manager: any() | nil
         }
 
   # Cursor Operations
@@ -174,46 +178,7 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec new(non_neg_integer(), non_neg_integer()) :: t()
   def new(width, height) do
-    state_pid = get_pid(Raxol.Terminal.State.Manager.start_link())
-    event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link())
-
-    buffer_pid =
-      get_pid(
-        Raxol.Terminal.Buffer.Manager.start_link(width: width, height: height)
-      )
-
-    config_pid =
-      get_pid(
-        Raxol.Terminal.Config.Manager.start_link(width: width, height: height)
-      )
-
-    command_pid = get_pid(Raxol.Terminal.Command.Manager.start_link())
-    cursor_pid = get_pid(Raxol.Terminal.Cursor.Manager.start_link())
-    window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link())
-    mode_manager_pid = get_pid(Raxol.Terminal.ModeManager.start_link([]))
-
-    # Initialize screen buffers
-    main_buffer = ScreenBuffer.new(width, height)
-    alternate_buffer = ScreenBuffer.new(width, height)
-
-    %__MODULE__{
-      state: state_pid,
-      event: event_pid,
-      buffer: buffer_pid,
-      config: config_pid,
-      command: command_pid,
-      cursor: cursor_pid,
-      window_manager: window_manager_pid,
-      mode_manager: mode_manager_pid,
-      active_buffer_type: :main,
-      main_screen_buffer: main_buffer,
-      alternate_screen_buffer: alternate_buffer,
-      width: width,
-      height: height,
-      output_buffer: "",
-      style: %{},
-      scrollback_limit: 1000
-    }
+    new(width, height, [])
   end
 
   @doc """
@@ -267,6 +232,21 @@ defmodule Raxol.Terminal.Emulator do
     }
   end
 
+  @doc """
+  Creates a new terminal emulator instance with options map.
+  """
+  @spec new(map()) :: t()
+  def new(%{width: width, height: height} = opts) do
+    plugin_manager = Map.get(opts, :plugin_manager)
+    emulator = new(width, height, [])
+
+    if plugin_manager do
+      %{emulator | plugin_manager: plugin_manager}
+    else
+      emulator
+    end
+  end
+
   defp get_pid({:ok, pid}), do: pid
   defp get_pid({:error, {:already_started, pid}}), do: pid
 
@@ -281,8 +261,11 @@ defmodule Raxol.Terminal.Emulator do
     # Handle character set commands
     emulator = handle_charset_commands(emulator, input)
 
-    # Handle ANSI sequences
-    emulator = handle_ansi_sequences(input, emulator)
+    # Handle ANSI sequences and get remaining text
+    {emulator, remaining_text} = handle_ansi_sequences(input, emulator)
+
+    # Handle remaining text input
+    emulator = handle_text_input(remaining_text, emulator)
 
     # For now, just return the emulator and empty string as expected by tests
     {emulator, ""}
@@ -290,7 +273,7 @@ defmodule Raxol.Terminal.Emulator do
 
   defp handle_charset_commands(emulator, input) do
     case get_charset_command(input) do
-      {:ok, field, value} ->
+      {field, value} ->
         %{emulator | charset_state: %{emulator.charset_state | field => value}}
 
       :no_match ->
@@ -315,7 +298,7 @@ defmodule Raxol.Terminal.Emulator do
     Map.get(charset_commands, input, :no_match)
   end
 
-  defp handle_ansi_sequences(<<>>, emulator), do: emulator
+  defp handle_ansi_sequences(<<>>, emulator), do: {emulator, <<>>}
 
   defp handle_ansi_sequences(rest, emulator) do
     case parse_ansi_sequence(rest) do
@@ -325,52 +308,205 @@ defmodule Raxol.Terminal.Emulator do
       {:dcs, remaining, _} ->
         handle_ansi_sequences(remaining, emulator)
 
-      {:csi_cursor_pos, params, remaining, _} ->
-        handle_ansi_sequences(
-          remaining,
-          handle_cursor_position(params, emulator)
-        )
-
-      {:csi_cursor_up, params, remaining, _} ->
-        handle_ansi_sequences(remaining, handle_cursor_up(params, emulator))
-
-      {:csi_cursor_down, params, remaining, _} ->
-        handle_ansi_sequences(remaining, handle_cursor_down(params, emulator))
-
-      {:csi_cursor_forward, params, remaining, _} ->
-        handle_ansi_sequences(
-          remaining,
-          handle_cursor_forward(params, emulator)
-        )
-
-      {:csi_cursor_back, params, remaining, _} ->
-        handle_ansi_sequences(remaining, handle_cursor_back(params, emulator))
-
-      {:csi_cursor_show, remaining, _} ->
-        handle_ansi_sequences(remaining, set_cursor_visible(true, emulator))
-
-      {:csi_cursor_hide, remaining, _} ->
-        handle_ansi_sequences(remaining, set_cursor_visible(false, emulator))
-
-      {:csi_clear_screen, remaining, _} ->
-        handle_ansi_sequences(remaining, clear_screen(emulator))
-
-      {:csi_clear_line, remaining, _} ->
-        handle_ansi_sequences(remaining, clear_line(emulator))
-
-      {:sgr, params, remaining, _} ->
-        handle_ansi_sequences(remaining, handle_sgr(params, emulator))
-
-      {:unknown, remaining, _} ->
-        handle_ansi_sequences(remaining, emulator)
-
       {:incomplete, _} ->
-        emulator
+        {emulator, rest}
+
+      parsed_sequence ->
+        {new_emulator, remaining} = handle_parsed_sequence(parsed_sequence, rest, emulator)
+        handle_ansi_sequences(remaining, new_emulator)
     end
   end
 
+  defp handle_parsed_sequence({:csi_cursor_pos, params, remaining, _}, _rest, emulator) do
+    {handle_cursor_position(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_cursor_up, params, remaining, _}, _rest, emulator) do
+    {handle_cursor_up(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_cursor_down, params, remaining, _}, _rest, emulator) do
+    {handle_cursor_down(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_cursor_forward, params, remaining, _}, _rest, emulator) do
+    {handle_cursor_forward(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_cursor_back, params, remaining, _}, _rest, emulator) do
+    {handle_cursor_back(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_cursor_show, remaining, _}, _rest, emulator) do
+    {set_cursor_visible(true, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_cursor_hide, remaining, _}, _rest, emulator) do
+    {set_cursor_visible(false, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_clear_screen, remaining, _}, _rest, emulator) do
+    {clear_screen(emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_clear_line, remaining, _}, _rest, emulator) do
+    {clear_line(emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_set_mode, params, remaining, _}, _rest, emulator) do
+    {handle_set_mode(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_reset_mode, params, remaining, _}, _rest, emulator) do
+    {handle_reset_mode(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_set_standard_mode, params, remaining, _}, _rest, emulator) do
+    {handle_set_standard_mode(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:csi_reset_standard_mode, params, remaining, _}, _rest, emulator) do
+    {handle_reset_standard_mode(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:esc_equals, remaining, _}, _rest, emulator) do
+    {handle_esc_equals(emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:esc_greater, remaining, _}, _rest, emulator) do
+    {handle_esc_greater(emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:sgr, params, remaining, _}, _rest, emulator) do
+    {handle_sgr(params, emulator), remaining}
+  end
+
+  defp handle_parsed_sequence({:unknown, remaining, _}, _rest, emulator) do
+    handle_ansi_sequences(remaining, emulator)
+  end
+
   defp parse_ansi_sequence(rest) do
-    parsers = [
+    case find_matching_parser(rest) do
+      nil -> {:incomplete, nil}
+      result -> result
+    end
+  end
+
+  def parse_osc(<<0x1B, 0x5D, 0x30, 0x3B, remaining::binary>>) do
+    case String.split(remaining, <<0x07>>, parts: 2) do
+      [title, rest] -> {:osc, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_osc(_), do: nil
+
+  def parse_dcs(<<0x1B, 0x50, 0x30, 0x3B, remaining::binary>>) do
+    case String.split(remaining, <<0x07>>, parts: 2) do
+      [params, rest] -> {:dcs, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_dcs(_), do: nil
+
+  def parse_csi_cursor_pos(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, <<0x48>>, parts: 2) do
+      [params, rest] -> {:csi_cursor_pos, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_cursor_pos(_), do: nil
+
+  def parse_csi_cursor_up(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, <<0x41>>, parts: 2) do
+      [params, rest] -> {:csi_cursor_up, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_cursor_up(_), do: nil
+
+  def parse_csi_cursor_down(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, <<0x42>>, parts: 2) do
+      [params, rest] -> {:csi_cursor_down, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_cursor_down(_), do: nil
+
+  def parse_csi_cursor_forward(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, <<0x43>>, parts: 2) do
+      [params, rest] -> {:csi_cursor_forward, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_cursor_forward(_), do: nil
+
+  def parse_csi_cursor_back(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, <<0x44>>, parts: 2) do
+      [params, rest] -> {:csi_cursor_back, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_cursor_back(_), do: nil
+
+  def parse_csi_cursor_show(
+         <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x68, remaining::binary>>
+       ),
+       do: {:csi_cursor_show, remaining, nil}
+
+  def parse_csi_cursor_show(_), do: nil
+
+  def parse_csi_cursor_hide(
+         <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x6C, remaining::binary>>
+       ),
+       do: {:csi_cursor_hide, remaining, nil}
+
+  def parse_csi_cursor_hide(_), do: nil
+
+  def parse_csi_clear_screen(<<0x1B, 0x5B, 0x32, 0x4A, remaining::binary>>),
+    do: {:csi_clear_screen, remaining, nil}
+
+  def parse_csi_clear_screen(_), do: nil
+
+  def parse_csi_clear_line(<<0x1B, 0x5B, 0x32, 0x4B, remaining::binary>>),
+    do: {:csi_clear_line, remaining, nil}
+
+  def parse_csi_clear_line(_), do: nil
+
+  def parse_sgr(<<0x1B, 0x5B, remaining::binary>>) do
+    # Only match if the remaining part contains 'm' and has valid SGR parameters
+    case String.split(remaining, "m", parts: 2) do
+      [params, rest] when binary?(params) and byte_size(params) > 0 ->
+        # Validate that params contains only digits, semicolons, and colons
+        if String.match?(params, ~r/^[\d;:]*$/) do
+          {:sgr, params, rest, nil}
+        else
+          nil
+        end
+      _ -> nil
+    end
+  end
+
+  def parse_sgr(_), do: nil
+
+  def parse_unknown(<<0x1B, remaining::binary>>) do
+    # Skip one character after ESC
+    case remaining do
+      <<_char, rest::binary>> -> {:unknown, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_unknown(_), do: nil
+
+  defp ansi_parsers do
+    [
       &parse_osc/1,
       &parse_dcs/1,
       &parse_csi_cursor_pos/1,
@@ -382,113 +518,20 @@ defmodule Raxol.Terminal.Emulator do
       &parse_csi_cursor_hide/1,
       &parse_csi_clear_screen/1,
       &parse_csi_clear_line/1,
+      &parse_csi_set_mode/1,
+      &parse_csi_reset_mode/1,
+      &parse_csi_set_standard_mode/1,
+      &parse_csi_reset_standard_mode/1,
+      &parse_esc_equals/1,
+      &parse_esc_greater/1,
       &parse_sgr/1,
       &parse_unknown/1
     ]
-
-    Enum.find_value(parsers, {:incomplete, nil}, & &1.(rest))
   end
 
-  defp parse_osc(<<0x1B, 0x5D, 0x30, 0x3B, remaining::binary>>) do
-    case String.split(remaining, <<0x07>>, parts: 2) do
-      [title, rest] -> {:osc, rest, nil}
-      _ -> nil
-    end
+  defp find_matching_parser(rest) do
+    Enum.find_value(ansi_parsers(), & &1.(rest))
   end
-
-  defp parse_osc(_), do: nil
-
-  defp parse_dcs(<<0x1B, 0x50, 0x30, 0x3B, remaining::binary>>) do
-    case String.split(remaining, <<0x07>>, parts: 2) do
-      [params, rest] -> {:dcs, rest, nil}
-      _ -> nil
-    end
-  end
-
-  defp parse_dcs(_), do: nil
-
-  defp parse_csi_cursor_pos(<<0x1B, 0x5B, remaining::binary>>) do
-    case String.split(remaining, <<0x48>>, parts: 2) do
-      [params, rest] -> {:csi_cursor_pos, params, rest, nil}
-      _ -> nil
-    end
-  end
-
-  defp parse_csi_cursor_pos(_), do: nil
-
-  defp parse_csi_cursor_up(<<0x1B, 0x5B, remaining::binary>>) do
-    case String.split(remaining, <<0x41>>, parts: 2) do
-      [params, rest] -> {:csi_cursor_up, params, rest, nil}
-      _ -> nil
-    end
-  end
-
-  defp parse_csi_cursor_up(_), do: nil
-
-  defp parse_csi_cursor_down(<<0x1B, 0x5B, remaining::binary>>) do
-    case String.split(remaining, <<0x42>>, parts: 2) do
-      [params, rest] -> {:csi_cursor_down, params, rest, nil}
-      _ -> nil
-    end
-  end
-
-  defp parse_csi_cursor_down(_), do: nil
-
-  defp parse_csi_cursor_forward(<<0x1B, 0x5B, remaining::binary>>) do
-    case String.split(remaining, <<0x43>>, parts: 2) do
-      [params, rest] -> {:csi_cursor_forward, params, rest, nil}
-      _ -> nil
-    end
-  end
-
-  defp parse_csi_cursor_forward(_), do: nil
-
-  defp parse_csi_cursor_back(<<0x1B, 0x5B, remaining::binary>>) do
-    case String.split(remaining, <<0x44>>, parts: 2) do
-      [params, rest] -> {:csi_cursor_back, params, rest, nil}
-      _ -> nil
-    end
-  end
-
-  defp parse_csi_cursor_back(_), do: nil
-
-  defp parse_csi_cursor_show(
-         <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x68, remaining::binary>>
-       ),
-       do: {:csi_cursor_show, remaining, nil}
-
-  defp parse_csi_cursor_show(_), do: nil
-
-  defp parse_csi_cursor_hide(
-         <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x6C, remaining::binary>>
-       ),
-       do: {:csi_cursor_hide, remaining, nil}
-
-  defp parse_csi_cursor_hide(_), do: nil
-
-  defp parse_csi_clear_screen(<<0x1B, 0x5B, 0x32, 0x4A, remaining::binary>>),
-    do: {:csi_clear_screen, remaining, nil}
-
-  defp parse_csi_clear_screen(_), do: nil
-
-  defp parse_csi_clear_line(<<0x1B, 0x5B, 0x32, 0x4B, remaining::binary>>),
-    do: {:csi_clear_line, remaining, nil}
-
-  defp parse_csi_clear_line(_), do: nil
-
-  defp parse_sgr(<<0x1B, 0x5B, remaining::binary>>) do
-    case String.split(remaining, <<0x6D>>, parts: 2) do
-      [params, rest] -> {:sgr, params, rest, nil}
-      _ -> nil
-    end
-  end
-
-  defp parse_sgr(_), do: nil
-
-  defp parse_unknown(<<_char, remaining::binary>>),
-    do: {:unknown, remaining, nil}
-
-  defp parse_unknown(_), do: nil
 
   defp handle_cursor_position(params, emulator) do
     case String.split(params, ";") do
@@ -549,8 +592,14 @@ defmodule Raxol.Terminal.Emulator do
   defp set_cursor_visible(visible, emulator) do
     mode_manager = emulator.mode_manager
 
-    if is_pid(mode_manager) do
+    if pid?(mode_manager) do
       GenServer.call(mode_manager, {:set_cursor_visible, visible})
+    end
+
+    # Also update the cursor manager
+    cursor = emulator.cursor
+    if pid?(cursor) do
+      GenServer.call(cursor, {:set_visibility, visible})
     end
 
     emulator
@@ -562,10 +611,139 @@ defmodule Raxol.Terminal.Emulator do
     emulator
   end
 
+  defp handle_set_mode(params, emulator) do
+    # Handle DEC private mode setting (CSI ?n h)
+    case parse_mode_params(params) do
+      [mode_code] ->
+        case lookup_mode(mode_code) do
+          {:ok, mode_name} ->
+            set_mode_in_manager(emulator, mode_name, true)
+          _ ->
+            emulator
+        end
+      _ ->
+        emulator
+    end
+  end
+
+  defp handle_reset_mode(params, emulator) do
+    # Handle DEC private mode resetting (CSI ?n l)
+    case parse_mode_params(params) do
+      [mode_code] ->
+        case lookup_mode(mode_code) do
+          {:ok, mode_name} ->
+            set_mode_in_manager(emulator, mode_name, false)
+          _ ->
+            emulator
+        end
+      _ ->
+        emulator
+    end
+  end
+
+  defp handle_set_standard_mode(params, emulator) do
+    # Handle standard mode setting (CSI n h)
+    case parse_mode_params(params) do
+      [mode_code] ->
+        case lookup_standard_mode(mode_code) do
+          {:ok, mode_name} ->
+            set_mode_in_manager(emulator, mode_name, true)
+          _ ->
+            emulator
+        end
+      _ ->
+        emulator
+    end
+  end
+
+  defp handle_reset_standard_mode(params, emulator) do
+    # Handle standard mode resetting (CSI n l)
+    case parse_mode_params(params) do
+      [mode_code] ->
+        case lookup_standard_mode(mode_code) do
+          {:ok, mode_name} ->
+            set_mode_in_manager(emulator, mode_name, false)
+          _ ->
+            emulator
+        end
+      _ ->
+        emulator
+    end
+  end
+
+  defp handle_esc_equals(emulator) do
+    # ESC = - Application Keypad Mode (DECKPAM)
+    set_mode_in_manager(emulator, :decckm, true)
+  end
+
+  defp handle_esc_greater(emulator) do
+    # ESC > - Normal Keypad Mode (DECKPNM)
+    set_mode_in_manager(emulator, :decckm, false)
+  end
+
+  defp parse_mode_params(params) do
+    params
+    |> String.split(";")
+    |> Enum.map(&String.trim/1)
+    |> Enum.filter(&(&1 != ""))
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  defp lookup_mode(mode_code) do
+    case Raxol.Terminal.ModeManager.lookup_private(mode_code) do
+      nil -> :error
+      mode_name -> {:ok, mode_name}
+    end
+  end
+
+  defp lookup_standard_mode(mode_code) do
+    case Raxol.Terminal.ModeManager.lookup_standard(mode_code) do
+      nil -> :error
+      mode_name -> {:ok, mode_name}
+    end
+  end
+
+  defp set_mode_in_manager(emulator, mode_name, value) do
+    mode_manager = emulator.mode_manager
+
+    if pid?(mode_manager) do
+      if value do
+        GenServer.call(mode_manager, {:set_mode, mode_name, true})
+      else
+        GenServer.call(mode_manager, {:reset_mode, mode_name})
+      end
+    end
+
+    # Handle screen buffer switching
+    emulator = handle_screen_buffer_switch(emulator, mode_name, value)
+
+    emulator
+  end
+
+  defp handle_screen_buffer_switch(emulator, :alt_screen_buffer, true) do
+    %{emulator | active_buffer_type: :alternate}
+  end
+
+  defp handle_screen_buffer_switch(emulator, :alt_screen_buffer, false) do
+    %{emulator | active_buffer_type: :main}
+  end
+
+  defp handle_screen_buffer_switch(emulator, :dec_alt_screen_save, true) do
+    %{emulator | active_buffer_type: :alternate}
+  end
+
+  defp handle_screen_buffer_switch(emulator, :dec_alt_screen_save, false) do
+    %{emulator | active_buffer_type: :main}
+  end
+
+  defp handle_screen_buffer_switch(emulator, _mode, _value) do
+    emulator
+  end
+
   defp move_cursor_to(emulator, row, col) do
     cursor = emulator.cursor
 
-    if is_pid(cursor) do
+    if pid?(cursor) do
       GenServer.call(cursor, {:set_position, row, col})
     end
 
@@ -575,7 +753,7 @@ defmodule Raxol.Terminal.Emulator do
   defp move_cursor_up(emulator, count) do
     cursor = emulator.cursor
 
-    if is_pid(cursor) do
+    if pid?(cursor) do
       GenServer.call(cursor, {:move_up, count})
     end
 
@@ -585,7 +763,7 @@ defmodule Raxol.Terminal.Emulator do
   defp move_cursor_down(emulator, count) do
     cursor = emulator.cursor
 
-    if is_pid(cursor) do
+    if pid?(cursor) do
       GenServer.call(cursor, {:move_down, count})
     end
 
@@ -595,7 +773,7 @@ defmodule Raxol.Terminal.Emulator do
   defp move_cursor_forward(emulator, count) do
     cursor = emulator.cursor
 
-    if is_pid(cursor) do
+    if pid?(cursor) do
       GenServer.call(cursor, {:move_forward, count})
     end
 
@@ -605,7 +783,7 @@ defmodule Raxol.Terminal.Emulator do
   defp move_cursor_back(emulator, count) do
     cursor = emulator.cursor
 
-    if is_pid(cursor) do
+    if pid?(cursor) do
       GenServer.call(cursor, {:move_back, count})
     end
 
@@ -701,30 +879,37 @@ defmodule Raxol.Terminal.Emulator do
 
   # Helper functions to fetch state from GenServer-based managers
   @spec get_config_struct(t()) :: any()
-  def get_config_struct(%__MODULE__{config: pid}) when is_pid(pid) do
+  def get_config_struct(%__MODULE__{config: pid}) when pid?(pid) do
     GenServer.call(pid, :get_state)
   end
 
   @spec get_window_manager_struct(t()) :: any()
   def get_window_manager_struct(%__MODULE__{window_manager: pid})
-      when is_pid(pid) do
+      when pid?(pid) do
     GenServer.call(pid, :get_state)
   end
 
-  @spec get_cursor_struct(t()) :: any()
-  def get_cursor_struct(%__MODULE__{cursor: pid}) when is_pid(pid) do
-    GenServer.call(pid, :get_state)
+  @doc """
+  Gets the cursor struct from the emulator.
+  """
+  @spec get_cursor_struct(t()) :: Cursor.t()
+  def get_cursor_struct(%__MODULE__{cursor: cursor}) when pid?(cursor) do
+    GenServer.call(cursor, :get_state)
+  end
+
+  def get_cursor_struct(%__MODULE__{cursor: cursor}) when map?(cursor) do
+    cursor
   end
 
   @spec get_mode_manager_struct(t()) :: any()
   def get_mode_manager_struct(%__MODULE__{mode_manager: pid})
-      when is_pid(pid) do
+      when pid?(pid) do
     GenServer.call(pid, :get_state)
   end
 
   # Override the delegate functions to handle PIDs properly
   def get_cursor_position(%__MODULE__{cursor: pid} = emulator)
-      when is_pid(pid) do
+      when pid?(pid) do
     cursor = get_cursor_struct(emulator)
     cursor.position
   end
@@ -733,7 +918,7 @@ defmodule Raxol.Terminal.Emulator do
     CursorOperations.get_cursor_position(emulator)
   end
 
-  def cursor_visible?(%__MODULE__{cursor: pid} = emulator) when is_pid(pid) do
+  def cursor_visible?(%__MODULE__{cursor: pid} = emulator) when pid?(pid) do
     cursor = get_cursor_struct(emulator)
     cursor.visible
   end
@@ -820,9 +1005,35 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Helper function to write text at current cursor position
-  defp write_text_at_cursor(emulator, text, style \\ %{}) do
+  defp write_text_at_cursor(emulator, text) do
     cursor = get_cursor_struct(emulator)
-    write_string(emulator, cursor.x, cursor.y, text, style)
+    {x, y} = cursor.position
+
+    # Get the active buffer
+    buffer = get_active_buffer(emulator)
+
+    # Write the text to the buffer
+    updated_buffer = ScreenBuffer.write_string(buffer, x, y, text, %{})
+
+    # Update cursor position after writing
+    new_x = x + String.length(text)
+
+    # Update the cursor through GenServer if it's a PID
+    emulator = if pid?(emulator.cursor) do
+      GenServer.call(emulator.cursor, {:update_position, new_x, y})
+      emulator
+    else
+      new_cursor = %{cursor | x: new_x, position: {new_x, y}}
+      %{emulator | cursor: new_cursor}
+    end
+
+    # Update the appropriate buffer
+    case emulator.active_buffer_type do
+      :main ->
+        %{emulator | main_screen_buffer: updated_buffer}
+      :alternate ->
+        %{emulator | alternate_screen_buffer: updated_buffer}
+    end
   end
 
   @doc """
@@ -830,39 +1041,39 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec set_mode(t(), atom()) :: t()
   def set_mode(%__MODULE__{mode_manager: pid} = emulator, mode)
-      when is_pid(pid) do
+      when pid do
     Raxol.Terminal.ModeManager.set_mode(pid, [mode])
     emulator
   end
 
   # Add helper functions for tests that expect struct access
   def get_cursor_struct_for_test(%__MODULE__{cursor: pid} = emulator)
-      when is_pid(pid) do
+      when pid?(pid) do
     get_cursor_struct(emulator)
   end
 
   def get_mode_manager_struct_for_test(
         %__MODULE__{mode_manager: pid} = emulator
       )
-      when is_pid(pid) do
+      when pid?(pid) do
     get_mode_manager_struct(emulator)
   end
 
   # Override cursor access for tests
   def get_cursor_position_struct(%__MODULE__{cursor: pid} = emulator)
-      when is_pid(pid) do
+      when pid?(pid) do
     cursor = get_cursor_struct(emulator)
     cursor.position
   end
 
   def get_cursor_visible_struct(%__MODULE__{cursor: pid} = emulator)
-      when is_pid(pid) do
+      when pid?(pid) do
     cursor = get_cursor_struct(emulator)
     cursor.visible
   end
 
   def get_mode_manager_cursor_visible(%__MODULE__{mode_manager: pid} = emulator)
-      when is_pid(pid) do
+      when pid?(pid) do
     mode_manager = get_mode_manager_struct(emulator)
     mode_manager.cursor_visible
   end
@@ -871,5 +1082,105 @@ defmodule Raxol.Terminal.Emulator do
     # Clear the current line from cursor to end
     # For now, just return emulator unchanged
     emulator
+  end
+
+  def move_cursor_down(emulator, count, _width, _height) do
+    move_cursor_down(emulator, count)
+  end
+
+  def move_cursor_left(emulator, count, _width, _height) do
+    move_cursor_back(emulator, count)
+  end
+
+  def move_cursor_right(emulator, count, _width, _height) do
+    move_cursor_forward(emulator, count)
+  end
+
+  def move_cursor_to_column(emulator, column, _width, _height) do
+    {_current_x, current_y} = get_cursor_position(emulator)
+    move_cursor_to(emulator, current_y, column)
+  end
+
+  def move_cursor_to_line_start(emulator) do
+    {_current_x, current_y} = get_cursor_position(emulator)
+    move_cursor_to(emulator, current_y, 0)
+  end
+
+  def move_cursor_up(emulator, count, _width, _height) do
+    move_cursor_up(emulator, count)
+  end
+
+  # Mode setting sequences
+  def parse_csi_set_mode(<<0x1B, 0x5B, 0x3F, remaining::binary>>) do
+    case String.split(remaining, "h", parts: 2) do
+      [params, rest] -> {:csi_set_mode, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_set_mode(_), do: nil
+
+  def parse_csi_reset_mode(<<0x1B, 0x5B, 0x3F, remaining::binary>>) do
+    case String.split(remaining, "l", parts: 2) do
+      [params, rest] -> {:csi_reset_mode, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_reset_mode(_), do: nil
+
+  # Standard mode sequences (without ?)
+  def parse_csi_set_standard_mode(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, "h", parts: 2) do
+      [params, rest] -> {:csi_set_standard_mode, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_set_standard_mode(_), do: nil
+
+  def parse_csi_reset_standard_mode(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, "l", parts: 2) do
+      [params, rest] -> {:csi_reset_standard_mode, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_reset_standard_mode(_), do: nil
+
+  # Application keypad mode sequences
+  def parse_esc_equals(<<0x1B, 0x3D, remaining::binary>>),
+    do: {:esc_equals, remaining, nil}
+
+  def parse_esc_equals(_), do: nil
+
+  def parse_esc_greater(<<0x1B, 0x3E, remaining::binary>>),
+    do: {:esc_greater, remaining, nil}
+
+  def parse_esc_greater(_), do: nil
+
+  defp handle_text_input(input, emulator) do
+    # If input contains only printable characters and no ANSI sequences, write it to buffer
+    if printable_text?(input) do
+      write_text_at_cursor(emulator, input)
+    else
+      emulator
+    end
+  end
+
+  defp printable_text?(input) do
+    String.valid?(input) and
+    String.length(input) > 0 and
+    not String.contains?(input, "\e") and
+    String.graphemes(input) |> Enum.all?(&printable_char?/1)
+  end
+
+  defp printable_char?(char) do
+    # Check if character is printable (not control characters)
+    case char do
+      <<code::utf8>> when code >= 32 and code <= 126 -> true
+      <<code::utf8>> when code >= 160 -> true  # Extended ASCII and Unicode
+      _ -> false
+    end
   end
 end

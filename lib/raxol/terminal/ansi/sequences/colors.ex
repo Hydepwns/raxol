@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.ANSI.Sequences.Colors do
+  import Raxol.Guards
+
   @moduledoc """
   ANSI Color Sequence Handler.
 
@@ -228,7 +230,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
 
   Color struct or nil if invalid format
   """
-  def parse_color(color_str) when is_binary(color_str) do
+  def parse_color(color_str) when binary?(color_str) do
     cond do
       String.starts_with?(color_str, "rgb:") ->
         parse_rgb_color(color_str)

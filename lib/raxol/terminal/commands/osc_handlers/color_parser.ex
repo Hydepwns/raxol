@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
   Handles parsing of color specifications in various formats.
   """
 
+  import Raxol.Guards
+
   @doc """
   Parses a color specification string into an RGB tuple.
   """
@@ -64,7 +66,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
 
   defp parse_rgb_decimal("rgb(" <> rest) do
     with trimmed <- String.trim_trailing(rest, ")"),
-         true <- is_binary(trimmed),
+         true <- binary?(trimmed),
          [r, g, b] <- String.split(trimmed, ","),
          {:ok, r_val} <- parse_decimal_component(r),
          {:ok, g_val} <- parse_decimal_component(g),

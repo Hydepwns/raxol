@@ -200,7 +200,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   """
   def cleanup(_io) do
     # Stop the renderer
-    UnifiedRenderer.stop()
+    UnifiedRenderer.shutdown_terminal()
 
     # Reset the state
     GenServer.call(__MODULE__, :cleanup)
@@ -208,7 +208,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   # Server Callbacks
 
-  @impl true
   def init(opts) do
     state = %__MODULE__{
       # Input state
@@ -243,7 +242,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:init_terminal, width, height, config}, _from, state) do
     # Initialize components
     {:ok, buffer_manager} =
@@ -270,7 +268,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:process_input, event}, _from, state) do
     case process_input_event(state, event) do
       {:ok, new_state, commands} ->
@@ -281,7 +278,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     end
   end
 
-  @impl true
   def handle_call({:process_output, data}, _from, state) do
     case process_output_data(state, data) do
       {:ok, new_state, commands} ->
@@ -292,33 +288,28 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     end
   end
 
-  @impl true
   def handle_call({:update_config, config}, _from, state) do
     new_state = update_io_config(state, config)
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:set_config_value, path, value}, _from, state) do
     new_config = put_in(state.config, path, value)
     new_state = update_io_config(state, new_config)
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call(:reset_config, _from, state) do
     new_config = get_default_config()
     new_state = update_io_config(state, new_config)
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:resize, width, height}, _from, state) do
     new_state = handle_resize(state, width, height)
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:set_cursor_visibility, visible}, _from, state) do
     UnifiedRenderer.set_cursor_visibility(visible)
     {:reply, :ok, state}
@@ -332,7 +323,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     {:reply, :ok, state}
   end
 
-  @impl true
   def handle_call(:cleanup, _from, state) do
     # Reset all state to initial values
     new_state = %__MODULE__{

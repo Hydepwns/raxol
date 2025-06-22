@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.InputManager do
 
   alias Raxol.Terminal.{Emulator, ParserStateManager}
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   @doc """
   Processes a single character input.
@@ -48,10 +49,10 @@ defmodule Raxol.Terminal.InputManager do
       %{key: :escape} ->
         handle_escape(emulator)
 
-      %{key: key} when is_atom(key) ->
+      %{key: key} when atom?(key) ->
         handle_special_key(emulator, key)
 
-      %{char: char} when is_integer(char) ->
+      %{char: char} when integer?(char) ->
         handle_character(emulator, char)
 
       _ ->
@@ -85,7 +86,7 @@ defmodule Raxol.Terminal.InputManager do
 
   defp handle_input_result(emulator, nil), do: {emulator, nil}
 
-  defp handle_input_result(emulator, output) when is_binary(output) do
+  defp handle_input_result(emulator, output) when binary?(output) do
     {emulator, output}
   end
 

@@ -59,15 +59,17 @@ defmodule Raxol.Terminal.Sync.System do
   end
 
   # Server Callbacks
-  @impl true
   def init(opts) do
+    # Convert keyword list to map if needed
+    opts_map = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+
     state = %{
       # sync_id => %{key => sync_entry}
       syncs: %{},
       # sync_id => sync_stats
       stats: %{},
       consistency_levels:
-        Map.get(opts, :consistency_levels, %{
+        Map.get(opts_map, :consistency_levels, %{
           split: :strong,
           window: :strong,
           tab: :eventual
@@ -77,32 +79,34 @@ defmodule Raxol.Terminal.Sync.System do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:sync, sync_id, key, value, opts}, _from, state) do
+    # Convert keyword list to map if needed
+    opts_map = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+
     consistency =
       Map.get(
-        opts,
+        opts_map,
         :consistency,
         Map.get(state.consistency_levels, sync_id, :eventual)
       )
 
     metadata = %{
-      version: System.monotonic_time(),
+      version: Map.get(opts_map, :version, System.monotonic_time()),
       timestamp: System.system_time(),
-      source: Map.get(opts, :source, "unknown"),
+      source: Map.get(opts_map, :source, "unknown"),
       consistency: consistency
     }
 
     case do_sync(state, sync_id, key, value, metadata) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
-
+      {:error, :conflict, new_state} ->
+        {:reply, {:error, :conflict}, new_state}
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
-  @impl true
   def handle_call({:get, sync_id, key}, _from, state) do
     case get_sync_entry(state, sync_id, key) do
       {:ok, entry} -> {:reply, {:ok, entry.value}, state}
@@ -110,7 +114,6 @@ defmodule Raxol.Terminal.Sync.System do
     end
   end
 
-  @impl true
   def handle_call({:get_all, sync_id}, _from, state) do
     case Map.get(state.syncs, sync_id) do
       nil -> {:reply, {:error, :not_found}, state}
@@ -118,19 +121,16 @@ defmodule Raxol.Terminal.Sync.System do
     end
   end
 
-  @impl true
   def handle_call({:delete, sync_id, key}, _from, state) do
     new_state = delete_sync_entry(state, sync_id, key)
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:clear, sync_id}, _from, state) do
     new_state = clear_sync_entries(state, sync_id)
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:stats, sync_id}, _from, state) do
     case Map.get(state.stats, sync_id) do
       nil -> {:reply, {:error, :not_found}, state}
@@ -173,8 +173,8 @@ defmodule Raxol.Terminal.Sync.System do
         {:ok, new_state}
 
       :conflict ->
-        _new_state = increment_conflict_count(state, sync_id)
-        {:error, :conflict}
+        new_state = increment_conflict_count(state, sync_id)
+        {:error, :conflict, new_state}
     end
   end
 
@@ -207,7 +207,11 @@ defmodule Raxol.Terminal.Sync.System do
   defp get_sync_entry(state, sync_id, key) do
     case Map.get(state.syncs, sync_id) do
       nil -> {:error, :not_found}
-      sync_data -> Map.fetch(sync_data, key)
+      sync_data ->
+        case Map.fetch(sync_data, key) do
+          {:ok, entry} -> {:ok, entry}
+          :error -> {:error, :not_found}
+        end
     end
   end
 

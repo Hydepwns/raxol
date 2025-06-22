@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.ANSI.TerminalState do
+  import Raxol.Guards
+
   @moduledoc """
   Manages terminal state operations for ANSI escape sequences.
   """
@@ -40,7 +42,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   Updates the state stack.
   """
   def update_state_stack(%__MODULE__{} = state, new_stack)
-      when is_list(new_stack) do
+      when list?(new_stack) do
     %{state | state_stack: new_stack}
   end
 
@@ -105,7 +107,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   Updates the current state.
   """
   def update_current_state(%__MODULE__{} = state, new_state)
-      when is_map(new_state) do
+      when map?(new_state) do
     %{state | current_state: new_state}
   end
 
@@ -158,21 +160,21 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @doc """
   Gets the count of states in the state stack.
   """
-  def count(stack) when is_list(stack) do
+  def count(stack) when list?(stack) do
     length(stack)
   end
 
   @doc """
   Checks if the state stack is empty.
   """
-  def empty?(stack) when is_list(stack) do
+  def empty?(stack) when list?(stack) do
     stack == []
   end
 
   @doc """
   Clears the terminal state stack.
   """
-  def clear_state(stack) when is_list(stack) do
+  def clear_state(stack) when list?(stack) do
     []
   end
 

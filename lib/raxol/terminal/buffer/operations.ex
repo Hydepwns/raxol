@@ -4,17 +4,17 @@ defmodule Raxol.Terminal.Buffer.Operations do
   and cursor movement.
   """
 
+  import Raxol.Guards
   @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 
   alias Raxol.Terminal.Buffer.Cell
-  alias Raxol.Terminal.Buffer.{Cursor, Queries, LineOperations}
+  alias Raxol.Terminal.Buffer.{Cursor, LineOperations}
 
-  @impl true
   @doc """
   Resizes the buffer to the specified dimensions.
   """
   def resize(buffer, rows, cols)
-      when is_list(buffer) and is_integer(rows) and is_integer(cols) do
+      when list?(buffer) and is_integer(rows) and is_integer(cols) do
     rows = max(1, rows)
     cols = max(1, cols)
     copy_and_resize_rows(buffer, rows, cols)
@@ -36,11 +36,10 @@ defmodule Raxol.Terminal.Buffer.Operations do
     )
   end
 
-  @impl true
   @doc """
   Checks if scrolling is needed and performs it if necessary.
   """
-  def maybe_scroll(buffer) when is_list(buffer) do
+  def maybe_scroll(buffer) when list?(buffer) do
     # Check if we need to scroll
     if needs_scroll?(buffer) do
       scroll_up(buffer, 1)
@@ -49,40 +48,36 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @impl true
   @doc """
   Moves the cursor to the next line, scrolling if necessary.
   """
-  def next_line(buffer) when is_list(buffer) do
+  def next_line(buffer) when list?(buffer) do
     buffer
     |> maybe_scroll()
     |> index()
   end
 
-  @impl true
   @doc """
   Moves the cursor to the previous line.
   """
-  def reverse_index(buffer) when is_list(buffer) do
+  def reverse_index(buffer) when list?(buffer) do
     # Move cursor up one line
     buffer
   end
 
-  @impl true
   @doc """
   Moves the cursor to the beginning of the next line.
   """
-  def index(buffer) when is_list(buffer) do
+  def index(buffer) when list?(buffer) do
     # Move cursor to beginning of next line
     buffer
   end
 
-  @impl true
   @doc """
   Scrolls the buffer up by the specified number of lines.
   """
   def scroll_up(buffer, lines, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(lines) and lines > 0 and
+      when list?(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Remove lines from top and add empty lines at bottom
     new_buffer =
@@ -100,12 +95,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @impl true
   @doc """
   Scrolls the buffer down by the specified number of lines.
   """
   def scroll_down(buffer, lines, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(lines) and lines > 0 and
+      when list?(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Remove lines from bottom and add empty lines at top
     new_buffer =
@@ -123,12 +117,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
     {new_buffer, new_cursor_y, cursor_x}
   end
 
-  @impl true
   @doc """
   Inserts the specified number of blank lines at the cursor position.
   """
   def insert_lines(buffer, count, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when list?(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Insert blank lines at cursor position
     new_buffer =
@@ -142,12 +135,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
     {new_buffer, cursor_y, cursor_x}
   end
 
-  @impl true
   @doc """
   Inserts the specified number of blank lines at the cursor position with scroll region.
   """
   def insert_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when list?(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
     if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
@@ -166,12 +158,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @impl true
   @doc """
   Deletes the specified number of lines at the cursor position.
   """
   def delete_lines(buffer, count, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when list?(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Delete lines at cursor position
     new_buffer =
@@ -182,12 +173,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
     {new_buffer, cursor_y, cursor_x}
   end
 
-  @impl true
   @doc """
   Deletes the specified number of lines at the cursor position with scroll region.
   """
   def delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when list?(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
     if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
@@ -203,7 +193,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @impl true
   @doc """
   Erases characters in the current line based on the mode.
   """
@@ -218,7 +207,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @impl true
   @doc """
   Erases characters in the display based on the mode.
   """
@@ -234,12 +222,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @impl true
   @doc """
   Writes a character to the buffer at the specified position.
   """
   def write_char(buffer, x, y, char, style)
-      when is_list(buffer) and is_integer(x) and is_integer(y) and
+      when list?(buffer) and is_integer(x) and is_integer(y) and
              is_binary(char) and is_map(style) do
     new_buffer =
       buffer
@@ -270,7 +257,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Inserts the specified number of blank characters at the cursor position.
   """
   def insert_chars(buffer, count)
-      when is_list(buffer) and is_integer(count) and count > 0 do
+      when list?(buffer) and is_integer(count) and count > 0 do
     # Insert blank characters at cursor position
     buffer
     |> Enum.map(fn row ->
@@ -285,7 +272,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Deletes the specified number of characters at the cursor position.
   """
   def delete_chars(buffer, count)
-      when is_list(buffer) and is_integer(count) and count > 0 do
+      when list?(buffer) and is_integer(count) and count > 0 do
     # Delete characters at cursor position
     buffer
     |> Enum.map(fn row ->
@@ -380,14 +367,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   def scroll_up(buffer, lines)
-      when is_list(buffer) and is_integer(lines) and lines > 0 do
+      when list?(buffer) and is_integer(lines) and lines > 0 do
     # Default cursor position to 0, 0 for backward compatibility
     {new_buffer, _cursor_y, _cursor_x} = scroll_up(buffer, lines, 0, 0)
     new_buffer
   end
 
   def scroll_down(buffer, lines)
-      when is_list(buffer) and is_integer(lines) and lines > 0 do
+      when list?(buffer) and is_integer(lines) and lines > 0 do
     {new_buffer, _cursor_y, _cursor_x} = scroll_down(buffer, lines, 0, 0)
     new_buffer
   end
@@ -689,7 +676,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t()
   def get_cell(buffer, x, y)
-      when is_list(buffer) and is_integer(x) and is_integer(y) do
+      when list?(buffer) and is_integer(x) and is_integer(y) do
     case get_in(buffer, [Access.at(y), Access.at(x)]) do
       nil -> Cell.new()
       cell -> cell
@@ -727,7 +714,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           Cell.t()
         ) :: ScreenBuffer.t()
-  def fill_region(buffer, x, y, width, height, cell) when is_list(buffer) do
+  def fill_region(buffer, x, y, width, height, cell) when list?(buffer) do
     buffer
     |> Enum.with_index()
     |> Enum.map(fn {row, row_y} ->

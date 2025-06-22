@@ -88,7 +88,6 @@ defmodule Raxol.Terminal.Window.Registry do
 
   # Server Callbacks
 
-  @impl true
   def init(_opts) do
     state = %{
       windows: %{},
@@ -98,7 +97,6 @@ defmodule Raxol.Terminal.Window.Registry do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:register_window, window}, _from, state) do
     window_id = UUID.uuid4()
 
@@ -111,7 +109,6 @@ defmodule Raxol.Terminal.Window.Registry do
     {:reply, {:ok, window_id}, new_state}
   end
 
-  @impl true
   def handle_call({:unregister_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -132,7 +129,6 @@ defmodule Raxol.Terminal.Window.Registry do
     end
   end
 
-  @impl true
   def handle_call({:get_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil -> {:reply, {:error, :window_not_found}, state}
@@ -140,13 +136,11 @@ defmodule Raxol.Terminal.Window.Registry do
     end
   end
 
-  @impl true
   def handle_call(:list_windows, _from, state) do
     windows = Map.values(state.windows)
     {:reply, {:ok, windows}, state}
   end
 
-  @impl true
   def handle_call({:update_window_state, window_id, new_state}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -164,7 +158,6 @@ defmodule Raxol.Terminal.Window.Registry do
     end
   end
 
-  @impl true
   def handle_call(:get_active_window, _from, state) do
     case state.active_window do
       nil ->
@@ -178,7 +171,6 @@ defmodule Raxol.Terminal.Window.Registry do
     end
   end
 
-  @impl true
   def handle_call({:set_active_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
@@ -196,7 +188,6 @@ defmodule Raxol.Terminal.Window.Registry do
     end
   end
 
-  @impl true
   def handle_call({:update_window, window_id, properties}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->

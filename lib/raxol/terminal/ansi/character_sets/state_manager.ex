@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   Manages character set state and operations.
   """
 
+  import Raxol.Guards
+
   @type charset ::
           :us_ascii
           | :dec_special_graphics
@@ -205,7 +207,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   Validates a character set state.
   Returns :ok if valid, or {:error, reason} if invalid.
   """
-  def validate_state(state) when is_map(state) do
+  def validate_state(state) when map?(state) do
     required_keys = [:active, :single_shift, :g0, :g1, :g2, :g3, :gl, :gr]
 
     case Enum.all?(required_keys, &Map.has_key?(state, &1)) do

@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Buffer.CharEditor do
+  import Raxol.Guards
+
   @moduledoc """
   Manages terminal character editing operations.
   """
@@ -8,7 +10,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Inserts a character at the current position.
   """
-  def insert_char(%Cell{} = cell, char) when is_binary(char) do
+  def insert_char(%Cell{} = cell, char) when binary?(char) do
     %{cell | char: char}
   end
 
@@ -22,14 +24,14 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Replaces a character at the current position.
   """
-  def replace_char(%Cell{} = cell, char) when is_binary(char) do
+  def replace_char(%Cell{} = cell, char) when binary?(char) do
     %{cell | char: char}
   end
 
   @doc """
   Inserts a string of characters.
   """
-  def insert_string(%Cell{} = cell, string) when is_binary(string) do
+  def insert_string(%Cell{} = cell, string) when binary?(string) do
     case String.length(string) do
       0 -> cell
       1 -> insert_char(cell, string)
@@ -41,7 +43,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   Deletes a string of characters.
   """
   def delete_string(%Cell{} = cell, length)
-      when is_integer(length) and length > 0 do
+      when integer?(length) and length > 0 do
     case length do
       1 -> delete_char(cell)
       _ -> %{cell | char: " ", width: 1}
@@ -51,7 +53,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Replaces a string of characters.
   """
-  def replace_string(%Cell{} = cell, string) when is_binary(string) do
+  def replace_string(%Cell{} = cell, string) when binary?(string) do
     case String.length(string) do
       0 -> cell
       1 -> replace_char(cell, string)
@@ -62,7 +64,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Checks if a character is a control character.
   """
-  def control_char?(char) when is_binary(char) do
+  def control_char?(char) when binary?(char) do
     case String.to_charlist(char) do
       [c] when c < 32 or c == 127 -> true
       _ -> false
@@ -72,7 +74,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Checks if a character is a printable character.
   """
-  def printable_char?(char) when is_binary(char) do
+  def printable_char?(char) when binary?(char) do
     case String.to_charlist(char) do
       [c] when c >= 32 and c != 127 -> true
       _ -> false
@@ -82,14 +84,14 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Checks if a character is a whitespace character.
   """
-  def whitespace_char?(char) when is_binary(char) do
+  def whitespace_char?(char) when binary?(char) do
     char in [" ", "\t", "\n", "\r"]
   end
 
   @doc """
   Gets the width of a character.
   """
-  def char_width(char) when is_binary(char) do
+  def char_width(char) when binary?(char) do
     case String.to_charlist(char) do
       [c] when c < 32 or c == 127 -> 0
       [c] when c < 128 -> 1
@@ -100,7 +102,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Gets the width of a string.
   """
-  def string_width(string) when is_binary(string) do
+  def string_width(string) when binary?(string) do
     string
     |> String.to_charlist()
     |> Enum.map(&char_width/1)
@@ -273,7 +275,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Writes a character at the specified position in the buffer.
   """
-  def write_char(buffer, row, col, char) when is_binary(char) do
+  def write_char(buffer, row, col, char) when binary?(char) do
     if row >= 0 and row < buffer.height and col >= 0 and col < buffer.width do
       line = Enum.at(buffer.cells, row)
       updated_line = List.replace_at(line, col, %Cell{char: char})
@@ -287,7 +289,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   @doc """
   Writes a string at the specified position in the buffer.
   """
-  def write_string(buffer, row, col, string) when is_binary(string) do
+  def write_string(buffer, row, col, string) when binary?(string) do
     if row >= 0 and row < buffer.height and col >= 0 do
       line = Enum.at(buffer.cells, row)
       updated_line = update_line_with_string(line, col, string, buffer.width)
@@ -313,12 +315,12 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   end
 
   # Add missing stubs for test compatibility
-  def erase_chars(buffer, row, col, count), do: buffer
-  def erase_chars(buffer, row, col, count, _style), do: buffer
-  def insert_chars(buffer, row, col, count), do: buffer
-  def delete_chars(buffer, row, col, count), do: buffer
-  def replace_chars(buffer, row, col, string), do: buffer
-  def replace_chars(buffer, row, col, string, _style), do: buffer
+  def erase_chars(buffer, _row, _col, _count), do: buffer
+  def erase_chars(buffer, _row, _col, _count, _style), do: buffer
+  def insert_chars(buffer, _row, _col, _count), do: buffer
+  def delete_chars(buffer, _row, _col, _count), do: buffer
+  def replace_chars(buffer, _row, _col, _string), do: buffer
+  def replace_chars(buffer, _row, _col, _string, _style), do: buffer
 
   @doc """
   Inserts a specified number of characters at the given position.

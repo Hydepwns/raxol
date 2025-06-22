@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   - Buffer compression
   """
 
+  import Raxol.Guards
   alias Raxol.Terminal.Cell
 
   @type t :: %__MODULE__{
@@ -190,7 +191,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   Trims the buffer if the new max height is smaller than the current content.
   """
   def set_max_height(%__MODULE__{} = scroll, new_max_height)
-      when is_integer(new_max_height) and new_max_height >= 0 do
+      when integer?(new_max_height) and new_max_height >= 0 do
     new_buffer =
       if length(scroll.buffer) > new_max_height do
         Enum.take(scroll.buffer, new_max_height)
@@ -235,7 +236,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   @doc """
   Adds content (multiple lines) to the scroll buffer.
   """
-  def add_content(%__MODULE__{} = scroll, content) when is_list(content) do
+  def add_content(%__MODULE__{} = scroll, content) when list?(content) do
     Enum.reduce(content, scroll, fn line, acc ->
       add_line(acc, line)
     end)

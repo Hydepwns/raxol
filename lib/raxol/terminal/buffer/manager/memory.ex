@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
       true
   """
   def within_limits?(%State{} = state) do
-    MemoryManager.is_within_limit?(state.memory_usage, state.memory_limit)
+    MemoryManager.within_limit?(state.memory_usage, state.memory_limit)
   end
 
   @doc """

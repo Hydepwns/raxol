@@ -7,6 +7,8 @@ defmodule Raxol.Terminal.Commands.Parser do
   sequence parameter strings.
   """
 
+  import Raxol.Guards
+
   @doc """
   Parses a raw parameter string buffer into a list of integers or nil values.
 
@@ -37,7 +39,7 @@ defmodule Raxol.Terminal.Commands.Parser do
 
   defp parse_single_param(""), do: nil
 
-  defp parse_single_param(param) when is_binary(param) do
+  defp parse_single_param(param) when binary?(param) do
     case String.split(param, ":", parts: 2) do
       [param] ->
         parse_int(param)

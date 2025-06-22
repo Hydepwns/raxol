@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.Font.Manager do
   @doc """
   Resets the font manager to its initial state.
   """
-  def reset(%__MODULE__{} = manager) do
+  def reset(%__MODULE__{} = _manager) do
     new()
   end
 end

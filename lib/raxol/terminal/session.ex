@@ -20,6 +20,7 @@ defmodule Raxol.Terminal.Session do
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.Session.Storage
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  import Raxol.Guards
 
   @type t :: %__MODULE__{
           id: String.t(),
@@ -173,7 +174,7 @@ defmodule Raxol.Terminal.Session do
   def count_active_sessions do
     # Guard against potential nil return or other issues
     case Raxol.Terminal.Registry.count() do
-      count when is_integer(count) and count >= 0 -> count
+      count when integer?(count) and count >= 0 -> count
       _ -> 0
     end
   end
@@ -192,7 +193,6 @@ defmodule Raxol.Terminal.Session do
 
   # Callbacks
 
-  @impl true
   def init({id, width, height, title, theme}) do
     # Create emulator with explicit dimensions
     scrollback_limit =
@@ -238,14 +238,13 @@ defmodule Raxol.Terminal.Session do
     {:ok, state}
   end
 
-  @impl true
   def handle_cast({:input, input}, state) do
     # Handle process_input with more robust pattern matching
     new_state =
       try do
         case EmulatorStruct.process_input(state.emulator, input) do
           {new_emulator, _output}
-          when is_struct(new_emulator, EmulatorStruct) ->
+          when struct?(new_emulator, EmulatorStruct) ->
             %{state | emulator: new_emulator}
 
           _ ->
@@ -258,30 +257,25 @@ defmodule Raxol.Terminal.Session do
     {:noreply, new_state}
   end
 
-  @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
   def handle_call({:update_config, config}, _from, state) do
     new_state = update_state_from_config(state, config)
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call(:save_session, _from, state) do
     result = Storage.save_session(state)
     {:reply, result, state}
   end
 
-  @impl true
   def handle_call({:set_auto_save, enabled}, _from, state) do
     new_state = %{state | auto_save: enabled}
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_info(:auto_save, state) do
     if state.auto_save do
       Task.start(fn -> Storage.save_session(state) end)

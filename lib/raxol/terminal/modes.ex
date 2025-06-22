@@ -6,6 +6,8 @@ defmodule Raxol.Terminal.Modes do
   escape sequences, and handling terminal state transitions.
   """
 
+  import Raxol.Guards
+
   @type mode :: :insert | :replace | :visual | :command | :normal
   @type mode_state :: %{mode => boolean()}
 
@@ -40,7 +42,7 @@ defmodule Raxol.Terminal.Modes do
       iex> modes.replace
       false
   """
-  def set_mode(%{} = modes, mode) when is_atom(mode) do
+  def set_mode(%{} = modes, mode) when atom?(mode) do
     # Turn off all modes first
     modes =
       Enum.reduce(modes, %{}, fn {k, _}, acc -> Map.put(acc, k, false) end)
@@ -65,7 +67,7 @@ defmodule Raxol.Terminal.Modes do
       true
   """
   @spec reset_mode(mode_state(), atom()) :: mode_state()
-  def reset_mode(%{} = modes, mode) when is_atom(mode) do
+  def reset_mode(%{} = modes, mode) when atom?(mode) do
     default_modes = new()
     # Default to false if mode unknown
     default_value = Map.get(default_modes, mode, false)
@@ -83,7 +85,7 @@ defmodule Raxol.Terminal.Modes do
       iex> Modes.active?(modes, :insert)
       false
   """
-  def active?(%{} = modes, mode) when is_atom(mode) do
+  def active?(%{} = modes, mode) when atom?(mode) do
     Map.get(modes, mode, false)
   end
 

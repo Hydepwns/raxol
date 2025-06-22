@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
               t()
 
   # --- Cell Operations ---
-  @callback is_empty?(cell :: map()) :: boolean()
+  @callback empty?(cell :: map()) :: boolean()
 
   # --- Metrics Operations ---
   @callback get_metric_value(buffer :: t(), metric :: metric()) ::

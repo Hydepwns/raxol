@@ -116,20 +116,20 @@ defmodule Raxol.Terminal.Buffer.Updater do
   defp update_cell_in_bounds(buffer, x, y, cell) do
     codepoint = get_codepoint(cell)
 
-    is_wide =
+    wide =
       CharacterHandling.get_char_width(codepoint) == 2 and
-        not cell.is_wide_placeholder
+        not cell.wide_placeholder
 
     new_cells =
       List.update_at(buffer.cells, y, fn row ->
-        update_row_with_wide_char(row, x, cell, is_wide, buffer.width)
+        update_row_with_wide_char(row, x, cell, wide, buffer.width)
       end)
 
     %{buffer | cells: new_cells}
   end
 
   defp get_codepoint(%Cell{char: char})
-       when is_binary(char) and byte_size(char) > 0 do
+    when is_binary(char) and byte_size(char) > 0 do
     hd(String.to_charlist(char))
   end
 
@@ -142,10 +142,10 @@ defmodule Raxol.Terminal.Buffer.Updater do
     32
   end
 
-  defp update_row_with_wide_char(row, x, cell, is_wide, width) do
+  defp update_row_with_wide_char(row, x, cell, wide, width) do
     row_with_primary = List.replace_at(row, x, cell)
 
-    if is_wide and x + 1 < width do
+    if wide and x + 1 < width do
       List.replace_at(
         row_with_primary,
         x + 1,

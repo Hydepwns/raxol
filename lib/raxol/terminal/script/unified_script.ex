@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   """
 
   use GenServer
+  import Raxol.Guards
   require Logger
 
   # Types
@@ -58,8 +59,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   @doc """
   Executes a script with optional arguments.
   """
-  def execute_script(script_id, args \\ []) do
-    GenServer.call(__MODULE__, {:execute_script, script_id, args})
+  def execute_script(script_id, _args \\ []) do
+    GenServer.call(__MODULE__, {:execute_script, script_id, _args})
   end
 
   @doc """
@@ -112,7 +113,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   # Server Callbacks
-  @impl true
   def init(opts) do
     state = %{
       scripts: %{},
@@ -129,7 +129,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:load_script, source, type, opts}, _from, state) do
     script_id = generate_script_id()
     script_state = load_script_state(source, type, opts)
@@ -144,7 +143,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:unload_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -156,7 +154,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:get_script_state, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -167,7 +164,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:update_script_config, script_id, config}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -180,14 +176,13 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
-  def handle_call({:execute_script, script_id, args}, _from, state) do
+  def handle_call({:execute_script, script_id, _args}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        case execute_script(script, args, state.script_timeout) do
+        case do_execute_script(script, state.script_timeout) do
           {:ok, result} ->
             new_script = %{
               script
@@ -206,7 +201,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:pause_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -223,7 +217,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:resume_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -240,7 +233,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:stop_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -257,7 +249,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:get_script_output, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -268,13 +259,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:get_scripts, opts}, _from, state) do
     scripts = filter_scripts(state.scripts, opts)
     {:reply, {:ok, scripts}, state}
   end
 
-  @impl true
   def handle_call({:export_script, script_id, path}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
@@ -291,7 +280,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  @impl true
   def handle_call({:import_script, path, opts}, _from, state) do
     case import_script_from_file(path, opts) do
       {:ok, script} ->
@@ -326,11 +314,9 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp validate_script(script) do
-    with :ok <- validate_script_type(script.type),
-         :ok <- validate_script_source(script.source),
-         :ok <- validate_script_config(script.config) do
-      :ok
-    end
+    validate_script_type(script.type) == :ok and
+    validate_script_source(script.source) == :ok and
+    validate_script_config(script.config) == :ok
   end
 
   defp validate_script_type(type)
@@ -340,19 +326,85 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   defp validate_script_type(_), do: {:error, :invalid_script_type}
 
   defp validate_script_source(source)
-       when is_binary(source) and byte_size(source) > 0,
+       when binary?(source) and byte_size(source) > 0,
        do: :ok
 
   defp validate_script_source(_), do: {:error, :invalid_script_source}
 
-  defp validate_script_config(config) when is_map(config), do: :ok
+  defp validate_script_config(config) when map?(config), do: :ok
   defp validate_script_config(_), do: {:error, :invalid_script_config}
 
-  defp execute_script(_script, args, _timeout) do
-    # TODO: Implement actual script execution based on type
-    # This is a placeholder that simulates script execution
-    Process.sleep(100)
-    {:ok, "Script executed with args: #{inspect(args)}"}
+  defp do_execute_script(script, timeout) do
+    try do
+      case script.type do
+        :elixir -> execute_elixir_script(script, timeout)
+        :lua -> execute_lua_script(script, timeout)
+        :python -> execute_python_script(script, timeout)
+        :javascript -> execute_javascript_script(script, timeout)
+      end
+    rescue
+      e ->
+        Logger.error("Script execution failed: #{inspect(e)}")
+        {:error, :execution_failed}
+    end
+  end
+
+  defp execute_elixir_script(script, timeout) do
+    # Execute Elixir code using Code.eval_string
+    case Code.eval_string(script.source) do
+      {result, _bindings} ->
+        {:ok, inspect(result)}
+      _ ->
+        {:ok, "Elixir script executed successfully"}
+    end
+  end
+
+  defp execute_lua_script(script, timeout) do
+    # Execute Lua script using Port or external Lua interpreter
+    case execute_external_script("lua", script.source, timeout) do
+      {:ok, output} -> {:ok, output}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp execute_python_script(script, timeout) do
+    # Execute Python script using Port or external Python interpreter
+    case execute_external_script("python3", script.source, timeout) do
+      {:ok, output} -> {:ok, output}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp execute_javascript_script(script, timeout) do
+    # Execute JavaScript using Node.js
+    case execute_external_script("node", script.source, timeout) do
+      {:ok, output} -> {:ok, output}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp execute_external_script(interpreter, source, timeout) do
+    # Create temporary file for script
+    temp_file = Path.join(System.tmp_dir!(), "raxol_script_#{:crypto.strong_rand_bytes(8) |> Base.encode16()}")
+
+    try do
+      # Write script to temporary file
+      File.write!(temp_file, source)
+
+      # Execute script with arguments
+      cmd = [interpreter, temp_file]
+
+      case System.cmd(interpreter, cmd,
+                     timeout: timeout, stderr_to_stdout: true) do
+        {output, 0} -> {:ok, String.trim(output)}
+        {error_output, _exit_code} -> {:error, String.trim(error_output)}
+      end
+    rescue
+      e -> {:error, "Failed to execute script: #{inspect(e)}"}
+    after
+      # Clean up temporary file
+      File.rm(temp_file)
+    end
   end
 
   defp filter_scripts(scripts, opts) do
@@ -368,27 +420,194 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp export_script_to_file(script, path) do
-    # TODO: Implement actual script export
-    # This is a placeholder that simulates script export
-    {:ok, _} = File.write(path, script.source)
-    :ok
+    try do
+      # Create directory if it doesn't exist
+      File.mkdir_p!(Path.dirname(path))
+
+      # Determine file extension based on script type
+      extension = get_script_extension(script.type)
+      script_path = if Path.extname(path) == "", do: path <> extension, else: path
+
+      # Write script source
+      File.write!(script_path, script.source)
+
+      # Create metadata file
+      metadata_path = script_path <> ".json"
+      metadata = %{
+        "name" => script.name,
+        "type" => Atom.to_string(script.type),
+        "config" => script.config,
+        "metadata" => script.metadata,
+        "exported_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+      }
+
+      File.write!(metadata_path, Jason.encode!(metadata, pretty: true))
+
+      :ok
+    rescue
+      e ->
+        Logger.error("Script export failed: #{inspect(e)}")
+        {:error, :export_failed}
+    end
+  end
+
+  defp get_script_extension(type) do
+    case type do
+      :elixir -> ".exs"
+      :lua -> ".lua"
+      :python -> ".py"
+      :javascript -> ".js"
+      _ -> ".txt"
+    end
   end
 
   defp import_script_from_file(path, opts) do
-    # TODO: Implement actual script import
-    # This is a placeholder that simulates script import
-    case File.read(path) do
-      {:ok, source} ->
-        {:ok, load_script_state(source, :elixir, opts)}
+    try do
+      # Check if path is a directory or file
+      case File.stat(path) do
+        {:ok, %{type: :directory}} ->
+          import_script_from_directory(path, opts)
+        {:ok, %{type: :regular}} ->
+          import_script_from_single_file(path, opts)
+        _ ->
+          {:error, :invalid_path}
+      end
+    rescue
+      e ->
+        Logger.error("Script import failed: #{inspect(e)}")
+        {:error, :import_failed}
+    end
+  end
 
+  defp import_script_from_directory(path, opts) do
+    case File.ls(path) do
+      {:ok, files} ->
+        case find_script_file(files) do
+          {:ok, script_file} -> load_script_with_metadata(path, script_file, opts)
+          {:error, reason} -> {:error, reason}
+        end
       {:error, reason} ->
         {:error, reason}
     end
   end
 
-  defp load_scripts_from_paths(_paths) do
-    # TODO: Implement actual script loading from paths
-    # This is a placeholder that simulates script loading
-    :ok
+  defp find_script_file(files) do
+    script_files = Enum.filter(files, &script_file?/1)
+    case script_files do
+      [script_file | _] -> {:ok, script_file}
+      [] -> {:error, :no_script_files}
+    end
+  end
+
+  defp load_script_with_metadata(path, script_file, opts) do
+    script_path = Path.join(path, script_file)
+    metadata_path = Path.join(path, script_file <> ".json")
+
+    with {:ok, source} <- File.read(script_path) do
+      metadata = load_script_metadata(metadata_path)
+      type = determine_script_type(metadata, script_file)
+      merged_opts = merge_metadata_with_opts(metadata, opts)
+      {:ok, load_script_state(source, type, merged_opts)}
+    end
+  end
+
+  defp determine_script_type(metadata, script_file) do
+    type = metadata["type"] || infer_script_type(script_file)
+    String.to_existing_atom(type)
+  end
+
+  defp merge_metadata_with_opts(metadata, opts) do
+    metadata_opts = [
+      name: metadata["name"],
+      config: metadata["config"] || %{},
+      metadata: metadata["metadata"] || %{}
+    ]
+    |> Enum.reject(fn {_key, value} -> nil?(value) end)
+
+    Keyword.merge(opts, metadata_opts)
+  end
+
+  defp import_script_from_single_file(path, opts) do
+    case File.read(path) do
+      {:ok, source} ->
+        # Determine script type from file extension
+        type = infer_script_type(path)
+        {:ok, load_script_state(source, type, opts)}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp script_file?(filename) do
+    String.ends_with?(filename, [".exs", ".lua", ".py", ".js", ".txt"])
+  end
+
+  defp load_script_metadata(metadata_path) do
+    case File.read(metadata_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, metadata} -> metadata
+          {:error, _} -> %{}
+        end
+      {:error, _} -> %{}
+    end
+  end
+
+  defp infer_script_type(filename) do
+    case Path.extname(filename) do
+      ".exs" -> :elixir
+      ".lua" -> :lua
+      ".py" -> :python
+      ".js" -> :javascript
+      _ -> :elixir
+    end
+  end
+
+  defp load_scripts_from_paths(paths) do
+    Enum.each(paths, fn path ->
+      case File.stat(path) do
+        {:ok, %{type: :directory}} ->
+          load_scripts_from_directory(path)
+        {:ok, %{type: :regular}} ->
+          load_script_from_single_file(path)
+        _ ->
+          Logger.warning("Invalid script path: #{path}")
+      end
+    end)
+  end
+
+  defp load_scripts_from_directory(path) do
+    case File.ls(path) do
+      {:ok, entries} ->
+        Enum.each(entries, &process_directory_entry(path, &1))
+      {:error, reason} ->
+        Logger.error("Failed to list directory #{path}: #{inspect(reason)}")
+    end
+  end
+
+  defp process_directory_entry(base_path, entry) do
+    entry_path = Path.join(base_path, entry)
+    case File.stat(entry_path) do
+      {:ok, %{type: :directory}} ->
+        load_scripts_from_directory(entry_path)
+      {:ok, %{type: :regular}} ->
+        load_script_from_single_file(entry_path)
+      _ ->
+        :ok
+    end
+  end
+
+  defp load_script_from_single_file(path) do
+    if script_file?(Path.basename(path)) do
+      case import_script_from_file(path, []) do
+        {:ok, script} ->
+          script_id = generate_script_id()
+          # Store in process dictionary for now, could be enhanced to use GenServer state
+          Process.put({:loaded_script, script_id}, script)
+          Logger.info("Loaded script: #{script.name} from #{path}")
+        {:error, reason} ->
+          Logger.error("Failed to load script from #{path}: #{inspect(reason)}")
+      end
+    end
   end
 end

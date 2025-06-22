@@ -65,11 +65,11 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   end
 
   # Function aliases expected by tests
-  def is_cursor_visible?(emulator) do
+  def visible?(emulator) do
     cursor_visible?(emulator)
   end
 
-  def is_cursor_blinking?(emulator) do
+  def blinking?(emulator) do
     cursor_blinking?(emulator)
   end
 end

@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.ANSI.Colors do
   Handles color parsing, setting, and management for terminal text.
   """
 
+  import Raxol.Guards
+
   @type color ::
           :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white
   @type color_mode :: :normal | :bright | :dim
@@ -13,7 +15,7 @@ defmodule Raxol.Terminal.ANSI.Colors do
   Parses a color specification into a standardized format.
   Accepts named colors, RGB values, and ANSI color codes.
   """
-  def parse_color(color) when is_atom(color) do
+  def parse_color(color) when atom?(color) do
     case color do
       :black -> {:ok, 0}
       :red -> {:ok, 1}
@@ -28,7 +30,7 @@ defmodule Raxol.Terminal.ANSI.Colors do
   end
 
   def parse_color({r, g, b})
-      when is_integer(r) and is_integer(g) and is_integer(b) do
+      when integer?(r) and integer?(g) and integer?(b) do
     if r in 0..255 and g in 0..255 and b in 0..255 do
       {:ok, {r, g, b}}
     else

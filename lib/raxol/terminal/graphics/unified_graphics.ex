@@ -119,7 +119,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   end
 
   # Server Callbacks
-  @impl true
   def init(opts) do
     state = %{
       graphics: %{},
@@ -131,7 +130,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:create_graphics, config}, _from, state) do
     graphics_id = state.next_id
 
@@ -159,12 +157,10 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     {:reply, {:ok, graphics_id}, new_state}
   end
 
-  @impl true
   def handle_call(:get_graphics, _from, state) do
     {:reply, Map.keys(state.graphics), state}
   end
 
-  @impl true
   def handle_call(:get_active_graphics, _from, state) do
     case state.active_graphics do
       nil -> {:reply, {:error, :no_active_graphics}, state}
@@ -172,7 +168,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:set_active_graphics, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
@@ -184,7 +179,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:get_graphics_state, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil -> {:reply, {:error, :graphics_not_found}, state}
@@ -192,7 +186,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:update_graphics_config, graphics_id, config}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
@@ -211,7 +204,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:render_graphics, graphics_id, data}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
@@ -247,7 +239,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:swap_buffers, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
@@ -270,7 +261,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:clear_graphics, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
@@ -288,7 +278,6 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:close_graphics, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
@@ -319,14 +308,12 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  @impl true
   def handle_call({:update_config, config}, _from, state) do
     new_config = Map.merge(state.config, config)
     new_state = %{state | config: new_config}
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call(:cleanup, _from, state) do
     # Clean up all graphics contexts
     {:reply, :ok, %{state | graphics: %{}, active_graphics: nil}}

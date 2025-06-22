@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Config.Validator do
+  import Raxol.Guards
+
   @moduledoc """
   Validates terminal configuration settings.
   """
@@ -11,7 +13,7 @@ defmodule Raxol.Terminal.Config.Validator do
   Validates a configuration update.
   """
   @spec validate_update(Config.t(), map()) :: validation_result()
-  def validate_update(_config, updates) when is_map(updates) do
+  def validate_update(_config, updates) when map?(updates) do
     with :ok <- validate_dimensions(updates),
          :ok <- validate_colors(updates),
          :ok <- validate_styles(updates),
@@ -41,7 +43,7 @@ defmodule Raxol.Terminal.Config.Validator do
   # Private validation functions
 
   defp validate_dimensions(%{width: width, height: height})
-       when is_integer(width) and is_integer(height) and width > 0 and
+       when integer?(width) and integer?(height) and width > 0 and
               height > 0 do
     :ok
   end
@@ -52,7 +54,7 @@ defmodule Raxol.Terminal.Config.Validator do
 
   defp validate_dimensions(_), do: :ok
 
-  defp validate_colors(%{colors: colors}) when is_map(colors) do
+  defp validate_colors(%{colors: colors}) when map?(colors) do
     validate_color_map(colors)
   end
 
@@ -68,7 +70,7 @@ defmodule Raxol.Terminal.Config.Validator do
   end
 
   defp validate_color_value({r, g, b})
-       when is_integer(r) and is_integer(g) and is_integer(b) and
+       when integer?(r) and integer?(g) and integer?(b) and
               r >= 0 and r <= 255 and
               g >= 0 and g <= 255 and
               b >= 0 and b <= 255 do
@@ -79,7 +81,7 @@ defmodule Raxol.Terminal.Config.Validator do
     {:error, "Invalid color value: #{inspect(value)}"}
   end
 
-  defp validate_styles(%{styles: styles}) when is_map(styles) do
+  defp validate_styles(%{styles: styles}) when map?(styles) do
     validate_style_map(styles)
   end
 
@@ -94,13 +96,13 @@ defmodule Raxol.Terminal.Config.Validator do
     end)
   end
 
-  defp validate_style_value(value) when is_boolean(value), do: :ok
-  defp validate_style_value(value) when is_atom(value), do: :ok
+  defp validate_style_value(value) when boolean?(value), do: :ok
+  defp validate_style_value(value) when atom?(value), do: :ok
 
   defp validate_style_value(value),
     do: {:error, "Invalid style value: #{inspect(value)}"}
 
-  defp validate_input(%{input: input}) when is_map(input) do
+  defp validate_input(%{input: input}) when map?(input) do
     validate_input_map(input)
   end
 
@@ -115,13 +117,13 @@ defmodule Raxol.Terminal.Config.Validator do
     end)
   end
 
-  defp validate_input_value(value) when is_boolean(value), do: :ok
-  defp validate_input_value(value) when is_atom(value), do: :ok
+  defp validate_input_value(value) when boolean?(value), do: :ok
+  defp validate_input_value(value) when atom?(value), do: :ok
 
   defp validate_input_value(value),
     do: {:error, "Invalid input value: #{inspect(value)}"}
 
-  defp validate_performance(%{performance: perf}) when is_map(perf) do
+  defp validate_performance(%{performance: perf}) when map?(perf) do
     validate_performance_map(perf)
   end
 
@@ -136,15 +138,15 @@ defmodule Raxol.Terminal.Config.Validator do
     end)
   end
 
-  defp validate_performance_value(value) when is_integer(value) and value > 0,
+  defp validate_performance_value(value) when integer?(value) and value > 0,
     do: :ok
 
-  defp validate_performance_value(value) when is_boolean(value), do: :ok
+  defp validate_performance_value(value) when boolean?(value), do: :ok
 
   defp validate_performance_value(value),
     do: {:error, "Invalid performance value: #{inspect(value)}"}
 
-  defp validate_mode(%{mode: mode}) when is_map(mode) do
+  defp validate_mode(%{mode: mode}) when map?(mode) do
     validate_mode_map(mode)
   end
 
@@ -159,8 +161,8 @@ defmodule Raxol.Terminal.Config.Validator do
     end)
   end
 
-  defp validate_mode_value(value) when is_boolean(value), do: :ok
-  defp validate_mode_value(value) when is_atom(value), do: :ok
+  defp validate_mode_value(value) when boolean?(value), do: :ok
+  defp validate_mode_value(value) when atom?(value), do: :ok
 
   defp validate_mode_value(value),
     do: {:error, "Invalid mode value: #{inspect(value)}"}

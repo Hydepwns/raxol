@@ -32,6 +32,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
+  import Raxol.Guards
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -86,17 +87,15 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Core Operations ===
 
-  @impl true
   defdelegate new(width, height, scrollback_limit \\ 1000), to: Initializer
 
-  @impl true
   def resize(buffer, new_width, new_height) do
     # Create a new ScreenBuffer with the new dimensions
     default_cell = %Raxol.Terminal.Cell{
       char: " ",
       style: nil,
       dirty: nil,
-      is_wide_placeholder: false
+      wide_placeholder: false
     }
 
     # Create new cells array with the new dimensions
@@ -125,57 +124,39 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Content Operations ===
 
-  @impl true
   def write_char(buffer, x, y, char) do
     write_char(buffer, x, y, char, buffer.default_style)
   end
 
-  @impl true
   defdelegate write_char(buffer, x, y, char, style), to: Content
 
-  @impl true
   def write_string(buffer, x, y, string),
     do: write_string(buffer, x, y, string, nil)
 
-  @impl true
   defdelegate write_string(buffer, x, y, string, style), to: Content
 
-  @impl true
   defdelegate get_char(buffer, x, y), to: Content
-  @impl true
   defdelegate get_cell(buffer, x, y), to: Content
-  @impl true
   defdelegate get_content(buffer), to: Content
-  @impl true
   defdelegate put_line(buffer, line, y), to: Content
 
   # === Eraser Operations ===
 
-  @impl true
   defdelegate clear_line(buffer, line, style \\ nil), to: Eraser
-  @impl true
   defdelegate erase_chars(buffer, count), to: Eraser
-  @impl true
   defdelegate erase_display(buffer, mode), to: Eraser
-  @impl true
   defdelegate erase_line(buffer, mode), to: Eraser
 
   # === Line Operations ===
 
-  @impl true
   defdelegate insert_lines(buffer, count), to: LineOperations
-  @impl true
   defdelegate delete_lines(buffer, count), to: LineOperations
-  @impl true
   defdelegate insert_chars(buffer, count), to: LineOperations
-  @impl true
   defdelegate delete_chars(buffer, count), to: LineOperations
-  @impl true
   defdelegate prepend_lines(buffer, lines), to: LineOperations
 
   # === Scroll Operations ===
 
-  @impl true
   def scroll_up(buffer, lines) do
     Raxol.Terminal.Commands.Scrolling.scroll_up(
       buffer,
@@ -185,7 +166,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     )
   end
 
-  @impl true
   def scroll_down(buffer, lines) do
     Raxol.Terminal.Commands.Scrolling.scroll_down(
       buffer,
@@ -222,11 +202,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Raxol.Terminal.Buffer.ScrollRegion.clear(buffer)
   end
 
-  @impl true
   defdelegate get_scroll_top(buffer), to: ScrollRegion
-  @impl true
   defdelegate get_scroll_bottom(buffer), to: ScrollRegion
-  @impl true
   def set_scroll_region(buffer, {top, bottom}) do
     Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
   end
@@ -235,154 +212,108 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Sets the scroll region with individual top and bottom parameters.
   """
   def set_scroll_region(buffer, top, bottom)
-      when is_integer(top) and is_integer(bottom) do
+      when integer?(top) and integer?(bottom) do
     Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
   end
 
   # === Dimension Operations ===
 
-  @impl true
   def get_dimensions(buffer) do
     {buffer.width, buffer.height}
   end
 
-  @impl true
   def get_width(buffer) do
     buffer.width
   end
 
-  @impl true
   def get_height(buffer) do
     buffer.height
   end
 
   # === Cursor Operations ===
 
-  @impl true
   defdelegate set_cursor_position(buffer, x, y), to: Cursor
-  @impl true
   defdelegate get_cursor_position(buffer), to: Cursor
-  @impl true
   defdelegate set_cursor_visibility(buffer, visible),
     to: Cursor,
     as: :set_visibility
 
-  @impl true
-  defdelegate is_cursor_visible?(buffer), to: Cursor, as: :is_visible?
-  @impl true
+  defdelegate cursor_visible?(buffer), to: Cursor, as: :visible?
   defdelegate set_cursor_style(buffer, style), to: Cursor, as: :set_style
-  @impl true
   defdelegate get_cursor_style(buffer), to: Cursor, as: :get_style
-  @impl true
   defdelegate set_cursor_blink(buffer, blink), to: Cursor, as: :set_blink
-  @impl true
-  defdelegate is_cursor_blinking?(buffer), to: Cursor, as: :is_blinking?
+  defdelegate cursor_blinking?(buffer), to: Cursor, as: :blinking?
 
   # === Charset Operations ===
 
-  @impl true
   defdelegate designate_charset(buffer, slot, charset),
     to: Charset,
     as: :designate
 
-  @impl true
   defdelegate get_designated_charset(buffer, slot),
     to: Charset,
     as: :get_designated
 
-  @impl true
   defdelegate invoke_g_set(buffer, slot), to: Charset
-  @impl true
   defdelegate get_current_g_set(buffer), to: Charset
-  @impl true
   defdelegate apply_single_shift(buffer, slot), to: Charset
-  @impl true
   defdelegate get_single_shift(buffer), to: Charset
-  @impl true
   defdelegate reset_charset_state(buffer), to: Charset, as: :reset
 
   # === Formatting Operations ===
 
-  @impl true
   defdelegate get_style(buffer), to: Formatting
-  @impl true
   defdelegate update_style(buffer, style), to: Formatting
-  @impl true
   defdelegate set_attribute(buffer, attribute), to: Formatting
-  @impl true
   defdelegate reset_attribute(buffer, attribute), to: Formatting
-  @impl true
   defdelegate set_foreground(buffer, color), to: Formatting
-  @impl true
   defdelegate set_background(buffer, color), to: Formatting
-  @impl true
   defdelegate reset_all_attributes(buffer), to: Formatting, as: :reset_all
-  @impl true
   defdelegate get_foreground(buffer), to: Formatting
-  @impl true
   defdelegate get_background(buffer), to: Formatting
-  @impl true
   defdelegate attribute_set?(buffer, attribute), to: Formatting
-  @impl true
   defdelegate get_set_attributes(buffer), to: Formatting
 
   # === Selection Operations ===
 
-  @impl true
   defdelegate start_selection(buffer, x, y), to: Selection, as: :start
-  @impl true
   defdelegate update_selection(buffer, x, y), to: Selection, as: :update
-  @impl true
   defdelegate get_selection(buffer), to: Selection, as: :get_text
-  @impl true
   defdelegate in_selection?(buffer, x, y), to: Selection, as: :contains?
-  @impl true
   defdelegate get_selection_boundaries(buffer),
     to: Selection,
     as: :get_boundaries
 
-  @impl true
   defdelegate get_text_in_region(buffer, start_x, start_y, end_x, end_y),
     to: Selection
 
-  @impl true
   defdelegate clear_selection(buffer), to: Selection, as: :clear
-  @impl true
   defdelegate selection_active?(buffer), to: Selection, as: :active?
-  @impl true
   defdelegate get_selection_start(buffer),
     to: Selection,
     as: :get_start_position
 
-  @impl true
   defdelegate get_selection_end(buffer), to: Selection, as: :get_end_position
 
   # === Scroll Region Operations ===
 
-  @impl true
   defdelegate clear_scroll_region(buffer), to: ScrollRegion, as: :clear
-  @impl true
   defdelegate get_scroll_region_boundaries(buffer),
     to: ScrollRegion,
     as: :get_boundaries
 
   # === Query Operations ===
 
-  @impl true
   defdelegate get_line(buffer, line_index), to: Queries
-  @impl true
   defdelegate get_cell_at(buffer, x, y), to: Queries
-  @impl true
-  defdelegate is_empty?(buffer), to: Queries
+  defdelegate empty?(buffer), to: Queries
 
   # === Scrollback Operations ===
 
-  @impl true
   defdelegate get_scroll_position(buffer), to: ScrollRegion
 
   # === Cleanup ===
 
-  @impl true
   def cleanup(_buffer), do: :ok
 
   # Higher-arity insert_lines for command handlers
@@ -431,7 +362,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def clear(buffer, style),
     do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
 
-  @impl true
   def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
     # Clear from cursor to end of line
     line = Enum.at(buffer.cells, y, [])
@@ -450,7 +380,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     %{buffer | cells: new_cells}
   end
 
-  @impl true
   def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
     # Clear from start of line to cursor
     line = Enum.at(buffer.cells, y, [])
@@ -466,7 +395,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     %{buffer | cells: new_cells}
   end
 
-  @impl true
   def erase_all(buffer) do
     %{
       buffer
@@ -612,7 +540,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   # Private helper to calculate memory usage for a grid of cells
-  defp calculate_cells_memory_usage(cells) when is_list(cells) do
+  defp calculate_cells_memory_usage(cells) when list?(cells) do
     total_cells =
       Enum.reduce(cells, 0, fn row, acc ->
         acc + length(row)
@@ -712,7 +640,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Scrolls the buffer down by the specified number of lines with additional parameters.
   """
   def scroll_down(buffer, lines, count)
-      when is_integer(lines) and is_integer(count) do
+      when integer?(lines) and integer?(count) do
     Raxol.Terminal.Commands.Scrolling.scroll_down(
       buffer,
       lines,

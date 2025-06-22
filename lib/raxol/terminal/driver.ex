@@ -47,7 +47,6 @@ defmodule Raxol.Terminal.Driver do
   @doc """
   Starts the GenServer.
   """
-  @impl true
   # Allow nil or pid
   def start_link(dispatcher_pid) do
     Raxol.Core.Runtime.Log.info(
@@ -59,7 +58,6 @@ defmodule Raxol.Terminal.Driver do
 
   # --- GenServer Callbacks ---
 
-  @impl true
   # dispatcher_pid can be nil here
   def init(dispatcher_pid) do
     Raxol.Core.Runtime.Log.info(
@@ -105,7 +103,6 @@ defmodule Raxol.Terminal.Driver do
     {:ok, state}
   end
 
-  @impl true
   def handle_info(:retry_init, %{init_retries: retries} = state)
       when retries < @max_init_retries do
     case initialize_termbox() do
@@ -123,7 +120,6 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  @impl true
   def handle_info(:retry_init, state) do
     Raxol.Core.Runtime.Log.error(
       "Failed to initialize termbox after #{@max_init_retries} attempts. Terminal features will be disabled."
@@ -132,7 +128,6 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  @impl true
   def handle_info(
         {:termbox_event, event_map},
         %{termbox_state: :initialized} = state
@@ -163,13 +158,11 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  @impl true
   def handle_info({:termbox_event, _event_map}, state) do
     # Ignore events if termbox is not initialized
     {:noreply, state}
   end
 
-  @impl true
   def handle_info({:termbox_error, reason}, state) do
     Raxol.Core.Runtime.Log.error(
       "Received termbox error: #{inspect(reason)}. Attempting recovery..."
@@ -206,7 +199,6 @@ defmodule Raxol.Terminal.Driver do
   end
 
   # --- Handle dispatcher registration ---
-  @impl true
   def handle_info({:register_dispatcher, pid}, state) when is_pid(pid) do
     Raxol.Core.Runtime.Log.info("Registering dispatcher PID: #{inspect(pid)}")
     # Send initial size event now that we have the PID
@@ -217,7 +209,6 @@ defmodule Raxol.Terminal.Driver do
   # --- Test Environment Input Simulation ---
   # This clause is only intended for use in the :test environment
   # to simulate raw input events without relying on the NIF.
-  @impl true
   def handle_info({:test_input, input_data}, %{dispatcher_pid: nil} = state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Received test input before dispatcher registration: #{inspect(input_data)}",
@@ -227,7 +218,6 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  @impl true
   def handle_info({:test_input, input_data}, state) do
     # Construct a basic event. Tests might need more specific event types later.
     # We need to parse the input_data into something the MockApp expects.
@@ -249,12 +239,10 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  @impl true
   def handle_info({:EXIT, _pid, _reason}, state) do
     {:noreply, state}
   end
 
-  @impl true
   def handle_info(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "#{__MODULE__} received unhandled message: #{inspect(unhandled_message)}",
@@ -264,7 +252,6 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  @impl true
   def terminate(_reason, %{termbox_state: :initialized} = _state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
     # Only attempt shutdown if not in test environment
@@ -277,7 +264,6 @@ defmodule Raxol.Terminal.Driver do
     :ok
   end
 
-  @impl true
   def terminate(_reason, _state) do
     Raxol.Core.Runtime.Log.info(
       "Terminal Driver terminating (not initialized)."
@@ -289,7 +275,6 @@ defmodule Raxol.Terminal.Driver do
   @doc """
   Processes a terminal title change event.
   """
-  @impl true
   def process_title_change(title, state) when is_binary(title) do
     if Mix.env() != :test and real_tty?() do
       _ = Termbox2Nif.tb_set_title(title)
@@ -301,7 +286,6 @@ defmodule Raxol.Terminal.Driver do
   @doc """
   Processes a terminal position change event.
   """
-  @impl true
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
     if Mix.env() != :test and real_tty?() do

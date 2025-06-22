@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Config.Persistence do
+  import Raxol.Guards
+
   @moduledoc """
   Handles persistence and migration of terminal configurations.
   """
@@ -97,7 +99,7 @@ defmodule Raxol.Terminal.Config.Persistence do
     Map.get(config, :version, 1)
   end
 
-  defp validate_version(version) when is_integer(version) and version > 0,
+  defp validate_version(version) when integer?(version) and version > 0,
     do: :ok
 
   defp validate_version(_), do: {:error, :invalid_version}

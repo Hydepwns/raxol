@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.CharacterSets do
   Manages character sets for the terminal emulator.
   """
 
+  import Raxol.Guards
+
   @doc """
   Creates a new character sets manager with default settings.
   """
@@ -64,7 +66,7 @@ defmodule Raxol.Terminal.CharacterSets do
   @doc """
   Sets the current character set.
   """
-  def set_current_set(manager, set_name) when is_atom(set_name) do
+  def set_current_set(manager, set_name) when atom?(set_name) do
     case Map.get(manager.sets, set_name) do
       nil -> {:error, :invalid_set}
       _set -> {:ok, %{manager | current_set: set_name}}

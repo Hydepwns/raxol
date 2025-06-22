@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Input.Processor do
+  import Raxol.Guards
+
   @moduledoc """
   Processes input events for the terminal emulator.
   """
@@ -103,7 +105,7 @@ defmodule Raxol.Terminal.Input.Processor do
         {:ok, "\e[6~"}
 
       # Regular keys
-      {char, []} when is_binary(char) and byte_size(char) == 1 ->
+      {char, []} when binary?(char) and byte_size(char) == 1 ->
         {:ok, char}
 
       # Unknown key

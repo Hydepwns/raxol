@@ -31,7 +31,6 @@ defmodule Raxol.Terminal.Split.Manager do
 
   # Server Callbacks
 
-  @impl true
   def init(_opts) do
     state = %{
       splits: %{},
@@ -42,7 +41,6 @@ defmodule Raxol.Terminal.Split.Manager do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:create_split, opts}, _from, state) do
     split_id = state.next_id
 
@@ -64,7 +62,6 @@ defmodule Raxol.Terminal.Split.Manager do
     {:reply, {:ok, split}, new_state}
   end
 
-  @impl true
   def handle_call({:resize_split, split_id, dimensions}, _from, state) do
     case Map.get(state.splits, split_id) do
       nil ->
@@ -82,7 +79,6 @@ defmodule Raxol.Terminal.Split.Manager do
     end
   end
 
-  @impl true
   def handle_call({:navigate_to_split, split_id}, _from, state) do
     case Map.get(state.splits, split_id) do
       nil ->
@@ -94,7 +90,6 @@ defmodule Raxol.Terminal.Split.Manager do
     end
   end
 
-  @impl true
   def handle_call(:list_splits, _from, state) do
     {:reply, Map.values(state.splits), state}
   end

@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   """
 
   import Bitwise
+  import Raxol.Guards
   alias Raxol.Terminal.ANSI.Monitor
 
   @type mouse_button :: :left | :middle | :right | :wheel_up | :wheel_down
@@ -175,7 +176,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
 
   defp parse_sgr_mouse_event(rest) do
     rest_str =
-      if is_binary(rest),
+      if binary?(rest),
         do: :erlang.binary_to_list(rest) |> to_string(),
         else: rest
 

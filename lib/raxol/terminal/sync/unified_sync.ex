@@ -106,7 +106,6 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
 
   # Server Callbacks
 
-  @impl true
   def init(opts) do
     consistency = Keyword.get(opts, :consistency, :strong)
 
@@ -129,7 +128,6 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:create_sync, type, opts}, _from, state) do
     sync_id = generate_sync_id()
     config = build_sync_config(opts, state.config)
@@ -151,7 +149,6 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     {:reply, {:ok, sync_id}, updated_state}
   end
 
-  @impl true
   def handle_call({:sync, sync_id, data, opts}, _from, state) do
     case Map.get(state.syncs, sync_id) do
       nil ->
@@ -177,7 +174,6 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     end
   end
 
-  @impl true
   def handle_call({:get_sync_state, sync_id}, _from, state) do
     case Map.get(state.syncs, sync_id) do
       nil ->
@@ -188,7 +184,6 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     end
   end
 
-  @impl true
   def handle_call({:resolve_conflicts, sync_id, conflicts, opts}, _from, state) do
     case Map.get(state.syncs, sync_id) do
       nil ->
@@ -220,7 +215,6 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     end
   end
 
-  @impl true
   def handle_call({:cleanup, sync_id}, _from, state) do
     case Map.get(state.syncs, sync_id) do
       nil ->

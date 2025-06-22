@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   Supports G0, G1, G2, G3 character sets and their switching operations.
   """
 
+  import Raxol.Guards
+
   alias Raxol.Terminal.ANSI.CharacterSets.{
     ASCII,
     DEC,
@@ -173,7 +175,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   """
   @spec translate_char(codepoint, charset_state()) ::
           {codepoint(), charset_state()}
-  def translate_char(codepoint, state) when is_integer(codepoint) do
+  def translate_char(codepoint, state) when integer?(codepoint) do
     result =
       Translator.translate_char(
         codepoint,
@@ -186,7 +188,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   end
 
   # Handle case where arguments are swapped (state, codepoint)
-  def translate_char(state, codepoint) when is_integer(codepoint) do
+  def translate_char(state, codepoint) when integer?(codepoint) do
     translate_char(codepoint, state)
   end
 

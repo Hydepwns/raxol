@@ -73,17 +73,14 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
 
   # Server Callbacks
 
-  @impl true
   def init(_) do
     {:ok, %__MODULE__{}}
   end
 
-  @impl true
   def handle_call(:get_scrollback_count, _from, state) do
     {:reply, state.current_lines, state}
   end
 
-  @impl true
   def handle_call({:add_line, line}, _from, state) do
     new_lines = [line | state.lines]
     new_count = min(state.current_lines + 1, state.max_lines)
@@ -97,7 +94,6 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call({:get_lines, start_line, count}, _from, state) do
     lines =
       state.lines
@@ -107,7 +103,6 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
     {:reply, lines, state}
   end
 
-  @impl true
   def handle_call(:clear, _from, state) do
     new_state = %{state | lines: [], current_lines: 0}
     {:reply, :ok, new_state}

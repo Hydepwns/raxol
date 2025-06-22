@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.Mouse.Manager do
   movement, and wheel events.
   """
 
+  import Raxol.Guards
+
   defstruct [
     :enabled,
     :mode,
@@ -108,7 +110,7 @@ defmodule Raxol.Terminal.Mouse.Manager do
   Updates the last known mouse position.
   """
   def set_position(%__MODULE__{} = manager, {x, y} = position)
-      when is_integer(x) and is_integer(y) do
+      when integer?(x) and integer?(y) do
     %{manager | last_position: position}
   end
 

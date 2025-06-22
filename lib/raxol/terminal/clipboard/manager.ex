@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   Manages clipboard operations for the terminal, including copying and pasting text.
   """
 
+  import Raxol.Guards
+
   defstruct [:content, :mode]
 
   @type t :: %__MODULE__{
@@ -30,7 +32,7 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   @doc """
   Sets the clipboard content.
   """
-  def set_content(%__MODULE__{} = manager, content) when is_binary(content) do
+  def set_content(%__MODULE__{} = manager, content) when binary?(content) do
     %{manager | content: content}
   end
 
@@ -59,14 +61,14 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   @doc """
   Appends text to the current clipboard content.
   """
-  def append(%__MODULE__{} = manager, text) when is_binary(text) do
+  def append(%__MODULE__{} = manager, text) when binary?(text) do
     %{manager | content: manager.content <> text}
   end
 
   @doc """
   Prepends text to the current clipboard content.
   """
-  def prepend(%__MODULE__{} = manager, text) when is_binary(text) do
+  def prepend(%__MODULE__{} = manager, text) when binary?(text) do
     %{manager | content: text <> manager.content}
   end
 
@@ -89,5 +91,32 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   """
   def reset(%__MODULE__{} = manager) do
     %{manager | content: "", mode: :normal}
+  end
+
+  @doc """
+  Clears the clipboard content (global function).
+  """
+  def clear do
+    # This would typically interact with the system clipboard
+    # For now, we'll just return :ok
+    :ok
+  end
+
+  @doc """
+  Copies content to the clipboard with the specified format.
+  """
+  def copy(content, format \\ :text) when binary?(content) do
+    # This would typically interact with the system clipboard
+    # For now, we'll just return :ok
+    :ok
+  end
+
+  @doc """
+  Pastes content from the clipboard with the specified format.
+  """
+  def paste(format \\ :text) do
+    # This would typically interact with the system clipboard
+    # For now, we'll return an empty string
+    ""
   end
 end

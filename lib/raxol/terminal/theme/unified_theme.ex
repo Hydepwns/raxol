@@ -92,7 +92,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   end
 
   # Server Callbacks
-  @impl true
   def init(opts) do
     state = %{
       themes: %{},
@@ -110,7 +109,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:load_theme, path, opts}, _from, state) do
     case do_load_theme(path, opts, state) do
       {:ok, theme_id, theme_state} ->
@@ -122,7 +120,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  @impl true
   def handle_call({:unload_theme, theme_id}, _from, state) do
     case do_unload_theme(theme_id, state) do
       {:ok, new_state} ->
@@ -133,7 +130,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  @impl true
   def handle_call({:get_theme_state, theme_id}, _from, state) do
     case Map.get(state.themes, theme_id) do
       nil -> {:reply, {:error, :theme_not_found}, state}
@@ -141,13 +137,11 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  @impl true
   def handle_call({:get_themes, opts}, _from, state) do
     themes = filter_themes(state.themes, opts)
     {:reply, {:ok, themes}, state}
   end
 
-  @impl true
   def handle_call({:update_theme_config, theme_id, config}, _from, state) do
     case do_update_theme_config(theme_id, config, state) do
       {:ok, new_state} ->
@@ -158,7 +152,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  @impl true
   def handle_call({:apply_theme, theme_id}, _from, state) do
     case do_apply_theme(theme_id, state) do
       {:ok, new_state} ->
@@ -169,7 +162,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  @impl true
   def handle_call({:preview_theme, theme_id}, _from, state) do
     case do_preview_theme(theme_id, state) do
       {:ok, new_state} ->
@@ -180,7 +172,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  @impl true
   def handle_call({:export_theme, theme_id, path}, _from, state) do
     case do_export_theme(theme_id, path, state) do
       {:ok, new_state} ->
@@ -191,7 +182,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  @impl true
   def handle_call({:import_theme, path}, _from, state) do
     case do_import_theme(path, state) do
       {:ok, theme_id, new_state} ->

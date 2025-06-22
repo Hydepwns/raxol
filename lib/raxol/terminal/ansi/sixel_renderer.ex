@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.ANSI.SixelRenderer do
+  import Raxol.Guards
+
   @moduledoc """
   Handles rendering Sixel graphics data from a pixel buffer.
   """
@@ -61,8 +63,8 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
 
   defp get_dimension(attrs, key, tuple_index, default) do
     cond do
-      is_map(attrs) -> Map.get(attrs, key, default)
-      is_tuple(attrs) -> elem(attrs, tuple_index)
+      map?(attrs) -> Map.get(attrs, key, default)
+      tuple?(attrs) -> elem(attrs, tuple_index)
       true -> default
     end
   end
@@ -186,12 +188,12 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
          last_char,
          repeat_count
        ) do
-    is_simple_column = map_size(column_pixels) == 1
+    simple_column? = map_size(column_pixels) == 1
 
     {current_color, current_char} =
-      get_column_values(column_pixels, is_simple_column)
+      get_column_values(column_pixels, simple_column?)
 
-    if is_simple_column and current_color == last_color and
+    if simple_column? and current_color == last_color and
          current_char == last_char do
       {acc_commands, last_color, last_char, repeat_count + 1}
     else
@@ -203,8 +205,8 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
     end
   end
 
-  defp get_column_values(column_pixels, is_simple_column) do
-    if is_simple_column do
+  defp get_column_values(column_pixels, simple_column?) do
+    if simple_column? do
       [{color, bitmask}] = Map.to_list(column_pixels)
       {color, <<bitmask + 63>>}
     else
@@ -241,7 +243,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   end
 
   defp get_palette_color(palette, index)
-       when is_integer(index) and index >= 0 and index <= 255 do
+       when integer?(index) and index >= 0 and index <= 255 do
     case Map.get(palette, index) do
       nil -> {:error, :invalid_color_index}
       color -> {:ok, color}

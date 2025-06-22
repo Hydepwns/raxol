@@ -3,6 +3,7 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
   Provides functionality for line editing operations in the terminal buffer.
   """
 
+  import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -41,7 +42,7 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
     %{buffer | cells: new_cells}
   end
 
-  def insert_lines(buffer, _row, _count, _blank_cell) when is_tuple(buffer) do
+  def insert_lines(buffer, _row, _count, _blank_cell) when tuple?(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end

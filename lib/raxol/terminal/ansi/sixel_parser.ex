@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   Handles the parsing logic for Sixel graphics data streams within a DCS sequence.
   """
 
+  import Raxol.Guards
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.ANSI.SixelPatternMap
@@ -41,7 +43,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
 
   @spec parse(binary(), ParserState.t()) ::
           {:ok, ParserState.t()} | {:error, atom()}
-  def parse(data, state) when is_binary(data) do
+  def parse(data, state) when binary?(data) do
     case data do
       <<>> -> {:ok, state}
       <<"\eP", rest::binary>> -> handle_dcs_start(rest, state)
@@ -209,7 +211,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
 
   defp handle_carriage_return(rest, state) do
     case SixelPatternMap.get_pattern(?$) do
-      pattern_int when is_integer(pattern_int) ->
+      pattern_int when integer?(pattern_int) ->
         {new_pixels, new_max_x, new_max_y} =
           generate_pixels_for_pattern(
             pattern_int,
@@ -246,7 +248,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
 
   defp handle_data_character(char_byte, remaining_data, state) do
     case SixelPatternMap.get_pattern(char_byte) do
-      pattern_int when is_integer(pattern_int) ->
+      pattern_int when integer?(pattern_int) ->
         {final_buffer, final_x, final_max_x} =
           generate_repeated_pixels(
             pattern_int,
@@ -280,8 +282,8 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   defp generate_pixels_for_pattern(pattern_int, x, y, color) do
     pixels =
       Enum.reduce(0..5, %{}, fn bit_index, acc ->
-        is_set = Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) != 0
-        if is_set, do: Map.put(acc, {x, y + bit_index}, color), else: acc
+        set? = Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) != 0
+        if set?, do: Map.put(acc, {x, y + bit_index}, color), else: acc
       end)
 
     {pixels, x, y + 5}

@@ -30,28 +30,23 @@ defmodule Raxol.Terminal.State.Manager do
 
   # Server Callbacks
 
-  @impl true
   def init(_opts) do
     {:ok, new()}
   end
 
-  @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
   def handle_call({:set_state, new_state}, _from, _state) do
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_cast({:update_state, update_fun}, state)
-      when is_function(update_fun, 1) do
+      when is_function(update_fun) do
     {:noreply, update_fun.(state)}
   end
 
-  @impl true
   def handle_info(_msg, state) do
     {:noreply, state}
   end

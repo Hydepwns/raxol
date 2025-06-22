@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Color.Manager do
   Manages terminal colors and color operations.
   """
 
+  import Raxol.Guards
+
   defstruct colors: %{
               foreground: :default,
               background: :default,
@@ -55,7 +57,7 @@ defmodule Raxol.Terminal.Color.Manager do
   @doc """
   Sets multiple colors at once.
   """
-  def set_colors(%__MODULE__{} = state, colors) when is_map(colors) do
+  def set_colors(%__MODULE__{} = state, colors) when map?(colors) do
     new_colors = Map.merge(state.colors, colors)
     %{state | colors: new_colors}
   end
@@ -70,7 +72,7 @@ defmodule Raxol.Terminal.Color.Manager do
   @doc """
   Gets a specific color by name.
   """
-  def get_color(%__MODULE__{} = state, name) when is_atom(name) do
+  def get_color(%__MODULE__{} = state, name) when atom?(name) do
     case name do
       :foreground -> state.colors.foreground
       :background -> state.colors.background
@@ -81,7 +83,7 @@ defmodule Raxol.Terminal.Color.Manager do
   @doc """
   Sets a specific color by name.
   """
-  def set_color(%__MODULE__{} = state, name, value) when is_atom(name) do
+  def set_color(%__MODULE__{} = state, name, value) when atom?(name) do
     case name do
       :foreground ->
         %{state | colors: %{state.colors | foreground: value}}
@@ -117,10 +119,10 @@ defmodule Raxol.Terminal.Color.Manager do
       :default ->
         :default
 
-      {r, g, b} when is_integer(r) and is_integer(g) and is_integer(b) ->
+      {r, g, b} when integer?(r) and integer?(g) and integer?(b) ->
         {r, g, b}
 
-      name when is_atom(name) ->
+      name when atom?(name) ->
         Map.get(state.colors.palette, name) ||
           Map.get(state.default_palette, name)
 
@@ -139,14 +141,14 @@ defmodule Raxol.Terminal.Color.Manager do
   @doc """
   Sets a custom color palette.
   """
-  def set_palette(%__MODULE__{} = state, palette) when is_map(palette) do
+  def set_palette(%__MODULE__{} = state, palette) when map?(palette) do
     %{state | colors: %{state.colors | palette: palette}}
   end
 
   @doc """
   Merges a new palette with the existing one.
   """
-  def merge_palette(%__MODULE__{} = state, palette) when is_map(palette) do
+  def merge_palette(%__MODULE__{} = state, palette) when map?(palette) do
     new_palette = Map.merge(state.colors.palette, palette)
     %{state | colors: %{state.colors | palette: new_palette}}
   end

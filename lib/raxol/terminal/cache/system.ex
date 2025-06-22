@@ -125,7 +125,6 @@ defmodule Raxol.Terminal.Cache.System do
     System.monotonic_time(:millisecond)
   end
 
-  @impl true
   def init(opts) do
     max_size = Keyword.get(opts, :max_size, 100 * 1024 * 1024)
     default_ttl = Keyword.get(opts, :default_ttl, 3600)
@@ -145,7 +144,6 @@ defmodule Raxol.Terminal.Cache.System do
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:get, namespace, key}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
@@ -156,7 +154,6 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  @impl true
   def handle_call({:put, namespace, key, value, ttl, metadata}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
@@ -201,7 +198,6 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  @impl true
   def handle_call({:invalidate, namespace, key}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
@@ -227,7 +223,6 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  @impl true
   def handle_call({:stats, namespace}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
@@ -247,7 +242,6 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  @impl true
   def handle_call({:clear, namespace}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->

@@ -40,4 +40,35 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
         {GroundState, data}
     end
   end
+
+  @doc """
+  Handles input in CSI Entry state with emulator context.
+  Returns {:continue, emulator, parser_state, input} or {:incomplete, emulator, parser_state}.
+  """
+  @spec handle(Raxol.Terminal.Emulator.t(), Raxol.Terminal.Parser.State.t(), binary()) ::
+          {:continue, Raxol.Terminal.Emulator.t(), Raxol.Terminal.Parser.State.t(), binary()}
+          | {:incomplete, Raxol.Terminal.Emulator.t(), Raxol.Terminal.Parser.State.t()}
+  def handle(emulator, parser_state, input) do
+    case input do
+      # Process each byte in the input
+      <<byte, rest::binary>> ->
+        {next_state_module, updated_data} = handle(byte, parser_state)
+
+        # Update parser state with the new state and data
+        next_parser_state = %{parser_state | state: next_state_module, params: updated_data[:params] || [], intermediates: updated_data[:intermediates] || [], final: updated_data[:final]}
+
+        case next_state_module do
+          GroundState ->
+            # Transition back to ground state
+            {:continue, emulator, next_parser_state, rest}
+          _ ->
+            # Continue with the next state
+            {:continue, emulator, next_parser_state, rest}
+        end
+
+      # Empty input - incomplete sequence
+      <<>> ->
+        {:incomplete, emulator, parser_state}
+    end
+  end
 end

@@ -3,6 +3,8 @@ defmodule Raxol.Terminal.Selection.Manager do
   Manages text selection operations in the terminal.
   """
 
+  import Raxol.Guards
+
   defstruct start_pos: nil,
             end_pos: nil,
             active: false,
@@ -32,7 +34,7 @@ defmodule Raxol.Terminal.Selection.Manager do
   Starts a new selection at the given position.
   """
   def start_selection(%__MODULE__{} = state, pos, mode \\ :normal)
-      when is_tuple(pos) and tuple_size(pos) == 2 and
+      when tuple?(pos) and tuple_size(pos) == 2 and
              mode in [:normal, :word, :line] do
     %{state | start_pos: pos, end_pos: pos, active: true, mode: mode}
   end
@@ -41,7 +43,7 @@ defmodule Raxol.Terminal.Selection.Manager do
   Updates the selection end position.
   """
   def update_selection(%__MODULE__{} = state, pos)
-      when is_tuple(pos) and tuple_size(pos) == 2 do
+      when tuple?(pos) and tuple_size(pos) == 2 do
     if state.active do
       %{state | end_pos: pos}
     else
@@ -71,7 +73,7 @@ defmodule Raxol.Terminal.Selection.Manager do
   Checks if a position is within the current selection.
   """
   def position_in_selection?(%__MODULE__{} = state, pos)
-      when is_tuple(pos) and tuple_size(pos) == 2 do
+      when tuple?(pos) and tuple_size(pos) == 2 do
     if state.active and state.start_pos and state.end_pos do
       {start_x, start_y} = state.start_pos
       {end_x, end_y} = state.end_pos

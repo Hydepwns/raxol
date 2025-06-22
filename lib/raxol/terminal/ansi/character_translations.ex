@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   Maps characters between different character sets according to ANSI standards.
   """
 
+  import Raxol.Guards
+
   require Raxol.Core.Runtime.Log
 
   # US ASCII character set (G0)
@@ -579,7 +581,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   """
   @spec translate_char(char_codepoint :: integer(), charset :: atom()) ::
           binary()
-  def translate_char(char, charset) when is_integer(char) do
+  def translate_char(char, charset) when integer?(char) do
     map = Map.get(@charset_tables, charset, %{})
     codepoint = Map.get(map, char, char)
 
@@ -602,14 +604,14 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   Handles invalid bytes gracefully by passing them through as-is.
   """
   @spec translate_string(string :: String.t(), charset :: atom()) :: String.t()
-  def translate_string(string, charset) when is_binary(string) do
+  def translate_string(string, charset) when binary?(string) do
     case :unicode.characters_to_list(string, :utf8) do
       {:ok, charlist, _} ->
         translated =
           Enum.map(charlist, fn
             # Handle [0] explicitly
             [0] -> translate_char(0, charset)
-            int when is_integer(int) -> translate_char(int, charset)
+            int when integer?(int) -> translate_char(int, charset)
             # skip non-integer (shouldn't happen)
             _ -> ""
           end)
@@ -622,7 +624,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
           Enum.map(:binary.bin_to_list(string), fn
             # Handle [0] explicitly
             [0] -> translate_char(0, charset)
-            int when is_integer(int) -> translate_char(int, charset)
+            int when integer?(int) -> translate_char(int, charset)
             # skip non-integer (shouldn't happen)
             _ -> ""
           end)
@@ -635,7 +637,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
           Enum.map(:binary.bin_to_list(string), fn
             # Handle [0] explicitly
             [0] -> translate_char(0, charset)
-            int when is_integer(int) -> translate_char(int, charset)
+            int when integer?(int) -> translate_char(int, charset)
             # skip non-integer (shouldn't happen)
             _ -> ""
           end)

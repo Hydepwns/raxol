@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.Command.Manager do
   This module is responsible for handling command parsing, validation, and execution.
   """
 
+  import Raxol.Guards
   alias Raxol.Terminal.{Emulator, Command}
   require Raxol.Core.Runtime.Log
 
@@ -104,13 +105,11 @@ defmodule Raxol.Terminal.Command.Manager do
 
   # --- Server Callbacks ---
 
-  @impl true
   def init(opts) do
     state = new(opts)
     {:ok, state}
   end
 
-  @impl true
   def handle_call({:execute_command, command}, _from, state) do
     case Map.get(state.commands, command) do
       nil ->
@@ -128,45 +127,37 @@ defmodule Raxol.Terminal.Command.Manager do
     end
   end
 
-  @impl true
   def handle_call(:get_command_history, _from, state) do
     {:reply, state.history, state}
   end
 
-  @impl true
   def handle_call(:clear_command_history, _from, state) do
     new_state = %{state | history: []}
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call(:get_current_command, _from, state) do
     {:reply, state.current_command, state}
   end
 
-  @impl true
   def handle_call({:set_current_command, command}, _from, state) do
     new_state = %{state | current_command: command}
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call(:get_command_buffer, _from, state) do
     {:reply, state.command_buffer, state}
   end
 
-  @impl true
   def handle_call(:clear_command_buffer, _from, state) do
     new_state = %{state | command_buffer: []}
     {:reply, :ok, new_state}
   end
 
-  @impl true
   def handle_call(:get_command_state, _from, state) do
     {:reply, state.command_state, state}
   end
 
-  @impl true
   def handle_call({:set_command_state, new_state}, _from, state) do
     new_state = %{state | command_state: new_state}
     {:reply, :ok, new_state}
@@ -176,14 +167,14 @@ defmodule Raxol.Terminal.Command.Manager do
   Updates the command buffer.
   """
   def update_command_buffer(%__MODULE__{} = state, new_buffer)
-      when is_binary(new_buffer) do
+      when binary?(new_buffer) do
     %{state | command_buffer: new_buffer}
   end
 
   @doc """
   Adds a command to the history.
   """
-  def add_to_history(%__MODULE__{} = state, command) when is_binary(command) do
+  def add_to_history(%__MODULE__{} = state, command) when binary?(command) do
     %{
       state
       | command_history: [command | state.command_history],
@@ -282,7 +273,7 @@ defmodule Raxol.Terminal.Command.Manager do
   Gets a command from history by index.
   """
   def get_history_command(%__MODULE__{} = state, index)
-      when is_integer(index) do
+      when integer?(index) do
     if index >= 0 and index < length(state.command_history) do
       {:ok, Enum.at(state.command_history, index)}
     else
@@ -293,7 +284,7 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Searches command history for a matching command.
   """
-  def search_history(%__MODULE__{} = state, pattern) when is_binary(pattern) do
+  def search_history(%__MODULE__{} = state, pattern) when binary?(pattern) do
     matches = Enum.filter(state.command_history, &String.contains?(&1, pattern))
     if Enum.empty?(matches), do: {:error, :not_found}, else: {:ok, matches}
   end
@@ -333,7 +324,7 @@ defmodule Raxol.Terminal.Command.Manager do
 
   # Private helper functions
 
-  defp parse_command(command) when is_binary(command) do
+  defp parse_command(command) when binary?(command) do
     # Split command into name and arguments
     [cmd | args] = String.split(command)
     {:ok, {cmd, args}}
@@ -357,4 +348,8 @@ defmodule Raxol.Terminal.Command.Manager do
     # Unknown command
     {emulator, {:error, {:unknown_command, cmd}}}
   end
+end
+
+defmodule Command.Manager do
+  def new, do: :ok
 end

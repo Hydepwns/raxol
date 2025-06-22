@@ -81,7 +81,6 @@ defmodule Raxol.Terminal.Sync.Manager do
   end
 
   # Server Callbacks
-  @impl true
   def init(opts) do
     state = %__MODULE__{
       components: %{},
@@ -91,7 +90,6 @@ defmodule Raxol.Terminal.Sync.Manager do
     {:ok, state}
   end
 
-  @impl true
   def handle_call(
         {:register_component, component_id, component_type, initial_state},
         _from,
@@ -115,7 +113,6 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  @impl true
   def handle_call({:unregister_component, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
@@ -132,7 +129,6 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  @impl true
   def handle_call(
         {:sync_state, component_id, component_type, new_state, opts},
         _from,
@@ -145,7 +141,6 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  @impl true
   def handle_call({:get_state, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil -> {:reply, {:error, :not_found}, state}
@@ -153,7 +148,6 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  @impl true
   def handle_call({:get_component_stats, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil -> {:reply, {:error, :not_found}, state}

@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   inserting and deleting lines, and other screen manipulation operations.
   """
 
+  import Raxol.Guards
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Eraser
@@ -188,7 +189,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec scroll_up_screen_command(Emulator.t(), non_neg_integer()) ::
           Emulator.t()
   def scroll_up_screen_command(emulator, count)
-      when is_integer(count) and count > 0 do
+      when integer?(count) and count > 0 do
     scrollback = emulator.scrollback_buffer || []
     buffer = emulator.main_screen_buffer
     {to_restore, remaining_scrollback} = Enum.split(scrollback, count)
@@ -207,7 +208,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   Scrolls down by moving lines from the screen buffer into the scrollback buffer.
   """
   @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
-  def scroll_down(emulator, count) when is_integer(count) and count > 0 do
+  def scroll_down(emulator, count) when integer?(count) and count > 0 do
     buffer = Emulator.get_active_buffer(emulator)
     {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
@@ -228,7 +229,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   Scrolls the screen up by the specified number of lines.
   """
   @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
-  def scroll_up(emulator, lines) when is_integer(lines) and lines > 0 do
+  def scroll_up(emulator, lines) when integer?(lines) and lines > 0 do
     buffer = Emulator.get_active_buffer(emulator)
     {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
