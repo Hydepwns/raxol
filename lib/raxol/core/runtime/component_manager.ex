@@ -12,8 +12,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   use GenServer
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
-  # Use standard Elixir UUID library
   alias UUID
   alias Raxol.Core.Runtime.Subscription
 
@@ -303,7 +303,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   defp handle_component_command(command, component_id, state) do
     case command do
-      {:subscribe, events} when is_list(events) ->
+      {:subscribe, events} when list?(events) ->
         handle_subscription_command(events, component_id, state)
 
       {:unsubscribe, sub_id} ->

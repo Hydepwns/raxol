@@ -3,6 +3,8 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
   Provides utility functions for common view operations in the Raxol view system.
   """
 
+  import Raxol.Guards
+
   @doc """
   Normalizes spacing values for padding and margin.
   Accepts various input formats and converts them to a standardized format.
@@ -13,7 +15,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       normalize_spacing({10, 20})    # {10, 20, 10, 20}
       normalize_spacing({1, 2, 3, 4}) # {1, 2, 3, 4}
   """
-  def normalize_spacing(spacing) when is_integer(spacing) do
+  def normalize_spacing(spacing) when integer?(spacing) do
     {spacing, spacing, spacing, spacing}
   end
 
@@ -60,7 +62,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
 
   defp apply_foreground(text, nil), do: text
 
-  defp apply_foreground(text, color) when is_atom(color) do
+  defp apply_foreground(text, color) when atom?(color) do
     code = color_to_code(color)
     "\e[38;5;#{code}m#{text}\e[39m"
   end
@@ -71,7 +73,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
 
   defp apply_background(text, nil), do: text
 
-  defp apply_background(text, color) when is_atom(color) do
+  defp apply_background(text, color) when atom?(color) do
     code = color_to_code(color)
     "\e[48;5;#{code}m#{text}\e[49m"
   end
@@ -84,26 +86,26 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
   Converts a color name to its ANSI color code.
   """
   def color_to_code(color) do
-    case color do
-      :black -> 0
-      :red -> 1
-      :green -> 2
-      :yellow -> 3
-      :blue -> 4
-      :magenta -> 5
-      :cyan -> 6
-      :white -> 7
-      :bright_black -> 8
-      :bright_red -> 9
-      :bright_green -> 10
-      :bright_yellow -> 11
-      :bright_blue -> 12
-      :bright_magenta -> 13
-      :bright_cyan -> 14
-      :bright_white -> 15
-      # Default to white
-      _ -> 7
-    end
+    color_codes = %{
+      black: 0,
+      red: 1,
+      green: 2,
+      yellow: 3,
+      blue: 4,
+      magenta: 5,
+      cyan: 6,
+      white: 7,
+      bright_black: 8,
+      bright_red: 9,
+      bright_green: 10,
+      bright_yellow: 11,
+      bright_blue: 12,
+      bright_magenta: 13,
+      bright_cyan: 14,
+      bright_white: 15
+    }
+
+    Map.get(color_codes, color, 7) # Default to white
   end
 
   @doc """

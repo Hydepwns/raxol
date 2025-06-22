@@ -3,6 +3,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Handles plugin command registration and dispatch for the Plugin Manager.
   """
 
+  import Raxol.Guards
+
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
 
   require Raxol.Core.Runtime.Log
@@ -14,14 +16,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     # Normalize command name: trim whitespace and downcase
     processed_command_name =
       command_name
-      |> (fn name -> if is_atom(name), do: Atom.to_string(name), else: name end).()
+      |> (fn name -> if atom?(name), do: Atom.to_string(name), else: name end).()
       |> String.trim()
       |> String.downcase()
 
     # Namespace is optional (pass nil for global search or specific module)
     namespace_module =
       cond do
-        is_binary(namespace) ->
+        binary?(namespace) ->
           try do
             String.to_existing_atom(namespace)
           rescue
@@ -35,7 +37,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
               nil
           end
 
-        is_atom(namespace) ->
+        atom?(namespace) ->
           namespace
 
         true ->
@@ -68,7 +70,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   end
 
   defp process_commands(plugin_module, commands, command_table)
-       when is_list(commands) do
+       when list?(commands) do
     Enum.reduce(
       commands,
       command_table,
@@ -82,7 +84,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   end
 
   defp register_command(plugin_module, {name, function, arity}, acc)
-       when is_atom(name) and is_atom(function) and is_integer(arity) and
+       when atom?(name) and atom?(function) and integer?(arity) and
               arity >= 0 do
     name_str = Atom.to_string(name) |> String.trim() |> String.downcase()
 
@@ -111,7 +113,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
            function,
            arity
          ) do
-      new_table when is_map(new_table) -> new_table
+      new_table when map?(new_table) -> new_table
       _ -> acc
     end
   end
@@ -191,10 +193,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   defp execute_command(handler, args, plugin_state) do
     case with_timeout(fn -> handler.(args, plugin_state) end, 5000) do
-      {:ok, new_state, result} when is_map(new_state) ->
+      {:ok, new_state, result} when map?(new_state) ->
         {:ok, new_state, result}
 
-      {:error, reason, new_state} when is_map(new_state) ->
+      {:error, reason, new_state} when map?(new_state) ->
         {:error, reason, new_state}
 
       {:error, {:exception, error}} ->
@@ -227,13 +229,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   """
   def validate_command_args(args) do
     cond do
-      is_nil(args) ->
+      nil?(args) ->
         {:error, :invalid_args}
 
-      not is_list(args) ->
+      not list?(args) ->
         {:error, :invalid_args}
 
-      Enum.any?(args, &(not is_binary(&1) and not is_number(&1))) ->
+      Enum.any?(args, &(not binary?(&1) and not number?(&1))) ->
         {:error, :invalid_args}
 
       true ->

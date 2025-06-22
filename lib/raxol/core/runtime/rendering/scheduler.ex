@@ -4,7 +4,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   """
 
   use GenServer
-
+  import Raxol.Guards
   alias Raxol.Core.Runtime.Rendering.Engine
 
   defmodule State do
@@ -35,7 +35,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
     GenServer.cast(__MODULE__, :disable)
   end
 
-  def set_interval(ms) when is_integer(ms) and ms > 0 do
+  def set_interval(ms) when integer?(ms) and ms > 0 do
     GenServer.cast(__MODULE__, {:set_interval, ms})
   end
 
@@ -85,15 +85,6 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   # Ignore tick if disabled
   def handle_info(:render_tick, state), do: {:noreply, state}
 
-  # --- Private Helpers ---
-
-  defp schedule_render_tick(%State{interval_ms: ms} = state) do
-    # We can't cancel the timer, but we can ignore its message
-    timer_id = System.unique_integer([:positive])
-    Process.send_after(self(), {:render_tick, timer_id}, ms)
-    %{state | timer_id: timer_id}
-  end
-
   @impl true
   def handle_info(
         {:render_tick, timer_id},
@@ -105,4 +96,13 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   end
 
   def handle_info({:render_tick, _other_id}, state), do: {:noreply, state}
+
+  # --- Private Helpers ---
+
+  defp schedule_render_tick(%State{interval_ms: ms} = state) do
+    # We can't cancel the timer, but we can ignore its message
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:render_tick, timer_id}, ms)
+    %{state | timer_id: timer_id}
+  end
 end

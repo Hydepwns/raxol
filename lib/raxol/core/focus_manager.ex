@@ -1,4 +1,6 @@
 defmodule Raxol.Core.FocusManager do
+  import Raxol.Guards
+
   @behaviour Raxol.Core.FocusManager.Behaviour
   @moduledoc """
   Focus management system for Raxol terminal UI applications.
@@ -112,7 +114,7 @@ defmodule Raxol.Core.FocusManager do
   def set_initial_focus(component_id) do
     focus_state = get_focus_state()
 
-    if not is_map_key(focus_state, :active_element) ||
+    if not map_key?(focus_state, :active_element) ||
          focus_state.active_element != component_id do
       set_focus(component_id)
     else
@@ -412,7 +414,7 @@ defmodule Raxol.Core.FocusManager do
     history = focus_state[:focus_history] || []
 
     case history do
-      [prev | rest] when is_binary(prev) ->
+      [prev | rest] when binary?(prev) ->
         # Update focus state
         updated_focus_state = %{
           active_element: prev,
@@ -484,7 +486,7 @@ defmodule Raxol.Core.FocusManager do
   @spec register_focus_change_handler((String.t() | nil, String.t() | nil ->
                                          any())) :: :ok
   def register_focus_change_handler(handler_fun)
-      when is_function(handler_fun, 2) do
+      when function?(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])
     updated_handlers = [handler_fun | handlers]
     Process.put(:focus_manager_change_handlers, updated_handlers)
@@ -499,7 +501,7 @@ defmodule Raxol.Core.FocusManager do
   @spec unregister_focus_change_handler((String.t() | nil, String.t() | nil ->
                                            any())) :: :ok
   def unregister_focus_change_handler(handler_fun)
-      when is_function(handler_fun, 2) do
+      when function?(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])
     updated_handlers = List.delete(handlers, handler_fun)
     Process.put(:focus_manager_change_handlers, updated_handlers)
@@ -617,13 +619,7 @@ defmodule Raxol.Core.FocusManager do
       focusables
       |> Enum.map(fn {group, components} ->
         updated_components =
-          Enum.map(components, fn component ->
-            if component.id == component_id do
-              Map.put(component, field, value)
-            else
-              component
-            end
-          end)
+          Enum.map(components, &update_component_if_match(&1, component_id, field, value))
 
         {group, updated_components}
       end)
@@ -631,6 +627,10 @@ defmodule Raxol.Core.FocusManager do
 
     Process.put(:focus_manager_focusables, updated_focusables)
     :ok
+  end
+
+  defp update_component_if_match(component, component_id, field, value) do
+    if component.id == component_id, do: Map.put(component, field, value), else: component
   end
 
   defp announce_focus_change(message) do

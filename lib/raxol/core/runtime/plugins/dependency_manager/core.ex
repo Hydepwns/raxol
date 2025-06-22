@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
+  import Raxol.Guards
+
   @moduledoc """
   Core module for managing plugin dependencies and dependency resolution.
   Provides the main public API for dependency checking and load order resolution.
@@ -67,7 +69,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     Enum.group_by(dependencies, fn
       {dep_id, _ver_req} -> dep_id
       {dep_id, _ver_req, _opts} -> dep_id
-      dep_id when is_binary(dep_id) -> dep_id
+      dep_id when binary?(dep_id) -> dep_id
     end)
   end
 
@@ -168,7 +170,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     handle_plugin_dependency(dep_id, version_req, loaded_plugins, acc)
   end
 
-  defp process_dependency(dep_id, loaded_plugins, acc) when is_binary(dep_id) do
+  defp process_dependency(dep_id, loaded_plugins, acc) when binary?(dep_id) do
     if Map.has_key?(loaded_plugins, dep_id) do
       acc
     else
@@ -317,7 +319,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
       nil ->
         update_acc(acc, 0, dep_id)
 
-      plugin when is_map(plugin) ->
+      plugin when map?(plugin) ->
         handle_plugin_version(plugin, dep_id, version_req, acc)
 
       _ ->
@@ -368,7 +370,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
           Enum.map(dependencies, fn
             {dep_id, _ver_req} -> dep_id
             {dep_id, _ver_req, _opts} -> dep_id
-            dep_id when is_binary(dep_id) -> dep_id
+            dep_id when binary?(dep_id) -> dep_id
           end)
 
         {:ok, resolved}
@@ -393,9 +395,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   """
   def validate_dependencies(dependencies) do
     case Enum.find(dependencies, fn
-           {dep_id, _ver_req} when is_binary(dep_id) -> false
-           {dep_id, _ver_req, _opts} when is_binary(dep_id) -> false
-           dep_id when is_binary(dep_id) -> false
+           {dep_id, _ver_req} when binary?(dep_id) -> false
+           {dep_id, _ver_req, _opts} when binary?(dep_id) -> false
+           dep_id when binary?(dep_id) -> false
            _ -> true
          end) do
       nil -> :ok

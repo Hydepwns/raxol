@@ -4,6 +4,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
   Provides sophisticated version constraint handling with support for complex requirements.
   """
 
+  import Raxol.Guards
+
   @doc """
   Checks if a version satisfies a version requirement.
 
@@ -23,7 +25,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
       case parsed_req do
         {:or, reqs} ->
           # reqs is a list of parsed requirements
-          if Enum.any?(reqs, fn req -> Version.match?(version, req) end) do
+          if Enum.any?(reqs, &Version.match?(version, &1)) do
             :ok
           else
             {:error, :version_mismatch}
@@ -71,7 +73,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
       iex> Version.parse_version_requirement(">= 1.0.0 || >= 2.0.0")
       {:ok, {:or, [">= 1.0.0", ">= 2.0.0"]}}
   """
-  def parse_version_requirement(requirement) when is_binary(requirement) do
+  def parse_version_requirement(requirement) when binary?(requirement) do
     # Handle complex version requirements
     case String.split(requirement, "||") do
       [single_req] ->
@@ -81,11 +83,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
         # Handle OR conditions
         parsed_reqs = Enum.map(multiple_reqs, &parse_single_requirement/1)
 
-        if Enum.all?(parsed_reqs, fn
-             {:ok, _} -> true
-             _ -> false
-           end) do
-          {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, req} -> req end)}}
+        if Enum.all?(parsed_reqs, &match?({:ok, _}, &1)) do
+          {:ok, {:or, Enum.map(parsed_reqs, & &1.ok)}}
         else
           {:error, :invalid_requirement_format}
         end

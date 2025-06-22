@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
+  import Raxol.Guards
+
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
   use GenServer
@@ -44,7 +46,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
     * Other options are passed to the application module's `init/1` function.
   """
-  def start_link(app_module, options \\ []) when is_atom(app_module) do
+  def start_link(app_module, options \\ []) when atom?(app_module) do
     name_option = Keyword.get(options, :name, derive_process_name(app_module))
     GenServer.start_link(__MODULE__, {app_module, options}, name: name_option)
   end
@@ -224,7 +226,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
           model
 
-        model when is_map(model) ->
+        model when map?(model) ->
           Raxol.Core.Runtime.Log.info(
             "[#{__MODULE__}] #{inspect(app_module)}.init returned a map directly, using model: #{inspect(model)}"
           )
@@ -444,6 +446,19 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   # Private helper functions
   defp get_app_name(app_module, options) do
     Keyword.get(options, :app_name, Atom.to_string(app_module))
+  end
+
+  @doc """
+  Gets the application name for a given module.
+  """
+  @spec get_app_name(atom()) :: String.t()
+    def get_app_name(app_module) when atom?(app_module) do
+    # Try to call app_name/0 on the module if it exists
+    if function_exported?(app_module, :app_name, 0) do
+      app_module.app_name()
+    else
+      :default
+    end
   end
 
   # === Compatibility Wrappers ===

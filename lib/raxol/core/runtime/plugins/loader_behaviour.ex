@@ -8,5 +8,5 @@ defmodule Raxol.Core.Runtime.Plugins.LoaderBehaviour do
   @callback unload_plugin(plugin :: term()) :: :ok | {:error, term()}
   @callback reload_plugin(plugin :: term()) :: {:ok, term()} | {:error, term()}
   @callback get_loaded_plugins() :: [term()]
-  @callback is_plugin_loaded?(plugin :: term()) :: boolean()
+  @callback plugin_loaded?(plugin :: term()) :: boolean()
 end

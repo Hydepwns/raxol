@@ -1,6 +1,6 @@
 defmodule Raxol.Core.KeyboardShortcuts do
   @moduledoc """
-  Keyboard shortcuts manager for Raxol applications.
+  Manages keyboard shortcuts and key bindings for the terminal UI.
 
   This module provides functionality to register, manage, and handle keyboard shortcuts
   throughout the application. It integrates with the accessibility features to provide

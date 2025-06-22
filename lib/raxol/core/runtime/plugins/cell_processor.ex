@@ -3,6 +3,8 @@ defmodule Raxol.Core.Runtime.Plugins.CellProcessor do
   This module is responsible for processing cells in the Raxol runtime.
   """
 
+  import Raxol.Guards
+
   @doc """
   Process a cell with the given data.
   """
@@ -12,7 +14,7 @@ defmodule Raxol.Core.Runtime.Plugins.CellProcessor do
         # Handle placeholder cells
         {:ok, %{cell | processed: true, value: value}}
 
-      %{type: type} = cell when is_atom(type) ->
+      %{type: type} = cell when atom?(type) ->
         # Handle other cell types
         {:ok, %{cell | processed: true}}
 

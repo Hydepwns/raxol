@@ -9,6 +9,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   """
 
   alias Raxol.Core.Events.Event
+  import Raxol.Guards
   import Bitwise
 
   @doc """
@@ -56,37 +57,14 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   A structured `%Event{}` struct.
   """
   def convert_vscode_event(event) do
-    case event do
-      %{type: "keydown", key: key, modifiers: mods} ->
-        convert_vscode_key_event(key, mods)
-
-      %{type: "resize", width: width, height: height} ->
-        Event.new(:resize, %{
-          width: width,
-          height: height
-        })
-
-      %{type: "mouse", action: action, x: x, y: y, button: button} ->
-        convert_vscode_mouse_event(action, x, y, button)
-
-      %{type: "text", content: text} ->
-        Event.new(:text, %{
-          text: text
-        })
-
-      %{type: "focus", focused: focused} ->
-        Event.new(:focus, %{
-          focused: focused
-        })
-
-      %{type: "quit"} ->
-        Event.new(:quit, nil)
-
-      # For unknown events, just wrap the original
-      other ->
-        Event.new(:unknown, %{
-          raw_event: other
-        })
+    case event.type do
+      "keydown" -> convert_vscode_keydown_event(event)
+      "resize" -> convert_vscode_resize_event(event)
+      "mouse" -> convert_vscode_mouse_event(event)
+      "text" -> convert_vscode_text_event(event)
+      "focus" -> convert_vscode_focus_event(event)
+      "quit" -> Event.new(:quit, nil)
+      _ -> Event.new(:unknown, %{raw_event: event})
     end
   end
 
@@ -104,31 +82,13 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   """
   def normalize_event(event) do
     case event do
-      # Already an Event struct
-      %Event{} = e ->
-        e
-
-      # Termbox style event tuple
-      {type, mod, key, ch, w, h} ->
-        convert_termbox_event(type, mod, key, ch, w, h)
-
-      # VS Code style event map
-      %{type: _} = e ->
-        convert_vscode_event(e)
-
-      # Simple message events
-      {:key, key} ->
-        Event.new(:key, %{key: key})
-
-      {:mouse, x, y, button} ->
-        Event.new(:mouse, %{x: x, y: y, button: button})
-
-      {:text, text} ->
-        Event.new(:text, %{text: text})
-
-      # Unknown format - wrap as is
-      other ->
-        Event.new(:unknown, %{raw_event: other})
+      %Event{} = e -> e
+      {type, mod, key, ch, w, h} -> convert_termbox_event(type, mod, key, ch, w, h)
+      %{type: _} = e -> convert_vscode_event(e)
+      {:key, key} -> Event.new(:key, %{key: key})
+      {:mouse, x, y, button} -> Event.new(:mouse, %{x: x, y: y, button: button})
+      {:text, text} -> Event.new(:text, %{text: text})
+      other -> Event.new(:unknown, %{raw_event: other})
     end
   end
 
@@ -179,46 +139,28 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     })
   end
 
+  defp convert_vscode_keydown_event(%{key: key, modifiers: mods}) do
+    convert_vscode_key_event(key, mods)
+  end
+
+  defp convert_vscode_resize_event(%{width: width, height: height}) do
+    Event.new(:resize, %{width: width, height: height})
+  end
+
+  defp convert_vscode_mouse_event(%{action: action, x: x, y: y, button: button}) do
+    convert_vscode_mouse_event(action, x, y, button)
+  end
+
+  defp convert_vscode_text_event(%{content: text}) do
+    Event.new(:text, %{text: text})
+  end
+
+  defp convert_vscode_focus_event(%{focused: focused}) do
+    Event.new(:focus, %{focused: focused})
+  end
+
   defp convert_vscode_key_event(key, mods) do
-    # Convert key string to atom or code
-    key_value =
-      case key do
-        "Enter" ->
-          :enter
-
-        "Escape" ->
-          :escape
-
-        "Backspace" ->
-          :backspace
-
-        "Tab" ->
-          :tab
-
-        "Space" ->
-          :space
-
-        "ArrowLeft" ->
-          :arrow_left
-
-        "ArrowRight" ->
-          :arrow_right
-
-        "ArrowUp" ->
-          :arrow_up
-
-        "ArrowDown" ->
-          :arrow_down
-
-        # For regular characters, use the first character's code point
-        _ when is_binary(key) and byte_size(key) == 1 ->
-          :binary.first(key)
-
-        _ ->
-          key
-      end
-
-    # Convert modifiers
+    key_value = convert_vscode_key_to_value(key)
     modifiers = parse_vscode_modifiers(mods)
 
     Event.new(:key, %{
@@ -228,24 +170,42 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     })
   end
 
-  defp convert_vscode_mouse_event(action, x, y, button) do
-    # Convert button string to atom
-    button_atom =
-      case button do
-        "left" -> :left
-        "middle" -> :middle
-        "right" -> :right
-        _ -> :unknown
-      end
+  @vscode_key_map %{
+    "Enter" => :enter,
+    "Escape" => :escape,
+    "Backspace" => :backspace,
+    "Tab" => :tab,
+    "Space" => :space,
+    "ArrowLeft" => :arrow_left,
+    "ArrowRight" => :arrow_right,
+    "ArrowUp" => :arrow_up,
+    "ArrowDown" => :arrow_down
+  }
 
-    # Convert action string to atom
-    action_atom =
-      case action do
-        "down" -> :press
-        "up" -> :release
-        "move" -> :move
-        _ -> :unknown
-      end
+  defp convert_vscode_key_to_value(key) do
+    case key do
+      k when binary?(k) and byte_size(k) == 1 -> :binary.first(k)
+      k when binary?(k) -> k
+      _ -> key
+    end
+    |> Map.get(@vscode_key_map, key)
+  end
+
+  @vscode_button_map %{
+    "left" => :left,
+    "middle" => :middle,
+    "right" => :right
+  }
+
+  @vscode_action_map %{
+    "down" => :press,
+    "up" => :release,
+    "move" => :move
+  }
+
+  defp convert_vscode_mouse_event(action, x, y, button) do
+    button_atom = Map.get(@vscode_button_map, button, :unknown)
+    action_atom = Map.get(@vscode_action_map, action, :unknown)
 
     Event.new(:mouse, %{
       action: action_atom,
@@ -263,7 +223,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     ]
   end
 
-  defp parse_vscode_modifiers(mods) when is_list(mods) do
+  defp parse_vscode_modifiers(mods) when list?(mods) do
     ctrl = "ctrl" in mods or "control" in mods
     alt = "alt" in mods or "option" in mods
     shift = "shift" in mods

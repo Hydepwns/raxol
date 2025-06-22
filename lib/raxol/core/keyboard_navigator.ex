@@ -1,4 +1,6 @@
 defmodule Raxol.Core.KeyboardNavigator do
+  import Raxol.Guards
+
   @moduledoc """
   Keyboard navigation handler for Raxol terminal UI applications.
 
@@ -64,8 +66,8 @@ defmodule Raxol.Core.KeyboardNavigator do
   """
   def configure(opts \\ []) do
     ensure_keyword = fn
-      kw when is_list(kw) and (kw == [] or is_tuple(hd(kw))) -> kw
-      m when is_map(m) -> Map.to_list(m)
+      kw when list?(kw) and (kw == [] or tuple?(hd(kw))) -> kw
+      m when map?(m) -> Map.to_list(m)
       _ -> []
     end
 
@@ -247,7 +249,7 @@ defmodule Raxol.Core.KeyboardNavigator do
       iex> KeyboardNavigator.register_shortcut(:f1, [], &show_help/0)
       :ok
   """
-  def register_shortcut(key, modifiers, handler) when is_function(handler, 0) do
+  def register_shortcut(key, modifiers, handler) when function?(handler, 0) do
     shortcuts = Process.get(:keyboard_navigator_shortcuts) || %{}
     shortcut_key = {key, modifiers}
     updated_shortcuts = Map.put(shortcuts, shortcut_key, handler)
@@ -459,7 +461,7 @@ defmodule Raxol.Core.KeyboardNavigator do
       nil ->
         :unhandled
 
-      handler when is_function(handler, 0) ->
+      handler when function?(handler, 0) ->
         handler.()
         :handled
     end

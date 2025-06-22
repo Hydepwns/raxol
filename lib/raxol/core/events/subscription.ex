@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Events.Subscription do
+  import Raxol.Guards
+
   @moduledoc """
   Provides helpers for managing event subscriptions.
 
@@ -137,14 +139,14 @@ defmodule Raxol.Core.Events.Subscription do
   @doc """
   Unsubscribes from events using the subscription reference.
   """
-  def unsubscribe(ref) when is_integer(ref) do
+  def unsubscribe(ref) when integer?(ref) do
     Manager.unsubscribe(ref)
   end
 
   @doc """
   Unsubscribes from multiple subscriptions.
   """
-  def unsubscribe_all(refs) when is_list(refs) do
+  def unsubscribe_all(refs) when list?(refs) do
     Enum.each(refs, &unsubscribe/1)
   end
 
@@ -162,7 +164,7 @@ defmodule Raxol.Core.Events.Subscription do
   - `{:ok, list(subscription_ref())}` on success, containing a list of references for each subscription.
   - `{:error, reason}` if any subscription fails. Successfully created subscriptions before the failure will be automatically unsubscribed.
   """
-  def events(event_types) when is_list(event_types) do
+  def events(event_types) when list?(event_types) do
     do_subscribe_events(event_types, [])
   end
 
@@ -201,7 +203,7 @@ defmodule Raxol.Core.Events.Subscription do
   defp add_filter(opts, _key, nil), do: opts
 
   defp add_filter(opts, key, value) do
-    opts = if is_list(opts), do: opts, else: []
+    opts = if list?(opts), do: opts, else: []
     Keyword.put(opts, key, value)
   end
 end

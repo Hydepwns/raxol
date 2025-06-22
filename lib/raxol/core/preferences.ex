@@ -1,6 +1,6 @@
 defmodule Raxol.Core.Preferences do
   @moduledoc """
-  Manages user preferences including accessibility settings like reduced motion.
+  Manages user preferences and settings for the Raxol terminal UI.
   """
   use GenServer
 

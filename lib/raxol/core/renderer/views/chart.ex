@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Renderer.Views.Chart do
   require Raxol.Core.Renderer.View
+  import Raxol.Guards
 
   @moduledoc """
   Chart view component for data visualization.
@@ -305,8 +306,8 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     if depth > 10_000 do
       canvas
     else
-      if x < 0 or y < 0 or is_nil(Enum.at(canvas, y)) or
-           is_nil(Enum.at(Enum.at(canvas, y), x)) do
+      if x < 0 or y < 0 or nil?(Enum.at(canvas, y)) or
+           nil?(Enum.at(Enum.at(canvas, y), x)) do
         canvas
       else
         canvas = put_in(canvas, [Access.at(y), Access.at(x)], "•")
@@ -392,12 +393,12 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   defp create_vertical_bar(bar_height, total_height)
-       when is_integer(bar_height) and is_integer(total_height) do
+       when integer?(bar_height) and integer?(total_height) do
     build_bar_string(bar_height, total_height, :vertical)
   end
 
   defp create_horizontal_bar(bar_width, total_width)
-       when is_integer(bar_width) and is_integer(total_width) do
+       when integer?(bar_width) and integer?(total_width) do
     build_bar_string(bar_width, total_width, :horizontal)
   end
 

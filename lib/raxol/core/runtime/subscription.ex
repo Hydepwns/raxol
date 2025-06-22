@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Runtime.Subscription do
+  import Raxol.Guards
+
   @moduledoc """
   Provides a way to subscribe to recurring updates and external events.
 
@@ -55,7 +57,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   def interval(interval_ms, msg, opts \\ [])
 
   def interval(interval_ms, msg, opts)
-      when is_integer(interval_ms) and interval_ms > 0 do
+      when integer?(interval_ms) and interval_ms > 0 do
     data = %{
       interval: interval_ms,
       message: msg,
@@ -81,7 +83,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     * `:focus_change` - Terminal focus change
     * `:component` - Component-specific events
   """
-  def events(event_types) when is_list(event_types) do
+  def events(event_types) when list?(event_types) do
     new(:events, event_types)
   end
 
@@ -103,7 +105,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   """
   def file_watch(path, event_types \\ [:modify])
 
-  def file_watch(path, event_types) when is_list(event_types) do
+  def file_watch(path, event_types) when list?(event_types) do
     data = %{
       path: path,
       events: event_types
@@ -155,39 +157,34 @@ defmodule Raxol.Core.Runtime.Subscription do
   be called directly by applications.
   """
   def stop(subscription_id) do
-    case subscription_id do
-      {:interval, timer_ref} ->
-        case :timer.cancel(timer_ref) do
-          {:ok, :cancel} -> :ok
-          {:error, reason} -> {:error, {:timer_cancel_error, reason}}
-          # Handle any other return values
-          _ -> :ok
-        end
+    stop_subscription(subscription_id)
+  end
 
-      {:events, actual_id} ->
-        # Raxol.Core.Events.Manager.unsubscribe only returns :ok
-        Raxol.Core.Events.Manager.unsubscribe(actual_id)
-        :ok
+  defp stop_subscription({:interval, timer_ref}), do: stop_interval(timer_ref)
+  defp stop_subscription({:events, actual_id}), do: stop_events(actual_id)
+  defp stop_subscription({:file_watch, watcher_pid}), do: stop_file_watch(watcher_pid)
+  defp stop_subscription({:custom, source_pid}), do: stop_custom(source_pid)
+  defp stop_subscription(_), do: {:error, :invalid_subscription}
 
-      {:file_watch, watcher_pid} ->
-        if Process.alive?(watcher_pid) do
-          Process.exit(watcher_pid, :normal)
-          :ok
-        else
-          {:error, :process_not_alive}
-        end
-
-      {:custom, source_pid} ->
-        if Process.alive?(source_pid) do
-          Process.exit(source_pid, :normal)
-          :ok
-        else
-          {:error, :process_not_alive}
-        end
-
-      _other_subscription_id ->
-        {:error, :invalid_subscription}
+  defp stop_interval(timer_ref) do
+    case :timer.cancel(timer_ref) do
+      {:ok, :cancel} -> :ok
+      {:error, reason} -> {:error, {:timer_cancel_error, reason}}
+      _ -> :ok
     end
+  end
+
+  defp stop_events(actual_id) do
+    Raxol.Core.Events.Manager.unsubscribe(actual_id)
+    :ok
+  end
+
+  defp stop_file_watch(watcher_pid) do
+    if Process.alive?(watcher_pid), do: Process.exit(watcher_pid, :normal), else: {:error, :process_not_alive}
+  end
+
+  defp stop_custom(source_pid) do
+    if Process.alive?(source_pid), do: Process.exit(source_pid, :normal), else: {:error, :process_not_alive}
   end
 
   # Private helpers for starting different types of subscriptions

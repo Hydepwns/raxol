@@ -5,6 +5,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
 
   use GenServer
   require Logger
+  import Raxol.Guards
+
   @behaviour Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
 
   defstruct [
@@ -46,7 +48,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   """
   @impl true
   def watch_file(pid, file_path, callback)
-      when is_binary(file_path) and is_function(callback, 1) do
+      when binary?(file_path) and function?(callback, 1) do
     GenServer.call(pid, {:watch_file, file_path, callback})
   end
 
@@ -54,7 +56,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   Removes a file from watching.
   """
   @impl true
-  def unwatch_file(pid, file_path) when is_binary(file_path) do
+  def unwatch_file(pid, file_path) when binary?(file_path) do
     GenServer.call(pid, {:unwatch_file, file_path})
   end
 

@@ -6,6 +6,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
 
   use GenServer
   require Raxol.Core.Runtime.Log
+  import Raxol.Guards
 
   # Public API
 
@@ -21,7 +22,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
   """
   @spec register_plugin(atom(), map()) :: :ok
   def register_plugin(plugin_id, metadata)
-      when is_atom(plugin_id) and is_map(metadata) do
+      when atom?(plugin_id) and map?(metadata) do
     GenServer.call(__MODULE__, {:register_plugin, plugin_id, metadata})
   end
 
@@ -29,7 +30,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
   Unregisters a plugin by its ID.
   """
   @spec unregister_plugin(atom()) :: :ok
-  def unregister_plugin(plugin_id) when is_atom(plugin_id) do
+  def unregister_plugin(plugin_id) when atom?(plugin_id) do
     GenServer.call(__MODULE__, {:unregister_plugin, plugin_id})
   end
 

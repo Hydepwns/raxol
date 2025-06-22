@@ -1,4 +1,6 @@
 defmodule Raxol.Core.I18n do
+  import Raxol.Guards
+
   @moduledoc """
   Internationalization framework for Raxol terminal UI applications.
 
@@ -29,7 +31,7 @@ defmodule Raxol.Core.I18n do
   I18n.set_locale("fr")
 
   # Check if the current locale is RTL
-  is_rtl = I18n.rtl?()
+  rtl = I18n.rtl?()
   ```
   """
 
@@ -135,7 +137,7 @@ defmodule Raxol.Core.I18n do
   Format a currency amount according to the current locale.
   """
   def format_currency(amount, currency_code)
-      when is_number(amount) and is_binary(currency_code) do
+      when number?(amount) and binary?(currency_code) do
     locale = get_locale()
 
     case Cldr.Number.to_string(amount,
@@ -151,7 +153,7 @@ defmodule Raxol.Core.I18n do
   @doc """
   Format a datetime according to the current locale.
   """
-  def format_datetime(datetime) when is_struct(datetime, DateTime) do
+  def format_datetime(datetime) when struct?(datetime, DateTime) do
     locale = get_locale()
 
     case Cldr.DateTime.to_string(datetime, backend: Raxol.Cldr, locale: locale) do

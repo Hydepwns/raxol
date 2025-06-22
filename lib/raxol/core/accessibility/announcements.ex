@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Accessibility.Announcements do
+  import Raxol.Guards
+
   @moduledoc """
   Handles screen reader announcements and announcement queue management.
   """
@@ -29,8 +31,8 @@ defmodule Raxol.Core.Accessibility.Announcements do
       :ok
   """
   def announce(message, opts \\ [], user_preferences_pid_or_name)
-      when is_binary(message) do
-    if is_nil(user_preferences_pid_or_name) do
+      when binary?(message) do
+    if nil?(user_preferences_pid_or_name) do
       raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
     end
 

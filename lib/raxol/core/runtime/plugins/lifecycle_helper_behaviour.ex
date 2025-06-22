@@ -117,5 +117,18 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour do
               state :: map()
             ) :: {:ok, map()} | {:error, any()}
 
+  @doc """
+  Handles an event through the plugin system.
+  """
+  @callback handle_event(
+              event :: any(),
+              plugins :: map(),
+              metadata :: map(),
+              plugin_states :: map(),
+              load_order :: list(),
+              command_table :: atom(),
+              plugin_config :: map()
+            ) :: {:ok, {map(), map(), atom()}} | {:error, any()}
+
   # Add other callbacks here if the Manager interacts with more LifecycleHelper functions
 end

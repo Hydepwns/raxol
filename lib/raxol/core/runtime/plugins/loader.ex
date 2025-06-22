@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Runtime.Plugins.Loader do
+  import Raxol.Guards
+
   @moduledoc """
   Manages plugin loading operations.
   """
@@ -32,7 +34,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   Loads a plugin from the given path.
   """
   @impl true
-  def load_plugin(plugin_path) when is_binary(plugin_path) do
+  def load_plugin(plugin_path) when binary?(plugin_path) do
     GenServer.call(__MODULE__, {:load_plugin, plugin_path})
   end
 
@@ -64,8 +66,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   Checks if a plugin is loaded.
   """
   @impl true
-  def is_plugin_loaded?(plugin) do
-    GenServer.call(__MODULE__, {:is_plugin_loaded?, plugin})
+  def plugin_loaded?(plugin) do
+    GenServer.call(__MODULE__, {:plugin_loaded?, plugin})
   end
 
   # Server Callbacks
@@ -121,7 +123,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   end
 
   @impl true
-  def handle_call({:is_plugin_loaded?, plugin}, _from, state) do
+  def handle_call({:plugin_loaded?, plugin}, _from, state) do
     {:reply, Map.has_key?(state.loaded_plugins, plugin), state}
   end
 
@@ -186,7 +188,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     if function_exported?(module, :init, 1) do
       case module.init(config) do
         {:ok, state} -> {:ok, state}
-        state when is_map(state) -> {:ok, state}
+        state when map?(state) -> {:ok, state}
         _ -> {:error, :invalid_init_return}
       end
     else
