@@ -43,7 +43,16 @@ defmodule Raxol.Terminal.Config do
   """
   @spec new() :: t()
   def new do
-    %__MODULE__{}
+    %__MODULE__{
+      version: 1,
+      width: 80,
+      height: 24,
+      colors: %{},
+      styles: %{},
+      input: %{},
+      performance: %{},
+      mode: %{}
+    }
   end
 
   @doc """
@@ -433,19 +442,19 @@ defmodule Raxol.Terminal.Config do
     do: %{acc | height: value}
 
   defp update_field({:colors, value}, acc) when map?(value),
-    do: %{acc | colors: Map.merge(acc.colors, value)}
+    do: %{acc | colors: Map.merge(acc.colors || %{}, value)}
 
   defp update_field({:styles, value}, acc) when map?(value),
-    do: %{acc | styles: Map.merge(acc.styles, value)}
+    do: %{acc | styles: Map.merge(acc.styles || %{}, value)}
 
   defp update_field({:input, value}, acc) when map?(value),
-    do: %{acc | input: Map.merge(acc.input, value)}
+    do: %{acc | input: Map.merge(acc.input || %{}, value)}
 
   defp update_field({:performance, value}, acc) when map?(value),
-    do: %{acc | performance: Map.merge(acc.performance, value)}
+    do: %{acc | performance: Map.merge(acc.performance || %{}, value)}
 
   defp update_field({:mode, value}, acc) when map?(value),
-    do: %{acc | mode: Map.merge(acc.mode, value)}
+    do: %{acc | mode: Map.merge(acc.mode || %{}, value)}
 
   defp update_field(_, acc), do: acc
 end

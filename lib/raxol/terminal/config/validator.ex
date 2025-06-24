@@ -49,7 +49,10 @@ defmodule Raxol.Terminal.Config.Validator do
   end
 
   defp validate_dimensions(%{width: width, height: height}) do
-    {:error, "Invalid dimensions: width=#{width}, height=#{height}"}
+    # Handle cases where width or height might be nil or empty
+    width_str = if is_nil(width), do: "", else: to_string(width)
+    height_str = if is_nil(height), do: "", else: to_string(height)
+    {:error, "Invalid dimensions: width=#{width_str}, height=#{height_str}"}
   end
 
   defp validate_dimensions(_), do: :ok

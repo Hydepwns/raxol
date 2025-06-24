@@ -95,17 +95,23 @@ defmodule Raxol.Terminal.Scroll.Manager do
     * `manager` - The scroll manager
     * `opts` - History options
       * `:limit` - Maximum number of entries to return (default: all)
+      * `:direction` - Filter by direction (:up or :down)
   """
-  @spec get_history(t(), keyword()) :: [map()]
-  def get_history(_manager, opts \\ []) do
+  @spec get_history(t(), keyword()) :: {:ok, [map()], t()}
+  def get_history(manager, opts \\ []) do
     limit = Keyword.get(opts, :limit)
+    direction = Keyword.get(opts, :direction)
 
     case System.get(:history, namespace: :scroll) do
       {:ok, history} ->
-        if limit, do: Enum.take(history, limit), else: history
+        result =
+          history
+          |> filter_by_direction(direction)
+          |> limit_results(limit)
+        {:ok, result, manager}
 
       {:error, _} ->
-        []
+        {:ok, [], manager}
     end
   end
 
@@ -133,15 +139,8 @@ defmodule Raxol.Terminal.Scroll.Manager do
         :ok
     end
 
-    # Adjust prediction window based on prediction accuracy
-    new_window =
-      if manager.metrics.predictions > 100 do
-        max(5, min(20, manager.prediction_window))
-      else
-        manager.prediction_window
-      end
-
-    %{manager | prediction_window: new_window}
+    # Return the manager unchanged since we don't have prediction_window
+    manager
   end
 
   # Private helper functions
@@ -149,14 +148,63 @@ defmodule Raxol.Terminal.Scroll.Manager do
   defp get_cached_scroll(manager, direction, amount) do
     cache_key = {direction, amount}
 
-    case :sys.get_state(manager.cache, cache_key) do
+    case System.get(cache_key, namespace: :scroll) do
       {:ok, result} -> {:hit, result}
-      :error -> {:miss, nil}
+      {:error, _} -> {:miss, nil}
     end
   end
 
-  defp perform_scroll(manager, _direction, _amount, _opts) do
-    # TODO: Implementation
+  defp perform_scroll(manager, direction, amount, opts) do
+    predict = Keyword.get(opts, :predict, true)
+    optimize = Keyword.get(opts, :optimize, true)
+    sync = Keyword.get(opts, :sync, true)
+
+    # Update scroll metrics
+    manager = update_metrics(manager, :scroll)
+
+    # Use prediction if enabled and available
+    manager =
+      if predict and manager.predictor do
+        %{manager | predictor: Predictor.predict(manager.predictor, direction, amount)}
+        |> update_metrics(:prediction)
+      else
+        manager
+      end
+
+    # Use optimization if enabled and available
+    manager =
+      if optimize and manager.optimizer do
+        %{manager | optimizer: Optimizer.optimize(manager.optimizer, direction, amount)}
+        |> update_metrics(:optimization)
+      else
+        manager
+      end
+
+    # Use sync if enabled and available
+    manager =
+      if sync and manager.sync do
+        %{manager | sync: Sync.sync(manager.sync, direction, amount)}
+      else
+        manager
+      end
+
+    # Store scroll operation in history
+    scroll_entry = %{
+      direction: direction,
+      amount: amount,
+      timestamp: System.monotonic_time(),
+      options: opts
+    }
+
+    case System.get(:history, namespace: :scroll) do
+      {:ok, history} ->
+        updated_history = [scroll_entry | history]
+        System.put(:history, updated_history, namespace: :scroll)
+
+      {:error, _} ->
+        System.put(:history, [scroll_entry], namespace: :scroll)
+    end
+
     {:ok, manager}
   end
 
@@ -177,13 +225,42 @@ defmodule Raxol.Terminal.Scroll.Manager do
     }
   end
 
+  defp update_metrics(manager, :scroll) do
+    %{
+      manager
+      | metrics: %{manager.metrics | scrolls: manager.metrics.scrolls + 1}
+    }
+  end
+
+  defp update_metrics(manager, :prediction) do
+    %{
+      manager
+      | metrics: %{manager.metrics | predictions: manager.metrics.predictions + 1}
+    }
+  end
+
+  defp update_metrics(manager, :optimization) do
+    %{
+      manager
+      | metrics: %{manager.metrics | optimizations: manager.metrics.optimizations + 1}
+    }
+  end
+
+  defp filter_by_direction(history, nil), do: history
+  defp filter_by_direction(history, direction) do
+    Enum.filter(history, fn entry -> entry.direction == direction end)
+  end
+
+  defp limit_results(history, nil), do: history
+  defp limit_results(history, limit), do: Enum.take(history, limit)
+
   @doc """
   Clears the scroll history.
   """
   @spec clear_history(t()) :: {:ok, t()}
   def clear_history(manager) do
     case System.clear(namespace: :scroll) do
-      {:ok, _} -> {:ok, manager}
+      :ok -> {:ok, manager}
       {:error, _} -> {:ok, manager}
     end
   end
