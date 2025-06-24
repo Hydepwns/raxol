@@ -152,4 +152,18 @@ defmodule Raxol.Terminal.Config.Schema do
   defp get_type_from_path(_schema, _path), do: nil
 
   def schema(), do: config_schema()
+
+  @doc """
+  Returns the schema in a format compatible with validation tests.
+  Each field is a map with a :type key.
+  """
+  def test_schema do
+    %{
+      terminal_type: %{type: :atom},
+      color_mode: %{type: :atom},
+      unicode_support: %{type: :boolean},
+      width: %{type: :integer},
+      height: %{type: :integer}
+    }
+  end
 end

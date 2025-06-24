@@ -488,13 +488,32 @@ defmodule Raxol.Style.Colors.Accessibility do
     accent =
       suggest_accessible_color(rotated.hex, background: bg.hex, level: level)
 
+    # Generate semantic colors
+    link = suggest_accessible_color("#0066CC", background: bg.hex, level: level)
+
+    success =
+      suggest_accessible_color("#28A745", background: bg.hex, level: level)
+
+    warning =
+      suggest_accessible_color("#FFC107", background: bg.hex, level: level)
+
+    error =
+      suggest_accessible_color("#DC3545", background: bg.hex, level: level)
+
+    info = suggest_accessible_color("#17A2B8", background: bg.hex, level: level)
+
     # Validate and adjust if needed
     colors = %{
       primary: base.hex,
       secondary: secondary,
       accent: accent,
       background: bg.hex,
-      text: text
+      text: text,
+      link: link,
+      success: success,
+      warning: warning,
+      error: error,
+      info: info
     }
 
     case validate_colors(colors, background: bg.hex, level: level) do

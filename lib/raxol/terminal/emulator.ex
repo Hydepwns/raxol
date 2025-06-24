@@ -69,7 +69,9 @@ defmodule Raxol.Terminal.Emulator do
     style: %{},
     scrollback_limit: 1000,
     window_title: nil,
-    plugin_manager: nil
+    plugin_manager: nil,
+    saved_cursor: nil,
+    scroll_region: nil
   ]
 
   @type t :: %__MODULE__{
@@ -90,7 +92,9 @@ defmodule Raxol.Terminal.Emulator do
           style: map(),
           scrollback_limit: non_neg_integer(),
           window_title: String.t() | nil,
-          plugin_manager: any() | nil
+          plugin_manager: any() | nil,
+          saved_cursor: any() | nil,
+          scroll_region: any() | nil
         }
 
   # Cursor Operations
@@ -152,7 +156,7 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate get_style_at_cursor(emulator), to: StateOperations
 
   # Buffer Operations
-  defdelegate update_active_buffer(emulator, new_buffer), to: Buffer.Manager
+  defdelegate update_active_buffer(emulator, new_buffer), to: Raxol.Terminal.BufferManager
 
   @doc """
   Gets the active buffer from the emulator.

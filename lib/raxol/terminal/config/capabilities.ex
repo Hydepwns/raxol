@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   alias Raxol.Terminal.Config.Defaults
   alias Raxol.System.EnvironmentAdapterImpl
+  alias Raxol.Terminal.Config.Schema
 
   @doc """
   Detects terminal capabilities based on the environment using a specific adapter.
@@ -85,8 +86,30 @@ defmodule Raxol.Terminal.Config.Capabilities do
     capabilities = detect_capabilities(adapter_module)
     config = deep_merge_capabilities(defaults, capabilities)
 
+    # Flatten nested keys to top-level
+    flat_config = flatten_config(config)
+
     # Apply optimizations based on capabilities
-    optimize_config_for_capabilities(config)
+    optimized_config = optimize_config_for_capabilities(flat_config)
+
+    # Filter to only include schema-valid keys
+    filter_config_by_schema(optimized_config)
+  end
+
+  # Flattens nested :display, :input, :ansi, :rendering keys to top-level
+  defp flatten_config(config) do
+    config
+    |> Map.merge(Map.get(config, :display, %{}))
+    |> Map.merge(Map.get(config, :input, %{}))
+    |> Map.merge(Map.get(config, :ansi, %{}))
+    |> Map.merge(Map.get(config, :rendering, %{}))
+    |> Map.drop([:display, :input, :ansi, :rendering])
+  end
+
+  # Filters config to only include keys present in the schema
+  defp filter_config_by_schema(config) do
+    schema_keys = Schema.schema() |> Map.keys()
+    Map.take(config, schema_keys)
   end
 
   # Private functions
@@ -300,6 +323,6 @@ defmodule Raxol.Terminal.Config.Capabilities do
           rendering
       end
 
-    %{config | rendering: updated_rendering}
+    Map.put(config, :rendering, updated_rendering)
   end
 end
