@@ -32,7 +32,10 @@ defmodule Raxol.Core.Performance do
       # Create jank detector
       jank_threshold = Keyword.get(options, :jank_threshold, 16)
       window_size = Keyword.get(options, :window_size, 60)
-      detector = Raxol.Core.Performance.JankDetector.new(jank_threshold, window_size)
+
+      detector =
+        Raxol.Core.Performance.JankDetector.new(jank_threshold, window_size)
+
       Process.put(:jank_detector, detector)
 
       :ok
@@ -61,33 +64,40 @@ defmodule Raxol.Core.Performance do
   def get_stats do
     try do
       # Get monitor metrics if available
-      monitor_metrics = case Process.whereis(Raxol.Core.Performance.Monitor) do
-        nil -> %{}
-        monitor -> Raxol.Core.Performance.Monitor.get_metrics(monitor)
-      end
+      monitor_metrics =
+        case Process.whereis(Raxol.Core.Performance.Monitor) do
+          nil -> %{}
+          monitor -> Raxol.Core.Performance.Monitor.get_metrics(monitor)
+        end
 
       # Get collector metrics if available
       collector = Process.get(:performance_collector)
-      collector_metrics = if collector do
-        %{
-          fps: Raxol.Core.Performance.MetricsCollector.get_fps(collector),
-          avg_frame_time: Raxol.Core.Performance.MetricsCollector.get_avg_frame_time(collector)
-        }
-      else
-        %{}
-      end
+
+      collector_metrics =
+        if collector do
+          %{
+            fps: Raxol.Core.Performance.MetricsCollector.get_fps(collector),
+            avg_frame_time:
+              Raxol.Core.Performance.MetricsCollector.get_avg_frame_time(
+                collector
+              )
+          }
+        else
+          %{}
+        end
 
       # Combine metrics
       stats = Map.merge(monitor_metrics, collector_metrics)
 
       # Add basic system stats if not available
-      stats = Map.merge_new(stats, %{
-        cpu_usage: get_cpu_usage(),
-        memory_usage: get_memory_usage(),
-        render_time: Map.get(stats, :avg_frame_time, 0),
-        frame_rate: Map.get(stats, :fps, 0),
-        jank_events: Map.get(stats, :jank_count, 0)
-      })
+      stats =
+        Map.merge_new(stats, %{
+          cpu_usage: get_cpu_usage(),
+          memory_usage: get_memory_usage(),
+          render_time: Map.get(stats, :avg_frame_time, 0),
+          frame_rate: Map.get(stats, :fps, 0),
+          jank_events: Map.get(stats, :jank_count, 0)
+        })
 
       {:ok, stats}
     rescue
@@ -110,12 +120,14 @@ defmodule Raxol.Core.Performance do
   * `:ok` - Measurement recorded successfully
   * `{:error, reason}` - Failed to record measurement
   """
-  @spec record_measurement(String.t(), number(), keyword()) :: :ok | {:error, term()}
+  @spec record_measurement(String.t(), number(), keyword()) ::
+          :ok | {:error, term()}
   def record_measurement(name, value, tags \\ []) do
     try do
       # Record in metrics collector if it's a frame time
       if name == "render_time" or name == "frame_time" do
         collector = Process.get(:performance_collector)
+
         if collector do
           Raxol.Core.Performance.MetricsCollector.record_frame(collector, value)
         end
@@ -123,6 +135,7 @@ defmodule Raxol.Core.Performance do
 
       # Record in monitor if available
       monitor = Process.whereis(Raxol.Core.Performance.Monitor)
+
       if monitor and (name == "render_time" or name == "frame_time") do
         Raxol.Core.Performance.Monitor.record_frame(monitor, value)
       end

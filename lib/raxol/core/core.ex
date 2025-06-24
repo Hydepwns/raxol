@@ -116,7 +116,8 @@ defmodule Raxol.Core do
   ])
   ```
   """
-  @spec start_application(app_module(), app_options()) :: {:ok, pid()} | {:error, term()}
+  @spec start_application(app_module(), app_options()) ::
+          {:ok, pid()} | {:error, term()}
   def start_application(app_module, options \\ []) when is_atom(app_module) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Starting application: #{inspect(app_module)}"
@@ -182,7 +183,8 @@ defmodule Raxol.Core do
   # Returns: {:ok, %{state: :running, uptime: 1234, model: %{...}}}
   ```
   """
-  @spec get_application_status(pid() | atom()) :: {:ok, map()} | {:error, term()}
+  @spec get_application_status(pid() | atom()) ::
+          {:ok, map()} | {:error, term()}
   def get_application_status(pid_or_name) do
     case GenServer.call(pid_or_name, :get_status, 5000) do
       {:ok, status} -> {:ok, status}
@@ -222,12 +224,14 @@ defmodule Raxol.Core do
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Plugin loaded: #{inspect(plugin_id)}"
         )
+
         {:ok, plugin_info}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "[#{__MODULE__}] Failed to load plugin #{inspect(plugin_id)}: #{inspect(reason)}"
         )
+
         {:error, reason}
     end
   end
@@ -257,12 +261,14 @@ defmodule Raxol.Core do
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Plugin unloaded: #{inspect(plugin_id)}"
         )
+
         :ok
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "[#{__MODULE__}] Failed to unload plugin #{inspect(plugin_id)}: #{inspect(reason)}"
         )
+
         {:error, reason}
     end
   end
@@ -562,6 +568,7 @@ defmodule Raxol.Core do
         Raxol.Core.Runtime.Log.error(
           "[#{__MODULE__}] Failed to start runtime: #{inspect(reason)}"
         )
+
         {:error, reason}
     end
   end

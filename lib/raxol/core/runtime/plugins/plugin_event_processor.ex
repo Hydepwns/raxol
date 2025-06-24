@@ -18,29 +18,34 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
         plugin_config
       ) do
     # Process event through enabled plugins in load order
-    Enum.reduce_while(load_order, {:ok, {metadata, plugin_states, command_table}}, fn plugin_id, acc ->
-      case acc do
-        {:ok, {current_metadata, current_states, current_table}} ->
-          case process_plugin_event(
-                 plugin_id,
-                 event,
-                 plugins,
-                 current_metadata,
-                 current_states,
-                 current_table,
-                 plugin_config
-               ) do
-            {:ok, {updated_metadata, updated_states, updated_table}} ->
-              {:cont, {:ok, {updated_metadata, updated_states, updated_table}}}
+    Enum.reduce_while(
+      load_order,
+      {:ok, {metadata, plugin_states, command_table}},
+      fn plugin_id, acc ->
+        case acc do
+          {:ok, {current_metadata, current_states, current_table}} ->
+            case process_plugin_event(
+                   plugin_id,
+                   event,
+                   plugins,
+                   current_metadata,
+                   current_states,
+                   current_table,
+                   plugin_config
+                 ) do
+              {:ok, {updated_metadata, updated_states, updated_table}} ->
+                {:cont,
+                 {:ok, {updated_metadata, updated_states, updated_table}}}
 
-            {:error, reason} ->
-              {:halt, {:error, reason}}
-          end
+              {:error, reason} ->
+                {:halt, {:error, reason}}
+            end
 
-        {:error, _reason} = error ->
-          {:halt, error}
+          {:error, _reason} = error ->
+            {:halt, error}
+        end
       end
-    end)
+    )
   end
 
   @doc """
@@ -73,21 +78,39 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
                   if function_exported?(plugin_module, :handle_event, 2) do
                     case plugin_module.handle_event(event, plugin_state) do
                       {:ok, updated_plugin_state} ->
-                        updated_states = Map.put(plugin_states, plugin_id, updated_plugin_state)
+                        updated_states =
+                          Map.put(
+                            plugin_states,
+                            plugin_id,
+                            updated_plugin_state
+                          )
+
                         {:ok, {metadata, updated_states, command_table}}
 
                       {:error, reason} ->
                         Raxol.Core.Runtime.Log.warning_with_context(
                           "Plugin #{plugin_id} failed to handle event",
-                          %{plugin_id: plugin_id, event: event, reason: reason, module: __MODULE__}
+                          %{
+                            plugin_id: plugin_id,
+                            event: event,
+                            reason: reason,
+                            module: __MODULE__
+                          }
                         )
+
                         {:ok, {metadata, plugin_states, command_table}}
 
                       other ->
                         Raxol.Core.Runtime.Log.warning_with_context(
                           "Plugin #{plugin_id} returned unexpected value from handle_event",
-                          %{plugin_id: plugin_id, event: event, value: other, module: __MODULE__}
+                          %{
+                            plugin_id: plugin_id,
+                            event: event,
+                            value: other,
+                            module: __MODULE__
+                          }
                         )
+
                         {:ok, {metadata, plugin_states, command_table}}
                     end
                   else
@@ -102,12 +125,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
                       nil,
                       %{plugin_id: plugin_id, event: event, module: __MODULE__}
                     )
+
                     {:ok, {metadata, plugin_states, command_table}}
                 end
             end
+
           _ ->
             {:ok, {metadata, plugin_states, command_table}}
         end
+
       _ ->
         {:ok, {metadata, plugin_states, command_table}}
     end

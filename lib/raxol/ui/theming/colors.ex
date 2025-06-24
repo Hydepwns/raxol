@@ -283,6 +283,11 @@ defmodule Raxol.UI.Theming.Colors do
 
       {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 ->
         rgb_to_hex(r, g, b)
+
+      {r, g, b, a}
+      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 ->
+        (rgb_to_hex(r, g, b) <> Integer.to_string(a, 16))
+        |> String.pad_leading(2, "0")
     end
   end
 
@@ -446,26 +451,62 @@ defmodule Raxol.UI.Theming.Colors do
 
   @linux_colors [
     # Linux console colors (16 colors)
-    {0, {0, 0, 0}}, {1, {170, 0, 0}}, {2, {0, 170, 0}}, {3, {170, 85, 0}},
-    {4, {0, 0, 170}}, {5, {170, 0, 170}}, {6, {0, 170, 170}}, {7, {170, 170, 170}},
-    {8, {85, 85, 85}}, {9, {255, 85, 85}}, {10, {85, 255, 85}}, {11, {255, 255, 85}},
-    {12, {85, 85, 255}}, {13, {255, 85, 255}}, {14, {85, 255, 255}}, {15, {255, 255, 255}}
+    {0, {0, 0, 0}},
+    {1, {170, 0, 0}},
+    {2, {0, 170, 0}},
+    {3, {170, 85, 0}},
+    {4, {0, 0, 170}},
+    {5, {170, 0, 170}},
+    {6, {0, 170, 170}},
+    {7, {170, 170, 170}},
+    {8, {85, 85, 85}},
+    {9, {255, 85, 85}},
+    {10, {85, 255, 85}},
+    {11, {255, 255, 85}},
+    {12, {85, 85, 255}},
+    {13, {255, 85, 255}},
+    {14, {85, 255, 255}},
+    {15, {255, 255, 255}}
   ]
 
   @mac_colors [
     # macOS Terminal colors (16 colors)
-    {0, {0, 0, 0}}, {1, {194, 54, 33}}, {2, {37, 188, 36}}, {3, {173, 173, 39}},
-    {4, {73, 46, 225}}, {5, {211, 56, 211}}, {6, {51, 187, 200}}, {7, {203, 204, 205}},
-    {8, {129, 131, 131}}, {9, {252, 57, 31}}, {10, {49, 231, 34}}, {11, {234, 236, 35}},
-    {12, {88, 51, 255}}, {13, {249, 53, 248}}, {14, {20, 240, 240}}, {15, {233, 235, 235}}
+    {0, {0, 0, 0}},
+    {1, {194, 54, 33}},
+    {2, {37, 188, 36}},
+    {3, {173, 173, 39}},
+    {4, {73, 46, 225}},
+    {5, {211, 56, 211}},
+    {6, {51, 187, 200}},
+    {7, {203, 204, 205}},
+    {8, {129, 131, 131}},
+    {9, {252, 57, 31}},
+    {10, {49, 231, 34}},
+    {11, {234, 236, 35}},
+    {12, {88, 51, 255}},
+    {13, {249, 53, 248}},
+    {14, {20, 240, 240}},
+    {15, {233, 235, 235}}
   ]
 
   @windows_colors [
     # Windows Terminal colors (16 colors)
-    {0, {12, 12, 12}}, {1, {197, 15, 31}}, {2, {19, 161, 14}}, {3, {193, 156, 0}},
-    {4, {0, 55, 218}}, {5, {136, 23, 152}}, {6, {58, 150, 221}}, {7, {204, 204, 204}},
-    {8, {118, 118, 118}}, {9, {231, 72, 86}}, {10, {22, 198, 12}}, {11, {249, 241, 165}},
-    {12, {59, 120, 255}}, {13, {180, 0, 158}}, {14, {97, 214, 214}}, {15, {242, 242, 242}}
+    {0, {12, 12, 12}},
+    {1, {197, 15, 31}},
+    {2, {19, 161, 14}},
+    {3, {193, 156, 0}},
+    {4, {0, 55, 218}},
+    {5, {136, 23, 152}},
+    {6, {58, 150, 221}},
+    {7, {204, 204, 204}},
+    {8, {118, 118, 118}},
+    {9, {231, 72, 86}},
+    {10, {22, 198, 12}},
+    {11, {249, 241, 165}},
+    {12, {59, 120, 255}},
+    {13, {180, 0, 158}},
+    {14, {97, 214, 214}},
+    {15, {242, 242, 242}}
   ]
 
   # Custom palette registry
@@ -479,11 +520,13 @@ defmodule Raxol.UI.Theming.Colors do
       iex> register_custom_palette(:my_palette, [{0, {0, 0, 0}}, {1, {255, 255, 255}}])
       :ok
   """
-  def register_custom_palette(name, colors) when atom?(name) and list?(colors) do
+  def register_custom_palette(name, colors)
+      when atom?(name) and list?(colors) do
     # Validate color format
     case validate_palette_colors(colors) do
       :ok ->
         Raxol.UI.Theming.PaletteRegistry.register(name, colors)
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -533,29 +576,45 @@ defmodule Raxol.UI.Theming.Colors do
     end
   end
 
-  defp valid_palette_color?({index, {r, g, b}}) when integer?(index) and
-                                                     r in 0..255 and
-                                                     g in 0..255 and
-                                                     b in 0..255 do
+  defp valid_palette_color?({index, {r, g, b}})
+       when integer?(index) and
+              r in 0..255 and
+              g in 0..255 and
+              b in 0..255 do
     true
   end
+
   defp valid_palette_color?(_), do: false
 
   defp find_closest_palette_color(rgb, palette_name) do
     palette =
       case palette_name do
-        :xterm256 -> @ansi_256_colors
-        :basic -> @ansi_basic_colors
-        :linux -> @linux_colors
-        :mac -> @mac_colors
-        :windows -> @windows_colors
-        :xterm -> @xterm_colors
+        :xterm256 ->
+          @ansi_256_colors
+
+        :basic ->
+          @ansi_basic_colors
+
+        :linux ->
+          @linux_colors
+
+        :mac ->
+          @mac_colors
+
+        :windows ->
+          @windows_colors
+
+        :xterm ->
+          @xterm_colors
+
         custom when atom?(custom) ->
           case Raxol.UI.Theming.PaletteRegistry.get(custom) do
             {:ok, colors} -> colors
             {:error, _} -> @ansi_256_colors
           end
-        _ -> @ansi_256_colors
+
+        _ ->
+          @ansi_256_colors
       end
 
     palette

@@ -171,7 +171,8 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
     if msg, do: update(msg, state), else: {state, []}
   end
 
-  defp map_key_to_message(%{key: k, modifiers: []}) when is_binary(k) and byte_size(k) == 1 do
+  defp map_key_to_message(%{key: k, modifiers: []})
+       when is_binary(k) and byte_size(k) == 1 do
     {:insert_char, k}
   end
 
@@ -179,7 +180,10 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   defp map_key_to_message(%{key: "Backspace", modifiers: []}), do: :backspace
   defp map_key_to_message(%{key: "Delete", modifiers: []}), do: :delete
   defp map_key_to_message(%{key: "Left", modifiers: []}), do: :move_cursor_left
-  defp map_key_to_message(%{key: "Right", modifiers: []}), do: :move_cursor_right
+
+  defp map_key_to_message(%{key: "Right", modifiers: []}),
+    do: :move_cursor_right
+
   defp map_key_to_message(%{key: "Home", modifiers: []}), do: :move_cursor_start
   defp map_key_to_message(%{key: "End", modifiers: []}), do: :move_cursor_end
   defp map_key_to_message(_), do: nil

@@ -646,7 +646,8 @@ defmodule Raxol.RuntimeTest do
   defp do_wait_for_model(dispatcher_pid, expected, start, timeout) do
     case GenServer.call(dispatcher_pid, :get_model, 100) do
       {:ok, model} ->
-        expected_with_theme = Map.put(expected, :current_theme_id, "Default Theme")
+        expected_with_theme =
+          Map.put(expected, :current_theme_id, "Default Theme")
 
         if model == expected_with_theme do
           :ok

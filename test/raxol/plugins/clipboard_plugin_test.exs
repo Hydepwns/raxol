@@ -11,8 +11,8 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   # Keep Behaviour alias for type hints if desired, but Mox expects the mock module
   alias Raxol.System.Clipboard.Behaviour, as: ClipboardBehaviour
 
-  # Get the configured mock module
-  @clipboard_mock Application.compile_env!(:raxol, :mocks)[:ClipboardBehaviour]
+  # Get the configured mock module - use the correct mock from test support
+  @clipboard_mock ClipboardMock
 
   # Setup Mox: Define the mock for ClipboardBehaviour
   setup :verify_on_exit!
@@ -131,17 +131,24 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
     test "returns error for unhandled command variants" do
       # Use helper to get state with mock (although mock isn't called)
       initial_state = initial_state_with_mock()
-      # Test calling write handler (arity 2) with wrong args
+
+      # Test calling with empty args - should return unhandled
       assert match?(
                {:error, :unhandled_clipboard_command, ^initial_state},
                ClipboardPlugin.handle_clipboard_command([], initial_state)
              )
 
-      # Test calling read handler (arity 1) with wrong args (impossible? it takes only state)
-      # This test case might be invalid now.
-      # Let's just test calling the write handler with wrong arity again
+      # Add mock expectation for the clipboard_copy call that happens when testing with "unexpected" args
+      expect_clipboard_copy(
+        @clipboard_mock,
+        "unexpected",
+        {:error, :unexpected_call}
+      )
+
+      # Test calling with unexpected args - should return clipboard write failure
       assert match?(
-               {:error, :unhandled_clipboard_command, ^initial_state},
+               {:error, {:clipboard_write_failed, :unexpected_call},
+                ^initial_state},
                ClipboardPlugin.handle_clipboard_command(
                  ["unexpected"],
                  initial_state

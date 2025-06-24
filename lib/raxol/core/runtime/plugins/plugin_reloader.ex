@@ -25,7 +25,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
            {:ok, updated_state} <-
              initialize_plugin_state(plugin_module, plugin_state),
            {:ok, updated_table} <-
-             PluginCommandManager.update_command_table(command_table, plugin_module, updated_state) do
+             PluginCommandManager.update_command_table(
+               command_table,
+               plugin_module,
+               updated_state
+             ) do
         {:ok, updated_state, updated_table,
          update_metadata(metadata, plugin_id, plugin_path, updated_state)}
       else

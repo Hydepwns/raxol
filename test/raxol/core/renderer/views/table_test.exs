@@ -208,10 +208,11 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
     end
 
     test "renders table with row selection" do
-      props = Map.merge(basic_table_props(), %{
-        selectable: true,
-        selected: 0
-      })
+      props =
+        Map.merge(basic_table_props(), %{
+          selectable: true,
+          selected: 0
+        })
 
       state = Table.init(props)
       assert state.selectable == true

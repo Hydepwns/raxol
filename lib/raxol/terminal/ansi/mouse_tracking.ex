@@ -91,15 +91,15 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
 
       case sequence do
         <<"\e[M", button, x, y>> ->
-          b = button - 32
-          xx = x - 32
-          yy = y - 32
+          # Decode coordinates: they are encoded as x+32, y+32
+          decoded_x = x - 32
+          decoded_y = y - 32
 
           IO.puts(
-            "parse_mouse_sequence: b=#{inspect(b)}, xx=#{inspect(xx)}, yy=#{inspect(yy)}"
+            "parse_mouse_sequence: button=#{inspect(button)}, decoded_x=#{inspect(decoded_x)}, decoded_y=#{inspect(decoded_y)}"
           )
 
-          parse_mouse_event(b, xx, yy)
+          parse_mouse_event(button, decoded_x, decoded_y)
 
         <<"\e[<", rest::binary>> ->
           parse_sgr_mouse_event(rest)

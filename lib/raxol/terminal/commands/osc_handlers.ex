@@ -1,37 +1,9 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers do
-  @moduledoc """
-  Handles Operating System Command (OSC) sequences.
-
-  This module dispatches OSC commands to their respective handlers based on the command number.
-  Each handler is responsible for a specific set of related commands.
-
-  ## Supported Commands
-
-  - Window Operations (OSC 0, 1, 2, 7, 8, 1337)
-  - Color Palette (OSC 4)
-  - Clipboard Operations (OSC 9, 52)
-  - Color Management (OSC 10, 11, 12, 17, 19)
-  - Cursor and Font (OSC 12, 50, 112)
-  - Selection (OSC 51)
-  """
+  @moduledoc false
 
   alias Raxol.Terminal.{Emulator, Commands.OSCHandlers}
   require Raxol.Core.Runtime.Log
 
-  @doc """
-  Handles an OSC command by dispatching it to the appropriate handler.
-
-  ## Parameters
-
-  - `emulator` - The terminal emulator state
-  - `command` - The OSC command number
-  - `data` - The command data
-
-  ## Returns
-
-  - `{:ok, emulator}` - Command handled successfully
-  - `{:error, reason, emulator}` - Command failed with reason
-  """
   @spec handle(Emulator.t(), non_neg_integer(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle(emulator, command, data) do
@@ -110,7 +82,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
     end
   end
 
-  # --- Stubs for missing OSC handler functions (for test pass) ---
   def handle_window_title(emulator, _data), do: {:ok, emulator}
   def handle_icon_name(emulator, _data), do: {:ok, emulator}
   def handle_icon_title(emulator, _data), do: {:ok, emulator}
@@ -122,7 +93,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   def handle_clipboard_set(emulator, _data), do: {:ok, emulator}
   def handle_osc4_color(emulator, _idx, _color), do: {:ok, emulator}
 
-  # Additional missing functions
   def handle_4(emulator, _data), do: {:ok, emulator}
   def handle_clipboard_get(emulator), do: {:ok, emulator}
   def handle_cursor_color(emulator, _data), do: {:ok, emulator}
@@ -130,7 +100,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   def handle_highlight_foreground_color(emulator, _data), do: {:ok, emulator}
   def handle_mouse_background_color(emulator, _data), do: {:ok, emulator}
 
-  # Window handler functions
   def handle_window_fullscreen(emulator), do: {:ok, emulator}
   def handle_window_maximize(emulator), do: {:ok, emulator}
   def handle_window_size(emulator, _width, _height), do: {:ok, emulator}

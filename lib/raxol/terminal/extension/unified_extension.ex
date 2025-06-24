@@ -261,7 +261,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   @impl true
-  def handle_call({:execute_command, extension_id, command, _args}, _from, state) do
+  def handle_call(
+        {:execute_command, extension_id, command, _args},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
@@ -415,14 +419,16 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       name: Keyword.get(opts, :name, manifest["name"] || "Unnamed Extension"),
       type: type,
       version: Keyword.get(opts, :version, manifest["version"] || "1.0.0"),
-      description: Keyword.get(opts, :description, manifest["description"] || ""),
+      description:
+        Keyword.get(opts, :description, manifest["description"] || ""),
       author: Keyword.get(opts, :author, manifest["author"] || "Unknown"),
       license: Keyword.get(opts, :license, manifest["license"] || "MIT"),
       config: config,
       status: :idle,
       error: nil,
       metadata: Keyword.get(opts, :metadata, manifest["metadata"] || %{}),
-      dependencies: Keyword.get(opts, :dependencies, manifest["dependencies"] || []),
+      dependencies:
+        Keyword.get(opts, :dependencies, manifest["dependencies"] || []),
       hooks: Keyword.get(opts, :hooks, manifest["hooks"] || []),
       commands: Keyword.get(opts, :commands, manifest["commands"] || []),
       module: module,
@@ -440,7 +446,9 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           {:ok, manifest} -> manifest
           {:error, _reason} -> %{}
         end
-      {:error, _reason} -> %{}
+
+      {:error, _reason} ->
+        %{}
     end
   end
 
@@ -475,13 +483,18 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         case plugin_files do
           [plugin_file | _] ->
             plugin_path = Path.join(path, plugin_file)
+
             case Code.compile_file(plugin_path) do
               [{module, _}] -> {:ok, module}
               _ -> {:error, :compilation_failed}
             end
-          [] -> {:error, :no_plugin_files}
+
+          [] ->
+            {:error, :no_plugin_files}
         end
-      {:error, _reason} -> {:error, :directory_not_found}
+
+      {:error, _reason} ->
+        {:error, :directory_not_found}
     end
   end
 
@@ -535,9 +548,9 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
   defp validate_extension(extension) do
     validate_extension_type(extension.type) == :ok and
-    validate_extension_config(extension.config) == :ok and
-    validate_extension_dependencies(extension.dependencies) == :ok and
-    validate_extension_module(extension.module) == :ok
+      validate_extension_config(extension.config) == :ok and
+      validate_extension_dependencies(extension.dependencies) == :ok and
+      validate_extension_module(extension.module) == :ok
   end
 
   defp validate_extension_type(type)
@@ -556,7 +569,8 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     do: {:error, :invalid_extension_dependencies}
 
   defp validate_extension_module({:ok, _module}), do: :ok
-  defp validate_extension_module({:error, _reason}), do: :ok  # Allow extensions without modules
+  # Allow extensions without modules
+  defp validate_extension_module({:error, _reason}), do: :ok
   defp validate_extension_module(nil), do: :ok
   defp validate_extension_module(_), do: {:error, :invalid_extension_module}
 
@@ -564,8 +578,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     case extension.module do
       {:ok, module} ->
         execute_module_command(module, extension.type, command, _args)
+
       nil ->
         execute_fallback_command(extension, command, _args)
+
       _ ->
         execute_fallback_command(extension, command, _args)
     end
@@ -580,18 +596,21 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           else
             {:error, :command_not_implemented}
           end
+
         :plugin ->
           if function_exported?(module, :run_extension, 2) do
             module.run_extension(command, _args)
           else
             {:error, :command_not_implemented}
           end
+
         :theme ->
           if function_exported?(module, :apply_theme, 1) do
             module.apply_theme(_args)
           else
             {:error, :command_not_implemented}
           end
+
         :custom ->
           if function_exported?(module, :execute_feature, 2) do
             module.execute_feature(command, _args)
@@ -611,10 +630,13 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     case extension.type do
       :script ->
         {:ok, "Script command '#{command}' executed"}
+
       :plugin ->
         {:ok, "Plugin command '#{command}' executed"}
+
       :theme ->
         {:ok, "Theme command '#{command}' executed"}
+
       :custom ->
         {:ok, "Custom command '#{command}' executed"}
     end
@@ -627,12 +649,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           if function_exported?(module, :init, 0) do
             module.init()
           end
+
           {:ok, extension}
         rescue
           e ->
             Logger.error("Extension initialization failed: #{inspect(e)}")
             {:error, :initialization_failed}
         end
+
       _ ->
         {:ok, extension}
     end
@@ -645,12 +669,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           if function_exported?(module, :cleanup, 0) do
             module.cleanup()
           end
+
           {:ok, extension}
         rescue
           e ->
             Logger.error("Extension cleanup failed: #{inspect(e)}")
             {:error, :cleanup_failed}
         end
+
       _ ->
         {:ok, extension}
     end
@@ -667,6 +693,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           e ->
             Logger.error("Extension cleanup failed: #{inspect(e)}")
         end
+
       _ ->
         :ok
     end
@@ -691,6 +718,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
       # Export manifest
       manifest_path = Path.join(path, @manifest_file)
+
       manifest = %{
         "name" => extension.name,
         "version" => extension.version,
@@ -708,6 +736,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
       # Export configuration
       config_path = Path.join(path, @config_file)
+
       config_content = """
       # Extension Configuration
       # Generated on #{DateTime.utc_now()}
@@ -716,6 +745,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         #{format_config(extension.config)}
       }
       """
+
       File.write!(config_path, config_content)
 
       # Copy source files if they exist
@@ -743,8 +773,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     case File.stat(source_path) do
       {:ok, %{type: :directory}} ->
         File.cp_r!(source_path, dest_path)
+
       {:ok, %{type: :regular}} ->
         File.cp!(source_path, dest_path)
+
       _ ->
         :ok
     end
@@ -756,8 +788,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       case File.stat(path) do
         {:ok, %{type: :directory}} ->
           import_extension_from_directory(path, opts)
+
         {:ok, %{type: :regular}} ->
           import_extension_from_file(path, opts)
+
         _ ->
           {:error, :invalid_path}
       end
@@ -777,10 +811,17 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         case Jason.decode(content) do
           {:ok, manifest} ->
             type = String.to_existing_atom(manifest["type"])
-            load_extension_state(path, type, Keyword.merge(opts, manifest_to_opts(manifest)))
+
+            load_extension_state(
+              path,
+              type,
+              Keyword.merge(opts, manifest_to_opts(manifest))
+            )
+
           {:error, reason} ->
             {:error, reason}
         end
+
       {:error, _reason} ->
         # Try to infer type from directory structure
         inferred_type = infer_extension_type(path)
@@ -796,22 +837,32 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           [{module, _}] ->
             inferred_type = infer_type_from_module(module)
             load_extension_state(Path.dirname(path), inferred_type, opts)
+
           _ ->
             {:error, :compilation_failed}
         end
+
       ".json" ->
         case File.read(path) do
           {:ok, content} ->
             case Jason.decode(content) do
               {:ok, manifest} ->
                 type = String.to_existing_atom(manifest["type"])
-                load_extension_state(Path.dirname(path), type, Keyword.merge(opts, manifest_to_opts(manifest)))
+
+                load_extension_state(
+                  Path.dirname(path),
+                  type,
+                  Keyword.merge(opts, manifest_to_opts(manifest))
+                )
+
               {:error, reason} ->
                 {:error, reason}
             end
+
           {:error, reason} ->
             {:error, reason}
         end
+
       _ ->
         {:error, :unsupported_file_type}
     end
@@ -841,7 +892,9 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           Enum.any?(files, &String.contains?(&1, "plugin")) -> :plugin
           true -> :custom
         end
-      {:error, _reason} -> :custom
+
+      {:error, _reason} ->
+        :custom
     end
   end
 
@@ -860,8 +913,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       case File.stat(path) do
         {:ok, %{type: :directory}} ->
           load_extensions_from_directory(path)
+
         {:ok, %{type: :regular}} ->
           load_extension_from_file(path)
+
         _ ->
           Logger.warning("Invalid extension path: #{path}")
       end
@@ -873,15 +928,19 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       {:ok, entries} ->
         Enum.each(entries, fn entry ->
           entry_path = Path.join(path, entry)
+
           case File.stat(entry_path) do
             {:ok, %{type: :directory}} ->
               load_extension_from_directory(entry_path)
+
             {:ok, %{type: :regular}} ->
               load_extension_from_file(entry_path)
+
             _ ->
               :ok
           end
         end)
+
       {:error, reason} ->
         Logger.error("Failed to list directory #{path}: #{inspect(reason)}")
     end
@@ -897,9 +956,13 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           {:ok, manifest} ->
             type = String.to_existing_atom(manifest["type"])
             load_extension(path, type, manifest_to_opts(manifest))
+
           {:error, reason} ->
-            Logger.error("Failed to parse manifest in #{path}: #{inspect(reason)}")
+            Logger.error(
+              "Failed to parse manifest in #{path}: #{inspect(reason)}"
+            )
         end
+
       {:error, _reason} ->
         # Try to infer type
         inferred_type = infer_extension_type(path)
@@ -914,22 +977,36 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           [{module, _}] ->
             inferred_type = infer_type_from_module(module)
             load_extension(Path.dirname(path), inferred_type, [])
+
           _ ->
             Logger.error("Failed to compile extension file: #{path}")
         end
+
       ".json" ->
         case File.read(path) do
           {:ok, content} ->
             case Jason.decode(content) do
               {:ok, manifest} ->
                 type = String.to_existing_atom(manifest["type"])
-                load_extension(Path.dirname(path), type, manifest_to_opts(manifest))
+
+                load_extension(
+                  Path.dirname(path),
+                  type,
+                  manifest_to_opts(manifest)
+                )
+
               {:error, reason} ->
-                Logger.error("Failed to parse JSON file: #{path}, reason: #{inspect(reason)}")
+                Logger.error(
+                  "Failed to parse JSON file: #{path}, reason: #{inspect(reason)}"
+                )
             end
+
           {:error, reason} ->
-            Logger.error("Failed to read file: #{path}, reason: #{inspect(reason)}")
+            Logger.error(
+              "Failed to read file: #{path}, reason: #{inspect(reason)}"
+            )
         end
+
       _ ->
         :ok
     end

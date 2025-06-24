@@ -619,7 +619,10 @@ defmodule Raxol.Core.FocusManager do
       focusables
       |> Enum.map(fn {group, components} ->
         updated_components =
-          Enum.map(components, &update_component_if_match(&1, component_id, field, value))
+          Enum.map(
+            components,
+            &update_component_if_match(&1, component_id, field, value)
+          )
 
         {group, updated_components}
       end)
@@ -630,7 +633,9 @@ defmodule Raxol.Core.FocusManager do
   end
 
   defp update_component_if_match(component, component_id, field, value) do
-    if component.id == component_id, do: Map.put(component, field, value), else: component
+    if component.id == component_id,
+      do: Map.put(component, field, value),
+      else: component
   end
 
   defp announce_focus_change(message) do

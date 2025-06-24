@@ -46,7 +46,9 @@ defmodule Raxol.Auth.Plug do
         |> configure_session(renew: true)
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning("Authentication failed for user: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.warning(
+          "Authentication failed for user: #{inspect(reason)}"
+        )
 
         conn
         |> put_flash(:error, "Invalid email or password")
@@ -82,7 +84,10 @@ defmodule Raxol.Auth.Plug do
 
       conn
     else
-      Raxol.Core.Runtime.Log.warning("Authorization failed for user #{user.id} on #{inspect(module)}.#{action}")
+      Raxol.Core.Runtime.Log.warning(
+        "Authorization failed for user #{user.id} on #{inspect(module)}.#{action}"
+      )
+
       conn
       |> put_status(:forbidden)
       |> text("Forbidden")

@@ -574,7 +574,3 @@ defmodule Raxol.Terminal.Buffer.Manager do
     %{emulator | buffer: new()}
   end
 end
-
-defmodule Buffer.Manager do
-  def update_active_buffer(_a, _b), do: :ok
-end

@@ -129,7 +129,7 @@ defmodule Raxol.Terminal.Buffer.Updater do
   end
 
   defp get_codepoint(%Cell{char: char})
-    when is_binary(char) and byte_size(char) > 0 do
+       when is_binary(char) and byte_size(char) > 0 do
     hd(String.to_charlist(char))
   end
 

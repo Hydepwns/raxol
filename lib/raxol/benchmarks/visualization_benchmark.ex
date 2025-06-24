@@ -558,7 +558,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   end
 
   defp get_size_extremes(results) do
-    sorted = Enum.sort_by(results, &(&1.size))
+    sorted = Enum.sort_by(results, & &1.size)
 
     if length(sorted) >= 2,
       do: {List.first(sorted), List.last(sorted)},

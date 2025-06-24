@@ -361,7 +361,9 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
         # Find the oldest buffer to evict (from the largest list)
         {evict_key, evict_list} =
           pool.buffers
-          |> Enum.max_by(fn {_k, v} -> length(v) end, fn -> {key, new_buffers} end)
+          |> Enum.max_by(fn {_k, v} -> length(v) end, fn ->
+            {key, new_buffers}
+          end)
 
         # Remove the last buffer from the evict_list
         updated_evict_list = Enum.drop(evict_list, -1)
@@ -401,7 +403,8 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     end
   end
 
-  defp calculate_average_time(times) when is_list(times) and length(times) > 0 do
+  defp calculate_average_time(times)
+       when is_list(times) and length(times) > 0 do
     Enum.sum(times) / length(times)
   end
 
@@ -421,7 +424,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     %{
       state
       | level: Kernel.min(state.level + 1, 9),
-        threshold: Kernel.max(state.threshold div 2, 256)
+        threshold: Kernel.max(state.threshold(div(2, 256)))
     }
   end
 
@@ -436,7 +439,8 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     recent_compression_times = Enum.take(metrics.compression_times, 10)
 
     case {recent_update_times, recent_compression_times} do
-      {updates, compressions} when length(updates) >= 5 and length(compressions) >= 3 ->
+      {updates, compressions}
+      when length(updates) >= 5 and length(compressions) >= 3 ->
         avg_recent_update = calculate_average_time(updates)
         avg_recent_compression = calculate_average_time(compressions)
 

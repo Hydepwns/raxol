@@ -17,7 +17,8 @@ defmodule Raxol.Style.Colors.PaletteManager do
   List of hex color strings with sufficient contrast ratios
   """
   @spec generate_scale(String.t(), pos_integer()) :: [String.t()]
-  def generate_scale(base_color, steps) when binary?(base_color) and steps > 0 do
+  def generate_scale(base_color, steps)
+      when binary?(base_color) and steps > 0 do
     # Convert hex to HSL for easier manipulation
     {h, s, l} = hex_to_hsl(base_color)
 
@@ -26,7 +27,7 @@ defmodule Raxol.Style.Colors.PaletteManager do
     light_step = l / (steps - 1)
 
     Enum.map(0..(steps - 1), fn i ->
-      new_l = max(0.1, min(0.9, l - (i * light_step)))
+      new_l = max(0.1, min(0.9, l - i * light_step))
       hsl_to_hex(h, s, new_l)
     end)
     |> ensure_accessible_contrast()
@@ -69,15 +70,18 @@ defmodule Raxol.Style.Colors.PaletteManager do
   end
 
   defp calculate_saturation(delta, max_val, min_val, l) do
-    if l > 0.5, do: delta / (2 - max_val - min_val), else: delta / (max_val + min_val)
+    if l > 0.5,
+      do: delta / (2 - max_val - min_val),
+      else: delta / (max_val + min_val)
   end
 
   defp calculate_hue(r, g, b, max_val, delta) do
-    h = cond do
-      max_val == r -> ((g - b) / delta) * 60
-      max_val == g -> (((b - r) / delta) + 2) * 60
-      max_val == b -> (((r - g) / delta) + 4) * 60
-    end
+    h =
+      cond do
+        max_val == r -> (g - b) / delta * 60
+        max_val == g -> ((b - r) / delta + 2) * 60
+        max_val == b -> ((r - g) / delta + 4) * 60
+      end
 
     if h < 0, do: h + 360, else: h
   end
@@ -173,7 +177,9 @@ defmodule Raxol.Style.Colors.PaletteManager do
   end
 
   defp calculate_channel_luminance(channel) do
-    if channel <= 0.03928, do: channel / 12.92, else: :math.pow((channel + 0.055) / 1.055, 2.4)
+    if channel <= 0.03928,
+      do: channel / 12.92,
+      else: :math.pow((channel + 0.055) / 1.055, 2.4)
   end
 
   defp adjust_for_contrast(color, background, min_ratio) do
@@ -184,7 +190,14 @@ defmodule Raxol.Style.Colors.PaletteManager do
     hsl_to_hex(h, s, adjusted_l)
   end
 
-  defp adjust_lightness_for_contrast(h, s, l, background, min_ratio, attempts \\ 0) do
+  defp adjust_lightness_for_contrast(
+         h,
+         s,
+         l,
+         background,
+         min_ratio,
+         attempts \\ 0
+       ) do
     if attempts >= 20 do
       # Fallback to a safe color if we can't achieve contrast
       0.8
@@ -196,7 +209,15 @@ defmodule Raxol.Style.Colors.PaletteManager do
       else
         # Increase lightness and try again
         new_l = min(0.95, l + 0.05)
-        adjust_lightness_for_contrast(h, s, new_l, background, min_ratio, attempts + 1)
+
+        adjust_lightness_for_contrast(
+          h,
+          s,
+          new_l,
+          background,
+          min_ratio,
+          attempts + 1
+        )
       end
     end
   end

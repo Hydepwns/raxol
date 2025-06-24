@@ -181,6 +181,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
       initial_g0_for_portuguese_call = emulator.charset_state.g0
       portuguese_char_code = ?'
+
       result_portuguese =
         unwrap_ok(
           CSIHandlers.handle_scs(emulator, <<portuguese_char_code>>, 40)

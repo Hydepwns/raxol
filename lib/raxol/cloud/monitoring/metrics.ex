@@ -80,7 +80,12 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
 
     %{
       limit: Keyword.get(opts, :limit, 100),
-      since: Keyword.get(opts, :since, DateTime.add(DateTime.utc_now(), -60 * 60, :second)),
+      since:
+        Keyword.get(
+          opts,
+          :since,
+          DateTime.add(DateTime.utc_now(), -60 * 60, :second)
+        ),
       until: Keyword.get(opts, :until, DateTime.utc_now()),
       tags: Keyword.get(opts, :tags)
     }
@@ -103,7 +108,9 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   defp tags_match?(_metric, nil), do: true
-  defp tags_match?(metric, tags), do: Enum.all?(tags, &(&1 in Map.get(metric, :tags, [])))
+
+  defp tags_match?(metric, tags),
+    do: Enum.all?(tags, &(&1 in Map.get(metric, :tags, [])))
 
   def count() do
     metrics_state = get_metrics_state()

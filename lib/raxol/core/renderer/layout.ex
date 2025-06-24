@@ -140,7 +140,9 @@ defmodule Raxol.Core.Renderer.Layout do
       %{children: children} when list?(children) ->
         # Container with children - layout children recursively
         children
-        |> Enum.flat_map(fn child -> layout_single_view(child, available_space) end)
+        |> Enum.flat_map(fn child ->
+          layout_single_view(child, available_space)
+        end)
 
       _ ->
         # Unknown or simple view - return as is
@@ -166,13 +168,15 @@ defmodule Raxol.Core.Renderer.Layout do
       calculate_content_area(box_size, padding, margin, border)
 
     # Create positioned box
-    positioned_box = box
-    |> Map.put(:position, {content_x, content_y})
-    |> Map.put(:size, box_size)
+    positioned_box =
+      box
+      |> Map.put(:position, {content_x, content_y})
+      |> Map.put(:size, box_size)
 
     # Layout children if any
     if list?(children) and children != [] do
       child_space = {content_width, content_height}
+
       positioned_children =
         children
         |> Enum.flat_map(fn child -> layout_single_view(child, child_space) end)
@@ -195,9 +199,10 @@ defmodule Raxol.Core.Renderer.Layout do
     text_width = String.length(content)
     text_height = 1
 
-    positioned_text = text
-    |> Map.put(:position, {0, 0})
-    |> Map.put(:size, {min(text_width, width), min(text_height, height)})
+    positioned_text =
+      text
+      |> Map.put(:position, {0, 0})
+      |> Map.put(:size, {min(text_width, width), min(text_height, height)})
 
     [positioned_text]
   end
@@ -210,9 +215,10 @@ defmodule Raxol.Core.Renderer.Layout do
     text_width = String.length(content)
     text_height = 1
 
-    positioned_label = label
-    |> Map.put(:position, {0, 0})
-    |> Map.put(:size, {min(text_width, width), min(text_height, height)})
+    positioned_label =
+      label
+      |> Map.put(:position, {0, 0})
+      |> Map.put(:size, {min(text_width, width), min(text_height, height)})
 
     [positioned_label]
   end
@@ -225,9 +231,10 @@ defmodule Raxol.Core.Renderer.Layout do
     button_width = min(String.length(label) + 4, width)
     button_height = 3
 
-    positioned_button = button
-    |> Map.put(:position, {0, 0})
-    |> Map.put(:size, {button_width, button_height})
+    positioned_button =
+      button
+      |> Map.put(:position, {0, 0})
+      |> Map.put(:size, {button_width, button_height})
 
     [positioned_button]
   end
@@ -243,9 +250,10 @@ defmodule Raxol.Core.Renderer.Layout do
     text_width = String.length(text)
     text_height = 1
 
-    positioned_checkbox = checkbox
-    |> Map.put(:position, {0, 0})
-    |> Map.put(:size, {min(text_width, width), min(text_height, height)})
+    positioned_checkbox =
+      checkbox
+      |> Map.put(:position, {0, 0})
+      |> Map.put(:size, {min(text_width, width), min(text_height, height)})
 
     [positioned_checkbox]
   end
@@ -256,12 +264,16 @@ defmodule Raxol.Core.Renderer.Layout do
     case Map.get(box, :size) do
       {w, h} when integer?(w) and integer?(h) ->
         {max(0, w), max(0, h)}
+
       {w, :auto} when integer?(w) ->
         {max(0, w), max(0, available_height)}
+
       {:auto, h} when integer?(h) ->
         {max(0, available_width), max(0, h)}
+
       :auto ->
         {max(0, available_width), max(0, available_height)}
+
       _ ->
         {max(0, available_width), max(0, available_height)}
     end
@@ -277,8 +289,8 @@ defmodule Raxol.Core.Renderer.Layout do
     content_width = box_width - padding_left - padding_right - border_width
     content_height = box_height - padding_top - padding_bottom - border_width
 
-    content_x = margin_left + padding_left + (if border, do: 1, else: 0)
-    content_y = margin_top + padding_top + (if border, do: 1, else: 0)
+    content_x = margin_left + padding_left + if border, do: 1, else: 0
+    content_y = margin_top + padding_top + if border, do: 1, else: 0
 
     {content_x, content_y, max(0, content_width), max(0, content_height)}
   end

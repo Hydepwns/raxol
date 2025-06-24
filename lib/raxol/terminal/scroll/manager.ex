@@ -108,6 +108,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
           history
           |> filter_by_direction(direction)
           |> limit_results(limit)
+
         {:ok, result, manager}
 
       {:error, _} ->
@@ -165,7 +166,10 @@ defmodule Raxol.Terminal.Scroll.Manager do
     # Use prediction if enabled and available
     manager =
       if predict and manager.predictor do
-        %{manager | predictor: Predictor.predict(manager.predictor, direction, amount)}
+        %{
+          manager
+          | predictor: Predictor.predict(manager.predictor, direction, amount)
+        }
         |> update_metrics(:prediction)
       else
         manager
@@ -174,7 +178,10 @@ defmodule Raxol.Terminal.Scroll.Manager do
     # Use optimization if enabled and available
     manager =
       if optimize and manager.optimizer do
-        %{manager | optimizer: Optimizer.optimize(manager.optimizer, direction, amount)}
+        %{
+          manager
+          | optimizer: Optimizer.optimize(manager.optimizer, direction, amount)
+        }
         |> update_metrics(:optimization)
       else
         manager
@@ -235,18 +242,25 @@ defmodule Raxol.Terminal.Scroll.Manager do
   defp update_metrics(manager, :prediction) do
     %{
       manager
-      | metrics: %{manager.metrics | predictions: manager.metrics.predictions + 1}
+      | metrics: %{
+          manager.metrics
+          | predictions: manager.metrics.predictions + 1
+        }
     }
   end
 
   defp update_metrics(manager, :optimization) do
     %{
       manager
-      | metrics: %{manager.metrics | optimizations: manager.metrics.optimizations + 1}
+      | metrics: %{
+          manager.metrics
+          | optimizations: manager.metrics.optimizations + 1
+        }
     }
   end
 
   defp filter_by_direction(history, nil), do: history
+
   defp filter_by_direction(history, direction) do
     Enum.filter(history, fn entry -> entry.direction == direction end)
   end

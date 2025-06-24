@@ -251,7 +251,8 @@ defmodule Raxol.Terminal.Tab.Manager do
   Sets a horizontal tab stop at the specified position.
   """
   @spec set_horizontal_tab(t(), non_neg_integer()) :: t()
-  def set_horizontal_tab(manager, position) when is_integer(position) and position >= 0 do
+  def set_horizontal_tab(manager, position)
+      when is_integer(position) and position >= 0 do
     %{manager | tab_stops: MapSet.put(manager.tab_stops, position)}
   end
 
@@ -298,6 +299,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     state = %__MODULE__{
       default_tab_width: Keyword.get(opts, :default_tab_width, 8)
     }
+
     {:ok, state}
   end
 

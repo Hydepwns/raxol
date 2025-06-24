@@ -46,6 +46,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginUnloader do
       nil,
       %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
     )
+
     {:error, reason}
   end
 end

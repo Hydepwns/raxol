@@ -112,7 +112,8 @@ defmodule Raxol.Plugins.Manager.Core do
   Unloads a plugin by name and cleans up its resources.
   Delegates to Raxol.Plugins.Lifecycle.unload_plugin/2.
   """
-  def unload_plugin(%__MODULE__{} = manager, plugin_name) when binary?(plugin_name) do
+  def unload_plugin(%__MODULE__{} = manager, plugin_name)
+      when binary?(plugin_name) do
     Raxol.Plugins.Lifecycle.unload_plugin(manager, plugin_name)
   end
 end

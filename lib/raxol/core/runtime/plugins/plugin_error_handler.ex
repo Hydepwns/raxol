@@ -33,6 +33,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginErrorHandler do
       nil,
       %{module: __MODULE__, event: event, reason: reason}
     )
+
     {:error, reason}
   end
 end

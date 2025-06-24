@@ -123,17 +123,35 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   @doc """
-  Prepends lines to the top of the screen buffer, shifting existing content down.
-  Lines shifted off the bottom are moved to the scrollback buffer.
+  Prepends a specified number of empty lines to the buffer.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `count` - The number of empty lines to prepend
+
+  ## Returns
+
+  The updated screen buffer with empty lines prepended.
+
+  ## Examples
+
+      iex> buffer = ScreenBuffer.new(80, 24)
+      iex> buffer = LineOperations.prepend_lines(buffer, 2)
+      iex> length(buffer.cells)
+      24
   """
-  @spec prepend_lines(ScreenBuffer.t(), list(list(Cell.t()))) ::
+  @spec prepend_lines(ScreenBuffer.t(), non_neg_integer()) ::
           ScreenBuffer.t()
-  def prepend_lines(buffer, lines) do
+  def prepend_lines(buffer, count) when count > 0 do
+    # Create empty lines to prepend
+    empty_lines = create_empty_lines(buffer.width, count)
+
     # Calculate how many lines will be shifted to scrollback
-    overflow = max(0, length(lines) - buffer.height)
+    overflow = max(0, count - buffer.height)
 
     # Split lines into those that fit and those that go to scrollback
-    {visible_lines, scrollback_lines} = Enum.split(lines, buffer.height)
+    {visible_lines, scrollback_lines} = Enum.split(empty_lines, buffer.height)
 
     # Shift existing content down
     {shifted_content, new_scrollback} =
@@ -157,6 +175,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
 
     %{buffer | cells: shifted_content, scrollback: final_scrollback}
   end
+
+  def prepend_lines(buffer, _count), do: buffer
 
   @doc """
   Removes lines from the top of the buffer.
@@ -296,7 +316,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
           list(Cell.t())
   def create_empty_line(width, style \\ nil) do
     for _ <- 1..width do
-      Cell.new("", style)
+      Cell.new(" ", style)
     end
   end
 
@@ -331,7 +351,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     line = get_line(buffer, row)
 
     if line do
-      new_line = List.update_at(line, col, fn _ -> Cell.new("") end)
+      new_line = List.update_at(line, col, fn _ -> Cell.new(" ") end)
       update_line(buffer, row, new_line)
     else
       buffer

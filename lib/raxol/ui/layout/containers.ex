@@ -286,7 +286,7 @@ defmodule Raxol.UI.Layout.Containers do
         %{type: :column, attrs: _attrs, children: children},
         available_space
       )
-    when list?(children) do
+      when list?(children) do
     # Skip if no children
     if children == [] do
       %{width: 0, height: 0}

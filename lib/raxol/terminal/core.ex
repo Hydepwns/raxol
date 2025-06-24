@@ -12,6 +12,7 @@ defmodule Raxol.Terminal.Core do
     :current_hyperlink_url,
     :tab_stops,
     :scroll_region,
+    :saved_cursor,
     mounted: false,
     render_count: 0
   ]
@@ -24,6 +25,7 @@ defmodule Raxol.Terminal.Core do
           memory_limit: integer() | nil,
           current_hyperlink_url: String.t() | nil,
           tab_stops: any(),
-          scroll_region: {non_neg_integer(), non_neg_integer()} | nil
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+          saved_cursor: {non_neg_integer(), non_neg_integer()} | nil
         }
 end

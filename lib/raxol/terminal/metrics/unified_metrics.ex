@@ -292,7 +292,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       metrics ->
         case hd(metrics).type do
           :counter -> Enum.sum(Enum.map(metrics, & &1.value))
-          :gauge -> List.last(metrics).value
+          :gauge -> List.first(metrics).value
           :histogram -> calculate_histogram_stats(metrics)
           :summary -> calculate_summary_stats(metrics)
         end

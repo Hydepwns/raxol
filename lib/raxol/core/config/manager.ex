@@ -129,7 +129,9 @@ defmodule Raxol.Core.Config.Manager do
     config_file = Keyword.get(opts, :config_file, "config/raxol.exs")
     env = Keyword.get(opts, :env, Mix.env())
     validate = Keyword.get(opts, :validate, true)
-    persistent_file = Keyword.get(opts, :persistent_file, @persistent_config_file)
+
+    persistent_file =
+      Keyword.get(opts, :persistent_file, @persistent_config_file)
 
     state = %{
       config: %{},
@@ -182,6 +184,7 @@ defmodule Raxol.Core.Config.Manager do
       :ok ->
         new_state = update_in(state.config, &Map.delete(&1, key))
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -210,8 +213,11 @@ defmodule Raxol.Core.Config.Manager do
           {:ok, new_state} ->
             # Load and merge persistent config
             load_persistent_config(new_state)
-          error -> error
+
+          error ->
+            error
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -234,9 +240,11 @@ defmodule Raxol.Core.Config.Manager do
         # Merge persistent config with base config
         merged_config = Map.merge(state.config, persistent_config)
         {:ok, %{state | config: merged_config}}
+
       {:error, :file_not_found} ->
         # No persistent config file exists, use base config
         {:ok, state}
+
       {:error, reason} ->
         Logger.warning("Failed to load persistent config: #{inspect(reason)}")
         {:ok, state}
@@ -376,11 +384,14 @@ defmodule Raxol.Core.Config.Manager do
     case Jason.encode(updated_config, pretty: true) do
       {:ok, json_content} ->
         case File.write(persistent_file, json_content) do
-          :ok -> :ok
+          :ok ->
+            :ok
+
           {:error, reason} ->
             Logger.error("Failed to persist config change: #{inspect(reason)}")
             {:error, :persistence_failed}
         end
+
       {:error, reason} ->
         Logger.error("Failed to encode config: #{inspect(reason)}")
         {:error, :encoding_failed}
@@ -400,11 +411,17 @@ defmodule Raxol.Core.Config.Manager do
     case Jason.encode(updated_config, pretty: true) do
       {:ok, json_content} ->
         case File.write(persistent_file, json_content) do
-          :ok -> :ok
+          :ok ->
+            :ok
+
           {:error, reason} ->
-            Logger.error("Failed to persist config deletion: #{inspect(reason)}")
+            Logger.error(
+              "Failed to persist config deletion: #{inspect(reason)}"
+            )
+
             {:error, :persistence_failed}
         end
+
       {:error, reason} ->
         Logger.error("Failed to encode config: #{inspect(reason)}")
         {:error, :encoding_failed}
@@ -434,11 +451,14 @@ defmodule Raxol.Core.Config.Manager do
           case Jason.decode(content) do
             {:ok, config} when is_map(config) ->
               {:ok, config}
+
             {:ok, _} ->
               {:error, :invalid_config_format}
+
             {:error, reason} ->
               {:error, reason}
           end
+
         {:error, reason} ->
           {:error, reason}
       end

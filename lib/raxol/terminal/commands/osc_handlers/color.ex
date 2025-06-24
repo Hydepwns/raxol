@@ -145,10 +145,11 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
   end
 
   defp set_color(emulator, color_spec, setter_fn) do
-    with {:ok, color} <- ColorParser.parse(color_spec) do
-      new_colors = setter_fn.(emulator.colors, color)
-      {:ok, %{emulator | colors: new_colors}}
-    else
+    case ColorParser.parse(color_spec) do
+      {:ok, color} ->
+        new_colors = setter_fn.(emulator.colors, color)
+        {:ok, %{emulator | colors: new_colors}}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning(
           "Failed to set color: #{inspect(reason)}"
@@ -159,20 +160,21 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Color do
   end
 
   defp format_color_response(command, color) do
-    # Format: OSC command;rgb:r/g/b
-    # Scale up to 16-bit range (0-65535)
     {r, g, b} = parse_hex_color(color)
-
-    r_scaled =
-      Integer.to_string(div(r * 65_535, 255), 16) |> String.pad_leading(4, "0")
-
-    g_scaled =
-      Integer.to_string(div(g * 65_535, 255), 16) |> String.pad_leading(4, "0")
-
-    b_scaled =
-      Integer.to_string(div(b * 65_535, 255), 16) |> String.pad_leading(4, "0")
-
+    {r_scaled, g_scaled, b_scaled} = scale_color_components(r, g, b)
     "\x1b]#{command};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}\x07"
+  end
+
+  defp scale_color_components(r, g, b) do
+    r_scaled = scale_component(r)
+    g_scaled = scale_component(g)
+    b_scaled = scale_component(b)
+    {r_scaled, g_scaled, b_scaled}
+  end
+
+  defp scale_component(value) do
+    Integer.to_string(div(value * 65_535, 255), 16)
+    |> String.pad_leading(4, "0")
   end
 
   defp parse_hex_color("#" <> hex) do

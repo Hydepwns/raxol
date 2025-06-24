@@ -1,11 +1,5 @@
 defmodule Raxol.Terminal.Commands.EraseHandlers do
-  @moduledoc """
-  Handles erase related CSI commands.
-
-  This module contains handlers for erase operations like ED (Erase in Display)
-  and EL (Erase in Line). Each function takes the current emulator state and
-  parsed parameters, returning the updated emulator state.
-  """
+  @moduledoc false
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
@@ -13,10 +7,6 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   alias Raxol.Terminal.Buffer.Eraser
   require Raxol.Core.Runtime.Log
 
-  @doc """
-  Helper function to get active buffer, cursor position, and default style.
-  Returns a tuple of {active_buffer, cursor_pos, default_style}.
-  """
   @spec get_buffer_state(Emulator.t()) ::
           {ScreenBuffer.t(), {integer(), integer()},
            Raxol.Terminal.ANSI.TextFormatting.text_style()}
@@ -32,10 +22,6 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     {active_buffer, cursor_pos, blank_style}
   end
 
-  @doc """
-  Helper function to handle erase operations.
-  Takes the emulator, erase type, and erase parameters.
-  """
   @spec handle_erase(
           Emulator.t(),
           :screen | :line,
@@ -93,7 +79,6 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     end
   end
 
-  @doc "Handles Erase in Display (ED - 'J')"
   @spec handle_j(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_j(emulator, params) do
@@ -111,7 +96,6 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
-  @doc "Handles Erase in Line (EL - 'K')"
   @spec handle_k(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_k(emulator, params) do
@@ -129,10 +113,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
-  # Helper function to clear scrollback buffer
   @spec clear_scrollback(ScreenBuffer.t(), Cell.style()) :: ScreenBuffer.t()
   defp clear_scrollback(buffer, _default_style) do
-    # Get current viewport dimensions and content
     current_width = ScreenBuffer.get_width(buffer)
     current_height = ScreenBuffer.get_height(buffer)
 
@@ -142,27 +124,17 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
           List.duplicate(Cell.new(), current_width)
       end)
 
-    # Create a new buffer struct with the viewport content and empty scrollback
     %ScreenBuffer{
       cells: current_cells,
       width: current_width,
       height: current_height,
-      # Effectively clears scrollback
       scrollback: [],
-      # Preserve limit
       scrollback_limit: buffer.scrollback_limit,
-      # Selections are usually cleared on such operations
       selection: nil,
-      # Scroll region is also typically reset
       scroll_region: nil
     }
   end
 
-  # --- Parameter Validation Helpers ---
-
-  # Gets a parameter value with validation.
-  # Returns the parameter value if valid, or the default value if invalid.
-  @doc false
   defp get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
       value when is_integer(value) and value >= min and value <= max ->
@@ -198,7 +170,6 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     end
   end
 
-  # Alias for uppercase function names used in tests
   def handle_J(emulator, params), do: handle_j(emulator, params)
   def handle_K(emulator, params), do: handle_k(emulator, params)
 end

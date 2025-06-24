@@ -386,7 +386,16 @@ defmodule Raxol.Test.Visual do
       errors: %{},
       focused_component: nil,
       # Match typical full context structure
-      terminal_size: {80, 24}
+      terminal_size: {80, 24},
+      # Add component_styles to fix button component test
+      component_styles: %{
+        button: %{
+          active: "#3A8CC5",
+          background: "#4A9CD5",
+          foreground: "#FFFFFF",
+          hover: "#5FB0E8"
+        }
+      }
     }
   end
 

@@ -1,5 +1,6 @@
 defmodule Raxol.Benchmarks.Performance.Validation do
   import Raxol.Guards
+
   @moduledoc """
   Validation functions for Raxol performance benchmarks.
   """

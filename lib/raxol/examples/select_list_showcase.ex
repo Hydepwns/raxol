@@ -438,7 +438,7 @@ defmodule Raxol.Examples.SelectListShowcase do
                     |> Enum.filter(
                       &Enum.member?(state.multiple_selected, &1.id)
                     )
-                    |> Enum.map(&(&1.name))
+                    |> Enum.map(& &1.name)
                     |> Enum.join(", ")
 
                   label(text: "Selected users: #{selected_users}")

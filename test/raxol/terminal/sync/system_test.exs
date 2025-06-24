@@ -59,10 +59,16 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   describe "consistency levels" do
     test ~c"strong consistency" do
       # First sync with strong consistency
-      System.sync("split", "test_key", "value1", consistency: :strong, version: 1)
+      System.sync("split", "test_key", "value1",
+        consistency: :strong,
+        version: 1
+      )
 
       # Second sync with lower version
-      System.sync("split", "test_key", "value2", consistency: :strong, version: 0)
+      System.sync("split", "test_key", "value2",
+        consistency: :strong,
+        version: 0
+      )
 
       # Should keep the first value due to strong consistency
       assert {:ok, "value1"} == System.get("split", "test_key")
@@ -70,10 +76,16 @@ defmodule Raxol.Terminal.Sync.SystemTest do
 
     test ~c"eventual consistency" do
       # First sync with eventual consistency
-      System.sync("tab", "test_key", "value1", consistency: :eventual, version: 1)
+      System.sync("tab", "test_key", "value1",
+        consistency: :eventual,
+        version: 1
+      )
 
       # Second sync with higher version
-      System.sync("tab", "test_key", "value2", consistency: :eventual, version: 2)
+      System.sync("tab", "test_key", "value2",
+        consistency: :eventual,
+        version: 2
+      )
 
       # Should use the second value due to higher version
       assert {:ok, "value2"} == System.get("tab", "test_key")
@@ -81,11 +93,17 @@ defmodule Raxol.Terminal.Sync.SystemTest do
 
     test ~c"conflict resolution" do
       # First sync with eventual consistency
-      System.sync("tab", "test_key", "value1", consistency: :eventual, version: 1)
+      System.sync("tab", "test_key", "value1",
+        consistency: :eventual,
+        version: 1
+      )
 
       # Second sync with same version
       assert {:error, :conflict} ==
-               System.sync("tab", "test_key", "value2", consistency: :eventual, version: 1)
+               System.sync("tab", "test_key", "value2",
+                 consistency: :eventual,
+                 version: 1
+               )
     end
   end
 
@@ -109,9 +127,20 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   describe "statistics" do
     test ~c"tracks sync statistics" do
       # Perform some syncs
-      System.sync("test_sync", "key1", "value1", consistency: :strong, version: 1)
-      System.sync("test_sync", "key2", "value2", consistency: :eventual, version: 2)
-      System.sync("test_sync", "key3", "value3", consistency: :causal, version: 3)
+      System.sync("test_sync", "key1", "value1",
+        consistency: :strong,
+        version: 1
+      )
+
+      System.sync("test_sync", "key2", "value2",
+        consistency: :eventual,
+        version: 2
+      )
+
+      System.sync("test_sync", "key3", "value3",
+        consistency: :causal,
+        version: 3
+      )
 
       # Get stats
       {:ok, stats} = System.stats("test_sync")
@@ -125,10 +154,16 @@ defmodule Raxol.Terminal.Sync.SystemTest do
 
     test ~c"tracks conflicts" do
       # First sync
-      System.sync("test_sync", "test_key", "value1", consistency: :eventual, version: 1)
+      System.sync("test_sync", "test_key", "value1",
+        consistency: :eventual,
+        version: 1
+      )
 
       # Second sync with same version (should cause conflict)
-      System.sync("test_sync", "test_key", "value2", consistency: :eventual, version: 1)
+      System.sync("test_sync", "test_key", "value2",
+        consistency: :eventual,
+        version: 1
+      )
 
       # Get stats
       {:ok, stats} = System.stats("test_sync")

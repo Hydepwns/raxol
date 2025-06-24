@@ -147,7 +147,10 @@ defmodule Raxol.Terminal.CharacterHandling do
   @spec process_bidi_text(String.t()) ::
           list({:LTR | :RTL | :NEUTRAL, String.t()})
   @dialyzer {:nowarn_function, process_bidi_text: 1}
-  def process_bidi_text(string) do
+  def process_bidi_text(nil), do: []
+  def process_bidi_text(""), do: []
+
+  def process_bidi_text(string) when is_binary(string) do
     string
     |> String.to_charlist()
     |> Enum.reduce([], &handle_bidi_segment/2)

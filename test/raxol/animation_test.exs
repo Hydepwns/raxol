@@ -766,6 +766,7 @@ defmodule Raxol.AnimationTest do
     # Be cautious if this process is globally shared.
     ref = Process.monitor(pid)
     Process.exit(pid, :shutdown)
+
     receive do
       {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
     end

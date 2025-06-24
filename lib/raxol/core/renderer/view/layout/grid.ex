@@ -64,8 +64,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
   defp calculate_column_sizes(columns, total_width, gap) do
     case columns do
-      n when integer?(n) -> calculate_equal_columns(n, total_width, gap)
-      sizes when list?(sizes) -> calculate_custom_columns(sizes, total_width, gap)
+      n when integer?(n) ->
+        calculate_equal_columns(n, total_width, gap)
+
+      sizes when list?(sizes) ->
+        calculate_custom_columns(sizes, total_width, gap)
     end
   end
 
@@ -106,16 +109,19 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
   defp place_children(children, column_sizes, row_sizes, {gap_x, gap_y}) do
     # Separate children with explicit positions from those needing auto-placement
-    {positioned_children, auto_children} = separate_children_by_position(children)
+    {positioned_children, auto_children} =
+      separate_children_by_position(children)
 
     # Calculate cell boundaries for the grid
     cell_bounds = calculate_cell_bounds(column_sizes, row_sizes, {gap_x, gap_y})
 
     # Position children with explicit grid positions
-    positioned_result = position_explicit_children(positioned_children, cell_bounds)
+    positioned_result =
+      position_explicit_children(positioned_children, cell_bounds)
 
     # Auto-place remaining children
-    auto_placed_result = auto_place_children(auto_children, cell_bounds, positioned_result)
+    auto_placed_result =
+      auto_place_children(auto_children, cell_bounds, positioned_result)
 
     positioned_result ++ auto_placed_result
   end
@@ -135,12 +141,13 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     for {col, col_start} <- Enum.with_index(column_positions),
         {row, row_start} <- Enum.with_index(row_positions),
         col < length(column_sizes) and row < length(row_sizes) do
-      {{col, row}, {
-        col_start,
-        row_start,
-        Enum.at(column_sizes, col),
-        Enum.at(row_sizes, row)
-      }}
+      {{col, row},
+       {
+         col_start,
+         row_start,
+         Enum.at(column_sizes, col),
+         Enum.at(row_sizes, row)
+       }}
     end
     |> Map.new()
   end
@@ -154,11 +161,13 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   defp position_explicit_children(children, cell_bounds) do
     Enum.map(children, fn child ->
       {col, row} = child.grid_position
+
       case Map.get(cell_bounds, {col, row}) do
         {x, y, width, height} ->
           child
           |> Map.put(:position, {x, y})
           |> Map.put(:size, {width, height})
+
         nil ->
           # Invalid position, use default
           child
@@ -179,6 +188,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     |> Enum.zip(available_positions)
     |> Enum.map(fn {child, {col, row}} ->
       {x, y, width, height} = Map.get(cell_bounds, {col, row})
+
       child
       |> Map.put(:grid_position, {col, row})
       |> Map.put(:position, {x, y})
@@ -200,12 +210,18 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
   defp align_child_in_cell(child, column_sizes, row_sizes, align, justify) do
     {col, row} = child.grid_position
-    {cell_x, cell_y, cell_width, cell_height} = get_cell_bounds(col, row, column_sizes, row_sizes)
+
+    {cell_x, cell_y, cell_width, cell_height} =
+      get_cell_bounds(col, row, column_sizes, row_sizes)
+
     {child_width, child_height} = get_child_size(child)
 
     # Calculate aligned position within cell
-    aligned_x = calculate_horizontal_alignment(cell_x, cell_width, child_width, justify)
-    aligned_y = calculate_vertical_alignment(cell_y, cell_height, child_height, align)
+    aligned_x =
+      calculate_horizontal_alignment(cell_x, cell_width, child_width, justify)
+
+    aligned_y =
+      calculate_vertical_alignment(cell_y, cell_height, child_height, align)
 
     # Update child with aligned position and size
     child
@@ -227,7 +243,8 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   defp get_child_size(child) do
     case Map.get(child, :size) do
       {width, height} -> {width, height}
-      nil -> {100, 100} # Default size
+      # Default size
+      nil -> {100, 100}
     end
   end
 
@@ -236,7 +253,8 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
       :start -> cell_x
       :center -> cell_x + (cell_width - child_width) / 2
       :end -> cell_x + cell_width - child_width
-      :space_between -> cell_x # Simplified - would need multiple children
+      # Simplified - would need multiple children
+      :space_between -> cell_x
       _ -> cell_x
     end
   end
@@ -246,7 +264,8 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
       :start -> cell_y
       :center -> cell_y + (cell_height - child_height) / 2
       :end -> cell_y + cell_height - child_height
-      :stretch -> cell_y # Child height would be adjusted to cell height
+      # Child height would be adjusted to cell height
+      :stretch -> cell_y
       _ -> cell_y
     end
   end
@@ -297,9 +316,13 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
         case validate_grid_positions(children) do
           :ok ->
             validate_no_duplicate_positions(children)
-          error -> error
+
+          error ->
+            error
         end
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -324,10 +347,10 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
       children
       |> Enum.filter(fn child ->
         Map.has_key?(child, :grid_position) and
-        (fn ->
-          {col, row} = child.grid_position
-          !valid_position?(col, row)
-        end).()
+          (fn ->
+             {col, row} = child.grid_position
+             !valid_position?(col, row)
+           end).()
       end)
 
     if Enum.empty?(invalid_positions) do

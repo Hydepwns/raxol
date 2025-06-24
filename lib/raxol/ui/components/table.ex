@@ -403,7 +403,15 @@ defmodule Raxol.UI.Components.Table do
     selected_row_style = Map.get(theme, :selected_row, %{bg: :blue, fg: :white})
 
     Enum.map(Enum.with_index(data), fn {row, index} ->
-      cells = create_cells(row, columns, index, selected_row, row_style, selected_row_style)
+      cells =
+        create_cells(
+          row,
+          columns,
+          index,
+          selected_row,
+          row_style,
+          selected_row_style
+        )
 
       Raxol.Core.Renderer.View.flex(
         direction: :row,
@@ -412,11 +420,28 @@ defmodule Raxol.UI.Components.Table do
     end)
   end
 
-  defp create_cells(row, columns, index, selected_row, row_style, selected_row_style) do
+  defp create_cells(
+         row,
+         columns,
+         index,
+         selected_row,
+         row_style,
+         selected_row_style
+       ) do
     Enum.map(columns, fn column ->
       value = row[column.id]
-      formatted = if column.format, do: column.format.(value), else: to_string(value)
-      style = determine_cell_style(column, row_style, selected_row_style, index, selected_row)
+
+      formatted =
+        if column.format, do: column.format.(value), else: to_string(value)
+
+      style =
+        determine_cell_style(
+          column,
+          row_style,
+          selected_row_style,
+          index,
+          selected_row
+        )
 
       Raxol.Core.Renderer.View.text(
         formatted,
@@ -426,7 +451,13 @@ defmodule Raxol.UI.Components.Table do
     end)
   end
 
-  defp determine_cell_style(column, row_style, selected_row_style, index, selected_row) do
+  defp determine_cell_style(
+         column,
+         row_style,
+         selected_row_style,
+         index,
+         selected_row
+       ) do
     base_style = Map.merge(row_style, Map.get(column, :style, %{}))
 
     if index == selected_row do

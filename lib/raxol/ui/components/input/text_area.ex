@@ -24,9 +24,9 @@ defmodule Raxol.UI.Components.Input.TextArea do
   def update(msg, state), do: MultiLineInput.update(msg, state)
 
   @impl true
-  def handle_event(event, context, state), do: MultiLineInput.handle_event(event, context, state)
+  def handle_event(event, context, state),
+    do: MultiLineInput.handle_event(event, context, state)
 
   @impl true
   def render(state, context), do: MultiLineInput.render(state, context)
 end
-

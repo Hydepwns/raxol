@@ -162,7 +162,10 @@ defmodule Raxol.Core.Runtime.Subscription do
 
   defp stop_subscription({:interval, timer_ref}), do: stop_interval(timer_ref)
   defp stop_subscription({:events, actual_id}), do: stop_events(actual_id)
-  defp stop_subscription({:file_watch, watcher_pid}), do: stop_file_watch(watcher_pid)
+
+  defp stop_subscription({:file_watch, watcher_pid}),
+    do: stop_file_watch(watcher_pid)
+
   defp stop_subscription({:custom, source_pid}), do: stop_custom(source_pid)
   defp stop_subscription(_), do: {:error, :invalid_subscription}
 
@@ -180,11 +183,15 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   defp stop_file_watch(watcher_pid) do
-    if Process.alive?(watcher_pid), do: Process.exit(watcher_pid, :normal), else: {:error, :process_not_alive}
+    if Process.alive?(watcher_pid),
+      do: Process.exit(watcher_pid, :normal),
+      else: {:error, :process_not_alive}
   end
 
   defp stop_custom(source_pid) do
-    if Process.alive?(source_pid), do: Process.exit(source_pid, :normal), else: {:error, :process_not_alive}
+    if Process.alive?(source_pid),
+      do: Process.exit(source_pid, :normal),
+      else: {:error, :process_not_alive}
   end
 
   # Private helpers for starting different types of subscriptions

@@ -49,6 +49,24 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     66 => :application_keypad
   }
 
+  @sequence_handlers %{
+    [?A] => {:cursor_up, 1},
+    [?B] => {:cursor_down, 1},
+    [?C] => {:cursor_forward, 1},
+    [?D] => {:cursor_backward, 1},
+    [?H] => {:cursor_position, []},
+    [?G] => {:cursor_column, 1},
+    [?J] => {:screen_clear, []},
+    [?K] => {:line_clear, []},
+    [?m] => {:text_attributes, []},
+    [?s] => {:save_restore_cursor, [?s]},
+    [?u] => {:save_restore_cursor, [?u]},
+    [?r] => {:r, []},
+    [?S] => {:scroll_up, 1},
+    [?T] => {:scroll_down, 1},
+    [?6, ?n] => {:device_status, [?6, ?n]}
+  }
+
   def handle_basic_command(emulator, params, byte) do
     Basic.handle_command(emulator, params, byte)
   end
@@ -256,25 +274,52 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   # Sequence handler
   def handle_sequence(emulator, sequence) do
-    case sequence do
-      [?A] -> handle_cursor_up(emulator, 1)
-      [?B] -> handle_cursor_down(emulator, 1)
-      [?C] -> handle_cursor_forward(emulator, 1)
-      [?D] -> handle_cursor_backward(emulator, 1)
-      [?H] -> handle_cursor_position(emulator, [])
-      [?G] -> handle_cursor_column(emulator, 1)
-      [?J] -> handle_screen_clear(emulator, [])
-      [?K] -> handle_line_clear(emulator, [])
-      [?m] -> handle_text_attributes(emulator, [])
-      [?s] -> handle_save_restore_cursor(emulator, [?s])
-      [?u] -> handle_save_restore_cursor(emulator, [?u])
-      [?r] -> handle_r(emulator, [])
-      [?S] -> handle_scroll_up(emulator, 1)
-      [?T] -> handle_scroll_down(emulator, 1)
-      [?6, ?n] -> handle_device_status(emulator, [?6, ?n])
-      _ -> {:ok, emulator}
+    case Map.get(@sequence_handlers, sequence) do
+      {handler, args} -> apply_handler(emulator, handler, args)
+      nil -> {:ok, emulator}
     end
   end
+
+  defp apply_handler(emulator, :cursor_up, amount),
+    do: handle_cursor_up(emulator, amount)
+
+  defp apply_handler(emulator, :cursor_down, amount),
+    do: handle_cursor_down(emulator, amount)
+
+  defp apply_handler(emulator, :cursor_forward, amount),
+    do: handle_cursor_forward(emulator, amount)
+
+  defp apply_handler(emulator, :cursor_backward, amount),
+    do: handle_cursor_backward(emulator, amount)
+
+  defp apply_handler(emulator, :cursor_position, params),
+    do: handle_cursor_position(emulator, params)
+
+  defp apply_handler(emulator, :cursor_column, column),
+    do: handle_cursor_column(emulator, column)
+
+  defp apply_handler(emulator, :screen_clear, params),
+    do: handle_screen_clear(emulator, params)
+
+  defp apply_handler(emulator, :line_clear, params),
+    do: handle_line_clear(emulator, params)
+
+  defp apply_handler(emulator, :text_attributes, params),
+    do: handle_text_attributes(emulator, params)
+
+  defp apply_handler(emulator, :save_restore_cursor, params),
+    do: handle_save_restore_cursor(emulator, params)
+
+  defp apply_handler(emulator, :r, params), do: handle_r(emulator, params)
+
+  defp apply_handler(emulator, :scroll_up, lines),
+    do: handle_scroll_up(emulator, lines)
+
+  defp apply_handler(emulator, :scroll_down, lines),
+    do: handle_scroll_down(emulator, lines)
+
+  defp apply_handler(emulator, :device_status, params),
+    do: handle_device_status(emulator, params)
 
   # Window state functions
   def handle_window_unmaximize(emulator) do

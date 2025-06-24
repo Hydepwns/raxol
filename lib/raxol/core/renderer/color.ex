@@ -125,6 +125,7 @@ defmodule Raxol.Core.Renderer.Color do
         else
           "\e[#{40 + code}m"
         end
+
       _ ->
         raise ArgumentError, "Invalid color format"
     end
@@ -186,16 +187,22 @@ defmodule Raxol.Core.Renderer.Color do
     {key, hex_to_rgb(hex)}
   end
 
-  defp process_color_entry({key, value}) when atom?(value) and value in @ansi_16_atoms do
+  defp process_color_entry({key, value})
+       when atom?(value) and value in @ansi_16_atoms do
     {key, value}
   end
 
-  defp process_color_entry({key, {r, g, b}}) when r in 0..255 and g in 0..255 and b in 0..255 do
+  defp process_color_entry({key, {r, g, b}})
+       when r in 0..255 and g in 0..255 and b in 0..255 do
     {key, {r, g, b}}
   end
 
   defp process_color_entry({_key, value}) do
-    msg = if binary?(value), do: "Invalid color in theme: #{value}", else: "Invalid color in theme: #{inspect(value)}"
+    msg =
+      if binary?(value),
+        do: "Invalid color in theme: #{value}",
+        else: "Invalid color in theme: #{inspect(value)}"
+
     raise(ArgumentError, msg)
   end
 
@@ -203,7 +210,9 @@ defmodule Raxol.Core.Renderer.Color do
   Returns the default color theme.
   """
   def default_theme do
-    theme = Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
+    theme =
+      Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
+
     colors = convert_theme_colors(theme.colors)
     merged_colors = merge_with_defaults(colors)
     %{colors: merged_colors}

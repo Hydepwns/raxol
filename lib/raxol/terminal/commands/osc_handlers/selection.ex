@@ -1,32 +1,10 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.Selection do
-  @moduledoc """
-  Handles OSC 51 (Selection) commands.
-
-  This handler manages terminal selection operations, including:
-  - Setting selection boundaries
-  - Querying selection content
-  - Managing selection attributes
-  """
+  @moduledoc false
 
   alias Raxol.Terminal.{Emulator, Buffer.Selection}
   alias Raxol.Terminal.Commands.OSCHandlers.SelectionParser
   require Raxol.Core.Runtime.Log
 
-  @doc """
-  Handles OSC 51 commands for selection management.
-
-  ## Commands
-
-  - `51;?` - Query current selection
-  - `51;start;x;y` - Set selection start position
-  - `51;end;x;y` - Set selection end position
-  - `51;clear` - Clear selection
-  - `51;text;content` - Set selection text directly
-
-  Where:
-  - x, y are screen coordinates
-  - content is the text to select
-  """
   @spec handle_51(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_51(emulator, data) do
@@ -39,8 +17,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Selection do
       {:error, reason} -> handle_selection_error(emulator, reason, data)
     end
   end
-
-  # Private Helpers
 
   defp handle_selection_query(emulator) do
     case Selection.get_text(emulator.screen_buffer) do

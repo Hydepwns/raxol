@@ -5,6 +5,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
 
   require Raxol.Core.Runtime.Log
   import Raxol.Guards
+
   @doc """
   Cleans up file watching resources.
   Returns the updated state.
@@ -27,13 +28,16 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
       Raxol.Core.Runtime.Log.debug(
         "[#{__MODULE__}] Stopping file watcher (PID: #{inspect(state.file_watcher_pid)})."
       )
+
       stop_watcher_process(state.file_watcher_pid)
     end
+
     state
   end
 
   defp should_stop_file_watcher?(state) do
-    state.file_watcher_pid && pid?(state.file_watcher_pid) && Process.alive?(state.file_watcher_pid)
+    state.file_watcher_pid && pid?(state.file_watcher_pid) &&
+      Process.alive?(state.file_watcher_pid)
   end
 
   defp stop_watcher_process(pid) do
@@ -66,6 +70,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
     if state.file_event_timer do
       Process.cancel_timer(state.file_event_timer)
     end
+
     state
   end
 end

@@ -52,7 +52,10 @@ defmodule Raxol.Guards do
   defmacro list?(term), do: quote(do: is_list(unquote(term)))
   defmacro map?(term), do: quote(do: is_map(unquote(term)))
   defmacro function?(term), do: quote(do: is_function(unquote(term)))
-  defmacro function?(term, arity), do: quote(do: is_function(unquote(term), unquote(arity)))
+
+  defmacro function?(term, arity),
+    do: quote(do: is_function(unquote(term), unquote(arity)))
+
   defmacro float?(term), do: quote(do: is_float(unquote(term)))
   defmacro integer?(term), do: quote(do: is_integer(unquote(term)))
   defmacro boolean?(term), do: quote(do: is_boolean(unquote(term)))
@@ -61,6 +64,15 @@ defmodule Raxol.Guards do
   defmacro pid?(term), do: quote(do: is_pid(unquote(term)))
   defmacro nil?(term), do: quote(do: is_nil(unquote(term)))
   defmacro struct?(term), do: quote(do: is_struct(unquote(term)))
-  defmacro struct?(term, module), do: quote(do: is_struct(unquote(term), unquote(module)))
-  defmacro map_key?(map, key), do: quote(do: is_map(unquote(map)) and :erlang.is_map_key(unquote(key), unquote(map)))
+
+  defmacro struct?(term, module),
+    do: quote(do: is_struct(unquote(term), unquote(module)))
+
+  defmacro map_key?(map, key),
+    do:
+      quote(
+        do:
+          is_map(unquote(map)) and
+            :erlang.is_map_key(unquote(key), unquote(map))
+      )
 end

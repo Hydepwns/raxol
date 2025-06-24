@@ -315,8 +315,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
 
   defp validate_script(script) do
     validate_script_type(script.type) == :ok and
-    validate_script_source(script.source) == :ok and
-    validate_script_config(script.config) == :ok
+      validate_script_source(script.source) == :ok and
+      validate_script_config(script.config) == :ok
   end
 
   defp validate_script_type(type)
@@ -354,6 +354,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     case Code.eval_string(script.source) do
       {result, _bindings} ->
         {:ok, inspect(result)}
+
       _ ->
         {:ok, "Elixir script executed successfully"}
     end
@@ -385,7 +386,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
 
   defp execute_external_script(interpreter, source, timeout) do
     # Create temporary file for script
-    temp_file = Path.join(System.tmp_dir!(), "raxol_script_#{:crypto.strong_rand_bytes(8) |> Base.encode16()}")
+    temp_file =
+      Path.join(
+        System.tmp_dir!(),
+        "raxol_script_#{:crypto.strong_rand_bytes(8) |> Base.encode16()}"
+      )
 
     try do
       # Write script to temporary file
@@ -395,7 +400,9 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       cmd = [interpreter, temp_file]
 
       case System.cmd(interpreter, cmd,
-                     timeout: timeout, stderr_to_stdout: true) do
+             timeout: timeout,
+             stderr_to_stdout: true
+           ) do
         {output, 0} -> {:ok, String.trim(output)}
         {error_output, _exit_code} -> {:error, String.trim(error_output)}
       end
@@ -426,13 +433,16 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
 
       # Determine file extension based on script type
       extension = get_script_extension(script.type)
-      script_path = if Path.extname(path) == "", do: path <> extension, else: path
+
+      script_path =
+        if Path.extname(path) == "", do: path <> extension, else: path
 
       # Write script source
       File.write!(script_path, script.source)
 
       # Create metadata file
       metadata_path = script_path <> ".json"
+
       metadata = %{
         "name" => script.name,
         "type" => Atom.to_string(script.type),
@@ -467,8 +477,10 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       case File.stat(path) do
         {:ok, %{type: :directory}} ->
           import_script_from_directory(path, opts)
+
         {:ok, %{type: :regular}} ->
           import_script_from_single_file(path, opts)
+
         _ ->
           {:error, :invalid_path}
       end
@@ -483,9 +495,13 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     case File.ls(path) do
       {:ok, files} ->
         case find_script_file(files) do
-          {:ok, script_file} -> load_script_with_metadata(path, script_file, opts)
-          {:error, reason} -> {:error, reason}
+          {:ok, script_file} ->
+            load_script_with_metadata(path, script_file, opts)
+
+          {:error, reason} ->
+            {:error, reason}
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -493,6 +509,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
 
   defp find_script_file(files) do
     script_files = Enum.filter(files, &script_file?/1)
+
     case script_files do
       [script_file | _] -> {:ok, script_file}
       [] -> {:error, :no_script_files}
@@ -517,12 +534,13 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp merge_metadata_with_opts(metadata, opts) do
-    metadata_opts = [
-      name: metadata["name"],
-      config: metadata["config"] || %{},
-      metadata: metadata["metadata"] || %{}
-    ]
-    |> Enum.reject(fn {_key, value} -> nil?(value) end)
+    metadata_opts =
+      [
+        name: metadata["name"],
+        config: metadata["config"] || %{},
+        metadata: metadata["metadata"] || %{}
+      ]
+      |> Enum.reject(fn {_key, value} -> nil?(value) end)
 
     Keyword.merge(opts, metadata_opts)
   end
@@ -533,6 +551,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         # Determine script type from file extension
         type = infer_script_type(path)
         {:ok, load_script_state(source, type, opts)}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -549,7 +568,9 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
           {:ok, metadata} -> metadata
           {:error, _} -> %{}
         end
-      {:error, _} -> %{}
+
+      {:error, _} ->
+        %{}
     end
   end
 
@@ -568,8 +589,10 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       case File.stat(path) do
         {:ok, %{type: :directory}} ->
           load_scripts_from_directory(path)
+
         {:ok, %{type: :regular}} ->
           load_script_from_single_file(path)
+
         _ ->
           Logger.warning("Invalid script path: #{path}")
       end
@@ -580,6 +603,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     case File.ls(path) do
       {:ok, entries} ->
         Enum.each(entries, &process_directory_entry(path, &1))
+
       {:error, reason} ->
         Logger.error("Failed to list directory #{path}: #{inspect(reason)}")
     end
@@ -587,11 +611,14 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
 
   defp process_directory_entry(base_path, entry) do
     entry_path = Path.join(base_path, entry)
+
     case File.stat(entry_path) do
       {:ok, %{type: :directory}} ->
         load_scripts_from_directory(entry_path)
+
       {:ok, %{type: :regular}} ->
         load_script_from_single_file(entry_path)
+
       _ ->
         :ok
     end
@@ -602,9 +629,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       case import_script_from_file(path, []) do
         {:ok, script} ->
           script_id = generate_script_id()
+
           # Store in process dictionary for now, could be enhanced to use GenServer state
           Process.put({:loaded_script, script_id}, script)
           Logger.info("Loaded script: #{script.name} from #{path}")
+
         {:error, reason} ->
           Logger.error("Failed to load script from #{path}: #{inspect(reason)}")
       end

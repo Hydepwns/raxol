@@ -98,10 +98,11 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
   end
 
   defp set_color(emulator, color_spec, setter_fn) do
-    with {:ok, color} <- ColorParser.parse(color_spec),
-         {:ok, new_cursor} <- setter_fn.(emulator.cursor, color) do
-      {:ok, %{emulator | cursor: new_cursor}}
-    else
+    case ColorParser.parse(color_spec) do
+      {:ok, color} ->
+        {:ok, new_cursor} = setter_fn.(emulator.cursor, color)
+        {:ok, %{emulator | cursor: new_cursor}}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning(
           "Failed to set color: #{inspect(reason)}"

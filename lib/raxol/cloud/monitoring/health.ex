@@ -23,7 +23,9 @@ defmodule Raxol.Cloud.Monitoring.Health do
     opts = if map?(opts), do: Enum.into(opts, []), else: opts
     health_state = get_health_state()
 
-    components_to_check = Keyword.get(opts, :components, [:system, :application, :connections])
+    components_to_check =
+      Keyword.get(opts, :components, [:system, :application, :connections])
+
     timeout = Keyword.get(opts, :timeout, 5000)
 
     component_results =

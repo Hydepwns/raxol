@@ -874,6 +874,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             plugin_states: updated_states,
             command_registry_table: updated_table
         }
+
         {:ok, updated_state}
 
       {:error, reason} ->
@@ -883,6 +884,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
           nil,
           %{module: __MODULE__, event: event, reason: reason}
         )
+
         {:error, reason}
     end
   end

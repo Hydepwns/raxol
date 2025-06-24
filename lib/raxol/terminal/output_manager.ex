@@ -203,7 +203,7 @@ defmodule Raxol.Terminal.OutputManager do
   end
 
   defp apply_ansi_pattern({pattern, replacement}, acc)
-      when function?(replacement, 2) do
+       when function?(replacement, 2) do
     Regex.replace(pattern, acc, fn _, a, b -> replacement.(a, b) end)
   end
 
