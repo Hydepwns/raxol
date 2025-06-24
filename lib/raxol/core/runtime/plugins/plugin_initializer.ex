@@ -18,7 +18,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginInitializer do
         command_table,
         _opts
       ) do
-    table = PluginCommandManager.initialize_command_table(command_table, plugins)
+    table =
+      PluginCommandManager.initialize_command_table(command_table, plugins)
 
     Enum.reduce_while(
       load_order,

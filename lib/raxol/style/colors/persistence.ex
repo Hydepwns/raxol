@@ -261,7 +261,7 @@ defmodule Raxol.Style.Colors.Persistence do
   defp to_atom_key(k) when is_binary(k), do: String.to_atom(k)
   defp to_atom_key(k), do: k
 
- # Helper to normalize color values in both colors and variants
+  # Helper to normalize color values in both colors and variants
   defp normalize_color_value(v) do
     cond do
       is_map(v) and Map.has_key?(v, :hex) -> Color.from_hex(v["hex"] || v.hex)

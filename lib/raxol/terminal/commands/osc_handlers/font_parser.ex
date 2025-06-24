@@ -1,10 +1,13 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.FontParser do
   @moduledoc """
   Handles parsing of font-related OSC commands.
-  """
 
-  @doc """
-  Parses a font command string into a tuple of {family, size, style}.
+  This module is used to parse font-related OSC commands into a tuple of {family, size, style}.
+
+  ## Supported Commands
+
+  - OSC 50: Set/Query font
+  - OSC 51: Set/Query font size
   """
   @spec parse(String.t()) ::
           {:query, nil}

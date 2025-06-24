@@ -12,6 +12,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   """
 
   import Raxol.Guards
+
   alias Raxol.UI.Components.Input.SelectList.{
     Search,
     Pagination,
@@ -19,6 +20,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     Selection,
     Renderer
   }
+
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component

@@ -57,12 +57,21 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   # Private Helpers
 
   defp parse_command(rest) do
-    with [index_str, spec] <- String.split(rest, ";", parts: 2),
-         {index, ""} <- Integer.parse(index_str),
-         true <- index >= 0 and index <= 255 do
-      if spec == "?", do: {:query, index}, else: {:set, index, spec}
-    else
-      _ -> {:error, :invalid_format}
+    case String.split(rest, ";", parts: 2) do
+      [index_str, spec] ->
+        case Integer.parse(index_str) do
+          {index, ""} when index >= 0 and index <= 255 ->
+            if spec == "?", do: {:query, index}, else: {:set, index, spec}
+
+          {index, ""} ->
+            {:error, {:invalid_index, index_str}}
+
+          _ ->
+            {:error, :invalid_format}
+        end
+
+      _ ->
+        {:error, :invalid_format}
     end
   end
 
@@ -131,7 +140,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
              capture: :all_but_first
            ) do
         [r_str, g_str, b_str] ->
-          parse_and_validate_rgb({r_str, g_str, b_str})
+          parse_and_validate_decimal({r_str, g_str, b_str})
 
         _ ->
           :no_match
@@ -147,13 +156,52 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
              capture: :all_but_first
            ) do
         [r_str, g_str, b_str] ->
-          parse_and_validate_rgb({r_str, g_str, b_str})
+          parse_and_validate_percent({r_str, g_str, b_str})
 
         _ ->
           :no_match
       end
     else
       :no_match
+    end
+  end
+
+  defp parse_and_validate_decimal({r_str, g_str, b_str}) do
+    with {:ok, r} <- parse_decimal_component(r_str),
+         {:ok, g} <- parse_decimal_component(g_str),
+         {:ok, b} <- parse_decimal_component(b_str) do
+      {:ok, {r, g, b}}
+    else
+      _ -> :no_match
+    end
+  end
+
+  defp parse_and_validate_percent({r_str, g_str, b_str}) do
+    with {:ok, r} <- parse_percent_component(r_str),
+         {:ok, g} <- parse_percent_component(g_str),
+         {:ok, b} <- parse_percent_component(b_str) do
+      {:ok, {r, g, b}}
+    else
+      _ -> :no_match
+    end
+  end
+
+  # Parses decimal color component (0-255)
+  defp parse_decimal_component(decimal_str) do
+    case Integer.parse(decimal_str) do
+      {val, ""} when val >= 0 and val <= 255 -> {:ok, val}
+      _ -> :error
+    end
+  end
+
+  # Parses percentage color component (0-100%) and converts to 0-255
+  defp parse_percent_component(percent_str) do
+    case Integer.parse(percent_str) do
+      {val, ""} when val >= 0 and val <= 100 ->
+        {:ok, round(val * 255 / 100)}
+
+      _ ->
+        :error
     end
   end
 

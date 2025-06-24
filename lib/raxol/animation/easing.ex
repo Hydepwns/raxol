@@ -1,5 +1,6 @@
 defmodule Raxol.Animation.Easing do
   import Raxol.Guards
+
   @moduledoc """
   Provides standard easing functions for animations.
   """

@@ -1,13 +1,5 @@
 defmodule Raxol.Terminal.Commands.History do
-  @moduledoc """
-  Manages command history for the terminal emulator.
-
-  This module provides functionality for:
-  - Storing and retrieving command history
-  - Navigating through command history
-  - Persisting command history
-  - Managing history size limits
-  """
+  @moduledoc false
 
   import Raxol.Guards
 
@@ -31,15 +23,6 @@ defmodule Raxol.Terminal.Commands.History do
     :current_input
   ]
 
-  @doc """
-  Creates a new command history manager.
-
-  ## Examples
-
-      iex> history = History.new(1000)
-      iex> history.max_size
-      1000
-  """
   @spec new(non_neg_integer()) :: t()
   def new(max_size) when integer?(max_size) and max_size > 0 do
     %__MODULE__{
@@ -50,16 +33,6 @@ defmodule Raxol.Terminal.Commands.History do
     }
   end
 
-  @doc """
-  Adds a command to the history.
-
-  ## Examples
-
-      iex> history = History.new(1000)
-      iex> history = History.add(history, "ls -la")
-      iex> history.commands
-      ["ls -la"]
-  """
   @spec add(t(), String.t()) :: t()
   def add(%__MODULE__{} = history, command) when binary?(command) do
     commands = [command | history.commands]
@@ -68,17 +41,6 @@ defmodule Raxol.Terminal.Commands.History do
     %{history | commands: commands, current_index: -1, current_input: ""}
   end
 
-  @doc """
-  Retrieves the previous command in history.
-
-  ## Examples
-
-      iex> history = History.new(1000)
-      iex> history = History.add(history, "ls -la")
-      iex> history = History.add(history, "cd /tmp")
-      iex> History.previous(history)
-      {"cd /tmp", %History{...}}
-  """
   @spec previous(t()) :: {String.t() | nil, t()}
   def previous(%__MODULE__{} = history) do
     case history.current_index + 1 < length(history.commands) do

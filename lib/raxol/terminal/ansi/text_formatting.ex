@@ -535,23 +535,23 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @spec ansi_code_to_color_name(integer()) :: atom()
   def ansi_code_to_color_name(code) do
     case code do
-      0 -> :black
-      1 -> :red
-      2 -> :green
-      3 -> :yellow
-      4 -> :blue
-      5 -> :magenta
-      6 -> :cyan
-      7 -> :white
-      8 -> :bright_black
-      9 -> :bright_red
-      10 -> :bright_green
-      11 -> :bright_yellow
-      12 -> :bright_blue
-      13 -> :bright_magenta
-      14 -> :bright_cyan
-      15 -> :bright_white
-      _ -> :default
+      30 -> :black
+      31 -> :red
+      32 -> :green
+      33 -> :yellow
+      34 -> :blue
+      35 -> :magenta
+      36 -> :cyan
+      37 -> :white
+      40 -> :black
+      41 -> :red
+      42 -> :green
+      43 -> :yellow
+      44 -> :blue
+      45 -> :magenta
+      46 -> :cyan
+      47 -> :white
+      _ -> nil
     end
   end
 
@@ -684,15 +684,42 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   @doc """
   Formats a style into SGR (Select Graphic Rendition) parameters.
-  Returns a list of ANSI SGR codes.
+  Returns a string of ANSI SGR codes.
   """
   def format_sgr_params(style) do
-    Enum.reduce(@sgr_style_map, [], fn {attr, code}, acc ->
-      if Map.get(style, attr), do: [code] ++ acc, else: acc
-    end)
-    |> Enum.concat([38, 5, style.foreground])
-    |> Enum.concat([48, 5, style.background])
+    codes =
+      Enum.reduce(@sgr_style_map, [], fn {attr, code}, acc ->
+        if Map.get(style, attr), do: [code] ++ acc, else: acc
+      end)
+
+    # Add foreground color if set
+    codes =
+      case style.foreground do
+        nil -> codes
+        color when is_atom(color) -> codes ++ [30 + color_to_code(color)]
+        _ -> codes
+      end
+
+    # Add background color if set
+    codes =
+      case style.background do
+        nil -> codes
+        color when is_atom(color) -> codes ++ [40 + color_to_code(color)]
+        _ -> codes
+      end
+
+    Enum.join(codes, ";")
   end
+
+  defp color_to_code(:black), do: 0
+  defp color_to_code(:red), do: 1
+  defp color_to_code(:green), do: 2
+  defp color_to_code(:yellow), do: 3
+  defp color_to_code(:blue), do: 4
+  defp color_to_code(:magenta), do: 5
+  defp color_to_code(:cyan), do: 6
+  defp color_to_code(:white), do: 7
+  defp color_to_code(_), do: 0
 
   @doc """
   Sets a single attribute on the emulator.
@@ -777,7 +804,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     end
   end
 
-  defp handle_tuple_param({:fg_8bit, color_code}, style) when is_integer(color_code) do
+  defp handle_tuple_param({:fg_8bit, color_code}, style)
+       when is_integer(color_code) do
     %{style | foreground: {:index, color_code}}
   end
 

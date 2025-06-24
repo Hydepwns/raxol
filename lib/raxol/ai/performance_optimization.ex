@@ -1,5 +1,6 @@
 defmodule Raxol.AI.PerformanceOptimization do
   import Raxol.Guards
+
   @moduledoc """
   Runtime AI features for intelligent performance optimization.
 

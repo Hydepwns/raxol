@@ -25,9 +25,9 @@ defmodule Raxol.UI.Components.Input.PasswordField do
   def update(msg, state), do: TextField.update(msg, state)
 
   @impl true
-  def handle_event(event, context, state), do: TextField.handle_event(event, context, state)
+  def handle_event(event, context, state),
+    do: TextField.handle_event(event, context, state)
 
   @impl true
   def render(state, context), do: TextField.render(state, context)
 end
-

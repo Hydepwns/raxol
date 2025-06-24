@@ -82,13 +82,26 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   """
   def normalize_event(event) do
     case event do
-      %Event{} = e -> e
-      {type, mod, key, ch, w, h} -> convert_termbox_event(type, mod, key, ch, w, h)
-      %{type: _} = e -> convert_vscode_event(e)
-      {:key, key} -> Event.new(:key, %{key: key})
-      {:mouse, x, y, button} -> Event.new(:mouse, %{x: x, y: y, button: button})
-      {:text, text} -> Event.new(:text, %{text: text})
-      other -> Event.new(:unknown, %{raw_event: other})
+      %Event{} = e ->
+        e
+
+      {type, mod, key, ch, w, h} ->
+        convert_termbox_event(type, mod, key, ch, w, h)
+
+      %{type: _} = e ->
+        convert_vscode_event(e)
+
+      {:key, key} ->
+        Event.new(:key, %{key: key})
+
+      {:mouse, x, y, button} ->
+        Event.new(:mouse, %{x: x, y: y, button: button})
+
+      {:text, text} ->
+        Event.new(:text, %{text: text})
+
+      other ->
+        Event.new(:unknown, %{raw_event: other})
     end
   end
 

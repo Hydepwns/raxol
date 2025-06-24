@@ -100,8 +100,10 @@ defmodule Raxol.Terminal.Sync.System do
     case do_sync(state, sync_id, key, value, metadata) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, :conflict, new_state} ->
         {:reply, {:error, :conflict}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -206,7 +208,9 @@ defmodule Raxol.Terminal.Sync.System do
 
   defp get_sync_entry(state, sync_id, key) do
     case Map.get(state.syncs, sync_id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       sync_data ->
         case Map.fetch(sync_data, key) do
           {:ok, entry} -> {:ok, entry}

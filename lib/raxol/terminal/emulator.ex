@@ -156,7 +156,8 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate get_style_at_cursor(emulator), to: StateOperations
 
   # Buffer Operations
-  defdelegate update_active_buffer(emulator, new_buffer), to: Raxol.Terminal.BufferManager
+  defdelegate update_active_buffer(emulator, new_buffer),
+    to: Raxol.Terminal.BufferManager
 
   @doc """
   Gets the active buffer from the emulator.
@@ -316,28 +317,50 @@ defmodule Raxol.Terminal.Emulator do
         {emulator, rest}
 
       parsed_sequence ->
-        {new_emulator, remaining} = handle_parsed_sequence(parsed_sequence, rest, emulator)
+        {new_emulator, remaining} =
+          handle_parsed_sequence(parsed_sequence, rest, emulator)
+
         handle_ansi_sequences(remaining, new_emulator)
     end
   end
 
-  defp handle_parsed_sequence({:csi_cursor_pos, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_cursor_pos, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_cursor_position(params, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_cursor_up, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_cursor_up, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_cursor_up(params, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_cursor_down, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_cursor_down, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_cursor_down(params, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_cursor_forward, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_cursor_forward, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_cursor_forward(params, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_cursor_back, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_cursor_back, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_cursor_back(params, emulator), remaining}
   end
 
@@ -349,7 +372,11 @@ defmodule Raxol.Terminal.Emulator do
     {set_cursor_visible(false, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_clear_screen, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_clear_screen, remaining, _},
+         _rest,
+         emulator
+       ) do
     {clear_screen(emulator), remaining}
   end
 
@@ -357,19 +384,35 @@ defmodule Raxol.Terminal.Emulator do
     {clear_line(emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_set_mode, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_set_mode, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_set_mode(params, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_reset_mode, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_reset_mode, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_reset_mode(params, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_set_standard_mode, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_set_standard_mode, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_set_standard_mode(params, emulator), remaining}
   end
 
-  defp handle_parsed_sequence({:csi_reset_standard_mode, params, remaining, _}, _rest, emulator) do
+  defp handle_parsed_sequence(
+         {:csi_reset_standard_mode, params, remaining, _},
+         _rest,
+         emulator
+       ) do
     {handle_reset_standard_mode(params, emulator), remaining}
   end
 
@@ -460,16 +503,16 @@ defmodule Raxol.Terminal.Emulator do
   def parse_csi_cursor_back(_), do: nil
 
   def parse_csi_cursor_show(
-         <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x68, remaining::binary>>
-       ),
-       do: {:csi_cursor_show, remaining, nil}
+        <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x68, remaining::binary>>
+      ),
+      do: {:csi_cursor_show, remaining, nil}
 
   def parse_csi_cursor_show(_), do: nil
 
   def parse_csi_cursor_hide(
-         <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x6C, remaining::binary>>
-       ),
-       do: {:csi_cursor_hide, remaining, nil}
+        <<0x1B, 0x5B, 0x3F, 0x32, 0x35, 0x6C, remaining::binary>>
+      ),
+      do: {:csi_cursor_hide, remaining, nil}
 
   def parse_csi_cursor_hide(_), do: nil
 
@@ -493,7 +536,9 @@ defmodule Raxol.Terminal.Emulator do
         else
           nil
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -602,6 +647,7 @@ defmodule Raxol.Terminal.Emulator do
 
     # Also update the cursor manager
     cursor = emulator.cursor
+
     if pid?(cursor) do
       GenServer.call(cursor, {:set_visibility, visible})
     end
@@ -622,9 +668,11 @@ defmodule Raxol.Terminal.Emulator do
         case lookup_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, true)
+
           _ ->
             emulator
         end
+
       _ ->
         emulator
     end
@@ -637,9 +685,11 @@ defmodule Raxol.Terminal.Emulator do
         case lookup_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, false)
+
           _ ->
             emulator
         end
+
       _ ->
         emulator
     end
@@ -652,9 +702,11 @@ defmodule Raxol.Terminal.Emulator do
         case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, true)
+
           _ ->
             emulator
         end
+
       _ ->
         emulator
     end
@@ -667,9 +719,11 @@ defmodule Raxol.Terminal.Emulator do
         case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, false)
+
           _ ->
             emulator
         end
+
       _ ->
         emulator
     end
@@ -1023,18 +1077,20 @@ defmodule Raxol.Terminal.Emulator do
     new_x = x + String.length(text)
 
     # Update the cursor through GenServer if it's a PID
-    emulator = if pid?(emulator.cursor) do
-      GenServer.call(emulator.cursor, {:update_position, new_x, y})
-      emulator
-    else
-      new_cursor = %{cursor | x: new_x, position: {new_x, y}}
-      %{emulator | cursor: new_cursor}
-    end
+    emulator =
+      if pid?(emulator.cursor) do
+        GenServer.call(emulator.cursor, {:update_position, new_x, y})
+        emulator
+      else
+        new_cursor = %{cursor | x: new_x, position: {new_x, y}}
+        %{emulator | cursor: new_cursor}
+      end
 
     # Update the appropriate buffer
     case emulator.active_buffer_type do
       :main ->
         %{emulator | main_screen_buffer: updated_buffer}
+
       :alternate ->
         %{emulator | alternate_screen_buffer: updated_buffer}
     end
@@ -1174,16 +1230,17 @@ defmodule Raxol.Terminal.Emulator do
 
   defp printable_text?(input) do
     String.valid?(input) and
-    String.length(input) > 0 and
-    not String.contains?(input, "\e") and
-    String.graphemes(input) |> Enum.all?(&printable_char?/1)
+      String.length(input) > 0 and
+      not String.contains?(input, "\e") and
+      String.graphemes(input) |> Enum.all?(&printable_char?/1)
   end
 
   defp printable_char?(char) do
     # Check if character is printable (not control characters)
     case char do
       <<code::utf8>> when code >= 32 and code <= 126 -> true
-      <<code::utf8>> when code >= 160 -> true  # Extended ASCII and Unicode
+      # Extended ASCII and Unicode
+      <<code::utf8>> when code >= 160 -> true
       _ -> false
     end
   end

@@ -112,12 +112,23 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   defp matches_quit_key(quit_key, key, modifiers) do
     case quit_key do
-      key_val when atom?(key_val) or integer?(key_val) -> key == key_val
-      {key_val, mods} when list?(mods) -> key == key_val and modifiers_match?(modifiers, mods)
-      :ctrl_c -> key == ?c and Keyword.get(modifiers, :ctrl, false)
-      :ctrl_q -> key == ?q and Keyword.get(modifiers, :ctrl, false)
-      {:unrecognized, other} -> log_unknown_quit_key(other)
-      _ -> false
+      key_val when atom?(key_val) or integer?(key_val) ->
+        key == key_val
+
+      {key_val, mods} when list?(mods) ->
+        key == key_val and modifiers_match?(modifiers, mods)
+
+      :ctrl_c ->
+        key == ?c and Keyword.get(modifiers, :ctrl, false)
+
+      :ctrl_q ->
+        key == ?q and Keyword.get(modifiers, :ctrl, false)
+
+      {:unrecognized, other} ->
+        log_unknown_quit_key(other)
+
+      _ ->
+        false
     end
   end
 
@@ -126,6 +137,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
       "Unknown quit key format: #{inspect(other)}",
       %{}
     )
+
     false
   end
 

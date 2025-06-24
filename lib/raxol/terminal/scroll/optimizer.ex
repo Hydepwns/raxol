@@ -1,18 +1,28 @@
 defmodule Raxol.Terminal.Scroll.Optimizer do
   @moduledoc """
   Handles scroll optimization for better performance.
+  Dynamically adjusts batch size based on recent scroll patterns and (optionally) performance metrics.
   """
 
+  @history_size 10
+
+  @type scroll_event :: %{
+          direction: :up | :down,
+          lines: non_neg_integer(),
+          timestamp: integer()
+        }
   @type t :: %__MODULE__{
           batch_size: non_neg_integer(),
-          last_optimization: non_neg_integer()
+          last_optimization: non_neg_integer(),
+          history: [scroll_event()]
+          # Optionally: :avg_latency, :target_latency, etc.
         }
 
-  defstruct [
-    :batch_size,
-    :last_optimization
-  ]
+  defstruct batch_size: 10,
+            last_optimization: 0,
+            history: []
 
+  # Optionally: avg_latency: nil, target_latency: 20
   @doc """
   Creates a new optimizer instance.
   """
@@ -20,16 +30,59 @@ defmodule Raxol.Terminal.Scroll.Optimizer do
   def new do
     %__MODULE__{
       batch_size: 10,
-      last_optimization: System.monotonic_time()
+      last_optimization: System.monotonic_time(),
+      history: []
+      # Optionally: avg_latency: nil, target_latency: 20
     }
   end
 
   @doc """
   Optimizes scroll operations for better performance.
+
+  - Increases batch size for large/rapid scrolls.
+  - Decreases batch size for small/precise or alternating scrolls.
+  - Uses recent scroll history to adapt.
   """
   @spec optimize(t(), :up | :down, non_neg_integer()) :: t()
-  def optimize(optimizer, _direction, _lines) do
-    # Optimize scroll operations based on current state
-    optimizer
+  def optimize(%__MODULE__{} = optimizer, direction, lines) do
+    now = System.monotonic_time()
+    event = %{direction: direction, lines: lines, timestamp: now}
+    history = [event | Enum.take(optimizer.history, @history_size - 1)]
+
+    avg_lines =
+      if history == [] do
+        lines
+      else
+        Enum.sum(Enum.map(history, & &1.lines)) / length(history)
+      end
+
+    # Detect rapid alternation (zig-zag)
+    alternations =
+      history
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.count(fn [a, b] -> a.direction != b.direction end)
+
+    alternation_ratio =
+      if length(history) > 1, do: alternations / (length(history) - 1), else: 0
+
+    # Optionally, use performance metrics (e.g., optimizer.avg_latency, optimizer.target_latency)
+
+    new_batch_size =
+      cond do
+        # User is zig-zagging, decrease batch
+        alternation_ratio > 0.5 -> max(optimizer.batch_size - 2, 1)
+        avg_lines >= 50 -> min(optimizer.batch_size + 10, 100)
+        avg_lines >= 20 -> min(optimizer.batch_size + 5, 50)
+        avg_lines <= 2 -> max(optimizer.batch_size - 2, 1)
+        avg_lines <= 5 -> max(optimizer.batch_size - 1, 1)
+        true -> optimizer.batch_size
+      end
+
+    %{
+      optimizer
+      | batch_size: new_batch_size,
+        last_optimization: now,
+        history: history
+    }
   end
 end

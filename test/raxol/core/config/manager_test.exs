@@ -149,7 +149,8 @@ defmodule Raxol.Core.Config.ManagerTest do
 
     test "persists configuration deletions", %{temp_file: temp_file} do
       # Set a configuration value
-      assert :ok = Manager.set(:delete_test_key, "delete_test_value", persist: true)
+      assert :ok =
+               Manager.set(:delete_test_key, "delete_test_value", persist: true)
 
       # Verify the value is set
       assert "delete_test_value" = Manager.get(:delete_test_key)
@@ -171,12 +172,14 @@ defmodule Raxol.Core.Config.ManagerTest do
       read_only_file = "/readonly/test_config.json"
 
       # This should not crash the manager
-      assert {:error, _reason} = Manager.set(:test_key, "test_value", persist: true)
+      assert {:error, _reason} =
+               Manager.set(:test_key, "test_value", persist: true)
     end
 
     test "skips persistence when persist: false", %{temp_file: temp_file} do
       # Set a configuration value without persistence
-      assert :ok = Manager.set(:no_persist_key, "no_persist_value", persist: false)
+      assert :ok =
+               Manager.set(:no_persist_key, "no_persist_value", persist: false)
 
       # Verify the value is set in memory
       assert "no_persist_value" = Manager.get(:no_persist_key)

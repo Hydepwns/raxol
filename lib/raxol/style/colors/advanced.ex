@@ -356,7 +356,8 @@ defmodule Raxol.Style.Colors.Advanced do
     # If brightness is too low, adjust lightness while preserving hue and saturation
     if original_l < 30 do
       %{h: h, s: s} = rgb_to_hsl(color)
-      hsl_to_rgb({h, s, 0.3})  # Increase lightness to 30%
+      # Increase lightness to 30%
+      hsl_to_rgb({h, s, 0.3})
     else
       color
     end
@@ -369,11 +370,15 @@ defmodule Raxol.Style.Colors.Advanced do
     %{h: h, s: s, l: l} = rgb_to_hsl(color)
 
     # If lightness is in middle range, push towards extremes
-    adjusted_l = cond do
-      l > 40 and l < 60 -> l + 20  # Lighten mid-tones
-      l < 40 -> l - 10              # Darken dark tones
-      true -> l                     # Keep extreme values
-    end
+    adjusted_l =
+      cond do
+        # Lighten mid-tones
+        l > 40 and l < 60 -> l + 20
+        # Darken dark tones
+        l < 40 -> l - 10
+        # Keep extreme values
+        true -> l
+      end
 
     hsl_to_rgb({h, s, adjusted_l / 100})
   end

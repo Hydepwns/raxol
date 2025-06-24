@@ -1,5 +1,6 @@
 defmodule Raxol.Benchmarks.Performance do
   import Raxol.Guards
+
   @moduledoc """
   Performance benchmarking and validation tools for Raxol.
 
@@ -60,7 +61,12 @@ defmodule Raxol.Benchmarks.Performance do
   end
 
   defp normalize_opts(opts) do
-    default_opts = [save_results: true, compare_with_baseline: true, detailed: false]
+    default_opts = [
+      save_results: true,
+      compare_with_baseline: true,
+      detailed: false
+    ]
+
     Keyword.merge(default_opts, normalize_to_keyword(opts))
   end
 

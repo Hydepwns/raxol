@@ -53,6 +53,14 @@ defmodule Raxol.Terminal.Buffer do
     }
   end
 
+  @doc """
+  Creates a new buffer with default dimensions (80x24).
+  """
+  @spec new() :: t()
+  def new() do
+    new({80, 24})
+  end
+
   def new({width, height}) when integer?(width) and integer?(height) do
     raise ArgumentError,
           "Invalid buffer dimensions: width and height must be positive integers"

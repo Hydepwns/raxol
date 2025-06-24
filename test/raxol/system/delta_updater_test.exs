@@ -7,7 +7,9 @@ defmodule Raxol.System.DeltaUpdaterTest do
   alias Raxol.System.DeltaUpdaterSystemAdapterBehaviour
 
   # Define the mock for the adapter behaviour
-  Mox.defmock(DeltaUpdaterSystemAdapterMock, for: DeltaUpdaterSystemAdapterBehaviour)
+  Mox.defmock(DeltaUpdaterSystemAdapterMock,
+    for: DeltaUpdaterSystemAdapterBehaviour
+  )
 
   describe "check_delta_availability/1" do
     # Add Mox verification

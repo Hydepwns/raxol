@@ -2,8 +2,21 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Terminal.Scroll.Manager
+  alias Raxol.Terminal.Cache.System
 
   setup do
+    # Start the cache system with test configuration
+    {:ok, _pid} =
+      System.start_link(
+        max_size: 1024 * 1024,
+        default_ttl: 3600,
+        eviction_policy: :lru,
+        compression_enabled: true,
+        namespace_configs: %{
+          scroll: %{max_size: 128 * 1024}
+        }
+      )
+
     manager = Manager.new()
     %{manager: manager}
   end

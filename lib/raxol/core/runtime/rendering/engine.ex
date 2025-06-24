@@ -307,7 +307,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     @terminal_color_map[color] || "default"
   end
 
-  defp convert_color_to_vscode({r, g, b}) when integer?(r) and integer?(g) and integer?(b) do
+  defp convert_color_to_vscode({r, g, b})
+       when integer?(r) and integer?(g) and integer?(b) do
     "rgb(#{r},#{g},#{b})"
   end
 
@@ -350,13 +351,20 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         }
 
         # Process cells through plugins using CellProcessor
-        case Raxol.Plugins.CellProcessor.process(plugin_manager, cells, emulator_state) do
+        case Raxol.Plugins.CellProcessor.process(
+               plugin_manager,
+               cells,
+               emulator_state
+             ) do
           {:ok, updated_manager, processed_cells, collected_commands} ->
             # Execute any collected commands (like escape sequences)
             execute_plugin_commands(collected_commands)
 
             # Update plugin manager state in dispatcher if needed
-            update_plugin_manager_in_dispatcher(state.dispatcher_pid, updated_manager)
+            update_plugin_manager_in_dispatcher(
+              state.dispatcher_pid,
+              updated_manager
+            )
 
             Raxol.Core.Runtime.Log.debug(
               "Rendering Engine: Plugin transforms applied. Processed cells: #{length(processed_cells)}, Commands: #{length(collected_commands)}"
@@ -388,7 +396,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Helper function to get plugin manager from dispatcher
-  defp get_plugin_manager_from_dispatcher(dispatcher_pid) when pid?(dispatcher_pid) do
+  defp get_plugin_manager_from_dispatcher(dispatcher_pid)
+       when pid?(dispatcher_pid) do
     try do
       case GenServer.call(dispatcher_pid, :get_plugin_manager, 5000) do
         {:ok, plugin_manager} -> {:ok, plugin_manager}
@@ -403,6 +412,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           nil,
           %{dispatcher_pid: dispatcher_pid}
         )
+
         {:error, :dispatcher_error}
     end
   end
@@ -410,7 +420,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   defp get_plugin_manager_from_dispatcher(_), do: {:error, :invalid_dispatcher}
 
   # Helper function to execute plugin commands (like escape sequences)
-  defp execute_plugin_commands(commands) when list?(commands) and length(commands) > 0 do
+  defp execute_plugin_commands(commands)
+       when list?(commands) and length(commands) > 0 do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Executing #{length(commands)} plugin commands"
     )

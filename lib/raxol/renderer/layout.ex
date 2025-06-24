@@ -814,15 +814,32 @@ defmodule Raxol.Renderer.Layout do
 
   defp normalize_child_by_type(child, space, default_type, for_layout) do
     cond do
-      struct?(child) -> normalize_struct(child, space, default_type)
-      list?(child) and Keyword.keyword?(child) and for_layout -> normalize_keyword(child, space, default_type)
-      list?(child) -> normalize_list(child, space, default_type)
-      map?(child) -> normalize_map(child, space, default_type)
-      atom?(child) and for_layout -> normalize_atom_for_layout(child, space)
-      atom?(child) -> [%{type: child}]
-      binary?(child) -> [%{type: child}]
-      number?(child) -> [%{type: child}]
-      true -> normalize_unknown(child, space, for_layout)
+      struct?(child) ->
+        normalize_struct(child, space, default_type)
+
+      list?(child) and Keyword.keyword?(child) and for_layout ->
+        normalize_keyword(child, space, default_type)
+
+      list?(child) ->
+        normalize_list(child, space, default_type)
+
+      map?(child) ->
+        normalize_map(child, space, default_type)
+
+      atom?(child) and for_layout ->
+        normalize_atom_for_layout(child, space)
+
+      atom?(child) ->
+        [%{type: child}]
+
+      binary?(child) ->
+        [%{type: child}]
+
+      number?(child) ->
+        [%{type: child}]
+
+      true ->
+        normalize_unknown(child, space, for_layout)
     end
   end
 
@@ -872,7 +889,12 @@ defmodule Raxol.Renderer.Layout do
 
   defp normalize_unknown(child, space, for_layout) do
     if for_layout do
-      [ensure_required_keys(%{type: :unknown, value: child, children: []}, space)]
+      [
+        ensure_required_keys(
+          %{type: :unknown, value: child, children: []},
+          space
+        )
+      ]
     else
       [%{type: child}]
     end
@@ -914,20 +936,31 @@ defmodule Raxol.Renderer.Layout do
 
   defp normalize_children(children, space) do
     case children do
-      list when list?(list) -> Enum.flat_map(list, &deep_normalize_child(&1, space, :box, true))
-      nil -> []
-      single_item -> deep_normalize_child(single_item, space, :box, true)
+      list when list?(list) ->
+        Enum.flat_map(list, &deep_normalize_child(&1, space, :box, true))
+
+      nil ->
+        []
+
+      single_item ->
+        deep_normalize_child(single_item, space, :box, true)
     end
   end
 
   defp resolve_final_type(map, default_type) do
-    final_type = cond do
-      Map.has_key?(map, :__struct__) ->
-        struct_name = get_struct_name(map)
-        resolve_type(map, struct_name)
-      Map.has_key?(map, :type) -> map.type
-      true -> default_type
-    end
+    final_type =
+      cond do
+        Map.has_key?(map, :__struct__) ->
+          struct_name = get_struct_name(map)
+          resolve_type(map, struct_name)
+
+        Map.has_key?(map, :type) ->
+          map.type
+
+        true ->
+          default_type
+      end
+
     Map.put(map, :type, final_type)
   end
 

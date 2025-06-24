@@ -10,7 +10,6 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
   alias Raxol.Terminal.{Emulator, OutputManager}
   require Raxol.Core.Runtime.Log
 
-  @doc "Handles Device Status Report (DSR - 'n')"
   @spec handle_n(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_n(emulator, params) do
@@ -30,7 +29,6 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     end
   end
 
-  @doc "Handles Device Attributes (DA - 'c')"
   @spec handle_c(Emulator.t(), list(integer()), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_c(emulator, _params, intermediates_buffer) do
@@ -43,7 +41,6 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     end
   end
 
-  # Helper function to generate DSR response based on code
   @spec generate_dsr_response(non_neg_integer(), Emulator.t()) ::
           String.t() | nil
   defp generate_dsr_response(code, emulator) do
@@ -69,7 +66,6 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     end
   end
 
-  # Helper function to generate DA response based on intermediate buffer
   @spec generate_da_response(String.t()) :: String.t()
   defp generate_da_response(intermediates_buffer) do
     case intermediates_buffer do

@@ -67,6 +67,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
           prompt: String.t() | nil,
           completion_context: map() | nil,
           last_event_time: integer() | nil,
+          last_input: String.t() | nil,
           clipboard_content: String.t() | nil,
           clipboard_history: [String.t()],
           mouse_enabled: boolean(),
@@ -103,6 +104,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     :prompt,
     :completion_context,
     :last_event_time,
+    :last_input,
     :clipboard_content,
     :clipboard_history,
     :mouse_enabled,
@@ -218,6 +220,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
       prompt: nil,
       completion_context: nil,
       last_event_time: nil,
+      last_input: nil,
       clipboard_content: nil,
       clipboard_history: [],
       mouse_enabled: false,
@@ -334,6 +337,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
       prompt: nil,
       completion_context: nil,
       last_event_time: nil,
+      last_input: nil,
       clipboard_content: nil,
       clipboard_history: [],
       mouse_enabled: false,
@@ -435,25 +439,53 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp update_io_config(state, config) do
-    # Update buffer manager
-    {:ok, new_buffer_manager} =
-      UnifiedManager.update_config(state.buffer_manager, config)
+    # Initialize components if they don't exist yet
+    {buffer_manager, scroll_buffer, renderer, command_history} =
+      if state.buffer_manager do
+        # Components already exist, update them
+        {:ok, new_buffer_manager} =
+          UnifiedManager.update_config(state.buffer_manager, config)
 
-    # Update scroll buffer
-    new_scroll_buffer =
-      UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
+        new_scroll_buffer =
+          UnifiedScroll.set_max_height(
+            state.scroll_buffer,
+            config.scrollback_limit
+          )
 
-    # Update renderer
-    UnifiedRenderer.update_config(config.rendering)
+        UnifiedRenderer.update_config(config.rendering)
 
-    # Update command history
-    new_command_history = History.update_config(state.command_history, config)
+        new_command_history =
+          History.update_config(state.command_history, config)
+
+        {new_buffer_manager, new_scroll_buffer, state.renderer,
+         new_command_history}
+      else
+        # Initialize components for the first time
+        {:ok, new_buffer_manager} =
+          UnifiedManager.new(
+            config.width || 80,
+            config.height || 24,
+            config.scrollback_limit || 1000,
+            config.memory_limit || 50 * 1024 * 1024
+          )
+
+        new_scroll_buffer = UnifiedScroll.new(config.scrollback_limit || 1000)
+
+        {:ok, new_renderer} =
+          UnifiedRenderer.start_link(config.rendering || %{})
+
+        new_command_history = History.new(config.command_history_limit || 1000)
+
+        {new_buffer_manager, new_scroll_buffer, new_renderer,
+         new_command_history}
+      end
 
     %{
       state
-      | buffer_manager: new_buffer_manager,
-        scroll_buffer: new_scroll_buffer,
-        command_history: new_command_history,
+      | buffer_manager: buffer_manager,
+        scroll_buffer: scroll_buffer,
+        renderer: renderer,
+        command_history: command_history,
         config: config
     }
   end

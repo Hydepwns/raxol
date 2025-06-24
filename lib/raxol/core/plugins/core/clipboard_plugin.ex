@@ -22,8 +22,8 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   @impl true
   def get_commands do
     [
-      :clipboard_write,
-      :clipboard_read
+      {:clipboard_write, :handle_clipboard_command, 2},
+      {:clipboard_read, :handle_clipboard_command, 1}
     ]
   end
 
@@ -31,55 +31,85 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   def handle_command(
         :clipboard_write,
         [content],
-        %{clipboard_impl: clipboard_impl} = _state
+        %{clipboard_impl: clipboard_impl} = state
       )
       when binary?(content) do
     case clipboard_impl.copy(content) do
       :ok ->
-        {:ok, "Content copied to clipboard"}
+        {:ok, state, :clipboard_write_ok}
 
       {:error, reason} ->
-        {:error, "Failed to copy to clipboard: #{inspect(reason)}"}
+        {:error, {:clipboard_write_failed, reason}, state}
     end
   end
 
   def handle_command(
         :clipboard_read,
         [],
-        %{clipboard_impl: clipboard_impl} = _state
+        %{clipboard_impl: clipboard_impl} = state
       ) do
     case clipboard_impl.paste() do
       {:ok, content} ->
-        {:ok, content}
+        {:ok, state, {:clipboard_content, content}}
 
       {:error, reason} ->
-        {:error, "Failed to read from clipboard: #{inspect(reason)}"}
+        {:error, {:clipboard_read_failed, reason}, state}
     end
   end
 
-  def handle_command(:clipboard_write, _args, _state) do
-    {:error, "Invalid arguments for clipboard_write command"}
+  def handle_command(:clipboard_write, _args, state) do
+    {:error, :unhandled_clipboard_command, state}
   end
 
-  def handle_command(:clipboard_read, _args, _state) do
-    {:error, "Invalid arguments for clipboard_read command"}
+  def handle_command(:clipboard_read, _args, state) do
+    {:error, :unhandled_clipboard_command, state}
   end
 
   @doc """
   Handles clipboard commands with a simplified interface.
   """
-  @spec handle_clipboard_command(atom(), map()) :: {:ok, any()} | {:error, String.t()}
-  def handle_clipboard_command(command, state) when command in [:clipboard_write, :clipboard_read] do
-    case command do
-      :clipboard_write ->
-        handle_command(:clipboard_write, [""], state)
-
-      :clipboard_read ->
-        handle_command(:clipboard_read, [], state)
-    end
+  @spec handle_clipboard_command(list(), map()) ::
+          {:ok, map(), any()} | {:error, String.t(), map()}
+  def handle_clipboard_command([content], state) when binary?(content) do
+    # Handle clipboard_write with content
+    handle_command(:clipboard_write, [content], state)
   end
 
-  def handle_clipboard_command(_command, _state) do
-    {:error, "Unknown clipboard command"}
+  def handle_clipboard_command(_args, state) do
+    {:error, :unhandled_clipboard_command, state}
+  end
+
+  @doc """
+  Handles clipboard read command (arity 1 - just state).
+  """
+  @spec handle_clipboard_command(map()) ::
+          {:ok, map(), any()} | {:error, String.t(), map()}
+  def handle_clipboard_command(state) do
+    # Handle clipboard_read with no content
+    handle_command(:clipboard_read, [], state)
+  end
+
+  @doc """
+  Enables the clipboard plugin.
+  """
+  @spec enable(map()) :: {:ok, map()}
+  def enable(state) do
+    {:ok, state}
+  end
+
+  @doc """
+  Disables the clipboard plugin.
+  """
+  @spec disable(map()) :: {:ok, map()}
+  def disable(state) do
+    {:ok, state}
+  end
+
+  @doc """
+  Filters events for the clipboard plugin.
+  """
+  @spec filter_event(any(), map()) :: {:ok, any(), map()}
+  def filter_event(event, state) do
+    {:ok, event, state}
   end
 end

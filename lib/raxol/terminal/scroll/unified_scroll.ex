@@ -247,7 +247,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
         |> Enum.map(fn chunk ->
           case chunk do
             [cell | _] -> cell
-            [] -> Cell.new("")
+            [] -> Cell.new(" ")
           end
         end)
       end)

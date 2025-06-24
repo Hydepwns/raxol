@@ -205,7 +205,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- Public API for PubSub ---
 
   @doc "Subscribes the calling process to a specific event topic."
-    @spec subscribe(atom()) :: :ok | {:error, term()}
+  @spec subscribe(atom()) :: :ok | {:error, term()}
   def subscribe(topic) when atom?(topic) do
     Registry.register(@registry_name, topic, {})
   end

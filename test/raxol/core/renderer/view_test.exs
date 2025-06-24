@@ -175,7 +175,8 @@ defmodule Raxol.Core.Renderer.ViewTest do
       # View.shadow/1 returns a shadow map, it doesn't raise an error for invalid offset
       # The invalid offset gets converted to a default value
       shadow = View.shadow(offset: "invalid")
-      assert shadow.offset == {1, 1}  # Default fallback value
+      # Default fallback value
+      assert shadow.offset == {1, 1}
     end
 
     test "flex layout with row direction" do

@@ -1,11 +1,6 @@
 defmodule Raxol.Terminal.Commands.OSCHandlers.SelectionParser do
-  @moduledoc """
-  Handles parsing of selection-related OSC commands.
-  """
+  @moduledoc false
 
-  @doc """
-  Parses a selection command string into a command tuple.
-  """
   @spec parse(String.t()) ::
           {:query, nil}
           | {:start, integer(), integer()}

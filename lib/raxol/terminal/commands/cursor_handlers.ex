@@ -13,10 +13,6 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   alias Raxol.Terminal.ScreenBuffer
   require Raxol.Core.Runtime.Log
 
-  @doc """
-  Helper function to handle cursor movement operations.
-  Takes the emulator, movement function, and movement parameters.
-  """
   @spec handle_cursor_movement(
           Emulator.t(),
           (CursorManager.t(), integer(), integer(), integer() ->

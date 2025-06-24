@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
   def clear_region(buffer, x, y, width, height, style \\ nil) do
-    empty_cell = Cell.new("", style || buffer.default_style)
+    empty_cell = Cell.new(" ", style || buffer.default_style)
 
     new_cells =
       Enum.reduce(y..(y + height - 1), buffer.cells, fn row, cells ->
@@ -375,7 +375,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
   defp create_empty_line(width, style) do
     for _ <- 1..width do
-      Cell.new("", style)
+      Cell.new(" ", style)
     end
   end
 

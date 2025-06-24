@@ -16,9 +16,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
   alias Raxol.Terminal.{Emulator, Clipboard}
   require Raxol.Core.Runtime.Log
 
-  @doc """
-  Handles OSC 9 command to set/query clipboard content.
-  """
   @spec handle_9(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_9(emulator, data) do
@@ -71,58 +68,16 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
   def handle_52(emulator, data) do
     case parse_command(data) do
       {:query, :clipboard} ->
-        case Clipboard.get_content(emulator.clipboard) do
-          {:ok, content} ->
-            response = format_clipboard_response(52, content)
-            {:ok, %{emulator | output_buffer: response}}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning(
-              "Failed to get clipboard content: #{inspect(reason)}"
-            )
-
-            {:error, reason, emulator}
-        end
+        handle_clipboard_query(emulator, 52)
 
       {:query, :selection} ->
-        case Clipboard.get_selection(emulator.clipboard) do
-          {:ok, content} ->
-            response = format_selection_response(52, content)
-            {:ok, %{emulator | output_buffer: response}}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning(
-              "Failed to get selection content: #{inspect(reason)}"
-            )
-
-            {:error, reason, emulator}
-        end
+        handle_selection_query(emulator, 52)
 
       {:set, :clipboard, content} ->
-        case Clipboard.set_content(emulator.clipboard, content) do
-          {:ok, new_clipboard} ->
-            {:ok, %{emulator | clipboard: new_clipboard}}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning(
-              "Failed to set clipboard content: #{inspect(reason)}"
-            )
-
-            {:error, reason, emulator}
-        end
+        handle_clipboard_set(emulator, 52, content)
 
       {:set, :selection, content} ->
-        case Clipboard.set_selection(emulator.clipboard, content) do
-          {:ok, new_clipboard} ->
-            {:ok, %{emulator | clipboard: new_clipboard}}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning(
-              "Failed to set selection content: #{inspect(reason)}"
-            )
-
-            {:error, reason, emulator}
-        end
+        handle_selection_set(emulator, 52, content)
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning(
@@ -162,5 +117,64 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
   defp format_selection_response(command, content) do
     # Format: OSC command;s;content
     "\e]#{command};s;#{content}\e\\"
+  end
+
+  # Private command handlers
+  defp handle_clipboard_query(emulator, command) do
+    case Clipboard.get_content(emulator.clipboard) do
+      {:ok, content} ->
+        response = format_clipboard_response(command, content)
+        {:ok, %{emulator | output_buffer: response}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to get clipboard content: #{inspect(reason)}"
+        )
+
+        {:error, reason, emulator}
+    end
+  end
+
+  defp handle_selection_query(emulator, command) do
+    case Clipboard.get_selection(emulator.clipboard) do
+      {:ok, content} ->
+        response = format_selection_response(command, content)
+        {:ok, %{emulator | output_buffer: response}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to get selection content: #{inspect(reason)}"
+        )
+
+        {:error, reason, emulator}
+    end
+  end
+
+  defp handle_clipboard_set(emulator, _command, content) do
+    case Clipboard.set_content(emulator.clipboard, content) do
+      {:ok, new_clipboard} ->
+        {:ok, %{emulator | clipboard: new_clipboard}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to set clipboard content: #{inspect(reason)}"
+        )
+
+        {:error, reason, emulator}
+    end
+  end
+
+  defp handle_selection_set(emulator, _command, content) do
+    case Clipboard.set_selection(emulator.clipboard, content) do
+      {:ok, new_clipboard} ->
+        {:ok, %{emulator | clipboard: new_clipboard}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to set selection content: #{inspect(reason)}"
+        )
+
+        {:error, reason, emulator}
+    end
   end
 end

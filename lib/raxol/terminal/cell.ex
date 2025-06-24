@@ -255,7 +255,7 @@ defmodule Raxol.Terminal.Cell do
   end
 
   def with_attributes(%__MODULE__{} = cell, attributes)
-    when map?(attributes) do
+      when map?(attributes) do
     # When merging a map, use the refined merge_style logic
     merge_style(cell, attributes)
   end

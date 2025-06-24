@@ -1,5 +1,6 @@
 defmodule Raxol.Animation.Physics.ForceField do
   import Raxol.Guards
+
   @moduledoc """
   Force field implementation for physics simulations.
 

@@ -1,5 +1,6 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
   import Raxol.Guards
+
   @moduledoc """
   A realistic benchmark tool for visualization components with progressive data sizes.
   Tests the performance impact of our optimizations on various dataset sizes.
@@ -148,10 +149,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
 
     # Print average speedup
     avg_chart_speedup =
-      Enum.sum(Enum.map(chart_results, &(&1.speedup))) / length(chart_results)
+      Enum.sum(Enum.map(chart_results, & &1.speedup)) / length(chart_results)
 
     avg_treemap_speedup =
-      Enum.sum(Enum.map(treemap_results, &(&1.speedup))) /
+      Enum.sum(Enum.map(treemap_results, & &1.speedup)) /
         length(treemap_results)
 
     IO.puts("Average Chart Speedup: #{Float.round(avg_chart_speedup, 1)}x")

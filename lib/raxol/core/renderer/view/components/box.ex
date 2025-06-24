@@ -72,7 +72,8 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     case layout_mode do
       :horizontal -> layout_horizontal(children, {width, height})
       :stack -> layout_stack(children, {width, height})
-      _ -> layout_vertical(children, {width, height}) # Default
+      # Default
+      _ -> layout_vertical(children, {width, height})
     end
   end
 
@@ -90,9 +91,10 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
       child_width = get_child_width(child, width)
 
       # Position child at top of remaining space
-      _positioned_child = child
-      |> Map.put(:position, {0, prev_y})
-      |> Map.put(:size, {child_width, child_height})
+      _positioned_child =
+        child
+        |> Map.put(:position, {0, prev_y})
+        |> Map.put(:size, {child_width, child_height})
 
       {0, prev_y + child_height}
     end)
@@ -106,9 +108,10 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
       child_height = get_child_height(child, height)
 
       # Position child to the right of previous child
-      _positioned_child = child
-      |> Map.put(:position, {prev_x, 0})
-      |> Map.put(:size, {child_width, child_height})
+      _positioned_child =
+        child
+        |> Map.put(:position, {prev_x, 0})
+        |> Map.put(:size, {child_width, child_height})
 
       {prev_x + child_width, 0}
     end)
@@ -126,10 +129,11 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
       # All children get the same position, but only the last one is visible
       visible = index == length(children) - 1
 
-      _positioned_child = child
-      |> Map.put(:position, {0, 0})
-      |> Map.put(:size, {child_width, child_height})
-      |> Map.put(:visible, visible)
+      _positioned_child =
+        child
+        |> Map.put(:position, {0, 0})
+        |> Map.put(:size, {child_width, child_height})
+        |> Map.put(:visible, visible)
     end)
   end
 
@@ -144,7 +148,8 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
 
   defp get_child_height(child, available_height) do
     case Map.get(child, :height) do
-      nil -> 1 # Default height for text-like content
+      # Default height for text-like content
+      nil -> 1
       height when integer?(height) -> min(height, available_height)
       :auto -> 1
       _ -> 1
@@ -227,12 +232,16 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
       {child_width, child_height} = Map.get(child, :size, {0, 0})
 
       # Adjust position to account for border
-      new_x = child_x + 1  # Left border
-      new_y = child_y + 1  # Top border
+      # Left border
+      new_x = child_x + 1
+      # Top border
+      new_y = child_y + 1
 
       # Adjust size to account for borders
-      new_width = max(0, child_width - 2)  # Left and right borders
-      new_height = max(0, child_height - 2) # Top and bottom borders
+      # Left and right borders
+      new_width = max(0, child_width - 2)
+      # Top and bottom borders
+      new_height = max(0, child_height - 2)
 
       child
       |> Map.put(:position, {new_x, new_y})
@@ -245,45 +254,92 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
 
   defp get_border_characters(style) do
     case style do
-      :single -> %{
-        top_left: "┌", top: "─", top_right: "┐",
-        left: "│", right: "│",
-        bottom_left: "└", bottom: "─", bottom_right: "┘"
-      }
-      :double -> %{
-        top_left: "╔", top: "═", top_right: "╗",
-        left: "║", right: "║",
-        bottom_left: "╚", bottom: "═", bottom_right: "╝"
-      }
-      :rounded -> %{
-        top_left: "╭", top: "─", top_right: "╮",
-        left: "│", right: "│",
-        bottom_left: "╰", bottom: "─", bottom_right: "╯"
-      }
-      :bold -> %{
-        top_left: "┏", top: "━", top_right: "┓",
-        left: "┃", right: "┃",
-        bottom_left: "┗", bottom: "━", bottom_right: "┛"
-      }
-      :dashed -> %{
-        top_left: "┌", top: "┄", top_right: "┐",
-        left: "┆", right: "┆",
-        bottom_left: "└", bottom: "┄", bottom_right: "┘"
-      }
-      _ -> %{
-        top_left: "┌", top: "─", top_right: "┐",
-        left: "│", right: "│",
-        bottom_left: "└", bottom: "─", bottom_right: "┘"
-      }
+      :single ->
+        %{
+          top_left: "┌",
+          top: "─",
+          top_right: "┐",
+          left: "│",
+          right: "│",
+          bottom_left: "└",
+          bottom: "─",
+          bottom_right: "┘"
+        }
+
+      :double ->
+        %{
+          top_left: "╔",
+          top: "═",
+          top_right: "╗",
+          left: "║",
+          right: "║",
+          bottom_left: "╚",
+          bottom: "═",
+          bottom_right: "╝"
+        }
+
+      :rounded ->
+        %{
+          top_left: "╭",
+          top: "─",
+          top_right: "╮",
+          left: "│",
+          right: "│",
+          bottom_left: "╰",
+          bottom: "─",
+          bottom_right: "╯"
+        }
+
+      :bold ->
+        %{
+          top_left: "┏",
+          top: "━",
+          top_right: "┓",
+          left: "┃",
+          right: "┃",
+          bottom_left: "┗",
+          bottom: "━",
+          bottom_right: "┛"
+        }
+
+      :dashed ->
+        %{
+          top_left: "┌",
+          top: "┄",
+          top_right: "┐",
+          left: "┆",
+          right: "┆",
+          bottom_left: "└",
+          bottom: "┄",
+          bottom_right: "┘"
+        }
+
+      _ ->
+        %{
+          top_left: "┌",
+          top: "─",
+          top_right: "┐",
+          left: "│",
+          right: "│",
+          bottom_left: "└",
+          bottom: "─",
+          bottom_right: "┘"
+        }
     end
   end
 
   # Helper function to normalize spacing values
   defp normalize_spacing(n) when integer?(n) and n >= 0, do: {n, n, n, n}
   defp normalize_spacing({n}) when integer?(n) and n >= 0, do: {n, n, n, n}
-  defp normalize_spacing({h, v}) when integer?(h) and integer?(v) and h >= 0 and v >= 0, do: {h, v, h, v}
+
+  defp normalize_spacing({h, v})
+       when integer?(h) and integer?(v) and h >= 0 and v >= 0,
+       do: {h, v, h, v}
+
   defp normalize_spacing({t, r, b, l})
        when integer?(t) and integer?(r) and integer?(b) and integer?(l) and
-            t >= 0 and r >= 0 and b >= 0 and l >= 0, do: {t, r, b, l}
+              t >= 0 and r >= 0 and b >= 0 and l >= 0,
+       do: {t, r, b, l}
+
   defp normalize_spacing(_), do: {0, 0, 0, 0}
 end

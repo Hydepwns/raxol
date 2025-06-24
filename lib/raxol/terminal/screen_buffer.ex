@@ -204,6 +204,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   defdelegate get_scroll_top(buffer), to: ScrollRegion
   defdelegate get_scroll_bottom(buffer), to: ScrollRegion
+
   def set_scroll_region(buffer, {top, bottom}) do
     Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
   end
@@ -234,6 +235,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   defdelegate set_cursor_position(buffer, x, y), to: Cursor
   defdelegate get_cursor_position(buffer), to: Cursor
+
   defdelegate set_cursor_visibility(buffer, visible),
     to: Cursor,
     as: :set_visibility
@@ -280,6 +282,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate update_selection(buffer, x, y), to: Selection, as: :update
   defdelegate get_selection(buffer), to: Selection, as: :get_text
   defdelegate in_selection?(buffer, x, y), to: Selection, as: :contains?
+
   defdelegate get_selection_boundaries(buffer),
     to: Selection,
     as: :get_boundaries
@@ -289,6 +292,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   defdelegate clear_selection(buffer), to: Selection, as: :clear
   defdelegate selection_active?(buffer), to: Selection, as: :active?
+
   defdelegate get_selection_start(buffer),
     to: Selection,
     as: :get_start_position
@@ -298,6 +302,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # === Scroll Region Operations ===
 
   defdelegate clear_scroll_region(buffer), to: ScrollRegion, as: :clear
+
   defdelegate get_scroll_region_boundaries(buffer),
     to: ScrollRegion,
     as: :get_boundaries

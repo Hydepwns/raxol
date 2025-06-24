@@ -63,7 +63,9 @@ defmodule Raxol.Core.Metrics do
   def record(name, value, tags \\ []) do
     try do
       # Record in unified collector
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value, tags: tags)
+      Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value,
+        tags: tags
+      )
 
       # Record in aggregator for statistics
       Raxol.Core.Metrics.Aggregator.record(name, value, tags)

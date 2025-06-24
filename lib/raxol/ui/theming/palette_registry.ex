@@ -189,7 +189,10 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Logger.warning("Failed to update palette #{name}: #{inspect(reason)}")
+            Logger.warning(
+              "Failed to update palette #{name}: #{inspect(reason)}"
+            )
+
             {:reply, {:error, reason}, state}
         end
     end
@@ -205,12 +208,14 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
     end
   end
 
-  defp valid_palette_color?({index, {r, g, b}}) when is_integer(index) and
-                                                     r in 0..255 and
-                                                     g in 0..255 and
-                                                     b in 0..255 do
+  defp valid_palette_color?({index, {r, g, b}})
+       when is_integer(index) and
+              r in 0..255 and
+              g in 0..255 and
+              b in 0..255 do
     true
   end
+
   defp valid_palette_color?(_), do: false
 
   defp load_palettes_from_storage do

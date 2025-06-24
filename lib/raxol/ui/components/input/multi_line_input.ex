@@ -538,7 +538,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   defp trigger_on_change({:noreply, new_state, existing_cmd}, old_state) do
     if new_state.value != old_state.value and
-        is_function(new_state.on_change, 1) do
+         is_function(new_state.on_change, 1) do
       change_event_cmd =
         {:component_event, new_state.id, {:change, new_state.value}}
 

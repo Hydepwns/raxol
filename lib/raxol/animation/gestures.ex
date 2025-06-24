@@ -1,5 +1,6 @@
 defmodule Raxol.Animation.Gestures do
   import Raxol.Guards
+
   @moduledoc """
   Gesture-driven interactions for Raxol animations.
 

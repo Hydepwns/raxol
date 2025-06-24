@@ -127,30 +127,35 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     measured_children = measure_children(container.children, {width, height})
 
     # Calculate flex direction and available space
-    {main_axis_size, cross_axis_size} = get_axis_sizes(container.direction, {width, height})
+    {main_axis_size, cross_axis_size} =
+      get_axis_sizes(container.direction, {width, height})
 
     # Calculate total content size and gaps
-    total_content_size = calculate_total_content_size(measured_children, container.gap)
+    total_content_size =
+      calculate_total_content_size(measured_children, container.gap)
 
     # Apply justification to distribute items along main axis
-    justified_children = apply_justification(
-      measured_children,
-      container.justify,
-      main_axis_size,
-      total_content_size,
-      container.gap
-    )
+    justified_children =
+      apply_justification(
+        measured_children,
+        container.justify,
+        main_axis_size,
+        total_content_size,
+        container.gap
+      )
 
     # Apply alignment to position items along cross axis
-    aligned_children = apply_alignment(
-      justified_children,
-      container.align,
-      cross_axis_size,
-      container.direction
-    )
+    aligned_children =
+      apply_alignment(
+        justified_children,
+        container.align,
+        cross_axis_size,
+        container.direction
+      )
 
     # Apply gap spacing between items
-    final_children = apply_gap_spacing(aligned_children, container.gap, container.direction)
+    final_children =
+      apply_gap_spacing(aligned_children, container.gap, container.direction)
 
     final_children
   end
@@ -166,21 +171,30 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     child_width = Map.get(child, :width)
     child_height = Map.get(child, :height)
 
-    {calculate_width(child_width, width), calculate_height(child_height, height)}
+    {calculate_width(child_width, width),
+     calculate_height(child_height, height)}
   end
 
   defp calculate_width(nil, available_width), do: min(50, available_width)
-  defp calculate_width(width, available_width) when integer?(width), do: min(width, available_width)
+
+  defp calculate_width(width, available_width) when integer?(width),
+    do: min(width, available_width)
+
   defp calculate_width(_, available_width), do: min(50, available_width)
 
   defp calculate_height(nil, available_height), do: min(1, available_height)
-  defp calculate_height(height, available_height) when integer?(height), do: min(height, available_height)
+
+  defp calculate_height(height, available_height) when integer?(height),
+    do: min(height, available_height)
+
   defp calculate_height(_, available_height), do: min(1, available_height)
 
   defp get_axis_sizes(direction, {width, height}) do
     case direction do
-      :row -> {width, height}   # Main axis: width, Cross axis: height
-      :column -> {height, width} # Main axis: height, Cross axis: width
+      # Main axis: width, Cross axis: height
+      :row -> {width, height}
+      # Main axis: height, Cross axis: width
+      :column -> {height, width}
       _ -> {width, height}
     end
   end
@@ -191,18 +205,34 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
     children
     |> Enum.map(&Map.get(&1, :measured_size))
-    |> Enum.map(fn {w, _h} -> w end) # Use width for main axis size
+    # Use width for main axis size
+    |> Enum.map(fn {w, _h} -> w end)
     |> Enum.sum()
     |> Kernel.+(total_gaps)
   end
 
-  defp apply_justification(children, justify, main_axis_size, total_content_size, gap) do
+  defp apply_justification(
+         children,
+         justify,
+         main_axis_size,
+         total_content_size,
+         gap
+       ) do
     case justify do
-      :start -> justify_start(children, gap)
-      :center -> justify_center(children, main_axis_size, total_content_size, gap)
-      :end -> justify_end(children, main_axis_size, total_content_size, gap)
-      :space_between -> justify_space_between(children, main_axis_size, total_content_size, gap)
-      _ -> justify_start(children, gap)
+      :start ->
+        justify_start(children, gap)
+
+      :center ->
+        justify_center(children, main_axis_size, total_content_size, gap)
+
+      :end ->
+        justify_end(children, main_axis_size, total_content_size, gap)
+
+      :space_between ->
+        justify_space_between(children, main_axis_size, total_content_size, gap)
+
+      _ ->
+        justify_start(children, gap)
     end
   end
 
@@ -247,7 +277,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       justify_start(children, gap)
     else
       # Calculate space between items
-      total_item_width = total_content_size - (gap * (total_items - 1))
+      total_item_width = total_content_size - gap * (total_items - 1)
       space_between = (main_axis_size - total_item_width) / (total_items - 1)
 
       children
@@ -263,7 +293,10 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   defp apply_alignment(children, align, cross_axis_size, _direction) do
     Enum.map(children, fn child ->
       {_child_width, child_height} = Map.get(child, :measured_size)
-      cross_axis_position = calculate_cross_axis_position(align, cross_axis_size, child_height)
+
+      cross_axis_position =
+        calculate_cross_axis_position(align, cross_axis_size, child_height)
+
       Map.put(child, :cross_axis_position, cross_axis_position)
     end)
   end
@@ -284,11 +317,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       cross_pos = Map.get(child, :cross_axis_position, 0)
       {child_width, child_height} = Map.get(child, :measured_size)
 
-      {x, y} = case direction do
-        :row -> {main_pos, cross_pos}
-        :column -> {cross_pos, main_pos}
-        _ -> {main_pos, cross_pos}
-      end
+      {x, y} =
+        case direction do
+          :row -> {main_pos, cross_pos}
+          :column -> {cross_pos, main_pos}
+          _ -> {main_pos, cross_pos}
+        end
 
       child
       |> Map.put(:position, {x, y})

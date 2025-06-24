@@ -452,7 +452,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   Gets the application name for a given module.
   """
   @spec get_app_name(atom()) :: String.t()
-    def get_app_name(app_module) when atom?(app_module) do
+  def get_app_name(app_module) when atom?(app_module) do
     # Try to call app_name/0 on the module if it exists
     if function_exported?(app_module, :app_name, 0) do
       app_module.app_name()

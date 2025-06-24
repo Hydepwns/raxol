@@ -437,7 +437,9 @@ defmodule Raxol.Docs.ComponentCatalog do
   defp fetch_introspected_data(_), do: %{}
 
   defp build_props_str(props) do
-    Enum.map_join(props, ", ", fn {key, value} -> ":#{key}: #{inspect(value)}" end)
+    Enum.map_join(props, ", ", fn {key, value} ->
+      ":#{key}: #{inspect(value)}"
+    end)
   end
 
   defp get_main_arg(props) do

@@ -136,7 +136,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     end
 
     test "selection within single line", %{theme: theme} do
-      state = create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 1}, {0, 3}})
+      state =
+        create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 1}, {0, 3}})
+
       line = "abcdef"
 
       result =
@@ -154,7 +156,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     test "selection across multiple lines, only highlights this line's part", %{
       theme: theme
     } do
-      state = create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 2}, {2, 1}})
+      state =
+        create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 2}, {2, 1}})
+
       line = "abcdef"
 
       result =
@@ -185,7 +189,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     end
 
     test "out-of-bounds cursor/selection does not crash", %{theme: theme} do
-      state = create_state(["abc"], {0, 10}, {10, 1}, {0, 0}, {{0, 20}, {0, 25}}) |> Map.put(:focused, true)
+      state =
+        create_state(["abc"], {0, 10}, {10, 1}, {0, 0}, {{0, 20}, {0, 25}})
+        |> Map.put(:focused, true)
+
       line = "abc"
 
       result =
@@ -200,7 +207,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     end
 
     test "selection within single line, inspect second label", %{theme: theme} do
-      state = create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 1}, {0, 3}})
+      state =
+        create_state(["abcdef"], {0, 0}, {10, 1}, {0, 0}, {{0, 1}, {0, 3}})
+
       line = "abcdef"
 
       result =

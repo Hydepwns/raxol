@@ -18,6 +18,7 @@ defmodule Raxol.Plugins.Manager.State do
       when binary?(name) and function?(update_fun, 1) do
     plugin = Map.get(manager.plugins, name)
     new_plugin_state = update_fun.(plugin)
+
     if is_struct(new_plugin_state, plugin.__struct__) do
       %{manager | plugins: Map.put(manager.plugins, name, new_plugin_state)}
     else
@@ -45,7 +46,8 @@ defmodule Raxol.Plugins.Manager.State do
   Loads a plugin module and initializes it with the given configuration.
   Delegates to `Raxol.Plugins.Lifecycle.load_plugin/3`.
   """
-  def load_plugin(%Core{} = manager, module, config \\ %{}) when atom?(module) do
+  def load_plugin(%Core{} = manager, module, config \\ %{})
+      when atom?(module) do
     Raxol.Plugins.Lifecycle.load_plugin(manager, module, config)
   end
 

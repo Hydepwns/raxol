@@ -105,7 +105,8 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       bright_white: 15
     }
 
-    Map.get(color_codes, color, 7) # Default to white
+    # Default to white
+    Map.get(color_codes, color, 7)
   end
 
   @doc """

@@ -38,7 +38,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       ) do
     with {:ok, {plugin_id, plugin_module}} <-
            PluginValidator.resolve_plugin_identity(plugin_id_or_module),
-         :ok <- PluginValidator.validate_plugin(plugin_id, plugin_module, plugins),
+         :ok <-
+           PluginValidator.validate_plugin(plugin_id, plugin_module, plugins),
          {:ok, plugin_metadata} <- Loader.extract_metadata(plugin_module),
          {:ok, updated_maps} <-
            initialize_and_register_plugin(%{
@@ -86,7 +87,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          command_table: command_table,
          plugin_config: plugin_config
        }) do
-    with {:ok, initial_state} <- PluginStateManager.initialize_plugin_state(plugin_module, config),
+    with {:ok, initial_state} <-
+           PluginStateManager.initialize_plugin_state(plugin_module, config),
          :ok <-
            register_plugin_components(%{
              plugin_id: plugin_id,
@@ -137,7 +139,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
              load_order,
              plugin_config
            ),
-         :ok <- PluginCommandManager.register_commands(plugin_module, initial_state, command_table) do
+         :ok <-
+           PluginCommandManager.register_commands(
+             plugin_module,
+             initial_state,
+             command_table
+           ) do
       register_plugin(plugin_id, plugin_metadata)
     end
   end
@@ -198,7 +205,11 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   def handle_state_transition(plugin_id, old_state, new_state) do
-    PluginLifecycleCallbacks.handle_state_transition(plugin_id, old_state, new_state)
+    PluginLifecycleCallbacks.handle_state_transition(
+      plugin_id,
+      old_state,
+      new_state
+    )
   end
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
@@ -308,7 +319,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   def unload_plugin(plugin_id, metadata, config, states, command_table, opts) do
-    PluginUnloader.unload_plugin(plugin_id, metadata, config, states, command_table, opts)
+    PluginUnloader.unload_plugin(
+      plugin_id,
+      metadata,
+      config,
+      states,
+      command_table,
+      opts
+    )
   end
 
   @doc """

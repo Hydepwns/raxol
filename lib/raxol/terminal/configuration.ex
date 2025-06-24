@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Configuration do
   import Raxol.Guards
+
   @moduledoc """
   Configuration management for the terminal emulator.
   """
@@ -12,6 +13,10 @@ defmodule Raxol.Terminal.Configuration do
           width: non_neg_integer(),
           height: non_neg_integer(),
           scrollback_size: non_neg_integer(),
+          scrollback_height: non_neg_integer(),
+          font_family: String.t() | nil,
+          theme: map() | nil,
+          cursor_blink: boolean(),
           tab_stops: [non_neg_integer()],
           charset_state: map(),
           mode_state: map(),
@@ -22,6 +27,10 @@ defmodule Raxol.Terminal.Configuration do
     :width,
     :height,
     :scrollback_size,
+    :scrollback_height,
+    :font_family,
+    :theme,
+    :cursor_blink,
     :tab_stops,
     :charset_state,
     :mode_state,
@@ -36,6 +45,10 @@ defmodule Raxol.Terminal.Configuration do
       width: Keyword.get(opts, :width, 80),
       height: Keyword.get(opts, :height, 24),
       scrollback_size: Keyword.get(opts, :scrollback_size, 1000),
+      scrollback_height: Keyword.get(opts, :scrollback_height, 1000),
+      font_family: Keyword.get(opts, :font_family, nil),
+      theme: Keyword.get(opts, :theme, nil),
+      cursor_blink: Keyword.get(opts, :cursor_blink, true),
       tab_stops:
         Keyword.get(opts, :tab_stops, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]),
       charset_state: %{},

@@ -31,7 +31,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   @doc """
   Checks if adding a character would exceed the maximum length.
   """
-    def would_exceed_max_length?(state, char) when integer?(char) do
+  def would_exceed_max_length?(state, char) when integer?(char) do
     case state.max_length do
       nil -> false
       max -> String.length(state.value) >= max

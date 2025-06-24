@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Creates a new cursor manager with specified x and y coordinates.
   """
-    def new(x, y) when is_integer(x) and is_integer(y) do
+  def new(x, y) when is_integer(x) and is_integer(y) do
     %__MODULE__{
       x: x,
       y: y,
@@ -587,7 +587,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
       position: state.position
     }
 
-    %{state | history: [history_entry | state.history]}
+    %{
+      state
+      | history: [history_entry | state.history],
+        history_index: state.history_index + 1
+    }
   end
 
   @doc """
@@ -651,7 +655,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl true
   def handle_call({:set_visibility, visible}, _from, state) do
-    new_state = %{state | visible: visible, state: if(visible, do: :visible, else: :hidden)}
+    new_state = %{
+      state
+      | visible: visible,
+        state: if(visible, do: :visible, else: :hidden)
+    }
+
     {:reply, :ok, new_state}
   end
 
