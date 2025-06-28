@@ -131,7 +131,7 @@ defmodule Raxol.Core.Performance.Monitor do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     jank_threshold = Keyword.get(opts, :jank_threshold, @default_jank_threshold)
 
@@ -150,7 +150,7 @@ defmodule Raxol.Core.Performance.Monitor do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:record_frame, frame_time}, state) do
     new_frame_times = [frame_time | state.frame_times] |> Enum.take(60)
 
@@ -163,12 +163,12 @@ defmodule Raxol.Core.Performance.Monitor do
      %{state | frame_times: new_frame_times, jank_count: new_jank_count}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:reset_metrics, state) do
     {:noreply, %{state | frame_times: [], jank_count: 0}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_metrics, _from, state) do
     fps = calculate_fps(state.frame_times)
     avg_frame_time = calculate_avg_frame_time(state.frame_times)
@@ -186,7 +186,7 @@ defmodule Raxol.Core.Performance.Monitor do
     {:reply, metrics, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:detect_jank?, _from, state) do
     jank_detected =
       case state.frame_times do
@@ -197,7 +197,7 @@ defmodule Raxol.Core.Performance.Monitor do
     {:reply, jank_detected, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:check_memory, state) do
     memory_usage = get_memory_usage()
     send(self(), {:memory_check, memory_usage})

@@ -85,7 +85,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
 
   defp get_error_message(error) do
     cond do
-      Exception.exception?(error) && Map.has_key?(error, :message) ->
+      Kernel.is_exception(error) && Map.has_key?(error, :message) ->
         error.message
 
       binary?(error) ->

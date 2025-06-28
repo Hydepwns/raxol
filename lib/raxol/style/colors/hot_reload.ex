@@ -10,7 +10,6 @@ defmodule Raxol.Style.Colors.HotReload do
   """
 
   use GenServer
-  @behaviour GenServer
 
   alias Raxol.Style.Colors.Persistence
 
@@ -71,7 +70,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     # Get theme paths from config
     theme_paths = get_theme_paths()
@@ -89,24 +88,24 @@ defmodule Raxol.Style.Colors.HotReload do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:subscribe, _from, state) do
     {:reply, :ok, %{state | subscribers: [self() | state.subscribers]}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:unsubscribe, _from, state) do
     {:reply, :ok,
      %{state | subscribers: List.delete(state.subscribers, self())}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:watch_path, path}, _from, state) do
     new_state = init_path_watch(path, state)
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:check_changes, state) do
     new_state = check_for_changes(state)
     schedule_check()

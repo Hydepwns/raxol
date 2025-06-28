@@ -4,7 +4,6 @@ defmodule Raxol.Docs.TutorialViewer do
   """
 
   use Raxol.Core.Runtime.Application
-  @behaviour Raxol.Core.Runtime.Application
   require Raxol.View.Elements
 
   defstruct status: :selecting_tutorial,
@@ -27,7 +26,7 @@ defmodule Raxol.Docs.TutorialViewer do
 
   # --- Lifecycle Callbacks ---
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def init(_props) do
     # Initialize with available tutorials
     tutorials = [
@@ -56,7 +55,7 @@ defmodule Raxol.Docs.TutorialViewer do
     }
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def update({:select_tutorial, tutorial_id}, state) do
     tutorial = Enum.find(state.available_tutorials, &(&1.id == tutorial_id))
     step = List.first(tutorial.steps)
@@ -114,34 +113,34 @@ defmodule Raxol.Docs.TutorialViewer do
      }, []}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_event(_event) do
     {:ok, %__MODULE__{}}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_message(_message, model) do
     {:noreply, model}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_tick(model) do
     {:noreply, model}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def subscriptions(_model) do
     []
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def terminate(_reason, _model) do
     :ok
   end
 
   # --- View Functions ---
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def view(model = %__MODULE__{}) do
     case model.status do
       :selecting_tutorial ->

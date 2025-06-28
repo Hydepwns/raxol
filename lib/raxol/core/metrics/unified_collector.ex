@@ -19,6 +19,8 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
           collectors: map()
         }
 
+  @history_limit 1000
+
   # --- Public API ---
 
   def start_link(opts \\ []) do
@@ -40,9 +42,9 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   end
 
   @doc """
-  Gets all metrics.
+  Gets all metrics grouped by type.
   """
-  def get_all_metrics do
+  def get_metrics do
     GenServer.call(__MODULE__, :get_all_metrics)
   end
 
@@ -62,17 +64,9 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   end
 
   @doc """
-  Gets all metrics without parameters.
-  """
-  @spec get_metrics() :: {:ok, list(map())} | {:error, term()}
-  def get_metrics() do
-    GenServer.call(__MODULE__, :get_all_metrics)
-  end
-
-  @doc """
   Gets metrics by type.
   """
-  @spec get_metrics_by_type(atom()) :: {:ok, list(map())} | {:error, term()}
+  @spec get_metrics_by_type(atom()) :: map()
   def get_metrics_by_type(type) do
     GenServer.call(__MODULE__, {:get_metrics_by_type, type})
   end
@@ -136,21 +130,35 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
       collectors: Keyword.get(opts, :collectors, %{})
     }
 
+    # Start periodic system metrics collection
+    if Keyword.get(opts, :auto_collect_system_metrics, true) do
+      schedule_system_metrics_collection()
+    end
+
     {:ok, state}
   end
 
   @impl true
   def handle_cast({:record_metric, name, type, value, opts}, state) do
-    tags = Keyword.get(opts, :tags, %{})
-    metric_key = {name, type, tags}
+    tags = Keyword.get(opts, :tags, [])
+    timestamp = DateTime.utc_now()
 
-    metrics =
-      Map.update(state.metrics, metric_key, [value], fn current ->
-        [value | current]
+    metric_entry = %{
+      value: value,
+      timestamp: timestamp,
+      tags: tags
+    }
+
+    # Update metrics by type
+    updated_metrics = Map.update(state.metrics, type, %{name => [metric_entry]}, fn type_metrics ->
+      Map.update(type_metrics, name, [metric_entry], fn existing_entries ->
+        # Add new entry and limit history
+        [metric_entry | existing_entries] |> Enum.take(@history_limit)
       end)
+    end)
 
     {:noreply,
-     %{state | metrics: metrics, last_update: System.monotonic_time()}}
+     %{state | metrics: updated_metrics, last_update: System.monotonic_time()}}
   end
 
   @impl true
@@ -160,9 +168,18 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
   @impl true
   def handle_call({:get_metric, name, type, opts}, _from, state) do
-    tags = Keyword.get(opts, :tags, %{})
-    metric_key = {name, type, tags}
-    {:reply, Map.get(state.metrics, metric_key), state}
+    tags = Keyword.get(opts, :tags, [])
+    type_metrics = Map.get(state.metrics, type, %{})
+    metric_entries = Map.get(type_metrics, name, [])
+
+    # Filter by tags if specified
+    filtered_entries = if tags == [] do
+      metric_entries
+    else
+      Enum.filter(metric_entries, fn entry -> entry.tags == tags end)
+    end
+
+    {:reply, filtered_entries, state}
   end
 
   @impl true
@@ -172,14 +189,20 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
   @impl true
   def handle_call({:get_metrics, metric_name, tags}, _from, state) do
-    # Return all metrics matching the name and tags (type-agnostic)
+    # Return all metrics matching the name and tags across all types
     result =
       state.metrics
-      |> Enum.filter(fn {{name, _type, metric_tags}, _values} ->
-        name == metric_name and Map.equal?(metric_tags, tags)
-      end)
-      |> Enum.map(fn {key, values} ->
-        %{key: key, values: Enum.reverse(values)}
+      |> Enum.flat_map(fn {type, type_metrics} ->
+        case Map.get(type_metrics, metric_name) do
+          nil -> []
+          entries ->
+            filtered = if tags == %{} do
+              entries
+            else
+              Enum.filter(entries, fn entry -> entry.tags == tags end)
+            end
+            Enum.map(filtered, fn entry -> Map.put(entry, :type, type) end)
+        end
       end)
 
     {:reply, {:ok, result}, state}
@@ -187,16 +210,40 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
   @impl true
   def handle_call({:get_metrics_by_type, type}, _from, state) do
-    # Return all metrics matching the type
-    result =
-      state.metrics
-      |> Enum.filter(fn {{_name, metric_type, _tags}, _values} ->
-        metric_type == type
-      end)
-      |> Enum.map(fn {key, values} ->
-        %{key: key, values: Enum.reverse(values)}
-      end)
+    # Return all metrics for the specified type
+    type_metrics = Map.get(state.metrics, type, %{})
+    {:reply, type_metrics, state}
+  end
 
-    {:reply, {:ok, result}, state}
+  @impl true
+  def handle_info(:collect_system_metrics, state) do
+    # Collect system metrics
+    collect_system_metrics()
+
+    # Schedule next collection
+    schedule_system_metrics_collection()
+
+    {:noreply, state}
+  end
+
+  # Private helper functions
+
+  defp schedule_system_metrics_collection do
+    Process.send_after(self(), :collect_system_metrics, 100)
+  end
+
+  defp collect_system_metrics do
+    # Process count
+    process_count = Process.list() |> length()
+    record_resource(:process_count, process_count)
+
+    # Runtime ratio (simplified)
+    {_, runtime} = :erlang.statistics(:runtime)
+    runtime_ratio = runtime / 1000.0
+    record_resource(:runtime_ratio, runtime_ratio)
+
+    # GC stats (simplified)
+    gc_stats = :erlang.statistics(:garbage_collection)
+    record_resource(:gc_stats, gc_stats)
   end
 end

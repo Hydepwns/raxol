@@ -98,7 +98,7 @@ defmodule Raxol.Style do
   Merges two styles, with the second overriding the first.
   """
   def merge(style1, style2) do
-    %{
+    %__MODULE__{
       layout: Map.merge(style1.layout, style2.layout),
       border: Borders.merge(style1.border, style2.border),
       color: style2.color || style1.color,
