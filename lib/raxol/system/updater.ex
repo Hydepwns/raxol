@@ -1,6 +1,5 @@
 defmodule Raxol.System.Updater do
   use GenServer
-  @behaviour GenServer
   import Raxol.Guards
   require Logger
 
@@ -258,7 +257,7 @@ defmodule Raxol.System.Updater do
 
   # --- Server Callbacks ---
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     state = %{
       settings: default_settings(),
@@ -272,7 +271,7 @@ defmodule Raxol.System.Updater do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:install_update, version}, _from, state) do
     case perform_install_update(version, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
@@ -280,18 +279,18 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_update_settings, _from, state) do
     {:reply, state.settings, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_update_settings, settings}, _from, state) do
     state = %{state | settings: settings}
     {:reply, :ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:check_for_updates, _from, state) do
     case check_updates(state) do
       {:ok, updates} ->
@@ -311,7 +310,7 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_update_status, _from, state) do
     status = %{
       current_version: state.current_version,

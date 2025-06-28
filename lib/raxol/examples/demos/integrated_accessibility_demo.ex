@@ -6,14 +6,12 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   A demo showcasing integrated accessibility features.
   """
 
-  @behaviour Raxol.Core.Runtime.Application
-
   alias Raxol.Core.Renderer.View
   require Raxol.Core.Renderer.View
   # If this demo uses Accessibility features directly:
   # alias Raxol.Core.Accessibility
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def init(_opts) do
     model = %{
       message: "Welcome to the Accessibility Demo",
@@ -24,37 +22,37 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
     {:ok, {model, []}}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def update(model, {:button_clicked}) do
     {:ok, %{model | button_clicks: model.button_clicks + 1}}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def update(model, {:checkbox_toggled}) do
     {:ok, %{model | checkbox_checked: !model.checkbox_checked}}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def update(model, _event), do: {:ok, model}
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_event(event) do
     {:ok, event}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_message(_message, model), do: {:noreply, model}
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_tick(model), do: {:noreply, model}
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def subscriptions(_model), do: []
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def terminate(_reason, _model), do: :ok
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def view(model), do: demo_view(model)
 
   @doc """
