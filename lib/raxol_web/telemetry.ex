@@ -1,13 +1,12 @@
 defmodule RaxolWeb.Telemetry do
   use Supervisor
-  @behaviour Supervisor
   import Telemetry.Metrics
 
   def start_link(arg) do
     Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
   end
 
-  @impl true
+  @impl Supervisor
   def init(_arg) do
     children = [
       {TelemetryMetricsPrometheus, metrics: metrics()},

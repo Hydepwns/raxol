@@ -1,9 +1,8 @@
 defmodule RaxolWeb.LoginLive do
   use RaxolWeb, :live_view
-  @behaviour Phoenix.LiveView
   alias Raxol.Accounts
 
-  @impl true
+  @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     {:ok,
      assign(socket,
@@ -13,7 +12,7 @@ defmodule RaxolWeb.LoginLive do
      )}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event(
         "login",
         %{"username" => username, "password" => password},
@@ -35,7 +34,7 @@ defmodule RaxolWeb.LoginLive do
     end
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event(
         "validate",
         %{"username" => username, "password" => password},
