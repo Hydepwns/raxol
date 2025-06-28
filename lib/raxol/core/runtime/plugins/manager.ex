@@ -22,17 +22,17 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   require Raxol.Core.Runtime.Log
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @impl true
+  @impl GenServer
   def start_link(_app, opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @impl true
+  @impl GenServer
   def init(arg) do
     {:ok, arg}
   end
@@ -54,7 +54,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @doc """
   Get a specific plugin by its ID.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
   def get_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin, plugin_id})
   end
@@ -80,7 +80,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.call(__MODULE__, {:reload_plugin, plugin_id})
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:load_plugin, plugin_id, config}, _from, state) do
     # Send plugin load attempted event
     send(state.runtime_pid, {:plugin_load_attempted, plugin_id})
@@ -100,7 +100,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     handle_plugin_operation(operation, plugin_id, state, "load")
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
+  def load_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:load_plugin, plugin_id})
+  end
+
+  @impl GenServer
   def handle_call({:load_plugin, plugin_id}, _from, state) do
     case state.lifecycle_helper_module.load_plugin(plugin_id) do
       {:ok, plugin_state} ->
@@ -112,7 +117,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
+  def unload_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
+  end
+
+  @impl GenServer
   def handle_call({:unload_plugin, plugin_id}, _from, state) do
     case Map.get(state, plugin_id) do
       nil ->
@@ -649,22 +659,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @impl true
   def stop(pid \\ __MODULE__) do
     GenServer.stop(pid)
-  end
-
-  @doc """
-  Loads a plugin by sending a call to the GenServer.
-  """
-  @impl true
-  def load_plugin(plugin_id) do
-    GenServer.call(__MODULE__, {:load_plugin, plugin_id})
-  end
-
-  @doc """
-  Unloads a plugin by sending a call to the GenServer.
-  """
-  @impl true
-  def unload_plugin(plugin_id) do
-    GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
   end
 
   @doc """

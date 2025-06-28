@@ -25,7 +25,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
              dependency_chain()}
           | {:error, :circular_dependency, [String.t()], dependency_chain()}
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
   @doc """
   Checks if a plugin's dependencies are satisfied.
 
@@ -179,7 +179,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
   @doc """
   Resolves the load order for a set of plugins based on their dependencies.
   Uses Tarjan's algorithm for efficient cycle detection and component identification.
@@ -197,15 +197,31 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     graph = Graph.build_dependency_graph(plugins)
 
     case validate_dependencies(graph, plugins) do
-      :ok -> Resolver.tarjan_sort(graph)
-      error -> error
+      :ok ->
+        case Resolver.tarjan_sort(graph) do
+          {:ok, order} -> {:ok, order}
+          {:error, cycle} -> {:error, :circular_dependency, cycle, cycle}
+        end
+
+      error ->
+        error
     end
   end
 
   defp validate_dependencies(graph, plugins) do
-    find_self_dependency(graph) and
-      find_conflicting_requirements(graph) and
-      find_version_mismatches(graph, plugins)
+    case find_self_dependency(graph) do
+      :ok ->
+        case find_conflicting_requirements(graph) do
+          :ok ->
+            find_version_mismatches(graph, plugins)
+
+          error ->
+            error
+        end
+
+      error ->
+        error
+    end
   end
 
   # --- Helper functions for error detection ---
@@ -347,7 +363,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
   @doc """
   Resolves dependencies between plugins.
 

@@ -30,7 +30,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @doc """
   Starts the file watcher.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -38,7 +38,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @doc """
   Stops the file watcher.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
   def stop(pid) do
     GenServer.stop(pid)
   end
@@ -46,7 +46,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @doc """
   Adds a file to watch.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
   def watch_file(pid, file_path, callback)
       when binary?(file_path) and function?(callback, 1) do
     GenServer.call(pid, {:watch_file, file_path, callback})
@@ -55,7 +55,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @doc """
   Removes a file from watching.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
   def unwatch_file(pid, file_path) when binary?(file_path) do
     GenServer.call(pid, {:unwatch_file, file_path})
   end
@@ -63,7 +63,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @doc """
   Gets the list of watched files.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
   def get_watched_files(pid) do
     GenServer.call(pid, :get_watched_files)
   end
@@ -71,14 +71,14 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @doc """
   Sets up file watching for a directory.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
   def setup_file_watching(pid) do
     GenServer.call(pid, :setup_file_watching)
   end
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     state = %__MODULE__{
       watched_files: %{},
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:watch_file, file_path, callback}, _from, state) do
     case File.exists?(file_path) do
       true ->
@@ -107,7 +107,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:unwatch_file, file_path}, _from, state) do
     new_state = %{
       state
@@ -117,24 +117,24 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_watched_files, _from, state) do
     {:reply, Map.keys(state.watched_files), state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:setup_file_watching, _from, state) do
     # Implementation would depend on the file watching library being used
     {:reply, :ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:file_event, file_path, event}, state) do
     new_state = handle_file_event(state, file_path, event)
     {:noreply, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:process_events, state) do
     new_state = process_events(state)
     {:noreply, new_state}
