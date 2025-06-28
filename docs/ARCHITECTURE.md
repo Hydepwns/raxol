@@ -1,7 +1,7 @@
 ---
 title: Raxol Architecture
 description: Overview of the Raxol system architecture
-date: 2025-05-10
+date: 2025-06-28
 author: Raxol Team
 section: documentation
 tags: [architecture, documentation, design]
