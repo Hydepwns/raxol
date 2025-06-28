@@ -18,7 +18,7 @@ defmodule Raxol.Plugins.ThemePlugin do
 
   alias Raxol.UI.Theming.Theme
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
     theme_name = Map.get(config, :theme, :default)
     current_theme = Theme.get(theme_name) || Theme.default_theme()
@@ -35,7 +35,7 @@ defmodule Raxol.Plugins.ThemePlugin do
      }}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_output(plugin, _output), do: {:ok, plugin}
 
   @impl Raxol.Plugins.Plugin
@@ -48,7 +48,7 @@ defmodule Raxol.Plugins.ThemePlugin do
     {:ok, plugin}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_input(plugin, input) do
     case input do
       {:command, command} -> handle_theme_command(plugin, command)
@@ -75,13 +75,13 @@ defmodule Raxol.Plugins.ThemePlugin do
   def enable(plugin), do: %{plugin | enabled: true}
   def disable(plugin), do: %{plugin | enabled: false}
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def cleanup(_plugin), do: :ok
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_api_version, do: "1.0.0"
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_dependencies, do: []
 
   @doc """

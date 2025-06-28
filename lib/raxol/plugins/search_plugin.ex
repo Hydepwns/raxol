@@ -5,8 +5,6 @@ defmodule Raxol.Plugins.SearchPlugin do
   Plugin for text search functionality.
   """
 
-  @behaviour Raxol.Plugins.Plugin
-
   @type t :: %__MODULE__{
           name: String.t(),
           version: String.t(),
@@ -32,13 +30,13 @@ defmodule Raxol.Plugins.SearchPlugin do
             search_results: [],
             current_result_index: 0
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
     plugin_state = struct(__MODULE__, config)
     {:ok, plugin_state}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_input(%__MODULE__{} = plugin, input) do
     case input do
       "/search " <> search_term ->
@@ -79,18 +77,18 @@ defmodule Raxol.Plugins.SearchPlugin do
     {:ok, plugin}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def cleanup(%__MODULE__{} = _plugin) do
     :ok
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_dependencies do
     # Define any dependencies this plugin has
     []
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_api_version do
     # Specify the API version this plugin targets
     "1.0.0"

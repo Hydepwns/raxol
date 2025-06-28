@@ -5,7 +5,6 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   Plugin for clipboard operations in Raxol.
   """
 
-  @behaviour Raxol.Plugins.Plugin
   require Raxol.Core.Runtime.Log
 
   # Alias the new consolidated module
@@ -45,14 +44,14 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     last_cells_at_selection: nil
   ]
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
     # Initialize the plugin struct, merging provided config
     plugin_state = struct(__MODULE__, config)
     {:ok, plugin_state}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_input(
         %__MODULE__{} = state,
         %{type: :key, modifiers: mods, key: ?c} = _event
@@ -198,9 +197,9 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     Clipboard.paste()
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_dependencies, do: []
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_api_version, do: "1.0.0"
 end
