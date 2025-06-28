@@ -70,6 +70,13 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
         subscribe_to_events([:key_press, :mouse_click])
       ]
     end
+
+    def handle_event(_), do: :ok
+    def handle_message(_, _), do: :ok
+    def handle_tick(_), do: :ok
+    def init(_), do: {:ok, %{}}
+    def subscriptions(_), do: []
+    def terminate(_, _), do: :ok
   end
 
   # Test implementation with minimal overrides

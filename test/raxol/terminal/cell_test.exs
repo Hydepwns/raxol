@@ -118,12 +118,12 @@ defmodule Raxol.Terminal.CellTest do
       refute Cell.double_height?(default_cell)
     end
 
-    test "is_empty?/1 checks if the cell is empty" do
+    test "empty?/1 checks if the cell is empty" do
       empty_cell = Cell.new()
-      assert Cell.is_empty?(empty_cell)
+      assert Cell.empty?(empty_cell)
 
       non_empty_cell_char = Cell.new("A")
-      refute Cell.is_empty?(non_empty_cell_char)
+      refute Cell.empty?(non_empty_cell_char)
 
       non_empty_cell_style =
         Cell.new(
@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.CellTest do
           TextFormatting.new() |> TextFormatting.apply_attribute(:bold)
         )
 
-      refute Cell.is_empty?(non_empty_cell_style)
+      refute Cell.empty?(non_empty_cell_style)
     end
 
     test "with_attributes/2 returns a new cell with merged attributes" do

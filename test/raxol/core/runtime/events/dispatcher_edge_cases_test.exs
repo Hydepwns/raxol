@@ -53,6 +53,13 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       # Simple view
       [%{type: :text, content: "Count: #{model.count}", x: 0, y: 0}]
     end
+
+    # Required behaviour callbacks
+    def handle_event(_), do: :ok
+    def handle_message(_, _), do: :ok
+    def handle_tick(_), do: :ok
+    def subscriptions(_), do: []
+    def terminate(_, _), do: :ok
   end
 
   # Mock Plugin Manager module

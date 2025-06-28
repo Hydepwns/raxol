@@ -104,6 +104,13 @@ defmodule MockApp do
   def subscriptions(_model) do
     []
   end
+
+  def handle_event(_), do: :ok
+  def handle_message(_, _), do: :ok
+  def handle_tick(_), do: :ok
+  def init(_), do: {:ok, %{}}
+  def subscriptions(_), do: []
+  def terminate(_, _), do: :ok
 end
 
 # --- All test code below ---

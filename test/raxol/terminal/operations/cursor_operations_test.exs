@@ -61,16 +61,16 @@ defmodule Raxol.Terminal.Operations.CursorOperationsTest do
     end
   end
 
-  describe "is_cursor_visible?/1" do
+  describe "cursor_visible?/1" do
     test "returns initial cursor visibility" do
       emulator = TestHelper.create_test_emulator()
-      assert CursorOperations.is_cursor_visible?(emulator) == true
+      assert CursorOperations.cursor_visible?(emulator) == true
     end
 
     test "returns updated cursor visibility" do
       emulator = TestHelper.create_test_emulator()
       emulator = CursorOperations.set_cursor_visibility(emulator, false)
-      assert CursorOperations.is_cursor_visible?(emulator) == false
+      assert CursorOperations.cursor_visible?(emulator) == false
     end
   end
 
@@ -78,20 +78,20 @@ defmodule Raxol.Terminal.Operations.CursorOperationsTest do
     test "sets cursor visibility" do
       emulator = TestHelper.create_test_emulator()
       emulator = CursorOperations.set_cursor_visibility(emulator, false)
-      assert CursorOperations.is_cursor_visible?(emulator) == false
+      assert CursorOperations.cursor_visible?(emulator) == false
     end
   end
 
-  describe "is_cursor_blinking?/1" do
+  describe "cursor_blinking?/1" do
     test "returns initial cursor blink state" do
       emulator = TestHelper.create_test_emulator()
-      assert CursorOperations.is_cursor_blinking?(emulator) == true
+      assert CursorOperations.cursor_blinking?(emulator) == true
     end
 
     test "returns updated cursor blink state" do
       emulator = TestHelper.create_test_emulator()
       emulator = CursorOperations.set_cursor_blink(emulator, false)
-      assert CursorOperations.is_cursor_blinking?(emulator) == false
+      assert CursorOperations.cursor_blinking?(emulator) == false
     end
   end
 
@@ -99,25 +99,25 @@ defmodule Raxol.Terminal.Operations.CursorOperationsTest do
     test "sets cursor blink state" do
       emulator = TestHelper.create_test_emulator()
       emulator = CursorOperations.set_cursor_blink(emulator, false)
-      assert CursorOperations.is_cursor_blinking?(emulator) == false
+      assert CursorOperations.cursor_blinking?(emulator) == false
     end
   end
 
   describe "toggle_visibility/1" do
     test "toggles cursor visibility" do
       emulator = TestHelper.create_test_emulator()
-      initial = CursorOperations.is_cursor_visible?(emulator)
+      initial = CursorOperations.cursor_visible?(emulator)
       emulator = CursorOperations.toggle_visibility(emulator)
-      assert CursorOperations.is_cursor_visible?(emulator) == !initial
+      assert CursorOperations.cursor_visible?(emulator) == !initial
     end
   end
 
   describe "toggle_blink/1" do
     test "toggles cursor blink state" do
       emulator = TestHelper.create_test_emulator()
-      initial = CursorOperations.is_cursor_blinking?(emulator)
+      initial = CursorOperations.cursor_blinking?(emulator)
       emulator = CursorOperations.toggle_blink(emulator)
-      assert CursorOperations.is_cursor_blinking?(emulator) == !initial
+      assert CursorOperations.cursor_blinking?(emulator) == !initial
     end
   end
 
@@ -137,7 +137,7 @@ defmodule Raxol.Terminal.Operations.CursorOperationsTest do
       emulator = CursorOperations.update_blink(emulator)
       # Note: This test might be flaky due to timing issues
       # Consider mocking time or using a more deterministic approach
-      assert is_boolean(CursorOperations.is_cursor_blinking?(emulator))
+      assert is_boolean(CursorOperations.cursor_blinking?(emulator))
     end
   end
 end

@@ -37,7 +37,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
       # Check for theme's border. Given the warning "Theme missing component style for :text_field",
       # we expect this to be nil for now. Once the theme application is fixed in the component,
       # this assertion should be updated to check for the actual themed border.
-      assert Map.get(actual_merged_style, :border) == nil
+      assert Map.get(actual_merged_style, :border) == "2px solid #00ff00"
     end
 
     test "mount/1 and unmount/1 return state unchanged" do

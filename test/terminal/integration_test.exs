@@ -225,22 +225,22 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state_after_cmd1, _} =
         Emulator.process_input(initial_state, "command1\n")
 
-      assert state_after_cmd1.command_history == ["command1"]
+      assert Raxol.Terminal.Command.Manager.get_command_history(state_after_cmd1.command) == ["command1"]
 
       # Process an empty command (should be ignored)
       {state_after_empty, _} = Emulator.process_input(state_after_cmd1, "\n")
-      assert state_after_empty.command_history == ["command1"]
+      assert Raxol.Terminal.Command.Manager.get_command_history(state_after_empty.command) == ["command1"]
 
       # Add more commands
       {state_after_cmd2, _} =
         Emulator.process_input(state_after_empty, "command2\n")
 
-      assert state_after_cmd2.command_history == ["command1", "command2"]
+      assert Raxol.Terminal.Command.Manager.get_command_history(state_after_cmd2.command) == ["command1", "command2"]
 
       {state_after_cmd3, _} =
         Emulator.process_input(state_after_cmd2, "command3\n")
 
-      assert state_after_cmd3.command_history == [
+      assert Raxol.Terminal.Command.Manager.get_command_history(state_after_cmd3.command) == [
                "command1",
                "command2",
                "command3"
@@ -250,7 +250,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state_after_cmd4, _} =
         Emulator.process_input(state_after_cmd3, "command4\n")
 
-      assert state_after_cmd4.command_history == [
+      assert Raxol.Terminal.Command.Manager.get_command_history(state_after_cmd4.command) == [
                "command2",
                "command3",
                "command4"

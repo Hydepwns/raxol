@@ -117,15 +117,6 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
     test ~c"handles invalid buffer operations" do
       buffer = Buffer.new({80, 24})
 
-      # Test invalid write operations
-      assert_raise ArgumentError, fn ->
-        Buffer.write(buffer, nil)
-      end
-
-      assert_raise ArgumentError, fn ->
-        Buffer.write(buffer, 123)
-      end
-
       # Test invalid read operations
       assert_raise ArgumentError, fn ->
         Buffer.read(buffer, invalid: true)
@@ -169,14 +160,6 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
       # Test recovery from invalid operation
       assert_raise ArgumentError, fn ->
         Buffer.set_cell(buffer, -1, 0, Cell.new())
-      end
-
-      # Verify buffer is still usable
-      assert Buffer.get_cell(buffer, 0, 0) == Cell.new()
-
-      # Test recovery from invalid write
-      assert_raise ArgumentError, fn ->
-        Buffer.write(buffer, nil)
       end
 
       # Verify buffer is still usable

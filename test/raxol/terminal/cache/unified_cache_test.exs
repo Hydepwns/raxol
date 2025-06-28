@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Cache.UnifiedCache
 
   setup do
@@ -64,42 +64,35 @@ defmodule Raxol.Terminal.Cache.UnifiedCacheTest do
 
   describe "eviction policies" do
     test ~c"LRU eviction" do
-      {:ok, _pid} =
-        UnifiedCache.start_link(max_size: 100, eviction_policy: :lru)
-
-      UnifiedCache.put("key1", String.duplicate("a", 50))
-      UnifiedCache.put("key2", String.duplicate("b", 50))
-      # Should evict key1
-      UnifiedCache.put("key3", String.duplicate("c", 50))
+      UnifiedCache.clear()
+      :ok = GenServer.cast(UnifiedCache, {:set_eviction_policy, :lru})
+      UnifiedCache.put("key1", String.duplicate("a", 350))
+      UnifiedCache.put("key2", String.duplicate("b", 350))
+      UnifiedCache.put("key3", String.duplicate("c", 350))
       assert {:error, :not_found} == UnifiedCache.get("key1")
       assert {:ok, _value2} = UnifiedCache.get("key2")
       assert {:ok, _value3} = UnifiedCache.get("key3")
     end
 
     test ~c"LFU eviction" do
-      {:ok, _pid} =
-        UnifiedCache.start_link(max_size: 100, eviction_policy: :lfu)
-
-      UnifiedCache.put("key1", String.duplicate("a", 50))
-      UnifiedCache.put("key2", String.duplicate("b", 50))
-      # Access key1 twice
+      UnifiedCache.clear()
+      :ok = GenServer.cast(UnifiedCache, {:set_eviction_policy, :lfu})
+      UnifiedCache.put("key1", String.duplicate("a", 350))
+      UnifiedCache.put("key2", String.duplicate("b", 350))
       UnifiedCache.get("key1")
       UnifiedCache.get("key1")
-      # Should evict key2
-      UnifiedCache.put("key3", String.duplicate("c", 50))
+      UnifiedCache.put("key3", String.duplicate("c", 350))
       assert {:ok, _value1} = UnifiedCache.get("key1")
       assert {:error, :not_found} == UnifiedCache.get("key2")
       assert {:ok, _value3} = UnifiedCache.get("key3")
     end
 
     test ~c"FIFO eviction" do
-      {:ok, _pid} =
-        UnifiedCache.start_link(max_size: 100, eviction_policy: :fifo)
-
-      UnifiedCache.put("key1", String.duplicate("a", 50))
-      UnifiedCache.put("key2", String.duplicate("b", 50))
-      # Should evict key1
-      UnifiedCache.put("key3", String.duplicate("c", 50))
+      UnifiedCache.clear()
+      :ok = GenServer.cast(UnifiedCache, {:set_eviction_policy, :fifo})
+      UnifiedCache.put("key1", String.duplicate("a", 350))
+      UnifiedCache.put("key2", String.duplicate("b", 350))
+      UnifiedCache.put("key3", String.duplicate("c", 350))
       assert {:error, :not_found} == UnifiedCache.get("key1")
       assert {:ok, _value2} = UnifiedCache.get("key2")
       assert {:ok, _value3} = UnifiedCache.get("key3")
