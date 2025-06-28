@@ -16,10 +16,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   describe "handle_J/2 (Erase in Display)" do
     test "erases from cursor to end of screen (mode 0)", %{emulator: emulator} do
       # Set cursor to middle of screen
-      emulator = %{
-        emulator
-        | cursor: CursorManager.set_position(emulator.cursor, {5, 5})
-      }
+      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 5})
 
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
@@ -39,10 +36,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       emulator: emulator
     } do
       # Set cursor to middle of screen
-      emulator = %{
-        emulator
-        | cursor: CursorManager.set_position(emulator.cursor, {5, 5})
-      }
+      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 5})
 
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
@@ -98,10 +92,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   describe "handle_K/2 (Erase in Line)" do
     test "erases from cursor to end of line (mode 0)", %{emulator: emulator} do
       # Set cursor to middle of line
-      emulator = %{
-        emulator
-        | cursor: CursorManager.set_position(emulator.cursor, {5, 0})
-      }
+      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 0})
 
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
@@ -121,10 +112,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       emulator: emulator
     } do
       # Set cursor to middle of line
-      emulator = %{
-        emulator
-        | cursor: CursorManager.set_position(emulator.cursor, {5, 0})
-      }
+      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 0})
 
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")

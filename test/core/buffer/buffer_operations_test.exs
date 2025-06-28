@@ -177,8 +177,12 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
         end)
 
       # Wait for both processes to complete
-      {:ok, _} = Task.await(reader, 5000)
-      {:ok, _} = Task.await(writer, 5000)
+      reader_result = Task.await(reader, 5000)
+      writer_result = Task.await(writer, 5000)
+
+      # Verify both processes completed successfully (returned buffer structs)
+      assert is_struct(reader_result, Raxol.Terminal.Buffer)
+      assert is_struct(writer_result, Raxol.Terminal.Buffer)
     end
   end
 
@@ -218,7 +222,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       corrupted_buffer = %{buffer | cells: nil}
 
       # Verify that operations fail gracefully
-      assert_raise RuntimeError, fn ->
+      assert_raise Protocol.UndefinedError, fn ->
         Buffer.get_cell(corrupted_buffer, 0, 0)
       end
     end

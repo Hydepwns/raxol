@@ -138,6 +138,7 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
       line
       |> Enum.map(&Raxol.Terminal.Cell.get_char/1)
       |> Enum.join()
+      |> String.trim_trailing()
     end)
     |> Enum.join("\n")
   end

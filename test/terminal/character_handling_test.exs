@@ -4,10 +4,10 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
 
   describe "wide character detection" do
     test ~c"identifies wide characters correctly" do
-      assert CharacterHandling.is_wide_char?(?中)
-      assert CharacterHandling.is_wide_char?(?日)
-      refute CharacterHandling.is_wide_char?(?a)
-      refute CharacterHandling.is_wide_char?(?1)
+      assert CharacterHandling.wide_char?(?中)
+      assert CharacterHandling.wide_char?(?日)
+      refute CharacterHandling.wide_char?(?a)
+      refute CharacterHandling.wide_char?(?1)
     end
   end
 
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
 
   describe "combining characters" do
     test ~c"handles combining characters correctly" do
-      assert Raxol.Terminal.CharacterHandling.is_combining_char?(0x0301)
+      assert Raxol.Terminal.CharacterHandling.combining_char?(0x0301)
       assert Raxol.Terminal.CharacterHandling.get_char_width("e\u0301") == 1
     end
   end

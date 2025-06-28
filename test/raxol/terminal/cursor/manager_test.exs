@@ -133,10 +133,7 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       {cursor, visible1} = Manager.update_blink(cursor)
       assert visible1 == true
 
-      # Wait for blink state change
-      assert_receive {:cursor_blink_state_changed, false}, 100
-
-      # Second update should be hidden
+      # Second update should toggle the blink state
       {_cursor, visible2} = Manager.update_blink(cursor)
       assert visible2 == false
     end

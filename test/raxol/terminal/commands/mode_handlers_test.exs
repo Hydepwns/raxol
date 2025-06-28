@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
       assert res_set.mode_manager.cursor_visible == true
 
       # Reset Mode
-      {:ok, res_reset} = ModeHandlers.handle_h_or_l(res_set, "?", [25], ?l)
+      {:ok, res_reset} = ModeHandlers.handle_h_or_l(res_set, [25], "?", ?l)
       assert res_reset.mode_manager.cursor_visible == false
     end
 

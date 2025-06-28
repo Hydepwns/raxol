@@ -9,49 +9,49 @@ defmodule Raxol.Test.Support.MockImplementations do
   defmodule FileWatcherMock do
     @behaviour Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
     def setup_file_watching(state),
       do: {self(), true}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
     def handle_file_event(_path, state), do: {:ok, state}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
     def handle_debounced_events(state), do: {:ok, state}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
     def update_file_watcher(state), do: state
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
     def cleanup_file_watching(state), do: state
   end
 
   defmodule LoaderMock do
     @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
     def load_plugin(_plugin_path), do: {:ok, :mock_plugin}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
     def unload_plugin(_plugin), do: :ok
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
     def reload_plugin(_plugin), do: {:ok, :mock_plugin}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
     def get_loaded_plugins, do: [:mock_plugin]
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
     def is_plugin_loaded?(_plugin), do: true
   end
 
   defmodule AccessibilityMock do
     @behaviour Raxol.Core.Accessibility.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Accessibility.Behaviour
     def set_large_text(_enabled, _user_preferences_pid_or_name), do: :ok
 
-    @impl true
+    @impl Raxol.Core.Accessibility.Behaviour
     def get_focus_history, do: []
 
     # Additional functions that exist in the real Accessibility module
@@ -62,10 +62,10 @@ defmodule Raxol.Test.Support.MockImplementations do
   defmodule ClipboardMock do
     @behaviour Raxol.Core.Clipboard.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Clipboard.Behaviour
     def copy(_content), do: :ok
 
-    @impl true
+    @impl Raxol.Core.Clipboard.Behaviour
     def paste, do: {:ok, ""}
   end
 
@@ -73,7 +73,7 @@ defmodule Raxol.Test.Support.MockImplementations do
   defmodule LifecycleHelperMock do
     @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def load_plugin(
           plugin_id_or_module,
           config,
@@ -87,7 +87,7 @@ defmodule Raxol.Test.Support.MockImplementations do
       {:ok, %{}}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def unload_plugin(
           plugin_id,
           plugins,
@@ -99,7 +99,7 @@ defmodule Raxol.Test.Support.MockImplementations do
       {:ok, %{}}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def reload_plugin(
           plugin_id,
           plugins,
@@ -112,7 +112,7 @@ defmodule Raxol.Test.Support.MockImplementations do
       {:ok, %{}}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def initialize_plugins(
           plugin_specs,
           manager_pid,
@@ -125,7 +125,7 @@ defmodule Raxol.Test.Support.MockImplementations do
       {:ok, {[], []}}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def reload_plugin_from_disk(
           plugin_id,
           current_state,
@@ -139,7 +139,7 @@ defmodule Raxol.Test.Support.MockImplementations do
       {:ok, %{}}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def load_plugin_by_module(
           plugin_module,
           config,
@@ -153,22 +153,22 @@ defmodule Raxol.Test.Support.MockImplementations do
       {:ok, %{}}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def init_plugin(module, opts) do
       {:ok, opts}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def terminate_plugin(plugin_id, state, reason) do
       :ok
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def cleanup_plugin(plugin_id, state) do
       :ok
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
     def handle_state_transition(plugin_id, transition, state) do
       {:ok, state}
     end
@@ -294,30 +294,30 @@ defmodule Raxol.Test.Support.MockImplementations do
   defmodule ScreenBufferMock do
     @behaviour Raxol.Core.Runtime.Plugins.ScreenBuffer.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.ScreenBuffer.Behaviour
     def get_buffer, do: {:ok, []}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.ScreenBuffer.Behaviour
     def set_buffer(buffer), do: {:ok, buffer}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.ScreenBuffer.Behaviour
     def clear_buffer, do: {:ok, []}
   end
 
   defmodule EmulatorMock do
     @behaviour Raxol.Terminal.EmulatorBehaviour
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def new(), do: %{mock: :emulator}
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def new(width, height), do: %{mock: :emulator, width: width, height: height}
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def new(width, height, opts),
       do: %{mock: :emulator, width: width, height: height, opts: opts}
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def new(width, height, session_id, client_options) do
       {:ok,
        %{
@@ -329,22 +329,22 @@ defmodule Raxol.Test.Support.MockImplementations do
        }}
     end
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def get_active_buffer(_emulator), do: %{mock: :screen_buffer}
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def update_active_buffer(emulator, _new_buffer), do: emulator
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def process_input(emulator, _input), do: {emulator, ""}
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def resize(emulator, _new_width, _new_height), do: emulator
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def get_cursor_position(_emulator), do: {0, 0}
 
-    @impl true
+    @impl Raxol.Terminal.EmulatorBehaviour
     def get_cursor_visible(_emulator), do: true
   end
 
@@ -352,23 +352,23 @@ defmodule Raxol.Test.Support.MockImplementations do
   defmodule ClipboardPluginMock do
     @behaviour Raxol.Core.Runtime.Plugins.ClipboardPlugin.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.ClipboardPlugin.Behaviour
     def init(config), do: {:ok, config}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.ClipboardPlugin.Behaviour
     def handle_event(_event, state), do: {:ok, state}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.ClipboardPlugin.Behaviour
     def handle_command(_command, _args, state), do: {:ok, state}
   end
 
   defmodule PluginEventFilterMock do
     @behaviour Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
     def filter_event(_event), do: {:ok, _event}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
     def should_process_event?(_event), do: true
   end
 
@@ -404,13 +404,13 @@ defmodule Raxol.Test.Support.MockImplementations do
   defmodule EventManagerMock do
     @behaviour Raxol.Core.Runtime.Plugins.EventManager.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.EventManager.Behaviour
     def publish_event(_event), do: :ok
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.EventManager.Behaviour
     def subscribe(_event_type, _handler), do: {:ok, self()}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.EventManager.Behaviour
     def unsubscribe(_subscription), do: :ok
   end
 
@@ -418,75 +418,75 @@ defmodule Raxol.Test.Support.MockImplementations do
   defmodule BufferManagerMock do
     @behaviour Raxol.Core.Runtime.Plugins.BufferManager.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferManager.Behaviour
     def get_buffer, do: {:ok, []}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferManager.Behaviour
     def set_buffer(buffer), do: {:ok, buffer}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferManager.Behaviour
     def clear_buffer, do: {:ok, []}
   end
 
   defmodule BufferScrollbackMock do
     @behaviour Raxol.Core.Runtime.Plugins.BufferScrollback.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferScrollback.Behaviour
     def get_scrollback, do: {:ok, []}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferScrollback.Behaviour
     def add_to_scrollback(_line), do: {:ok, []}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferScrollback.Behaviour
     def clear_scrollback, do: {:ok, []}
   end
 
   defmodule BufferScrollRegionMock do
     @behaviour Raxol.Core.Runtime.Plugins.BufferScrollRegion.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferScrollRegion.Behaviour
     def get_scroll_region, do: {:ok, {0, 0}}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferScrollRegion.Behaviour
     def set_scroll_region(_region), do: {:ok, {0, 0}}
   end
 
   defmodule BufferSelectionMock do
     @behaviour Raxol.Core.Runtime.Plugins.BufferSelection.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferSelection.Behaviour
     def get_selection, do: {:ok, nil}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferSelection.Behaviour
     def set_selection(_selection), do: {:ok, nil}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferSelection.Behaviour
     def clear_selection, do: {:ok, nil}
   end
 
   defmodule BufferQueriesMock do
     @behaviour Raxol.Core.Runtime.Plugins.BufferQueries.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferQueries.Behaviour
     def get_line(_index), do: {:ok, ""}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferQueries.Behaviour
     def get_cell(_x, _y), do: {:ok, ""}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferQueries.Behaviour
     def get_dimensions, do: {:ok, {80, 24}}
   end
 
   defmodule BufferLineOperationsMock do
     @behaviour Raxol.Core.Runtime.Plugins.BufferLineOperations.Behaviour
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferLineOperations.Behaviour
     def insert_line(_index, _line), do: {:ok, []}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferLineOperations.Behaviour
     def delete_line(_index), do: {:ok, []}
 
-    @impl true
+    @impl Raxol.Core.Runtime.Plugins.BufferLineOperations.Behaviour
     def move_line(_from, _to), do: {:ok, []}
   end
 end

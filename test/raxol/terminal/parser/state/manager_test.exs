@@ -61,8 +61,8 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
 
     test ~c"append_intermediate/2 appends to intermediates buffer" do
       state = Manager.new()
-      state = Manager.append_intermediate(state, "?')
-      state = Manager.append_intermediate(state, '!")
+      state = Manager.append_intermediate(state, "?")
+      state = Manager.append_intermediate(state, "!")
       assert state.intermediates_buffer == "?!"
     end
 

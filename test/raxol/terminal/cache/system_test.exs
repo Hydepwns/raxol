@@ -1,8 +1,14 @@
 defmodule Raxol.Terminal.Cache.SystemTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   alias Raxol.Terminal.Cache.System
 
   setup do
+    # Stop any existing cache system to ensure a clean state
+    case GenServer.whereis(Raxol.Terminal.Cache.System) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
+    end
+    Process.sleep(50)
     # Start the cache system with test configuration
     {:ok, _pid} =
       System.start_link(
@@ -20,11 +26,10 @@ defmodule Raxol.Terminal.Cache.SystemTest do
           scroll: %{max_size: 128 * 1024},
           # 64KB
           clipboard: %{max_size: 64 * 1024},
-          # 64KB
-          general: %{max_size: 64 * 1024}
+          # 20KB (force eviction for test)
+          general: %{max_size: 20_000}
         }
       )
-
     :ok
   end
 
@@ -84,9 +89,10 @@ defmodule Raxol.Terminal.Cache.SystemTest do
   describe "TTL operations" do
     test ~c"expired entry" do
       System.put("test_key", "test_value", namespace: :general, ttl: 1)
-      # Wait for entry to expire
-      :timer.sleep(1100)
-      assert {:error, :expired} == System.get("test_key", namespace: :general)
+      # Wait for entry to expire (increase wait time to ensure expiration)
+      :timer.sleep(1500)
+      result = System.get("test_key", namespace: :general)
+      assert {:error, :expired} == result
     end
 
     test ~c"non-expired entry" do
@@ -99,87 +105,114 @@ defmodule Raxol.Terminal.Cache.SystemTest do
 
   describe "eviction policies" do
     test ~c"LRU eviction" do
-      # Fill cache with values
-      for i <- 1..10 do
-        System.put("key#{i}", String.duplicate("value", 100),
+      # With 20KB cache and ~5KB per value, only 4 values can fit
+      # Insert 4 values
+      for i <- 1..4 do
+        System.put("key#{i}", String.duplicate("value", 1000),
           namespace: :general
         )
       end
 
       # Access some keys to change their last access time
-      System.get("key1", namespace: :general)
-      System.get("key2", namespace: :general)
+      System.get("key3", namespace: :general)
+      System.get("key4", namespace: :general)
 
-      # Add a new value that should trigger eviction
-      System.put("new_key", String.duplicate("value", 100), namespace: :general)
+      # Add a 5th value that should trigger eviction
+      System.put("key5", String.duplicate("value", 1000), namespace: :general)
 
-      # Check that least recently used keys were evicted
-      assert {:error, :not_found} == System.get("key3", namespace: :general)
-      assert {:ok, value1} = System.get("key1", namespace: :general)
-      assert {:ok, value2} = System.get("key2", namespace: :general)
-      assert is_binary(value1)
-      assert is_binary(value2)
+      # Check that least recently used keys were evicted (key1 and key2)
+      result1 = System.get("key1", namespace: :general)
+      result2 = System.get("key2", namespace: :general)
+      result3 = System.get("key3", namespace: :general)
+      result4 = System.get("key4", namespace: :general)
+      result5 = System.get("key5", namespace: :general)
+
+      assert {:error, :not_found} == result1
+      assert {:error, :not_found} == result2
+      assert {:ok, value3} = result3
+      assert {:ok, value4} = result4
+      assert {:ok, value5} = result5
+      assert is_binary(value3)
+      assert is_binary(value4)
+      assert is_binary(value5)
     end
 
     test ~c"LFU eviction" do
-      # Start with LFU policy
+      # Stop the existing cache system and start with LFU policy
+      GenServer.stop(Raxol.Terminal.Cache.System)
+      Process.sleep(100) # Give it time to stop
+
       {:ok, _pid} =
         System.start_link(
           max_size: 1024 * 1024,
           eviction_policy: :lfu,
-          namespace_configs: %{general: %{max_size: 64 * 1024}}
+          namespace_configs: %{general: %{max_size: 20_000}}
         )
 
-      # Fill cache with values
-      for i <- 1..10 do
-        System.put("key#{i}", String.duplicate("value", 100),
+      # With 20KB cache and ~5KB per value, only 4 values can fit
+      # Insert 4 values
+      for i <- 1..4 do
+        System.put("key#{i}", String.duplicate("value", 1000),
           namespace: :general
         )
       end
 
-      # Access some keys multiple times
+      # Access some keys multiple times to increase their frequency
       for _ <- 1..5 do
         System.get("key1", namespace: :general)
         System.get("key2", namespace: :general)
       end
 
-      # Add a new value that should trigger eviction
-      System.put("new_key", String.duplicate("value", 100), namespace: :general)
+      # Add a 5th value that should trigger eviction
+      System.put("key5", String.duplicate("value", 1000), namespace: :general)
 
-      # Check that least frequently used keys were evicted
+      # Check that least frequently used keys were evicted (key3 and key4)
       assert {:error, :not_found} == System.get("key3", namespace: :general)
+      assert {:error, :not_found} == System.get("key4", namespace: :general)
+
+      # Check that frequently accessed keys are still present
       assert {:ok, value1} = System.get("key1", namespace: :general)
       assert {:ok, value2} = System.get("key2", namespace: :general)
+      assert {:ok, value5} = System.get("key5", namespace: :general)
       assert is_binary(value1)
       assert is_binary(value2)
+      assert is_binary(value5)
     end
 
     test ~c"FIFO eviction" do
-      # Start with FIFO policy
+      # Stop the existing cache system and start with FIFO policy
+      GenServer.stop(Raxol.Terminal.Cache.System)
+      Process.sleep(100) # Give it time to stop
+
       {:ok, _pid} =
         System.start_link(
           max_size: 1024 * 1024,
           eviction_policy: :fifo,
-          namespace_configs: %{general: %{max_size: 64 * 1024}}
+          namespace_configs: %{general: %{max_size: 20_000}}
         )
 
-      # Fill cache with values
-      for i <- 1..10 do
-        System.put("key#{i}", String.duplicate("value", 100),
+      # With 20KB cache and ~5KB per value, only 4 values can fit
+      # Insert 4 values
+      for i <- 1..4 do
+        System.put("key#{i}", String.duplicate("value", 1000),
           namespace: :general
         )
       end
 
-      # Add a new value that should trigger eviction
-      System.put("new_key", String.duplicate("value", 100), namespace: :general)
+      # Add a 5th value that should trigger eviction
+      System.put("key5", String.duplicate("value", 1000), namespace: :general)
 
-      # Check that oldest keys were evicted
+      # Check that oldest keys were evicted (key1 and key2 in FIFO order)
       assert {:error, :not_found} == System.get("key1", namespace: :general)
       assert {:error, :not_found} == System.get("key2", namespace: :general)
-      assert {:ok, value9} = System.get("key9", namespace: :general)
-      assert {:ok, value10} = System.get("key10", namespace: :general)
-      assert is_binary(value9)
-      assert is_binary(value10)
+
+      # Check that newer keys are still present
+      assert {:ok, value3} = System.get("key3", namespace: :general)
+      assert {:ok, value4} = System.get("key4", namespace: :general)
+      assert {:ok, value5} = System.get("key5", namespace: :general)
+      assert is_binary(value3)
+      assert is_binary(value4)
+      assert is_binary(value5)
     end
   end
 

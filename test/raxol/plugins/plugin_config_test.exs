@@ -75,7 +75,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
 
       # Enable plugin
       config = PluginConfig.enable_plugin(config, "test_plugin")
-      assert PluginConfig.is_plugin_enabled?(config, "test_plugin")
+      assert PluginConfig.plugin_enabled?(config, "test_plugin")
 
       # Enable again (should not duplicate)
       config = PluginConfig.enable_plugin(config, "test_plugin")
@@ -83,7 +83,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
 
       # Disable plugin
       config = PluginConfig.disable_plugin(config, "test_plugin")
-      refute PluginConfig.is_plugin_enabled?(config, "test_plugin")
+      refute PluginConfig.plugin_enabled?(config, "test_plugin")
     end
 
     test "handles loading non-existent configuration file" do

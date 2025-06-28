@@ -430,7 +430,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         )
 
       emulator =
-        Emulator.new(%{width: 80, height: 24, plugin_manager: loaded_manager})
+        Emulator.new(80, 24, plugin_manager: loaded_manager)
 
       assert %Emulator{plugin_manager: pm} = emulator
       assert pm == loaded_manager
@@ -454,7 +454,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         Lifecycle.enable_plugin(loaded_manager, "hyperlink")
 
       emulator =
-        Emulator.new(%{width: 80, height: 24, plugin_manager: enabled_manager})
+        Emulator.new(80, 24, plugin_manager: enabled_manager)
 
       output_text = "Visit https://example.com"
 
@@ -479,7 +479,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         Lifecycle.disable_plugin(loaded_manager, "hyperlink")
 
       emulator =
-        Emulator.new(%{width: 80, height: 24, plugin_manager: disabled_manager})
+        Emulator.new(80, 24, plugin_manager: disabled_manager)
 
       output_text = "Visit https://example.com"
 
@@ -499,7 +499,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       {:ok, enabled_manager} = Lifecycle.enable_plugin(loaded_manager, "search")
 
       emulator =
-        Emulator.new(%{width: 80, height: 24, plugin_manager: enabled_manager})
+        Emulator.new(80, 24, plugin_manager: enabled_manager)
 
       input_text = "/search test query"
 
@@ -535,11 +535,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         Lifecycle.load_plugin(manager_after_search, Raxol.Plugins.ImagePlugin)
 
       emulator =
-        Emulator.new(%{
-          width: 80,
-          height: 24,
-          plugin_manager: final_plugin_manager
-        })
+        Emulator.new(80, 24, plugin_manager: final_plugin_manager)
 
       assert %Emulator{plugin_manager: pm} = emulator
 

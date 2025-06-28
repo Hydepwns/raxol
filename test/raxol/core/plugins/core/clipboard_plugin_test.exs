@@ -15,9 +15,8 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
 
   setup context do
     # Set up the default state with our mock
-    # Set up the default state with our mock
     {:ok, state} = ClipboardPlugin.init(clipboard_impl: ClipboardMock)
-    %{context | state: state}
+    Map.put(context, :state, state)
   end
 
   describe "terminate/2" do
@@ -29,8 +28,8 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   describe "get_commands/0" do
     test "returns the expected clipboard commands" do
       commands = ClipboardPlugin.get_commands()
-      assert :clipboard_write in commands
-      assert :clipboard_read in commands
+      assert {:clipboard_write, :handle_clipboard_command, 2} in commands
+      assert {:clipboard_read, :handle_clipboard_command, 1} in commands
     end
   end
 

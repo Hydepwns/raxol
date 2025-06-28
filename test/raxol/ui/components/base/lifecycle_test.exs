@@ -84,6 +84,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
 
       {updated, []}
     end
+
+    def init(_), do: {:ok, %{}}
   end
 
   describe "component lifecycle" do
