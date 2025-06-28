@@ -84,7 +84,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
         parsed_reqs = Enum.map(multiple_reqs, &parse_single_requirement/1)
 
         if Enum.all?(parsed_reqs, &match?({:ok, _}, &1)) do
-          {:ok, {:or, Enum.map(parsed_reqs, & &1.ok)}}
+          {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, parsed} -> parsed end)}}
         else
           {:error, :invalid_requirement_format}
         end

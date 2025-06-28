@@ -5,7 +5,7 @@ defmodule FileMock do
 
   @behaviour File.Behaviour
 
-  @impl true
+  @impl File.Behaviour
   def stat(_path) do
     # Default implementation returns a regular readable file
     {:ok,
@@ -26,18 +26,18 @@ defmodule FileMock do
      }}
   end
 
-  @impl true
+  @impl File.Behaviour
   def exists?(_path), do: true
 
-  @impl true
+  @impl File.Behaviour
   def read(_path), do: {:ok, ""}
 
-  @impl true
+  @impl File.Behaviour
   def write(_path, _content), do: :ok
 
-  @impl true
+  @impl File.Behaviour
   def rm(_path), do: :ok
 
-  @impl true
+  @impl File.Behaviour
   def mkdir_p(_path), do: :ok
 end

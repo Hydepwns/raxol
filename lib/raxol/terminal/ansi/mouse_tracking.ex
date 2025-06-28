@@ -161,8 +161,10 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   defp parse_mouse_event(1, x, y), do: {:middle, :press, x, y}
   defp parse_mouse_event(2, x, y), do: {:right, :press, x, y}
   defp parse_mouse_event(3, x, y), do: {:left, :release, x, y}
-  defp parse_mouse_event(32, x, y), do: {:left, :move, x, y}
-  defp parse_mouse_event(35, x, y), do: {:left, :drag, x, y}
+  defp parse_mouse_event(32, x, y), do: {:left, :press, x, y}
+  defp parse_mouse_event(35, x, y), do: {:left, :release, x, y}
+  defp parse_mouse_event(64, x, y), do: {:left, :move, x, y}
+  defp parse_mouse_event(67, x, y), do: {:left, :drag, x, y}
 
   defp parse_mouse_event(button_code, x, y),
     do: parse_mouse_event_fallback(button_code, x, y)
