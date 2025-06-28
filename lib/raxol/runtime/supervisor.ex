@@ -14,7 +14,7 @@ defmodule Raxol.Runtime.Supervisor do
     Supervisor.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
-  @impl true
+  @impl Supervisor
   def init(init_args) do
     # Expect init_args to be a map like:
     # %{

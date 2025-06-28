@@ -65,7 +65,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   # GenServer callbacks
 
-  @impl true
+  @impl GenServer
   def init({app_module, options}) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
@@ -250,7 +250,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:runtime_initialized, dispatcher_pid}, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "Runtime Lifecycle for #{inspect(state.app_module)} received :runtime_initialized from Dispatcher #{inspect(dispatcher_pid)}."
@@ -261,7 +261,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, updated_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:plugin_manager_ready, plugin_manager_pid}, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Plugin Manager ready notification received from #{inspect(plugin_manager_pid)}."
@@ -272,7 +272,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, updated_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:render_needed, state) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Received :render_needed. Passing through or logging."
@@ -281,7 +281,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}",
@@ -347,7 +347,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:shutdown, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
@@ -376,7 +376,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:stop, :normal, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled cast message: #{inspect(unhandled_message)}",
@@ -386,12 +386,12 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_full_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(unhandled_message, _from, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled call message: #{inspect(unhandled_message)}",
@@ -401,7 +401,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:reply, {:error, :unknown_call}, state}
   end
 
-  @impl true
+  @impl GenServer
   def terminate(reason, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"

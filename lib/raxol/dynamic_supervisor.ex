@@ -3,13 +3,12 @@ defmodule Raxol.DynamicSupervisor do
   A dynamic supervisor for dynamically starting Raxol application processes.
   """
   use DynamicSupervisor
-  @behaviour DynamicSupervisor
 
   def start_link(init_arg) do
     DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
-  @impl true
+  @impl DynamicSupervisor
   def init(_init_arg) do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
