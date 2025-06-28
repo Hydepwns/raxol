@@ -1,9 +1,8 @@
 defmodule Raxol.Application do
   use Application
-  @behaviour Application
   require Raxol.Core.Runtime.Log
 
-  @impl true
+  @impl Application
   def start(_type, _args) do
     Raxol.Core.Runtime.Log.info_with_context(
       "No preferences file found, using defaults.",
@@ -58,7 +57,6 @@ end
 # Create a mock application supervisor for testing
 defmodule Raxol.Test.MockApplicationSupervisor do
   use Supervisor
-  @behaviour Supervisor
   require Raxol.Core.Runtime.Log
 
   def start_link(_args) do
@@ -70,7 +68,7 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     Supervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  @impl true
+  @impl Supervisor
   def init(_args) do
     Raxol.Core.Runtime.Log.info_with_context(
       "Initializing MockApplicationSupervisor with Phoenix PubSub and Repo",
