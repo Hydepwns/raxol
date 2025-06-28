@@ -1,6 +1,5 @@
 defmodule RaxolWeb.SettingsLive do
   use RaxolWeb, :live_view
-  @behaviour Phoenix.LiveView
   # Use Accounts context
   alias Raxol.Accounts
   alias Raxol.UI.Theming.Theme
@@ -9,7 +8,7 @@ defmodule RaxolWeb.SettingsLive do
   alias Raxol.Cloud.Config
   import Raxol.Guards
 
-  @impl true
+  @impl Phoenix.LiveView
   def mount(%{"token" => _token}, _session, socket) do
     # Assume user_id is in session after login (RaxolWeb.UserAuth likely handles this)
     # Example: Adapt to actual session key
@@ -50,7 +49,7 @@ defmodule RaxolWeb.SettingsLive do
     end
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("update_profile", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
     changeset = Raxol.Auth.User.changeset(user, user_params)
@@ -68,7 +67,7 @@ defmodule RaxolWeb.SettingsLive do
     end
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("update_password", params, socket) do
     user = socket.assigns.current_user
     current_password = params["current_password"]
@@ -86,14 +85,14 @@ defmodule RaxolWeb.SettingsLive do
     end
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("validate", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
     changeset = Raxol.Auth.User.changeset(user, user_params)
     {:noreply, assign(socket, changeset: changeset)}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("toggle_theme", _params, socket) do
     current_theme = socket.assigns.theme
 
@@ -108,7 +107,7 @@ defmodule RaxolWeb.SettingsLive do
      |> put_flash(:info, "Theme updated successfully.")}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("update_preferences", params, socket) do
     preferences = socket.assigns.preferences
 
@@ -139,7 +138,7 @@ defmodule RaxolWeb.SettingsLive do
      |> put_flash(:info, "Preferences updated successfully.")}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("update_auto_check", %{"enabled" => enabled}, socket) do
     enabled = enabled == "true"
     Updater.set_auto_check(enabled)
@@ -153,7 +152,7 @@ defmodule RaxolWeb.SettingsLive do
      |> put_flash(:info, "Auto-update settings updated successfully.")}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("update_cloud_config", params, socket) do
     cloud_config = socket.assigns.cloud_config
 

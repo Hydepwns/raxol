@@ -1,6 +1,5 @@
 defmodule RaxolWeb.UserSocket do
   use Phoenix.Socket
-  @behaviour Phoenix.Socket
   require Raxol.Core.Runtime.Log
 
   # Channels
@@ -8,7 +7,7 @@ defmodule RaxolWeb.UserSocket do
   channel("user:*", RaxolWeb.UserChannel)
 
   # Socket configuration
-  @impl true
+  @impl Phoenix.Socket
   def connect(%{user_id: user_id} = _params, socket, _connect_info) do
     Raxol.Core.Runtime.Log.info(
       "Connecting user with atom key user_id: #{user_id}"
@@ -25,6 +24,6 @@ defmodule RaxolWeb.UserSocket do
   @doc """
   Identifies the socket connections.
   """
-  @impl true
+  @impl Phoenix.Socket
   def id(socket), do: "user_socket:" <> socket.assigns.user_id
 end

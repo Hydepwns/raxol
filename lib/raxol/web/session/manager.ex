@@ -42,7 +42,7 @@ defmodule Raxol.Web.Session.Manager do
     GenServer.call(__MODULE__, :get_active_sessions)
   end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     :ok = Storage.init()
 
@@ -65,7 +65,7 @@ defmodule Raxol.Web.Session.Manager do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:create_session, user_id, metadata}, _from, state) do
     session_id = generate_session_id()
 
@@ -93,7 +93,7 @@ defmodule Raxol.Web.Session.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_session, session_id}, _from, state) do
     case Storage.get(session_id) do
       {:ok, session} ->
@@ -117,7 +117,7 @@ defmodule Raxol.Web.Session.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update_session, session_id, metadata}, _from, state) do
     case Storage.get(session_id) do
       {:ok, session} ->
@@ -146,7 +146,7 @@ defmodule Raxol.Web.Session.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:end_session, session_id}, _from, state) do
     case Storage.get(session_id) do
       {:ok, session} ->
@@ -179,7 +179,7 @@ defmodule Raxol.Web.Session.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:cleanup_sessions, _from, state) do
     # Get expired sessions directly - Storage.get_expired_sessions/1 returns a list
     expired_sessions = Storage.get_expired_sessions(state.session_timeout)
@@ -203,12 +203,12 @@ defmodule Raxol.Web.Session.Manager do
     {:reply, :ok, %{state | sessions: new_sessions}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_active_sessions, _from, state) do
     {:reply, {:ok, state.sessions}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:cleanup, state) do
     # Schedule next cleanup
     _timer_id = System.unique_integer([:positive])

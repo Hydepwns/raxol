@@ -27,7 +27,7 @@ defmodule Raxol.Web.Session.Monitor do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     # Initialize monitoring state
     state = %{
@@ -48,17 +48,17 @@ defmodule Raxol.Web.Session.Monitor do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_stats, _from, state) do
     {:reply, state.stats, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_active_users, _from, state) do
     {:reply, state.active_users, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:monitor, state) do
     # Schedule next monitoring
     schedule_monitoring(state)

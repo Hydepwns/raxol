@@ -1,9 +1,8 @@
 defmodule RaxolWeb.MonitoringLive do
   use RaxolWeb, :live_view
-  @behaviour Phoenix.LiveView
   alias Raxol.Metrics
 
-  @impl true
+  @impl Phoenix.LiveView
   @dialyzer {:nowarn_function, mount: 3}
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -17,12 +16,12 @@ defmodule RaxolWeb.MonitoringLive do
      )}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info(:update_metrics, socket) do
     {:noreply, assign(socket, metrics: Metrics.get_current_metrics())}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("refresh", _params, socket) do
     {:noreply, assign(socket, metrics: Metrics.get_current_metrics())}
   end
