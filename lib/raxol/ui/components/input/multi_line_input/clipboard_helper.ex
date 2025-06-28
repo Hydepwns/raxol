@@ -7,6 +7,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
   alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper, as: Impl
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
+  alias Raxol.Core.Runtime.Command
 
   @doc """
   Copies the currently selected text to the clipboard.
@@ -30,7 +31,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
       selected_text =
         String.slice(Enum.join(lines, "\n"), norm_start, norm_end - norm_start)
 
-      {state, [{:clipboard_write, selected_text}]}
+      {state, [%Command{type: :clipboard_write, data: selected_text}]}
     end
   end
 
@@ -62,7 +63,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
       # Delete the selection
       {new_state, _} = TextHelper.delete_selection(state)
       # Return new state and clipboard write command
-      {new_state, [{:clipboard_write, selected_text}]}
+      {new_state, [%Command{type: :clipboard_write, data: selected_text}]}
     end
   end
 

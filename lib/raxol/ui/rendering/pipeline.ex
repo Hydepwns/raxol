@@ -222,7 +222,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # GenServer Implementation
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     initial_tree = Keyword.get(opts, :initial_tree, %{})
     renderer_module = Keyword.get(opts, :renderer, get_renderer())
@@ -239,7 +239,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:update_tree, new_tree}, state) do
     if state.current_tree == new_tree do
       Raxol.Core.Runtime.Log.debug(
@@ -283,7 +283,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:trigger_render, data}, state) do
     tree_to_render = data || state.current_tree
 
@@ -311,7 +311,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:request_animation_frame, pid, ref}, state) do
     Raxol.Core.Runtime.Log.debug(
       "Pipeline: Received request_animation_frame from #{inspect(pid)} with ref #{inspect(ref)}"
@@ -323,7 +323,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     {:noreply, final_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:schedule_render_on_next_frame, _data}, state) do
     # TODO: Ensure this is only processed on the next actual animation frame tick.
     #       Currently, if no debouncing is active, it might render immediately or schedule soon.
@@ -348,7 +348,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:request_animation_frame, pid, ref}, from, state) do
     Raxol.Core.Runtime.Log.debug(
       "Pipeline: Received request_animation_frame call from #{inspect(pid)}, ref #{inspect(ref)}, from #{inspect(from)}"
@@ -363,7 +363,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     {:noreply, final_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(
         {:deferred_render, diff_result, new_tree_for_reference, timer_id},
         state
@@ -393,7 +393,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:animation_tick, timer_id}, state) do
     if state.animation_ticker_ref == timer_id do
       # Process all queued animation frame requests

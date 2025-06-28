@@ -107,7 +107,7 @@ defmodule Raxol.UI.Components.Display.Table do
 
   @doc "Initializes the Table component state from props."
   @spec init(map()) :: {:ok, state()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def init(attrs) do
     id = Map.get(attrs, :id) || Raxol.Core.ID.generate()
 
@@ -143,7 +143,7 @@ defmodule Raxol.UI.Components.Display.Table do
 
   @doc "Mounts the Table component, performing any setup needed."
   @spec mount(state()) :: {:ok, state(), list()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def mount(state) do
     # Initialize any subscriptions or setup needed
     {:ok, state, []}
@@ -151,7 +151,7 @@ defmodule Raxol.UI.Components.Display.Table do
 
   @doc "Updates the Table component state in response to messages. Handles prop updates, sorting, filtering, and selection."
   @spec update(term(), state()) :: {:noreply, state()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def update(message, state) do
     case message do
       {:update_props, new_props} ->
@@ -163,10 +163,10 @@ defmodule Raxol.UI.Components.Display.Table do
 
       {:sort, column} ->
         new_direction =
-          if state.sort_by == column do
-            if state.sort_direction == :asc, do: :desc, else: :asc
-          else
-            :asc
+          cond do
+            state.sort_by != column -> :asc
+            state.sort_direction == :asc -> :desc
+            true -> :asc
           end
 
         updated_state = %{
@@ -197,80 +197,23 @@ defmodule Raxol.UI.Components.Display.Table do
   @doc "Handles events for the Table component."
   @spec handle_event(state(), term(), map()) ::
           {:noreply, state()} | {:noreply, state(), list()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def handle_event(state, event, context) do
     attrs = context.attrs
-    data = Map.get(attrs, :data, [])
-    component_style = Map.get(attrs, :style, %{})
-    theme = context.theme
-    theme_style_def = Theme.component_style(theme, :table)
-    theme_style_struct = Raxol.Style.new(theme_style_def)
-    component_style_struct = Raxol.Style.new(component_style)
-    base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
-    max_height = base_style.layout.height
-    current_visible_height = visible_height(%{max_height: max_height})
+    current_visible_height = get_visible_height(context)
 
     case event do
-      # Scrolling events
-      {:keypress, :arrow_up} ->
-        new_scroll_top = max(0, state.scroll_top - 1)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
-
-      {:keypress, :arrow_down} ->
-        max_scroll = max(0, length(data) - current_visible_height)
-        new_scroll_top = min(max_scroll, state.scroll_top + 1)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
-
-      {:keypress, :page_up} ->
-        page_size = current_visible_height
-        new_scroll_top = max(0, state.scroll_top - page_size)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
-
-      {:keypress, :page_down} ->
-        max_scroll = max(0, length(data) - current_visible_height)
-        page_size = current_visible_height
-        new_scroll_top = min(max_scroll, state.scroll_top + page_size)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
-
-      # Row selection events
-      {:click, {:row, row_index}} ->
-        if Map.get(attrs, :selectable, false) do
-          {:noreply, %{state | selected_row: row_index}}
-        else
-          {:noreply, state}
-        end
-
-      # Sorting events
-      {:click, {:header, column}} ->
-        if Map.get(attrs, :sortable, false) do
-          {:noreply, state, [{:update, {:sort, column}}]}
-        else
-          {:noreply, state}
-        end
-
-      # Filtering events
-      {:input, {:filter, term}} ->
-        if Map.get(attrs, :filterable, false) do
-          {:noreply, state, [{:update, {:filter, term}}]}
-        else
-          {:noreply, state}
-        end
-
-      # Focus events
-      {:focus, {:row, row_index}} ->
-        {:noreply, %{state | focused_row: row_index}}
-
-      {:focus, {:cell, {row_index, col_index}}} ->
-        {:noreply, %{state | focused_row: row_index, focused_col: col_index}}
-
-      _ ->
-        {:noreply, state}
+      {:keypress, key} -> handle_keypress(state, key, attrs, current_visible_height)
+      {:click, click_data} -> handle_click(state, click_data, attrs)
+      {:input, input_data} -> handle_input(state, input_data, attrs)
+      {:focus, focus_data} -> handle_focus(state, focus_data)
+      _ -> {:noreply, state}
     end
   end
 
   @doc "Renders the Table component."
   @spec render(state(), map()) :: any()
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def render(state, context) do
     attrs = context.attrs
     id = Map.get(attrs, :id)
@@ -313,7 +256,7 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   @spec unmount(state()) :: {:ok, state()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def unmount(state) do
     # Clean up any resources
     {:ok, state}
@@ -340,51 +283,30 @@ defmodule Raxol.UI.Components.Display.Table do
   defp visible_height(%{max_height: _}), do: 1
 
   defp update_column_widths(state) do
-    # Calculate widths based on headers and data
-    header_widths =
-      case state.columns do
-        nil ->
-          []
-
-        [] ->
-          []
-
-        columns when list?(columns) ->
-          Enum.map(columns, fn col ->
-            String.length(Map.get(col, :header, ""))
-          end)
-
-        _ ->
-          []
-      end
-
-    data_widths =
-      case state.data do
-        nil ->
-          []
-
-        [] ->
-          []
-
-        data when list?(data) ->
-          Enum.reduce(data, List.duplicate(0, length(state.columns)), fn row,
-                                                                         acc ->
-            Enum.zip_with(acc, state.columns, fn max_width, col ->
-              value = Map.get(row, Map.get(col, :key))
-              max(max_width, String.length(to_string(value)))
-            end)
-          end)
-
-        _ ->
-          []
-      end
-
-    # Combine header and data widths
+    header_widths = calculate_header_widths(state.columns)
+    data_widths = calculate_data_widths(state.data, state.columns)
     column_widths = Enum.zip_with(header_widths, data_widths, &max/2)
-
-    # Update state with calculated widths
     %{state | column_widths: column_widths}
   end
+
+  defp calculate_header_widths(nil), do: []
+  defp calculate_header_widths([]), do: []
+  defp calculate_header_widths(columns) when list?(columns) do
+    Enum.map(columns, fn col -> String.length(Map.get(col, :header, "")) end)
+  end
+  defp calculate_header_widths(_), do: []
+
+  defp calculate_data_widths(nil, _columns), do: []
+  defp calculate_data_widths([], _columns), do: []
+  defp calculate_data_widths(data, columns) when list?(data) and list?(columns) do
+    Enum.reduce(data, List.duplicate(0, length(columns)), fn row, acc ->
+      Enum.zip_with(acc, columns, fn max_width, col ->
+        value = Map.get(row, Map.get(col, :key))
+        max(max_width, String.length(to_string(value)))
+      end)
+    end)
+  end
+  defp calculate_data_widths(_, _), do: []
 
   defp process_data(data, state) do
     data
@@ -473,5 +395,77 @@ defmodule Raxol.UI.Components.Display.Table do
     else
       element
     end
+  end
+
+  defp get_visible_height(context) do
+    attrs = context.attrs
+    component_style = Map.get(attrs, :style, %{})
+    theme = context.theme
+    theme_style_def = Theme.component_style(theme, :table)
+    theme_style_struct = Raxol.Style.new(theme_style_def)
+    component_style_struct = Raxol.Style.new(component_style)
+    base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
+    max_height = Map.get(base_style.layout, :height, nil)
+    visible_height(%{max_height: max_height})
+  end
+
+  defp handle_keypress(state, key, attrs, current_visible_height) do
+    data = Map.get(attrs, :data, [])
+
+    case key do
+      :arrow_up ->
+        new_scroll_top = max(0, state.scroll_top - 1)
+        {:noreply, %{state | scroll_top: new_scroll_top}}
+
+      :arrow_down ->
+        max_scroll = max(0, length(data) - current_visible_height)
+        new_scroll_top = min(max_scroll, state.scroll_top + 1)
+        {:noreply, %{state | scroll_top: new_scroll_top}}
+
+      :page_up ->
+        page_size = current_visible_height
+        new_scroll_top = max(0, state.scroll_top - page_size)
+        {:noreply, %{state | scroll_top: new_scroll_top}}
+
+      :page_down ->
+        max_scroll = max(0, length(data) - current_visible_height)
+        page_size = current_visible_height
+        new_scroll_top = min(max_scroll, state.scroll_top + page_size)
+        {:noreply, %{state | scroll_top: new_scroll_top}}
+
+      _ -> {:noreply, state}
+    end
+  end
+
+  defp handle_click(state, {:row, row_index}, attrs) do
+    if Map.get(attrs, :selectable, false) do
+      {:noreply, %{state | selected_row: row_index}}
+    else
+      {:noreply, state}
+    end
+  end
+
+  defp handle_click(state, {:header, column}, attrs) do
+    if Map.get(attrs, :sortable, false) do
+      {:noreply, state, [{:update, {:sort, column}}]}
+    else
+      {:noreply, state}
+    end
+  end
+
+  defp handle_input(state, {:filter, term}, attrs) do
+    if Map.get(attrs, :filterable, false) do
+      {:noreply, state, [{:update, {:filter, term}}]}
+    else
+      {:noreply, state}
+    end
+  end
+
+  defp handle_focus(state, {:row, row_index}) do
+    {:noreply, %{state | focused_row: row_index}}
+  end
+
+  defp handle_focus(state, {:cell, {row_index, col_index}}) do
+    {:noreply, %{state | focused_row: row_index, focused_col: col_index}}
   end
 end

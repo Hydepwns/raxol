@@ -142,7 +142,7 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   # GenServer Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_init_arg) do
     emulator = Raxol.Terminal.Emulator.new(80, 24, [])
 
@@ -155,12 +155,12 @@ defmodule Raxol.UI.Rendering.Renderer do
      }}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:set_animation_settings, settings}, state) do
     {:noreply, %{state | animation_settings: settings}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:render, data}, state) do
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], data, data, state)
@@ -174,12 +174,12 @@ defmodule Raxol.UI.Rendering.Renderer do
     {:noreply, %{new_state | last_render: data}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:set_test_pid, pid}, state) do
     {:noreply, %{state | test_pid: pid}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:apply_diff, :no_change, _new_tree}, state) do
     # No update needed
     {:noreply, state}
@@ -197,6 +197,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     {:noreply, %{state | last_render: new_tree}}
   end
 
+  @impl GenServer
   def handle_cast(
         {:apply_diff, {:update, path, changes} = diff, new_tree},
         state
