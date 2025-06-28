@@ -56,7 +56,7 @@ defmodule Raxol.UI.Components.Input.TextField do
   Initializes the TextField component state from the given props.
   """
   @spec init(map()) :: {:ok, map()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def init(props) do
     id = props[:id] || Raxol.Core.ID.generate()
     width = props[:width] || 20
@@ -69,14 +69,14 @@ defmodule Raxol.UI.Components.Input.TextField do
   Mounts the TextField component. Performs any setup needed after initialization.
   """
   @spec mount(map()) :: map()
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def mount(state), do: state
 
   @doc """
   Updates the TextField component state in response to messages or prop changes.
   """
   @spec update(term(), map()) :: {:noreply, map()} | {:noreply, map(), any()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def update({:update_props, new_props}, state) do
     updated_state = Map.merge(state, Map.new(new_props))
     # Clamp cursor position if value changed
@@ -107,7 +107,7 @@ defmodule Raxol.UI.Components.Input.TextField do
   # def update(:focus, state), do: {:noreply, %{state | focused: true}}
   # def update(:blur, state), do: {:noreply, %{state | focused: false}}
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def update(message, state) do
     _message = message
     {:noreply, state}
@@ -118,7 +118,7 @@ defmodule Raxol.UI.Components.Input.TextField do
   """
   @spec handle_event(map(), term(), map()) ::
           {:noreply, map()} | {:noreply, map(), any()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def handle_event(state, {:keypress, key, modifiers}, context) do
     _context = context
 
@@ -275,15 +275,26 @@ defmodule Raxol.UI.Components.Input.TextField do
   Renders the TextField component using the current state and context.
   """
   @spec render(map(), map()) :: any()
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def render(state, _context) do
     theme = Map.get(state, :theme, %{})
     component_theme_style = Theme.component_style(theme, :text_field)
-    style = Raxol.Style.merge(component_theme_style, state.style)
+
+    # Handle the case where component_theme_style is a plain map, not a Style struct
+    merged_style = case component_theme_style do
+      %Raxol.Style{} = style_struct ->
+        Raxol.Style.merge(style_struct, state.style)
+      plain_map when is_map(plain_map) ->
+        # If it's a plain map, merge it directly with state.style
+        Map.merge(plain_map, state.style || %{})
+      _ ->
+        # Fallback to just state.style
+        state.style || %{}
+    end
 
     display_value =
       if state.secret,
-        do: String.duplicate("*", String.length(state.value)),
+        do: String.duplicate("•", String.length(state.value)),
         else: state.value
 
     # Add placeholder if value is empty and not focused
@@ -331,8 +342,8 @@ defmodule Raxol.UI.Components.Input.TextField do
 
           cursor_style = %{
             text_decoration: [:underline],
-            color: style.color || "#fff",
-            background: style.background || "#000"
+            color: merged_style.color || "#fff",
+            background: merged_style.background || "#000"
           }
 
           [
@@ -348,13 +359,13 @@ defmodule Raxol.UI.Components.Input.TextField do
           ]
       end
 
-    Element.new(:view, %{style: style}, do: text_children)
+    Element.new(:view, %{style: merged_style}, do: text_children)
   end
 
   @doc """
   Unmounts the TextField component, performing any necessary cleanup.
   """
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def unmount(state), do: state
 
   defp clamp(value, min_val, max_val), do: max(min_val, min(value, max_val))

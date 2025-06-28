@@ -49,7 +49,7 @@ defmodule Raxol.UI.Components.FocusRing do
   # --- Component Behaviour Callbacks ---
 
   @spec init(map()) :: %__MODULE__{}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def init(opts) when map?(opts) do
     # Initialize state from props, merging with defaults
     defaults = %{
@@ -71,7 +71,7 @@ defmodule Raxol.UI.Components.FocusRing do
   end
 
   @spec update(term(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages (animation ticks, focus changes)
     Raxol.Core.Runtime.Log.debug("FocusRing received message: #{inspect(msg)}")
@@ -154,7 +154,7 @@ defmodule Raxol.UI.Components.FocusRing do
   end
 
   @spec handle_event(term(), map(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # FocusRing might listen to focus changes or accessibility events
     Raxol.Core.Runtime.Log.debug("FocusRing received event: #{inspect(event)}")
@@ -175,7 +175,7 @@ defmodule Raxol.UI.Components.FocusRing do
   # --- Render Logic ---
 
   @spec render(%__MODULE__{}, map()) :: any()
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = props) do
     dsl_result = render_focus_ring(state, props)
     # Result can be nil or a box element map

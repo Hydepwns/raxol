@@ -60,7 +60,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @doc """
   Initializes the Checkbox component state from the given props.
   """
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   @spec init(keyword()) :: {:ok, t()}
   def init(props) do
     id =
@@ -86,7 +86,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @doc """
   Mounts the Checkbox component. Performs any setup needed after initialization.
   """
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   @spec mount(t()) :: {t(), list()}
   def mount(state) do
     # Could register focus, subscriptions, etc. if needed
@@ -97,7 +97,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @doc """
   Unmounts the Checkbox component, performing any necessary cleanup.
   """
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   @spec unmount(t()) :: t()
   def unmount(state) do
     # Cleanup any resources, subscriptions, etc. if needed
@@ -107,7 +107,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @doc """
   Updates the Checkbox component state in response to messages or prop changes.
   """
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   @spec update(map(), t()) :: {:ok, t(), list()}
   def update(props, state) when map?(props) do
     # Merge new props into state, with style/theme merged as in other components
@@ -123,14 +123,14 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:ok, new_state, []}
   end
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   @spec update(term(), t()) :: {:ok, t(), list()}
   def update(_msg, state) do
     # Ignore unknown messages for now
     {:ok, state, []}
   end
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def handle_event(
         %Event{type: :mouse, data: %{action: :press}},
         _context,
@@ -166,7 +166,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @doc """
   Renders the Checkbox component using the current state and context.
   """
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   @spec render(t(), map()) :: any()
   def render(state, context) do
     # Harmonize theme merging: context.theme < state.theme < state.style
