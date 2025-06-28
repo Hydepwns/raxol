@@ -33,14 +33,14 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
             dependencies: [],
             api_version: "1.0.0"
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
     # Initialize the plugin struct, merging provided config
     plugin_state = struct(__MODULE__, config)
     {:ok, plugin_state}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_input(%__MODULE__{} = plugin, input) do
     # Process input for hyperlink-related commands
     case input do
@@ -117,19 +117,19 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     {:ok, plugin}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def cleanup(%__MODULE__{} = _plugin) do
     # No cleanup needed for this plugin
     :ok
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_dependencies do
     # This plugin has no dependencies
     []
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_api_version do
     "1.0.0"
   end

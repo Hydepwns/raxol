@@ -39,14 +39,14 @@ defmodule Raxol.Plugins.ImagePlugin do
             image_escape_sequence: nil,
             sequence_just_generated: false
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
     # Initialize the plugin struct, merging provided config
     plugin_state = struct(__MODULE__, config)
     {:ok, plugin_state}
   end
 
-  # @impl true
+  # @impl Raxol.Plugins.Plugin
   # def handle_output(%__MODULE__{} = plugin, output) when binary?(output) do
   #   # Check if the output contains an image marker
   #   if String.contains?(output, "<<IMAGE:") do
@@ -66,7 +66,7 @@ defmodule Raxol.Plugins.ImagePlugin do
   #   end
   # end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_input(%__MODULE__{} = plugin, _input) do
     # Input is not handled directly by this plugin for generating images.
     # Image display is triggered by specific markers in the output stream
@@ -89,17 +89,17 @@ defmodule Raxol.Plugins.ImagePlugin do
      }}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def cleanup(%__MODULE__{} = _plugin) do
     :ok
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_dependencies do
     []
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def get_api_version do
     "1.0.0"
   end
