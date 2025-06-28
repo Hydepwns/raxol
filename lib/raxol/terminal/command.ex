@@ -6,12 +6,20 @@ defmodule Raxol.Terminal.Command do
   defstruct [
     :history,
     :current,
-    :max_history
+    :max_history,
+    :command_buffer,
+    :history_index,
+    :last_key_event,
+    :command_state
   ]
 
   @type t :: %__MODULE__{
           history: [String.t()],
           current: String.t() | nil,
-          max_history: non_neg_integer()
+          max_history: non_neg_integer(),
+          command_buffer: String.t(),
+          history_index: integer(),
+          last_key_event: any(),
+          command_state: any()
         }
 end

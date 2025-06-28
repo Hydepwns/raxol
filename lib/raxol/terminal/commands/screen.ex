@@ -159,17 +159,9 @@ defmodule Raxol.Terminal.Commands.Screen do
     buffer = Emulator.get_active_buffer(emulator)
     {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
-    case Operations.scroll_down(buffer, count, top, bottom) do
-      {:ok, new_buffer} ->
-        Emulator.update_active_buffer(emulator, new_buffer)
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to scroll down: #{inspect(reason)}"
-        )
-
-        emulator
-    end
+    # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
+    new_buffer = ScreenBuffer.scroll_down(buffer, top, bottom, count)
+    Emulator.update_active_buffer(emulator, new_buffer)
   end
 
   @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
@@ -181,16 +173,8 @@ defmodule Raxol.Terminal.Commands.Screen do
     buffer = Emulator.get_active_buffer(emulator)
     {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
-    case Operations.scroll_up(buffer, lines, top, bottom) do
-      {:ok, new_buffer} ->
-        Emulator.update_active_buffer(emulator, new_buffer)
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to scroll up: #{inspect(reason)}"
-        )
-
-        emulator
-    end
+    # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct
+    new_buffer = ScreenBuffer.scroll_up(buffer, top, bottom, lines)
+    Emulator.update_active_buffer(emulator, new_buffer)
   end
 end

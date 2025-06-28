@@ -66,12 +66,12 @@ defmodule Raxol.Terminal.ANSI.Monitor do
 
   # --- Server Callbacks ---
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     {:ok, initial_state()}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:record_sequence, input}, state) do
     {parse_time, parsed} = :timer.tc(Parser, :parse, [input])
     {process_time, _} = :timer.tc(Processor, :process_sequences, [parsed])
@@ -86,19 +86,19 @@ defmodule Raxol.Terminal.ANSI.Monitor do
     {:noreply, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:record_error, _input, reason, context}, state) do
     error = {DateTime.utc_now(), reason, context}
     new_state = %{state | errors: [error | state.errors]}
     {:noreply, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:reset_metrics, _state) do
     {:noreply, initial_state()}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_metrics, _from, state) do
     {:reply, state, state}
   end

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   Handlers for CSI (Control Sequence Introducer) commands.
   """
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.{Basic, Cursor, Screen, Device}
   require Raxol.Core.Runtime.Log
 
@@ -247,9 +247,25 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   # Mode changes
   def handle_mode_change(emulator, mode, enabled) do
-    case enabled do
-      true -> handle_public_mode(emulator, [mode], ?h)
-      false -> handle_public_mode(emulator, [mode], ?l)
+    # Check if it's a public mode first
+    case Map.get(@public_modes, mode) do
+      nil ->
+        # Check if it's a private mode
+        case Map.get(@private_modes, mode) do
+          nil -> {:ok, emulator}
+          mode_name ->
+            if enabled do
+              Emulator.set_mode(emulator, mode_name)
+            else
+              Emulator.reset_mode(emulator, mode_name)
+            end
+        end
+      mode_name ->
+        if enabled do
+          Emulator.set_mode(emulator, mode_name)
+        else
+          Emulator.reset_mode(emulator, mode_name)
+        end
     end
   end
 

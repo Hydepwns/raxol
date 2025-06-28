@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   """
 
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.BufferManager
 
   @doc """
   Move cursor to absolute position.
@@ -27,8 +28,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     col = max(0, col - 1)
 
     # Ensure coordinates are within bounds
-    height = ScreenBuffer.get_height(emulator.active_buffer)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    height = ScreenBuffer.get_height(active_buffer)
+    width = ScreenBuffer.get_width(active_buffer)
 
     row = min(row, height - 1)
     col = min(col, width - 1)
@@ -70,7 +72,8 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   """
   def move_cursor_down(emulator, n) do
     n = if n <= 0, do: 1, else: n
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    height = ScreenBuffer.get_height(active_buffer)
     {cur_x, cur_y} = emulator.cursor.position
     new_y = min(cur_y + n, height - 1)
     %{emulator | cursor: %{emulator.cursor | position: {cur_x, new_y}}}
@@ -90,7 +93,8 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   """
   def move_cursor_forward(emulator, n) do
     n = if n <= 0, do: 1, else: n
-    width = ScreenBuffer.get_width(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
     {cur_x, cur_y} = emulator.cursor.position
     new_x = min(cur_x + n, width - 1)
     %{emulator | cursor: %{emulator.cursor | position: {new_x, cur_y}}}

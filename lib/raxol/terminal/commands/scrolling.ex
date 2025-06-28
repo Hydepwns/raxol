@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Buffer.Operations
   require Raxol.Core.Runtime.Log
 
@@ -137,19 +138,24 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     new_cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, idx} ->
-        cond do
-          idx >= region_start and idx <= region_end - n ->
-            Enum.at(cells, idx + n)
-
-          idx > region_end - n and idx <= region_end ->
-            nil
-
-          true ->
-            line
-        end
+        map_line_for_shift_up(idx, cells, line, region_start, region_end, n, buffer.width)
       end)
 
     %{buffer | cells: new_cells}
+  end
+
+  defp map_line_for_shift_up(idx, cells, line, region_start, region_end, n, width) do
+    cond do
+      idx >= region_start and idx <= region_end - n ->
+        get_source_line(cells, idx + n, line)
+
+      idx > region_end - n and idx <= region_end ->
+        # Create empty line for this position
+        List.duplicate(Cell.new(" ", TextFormatting.new()), width)
+
+      true ->
+        line
+    end
   end
 
   defp shift_lines_down(buffer, region_start_plus_n, region_start, count) do
@@ -161,20 +167,32 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     new_cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, idx} ->
-        cond do
-          idx >= region_start + n and idx <= region_end ->
-            source_idx = idx - n
-            Enum.at(cells, source_idx)
-
-          idx >= region_start and idx < region_start + n ->
-            nil
-
-          true ->
-            line
-        end
+        map_line_for_shift_down(idx, cells, line, region_start, region_end, n, buffer.width)
       end)
 
     %{buffer | cells: new_cells}
+  end
+
+  defp map_line_for_shift_down(idx, cells, line, region_start, region_end, n, width) do
+    cond do
+      idx >= region_start + n and idx <= region_end ->
+        get_source_line(cells, idx - n, line)
+
+      idx >= region_start and idx < region_start + n ->
+        # Create empty line for this position
+        List.duplicate(Cell.new(" ", TextFormatting.new()), width)
+
+      true ->
+        line
+    end
+  end
+
+  defp get_source_line(cells, source_idx, fallback_line) do
+    if source_idx >= 0 and source_idx < length(cells) do
+      Enum.at(cells, source_idx) || fallback_line
+    else
+      fallback_line
+    end
   end
 
   defp fill_blank_lines(buffer, _start_line, _count, style) do
@@ -183,7 +201,8 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     updated_cells =
       Enum.map(buffer.cells, fn
         nil -> empty_line
-        line -> line
+        line when is_list(line) -> line
+        _ -> empty_line
       end)
 
     %{buffer | cells: updated_cells}

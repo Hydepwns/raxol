@@ -178,9 +178,9 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
       {:ok, buffer, updated_pool} ->
         {buffer, %{manager | pool: updated_pool}}
 
-      :error ->
+      {:error, updated_pool} ->
         buffer = ScreenBuffer.new(width, height)
-        {buffer, manager}
+        {buffer, %{manager | pool: updated_pool}}
     end
   end
 
@@ -297,8 +297,22 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
 
   defp get_from_pool(pool, width, height) do
     # Get a buffer from the pool or return error
-    # Implementation details...
-    :error
+    key = {width, height}
+    buffers = Map.get(pool.buffers, key, [])
+
+    case buffers do
+      [buffer | remaining_buffers] ->
+        # Found a buffer in the pool
+        updated_buffers = Map.put(pool.buffers, key, remaining_buffers)
+        updated_pool = %{pool | buffers: updated_buffers}
+        {:ok, buffer, updated_pool}
+
+      [] ->
+        # No buffer available in pool, need to allocate new one
+        updated_stats = %{pool.stats | allocations: pool.stats.allocations + 1}
+        updated_pool = %{pool | stats: updated_stats}
+        {:error, updated_pool}
+    end
   end
 
   defp update_performance_metrics(
@@ -342,38 +356,39 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   end
 
   defp add_to_pool(pool, buffer) do
-    # Assume buffer has width and height fields
     key = {buffer.width, buffer.height}
     buffers = Map.get(pool.buffers, key, [])
-
-    # Add the buffer to the front of the list for this size
     new_buffers = [buffer | buffers]
 
-    # If we exceed max_size, drop the oldest buffer
-    all_buffers_count =
-      pool.buffers
-      |> Map.values()
-      |> Enum.map(&length/1)
-      |> Enum.sum()
+    if should_evict_buffer?(pool, new_buffers) do
+      evict_oldest_buffer(pool, key, new_buffers)
+    else
+      %{pool | buffers: Map.put(pool.buffers, key, new_buffers)}
+    end
+  end
 
-    {final_buffers, updated_buffers_map} =
-      if all_buffers_count >= pool.max_size do
-        # Find the oldest buffer to evict (from the largest list)
-        {evict_key, evict_list} =
-          pool.buffers
-          |> Enum.max_by(fn {_k, v} -> length(v) end, fn ->
-            {key, new_buffers}
-          end)
+  defp should_evict_buffer?(pool, new_buffers) do
+    total_buffers = count_total_buffers(pool) + 1
+    total_buffers > pool.max_size
+  end
 
-        # Remove the last buffer from the evict_list
-        updated_evict_list = Enum.drop(evict_list, -1)
-        updated_map = Map.put(pool.buffers, evict_key, updated_evict_list)
-        {new_buffers, Map.put(updated_map, key, new_buffers)}
-      else
-        {new_buffers, Map.put(pool.buffers, key, new_buffers)}
-      end
+  defp count_total_buffers(pool) do
+    pool.buffers
+    |> Map.values()
+    |> Enum.map(&length/1)
+    |> Enum.sum()
+  end
 
-    %{pool | buffers: updated_buffers_map}
+  defp evict_oldest_buffer(pool, key, new_buffers) do
+    {evict_key, evict_list} = find_largest_buffer_list(pool, key, new_buffers)
+    updated_evict_list = Enum.drop(evict_list, -1)
+    updated_map = Map.put(pool.buffers, evict_key, updated_evict_list)
+    %{pool | buffers: Map.put(updated_map, key, new_buffers)}
+  end
+
+  defp find_largest_buffer_list(pool, key, new_buffers) do
+    pool.buffers
+    |> Enum.max_by(fn {_k, v} -> length(v) end, fn -> {key, new_buffers} end)
   end
 
   defp apply_optimizations(state, metrics) do
@@ -434,32 +449,31 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   end
 
   defp fine_tune_compression(state, metrics) do
-    # Fine-tune based on recent performance trends
     recent_update_times = Enum.take(metrics.update_times, 10)
     recent_compression_times = Enum.take(metrics.compression_times, 10)
 
-    case {recent_update_times, recent_compression_times} do
-      {updates, compressions}
-      when length(updates) >= 5 and length(compressions) >= 3 ->
-        avg_recent_update = calculate_average_time(updates)
-        avg_recent_compression = calculate_average_time(compressions)
+    if has_sufficient_data?(recent_update_times, recent_compression_times) do
+      apply_fine_tuning(state, recent_update_times, recent_compression_times)
+    else
+      # Not enough data for fine-tuning, make a small adjustment
+      %{state | threshold: Kernel.max(state.threshold - 64, 256)}
+    end
+  end
 
-        cond do
-          # If recent updates are getting slower, reduce compression
-          avg_recent_update > 30 ->
-            %{state | level: Kernel.max(state.level - 1, 1)}
+  defp has_sufficient_data?(updates, compressions) do
+    length(updates) >= 5 and length(compressions) >= 3
+  end
 
-          # If recent compression is getting faster, we can increase it slightly
-          avg_recent_compression < 20 ->
-            %{state | level: Kernel.min(state.level + 1, 9)}
+  defp apply_fine_tuning(state, updates, compressions) do
+    avg_recent_update = calculate_average_time(updates)
+    avg_recent_compression = calculate_average_time(compressions)
 
-          # Otherwise, keep current settings
-          true ->
-            state
-        end
-
-      _ ->
-        # Not enough data for fine-tuning, keep current settings
+    cond do
+      avg_recent_update > 30 ->
+        %{state | level: Kernel.max(state.level - 1, 1)}
+      avg_recent_compression < 20 ->
+        %{state | level: Kernel.min(state.level + 1, 9)}
+      true ->
         state
     end
   end

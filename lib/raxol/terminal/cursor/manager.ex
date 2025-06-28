@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
 
   use GenServer
-  @behaviour GenServer
   require Logger
 
   alias Raxol.Terminal.Emulator
@@ -409,21 +408,15 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Updates the cursor blink state.
   """
-  def update_blink(%__MODULE__{} = state) do
-    new_blink_state = !state.blink
-    new_state = %{state | blink: new_blink_state}
-    {new_state, new_state.visible}
+  def update_blink(%__MODULE__{state: :visible} = state), do: {state, true}
+  def update_blink(%__MODULE__{state: :hidden} = state), do: {state, false}
+  def update_blink(%__MODULE__{state: :blinking, blink: blink} = state) do
+    new_blink = !blink
+    {%{state | blink: new_blink}, new_blink}
   end
 
   def update_blink(pid), do: GenServer.call(pid, :update_blink)
   def update_blink(), do: update_blink(__MODULE__)
-
-  # Struct-based version for tests (should match before GenServer version)
-  def update_blink(%__MODULE__{} = state) do
-    new_blink_state = !state.blink
-    new_state = %{state | blink: new_blink_state}
-    {new_state, new_state.visible}
-  end
 
   @doc """
   Updates the cursor position after a resize operation.
@@ -498,10 +491,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %{emulator | cursor: %{cursor | x: x}}
   end
 
-  @spec get_emulator_position(Emulator.t()) ::
-          {non_neg_integer(), non_neg_integer()}
+  @spec get_emulator_position(Emulator.t()) :: {integer(), integer()}
   def get_emulator_position(emulator) do
-    {emulator.cursor.x, emulator.cursor.y}
+    emulator.cursor.position
   end
 
   @spec set_emulator_position(
@@ -512,7 +504,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def set_emulator_position(emulator, x, y) do
     x = max(0, min(x, emulator.width - 1))
     y = max(0, min(y, emulator.height - 1))
-    %{emulator | cursor: %{emulator.cursor | x: x, y: y}}
+    %{emulator | cursor: %{emulator.cursor | position: {x, y}}}
   end
 
   @spec get_emulator_style(Emulator.t()) :: atom()
@@ -537,12 +529,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @spec emulator_blinking?(Emulator.t()) :: boolean()
   def emulator_blinking?(emulator) do
-    emulator.cursor.blinking
+    emulator.cursor.blink_state
   end
 
   @spec set_emulator_blink(Emulator.t(), boolean()) :: Emulator.t()
   def set_emulator_blink(emulator, blinking) do
-    %{emulator | cursor: %{emulator.cursor | blinking: blinking}}
+    %{emulator | cursor: %{emulator.cursor | blink_state: blinking}}
   end
 
   @doc """
@@ -619,23 +611,23 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     {:ok, new()}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_position, _from, state) do
     {:reply, {state.x, state.y}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_position, row, col}, _from, state) do
     new_state = %{state | x: row, y: col}
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:move_cursor, direction, count}, _from, state) do
     new_state =
       case direction do
@@ -648,12 +640,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_visibility, _from, state) do
     {:reply, state.visible, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_visibility, visible}, _from, state) do
     new_state = %{
       state
@@ -664,22 +656,22 @@ defmodule Raxol.Terminal.Cursor.Manager do
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_style, _from, state) do
     {:reply, state.style, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_style, style}, _from, state) do
     {:reply, :ok, %{state | style: style}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_blink, _from, state) do
     {:reply, state.blinking, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_blink, blink}, _from, state) do
     new_state = %{state | blinking: blink}
 
@@ -692,7 +684,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
     {:reply, :ok, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_custom_shape, shape, params}, _from, state) do
     {:reply, :ok,
      %{
@@ -704,35 +696,35 @@ defmodule Raxol.Terminal.Cursor.Manager do
      }}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update_position, row, col}, _from, state) do
     {:reply, :ok, %{state | x: row, y: col}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:reset_position, _from, state) do
     {:reply, :ok, %{state | x: 0, y: 0}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:update_blink, _from, state) do
     new_blink_state = !state.blink
     new_state = %{state | blink: new_blink_state}
     {:reply, new_blink_state, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(request, _from, state) do
     Logger.warning("Unknown request: #{inspect(request)}")
     {:reply, {:error, :unknown_request}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:blink, _timer_id}, state) do
     if state.blinking do
       new_blink_state = !state.blink

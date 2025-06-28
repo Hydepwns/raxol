@@ -33,113 +33,103 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   defp apply_mode_effects(mode_def, value, emulator) do
-    case mode_def.name do
-      :decckm ->
-        handle_cursor_keys_mode(value, emulator)
-
-      :deccolm_132 ->
-        handle_column_width_mode(value, emulator, :wide)
-
-      :deccolm_80 ->
-        handle_column_width_mode(value, emulator, :normal)
-
-      :decscnm ->
-        handle_screen_mode(value, emulator)
-
-      :decom ->
-        handle_origin_mode(value, emulator)
-
-      :decawm ->
-        handle_auto_wrap_mode(value, emulator)
-
-      :decarm ->
-        handle_auto_repeat_mode(value, emulator)
-
-      :decinlm ->
-        handle_interlace_mode(value, emulator)
-
-      :dectcem ->
-        handle_cursor_visibility(value, emulator)
-
-      :focus_events ->
-        handle_focus_events(value, emulator)
-
-      :bracketed_paste ->
-        handle_bracketed_paste(value, emulator)
-
-      _ ->
-        {:error, :unsupported_mode}
+    case get_mode_handler(mode_def.name) do
+      {:ok, handler} -> handler.(value, emulator)
+      :error -> {:error, :unsupported_mode}
     end
+  end
+
+  defp get_mode_handler(mode_name) do
+    handlers = %{
+      decckm: &handle_cursor_keys_mode/2,
+      deccolm_132: &handle_column_width_mode_wide/2,
+      deccolm_80: &handle_column_width_mode_normal/2,
+      decscnm: &handle_screen_mode/2,
+      decom: &handle_origin_mode/2,
+      decawm: &handle_auto_wrap_mode/2,
+      decarm: &handle_auto_repeat_mode/2,
+      decinlm: &handle_interlace_mode/2,
+      dectcem: &handle_cursor_visibility/2,
+      focus_events: &handle_focus_events/2,
+      bracketed_paste: &handle_bracketed_paste/2
+    }
+
+    Map.fetch(handlers, mode_name)
+  end
+
+  defp handle_column_width_mode_wide(value, emulator) do
+    handle_column_width_mode(value, emulator, :wide)
+  end
+
+  defp handle_column_width_mode_normal(value, emulator) do
+    handle_column_width_mode(value, emulator, :normal)
   end
 
   defp handle_cursor_keys_mode(value, emulator) do
-    # Update cursor keys mode in emulator
-    {:ok, %{emulator | cursor_keys_mode: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | cursor_keys_mode: value}}}
   end
 
   defp handle_column_width_mode(value, emulator, width_mode) do
-    if value do
-      new_width = if width_mode == :wide, do: 132, else: 80
+    target_width = calculate_target_width(width_mode, value)
+    new_column_width_mode = calculate_column_width_mode(width_mode, value)
 
-      # Resize main buffer
-      main_buffer = resize_buffer(emulator.main_screen_buffer, new_width)
+    emulator = resize_emulator_buffers(emulator, target_width)
+    emulator = update_column_width_mode(emulator, new_column_width_mode)
 
-      # Resize alternate buffer if it exists
-      alt_buffer =
-        if emulator.alternate_screen_buffer do
-          resize_buffer(emulator.alternate_screen_buffer, new_width)
-        end
+    {:ok, emulator}
+  end
 
-      emulator = %{
-        emulator
-        | main_screen_buffer: main_buffer,
-          alternate_screen_buffer: alt_buffer
-      }
+  defp calculate_target_width(:wide, true), do: 132
+  defp calculate_target_width(:wide, false), do: 80
+  defp calculate_target_width(:normal, _), do: 80
 
-      {:ok, emulator}
-    else
-      {:ok, emulator}
-    end
+  defp calculate_column_width_mode(:wide, true), do: :wide
+  defp calculate_column_width_mode(_, _), do: :normal
+
+  defp resize_emulator_buffers(emulator, target_width) do
+    main_buffer = resize_buffer(emulator.main_screen_buffer, target_width)
+    alt_buffer = maybe_resize_alt_buffer(emulator.alternate_screen_buffer, target_width)
+
+    %{emulator | main_screen_buffer: main_buffer, alternate_screen_buffer: alt_buffer}
+  end
+
+  defp maybe_resize_alt_buffer(nil, _), do: nil
+  defp maybe_resize_alt_buffer(buffer, width), do: resize_buffer(buffer, width)
+
+  defp update_column_width_mode(emulator, new_mode) do
+    %{emulator | mode_manager: %{emulator.mode_manager | column_width_mode: new_mode}}
   end
 
   defp handle_screen_mode(value, emulator) do
-    # Update screen mode (reverse video)
-    {:ok, %{emulator | screen_mode_reverse: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | screen_mode_reverse: value}}}
   end
 
   defp handle_origin_mode(value, emulator) do
-    # Update origin mode
-    {:ok, %{emulator | origin_mode: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | origin_mode: value}}}
   end
 
   defp handle_auto_wrap_mode(value, emulator) do
-    # Update auto wrap mode
-    {:ok, %{emulator | auto_wrap: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | auto_wrap: value}}}
   end
 
   defp handle_auto_repeat_mode(value, emulator) do
-    # Update auto repeat mode
-    {:ok, %{emulator | auto_repeat: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | auto_repeat_mode: value}}}
   end
 
   defp handle_interlace_mode(value, emulator) do
-    # Update interlace mode
-    {:ok, %{emulator | interlacing_mode: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | interlacing_mode: value}}}
   end
 
   defp handle_cursor_visibility(value, emulator) do
-    # Update cursor visibility
-    {:ok, %{emulator | cursor_visible: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | cursor_visible: value}}}
   end
 
   defp handle_focus_events(value, emulator) do
-    # Update focus events mode
-    {:ok, %{emulator | focus_events_enabled: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | focus_events_enabled: value}}}
   end
 
   defp handle_bracketed_paste(value, emulator) do
-    # Update bracketed paste mode
-    {:ok, %{emulator | bracketed_paste_mode: value}}
+    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | bracketed_paste_mode: value}}}
   end
 
   defp resize_buffer(buffer, new_width) do

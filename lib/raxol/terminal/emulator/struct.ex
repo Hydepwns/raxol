@@ -124,7 +124,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec get_active_buffer(t()) :: ScreenBuffer.t()
   def get_active_buffer(emulator) do
-    emulator.active_buffer
+    case emulator.active_buffer_type do
+      :main -> emulator.main_screen_buffer
+      :alternate -> emulator.alternate_screen_buffer
+      _ -> emulator.main_screen_buffer
+    end
   end
 
   @doc """
@@ -158,11 +162,70 @@ defmodule Raxol.Terminal.Emulator.Struct do
   end
 
   @doc """
+  Sets a terminal mode.
+  """
+  @spec set_mode(t(), atom()) :: t()
+  def set_mode(emulator, mode) do
+    case mode do
+      :show_cursor ->
+        %{emulator | cursor: %{emulator.cursor | visible: true}}
+      :insert_mode ->
+        %{emulator | state: :insert}
+      _ ->
+        # For other modes, just return the emulator unchanged
+        emulator
+    end
+  end
+
+  @doc """
+  Resets a terminal mode.
+  """
+  @spec reset_mode(t(), atom()) :: t()
+  def reset_mode(emulator, mode) do
+    case mode do
+      :show_cursor ->
+        %{emulator | cursor: %{emulator.cursor | visible: false}}
+      :insert_mode ->
+        %{emulator | state: :normal}
+      _ ->
+        # For other modes, just return the emulator unchanged
+        emulator
+    end
+  end
+
+  @doc """
+  Sets the character set for the emulator.
+  """
+  @spec set_charset(t(), atom()) :: {:ok, t()} | {:error, atom(), t()}
+  def set_charset(emulator, charset) do
+    # For now, just return success
+    # This is a placeholder implementation
+    {:ok, emulator}
+  end
+
+  @doc """
   Updates the active buffer in the emulator.
   """
   @spec update_active_buffer(t(), ScreenBuffer.t()) :: t()
-  def update_active_buffer(emulator, buffer) do
-    %{emulator | active_buffer: buffer}
+  def update_active_buffer(emulator, new_buffer) do
+    case emulator.active_buffer_type do
+      :main ->
+        %{emulator | main_screen_buffer: new_buffer}
+      :alternate ->
+        %{emulator | alternate_screen_buffer: new_buffer}
+      _ ->
+        %{emulator | main_screen_buffer: new_buffer}
+    end
+  end
+
+  @doc """
+  Moves the cursor to the specified position.
+  """
+  @spec move_cursor(t(), integer(), integer()) :: t()
+  def move_cursor(emulator, x, y) do
+    x = max(0, min(x, emulator.width - 1))
+    y = max(0, min(y, emulator.height - 1))
+    %{emulator | cursor: %{emulator.cursor | position: {x, y}}}
   end
 
   # Private helper functions

@@ -90,6 +90,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate new(width, height, scrollback_limit \\ 1000), to: Initializer
 
   def resize(buffer, new_width, new_height) do
+    # Validate input dimensions
+    if new_width <= 0 or new_height <= 0 do
+      raise ArgumentError, "ScreenBuffer dimensions must be positive integers, got: #{new_width}x#{new_height}"
+    end
+
     # Create a new ScreenBuffer with the new dimensions
     default_cell = %Raxol.Terminal.Cell{
       char: " ",
@@ -103,19 +108,23 @@ defmodule Raxol.Terminal.ScreenBuffer do
       List.duplicate(List.duplicate(default_cell, new_width), new_height)
 
     # Copy existing content, truncating or padding as needed
+    # Handle case where buffer.cells might be nil or corrupted
+    cells = buffer.cells || []
+
     new_cells =
       Enum.reduce(0..min(buffer.height - 1, new_height - 1), new_cells, fn row,
                                                                            acc ->
+        row_data = Enum.at(cells, row, [])
+
         Enum.reduce(0..min(buffer.width - 1, new_width - 1), acc, fn col,
                                                                      row_acc ->
           existing_cell =
-            Enum.at(Enum.at(buffer.cells, row, []), col) || default_cell
+            Enum.at(row_data, col) || default_cell
 
-          List.replace_at(
-            row_acc,
-            row,
-            List.replace_at(Enum.at(row_acc, row), col, existing_cell)
-          )
+          current_row = Enum.at(row_acc, row, List.duplicate(default_cell, new_width))
+          updated_row = List.replace_at(current_row, col, existing_cell)
+
+          List.replace_at(row_acc, row, updated_row)
         end)
       end)
 

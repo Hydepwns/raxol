@@ -95,6 +95,30 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
+  def scroll_up(buffer, lines)
+      when list?(buffer) and is_integer(lines) and lines > 0 do
+    # Default cursor position to 0, 0 for backward compatibility
+    {new_buffer, _cursor_y, _cursor_x} = scroll_up(buffer, lines, 0, 0)
+    new_buffer
+  end
+
+  # Handle ScreenBuffer structs by extracting cells and calling the list version
+  def scroll_up(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
+      when is_integer(lines) and lines > 0 do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, _cursor_y, _cursor_x} = scroll_up(buffer.cells, lines, 0, 0)
+    %{buffer | cells: new_cells}
+  end
+
+  # Handle ScreenBuffer structs with cursor position
+  def scroll_up(%Raxol.Terminal.ScreenBuffer{} = buffer, lines, cursor_y, cursor_x)
+      when is_integer(lines) and lines > 0 and
+             is_integer(cursor_y) and is_integer(cursor_x) do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, new_cursor_y, new_cursor_x} = scroll_up(buffer.cells, lines, cursor_y, cursor_x)
+    {%{buffer | cells: new_cells}, new_cursor_y, new_cursor_x}
+  end
+
   @doc """
   Scrolls the buffer down by the specified number of lines.
   """
@@ -197,13 +221,20 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Erases characters in the current line based on the mode.
   """
   def erase_in_line(buffer, mode, cursor) do
-    {row, col} = Cursor.get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
 
-    case mode do
-      0 -> erase_from_cursor_to_line_end(buffer, row, col)
-      1 -> erase_from_line_start_to_cursor(buffer, row, col)
-      2 -> erase_entire_line(buffer, row)
-      _ -> buffer
+    cond do
+      is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
+        updated_cells = erase_in_line(buffer.cells, mode, cursor)
+        %{buffer | cells: updated_cells}
+      is_list(buffer) ->
+        case mode do
+          0 -> erase_from_cursor_to_line_end(buffer, row, col)
+          1 -> erase_from_line_start_to_cursor(buffer, row, col)
+          2 -> erase_entire_line(buffer, row)
+          _ -> buffer
+        end
+      true -> buffer
     end
   end
 
@@ -211,16 +242,28 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Erases characters in the display based on the mode.
   """
   def erase_in_display(buffer, mode, cursor) do
-    {row, col} = Cursor.get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
 
-    case mode do
-      0 -> erase_from_cursor_to_end(buffer, row, col)
-      1 -> erase_from_start_to_cursor(buffer, row, col)
-      2 -> erase_all(buffer)
-      3 -> erase_all_with_scrollback(buffer)
-      _ -> buffer
+    cond do
+      is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
+        updated_cells = erase_in_display(buffer.cells, mode, cursor)
+        %{buffer | cells: updated_cells}
+      is_list(buffer) ->
+        case mode do
+          0 -> erase_from_cursor_to_end(buffer, row, col)
+          1 -> erase_from_start_to_cursor(buffer, row, col)
+          2 -> erase_all(buffer)
+          3 -> erase_all_with_scrollback(buffer)
+          _ -> buffer
+        end
+      true -> buffer
     end
   end
+
+  # Helper to extract position from cursor struct or GenServer PID
+  defp get_cursor_position(%Raxol.Terminal.Cursor.Manager{} = cursor), do: cursor.position
+  defp get_cursor_position(pid) when is_pid(pid), do: Raxol.Terminal.Cursor.Manager.get_position(pid)
+  defp get_cursor_position(_), do: {0, 0}
 
   @doc """
   Writes a character to the buffer at the specified position.
@@ -300,18 +343,22 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Writes data to the buffer.
   """
   def write(buffer, data, opts \\ []) do
-    case data do
-      {x, y, char} when is_integer(x) and is_integer(y) and is_binary(char) ->
-        write_char_data(buffer, x, y, char, opts)
-
-      {x, y, string}
-      when is_integer(x) and is_integer(y) and is_binary(string) ->
-        write_string_data(buffer, x, y, string)
-
-      _ ->
-        buffer
+    case classify_data(data) do
+      {:char, x, y, char} -> write_char_data(buffer, x, y, char, opts)
+      {:string, x, y, string} -> write_string_data(buffer, x, y, string)
+      :unknown -> buffer
     end
   end
+
+  defp classify_data({x, y, char}) when is_integer(x) and is_integer(y) and is_binary(char) and byte_size(char) == 1 do
+    {:char, x, y, char}
+  end
+
+  defp classify_data({x, y, string}) when is_integer(x) and is_integer(y) and is_binary(string) and byte_size(string) > 1 do
+    {:string, x, y, string}
+  end
+
+  defp classify_data(_), do: :unknown
 
   defp write_char_data(buffer, x, y, char, opts) do
     Raxol.Terminal.Buffer.Writer.write_char(
@@ -366,17 +413,27 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Raxol.Terminal.Buffer.Content.get_content(buffer)
   end
 
-  def scroll_up(buffer, lines)
-      when list?(buffer) and is_integer(lines) and lines > 0 do
-    # Default cursor position to 0, 0 for backward compatibility
-    {new_buffer, _cursor_y, _cursor_x} = scroll_up(buffer, lines, 0, 0)
-    new_buffer
-  end
-
   def scroll_down(buffer, lines)
       when list?(buffer) and is_integer(lines) and lines > 0 do
     {new_buffer, _cursor_y, _cursor_x} = scroll_down(buffer, lines, 0, 0)
     new_buffer
+  end
+
+  # Handle ScreenBuffer structs by extracting cells and calling the list version
+  def scroll_down(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
+      when is_integer(lines) and lines > 0 do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, _cursor_y, _cursor_x} = scroll_down(buffer.cells, lines, 0, 0)
+    %{buffer | cells: new_cells}
+  end
+
+  # Handle ScreenBuffer structs with cursor position
+  def scroll_down(%Raxol.Terminal.ScreenBuffer{} = buffer, lines, cursor_y, cursor_x)
+      when is_integer(lines) and lines > 0 and
+             is_integer(cursor_y) and is_integer(cursor_x) do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, new_cursor_y, new_cursor_x} = scroll_down(buffer.cells, lines, cursor_y, cursor_x)
+    {%{buffer | cells: new_cells}, new_cursor_y, new_cursor_x}
   end
 
   # Private helper functions
@@ -426,8 +483,25 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           non_neg_integer()
         ) :: ScreenBuffer.t()
-  def erase_from_cursor_to_line_end(buffer, row, col) do
+  def erase_from_cursor_to_line_end(buffer, row, col) when is_struct(buffer, Raxol.Terminal.ScreenBuffer) do
     LineOperations.erase_chars(buffer, row, col, buffer.width - col)
+  end
+  def erase_from_cursor_to_line_end(buffer, row, col) when is_list(buffer) do
+    Enum.with_index(buffer)
+    |> Enum.map(fn {line, idx} ->
+      if idx == row do
+        map_cells_from_column(line, col)
+      else
+        line
+      end
+    end)
+  end
+
+  defp map_cells_from_column(line, col) do
+    Enum.with_index(line)
+    |> Enum.map(fn {cell, cell_col} ->
+      if cell_col >= col, do: Cell.new(), else: cell
+    end)
   end
 
   @doc """
@@ -454,8 +528,22 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           non_neg_integer()
         ) :: ScreenBuffer.t()
-  def erase_from_line_start_to_cursor(buffer, row, col) do
-    LineOperations.erase_chars(buffer, row, 0, col + 1)
+  def erase_from_line_start_to_cursor(buffer, row, col) when is_list(buffer) do
+    Enum.with_index(buffer)
+    |> Enum.map(fn {line, idx} ->
+      if idx == row do
+        map_cells_up_to_column(line, col)
+      else
+        line
+      end
+    end)
+  end
+
+  defp map_cells_up_to_column(line, col) do
+    Enum.with_index(line)
+    |> Enum.map(fn {cell, cell_col} ->
+      if cell_col <= col, do: Cell.new(), else: cell
+    end)
   end
 
   @doc """
@@ -478,8 +566,18 @@ defmodule Raxol.Terminal.Buffer.Operations do
   """
   @spec erase_entire_line(ScreenBuffer.t(), non_neg_integer()) ::
           ScreenBuffer.t()
-  def erase_entire_line(buffer, row) do
+  def erase_entire_line(buffer, row) when is_struct(buffer, Raxol.Terminal.ScreenBuffer) do
     LineOperations.erase_chars(buffer, row, 0, buffer.width)
+  end
+  def erase_entire_line(buffer, row) when is_list(buffer) do
+    Enum.with_index(buffer)
+    |> Enum.map(fn {line, idx} ->
+      if idx == row do
+        Enum.map(line, fn _ -> Cell.new() end)
+      else
+        line
+      end
+    end)
   end
 
   @doc """
@@ -581,28 +679,30 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Erases from the cursor position to the end of the display.
   """
-  defp erase_from_cursor_to_end(buffer, row, col) do
+  defp erase_from_cursor_to_end(buffer, row, col) when is_list(buffer) do
     buffer
     |> Enum.with_index()
-    |> Enum.map(fn {line, line_row} ->
-      cond do
-        line_row < row -> line
-        line_row == row -> erase_from_cursor_to_line_end(line, col)
-        true -> List.duplicate(Cell.new(), length(line))
-      end
-    end)
+    |> Enum.map(fn {line, line_row} -> process_line_for_cursor_end(line, line_row, row, col) end)
+  end
+
+  defp process_line_for_cursor_end(line, line_row, target_row, col) do
+    cond do
+      line_row < target_row -> line
+      line_row == target_row -> map_cells_from_column(line, col)
+      true -> List.duplicate(Cell.new(), length(line))
+    end
   end
 
   @doc """
   Erases from the start of the display to the cursor position.
   """
-  defp erase_from_start_to_cursor(buffer, row, col) do
+  defp erase_from_start_to_cursor(buffer, row, col) when is_list(buffer) do
     buffer
     |> Enum.with_index()
     |> Enum.map(fn {line, line_row} ->
       cond do
         line_row > row -> line
-        line_row == row -> erase_from_line_start_to_cursor(line, col)
+        line_row == row -> map_cells_up_to_column(line, col)
         true -> List.duplicate(Cell.new(), length(line))
       end
     end)
@@ -611,7 +711,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Erases the entire display.
   """
-  defp erase_all(buffer) do
+  defp erase_all(buffer) when is_list(buffer) do
     width = length(hd(buffer))
     List.duplicate(List.duplicate(Cell.new(), width), length(buffer))
   end
@@ -619,39 +719,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Erases the entire display including scrollback.
   """
-  defp erase_all_with_scrollback(buffer) do
+  defp erase_all_with_scrollback(buffer) when is_struct(buffer, Raxol.Terminal.ScreenBuffer) do
+    updated_cells = erase_all_with_scrollback(buffer.cells)
+    %{buffer | cells: updated_cells, scrollback: []}
+  end
+  defp erase_all_with_scrollback(buffer) when is_list(buffer) do
     width = length(hd(buffer))
     List.duplicate(List.duplicate(Cell.new(), width), length(buffer))
-  end
-
-  @doc """
-  Erases from the cursor position to the end of the line.
-  """
-  defp erase_from_cursor_to_line_end(line, col) do
-    line
-    |> Enum.with_index()
-    |> Enum.map(fn {cell, cell_col} ->
-      if cell_col >= col do
-        Cell.new()
-      else
-        cell
-      end
-    end)
-  end
-
-  @doc """
-  Erases from the start of the line to the cursor position.
-  """
-  defp erase_from_line_start_to_cursor(line, col) do
-    line
-    |> Enum.with_index()
-    |> Enum.map(fn {cell, cell_col} ->
-      if cell_col <= col do
-        Cell.new()
-      else
-        cell
-      end
-    end)
   end
 
   @doc """
@@ -719,17 +793,21 @@ defmodule Raxol.Terminal.Buffer.Operations do
     |> Enum.with_index()
     |> Enum.map(fn {row, row_y} ->
       if row_y >= y and row_y < y + height do
-        row
-        |> Enum.with_index()
-        |> Enum.map(fn {col_cell, col_x} ->
-          if col_x >= x and col_x < x + width do
-            cell
-          else
-            col_cell
-          end
-        end)
+        fill_row_region(row, x, width, cell)
       else
         row
+      end
+    end)
+  end
+
+  defp fill_row_region(row, x, width, cell) do
+    row
+    |> Enum.with_index()
+    |> Enum.map(fn {col_cell, col_x} ->
+      if col_x >= x and col_x < x + width do
+        cell
+      else
+        col_cell
       end
     end)
   end

@@ -116,9 +116,7 @@ defmodule Raxol.Terminal.Buffer.Selection do
         ) :: String.t()
   def get_text_in_region(buffer, start_x, start_y, end_x, end_y) do
     # Check if coordinates are out of bounds
-    if start_x >= buffer.width or end_x >= buffer.width or
-         start_y >= buffer.height or end_y >= buffer.height or
-         start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0 do
+    if out_of_bounds?(buffer, start_x, start_y, end_x, end_y) do
       ""
     else
       # Ensure start coordinates are less than or equal to end coordinates
@@ -129,24 +127,32 @@ defmodule Raxol.Terminal.Buffer.Selection do
       if start_x == end_x and start_y == end_y do
         ""
       else
-        # Get the text from each line in the region
-        text =
-          for y <- start_y..end_y do
-            line = Enum.at(buffer.cells, y) || []
-
-            chars =
-              for x <- start_x..end_x do
-                cell = Enum.at(line, x)
-                if cell, do: cell.char, else: " "
-              end
-
-            Enum.join(chars)
-          end
-
-        # Join all lines with newlines
-        Enum.join(text, "\n")
+        extract_region_text(buffer, start_x, start_y, end_x, end_y)
       end
     end
+  end
+
+  defp out_of_bounds?(buffer, start_x, start_y, end_x, end_y) do
+    start_x >= buffer.width or end_x >= buffer.width or
+      start_y >= buffer.height or end_y >= buffer.height or
+      start_x < 0 or start_y < 0 or end_x < 0 or end_y < 0
+  end
+
+  defp extract_region_text(buffer, start_x, start_y, end_x, end_y) do
+    text =
+      for y <- start_y..end_y do
+        line = Enum.at(buffer.cells, y) || []
+
+        chars =
+          for x <- start_x..end_x do
+            cell = Enum.at(line, x)
+            if cell, do: cell.char, else: " "
+          end
+
+        Enum.join(chars)
+      end
+
+    Enum.join(text, "\n")
   end
 
   @doc """

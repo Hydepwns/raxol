@@ -71,17 +71,17 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_init_arg) do
     {:ok, new()}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_mode, mode_name, value}, _from, state) do
     case set_mode(state, mode_name, value) do
       {:ok, new_state} -> {:reply, :ok, new_state}
@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:reset_mode, mode_name}, _from, state) do
     case reset_mode(state, mode_name) do
       {:ok, new_state} -> {:reply, :ok, new_state}
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_mode, mode_name}, _from, state) do
     value = mode_enabled?(state, mode_name)
     {:reply, value, state}

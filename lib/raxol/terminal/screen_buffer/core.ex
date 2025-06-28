@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
         }
 
   # --- Core Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def new(width, height, _scrollback \\ 1000) do
     %__MODULE__{
       cells: List.duplicate(List.duplicate(%{}, width), height),
@@ -90,11 +90,21 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
       cloud_state: Cloud.init(),
       theme_state: Theme.init(),
       csi_state: CSI.init(),
-      default_style: %{}
+      default_style: %{
+        foreground: nil,
+        background: nil,
+        bold: false,
+        italic: false,
+        underline: false,
+        blink: false,
+        reverse: false,
+        hidden: false,
+        strikethrough: false
+      }
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_char(buffer, x, y) do
     case get_in(buffer.cells, [y, x]) do
       %{char: char} -> char
@@ -102,12 +112,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     end
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_cell(buffer, x, y) do
     get_in(buffer.cells, [y, x]) || %{}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def write_char(buffer, x, y, char, style) do
     cell = %{char: char, style: style}
 
@@ -123,7 +133,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     end
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def write_string(buffer, x, y, string, style \\ nil) do
     string
     |> String.graphemes()
@@ -133,17 +143,17 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     end)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_dimensions(buffer) do
     {buffer.width, buffer.height}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_width(buffer) do
     buffer.width
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_height(buffer) do
     buffer.height
   end
@@ -322,7 +332,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   # --- Scroll Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_size(buffer) do
     {buffer.width, buffer.height}
   end
@@ -367,7 +377,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   # --- Charset Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def designate_charset(buffer, slot, charset) do
     %{
       buffer
@@ -375,27 +385,27 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def invoke_g_set(buffer, slot) do
     %{buffer | charset_state: Charset.invoke_g_set(buffer.charset_state, slot)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_current_g_set(buffer) do
     Charset.get_current_g_set(buffer.charset_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_designated_charset(buffer, slot) do
     Charset.get_designated(buffer.charset_state, slot)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def reset_state(buffer) do
     %{buffer | charset_state: Charset.reset(buffer.charset_state)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def apply_single_shift(buffer, slot) do
     %{
       buffer
@@ -403,18 +413,18 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_single_shift(buffer) do
     Charset.get_single_shift(buffer.charset_state)
   end
 
   # --- Formatting Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_style(buffer) do
     Formatting.get_style(buffer.formatting_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def update_style(buffer, style) do
     %{
       buffer
@@ -423,7 +433,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_attribute(buffer, attribute) do
     %{
       buffer
@@ -432,7 +442,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def reset_attribute(buffer, attribute) do
     %{
       buffer
@@ -441,7 +451,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_foreground(buffer, color) do
     %{
       buffer
@@ -450,7 +460,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_background(buffer, color) do
     %{
       buffer
@@ -459,73 +469,73 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def reset_all_attributes(buffer) do
     %{buffer | formatting_state: Formatting.reset_all(buffer.formatting_state)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_foreground(buffer) do
     Formatting.get_foreground(buffer.formatting_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_background(buffer) do
     Formatting.get_background(buffer.formatting_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def attribute_set?(buffer, attribute) do
     Formatting.attribute_set?(buffer.formatting_state, attribute)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_set_attributes(buffer) do
     Formatting.get_set_attributes(buffer.formatting_state)
   end
 
   # --- Terminal State Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_state_stack(buffer) do
     State.get_stack(buffer.terminal_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def update_state_stack(buffer, stack) do
     %{buffer | terminal_state: State.update_stack(buffer.terminal_state, stack)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def save_state(buffer) do
     %{buffer | terminal_state: State.save(buffer.terminal_state)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def restore_state(buffer) do
     %{buffer | terminal_state: State.restore(buffer.terminal_state)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def has_saved_states?(buffer) do
     State.has_saved_states?(buffer.terminal_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_saved_states_count(buffer) do
     State.get_saved_states_count(buffer.terminal_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def clear_saved_states(buffer) do
     %{buffer | terminal_state: State.clear_saved_states(buffer.terminal_state)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_current_state(buffer) do
     State.get_current(buffer.terminal_state)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def update_current_state(buffer, state) do
     %{
       buffer
@@ -534,27 +544,27 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   # --- Output Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def write(buffer, data) do
     %{buffer | output_buffer: Output.write(buffer.output_buffer, data)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def flush_output(buffer) do
     %{buffer | output_buffer: Output.flush(buffer.output_buffer)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def clear_output_buffer(buffer) do
     %{buffer | output_buffer: Output.clear(buffer.output_buffer)}
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_output_buffer(buffer) do
     buffer.output_buffer
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def enqueue_control_sequence(buffer, sequence) do
     %{
       buffer
@@ -564,28 +574,28 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   # --- Cell Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def empty?(cell) when is_map(cell) do
     is_nil(cell.char) or cell.char == " "
   end
 
   # --- Metrics Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_metric_value(buffer, metric) do
     Metrics.get_value(buffer.metrics_state, metric)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def verify_metrics(buffer, metrics) do
     Metrics.verify(buffer.metrics_state, metrics)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def collect_metrics(buffer, metrics) do
     Metrics.collect(buffer.metrics_state, metrics)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def record_performance(buffer, metric, value) do
     %{
       buffer
@@ -594,7 +604,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def record_operation(buffer, operation, value) do
     %{
       buffer
@@ -603,7 +613,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def record_resource(buffer, resource, value) do
     %{
       buffer
@@ -612,12 +622,12 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_metrics_by_type(buffer, type) do
     Metrics.get_by_type(buffer.metrics_state, type)
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def record_metric(buffer, metric, value, tags) do
     %{
       buffer
@@ -625,13 +635,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_metric(buffer, metric, tags) do
     Metrics.get(buffer.metrics_state, metric, tags)
   end
 
   # --- File Watcher Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def handle_file_event(buffer, event) do
     %{
       buffer
@@ -640,7 +650,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def handle_debounced_events(buffer, events, timeout) do
     %{
       buffer
@@ -653,7 +663,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def cleanup_file_watching(buffer) do
     %{
       buffer
@@ -662,19 +672,19 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   # --- Screen Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def clear_screen(buffer) do
     %{buffer | screen_state: Screen.clear(buffer.screen_state)}
   end
 
   # --- Mode Handler Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def handle_mode(buffer, mode, value) do
     %{buffer | mode_state: Mode.handle(buffer.mode_state, mode, value)}
   end
 
   # --- Visualizer Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def create_chart(buffer, data, options) do
     %{
       buffer
@@ -684,46 +694,46 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   # --- User Preferences Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_preferences do
     Preferences.get()
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_preferences(preferences) do
     Preferences.set(preferences)
   end
 
   # --- System Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_update_settings do
     System.get_update_settings()
   end
 
   # --- Cloud Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_config do
     Cloud.get_config()
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_config(config) do
     Cloud.set_config(config)
   end
 
   # --- Theme Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def current_theme do
     Theme.current()
   end
 
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def light_theme do
     Theme.light()
   end
 
   # --- CSI Handler Operations ---
-  @impl true
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def handle_csi_sequence(buffer, sequence, params) do
     %{
       buffer

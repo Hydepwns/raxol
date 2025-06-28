@@ -4,8 +4,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
   """
 
   import Raxol.Guards
-  alias Raxol.Terminal.Emulator, as: Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.BufferManager
 
   @command_map %{
     ?A => {__MODULE__, :handle_cuu},
@@ -38,8 +39,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cuu(emulator, params) do
     lines = get_valid_non_neg_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_up(emulator, lines, width, height)
   end
 
@@ -48,8 +50,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cud(emulator, params) do
     lines = get_valid_non_neg_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_down(emulator, lines, width, height)
   end
 
@@ -58,8 +61,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cuf(emulator, params) do
     cols = get_valid_non_neg_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_right(emulator, cols, width, height)
   end
 
@@ -68,8 +72,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cub(emulator, params) do
     cols = get_valid_non_neg_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_left(emulator, cols, width, height)
   end
 
@@ -78,8 +83,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cnl(emulator, params) do
     lines = get_valid_non_neg_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_down(emulator, lines, width, height)
     Emulator.move_cursor_to_line_start(emulator)
   end
@@ -89,8 +95,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cpl(emulator, params) do
     lines = get_valid_non_neg_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_up(emulator, lines, width, height)
     Emulator.move_cursor_to_line_start(emulator)
   end
@@ -100,8 +107,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cha(emulator, params) do
     col = get_valid_pos_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_to_column(emulator, col - 1, width, height)
   end
 
@@ -111,8 +119,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
   def handle_cup(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
     col = get_valid_pos_param(params, 1, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_to(emulator, {col - 1, row - 1}, width, height)
   end
 
@@ -121,8 +130,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_hpa(emulator, params) do
     col = get_valid_pos_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_to_column(emulator, col - 1, width, height)
   end
 
@@ -131,8 +141,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_vpa(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     {current_x, _} = Emulator.get_cursor_position(emulator)
     Emulator.move_cursor_to(emulator, {current_x, row - 1}, width, height)
   end
@@ -142,8 +153,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_hpr(emulator, params) do
     cols = get_valid_non_neg_param(params, 0, 1)
-    width = ScreenBuffer.get_width(emulator.active_buffer)
-    height = ScreenBuffer.get_height(emulator.active_buffer)
+    active_buffer = BufferManager.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
     Emulator.move_cursor_right(emulator, cols, width, height)
   end
 

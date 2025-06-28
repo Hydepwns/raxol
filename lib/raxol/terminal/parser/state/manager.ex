@@ -17,7 +17,13 @@ defmodule Raxol.Terminal.Parser.State.Manager do
     :string_buffer,
     :string_terminator,
     :string_flags,
-    :string_parser_state
+    :string_parser_state,
+    :params_buffer,
+    :intermediates_buffer,
+    :payload_buffer,
+    :final_byte,
+    :designating_gset,
+    :single_shift
   ]
 
   @type parser_state ::
@@ -90,7 +96,13 @@ defmodule Raxol.Terminal.Parser.State.Manager do
       string_buffer: "",
       string_terminator: nil,
       string_flags: %{},
-      string_parser_state: nil
+      string_parser_state: nil,
+      params_buffer: "",
+      intermediates_buffer: "",
+      payload_buffer: "",
+      final_byte: nil,
+      designating_gset: nil,
+      single_shift: nil
     }
   end
 
@@ -98,23 +110,8 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   Processes a single character and updates the parser state accordingly.
   """
   def process_char(%__MODULE__{} = manager, char) when is_integer(char) do
-    case manager.state do
-      :ground -> process_ground_state(manager, char)
-      :escape -> process_escape_state(manager, char)
-      :csi_entry -> process_csi_entry_state(manager, char)
-      :csi_param -> process_csi_param_state(manager, char)
-      :csi_intermediate -> process_csi_intermediate_state(manager, char)
-      :csi_ignore -> process_csi_ignore_state(manager, char)
-      :osc_string -> process_osc_string_state(manager, char)
-      :dcs_entry -> process_dcs_entry_state(manager, char)
-      :dcs_param -> process_dcs_param_state(manager, char)
-      :dcs_intermediate -> process_dcs_intermediate_state(manager, char)
-      :dcs_passthrough -> process_dcs_passthrough_state(manager, char)
-      :apc_string -> process_apc_string_state(manager, char)
-      :pm_string -> process_pm_string_state(manager, char)
-      :sos_string -> process_sos_string_state(manager, char)
-      :string -> process_string_state(manager, char)
-    end
+    handler = Map.get(state_handlers(), manager.state, &process_ground_state/2)
+    handler.(manager, char)
   end
 
   # State processing functions
@@ -537,53 +534,159 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   end
 
   # Functions expected by tests
-  def transition_to(manager, new_state) do
-    case new_state do
-      :csi_entry ->
-        %{manager | state: :csi_entry, params: [], intermediate: []}
-
-      :csi_param ->
-        %{manager | state: :csi_param, params: [], intermediate: []}
-
-      :csi_intermediate ->
-        %{manager | state: :csi_intermediate, params: [], intermediate: []}
-
-      :escape ->
-        %{manager | state: :escape, intermediate: []}
-
-      _ ->
-        %{manager | state: new_state}
-    end
-  end
-
-  def append_param(manager, param) do
-    params = manager.params ++ [String.to_integer(param)]
-    %{manager | params: params}
-  end
-
-  def append_intermediate(manager, intermediate) do
-    intermediates = manager.intermediate ++ [String.to_integer(intermediate)]
-    %{manager | intermediate: intermediates}
-  end
-
-  def append_payload(manager, payload) do
-    %{manager | string_buffer: manager.string_buffer <> payload}
-  end
-
-  def set_final_byte(manager, byte) do
-    %{manager | string_terminator: byte}
-  end
-
-  def set_designating_gset(manager, gset) do
-    %{manager | string_flags: Map.put(manager.string_flags, "gset", gset)}
-  end
-
   def get_current_state(manager) do
     manager
   end
 
-  def process_input(_emulator, state, _input) do
-    # For test purposes, just return the state
-    state
+  def set_state(_manager, new_state) do
+    new_state
+  end
+
+  def transition_to(manager, new_state) do
+    case new_state do
+      :csi_entry ->
+        %{manager | state: :csi_entry, params_buffer: "", intermediates_buffer: ""}
+
+      :osc_string ->
+        %{manager | state: :osc_string, payload_buffer: ""}
+
+      :dcs_entry ->
+        %{manager | state: :dcs_entry, params_buffer: "", intermediates_buffer: "", payload_buffer: ""}
+
+      _ ->
+        %{manager | state: :ground}
+    end
+  end
+
+  def append_param(manager, param) do
+    %{manager | params_buffer: manager.params_buffer <> param}
+  end
+
+  def append_intermediate(manager, intermediate) do
+    append =
+      cond do
+        is_integer(intermediate) -> <<intermediate>>
+        is_binary(intermediate) -> intermediate
+        is_list(intermediate) and length(intermediate) == 1 -> <<hd(intermediate)>>
+        is_list(intermediate) -> to_string(intermediate)
+        true -> ""
+      end
+    %{manager | intermediates_buffer: manager.intermediates_buffer <> append}
+  end
+
+  def append_payload(manager, payload) do
+    %{manager | payload_buffer: manager.payload_buffer <> payload}
+  end
+
+  def set_final_byte(manager, byte) do
+    %{manager | final_byte: byte}
+  end
+
+  def set_designating_gset(manager, gset) do
+    %{manager | designating_gset: gset}
+  end
+
+  def reset(manager) do
+    %{
+      manager
+      | state: :ground,
+        params_buffer: "",
+        intermediates_buffer: "",
+        payload_buffer: "",
+        final_byte: nil,
+        designating_gset: nil,
+        single_shift: nil
+    }
+  end
+
+  def process_input(emulator, state, input) do
+    case state.state do
+      :ground -> handle_ground_state(emulator, state, input)
+      :escape -> handle_escape_state(emulator, state, input)
+      _ -> {:continue, emulator, %{state | state: :ground}, input}
+    end
+  end
+
+  defp handle_ground_state(emulator, state, input) do
+    case input do
+      <<142, next::binary>> ->  # C1 SS2 (0x8E)
+        if byte_size(next) > 0 do
+          <<_char, rest::binary>> = next
+          {:continue, emulator, %{state | single_shift: nil}, rest}
+        else
+          {:continue, emulator, %{state | single_shift: :ss2}, next}
+        end
+      <<143, next::binary>> ->  # C1 SS3 (0x8F)
+        if byte_size(next) > 0 do
+          <<_char, rest::binary>> = next
+          {:continue, emulator, %{state | single_shift: nil}, rest}
+        else
+          {:continue, emulator, %{state | single_shift: :ss3}, next}
+        end
+      _ ->
+        cond do
+          state.single_shift != nil and byte_size(input) > 0 ->
+            <<_char, rest::binary>> = input
+            {:continue, emulator, %{state | single_shift: nil}, rest}
+          state.single_shift != nil and byte_size(input) == 0 ->
+            {:continue, emulator, %{state | single_shift: nil}, input}
+          true ->
+            {:continue, emulator, state, input}
+        end
+    end
+  end
+
+  defp handle_escape_state(emulator, state, input) do
+    case input do
+      <<27, 91, rest::binary>> ->  # ESC [ (CSI) as two bytes
+        {:continue, emulator, %{state | state: :csi_entry}, rest}
+      <<78, next::binary>> ->  # ESC N (SS2)
+        if byte_size(next) > 0 do
+          <<_char, rest::binary>> = next
+          {:continue, emulator, %{state | single_shift: nil}, rest}
+        else
+          {:continue, emulator, %{state | single_shift: :ss2}, next}
+        end
+      <<79, next::binary>> ->  # ESC O (SS3)
+        if byte_size(next) > 0 do
+          <<_char, rest::binary>> = next
+          {:continue, emulator, %{state | single_shift: nil}, rest}
+        else
+          {:continue, emulator, %{state | single_shift: :ss3}, next}
+        end
+      <<91, rest::binary>> ->  # ESC [ (CSI)
+        {:continue, emulator, %{state | state: :csi_entry}, rest}
+      _ ->
+        cond do
+          state.single_shift != nil and byte_size(input) > 0 ->
+            <<_char, rest::binary>> = input
+            {:continue, emulator, %{state | state: :ground, single_shift: nil}, rest}
+          state.single_shift != nil and byte_size(input) == 0 ->
+            {:continue, emulator, %{state | state: :ground, single_shift: nil}, input}
+          true ->
+            {:continue, emulator, %{state | state: :ground}, input}
+        end
+    end
+  end
+
+  # State handlers map - defined after all functions
+  defp state_handlers do
+    %{
+      ground: &process_ground_state/2,
+      escape: &process_escape_state/2,
+      csi_entry: &process_csi_entry_state/2,
+      csi_param: &process_csi_param_state/2,
+      csi_intermediate: &process_csi_intermediate_state/2,
+      csi_ignore: &process_csi_ignore_state/2,
+      osc_string: &process_osc_string_state/2,
+      dcs_entry: &process_dcs_entry_state/2,
+      dcs_param: &process_dcs_param_state/2,
+      dcs_intermediate: &process_dcs_intermediate_state/2,
+      dcs_passthrough: &process_dcs_passthrough_state/2,
+      apc_string: &process_apc_string_state/2,
+      pm_string: &process_pm_string_state/2,
+      sos_string: &process_sos_string_state/2,
+      string: &process_string_state/2
+    }
   end
 end

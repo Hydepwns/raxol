@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Cell do
       %{foreground: :red}
   """
   @spec new(String.t() | nil, TextFormatting.text_style() | nil) :: t()
-  def new(char \\ " ", style \\ %{}) do
+  def new(char \\ " ", style \\ TextFormatting.new()) do
     %__MODULE__{
       char: char || " ",
       style: style,
@@ -139,21 +139,35 @@ defmodule Raxol.Terminal.Cell do
       %{bold: true, underline: true} # Note: :bold remains, :underline added
   """
   def merge_style(%__MODULE__{} = cell, style_to_merge)
-      when map?(style_to_merge) do
+      when is_struct(style_to_merge, TextFormatting) do
     default_style = TextFormatting.new()
+
+    # Convert both styles to maps for easier manipulation
+    cell_style_map = Map.from_struct(cell.style)
+    merge_style_map = Map.from_struct(style_to_merge)
+    default_style_map = Map.from_struct(default_style)
 
     # Iterate through the style map we want to merge in.
     # Only apply the attribute if its value is different from the default.
-    final_style =
-      Enum.reduce(style_to_merge, cell.style, fn {key, value}, acc_style ->
-        if Map.get(default_style, key) != value do
+    final_style_map =
+      Enum.reduce(merge_style_map, cell_style_map, fn {key, value}, acc_style ->
+        if Map.get(default_style_map, key) != value do
           Map.put(acc_style, key, value)
         else
           acc_style
         end
       end)
 
+    # Convert back to TextFormatting struct
+    final_style = struct(TextFormatting, final_style_map)
     %{cell | style: final_style}
+  end
+
+  def merge_style(%__MODULE__{} = cell, style_to_merge)
+      when map?(style_to_merge) do
+    # Handle plain maps by converting to TextFormatting struct first
+    style_struct = struct(TextFormatting, style_to_merge)
+    merge_style(cell, style_struct)
   end
 
   @doc """
@@ -166,7 +180,7 @@ defmodule Raxol.Terminal.Cell do
       true
   """
   def has_attribute?(%__MODULE__{style: style}, attribute) do
-    Map.get(style, attribute, false)
+    Map.get(Map.from_struct(style), attribute, false)
   end
 
   @doc """
@@ -179,7 +193,7 @@ defmodule Raxol.Terminal.Cell do
       false
   """
   def has_decoration?(%__MODULE__{style: style}, decoration) do
-    Map.get(style, decoration, false)
+    Map.get(Map.from_struct(style), decoration, false)
   end
 
   @doc """
@@ -219,8 +233,8 @@ defmodule Raxol.Terminal.Cell do
       false
   """
   @spec empty?(t()) :: boolean()
-  def empty?(%__MODULE__{char: char}) do
-    char == nil or char == " " or char == ""
+  def empty?(%__MODULE__{char: char, style: style}) do
+    (char == nil or char == "" or char == " ") and style == TextFormatting.new()
   end
 
   @doc """
@@ -291,7 +305,9 @@ defmodule Raxol.Terminal.Cell do
   def copy(%__MODULE__{} = cell) do
     %__MODULE__{
       char: cell.char,
-      style: Map.new(cell.style)
+      style: cell.style,
+      dirty: cell.dirty,
+      wide_placeholder: cell.wide_placeholder
     }
   end
 
