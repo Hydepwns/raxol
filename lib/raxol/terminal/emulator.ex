@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.Emulator do
     command_pid = get_pid(Raxol.Terminal.Command.Manager.start_link(opts))
     cursor_pid = get_pid(Raxol.Terminal.Cursor.Manager.start_link(opts))
     window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link(opts))
-    mode_manager_pid = get_pid(Raxol.Terminal.ModeManager.start_link(opts))
+    mode_manager = Raxol.Terminal.ModeManager.new()
 
     # Initialize screen buffers
     main_buffer = ScreenBuffer.new(width, height)
@@ -225,7 +225,7 @@ defmodule Raxol.Terminal.Emulator do
       command: command_pid,
       cursor: cursor_pid,
       window_manager: window_manager_pid,
-      mode_manager: mode_manager_pid,
+      mode_manager: mode_manager,
       active_buffer_type: :main,
       main_screen_buffer: main_buffer,
       alternate_screen_buffer: alternate_buffer,
@@ -554,33 +554,8 @@ defmodule Raxol.Terminal.Emulator do
 
   def parse_unknown(_), do: nil
 
-  defp ansi_parsers do
-    [
-      &parse_osc/1,
-      &parse_dcs/1,
-      &parse_csi_cursor_pos/1,
-      &parse_csi_cursor_up/1,
-      &parse_csi_cursor_down/1,
-      &parse_csi_cursor_forward/1,
-      &parse_csi_cursor_back/1,
-      &parse_csi_cursor_show/1,
-      &parse_csi_cursor_hide/1,
-      &parse_csi_clear_screen/1,
-      &parse_csi_clear_line/1,
-      &parse_csi_set_mode/1,
-      &parse_csi_reset_mode/1,
-      &parse_csi_set_standard_mode/1,
-      &parse_csi_reset_standard_mode/1,
-      &parse_esc_equals/1,
-      &parse_esc_greater/1,
-      &parse_sgr/1,
-      &parse_unknown/1
-    ]
-  end
-
-  defp find_matching_parser(rest) do
-    Enum.find_value(ansi_parsers(), & &1.(rest))
-  end
+  # Move the @ansi_parsers list and related functions to after all parse functions are defined
+  # This will be moved to the end of the file
 
   defp handle_cursor_position(params, emulator) do
     case String.split(params, ";") do
@@ -641,9 +616,9 @@ defmodule Raxol.Terminal.Emulator do
   defp set_cursor_visible(visible, emulator) do
     mode_manager = emulator.mode_manager
 
-    if pid?(mode_manager) do
-      GenServer.call(mode_manager, {:set_cursor_visible, visible})
-    end
+    # Update the mode manager struct directly
+    new_mode_manager = %{mode_manager | cursor_visible: visible}
+    emulator = %{emulator | mode_manager: new_mode_manager}
 
     # Also update the cursor manager
     cursor = emulator.cursor
@@ -764,18 +739,28 @@ defmodule Raxol.Terminal.Emulator do
   defp set_mode_in_manager(emulator, mode_name, value) do
     mode_manager = emulator.mode_manager
 
-    if pid?(mode_manager) do
-      if value do
-        GenServer.call(mode_manager, {:set_mode, mode_name, true})
-      else
-        GenServer.call(mode_manager, {:reset_mode, mode_name})
-      end
-    end
+    # Update the mode manager struct directly
+    new_mode_manager = update_mode_manager_state(mode_manager, mode_name, value)
+    emulator = %{emulator | mode_manager: new_mode_manager}
 
     # Handle screen buffer switching
     emulator = handle_screen_buffer_switch(emulator, mode_name, value)
 
     emulator
+  end
+
+  defp update_mode_manager_state(mode_manager, mode_name, value) do
+    case get_mode_update_function(mode_name, value) do
+      {:ok, update_fn} -> update_fn.(mode_manager)
+      :error -> mode_manager
+    end
+  end
+
+  defp get_mode_update_function(mode_name, value) do
+    case Map.fetch(mode_updates(), mode_name) do
+      {:ok, update_fn} -> {:ok, fn mode_manager -> update_fn.(mode_manager, value) end}
+      :error -> :error
+    end
   end
 
   defp handle_screen_buffer_switch(emulator, :alt_screen_buffer, true) do
@@ -960,9 +945,8 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   @spec get_mode_manager_struct(t()) :: any()
-  def get_mode_manager_struct(%__MODULE__{mode_manager: pid})
-      when pid?(pid) do
-    GenServer.call(pid, :get_state)
+  def get_mode_manager_struct(%__MODULE__{mode_manager: mode_manager}) do
+    mode_manager
   end
 
   # Override the delegate functions to handle PIDs properly
@@ -1100,9 +1084,8 @@ defmodule Raxol.Terminal.Emulator do
   Sets a terminal mode using the mode manager.
   """
   @spec set_mode(t(), atom()) :: t()
-  def set_mode(%__MODULE__{mode_manager: pid} = emulator, mode)
-      when pid do
-    Raxol.Terminal.ModeManager.set_mode(pid, [mode])
+  def set_mode(%__MODULE__{} = emulator, mode) do
+    Raxol.Terminal.ModeManager.set_mode(emulator, [mode])
     emulator
   end
 
@@ -1112,10 +1095,7 @@ defmodule Raxol.Terminal.Emulator do
     get_cursor_struct(emulator)
   end
 
-  def get_mode_manager_struct_for_test(
-        %__MODULE__{mode_manager: pid} = emulator
-      )
-      when pid?(pid) do
+  def get_mode_manager_struct_for_test(%__MODULE__{} = emulator) do
     get_mode_manager_struct(emulator)
   end
 
@@ -1132,8 +1112,7 @@ defmodule Raxol.Terminal.Emulator do
     cursor.visible
   end
 
-  def get_mode_manager_cursor_visible(%__MODULE__{mode_manager: pid} = emulator)
-      when pid?(pid) do
+  def get_mode_manager_cursor_visible(%__MODULE__{} = emulator) do
     mode_manager = get_mode_manager_struct(emulator)
     mode_manager.cursor_visible
   end
@@ -1222,7 +1201,23 @@ defmodule Raxol.Terminal.Emulator do
   defp handle_text_input(input, emulator) do
     # If input contains only printable characters and no ANSI sequences, write it to buffer
     if printable_text?(input) do
-      write_text_at_cursor(emulator, input)
+      # Check if input contains newline (command completion)
+      if String.contains?(input, "\n") do
+        # Split by newline to handle multiple commands
+        [command | _] = String.split(input, "\n", parts: 2)
+
+        # Only add non-empty commands to history
+        if String.trim(command) != "" do
+          # Add command to history via command manager
+          Raxol.Terminal.Command.Manager.add_to_history(emulator.command, command)
+        end
+
+        # Write the text to buffer (including newline)
+        write_text_at_cursor(emulator, input)
+      else
+        # Just write text to buffer
+        write_text_at_cursor(emulator, input)
+      end
     else
       emulator
     end
@@ -1241,7 +1236,56 @@ defmodule Raxol.Terminal.Emulator do
       <<code::utf8>> when code >= 32 and code <= 126 -> true
       # Extended ASCII and Unicode
       <<code::utf8>> when code >= 160 -> true
+      # Allow newline character for command input
+      <<10::utf8>> -> true
       _ -> false
     end
+  end
+
+  defp find_matching_parser(rest) do
+    Enum.find_value(ansi_parsers(), & &1.(rest))
+  end
+
+  defp ansi_parsers do
+    [
+      &parse_osc/1,
+      &parse_dcs/1,
+      &parse_csi_cursor_pos/1,
+      &parse_csi_cursor_up/1,
+      &parse_csi_cursor_down/1,
+      &parse_csi_cursor_forward/1,
+      &parse_csi_cursor_back/1,
+      &parse_csi_cursor_show/1,
+      &parse_csi_cursor_hide/1,
+      &parse_csi_clear_screen/1,
+      &parse_csi_clear_line/1,
+      &parse_csi_set_mode/1,
+      &parse_csi_reset_mode/1,
+      &parse_csi_set_standard_mode/1,
+      &parse_csi_reset_standard_mode/1,
+      &parse_esc_equals/1,
+      &parse_esc_greater/1,
+      &parse_sgr/1,
+      &parse_unknown/1
+    ]
+  end
+
+  defp mode_updates do
+    %{
+      irm: &%{&1 | insert_mode: &2},
+      lnm: &%{&1 | line_feed_mode: &2},
+      decom: &%{&1 | origin_mode: &2},
+      decawm: &%{&1 | auto_wrap: &2},
+      dectcem: &%{&1 | cursor_visible: &2},
+      decscnm: &%{&1 | screen_mode_reverse: &2},
+      decarm: &%{&1 | auto_repeat_mode: &2},
+      decinlm: &%{&1 | interlacing_mode: &2},
+      bracketed_paste: &%{&1 | bracketed_paste_mode: &2},
+      decckm: &%{&1 | cursor_keys_mode: if(&2, do: :application, else: :normal)},
+      deccolm_132: &%{&1 | column_width_mode: if(&2, do: :wide, else: :normal)},
+      deccolm_80: &%{&1 | column_width_mode: if(&2, do: :normal, else: :wide)},
+      dec_alt_screen: &%{&1 | alternate_buffer_active: &2},
+      alt_screen_buffer: &%{&1 | alternate_buffer_active: &2}
+    }
   end
 end

@@ -27,18 +27,18 @@ defmodule Raxol.Terminal.Input.Buffer do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     max_size = Keyword.get(opts, :max_size, 1024)
     {:ok, new(max_size)}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:add_event, event}, state) do
     case add(state, event) do
       {:ok, new_state} -> {:noreply, new_state}
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Input.Buffer do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(_msg, state) do
     {:noreply, state}
   end

@@ -192,11 +192,9 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
            text: ""
          }}
 
-      cancel_byte?(byte) ->
-        {:continue, %{state | state: :ground}}
-
-      true ->
-        {:error, %{state | state: :ground}, :invalid_csi_sequence}
+      cancel_byte?(byte) or true ->
+        # On cancel or error, reset buffers
+        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
@@ -215,11 +213,9 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
       final_byte?(byte) ->
         emit_csi_sequence(state, byte)
 
-      cancel_byte?(byte) ->
-        {:continue, %{state | state: :ground}}
-
-      true ->
-        {:error, %{state | state: :ground}, :invalid_csi_sequence}
+      cancel_byte?(byte) or true ->
+        # On cancel or error, reset buffers
+        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
@@ -232,11 +228,9 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
       final_byte?(byte) ->
         emit_csi_sequence(state, byte)
 
-      cancel_byte?(byte) ->
-        {:continue, %{state | state: :ground}}
-
-      true ->
-        {:error, %{state | state: :ground}, :invalid_csi_sequence}
+      cancel_byte?(byte) or true ->
+        # On cancel or error, reset buffers
+        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 

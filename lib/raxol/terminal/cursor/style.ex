@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   alias Raxol.Terminal.Cursor.Manager
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Sets the cursor style to block.
 
@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | style: :block}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Sets the cursor style to underline.
 
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | style: :underline}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Sets the cursor style to bar.
 
@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | style: :bar}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Sets a custom cursor shape.
 
@@ -108,7 +108,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     }
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Makes the cursor visible.
 
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | visible: true, state: :visible}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Hides the cursor.
 
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | visible: false, state: :hidden}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Makes the cursor blink.
 
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | blinking: true, blink: true, state: :blinking}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Sets the cursor blink rate in milliseconds.
 
@@ -174,7 +174,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     %{cursor | blink_rate: rate}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Updates the cursor blink state and returns the updated cursor and visibility.
 
@@ -193,7 +193,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     {new_cursor, new_blink_state}
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Toggles the cursor visibility.
 
@@ -216,7 +216,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     end
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Toggles the cursor blinking state.
 
@@ -238,7 +238,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     end
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Gets the current cursor style.
 
@@ -253,7 +253,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     cursor.style
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Gets the current cursor state.
 
@@ -268,7 +268,7 @@ defmodule Raxol.Terminal.Cursor.Style do
     cursor.state
   end
 
-  @impl true
+  @impl Raxol.Terminal.Cursor.Style
   @doc """
   Gets the current cursor blink mode.
 

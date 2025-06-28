@@ -100,7 +100,16 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   def handle_highlight_foreground_color(emulator, _data), do: {:ok, emulator}
   def handle_mouse_background_color(emulator, _data), do: {:ok, emulator}
 
-  def handle_window_fullscreen(emulator), do: {:ok, emulator}
-  def handle_window_maximize(emulator), do: {:ok, emulator}
-  def handle_window_size(emulator, _width, _height), do: {:ok, emulator}
+  def handle_window_fullscreen(emulator) do
+    updated_window_manager = %{emulator.window_manager | state: :fullscreen}
+    {:ok, %{emulator | window_manager: updated_window_manager}}
+  end
+  def handle_window_maximize(emulator) do
+    updated_window_manager = %{emulator.window_manager | state: :maximized}
+    {:ok, %{emulator | window_manager: updated_window_manager}}
+  end
+  def handle_window_size(emulator, width, height) do
+    updated_window_manager = %{emulator.window_manager | size: {width, height}}
+    {:ok, %{emulator | window_manager: updated_window_manager}}
+  end
 end

@@ -30,7 +30,9 @@ defmodule Raxol.Terminal.Window.Manager do
       icon_name: "",
       icon_title: "",
       windows: %{},
-      active_window: nil
+      active_window: nil,
+      state: :normal,
+      size: {80, 24}
     }
   end
 

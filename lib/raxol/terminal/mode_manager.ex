@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.ModeManager do
   emulator state (like screen buffer switching or resizing).
   """
 
-  use GenServer
   require Logger
 
   require Raxol.Core.Runtime.Log
@@ -83,65 +82,6 @@ defmodule Raxol.Terminal.ModeManager do
 
   @type t :: %__MODULE__{}
 
-  def start_link(init_arg) do
-    GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
-  end
-
-  def init(_init_arg) do
-    {:ok, ModeStateManager.new()}
-  end
-
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
-  end
-
-  def handle_call({:set_mode, mode_name, value}, _from, state) do
-    case ModeStateManager.set_mode(state, mode_name, value) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
-  end
-
-  def handle_call({:reset_mode, mode_name}, _from, state) do
-    case ModeStateManager.reset_mode(state, mode_name) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
-  end
-
-  def handle_call({:get_mode, mode_name}, _from, state) do
-    value = ModeStateManager.mode_enabled?(state, mode_name)
-    {:reply, value, state}
-  end
-
-  def handle_call({:set_cursor_visible, visible}, _from, state) do
-    case ModeStateManager.set_mode(state, :dectcem, visible) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
-  end
-
-  def handle_call(:save_state, _from, state) do
-    {:reply, :ok, state}
-  end
-
-  def handle_call(:restore_state, _from, state) do
-    {:reply, :ok, state}
-  end
-
-  def handle_info(:tick, state) do
-    {:noreply, state}
-  end
-
-  def terminate(reason, _state) do
-    Raxol.Core.Runtime.Log.info(
-      "[#{__MODULE__}] Terminating (Reason: #{inspect(reason)})",
-      %{module: __MODULE__, reason: reason}
-    )
-
-    :ok
-  end
-
   # --- Mode Lookup ---
 
   @doc """
@@ -203,7 +143,23 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec mode_enabled?(t(), mode()) :: boolean()
   def mode_enabled?(state, mode) do
-    ModeStateManager.mode_enabled?(state, mode)
+    case mode do
+      :irm -> state.insert_mode
+      :lnm -> state.line_feed_mode
+      :decom -> state.origin_mode
+      :decawm -> state.auto_wrap
+      :dectcem -> state.cursor_visible
+      :decscnm -> state.screen_mode_reverse
+      :decarm -> state.auto_repeat_mode
+      :decinlm -> state.interlacing_mode
+      :bracketed_paste -> state.bracketed_paste_mode
+      :decckm -> state.cursor_keys_mode == :application
+      :deccolm_132 -> state.column_width_mode == :wide
+      :deccolm_80 -> state.column_width_mode == :normal
+      :dec_alt_screen -> state.alternate_buffer_active
+      :alt_screen_buffer -> state.alternate_buffer_active
+      _ -> false
+    end
   end
 
   @doc """
@@ -226,19 +182,17 @@ defmodule Raxol.Terminal.ModeManager do
 
   defp do_set_mode(mode_name, emulator) do
     with {:ok, mode_def} <- find_mode_definition(mode_name),
-         {:ok, new_state} <-
-           ModeStateManager.set_mode(emulator.mode_manager, mode_name, true),
-         {:ok, new_emu} <- apply_mode_effects(mode_def, emulator) do
-      {:ok, %{new_emu | mode_manager: new_state}}
+         {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, true) do
+      new_mode_manager = update_mode_manager_state(emulator.mode_manager, mode_name, true)
+      {:ok, %{new_emu | mode_manager: new_mode_manager}}
     end
   end
 
   defp do_reset_mode(mode_name, emulator) do
     with {:ok, mode_def} <- find_mode_definition(mode_name),
-         {:ok, new_state} <-
-           ModeStateManager.reset_mode(emulator.mode_manager, mode_name),
-         {:ok, new_emu} <- apply_mode_effects(mode_def, emulator) do
-      {:ok, %{new_emu | mode_manager: new_state}}
+         {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, false) do
+      new_mode_manager = update_mode_manager_state(emulator.mode_manager, mode_name, false)
+      {:ok, %{new_emu | mode_manager: new_mode_manager}}
     end
   end
 
@@ -251,19 +205,39 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  defp apply_mode_effects(mode_def, emulator) do
+  defp apply_mode_effects(mode_def, emulator, value) do
     case mode_def.category do
       :dec_private ->
-        DECPrivateHandler.handle_mode_change(mode_def.name, true, emulator)
+        DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
 
       :standard ->
-        StandardHandler.handle_mode_change(mode_def.name, true, emulator)
+        StandardHandler.handle_mode_change(mode_def.name, value, emulator)
 
       :mouse ->
-        MouseHandler.handle_mode_change(mode_def.name, true, emulator)
+        MouseHandler.handle_mode_change(mode_def.name, value, emulator)
 
       :screen_buffer ->
-        ScreenBufferHandler.handle_mode_change(mode_def.name, true, emulator)
+        ScreenBufferHandler.handle_mode_change(mode_def.name, value, emulator)
+    end
+  end
+
+  defp update_mode_manager_state(mode_manager, mode_name, value) do
+    case mode_name do
+      :irm -> %{mode_manager | insert_mode: value}
+      :lnm -> %{mode_manager | line_feed_mode: value}
+      :decom -> %{mode_manager | origin_mode: value}
+      :decawm -> %{mode_manager | auto_wrap: value}
+      :dectcem -> %{mode_manager | cursor_visible: value}
+      :decscnm -> %{mode_manager | screen_mode_reverse: value}
+      :decarm -> %{mode_manager | auto_repeat_mode: value}
+      :decinlm -> %{mode_manager | interlacing_mode: value}
+      :bracketed_paste -> %{mode_manager | bracketed_paste_mode: value}
+      :decckm -> %{mode_manager | cursor_keys_mode: if(value, do: :application, else: :normal)}
+      :deccolm_132 -> %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
+      :deccolm_80 -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
+      :dec_alt_screen -> %{mode_manager | alternate_buffer_active: value}
+      :alt_screen_buffer -> %{mode_manager | alternate_buffer_active: value}
+      _ -> mode_manager
     end
   end
 
@@ -272,8 +246,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec new() :: t()
   def new do
-    {:ok, pid} = start_link([])
-    pid
+    %__MODULE__{}
   end
 
   @doc """

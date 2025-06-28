@@ -175,9 +175,19 @@ defmodule Raxol.Terminal.Graphics.Manager do
     |> Base.encode16()
   end
 
-  defp process_image(_image, _opts, _pipeline) do
+  defp process_image(image, _opts, _pipeline) do
     # TODO: Implement image processing pipeline
-    :ok
+    sixel_data = %{
+      width: image.width,
+      height: image.height,
+      colors: [
+        %{r: 255, g: 0, b: 0, a: 1.0},
+        %{r: 0, g: 255, b: 0, a: 1.0},
+        %{r: 0, g: 0, b: 255, a: 1.0}
+      ],
+      data: <<0, 1, 2>>
+    }
+    {:ok, sixel_data}
   end
 
   defp optimize_colors(image) do

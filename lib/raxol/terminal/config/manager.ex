@@ -32,14 +32,14 @@ defmodule Raxol.Terminal.Config.Manager do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
     {:ok, new(width, height)}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end

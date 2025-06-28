@@ -4,9 +4,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
 
   import Raxol.Guards
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.SGRHandler
-  alias Raxol.Terminal.{Buffer.Operations}
+  alias Raxol.Terminal.{Buffer.Operations, ScreenBuffer}
 
   @command_handlers %{
     ?A => {:handle_cuu, "Cursor Up"},
@@ -469,17 +469,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     cursor = buffer.cursor
 
     if cursor.y >= buffer.height - 1 do
-      case Operations.scroll_down(buffer, 1) do
-        {:ok, new_buffer} ->
-          %{emulator | main_screen_buffer: new_buffer}
-
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.warning(
-            "Failed to scroll down: #{inspect(reason)}"
-          )
-
-          emulator
-      end
+      # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
+      new_buffer = ScreenBuffer.scroll_down(buffer, 1)
+      %{emulator | main_screen_buffer: new_buffer}
     else
       new_cursor = %{cursor | y: cursor.y + 1}
       new_buffer = %{buffer | cursor: new_cursor}
@@ -495,18 +487,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     cursor = buffer.cursor
 
     if cursor.y >= buffer.height - 1 do
-      case Operations.scroll_down(buffer, 1) do
-        {:ok, new_buffer} ->
-          new_cursor = %{new_buffer.cursor | x: 0}
-          %{emulator | main_screen_buffer: %{new_buffer | cursor: new_cursor}}
-
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.warning(
-            "Failed to scroll down: #{inspect(reason)}"
-          )
-
-          emulator
-      end
+      # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
+      new_buffer = ScreenBuffer.scroll_down(buffer, 1)
+      new_cursor = %{new_buffer.cursor | x: 0}
+      %{emulator | main_screen_buffer: %{new_buffer | cursor: new_cursor}}
     else
       new_cursor = %{cursor | x: 0, y: cursor.y + 1}
       new_buffer = %{buffer | cursor: new_cursor}
@@ -522,17 +506,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     cursor = buffer.cursor
 
     if cursor.y <= 0 do
-      case Operations.scroll_up(buffer, 1) do
-        {:ok, new_buffer} ->
-          %{emulator | main_screen_buffer: new_buffer}
-
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.warning(
-            "Failed to scroll up: #{inspect(reason)}"
-          )
-
-          emulator
-      end
+      # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct
+      new_buffer = ScreenBuffer.scroll_up(buffer, 1)
+      %{emulator | main_screen_buffer: new_buffer}
     else
       new_cursor = %{cursor | y: cursor.y - 1}
       new_buffer = %{buffer | cursor: new_cursor}

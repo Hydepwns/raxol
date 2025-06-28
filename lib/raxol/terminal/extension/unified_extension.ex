@@ -135,7 +135,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   # Server Callbacks
-  @impl true
+  @impl GenServer
   def init(opts) do
     state = %{
       extensions: %{},
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:load_extension, path, type, opts}, _from, state) do
     extension_id = generate_extension_id()
     extension_state = load_extension_state(path, type, opts)
@@ -168,7 +168,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:unload_extension, extension_id}, _from, state) do
     case Map.get(state.extensions, extension_id) do
       nil ->
@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_extension_state, extension_id}, _from, state) do
     case Map.get(state.extensions, extension_id) do
       nil ->
@@ -193,7 +193,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(
         {:update_extension_config, extension_id, config},
         _from,
@@ -210,7 +210,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:activate_extension, extension_id}, _from, state) do
     case Map.get(state.extensions, extension_id) do
       nil ->
@@ -235,7 +235,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:deactivate_extension, extension_id}, _from, state) do
     case Map.get(state.extensions, extension_id) do
       nil ->
@@ -260,7 +260,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(
         {:execute_command, extension_id, command, _args},
         _from,
@@ -287,13 +287,13 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_extensions, opts}, _from, state) do
     extensions = filter_extensions(state.extensions, opts)
     {:reply, {:ok, extensions}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:export_extension, extension_id, path}, _from, state) do
     case Map.get(state.extensions, extension_id) do
       nil ->
@@ -310,7 +310,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:import_extension, path, opts}, _from, state) do
     case import_extension_from_path(path, opts) do
       {:ok, extension} ->
@@ -323,7 +323,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(
         {:register_hook, extension_id, hook_name, callback},
         _from,
@@ -346,7 +346,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:unregister_hook, extension_id, hook_name}, _from, state) do
     case Map.get(state.extensions, extension_id) do
       nil ->
@@ -372,7 +372,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:trigger_hook, hook_name, _args}, _from, state) do
     case Map.get(state.hooks, hook_name) do
       nil ->

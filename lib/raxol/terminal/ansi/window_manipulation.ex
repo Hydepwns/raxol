@@ -206,8 +206,12 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
 
   def format_event(_), do: ""
 
+  def format_resize({width, height}) do
+    "\e[4;#{height};#{width}t"
+  end
+
   def format_resize(%{width: width, height: height}) do
-    "\e[8;#{height};#{width}t"
+    "\e[4;#{height};#{width}t"
   end
 
   def format_move({x, y}), do: "\e[3;#{x};#{y}t"

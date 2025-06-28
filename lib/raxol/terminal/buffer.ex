@@ -116,6 +116,10 @@ defmodule Raxol.Terminal.Buffer do
   Delegates to ScreenBuffer.resize/3.
   """
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def resize(buffer, width, height) when width <= 0 or height <= 0 do
+    raise ArgumentError, "Buffer dimensions must be positive integers, got: #{width}x#{height}"
+  end
+
   def resize(buffer, width, height) do
     screen_buffer = to_screen_buffer(buffer)
     resized_screen_buffer = ScreenBuffer.resize(screen_buffer, width, height)
@@ -203,7 +207,7 @@ defmodule Raxol.Terminal.Buffer do
   @spec scroll(t(), integer()) :: t()
   def scroll(buffer, lines) do
     screen_buffer = to_screen_buffer(buffer)
-    {updated_screen_buffer, _} = Operations.scroll_up(screen_buffer, abs(lines))
+    updated_screen_buffer = ScreenBuffer.scroll_up(screen_buffer, abs(lines))
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 

@@ -276,24 +276,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
     # Simple compression: merge empty cells and reduce attribute storage
     compressed =
       buffer
-      |> Enum.map(fn line ->
-        line
-        |> Enum.chunk_by(&Cell.empty?/1)
-        |> Enum.map(fn
-          [cell] ->
-            cell
-
-          cells ->
-            # If all cells are empty, just keep one
-            if Enum.all?(cells, &Cell.empty?/1) do
-              List.first(cells)
-            else
-              # Otherwise, keep all cells but with minimal attributes
-              Enum.map(cells, &minimize_cell_attributes/1)
-            end
-        end)
-        |> List.flatten()
-      end)
+      |> Enum.map(&compress_line/1)
 
     # Calculate new compression ratio
     original_size = calculate_memory_usage(buffer)
@@ -301,6 +284,25 @@ defmodule Raxol.Terminal.Buffer.Scroll do
     ratio = compressed_size / original_size
 
     {compressed, ratio}
+  end
+
+  defp compress_line(line) do
+    line
+    |> Enum.chunk_by(&Cell.empty?/1)
+    |> Enum.map(&process_cell_chunk/1)
+    |> List.flatten()
+  end
+
+  defp process_cell_chunk([cell]) do
+    cell
+  end
+
+  defp process_cell_chunk(cells) do
+    if Enum.all?(cells, &Cell.empty?/1) do
+      [List.first(cells)]
+    else
+      Enum.map(cells, &minimize_cell_attributes/1)
+    end
   end
 
   defp minimize_cell_attributes(cell) do

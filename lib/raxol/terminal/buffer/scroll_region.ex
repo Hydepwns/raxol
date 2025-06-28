@@ -53,18 +53,23 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   @spec set_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def set_region(buffer, top, bottom) do
-    # Clamp coordinates to screen bounds
-    top = max(0, min(top, buffer.height))
-    bottom = max(0, min(bottom, buffer.height))
+    # Check for invalid regions
+    cond do
+      # Negative values
+      top < 0 or bottom < 0 ->
+        %{buffer | scroll_region: nil, scroll_position: 0}
 
-    # Swap if top > bottom
-    {top, bottom} = if top > bottom, do: {bottom, top}, else: {top, bottom}
+      # Top > bottom
+      top > bottom ->
+        %{buffer | scroll_region: nil, scroll_position: 0}
 
-    # Ensure we have at least one line
-    if top < bottom do
-      %{buffer | scroll_region: {top, bottom}, scroll_position: top}
-    else
-      %{buffer | scroll_region: nil, scroll_position: 0}
+      # Bottom >= height (out of bounds)
+      bottom >= buffer.height ->
+        %{buffer | scroll_region: nil, scroll_position: 0}
+
+      # Valid region
+      true ->
+        %{buffer | scroll_region: {top, bottom}, scroll_position: top}
     end
   end
 
@@ -111,13 +116,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   ## Returns
 
   A tuple {top, bottom} representing the scroll region boundaries.
-  Returns {0, height-1} if no region is set.
+  Returns nil if no region is set.
 
   ## Examples
 
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> ScrollRegion.get_region(buffer)
-      {0, 23}
+      nil
 
       iex> buffer = ScreenBuffer.new(80, 24)
       iex> buffer = ScrollRegion.set_region(buffer, 5, 15)
@@ -125,9 +130,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       {5, 15}
   """
   @spec get_region(ScreenBuffer.t()) ::
-          {non_neg_integer(), non_neg_integer()}
-  def get_region(%ScreenBuffer{scroll_region: nil, height: height}) do
-    {0, height}
+          {non_neg_integer(), non_neg_integer()} | nil
+  def get_region(%ScreenBuffer{scroll_region: nil}) do
+    nil
   end
 
   def get_region(%ScreenBuffer{scroll_region: {top, bottom}}) do
@@ -202,6 +207,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     end
   end
 
+  def scroll_up(buffer, lines, _scroll_region_arg) when lines <= 0 do
+    buffer
+  end
+
   defp clear_region(buffer, start, ending) do
     visible_lines = ending - start + 1
 
@@ -258,6 +267,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     else
       scroll_region_down(buffer, scroll_start, scroll_end, lines)
     end
+  end
+
+  def scroll_down(buffer, lines, _scroll_region_arg) when lines <= 0 do
+    buffer
   end
 
   defp scroll_region_down(buffer, scroll_start, scroll_end, lines) do
@@ -355,22 +368,22 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
         ) :: ScreenBuffer.t()
   def shift_region_to_line(buffer, {top, bottom}, target_line) do
     {top, bottom} = clamp_region({top, bottom}, buffer.height)
-    region_height = bottom - top + 1
-    # Clamp target_line to [top, bottom]
     target_line = max(top, min(target_line, bottom))
-
-    # Calculate how many lines to shift up so that target_line is at the top
     shift = target_line - top
 
-    {before, region} = Enum.split(buffer.cells, top)
+    new_cells = shift_region_content(buffer.cells, top, bottom, shift)
+    %{buffer | cells: new_cells, scroll_position: target_line}
+  end
+
+  defp shift_region_content(cells, top, bottom, shift) do
+    region_height = bottom - top + 1
+    {before, region} = Enum.split(cells, top)
     {region, after_part} = Enum.split(region, region_height)
 
-    # Shift region content up by 'shift' lines
     {to_shift, remaining} = Enum.split(region, shift)
-    empty_line = List.duplicate(%Raxol.Terminal.Cell{}, buffer.width)
+    empty_line = List.duplicate(Cell.new(), length(hd(cells)))
     new_region = remaining ++ List.duplicate(empty_line, length(to_shift))
 
-    new_cells = before ++ new_region ++ after_part
-    %{buffer | cells: new_cells, scroll_position: target_line}
+    before ++ new_region ++ after_part
   end
 end

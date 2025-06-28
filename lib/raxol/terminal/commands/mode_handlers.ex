@@ -44,7 +44,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
     mode_atom = ModeManager.lookup_private(param_code)
 
     if mode_atom do
-      apply_mode_func.(emulator, [mode_atom])
+      case apply_mode_func.(emulator, [mode_atom]) do
+        {:ok, updated_emulator} -> updated_emulator
+        {:error, _reason} -> emulator
+      end
     else
       Raxol.Core.Runtime.Log.warning_with_context(
         "Unknown DEC private mode code: ?#{param_code}",
@@ -74,7 +77,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
     mode_atom = ModeManager.lookup_standard(param_code)
 
     if mode_atom do
-      apply_mode_func.(emulator, [mode_atom])
+      case apply_mode_func.(emulator, [mode_atom]) do
+        {:ok, updated_emulator} -> updated_emulator
+        {:error, _reason} -> emulator
+      end
     else
       handle_unknown_standard_mode(param_code, emulator)
     end

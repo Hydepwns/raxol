@@ -70,7 +70,16 @@ defmodule Raxol.Terminal.Config do
   @spec new(integer(), integer()) :: t()
   def new(width, height)
       when integer?(width) and integer?(height) and width > 0 and height > 0 do
-    %__MODULE__{width: width, height: height}
+    %__MODULE__{
+      version: 1,
+      width: width,
+      height: height,
+      colors: %{},
+      styles: %{},
+      input: %{},
+      performance: %{},
+      mode: %{}
+    }
   end
 
   @doc """
@@ -432,7 +441,7 @@ defmodule Raxol.Terminal.Config do
   end
 
   defp update_config_fields(config, updates) do
-    Enum.reduce(updates, config, &update_field/2)
+    Enum.reduce(updates, config, fn {key, value}, acc -> update_field({key, value}, acc) end)
   end
 
   defp update_field({:width, value}, acc) when integer?(value) and value > 0,

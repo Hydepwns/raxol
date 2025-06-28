@@ -22,13 +22,7 @@ defmodule Raxol.Terminal.Buffer.Content do
   def write_char(buffer, x, y, char, style \\ nil) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       cell = Cell.new(char, style)
-
-      cells =
-        List.update_at(buffer.cells, y, fn line ->
-          List.update_at(line, x, fn _ -> cell end)
-        end)
-
-      %{buffer | cells: cells}
+      %{buffer | cells: put_in(buffer.cells, [y, x], cell)}
     else
       buffer
     end
@@ -96,8 +90,7 @@ defmodule Raxol.Terminal.Buffer.Content do
     cells
     |> Enum.map(fn row ->
       row
-      |> Enum.map(& &1.char)
-      |> Enum.join()
+      |> Enum.map_join("", & &1.char)
       |> String.trim_trailing()
     end)
     |> Enum.filter(&(&1 != ""))

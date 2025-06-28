@@ -196,9 +196,9 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Gets a line from the buffer.
   """
-  @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t()) | nil
+  @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, line_index) do
-    Enum.at(buffer.cells, line_index)
+    Enum.at(buffer.cells, line_index) || []
   end
 
   @doc """

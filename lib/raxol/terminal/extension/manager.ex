@@ -21,7 +21,8 @@ defmodule Raxol.Terminal.Extension.Manager do
   @type event :: %{
           name: String.t(),
           handler: function(),
-          priority: integer()
+          priority: integer(),
+          extension: String.t()
         }
 
   @type command :: %{
@@ -248,7 +249,8 @@ defmodule Raxol.Terminal.Extension.Manager do
       event = %{
         name: event_name,
         handler: fn args -> {:ok, args} end,
-        priority: 0
+        priority: 0,
+        extension: extension.name
       }
 
       Map.update(acc, event_name, [event], &[event | &1])
@@ -261,7 +263,7 @@ defmodule Raxol.Terminal.Extension.Manager do
         acc,
         event_name,
         [],
-        &Enum.reject(&1, fn e -> e.name == extension.name end)
+        &Enum.reject(&1, fn e -> e.extension == extension.name end)
       )
     end)
   end
