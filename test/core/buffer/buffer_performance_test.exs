@@ -139,10 +139,13 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       scroll_amounts = [1, 5, 10, 20]
 
       Enum.each(scroll_amounts, fn amount ->
-        {time, _} =
+        {time, result} =
           :timer.tc(fn ->
             Buffer.scroll(buffer, amount)
           end)
+
+        # Ensure we got a valid result
+        assert is_struct(result, Raxol.Terminal.Buffer)
 
         time_ms = time / 1000
         IO.puts("Scroll performance for #{amount} lines: #{time_ms}ms")

@@ -143,12 +143,9 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       # Wait for all processes to complete
       results = Task.await_many(processes, 5000)
 
-      # Verify all processes completed successfully
+      # Verify all processes completed successfully (returned buffer structs)
       assert Enum.all?(results, fn result ->
-               case result do
-                 {:ok, _} -> true
-                 _ -> false
-               end
+               is_struct(result, Raxol.Terminal.Buffer)
              end)
     end
 
