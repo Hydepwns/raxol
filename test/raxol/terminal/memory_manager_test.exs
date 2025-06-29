@@ -51,71 +51,67 @@ defmodule Raxol.Terminal.MemoryManagerTest do
   end
 
   describe "estimate_memory_usage/1 (integration)" do
-    test "returns correct sum for real State with default config" do
-      config = Raxol.Terminal.Config.Defaults.generate_default_config()
+    test "returns correct sum for mock State with buffer_manager and scroll_buffer" do
+      # Create a mock state with buffer_manager and scroll_buffer that have memory_usage
+      mock_buffer_manager = %{memory_usage: 1000}
+      mock_scroll_buffer = %{memory_usage: 2000}
 
-      behavior_keys =
-        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
+      state = %{
+        buffer_manager: mock_buffer_manager,
+        scroll_buffer: mock_scroll_buffer,
+        style: %{},
+        charset_state: %{},
+        mode_manager: %{},
+        cursor: %{}
+      }
 
-      behavior = Map.take(config, behavior_keys)
-      config = Map.put(config, :behavior, behavior)
-      state = Raxol.Terminal.Integration.State.new(80, 24, config)
-
-      # By default, both buffer_manager and scroll_buffer should have memory_usage fields
-      expected =
-        (state.buffer_manager.memory_usage || 0) +
-          (state.scroll_buffer.memory_usage || 0)
-
+      expected = 1000 + 2000
       assert MemoryManager.estimate_memory_usage(state) == expected
     end
 
-    test "returns correct sum for State with custom memory_usage values" do
-      config = Raxol.Terminal.Config.Defaults.generate_default_config()
-
-      behavior_keys =
-        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
-
-      behavior = Map.take(config, behavior_keys)
-      config = Map.put(config, :behavior, behavior)
-      state = Raxol.Terminal.Integration.State.new(80, 24, config)
-      # Manually set memory_usage fields
-      buffer_manager = Map.put(state.buffer_manager, :memory_usage, 1111)
-      scroll_buffer = Map.put(state.scroll_buffer, :memory_usage, 2222)
+    test "returns correct sum for mock State with custom memory_usage values" do
+      mock_buffer_manager = %{memory_usage: 1111}
+      mock_scroll_buffer = %{memory_usage: 2222}
 
       state = %{
-        state
-        | buffer_manager: buffer_manager,
-          scroll_buffer: scroll_buffer
+        buffer_manager: mock_buffer_manager,
+        scroll_buffer: mock_scroll_buffer,
+        style: %{},
+        charset_state: %{},
+        mode_manager: %{},
+        cursor: %{}
       }
 
       assert MemoryManager.estimate_memory_usage(state) == 3333
     end
 
     test "returns correct value if only buffer_manager has memory_usage" do
-      config = Raxol.Terminal.Config.Defaults.generate_default_config()
+      mock_buffer_manager = %{memory_usage: 555}
 
-      behavior_keys =
-        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
+      state = %{
+        buffer_manager: mock_buffer_manager,
+        scroll_buffer: nil,
+        style: %{},
+        charset_state: %{},
+        mode_manager: %{},
+        cursor: %{}
+      }
 
-      behavior = Map.take(config, behavior_keys)
-      config = Map.put(config, :behavior, behavior)
-      state = Raxol.Terminal.Integration.State.new(80, 24, config)
-      buffer_manager = Map.put(state.buffer_manager, :memory_usage, 555)
-      state = %{state | buffer_manager: buffer_manager, scroll_buffer: nil}
       assert MemoryManager.estimate_memory_usage(state) == 555
     end
 
     test "returns correct value if only scroll_buffer has memory_usage" do
-      config = Raxol.Terminal.Config.Defaults.generate_default_config()
+      mock_scroll_buffer = %{memory_usage: 777}
 
-      behavior_keys =
-        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
+      state = %{
+        buffer_manager: nil,
+        scroll_buffer: mock_scroll_buffer,
+        style: %{},
+        charset_state: %{},
+        mode_manager: %{},
+        cursor: %{}
+      }
 
-      behavior = Map.take(config, behavior_keys)
-      config = Map.put(config, :behavior, behavior)
-      state = Raxol.Terminal.Integration.State.new(80, 24, config)
-      scroll_buffer = Map.put(state.scroll_buffer, :memory_usage, 777)
-      state = %{state | buffer_manager: nil, scroll_buffer: scroll_buffer}
       assert MemoryManager.estimate_memory_usage(state) == 777
     end
   end

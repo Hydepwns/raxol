@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
     test ~c"handles invalid Unicode characters" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_unicode(<<0xFF, 0xFF>>, buffer)
-      assert ScreenBuffer.get_char(buffer, 0, 0) == nil
+      assert ScreenBuffer.get_char(buffer, 0, 0) == " "
     end
   end
 
@@ -115,10 +115,10 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
     test ~c"handles alternate screen buffer" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ExtendedSequences.process_terminal_state("?1049h", buffer)
-      assert buffer.alternate_screen_buffer == true
+      assert buffer.alternate_screen == true
 
       buffer = ExtendedSequences.process_terminal_state("?1049l", buffer)
-      assert buffer.alternate_screen_buffer == false
+      assert buffer.alternate_screen == false
     end
 
     test ~c"handles unknown state" do

@@ -72,4 +72,6 @@ defmodule Raxol.Terminal.ANSI.TextFormattingBehaviour do
   @callback reset_underline(text_style()) :: text_style()
   @callback reset_blink(text_style()) :: text_style()
   @callback reset_reverse(text_style()) :: text_style()
+  @callback reset_framed_encircled(text_style()) :: text_style()
+  @callback reset_overlined(text_style()) :: text_style()
 end

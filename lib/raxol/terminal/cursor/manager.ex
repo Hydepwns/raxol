@@ -90,6 +90,13 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
+  Creates a new cursor struct with the given keyword list options.
+  """
+  def new(opts) when is_list(opts) do
+    struct!(__MODULE__, Map.new(opts))
+  end
+
+  @doc """
   Creates a new cursor manager with specified x and y coordinates.
   """
   def new(x, y) when is_integer(x) and is_integer(y) do

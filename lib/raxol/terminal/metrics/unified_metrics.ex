@@ -326,8 +326,17 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   end
 
   defp percentile(sorted, p) do
-    index = trunc(p * (length(sorted) - 1))
-    Enum.at(sorted, index)
+    count = length(sorted)
+    if count == 0 do
+      nil
+    else
+      # For percentiles, we want the value at the p-th percentile position
+      # For a list of n elements, the p-th percentile is at position ceil(p * n)
+      index = ceil(p * count) - 1
+      # Clamp to valid range
+      index = max(0, min(index, count - 1))
+      Enum.at(sorted, index)
+    end
   end
 
   defp filter_errors(errors, opts) do

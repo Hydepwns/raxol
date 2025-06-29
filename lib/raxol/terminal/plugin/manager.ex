@@ -114,7 +114,7 @@ defmodule Raxol.Terminal.Plugin.Manager do
   """
   @spec call_hook(t(), String.t(), [term()]) ::
           {:ok, [term()], t()} | {:error, term()}
-  def call_hook(manager, hook_name, _args \\ []) do
+  def call_hook(manager, hook_name, args \\ []) do
     case Map.get(manager.hooks, hook_name) do
       nil ->
         {:error, :hook_not_found}
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.Plugin.Manager do
       hooks ->
         results =
           Enum.map(hooks, fn hook ->
-            apply_hook(hook, _args)
+            apply_hook(hook, args)
           end)
 
         updated_manager = %{

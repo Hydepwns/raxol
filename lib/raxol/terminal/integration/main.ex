@@ -279,17 +279,17 @@ defmodule Raxol.Terminal.Integration.Main do
     :ok
   end
 
-  def write(pid, text) when is_pid(pid) do
+  def write(pid, _text) when is_pid(pid) do
     # For test purposes, return success
     {:ok, "output"}
   end
 
-  def resize(pid, width, height) when is_pid(pid) do
+  def resize(pid, _width, _height) when is_pid(pid) do
     # For test purposes, just return ok
     :ok
   end
 
-  def update_config(pid, config) when is_pid(pid) do
+  def update_config(pid, _config) when is_pid(pid) do
     # For test purposes, just return ok
     :ok
   end

@@ -30,15 +30,15 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
 
   describe "render/2" do
     test "renders with default options", %{gpu_renderer: gpu_renderer} do
-      output = GPURenderer.render(gpu_renderer)
+      {output, _updated_renderer} = GPURenderer.render(gpu_renderer)
       assert is_binary(output)
     end
 
     test "updates performance metrics after rendering", %{
       gpu_renderer: gpu_renderer
     } do
-      output = GPURenderer.render(gpu_renderer)
-      metrics = GPURenderer.get_performance_metrics(gpu_renderer)
+      {_output, updated_renderer} = GPURenderer.render(gpu_renderer)
+      metrics = GPURenderer.get_performance_metrics(updated_renderer)
 
       assert length(metrics.frame_times) > 0
       assert metrics.render_calls > 0
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
 
     test "renders with custom options", %{gpu_renderer: gpu_renderer} do
       opts = [shader_model: "6.0", antialiasing: true]
-      output = GPURenderer.render(gpu_renderer, opts)
+      {output, _updated_renderer} = GPURenderer.render(gpu_renderer, opts)
       assert is_binary(output)
     end
   end
@@ -78,11 +78,11 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
   describe "optimize_pipeline/1" do
     test "optimizes pipeline based on metrics", %{gpu_renderer: gpu_renderer} do
       # First render to generate some metrics
-      GPURenderer.render(gpu_renderer)
+      {_output, updated_renderer} = GPURenderer.render(gpu_renderer)
 
       # Then optimize
-      optimized_renderer = GPURenderer.optimize_pipeline(gpu_renderer)
-      assert optimized_renderer.render_pipeline != gpu_renderer.render_pipeline
+      optimized_renderer = GPURenderer.optimize_pipeline(updated_renderer)
+      assert optimized_renderer.render_pipeline != updated_renderer.render_pipeline
     end
   end
 
@@ -129,11 +129,11 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
     test "allocates and updates buffers during rendering", %{
       gpu_renderer: gpu_renderer
     } do
-      output = GPURenderer.render(gpu_renderer)
+      {output, updated_renderer} = GPURenderer.render(gpu_renderer)
       assert is_binary(output)
 
       # Verify that buffers were used
-      metrics = GPURenderer.get_performance_metrics(gpu_renderer)
+      metrics = GPURenderer.get_performance_metrics(updated_renderer)
       assert metrics.render_calls > 0
     end
   end
@@ -154,11 +154,11 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
     test "executes all pipeline stages during rendering", %{
       gpu_renderer: gpu_renderer
     } do
-      output = GPURenderer.render(gpu_renderer)
+      {output, updated_renderer} = GPURenderer.render(gpu_renderer)
       assert is_binary(output)
 
       # Verify that all stages were executed
-      metrics = GPURenderer.get_performance_metrics(gpu_renderer)
+      metrics = GPURenderer.get_performance_metrics(updated_renderer)
       assert metrics.render_calls > 0
     end
   end

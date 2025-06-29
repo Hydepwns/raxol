@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   """
 
   use GenServer
-  @behaviour GenServer
   require Logger
   require Raxol.Core.Runtime.Log
   import Raxol.Guards
@@ -341,36 +340,81 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {:ok, state}
   end
 
-  # Safe cache wrapper functions - completely disable cache when not available
-  defp safe_cache_get(_key, _namespace) do
-    {:error, :cache_not_available}
+  # Real cache wrapper functions
+  defp safe_cache_get(key, namespace) do
+    case System.get(key, namespace: namespace) do
+      {:ok, value} -> {:ok, value}
+      {:error, :not_found} -> {:error, :cache_miss}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  defp safe_cache_put(_key, _value, _namespace) do
-    {:error, :cache_not_available}
+  defp safe_cache_put(key, value, namespace) do
+    case System.put(key, value, namespace: namespace) do
+      :ok -> {:ok, value}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  defp safe_cache_clear(_namespace) do
-    {:error, :cache_not_available}
+  defp safe_cache_clear(namespace) do
+    case System.clear(namespace: namespace) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  defp safe_cache_invalidate(_key, _namespace) do
-    {:error, :cache_not_available}
+  defp safe_cache_invalidate(key, namespace) do
+    case System.invalidate(key, namespace: namespace) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   def handle_call({:get_cell, x, y}, _from, state) do
     start_time = System.monotonic_time()
 
-    result = get_cell_at_coordinates(state, x, y)
-    duration = System.monotonic_time() - start_time
+    # Create cache key for this cell
+    cache_key = {:cell, x, y}
 
-    case result do
-      {:invalid, default_cell} ->
-        state = update_metrics(state, :get_cell_invalid, duration)
-        {:reply, {:ok, default_cell}, state}
-      {:valid, clean_cell} ->
-        state = update_metrics(state, :get_cell, duration)
-        {:reply, {:ok, clean_cell}, state}
+    # Try to get from cache first
+    case safe_cache_get(cache_key, :buffer) do
+      {:ok, cached_cell} ->
+        # Cache hit
+        duration = System.monotonic_time() - start_time
+        state = update_metrics(state, :get_cell_cache_hit, duration)
+        {:reply, {:ok, cached_cell}, state}
+
+      {:error, :cache_miss} ->
+        # Cache miss - get from buffer
+        result = get_cell_at_coordinates(state, x, y)
+        duration = System.monotonic_time() - start_time
+
+        case result do
+          {:invalid, default_cell} ->
+            state = update_metrics(state, :get_cell_invalid, duration)
+            {:reply, {:ok, default_cell}, state}
+
+          {:valid, clean_cell} ->
+            # Cache the result for future access
+            safe_cache_put(cache_key, clean_cell, :buffer)
+            state = update_metrics(state, :get_cell_cache_miss, duration)
+            {:reply, {:ok, clean_cell}, state}
+        end
+
+      {:error, _reason} ->
+        # Cache error - fallback to direct access
+        result = get_cell_at_coordinates(state, x, y)
+        duration = System.monotonic_time() - start_time
+
+        case result do
+          {:invalid, default_cell} ->
+            state = update_metrics(state, :get_cell_invalid, duration)
+            {:reply, {:ok, default_cell}, state}
+
+          {:valid, clean_cell} ->
+            state = update_metrics(state, :get_cell, duration)
+            {:reply, {:ok, clean_cell}, state}
+        end
     end
   end
 
@@ -458,9 +502,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
     case validate_and_set_cell(state, x, y, cell) do
       {:ok, new_state} ->
+        # Invalidate cache for this cell
+        cache_key = {:cell, x, y}
+        safe_cache_invalidate(cache_key, :buffer)
+
         duration = System.monotonic_time() - start_time
         state = update_metrics(new_state, :set_cell, duration)
         {:reply, {:ok, state}, state}
+
       {:invalid, state} ->
         duration = System.monotonic_time() - start_time
         state = update_metrics(state, :set_cell_invalid, duration)
@@ -509,8 +558,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     new_active_buffer =
       fill_region_with_cell(state.active_buffer, x, y, width, height, cell)
 
-    # Clear cache for the filled region
-    safe_cache_clear(:buffer)
+    # Invalidate cache for the filled region
+    invalidate_region_cache(x, y, width, height)
 
     duration = System.monotonic_time() - start_time
     state = %{state | active_buffer: new_active_buffer}
@@ -525,8 +574,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     {new_active_buffer, new_scrollback_buffer} =
       process_scroll_region(state, x, y, width, height, amount)
 
-    # Clear cache for the scrolled region
-    safe_cache_clear(:buffer)
+    # Invalidate cache for the scrolled region
+    invalidate_region_cache(x, y, width, height)
 
     duration = System.monotonic_time() - start_time
 
@@ -547,7 +596,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     new_active_buffer = ScreenBuffer.clear(state.active_buffer, nil)
     new_back_buffer = ScreenBuffer.clear(state.back_buffer, nil)
 
-    # Clear all cache
+    # Clear all buffer cache
     safe_cache_clear(:buffer)
 
     duration = System.monotonic_time() - start_time
@@ -580,7 +629,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       new_active_buffer = ScreenBuffer.clear(new_active_buffer, nil)
       new_back_buffer = ScreenBuffer.clear(new_back_buffer, nil)
 
-      # Clear cache
+      # Clear cache since buffer dimensions changed
       safe_cache_clear(:buffer)
 
       duration = System.monotonic_time() - start_time
@@ -599,37 +648,59 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end
   end
 
-  def handle_call({:scroll_up, amount}, _from, state) do
+  def handle_call({:scroll_up, lines}, _from, state) do
     start_time = System.monotonic_time()
 
-    # Use ScreenBuffer's scroll operations
-    new_active_buffer =
-      if amount > 0 do
-        # Call the scrolling module directly with proper arguments
-        Raxol.Terminal.Commands.Scrolling.scroll_up(
-          state.active_buffer,
-          amount,
-          nil,  # No specific scroll region
-          nil   # No specific blank style
-        )
-      else
-        # Call the scrolling module directly with proper arguments
-        Raxol.Terminal.Commands.Scrolling.scroll_down(
-          state.active_buffer,
-          abs(amount),
-          nil,  # No specific scroll region
-          nil   # No specific blank style
-        )
-      end
+    # Extract the lines that will be scrolled out
+    scrolled_lines = extract_top_lines(state.active_buffer, lines)
 
-    # Clear cache for the visible area
+    # Add lines to scrollback buffer
+    new_scrollback_buffer = add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
+
+    # Perform the scroll operation
+    new_active_buffer = scroll_buffer_up(state.active_buffer, lines)
+
+    # Clear cache for the scrolled region
     safe_cache_clear(:buffer)
 
     duration = System.monotonic_time() - start_time
-    state = %{state | active_buffer: new_active_buffer}
+
+    state = %{
+      state
+      | active_buffer: new_active_buffer,
+        scrollback_buffer: new_scrollback_buffer
+    }
+
     state = update_metrics(state, :scroll_up, duration)
     state = update_memory_usage(state)
     {:reply, {:ok, state}, state}
+  end
+
+  # Extract the top lines that will be scrolled out
+  defp extract_top_lines(buffer, lines) do
+    Enum.map(0..(lines - 1), fn i ->
+      if i < buffer.height do
+        buffer.cells |> Enum.at(i, [])
+      else
+        []
+      end
+    end)
+    |> Enum.filter(fn line -> line != [] end)
+  end
+
+  # Scroll the buffer up by the specified number of lines
+  defp scroll_buffer_up(buffer, lines) do
+    # Extract lines starting from 'lines' position
+    {_, remaining_lines} = Enum.split(buffer.cells, lines)
+
+    # Create empty lines for the bottom
+    empty_line = List.duplicate(Cell.new(), buffer.width)
+    empty_lines = List.duplicate(empty_line, lines)
+
+    # New buffer: remaining lines + empty lines at bottom
+    new_cells = remaining_lines ++ empty_lines
+
+    %{buffer | cells: new_cells}
   end
 
   def handle_call({:get_history, _start_line, count}, _from, state) do
@@ -756,7 +827,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     # Invalidate all cells in the region
     for i <- x..(x + width - 1),
         j <- y..(y + height - 1) do
-      System.invalidate({i, j, 1, 1}, namespace: :buffer)
+      cache_key = {:cell, i, j}
+      safe_cache_invalidate(cache_key, :buffer)
     end
   end
 
@@ -813,9 +885,48 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       # Perform scrolling within the region
       new_active_buffer = scroll_region_in_buffer(state.active_buffer, x, y, width, height, amount)
 
-      # For now, we don't modify the scrollback buffer during region scrolling
-      # This could be enhanced to add scrolled content to scrollback if needed
-      {new_active_buffer, state.scrollback_buffer}
+      # Add scrolled content to scrollback buffer
+      scrolled_lines = extract_scrolled_lines(state.active_buffer, x, y, width, height, amount)
+      new_scrollback_buffer = add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
+
+      {new_active_buffer, new_scrollback_buffer}
+    end
+  end
+
+  # Extract lines that are scrolled out of the region
+  defp extract_scrolled_lines(buffer, x, y, width, height, amount) when amount > 0 do
+    # When scrolling up, the top 'amount' lines are scrolled out
+    Enum.map(0..(amount - 1), fn i ->
+      row_y = y + i
+      if row_y < buffer.height do
+        Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
+      else
+        []
+      end
+    end)
+    |> Enum.filter(fn line -> line != [] end)
+  end
+
+  defp extract_scrolled_lines(buffer, x, y, width, height, amount) when amount < 0 do
+    # When scrolling down, the bottom 'abs(amount)' lines are scrolled out
+    abs_amount = abs(amount)
+    Enum.map((height - abs_amount)..(height - 1), fn i ->
+      row_y = y + i
+      if row_y < buffer.height do
+        Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
+      else
+        []
+      end
+    end)
+    |> Enum.filter(fn line -> line != [] end)
+  end
+
+  # Add lines to scrollback buffer
+  defp add_lines_to_scrollback(scrollback_buffer, lines) do
+    if lines != [] do
+      Scroll.add_content(scrollback_buffer, lines)
+    else
+      scrollback_buffer
     end
   end
 
@@ -833,32 +944,60 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     # Extract the region lines
     region_lines = Enum.slice(buffer.cells, y, height)
 
-    # Scroll the region content up
-    {scrolled_lines, _} = Enum.split(region_lines, amount)
-    empty_lines = List.duplicate(List.duplicate(Cell.new(" ", TextFormatting.new()), buffer.width), amount)
-    new_region_lines = scrolled_lines ++ empty_lines
+    # Split the region into scroll_lines (lines that will be scrolled out) and remaining (lines that will stay)
+    {scroll_lines, remaining} = Enum.split(region_lines, amount)
 
-    # Replace the region in the buffer
-    new_cells =
-      buffer.cells
-      |> List.replace_slice(y, y + height - 1, new_region_lines)
+    # Create empty lines for the scrolled-out lines - only for the region width
+    empty_line = List.duplicate(Cell.new(), width)
+    empty_lines = List.duplicate(empty_line, length(scroll_lines))
 
-    %{buffer | cells: new_cells}
+    # New region: remaining lines + empty lines at bottom
+    new_region_lines = remaining ++ empty_lines
+
+    # Replace only the region in the buffer
+    replace_region_in_buffer(buffer, x, y, width, height, new_region_lines)
   end
 
   defp scroll_region_down(buffer, x, y, width, height, amount) do
     # Extract the region lines
     region_lines = Enum.slice(buffer.cells, y, height)
 
-    # Scroll the region content down
-    {_, scrolled_lines} = Enum.split(region_lines, length(region_lines) - amount)
-    empty_lines = List.duplicate(List.duplicate(Cell.new(" ", TextFormatting.new()), buffer.width), amount)
-    new_region_lines = empty_lines ++ scrolled_lines
+    # Scroll the region content down: move lines starting from 0 down by 'amount' positions
+    # Lines height-amount to height-1 are lost, lines 0 to height-amount-1 move down
+    {lines_to_move, _} = Enum.split(region_lines, height - amount)
 
-    # Replace the region in the buffer
+    # Create empty lines for the top - only for the region width
+    empty_line = List.duplicate(Cell.new(), width)
+    empty_lines = List.duplicate(empty_line, amount)
+
+    # New region: empty lines at top + moved lines
+    new_region_lines = empty_lines ++ lines_to_move
+
+    # Replace only the region in the buffer
+    replace_region_in_buffer(buffer, x, y, width, height, new_region_lines)
+  end
+
+  # Helper function to replace a region in the buffer
+  defp replace_region_in_buffer(buffer, x, y, width, height, new_region_lines) do
     new_cells =
       buffer.cells
-      |> List.replace_slice(y, y + height - 1, new_region_lines)
+      |> Enum.with_index()
+      |> Enum.map(fn {row, row_y} ->
+        if row_y >= y and row_y < y + height do
+          region_row = Enum.at(new_region_lines, row_y - y)
+          row
+          |> Enum.with_index()
+          |> Enum.map(fn {cell, col_x} ->
+            if col_x >= x and col_x < x + width do
+              Enum.at(region_row, col_x - x)
+            else
+              cell
+            end
+          end)
+        else
+          row
+        end
+      end)
 
     %{buffer | cells: new_cells}
   end

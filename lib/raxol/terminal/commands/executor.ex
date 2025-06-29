@@ -204,6 +204,13 @@ defmodule Raxol.Terminal.Commands.Executor do
     handle_osc_command(emulator, command_string)
   end
 
+  @spec execute_osc_command(Emulator.t(), integer(), list()) :: Emulator.t()
+  def execute_osc_command(emulator, command, params) do
+    # Convert params to string format for the existing handler
+    command_string = "#{command};#{Enum.join(params, ";")}"
+    execute_osc_command(emulator, command_string)
+  end
+
   defp handle_osc_command(emulator, command_string) do
     with [ps_str, pt] <- String.split(command_string, ";", parts: 2),
          {ps_code, ""} <- Integer.parse(ps_str) do
@@ -245,6 +252,13 @@ defmodule Raxol.Terminal.Commands.Executor do
       intermediates_buffer,
       data_string
     )
+  end
+
+  @spec execute_dcs_command(Emulator.t(), integer(), list()) :: Emulator.t()
+  def execute_dcs_command(emulator, command, params) do
+    # Convert to string format for the existing handler
+    params_buffer = Enum.join(params, ";")
+    execute_dcs_command(emulator, params_buffer, "", "")
   end
 
   defp handle_dcs_command(

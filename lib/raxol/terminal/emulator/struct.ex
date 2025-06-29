@@ -228,6 +228,75 @@ defmodule Raxol.Terminal.Emulator.Struct do
     %{emulator | cursor: %{emulator.cursor | position: {x, y}}}
   end
 
+  @doc """
+  Moves the cursor up by the specified number of lines.
+  """
+  @spec move_cursor_up(t(), integer(), integer(), integer()) :: t()
+  def move_cursor_up(emulator, lines, _width, _height) do
+    {x, y} = emulator.cursor.position
+    new_y = max(0, y - lines)
+    %{emulator | cursor: %{emulator.cursor | position: {x, new_y}}}
+  end
+
+  @doc """
+  Moves the cursor down by the specified number of lines.
+  """
+  @spec move_cursor_down(t(), integer(), integer(), integer()) :: t()
+  def move_cursor_down(emulator, lines, _width, height) do
+    {x, y} = emulator.cursor.position
+    new_y = min(height - 1, y + lines)
+    %{emulator | cursor: %{emulator.cursor | position: {x, new_y}}}
+  end
+
+  @doc """
+  Moves the cursor right by the specified number of columns.
+  """
+  @spec move_cursor_right(t(), integer(), integer(), integer()) :: t()
+  def move_cursor_right(emulator, cols, width, _height) do
+    {x, y} = emulator.cursor.position
+    new_x = min(width - 1, x + cols)
+    %{emulator | cursor: %{emulator.cursor | position: {new_x, y}}}
+  end
+
+  @doc """
+  Moves the cursor left by the specified number of columns.
+  """
+  @spec move_cursor_left(t(), integer(), integer(), integer()) :: t()
+  def move_cursor_left(emulator, cols, _width, _height) do
+    {x, y} = emulator.cursor.position
+    new_x = max(0, x - cols)
+    %{emulator | cursor: %{emulator.cursor | position: {new_x, y}}}
+  end
+
+  @doc """
+  Moves the cursor to the start of the current line.
+  """
+  @spec move_cursor_to_line_start(t()) :: t()
+  def move_cursor_to_line_start(emulator) do
+    {_x, y} = emulator.cursor.position
+    %{emulator | cursor: %{emulator.cursor | position: {0, y}}}
+  end
+
+  @doc """
+  Moves the cursor to the specified column.
+  """
+  @spec move_cursor_to_column(t(), integer(), integer(), integer()) :: t()
+  def move_cursor_to_column(emulator, column, width, _height) do
+    {_x, y} = emulator.cursor.position
+    new_x = max(0, min(column, width - 1))
+    %{emulator | cursor: %{emulator.cursor | position: {new_x, y}}}
+  end
+
+  @doc """
+  Moves the cursor to the specified position.
+  """
+  @spec move_cursor_to(t(), {integer(), integer()}, integer(), integer()) :: t()
+  def move_cursor_to(emulator, {x, y}, width, height) do
+    new_x = max(0, min(x, width - 1))
+    new_y = max(0, min(y, height - 1))
+    %{emulator | cursor: %{emulator.cursor | position: {new_x, new_y}}}
+  end
+
   # Private helper functions
 
   defp needs_scroll?(emulator) do

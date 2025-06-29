@@ -356,6 +356,15 @@ defmodule Raxol.Terminal.Manager do
     {:reply, state.terminal, state}
   end
 
+  def handle_call({:update_state, new_state}, _from, _state) do
+    struct_state =
+      case new_state do
+        %__MODULE__{} = s -> s
+        map when is_map(map) -> struct(__MODULE__, map)
+      end
+    {:reply, :ok, struct_state}
+  end
+
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     new_state = SessionHandler.handle_session_down(pid, state)
     {:noreply, new_state}

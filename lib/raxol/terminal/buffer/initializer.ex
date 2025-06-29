@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
   Creates a new screen buffer with the specified dimensions.
@@ -22,7 +23,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
     height = validate_dimension(height, 24)
     scrollback_limit = validate_dimension(scrollback_limit, 1000)
 
-    %ScreenBuffer{
+    buffer = %ScreenBuffer{
       cells: create_empty_grid(width, height),
       scrollback: [],
       scrollback_limit: scrollback_limit,
@@ -30,8 +31,10 @@ defmodule Raxol.Terminal.Buffer.Initializer do
       scroll_region: nil,
       scroll_position: 0,
       width: width,
-      height: height
+      height: height,
+      default_style: TextFormatting.new()
     }
+    buffer
   end
 
   @doc """

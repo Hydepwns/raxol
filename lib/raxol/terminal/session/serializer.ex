@@ -5,21 +5,30 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   alias Raxol.Terminal.{Session, Renderer, ScreenBuffer}
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Serializes a session state to a map that can be stored and later restored.
   """
   @spec serialize(Session.t()) :: map()
   def serialize(%Session{} = session) do
-    %{
-      id: session.id,
-      width: session.width,
-      height: session.height,
-      title: session.title,
-      theme: session.theme,
-      emulator: serialize_emulator(session.emulator),
-      renderer: serialize_renderer(session.renderer)
-    }
+    try do
+      %{
+        id: session.id,
+        width: session.width,
+        height: session.height,
+        title: session.title,
+        theme: session.theme,
+        auto_save: session.auto_save,
+        emulator: serialize_emulator(session.emulator),
+        renderer: serialize_renderer(session.renderer)
+      }
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error("Session serialization failed: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        raise e
+    end
   end
 
   @doc """
@@ -32,6 +41,7 @@ defmodule Raxol.Terminal.Session.Serializer do
         height: height,
         title: title,
         theme: theme,
+        auto_save: auto_save,
         emulator: emulator_data,
         renderer: renderer_data
       }) do
@@ -43,6 +53,7 @@ defmodule Raxol.Terminal.Session.Serializer do
         height: height,
         title: title,
         theme: theme,
+        auto_save: auto_save,
         emulator: emulator,
         renderer: renderer
       }
@@ -51,7 +62,10 @@ defmodule Raxol.Terminal.Session.Serializer do
     end
   end
 
-  def deserialize(_invalid_data), do: {:error, :invalid_session_data}
+  def deserialize(invalid_data) do
+    Raxol.Core.Runtime.Log.error("Invalid session data: #{inspect(invalid_data)}")
+    {:error, :invalid_session_data}
+  end
 
   # Private functions for serializing/deserializing components
 
@@ -79,12 +93,90 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp serialize_screen_buffer(%ScreenBuffer{} = buffer) do
-    %{
-      width: buffer.width,
-      height: buffer.height,
-      cells: buffer.cells,
-      cursor: buffer.cursor
-    }
+    try do
+      %{
+        width: buffer.width,
+        height: buffer.height,
+        cells: serialize_cells(buffer.cells),
+        cursor_position: buffer.cursor_position
+      }
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error("ScreenBuffer serialization failed: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        raise e
+    end
+  end
+
+  defp serialize_screen_buffer([]) do
+    # Handle empty scrollback buffer
+    []
+  end
+
+  defp serialize_screen_buffer(buffers) when is_list(buffers) do
+    # Handle list of screen buffers
+    Enum.map(buffers, &serialize_screen_buffer/1)
+  end
+
+  defp serialize_cells(cells) when is_list(cells) do
+    try do
+      Enum.map(cells, fn row ->
+        Enum.map(row, &serialize_cell/1)
+      end)
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error("Cells serialization failed: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        raise e
+    end
+  end
+
+  defp serialize_cell(%Raxol.Terminal.Cell{} = cell) do
+    try do
+      %{
+        char: cell.char,
+        style: serialize_style(cell.style),
+        dirty: cell.dirty,
+        wide_placeholder: cell.wide_placeholder
+      }
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error("Cell serialization failed: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Cell data: #{inspect(cell)}")
+        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        raise e
+    end
+  end
+
+  defp serialize_style(%Raxol.Terminal.ANSI.TextFormatting{} = style) do
+    try do
+      %{
+        bold: style.bold,
+        italic: style.italic,
+        underline: style.underline,
+        blink: style.blink,
+        reverse: style.reverse,
+        foreground: style.foreground,
+        background: style.background,
+        double_width: style.double_width,
+        double_height: style.double_height,
+        faint: style.faint,
+        conceal: style.conceal,
+        strikethrough: style.strikethrough,
+        fraktur: style.fraktur,
+        double_underline: style.double_underline,
+        framed: style.framed,
+        encircled: style.encircled,
+        overlined: style.overlined,
+        hyperlink: style.hyperlink
+      }
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error("Style serialization failed: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Style data: #{inspect(style)}")
+        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        raise e
+    end
   end
 
   defp deserialize_emulator(%{
@@ -101,8 +193,7 @@ defmodule Raxol.Terminal.Session.Serializer do
          charset_state: charset_state
        }) do
     with {:ok, active_buffer} <- deserialize_screen_buffer(active_buffer_data),
-         {:ok, scrollback_buffer} <-
-           deserialize_screen_buffer(scrollback_buffer_data) do
+         {:ok, scrollback_buffer} <- deserialize_screen_buffer(scrollback_buffer_data) do
       emulator = %EmulatorStruct{
         active_buffer: active_buffer,
         scrollback_buffer: scrollback_buffer,
@@ -122,9 +213,9 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp deserialize_renderer(%{screen_buffer: buffer_data, theme: theme}) do
-    with {:ok, buffer} <- deserialize_screen_buffer(buffer_data) do
+    with {:ok, screen_buffer} <- deserialize_screen_buffer(buffer_data) do
       renderer = %Renderer{
-        screen_buffer: buffer,
+        screen_buffer: screen_buffer,
         theme: theme
       }
 
@@ -133,24 +224,96 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp deserialize_screen_buffer(%{
-         cells: cells,
-         scrollback: scrollback,
-         scrollback_limit: scrollback_limit,
-         selection: selection,
-         scroll_region: scroll_region,
          width: width,
-         height: height
+         height: height,
+         cells: cells,
+         cursor_position: cursor_position
        }) do
+    # Deserialize the cells back to Cell structs
+    deserialized_cells = deserialize_cells(cells)
+
     screen_buffer = %ScreenBuffer{
-      cells: cells,
-      scrollback: scrollback,
-      scrollback_limit: scrollback_limit,
-      selection: selection,
-      scroll_region: scroll_region,
       width: width,
-      height: height
+      height: height,
+      cells: deserialized_cells,
+      cursor_position: cursor_position,
+      scrollback: [],
+      scrollback_limit: 1000,
+      selection: nil,
+      scroll_region: nil,
+      scroll_position: 0,
+      damage_regions: [],
+      default_style: Raxol.Terminal.ANSI.TextFormatting.new()
     }
 
     {:ok, screen_buffer}
+  end
+
+  defp deserialize_screen_buffer([]) do
+    # Handle empty scrollback buffer
+    Raxol.Core.Runtime.Log.info("Deserializing empty scrollback buffer")
+    {:ok, []}
+  end
+
+  defp deserialize_cells(cells) when is_list(cells) do
+    Enum.map(cells, fn row ->
+      Enum.map(row, &deserialize_cell/1)
+    end)
+  end
+
+  defp deserialize_cell(%{
+         char: char,
+         style: style_data,
+         dirty: dirty,
+         wide_placeholder: wide_placeholder
+       }) do
+    %Raxol.Terminal.Cell{
+      char: char,
+      style: deserialize_style(style_data),
+      dirty: dirty,
+      wide_placeholder: wide_placeholder
+    }
+  end
+
+  defp deserialize_style(%{
+         bold: bold,
+         italic: italic,
+         underline: underline,
+         blink: blink,
+         reverse: reverse,
+         foreground: foreground,
+         background: background,
+         double_width: double_width,
+         double_height: double_height,
+         faint: faint,
+         conceal: conceal,
+         strikethrough: strikethrough,
+         fraktur: fraktur,
+         double_underline: double_underline,
+         framed: framed,
+         encircled: encircled,
+         overlined: overlined,
+         hyperlink: hyperlink
+       }) do
+    %Raxol.Terminal.ANSI.TextFormatting{
+      bold: bold,
+      italic: italic,
+      underline: underline,
+      blink: blink,
+      reverse: reverse,
+      foreground: foreground,
+      background: background,
+      double_width: double_width,
+      double_height: double_height,
+      faint: faint,
+      conceal: conceal,
+      strikethrough: strikethrough,
+      fraktur: fraktur,
+      double_underline: double_underline,
+      framed: framed,
+      encircled: encircled,
+      overlined: overlined,
+      hyperlink: hyperlink
+    }
   end
 end

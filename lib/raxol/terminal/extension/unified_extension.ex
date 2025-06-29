@@ -85,8 +85,8 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   @doc """
   Executes an extension command.
   """
-  def execute_command(extension_id, command, _args \\ []) do
-    GenServer.call(__MODULE__, {:execute_command, extension_id, command, _args})
+  def execute_command(extension_id, command, args \\ []) do
+    GenServer.call(__MODULE__, {:execute_command, extension_id, command, args})
   end
 
   @doc """
@@ -130,8 +130,8 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   @doc """
   Triggers a hook for all registered extensions.
   """
-  def trigger_hook(hook_name, _args \\ []) do
-    GenServer.call(__MODULE__, {:trigger_hook, hook_name, _args})
+  def trigger_hook(hook_name, args \\ []) do
+    GenServer.call(__MODULE__, {:trigger_hook, hook_name, args})
   end
 
   # Server Callbacks
@@ -262,7 +262,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
   @impl GenServer
   def handle_call(
-        {:execute_command, extension_id, command, _args},
+        {:execute_command, extension_id, command, args},
         _from,
         state
       ) do
@@ -272,7 +272,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
       extension ->
         if command in extension.commands do
-          case do_execute_command(extension, command, _args) do
+          case do_execute_command(extension, command, args) do
             {:ok, result} ->
               {:reply, {:ok, result}, state}
 
@@ -373,7 +373,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   @impl GenServer
-  def handle_call({:trigger_hook, hook_name, _args}, _from, state) do
+  def handle_call({:trigger_hook, hook_name, args}, _from, state) do
     case Map.get(state.hooks, hook_name) do
       nil ->
         {:reply, :ok, state}
@@ -383,7 +383,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           Enum.map(callbacks, fn callback ->
             Task.async(fn ->
               try do
-                callback.fun.([])
+                callback.fun.(args)
               rescue
                 e ->
                   Logger.error("Hook execution failed: #{inspect(e)}")
@@ -574,46 +574,46 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   defp validate_extension_module(nil), do: :ok
   defp validate_extension_module(_), do: {:error, :invalid_extension_module}
 
-  defp do_execute_command(extension, command, _args) do
+  defp do_execute_command(extension, command, args) do
     case extension.module do
       {:ok, module} ->
-        execute_module_command(module, extension.type, command, _args)
+        execute_module_command(module, extension.type, command, args)
 
       nil ->
-        execute_fallback_command(extension, command, _args)
+        execute_fallback_command(extension, command, args)
 
       _ ->
-        execute_fallback_command(extension, command, _args)
+        execute_fallback_command(extension, command, args)
     end
   end
 
-  defp execute_module_command(module, type, command, _args) do
+  defp execute_module_command(module, type, command, args) do
     try do
       case type do
         :script ->
           if function_exported?(module, :execute_command, 2) do
-            module.execute_command(command, _args)
+            module.execute_command(command, args)
           else
             {:error, :command_not_implemented}
           end
 
         :plugin ->
           if function_exported?(module, :run_extension, 2) do
-            module.run_extension(command, _args)
+            module.run_extension(command, args)
           else
             {:error, :command_not_implemented}
           end
 
         :theme ->
           if function_exported?(module, :apply_theme, 1) do
-            module.apply_theme(_args)
+            module.apply_theme(args)
           else
             {:error, :command_not_implemented}
           end
 
         :custom ->
           if function_exported?(module, :execute_feature, 2) do
-            module.execute_feature(command, _args)
+            module.execute_feature(command, args)
           else
             {:error, :command_not_implemented}
           end
@@ -625,7 +625,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  defp execute_fallback_command(extension, command, _args) do
+  defp execute_fallback_command(extension, command, args) do
     # Fallback implementation for extensions without modules
     case extension.type do
       :script ->

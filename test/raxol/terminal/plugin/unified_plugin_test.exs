@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Plugin.UnifiedPlugin
 
   setup do
@@ -8,6 +8,13 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
         plugin_paths: ["test/fixtures/plugins"],
         auto_load: false
       )
+
+    theme_file = "test/fixtures/plugins/theme/theme.ex"
+    original_content = File.read!(theme_file)
+    on_exit(fn ->
+      # Always restore the theme file after each test
+      File.write!(theme_file, original_content)
+    end)
 
     :ok
   end
@@ -283,24 +290,48 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
     end
 
     test ~c"handles reload errors" do
-      # Load plugin
+      # Create a temporary copy of the theme plugin for this test
+      original_theme_dir = "test/fixtures/plugins/theme"
+      temp_theme_dir = "test/fixtures/plugins/theme_temp_#{System.system_time()}"
+
+      # Copy the theme plugin to a temporary location
+      File.cp_r!(original_theme_dir, temp_theme_dir)
+
+      # Load plugin from temporary location
       assert {:ok, plugin_id} =
                UnifiedPlugin.load_plugin(
-                 "test/fixtures/plugins/theme",
+                 temp_theme_dir,
                  :theme,
                  name: "Test Theme",
                  version: "1.0.0"
                )
 
-      # Corrupt plugin file
-      # (In a real test, we would corrupt the plugin file here)
+      temp_theme_file = Path.join(temp_theme_dir, "theme.ex")
+      original_content = File.read!(temp_theme_file)
 
-      # Attempt to reload
-      assert {:error, :reload_failed} = UnifiedPlugin.reload_plugin(plugin_id)
+      # Corrupt the temporary theme file
+      File.write!(temp_theme_file, "defmodule InvalidModule do\n  invalid syntax\nend")
 
-      # Verify plugin is in error state
-      assert {:ok, plugin_state} = UnifiedPlugin.get_plugin_state(plugin_id)
-      assert plugin_state.status == :error
+      try do
+        # Attempt to reload - should fail
+        assert {:error, :reload_failed} = UnifiedPlugin.reload_plugin(plugin_id)
+
+        # Verify plugin is in error state
+        assert {:ok, plugin_state} = UnifiedPlugin.get_plugin_state(plugin_id)
+        assert plugin_state.status == :error
+      after
+        # Clean up: restore the temporary file and remove the temp directory
+        File.write!(temp_theme_file, original_content)
+        File.rm_rf!(temp_theme_dir)
+
+        # Purge and delete the corrupted module if it was loaded
+        try do
+          :code.purge(InvalidModule)
+          :code.delete(InvalidModule)
+        rescue
+          _ -> :ok
+        end
+      end
     end
   end
 end

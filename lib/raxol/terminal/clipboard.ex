@@ -129,4 +129,83 @@ defmodule Raxol.Terminal.Clipboard do
   def get_content(clipboard) do
     Manager.get_content(clipboard)
   end
+
+  @doc """
+  Sets the content of a clipboard instance.
+
+  ## Parameters
+
+    * `clipboard` - The clipboard instance
+    * `content` - The content to set
+
+  ## Returns
+
+    * `{:ok, Manager.t()}` - Content set successfully
+    * `{:error, reason}` - Failed to set content
+
+  ## Examples
+
+      iex> clipboard = Manager.new()
+      iex> {:ok, clipboard} = Clipboard.set_content(clipboard, "Hello, World!")
+      iex> Clipboard.get_content(clipboard)
+      "Hello, World!"
+  """
+  @spec set_content(Manager.t(), String.t()) :: {:ok, Manager.t()} | {:error, term()}
+  def set_content(clipboard, content) do
+    {:ok, Manager.set_content(clipboard, content)}
+  end
+
+  @doc """
+  Gets the selection content from a clipboard instance.
+
+  ## Parameters
+
+    * `clipboard` - The clipboard instance
+
+  ## Returns
+
+    * `{:ok, String.t()}` - Selection content retrieved successfully
+    * `{:error, reason}` - Failed to get selection content
+
+  ## Examples
+
+      iex> clipboard = Manager.new()
+      iex> {:ok, content} = Clipboard.get_selection(clipboard)
+      iex> content
+      ""
+  """
+  @spec get_selection(Manager.t()) :: {:ok, String.t()} | {:error, term()}
+  def get_selection(clipboard) do
+    # For now, return the same content as the main clipboard
+    # In a real implementation, this would handle separate selection buffer
+    {:ok, Manager.get_content(clipboard)}
+  end
+
+  @doc """
+  Sets the selection content of a clipboard instance.
+
+  ## Parameters
+
+    * `clipboard` - The clipboard instance
+    * `content` - The selection content to set
+
+  ## Returns
+
+    * `{:ok, Manager.t()}` - Selection content set successfully
+    * `{:error, reason}` - Failed to set selection content
+
+  ## Examples
+
+      iex> clipboard = Manager.new()
+      iex> {:ok, clipboard} = Clipboard.set_selection(clipboard, "Selected text")
+      iex> {:ok, content} = Clipboard.get_selection(clipboard)
+      iex> content
+      "Selected text"
+  """
+  @spec set_selection(Manager.t(), String.t()) :: {:ok, Manager.t()} | {:error, term()}
+  def set_selection(clipboard, content) do
+    # For now, set the same content as the main clipboard
+    # In a real implementation, this would handle separate selection buffer
+    {:ok, Manager.set_content(clipboard, content)}
+  end
 end

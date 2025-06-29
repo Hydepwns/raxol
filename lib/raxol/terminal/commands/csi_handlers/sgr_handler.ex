@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SGRHandler do
     key = rem(code - 2, 13)
 
     case Map.get(@sgr_mode_map, key) do
-      {field, value} -> Emulator.set_attribute(emulator, {field, value})
+      {field, value} -> Emulator.set_attribute(emulator, field, value)
       nil -> emulator
     end
   end

@@ -24,15 +24,37 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
 
     test ~c"writes characters with character set translation (DEC Special Graphics)" do
       emulator = Emulator.new(80, 24)
+
+      # Debug: Check initial state
+      IO.puts("Initial charset state: #{inspect(emulator.charset_state)}")
+
       # Set G1 to DEC Special Graphics & Character Set (ESC ) 0)
       {emulator, ""} = Emulator.process_input(emulator, "\e)0")
+
+      # Debug: Check state after setting G1
+      IO.puts("After ESC)0, charset state: #{inspect(emulator.charset_state)}")
+
       # Invoke G1 (SI) - Using SO (Shift Out)
       {emulator, ""} = Emulator.process_input(emulator, "\x0E")
+
+      # Debug: Check state after invoking G1
+      IO.puts("After SO (\\x0E), charset state: #{inspect(emulator.charset_state)}")
+      IO.puts("Active charset: #{inspect(CharacterSets.get_active_charset(emulator.charset_state))}")
+
       # Write 'a' (0x61) which maps to block character in DEC Special Graphics
       {emulator, _} = Emulator.process_input(emulator, "a")
+
+      # Debug: Check final state
+      IO.puts("After writing 'a', charset state: #{inspect(emulator.charset_state)}")
+
       # Use ScreenBuffer.get_cell_at with emulator.screen_buffer
       cell =
         ScreenBuffer.get_cell_at(Emulator.get_active_buffer(emulator), 0, 0)
+
+      # Debug: Check what was actually written
+      IO.puts("Cell content: #{inspect(cell)}")
+      IO.puts("Cell char: #{inspect(cell.char)}")
+      IO.puts("Cell codepoint: #{inspect(cell.codepoint)}")
 
       # Assertion depends on the specific mapping implemented
       # Should be translated - Check the char field, not codepoint

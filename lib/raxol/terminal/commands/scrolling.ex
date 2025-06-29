@@ -38,13 +38,13 @@ defmodule Raxol.Terminal.Commands.Scrolling do
       preserved_lines_count = region_height - actual_scroll_count
 
       new_buffer =
-        buffer
-        |> shift_lines_up(
+        shift_lines_up(
+          buffer,
           effective_top,
           preserved_lines_source_start,
-          preserved_lines_count
+          region_height,
+          blank_style
         )
-        |> fill_blank_lines(effective_top, region_height, blank_style)
 
       %{
         new_buffer
@@ -91,13 +91,13 @@ defmodule Raxol.Terminal.Commands.Scrolling do
       actual_scroll_count = min(count, region_height)
 
       new_buffer =
-        buffer
-        |> shift_lines_down(
+        shift_lines_down(
+          buffer,
           effective_top + actual_scroll_count,
           effective_top,
-          region_height
+          region_height,
+          blank_style
         )
-        |> fill_blank_lines(effective_top, region_height, blank_style)
 
       %{
         new_buffer
@@ -126,39 +126,42 @@ defmodule Raxol.Terminal.Commands.Scrolling do
         {top, bottom}
 
       _ ->
-        Raxol.Terminal.Buffer.ScrollRegion.get_region(buffer)
+        case Raxol.Terminal.Buffer.ScrollRegion.get_region(buffer) do
+          {top, bottom} -> {top, bottom}
+          nil -> {0, buffer.height - 1}
+        end
     end
   end
 
-  defp shift_lines_up(buffer, region_start, region_start_plus_n, count) do
+  defp shift_lines_up(buffer, region_start, region_start_plus_n, region_height, blank_style) do
     cells = buffer.cells
-    region_end = region_start + count - 1
+    region_end = region_start + region_height - 1
     n = region_start_plus_n - region_start
 
     new_cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, idx} ->
-        map_line_for_shift_up(idx, cells, line, region_start, region_end, n, buffer.width)
+        map_line_for_shift_up(idx, cells, line, region_start, region_end, n, buffer.width, blank_style)
       end)
 
     %{buffer | cells: new_cells}
   end
 
-  defp map_line_for_shift_up(idx, cells, line, region_start, region_end, n, width) do
+  defp map_line_for_shift_up(idx, cells, line, region_start, region_end, n, width, blank_style) do
     cond do
       idx >= region_start and idx <= region_end - n ->
         get_source_line(cells, idx + n, line)
 
       idx > region_end - n and idx <= region_end ->
         # Create empty line for this position
-        List.duplicate(Cell.new(" ", TextFormatting.new()), width)
+        List.duplicate(Cell.new(" ", blank_style), width)
 
       true ->
         line
     end
   end
 
-  defp shift_lines_down(buffer, region_start_plus_n, region_start, count) do
+  defp shift_lines_down(buffer, region_start_plus_n, region_start, count, blank_style) do
     cells = buffer.cells
     region_height = count
     n = region_start_plus_n - region_start
@@ -167,20 +170,20 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     new_cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, idx} ->
-        map_line_for_shift_down(idx, cells, line, region_start, region_end, n, buffer.width)
+        map_line_for_shift_down(idx, cells, line, region_start, region_end, n, buffer.width, blank_style)
       end)
 
     %{buffer | cells: new_cells}
   end
 
-  defp map_line_for_shift_down(idx, cells, line, region_start, region_end, n, width) do
+  defp map_line_for_shift_down(idx, cells, line, region_start, region_end, n, width, blank_style) do
     cond do
       idx >= region_start + n and idx <= region_end ->
         get_source_line(cells, idx - n, line)
 
       idx >= region_start and idx < region_start + n ->
         # Create empty line for this position
-        List.duplicate(Cell.new(" ", TextFormatting.new()), width)
+        List.duplicate(Cell.new(" ", blank_style), width)
 
       true ->
         line
@@ -195,16 +198,48 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     end
   end
 
-  defp fill_blank_lines(buffer, _start_line, _count, style) do
+  defp fill_blank_lines(buffer, region_start, count, style, :up) do
+    region_height = get_region_height(buffer, region_start)
+    region_end = region_start + region_height - 1
+    blank_start = region_end - count + 1
+    blank_end = region_end
     empty_line = List.duplicate(Cell.new(" ", style), buffer.width)
 
     updated_cells =
-      Enum.map(buffer.cells, fn
-        nil -> empty_line
-        line when is_list(line) -> line
-        _ -> empty_line
+      Enum.with_index(buffer.cells)
+      |> Enum.map(fn {line, idx} ->
+        if idx >= blank_start and idx <= blank_end do
+          empty_line
+        else
+          line
+        end
       end)
 
     %{buffer | cells: updated_cells}
+  end
+
+  defp fill_blank_lines(buffer, region_start, count, style, :down) do
+    region_height = get_region_height(buffer, region_start)
+    region_end = region_start + region_height - 1
+    blank_start = region_start
+    blank_end = region_start + count - 1
+    empty_line = List.duplicate(Cell.new(" ", style), buffer.width)
+
+    updated_cells =
+      Enum.with_index(buffer.cells)
+      |> Enum.map(fn {line, idx} ->
+        if idx >= blank_start and idx <= blank_end do
+          empty_line
+        else
+          line
+        end
+      end)
+
+    %{buffer | cells: updated_cells}
+  end
+
+  defp get_region_height(buffer, region_start) do
+    # Try to infer region height from buffer.cells length and region_start
+    buffer.height - region_start
   end
 end

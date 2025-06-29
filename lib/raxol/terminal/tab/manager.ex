@@ -178,24 +178,25 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   * `manager` - The tab manager instance
   * `tab_id` - The ID of the tab
-  * `config` - The new configuration
+  * `updates` - The configuration updates to apply
 
   ## Returns
 
   `{:ok, updated_manager}` on success
   `{:error, :tab_not_found}` if the tab doesn't exist
   """
-  @spec update_tab_config(t(), tab_id(), tab_config()) ::
+  @spec update_tab_config(t(), tab_id(), map()) ::
           {:ok, t()} | {:error, :tab_not_found}
-  def update_tab_config(manager, tab_id, config) do
+  def update_tab_config(manager, tab_id, updates) do
     case Map.get(manager.tabs, tab_id) do
       nil ->
         {:error, :tab_not_found}
 
-      _tab ->
+      current_config ->
+        updated_config = Map.merge(current_config, updates)
         updated_manager = %{
           manager
-          | tabs: Map.put(manager.tabs, tab_id, config)
+          | tabs: Map.put(manager.tabs, tab_id, updated_config)
         }
 
         {:ok, updated_manager}
@@ -211,11 +212,11 @@ defmodule Raxol.Terminal.Tab.Manager do
 
   ## Returns
 
-  A list of tab configurations
+  A map of tab IDs to tab configurations
   """
-  @spec list_tabs(t()) :: [tab_config()]
+  @spec list_tabs(t()) :: %{tab_id() => tab_config()}
   def list_tabs(manager) do
-    Map.values(manager.tabs)
+    manager.tabs
   end
 
   @doc """

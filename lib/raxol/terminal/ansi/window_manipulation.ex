@@ -436,4 +436,10 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   """
   @spec set_mode(String.t()) :: String.t()
   def set_mode(mode), do: "\e[#{mode}h"
+
+  @doc """
+  Sets the window position.
+  """
+  @spec set_position(non_neg_integer(), non_neg_integer()) :: String.t()
+  def set_position(x, y), do: "\e[3;#{x};#{y}t"
 end

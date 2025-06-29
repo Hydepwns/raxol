@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.BufferHandlersTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Commands.BufferHandlers
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer

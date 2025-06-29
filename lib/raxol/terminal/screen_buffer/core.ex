@@ -106,9 +106,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_char(buffer, x, y) do
-    case get_in(buffer.cells, [y, x]) do
-      %{char: char} -> char
-      _ -> " "
+    case Enum.at(buffer.cells, y) do
+      nil -> " "
+      row ->
+        case Enum.at(row, x) do
+          nil -> " "
+          cell -> Raxol.Terminal.Cell.get_char(cell)
+        end
     end
   end
 
@@ -235,6 +239,27 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     }
   end
 
+  def erase_chars(buffer, x, y, count) do
+    # Erase characters starting at position (x, y)
+    if y < length(buffer.cells) do
+      line = Enum.at(buffer.cells, y, [])
+      if x < length(line) do
+        # Replace characters from x to x+count with empty cells
+        new_line =
+          Enum.take(line, x) ++
+          List.duplicate(%{}, count) ++
+          Enum.drop(line, x + count)
+
+        new_cells = List.replace_at(buffer.cells, y, new_line)
+        %{buffer | cells: new_cells}
+      else
+        buffer
+      end
+    else
+      buffer
+    end
+  end
+
   # --- Erase Operations ---
   def erase_from_cursor_to_end(buffer) do
     %{
@@ -289,6 +314,52 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
       3 -> erase_all(buffer)
       _ -> buffer
     end
+  end
+
+  # Add missing functions with different signatures
+  def erase_display(buffer, mode, cursor, min_row, max_row) do
+    # For now, delegate to the simpler version
+    erase_display(buffer, mode)
+  end
+
+  def erase_line(buffer, mode, cursor, min_col, max_col) do
+    # For now, delegate to the simpler version
+    erase_line(buffer)
+  end
+
+  def delete_chars(buffer, count, cursor, max_col) do
+    # For now, delegate to the simpler version
+    delete_chars(buffer, count)
+  end
+
+  def insert_chars(buffer, count, cursor, max_col) do
+    # For now, delegate to the simpler version
+    insert_chars(buffer, count)
+  end
+
+  def mark_damaged(buffer, x, y, width, height, reason) do
+    # For now, delegate to the simpler version
+    mark_damaged(buffer, x, y, width, height)
+  end
+
+  def set_dimensions(buffer, width, height) do
+    %{buffer | width: width, height: height}
+  end
+
+  def get_scrollback(buffer) do
+    buffer.scroll_state
+  end
+
+  def set_scrollback(buffer, scrollback) do
+    %{buffer | scroll_state: scrollback}
+  end
+
+  def get_damaged_regions(buffer) do
+    Screen.get_damaged_regions(buffer.screen_state)
+  end
+
+  def clear_damaged_regions(buffer) do
+    %{buffer | screen_state: Screen.clear_damaged_regions(buffer.screen_state)}
   end
 
   # --- Cursor Operations ---

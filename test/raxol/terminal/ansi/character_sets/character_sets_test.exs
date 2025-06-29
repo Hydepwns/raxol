@@ -106,7 +106,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
     test ~c"translates character using active charset" do
       state = CharacterSets.new()
       # Test ASCII translation (no change)
-      assert CharacterSets.translate_char(?A, state) == "A"
+      {value, _} = CharacterSets.translate_char(?A, state)
+      assert value == ?A
 
       # Test DEC Special Graphics translation
       state =
@@ -116,14 +117,18 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
           Raxol.Terminal.ANSI.CharacterSets.DEC
         )
 
-      assert CharacterSets.translate_char(?_, state) == "─"
+      {value, _} = CharacterSets.translate_char(?_, state)
+      assert value == ?─
     end
 
     test ~c"handles single shift translation" do
       state = CharacterSets.new()
+      # Set G2 to DEC Special Graphics for the test
+      state = CharacterSets.switch_charset(state, :g2, Raxol.Terminal.ANSI.CharacterSets.DEC)
       state = CharacterSets.set_single_shift(state, :ss2)
       # Test DEC Special Graphics translation with single shift
-      assert CharacterSets.translate_char(?_, state) == "─"
+      {value, _} = CharacterSets.translate_char(?_, state)
+      assert value == ?─
     end
   end
 

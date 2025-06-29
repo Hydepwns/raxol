@@ -55,6 +55,22 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
     %__MODULE__{tracker | regions: []}
   end
 
+  @doc """
+  Clears all tracked damage regions (alias for clear_regions).
+  """
+  @spec clear_damage(t()) :: t()
+  def clear_damage(%__MODULE__{} = tracker) do
+    clear_regions(tracker)
+  end
+
+  @doc """
+  Gets all damage regions (alias for get_regions).
+  """
+  @spec get_damage_regions(t()) :: list(region())
+  def get_damage_regions(%__MODULE__{} = tracker) do
+    get_regions(tracker)
+  end
+
   # --- Private Helpers ---
 
   # Merges newly added regions by iterating through the list and combining overlaps.

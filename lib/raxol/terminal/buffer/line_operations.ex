@@ -113,7 +113,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       remaining_lines = Enum.drop(after_cursor, count)
 
       # Add blank lines at the bottom
-      blank_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
+      blank_lines = create_empty_lines(buffer.width, count)
       new_cells = before ++ remaining_lines ++ blank_lines
 
       %{buffer | cells: new_cells}
@@ -181,24 +181,29 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Removes lines from the top of the buffer.
   """
-  @spec pop_top_lines(ScreenBuffer.t(), non_neg_integer()) ::
-          {list(list(Cell.t())), ScreenBuffer.t()}
-  def pop_top_lines(buffer, count) do
+  @spec pop_top_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def pop_top_lines(buffer, count) when count > 0 do
     {popped_lines, remaining_cells} = Enum.split(buffer.cells, count)
 
     # Add empty lines at the bottom
     empty_lines = create_empty_lines(buffer.width, count)
     new_cells = remaining_cells ++ empty_lines
 
-    {popped_lines, %{buffer | cells: new_cells}}
+    %{buffer | cells: new_cells}
   end
+
+  def pop_top_lines(buffer, _count), do: buffer
 
   @doc """
   Gets a line from the buffer.
   """
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, line_index) do
-    Enum.at(buffer.cells, line_index) || []
+    if line_index >= 0 and line_index < length(buffer.cells) do
+      Enum.at(buffer.cells, line_index) || []
+    else
+      []
+    end
   end
 
   @doc """
@@ -401,5 +406,69 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     else
       buffer
     end
+  end
+
+  @doc """
+  Deletes a specified number of characters from the current line.
+  """
+  @spec delete_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def delete_chars(buffer, count) when count > 0 do
+    {x, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    delete_chars_at(buffer, y, x, count)
+  end
+
+  def delete_chars(buffer, _count), do: buffer
+
+  @doc """
+  Deletes characters at a specific position.
+  """
+  @spec delete_chars_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def delete_chars_at(buffer, row, col, count) do
+    if row >= 0 and row < length(buffer.cells) and col >= 0 and col < buffer.width do
+      line = get_line(buffer, row)
+      new_line = delete_chars_from_line(line, col, count, buffer.width)
+      update_line(buffer, row, new_line)
+    else
+      buffer
+    end
+  end
+
+  @doc """
+  Inserts a specified number of characters at the current position.
+  """
+  @spec insert_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def insert_chars(buffer, count) when count > 0 do
+    {x, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    insert_chars_at(buffer, y, x, count)
+  end
+
+  def insert_chars(buffer, _count), do: buffer
+
+  @doc """
+  Inserts characters at a specific position.
+  """
+  @spec insert_chars_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def insert_chars_at(buffer, row, col, count) do
+    if row >= 0 and row < length(buffer.cells) and col >= 0 and col < buffer.width do
+      line = get_line(buffer, row)
+      new_line = insert_chars_into_line(line, col, count, buffer.width)
+      update_line(buffer, row, new_line)
+    else
+      buffer
+    end
+  end
+
+  # Helper functions for character operations
+  defp delete_chars_from_line(line, col, count, width) do
+    {before, after_part} = Enum.split(line, col)
+    {_, remaining} = Enum.split(after_part, count)
+    before ++ remaining ++ create_empty_line(width - length(before) - length(remaining))
+  end
+
+  defp insert_chars_into_line(line, col, count, width) do
+    {before, after_part} = Enum.split(line, col)
+    empty_chars = create_empty_line(count)
+    new_line = before ++ empty_chars ++ after_part
+    Enum.take(new_line, width)
   end
 end
