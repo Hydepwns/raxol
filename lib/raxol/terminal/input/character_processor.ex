@@ -59,6 +59,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
   defp get_buffer_info(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
+
     {active_buffer, ScreenBuffer.get_width(active_buffer),
      ScreenBuffer.get_height(active_buffer)}
   end
@@ -83,9 +84,17 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     char_width = CharacterHandling.get_char_width(char_codepoint)
     auto_wrap_mode = ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
 
+    # Get current cursor position
     {current_cursor_x, current_cursor_y} =
-      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+      try do
+        Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+      rescue
+        e ->
+          IO.puts("ERROR: Failed to get cursor position: #{inspect(e)}")
+          {0, 0}
+      end
 
+    # Use the existing helper function to calculate positions
     calculate_write_and_cursor_position(
       current_cursor_x,
       current_cursor_y,
@@ -138,14 +147,15 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
          next_last_col_exceeded,
          new_charset_state
        ) do
-    cursor_before_move = emulator.cursor
-    new_position_tuple = {next_cursor_x, next_cursor_y}
-    new_cursor = %{cursor_before_move | position: new_position_tuple}
+    # Update cursor position by calling the cursor manager
+    Raxol.Terminal.Cursor.Manager.set_position(
+      emulator.cursor,
+      {next_cursor_y, next_cursor_x}
+    )
 
     %{
       emulator
-      | cursor: new_cursor,
-        last_col_exceeded: next_last_col_exceeded,
+      | last_col_exceeded: next_last_col_exceeded,
         charset_state: new_charset_state
     }
   end
