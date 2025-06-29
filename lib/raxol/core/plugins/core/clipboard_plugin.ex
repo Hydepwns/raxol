@@ -36,10 +36,10 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
       when binary?(content) do
     case clipboard_impl.copy(content) do
       :ok ->
-        {:ok, state, :clipboard_write_ok}
+        {:ok, "Content copied to clipboard"}
 
       {:error, reason} ->
-        {:error, {:clipboard_write_failed, reason}, state}
+        {:error, "Failed to copy to clipboard: #{inspect(reason)}"}
     end
   end
 
@@ -50,19 +50,19 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
       ) do
     case clipboard_impl.paste() do
       {:ok, content} ->
-        {:ok, state, {:clipboard_content, content}}
+        {:ok, content}
 
       {:error, reason} ->
-        {:error, {:clipboard_read_failed, reason}, state}
+        {:error, "Failed to read from clipboard: #{inspect(reason)}"}
     end
   end
 
   def handle_command(:clipboard_write, _args, state) do
-    {:error, :unhandled_clipboard_command, state}
+    {:error, "Invalid arguments for clipboard_write command"}
   end
 
   def handle_command(:clipboard_read, _args, state) do
-    {:error, :unhandled_clipboard_command, state}
+    {:error, "Invalid arguments for clipboard_read command"}
   end
 
   @doc """
