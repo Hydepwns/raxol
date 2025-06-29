@@ -91,13 +91,13 @@ defmodule Raxol.Core.Performance do
 
       # Add basic system stats if not available
       stats =
-        Map.merge_new(stats, %{
+        Map.merge(stats, %{
           cpu_usage: get_cpu_usage(),
           memory_usage: get_memory_usage(),
           render_time: Map.get(stats, :avg_frame_time, 0),
           frame_rate: Map.get(stats, :fps, 0),
           jank_events: Map.get(stats, :jank_count, 0)
-        })
+        }, fn _key, _v1, v2 -> v2 end)
 
       {:ok, stats}
     rescue

@@ -80,6 +80,38 @@ defmodule Raxol.Core.Metrics.Aggregator do
   def calculate_aggregation(values, :min), do: Enum.min(values)
   def calculate_aggregation(values, :max), do: Enum.max(values)
 
+  def calculate_aggregation(values, :median) do
+    sorted = Enum.sort(values)
+    count = length(sorted)
+
+    if rem(count, 2) == 0 do
+      # Even number of elements - average of middle two
+      mid = div(count, 2)
+      (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
+    else
+      # Odd number of elements - middle element
+      Enum.at(sorted, div(count, 2))
+    end
+  end
+
+  def calculate_aggregation(values, {:percentile, p}) do
+    sorted = Enum.sort(values)
+    count = length(sorted)
+
+    if count == 0 do
+      0
+    else
+      index = ceil(p * count) - 1
+      index = max(0, min(index, count - 1))
+      Enum.at(sorted, index)
+    end
+  end
+
+  def calculate_aggregation(values, :percentile) do
+    # Default to 90th percentile
+    calculate_aggregation(values, {:percentile, 0.9})
+  end
+
   @impl GenServer
   def init(opts) do
     state = %{
@@ -161,7 +193,9 @@ defmodule Raxol.Core.Metrics.Aggregator do
     metrics
     |> group_metrics(rule.group_by)
     |> Enum.map(fn {group, group_metrics} ->
-      aggregated_value = calculate_aggregation(group_metrics, rule.type)
+      # Extract values from metric maps before aggregation
+      values = Enum.map(group_metrics, & &1.value)
+      aggregated_value = calculate_aggregation(values, rule.type)
 
       %{
         timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -181,7 +215,9 @@ defmodule Raxol.Core.Metrics.Aggregator do
     metrics
     |> Enum.group_by(fn metric ->
       group_by
-      |> Enum.map(&Map.get(metric.tags, &1))
+      |> Enum.map(fn key ->
+        Map.get(metric.tags, key) || Map.get(metric.tags, String.to_atom(key))
+      end)
       |> Enum.join(":")
     end)
   end

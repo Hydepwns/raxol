@@ -584,4 +584,67 @@ defmodule Raxol.Core.Accessibility do
     # For test purposes, just return ok
     :ok
   end
+
+  @doc """
+  Initialize accessibility system with the given options.
+
+  ## Parameters
+
+  * `options` - Options to configure the accessibility system
+
+  ## Returns
+
+  * `:ok` - Initialization successful
+  * `{:error, reason}` - Initialization failed
+
+  ## Examples
+
+      iex> Accessibility.init(high_contrast: true)
+      :ok
+  """
+  def init(options \\ []) do
+    Raxol.Core.Runtime.Log.debug(
+      "Initializing accessibility system with options: #{inspect(options)}"
+    )
+
+    # Initialize theme integration
+    ThemeIntegration.init()
+
+    # Apply initial settings if provided
+    if options != [] do
+      ThemeIntegration.apply_settings(options)
+    end
+
+    :ok
+  end
+
+  @doc """
+  Enable or disable accessibility features.
+
+  ## Parameters
+
+  * `enabled` - Whether to enable accessibility features
+
+  ## Returns
+
+  * `:ok` - Setting updated successfully
+  * `{:error, reason}` - Failed to update setting
+
+  ## Examples
+
+      iex> Accessibility.set_enabled(true)
+      :ok
+
+      iex> Accessibility.set_enabled(false)
+      :ok
+  """
+  def set_enabled(enabled) do
+    Raxol.Core.Runtime.Log.debug("Setting accessibility enabled to: #{enabled}")
+
+    if enabled do
+      enable()
+    else
+      disable()
+    end
+  end
 end

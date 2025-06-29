@@ -93,7 +93,8 @@ defmodule Raxol.Core.Metrics.Visualizer do
           Map.put(state.charts, chart_id, %{
             data: chart_data,
             options: chart_options,
-            created_at: DateTime.utc_now()
+            created_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now()
           }),
         next_chart_id: chart_id + 1
     }
@@ -162,7 +163,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
         datasets: [
           %{
             label: options.title,
-            data: get_metric_values(metrics),
+            data: get_filtered_metric_values(metrics, options),
             borderColor: options.color,
             fill: false,
             tension: 0.4
@@ -199,7 +200,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
         datasets: [
           %{
             label: options.title,
-            data: get_metric_values(metrics),
+            data: get_filtered_metric_values(metrics, options),
             backgroundColor: options.color,
             borderColor: options.color,
             borderWidth: 1
@@ -305,16 +306,22 @@ defmodule Raxol.Core.Metrics.Visualizer do
   end
 
   defp get_time_labels(metrics, options) do
-    metrics
+    filtered_metrics = filter_metrics_by_time_range(metrics, options.time_range)
+
+    filtered_metrics
     |> Enum.map(& &1.timestamp)
     |> Enum.map(&DateTime.from_unix!(&1, :millisecond))
-    |> filter_by_time_range(options.time_range)
     |> Enum.map(&format_time_label/1)
   end
 
   defp get_metric_values(metrics) do
     metrics
     |> Enum.map(& &1.value)
+  end
+
+  defp get_filtered_metric_values(metrics, options) do
+    filtered_metrics = filter_metrics_by_time_range(metrics, options.time_range)
+    get_metric_values(filtered_metrics)
   end
 
   defp get_latest_metric_value(metrics) do
@@ -343,13 +350,21 @@ defmodule Raxol.Core.Metrics.Visualizer do
     end)
   end
 
-  defp filter_by_time_range(timestamps, nil), do: timestamps
+  defp filter_metrics_by_time_range(metrics, nil), do: metrics
 
-  defp filter_by_time_range(timestamps, {start, end_}) do
-    Enum.filter(
-      timestamps,
-      &(DateTime.compare(&1, start) != :lt and DateTime.compare(&1, end_) != :gt)
-    )
+  defp filter_metrics_by_time_range(metrics, {start, end_}) do
+    IO.puts("DEBUG: Filtering metrics with time range: #{start} to #{end_}")
+    IO.puts("DEBUG: Total metrics before filtering: #{length(metrics)}")
+
+    filtered = Enum.filter(metrics, fn metric ->
+      timestamp = DateTime.from_unix!(metric.timestamp, :millisecond)
+      result = DateTime.compare(timestamp, start) != :lt and DateTime.compare(timestamp, end_) != :gt
+      IO.puts("DEBUG: Metric timestamp: #{timestamp}, value: #{metric.value}, included: #{result}")
+      result
+    end)
+
+    IO.puts("DEBUG: Total metrics after filtering: #{length(filtered)}")
+    filtered
   end
 
   defp format_time_label(datetime) do
@@ -375,9 +390,16 @@ defmodule Raxol.Core.Metrics.Visualizer do
   defp export_to_csv(chart) do
     headers = ["Timestamp", "Value"]
 
+    # Extract data from the chart structure
+    # The chart has {data: chart_data, options: ..., created_at: ..., updated_at: ...}
+    # where chart_data has {data: %{labels: [...], datasets: [...]}, options: ..., type: ...}
+    labels = chart.data.data.labels
+    values = chart.data.data.datasets |> List.first() |> Map.get(:data)
+
     rows =
-      Enum.map(chart.data, fn point ->
-        [format_time_label(point.timestamp), point.value]
+      Enum.zip(labels, values)
+      |> Enum.map(fn {label, value} ->
+        [label, to_string(value)]
       end)
 
     [headers | rows]

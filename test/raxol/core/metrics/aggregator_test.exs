@@ -63,27 +63,34 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
       }
 
       {:ok, rule_id} = Aggregator.add_rule(rule)
+
+      # Setup meck for UnifiedCollector
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+
+      on_exit(fn ->
+        try do
+          :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+        catch
+          :error, {:not_mocked, _} -> :ok
+        end
+      end)
+
       %{rule_id: rule_id}
     end
 
     test "aggregates metrics by mean", %{rule_id: rule_id} do
       metrics = create_test_metrics([10, 20, 30])
 
-      # Mock UnifiedCollector.get_metrics to return our test metrics
-      :meck.new(UnifiedCollector, [:passthrough])
-
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(rule_id)
       assert length(aggregated) == 1
       assert aggregated |> List.first() |> Map.get(:value) == 20.0
-
-      :meck.unload(UnifiedCollector)
     end
 
-    test "aggregates metrics by median", %{rule_id: rule_id} do
+    test "aggregates metrics by median", %{rule_id: _rule_id} do
       rule = %{
         type: :median,
         window: :hour,
@@ -96,20 +103,16 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30])
 
-      :meck.new(UnifiedCollector, [:passthrough])
-
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(median_rule_id)
       assert length(aggregated) == 1
       assert aggregated |> List.first() |> Map.get(:value) == 20.0
-
-      :meck.unload(UnifiedCollector)
     end
 
-    test "groups metrics by specified fields", %{rule_id: rule_id} do
+    test "groups metrics by specified fields", %{rule_id: _rule_id} do
       rule = %{
         type: :mean,
         window: :hour,
@@ -124,23 +127,21 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
           value: 10,
-          tags: %{service: "test", region: "us"}
+          tags: %{"service" => "test", "region" => "us"}
         },
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
           value: 20,
-          tags: %{service: "test", region: "eu"}
+          tags: %{"service" => "test", "region" => "eu"}
         },
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
           value: 30,
-          tags: %{service: "test", region: "us"}
+          tags: %{"service" => "test", "region" => "us"}
         }
       ]
 
-      :meck.new(UnifiedCollector, [:passthrough])
-
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
@@ -152,8 +153,6 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       assert us_metrics.value == 20.0
       assert eu_metrics.value == 20.0
-
-      :meck.unload(UnifiedCollector)
     end
   end
 
@@ -161,11 +160,26 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
     test "returns error for non-existent rule" do
       assert {:error, :rule_not_found} = Aggregator.get_aggregated_metrics(999)
       assert {:error, :rule_not_found} = Aggregator.update_aggregation(999)
-      assert {:error, :rule_not_found} = Aggregator.get_rules()
+      assert {:ok, %{}} = Aggregator.get_rules()
     end
   end
 
   describe "statistical calculations" do
+    setup do
+      # Setup meck for UnifiedCollector
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+
+      on_exit(fn ->
+        try do
+          :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+        catch
+          :error, {:not_mocked, _} -> :ok
+        end
+      end)
+
+      :ok
+    end
+
     test "calculates median correctly" do
       rule = %{
         type: :median,
@@ -178,17 +192,13 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30, 40])
 
-      :meck.new(UnifiedCollector, [:passthrough])
-
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(rule_id)
       assert length(aggregated) == 1
       assert aggregated |> List.first() |> Map.get(:value) == 25.0
-
-      :meck.unload(UnifiedCollector)
     end
 
     test "calculates percentile correctly" do
@@ -203,17 +213,14 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30, 40, 50])
 
-      :meck.new(UnifiedCollector, [:passthrough])
-
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(rule_id)
       assert length(aggregated) == 1
-      assert aggregated |> List.first() |> Map.get(:value) == 40.0
-
-      :meck.unload(UnifiedCollector)
+      # For 90th percentile of [10, 20, 30, 40, 50], we expect 50 (the 5th element)
+      assert aggregated |> List.first() |> Map.get(:value) == 50.0
     end
   end
 end

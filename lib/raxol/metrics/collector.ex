@@ -31,7 +31,7 @@ defmodule Raxol.Metrics.Collector do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     {:ok,
      %{
@@ -42,7 +42,7 @@ defmodule Raxol.Metrics.Collector do
      }}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:record_timing, event_type, time}, state) do
     timings =
       Map.update(
@@ -55,14 +55,14 @@ defmodule Raxol.Metrics.Collector do
     {:noreply, %{state | timings: timings}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:record_throughput, count}, state) do
     current_time = System.system_time(:second)
     throughput = [{current_time - state.start_time, count} | state.throughput]
     {:noreply, %{state | throughput: throughput}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:record_memory, memory}, state) do
     current_time = System.system_time(:second)
     memory_mb = memory / (1024 * 1024)
@@ -74,7 +74,7 @@ defmodule Raxol.Metrics.Collector do
     {:noreply, %{state | memory_usage: memory_usage}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_metrics, _from, state) do
     metrics = %{
       timings: state.timings,

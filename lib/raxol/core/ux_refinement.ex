@@ -126,7 +126,7 @@ defmodule Raxol.Core.UXRefinement do
 
     _ =
       focus_manager_module().register_focus_change_handler(
-        &handle_accessibility_focus_change/3
+        fn a, b -> handle_accessibility_focus_change(a, b, nil) end
       )
 
     _ = register_enabled_feature(:accessibility)
@@ -200,11 +200,11 @@ defmodule Raxol.Core.UXRefinement do
   end
 
   def disable_feature(:accessibility) do
-    accessibility_module().disable()
+    accessibility_module().disable(nil)
     Process.put(:ux_refinement_metadata, %{})
 
     focus_manager_module().unregister_focus_change_handler(
-      &handle_accessibility_focus_change/3
+      fn a, b -> handle_accessibility_focus_change(a, b, nil) end
     )
 
     unregister_enabled_feature(:accessibility)

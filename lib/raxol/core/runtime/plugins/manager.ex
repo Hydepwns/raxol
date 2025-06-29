@@ -22,6 +22,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   require Raxol.Core.Runtime.Log
 
+  # Add missing aliases for modules being called without full names
+  alias Raxol.Core.Runtime.Plugins.CommandHandler
+  alias Raxol.Core.Runtime.Plugins.Discovery
+  alias Raxol.Core.Runtime.Plugins.FileWatcher
+  alias Raxol.Core.Runtime.Plugins.PluginReloader
+  alias Raxol.Core.Runtime.Plugins.TimerManager
+
   @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -147,13 +154,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_loaded_plugins, _from, state) do
     plugins = Map.keys(state)
     {:reply, plugins, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:execute_command, command, arg1, arg2}, _from, state) do
     case execute_command(command, arg1, arg2) do
       {:ok, result} ->
@@ -164,7 +171,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_plugin_state, plugin_id}, _from, state) do
     case Map.get(state.plugin_states, plugin_id) do
       nil -> {:reply, {:error, :plugin_not_found}, state}
@@ -172,7 +179,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set_plugin_state, plugin_id, new_state}, _from, state) do
     updated_state =
       Raxol.Core.Runtime.Plugins.StateManager.set_plugin_state(
@@ -184,7 +191,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:reply, :ok, updated_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update_plugin_state, plugin_id, update_fun}, _from, state) do
     updated_state =
       Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
@@ -196,7 +203,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:reply, :ok, updated_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:process_command, command}, _from, state) do
     case Raxol.Core.Runtime.Plugins.CommandHandler.process_command(
            command,
@@ -207,12 +214,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_plugins, _from, state) do
     {:reply, state.plugins, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_plugin_states, _from, state) do
     {:reply, state.plugin_states, state}
   end
