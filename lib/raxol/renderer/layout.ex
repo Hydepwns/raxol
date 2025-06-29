@@ -94,12 +94,8 @@ defmodule Raxol.Renderer.Layout do
     result = process_element(normalized_view, available_space, [])
     flat = List.flatten(result) |> Enum.reject(&nil?/1)
 
-    IO.inspect(flat, label: "APPLY_LAYOUT FLAT", charlists: :as_lists)
-    # If the result is a single map, return it as a list.
-    # Otherwise, return the list (for multi-root, empty, or already correctly processed lists).
     case flat do
       [single_map] when map?(single_map) -> [single_map]
-      # Handles [], [map1, map2], etc.
       _ -> flat
     end
   end
@@ -107,11 +103,15 @@ defmodule Raxol.Renderer.Layout do
   # Process element functions - simplified main function
   defp process_element(%{type: type} = element, space, acc) do
     process_function = @element_processors[type]
-    if process_function, do: apply(__MODULE__, process_function, [element, space, acc]), else: acc
+
+    if process_function,
+      do: apply(__MODULE__, process_function, [element, space, acc]),
+      else: acc
   end
 
   # Extract each element type into its own function
-  def process_view_element(%{children: children}, space, acc) when list?(children) do
+  def process_view_element(%{children: children}, space, acc)
+      when list?(children) do
     process_children(children, space, acc)
   end
 
@@ -119,7 +119,8 @@ defmodule Raxol.Renderer.Layout do
     process_element(children, space, acc)
   end
 
-  def process_panel_element(%{attrs: attrs, children: children}, space, acc) when list?(children) do
+  def process_panel_element(%{attrs: attrs, children: children}, space, acc)
+      when list?(children) do
     panel_space = apply_panel_layout(space, attrs)
     panel_elements = create_panel_elements(space, attrs)
     inner_elements = process_children(children, panel_space, [])
@@ -129,6 +130,7 @@ defmodule Raxol.Renderer.Layout do
   def process_label_element(%{attrs: attrs}, space, acc) do
     text = Map.get(attrs, :content, "")
     style = Map.get(attrs, :style, @default_style)
+
     text_element = %{
       type: :text,
       position: {space.x, space.y},
@@ -136,6 +138,7 @@ defmodule Raxol.Renderer.Layout do
       content: text,
       style: style
     }
+
     [text_element | acc]
   end
 
@@ -146,9 +149,21 @@ defmodule Raxol.Renderer.Layout do
     button_width = min(String.length(text) + 4, space.width)
 
     button_elements = [
-      %{type: :box, position: {space.x, space.y}, size: {button_width, 3}, style: style},
-      %{type: :text, position: {space.x + 2, space.y + 1}, size: {button_width, 1}, content: text, style: text_style}
+      %{
+        type: :box,
+        position: {space.x, space.y},
+        size: {button_width, 3},
+        style: style
+      },
+      %{
+        type: :text,
+        position: {space.x + 2, space.y + 1},
+        size: {button_width, 1},
+        content: text,
+        style: text_style
+      }
     ]
+
     button_elements ++ acc
   end
 
@@ -157,13 +172,28 @@ defmodule Raxol.Renderer.Layout do
     placeholder = Map.get(attrs, :placeholder, "")
     text = if value == "", do: placeholder, else: value
     style = Map.get(attrs, :style, @default_text_input_style)
-    placeholder_style = Map.get(attrs, :placeholder_style, @default_placeholder_style)
+
+    placeholder_style =
+      Map.get(attrs, :placeholder_style, @default_placeholder_style)
+
     input_width = min(max(String.length(text) + 4, 10), space.width)
 
     text_input_elements = [
-      %{type: :box, position: {space.x, space.y}, size: {input_width, 3}, style: style},
-      %{type: :text, position: {space.x + 2, space.y + 1}, size: {input_width, 1}, content: text, style: if(value == "", do: placeholder_style, else: style)}
+      %{
+        type: :box,
+        position: {space.x, space.y},
+        size: {input_width, 3},
+        style: style
+      },
+      %{
+        type: :text,
+        position: {space.x + 2, space.y + 1},
+        size: {input_width, 1},
+        content: text,
+        style: if(value == "", do: placeholder_style, else: style)
+      }
     ]
+
     text_input_elements ++ acc
   end
 
@@ -175,8 +205,15 @@ defmodule Raxol.Renderer.Layout do
     text = "#{checkbox_text} #{label}"
 
     checkbox_elements = [
-      %{type: :text, position: {space.x, space.y}, size: {String.length(text), 1}, content: text, style: style}
+      %{
+        type: :text,
+        position: {space.x, space.y},
+        size: {String.length(text), 1},
+        content: text,
+        style: style
+      }
     ]
+
     checkbox_elements ++ acc
   end
 
@@ -186,24 +223,44 @@ defmodule Raxol.Renderer.Layout do
     styles = extract_table_styles(element_map)
 
     header_elements = create_table_header(column_defs, space, styles)
-    data_elements = create_table_data_rows(table_data, column_defs, space, styles, length(header_elements))
 
-    [Map.merge(element_map, %{
-      position: {space.x, space.y},
-      size: {space.width, space.height},
-      children: header_elements ++ data_elements
-    }) | acc]
+    data_elements =
+      create_table_data_rows(
+        table_data,
+        column_defs,
+        space,
+        styles,
+        length(header_elements)
+      )
+
+    [
+      Map.merge(element_map, %{
+        position: {space.x, space.y},
+        size: {space.width, space.height},
+        children: header_elements ++ data_elements
+      })
+      | acc
+    ]
   end
 
-  def process_scroll_element(%{children: children} = scroll_map, space, acc) when list?(children) do
+  def process_scroll_element(%{children: children} = scroll_map, space, acc)
+      when list?(children) do
     scroll_config = extract_scroll_config(scroll_map, space)
-    scrolled_children = process_scrolled_children(children, space, scroll_config)
+
+    scrolled_children =
+      process_scrolled_children(children, space, scroll_config)
+
     scrollbar_elements = create_scrollbar_elements(scroll_config)
 
     scrolled_children ++ scrollbar_elements ++ acc
   end
 
-  def process_shadow_wrapper_element(%{children: children, opts: opts}, space, acc) when list?(children) do
+  def process_shadow_wrapper_element(
+        %{children: children, opts: opts},
+        space,
+        acc
+      )
+      when list?(children) do
     offset = Map.get(opts, :offset, {1, 1})
     {offset_x, offset_y} = offset
 
@@ -216,7 +273,11 @@ defmodule Raxol.Renderer.Layout do
     shadow_children ++ shadow_elements ++ acc
   end
 
-  def process_shadow_wrapper_element(%{children: children, opts: opts}, space, acc) do
+  def process_shadow_wrapper_element(
+        %{children: children, opts: opts},
+        space,
+        acc
+      ) do
     offset = Map.get(opts, :offset, {1, 1})
     {offset_x, offset_y} = offset
 
@@ -234,10 +295,22 @@ defmodule Raxol.Renderer.Layout do
     border = Map.get(element_map, :border, false)
     size = calculate_box_size(element_map, space)
 
-    box = %{type: :box, position: {space.x, space.y}, size: size, style: style, border: border}
+    box = %{
+      type: :box,
+      position: {space.x, space.y},
+      size: size,
+      style: style,
+      border: border
+    }
 
     if list?(children) and children != [] do
-      inner_space = %{x: space.x, y: space.y, width: elem(size, 0), height: elem(size, 1)}
+      inner_space = %{
+        x: space.x,
+        y: space.y,
+        width: elem(size, 0),
+        height: elem(size, 1)
+      }
+
       processed_children = process_children(children, inner_space, [])
       [Map.put(box, :children, processed_children) | acc]
     else
@@ -245,24 +318,50 @@ defmodule Raxol.Renderer.Layout do
     end
   end
 
+  def process_box_element(element_map, space, acc) do
+    # Handle case where element_map doesn't have :children key
+    element_map_with_children = Map.put(element_map, :children, [])
+    process_box_element(element_map_with_children, space, acc)
+  end
+
   defp calculate_box_size(element_map, space) do
     size = Map.get(element_map, :size)
     calculate_size(size, space)
   end
 
-  defp calculate_size({w, h}, _space) when integer?(w) and integer?(h), do: {max(0, w), max(0, h)}
-  defp calculate_size({w, :auto}, space) when integer?(w), do: {max(0, w), max(0, space.height)}
-  defp calculate_size({:auto, h}, space) when integer?(h), do: {max(0, space.width), max(0, h)}
-  defp calculate_size(:auto, space), do: {max(0, space.width), max(0, space.height)}
+  defp calculate_size({w, h}, _space) when integer?(w) and integer?(h),
+    do: {max(0, w), max(0, h)}
+
+  defp calculate_size({w, :auto}, space) when integer?(w),
+    do: {max(0, w), max(0, space.height)}
+
+  defp calculate_size({:auto, h}, space) when integer?(h),
+    do: {max(0, space.width), max(0, h)}
+
+  defp calculate_size(:auto, space),
+    do: {max(0, space.width), max(0, space.height)}
+
   defp calculate_size(_, space), do: {max(0, space.width), max(0, space.height)}
 
   def process_flex_element(%{children: children} = element_map, space, acc) do
     flex_config = extract_flex_config(element_map)
     child_sizes = calculate_child_sizes(children)
-    processed_children = process_flex_layout(children, child_sizes, space, flex_config)
 
-    # Return the flattened list of processed children instead of a container
-    processed_children ++ acc
+    processed_children =
+      process_flex_layout(children, child_sizes, space, flex_config)
+
+    # Return a flex container with positioned children instead of a flat list
+    flex_container = %{
+      type: :flex,
+      position: {space.x, space.y},
+      size: {space.width, space.height},
+      direction: flex_config.direction,
+      wrap: flex_config.wrap,
+      gap: flex_config.gap,
+      children: processed_children
+    }
+
+    [flex_container | acc]
   end
 
   def process_text_element(%{content: content} = element_map, space, acc) do
@@ -276,13 +375,18 @@ defmodule Raxol.Renderer.Layout do
       content: content,
       style: style
     }
+
     [text_element | acc]
   end
 
-  def process_border_element(%{children: children, border: border_style} = element_map, space, acc) do
-    # Create border box
-    border_box = %{
-      type: :box,
+  def process_border_element(
+        %{children: children, border: border_style} = element_map,
+        space,
+        acc
+      ) do
+    # Create border container
+    border_container = %{
+      type: :border,
       position: {space.x, space.y},
       size: {space.width, space.height},
       style: Map.get(element_map, :style, @default_style),
@@ -292,9 +396,9 @@ defmodule Raxol.Renderer.Layout do
     # Process children without border offset (content should be at original position)
     if list?(children) and children != [] do
       processed_children = process_children(children, space, [])
-      [border_box | processed_children] ++ acc
+      [Map.put(border_container, :children, processed_children) | acc]
     else
-      [border_box | acc]
+      [border_container | acc]
     end
   end
 
@@ -315,11 +419,20 @@ defmodule Raxol.Renderer.Layout do
     end)
   end
 
-  defp process_flex_layout(children, child_sizes, space, %{direction: direction, wrap: wrap, gap: gap}) do
+  defp process_flex_layout(children, child_sizes, space, %{
+         direction: direction,
+         wrap: wrap,
+         gap: gap
+       }) do
     case {direction, wrap} do
-      {:row, true} -> process_wrapped_row(children, child_sizes, space, gap)
-      {:column, true} -> process_wrapped_column(children, child_sizes, space, gap)
-      _ -> process_non_wrapped(children, child_sizes, space, direction, gap)
+      {:row, true} ->
+        process_wrapped_row(children, child_sizes, space, gap)
+
+      {:column, true} ->
+        process_wrapped_column(children, child_sizes, space, gap)
+
+      _ ->
+        process_non_wrapped(children, child_sizes, space, direction, gap)
     end
   end
 
@@ -352,26 +465,99 @@ defmodule Raxol.Renderer.Layout do
 
   defp calculate_max_bounds(positions, sizes) do
     {
-      Enum.zip_with(positions, sizes, fn {x, _}, {w, _} -> x + w end) |> Enum.max(),
-      Enum.zip_with(positions, sizes, fn {_, y}, {_, h} -> y + h end) |> Enum.max()
+      Enum.zip_with(positions, sizes, fn {x, _}, {w, _} -> x + w end)
+      |> Enum.max(),
+      Enum.zip_with(positions, sizes, fn {_, y}, {_, h} -> y + h end)
+      |> Enum.max()
     }
   end
 
   # Helper function to create scrollbar elements
-  defp create_scrollbar_elements(%{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_width: content_width, content_height: content_height, ox: ox, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs}) do
+  defp create_scrollbar_elements(%{
+         space: space,
+         viewport_width: viewport_width,
+         viewport_height: viewport_height,
+         content_width: content_width,
+         content_height: content_height,
+         ox: ox,
+         oy: oy,
+         scrollbar_thickness: scrollbar_thickness,
+         render_v_bar: render_v_bar,
+         render_h_bar: render_h_bar,
+         scrollbar_attrs: scrollbar_attrs
+       }) do
     elements = []
-    elements = create_vertical_scrollbar(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_height: content_height, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, scrollbar_attrs: scrollbar_attrs})
-    elements = create_horizontal_scrollbar(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_width: content_width, ox: ox, scrollbar_thickness: scrollbar_thickness, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs})
-    create_corner_element(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs})
+
+    elements =
+      create_vertical_scrollbar(elements, %{
+        space: space,
+        viewport_width: viewport_width,
+        viewport_height: viewport_height,
+        content_height: content_height,
+        oy: oy,
+        scrollbar_thickness: scrollbar_thickness,
+        render_v_bar: render_v_bar,
+        scrollbar_attrs: scrollbar_attrs
+      })
+
+    elements =
+      create_horizontal_scrollbar(elements, %{
+        space: space,
+        viewport_width: viewport_width,
+        viewport_height: viewport_height,
+        content_width: content_width,
+        ox: ox,
+        scrollbar_thickness: scrollbar_thickness,
+        render_h_bar: render_h_bar,
+        scrollbar_attrs: scrollbar_attrs
+      })
+
+    create_corner_element(elements, %{
+      space: space,
+      viewport_width: viewport_width,
+      viewport_height: viewport_height,
+      scrollbar_thickness: scrollbar_thickness,
+      render_v_bar: render_v_bar,
+      render_h_bar: render_h_bar,
+      scrollbar_attrs: scrollbar_attrs
+    })
   end
+
   defp create_scrollbar_elements(_), do: []
 
-  defp create_vertical_scrollbar(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_height: content_height, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, scrollbar_attrs: scrollbar_attrs}) do
-    if render_v_bar and space.width >= scrollbar_thickness and viewport_height > 0 do
-      track = create_scrollbar_track(space.x + viewport_width, space.y, scrollbar_thickness, viewport_height, scrollbar_attrs)
+  defp create_vertical_scrollbar(elements, %{
+         space: space,
+         viewport_width: viewport_width,
+         viewport_height: viewport_height,
+         content_height: content_height,
+         oy: oy,
+         scrollbar_thickness: scrollbar_thickness,
+         render_v_bar: render_v_bar,
+         scrollbar_attrs: scrollbar_attrs
+       }) do
+    if render_v_bar and space.width >= scrollbar_thickness and
+         viewport_height > 0 do
+      track =
+        create_scrollbar_track(
+          space.x + viewport_width,
+          space.y,
+          scrollbar_thickness,
+          viewport_height,
+          scrollbar_attrs
+        )
 
       if content_height > viewport_height do
-        thumb = create_vertical_thumb(space, viewport_width, viewport_height, content_height, oy, scrollbar_thickness, scrollbar_attrs)
+        thumb =
+          create_vertical_thumb(
+            space,
+            viewport_width,
+            viewport_height,
+            content_height,
+            oy,
+            scrollbar_thickness,
+            scrollbar_attrs
+          )
+
         [thumb, track | elements]
       else
         [track | elements]
@@ -381,12 +567,39 @@ defmodule Raxol.Renderer.Layout do
     end
   end
 
-  defp create_horizontal_scrollbar(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_width: content_width, ox: ox, scrollbar_thickness: scrollbar_thickness, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs}) do
-    if render_h_bar and space.height >= scrollbar_thickness and viewport_width > 0 do
-      track = create_scrollbar_track(space.x, space.y + viewport_height, viewport_width, scrollbar_thickness, scrollbar_attrs)
+  defp create_horizontal_scrollbar(elements, %{
+         space: space,
+         viewport_width: viewport_width,
+         viewport_height: viewport_height,
+         content_width: content_width,
+         ox: ox,
+         scrollbar_thickness: scrollbar_thickness,
+         render_h_bar: render_h_bar,
+         scrollbar_attrs: scrollbar_attrs
+       }) do
+    if render_h_bar and space.height >= scrollbar_thickness and
+         viewport_width > 0 do
+      track =
+        create_scrollbar_track(
+          space.x,
+          space.y + viewport_height,
+          viewport_width,
+          scrollbar_thickness,
+          scrollbar_attrs
+        )
 
       if content_width > viewport_width do
-        thumb = create_horizontal_thumb(space, viewport_width, viewport_height, content_width, ox, scrollbar_thickness, scrollbar_attrs)
+        thumb =
+          create_horizontal_thumb(
+            space,
+            viewport_width,
+            viewport_height,
+            content_width,
+            ox,
+            scrollbar_thickness,
+            scrollbar_attrs
+          )
+
         [thumb, track | elements]
       else
         [track | elements]
@@ -396,14 +609,24 @@ defmodule Raxol.Renderer.Layout do
     end
   end
 
-  defp create_corner_element(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs}) do
-    if render_v_bar and render_h_bar and space.width >= scrollbar_thickness and space.height >= scrollbar_thickness do
+  defp create_corner_element(elements, %{
+         space: space,
+         viewport_width: viewport_width,
+         viewport_height: viewport_height,
+         scrollbar_thickness: scrollbar_thickness,
+         render_v_bar: render_v_bar,
+         render_h_bar: render_h_bar,
+         scrollbar_attrs: scrollbar_attrs
+       }) do
+    if render_v_bar and render_h_bar and space.width >= scrollbar_thickness and
+         space.height >= scrollbar_thickness do
       corner = %{
         type: :box,
         position: {space.x + viewport_width, space.y + viewport_height},
         size: {scrollbar_thickness, scrollbar_thickness},
         style: %{fg: scrollbar_attrs.corner_fg, bg: scrollbar_attrs.corner_bg}
       }
+
       [corner | elements]
     else
       elements
@@ -419,8 +642,18 @@ defmodule Raxol.Renderer.Layout do
     }
   end
 
-  defp create_vertical_thumb(space, viewport_width, viewport_height, content_height, oy, scrollbar_thickness, scrollbar_attrs) do
-    thumb_height = max(1, round(viewport_height * (viewport_height / content_height)))
+  defp create_vertical_thumb(
+         space,
+         viewport_width,
+         viewport_height,
+         content_height,
+         oy,
+         scrollbar_thickness,
+         scrollbar_attrs
+       ) do
+    thumb_height =
+      max(1, round(viewport_height * (viewport_height / content_height)))
+
     scroll_ratio = oy / (content_height - viewport_height)
     thumb_y = space.y + round(scroll_ratio * (viewport_height - thumb_height))
 
@@ -432,8 +665,18 @@ defmodule Raxol.Renderer.Layout do
     }
   end
 
-  defp create_horizontal_thumb(space, viewport_width, viewport_height, content_width, ox, scrollbar_thickness, scrollbar_attrs) do
-    thumb_width = max(1, round(viewport_width * (viewport_width / content_width)))
+  defp create_horizontal_thumb(
+         space,
+         viewport_width,
+         viewport_height,
+         content_width,
+         ox,
+         scrollbar_thickness,
+         scrollbar_attrs
+       ) do
+    thumb_width =
+      max(1, round(viewport_width * (viewport_width / content_width)))
+
     scroll_ratio = ox / (content_width - viewport_width)
     thumb_x = space.x + round(scroll_ratio * (viewport_width - thumb_width))
 
@@ -457,26 +700,51 @@ defmodule Raxol.Renderer.Layout do
     Enum.reverse(reversed_elements) |> List.flatten()
   end
 
-  defp process_wrapped_row_item({child, {cw, ch}}, {acc, x, y, line_h}, space, gap) do
+  defp process_wrapped_row_item(
+         {child, {cw, ch}},
+         {acc, x, y, line_h},
+         space,
+         gap
+       ) do
     x_start = x + if(x == 0, do: 0, else: gap)
     needs_wrap = x > 0 and x_start + cw > space.width
 
     if needs_wrap do
       process_wrapped_row_wrap(child, {cw, ch}, {acc, x, y, line_h}, space, gap)
     else
-      process_wrapped_row_no_wrap(child, {cw, ch}, {acc, x, y, line_h}, space, x_start)
+      process_wrapped_row_no_wrap(
+        child,
+        {cw, ch},
+        {acc, x, y, line_h},
+        space,
+        x_start
+      )
     end
   end
 
-  defp process_wrapped_row_wrap(child, {cw, ch}, {acc, x, y, line_h}, space, gap) do
+  defp process_wrapped_row_wrap(
+         child,
+         {cw, ch},
+         {acc, x, y, line_h},
+         space,
+         gap
+       ) do
     new_y = y + line_h + gap
     child_space = create_child_space(space, space.x, space.y + new_y, cw, ch)
     processed = process_element(child, child_space, [])
     {[processed | acc], cw, new_y, ch}
   end
 
-  defp process_wrapped_row_no_wrap(child, {cw, ch}, {acc, x, y, line_h}, space, x_start) do
-    child_space = create_child_space(space, space.x + x_start, space.y + y, cw, ch)
+  defp process_wrapped_row_no_wrap(
+         child,
+         {cw, ch},
+         {acc, x, y, line_h},
+         space,
+         x_start
+       ) do
+    child_space =
+      create_child_space(space, space.x + x_start, space.y + y, cw, ch)
+
     processed = process_element(child, child_space, [])
     {[processed | acc], x_start + cw, y, max(line_h, ch)}
   end
@@ -496,26 +764,57 @@ defmodule Raxol.Renderer.Layout do
     Enum.reverse(reversed_elements) |> List.flatten()
   end
 
-  defp process_wrapped_column_item({child, {cw, ch}}, {acc, x, y, col_h}, space, gap) do
+  defp process_wrapped_column_item(
+         {child, {cw, ch}},
+         {acc, x, y, col_h},
+         space,
+         gap
+       ) do
     y_start = y + if(y == 0, do: 0, else: gap)
     needs_wrap = y > 0 and y_start + ch > space.height
 
     if needs_wrap do
-      process_wrapped_column_wrap(child, {cw, ch}, {acc, x, y, col_h}, space, gap)
+      process_wrapped_column_wrap(
+        child,
+        {cw, ch},
+        {acc, x, y, col_h},
+        space,
+        gap
+      )
     else
-      process_wrapped_column_no_wrap(child, {cw, ch}, {acc, x, y, col_h}, space, y_start)
+      process_wrapped_column_no_wrap(
+        child,
+        {cw, ch},
+        {acc, x, y, col_h},
+        space,
+        y_start
+      )
     end
   end
 
-  defp process_wrapped_column_wrap(child, {cw, ch}, {acc, x, y, col_h}, space, gap) do
+  defp process_wrapped_column_wrap(
+         child,
+         {cw, ch},
+         {acc, x, y, col_h},
+         space,
+         gap
+       ) do
     new_x = x + col_h + gap
     child_space = create_child_space(space, space.x + new_x, space.y, cw, ch)
     processed = process_element(child, child_space, [])
     {[processed | acc], new_x, ch, col_h}
   end
 
-  defp process_wrapped_column_no_wrap(child, {cw, ch}, {acc, x, y, col_h}, space, y_start) do
-    child_space = create_child_space(space, space.x + x, space.y + y_start, cw, ch)
+  defp process_wrapped_column_no_wrap(
+         child,
+         {cw, ch},
+         {acc, x, y, col_h},
+         space,
+         y_start
+       ) do
+    child_space =
+      create_child_space(space, space.x + x, space.y + y_start, cw, ch)
+
     processed = process_element(child, child_space, [])
     {[processed | acc], x, y_start + ch, max(col_h, cw)}
   end
@@ -565,7 +864,12 @@ defmodule Raxol.Renderer.Layout do
     calculate_content_space(space, padding, margin, border_thickness)
   end
 
-  defp calculate_content_space(space, {pt, pr, pb, pl}, {mt, mr, mb, ml}, border_thickness) do
+  defp calculate_content_space(
+         space,
+         {pt, pr, pb, pl},
+         {mt, mr, mb, ml},
+         border_thickness
+       ) do
     %{
       x: calculate_content_x(space, ml, border_thickness, pl),
       y: calculate_content_y(space, mt, border_thickness, pt),
@@ -684,7 +988,9 @@ defmodule Raxol.Renderer.Layout do
     end
   end
 
-  defp keyword_list?(child, for_layout), do: for_layout and list?(child) and Keyword.keyword?(child)
+  defp keyword_list?(child, for_layout),
+    do: for_layout and list?(child) and Keyword.keyword?(child)
+
   defp atom_for_layout?(child, for_layout), do: for_layout and atom?(child)
   defp simple_type?(child), do: atom?(child) or binary?(child) or number?(child)
 
@@ -875,46 +1181,67 @@ defmodule Raxol.Renderer.Layout do
   # Table-related helper functions
   defp extract_table_styles(element_map) do
     %{
-      header_style: Map.get(element_map, :header_style, %{fg: :white, bg: :blue}),
+      header_style:
+        Map.get(element_map, :header_style, %{fg: :white, bg: :blue}),
       row_style: Map.get(element_map, :row_style, %{fg: :white, bg: :black}),
-      border_style: Map.get(element_map, :border_style, %{fg: :gray, bg: :black})
+      border_style:
+        Map.get(element_map, :border_style, %{fg: :gray, bg: :black})
     }
   end
 
   defp create_table_header(column_defs, space, styles) do
-    Enum.map(column_defs, fn col_def ->
-      text = Map.get(col_def, :title, "")
-      width = Map.get(col_def, :width, String.length(text))
-
-      %{
-        type: :text,
-        position: {space.x, space.y},
-        size: {width, 1},
-        content: pad_cell_content(text, col_def),
-        style: styles.header_style
-      }
-    end)
-  end
-
-  defp create_table_data_rows(table_data, column_defs, space, styles, header_height) do
-    Enum.with_index(table_data, 1)
-    |> Enum.flat_map(fn {row_data, row_index} ->
-      y_offset = space.y + header_height + row_index
-
-      Enum.with_index(column_defs)
-      |> Enum.map(fn {col_def, col_index} ->
-        cell_value = get_cell_value(row_data, col_def, col_index)
-        width = Map.get(col_def, :width, String.length(Kernel.to_string(cell_value)))
-        x_offset = space.x + calculate_column_offset(column_defs, col_index)
+    header_cells =
+      Enum.map(column_defs, fn col_def ->
+        text = Map.get(col_def, :title, "")
+        width = Map.get(col_def, :width, String.length(text))
 
         %{
           type: :text,
-          position: {x_offset, y_offset},
+          position: {space.x, space.y},
           size: {width, 1},
-          content: pad_cell_content(cell_value, col_def),
-          style: styles.row_style
+          content: pad_cell_content(text, col_def),
+          style: styles.header_style
         }
       end)
+
+    [%{type: :row, children: header_cells}]
+  end
+
+  defp create_table_data_rows(
+         table_data,
+         column_defs,
+         space,
+         styles,
+         header_height
+       ) do
+    Enum.with_index(table_data, 1)
+    |> Enum.map(fn {row_data, row_index} ->
+      y_offset = space.y + header_height + row_index
+
+      row_cells =
+        Enum.with_index(column_defs)
+        |> Enum.map(fn {col_def, col_index} ->
+          cell_value = get_cell_value(row_data, col_def, col_index)
+
+          width =
+            Map.get(
+              col_def,
+              :width,
+              String.length(Kernel.to_string(cell_value))
+            )
+
+          x_offset = space.x + calculate_column_offset(column_defs, col_index)
+
+          %{
+            type: :text,
+            position: {x_offset, y_offset},
+            size: {width, 1},
+            content: pad_cell_content(cell_value, col_def),
+            style: styles.row_style
+          }
+        end)
+
+      %{type: :row, children: row_cells}
     end)
   end
 
@@ -975,8 +1302,20 @@ defmodule Raxol.Renderer.Layout do
     render_v_bar = Map.get(scroll_map, :vertical_scrollbar, true)
     render_h_bar = Map.get(scroll_map, :horizontal_scrollbar, true)
 
-    default_sb_attrs = %{track_fg: :gray, track_bg: nil, thumb_fg: :white, thumb_bg: :darkgray, corner_fg: :gray, corner_bg: nil}
-    scrollbar_attrs = Map.merge(default_sb_attrs, Map.get(scroll_map, :scrollbar_attrs, Map.get(scroll_map, :attrs, %{})))
+    default_sb_attrs = %{
+      track_fg: :gray,
+      track_bg: nil,
+      thumb_fg: :white,
+      thumb_bg: :darkgray,
+      corner_fg: :gray,
+      corner_bg: nil
+    }
+
+    scrollbar_attrs =
+      Map.merge(
+        default_sb_attrs,
+        Map.get(scroll_map, :scrollbar_attrs, Map.get(scroll_map, :attrs, %{}))
+      )
 
     %{
       space: space,
@@ -990,60 +1329,109 @@ defmodule Raxol.Renderer.Layout do
   end
 
   defp process_scrolled_children(children, space, scroll_config) do
-    %{ox: ox, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar} = scroll_config
-
-    scrolled_children = Enum.flat_map(children, fn child ->
-      process_element(child, %{space | x: space.x - ox, y: space.y - oy}, [])
-    end)
-
-    {content_width, content_height} = calculate_content_dimensions(scrolled_children)
-    viewport_width = max(0, space.width - if(render_v_bar, do: scrollbar_thickness, else: 0))
-    viewport_height = max(0, space.height - if(render_h_bar, do: scrollbar_thickness, else: 0))
-
-    scrollbar_elements = create_scrollbar_elements(%{
-      space: space,
-      viewport_width: viewport_width,
-      viewport_height: viewport_height,
-      content_width: content_width,
-      content_height: content_height,
+    %{
       ox: ox,
       oy: oy,
       scrollbar_thickness: scrollbar_thickness,
       render_v_bar: render_v_bar,
-      render_h_bar: render_h_bar,
-      scrollbar_attrs: scroll_config.scrollbar_attrs
-    })
+      render_h_bar: render_h_bar
+    } = scroll_config
+
+    scrolled_children =
+      Enum.flat_map(children, fn child ->
+        process_element(child, %{space | x: space.x - ox, y: space.y - oy}, [])
+      end)
+
+    {content_width, content_height} =
+      calculate_content_dimensions(scrolled_children)
+
+    viewport_width =
+      max(0, space.width - if(render_v_bar, do: scrollbar_thickness, else: 0))
+
+    viewport_height =
+      max(0, space.height - if(render_h_bar, do: scrollbar_thickness, else: 0))
+
+    scrollbar_elements =
+      create_scrollbar_elements(%{
+        space: space,
+        viewport_width: viewport_width,
+        viewport_height: viewport_height,
+        content_width: content_width,
+        content_height: content_height,
+        ox: ox,
+        oy: oy,
+        scrollbar_thickness: scrollbar_thickness,
+        render_v_bar: render_v_bar,
+        render_h_bar: render_h_bar,
+        scrollbar_attrs: scroll_config.scrollbar_attrs
+      })
 
     scrolled_children ++ scrollbar_elements
   end
 
   defp create_shadow_elements(space, {offset_x, offset_y}) do
     shadow_color = :darkgray
+
     shadow_box = %{
       type: :box,
       position: {space.x + offset_x, space.y + offset_y},
       size: {space.width - offset_x, space.height - offset_y},
       style: %{bg: shadow_color, fg: shadow_color}
     }
+
     [shadow_box]
   end
 
-  def process_grid_element(%{children: children, columns: columns, rows: rows, gap: gap} = element_map, space, acc) do
+  def process_grid_element(
+        %{children: children, columns: columns, rows: rows, gap: gap} =
+          element_map,
+        space,
+        acc
+      ) do
+    # Ensure the grid element has required properties for calculate_layout
+    grid_element =
+      Map.merge(
+        %{
+          align: :start,
+          justify: :start
+        },
+        element_map
+      )
+
     # Calculate grid layout using the grid module
-    grid_layout = Raxol.Core.Renderer.View.Layout.Grid.calculate_layout(element_map, {space.width, space.height})
-    IO.inspect(grid_layout, label: "GRID LAYOUT CALCULATION", charlists: :as_lists)
-    IO.inspect(length(grid_layout), label: "GRID LAYOUT CHILDREN COUNT")
+    grid_layout =
+      Raxol.Core.Renderer.View.Layout.Grid.calculate_layout(
+        grid_element,
+        {space.width, space.height}
+      )
 
     # For each child, process it at its assigned position and size
     processed_children =
       Enum.flat_map(grid_layout, fn child ->
         # Each child should have :position and :size set by calculate_layout
-        child_space = %{space | x: elem(child.position, 0), y: elem(child.position, 1), width: elem(child.size, 0), height: elem(child.size, 1)}
+        child_space = %{
+          space
+          | x: elem(child.position, 0),
+            y: elem(child.position, 1),
+            width: elem(child.size, 0),
+            height: elem(child.size, 1)
+        }
+
         result = process_element(child, child_space, [])
         List.wrap(result)
       end)
 
-    IO.inspect(processed_children, label: "PROCESSED GRID CHILDREN", charlists: :as_lists)
-    processed_children ++ acc
+    # Return a grid container with positioned children instead of a flat list
+    grid_container = %{
+      type: :grid,
+      position: {space.x, space.y},
+      size: {space.width, space.height},
+      columns: columns,
+      rows: rows,
+      gap: gap,
+      children: processed_children
+    }
+
+    [grid_container | acc]
   end
 end
