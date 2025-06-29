@@ -10,6 +10,16 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   under different conditions and load patterns.
   """
 
+  # Helper function to fill buffer with cells
+  defp fill_buffer(buffer, width, height, char \\ "X", color \\ :red) do
+    Enum.reduce(0..(height - 1), buffer, fn y, acc ->
+      Enum.reduce(0..(width - 1), acc, fn x, acc ->
+        cell = Cell.new(char, TextFormatting.new(fg: color))
+        Buffer.set_cell(acc, x, y, cell)
+      end)
+    end)
+  end
+
   describe "Buffer Fill Performance" do
     test ~c"measures performance of filling large buffers" do
       sizes = [
@@ -27,12 +37,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
         # Measure fill performance
         {time, _} =
           :timer.tc(fn ->
-            Enum.reduce(0..(height - 1), buffer, fn y, acc ->
-              Enum.reduce(0..(width - 1), acc, fn x, acc ->
-                cell = Cell.new("X", TextFormatting.new(fg: :red))
-                Buffer.set_cell(acc, x, y, cell)
-              end)
-            end)
+            fill_buffer(buffer, width, height)
           end)
 
         # Convert to milliseconds
@@ -66,12 +71,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       Enum.each(patterns, fn {width, height} ->
         {time, _} =
           :timer.tc(fn ->
-            Enum.reduce(0..(height - 1), buffer, fn y, acc ->
-              Enum.reduce(0..(width - 1), acc, fn x, acc ->
-                cell = Cell.new("X", TextFormatting.new(fg: :blue))
-                Buffer.set_cell(acc, x, y, cell)
-              end)
-            end)
+            fill_buffer(buffer, width, height, "X", :blue)
           end)
 
         time_ms = time / 1000
@@ -93,13 +93,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       buffer = Buffer.new({200, 100})
 
       # Fill buffer with data
-      buffer =
-        Enum.reduce(0..99, buffer, fn y, acc ->
-          Enum.reduce(0..199, acc, fn x, acc ->
-            cell = Cell.new("X", TextFormatting.new(fg: :green))
-            Buffer.set_cell(acc, x, y, cell)
-          end)
-        end)
+      buffer = fill_buffer(buffer, 200, 100, "X", :green)
 
       # Measure read performance
       {time, _} =
@@ -127,13 +121,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       buffer = Buffer.new({80, 24})
 
       # Fill buffer with data
-      buffer =
-        Enum.reduce(0..23, buffer, fn y, acc ->
-          Enum.reduce(0..79, acc, fn x, acc ->
-            cell = Cell.new("X", TextFormatting.new(fg: :yellow))
-            Buffer.set_cell(acc, x, y, cell)
-          end)
-        end)
+      buffer = fill_buffer(buffer, 80, 24, "X", :yellow)
 
       # Test different scroll amounts
       scroll_amounts = [1, 5, 10, 20]
@@ -141,7 +129,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
       Enum.each(scroll_amounts, fn amount ->
         {time, result} =
           :timer.tc(fn ->
-            Buffer.scroll(buffer, amount)
+            Buffer.scroll_state(buffer, amount)
           end)
 
         # Ensure we got a valid result
@@ -177,14 +165,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
 
         # Create and fill buffer
         buffer = Buffer.new({width, height})
-
-        buffer =
-          Enum.reduce(0..(height - 1), buffer, fn y, acc ->
-            Enum.reduce(0..(width - 1), acc, fn x, acc ->
-              cell = Cell.new("X", TextFormatting.new(fg: :red))
-              Buffer.set_cell(acc, x, y, cell)
-            end)
-          end)
+        buffer = fill_buffer(buffer, width, height)
 
         # Measure memory after
         :erlang.garbage_collect()
