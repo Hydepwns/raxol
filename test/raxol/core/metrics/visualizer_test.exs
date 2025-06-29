@@ -8,7 +8,8 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
   alias Raxol.Core.Metrics.Visualizer
 
   setup do
-    {:ok, _pid} = Visualizer.start_link()
+    # Start the Visualizer process supervised for each test
+    start_supervised!(Visualizer)
     :ok
   end
 
@@ -156,7 +157,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
 
       assert {:ok, chart_id, _} = Visualizer.create_chart(metrics)
       assert {:ok, chart} = Visualizer.get_chart(chart_id)
-      assert chart.data.datasets |> List.first() |> Map.get(:data) == [10]
+      assert chart.data.data.datasets |> List.first() |> Map.get(:data) == [10]
     end
 
     test "returns error for non-existent chart" do
@@ -214,14 +215,18 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
       one_hour_ago = DateTime.add(now, -3600, :second)
       two_hours_ago = DateTime.add(now, -7200, :second)
 
+      now_ms = DateTime.to_unix(now, :millisecond)
+      one_hour_ago_ms = DateTime.to_unix(one_hour_ago, :millisecond)
+      two_hours_ago_ms = DateTime.to_unix(two_hours_ago, :millisecond)
+
       metrics = [
-        %{timestamp: DateTime.to_unix(two_hours_ago, :millisecond), value: 10},
-        %{timestamp: DateTime.to_unix(one_hour_ago, :millisecond), value: 20},
-        %{timestamp: DateTime.to_unix(now, :millisecond), value: 30}
+        %{timestamp: two_hours_ago_ms, value: 10},
+        %{timestamp: one_hour_ago_ms, value: 20},
+        %{timestamp: now_ms, value: 30}
       ]
 
       options = %{
-        time_range: {one_hour_ago, now}
+        time_range: {DateTime.from_unix!(one_hour_ago_ms, :millisecond), DateTime.from_unix!(now_ms, :millisecond)}
       }
 
       assert {:ok, chart_id, chart_data} =

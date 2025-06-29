@@ -299,7 +299,8 @@ defmodule Raxol.Core.Renderer.View do
             "View.layout macro expects a keyword list as the second argument, got: #{inspect(dimensions)}"
     end
 
-    LayoutEngine.apply_layout(view, dimensions)
+    # Convert keyword list to map for LayoutEngine
+    LayoutEngine.apply_layout(view, Map.new(dimensions))
   end
 
   @doc """

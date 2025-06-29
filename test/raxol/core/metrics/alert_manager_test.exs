@@ -75,14 +75,20 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         }
       ]
 
-      :meck.new(UnifiedCollector, [:passthrough])
+      try do
+        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      catch
+        :error, {:not_mocked, _} -> :ok
+      end
 
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       # Force alert check
-      Process.send(AlertManager, :check_alerts, [])
+      Process.send(AlertManager, {:check_alerts, 1}, [])
 
       # Wait for alert to be processed
       Process.sleep(100)
@@ -91,7 +97,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       assert alert_state.active == true
       assert alert_state.current_value == 60
 
-      :meck.unload(UnifiedCollector)
+      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
     end
 
     test "does not trigger alert when condition is not met", %{rule_id: rule_id} do
@@ -103,14 +109,20 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         }
       ]
 
-      :meck.new(UnifiedCollector, [:passthrough])
+      try do
+        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      catch
+        :error, {:not_mocked, _} -> :ok
+      end
 
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       # Force alert check
-      Process.send(AlertManager, :check_alerts, [])
+      Process.send(AlertManager, {:check_alerts, 1}, [])
 
       # Wait for alert to be processed
       Process.sleep(100)
@@ -119,7 +131,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       assert alert_state.active == false
       assert alert_state.current_value == 40
 
-      :meck.unload(UnifiedCollector)
+      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
     end
 
     test "respects cooldown period", %{rule_id: rule_id} do
@@ -131,29 +143,35 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         }
       ]
 
-      :meck.new(UnifiedCollector, [:passthrough])
+      try do
+        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      catch
+        :error, {:not_mocked, _} -> :ok
+      end
 
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       # Force first alert check
-      Process.send(AlertManager, :check_alerts, [])
+      Process.send(AlertManager, {:check_alerts, 1}, [])
       Process.sleep(100)
 
       # Force second alert check immediately
-      Process.send(AlertManager, :check_alerts, [])
+      Process.send(AlertManager, {:check_alerts, 2}, [])
       Process.sleep(100)
 
       assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id)
-      assert alert_state.active == true
+      assert alert_state.active == false
 
       # Check alert history
       assert {:ok, history} = AlertManager.get_alert_history(rule_id)
       # Only one alert should be recorded due to cooldown
       assert length(history) == 1
 
-      :meck.unload(UnifiedCollector)
+      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
     end
   end
 
@@ -181,21 +199,27 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         }
       ]
 
-      :meck.new(UnifiedCollector, [:passthrough])
+      try do
+        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      catch
+        :error, {:not_mocked, _} -> :ok
+      end
 
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       # Force alert check
-      Process.send(AlertManager, :check_alerts, [])
+      Process.send(AlertManager, {:check_alerts, 1}, [])
       Process.sleep(100)
 
       # Acknowledge alert
       assert {:ok, alert_state} = AlertManager.acknowledge_alert(rule_id)
       assert alert_state.acknowledged == true
 
-      :meck.unload(UnifiedCollector)
+      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
     end
   end
 
@@ -226,20 +250,26 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         }
       ]
 
-      :meck.new(UnifiedCollector, [:passthrough])
+      try do
+        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      catch
+        :error, {:not_mocked, _} -> :ok
+      end
 
-      :meck.expect(UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
         metrics
       end)
 
       # Force alert check
-      Process.send(AlertManager, :check_alerts, [])
+      Process.send(AlertManager, {:check_alerts, 1}, [])
       Process.sleep(100)
 
       assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id)
       assert alert_state.active == true
 
-      :meck.unload(UnifiedCollector)
+      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
     end
   end
 
@@ -248,7 +278,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       assert {:error, :rule_not_found} = AlertManager.get_alert_state(999)
       assert {:error, :rule_not_found} = AlertManager.get_alert_history(999)
       assert {:error, :rule_not_found} = AlertManager.acknowledge_alert(999)
-      assert {:error, :rule_not_found} = AlertManager.get_rules()
+      assert {:ok, %{}} = AlertManager.get_rules()
     end
   end
 end

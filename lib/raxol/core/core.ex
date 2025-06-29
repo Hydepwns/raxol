@@ -65,6 +65,18 @@ defmodule Raxol.Core do
   @type metric_value :: number()
   @type metric_tags :: [{atom(), any()}]
 
+  @doc """
+  Creates a new Core instance with default configuration.
+  """
+  @spec new() :: map()
+  def new do
+    %{
+      plugins: %{},
+      config: %{},
+      state: %{}
+    }
+  end
+
   # ============================================================================
   # Application Lifecycle Management
   # ============================================================================
@@ -528,7 +540,7 @@ defmodule Raxol.Core do
   """
   @spec get_version() :: String.t()
   def get_version do
-    Application.spec(:raxol, :vsn) || "unknown"
+    :application.spec(:raxol, :vsn) || "unknown"
   end
 
   # ============================================================================

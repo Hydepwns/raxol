@@ -213,6 +213,104 @@ defmodule Raxol.Core.ColorSystem do
     end
   end
 
+  @doc """
+  Initialize the color system with the given theme.
+
+  ## Parameters
+
+  * `theme_id` - The theme identifier to use (default: :default)
+
+  ## Returns
+
+  * `:ok` - Initialization successful
+  * `{:error, reason}` - Initialization failed
+
+  ## Examples
+
+      iex> ColorSystem.init(:dark)
+      :ok
+
+      iex> ColorSystem.init()
+      :ok
+  """
+  def init(theme_id \\ :default) do
+    Raxol.Core.Runtime.Log.debug(
+      "Initializing color system with theme: #{inspect(theme_id)}"
+    )
+
+    # Get the theme
+    theme = Theme.get(theme_id)
+
+    if theme do
+      # Store current theme in process dictionary for compatibility
+      Process.put(:color_system_current_theme, theme_id)
+      :ok
+    else
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "ColorSystem: Theme #{theme_id} not found, using default",
+        %{}
+      )
+      Process.put(:color_system_current_theme, :default)
+      :ok
+    end
+  end
+
+  @doc """
+  Get the current theme configuration.
+
+  ## Returns
+
+  * `{:ok, theme}` - Current theme configuration
+  * `{:error, reason}` - Failed to get theme
+
+  ## Examples
+
+      iex> ColorSystem.get_current_theme()
+      {:ok, %{name: "default", colors: %{...}}}
+  """
+  def get_current_theme do
+    theme_id = Process.get(:color_system_current_theme, :default)
+    theme = Theme.get(theme_id)
+
+    if theme do
+      {:ok, theme}
+    else
+      {:error, :theme_not_found}
+    end
+  end
+
+  @doc """
+  Set the current theme.
+
+  ## Parameters
+
+  * `theme_id` - The theme identifier to set
+
+  ## Returns
+
+  * `:ok` - Theme set successfully
+  * `{:error, reason}` - Failed to set theme
+
+  ## Examples
+
+      iex> ColorSystem.set_theme(:dark)
+      :ok
+  """
+  def set_theme(theme_id) when atom?(theme_id) do
+    Raxol.Core.Runtime.Log.debug(
+      "Setting color system theme to: #{inspect(theme_id)}"
+    )
+
+    theme = Theme.get(theme_id)
+
+    if theme do
+      Process.put(:color_system_current_theme, theme_id)
+      :ok
+    else
+      {:error, :theme_not_found}
+    end
+  end
+
   # Private functions
 
   defp adjust_color_for_contrast(fg, bg, level, size) do
