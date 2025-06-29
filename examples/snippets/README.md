@@ -2,50 +2,6 @@
 
 A collection of examples demonstrating Raxol's features and capabilities.
 
-## Directory Structure
-
-```mermaid
-graph TD
-    A[Examples] --> B[Basic]
-    A --> C[Advanced]
-    A --> D[Display]
-    A --> E[Interactive]
-    A --> F[Layout]
-    A --> G[Showcase]
-    A --> H[Without Runtime]
-
-    B --> B1[Counter]
-    B --> B2[MultipleViews]
-    B --> B3[Rendering]
-    B --> B4[Subscriptions]
-    B --> B5[TableFeatures]
-
-    C --> C1[Commands]
-    C --> C2[DocumentationBrowser]
-    C --> C3[Editor]
-    C --> C4[Snake]
-
-    D --> D1[ProgressBar]
-    D --> D2[Charts]
-    D --> D3[TreeMaps]
-
-    E --> E1[FormValidation]
-    E --> E2[EventHandling]
-    E --> E3[KeyboardShortcuts]
-
-    F --> F1[Dashboard]
-    F --> F2[AdvancedLayout]
-    F --> F3[Responsive]
-
-    G --> G1[ComponentShowcase]
-    G --> G2[ArchitectureDemo]
-    G --> G3[ProgressBarDemo]
-
-    H --> H1[HelloWorld]
-    H --> H2[Clock]
-    H --> H3[EventViewer]
-```
-
 ## Quick Start
 
 ```bash
