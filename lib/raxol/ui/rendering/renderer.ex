@@ -50,8 +50,13 @@ defmodule Raxol.UI.Rendering.Renderer do
   end
 
   # Recursively applies a diff to a tree, returning the updated tree
-  defp apply_diff_to_tree(tree, {:update, [], changes}) do
-    # At root, apply all child diffs
+  defp apply_diff_to_tree(tree, {:update, [], %{diffs: diffs, type: :indexed_children}}) do
+    # At root, apply all child diffs from the indexed_children format
+    apply_child_diffs(tree, diffs)
+  end
+
+  defp apply_diff_to_tree(tree, {:update, [], changes}) when is_list(changes) do
+    # At root, apply all child diffs (legacy format)
     apply_child_diffs(tree, changes)
   end
 
@@ -162,9 +167,12 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   @impl GenServer
   def handle_cast({:render, data}, state) do
+    # Convert the tree to paint operations
+    ops = ui_tree_to_terminal_ops_with_lines(data)
+
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], data, data, state)
-    if state.test_pid, do: send(state.test_pid, {:renderer_rendered, data})
+    if state.test_pid, do: send(state.test_pid, {:renderer_rendered, ops})
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
@@ -202,20 +210,45 @@ defmodule Raxol.UI.Rendering.Renderer do
         {:apply_diff, {:update, path, changes} = diff, new_tree},
         state
       ) do
+    Raxol.Core.Runtime.Log.debug(
+      "Renderer: Received apply_diff message: #{inspect(diff)}, new_tree: #{inspect(new_tree)}, test_pid: #{inspect(state.test_pid)}"
+    )
+
+    Raxol.Core.Runtime.Log.debug(
+      "Renderer: state.last_render: #{inspect(state.last_render)}"
+    )
+
     # Apply the diff to the last_render tree
     updated_tree = apply_diff_to_tree(state.last_render, diff)
+
+    Raxol.Core.Runtime.Log.debug(
+      "Renderer: updated_tree: #{inspect(updated_tree)}"
+    )
+
     # For now, log and notify test_pid with the updated subtree at path
     updated_subtree = get_subtree_at_path(updated_tree, path)
+
+    Raxol.Core.Runtime.Log.debug(
+      "Renderer: updated_subtree: #{inspect(updated_subtree)}"
+    )
 
     {new_state, _} =
       do_partial_render(path, updated_subtree, updated_tree, state)
 
-    if state.test_pid,
-      do:
-        send(
-          state.test_pid,
-          {:renderer_partial_update, path, updated_subtree, updated_tree}
-        )
+    if state.test_pid do
+      Raxol.Core.Runtime.Log.debug(
+        "Renderer: Sending {:renderer_partial_update, #{inspect(path)}, #{inspect(updated_subtree)}, #{inspect(updated_tree)}} to test_pid #{inspect(state.test_pid)}"
+      )
+
+      send(
+        state.test_pid,
+        {:renderer_partial_update, path, updated_subtree, updated_tree}
+      )
+    else
+      Raxol.Core.Runtime.Log.debug(
+        "Renderer: No test_pid set, not sending partial update message"
+      )
+    end
 
     require Raxol.Core.Runtime.Log
 
