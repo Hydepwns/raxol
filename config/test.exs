@@ -1,15 +1,6 @@
 import Config
 
-# Configure your database
-config :raxol, Raxol.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "raxol_test#{System.get_env("MIX_TEST_PARTITION")}",
-  pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 20
-
-# Override Repo adapter and pool for tests
+# Configure your database for tests - use MockDB adapter
 config :raxol, Raxol.Repo,
   adapter: Raxol.Test.MockDB,
   pool: Ecto.Adapters.SQL.Sandbox,

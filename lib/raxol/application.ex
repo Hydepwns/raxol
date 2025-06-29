@@ -30,7 +30,11 @@ defmodule Raxol.Application do
           # Start the Dynamic Supervisor for Raxol applications
           Raxol.DynamicSupervisor,
           # Start the UserPreferences GenServer
-          Raxol.Core.UserPreferences
+          Raxol.Core.UserPreferences,
+          # Start the Terminal Sync System
+          {Raxol.Terminal.Sync.System, []},
+          # Start the Terminal Supervisor
+          {Raxol.Terminal.Supervisor, []}
         ] ++
           if IO.ANSI.enabled?() do
             [
@@ -86,11 +90,19 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     # Add Accounts for tests
     accounts_child_spec = Raxol.Accounts
 
+    # Add Terminal Sync System for tests
+    sync_system_child_spec = {Raxol.Terminal.Sync.System, []}
+
+    # Add Terminal Supervisor for tests
+    terminal_supervisor_child_spec = {Raxol.Terminal.Supervisor, []}
+
     children = [
       pubsub_child_spec,
       repo_child_spec,
       user_preferences_child_spec,
-      accounts_child_spec
+      accounts_child_spec,
+      sync_system_child_spec,
+      terminal_supervisor_child_spec
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -60,7 +60,8 @@ defmodule Raxol.Renderer.Layout do
     scroll: :process_scroll_element,
     shadow_wrapper: :process_shadow_wrapper_element,
     box: :process_box_element,
-    flex: :process_flex_element
+    flex: :process_flex_element,
+    text: :process_text_element
   }
 
   @doc """
@@ -107,22 +108,22 @@ defmodule Raxol.Renderer.Layout do
   end
 
   # Extract each element type into its own function
-  defp process_view_element(%{children: children}, space, acc) when list?(children) do
+  def process_view_element(%{children: children}, space, acc) when list?(children) do
     process_children(children, space, acc)
   end
 
-  defp process_view_element(%{children: children}, space, acc) do
+  def process_view_element(%{children: children}, space, acc) do
     process_element(children, space, acc)
   end
 
-  defp process_panel_element(%{attrs: attrs, children: children}, space, acc) when list?(children) do
+  def process_panel_element(%{attrs: attrs, children: children}, space, acc) when list?(children) do
     panel_space = apply_panel_layout(space, attrs)
     panel_elements = create_panel_elements(space, attrs)
     inner_elements = process_children(children, panel_space, [])
     [panel_elements, inner_elements | acc]
   end
 
-  defp process_label_element(%{attrs: attrs}, space, acc) do
+  def process_label_element(%{attrs: attrs}, space, acc) do
     text = Map.get(attrs, :content, "")
     style = Map.get(attrs, :style, @default_style)
     text_element = %{
@@ -135,7 +136,7 @@ defmodule Raxol.Renderer.Layout do
     [text_element | acc]
   end
 
-  defp process_button_element(%{attrs: attrs}, space, acc) do
+  def process_button_element(%{attrs: attrs}, space, acc) do
     text = Map.get(attrs, :label, "Button")
     style = Map.get(attrs, :style, @default_button_style)
     text_style = Map.get(attrs, :text_style, style)
@@ -148,7 +149,7 @@ defmodule Raxol.Renderer.Layout do
     button_elements ++ acc
   end
 
-  defp process_text_input_element(%{attrs: attrs}, space, acc) do
+  def process_text_input_element(%{attrs: attrs}, space, acc) do
     value = Map.get(attrs, :value, "")
     placeholder = Map.get(attrs, :placeholder, "")
     text = if value == "", do: placeholder, else: value
@@ -163,7 +164,7 @@ defmodule Raxol.Renderer.Layout do
     text_input_elements ++ acc
   end
 
-  defp process_checkbox_element(%{attrs: attrs}, space, acc) do
+  def process_checkbox_element(%{attrs: attrs}, space, acc) do
     checked = Map.get(attrs, :checked, false)
     label = Map.get(attrs, :label, "")
     style = Map.get(attrs, :style, @default_style)
@@ -176,7 +177,7 @@ defmodule Raxol.Renderer.Layout do
     checkbox_elements ++ acc
   end
 
-  defp process_table_element(element_map, space, acc) do
+  def process_table_element(element_map, space, acc) do
     column_defs = Map.get(element_map, :columns, [])
     table_data = Map.get(element_map, :data, [])
     styles = extract_table_styles(element_map)
@@ -191,7 +192,7 @@ defmodule Raxol.Renderer.Layout do
     }) | acc]
   end
 
-  defp process_scroll_element(%{children: children} = scroll_map, space, acc) when list?(children) do
+  def process_scroll_element(%{children: children} = scroll_map, space, acc) when list?(children) do
     scroll_config = extract_scroll_config(scroll_map, space)
     scrolled_children = process_scrolled_children(children, space, scroll_config)
     scrollbar_elements = create_scrollbar_elements(scroll_config)
@@ -205,7 +206,7 @@ defmodule Raxol.Renderer.Layout do
     render_v_bar = Map.get(scroll_map, :vertical_scrollbar, true)
     render_h_bar = Map.get(scroll_map, :horizontal_scrollbar, true)
 
-    default_sb_attrs = %{track_fg: :gray, track_bg: nil, thumb_fg: :white, thumb_bg: :darkgray}
+    default_sb_attrs = %{track_fg: :gray, track_bg: nil, thumb_fg: :white, thumb_bg: :darkgray, corner_fg: :gray, corner_bg: nil}
     scrollbar_attrs = Map.merge(default_sb_attrs, Map.get(scroll_map, :scrollbar_attrs, Map.get(scroll_map, :attrs, %{})))
 
     %{
@@ -246,7 +247,7 @@ defmodule Raxol.Renderer.Layout do
     scrolled_children ++ scrollbar_elements
   end
 
-  defp process_shadow_wrapper_element(%{opts: attrs, children: child_view_node}, space, acc) do
+  def process_shadow_wrapper_element(%{opts: attrs, children: child_view_node}, space, acc) do
     shadow_offset_x = Map.get(attrs, :offset_x, 1)
     shadow_offset_y = Map.get(attrs, :offset_y, 1)
     shadow_color = Map.get(attrs, :color, :darkgray)
@@ -264,7 +265,7 @@ defmodule Raxol.Renderer.Layout do
     [shadow_box_element | processed_child_content_elements] ++ acc
   end
 
-  defp process_box_element(%{children: children} = element_map, space, acc) do
+  def process_box_element(%{children: children} = element_map, space, acc) do
     style = Map.get(element_map, :style, %{})
     border = Map.get(element_map, :border, false)
     size = calculate_box_size(element_map, space)
@@ -291,16 +292,27 @@ defmodule Raxol.Renderer.Layout do
   defp calculate_size(:auto, space), do: {max(0, space.width), max(0, space.height)}
   defp calculate_size(_, space), do: {max(0, space.width), max(0, space.height)}
 
-  defp process_flex_element(%{children: children} = element_map, space, acc) do
+  def process_flex_element(%{children: children} = element_map, space, acc) do
     flex_config = extract_flex_config(element_map)
     child_sizes = calculate_child_sizes(children)
     processed_children = process_flex_layout(children, child_sizes, space, flex_config)
 
-    [Map.merge(element_map, %{
-      children: processed_children,
+    # Return the flattened list of processed children instead of a container
+    processed_children ++ acc
+  end
+
+  def process_text_element(%{content: content} = element_map, space, acc) do
+    style = Map.get(element_map, :style, @default_style)
+    size = Map.get(element_map, :size, {String.length(content), 1})
+
+    text_element = %{
+      type: :text,
       position: {space.x, space.y},
-      size: {space.width, space.height}
-    }) | acc]
+      size: size,
+      content: content,
+      style: style
+    }
+    [text_element | acc]
   end
 
   defp extract_flex_config(element_map) do
