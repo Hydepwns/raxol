@@ -14,7 +14,14 @@ defmodule Raxol.UI.Rendering.Renderer do
   Starts the rendering process.
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, %{}, opts)
+    name = Keyword.get(opts, :name)
+    gen_server_opts = Keyword.delete(opts, :name)
+
+    if name do
+      GenServer.start_link(__MODULE__, %{}, [name: name] ++ gen_server_opts)
+    else
+      GenServer.start_link(__MODULE__, %{}, gen_server_opts)
+    end
   end
 
   @doc """
