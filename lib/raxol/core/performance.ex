@@ -91,13 +91,17 @@ defmodule Raxol.Core.Performance do
 
       # Add basic system stats if not available
       stats =
-        Map.merge(stats, %{
-          cpu_usage: get_cpu_usage(),
-          memory_usage: get_memory_usage(),
-          render_time: Map.get(stats, :avg_frame_time, 0),
-          frame_rate: Map.get(stats, :fps, 0),
-          jank_events: Map.get(stats, :jank_count, 0)
-        }, fn _key, _v1, v2 -> v2 end)
+        Map.merge(
+          stats,
+          %{
+            cpu_usage: get_cpu_usage(),
+            memory_usage: get_memory_usage(),
+            render_time: Map.get(stats, :avg_frame_time, 0),
+            frame_rate: Map.get(stats, :fps, 0),
+            jank_events: Map.get(stats, :jank_count, 0)
+          },
+          fn _key, _v1, v2 -> v2 end
+        )
 
       {:ok, stats}
     rescue
@@ -122,7 +126,7 @@ defmodule Raxol.Core.Performance do
   """
   @spec record_measurement(String.t(), number(), keyword()) ::
           :ok | {:error, term()}
-  def record_measurement(name, value, tags \\ []) do
+  def record_measurement(name, value, _tags \\ []) do
     try do
       # Record in metrics collector if it's a frame time
       if name == "render_time" or name == "frame_time" do
