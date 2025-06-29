@@ -7,7 +7,6 @@ defmodule Raxol.UI.Components.Base do
   """
 
   import Raxol.Guards
-  alias Raxol.UI.Theming.Theme
 
   @type state :: map()
 

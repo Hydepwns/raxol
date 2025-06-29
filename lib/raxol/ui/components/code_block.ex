@@ -8,7 +8,6 @@ defmodule Raxol.UI.Components.CodeBlock do
   use Raxol.UI.Components.Base.Component
 
   import Raxol.Guards
-  alias Raxol.UI.Theming.Theme
 
   @doc """
   Renders the code block.
