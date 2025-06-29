@@ -26,8 +26,11 @@ defmodule Raxol.UI.Layout.Containers do
 
   A list of positioned elements with absolute coordinates.
   """
-  def process_row(%{type: :row, attrs: attrs, children: children}, space, acc)
+  def process_row(%{type: :row, children: children} = row, space, acc)
       when list?(children) do
+    # Get attrs with default empty map if not present
+    attrs = Map.get(row, :attrs, %{})
+
     # Calculate spacing between items
     gap = Map.get(attrs, :gap, 1)
     justify = Map.get(attrs, :justify, :start)
@@ -129,11 +132,14 @@ defmodule Raxol.UI.Layout.Containers do
   A list of positioned elements with absolute coordinates.
   """
   def process_column(
-        %{type: :column, attrs: attrs, children: children},
+        %{type: :column, children: children} = column,
         space,
         acc
       )
       when list?(children) do
+    # Get attrs with default empty map if not present
+    attrs = Map.get(column, :attrs, %{})
+
     # Calculate spacing between items
     gap = Map.get(attrs, :gap, 1)
     justify = Map.get(attrs, :justify, :start)

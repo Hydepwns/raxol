@@ -203,23 +203,26 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       # Render
       {rendered, _view} = render(mounted, %{theme: test_theme()})
 
-      # Handle events - Pass the state BEFORE render (mounted)
+      # Handle events - Pass the state AFTER render (rendered)
       {:update, after_event} =
-        process_event(mounted, %{type: :test, value: "updated"}, %{
+        process_event(rendered, %{type: :test, value: "updated"}, %{
           theme: test_theme()
         })
 
       # Render again after update - Pass the updated state (after_event)
       {re_rendered, _view2} = render(after_event, %{theme: test_theme()})
 
-      # Update props
-      updated = TestComponent.update(after_event, %{value: "final"}, %{})
+      # Update props - Use the re_rendered component
+      updated = TestComponent.update(re_rendered, %{value: "final"}, %{})
 
       # Unmount
       {unmounted, _} = unmount(updated, %{})
 
       # Verify the full history
       events = Enum.reverse(unmounted.lifecycle_events)
+
+      # Debug output
+      IO.puts("DEBUG: Events: #{inspect(events)}")
 
       assert Enum.at(events, 0) == {:mount, :called}
       assert Enum.at(events, 1) == {:render, :called}

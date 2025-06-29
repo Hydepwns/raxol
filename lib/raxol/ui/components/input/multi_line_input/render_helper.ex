@@ -6,6 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
 
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper,
     as: ComponentRenderHelper
+  alias Raxol.View.Components
 
   import Raxol.Guards
 
@@ -30,7 +31,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
   """
   def render_line(line_index, line_content, state, theme) do
     require Raxol.View.Components
-    alias Raxol.View.Components
 
     {merged_theme, cursor_pos, focused, sel_start, sel_end, line_len,
      safe_cursor_col} =
@@ -173,7 +173,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
 
       cursor_on_this_line ->
         if safe_cursor_col >= line_len do
-          process_segments([{line_content, text_style}], line_content)
+          [{line_content, text_style}]
         else
           before_cursor = safe_slice.(line_content, 0, safe_cursor_col)
           cursor_char = safe_slice.(line_content, safe_cursor_col, 1)
@@ -185,13 +185,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
               line_len - safe_cursor_col - 1
             )
 
-          segments = [
+          [
             {before_cursor, text_style},
             {cursor_char, cursor_style},
             {after_cursor, text_style}
           ]
-
-          process_segments(segments, line_content)
         end
 
       true ->

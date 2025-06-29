@@ -443,7 +443,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
       # Reschedule the ticker if there were requests or a render was scheduled (even if not performed due to no tree)
       # Or if there are still pending requests (though current logic clears them all)
-      if :queue.size(current_state.animation_frame_requests) > 0 do
+      if :queue.len(current_state.animation_frame_requests) > 0 do
         new_timer_id = System.unique_integer([:positive])
 
         Process.send_after(

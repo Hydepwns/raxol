@@ -76,6 +76,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     tooltip = props[:tooltip]
     on_change = props[:on_change]
     on_submit = props[:on_submit]
+    focused = props[:focused] || false
     # Use the canonical helper for line splitting
     lines =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.split_into_lines(
@@ -98,7 +99,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
       selection_end: nil,
       history: nil,
       shift_held: false,
-      focused: false,
+      focused: focused,
       on_change: on_change,
       on_submit: on_submit,
       aria_label: aria_label,

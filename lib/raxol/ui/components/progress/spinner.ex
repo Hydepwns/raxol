@@ -32,7 +32,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   }
 
   @spec init(map()) :: map()
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def init(props) do
     style = props[:style] || @default_style
     frames = get_frames(style, props[:frames])
@@ -60,7 +60,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   defp get_frames(_, _), do: @animation_frames.dots
 
   @spec update(:tick, map()) :: map()
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def update(:tick, state) do
     current_time = System.monotonic_time(:millisecond)
 
@@ -111,7 +111,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   def update(_msg, state), do: state
 
   @spec render(map(), map()) :: any()
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def render(%{} = _props, state) do
     spinner_char = Enum.at(state.frames, state.frame_index)
     spinner_color = Enum.at(state.colors, state.color_index)
