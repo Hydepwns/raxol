@@ -22,6 +22,13 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
   """
   def wrap(view, opts \\ []) do
     border_type = Keyword.get(opts, :border, Keyword.get(opts, :style, :single))
+
+    # Validate border style
+    valid_styles = [:single, :double, :rounded, :bold, :dashed, :none]
+    if border_type not in valid_styles do
+      raise ArgumentError, "Invalid border style: #{inspect(border_type)}"
+    end
+
     title = Keyword.get(opts, :title)
     padding = Keyword.get(opts, :padding, 0)
     fg = Keyword.get(opts, :fg)

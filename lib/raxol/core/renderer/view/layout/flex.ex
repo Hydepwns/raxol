@@ -56,6 +56,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   """
   def container(opts) do
     direction = Keyword.get(opts, :direction, :row)
+
+    # Validate flex direction
+    if direction not in [:row, :column] do
+      raise ArgumentError, "Invalid flex direction: #{inspect(direction)}"
+    end
+
     # Get raw children from opts
     raw_children = Keyword.get(opts, :children)
 
@@ -237,37 +243,17 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   end
 
   defp justify_start(children, gap) do
-    children
-    |> Enum.scan({0, nil}, fn child, {pos, _prev_child} ->
-      {child_width, _child_height} = Map.get(child, :measured_size)
-      positioned_child = Map.put(child, :main_axis_position, pos)
-      {pos + child_width + gap, positioned_child}
-    end)
-    |> Enum.map(fn {_pos, child} -> child end)
+    justify_children(children, 0, gap)
   end
 
   defp justify_center(children, main_axis_size, total_content_size, gap) do
     start_offset = (main_axis_size - total_content_size) / 2
-
-    children
-    |> Enum.scan({start_offset, nil}, fn child, {pos, _prev_child} ->
-      {child_width, _child_height} = Map.get(child, :measured_size)
-      positioned_child = Map.put(child, :main_axis_position, pos)
-      {pos + child_width + gap, positioned_child}
-    end)
-    |> Enum.map(fn {_pos, child} -> child end)
+    justify_children(children, start_offset, gap)
   end
 
   defp justify_end(children, main_axis_size, total_content_size, gap) do
     start_offset = main_axis_size - total_content_size
-
-    children
-    |> Enum.scan({start_offset, nil}, fn child, {pos, _prev_child} ->
-      {child_width, _child_height} = Map.get(child, :measured_size)
-      positioned_child = Map.put(child, :main_axis_position, pos)
-      {pos + child_width + gap, positioned_child}
-    end)
-    |> Enum.map(fn {_pos, child} -> child end)
+    justify_children(children, start_offset, gap)
   end
 
   defp justify_space_between(children, main_axis_size, total_content_size, gap) do
@@ -279,15 +265,18 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       # Calculate space between items
       total_item_width = total_content_size - gap * (total_items - 1)
       space_between = (main_axis_size - total_item_width) / (total_items - 1)
-
-      children
-      |> Enum.scan({0, nil}, fn child, {pos, _prev_child} ->
-        {child_width, _child_height} = Map.get(child, :measured_size)
-        positioned_child = Map.put(child, :main_axis_position, pos)
-        {pos + child_width + space_between, positioned_child}
-      end)
-      |> Enum.map(fn {_pos, child} -> child end)
+      justify_children(children, 0, space_between)
     end
+  end
+
+  defp justify_children(children, start_offset, spacing) do
+    children
+    |> Enum.scan({start_offset, nil}, fn child, {pos, _prev_child} ->
+      {child_width, _child_height} = Map.get(child, :measured_size)
+      positioned_child = Map.put(child, :main_axis_position, pos)
+      {pos + child_width + spacing, positioned_child}
+    end)
+    |> Enum.map(fn {_pos, child} -> child end)
   end
 
   defp apply_alignment(children, align, cross_axis_size, _direction) do

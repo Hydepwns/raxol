@@ -20,11 +20,19 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
       Scroll.new(content, offset: {0, 10}, scrollbars: true)
   """
   def new(content, opts \\ []) do
+    offset = Keyword.get(opts, :offset, {0, 0})
+
+    # Validate offset
+    if not is_tuple(offset) or tuple_size(offset) != 2 or
+       not (is_integer(elem(offset, 0)) and is_integer(elem(offset, 1))) do
+      raise ArgumentError, "Scroll offset must be a tuple of two integers"
+    end
+
     %{
       type: :scroll,
       children: [content],
       viewport: Keyword.get(opts, :viewport),
-      offset: Keyword.get(opts, :offset, {0, 0}),
+      offset: offset,
       scrollbars: Keyword.get(opts, :scrollbars, true),
       fg: Keyword.get(opts, :fg),
       bg: Keyword.get(opts, :bg)

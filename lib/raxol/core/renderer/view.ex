@@ -41,6 +41,9 @@ defmodule Raxol.Core.Renderer.View do
       View.new(:text, content: "Hello", fg: :red)
   """
   def new(type, opts \\ []) do
+    validate_view_type(type)
+    validate_view_options(opts)
+
     defaults = %{
       type: type,
       position: {0, 0},
@@ -292,15 +295,10 @@ defmodule Raxol.Core.Renderer.View do
   Delegates to Raxol.Renderer.Layout.apply_layout/2.
   """
   def layout(view, dimensions) do
-    require Keyword
+    validate_layout_dimensions(dimensions)
 
-    if !Keyword.keyword?(dimensions) do
-      raise ArgumentError,
-            "View.layout macro expects a keyword list as the second argument, got: #{inspect(dimensions)}"
-    end
-
-    # Convert keyword list to map for LayoutEngine
-    LayoutEngine.apply_layout(view, Map.new(dimensions))
+    result = LayoutEngine.apply_layout(view, Map.new(dimensions))
+    process_layout_result(result, view)
   end
 
   @doc """
@@ -716,9 +714,15 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   defp normalize_spacing(view) do
+    padding = Map.get(view, :padding, {0, 0, 0, 0})
+    margin = Map.get(view, :margin, {0, 0, 0, 0})
+
+    normalized_padding = ViewUtils.normalize_spacing(padding)
+    normalized_margin = ViewUtils.normalize_margin(margin)
+
     view
-    |> Map.update!(:padding, &ViewUtils.normalize_spacing/1)
-    |> Map.update!(:margin, &ViewUtils.normalize_spacing/1)
+    |> Map.put(:padding, normalized_padding)
+    |> Map.put(:margin, normalized_margin)
   end
 
   defmacro ensure_keyword(opts) do
@@ -833,33 +837,149 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   defp parse_offset_string(str) do
-    parts = String.split(str, ~r/\s+/)
-    parse_offset_parts(parts)
+    str
+    |> String.split(~r/\s+/)
+    |> parse_offset_parts()
   end
 
   defp parse_offset_parts([x_str, y_str]) do
-    x = parse_offset_value(x_str)
-    y = parse_offset_value(y_str)
-    {x, y}
+    {parse_offset_value(x_str), parse_offset_value(y_str)}
   end
 
-  defp parse_offset_parts(_) do
-    {1, 1}
-  end
+  defp parse_offset_parts(_), do: {1, 1}
 
   defp parse_offset_value(str) do
-    cleaned_str = str |> String.replace("px", "") |> String.trim()
-
-    case cleaned_str do
-      "" -> 1
-      val -> parse_integer_or_default(val)
-    end
+    str
+    |> String.replace("px", "")
+    |> String.trim()
+    |> parse_integer_or_default()
   end
+
+  defp parse_integer_or_default(""), do: 1
 
   defp parse_integer_or_default(val) do
     case Integer.parse(val) do
       {int, _} -> int
       :error -> 1
     end
+  end
+
+  # Private validation functions
+  defp valid_size?({width, height}) when integer?(width) and integer?(height) do
+    width > 0 and height > 0
+  end
+
+  defp valid_size?(_), do: false
+
+  defp valid_position?({x, y}) when integer?(x) and integer?(y), do: true
+  defp valid_position?(_), do: false
+
+  defp validate_view_type(type) do
+    valid_types = [
+      :text,
+      :box,
+      :flex,
+      :grid,
+      :border,
+      :scroll,
+      :label,
+      :button,
+      :checkbox,
+      :panel
+    ]
+
+    if type not in valid_types do
+      raise ArgumentError, "Invalid view type: #{inspect(type)}"
+    end
+  end
+
+  defp validate_view_options(opts) do
+    validate_size_option(opts)
+    validate_position_option(opts)
+    validate_container_dimensions(opts)
+  end
+
+  defp validate_size_option(opts) do
+    if Keyword.has_key?(opts, :size) do
+      size = Keyword.get(opts, :size)
+
+      if not valid_size?(size) do
+        raise ArgumentError, "Size must be a tuple of two positive integers"
+      end
+    end
+  end
+
+  defp validate_position_option(opts) do
+    if Keyword.has_key?(opts, :position) do
+      position = Keyword.get(opts, :position)
+
+      if not valid_position?(position) do
+        raise ArgumentError, "Position must be a tuple of two integers"
+      end
+    end
+  end
+
+  defp validate_container_dimensions(opts) do
+    if Keyword.has_key?(opts, :width) or Keyword.has_key?(opts, :height) do
+      width = Keyword.get(opts, :width)
+      height = Keyword.get(opts, :height)
+
+      if (is_integer(width) and width <= 0) or
+           (is_integer(height) and height <= 0) do
+        raise ArgumentError, "Container dimensions must be positive integers"
+      end
+    end
+  end
+
+  defp validate_layout_dimensions(dimensions) do
+    require Keyword
+
+    if !Keyword.keyword?(dimensions) do
+      raise ArgumentError,
+            "View.layout macro expects a keyword list as the second argument, got: #{inspect(dimensions)}"
+    end
+
+    width = Keyword.get(dimensions, :width)
+    height = Keyword.get(dimensions, :height)
+
+    if is_integer(width) and width <= 0 do
+      raise ArgumentError, "Container width must be a positive integer"
+    end
+
+    if is_integer(height) and height <= 0 do
+      raise ArgumentError, "Container height must be a positive integer"
+    end
+  end
+
+  defp process_layout_result([single_element], view) do
+    if should_return_single_element?(single_element, view) do
+      build_single_element_result(single_element)
+    else
+      [single_element]
+    end
+  end
+
+  defp process_layout_result(result, _view), do: result
+
+  defp should_return_single_element?(single_element, view) do
+    Map.get(single_element, :type) == :text and
+      (is_map(view) and Map.get(view, :type) == :text)
+  end
+
+  defp build_single_element_result(single_element) do
+    %{
+      type: :text,
+      content: Map.get(single_element, :text, ""),
+      position:
+        {Map.get(single_element, :x, 0), Map.get(single_element, :y, 0)},
+      size:
+        {Map.get(single_element, :width, 1),
+         Map.get(single_element, :height, 1)},
+      style: Map.get(single_element, :attrs, %{}) |> Map.get(:style, []),
+      fg: Map.get(single_element, :attrs, %{}) |> Map.get(:fg),
+      bg: Map.get(single_element, :attrs, %{}) |> Map.get(:bg),
+      wrap: Map.get(single_element, :attrs, %{}) |> Map.get(:wrap, :none),
+      align: Map.get(single_element, :attrs, %{}) |> Map.get(:align, :left)
+    }
   end
 end
