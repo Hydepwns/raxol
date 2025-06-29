@@ -1,10 +1,8 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
   @moduledoc """
-  UI adapter for MultiLineInput's ClipboardHelper. Delegates to the implementation in
-  Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.
+  Helper functions for clipboard operations in MultiLineInput.
   """
 
-  alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper, as: Impl
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   alias Raxol.Core.Runtime.Command
@@ -70,5 +68,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
   @doc """
   Initiates a paste operation from clipboard.
   """
-  def paste(%State{} = state), do: Impl.paste(state)
+  def paste(%State{} = state) do
+    # Return the state unchanged and a clipboard read command
+    {state, [%Command{type: :clipboard_read}]}
+  end
 end

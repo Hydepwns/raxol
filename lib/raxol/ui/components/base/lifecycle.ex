@@ -22,9 +22,9 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
 
   ## Returns
 
-  The mounted component
+  The mounted component and any side effects
   """
-  @spec mount(Component.t(), map(), map()) :: Component.t()
+  @spec mount(Component.t(), map(), map()) :: {Component.t(), list()}
   def mount(component, props \\ %{}, context \\ %{}) do
     # Apply initial props
     component = apply_props(component, props)
@@ -33,7 +33,7 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     if function_exported?(component.__struct__, :mount, 2) do
       component.__struct__.mount(component, context)
     else
-      component
+      {component, []}
     end
   end
 
@@ -73,15 +73,15 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
 
   ## Returns
 
-  The unmounted component, typically for tracking/debugging only
+  The unmounted component and any cleanup effects
   """
-  @spec unmount(Component.t(), map()) :: Component.t()
+  @spec unmount(Component.t(), map()) :: {Component.t(), list()}
   def unmount(component, context \\ %{}) do
     # Call component's unmount handler if it exists
     if function_exported?(component.__struct__, :unmount, 2) do
       component.__struct__.unmount(component, context)
     else
-      component
+      {component, []}
     end
   end
 
@@ -103,18 +103,14 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   @spec render(Component.t(), map()) :: {Component.t(), map()}
   def render(component, context) do
     # Call the component's render function
-    view = component.__struct__.render(component, context)
+    if function_exported?(component.__struct__, :render, 2) do
+      {updated_component, view} =
+        component.__struct__.render(component, context)
 
-    # Track render in debug mode
-    debug_component =
-      if Map.get(context, :debug_mode) do
-        add_lifecycle_event(component, :render)
-      else
-        component
-      end
-
-    # Return both the updated component and the view
-    {debug_component, view}
+      {updated_component, view}
+    else
+      {component, %{type: :unknown_component}}
+    end
   end
 
   @doc """
@@ -135,16 +131,12 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   @spec process_event(Component.t(), map(), map()) ::
           {:update, Component.t()} | {:handled, Component.t()} | :passthrough
   def process_event(component, event, context) do
-    # Track the event in debug mode
-    debug_component =
-      if Map.get(context, :debug_mode) do
-        add_lifecycle_event(component, {:event, event})
-      else
-        component
-      end
-
     # Process the event using the component's handler
-    debug_component.__struct__.handle_event(debug_component, event, context)
+    if function_exported?(component.__struct__, :handle_event, 3) do
+      component.__struct__.handle_event(component, event, context)
+    else
+      :passthrough
+    end
   end
 
   @doc """

@@ -58,8 +58,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     # Get lines before the target row
     prefix_lines = Enum.slice(text_lines, 0, safe_row)
     prefix_sum = Enum.sum(Enum.map(prefix_lines, &String.length(&1)))
-    # Add count for newline characters (\n) - use max(0, safe_row) for safety
-    newline_count = max(0, safe_row)
+    # Add count for newline characters (\n) - one newline per line except the last
+    newline_count = safe_row
     # Add the clamped column index on the target row
     total_index = prefix_sum + newline_count + safe_col
 

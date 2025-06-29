@@ -36,8 +36,10 @@ defmodule Raxol.UI.Layout.Engine do
     }
 
     # Process the view tree
-    process_element(view, available_space, [])
+    result = process_element(view, available_space, [])
     |> List.flatten()
+
+    result
   end
 
   # --- Element Processing Logic ---
@@ -207,10 +209,25 @@ defmodule Raxol.UI.Layout.Engine do
 
   # Process children of a container element (Helper)
   defp process_children(children, space, acc) when list?(children) do
-    # Placeholder: needs proper handling based on container type (row, col, etc.)
-    # For now, just process each child in the same space (will overlap)
+    # Process each child with proper delegation to container-specific modules
     Enum.reduce(children, acc, fn child, current_acc ->
-      process_element(child, space, current_acc)
+      case child do
+        %{type: :row} = row ->
+          Containers.process_row(row, space, current_acc)
+
+        %{type: :column} = column ->
+          Containers.process_column(column, space, current_acc)
+
+        %{type: :panel} = panel ->
+          Panels.process(panel, space, current_acc)
+
+        %{type: :grid} = grid ->
+          Grid.process(grid, space, current_acc)
+
+        _ ->
+          # For non-container elements, process in the same space
+          process_element(child, space, current_acc)
+      end
     end)
   end
 

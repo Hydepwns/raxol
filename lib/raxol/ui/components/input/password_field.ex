@@ -9,25 +9,25 @@ defmodule Raxol.UI.Components.Input.PasswordField do
 
   @behaviour Raxol.UI.Components.Base.Component
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def init(props) do
     # Ensure secret: true is always set
     TextField.init(Map.put(props, :secret, true))
   end
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def mount(state), do: TextField.mount(state)
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def unmount(state), do: TextField.unmount(state)
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def update(msg, state), do: TextField.update(msg, state)
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def handle_event(event, context, state),
     do: TextField.handle_event(event, context, state)
 
-  @impl true
+  @impl Raxol.UI.Components.Base.Component
   def render(state, context), do: TextField.render(state, context)
 end
