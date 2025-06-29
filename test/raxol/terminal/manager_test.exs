@@ -6,48 +6,78 @@ defmodule Raxol.Terminal.ManagerTest do
 
   setup do
     emulator = Raxol.Terminal.Emulator.new()
-    {:ok, pid} = Manager.start_link(terminal: emulator, runtime_pid: self())
-    {:ok, %{pid: pid}}
+
+    # Stop any existing manager to ensure a clean state
+    case GenServer.whereis(Raxol.Terminal.Manager) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
+    end
+    Process.sleep(50)  # Give it time to stop
+
+    # Start the manager with test configuration
+    case Manager.start_link(terminal: emulator, runtime_pid: self()) do
+      {:ok, pid} -> {:ok, %{pid: pid}}
+      {:error, {:already_started, pid}} ->
+        # Update the existing manager's state to include the correct runtime_pid
+        GenServer.call(pid, {:update_state, %{terminal: emulator, runtime_pid: self()}})
+        {:ok, %{pid: pid}}
+      other -> raise "Unexpected result from Manager.start_link: #{inspect(other)}"
+    end
+  end
+
+  # Clean up processes after each test
+  setup do
+    on_exit(fn ->
+      # Stop the manager if it's running
+      case GenServer.whereis(Raxol.Terminal.Manager) do
+        nil -> :ok
+        pid -> GenServer.stop(pid)
+      end
+    end)
   end
 
   test "window resize event triggers notify_resized", %{pid: pid} do
+    # Debug: Check the manager's state
+    state = :sys.get_state(pid)
+    IO.inspect(state, label: "Manager State")
+
     event = %Event{
       type: :window,
       data: %{action: :resize, width: 100, height: 40}
     }
 
     Manager.process_event(pid, event)
-    assert_received {:terminal_resized, 100, 40}
+    assert_receive {:terminal_resized, 100, 40}, 100
   end
 
   test "window focus event triggers notify_focus_changed", %{pid: pid} do
     event = %Event{type: :window, data: %{action: :focus, focused: true}}
     Manager.process_event(pid, event)
-    assert_received {:terminal_focus_changed, true}
+    assert_receive {:terminal_focus_changed, true}, 100
   end
 
   test "window blur event triggers notify_focus_changed(false)", %{pid: pid} do
     event = %Event{type: :window, data: %{action: :blur}}
     Manager.process_event(pid, event)
-    assert_received {:terminal_focus_changed, false}
+    assert_receive {:terminal_focus_changed, false}, 100
   end
 
   test "mode event triggers notify_mode_changed", %{pid: pid} do
     event = %Event{type: :mode, data: %{mode: :insert}}
     Manager.process_event(pid, event)
-    assert_received {:terminal_mode_changed, :insert}
+    assert_receive {:terminal_mode_changed, :insert}, 100
   end
 
   test "focus event triggers notify_focus_changed", %{pid: pid} do
     event = %Event{type: :focus, data: %{focused: false}}
     Manager.process_event(pid, event)
-    assert_received {:terminal_focus_changed, false}
+    assert_receive {:terminal_focus_changed, false}, 100
   end
 
   test "clipboard event triggers notify_clipboard_event", %{pid: pid} do
     event = %Event{type: :clipboard, data: %{op: :copy, content: "abc"}}
     Manager.process_event(pid, event)
-    assert_received {:terminal_clipboard_event, :copy, "abc"}
+    assert_receive {:terminal_clipboard_event, :copy, "abc"}, 100
   end
 
   test "selection event triggers notify_selection_changed", %{pid: pid} do
@@ -58,14 +88,14 @@ defmodule Raxol.Terminal.ManagerTest do
 
     Manager.process_event(pid, event)
 
-    assert_received {:terminal_selection_changed,
-                     %{start_pos: {0, 0}, end_pos: {1, 1}, text: "hi"}}
+    assert_receive {:terminal_selection_changed,
+                     %{start_pos: {0, 0}, end_pos: {1, 1}, text: "hi"}}, 100
   end
 
   test "paste event triggers notify_paste_event", %{pid: pid} do
     event = %Event{type: :paste, data: %{text: "foo", position: {2, 3}}}
     Manager.process_event(pid, event)
-    assert_received {:terminal_paste_event, "foo", {2, 3}}
+    assert_receive {:terminal_paste_event, "foo", {2, 3}}, 100
   end
 
   test "cursor event triggers notify_cursor_event", %{pid: pid} do
@@ -76,13 +106,13 @@ defmodule Raxol.Terminal.ManagerTest do
 
     Manager.process_event(pid, event)
 
-    assert_received {:terminal_cursor_event,
+    assert_receive {:terminal_cursor_event,
                      %{
                        visible: true,
                        style: :block,
                        blink: true,
                        position: {1, 2}
-                     }}
+                     }}, 100
   end
 
   test "scroll event triggers notify_scroll_event", %{pid: pid} do
@@ -92,7 +122,7 @@ defmodule Raxol.Terminal.ManagerTest do
     }
 
     Manager.process_event(pid, event)
-    assert_received {:terminal_scroll_event, :down, 5, {0, 0}}
+    assert_receive {:terminal_scroll_event, :down, 5, {0, 0}}, 100
   end
 
   test "unknown event type does not crash or send messages" do
@@ -109,8 +139,8 @@ defmodule Raxol.Terminal.ManagerTest do
     event = %Raxol.Core.Events.Event{type: :unknown_event, data: %{}}
     Manager.process_event(pid, event)
     # Assert that an error message is received for unknown event type
-    assert_received {:terminal_error, :unknown_event_type,
-                     %{action: :process_event, event: ^event}}
+    assert_receive {:terminal_error, :unknown_event_type,
+                     %{action: :process_event, event: ^event}}, 100
   end
 
   defp flush do
@@ -138,8 +168,8 @@ defmodule Raxol.Terminal.ManagerTest do
 
     assert {:error, :no_terminal} = Manager.process_event(pid, event)
 
-    assert_received {:terminal_error, :no_terminal,
-                     %{action: :process_event, event: ^event}}
+    assert_receive {:terminal_error, :no_terminal,
+                     %{action: :process_event, event: ^event}}, 100
   end
 
   describe "telemetry event emission" do

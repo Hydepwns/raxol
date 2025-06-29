@@ -1,19 +1,20 @@
 defmodule Raxol.Terminal.Sync.SystemTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Sync.System
 
   setup do
     # Start the sync system with test configuration
-    {:ok, _pid} =
-      System.start_link(
-        consistency_levels: %{
-          split: :strong,
-          window: :strong,
-          tab: :eventual
-        }
-      )
-
-    :ok
+    case System.start_link(
+           consistency_levels: %{
+             split: :strong,
+             window: :strong,
+             tab: :eventual
+           }
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+      other -> raise "Unexpected result from System.start_link: #{inspect(other)}"
+    end
   end
 
   describe "basic operations" do
@@ -126,6 +127,9 @@ defmodule Raxol.Terminal.Sync.SystemTest do
 
   describe "statistics" do
     test ~c"tracks sync statistics" do
+      # Clear any existing sync data to ensure clean state
+      System.clear("test_sync")
+
       # Perform some syncs
       System.sync("test_sync", "key1", "value1",
         consistency: :strong,

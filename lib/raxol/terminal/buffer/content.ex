@@ -22,7 +22,8 @@ defmodule Raxol.Terminal.Buffer.Content do
   def write_char(buffer, x, y, char, style \\ nil) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       cell = Cell.new(char, style)
-      %{buffer | cells: put_in(buffer.cells, [y, x], cell)}
+      updated_cells = update_cell_at(buffer.cells, x, y, cell)
+      %{buffer | cells: updated_cells}
     else
       buffer
     end
@@ -74,9 +75,13 @@ defmodule Raxol.Terminal.Buffer.Content do
           Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
-      buffer.cells
-      |> Enum.at(y)
-      |> Enum.at(x)
+      case buffer.cells do
+        nil -> raise RuntimeError, "Buffer cells is nil"
+        cells ->
+          cells
+          |> Enum.at(y)
+          |> Enum.at(x)
+      end
     else
       Cell.new()
     end
@@ -112,7 +117,6 @@ defmodule Raxol.Terminal.Buffer.Content do
           ScreenBuffer.t()
   def put_line(%ScreenBuffer{cells: cells} = buffer, line_index, new_cells)
       when line_index >= 0 and line_index < length(cells) do
-    new_cells = List.duplicate(new_cells, 1)
     new_cells_list = List.replace_at(cells, line_index, new_cells)
     %{buffer | cells: new_cells_list}
   end
@@ -127,7 +131,7 @@ defmodule Raxol.Terminal.Buffer.Content do
           list({non_neg_integer(), non_neg_integer(), map()})
   def diff(%ScreenBuffer{cells: cells}, changes) do
     Enum.filter(changes, fn {y, x, _} ->
-      case get_in(cells, [y, x]) do
+      case get_cell_at(cells, x, y) do
         nil -> false
         cell -> cell != %Cell{}
       end
@@ -149,9 +153,28 @@ defmodule Raxol.Terminal.Buffer.Content do
             do: struct(Cell, cell_or_map),
             else: cell_or_map
 
-        put_in(acc_cells, [y, x], cell)
+        update_cell_at(acc_cells, x, y, cell)
       end)
 
     %{buffer | cells: new_cells}
+  end
+
+  # === Private Helper Functions ===
+
+  @doc false
+  defp update_cell_at(cells, x, y, cell) do
+    case Enum.at(cells, y) do
+      nil -> cells
+      row ->
+        updated_row = List.replace_at(row, x, cell)
+        List.replace_at(cells, y, updated_row)
+    end
+  end
+
+  @doc false
+  defp get_cell_at(cells, x, y) do
+    cells
+    |> Enum.at(y)
+    |> Enum.at(x)
   end
 end

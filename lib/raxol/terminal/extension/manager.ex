@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Extension.Manager do
   """
   @spec emit_event(t(), String.t(), [term()]) ::
           {:ok, [term()], t()} | {:error, term()}
-  def emit_event(manager, event_name, _args \\ []) do
+  def emit_event(manager, event_name, args \\ []) do
     case Map.get(manager.events, event_name) do
       nil ->
         {:error, :event_not_found}
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Extension.Manager do
       events ->
         results =
           Enum.map(events, fn event ->
-            apply_event_handler(event, _args)
+            apply_event_handler(event, args)
           end)
 
         updated_manager = %{
@@ -161,13 +161,13 @@ defmodule Raxol.Terminal.Extension.Manager do
   """
   @spec execute_command(t(), String.t(), [term()]) ::
           {:ok, term(), t()} | {:error, term()}
-  def execute_command(manager, command_name, _args \\ []) do
+  def execute_command(manager, command_name, args \\ []) do
     case Map.get(manager.commands, command_name) do
       nil ->
         {:error, :command_not_found}
 
       command ->
-        result = apply_command_handler(command, _args)
+        result = apply_command_handler(command, args)
 
         updated_manager = %{
           manager
@@ -259,12 +259,19 @@ defmodule Raxol.Terminal.Extension.Manager do
 
   defp unregister_extension_events(events, extension) do
     Enum.reduce(extension.events, events, fn event_name, acc ->
-      Map.update(
-        acc,
-        event_name,
-        [],
-        &Enum.reject(&1, fn e -> e.extension == extension.name end)
-      )
+      case Map.get(acc, event_name) do
+        nil ->
+          acc
+
+        event_list ->
+          filtered_events = Enum.reject(event_list, fn e -> e.extension == extension.name end)
+
+          if Enum.empty?(filtered_events) do
+            Map.delete(acc, event_name)
+          else
+            Map.put(acc, event_name, filtered_events)
+          end
+      end
     end)
   end
 

@@ -50,7 +50,9 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec new() :: t()
   def new do
-    %__MODULE__{}
+    %__MODULE__{
+      palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
+    }
   end
 
   @doc """
@@ -266,23 +268,30 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec process_sequence(t(), binary()) :: {t(), :ok | {:error, atom()}}
   def process_sequence(state, data) when binary?(data) do
+    # Ensure palette is initialized
+    state_with_palette = if map_size(state.palette) == 0 do
+      %{state | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()}
+    else
+      state
+    end
+
     case Raxol.Terminal.ANSI.SixelParser.parse(
            data,
            %Raxol.Terminal.ANSI.SixelParser.ParserState{
              x: 0,
              y: 0,
-             color_index: state.current_color,
+             color_index: state_with_palette.current_color,
              repeat_count: 1,
-             palette: state.palette,
-             raster_attrs: state.attributes,
-             pixel_buffer: state.pixel_buffer,
+             palette: state_with_palette.palette,
+             raster_attrs: state_with_palette.attributes,
+             pixel_buffer: state_with_palette.pixel_buffer,
              max_x: 0,
              max_y: 0
            }
          ) do
       {:ok, parser_state} ->
         updated_state = %{
-          state
+          state_with_palette
           | palette: parser_state.palette,
             pixel_buffer: parser_state.pixel_buffer,
             position: {parser_state.x, parser_state.y},
@@ -293,7 +302,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
         {updated_state, :ok}
 
       {:error, reason} ->
-        {state, {:error, reason}}
+        {state_with_palette, {:error, reason}}
     end
   end
 end

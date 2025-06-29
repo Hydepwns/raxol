@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.EmulatorFactory do
       scrollback_limit: scrollback_limit,
       memory_limit: opts[:memorylimit] || 1_000_000,
       max_command_history: opts[:max_command_history] || 100,
-      plugin_manager: opts[:plugin_manager] || Core.new(),
+      plugin_manager: opts[:plugin_manager] || Raxol.Core.new(),
       session_id: opts[:session_id],
       client_options: opts[:client_options] || %{},
       state: Raxol.Terminal.State.Manager.new(),

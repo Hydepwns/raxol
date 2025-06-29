@@ -17,7 +17,8 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
     :damage_tracker,
     :memory_usage,
     :memory_limit,
-    :metrics
+    :metrics,
+    :cursor_position
   ]
 
   @type t :: %__MODULE__{
@@ -27,7 +28,8 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
           damage_tracker: DamageTracker.t(),
           memory_usage: non_neg_integer(),
           memory_limit: non_neg_integer(),
-          metrics: map()
+          metrics: map(),
+          cursor_position: {non_neg_integer(), non_neg_integer()}
         }
 
   @doc """
@@ -46,7 +48,8 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
         reads: 0,
         scrolls: 0,
         memory_usage: 0
-      }
+      },
+      cursor_position: {0, 0}
     }
   end
 

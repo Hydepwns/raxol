@@ -43,7 +43,8 @@ defmodule Raxol.Terminal.Commands.ScrollingTest do
 
   defp get_line_as_string(buffer, row_index) do
     ScreenBuffer.get_line(buffer, row_index)
-    |> Enum.map_join(fn %Cell{char: char} -> char end)
+    |> List.flatten()
+    |> Enum.map_join(fn cell -> cell.char end)
   end
 
   describe "scroll_up/4" do

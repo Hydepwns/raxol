@@ -1,20 +1,12 @@
 defmodule Raxol.Terminal.Config.AnimationCacheTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Config.AnimationCache
   alias Raxol.Terminal.Cache.System
 
   setup do
-    # Start the cache system
-    {:ok, _pid} =
-      System.start_link(
-        max_size: 1024 * 1024,
-        default_ttl: 3600,
-        eviction_policy: :lru,
-        namespace_configs: %{
-          # 10MB for test
-          animation: %{max_size: 10 * 1024 * 1024}
-        }
-      )
+    # The cache system should be started by the supervisor
+    # Wait a moment for it to be ready
+    Process.sleep(100)
 
     # Create test animation data
     animation_data = %{

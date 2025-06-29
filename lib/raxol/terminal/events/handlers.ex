@@ -207,4 +207,51 @@ defmodule Raxol.Terminal.Events.Handlers do
 
     {:ok, emulator_state, commands}
   end
+
+  # === Additional Event Handlers ===
+
+  @doc """
+  Handles selection events.
+  """
+  @spec handle_selection_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  def handle_selection_event(emulator_state, event) do
+    # TODO: Implement selection event handling
+    {:ok, emulator_state}
+  end
+
+  @doc """
+  Handles scroll events.
+  """
+  @spec handle_scroll_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  def handle_scroll_event(emulator_state, event) do
+    # TODO: Implement scroll event handling
+    {:ok, emulator_state}
+  end
+
+  @doc """
+  Handles paste events.
+  """
+  @spec handle_paste_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  def handle_paste_event(emulator_state, event) do
+    # TODO: Implement paste event handling
+    {:ok, emulator_state}
+  end
+
+  @doc """
+  Handles cursor events.
+  """
+  @spec handle_cursor_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  def handle_cursor_event(emulator_state, event) do
+    # TODO: Implement cursor event handling
+    {:ok, emulator_state}
+  end
+
+  @doc """
+  Handles clipboard events.
+  """
+  @spec handle_clipboard_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  def handle_clipboard_event(emulator_state, event) do
+    # TODO: Implement clipboard event handling
+    {:ok, emulator_state}
+  end
 end

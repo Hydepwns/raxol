@@ -165,4 +165,70 @@ defmodule Raxol.Terminal.Cursor do
     y = max(0, min(y, height - 1))
     %{cursor | position: {x, y}}
   end
+
+  # === Additional Cursor Functions ===
+
+  @doc """
+  Checks if the cursor is visible.
+  """
+  @spec visible?(EmulatorStruct.t()) :: boolean()
+  def visible?(emulator) do
+    emulator.cursor.visible
+  end
+
+  @doc """
+  Sets the cursor visibility.
+  """
+  @spec set_visibility(EmulatorStruct.t(), boolean()) :: EmulatorStruct.t()
+  def set_visibility(emulator, visible) do
+    set_visible(emulator, visible)
+  end
+
+  @doc """
+  Sets the cursor style.
+  """
+  @spec set_style(EmulatorStruct.t(), map()) :: EmulatorStruct.t()
+  def set_style(emulator, style) do
+    %{emulator | cursor: %{emulator.cursor | style: style}}
+  end
+
+  @doc """
+  Sets the cursor position.
+  """
+  @spec set_position(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) :: EmulatorStruct.t()
+  def set_position(emulator, position) do
+    move_to(emulator, position)
+  end
+
+  @doc """
+  Sets the cursor color.
+  """
+  @spec set_color(EmulatorStruct.t(), map()) :: EmulatorStruct.t()
+  def set_color(emulator, color) do
+    %{emulator | cursor: %{emulator.cursor | color: color}}
+  end
+
+  @doc """
+  Sets the cursor blink state.
+  """
+  @spec set_blink(EmulatorStruct.t(), boolean()) :: EmulatorStruct.t()
+  def set_blink(emulator, blink) do
+    %{emulator | cursor: %{emulator.cursor | blink: blink}}
+  end
+
+  @doc """
+  Resets the cursor color to default.
+  """
+  @spec reset_color(EmulatorStruct.t()) :: EmulatorStruct.t()
+  def reset_color(emulator) do
+    %{emulator | cursor: %{emulator.cursor | color: nil}}
+  end
+
+  @doc """
+  Gets the cursor style.
+  """
+  @spec get_style(EmulatorStruct.t()) :: map()
+  def get_style(emulator) do
+    emulator.cursor.style || %{}
+  end
 end

@@ -83,6 +83,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(pid, :get_state)
   end
 
+  @impl GenServer
   def init(opts) do
     {:ok, memory_manager} = MemoryManager.start_link()
     lock = :ets.new(:buffer_lock, [:set, :private])
@@ -113,30 +114,37 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(pid, {:atomic_operation, operation})
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def initialize_buffers(width, height, opts \\ []) do
     GenServer.call(__MODULE__, {:initialize_buffers, width, height, opts})
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def write(data, opts \\ []) do
     GenServer.call(__MODULE__, {:write, data, opts})
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def read(opts \\ []) do
     GenServer.call(__MODULE__, {:read, opts})
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def resize(size, opts \\ []) do
     GenServer.call(__MODULE__, {:resize, size, opts})
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def scroll(lines) do
     GenServer.call(__MODULE__, {:scroll, lines})
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def set_cell(x, y, cell) do
     GenServer.call(__MODULE__, {:set_cell, x, y, cell})
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def get_cell(x, y) do
     GenServer.call(__MODULE__, {:get_cell, x, y})
   end
@@ -206,16 +214,27 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(__MODULE__, :get_icon_title)
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def get_memory_usage do
     GenServer.call(__MODULE__, :get_memory_usage)
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def get_scrollback_count do
     GenServer.call(__MODULE__, :get_scrollback_count)
   end
 
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def get_metrics do
     GenServer.call(__MODULE__, :get_metrics)
+  end
+
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
+  def clear_damage(%__MODULE__{} = manager) do
+    %{
+      manager
+      | damage_tracker: DamageTracker.clear_damage(manager.damage_tracker)
+    }
   end
 
   def get_active_buffer(%__MODULE__{} = state) do
@@ -248,16 +267,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
   """
   def get_damage_regions(%__MODULE__{} = manager) do
     DamageTracker.get_damage_regions(manager.damage_tracker)
-  end
-
-  @doc """
-  Clears all damage regions.
-  """
-  def clear_damage(%__MODULE__{} = manager) do
-    %{
-      manager
-      | damage_tracker: DamageTracker.clear_damage(manager.damage_tracker)
-    }
   end
 
   @doc """
@@ -347,11 +356,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:get_cell, x, y}, _from, state) do
-    cell = BufferImpl.get_cell(state.buffer, x, y)
-    {:reply, cell, state}
-  end
-
   def handle_call({:get_line, y}, _from, state) do
     line = BufferImpl.get_line(state.buffer, y)
     {:reply, line, state}
@@ -434,6 +438,22 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:reply, icon_title, state}
   end
 
+  @impl GenServer
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl GenServer
+  def handle_call({:get, key, default}, _from, state) do
+    value = Map.get(state, key, default)
+    {:reply, value, state}
+  end
+
+  def handle_call({:get_cell, x, y}, _from, state) do
+    cell = BufferImpl.get_cell(state.buffer, x, y)
+    {:reply, cell, state}
+  end
+
   def handle_call(:get_memory_usage, _from, state) do
     usage = MemoryManager.get_memory_usage(state.memory_manager)
     {:reply, usage, state}
@@ -446,17 +466,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   def handle_call(:get_metrics, _from, state) do
     {:reply, state.metrics, state}
-  end
-
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
-  end
-
-  @impl GenServer
-  def handle_call({:get, key, default}, _from, state) do
-    value = Map.get(state, key, default)
-    {:reply, value, state}
   end
 
   # Private functions

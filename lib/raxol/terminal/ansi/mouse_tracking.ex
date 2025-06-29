@@ -85,20 +85,11 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   @spec parse_mouse_sequence(String.t()) :: mouse_event() | nil
   def parse_mouse_sequence(sequence) do
     try do
-      IO.puts(
-        "parse_mouse_sequence: sequence=#{inspect(sequence)}, bytes=#{inspect(:erlang.binary_to_list(sequence))}"
-      )
-
       case sequence do
-        <<"\e[M", button, x, y>> ->
+        <<27, 77, button, x, y>> ->
           # Decode coordinates: they are encoded as x+32, y+32
           decoded_x = x - 32
           decoded_y = y - 32
-
-          IO.puts(
-            "parse_mouse_sequence: button=#{inspect(button)}, decoded_x=#{inspect(decoded_x)}, decoded_y=#{inspect(decoded_y)}"
-          )
-
           parse_mouse_event(button, decoded_x, decoded_y)
 
         <<"\e[<", rest::binary>> ->
@@ -113,7 +104,6 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
           sequence: sequence,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
-
         nil
     end
   end
@@ -157,17 +147,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   def format_focus_event(:focus_in), do: "\e[I"
   def format_focus_event(:focus_out), do: "\e[O"
 
-  defp parse_mouse_event(0, x, y), do: {:left, :press, x, y}
-  defp parse_mouse_event(1, x, y), do: {:middle, :press, x, y}
-  defp parse_mouse_event(2, x, y), do: {:right, :press, x, y}
-  defp parse_mouse_event(3, x, y), do: {:left, :release, x, y}
-  defp parse_mouse_event(32, x, y), do: {:left, :press, x, y}
-  defp parse_mouse_event(35, x, y), do: {:left, :release, x, y}
-  defp parse_mouse_event(64, x, y), do: {:left, :move, x, y}
-  defp parse_mouse_event(67, x, y), do: {:left, :drag, x, y}
-
-  defp parse_mouse_event(button_code, x, y),
-    do: parse_mouse_event_fallback(button_code, x, y)
+  defp parse_mouse_event(button_code, x, y), do: parse_mouse_event_fallback(button_code, x, y)
 
   defp parse_mouse_event_fallback(button_code, x, y) do
     import Bitwise

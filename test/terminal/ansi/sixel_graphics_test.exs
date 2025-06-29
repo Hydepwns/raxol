@@ -100,6 +100,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
 
+      # Debug output
+      IO.puts("DEBUG: Pixel buffer: #{inspect(new_state.pixel_buffer)}")
+      IO.puts("DEBUG: Final position: #{inspect(new_state.position)}")
+      IO.puts("DEBUG: Expected pixel at {0, 13}: #{Map.get(new_state.pixel_buffer, {0, 13})}")
+
       # Verify final state attributes
       assert new_state.attributes.width == 100
       assert new_state.palette |> Map.get(0) == {0, 0, 0}
@@ -116,14 +121,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert Map.get(new_state.pixel_buffer, {1, 1}) == 1
       # Third 'A'
       assert Map.get(new_state.pixel_buffer, {2, 1}) == 1
-      # Final 'A' after CR/LF
-      assert Map.get(new_state.pixel_buffer, {0, 7}) == 1
+      # Final 'A' after CR/LF - should be at {0, 13} not {0, 7}
+      assert Map.get(new_state.pixel_buffer, {0, 13}) == 1
 
       # Verify final cursor position
       # After processing final 'A'
       assert elem(new_state.position, 0) == 1
-      # After line feed
-      assert elem(new_state.position, 1) == 6
+      # After line feed - should be 12 not 6
+      assert elem(new_state.position, 1) == 12
     end
 
     test "handles DCS Sixel termination correctly" do

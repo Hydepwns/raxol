@@ -29,6 +29,9 @@ defmodule Raxol.Terminal.Sync.Protocol do
 
   # Protocol Functions
   def create_sync_message(component_id, component_type, state, opts \\ []) do
+    # Convert keyword list to map if needed
+    opts_map = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+
     %{
       type: @sync_type,
       component_id: component_id,
@@ -37,9 +40,9 @@ defmodule Raxol.Terminal.Sync.Protocol do
       metadata: %{
         version: System.monotonic_time(),
         timestamp: System.system_time(),
-        source: Map.get(opts, :source, "unknown"),
+        source: Map.get(opts_map, :source, "unknown"),
         consistency:
-          Map.get(opts, :consistency, get_default_consistency(component_type))
+          Map.get(opts_map, :consistency, get_default_consistency(component_type))
       }
     }
   end
@@ -201,9 +204,13 @@ defmodule Raxol.Terminal.Sync.Protocol do
   end
 
   defp resolve_conflict(message, current_state) do
-    case {message.metadata.consistency, current_state.metadata.consistency} do
+    # Extract metadata from both states, handling different formats
+    message_metadata = extract_metadata(message)
+    current_metadata = extract_metadata(current_state)
+
+    case {message_metadata.consistency, current_metadata.consistency} do
       {:strong, :strong} ->
-        if message.metadata.version > current_state.metadata.version do
+        if message_metadata.version > current_metadata.version do
           :accept
         else
           :reject
@@ -216,11 +223,33 @@ defmodule Raxol.Terminal.Sync.Protocol do
         :reject
 
       _ ->
-        if message.metadata.version > current_state.metadata.version do
+        if message_metadata.version > current_metadata.version do
           :accept
         else
           :conflict
         end
+    end
+  end
+
+  defp extract_metadata(state) do
+    cond do
+      # If state has metadata field, use it
+      Map.has_key?(state, :metadata) ->
+        state.metadata
+
+      # If state has version field directly, create metadata
+      Map.has_key?(state, :version) ->
+        %{
+          version: state.version,
+          consistency: Map.get(state, :consistency, :eventual)
+        }
+
+      # Default metadata
+      true ->
+        %{
+          version: 0,
+          consistency: :eventual
+        }
     end
   end
 

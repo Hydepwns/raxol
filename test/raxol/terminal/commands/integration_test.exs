@@ -20,9 +20,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_cursor_position(10, 10)
+        |> unwrap_ok()
         |> OSCHandlers.handle_window_size(100, 50)
         |> unwrap_ok()
         |> CSIHandlers.handle_cursor_position(20, 20)
+        |> unwrap_ok()
 
       assert result.window_manager.size == {100, 50}
       assert result.cursor.position == {20, 20}
@@ -32,8 +34,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> OSCHandlers.handle_foreground_color("#FF0000")
+        |> unwrap_ok()
         |> CSIHandlers.handle_text_attributes([1, 4])
+        |> unwrap_ok()
         |> OSCHandlers.handle_background_color("#0000FF")
+        |> unwrap_ok()
 
       # Check that the operations completed without error
       assert is_map(result)
@@ -43,9 +48,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_mode_change(25, false)
+        |> unwrap_ok()
         |> OSCHandlers.handle_window_maximize()
         |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(25, true)
+        |> unwrap_ok()
 
       assert result.window_manager.state == :maximized
       assert result.cursor.visible == true
@@ -59,6 +66,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_cursor_position(10, 10)
+        |> unwrap_ok()
         |> OSCHandlers.handle_window_title("Test")
         |> unwrap_ok()
         |> OSCHandlers.handle_window_size(100, 50)
@@ -71,8 +79,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_text_attributes([1, 4, 31])
+        |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(4, true)
+        |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(25, false)
+        |> unwrap_ok()
 
       # Check that the operations completed without error
       assert is_map(result)
@@ -84,7 +95,9 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
         |> OSCHandlers.handle_window_maximize()
         |> unwrap_ok()
         |> CSIHandlers.handle_cursor_position(10, 10)
+        |> unwrap_ok()
         |> CSIHandlers.handle_cursor_up(5)
+        |> unwrap_ok()
 
       assert result.window_manager.state == :maximized
     end
@@ -95,8 +108,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_cursor_position(10, 10)
+        |> unwrap_ok()
         |> CSIHandlers.handle_scroll_up(5)
+        |> unwrap_ok()
         |> CSIHandlers.handle_cursor_position(20, 20)
+        |> unwrap_ok()
 
       # Check that the operations completed without error
       assert is_map(result)
@@ -106,8 +122,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_text_attributes([1, 4])
+        |> unwrap_ok()
         |> CSIHandlers.handle_erase_display(0)
+        |> unwrap_ok()
         |> CSIHandlers.handle_text_attributes([0])
+        |> unwrap_ok()
 
       # Check that the operations completed without error
       assert is_map(result)
@@ -119,7 +138,9 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
         |> OSCHandlers.handle_window_size(100, 50)
         |> unwrap_ok()
         |> CSIHandlers.handle_scroll_up(10)
+        |> unwrap_ok()
         |> CSIHandlers.handle_scroll_down(5)
+        |> unwrap_ok()
 
       assert result.window_manager.size == {100, 50}
     end
@@ -130,8 +151,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_mode_change(4, true)
+        |> unwrap_ok()
         |> CSIHandlers.handle_cursor_position(10, 10)
+        |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(4, false)
+        |> unwrap_ok()
 
       # Check that the operations completed without error
       assert is_map(result)
@@ -141,9 +165,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_mode_change(25, false)
+        |> unwrap_ok()
         |> OSCHandlers.handle_window_fullscreen()
         |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(25, true)
+        |> unwrap_ok()
 
       assert result.cursor.visible == true
       assert result.window_manager.state == :fullscreen
@@ -153,9 +179,13 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_mode_change(4, true)
+        |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(25, false)
+        |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(4, false)
+        |> unwrap_ok()
         |> CSIHandlers.handle_mode_change(25, true)
+        |> unwrap_ok()
 
       assert result.cursor.visible == true
     end
@@ -177,7 +207,9 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> CSIHandlers.handle_cursor_position(-10, -10)
+        |> unwrap_ok()
         |> CSIHandlers.handle_cursor_position(10, 10)
+        |> unwrap_ok()
 
       assert result.cursor.position == {10, 10}
     end
@@ -186,7 +218,9 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
       result =
         emulator
         |> OSCHandlers.handle_foreground_color("invalid")
+        |> unwrap_ok()
         |> OSCHandlers.handle_foreground_color("#FF0000")
+        |> unwrap_ok()
 
       # Check that the operations completed without error
       assert is_map(result)

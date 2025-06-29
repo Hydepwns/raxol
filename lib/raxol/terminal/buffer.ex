@@ -131,6 +131,11 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec write(t(), String.t(), keyword()) :: t()
   def write(buffer, data, _opts \\ []) do
+    # Validate input data
+    if not is_binary(data) do
+      raise ArgumentError, "Invalid data: expected string, got #{inspect(data)}"
+    end
+
     screen_buffer = to_screen_buffer(buffer)
 
     updated_screen_buffer =
@@ -148,7 +153,20 @@ defmodule Raxol.Terminal.Buffer do
   Reads data from the buffer.
   """
   @spec read(t(), keyword()) :: {String.t(), t()}
-  def read(buffer, _opts \\ []) do
+  def read(buffer, opts \\ []) do
+    # Validate options
+    if not is_list(opts) do
+      raise ArgumentError, "Invalid options: expected keyword list, got #{inspect(opts)}"
+    end
+
+    # Check for invalid option keys
+    valid_keys = [:line, :include_style, :region]
+    invalid_keys = Enum.filter(opts, fn {key, _} -> key not in valid_keys end)
+
+    if invalid_keys != [] do
+      raise ArgumentError, "Invalid options: #{inspect(invalid_keys)}"
+    end
+
     screen_buffer = to_screen_buffer(buffer)
     {Operations.get_content(screen_buffer), buffer}
   end
@@ -193,6 +211,19 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec set_scroll_region(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_scroll_region(buffer, top, bottom) do
+    # Validate scroll region parameters
+    if top < 0 or bottom < 0 do
+      raise ArgumentError, "Scroll region boundaries must be non-negative, got top=#{top}, bottom=#{bottom}"
+    end
+
+    if top > bottom do
+      raise ArgumentError, "Scroll region top must be less than or equal to bottom, got top=#{top}, bottom=#{bottom}"
+    end
+
+    if bottom >= buffer.height do
+      raise ArgumentError, "Scroll region bottom must be less than buffer height, got bottom=#{bottom}, height=#{buffer.height}"
+    end
+
     screen_buffer = to_screen_buffer(buffer)
 
     updated_screen_buffer =
@@ -296,13 +327,30 @@ defmodule Raxol.Terminal.Buffer do
   end
 
   defp to_screen_buffer(buffer) do
+    if buffer.cells == nil do
+      raise RuntimeError, "Buffer cells is nil"
+    end
+
+    if buffer.width == nil do
+      raise RuntimeError, "Buffer width is nil"
+    end
+
+    if buffer.height == nil do
+      raise RuntimeError, "Buffer height is nil"
+    end
+
     %ScreenBuffer{
       width: buffer.width,
       height: buffer.height,
       cells: buffer.cells,
       scroll_region: {buffer.scroll_region_top, buffer.scroll_region_bottom},
       cursor_position: {buffer.cursor_x, buffer.cursor_y},
-      damage_regions: buffer.damage_regions
+      damage_regions: buffer.damage_regions,
+      scroll_position: 0,
+      scrollback: [],
+      scrollback_limit: 1000,
+      selection: nil,
+      default_style: nil
     }
   end
 

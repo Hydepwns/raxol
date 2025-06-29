@@ -5,20 +5,41 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
   alias Raxol.Terminal.Cache.System
 
   setup do
+    # Stop any existing cache system to ensure a clean state
+    case GenServer.whereis(Raxol.Terminal.Cache.System) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
+    end
+    Process.sleep(50)
+
     # Start the cache system with test configuration
-    {:ok, _pid} =
-      System.start_link(
-        max_size: 1024 * 1024,
-        default_ttl: 3600,
-        eviction_policy: :lru,
-        compression_enabled: true,
-        namespace_configs: %{
-          scroll: %{max_size: 128 * 1024}
-        }
-      )
+    case System.start_link(
+           max_size: 1024 * 1024,
+           default_ttl: 3600,
+           eviction_policy: :lru,
+           compression_enabled: true,
+           namespace_configs: %{
+             scroll: %{max_size: 128 * 1024}
+           }
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+      other -> raise "Unexpected result from System.start_link: #{inspect(other)}"
+    end
 
     manager = Manager.new()
     %{manager: manager}
+  end
+
+  # Clean up processes after each test
+  setup do
+    on_exit(fn ->
+      # Stop the cache system
+      case GenServer.whereis(Raxol.Terminal.Cache.System) do
+        nil -> :ok
+        pid -> GenServer.stop(pid)
+      end
+    end)
   end
 
   describe "new/1" do

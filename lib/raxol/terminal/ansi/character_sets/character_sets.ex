@@ -161,10 +161,14 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   end
 
   defp get_charset_for_gset(state, gset) do
-    case Map.get(state, gset) do
-      :us_ascii -> :us_ascii
-      :dec_special_graphics -> :dec_special_graphics
-      :uk -> :uk
+    Map.get(state, gset, ASCII)
+  end
+
+  defp module_to_atom(module) do
+    case module do
+      ASCII -> :us_ascii
+      DEC -> :dec_special_graphics
+      UK -> :uk
       _ -> :us_ascii
     end
   end
@@ -176,11 +180,20 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   @spec translate_char(codepoint, charset_state()) ::
           {codepoint(), charset_state()}
   def translate_char(codepoint, state) when integer?(codepoint) do
+    active_charset = get_active_charset(state)
+    charset_atom = module_to_atom(active_charset)
+
+    single_shift_atom =
+      case state.single_shift do
+        nil -> nil
+        mod -> module_to_atom(mod)
+      end
+
     result =
       Translator.translate_char(
         codepoint,
-        get_active_charset(state),
-        state.single_shift
+        charset_atom,
+        single_shift_atom
       )
 
     new_state = clear_single_shift(state)
@@ -204,10 +217,19 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   """
   @spec translate_string(String.t(), charset_state()) :: String.t()
   def translate_string(string, state) do
+    active_charset = get_active_charset(state)
+    charset_atom = module_to_atom(active_charset)
+
+    single_shift_atom =
+      case state.single_shift do
+        nil -> nil
+        mod -> module_to_atom(mod)
+      end
+
     Translator.translate_string(
       string,
-      get_active_charset(state),
-      state.single_shift
+      charset_atom,
+      single_shift_atom
     )
   end
 

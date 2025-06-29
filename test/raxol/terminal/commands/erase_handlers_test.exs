@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   setup do
-    emulator = Emulator.new()
+    emulator = Emulator.new(80, 24, [])
     {:ok, emulator: emulator}
   end
 

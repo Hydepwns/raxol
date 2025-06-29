@@ -6,6 +6,8 @@ defmodule Raxol.Terminal.Cursor.Style do
   visibility, and managing cursor blinking.
   """
 
+  @behaviour Raxol.Terminal.Cursor.Style
+
   # Define the behavior for cursor style operations
   @callback set_block(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
               Raxol.Terminal.Cursor.Manager.t()
@@ -34,6 +36,9 @@ defmodule Raxol.Terminal.Cursor.Style do
               {Raxol.Terminal.Cursor.Manager.t(), boolean()}
   @callback get_state(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: atom()
   @callback get_blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: boolean()
+  @callback blink(cursor :: Raxol.Terminal.Cursor.Manager.t()) ::
+              Raxol.Terminal.Cursor.Manager.t()
+  @callback get_style(cursor :: Raxol.Terminal.Cursor.Manager.t()) :: atom()
 
   alias Raxol.Terminal.Cursor.Manager
 

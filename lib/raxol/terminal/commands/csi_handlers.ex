@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.{Basic, Cursor, Screen, Device}
+  alias Raxol.Terminal.Commands.WindowHandlers
   require Raxol.Core.Runtime.Log
 
   @private_modes %{
@@ -337,32 +338,156 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   defp apply_handler(emulator, :device_status, params),
     do: handle_device_status(emulator, params)
 
-  # Window state functions
+  # Window handler implementations
+  def handle_window_maximize(emulator) do
+    case WindowHandlers.handle_t(emulator, [9]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
   def handle_window_unmaximize(emulator) do
-    # For test purposes, just return the emulator
-    emulator
+    case WindowHandlers.handle_t(emulator, [10]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_minimize(emulator) do
+    case WindowHandlers.handle_t(emulator, [2]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
   end
 
   def handle_window_unminimize(emulator) do
-    # For test purposes, just return the emulator
-    emulator
+    case WindowHandlers.handle_t(emulator, [1]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
   end
 
-  # Window handler stubs for tests
-  def handle_window_maximize(emulator), do: emulator
-  def handle_window_minimize(emulator), do: emulator
-  def handle_window_iconify(emulator), do: emulator
-  def handle_window_raise(emulator), do: emulator
-  def handle_window_lower(emulator), do: emulator
-  def handle_window_fullscreen(emulator), do: emulator
-  def handle_window_unfullscreen(emulator), do: emulator
-  def handle_window_deiconify(emulator), do: emulator
-  def handle_window_title(emulator), do: emulator
-  def handle_window_icon_name(emulator), do: emulator
-  def handle_window_icon_title(emulator), do: emulator
-  def handle_window_icon_title_name(emulator), do: emulator
-  def handle_window_save_title(emulator), do: emulator
-  def handle_window_restore_title(emulator), do: emulator
-  def handle_window_size_report(emulator), do: emulator
-  def handle_window_size_pixels(emulator), do: emulator
+  def handle_window_iconify(emulator) do
+    case WindowHandlers.handle_t(emulator, [2]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_deiconify(emulator) do
+    case WindowHandlers.handle_t(emulator, [1]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_raise(emulator) do
+    case WindowHandlers.handle_t(emulator, [5]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_lower(emulator) do
+    case WindowHandlers.handle_t(emulator, [6]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_fullscreen(emulator) do
+    # Set stacking order to fullscreen
+    updated_window_state = %{emulator.window_state | stacking_order: :fullscreen}
+    %{emulator | window_state: updated_window_state}
+  end
+
+  def handle_window_unfullscreen(emulator) do
+    # Set stacking order to normal
+    updated_window_state = %{emulator.window_state | stacking_order: :normal}
+    %{emulator | window_state: updated_window_state}
+  end
+
+  def handle_window_title(emulator) do
+    # Get title from emulator.window_title or use empty string
+    title = emulator.window_title || ""
+    case WindowHandlers.handle_t(emulator, [0, title]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_icon_name(emulator) do
+    # Get icon name from window_state if available
+    icon_name = Map.get(emulator.window_state, :icon_name, "")
+    case WindowHandlers.handle_t(emulator, [8, icon_name]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_icon_title(emulator) do
+    # Icon title should be the same as window title
+    title = emulator.window_title || ""
+    output = "\x1b]2;#{title}\x07"
+    %{emulator | output_buffer: output}
+  end
+
+  def handle_window_icon_title_name(emulator) do
+    # Icon title and name should be window title and icon name
+    title = emulator.window_title || ""
+    icon_name = Map.get(emulator.window_state, :icon_name, "")
+    output = "\x1b]3;#{title};#{icon_name}\x07"
+    %{emulator | output_buffer: output}
+  end
+
+  def handle_window_save_title(emulator) do
+    # Save current size
+    current_size = emulator.window_state.size
+    updated_window_state = %{emulator.window_state | saved_size: current_size}
+    %{emulator | window_state: updated_window_state}
+  end
+
+  def handle_window_restore_title(emulator) do
+    # Restore saved size or use default
+    saved_size = Map.get(emulator.window_state, :saved_size, {80, 24})
+    updated_window_state = %{emulator.window_state | size: saved_size}
+    %{emulator | window_state: updated_window_state}
+  end
+
+  def handle_window_size_report(emulator) do
+    case WindowHandlers.handle_t(emulator, [18]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  def handle_window_size_pixels(emulator) do
+    case WindowHandlers.handle_t(emulator, [13]) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, emulator} -> emulator
+    end
+  end
+
+  @doc """
+  Handles a CSI sequence with command and parameters.
+  """
+  @spec handle_csi_sequence(Emulator.t(), atom(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_csi_sequence(emulator, command, params) do
+    case command do
+      :cursor_up -> handle_cursor_up(emulator, List.first(params) || 1)
+      :cursor_down -> handle_cursor_down(emulator, List.first(params) || 1)
+      :cursor_forward -> handle_cursor_forward(emulator, List.first(params) || 1)
+      :cursor_backward -> handle_cursor_backward(emulator, List.first(params) || 1)
+      :cursor_position -> handle_cursor_position(emulator, params)
+      :cursor_column -> handle_cursor_column(emulator, List.first(params) || 1)
+      :screen_clear -> handle_screen_clear(emulator, params)
+      :line_clear -> handle_erase_line(emulator, List.first(params) || 0)
+      :text_attributes -> handle_text_attributes(emulator, params)
+      :scroll_up -> handle_scroll_up(emulator, List.first(params) || 1)
+      :scroll_down -> handle_scroll_down(emulator, List.first(params) || 1)
+      :device_status -> handle_device_status(emulator, params)
+      _ -> {:ok, emulator}
+    end
+  end
 end

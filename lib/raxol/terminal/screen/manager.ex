@@ -251,4 +251,48 @@ defmodule Raxol.Terminal.ScreenManager do
   def parse_scrollback_limit(opts) do
     Keyword.get(opts, :scrollback_limit, 1000)
   end
+
+  # === Additional ScreenManager Functions ===
+
+  @doc """
+  Gets the style at a specific position.
+  """
+  @spec get_style_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: map()
+  def get_style_at(buffer, x, y) do
+    case ScreenBuffer.get_cell(buffer, x, y) do
+      %{style: style} when not is_nil(style) -> style
+      _ -> %{}
+    end
+  end
+
+  @doc """
+  Gets the style at the cursor position.
+  """
+  @spec get_style_at_cursor(ScreenBuffer.t()) :: map()
+  def get_style_at_cursor(buffer) do
+    {x, y} = buffer.cursor_position
+    get_style_at(buffer, x, y)
+  end
+
+  @doc """
+  Gets the current state of the buffer.
+  """
+  @spec get_state(ScreenBuffer.t()) :: map()
+  def get_state(buffer) do
+    %{
+      width: buffer.width,
+      height: buffer.height,
+      cursor_position: buffer.cursor_position,
+      scroll_region: buffer.scroll_region,
+      selection: buffer.selection
+    }
+  end
+
+  @doc """
+  Gets the current style of the buffer.
+  """
+  @spec get_style(ScreenBuffer.t()) :: map()
+  def get_style(buffer) do
+    buffer.default_style || %{}
+  end
 end

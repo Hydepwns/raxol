@@ -104,6 +104,8 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         # Process the character with current style
         ScreenBuffer.write_char(buffer, 0, 0, char, buffer.default_style)
       else
+        # For invalid Unicode, don't write anything, leaving the cell unchanged
+        # This means get_char will return the original content (likely nil or space)
         buffer
       end
     rescue
@@ -128,8 +130,8 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         "?25l" -> %{buffer | cursor_visible: false}
         "?47h" -> %{buffer | alternate_screen: true}
         "?47l" -> %{buffer | alternate_screen: false}
-        "?1049h" -> %{buffer | alternate_screen_buffer: true}
-        "?1049l" -> %{buffer | alternate_screen_buffer: false}
+        "?1049h" -> %{buffer | alternate_screen: true}
+        "?1049l" -> %{buffer | alternate_screen: false}
         _ -> buffer
       end
     rescue
@@ -198,7 +200,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   end
 
   defp process_true_color_param(param, buffer) do
-    [type | rest] = String.split(param, ";")
+    [type, _color_space | rest] = String.split(param, ";")
     process_true_color(type, Enum.join(rest, ";"), buffer)
   end
 

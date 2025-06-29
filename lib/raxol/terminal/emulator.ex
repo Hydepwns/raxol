@@ -64,6 +64,19 @@ defmodule Raxol.Terminal.Emulator do
     width: 80,
     height: 24,
 
+    # Window state
+    window_state: %{
+      iconified: false,
+      maximized: false,
+      position: {0, 0},
+      size: {80, 24},
+      size_pixels: {640, 384},
+      stacking_order: :normal,
+      previous_size: {80, 24},
+      saved_size: {80, 24},
+      icon_name: ""
+    },
+
     # Other fields
     output_buffer: "",
     style: %{},
@@ -71,31 +84,35 @@ defmodule Raxol.Terminal.Emulator do
     window_title: nil,
     plugin_manager: nil,
     saved_cursor: nil,
-    scroll_region: nil
+    scroll_region: nil,
+    sixel_state: nil
   ]
 
   @type t :: %__MODULE__{
-          state: pid() | nil,
-          event: pid() | nil,
-          buffer: pid() | nil,
-          config: pid() | nil,
-          command: pid() | nil,
-          cursor: pid() | nil,
-          window_manager: pid() | nil,
-          mode_manager: pid() | nil,
-          active_buffer_type: :main | :alternate,
-          main_screen_buffer: ScreenBuffer.t() | nil,
-          alternate_screen_buffer: ScreenBuffer.t() | nil,
-          width: non_neg_integer(),
-          height: non_neg_integer(),
-          output_buffer: String.t(),
-          style: map(),
-          scrollback_limit: non_neg_integer(),
-          window_title: String.t() | nil,
-          plugin_manager: any() | nil,
-          saved_cursor: any() | nil,
-          scroll_region: any() | nil
-        }
+    state: pid() | nil,
+    event: pid() | nil,
+    buffer: pid() | nil,
+    config: pid() | nil,
+    command: pid() | nil,
+    cursor: pid() | nil,
+    window_manager: pid() | nil,
+    mode_manager: pid() | nil,
+    active_buffer_type: :main | :alternate,
+    main_screen_buffer: ScreenBuffer.t() | nil,
+    alternate_screen_buffer: ScreenBuffer.t() | nil,
+    charset_state: map(),
+    width: non_neg_integer(),
+    height: non_neg_integer(),
+    window_state: map(),
+    output_buffer: String.t(),
+    style: map(),
+    scrollback_limit: non_neg_integer(),
+    window_title: String.t() | nil,
+    plugin_manager: any() | nil,
+    saved_cursor: any() | nil,
+    scroll_region: any() | nil,
+    sixel_state: any() | nil
+  }
 
   # Cursor Operations
   defdelegate get_cursor_position(emulator), to: CursorOperations
@@ -159,6 +176,17 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate update_active_buffer(emulator, new_buffer),
     to: Raxol.Terminal.BufferManager
 
+  defdelegate clear_scrollback(emulator), to: Raxol.Terminal.Buffer.Manager
+
+  @doc """
+  Sets an attribute on the emulator.
+  """
+  @spec set_attribute(t(), atom(), any()) :: t()
+  def set_attribute(emulator, attribute, value) do
+    # TODO: Implement attribute setting
+    emulator
+  end
+
   @doc """
   Gets the active buffer from the emulator.
   """
@@ -183,7 +211,15 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec new(non_neg_integer(), non_neg_integer()) :: t()
   def new(width, height) do
-    new(width, height, [])
+    main_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
+    alternate_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
+    %__MODULE__{
+      width: width,
+      height: height,
+      main_screen_buffer: main_buffer,
+      alternate_screen_buffer: alternate_buffer,
+      # TODO: ... other fields ...
+    }
   end
 
   @doc """
@@ -763,19 +799,17 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-  defp handle_screen_buffer_switch(emulator, :alt_screen_buffer, true) do
-    %{emulator | active_buffer_type: :alternate}
+  defp handle_screen_buffer_switch(emulator, mode, true)
+       when mode in [:alt_screen_buffer, :dec_alt_screen_save] do
+    alt_buf =
+      emulator.alternate_screen_buffer ||
+        Raxol.Terminal.ScreenBuffer.new(emulator.width, emulator.height)
+
+    %{emulator | active_buffer_type: :alternate, alternate_screen_buffer: alt_buf}
   end
 
-  defp handle_screen_buffer_switch(emulator, :alt_screen_buffer, false) do
-    %{emulator | active_buffer_type: :main}
-  end
-
-  defp handle_screen_buffer_switch(emulator, :dec_alt_screen_save, true) do
-    %{emulator | active_buffer_type: :alternate}
-  end
-
-  defp handle_screen_buffer_switch(emulator, :dec_alt_screen_save, false) do
+  defp handle_screen_buffer_switch(emulator, mode, false)
+       when mode in [:alt_screen_buffer, :dec_alt_screen_save] do
     %{emulator | active_buffer_type: :main}
   end
 
@@ -1199,25 +1233,12 @@ defmodule Raxol.Terminal.Emulator do
   def parse_esc_greater(_), do: nil
 
   defp handle_text_input(input, emulator) do
-    # If input contains only printable characters and no ANSI sequences, write it to buffer
     if printable_text?(input) do
-      # Check if input contains newline (command completion)
-      if String.contains?(input, "\n") do
-        # Split by newline to handle multiple commands
-        [command | _] = String.split(input, "\n", parts: 2)
-
-        # Only add non-empty commands to history
-        if String.trim(command) != "" do
-          # Add command to history via command manager
-          Raxol.Terminal.Command.Manager.add_to_history(emulator.command, command)
-        end
-
-        # Write the text to buffer (including newline)
-        write_text_at_cursor(emulator, input)
-      else
-        # Just write text to buffer
-        write_text_at_cursor(emulator, input)
-      end
+      # Process each codepoint through the character processor for charset translation
+      String.to_charlist(input)
+      |> Enum.reduce(emulator, fn codepoint, emu ->
+        Raxol.Terminal.Input.CharacterProcessor.process_character(emu, codepoint)
+      end)
     else
       emulator
     end

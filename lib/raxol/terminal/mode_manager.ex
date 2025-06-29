@@ -242,7 +242,7 @@ defmodule Raxol.Terminal.ModeManager do
   end
 
   @doc """
-  Creates a new instance of the ModeManager.
+  Creates a new mode manager with default values.
   """
   @spec new() :: t()
   def new do

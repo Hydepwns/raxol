@@ -223,10 +223,10 @@ defmodule Raxol.Terminal.CharacterHandling do
   @doc """
   Alias for wide_char?/1 for backward compatibility.
   """
-  def wide_char?(char), do: wide_char?(char)
+  # def wide_char?(char), do: wide_char?(char)
 
   @doc """
   Alias for combining_char?/1 for backward compatibility.
   """
-  def combining_char?(char), do: combining_char?(char)
+  # def combining_char?(char), do: combining_char?(char)
 end

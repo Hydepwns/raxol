@@ -35,6 +35,8 @@ defmodule Raxol.Terminal.Sync.System do
   end
 
   def sync(sync_id, key, value, opts \\ []) do
+    require Logger
+    Logger.debug("[System] sync called: sync_id=#{sync_id}, key=#{key}, value=#{inspect(value)}, opts=#{inspect(opts)}")
     GenServer.call(__MODULE__, {:sync, sync_id, key, value, opts})
   end
 

@@ -104,4 +104,71 @@ defmodule Raxol.Terminal.Commands.Parser do
       _ -> nil
     end
   end
+
+  @doc """
+  Parses a command string into a structured command.
+
+  Returns {:ok, parsed_command} or {:error, reason}.
+
+  ## Examples
+
+      iex> Parser.parse("\\e[5;10H")
+      {:ok, %{type: :csi, params: [5, 10], final_byte: ?H}}
+
+      iex> Parser.parse("\\e]0;title\\a")
+      {:ok, %{type: :osc, command: 0, params: ["title"]}}
+  """
+  @spec parse(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def parse(command) when binary?(command) do
+    # For now, return a basic structure
+    # This is a simplified implementation
+    case command do
+      <<"\e[", rest::binary>> ->
+        # CSI command
+        case parse_csi_command(rest) do
+          {:ok, params, final_byte} ->
+            {:ok, %{type: :csi, params_buffer: params, final_byte: final_byte}}
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      <<"\e]", rest::binary>> ->
+        # OSC command
+        case parse_osc_command(rest) do
+          {:ok, command_num, params} ->
+            {:ok, %{type: :osc, command: command_num, params: params}}
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      _ ->
+        {:error, "Unknown command format"}
+    end
+  end
+
+  defp parse_csi_command(rest) do
+    # Simplified CSI parsing
+    case String.last(rest) do
+      nil -> {:error, "No final byte"}
+      final_byte when final_byte in ?A..?Z or final_byte in ?a..?z ->
+        params_string = String.slice(rest, 0..-2)
+        params = parse_params(params_string)
+        {:ok, params, final_byte}
+      _ -> {:error, "Invalid final byte"}
+    end
+  end
+
+  defp parse_osc_command(rest) do
+    # Simplified OSC parsing
+    case String.split(rest, ";", parts: 2) do
+      [command_str, params_str] ->
+        case parse_int(command_str) do
+          nil -> {:error, "Invalid OSC command number"}
+          command_num ->
+            params = [params_str]
+            {:ok, command_num, params}
+        end
+      _ -> {:error, "Invalid OSC format"}
+    end
+  end
 end

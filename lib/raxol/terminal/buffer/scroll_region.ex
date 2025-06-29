@@ -92,6 +92,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> ScrollRegion.get_region(buffer)
       nil
   """
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   @spec clear(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear(buffer) do
     %{buffer | scroll_region: nil}
@@ -191,6 +192,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_up(buffer, 1)
       iex> # Content is scrolled up within region 5-15
   """
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   @spec scroll_up(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -227,8 +229,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     {before, region} = Enum.split(buffer.cells, scroll_start)
     {region, after_part} = Enum.split(region, scroll_end - scroll_start + 1)
     {scroll_lines, remaining} = Enum.split(region, lines)
-    empty_line = List.duplicate(Cell.new(), buffer.width)
-    new_region = remaining ++ List.duplicate(empty_line, length(scroll_lines))
+
+    # Create a single empty cell and reuse it for all empty cells
+    empty_cell = Cell.new()
+    empty_line = List.duplicate(empty_cell, buffer.width)
+    empty_lines = List.duplicate(empty_line, length(scroll_lines))
+
+    new_region = remaining ++ empty_lines
     updated_cells = before ++ new_region ++ after_part
     %{buffer | cells: updated_cells}
   end
@@ -253,6 +260,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_down(buffer, 1)
       iex> # Content is scrolled down within region 5-15
   """
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   @spec scroll_down(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -352,9 +360,50 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   @doc """
   Gets the current scroll position within the scroll region.
   """
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   @spec get_scroll_position(ScreenBuffer.t()) :: non_neg_integer()
   def get_scroll_position(%ScreenBuffer{scroll_position: position}) do
     position
+  end
+
+  @doc """
+  Gets the dimensions of the buffer.
+  """
+  @spec get_dimensions(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_dimensions(%ScreenBuffer{width: width, height: height}) do
+    {width, height}
+  end
+
+  @doc """
+  Gets the height of the buffer.
+  """
+  @spec get_height(ScreenBuffer.t()) :: non_neg_integer()
+  def get_height(%ScreenBuffer{height: height}) do
+    height
+  end
+
+  @doc """
+  Gets the scroll bottom boundary.
+  """
+  @spec get_scroll_bottom(ScreenBuffer.t()) :: non_neg_integer()
+  def get_scroll_bottom(%ScreenBuffer{scroll_region: nil, height: height}) do
+    height - 1
+  end
+
+  def get_scroll_bottom(%ScreenBuffer{scroll_region: {_top, bottom}}) do
+    bottom
+  end
+
+  @doc """
+  Gets the scroll top boundary.
+  """
+  @spec get_scroll_top(ScreenBuffer.t()) :: non_neg_integer()
+  def get_scroll_top(%ScreenBuffer{scroll_region: nil}) do
+    0
+  end
+
+  def get_scroll_top(%ScreenBuffer{scroll_region: {top, _bottom}}) do
+    top
   end
 
   @doc """

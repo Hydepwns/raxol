@@ -59,14 +59,16 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
   defp get_buffer_info(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
-
     {active_buffer, ScreenBuffer.get_width(active_buffer),
      ScreenBuffer.get_height(active_buffer)}
   end
 
   defp translate_character(emulator, char_codepoint) do
-    translated_char =
+    {translated_codepoint, new_charset_state} =
       CharacterSets.translate_char(char_codepoint, emulator.charset_state)
+
+    # Convert codepoint to string
+    translated_char = <<translated_codepoint::utf8>>
 
     if not is_binary(translated_char) do
       Raxol.Core.Runtime.Log.error(
@@ -74,7 +76,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       )
     end
 
-    {translated_char, emulator.charset_state}
+    {translated_char, new_charset_state}
   end
 
   defp calculate_positions(emulator, buffer_width, char_codepoint) do

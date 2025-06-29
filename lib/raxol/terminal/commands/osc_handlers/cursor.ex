@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
   - OSC 112: Reset cursor color
   """
 
-  alias Raxol.Terminal.{Emulator, Cursor, Font}
+  alias Raxol.Terminal.{Emulator, Cursor.Manager, Font}
   alias Raxol.Terminal.Commands.OSCHandlers.{ColorParser, FontParser}
   require Raxol.Core.Runtime.Log
 
@@ -26,8 +26,8 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_12(emulator, data) do
     case data do
-      "?" -> handle_color_query(emulator, 12, &Cursor.get_color/1)
-      color_spec -> set_color(emulator, color_spec, &Cursor.set_color/2)
+      "?" -> handle_color_query(emulator, 12, &Manager.get_color/1)
+      color_spec -> set_color(emulator, color_spec, &Manager.set_color/2)
     end
   end
 
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
   @spec handle_112(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_112(emulator, _data) do
-    case Cursor.reset_color(emulator.cursor) do
+    case Manager.reset_color(emulator.cursor) do
       {:ok, new_cursor} ->
         {:ok, %{emulator | cursor: new_cursor}}
 

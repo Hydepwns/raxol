@@ -112,4 +112,28 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
     updated_window_manager = %{emulator.window_manager | size: {width, height}}
     {:ok, %{emulator | window_manager: updated_window_manager}}
   end
+
+  @doc """
+  Handles an OSC sequence with command and data.
+  """
+  @spec handle_osc_sequence(Emulator.t(), atom(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_osc_sequence(emulator, command, data) do
+    case command do
+      :window_title -> handle_window_title(emulator, data)
+      :icon_name -> handle_icon_name(emulator, data)
+      :icon_title -> handle_icon_title(emulator, data)
+      :foreground_color -> handle_foreground_color(emulator, data)
+      :background_color -> handle_background_color(emulator, data)
+      :highlight_background_color -> handle_highlight_background_color(emulator, data)
+      :mouse_foreground_color -> handle_mouse_foreground_color(emulator, data)
+      :font -> handle_font(emulator, data)
+      :clipboard_set -> handle_clipboard_set(emulator, data)
+      :cursor_color -> handle_cursor_color(emulator, data)
+      :cursor_shape -> handle_cursor_shape(emulator, data)
+      :highlight_foreground_color -> handle_highlight_foreground_color(emulator, data)
+      :mouse_background_color -> handle_mouse_background_color(emulator, data)
+      _ -> {:ok, emulator}
+    end
+  end
 end

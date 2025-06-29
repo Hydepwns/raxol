@@ -210,29 +210,14 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   end
 
   defp handle_carriage_return(rest, state) do
-    case SixelPatternMap.get_pattern(?$) do
-      pattern_int when integer?(pattern_int) ->
-        {new_pixels, new_max_x, new_max_y} =
-          generate_pixels_for_pattern(
-            pattern_int,
-            state.x,
-            state.y,
-            state.color_index
-          )
+    new_y = state.y + 6
 
-        updated_buffer = Map.merge(state.pixel_buffer, new_pixels)
-
-        parse(rest, %{
-          state
-          | x: 0,
-            pixel_buffer: updated_buffer,
-            max_x: new_max_x,
-            max_y: new_max_y
-        })
-
-      nil ->
-        parse(rest, %{state | x: 0})
-    end
+    parse(rest, %{
+      state
+      | x: 0,
+        y: new_y,
+        max_y: max(state.max_y, new_y + 5)
+    })
   end
 
   defp handle_new_line(rest, state) do
@@ -270,12 +255,16 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
         })
 
       nil ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Sixel Parser: Invalid sixel character byte #{char_byte}. Stopping parsing.",
-          %{}
-        )
-
-        {:error, :invalid_sixel_char}
+        case remaining_data do
+          <<"\e\\", _::binary>> ->
+            parse(remaining_data, state)
+          _ ->
+            if String.contains?(remaining_data, "\e\\") do
+              parse(remaining_data, state)
+            else
+              {:error, :missing_st}
+            end
+        end
     end
   end
 

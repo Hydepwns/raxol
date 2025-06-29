@@ -110,8 +110,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
   defp get_content(buffer) do
     buffer.cells
     |> Enum.map_join("\n", fn line ->
-      chars = line |> Enum.map_join("", &Raxol.Terminal.Cell.get_char/1)
-      String.trim_trailing(chars)
+      line |> Enum.map_join("", &Raxol.Terminal.Cell.get_char/1)
     end)
   end
 end

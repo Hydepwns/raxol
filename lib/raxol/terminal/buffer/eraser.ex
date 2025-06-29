@@ -12,6 +12,51 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   alias Raxol.Terminal.Buffer.LineOperations
   require Raxol.Core.Runtime.Log
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def clear_line(buffer, line_index, style \\ nil) do
+    LineOperations.clear_line(buffer, line_index, style)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def erase_all(buffer) do
+    clear(buffer)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def erase_from_cursor_to_end(buffer) do
+    {x, y} = buffer.cursor_position
+    clear_region(buffer, x, y, buffer.width - x, buffer.height - y)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def erase_from_start_to_cursor(buffer) do
+    {x, y} = buffer.cursor_position
+    clear_region(buffer, 0, 0, x + 1, y + 1)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def erase_from_cursor_to_end_of_line(buffer) do
+    {x, y} = buffer.cursor_position
+    clear_line_from(buffer, y, x)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def erase_from_start_of_line_to_cursor(buffer) do
+    {x, y} = buffer.cursor_position
+    clear_line_to(buffer, y, x)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def erase_line(buffer, mode) do
+    {x, y} = buffer.cursor_position
+    case mode do
+      0 -> clear_line_from(buffer, y, x)  # From cursor to end of line
+      1 -> clear_line_to(buffer, y, x)    # From start of line to cursor
+      2 -> clear_line(buffer, y)          # Entire line
+      _ -> buffer
+    end
+  end
+
   @doc """
   Clears the entire screen with the specified style.
   """
@@ -21,18 +66,6 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     empty_line = create_empty_line(buffer.width, style || buffer.default_style)
     new_cells = List.duplicate(empty_line, buffer.height)
     %{buffer | cells: new_cells}
-  end
-
-  @doc """
-  Clears a specific line with the specified style.
-  """
-  @spec clear_line(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          TextFormatting.text_style() | nil
-        ) :: ScreenBuffer.t()
-  def clear_line(buffer, line_index, style \\ nil) do
-    LineOperations.clear_line(buffer, line_index, style)
   end
 
   @doc """
@@ -67,32 +100,6 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       end)
 
     %{buffer | cells: new_cells}
-  end
-
-  @doc """
-  Erases from cursor to end of screen.
-  """
-  @spec erase_from_cursor_to_end(ScreenBuffer.t()) :: ScreenBuffer.t()
-  def erase_from_cursor_to_end(buffer) do
-    {x, y} = buffer.cursor_position
-    clear_region(buffer, x, y, buffer.width - x, buffer.height - y)
-  end
-
-  @doc """
-  Erases from start of screen to cursor.
-  """
-  @spec erase_from_start_to_cursor(ScreenBuffer.t()) :: ScreenBuffer.t()
-  def erase_from_start_to_cursor(buffer) do
-    {x, y} = buffer.cursor_position
-    clear_region(buffer, 0, 0, x + 1, y + 1)
-  end
-
-  @doc """
-  Erases the entire screen.
-  """
-  @spec erase_all(ScreenBuffer.t()) :: ScreenBuffer.t()
-  def erase_all(buffer) do
-    clear(buffer)
   end
 
   @doc """
@@ -369,6 +376,60 @@ defmodule Raxol.Terminal.Buffer.Eraser do
         raise ArgumentError,
               "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
     end
+  end
+
+  # === Additional Eraser Functions ===
+
+  @doc """
+  Erases characters from the cursor position.
+  """
+  @spec erase_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_chars(buffer, count) do
+    {x, y} = buffer.cursor_position
+    clear_region(buffer, x, y, count, 1)
+  end
+
+  @doc """
+  Erases the display with the specified mode.
+  """
+  @spec erase_display(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_display(buffer, mode) do
+    case mode do
+      0 -> erase_from_cursor_to_end(buffer)  # From cursor to end of screen
+      1 -> erase_from_start_to_cursor(buffer)  # From start of screen to cursor
+      2 -> erase_all(buffer)  # Entire screen
+      _ -> buffer
+    end
+  end
+
+  @doc """
+  Erases the line with the specified mode.
+  """
+  @spec erase_line(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_line(buffer, mode) do
+    {x, y} = buffer.cursor_position
+    case mode do
+      0 -> clear_line_from(buffer, y, x)  # From cursor to end of line
+      1 -> clear_line_to(buffer, y, x)    # From start of line to cursor
+      2 -> clear_line(buffer, y)          # Entire line
+      _ -> buffer
+    end
+  end
+
+  @doc """
+  Erases in display with the specified mode.
+  """
+  @spec erase_in_display(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_in_display(buffer, mode) do
+    erase_display(buffer, mode)
+  end
+
+  @doc """
+  Erases in line with the specified mode.
+  """
+  @spec erase_in_line(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_in_line(buffer, mode) do
+    erase_line(buffer, mode)
   end
 
   # Private helper functions
