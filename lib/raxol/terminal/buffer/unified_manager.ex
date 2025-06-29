@@ -97,7 +97,24 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   """
   def start_link(opts \\ []) do
     opts = if map?(opts), do: Enum.into(opts, []), else: opts
-    GenServer.start_link(__MODULE__, opts)
+    name = Keyword.get(opts, :name)
+    gen_server_opts = Keyword.delete(opts, :name)
+
+    # Ensure we have a valid name for GenServer
+    valid_name = case name do
+      nil -> __MODULE__
+      ref when is_reference(ref) -> nil  # Don't use references as names
+      atom when is_atom(atom) -> atom
+      {:global, term} -> {:global, term}
+      {:via, module, term} -> {:via, module, term}
+      _ -> __MODULE__  # Fallback to module name
+    end
+
+    if valid_name do
+      GenServer.start_link(__MODULE__, gen_server_opts, name: valid_name)
+    else
+      GenServer.start_link(__MODULE__, gen_server_opts)
+    end
   end
 
   @doc """

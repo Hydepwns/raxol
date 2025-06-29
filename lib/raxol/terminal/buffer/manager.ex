@@ -39,14 +39,27 @@ defmodule Raxol.Terminal.Buffer.Manager do
   # Client API
 
   def start_link(opts \\ []) do
-    name = if Mix.env() == :test do
-      # Use unique names in test environment to avoid conflicts
-      Keyword.get(opts, :name, make_ref())
-    else
-      Keyword.get(opts, :name, __MODULE__)
-    end
+    name = Keyword.get(opts, :name)
+    gen_server_opts = Keyword.delete(opts, :name)
 
-    GenServer.start_link(__MODULE__, opts, name: name)
+    # Ensure we have a valid name for GenServer
+    valid_name =
+      case name do
+        nil -> __MODULE__
+        # Don't use references as names
+        ref when is_reference(ref) -> nil
+        atom when is_atom(atom) -> atom
+        {:global, term} -> {:global, term}
+        {:via, module, term} -> {:via, module, term}
+        # Fallback to module name
+        _ -> __MODULE__
+      end
+
+    if valid_name do
+      GenServer.start_link(__MODULE__, gen_server_opts, name: valid_name)
+    else
+      GenServer.start_link(__MODULE__, gen_server_opts)
+    end
   end
 
   @doc """
@@ -614,16 +627,19 @@ defmodule Raxol.Terminal.Buffer.Manager do
       case GenServer.whereis(__MODULE__) do
         nil ->
           # Try to find any buffer manager process
-          case Process.list() |> Enum.find(fn pid ->
-            case Process.info(pid, :initial_call) do
-              {:initial_call, {__MODULE__, :init, 1}} -> true
-              _ -> false
-            end
-          end) do
+          case Process.list()
+               |> Enum.find(fn pid ->
+                 case Process.info(pid, :initial_call) do
+                   {:initial_call, {__MODULE__, :init, 1}} -> true
+                   _ -> false
+                 end
+               end) do
             nil -> raise "No buffer manager process found in test environment"
             pid -> pid
           end
-        pid -> pid
+
+        pid ->
+          pid
       end
     else
       __MODULE__

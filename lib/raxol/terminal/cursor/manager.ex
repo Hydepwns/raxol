@@ -72,7 +72,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   # Client API
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts)
+    name = Keyword.get(opts, :name)
+    gen_server_opts = Keyword.delete(opts, :name)
+
+    if name do
+      GenServer.start_link(__MODULE__, gen_server_opts, name: name)
+    else
+      GenServer.start_link(__MODULE__, gen_server_opts)
+    end
   end
 
   @doc """
