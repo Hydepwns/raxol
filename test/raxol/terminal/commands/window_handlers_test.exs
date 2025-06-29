@@ -110,18 +110,19 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       initial_char_h = emulator.window_state.size |> elem(1)
 
       emulator_maximized = unwrap_ok(WindowHandlers.handle_t(emulator, [9]))
+      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator_maximized, [10]))
 
-      new_emulator =
-        unwrap_ok(WindowHandlers.handle_t(emulator_maximized, [10]))
+      assert new_emulator.window_state.maximized == false,
+        "Expected maximized to be false, got: #{inspect(new_emulator.window_state.maximized)}"
 
-      assert new_emulator.window_state.maximized == false
-      assert new_emulator.window_state.size == {initial_char_w, initial_char_h}
+      assert new_emulator.window_state.size == {initial_char_w, initial_char_h},
+        "Expected window size to be {#{initial_char_w}, #{initial_char_h}}, got: #{inspect(new_emulator.window_state.size)}"
 
-      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) ==
-               initial_char_w
+      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) == initial_char_w,
+        "Expected buffer width to be #{initial_char_w}, got: #{ScreenBuffer.get_width(new_emulator.main_screen_buffer)}"
 
-      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) ==
-               initial_char_h
+      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) == initial_char_h,
+        "Expected buffer height to be #{initial_char_h}, got: #{ScreenBuffer.get_height(new_emulator.main_screen_buffer)}"
     end
   end
 
@@ -308,11 +309,11 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       # height_px=160, width_px defaults
       new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [4, 160]))
       # uses default if not enough params
-      assert new_emulator.window_state.size_pixels == {640, 384}
+      assert new_emulator.window_state.size_pixels == {640, 160}
 
       assert new_emulator.window_state.size ==
                {div(640, @default_char_width_px),
-                div(384, @default_char_height_px)}
+                div(160, @default_char_height_px)}
     end
 
     # General invalid param types

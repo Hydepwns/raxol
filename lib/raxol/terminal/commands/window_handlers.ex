@@ -113,21 +113,17 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
     height_px = Enum.at(params, 1, nil)
     width_px = Enum.at(params, 2, nil)
 
-    # Use current window state if missing
-    current_size_pixels = Map.get(emulator.window_state, :size_pixels, {640, 384})
-    current_width_px = elem(current_size_pixels, 0)
-    current_height_px = elem(current_size_pixels, 1)
-
+    # Use proper defaults if missing, not current window state
     safe_width_px =
       cond do
         is_integer(width_px) and width_px > 0 -> width_px
-        true -> current_width_px
+        true -> 640  # Default width in pixels
       end
 
     safe_height_px =
       cond do
         is_integer(height_px) and height_px > 0 -> height_px
-        true -> current_height_px
+        true -> 384  # Default height in pixels
       end
 
     char_width = calculate_width_chars(safe_width_px)
@@ -210,8 +206,12 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   end
 
   defp handle_restore(emulator) do
-    # Restore to previous size
-    previous_size = emulator.window_state.previous_size
+    # Restore to previous size, fallback to {80, 24} if missing/invalid
+    previous_size =
+      case emulator.window_state.previous_size do
+        {w, h} when is_integer(w) and is_integer(h) and w > 0 and h > 0 -> {w, h}
+        _ -> {80, 24}
+      end
     char_width = elem(previous_size, 0)
     char_height = elem(previous_size, 1)
 
@@ -223,8 +223,13 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
                      char_height * default_char_height_px()}
     }
 
-    # Update screen buffer dimensions
-    updated_main_buffer = ScreenBuffer.resize(emulator.main_screen_buffer, char_width, char_height)
+    # Update screen buffer dimensions, create new if nil
+    updated_main_buffer =
+      case emulator.main_screen_buffer do
+        nil -> ScreenBuffer.new(char_width, char_height)
+        buffer -> ScreenBuffer.resize(buffer, char_width, char_height)
+      end
+
     updated_emulator = %{
       emulator
       | window_state: updated_window_state,

@@ -369,7 +369,8 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   @doc """
   Gets the dimensions of the buffer.
   """
-  @spec get_dimensions(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_dimensions(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_dimensions(%ScreenBuffer{width: width, height: height}) do
     {width, height}
   end
@@ -380,6 +381,14 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   @spec get_height(ScreenBuffer.t()) :: non_neg_integer()
   def get_height(%ScreenBuffer{height: height}) do
     height
+  end
+
+  @doc """
+  Gets the width of the buffer.
+  """
+  @spec get_width(ScreenBuffer.t()) :: non_neg_integer()
+  def get_width(%ScreenBuffer{width: width}) do
+    width
   end
 
   @doc """
