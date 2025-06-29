@@ -117,6 +117,11 @@ defmodule Raxol.Test.Unit do
     {updated_component, commands}
   end
 
+  # Allow simulate_event to accept plain maps as events for test convenience
+  def simulate_event(component, event) when is_map(event) do
+    simulate_event(component, Raxol.Core.Events.Event.custom_event(event))
+  end
+
   defp parse_handle_event_result(result, current_state) do
     case result do
       {:update, updated_state, cmds} ->
@@ -140,11 +145,6 @@ defmodule Raxol.Test.Unit do
       other ->
         raise "Unexpected return value from handle_event/3: #{inspect(other)}"
     end
-  end
-
-  # Allow simulate_event to accept plain maps as events for test convenience
-  def simulate_event(component, event) when is_map(event) do
-    simulate_event(component, Raxol.Core.Events.Event.custom_event(event))
   end
 
   @doc """

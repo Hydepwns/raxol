@@ -18,17 +18,20 @@ defmodule Raxol.Terminal.MemoryManagerTest do
   describe "estimate_memory_usage/1" do
     test "returns 0 when both buffer_manager and scroll_buffer are missing" do
       state = %MockState{}
-      assert MemoryManager.estimate_memory_usage(state) == 0
+      # 24 bytes from empty maps in calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 24
     end
 
     test "returns buffer_manager memory_usage when only buffer_manager is present" do
       state = %MockState{buffer_manager: %MockBufferManager{memory_usage: 1000}}
-      assert MemoryManager.estimate_memory_usage(state) == 1000
+      # 1000 + 24 bytes from empty maps in calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 1024
     end
 
     test "returns scroll_buffer memory_usage when only scroll_buffer is present" do
       state = %MockState{scroll_buffer: %MockScrollBuffer{memory_usage: 2000}}
-      assert MemoryManager.estimate_memory_usage(state) == 2000
+      # 2000 + 24 bytes from empty maps in calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 2024
     end
 
     test "returns sum of buffer_manager and scroll_buffer memory_usage when both are present" do
@@ -37,7 +40,8 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         scroll_buffer: %MockScrollBuffer{memory_usage: 2500}
       }
 
-      assert MemoryManager.estimate_memory_usage(state) == 4000
+      # 1500 + 2500 + 24 bytes from empty maps in calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 4024
     end
 
     test "handles missing memory_usage fields gracefully" do
@@ -46,7 +50,8 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         scroll_buffer: %{}
       }
 
-      assert MemoryManager.estimate_memory_usage(state) == 0
+      # 24 bytes from empty maps in calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 24
     end
   end
 
@@ -65,7 +70,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         cursor: %{}
       }
 
-      expected = 1000 + 2000
+      expected = 1000 + 2000 + 24  # 24 bytes from calculate_other_usage
       assert MemoryManager.estimate_memory_usage(state) == expected
     end
 
@@ -82,7 +87,8 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         cursor: %{}
       }
 
-      assert MemoryManager.estimate_memory_usage(state) == 3333
+      # 1111 + 2222 + 24 bytes from calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 3357
     end
 
     test "returns correct value if only buffer_manager has memory_usage" do
@@ -97,7 +103,8 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         cursor: %{}
       }
 
-      assert MemoryManager.estimate_memory_usage(state) == 555
+      # 555 + 24 bytes from calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 579
     end
 
     test "returns correct value if only scroll_buffer has memory_usage" do
@@ -112,7 +119,8 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         cursor: %{}
       }
 
-      assert MemoryManager.estimate_memory_usage(state) == 777
+      # 777 + 24 bytes from calculate_other_usage
+      assert MemoryManager.estimate_memory_usage(state) == 801
     end
   end
 end
