@@ -951,35 +951,5 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  defp process_layout_result([single_element], view) do
-    if should_return_single_element?(single_element, view) do
-      build_single_element_result(single_element)
-    else
-      [single_element]
-    end
-  end
-
   defp process_layout_result(result, _view), do: result
-
-  defp should_return_single_element?(single_element, view) do
-    Map.get(single_element, :type) == :text and
-      (is_map(view) and Map.get(view, :type) == :text)
-  end
-
-  defp build_single_element_result(single_element) do
-    %{
-      type: :text,
-      content: Map.get(single_element, :text, ""),
-      position:
-        {Map.get(single_element, :x, 0), Map.get(single_element, :y, 0)},
-      size:
-        {Map.get(single_element, :width, 1),
-         Map.get(single_element, :height, 1)},
-      style: Map.get(single_element, :attrs, %{}) |> Map.get(:style, []),
-      fg: Map.get(single_element, :attrs, %{}) |> Map.get(:fg),
-      bg: Map.get(single_element, :attrs, %{}) |> Map.get(:bg),
-      wrap: Map.get(single_element, :attrs, %{}) |> Map.get(:wrap, :none),
-      align: Map.get(single_element, :attrs, %{}) |> Map.get(:align, :left)
-    }
-  end
 end
