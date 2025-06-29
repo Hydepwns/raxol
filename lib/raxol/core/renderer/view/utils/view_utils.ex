@@ -16,15 +16,83 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       normalize_spacing({1, 2, 3, 4}) # {1, 2, 3, 4}
   """
   def normalize_spacing(spacing) when integer?(spacing) do
+    if spacing < 0 do
+      raise ArgumentError, "Padding must be a positive integer or tuple"
+    end
     {spacing, spacing, spacing, spacing}
   end
 
   def normalize_spacing({top, right, bottom, left}) do
+    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and is_integer(left)) or
+       top < 0 or right < 0 or bottom < 0 or left < 0 do
+      raise ArgumentError, "Padding must be a positive integer or tuple"
+    end
     {top, right, bottom, left}
   end
 
   def normalize_spacing({vertical, horizontal}) do
+    if not (is_integer(vertical) and is_integer(horizontal)) or
+       vertical < 0 or horizontal < 0 do
+      raise ArgumentError, "Padding must be a positive integer or tuple"
+    end
     {vertical, horizontal, vertical, horizontal}
+  end
+
+  def normalize_spacing(invalid) do
+    if is_integer(invalid) and invalid < 0 do
+      raise ArgumentError, "Padding must be a positive integer or tuple"
+    end
+
+    if is_tuple(invalid) and tuple_size(invalid) == 3 do
+      raise ArgumentError, "Invalid padding tuple length"
+    end
+
+    raise ArgumentError, "Padding must be a positive integer or tuple"
+  end
+
+  @doc """
+  Normalizes margin values for padding and margin.
+  Accepts various input formats and converts them to a standardized format.
+
+  ## Examples
+
+      normalize_margin(5)           # {5, 5, 5, 5}
+      normalize_margin({10, 20})    # {10, 20, 10, 20}
+      normalize_margin({1, 2, 3, 4}) # {1, 2, 3, 4}
+  """
+  def normalize_margin(spacing) when integer?(spacing) do
+    if spacing < 0 do
+      raise ArgumentError, "Margin must be a positive integer or tuple"
+    end
+    {spacing, spacing, spacing, spacing}
+  end
+
+  def normalize_margin({top, right, bottom, left}) do
+    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and is_integer(left)) or
+       top < 0 or right < 0 or bottom < 0 or left < 0 do
+      raise ArgumentError, "Margin must be a positive integer or tuple"
+    end
+    {top, right, bottom, left}
+  end
+
+  def normalize_margin({vertical, horizontal}) do
+    if not (is_integer(vertical) and is_integer(horizontal)) or
+       vertical < 0 or horizontal < 0 do
+      raise ArgumentError, "Margin must be a positive integer or tuple"
+    end
+    {vertical, horizontal, vertical, horizontal}
+  end
+
+  def normalize_margin(invalid) do
+    if is_integer(invalid) and invalid < 0 do
+      raise ArgumentError, "Margin must be a positive integer or tuple"
+    end
+
+    if is_tuple(invalid) and tuple_size(invalid) == 3 do
+      raise ArgumentError, "Invalid margin tuple length"
+    end
+
+    raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
   @doc """

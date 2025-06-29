@@ -61,7 +61,9 @@ defmodule Raxol.Renderer.Layout do
     shadow_wrapper: :process_shadow_wrapper_element,
     box: :process_box_element,
     flex: :process_flex_element,
-    text: :process_text_element
+    text: :process_text_element,
+    border: :process_border_element,
+    grid: :process_grid_element
   }
 
   @doc """
@@ -92,10 +94,11 @@ defmodule Raxol.Renderer.Layout do
     result = process_element(normalized_view, available_space, [])
     flat = List.flatten(result) |> Enum.reject(&nil?/1)
 
-    # If the result is a single map, return it directly.
+    IO.inspect(flat, label: "APPLY_LAYOUT FLAT", charlists: :as_lists)
+    # If the result is a single map, return it as a list.
     # Otherwise, return the list (for multi-root, empty, or already correctly processed lists).
     case flat do
-      [single_map] when map?(single_map) -> single_map
+      [single_map] when map?(single_map) -> [single_map]
       # Handles [], [map1, map2], etc.
       _ -> flat
     end
@@ -200,69 +203,30 @@ defmodule Raxol.Renderer.Layout do
     scrolled_children ++ scrollbar_elements ++ acc
   end
 
-  defp extract_scroll_config(scroll_map, space) do
-    {ox, oy} = Map.get(scroll_map, :offset, {0, 0})
-    scrollbar_thickness = Map.get(scroll_map, :scrollbar_thickness, 1)
-    render_v_bar = Map.get(scroll_map, :vertical_scrollbar, true)
-    render_h_bar = Map.get(scroll_map, :horizontal_scrollbar, true)
+  def process_shadow_wrapper_element(%{children: children, opts: opts}, space, acc) when list?(children) do
+    offset = Map.get(opts, :offset, {1, 1})
+    {offset_x, offset_y} = offset
 
-    default_sb_attrs = %{track_fg: :gray, track_bg: nil, thumb_fg: :white, thumb_bg: :darkgray, corner_fg: :gray, corner_bg: nil}
-    scrollbar_attrs = Map.merge(default_sb_attrs, Map.get(scroll_map, :scrollbar_attrs, Map.get(scroll_map, :attrs, %{})))
+    # Process children without shadow offset (content should be at original position)
+    shadow_children = process_children(children, space, [])
 
-    %{
-      space: space,
-      offset: {ox, oy},
-      scrollbar_thickness: scrollbar_thickness,
-      render_v_bar: render_v_bar,
-      render_h_bar: render_h_bar,
-      scrollbar_attrs: scrollbar_attrs
-    }
+    # Add shadow effect elements
+    shadow_elements = create_shadow_elements(space, offset)
+
+    shadow_children ++ shadow_elements ++ acc
   end
 
-  defp process_scrolled_children(children, space, scroll_config) do
-    %{offset: {ox, oy}, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar} = scroll_config
+  def process_shadow_wrapper_element(%{children: children, opts: opts}, space, acc) do
+    offset = Map.get(opts, :offset, {1, 1})
+    {offset_x, offset_y} = offset
 
-    scrolled_children = Enum.flat_map(children, fn child ->
-      process_element(child, %{space | x: space.x - ox, y: space.y - oy}, [])
-    end)
+    # Process single child without shadow offset (content should be at original position)
+    shadow_child = process_element(children, space, [])
 
-    {content_width, content_height} = calculate_content_dimensions(scrolled_children)
-    viewport_width = max(0, space.width - if(render_v_bar, do: scrollbar_thickness, else: 0))
-    viewport_height = max(0, space.height - if(render_h_bar, do: scrollbar_thickness, else: 0))
+    # Add shadow effect elements
+    shadow_elements = create_shadow_elements(space, offset)
 
-    scrollbar_elements = create_scrollbar_elements(%{
-      space: space,
-      viewport_width: viewport_width,
-      viewport_height: viewport_height,
-      content_width: content_width,
-      content_height: content_height,
-      ox: ox,
-      oy: oy,
-      scrollbar_thickness: scrollbar_thickness,
-      render_v_bar: render_v_bar,
-      render_h_bar: render_h_bar,
-      scrollbar_attrs: scroll_config.scrollbar_attrs
-    })
-
-    scrolled_children ++ scrollbar_elements
-  end
-
-  def process_shadow_wrapper_element(%{opts: attrs, children: child_view_node}, space, acc) do
-    shadow_offset_x = Map.get(attrs, :offset_x, 1)
-    shadow_offset_y = Map.get(attrs, :offset_y, 1)
-    shadow_color = Map.get(attrs, :color, :darkgray)
-
-    shadow_box_element = %{
-      type: :box,
-      position: {space.x + shadow_offset_x, space.y + shadow_offset_y},
-      size: {space.width - shadow_offset_x, space.height - shadow_offset_y},
-      style: %{bg: shadow_color, fg: shadow_color}
-    }
-
-    content_space = %{space | width: space.width - shadow_offset_x, height: space.height - shadow_offset_y}
-    processed_child_content_elements = process_element(child_view_node, content_space, [])
-
-    [shadow_box_element | processed_child_content_elements] ++ acc
+    shadow_child ++ shadow_elements ++ acc
   end
 
   def process_box_element(%{children: children} = element_map, space, acc) do
@@ -313,6 +277,25 @@ defmodule Raxol.Renderer.Layout do
       style: style
     }
     [text_element | acc]
+  end
+
+  def process_border_element(%{children: children, border: border_style} = element_map, space, acc) do
+    # Create border box
+    border_box = %{
+      type: :box,
+      position: {space.x, space.y},
+      size: {space.width, space.height},
+      style: Map.get(element_map, :style, @default_style),
+      border: border_style
+    }
+
+    # Process children without border offset (content should be at original position)
+    if list?(children) and children != [] do
+      processed_children = process_children(children, space, [])
+      [border_box | processed_children] ++ acc
+    else
+      [border_box | acc]
+    end
   end
 
   defp extract_flex_config(element_map) do
@@ -375,26 +358,13 @@ defmodule Raxol.Renderer.Layout do
   end
 
   # Helper function to create scrollbar elements
-  defp create_scrollbar_elements(scrollbar_config) do
-    %{
-      space: space,
-      viewport_width: viewport_width,
-      viewport_height: viewport_height,
-      content_width: content_width,
-      content_height: content_height,
-      ox: ox,
-      oy: oy,
-      scrollbar_thickness: scrollbar_thickness,
-      render_v_bar: render_v_bar,
-      render_h_bar: render_h_bar,
-      scrollbar_attrs: scrollbar_attrs
-    } = scrollbar_config
-
+  defp create_scrollbar_elements(%{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_width: content_width, content_height: content_height, ox: ox, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs}) do
     elements = []
     elements = create_vertical_scrollbar(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_height: content_height, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, scrollbar_attrs: scrollbar_attrs})
     elements = create_horizontal_scrollbar(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_width: content_width, ox: ox, scrollbar_thickness: scrollbar_thickness, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs})
     create_corner_element(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar, scrollbar_attrs: scrollbar_attrs})
   end
+  defp create_scrollbar_elements(_), do: []
 
   defp create_vertical_scrollbar(elements, %{space: space, viewport_width: viewport_width, viewport_height: viewport_height, content_height: content_height, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, scrollbar_attrs: scrollbar_attrs}) do
     if render_v_bar and space.width >= scrollbar_thickness and viewport_height > 0 do
@@ -812,7 +782,7 @@ defmodule Raxol.Renderer.Layout do
   defp normalize_children(children, space) do
     case children do
       list when list?(list) ->
-        Enum.flat_map(list, &deep_normalize_child(&1, space, :box, true))
+        Enum.flat_map(list, &normalize_single_child(&1, space))
 
       nil ->
         []
@@ -820,6 +790,24 @@ defmodule Raxol.Renderer.Layout do
       single_item ->
         deep_normalize_child(single_item, space, :box, true)
     end
+  end
+
+  defp normalize_single_child(child_node, space) do
+    normalized_child =
+      if child_node_fully_normalized?(child_node) do
+        child_node
+      else
+        ensure_required_keys(child_node, space)
+      end
+
+    # Pass empty acc, collect this child's elements
+    process_element(normalized_child, space, [])
+  end
+
+  defp child_node_fully_normalized?(child_node) do
+    map?(child_node) and Map.has_key?(child_node, :type) and
+      Map.has_key?(child_node, :position) and
+      Map.has_key?(child_node, :size)
   end
 
   defp resolve_final_type(map, default_type) do
@@ -979,5 +967,83 @@ defmodule Raxol.Renderer.Layout do
       end
 
     process_element(normalized_child, space, acc)
+  end
+
+  defp extract_scroll_config(scroll_map, space) do
+    {ox, oy} = Map.get(scroll_map, :offset, {0, 0})
+    scrollbar_thickness = Map.get(scroll_map, :scrollbar_thickness, 1)
+    render_v_bar = Map.get(scroll_map, :vertical_scrollbar, true)
+    render_h_bar = Map.get(scroll_map, :horizontal_scrollbar, true)
+
+    default_sb_attrs = %{track_fg: :gray, track_bg: nil, thumb_fg: :white, thumb_bg: :darkgray, corner_fg: :gray, corner_bg: nil}
+    scrollbar_attrs = Map.merge(default_sb_attrs, Map.get(scroll_map, :scrollbar_attrs, Map.get(scroll_map, :attrs, %{})))
+
+    %{
+      space: space,
+      ox: ox,
+      oy: oy,
+      scrollbar_thickness: scrollbar_thickness,
+      render_v_bar: render_v_bar,
+      render_h_bar: render_h_bar,
+      scrollbar_attrs: scrollbar_attrs
+    }
+  end
+
+  defp process_scrolled_children(children, space, scroll_config) do
+    %{ox: ox, oy: oy, scrollbar_thickness: scrollbar_thickness, render_v_bar: render_v_bar, render_h_bar: render_h_bar} = scroll_config
+
+    scrolled_children = Enum.flat_map(children, fn child ->
+      process_element(child, %{space | x: space.x - ox, y: space.y - oy}, [])
+    end)
+
+    {content_width, content_height} = calculate_content_dimensions(scrolled_children)
+    viewport_width = max(0, space.width - if(render_v_bar, do: scrollbar_thickness, else: 0))
+    viewport_height = max(0, space.height - if(render_h_bar, do: scrollbar_thickness, else: 0))
+
+    scrollbar_elements = create_scrollbar_elements(%{
+      space: space,
+      viewport_width: viewport_width,
+      viewport_height: viewport_height,
+      content_width: content_width,
+      content_height: content_height,
+      ox: ox,
+      oy: oy,
+      scrollbar_thickness: scrollbar_thickness,
+      render_v_bar: render_v_bar,
+      render_h_bar: render_h_bar,
+      scrollbar_attrs: scroll_config.scrollbar_attrs
+    })
+
+    scrolled_children ++ scrollbar_elements
+  end
+
+  defp create_shadow_elements(space, {offset_x, offset_y}) do
+    shadow_color = :darkgray
+    shadow_box = %{
+      type: :box,
+      position: {space.x + offset_x, space.y + offset_y},
+      size: {space.width - offset_x, space.height - offset_y},
+      style: %{bg: shadow_color, fg: shadow_color}
+    }
+    [shadow_box]
+  end
+
+  def process_grid_element(%{children: children, columns: columns, rows: rows, gap: gap} = element_map, space, acc) do
+    # Calculate grid layout using the grid module
+    grid_layout = Raxol.Core.Renderer.View.Layout.Grid.calculate_layout(element_map, {space.width, space.height})
+    IO.inspect(grid_layout, label: "GRID LAYOUT CALCULATION", charlists: :as_lists)
+    IO.inspect(length(grid_layout), label: "GRID LAYOUT CHILDREN COUNT")
+
+    # For each child, process it at its assigned position and size
+    processed_children =
+      Enum.flat_map(grid_layout, fn child ->
+        # Each child should have :position and :size set by calculate_layout
+        child_space = %{space | x: elem(child.position, 0), y: elem(child.position, 1), width: elem(child.size, 0), height: elem(child.size, 1)}
+        result = process_element(child, child_space, [])
+        List.wrap(result)
+      end)
+
+    IO.inspect(processed_children, label: "PROCESSED GRID CHILDREN", charlists: :as_lists)
+    processed_children ++ acc
   end
 end
