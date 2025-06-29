@@ -171,3 +171,86 @@
   - Now uses the official [termbox2](https://github.com/termbox/termbox2) as a git submodule
   - Developers must run `git submodule update --init --recursive` before building
   - Updated build and documentation to reflect this change
+
+## [0.5.1] - 2025-01-27
+
+### Added
+
+- **Terminal System Major Enhancements:**
+
+  - Comprehensive refactoring of terminal buffer, ANSI, plugin, and rendering subsystems
+  - Enhanced ANSI state machine with improved escape sequence handling
+  - Better sixel graphics support and parsing
+  - Improved mouse tracking and window manipulation
+  - Enhanced buffer management with unified operations
+  - Better character handling and clipboard integration
+  - Comprehensive test coverage for all terminal subsystems
+
+- **Core System Improvements:**
+
+  - Enhanced metrics aggregation and visualization
+  - Improved performance monitoring and system utilities
+  - Better UX refinement with accessibility integration
+  - Enhanced color system and theme management
+  - Improved application lifecycle management
+
+- **UI Component Updates:**
+
+  - Updated base component lifecycle management
+  - Enhanced input field components (multi-line, password, select)
+  - Improved progress spinner and layout engine
+  - Better rendering pipeline and container management
+  - Enhanced test coverage for UI components
+
+- **Testing Infrastructure:**
+
+  - Expanded test suite with improved coverage
+  - Enhanced test fixtures and support scripts
+  - Better plugin test organization and reliability
+  - Improved mock implementations and test helpers
+  - Added comprehensive test documentation
+
+- **Documentation and Configuration:**
+  - Added compilation error plan and critical fixes reference
+  - Enhanced plugin test backups and documentation
+  - Updated configuration and application startup
+  - Improved plugin events and metrics collector
+  - Better script organization and maintenance
+
+### Changed
+
+- **Code Quality:**
+
+  - Applied consistent formatting across all Elixir source files
+  - Improved code readability and maintainability
+  - Enhanced error handling and validation
+  - Better separation of concerns in terminal subsystems
+  - Standardized API patterns across components
+
+- **Performance:**
+  - Optimized terminal operations and buffer management
+  - Improved rendering pipeline efficiency
+  - Enhanced memory management and resource cleanup
+  - Better concurrent operation handling
+
+### Fixed
+
+- **Terminal Operations:**
+
+  - Fixed ANSI sequence parsing edge cases
+  - Improved buffer scroll region handling
+  - Enhanced cursor positioning accuracy
+  - Better window state management
+  - Fixed sixel graphics rendering issues
+
+- **Test Reliability:**
+  - Resolved test compilation errors
+  - Fixed mock implementation inconsistencies
+  - Improved test isolation and cleanup
+  - Enhanced test data management
+
+### Removed
+
+- Obsolete UI component files
+- Redundant test fixtures
+- Unused configuration options

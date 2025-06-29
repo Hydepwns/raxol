@@ -11,10 +11,12 @@ tags: [documentation, overview, library, tui, elixir]
 
 Welcome! This is your starting point for all things Raxol—a modern, feature-rich toolkit for building sophisticated terminal user interfaces (TUIs) in Elixir. Raxol provides a comprehensive set of components, styling options, and event handling for creating interactive terminal applications with rich text formatting, keyboard input handling, and dynamic UI updates.
 
-## 📈 Project Status
+## 📈 Project Status (2025-06-29)
 
-- **Test suite:** 49 doctests, 1528 tests, 279 failures, 17 invalid, 21 skipped
-- **Recent improvements:** See the [CHANGELOG](../CHANGELOG.md) for details.
+- **Test suite:** Enhanced with improved coverage and reliability
+- **Recent improvements:** Major terminal system refactoring, core enhancements, and UI updates
+- **Code quality:** Consistent formatting and improved maintainability
+- **Documentation:** Updated with comprehensive guides and API references
 
 ## 🗂️ Key Sections
 
