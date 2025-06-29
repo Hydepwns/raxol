@@ -38,7 +38,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Creates a new plugin manager with default configuration.
   """
   def new(_opts \\ []) do
-    %__MODULE__{
+    manager = %__MODULE__{
       plugins: %{},
       plugin_states: %{},
       plugin_config: Raxol.Plugins.PluginConfig.new(),
@@ -48,6 +48,8 @@ defmodule Raxol.Plugins.Manager.Core do
       loaded_plugins: %{},
       config: %{}
     }
+
+    {:ok, manager}
   end
 
   @doc """
