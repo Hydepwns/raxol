@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Emulator do
       g2: :us_ascii,
       g3: :us_ascii,
       gl: :g0,
-      gr: :g1,
+      gr: :g0,
       single_shift: nil
     },
 
@@ -85,7 +85,8 @@ defmodule Raxol.Terminal.Emulator do
     plugin_manager: nil,
     saved_cursor: nil,
     scroll_region: nil,
-    sixel_state: nil
+    sixel_state: nil,
+    last_col_exceeded: false
   ]
 
   @type t :: %__MODULE__{
@@ -213,13 +214,30 @@ defmodule Raxol.Terminal.Emulator do
   def new(width, height) do
     main_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
     alternate_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
-    %__MODULE__{
+    mode_manager = Raxol.Terminal.ModeManager.new()
+
+    cursor_result = Raxol.Terminal.Cursor.Manager.start_link([])
+    cursor_pid = get_pid(cursor_result)
+
+    emulator = %__MODULE__{
       width: width,
       height: height,
       main_screen_buffer: main_buffer,
       alternate_screen_buffer: alternate_buffer,
-      # TODO: ... other fields ...
+      mode_manager: mode_manager,
+      cursor: cursor_pid,
+      charset_state: %{
+        g0: :us_ascii,
+        g1: :us_ascii,
+        g2: :us_ascii,
+        g3: :us_ascii,
+        gl: :g0,
+        gr: :g0,
+        single_shift: nil
+      }
     }
+
+    emulator
   end
 
   @doc """
@@ -299,26 +317,23 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec process_input(t(), binary()) :: {t(), binary()}
   def process_input(emulator, input) do
-    # Handle character set commands
-    emulator = handle_charset_commands(emulator, input)
-
-    # Handle ANSI sequences and get remaining text
-    {emulator, remaining_text} = handle_ansi_sequences(input, emulator)
-
-    # Handle remaining text input
-    emulator = handle_text_input(remaining_text, emulator)
-
-    # For now, just return the emulator and empty string as expected by tests
-    {emulator, ""}
-  end
-
-  defp handle_charset_commands(emulator, input) do
+    # Handle character set commands first
     case get_charset_command(input) do
       {field, value} ->
-        %{emulator | charset_state: %{emulator.charset_state | field => value}}
+        # If it's a charset command, handle it completely and return
+        updated_emulator = %{emulator | charset_state: %{emulator.charset_state | field => value}}
+        {updated_emulator, ""}
 
       :no_match ->
-        emulator
+        # Not a charset command, proceed with normal processing
+        # Handle ANSI sequences and get remaining text
+        {emulator, remaining_text} = handle_ansi_sequences(input, emulator)
+
+        # Handle remaining text input
+        emulator = handle_text_input(remaining_text, emulator)
+
+        # For now, just return the emulator and empty string as expected by tests
+        {emulator, ""}
     end
   end
 
@@ -1308,5 +1323,16 @@ defmodule Raxol.Terminal.Emulator do
       dec_alt_screen: &%{&1 | alternate_buffer_active: &2},
       alt_screen_buffer: &%{&1 | alternate_buffer_active: &2}
     }
+  end
+
+  def update_active_buffer(emulator, new_buffer) do
+    case emulator.active_buffer_type do
+      :main ->
+        %{emulator | main_screen_buffer: new_buffer}
+      :alternate ->
+        %{emulator | alternate_screen_buffer: new_buffer}
+      _ ->
+        %{emulator | main_screen_buffer: new_buffer}
+    end
   end
 end
