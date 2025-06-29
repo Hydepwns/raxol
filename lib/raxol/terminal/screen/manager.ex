@@ -257,7 +257,8 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the style at a specific position.
   """
-  @spec get_style_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec get_style_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def get_style_at(buffer, x, y) do
     case ScreenBuffer.get_cell(buffer, x, y) do
       %{style: style} when not is_nil(style) -> style
