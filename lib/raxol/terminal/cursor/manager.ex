@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   # Client API
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts)
   end
 
   @doc """
@@ -417,6 +417,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def update_blink(%__MODULE__{state: :visible} = state), do: {state, true}
   def update_blink(%__MODULE__{state: :hidden} = state), do: {state, false}
+
   def update_blink(%__MODULE__{state: :blinking, blink: blink} = state) do
     new_blink = !blink
     {%{state | blink: new_blink}, new_blink}
