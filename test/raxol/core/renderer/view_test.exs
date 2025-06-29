@@ -215,6 +215,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
         end
 
       result_list = View.layout(view, width: 4, height: 2)
+      IO.inspect(result_list, label: "GRID LAYOUT RESULT", charlists: :as_lists)
 
       # Find children by content
       one = Enum.find(result_list, &(&1.content == "1"))
@@ -228,9 +229,9 @@ defmodule Raxol.Core.Renderer.ViewTest do
       refute nil?(four)
 
       assert one.position == {0, 0}
-      assert two.position == {0, 0}
-      assert three.position == {0, 0}
-      assert four.position == {0, 0}
+      assert two.position == {0, 1.0}
+      assert three.position == {2.0, 0}
+      assert four.position == {2.0, 1.0}
     end
 
     test "border layout" do

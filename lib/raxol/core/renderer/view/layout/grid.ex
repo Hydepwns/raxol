@@ -23,14 +23,35 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
       Grid.new(columns: [1, 2, 1], rows: ["auto", "1fr"])
   """
   def new(opts \\ []) do
+    columns = Keyword.get(opts, :columns, 1)
+    children = Keyword.get(opts, :children, [])
+    provided_rows = Keyword.get(opts, :rows)
+
+    # Validate columns
+    if is_integer(columns) and columns < 1 do
+      raise ArgumentError, "Grid must have at least 1 column"
+    end
+
+    # Calculate required rows if not provided
+    rows =
+      case provided_rows do
+        nil ->
+          num_children = length(children)
+          required_rows = ceil(num_children / columns)
+          max(1, required_rows)
+
+        val ->
+          val
+      end
+
     %{
       type: :grid,
-      columns: Keyword.get(opts, :columns, 1),
-      rows: Keyword.get(opts, :rows, 1),
+      columns: columns,
+      rows: rows,
       gap: Keyword.get(opts, :gap, {0, 0}),
       align: Keyword.get(opts, :align, :start),
       justify: Keyword.get(opts, :justify, :start),
-      children: Keyword.get(opts, :children, [])
+      children: children
     }
   end
 
@@ -41,9 +62,15 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     {width, height} = available_size
     {gap_x, gap_y} = grid.gap
 
+    IO.inspect(grid.columns, label: "GRID COLUMNS", charlists: :as_lists)
+    IO.inspect(grid.rows, label: "GRID ROWS", charlists: :as_lists)
+
     # Calculate column and row sizes
     column_sizes = calculate_column_sizes(grid.columns, width, gap_x)
     row_sizes = calculate_row_sizes(grid.rows, height, gap_y)
+
+    IO.inspect(column_sizes, label: "COLUMN SIZES", charlists: :as_lists)
+    IO.inspect(row_sizes, label: "ROW SIZES", charlists: :as_lists)
 
     # Place children in grid cells
     placed_children =
@@ -108,12 +135,24 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   end
 
   defp place_children(children, column_sizes, row_sizes, {gap_x, gap_y}) do
+    IO.inspect(children, label: "PLACE_CHILDREN INPUT", charlists: :as_lists)
+    IO.inspect(length(children), label: "PLACE_CHILDREN COUNT")
+
     # Separate children with explicit positions from those needing auto-placement
     {positioned_children, auto_children} =
       separate_children_by_position(children)
 
+    IO.inspect(positioned_children,
+      label: "POSITIONED CHILDREN",
+      charlists: :as_lists
+    )
+
+    IO.inspect(auto_children, label: "AUTO CHILDREN", charlists: :as_lists)
+    IO.inspect(length(auto_children), label: "AUTO CHILDREN COUNT")
+
     # Calculate cell boundaries for the grid
     cell_bounds = calculate_cell_bounds(column_sizes, row_sizes, {gap_x, gap_y})
+    IO.inspect(cell_bounds, label: "CELL BOUNDS", charlists: :as_lists)
 
     # Position children with explicit grid positions
     positioned_result =
@@ -123,7 +162,21 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     auto_placed_result =
       auto_place_children(auto_children, cell_bounds, positioned_result)
 
-    positioned_result ++ auto_placed_result
+    IO.inspect(auto_placed_result,
+      label: "AUTO PLACED RESULT",
+      charlists: :as_lists
+    )
+
+    IO.inspect(length(auto_placed_result), label: "AUTO PLACED COUNT")
+
+    final_result = positioned_result ++ auto_placed_result
+
+    IO.inspect(final_result,
+      label: "FINAL PLACE_CHILDREN RESULT",
+      charlists: :as_lists
+    )
+
+    final_result
   end
 
   defp separate_children_by_position(children) do
@@ -137,25 +190,45 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     column_positions = calculate_cumulative_positions(column_sizes, gap_x)
     row_positions = calculate_cumulative_positions(row_sizes, gap_y)
 
-    # Create cell bounds map: {col, row} => {x, y, width, height}
-    for {col, col_start} <- Enum.with_index(column_positions),
-        {row, row_start} <- Enum.with_index(row_positions),
-        col < length(column_sizes) and row < length(row_sizes) do
-      {{col, row},
+    # Create cell bounds map: {col_index, row_index} => {x, y, width, height}
+    for {col_start, col_index} <- Enum.with_index(column_positions),
+        {row_start, row_index} <- Enum.with_index(row_positions),
+        col_index < length(column_sizes) and row_index < length(row_sizes) do
+      {{col_index, row_index},
        {
          col_start,
          row_start,
-         Enum.at(column_sizes, col),
-         Enum.at(row_sizes, row)
+         Enum.at(column_sizes, col_index),
+         Enum.at(row_sizes, row_index)
        }}
     end
     |> Map.new()
   end
 
+  defp calculate_simple_cell_bounds(bounds, columns, rows) do
+    {x, y, width, height} = bounds
+
+    # Calculate cell dimensions
+    cell_width = width / columns
+    cell_height = height / rows
+
+    # Create cell bounds map: {row_index, col_index} => {x, y, width, height}
+    for row <- 0..(rows - 1),
+        col <- 0..(columns - 1) do
+      cell_x = x + col * cell_width
+      cell_y = y + row * cell_height
+
+      {{row, col}, {cell_x, cell_y, cell_width, cell_height}}
+    end
+    |> Map.new()
+  end
+
   defp calculate_cumulative_positions(sizes, gap) do
-    sizes
-    |> Enum.scan(0, fn size, acc -> acc + size + gap end)
-    |> List.insert_at(0, 0)
+    Enum.reduce(sizes, {[], 0}, fn size, {acc, pos} ->
+      {[pos | acc], pos + size + gap}
+    end)
+    |> elem(0)
+    |> Enum.reverse()
   end
 
   defp position_explicit_children(children, cell_bounds) do
@@ -183,14 +256,14 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     used_positions = get_used_positions(existing_children)
     available_positions = all_positions -- used_positions
 
-    # Place children in available positions
+    # Place children in available positions, row by row
     children
     |> Enum.zip(available_positions)
-    |> Enum.map(fn {child, {col, row}} ->
-      {x, y, width, height} = Map.get(cell_bounds, {col, row})
+    |> Enum.map(fn {child, {row, col}} ->
+      {x, y, width, height} = Map.get(cell_bounds, {row, col})
 
       child
-      |> Map.put(:grid_position, {col, row})
+      |> Map.put(:grid_position, {row, col})
       |> Map.put(:position, {x, y})
       |> Map.put(:size, {width, height})
     end)
@@ -299,11 +372,26 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
         true -> [raw_children]
       end
 
-    # Rebuild opts with the processed children list
-    final_opts = Keyword.put(opts, :children, processed_children_list)
+    columns = Keyword.get(opts, :columns, 1)
+
+    rows =
+      case Keyword.get(opts, :rows) do
+        nil ->
+          child_count = length(processed_children_list)
+          # ceil(child_count / columns)
+          div(child_count + columns - 1, columns)
+
+        val ->
+          val
+      end
+
+    # Rebuild opts with the processed children list and calculated rows
+    final_opts =
+      opts
+      |> Keyword.put(:children, processed_children_list)
+      |> Keyword.put(:rows, rows)
 
     # Merge all options from final_opts into the base grid map, ensuring :type is :grid
-    # Specific grid options like :columns, :rows, :gap will be taken from final_opts if present.
     Map.merge(%{type: :grid}, Map.new(final_opts))
   end
 
@@ -379,5 +467,55 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     else
       {:error, "Duplicate grid positions found"}
     end
+  end
+
+  defp calculate_grid_dimensions(children, columns, rows) do
+    num_children = length(children)
+
+    # Ensure we have enough rows for all children
+    required_rows = ceil(num_children / columns)
+
+    # Use the maximum of provided rows and required rows
+    final_rows = max(rows || 1, required_rows)
+
+    IO.puts(
+      "Grid dimensions: columns=#{columns}, rows=#{rows}, required_rows=#{required_rows}, final_rows=#{final_rows}, children=#{num_children}"
+    )
+
+    {columns, final_rows}
+  end
+
+  def grid(children, columns: columns, rows: rows, bounds: bounds) do
+    IO.puts(
+      "Grid container: columns=#{columns}, rows=#{rows}, children=#{length(children)}"
+    )
+
+    {final_columns, final_rows} =
+      calculate_grid_dimensions(children, columns, rows)
+
+    cell_bounds =
+      calculate_simple_cell_bounds(bounds, final_columns, final_rows)
+
+    IO.puts("Generated #{length(cell_bounds)} cell bounds")
+
+    children
+    |> Enum.with_index()
+    |> Enum.map(fn {child, index} ->
+      {row, col} = {div(index, final_columns), rem(index, final_columns)}
+      cell_key = {row, col}
+
+      case Map.get(cell_bounds, cell_key) do
+        nil ->
+          IO.puts("No cell bounds for #{inspect(cell_key)}")
+          child
+
+        cell_bounds ->
+          IO.puts(
+            "Positioning child #{index} at #{inspect(cell_key)} with bounds #{inspect(cell_bounds)}"
+          )
+
+          %{child | bounds: cell_bounds}
+      end
+    end)
   end
 end
