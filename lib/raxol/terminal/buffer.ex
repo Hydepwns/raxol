@@ -40,15 +40,19 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec new({non_neg_integer(), non_neg_integer()}) :: t()
   def new({width, height})
-      when integer?(width) and integer?(height) and width > 0 and height > 0 do
+      when integer?(width) and integer?(height) and width >= 0 and height >= 0 do
+    # Handle zero dimensions by creating a minimal buffer
+    actual_width = max(width, 1)
+    actual_height = max(height, 1)
+
     %__MODULE__{
-      width: width,
-      height: height,
-      cells: create_empty_grid(width, height),
+      width: actual_width,
+      height: actual_height,
+      cells: create_empty_grid(actual_width, actual_height),
       cursor_x: 0,
       cursor_y: 0,
       scroll_region_top: 0,
-      scroll_region_bottom: height - 1,
+      scroll_region_bottom: actual_height - 1,
       damage_regions: []
     }
   end
@@ -117,7 +121,8 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(buffer, width, height) when width <= 0 or height <= 0 do
-    raise ArgumentError, "Buffer dimensions must be positive integers, got: #{width}x#{height}"
+    raise ArgumentError,
+          "Buffer dimensions must be positive integers, got: #{width}x#{height}"
   end
 
   def resize(buffer, width, height) do
@@ -134,6 +139,12 @@ defmodule Raxol.Terminal.Buffer do
     # Validate input data
     if not is_binary(data) do
       raise ArgumentError, "Invalid data: expected string, got #{inspect(data)}"
+    end
+
+    # Check for buffer overflow
+    if String.length(data) > buffer.width * buffer.height do
+      raise ArgumentError,
+            "Buffer overflow: string length #{String.length(data)} exceeds buffer capacity #{buffer.width * buffer.height}"
     end
 
     screen_buffer = to_screen_buffer(buffer)
@@ -156,7 +167,8 @@ defmodule Raxol.Terminal.Buffer do
   def read(buffer, opts \\ []) do
     # Validate options
     if not is_list(opts) do
-      raise ArgumentError, "Invalid options: expected keyword list, got #{inspect(opts)}"
+      raise ArgumentError,
+            "Invalid options: expected keyword list, got #{inspect(opts)}"
     end
 
     # Check for invalid option keys
@@ -213,15 +225,18 @@ defmodule Raxol.Terminal.Buffer do
   def set_scroll_region(buffer, top, bottom) do
     # Validate scroll region parameters
     if top < 0 or bottom < 0 do
-      raise ArgumentError, "Scroll region boundaries must be non-negative, got top=#{top}, bottom=#{bottom}"
+      raise ArgumentError,
+            "Scroll region boundaries must be non-negative, got top=#{top}, bottom=#{bottom}"
     end
 
     if top > bottom do
-      raise ArgumentError, "Scroll region top must be less than or equal to bottom, got top=#{top}, bottom=#{bottom}"
+      raise ArgumentError,
+            "Scroll region top must be less than or equal to bottom, got top=#{top}, bottom=#{bottom}"
     end
 
     if bottom >= buffer.height do
-      raise ArgumentError, "Scroll region bottom must be less than buffer height, got bottom=#{bottom}, height=#{buffer.height}"
+      raise ArgumentError,
+            "Scroll region bottom must be less than buffer height, got bottom=#{bottom}, height=#{buffer.height}"
     end
 
     screen_buffer = to_screen_buffer(buffer)
@@ -240,6 +255,20 @@ defmodule Raxol.Terminal.Buffer do
     screen_buffer = to_screen_buffer(buffer)
     updated_screen_buffer = ScreenBuffer.scroll_up(screen_buffer, abs(lines))
     from_screen_buffer(updated_screen_buffer, buffer)
+  end
+
+  @doc """
+  Updates the scroll state without moving content.
+  This is a fast operation that only updates scroll position.
+  """
+  @spec scroll_state(t(), integer()) :: t()
+  def scroll_state(buffer, lines) do
+    screen_buffer = to_screen_buffer_core(buffer)
+    # Use the simple scroll state update from Core
+    updated_screen_buffer =
+      Raxol.Terminal.ScreenBuffer.Core.scroll_up(screen_buffer, abs(lines))
+
+    from_screen_buffer_core(updated_screen_buffer, buffer)
   end
 
   @doc """
@@ -365,6 +394,49 @@ defmodule Raxol.Terminal.Buffer do
         scroll_region_top: elem(screen_buffer.scroll_region, 0),
         scroll_region_bottom: elem(screen_buffer.scroll_region, 1),
         damage_regions: screen_buffer.damage_regions
+    }
+  end
+
+  defp to_screen_buffer_core(buffer) do
+    %Raxol.Terminal.ScreenBuffer.Core{
+      width: buffer.width,
+      height: buffer.height,
+      cells: buffer.cells,
+      charset_state: Raxol.Terminal.ScreenBuffer.Charset.init(),
+      formatting_state: Raxol.Terminal.ScreenBuffer.Formatting.init(),
+      terminal_state: Raxol.Terminal.ScreenBuffer.State.init(),
+      output_buffer: "",
+      metrics_state: Raxol.Terminal.ScreenBuffer.Metrics.init(),
+      file_watcher_state: Raxol.Terminal.ScreenBuffer.FileWatcher.init(),
+      scroll_state: Raxol.Terminal.ScreenBuffer.Scroll.init(),
+      screen_state: Raxol.Terminal.ScreenBuffer.Screen.init(),
+      mode_state: Raxol.Terminal.ScreenBuffer.Mode.init(),
+      visualizer_state: Raxol.Terminal.ScreenBuffer.Visualizer.init(),
+      preferences: Raxol.Terminal.ScreenBuffer.Preferences.init(),
+      system_state: Raxol.Terminal.ScreenBuffer.System.init(),
+      cloud_state: Raxol.Terminal.ScreenBuffer.Cloud.init(),
+      theme_state: Raxol.Terminal.ScreenBuffer.Theme.init(),
+      csi_state: Raxol.Terminal.ScreenBuffer.CSI.init(),
+      default_style: %{
+        foreground: nil,
+        background: nil,
+        bold: false,
+        italic: false,
+        underline: false,
+        blink: false,
+        reverse: false,
+        hidden: false,
+        strikethrough: false
+      }
+    }
+  end
+
+  defp from_screen_buffer_core(screen_buffer, original_buffer) do
+    # Core ScreenBuffer doesn't have cursor_position and scroll_region fields
+    # Just return the original buffer with updated cells
+    %{
+      original_buffer
+      | cells: screen_buffer.cells
     }
   end
 end

@@ -226,18 +226,38 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   end
 
   defp scroll_region_up(buffer, scroll_start, scroll_end, lines) do
-    {before, region} = Enum.split(buffer.cells, scroll_start)
-    {region, after_part} = Enum.split(region, scroll_end - scroll_start + 1)
-    {scroll_lines, remaining} = Enum.split(region, lines)
+    # Pre-create a single empty line to reuse
+    empty_line = List.duplicate(Cell.new(), buffer.width)
 
-    # Create a single empty cell and reuse it for all empty cells
-    empty_cell = Cell.new()
-    empty_line = List.duplicate(empty_cell, buffer.width)
-    empty_lines = List.duplicate(empty_line, length(scroll_lines))
+    # Calculate the number of lines that will be affected
+    region_height = scroll_end - scroll_start + 1
 
-    new_region = remaining ++ empty_lines
-    updated_cells = before ++ new_region ++ after_part
-    %{buffer | cells: updated_cells}
+    # Only process the lines that actually need to change
+    new_cells =
+      buffer.cells
+      |> Enum.with_index()
+      |> Enum.map(fn {line, idx} ->
+        cond do
+          # Lines before the scroll region - unchanged
+          idx < scroll_start ->
+            line
+
+          # Lines within the scroll region that should move up
+          idx >= scroll_start and idx <= scroll_end - lines ->
+            # Move content from idx + lines to idx
+            Enum.at(buffer.cells, idx + lines, empty_line)
+
+          # Lines within the scroll region that should be empty
+          idx > scroll_end - lines and idx <= scroll_end ->
+            empty_line
+
+          # Lines after the scroll region - unchanged
+          true ->
+            line
+        end
+      end)
+
+    %{buffer | cells: new_cells}
   end
 
   @doc """
@@ -282,13 +302,35 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   end
 
   defp scroll_region_down(buffer, scroll_start, scroll_end, lines) do
-    {before, region} = Enum.split(buffer.cells, scroll_start)
-    {region, after_part} = Enum.split(region, scroll_end - scroll_start + 1)
-    {remaining, scroll_lines} = Enum.split(region, length(region) - lines)
+    # Pre-create a single empty line to reuse
     empty_line = List.duplicate(Cell.new(), buffer.width)
-    new_region = List.duplicate(empty_line, length(scroll_lines)) ++ remaining
-    updated_cells = before ++ new_region ++ after_part
-    %{buffer | cells: updated_cells}
+
+    # Build the new cells list in a single pass
+    new_cells =
+      buffer.cells
+      |> Enum.with_index()
+      |> Enum.map(fn {line, idx} ->
+        cond do
+          # Lines before the scroll region - unchanged
+          idx < scroll_start ->
+            line
+
+          # Lines within the scroll region that should be empty
+          idx >= scroll_start and idx < scroll_start + lines ->
+            empty_line
+
+          # Lines within the scroll region that should move down
+          idx >= scroll_start + lines and idx <= scroll_end ->
+            # Move content from idx - lines to idx
+            Enum.at(buffer.cells, idx - lines, empty_line)
+
+          # Lines after the scroll region - unchanged
+          true ->
+            line
+        end
+      end)
+
+    %{buffer | cells: new_cells}
   end
 
   @doc """

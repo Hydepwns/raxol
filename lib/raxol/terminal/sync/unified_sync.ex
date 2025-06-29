@@ -308,16 +308,16 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     do_commit(state, config.retry_count, config.timeout)
   end
 
-  defp do_commit(state, 0, _timeout), do: {:error, :commit_failed}
+  defp do_commit(_state, 0, _timeout), do: {:error, :commit_failed}
 
-  defp do_commit(state, retries, timeout) do
+  defp do_commit(state, _retries, _timeout) do
     # Simulate commit operation
     # Simulate network delay
     Process.sleep(100)
     {:ok, state}
   end
 
-  defp rollback(state) do
+  defp rollback(_state) do
     # Simulate rollback operation
     :ok
   end
@@ -349,7 +349,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     end
   end
 
-  defp resolve_custom(conflicts) do
+  defp resolve_custom(_conflicts) do
     # Implement custom conflict resolution strategy
     {:error, :not_implemented}
   end
