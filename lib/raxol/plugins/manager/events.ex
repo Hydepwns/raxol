@@ -136,7 +136,7 @@ defmodule Raxol.Plugins.Manager.Events do
   end
 
   def new do
-    Core.new()
+    Raxol.Core.new()
   end
 
   @doc """
