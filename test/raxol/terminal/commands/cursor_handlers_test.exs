@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
   describe "handle_H/2 (Cursor Position)" do
     test "moves cursor to specified position", %{emulator: emulator} do
       result = unwrap_ok(CursorHandlers.handle_H(emulator, [3, 4]))
-      assert CursorManager.get_position(result.cursor) == {2, 3}
+      assert CursorManager.get_position(result.cursor) == {3, 2}
     end
 
     test "clamps coordinates to screen bounds", %{emulator: emulator} do

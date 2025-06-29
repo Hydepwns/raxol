@@ -255,7 +255,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   end
 
   @spec execute_dcs_command(Emulator.t(), integer(), list()) :: Emulator.t()
-  def execute_dcs_command(emulator, command, params) do
+  def execute_dcs_command(emulator, _command, params) do
     # Convert to string format for the existing handler
     params_buffer = Enum.join(params, ";")
     execute_dcs_command(emulator, params_buffer, "", "")

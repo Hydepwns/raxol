@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Emulator do
 
     # Other fields
     output_buffer: "",
-    style: %{},
+    style: Raxol.Terminal.ANSI.TextFormatting.new(),
     scrollback_limit: 1000,
     window_title: nil,
     plugin_manager: nil,
@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.Emulator do
     height: non_neg_integer(),
     window_state: map(),
     output_buffer: String.t(),
-    style: map(),
+    style: Raxol.Terminal.ANSI.TextFormatting.t(),
     scrollback_limit: non_neg_integer(),
     window_title: String.t() | nil,
     plugin_manager: any() | nil,
@@ -183,7 +183,7 @@ defmodule Raxol.Terminal.Emulator do
   Sets an attribute on the emulator.
   """
   @spec set_attribute(t(), atom(), any()) :: t()
-  def set_attribute(emulator, attribute, value) do
+  def set_attribute(emulator, _attribute, _value) do
     # TODO: Implement attribute setting
     emulator
   end
@@ -226,6 +226,7 @@ defmodule Raxol.Terminal.Emulator do
       alternate_screen_buffer: alternate_buffer,
       mode_manager: mode_manager,
       cursor: cursor_pid,
+      style: Raxol.Terminal.ANSI.TextFormatting.new(),
       charset_state: %{
         g0: :us_ascii,
         g1: :us_ascii,
@@ -286,7 +287,7 @@ defmodule Raxol.Terminal.Emulator do
       width: width,
       height: height,
       output_buffer: "",
-      style: %{},
+      style: Raxol.Terminal.ANSI.TextFormatting.new(),
       scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000)
     }
   end
@@ -492,7 +493,7 @@ defmodule Raxol.Terminal.Emulator do
 
   def parse_osc(<<0x1B, 0x5D, 0x30, 0x3B, remaining::binary>>) do
     case String.split(remaining, <<0x07>>, parts: 2) do
-      [title, rest] -> {:osc, rest, nil}
+      [_title, rest] -> {:osc, rest, nil}
       _ -> nil
     end
   end
@@ -501,7 +502,7 @@ defmodule Raxol.Terminal.Emulator do
 
   def parse_dcs(<<0x1B, 0x50, 0x30, 0x3B, remaining::binary>>) do
     case String.split(remaining, <<0x07>>, parts: 2) do
-      [params, rest] -> {:dcs, rest, nil}
+      [_params, rest] -> {:dcs, rest, nil}
       _ -> nil
     end
   end
@@ -681,7 +682,7 @@ defmodule Raxol.Terminal.Emulator do
     emulator
   end
 
-  defp handle_sgr(params, emulator) do
+  defp handle_sgr(_params, emulator) do
     # Handle Select Graphic Rendition (colors, formatting)
     # For now, just return emulator unchanged
     emulator
@@ -920,7 +921,7 @@ defmodule Raxol.Terminal.Emulator do
     %{emulator | window_manager: nil}
   end
 
-  def move_cursor_to(emulator, {x, y}, width, height) do
+  def move_cursor_to(emulator, {x, y}, _width, _height) do
     set_cursor_position(emulator, x, y)
   end
 
@@ -940,11 +941,11 @@ defmodule Raxol.Terminal.Emulator do
     ScrollOperations.set_scroll_region(emulator, {top, bottom})
   end
 
-  def clear_from_cursor_to_end(emulator, x, y) do
+  def clear_from_cursor_to_end(emulator, _x, _y) do
     ScreenOperations.erase_from_cursor_to_end(emulator)
   end
 
-  def clear_from_start_to_cursor(emulator, x, y) do
+  def clear_from_start_to_cursor(emulator, _x, _y) do
     ScreenOperations.erase_from_start_to_cursor(emulator)
   end
 
@@ -957,15 +958,15 @@ defmodule Raxol.Terminal.Emulator do
     %{emulator | scrollback_buffer: []}
   end
 
-  def clear_from_cursor_to_end_of_line(emulator, x, y) do
+  def clear_from_cursor_to_end_of_line(emulator, _x, _y) do
     Screen.clear_line(emulator, 0)
   end
 
-  def clear_from_start_of_line_to_cursor(emulator, x, y) do
+  def clear_from_start_of_line_to_cursor(emulator, _x, _y) do
     Screen.clear_line(emulator, 1)
   end
 
-  def clear_entire_line(emulator, y) do
+  def clear_entire_line(emulator, _y) do
     Screen.clear_line(emulator, 2)
   end
 

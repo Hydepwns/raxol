@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
     test ~c"initializes with default screen modes" do
       emulator = Emulator.new(80, 24)
       mode_manager = Emulator.get_mode_manager_struct(emulator)
-      assert mode_manager == ModeStateManager.new()
+      assert mode_manager == ModeManager.new()
     end
 
     test ~c"switches between normal and alternate screen buffer" do

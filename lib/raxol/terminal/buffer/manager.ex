@@ -39,9 +39,14 @@ defmodule Raxol.Terminal.Buffer.Manager do
   # Client API
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts,
-      name: Keyword.get(opts, :name, __MODULE__)
-    )
+    name = if Mix.env() == :test do
+      # Use unique names in test environment to avoid conflicts
+      Keyword.get(opts, :name, make_ref())
+    else
+      Keyword.get(opts, :name, __MODULE__)
+    end
+
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -115,62 +120,68 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def initialize_buffers(width, height, opts \\ []) do
-    GenServer.call(__MODULE__, {:initialize_buffers, width, height, opts})
+  def initialize_buffers(pid, width, height, opts \\ []) do
+    GenServer.call(pid, {:initialize_buffers, width, height, opts})
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def write(data, opts \\ []) do
-    GenServer.call(__MODULE__, {:write, data, opts})
+  def write(pid, data, opts \\ []) do
+    GenServer.call(pid, {:write, data, opts})
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def read(opts \\ []) do
-    GenServer.call(__MODULE__, {:read, opts})
+  def read(pid, opts \\ []) do
+    GenServer.call(pid, {:read, opts})
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def resize(size, opts \\ []) do
-    GenServer.call(__MODULE__, {:resize, size, opts})
+  def resize(pid, size, opts \\ []) do
+    GenServer.call(pid, {:resize, size, opts})
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def scroll(lines) do
-    GenServer.call(__MODULE__, {:scroll, lines})
+  def scroll(pid, lines) do
+    GenServer.call(pid, {:scroll, lines})
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def set_cell(x, y, cell) do
-    GenServer.call(__MODULE__, {:set_cell, x, y, cell})
+  def set_cell(pid, x, y, cell) do
+    GenServer.call(pid, {:set_cell, x, y, cell})
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def get_cell(x, y) do
-    GenServer.call(__MODULE__, {:get_cell, x, y})
+  def get_cell(pid, x, y) do
+    GenServer.call(pid, {:get_cell, x, y})
   end
 
   def get_line(y) do
-    GenServer.call(__MODULE__, {:get_line, y})
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, {:get_line, y})
   end
 
   def set_line(y, line) do
-    GenServer.call(__MODULE__, {:set_line, y, line})
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, {:set_line, y, line})
   end
 
   def clear do
-    GenServer.call(__MODULE__, :clear)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :clear)
   end
 
   def get_size do
-    GenServer.call(__MODULE__, :get_size)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :get_size)
   end
 
   def get_cursor do
-    GenServer.call(__MODULE__, :get_cursor)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :get_cursor)
   end
 
   def set_cursor(cursor) do
-    GenServer.call(__MODULE__, {:set_cursor, cursor})
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, {:set_cursor, cursor})
   end
 
   def set_cursor(%__MODULE__{} = manager, {x, y})
@@ -179,62 +190,68 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   def get_attributes do
-    GenServer.call(__MODULE__, :get_attributes)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :get_attributes)
   end
 
   def set_attributes(attributes) do
-    GenServer.call(__MODULE__, {:set_attributes, attributes})
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, {:set_attributes, attributes})
   end
 
   def get_mode do
-    GenServer.call(__MODULE__, :get_mode)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :get_mode)
   end
 
   def set_mode(mode) do
-    GenServer.call(__MODULE__, {:set_mode, mode})
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, {:set_mode, mode})
   end
 
   def get_title do
-    GenServer.call(__MODULE__, :get_title)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :get_title)
   end
 
   def set_title(title) do
-    GenServer.call(__MODULE__, {:set_title, title})
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, {:set_title, title})
   end
 
   def get_icon_name do
-    GenServer.call(__MODULE__, :get_icon_name)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :get_icon_name)
   end
 
   def set_icon_name(icon_name) do
-    GenServer.call(__MODULE__, {:set_icon_name, icon_name})
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, {:set_icon_name, icon_name})
   end
 
   def get_icon_title do
-    GenServer.call(__MODULE__, :get_icon_title)
+    pid = get_buffer_manager_pid()
+    GenServer.call(pid, :get_icon_title)
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def get_memory_usage do
-    GenServer.call(__MODULE__, :get_memory_usage)
+  def get_memory_usage(pid) do
+    GenServer.call(pid, :get_memory_usage)
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def get_scrollback_count do
-    GenServer.call(__MODULE__, :get_scrollback_count)
+  def get_scrollback_count(pid) do
+    GenServer.call(pid, :get_scrollback_count)
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def get_metrics do
-    GenServer.call(__MODULE__, :get_metrics)
+  def get_metrics(pid) do
+    GenServer.call(pid, :get_metrics)
   end
 
   @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def clear_damage(%__MODULE__{} = manager) do
-    %{
-      manager
-      | damage_tracker: DamageTracker.clear_damage(manager.damage_tracker)
-    }
+  def clear_damage(pid) do
+    GenServer.call(pid, :clear_damage)
   end
 
   def get_active_buffer(%__MODULE__{} = state) do
@@ -468,6 +485,12 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:reply, state.metrics, state}
   end
 
+  def handle_call(:clear_damage, _from, state) do
+    new_damage_tracker = DamageTracker.clear_damage(state.damage_tracker)
+    new_state = %{state | damage_tracker: new_damage_tracker}
+    {:reply, :ok, new_state}
+  end
+
   # Private functions
 
   defp update_metrics(state, operation) do
@@ -581,5 +604,29 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @spec reset_buffer_manager(Emulator.t()) :: Emulator.t()
   def reset_buffer_manager(emulator) do
     %{emulator | buffer: new()}
+  end
+
+  # Helper function to get the buffer manager PID
+  defp get_buffer_manager_pid do
+    if Mix.env() == :test do
+      # In test environment, we need to find the process by name or use a different approach
+      # For now, let's use the global name if it exists, otherwise raise an error
+      case GenServer.whereis(__MODULE__) do
+        nil ->
+          # Try to find any buffer manager process
+          case Process.list() |> Enum.find(fn pid ->
+            case Process.info(pid, :initial_call) do
+              {:initial_call, {__MODULE__, :init, 1}} -> true
+              _ -> false
+            end
+          end) do
+            nil -> raise "No buffer manager process found in test environment"
+            pid -> pid
+          end
+        pid -> pid
+      end
+    else
+      __MODULE__
+    end
   end
 end

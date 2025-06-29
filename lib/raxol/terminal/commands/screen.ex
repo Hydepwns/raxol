@@ -10,7 +10,6 @@ defmodule Raxol.Terminal.Commands.Screen do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Eraser
-  alias Raxol.Terminal.Buffer.Operations
 
   require Raxol.Core.Runtime.Log
 

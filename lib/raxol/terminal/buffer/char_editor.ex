@@ -488,30 +488,17 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     if row >= buffer.height or col >= buffer.width do
       buffer
     else
-      default_style = %{
-        foreground: :default,
-        background: :default,
-        attributes: []
-      }
       line = Enum.at(buffer.cells, row)
-      line_len = length(line)
 
       # Split the line into left (before erasure) and right (after erasure)
       {left, _} = Enum.split(line, col)
+      right = Enum.slice(line, col + count, buffer.width)
 
-      # Create blank cells for the erased portion
-      blank_cells = List.duplicate(Cell.new(" ", default_style), count)
-
-      # Take the right part starting after the erasure length
-      remaining_right = if col + count < line_len do
-        Enum.slice(line, col + count, line_len - (col + count))
-      else
-        []
-      end
-
-      # Combine left + blank cells + remaining right
-      new_line = left ++ blank_cells ++ remaining_right
-      new_line = pad_or_truncate_line(new_line, buffer.width)
+      # Combine left + right
+      new_line = left ++ right
+      # Always pad to buffer.width
+      new_line = new_line ++ List.duplicate(Cell.new(" "), max(0, buffer.width - length(new_line)))
+      new_line = Enum.take(new_line, buffer.width)
 
       cells = List.replace_at(buffer.cells, row, new_line)
       %{buffer | cells: cells}
@@ -540,24 +527,16 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       buffer
     else
       line = Enum.at(buffer.cells, row)
-      line_len = length(line)
 
       # Split the line into left (before erasure) and right (after erasure)
       {left, _} = Enum.split(line, col)
+      right = Enum.slice(line, col + count, buffer.width)
 
-      # Create blank cells for the erased portion
-      blank_cells = List.duplicate(Cell.new(" ", style), count)
-
-      # Take the right part starting after the erasure length
-      remaining_right = if col + count < line_len do
-        Enum.slice(line, col + count, line_len - (col + count))
-      else
-        []
-      end
-
-      # Combine left + blank cells + remaining right
-      new_line = left ++ blank_cells ++ remaining_right
-      new_line = pad_or_truncate_line(new_line, buffer.width)
+      # Combine left + right
+      new_line = left ++ right
+      # Always pad to buffer.width with styled spaces
+      new_line = new_line ++ List.duplicate(Cell.new(" ", style), max(0, buffer.width - length(new_line)))
+      new_line = Enum.take(new_line, buffer.width)
 
       cells = List.replace_at(buffer.cells, row, new_line)
       %{buffer | cells: cells}
