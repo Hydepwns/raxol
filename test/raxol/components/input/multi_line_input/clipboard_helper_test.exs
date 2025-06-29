@@ -90,12 +90,22 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
     end
   end
 
-  defp create_state(value, cursor_pos, selection_start \\ nil) do
+  defp create_state(value, cursor_pos, selection_range \\ nil) do
+    # If selection_range is provided as {{start_row, start_col}, {end_row, end_col}},
+    # extract the start and end positions
+    {selection_start_pos, selection_end_pos} =
+      case selection_range do
+        nil -> {nil, nil}
+        {{start_row, start_col}, {end_row, end_col}} ->
+          {{start_row, start_col}, {end_row, end_col}}
+      end
+
     %MultiLineInput{
       value: value,
       lines: String.split(value, "\n"),
       cursor_pos: cursor_pos,
-      selection_start: selection_start,
+      selection_start: selection_start_pos,
+      selection_end: selection_end_pos,
       # Other fields can be defaults as they aren't relevant to clipboard ops
       id: "test_mli",
       width: 80,

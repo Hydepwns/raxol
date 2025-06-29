@@ -45,20 +45,44 @@ Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
 )
 
 Mox.defmock(Raxol.Terminal.ClipboardMock,
-  for: Raxol.Terminal.ClipboardBehaviour
+  for: Raxol.Core.Clipboard.Behaviour
+)
+
+# Accessibility and UX mocks
+Mox.defmock(AccessibilityMock,
+  for: Raxol.Core.Accessibility.Behaviour
+)
+
+Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
+  for: Raxol.Core.KeyboardShortcutsBehaviour
 )
 
 # Start ExUnit
 IO.puts("[TestHelper] Starting ExUnit...")
 ExUnit.start(max_failures: 10)
 
-# Start the application for testing
-IO.puts("[TestHelper] Starting application for testing...")
-Application.ensure_all_started(:raxol)
-
 # Set test environment
 IO.puts("[TestHelper] Setting test environment...")
 Application.put_env(:raxol, :test_mode, true)
+
+# Set up database BEFORE starting the application
+if Application.get_env(:raxol, :database_enabled, true) do
+  IO.puts("[TestHelper] Setting up database...")
+  # Ensure Ecto is started
+  {:ok, _} = Application.ensure_all_started(:ecto)
+  {:ok, _} = Application.ensure_all_started(:ecto_sql)
+
+  # Start the application (which includes the repo)
+  IO.puts("[TestHelper] Starting application for testing...")
+  {:ok, _} = Application.ensure_all_started(:raxol)
+
+  # Set up sandbox mode
+  Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, :manual)
+else
+  # Start the application without database setup
+  IO.puts("[TestHelper] Starting application for testing...")
+  Application.ensure_all_started(:raxol)
+end
 
 # Note: Module redefinition warnings are expected in test environment
 # as test modules are often redefined during test runs.
@@ -68,7 +92,6 @@ Application.put_env(:raxol, :test_mode, true)
 IO.puts("[TestHelper] Loading support files...")
 Code.require_file("support/helpers.ex", __DIR__)
 Code.require_file("support/event_macro_helpers.ex", __DIR__)
-Code.require_file("support/mocks.ex", __DIR__)
 Code.require_file("support/test_helper.ex", __DIR__)
 
 # Set up mocks
@@ -107,20 +130,14 @@ Raxol.UI.Theming.Theme.init()
 
 # Make UserPreferences globally available
 IO.puts("[TestHelper] Initializing UserPreferences...")
-Raxol.Core.UserPreferences.start_link(test_mode?: true)
+# Raxol.Core.UserPreferences is started by the supervision tree; do not start it manually here.
+# Manual start_link removed to avoid race/duplication issues. See test stabilization notes.
 
 # Reset UserPreferences to defaults after the test suite
 System.at_exit(fn _exit_status ->
   IO.puts("[TestHelper] Resetting UserPreferences to defaults...")
   Raxol.Core.UserPreferences.reset_to_defaults_for_test!()
 end)
-
-# Set up database if enabled
-if Application.get_env(:raxol, :database_enabled, true) do
-  IO.puts("[TestHelper] Setting up database...")
-  Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, :manual)
-  Application.ensure_all_started(:ecto_sql)
-end
 
 # Set up global test configuration
 IO.puts("[TestHelper] Setting up global test configuration...")

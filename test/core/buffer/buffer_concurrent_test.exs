@@ -37,7 +37,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       # Verify all writers completed successfully
       assert Enum.all?(results, fn result ->
                case result do
-                 {:ok, _} -> true
+                 %Raxol.Terminal.Buffer{} -> true
                  _ -> false
                end
              end)
@@ -65,7 +65,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       # Verify all writers completed successfully
       assert Enum.all?(results, fn result ->
                case result do
-                 {:ok, _} -> true
+                 %Raxol.Terminal.Buffer{} -> true
                  _ -> false
                end
              end)
@@ -107,7 +107,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       # Verify all processes completed successfully
       assert Enum.all?(results, fn result ->
                case result do
-                 {:ok, _} -> true
+                 %Raxol.Terminal.Buffer{} -> true
                  _ -> false
                end
              end)
@@ -164,7 +164,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       # Verify all operations completed successfully
       assert Enum.all?(results, fn result ->
                case result do
-                 {:ok, _} -> true
+                 %Raxol.Terminal.Buffer{} -> true
                  _ -> false
                end
              end)
@@ -207,7 +207,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       # Verify all operations completed successfully
       assert Enum.all?(results, fn result ->
                case result do
-                 {:ok, _} -> true
+                 %Raxol.Terminal.Buffer{} -> true
                  _ -> false
                end
              end)
