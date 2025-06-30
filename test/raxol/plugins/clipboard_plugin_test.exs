@@ -6,7 +6,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
 
   # Use Mox for mocking the clipboard behaviour
-  @clipboard_mock Raxol.Terminal.ClipboardMock
+  @clipboard_mock Raxol.Core.ClipboardMock
 
   describe "init/1" do
     test "initializes with default state" do
@@ -33,109 +33,50 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
 
   describe "handle_command/3" do
     test "delegates :clipboard_write command to clipboard implementation successfully" do
-      # Use helper to get state with mock
       test_content = "test content"
       initial_state = initial_state_with_mock()
-
-      # Set up mock expectations
-      @clipboard_mock
-      |> expect(:copy, fn ^test_content -> :ok end)
-
-      # Call the plugin's registered handler (arity 2 for write)
-      assert {:ok, ^initial_state, :clipboard_write_ok} =
-               ClipboardPlugin.handle_command(:clipboard_write, [test_content], initial_state)
+      @clipboard_mock |> expect(:copy, fn ^test_content -> :ok end)
+      assert ClipboardPlugin.handle_command(:clipboard_write, [test_content], initial_state) == {:ok, "Content copied to clipboard"}
     end
 
     test "delegates :clipboard_write command and handles System.Clipboard.copy/1 error" do
-      # Use helper to get state with mock
       test_content = "error content"
       initial_state = initial_state_with_mock()
-
-      # Set up mock expectations for error
-      @clipboard_mock
-      |> expect(:copy, fn ^test_content -> {:error, {:os_error, "cmd failed"}} end)
-
-      # Call the plugin's registered handler (arity 2 for write)
-      assert match?(
-               {:error, {:clipboard_write_failed, {:os_error, "cmd failed"}},
-                ^initial_state},
-               ClipboardPlugin.handle_command(:clipboard_write, [test_content], initial_state)
-             )
+      @clipboard_mock |> expect(:copy, fn ^test_content -> {:error, {:os_error, "cmd failed"}} end)
+      assert ClipboardPlugin.handle_command(:clipboard_write, [test_content], initial_state) == {:error, "Failed to write to clipboard: {:os_error, \"cmd failed\"}"}
     end
 
     test "delegates :clipboard_read command to System.Clipboard.paste/0 successfully" do
-      # Use helper to get state with mock
       initial_state = initial_state_with_mock()
-
-      # Set up mock expectations
-      @clipboard_mock
-      |> expect(:paste, fn -> {:ok, "mock clipboard content"} end)
-
-      # Call the plugin's registered handler (arity 1 for read)
-      assert {:ok, ^initial_state, {:clipboard_content, "mock clipboard content"}} =
-               ClipboardPlugin.handle_command(:clipboard_read, [], initial_state)
+      @clipboard_mock |> expect(:paste, fn -> {:ok, "mock clipboard content"} end)
+      assert ClipboardPlugin.handle_command(:clipboard_read, [], initial_state) == {:ok, "mock clipboard content"}
     end
 
     test "delegates :clipboard_read command and handles System.Clipboard.paste/0 error" do
-      # Use helper to get state with mock
       initial_state = initial_state_with_mock()
-
-      # Set up mock expectations for error
-      @clipboard_mock
-      |> expect(:paste, fn -> {:error, :command_not_found} end)
-
-      # Call the plugin's registered handler (arity 1 for read)
-      assert match?(
-               {:error, {:clipboard_read_failed, :command_not_found}, ^initial_state},
-               ClipboardPlugin.handle_command(:clipboard_read, [], initial_state)
-             )
+      @clipboard_mock |> expect(:paste, fn -> {:error, :command_not_found} end)
+      assert ClipboardPlugin.handle_command(:clipboard_read, [], initial_state) == {:error, "Failed to read from clipboard: :command_not_found"}
     end
   end
 
   describe "handle_clipboard_command/1 and /2" do
     test "delegates :clipboard_write command and handles System.Clipboard.copy/1 error" do
-      # Use helper to get state with mock
       test_content = "error content"
       initial_state = initial_state_with_mock()
-
-      # Set up mock expectations for error
-      @clipboard_mock
-      |> expect(:copy, fn ^test_content -> {:error, {:os_error, "cmd failed"}} end)
-
-      # Call the plugin's registered handler (arity 2 for write)
-      assert match?(
-               {:error, {:clipboard_write_failed, {:os_error, "cmd failed"}},
-                ^initial_state},
-               ClipboardPlugin.handle_clipboard_command([test_content], initial_state)
-             )
+      @clipboard_mock |> expect(:copy, fn ^test_content -> {:error, {:os_error, "cmd failed"}} end)
+      assert ClipboardPlugin.handle_clipboard_command([test_content], initial_state) == {:error, "Failed to write to clipboard: {:os_error, \"cmd failed\"}"}
     end
 
     test "delegates :clipboard_read command to System.Clipboard.paste/0 successfully" do
-      # Use helper to get state with mock
       initial_state = initial_state_with_mock()
-
-      # Set up mock expectations
-      @clipboard_mock
-      |> expect(:paste, fn -> {:ok, "mock clipboard content"} end)
-
-      # Call the plugin's registered handler (arity 1 for read)
-      assert {:ok, ^initial_state, {:clipboard_content, "mock clipboard content"}} =
-               ClipboardPlugin.handle_clipboard_command(initial_state)
+      @clipboard_mock |> expect(:paste, fn -> {:ok, "mock clipboard content"} end)
+      assert ClipboardPlugin.handle_clipboard_command(initial_state) == {:ok, "mock clipboard content"}
     end
 
     test "delegates :clipboard_read command and handles System.Clipboard.paste/0 error" do
-      # Use helper to get state with mock
       initial_state = initial_state_with_mock()
-
-      # Set up mock expectations for error
-      @clipboard_mock
-      |> expect(:paste, fn -> {:error, :command_not_found} end)
-
-      # Call the plugin's registered handler (arity 1 for read)
-      assert match?(
-               {:error, {:clipboard_read_failed, :command_not_found}, ^initial_state},
-               ClipboardPlugin.handle_clipboard_command(initial_state)
-             )
+      @clipboard_mock |> expect(:paste, fn -> {:error, :command_not_found} end)
+      assert ClipboardPlugin.handle_clipboard_command(initial_state) == {:error, "Failed to read from clipboard: :command_not_found"}
     end
   end
 
