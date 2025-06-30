@@ -134,6 +134,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
   defp pad_or_truncate_line(line, width) do
     len = length(line)
+
     cond do
       len < width -> line ++ List.duplicate(Cell.new(" "), width - len)
       len > width -> Enum.take(line, width)
@@ -171,10 +172,15 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       line = Enum.at(buffer.cells, row)
       orig_content_length = content_length(line)
       # If line is blank, use the column position as the content length
-      effective_content_length = if orig_content_length == 0, do: col, else: orig_content_length
+      effective_content_length =
+        if orig_content_length == 0, do: col, else: orig_content_length
+
       {left, _right} = Enum.split(line, col)
       blanks = Enum.map(1..count, fn _ -> Cell.new(" ") end)
-      new_line = left ++ blanks ++ Enum.slice(line, col, effective_content_length - col)
+
+      new_line =
+        left ++ blanks ++ Enum.slice(line, col, effective_content_length - col)
+
       new_line = Enum.take(new_line, effective_content_length + count)
       new_line = pad_or_truncate_line(new_line, buffer.width)
       cells = List.replace_at(buffer.cells, row, new_line)
@@ -269,7 +275,11 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     {left_part, _right_part} = Enum.split(line, col)
     blank_cell = Cell.new(" ", default_style)
     blank_cells = List.duplicate(blank_cell, count)
-    result = left_part ++ blank_cells ++ Enum.slice(line, col, orig_content_length - col)
+
+    result =
+      left_part ++
+        blank_cells ++ Enum.slice(line, col, orig_content_length - col)
+
     result = Enum.take(result, orig_content_length + count)
     pad_or_truncate_line(result, length(line))
   end
@@ -298,26 +308,8 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def delete_chars(buffer, row, col, count)
       when row >= 0 and col >= 0 and count > 0 do
-    if row >= buffer.height or col >= buffer.width do
-      buffer
-    else
-      line = Enum.at(buffer.cells, row)
-
-      # Split the line into left (before deletion) and right (after deletion)
-      {left, _} = Enum.split(line, col)
-      right = Enum.slice(line, col + count, buffer.width)
-
-      # Combine left + right
-      new_line = left ++ right
-      # Always pad to buffer.width
-      new_line = new_line ++ List.duplicate(Cell.new(" "), max(0, buffer.width - length(new_line)))
-      new_line = Enum.take(new_line, buffer.width)
-
-      cells = List.replace_at(buffer.cells, row, new_line)
-      %{buffer | cells: cells}
-    end
+    delete_characters(buffer, row, col, count, buffer.default_style)
   end
-  def delete_chars(buffer, _row, _col, count) when count <= 0, do: buffer
 
   @doc """
   Deletes a specified number of characters starting from the given position.
@@ -431,26 +423,30 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   Writes a string at the specified position in the buffer.
   """
   def write_string(buffer, row, col, string) when binary?(string) do
-    if row >= 0 and row < buffer.height and col >= 0 and col < buffer.width do
+    if row < 0 or row >= buffer.height or col < 0 or col >= buffer.width do
+      buffer
+    else
       line = Enum.at(buffer.cells, row)
       orig_len = length(line)
       chars = String.graphemes(string)
       max_len = orig_len - col
       chars = Enum.take(chars, max_len)
-      updated_line = Enum.with_index(line)
-      |> Enum.map(fn {cell, idx} ->
-        if idx >= col and idx < col + length(chars) do
-          char = Enum.at(chars, idx - col)
-          Cell.new(char)
-        else
-          cell
-        end
-      end)
-      updated_line = Enum.take(updated_line, orig_len)
+
+      updated_line =
+        Enum.with_index(line)
+        |> Enum.map(fn {cell, idx} ->
+          if idx >= col and idx < col + length(chars) do
+            char = Enum.at(chars, idx - col)
+            # Preserve style and other properties
+            %{cell | char: char}
+          else
+            cell
+          end
+        end)
+
+      updated_line = pad_or_truncate_line(updated_line, orig_len)
       cells = List.replace_at(buffer.cells, row, updated_line)
       %{buffer | cells: cells}
-    else
-      buffer
     end
   end
 
@@ -484,7 +480,10 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
   The updated screen buffer.
   """
-  def erase_chars(buffer, row, col, count) when row >= 0 and col >= 0 and count > 0 do
+  def erase_chars(buffer, row, col, count) when row < 0 or col < 0, do: buffer
+
+  def erase_chars(buffer, row, col, count)
+      when row >= 0 and col >= 0 and count > 0 do
     if row >= buffer.height or col >= buffer.width do
       buffer
     else
@@ -497,7 +496,10 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       # Combine left + right
       new_line = left ++ right
       # Always pad to buffer.width
-      new_line = new_line ++ List.duplicate(Cell.new(" "), max(0, buffer.width - length(new_line)))
+      new_line =
+        new_line ++
+          List.duplicate(Cell.new(" "), max(0, buffer.width - length(new_line)))
+
       new_line = Enum.take(new_line, buffer.width)
 
       cells = List.replace_at(buffer.cells, row, new_line)
@@ -522,7 +524,8 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
   The updated screen buffer.
   """
-  def erase_chars(buffer, row, col, count, style) when row >= 0 and col >= 0 and count > 0 do
+  def erase_chars(buffer, row, col, count, style)
+      when row >= 0 and col >= 0 and count > 0 do
     if row >= buffer.height or col >= buffer.width do
       buffer
     else
@@ -535,7 +538,13 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       # Combine left + right
       new_line = left ++ right
       # Always pad to buffer.width with styled spaces
-      new_line = new_line ++ List.duplicate(Cell.new(" ", style), max(0, buffer.width - length(new_line)))
+      new_line =
+        new_line ++
+          List.duplicate(
+            Cell.new(" ", style),
+            max(0, buffer.width - length(new_line))
+          )
+
       new_line = Enum.take(new_line, buffer.width)
 
       cells = List.replace_at(buffer.cells, row, new_line)
@@ -543,38 +552,37 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     end
   end
 
-  def replace_chars(buffer, row, col, string, style) when row >= 0 and col >= 0 and is_binary(string) do
+  def replace_chars(buffer, row, col, string, style)
+      when row >= 0 and col >= 0 and is_binary(string) do
     if row >= buffer.height or col >= buffer.width do
       buffer
     else
       line = Enum.at(buffer.cells, row)
       line_len = length(line)
-
-      # Truncate replacement string if it would overflow the line
       max_replace = max(0, line_len - col)
       chars = String.graphemes(string) |> Enum.take(max_replace)
       rep_len = length(chars)
-
-      # Split the line into left (before replacement)
       {left, _} = Enum.split(line, col)
 
-      # Create replacement cells
-      rep_cells = Enum.map(chars, fn c ->
-        if style, do: Cell.new(c, style), else: Cell.new(c)
-      end)
+      rep_cells =
+        Enum.with_index(chars)
+        |> Enum.map(fn {c, i} ->
+          orig_cell = Enum.at(line, col + i)
 
-      # The right segment should be empty if we're replacing at the end
-      # or should contain characters after the replacement
-      right = if col + rep_len < line_len do
-        Enum.slice(line, col + rep_len, line_len - (col + rep_len))
-      else
-        []
-      end
+          if style,
+            do: %{orig_cell | char: c, style: style},
+            else: %{orig_cell | char: c}
+        end)
 
-      # Combine left + replacement + right
+      right =
+        if col + rep_len < line_len do
+          Enum.slice(line, col + rep_len, line_len - (col + rep_len))
+        else
+          []
+        end
+
       new_line = left ++ rep_cells ++ right
       new_line = pad_or_truncate_line(new_line, buffer.width)
-
       cells = List.replace_at(buffer.cells, row, new_line)
       %{buffer | cells: cells}
     end
@@ -589,5 +597,4 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   def delete_chars(buffer, _row, _col, _count), do: buffer
   def erase_chars(buffer, _row, _col, count) when count <= 0, do: buffer
   def erase_chars(buffer, _row, _col, _count, _style), do: buffer
-
 end
