@@ -92,3 +92,4 @@ preferences.json
 
 # Documentation build artifacts
 docs/search-index.json
+tmp/eviction_debug.log
