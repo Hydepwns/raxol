@@ -314,9 +314,17 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp validate_script(script) do
-    validate_script_type(script.type) == :ok and
-      validate_script_source(script.source) == :ok and
-      validate_script_config(script.config) == :ok
+    case validate_script_type(script.type) do
+      :ok ->
+        case validate_script_source(script.source) do
+          :ok ->
+            validate_script_config(script.config)
+          {:error, reason} ->
+            {:error, reason}
+        end
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp validate_script_type(type)
