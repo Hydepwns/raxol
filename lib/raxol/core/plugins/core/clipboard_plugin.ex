@@ -39,7 +39,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
         {:ok, "Content copied to clipboard"}
 
       {:error, reason} ->
-        {:error, "Failed to copy to clipboard: #{inspect(reason)}"}
+        {:error, "Failed to write to clipboard: #{inspect(reason)}"}
     end
   end
 
@@ -69,7 +69,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   Handles clipboard commands with a simplified interface.
   """
   @spec handle_clipboard_command(list(), map()) ::
-          {:ok, map(), any()} | {:error, String.t(), map()}
+          {:ok, map(), any()} | {:error, any(), map()}
   def handle_clipboard_command([content], state) when binary?(content) do
     # Handle clipboard_write with content
     handle_command(:clipboard_write, [content], state)
@@ -83,7 +83,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   Handles clipboard read command (arity 1 - just state).
   """
   @spec handle_clipboard_command(map()) ::
-          {:ok, map(), any()} | {:error, String.t(), map()}
+          {:ok, map(), any()} | {:error, any(), map()}
   def handle_clipboard_command(state) do
     # Handle clipboard_read with no content
     handle_command(:clipboard_read, [], state)

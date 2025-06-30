@@ -9,7 +9,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   import Raxol.Test.ClipboardAssertions
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
-  alias Raxol.Terminal.ClipboardMock
+  alias Raxol.Core.ClipboardMock
 
   setup :verify_on_exit!
 
@@ -55,7 +55,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
     end
 
     test "clipboard_read handles errors", %{state: state} do
-      expect_clipboard_paste_error()
+      expect_clipboard_paste_error(ClipboardMock)
 
       assert {:error, "Failed to read from clipboard: :error"} =
                ClipboardPlugin.handle_command(:clipboard_read, [], state)
