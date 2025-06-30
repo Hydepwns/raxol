@@ -10,7 +10,7 @@ defmodule Raxol.Core.Renderer.View do
   alias Raxol.Core.Renderer.View.Style.Border
   alias Raxol.Core.Renderer.View.Components.{Text, Box, Scroll}
   alias Raxol.Core.Renderer.View.Utils.ViewUtils
-  alias Raxol.Renderer.Layout, as: LayoutEngine
+  alias Raxol.Core.Renderer.Layout, as: LayoutEngine
 
   @typedoc """
   Style options for a view. Typically a list of atoms, e.g., [:bold, :underline].
