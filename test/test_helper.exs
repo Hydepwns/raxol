@@ -44,7 +44,7 @@ Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
   for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
 )
 
-Mox.defmock(Raxol.Terminal.ClipboardMock,
+Mox.defmock(Raxol.Core.ClipboardMock,
   for: Raxol.Core.Clipboard.Behaviour
 )
 
@@ -130,6 +130,7 @@ Raxol.UI.Theming.Theme.init()
 
 # Make UserPreferences globally available
 IO.puts("[TestHelper] Initializing UserPreferences...")
+
 # Raxol.Core.UserPreferences is started by the supervision tree; do not start it manually here.
 # Manual start_link removed to avoid race/duplication issues. See test stabilization notes.
 
