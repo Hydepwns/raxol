@@ -129,13 +129,13 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       cursor = %{Manager.new() | blink_rate: 50}
       cursor = Manager.set_state(cursor, :blinking)
 
-      # First update should be visible
+      # First update should toggle from true to false
       {cursor, visible1} = Manager.update_blink(cursor)
-      assert visible1 == true
+      assert visible1 == false
 
-      # Second update should toggle the blink state
+      # Second update should toggle from false to true
       {_cursor, visible2} = Manager.update_blink(cursor)
-      assert visible2 == false
+      assert visible2 == true
     end
   end
 
