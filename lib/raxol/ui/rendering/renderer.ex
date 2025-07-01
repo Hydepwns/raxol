@@ -15,7 +15,11 @@ defmodule Raxol.UI.Rendering.Renderer do
   Starts the rendering process.
   """
   def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name)
+    name = if Mix.env() == :test do
+      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+    else
+      Keyword.get(opts, :name)
+    end
     gen_server_opts = Keyword.delete(opts, :name)
 
     if name do

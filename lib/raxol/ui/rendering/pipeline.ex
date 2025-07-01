@@ -69,11 +69,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
   Starts the rendering pipeline GenServer. Registers under the module name by default.
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(
-      __MODULE__,
-      opts,
-      Keyword.put_new(opts, :name, __MODULE__)
-    )
+    name =
+      if Mix.env() == :test do
+        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+      else
+        Keyword.get(opts, :name, __MODULE__)
+      end
+
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -188,11 +191,25 @@ defmodule Raxol.UI.Rendering.Pipeline do
   This is where the pipeline would send the output (a list of paint operations)
   to the configured renderer.
   """
-  @spec commit(painted_output :: list(map()), renderer :: module(), diff_result :: any(), new_tree :: any()) :: :ok
+  @spec commit(
+          painted_output :: list(map()),
+          renderer :: module(),
+          diff_result :: any(),
+          new_tree :: any()
+        ) :: :ok
   # Updated default usage
-  def commit(painted_output, renderer \\ @default_renderer, diff_result \\ nil, new_tree \\ nil) do
+  def commit(
+        painted_output,
+        renderer \\ @default_renderer,
+        diff_result \\ nil,
+        new_tree \\ nil
+      ) do
     require Logger
-    Logger.debug("[Pipeline] commit called with painted_output=#{inspect(painted_output)}, diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree)}")
+
+    Logger.debug(
+      "[Pipeline] commit called with painted_output=#{inspect(painted_output)}, diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree)}"
+    )
+
     # painted_output is now a list of paint operation maps from the paint/2 stage.
     Raxol.Core.Runtime.Log.debug(
       "Commit Stage: Sending #{Enum.count(painted_output)} paint operations to renderer #{inspect(renderer)}."
@@ -366,6 +383,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
       Raxol.Core.Runtime.Log.debug(
         "Pipeline: schedule_render_on_next_frame called, but no current_tree to render."
       )
+
       {:noreply, state}
     end
   end
@@ -465,13 +483,15 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
       # Always reschedule the ticker if there are pending requests or if a render was scheduled
       # This ensures the ticker continues running for future requests
-      if :queue.len(final_state.animation_frame_requests) > 0 or final_state.render_scheduled_for_next_frame do
+      if :queue.len(final_state.animation_frame_requests) > 0 or
+           final_state.render_scheduled_for_next_frame do
         # Use the actual timer reference returned by Process.send_after
-        timer_ref = Process.send_after(
-          self(),
-          {:animation_tick, :timer_ref},
-          @animation_tick_interval_ms
-        )
+        timer_ref =
+          Process.send_after(
+            self(),
+            {:animation_tick, :timer_ref},
+            @animation_tick_interval_ms
+          )
 
         %{final_state | animation_ticker_ref: timer_ref}
       else
@@ -491,11 +511,17 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   defp schedule_or_execute_render(diff_result, new_tree_for_reference, state) do
     require Logger
-    Logger.debug("[Pipeline] schedule_or_execute_render called with diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree_for_reference)}")
+
+    Logger.debug(
+      "[Pipeline] schedule_or_execute_render called with diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree_for_reference)}"
+    )
+
     # Handle partial updates immediately - they don't need debouncing
     case diff_result do
       {:update, _path, _changes} ->
-        Raxol.Core.Runtime.Log.debug("Pipeline: Executing partial update immediately.")
+        Raxol.Core.Runtime.Log.debug(
+          "Pipeline: Executing partial update immediately."
+        )
 
         if state.render_timer_ref,
           do: Process.cancel_timer(state.render_timer_ref)
@@ -528,7 +554,9 @@ defmodule Raxol.UI.Rendering.Pipeline do
             else: @animation_tick_interval_ms + 1
 
         if time_since_last_render >= @animation_tick_interval_ms do
-          Raxol.Core.Runtime.Log.debug("Pipeline: Executing render immediately.")
+          Raxol.Core.Runtime.Log.debug(
+            "Pipeline: Executing render immediately."
+          )
 
           if state.render_timer_ref,
             do: Process.cancel_timer(state.render_timer_ref)
@@ -562,11 +590,13 @@ defmodule Raxol.UI.Rendering.Pipeline do
             do: Process.cancel_timer(state.render_timer_ref)
 
           # Use the actual timer reference returned by Process.send_after
-          timer_ref = Process.send_after(
-            self(),
-            {:deferred_render, diff_result, new_tree_for_reference, System.unique_integer([:positive])},
-            delay
-          )
+          timer_ref =
+            Process.send_after(
+              self(),
+              {:deferred_render, diff_result, new_tree_for_reference,
+               System.unique_integer([:positive])},
+              delay
+            )
 
           %{state | render_timer_ref: timer_ref}
         end
@@ -605,7 +635,13 @@ defmodule Raxol.UI.Rendering.Pipeline do
               previous_painted_output
             )
 
-          commit(painted_data, renderer_module, diff_result, new_tree_for_reference)
+          commit(
+            painted_data,
+            renderer_module,
+            diff_result,
+            new_tree_for_reference
+          )
+
           {painted_data, composed_data}
         else
           Raxol.Core.Runtime.Log.debug(
@@ -640,11 +676,12 @@ defmodule Raxol.UI.Rendering.Pipeline do
       )
 
       # Use the actual timer reference returned by Process.send_after
-      timer_ref = Process.send_after(
-        self(),
-        {:animation_tick, :timer_ref},
-        @animation_tick_interval_ms
-      )
+      timer_ref =
+        Process.send_after(
+          self(),
+          {:animation_tick, :timer_ref},
+          @animation_tick_interval_ms
+        )
 
       %{state | animation_ticker_ref: timer_ref}
     else
