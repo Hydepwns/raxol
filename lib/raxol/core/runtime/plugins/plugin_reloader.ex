@@ -108,7 +108,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
         # Simulate successful reload
         updated_state = %{
           state
-          | plugin_states: Map.put(state.plugin_states, plugin_id_string, plugin_state)
+          | plugin_states:
+              Map.put(state.plugin_states, plugin_id_string, plugin_state)
         }
 
         {:ok, updated_state}
