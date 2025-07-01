@@ -187,6 +187,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
       true ->
         # This is a plugin file, trigger reload
         {:ok, state}
+
       false ->
         # Not a plugin file, ignore
         {:ok, state}
@@ -199,10 +200,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   def handle_debounced_events(plugin_id, plugin_path, state) do
     # This is a simplified implementation
     # In a real implementation, this would process multiple events and trigger reloads
-    case String.ends_with?(plugin_path, ".ex") or String.ends_with?(plugin_path, ".exs") do
+    case String.ends_with?(plugin_path, ".ex") or
+           String.ends_with?(plugin_path, ".exs") do
       true ->
         # This is a plugin file, trigger reload
         {:ok, state}
+
       false ->
         # Not a plugin file, ignore
         {:ok, state}

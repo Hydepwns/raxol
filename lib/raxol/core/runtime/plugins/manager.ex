@@ -223,7 +223,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
           {:ok, result, updated_plugin_state} ->
             updated_state = %{
               state
-              | plugin_states: Map.put(state.plugin_states, plugin_name, updated_plugin_state)
+              | plugin_states:
+                  Map.put(
+                    state.plugin_states,
+                    plugin_name,
+                    updated_plugin_state
+                  )
             }
 
             {:reply, {:ok, updated_state, result}, updated_state}
@@ -948,10 +953,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     case hook_name do
       "init" ->
         {:ok, :initialized, plugin_state}
+
       "start" ->
         {:ok, :started, plugin_state}
+
       "stop" ->
         {:ok, :stopped, plugin_state}
+
       _ ->
         {:ok, {:hook_called, hook_name, args}, plugin_state}
     end
@@ -963,9 +971,11 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     case config do
       %{enabled: enabled} when is_boolean(enabled) ->
         :ok
+
       %{} ->
         # Config is valid if it's a map, even without required fields
         :ok
+
       _ ->
         {:error, :invalid_config_format}
     end

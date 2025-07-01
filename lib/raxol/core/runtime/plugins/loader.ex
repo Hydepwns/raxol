@@ -230,10 +230,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
           [{module, _}] -> {:ok, module}
           _ -> {:error, :compilation_failed}
         end
+
       false ->
         # Assume it's a module name
         try do
           module = String.to_existing_atom(id)
+
           if Code.ensure_loaded(module) == {:module, module} do
             {:ok, module}
           else
