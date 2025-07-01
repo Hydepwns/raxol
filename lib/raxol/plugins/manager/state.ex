@@ -56,9 +56,10 @@ defmodule Raxol.Plugins.Manager.State do
   Delegates to `Raxol.Plugins.Lifecycle.load_plugins/2`.
   """
   def load_plugins(%Core{} = manager, modules) when list?(modules) do
-    Enum.reduce(modules, manager, fn module, acc ->
-      load_plugin(acc, module)
-    end)
+    case Raxol.Plugins.Lifecycle.load_plugins(manager, modules) do
+      {:ok, updated_manager} -> {:ok, updated_manager}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """

@@ -5,6 +5,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   actual terminal cells.
   """
   @behaviour Raxol.Plugins.Plugin
+  @behaviour Raxol.Plugins.LifecycleBehaviour
 
   alias Raxol.Plugins.Visualization.ChartRenderer
   alias Raxol.Plugins.Visualization.ImageRenderer

@@ -40,21 +40,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     case Enum.reduce_while(
            Map.keys(graph),
            {:ok, indices, lowlinks, components, stack, on_stack, index},
-           fn node, {:ok, idx, low, comp, stk, on_stk, i} ->
-             if Map.has_key?(idx, node) do
-               {:cont, {:ok, idx, low, comp, stk, on_stk, i}}
-             else
-               case strongconnect(node, graph, idx, low, comp, stk, i, on_stk) do
-                 {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i} ->
-                   {:cont,
-                    {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk,
-                     new_i}}
-
-                 {:error, cycle} ->
-                   {:halt, {:error, cycle}}
-               end
-             end
-           end
+           &process_node(&1, &2, graph)
          ) do
       {:ok, _, _, components, _, _, _} ->
         # Reverse components to get topological order
@@ -63,6 +49,22 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
       {:error, cycle} ->
         {:error, cycle}
     end
+  end
+
+  defp process_node(node, {:ok, idx, low, comp, stk, on_stk, i}, graph) do
+    if Map.has_key?(idx, node) do
+      {:cont, {:ok, idx, low, comp, stk, on_stk, i}}
+    else
+      handle_strongconnect_result(strongconnect(node, graph, idx, low, comp, stk, i, on_stk))
+    end
+  end
+
+  defp handle_strongconnect_result({:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}) do
+    {:cont, {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}}
+  end
+
+  defp handle_strongconnect_result({:error, cycle}) do
+    {:halt, {:error, cycle}}
   end
 
   @doc false
@@ -86,43 +88,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     # Process all neighbors
     result =
       Enum.reduce_while(
-        graph[node],
+        Map.get(graph, node, []),
         {new_indices, new_lowlinks, components, new_stack, new_on_stack,
          new_index},
-        fn {neighbor, _, _}, {idx, low, comp, stk, on_stk, i} ->
-          if not Map.has_key?(idx, neighbor) do
-            # Neighbor has not been visited yet
-            case strongconnect(neighbor, graph, idx, low, comp, stk, i, on_stk) do
-              {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i} ->
-                new_low =
-                  Map.put(
-                    new_low,
-                    node,
-                    min(Map.get(new_low, node), Map.get(new_low, neighbor))
-                  )
-
-                {:cont,
-                 {new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}}
-
-              {:error, cycle} ->
-                {:halt, {:error, cycle}}
-            end
-          else
-            if MapSet.member?(on_stk, neighbor) do
-              # Neighbor is on stack, update lowlink
-              new_low =
-                Map.put(
-                  low,
-                  node,
-                  min(Map.get(low, node), Map.get(idx, neighbor))
-                )
-
-              {:cont, {idx, new_low, comp, stk, on_stk, i}}
-            else
-              {:cont, {idx, low, comp, stk, on_stk, i}}
-            end
-          end
-        end
+        &process_neighbor(&1, &2, graph, node)
       )
 
     case result do
@@ -130,54 +99,106 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
         {:error, cycle}
 
       {idx, low, comp, stk, on_stk, i} ->
-        if Map.get(low, node) == Map.get(idx, node) do
-          # Node is root of strongly connected component
-          {component, new_stack} = extract_component(node, stk)
-
-          if !(list?(component) and Enum.all?(component, &binary?/1)),
-            do: raise("Component must be a list of strings")
-
-          if not struct?(on_stk, MapSet), do: raise("on_stk must be a MapSet")
-
-          if length(component) > 1 do
-            # Check if there is an edge within the component (true cycle)
-            if Enum.any?(component, fn n ->
-                 Enum.any?(graph[n], fn {neighbor, _, _} ->
-                   neighbor in component
-                 end)
-               end) do
-              {:error, component}
-            else
-              new_components = [component | comp]
-
-              new_on_stack =
-                Enum.reduce(component, on_stk, fn elem, acc ->
-                  if not struct?(acc, MapSet),
-                    do: raise("Accumulator must be a MapSet")
-
-                  MapSet.delete(acc, elem)
-                end)
-
-              {:ok, idx, low, new_components, new_stack, new_on_stack, i}
-            end
-          else
-            # Single node: check for self-loop
-            node = hd(component)
-
-            if Enum.any?(graph[node], fn {neighbor, _, _} ->
-                 neighbor == node
-               end) do
-              {:error, component}
-            else
-              new_components = [component | comp]
-              new_on_stack = MapSet.delete(on_stk, node)
-              {:ok, idx, low, new_components, new_stack, new_on_stack, i}
-            end
-          end
-        else
-          {:ok, idx, low, comp, stk, on_stk, i}
-        end
+        process_component_root(node, idx, low, comp, stk, on_stk, i, graph)
     end
+  end
+
+  defp process_neighbor({neighbor, _, _}, {idx, low, comp, stk, on_stk, i}, graph, node) do
+    neighbor_state = %{graph: graph, idx: idx, low: low, comp: comp, stk: stk, on_stk: on_stk, i: i, node: node}
+
+    case get_neighbor_type(neighbor, graph, idx, on_stk) do
+      :missing -> {:cont, {idx, low, comp, stk, on_stk, i}}
+      :unvisited -> process_unvisited_neighbor(neighbor, neighbor_state)
+      :on_stack -> update_lowlink_and_continue(node, neighbor, idx, low, comp, stk, on_stk, i)
+      :visited -> {:cont, {idx, low, comp, stk, on_stk, i}}
+    end
+  end
+
+  defp get_neighbor_type(neighbor, graph, idx, on_stk) do
+    cond do
+      not Map.has_key?(graph, neighbor) -> :missing
+      not Map.has_key?(idx, neighbor) -> :unvisited
+      MapSet.member?(on_stk, neighbor) -> :on_stack
+      true -> :visited
+    end
+  end
+
+  defp process_unvisited_neighbor(neighbor, %{graph: graph, idx: idx, low: low, comp: comp, stk: stk, on_stk: on_stk, i: i, node: node}) do
+    case strongconnect(neighbor, graph, idx, low, comp, stk, i, on_stk) do
+      {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i} ->
+        new_low = Map.put(new_low, node, min(Map.get(new_low, node), Map.get(new_low, neighbor)))
+        {:cont, {new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}}
+
+      {:error, cycle} ->
+        {:halt, {:error, cycle}}
+    end
+  end
+
+  defp process_component_root(node, idx, low, comp, stk, on_stk, i, graph) do
+    if Map.get(low, node) == Map.get(idx, node) do
+      {component, new_stack} = extract_component(node, stk)
+      validate_component(component, on_stk)
+      handle_component(component, idx, low, comp, new_stack, on_stk, i, graph)
+    else
+      {:ok, idx, low, comp, stk, on_stk, i}
+    end
+  end
+
+  defp validate_component(component, on_stk) do
+    if !(list?(component) and Enum.all?(component, &binary?/1)),
+      do: raise("Component must be a list of strings")
+
+    if not struct?(on_stk, MapSet), do: raise("on_stk must be a MapSet")
+  end
+
+  defp handle_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
+    if length(component) > 1 do
+      handle_multi_node_component(component, idx, low, comp, new_stack, on_stk, i, graph)
+    else
+      handle_single_node_component(component, idx, low, comp, new_stack, on_stk, i, graph)
+    end
+  end
+
+  defp handle_multi_node_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
+    if has_internal_edge?(component, graph) do
+      {:error, component}
+    else
+      new_components = [component | comp]
+      new_on_stack = remove_from_stack(component, on_stk)
+      {:ok, idx, low, new_components, new_stack, new_on_stack, i}
+    end
+  end
+
+  defp handle_single_node_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
+    node = hd(component)
+    deps = Map.get(graph, node, [])
+
+    if Enum.any?(deps, fn {neighbor, _, _} -> neighbor == node end) do
+      {:error, component}
+    else
+      new_components = [component | comp]
+      new_on_stack = MapSet.delete(on_stk, node)
+      {:ok, idx, low, new_components, new_stack, new_on_stack, i}
+    end
+  end
+
+  defp has_internal_edge?(component, graph) do
+    Enum.any?(component, fn n ->
+      deps = Map.get(graph, n, [])
+      Enum.any?(deps, fn {neighbor, _, _} -> neighbor in component end)
+    end)
+  end
+
+  defp update_lowlink_and_continue(node, neighbor, idx, low, comp, stk, on_stk, i) do
+    new_low = Map.put(low, node, min(Map.get(low, node), Map.get(idx, neighbor)))
+    {:cont, {idx, new_low, comp, stk, on_stk, i}}
+  end
+
+  defp remove_from_stack(component, on_stk) do
+    Enum.reduce(component, on_stk, fn elem, acc ->
+      if not struct?(acc, MapSet), do: raise("Accumulator must be a MapSet")
+      MapSet.delete(acc, elem)
+    end)
   end
 
   @doc false

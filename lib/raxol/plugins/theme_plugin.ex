@@ -5,6 +5,7 @@ defmodule Raxol.Plugins.ThemePlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
+  @behaviour Raxol.Plugins.LifecycleBehaviour
 
   defstruct [
     :name,
