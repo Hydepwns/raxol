@@ -123,7 +123,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
       memory_manager: memory_manager,
       damage_tracker: DamageTracker.new(),
       scrollback_manager: ScrollbackManager.new(),
-      renderer: Renderer.new(ScreenBuffer.new(80, 24)),
+      renderer: Renderer.new(width: 80, height: 24),
       metrics: %{
         writes: 0,
         reads: 0,
