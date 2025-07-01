@@ -3,16 +3,16 @@ defmodule Raxol.UI.Rendering.PipelineTest do
 
   alias Raxol.UI.Rendering.Pipeline
 
-    setup do
+  setup do
     Raxol.Test.Helpers.setup_rendering_test()
   end
 
-  test "starts and initializes state" do
+  test "starts and initializes state", _context do
     assert Process.whereis(Pipeline)
     # Internal state is not directly accessible, but no crash means success
   end
 
-  test "update_tree/1 stores the tree and triggers a render" do
+  test "update_tree/1 stores the tree and triggers a render", _context do
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Hello"}}]}
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
@@ -20,7 +20,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Raxol.Test.Helpers.assert_render_event("Hello")
   end
 
-  test "trigger_render/1 uses the current tree if data is nil" do
+  test "trigger_render/1 uses the current tree if data is nil", _context do
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "World"}}]}
     Pipeline.update_tree(tree)
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
@@ -29,7 +29,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Raxol.Test.Helpers.assert_render_event("World")
   end
 
-  test "trigger_render/1 uses provided data if not nil" do
+  test "trigger_render/1 uses provided data if not nil", _context do
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "A"}}]}
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
@@ -43,12 +43,12 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     end)
   end
 
-  test "diff_trees/2 returns :no_change for identical trees" do
+  test "diff_trees/2 returns :no_change for identical trees", _context do
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Hello"}}]}
     assert Pipeline.diff_trees(tree, tree) == :no_change
   end
 
-  test "diff_trees/2 returns {:replace, new_tree} for completely different trees" do
+  test "diff_trees/2 returns {:replace, new_tree} for completely different trees", _context do
     old_tree = %{type: :view, children: [%{type: :label, attrs: %{text: "A"}}]}
 
     new_tree = %{
@@ -59,7 +59,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert Pipeline.diff_trees(old_tree, new_tree) == {:replace, new_tree}
   end
 
-  test "diff_trees/2 returns {:update, path, changes} for one child changed" do
+  test "diff_trees/2 returns {:update, path, changes} for one child changed", _context do
     old_tree = %{
       type: :view,
       children: [
@@ -84,7 +84,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
            )
   end
 
-  test "diff_trees/2 returns {:update, path, changes} for multiple children changed" do
+  test "diff_trees/2 returns {:update, path, changes} for multiple children changed", _context do
     old_tree = %{
       type: :view,
       children: [
@@ -109,14 +109,14 @@ defmodule Raxol.UI.Rendering.PipelineTest do
            )
   end
 
-  test "diff_trees/2 handles nil children and structure changes" do
+  test "diff_trees/2 handles nil children and structure changes", _context do
     old_tree = %{type: :view, children: [%{type: :label, attrs: %{text: "A"}}]}
     new_tree = %{type: :view, children: []}
     diff = Pipeline.diff_trees(old_tree, new_tree)
     assert match?({:update, [], %{diffs: [{0, {:replace, nil}}], type: :indexed_children}}, diff)
   end
 
-  test "update_tree/1 does not trigger render if tree is unchanged" do
+  test "update_tree/1 does not trigger render if tree is unchanged", _context do
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Hello"}}]}
     Pipeline.update_tree(tree)
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
@@ -135,7 +135,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     refute_receive {:renderer_rendered, _}, 100
   end
 
-  test "multiple rapid update_tree/1 calls result in one render with last tree" do
+  test "multiple rapid update_tree/1 calls result in one render with last tree", _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
     tree1 = %{type: :view, children: [%{type: :label, attrs: %{text: "A"}}]}
     tree2 = %{type: :view, children: [%{type: :label, attrs: %{text: "B"}}]}
@@ -160,7 +160,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert_receive {:renderer_partial_update, [], ^tree3, ^tree3}, 100
   end
 
-  test "single update_tree/1 call triggers render after debounce interval" do
+  test "single update_tree/1 call triggers render after debounce interval", _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     tree = %{
@@ -180,7 +180,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     end)
   end
 
-  test "request_animation_frame/1 notifies caller on next frame" do
+  test "request_animation_frame/1 notifies caller on next frame", _context do
     # request_animation_frame returns the ref immediately, but the actual message
     # is sent later via GenServer.reply when the animation ticker processes it
     # We need to call the supervised Pipeline process directly, not the globally registered one
@@ -191,7 +191,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert result == {:animation_frame, ref}
   end
 
-  test "multiple request_animation_frame/1 calls in same frame all receive notifications" do
+  test "multiple request_animation_frame/1 calls in same frame all receive notifications", _context do
     ref1 = System.unique_integer([:positive])
     ref2 = System.unique_integer([:positive])
     refs = MapSet.new([ref1, ref2])
@@ -209,7 +209,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert refs == received
   end
 
-  test "frame loop runs at expected interval (basic timing check)" do
+  test "frame loop runs at expected interval (basic timing check)", _context do
     t1 = System.monotonic_time(:millisecond)
     ref = System.unique_integer([:positive])
     result = GenServer.call(Process.whereis(Pipeline), {:request_animation_frame, self(), ref})
@@ -220,7 +220,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert t2 - t1 < 100
   end
 
-  test "schedule_render_on_next_frame/0 triggers a render on the next animation frame" do
+  test "schedule_render_on_next_frame/0 triggers a render on the next animation frame", _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Frame"}}]}
     Pipeline.update_tree(tree)
@@ -244,7 +244,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     end)
   end
 
-  test "multiple schedule_render_on_next_frame/0 calls before next frame only trigger one render" do
+  test "multiple schedule_render_on_next_frame/0 calls before next frame only trigger one render", _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Frame2"}}]}
     Pipeline.update_tree(tree)
@@ -269,7 +269,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     refute_receive {:renderer_rendered, _}, 50
   end
 
-  test "schedule_render_on_next_frame/0 triggers render with latest tree" do
+  test "schedule_render_on_next_frame/0 triggers render with latest tree", _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     old_tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Old"}}]}
@@ -290,7 +290,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     assert_receive {:renderer_partial_update, [], ^new_tree, ^new_tree}, 100
   end
 
-  test "partial update triggers renderer_partial_update with correct path and subtree" do
+  test "partial update triggers renderer_partial_update with correct path and subtree", _context do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     old_tree = %{
