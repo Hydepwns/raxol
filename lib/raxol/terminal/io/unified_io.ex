@@ -219,6 +219,9 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   # Server Callbacks
 
   def init(opts) do
+    # Convert keyword list to map for config
+    config = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+
     state = %__MODULE__{
       # Input state
       mode: :normal,
@@ -247,7 +250,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
       output_processing: false,
 
       # Configuration
-      config: opts
+      config: config
     }
 
     {:ok, state}

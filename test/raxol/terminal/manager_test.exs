@@ -7,33 +7,14 @@ defmodule Raxol.Terminal.ManagerTest do
   setup do
     emulator = Raxol.Terminal.Emulator.new()
 
-    # Stop any existing manager to ensure a clean state
-    case GenServer.whereis(Raxol.Terminal.Manager) do
-      nil -> :ok
-      pid -> GenServer.stop(pid)
-    end
-    Process.sleep(50)  # Give it time to stop
+    # Start the manager with test configuration using unique naming
+    {:ok, pid} = start_supervised({Manager, [
+      terminal: emulator,
+      runtime_pid: self(),
+      name: Raxol.Test.ProcessNaming.generate_name(Manager)
+    ]})
 
-    # Start the manager with test configuration
-    case Manager.start_link(terminal: emulator, runtime_pid: self()) do
-      {:ok, pid} -> {:ok, %{pid: pid}}
-      {:error, {:already_started, pid}} ->
-        # Update the existing manager's state to include the correct runtime_pid
-        GenServer.call(pid, {:update_state, %{terminal: emulator, runtime_pid: self()}})
-        {:ok, %{pid: pid}}
-      other -> raise "Unexpected result from Manager.start_link: #{inspect(other)}"
-    end
-  end
-
-  # Clean up processes after each test
-  setup do
-    on_exit(fn ->
-      # Stop the manager if it's running
-      case GenServer.whereis(Raxol.Terminal.Manager) do
-        nil -> :ok
-        pid -> GenServer.stop(pid)
-      end
-    end)
+    %{pid: pid}
   end
 
   test "window resize event triggers notify_resized", %{pid: pid} do
