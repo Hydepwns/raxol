@@ -150,7 +150,10 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     combined = empty_lines ++ buffer.cells
     new_cells = Enum.take(combined, buffer.height)
     removed = Enum.drop(combined, buffer.height)
-    new_scrollback = Enum.take(removed ++ buffer.scrollback, buffer.scrollback_limit)
+
+    new_scrollback =
+      Enum.take(removed ++ buffer.scrollback, buffer.scrollback_limit)
+
     %{buffer | cells: new_cells, scrollback: new_scrollback}
   end
 

@@ -204,7 +204,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     blanks = Enum.map(1..count, fn _ -> %Cell{char: " ", dirty: true} end)
     shifted_right = Enum.take(right, width - col - count)
 
-    left ++ blanks ++ shifted_right
+    (left ++ blanks ++ shifted_right)
     |> pad_or_truncate_line(width)
   end
 
@@ -293,7 +293,13 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   def insert_into_line(line, col, count, default_style) do
     {left_part, right_part} = Enum.split(line, col)
     # Inserted blanks are dirty, but padding is not
-    blank_cell = %Cell{char: " ", style: default_style, dirty: true, wide_placeholder: false}
+    blank_cell = %Cell{
+      char: " ",
+      style: default_style,
+      dirty: true,
+      wide_placeholder: false
+    }
+
     blank_cells = List.duplicate(blank_cell, count)
     shifted_right = Enum.take(right_part, length(line) - col - count)
     result = left_part ++ blank_cells ++ shifted_right
@@ -416,7 +422,13 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     # Remove the characters to be deleted from the right part
     remaining_right = Enum.drop(right_part, count)
     # Pad the end with blanks to maintain line length
-    blank_cell = %Cell{char: " ", style: default_style, dirty: false, wide_placeholder: false}
+    blank_cell = %Cell{
+      char: " ",
+      style: default_style,
+      dirty: false,
+      wide_placeholder: false
+    }
+
     blanks_needed = line_length - length(left_part) - length(remaining_right)
     blank_cells = List.duplicate(blank_cell, blanks_needed)
     result = left_part ++ remaining_right ++ blank_cells
@@ -557,7 +569,10 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
   defp erase_chars_in_buffer_with_style(buffer, row, col, count, style) do
     line = Enum.at(buffer.cells, row)
-    updated_line = erase_chars_in_line_with_style(line, col, count, buffer.width, style)
+
+    updated_line =
+      erase_chars_in_line_with_style(line, col, count, buffer.width, style)
+
     cells = List.replace_at(buffer.cells, row, updated_line)
     %{buffer | cells: cells}
   end
@@ -569,7 +584,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     new_line = left ++ right
     padding_needed = max(0, width - length(new_line))
 
-    new_line ++ List.duplicate(Cell.new(" ", style), padding_needed)
+    (new_line ++ List.duplicate(Cell.new(" ", style), padding_needed))
     |> Enum.take(width)
   end
 
@@ -587,13 +602,19 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     new_line = left ++ right
     padding_needed = max(0, width - length(new_line))
 
-    new_line ++ List.duplicate(Cell.new(" "), padding_needed)
+    (new_line ++ List.duplicate(Cell.new(" "), padding_needed))
     |> Enum.take(width)
   end
 
   def replace_chars(buffer, row, col, string, style \\ nil) do
     if valid_replace_params?(buffer, row, col, string) do
-      replace_chars_in_buffer(buffer, row, col, string, style || buffer.default_style)
+      replace_chars_in_buffer(
+        buffer,
+        row,
+        col,
+        string,
+        style || buffer.default_style
+      )
     else
       buffer
     end
@@ -628,11 +649,14 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
   defp split_line_for_replacement(line, col, rep_len, line_len) do
     {left, _} = Enum.split(line, col)
-    right = if col + rep_len < line_len do
-      Enum.slice(line, col + rep_len, line_len - (col + rep_len))
-    else
-      []
-    end
+
+    right =
+      if col + rep_len < line_len do
+        Enum.slice(line, col + rep_len, line_len - (col + rep_len))
+      else
+        []
+      end
+
     {left, right}
   end
 

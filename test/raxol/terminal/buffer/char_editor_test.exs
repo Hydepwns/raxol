@@ -411,7 +411,9 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
 
   defp process_single_line(buffer, line, y) do
     IO.puts("Processing line #{y}: '#{line}'")
-    new_line = create_line_with_padding(line, buffer.width, buffer.default_style)
+
+    new_line =
+      create_line_with_padding(line, buffer.width, buffer.default_style)
 
     IO.puts("New line #{y} (length: #{length(new_line)}): #{inspect(new_line)}")
 
@@ -519,7 +521,8 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
   end
 
   defp assert_cell_equal(cell1, cell2, row_index, col_index) do
-    if cell1.char != cell2.char or cell1.dirty != cell2.dirty or cell1.wide_placeholder != cell2.wide_placeholder do
+    if cell1.char != cell2.char or cell1.dirty != cell2.dirty or
+         cell1.wide_placeholder != cell2.wide_placeholder do
       flunk("""
       Cell mismatch at position (#{row_index}, #{col_index}):
       Expected: char="#{cell1.char}", dirty=#{cell1.dirty}, wide_placeholder=#{cell1.wide_placeholder}
