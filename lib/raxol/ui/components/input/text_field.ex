@@ -281,16 +281,19 @@ defmodule Raxol.UI.Components.Input.TextField do
     component_theme_style = Theme.component_style(theme, :text_field)
 
     # Handle the case where component_theme_style is a plain map, not a Style struct
-    merged_style = case component_theme_style do
-      %Raxol.Style{} = style_struct ->
-        Raxol.Style.merge(style_struct, state.style)
-      plain_map when is_map(plain_map) ->
-        # If it's a plain map, merge it directly with state.style
-        Map.merge(plain_map, state.style || %{})
-      _ ->
-        # Fallback to just state.style
-        state.style || %{}
-    end
+    merged_style =
+      case component_theme_style do
+        %Raxol.Style{} = style_struct ->
+          Raxol.Style.merge(style_struct, state.style)
+
+        plain_map when is_map(plain_map) ->
+          # If it's a plain map, merge it directly with state.style
+          Map.merge(plain_map, state.style || %{})
+
+        _ ->
+          # Fallback to just state.style
+          state.style || %{}
+      end
 
     display_value =
       if state.secret,

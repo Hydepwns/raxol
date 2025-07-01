@@ -24,7 +24,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
 
     # Validate offset
     if not is_tuple(offset) or tuple_size(offset) != 2 or
-       not (is_integer(elem(offset, 0)) and is_integer(elem(offset, 1))) do
+         not (is_integer(elem(offset, 0)) and is_integer(elem(offset, 1))) do
       raise ArgumentError, "Scroll offset must be a tuple of two integers"
     end
 

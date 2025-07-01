@@ -81,7 +81,10 @@ defmodule Raxol.Core.UXRefinementTest do
     end
 
     test "enables accessibility feature" do
-      stub(AccessibilityMock, :enable, fn _opts, _user_preferences_pid_or_name -> :ok end)
+      stub(AccessibilityMock, :enable, fn _opts,
+                                          _user_preferences_pid_or_name ->
+        :ok
+      end)
 
       assert :ok = UXRefinement.enable_feature(:accessibility)
       assert UXRefinement.feature_enabled?(:accessibility)
@@ -134,9 +137,14 @@ defmodule Raxol.Core.UXRefinementTest do
     end
 
     test "disables accessibility feature" do
-      stub(AccessibilityMock, :enable, fn _opts, _user_preferences_pid_or_name -> :ok end)
+      stub(AccessibilityMock, :enable, fn _opts,
+                                          _user_preferences_pid_or_name ->
+        :ok
+      end)
 
-      stub(AccessibilityMock, :disable, fn _user_preferences_pid_or_name -> :ok end)
+      stub(AccessibilityMock, :disable, fn _user_preferences_pid_or_name ->
+        :ok
+      end)
 
       UXRefinement.enable_feature(:accessibility)
       assert :ok = UXRefinement.disable_feature(:accessibility)

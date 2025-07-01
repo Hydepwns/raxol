@@ -6,6 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
 
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper,
     as: ComponentRenderHelper
+
   alias Raxol.View.Components
 
   import Raxol.Guards

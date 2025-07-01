@@ -172,9 +172,10 @@ defmodule Raxol.Core.Renderer.Layout do
     children = scroll_view.children
     children_list = if is_list(children), do: children, else: [children]
 
-    positioned_children = Enum.flat_map(children_list, fn child ->
-      layout_single_view(child, available_space)
-    end)
+    positioned_children =
+      Enum.flat_map(children_list, fn child ->
+        layout_single_view(child, available_space)
+      end)
 
     # Apply scroll offset by subtracting from positions
     Enum.map(positioned_children, fn child ->

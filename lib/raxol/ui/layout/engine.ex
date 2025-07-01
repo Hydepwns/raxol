@@ -36,8 +36,9 @@ defmodule Raxol.UI.Layout.Engine do
     }
 
     # Process the view tree
-    result = process_element(view, available_space, [])
-    |> List.flatten()
+    result =
+      process_element(view, available_space, [])
+      |> List.flatten()
 
     result
   end
