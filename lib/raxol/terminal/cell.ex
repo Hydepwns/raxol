@@ -55,7 +55,7 @@ defmodule Raxol.Terminal.Cell do
     %__MODULE__{
       char: char || " ",
       style: style,
-      dirty: true,
+      dirty: false,
       wide_placeholder: false
     }
   end

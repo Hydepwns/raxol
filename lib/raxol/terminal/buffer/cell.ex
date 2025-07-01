@@ -208,8 +208,19 @@ defmodule Raxol.Terminal.Buffer.Cell do
 
   defp valid_attributes?(attrs) when is_map(attrs) do
     valid_attribute_keys = [
-      :bold, :italic, :underline, :strikethrough, :blink, :reverse, :faint,
-      :conceal, :fraktur, :double_underline, :framed, :encircled, :overlined
+      :bold,
+      :italic,
+      :underline,
+      :strikethrough,
+      :blink,
+      :reverse,
+      :faint,
+      :conceal,
+      :fraktur,
+      :double_underline,
+      :framed,
+      :encircled,
+      :overlined
     ]
 
     Enum.all?(attrs, fn {key, value} ->
@@ -266,7 +277,9 @@ defmodule Raxol.Terminal.Buffer.Cell do
           encircled: Map.get(style, :encircled, false),
           overlined: Map.get(style, :overlined, false)
         }
-      attrs -> attrs
+
+      attrs ->
+        attrs
     end
   end
 

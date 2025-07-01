@@ -101,14 +101,17 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     gen_server_opts = Keyword.delete(opts, :name)
 
     # Ensure we have a valid name for GenServer
-    valid_name = case name do
-      nil -> __MODULE__
-      ref when is_reference(ref) -> nil  # Don't use references as names
-      atom when is_atom(atom) -> atom
-      {:global, term} -> {:global, term}
-      {:via, module, term} -> {:via, module, term}
-      _ -> __MODULE__  # Fallback to module name
-    end
+    valid_name =
+      case name do
+        nil -> __MODULE__
+        # Don't use references as names
+        ref when is_reference(ref) -> nil
+        atom when is_atom(atom) -> atom
+        {:global, term} -> {:global, term}
+        {:via, module, term} -> {:via, module, term}
+        # Fallback to module name
+        _ -> __MODULE__
+      end
 
     if valid_name do
       GenServer.start_link(__MODULE__, gen_server_opts, name: valid_name)
@@ -446,7 +449,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp coordinates_valid?(state, x, y) do
-    x >= 0 and y >= 0 and x < state.active_buffer.width and y < state.active_buffer.height
+    x >= 0 and y >= 0 and x < state.active_buffer.width and
+      y < state.active_buffer.height
   end
 
   defp create_default_cell do
@@ -484,10 +488,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp has_default_style?(nil), do: true
+
   defp has_default_style?(style) do
     has_default_colors?(style) and
-    has_default_attributes?(style) and
-    has_default_effects?(style)
+      has_default_attributes?(style) and
+      has_default_effects?(style)
   end
 
   defp has_default_colors?(style) do
@@ -496,24 +501,24 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   defp has_default_attributes?(style) do
     style.bold == false and
-    style.italic == false and
-    style.underline == false and
-    style.blink == false and
-    style.reverse == false and
-    style.faint == false and
-    style.conceal == false and
-    style.strikethrough == false and
-    style.fraktur == false
+      style.italic == false and
+      style.underline == false and
+      style.blink == false and
+      style.reverse == false and
+      style.faint == false and
+      style.conceal == false and
+      style.strikethrough == false and
+      style.fraktur == false
   end
 
   defp has_default_effects?(style) do
     style.double_width == false and
-    style.double_height == :none and
-    style.double_underline == false and
-    style.framed == false and
-    style.encircled == false and
-    style.overlined == false and
-    style.hyperlink == nil
+      style.double_height == :none and
+      style.double_underline == false and
+      style.framed == false and
+      style.encircled == false and
+      style.overlined == false and
+      style.hyperlink == nil
   end
 
   def handle_call({:set_cell, x, y, cell}, _from, state) do
@@ -539,7 +544,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   defp validate_and_set_cell(state, x, y, cell) do
     if coordinates_valid_for_set?(state, x, y) do
       new_cell = create_cell_from_input(cell)
-      new_active_buffer = update_buffer_cell(state.active_buffer, x, y, new_cell)
+
+      new_active_buffer =
+        update_buffer_cell(state.active_buffer, x, y, new_cell)
+
       new_state = %{state | active_buffer: new_active_buffer}
       new_state = update_memory_usage(new_state)
       {:ok, new_state}
@@ -549,7 +557,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp coordinates_valid_for_set?(state, x, y) do
-    x >= 0 and y >= 0 and x < state.active_buffer.width and y < state.active_buffer.height
+    x >= 0 and y >= 0 and x < state.active_buffer.width and
+      y < state.active_buffer.height
   end
 
   defp create_cell_from_input(cell) do
@@ -674,7 +683,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     scrolled_lines = extract_top_lines(state.active_buffer, lines)
 
     # Add lines to scrollback buffer
-    new_scrollback_buffer = add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
+    new_scrollback_buffer =
+      add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
 
     # Perform the scroll operation
     new_active_buffer = scroll_buffer_up(state.active_buffer, lines)
@@ -897,26 +907,40 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   defp process_scroll_region(state, x, y, width, height, amount) do
     # Validate region bounds
     if x < 0 or y < 0 or width <= 0 or height <= 0 or
-         x + width > state.active_buffer.width or y + height > state.active_buffer.height do
+         x + width > state.active_buffer.width or
+         y + height > state.active_buffer.height do
       # Invalid region, return unchanged buffers
       {state.active_buffer, state.scrollback_buffer}
     else
       # Perform scrolling within the region
-      new_active_buffer = scroll_region_in_buffer(state.active_buffer, x, y, width, height, amount)
+      new_active_buffer =
+        scroll_region_in_buffer(
+          state.active_buffer,
+          x,
+          y,
+          width,
+          height,
+          amount
+        )
 
       # Add scrolled content to scrollback buffer
-      scrolled_lines = extract_scrolled_lines(state.active_buffer, x, y, width, height, amount)
-      new_scrollback_buffer = add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
+      scrolled_lines =
+        extract_scrolled_lines(state.active_buffer, x, y, width, height, amount)
+
+      new_scrollback_buffer =
+        add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
 
       {new_active_buffer, new_scrollback_buffer}
     end
   end
 
   # Extract lines that are scrolled out of the region
-  defp extract_scrolled_lines(buffer, x, y, width, height, amount) when amount > 0 do
+  defp extract_scrolled_lines(buffer, x, y, width, height, amount)
+       when amount > 0 do
     # When scrolling up, the top 'amount' lines are scrolled out
     Enum.map(0..(amount - 1), fn i ->
       row_y = y + i
+
       if row_y < buffer.height do
         Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
       else
@@ -926,11 +950,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     |> Enum.filter(fn line -> line != [] end)
   end
 
-  defp extract_scrolled_lines(buffer, x, y, width, height, amount) when amount < 0 do
+  defp extract_scrolled_lines(buffer, x, y, width, height, amount)
+       when amount < 0 do
     # When scrolling down, the bottom 'abs(amount)' lines are scrolled out
     abs_amount = abs(amount)
+
     Enum.map((height - abs_amount)..(height - 1), fn i ->
       row_y = y + i
+
       if row_y < buffer.height do
         Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
       else
@@ -1004,6 +1031,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       |> Enum.map(fn {row, row_y} ->
         if row_y >= y and row_y < y + height do
           region_row = Enum.at(new_region_lines, row_y - y)
+
           row
           |> Enum.with_index()
           |> Enum.map(fn {cell, col_x} ->
@@ -1023,7 +1051,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   # Private function to update state with commands (including config updates)
   defp update_state(state, commands) when is_list(commands) do
-    Enum.reduce_while(commands, {:ok, state}, fn command, {:ok, current_state} ->
+    Enum.reduce_while(commands, {:ok, state}, fn command,
+                                                 {:ok, current_state} ->
       case update_single_command(current_state, command) do
         {:ok, new_state} -> {:cont, {:ok, new_state}}
         error -> {:halt, error}
@@ -1040,18 +1069,22 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     # Update dimensions and resize buffers if needed
     if width != state.width or height != state.height do
       # Resize buffers
-      new_active_buffer = ScreenBuffer.resize(state.active_buffer, height, width)
+      new_active_buffer =
+        ScreenBuffer.resize(state.active_buffer, height, width)
+
       new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
 
       # Clear cache since buffer dimensions changed
       safe_cache_clear(:buffer)
 
-      {:ok, %{state |
-        width: width,
-        height: height,
-        active_buffer: new_active_buffer,
-        back_buffer: new_back_buffer
-      }}
+      {:ok,
+       %{
+         state
+         | width: width,
+           height: height,
+           active_buffer: new_active_buffer,
+           back_buffer: new_back_buffer
+       }}
     else
       {:ok, state}
     end
@@ -1059,11 +1092,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   defp update_single_command(state, %{scrollback_limit: limit}) do
     # Update scrollback limit
-    new_scrollback_buffer = Scroll.set_max_height(state.scrollback_buffer, limit)
-    {:ok, %{state |
-      scrollback_limit: limit,
-      scrollback_buffer: new_scrollback_buffer
-    }}
+    new_scrollback_buffer =
+      Scroll.set_max_height(state.scrollback_buffer, limit)
+
+    {:ok,
+     %{
+       state
+       | scrollback_limit: limit,
+         scrollback_buffer: new_scrollback_buffer
+     }}
   end
 
   defp update_single_command(state, %{memory_limit: limit}) do

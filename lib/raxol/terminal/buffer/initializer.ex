@@ -34,6 +34,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
       height: height,
       default_style: TextFormatting.new()
     }
+
     buffer
   end
 

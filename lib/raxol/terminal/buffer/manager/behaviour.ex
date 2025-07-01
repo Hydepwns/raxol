@@ -23,7 +23,11 @@ defmodule Raxol.Terminal.Buffer.Manager.Behaviour do
               y :: non_neg_integer(),
               cell :: term()
             ) :: :ok
-  @callback get_cell(pid :: pid(), x :: non_neg_integer(), y :: non_neg_integer()) :: term()
+  @callback get_cell(
+              pid :: pid(),
+              x :: non_neg_integer(),
+              y :: non_neg_integer()
+            ) :: term()
   @callback clear_damage(pid :: pid()) :: :ok
   @callback get_memory_usage(pid :: pid()) :: non_neg_integer()
   @callback get_scrollback_count(pid :: pid()) :: non_neg_integer()

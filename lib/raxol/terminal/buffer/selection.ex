@@ -202,7 +202,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
   Gets the buffer text for the current selection.
   This is an alias for get_text/1 for compatibility.
   """
-  @spec get_buffer_text(ScreenBuffer.t()) :: {:ok, String.t()} | {:error, term()}
+  @spec get_buffer_text(ScreenBuffer.t()) ::
+          {:ok, String.t()} | {:error, term()}
   def get_buffer_text(buffer) do
     try do
       text = get_text(buffer)
