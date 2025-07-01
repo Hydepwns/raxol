@@ -87,8 +87,12 @@ defmodule Raxol.Core.Renderer.Views.Table do
   """
   @impl Raxol.UI.Components.Base.Component
   def render(%__MODULE__{} = state, _props_or_context) do
+    IO.inspect("Table render called", label: "[DEBUG] Table render called")
     content = build_table_content(state)
-    wrap_table_content(content, state.border)
+    IO.inspect(content, label: "[DEBUG] Table render content")
+    result = wrap_table_content(content, state.border)
+    IO.inspect(result, label: "[DEBUG] Table render result")
+    result
   end
 
   @doc """
@@ -96,36 +100,25 @@ defmodule Raxol.Core.Renderer.Views.Table do
   """
   def render_content(state), do: render(state, %{})
 
-  defp build_table_content(state) do
+  @doc """
+  Builds the table content without wrapping it in a border or box.
+  This is used by the layout system to get the raw children.
+  """
+  def build_table_content(state) do
     header =
-      create_header_row(%RowContext{
-        columns: state.columns,
-        widths: state.calculated_widths,
-        style: state.header_style
-      })
+      create_header_row(%{columns: state.columns, style: state.header_style})
+
+    separator = create_separator_row(%{columns: state.columns})
 
     rows =
       Enum.with_index(state.data)
       |> Enum.map(fn {row, index} ->
-        style =
-          build_row_style(
-            index,
-            row,
-            state.striped,
-            state.selectable,
-            state.selected,
-            state.row_style
-          )
-
-        create_data_row(%RowContext{
-          columns: state.columns,
-          row: row,
-          widths: state.calculated_widths,
-          style: style
-        })
+        # You can adjust the style logic as needed
+        style = []
+        create_data_row(row, %{columns: state.columns}, index, style)
       end)
 
-    [header | rows]
+    [header, separator | rows]
   end
 
   defp wrap_table_content(content, border) do
@@ -229,39 +222,70 @@ defmodule Raxol.Core.Renderer.Views.Table do
     |> Enum.max(fn -> 0 end)
   end
 
-  defp create_header_row(%RowContext{
-         columns: columns,
-         widths: widths,
-         style: style
-       }) do
-    header_cells =
-      Enum.zip(columns, widths)
-      |> Enum.map(fn {%{header: header}, width} ->
-        View.text(String.pad_trailing(header, width), style: style)
-      end)
-
-    View.flex direction: :row do
-      header_cells
-    end
+  defp create_header_row(context) do
+    %{
+      type: :row,
+      align: :start,
+      children:
+        Enum.map(context.columns, fn col ->
+          %{
+            type: :text,
+            content: pad_cell_content(col.header, col),
+            style: context.style || [],
+            size: {col.width, :auto},
+            position: {0, 0}
+          }
+        end),
+      direction: :row,
+      gap: 0,
+      justify: :start,
+      style: []
+    }
   end
 
-  defp create_data_row(%RowContext{
-         columns: columns,
-         row: row,
-         widths: widths,
-         style: style
-       }) do
-    cells =
-      Enum.zip(columns, widths)
-      |> Enum.map(fn {column, width} ->
-        value = get_column_value(row, column)
-        formatted = format_cell_value(value, column)
-        View.text(String.pad_trailing(formatted, width), style: style)
-      end)
+  defp create_separator_row(context) do
+    # Calculate total width for the separator
+    total_width =
+      Enum.reduce(context.columns, 0, fn col, acc -> acc + col.width end)
 
-    View.flex direction: :row do
-      cells
-    end
+    %{
+      type: :row,
+      align: :start,
+      children: [
+        %{
+          type: :text,
+          content: String.duplicate("─", total_width),
+          style: [:dim],
+          size: {total_width, :auto},
+          position: {0, 0}
+        }
+      ],
+      direction: :row,
+      gap: 0,
+      justify: :start,
+      style: []
+    }
+  end
+
+  defp create_data_row(row, context, index, style) do
+    %{
+      type: :row,
+      align: :start,
+      children:
+        Enum.map(context.columns, fn col ->
+          %{
+            type: :text,
+            content: pad_cell_content(Map.get(row, col.key), col),
+            style: style,
+            size: {col.width, :auto},
+            position: {0, 0}
+          }
+        end),
+      direction: :row,
+      gap: 0,
+      justify: :start,
+      style: []
+    }
   end
 
   defp get_column_value(row, %{key: key}) when is_function(key, 1),
@@ -336,5 +360,47 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   def handle_call({:get_state}, _from, state) do
     {:reply, :not_implemented, state}
+  end
+
+  # Helper to pad cell content to the column width
+  defp pad_cell_content(value, col) do
+    # If the value is a chart or other component, return it as-is
+    if is_map(value) and Map.has_key?(value, :type) and
+         value.type in [:box, :chart, :sparkline] do
+      value
+    else
+      value_str =
+        cond do
+          is_binary(value) -> value
+          is_nil(value) -> ""
+          true -> to_string(value)
+        end
+
+      case Map.get(col, :align, :left) do
+        :right ->
+          String.pad_leading(value_str, col.width)
+
+        :center ->
+          padding = col.width - String.length(value_str)
+          left_pad = div(padding, 2)
+          right_pad = padding - left_pad
+          # For center alignment, ensure we don't exceed the column width
+          if left_pad + String.length(value_str) + right_pad <= col.width do
+            String.duplicate(" ", left_pad) <>
+              value_str <> String.duplicate(" ", right_pad)
+          else
+            # If the calculated padding would exceed width, adjust
+            adjusted_padding = col.width - String.length(value_str)
+            left_pad = div(adjusted_padding, 2)
+            right_pad = adjusted_padding - left_pad
+
+            String.duplicate(" ", left_pad) <>
+              value_str <> String.duplicate(" ", right_pad)
+          end
+
+        _ ->
+          String.pad_trailing(value_str, col.width)
+      end
+    end
   end
 end
