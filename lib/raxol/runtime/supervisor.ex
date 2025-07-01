@@ -103,7 +103,8 @@ defmodule Raxol.Runtime.Supervisor do
     children =
       [
         # 0. User Preferences (needs to start early)
-        {Raxol.Core.UserPreferences, if(Mix.env() == :test, do: [test_mode?: true], else: [])},
+        {Raxol.Core.UserPreferences,
+         if(Mix.env() == :test, do: [test_mode?: true], else: [])},
 
         # ADDED: Start the Registry under supervision
         {Registry, keys: :duplicate, name: :raxol_event_subscriptions},

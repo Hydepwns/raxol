@@ -55,11 +55,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     if Map.has_key?(idx, node) do
       {:cont, {:ok, idx, low, comp, stk, on_stk, i}}
     else
-      handle_strongconnect_result(strongconnect(node, graph, idx, low, comp, stk, i, on_stk))
+      handle_strongconnect_result(
+        strongconnect(node, graph, idx, low, comp, stk, i, on_stk)
+      )
     end
   end
 
-  defp handle_strongconnect_result({:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}) do
+  defp handle_strongconnect_result(
+         {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}
+       ) do
     {:cont, {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}}
   end
 
@@ -103,14 +107,44 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     end
   end
 
-  defp process_neighbor({neighbor, _, _}, {idx, low, comp, stk, on_stk, i}, graph, node) do
-    neighbor_state = %{graph: graph, idx: idx, low: low, comp: comp, stk: stk, on_stk: on_stk, i: i, node: node}
+  defp process_neighbor(
+         {neighbor, _, _},
+         {idx, low, comp, stk, on_stk, i},
+         graph,
+         node
+       ) do
+    neighbor_state = %{
+      graph: graph,
+      idx: idx,
+      low: low,
+      comp: comp,
+      stk: stk,
+      on_stk: on_stk,
+      i: i,
+      node: node
+    }
 
     case get_neighbor_type(neighbor, graph, idx, on_stk) do
-      :missing -> {:cont, {idx, low, comp, stk, on_stk, i}}
-      :unvisited -> process_unvisited_neighbor(neighbor, neighbor_state)
-      :on_stack -> update_lowlink_and_continue(node, neighbor, idx, low, comp, stk, on_stk, i)
-      :visited -> {:cont, {idx, low, comp, stk, on_stk, i}}
+      :missing ->
+        {:cont, {idx, low, comp, stk, on_stk, i}}
+
+      :unvisited ->
+        process_unvisited_neighbor(neighbor, neighbor_state)
+
+      :on_stack ->
+        update_lowlink_and_continue(
+          node,
+          neighbor,
+          idx,
+          low,
+          comp,
+          stk,
+          on_stk,
+          i
+        )
+
+      :visited ->
+        {:cont, {idx, low, comp, stk, on_stk, i}}
     end
   end
 
@@ -123,10 +157,25 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     end
   end
 
-  defp process_unvisited_neighbor(neighbor, %{graph: graph, idx: idx, low: low, comp: comp, stk: stk, on_stk: on_stk, i: i, node: node}) do
+  defp process_unvisited_neighbor(neighbor, %{
+         graph: graph,
+         idx: idx,
+         low: low,
+         comp: comp,
+         stk: stk,
+         on_stk: on_stk,
+         i: i,
+         node: node
+       }) do
     case strongconnect(neighbor, graph, idx, low, comp, stk, i, on_stk) do
       {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i} ->
-        new_low = Map.put(new_low, node, min(Map.get(new_low, node), Map.get(new_low, neighbor)))
+        new_low =
+          Map.put(
+            new_low,
+            node,
+            min(Map.get(new_low, node), Map.get(new_low, neighbor))
+          )
+
         {:cont, {new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}}
 
       {:error, cycle} ->
@@ -153,13 +202,40 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
 
   defp handle_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
     if length(component) > 1 do
-      handle_multi_node_component(component, idx, low, comp, new_stack, on_stk, i, graph)
+      handle_multi_node_component(
+        component,
+        idx,
+        low,
+        comp,
+        new_stack,
+        on_stk,
+        i,
+        graph
+      )
     else
-      handle_single_node_component(component, idx, low, comp, new_stack, on_stk, i, graph)
+      handle_single_node_component(
+        component,
+        idx,
+        low,
+        comp,
+        new_stack,
+        on_stk,
+        i,
+        graph
+      )
     end
   end
 
-  defp handle_multi_node_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
+  defp handle_multi_node_component(
+         component,
+         idx,
+         low,
+         comp,
+         new_stack,
+         on_stk,
+         i,
+         graph
+       ) do
     if has_internal_edge?(component, graph) do
       {:error, component}
     else
@@ -169,7 +245,16 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     end
   end
 
-  defp handle_single_node_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
+  defp handle_single_node_component(
+         component,
+         idx,
+         low,
+         comp,
+         new_stack,
+         on_stk,
+         i,
+         graph
+       ) do
     node = hd(component)
     deps = Map.get(graph, node, [])
 
@@ -189,8 +274,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     end)
   end
 
-  defp update_lowlink_and_continue(node, neighbor, idx, low, comp, stk, on_stk, i) do
-    new_low = Map.put(low, node, min(Map.get(low, node), Map.get(idx, neighbor)))
+  defp update_lowlink_and_continue(
+         node,
+         neighbor,
+         idx,
+         low,
+         comp,
+         stk,
+         on_stk,
+         i
+       ) do
+    new_low =
+      Map.put(low, node, min(Map.get(low, node), Map.get(idx, neighbor)))
+
     {:cont, {idx, new_low, comp, stk, on_stk, i}}
   end
 

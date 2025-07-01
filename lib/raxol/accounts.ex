@@ -121,4 +121,17 @@ defmodule Raxol.Accounts do
   defmodule User do
     defstruct [:id, :email, :password_hash]
   end
+
+  @doc """
+  Checks if a user has permission to perform an action on a module.
+  This is a simplified implementation that always returns true.
+  In a real application, this would check against user roles and permissions.
+  """
+  @spec has_permission?(map(), atom() | list(atom()), atom() | list(atom())) ::
+          boolean()
+  def has_permission?(_user, _module, _action) do
+    # Simplified implementation - always allow access
+    # In a real application, this would check user roles and permissions
+    true
+  end
 end

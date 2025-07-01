@@ -250,6 +250,7 @@ defmodule Raxol.Core.ColorSystem do
         "ColorSystem: Theme #{theme_id} not found, using default",
         %{}
       )
+
       Process.put(:color_system_current_theme, :default)
       :ok
     end

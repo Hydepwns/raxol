@@ -226,7 +226,9 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
       ]
 
       options = %{
-        time_range: {DateTime.from_unix!(one_hour_ago_ms, :millisecond), DateTime.from_unix!(now_ms, :millisecond)}
+        time_range:
+          {DateTime.from_unix!(one_hour_ago_ms, :millisecond),
+           DateTime.from_unix!(now_ms, :millisecond)}
       }
 
       assert {:ok, chart_id, chart_data} =

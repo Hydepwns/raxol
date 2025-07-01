@@ -411,6 +411,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       @impl true
       def init(config) do
         Process.put(:lifecycle_plugin_a_init, true)
+
         plugin = %Raxol.Plugins.Plugin{
           name: "lifecycle_plugin_a",
           version: "1.0.0",
@@ -420,6 +421,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           dependencies: [{:lifecycle_plugin_b, ">= 1.0.0"}],
           api_version: "1.0.0"
         }
+
         {:ok, plugin}
       end
 
@@ -465,6 +467,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       @impl true
       def init(config) do
         Process.put(:lifecycle_plugin_b_init, true)
+
         plugin = %Raxol.Plugins.Plugin{
           name: "lifecycle_plugin_b",
           version: "1.0.0",
@@ -474,6 +477,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           dependencies: [],
           api_version: "1.0.0"
         }
+
         {:ok, plugin}
       end
 
@@ -626,6 +630,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 
@@ -686,6 +691,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 
@@ -772,6 +778,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 
@@ -875,6 +882,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         @impl true
         def init(config) do
           Process.put(:concurrent_plugin_a_init, true)
+
           plugin = %Raxol.Plugins.Plugin{
             name: "concurrent_plugin_a",
             version: "1.0.0",
@@ -884,6 +892,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 
@@ -930,6 +939,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         @impl true
         def init(config) do
           Process.put(:concurrent_plugin_b_init, true)
+
           plugin = %Raxol.Plugins.Plugin{
             name: "concurrent_plugin_b",
             version: "1.0.0",
@@ -939,6 +949,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 
@@ -1078,6 +1089,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def init(config) do
           # Send message to plugin B during init
           Process.put(:plugin_a_init_message, "A initialized")
+
           plugin = %Raxol.Plugins.Plugin{
             name: "communicating_plugin_a",
             version: "1.0.0",
@@ -1087,6 +1099,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [{:communicating_plugin_b, ">= 1.0.0"}],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 
@@ -1136,6 +1149,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def init(config) do
           # Receive message from plugin A during init
           Process.put(:plugin_b_init_message, "B initialized")
+
           plugin = %Raxol.Plugins.Plugin{
             name: "communicating_plugin_b",
             version: "1.0.0",
@@ -1145,6 +1159,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 
@@ -1254,6 +1269,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
               dependencies: [{:recovery_plugin_b, ">= 1.0.0"}],
               api_version: "1.0.0"
             }
+
             {:ok, plugin}
           end
         end
@@ -1316,6 +1332,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             dependencies: [],
             api_version: "1.0.0"
           }
+
           {:ok, plugin}
         end
 

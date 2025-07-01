@@ -195,4 +195,57 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       {:ok, %{}}
     end
   end
+
+  @doc """
+  Checks if a module implements the given behaviour.
+  """
+  def behaviour_implemented?(module, behaviour) do
+    try do
+      # Check if the module has the behaviour attribute
+      module_info = module.module_info(:attributes)
+      behaviours = Keyword.get_values(module_info, :behaviour)
+
+      if behaviour in behaviours do
+        true
+      else
+        # Fallback: check if the module has the required callbacks
+        # This is a simplified check - in a real implementation you'd check all callbacks
+        function_exported?(module, :plugin_info, 0)
+      end
+    rescue
+      _ -> false
+    end
+  end
+
+  @doc """
+  Loads code for a plugin by its ID.
+  """
+  def load_code(id) when is_binary(id) do
+    # This is a simplified implementation
+    # In a real implementation, this would load the actual plugin code
+    case String.ends_with?(id, ".ex") or String.ends_with?(id, ".exs") do
+      true ->
+        # Assume it's a file path
+        case Code.compile_file(id) do
+          [{module, _}] -> {:ok, module}
+          _ -> {:error, :compilation_failed}
+        end
+      false ->
+        # Assume it's a module name
+        try do
+          module = String.to_existing_atom(id)
+          if Code.ensure_loaded(module) == {:module, module} do
+            {:ok, module}
+          else
+            {:error, :module_not_found}
+          end
+        rescue
+          ArgumentError -> {:error, :module_not_found}
+        end
+    end
+  end
+
+  def load_code(_id) do
+    {:error, :invalid_id}
+  end
 end

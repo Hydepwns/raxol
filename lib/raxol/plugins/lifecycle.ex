@@ -116,8 +116,11 @@ defmodule Raxol.Plugins.Lifecycle do
          :ok <- validate_string_field(plugin.api_version, :api_version) do
       :ok
     else
-      {:error, {:invalid_field, field, type}} -> {:error, {:invalid_field, field, type}}
-      error -> error
+      {:error, {:invalid_field, field, type}} ->
+        {:error, {:invalid_field, field, type}}
+
+      error ->
+        error
     end
   end
 
@@ -272,12 +275,14 @@ defmodule Raxol.Plugins.Lifecycle do
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugins(%Core{} = manager, modules) when list?(modules) do
     # Convert module list to module-config tuples, defaulting to empty config
-    module_configs = Enum.map(modules, fn
-      {module, config} -> {module, config}
-      module -> {module, %{}}
-    end)
+    module_configs =
+      Enum.map(modules, fn
+        {module, config} -> {module, config}
+        module -> {module, %{}}
+      end)
 
-    with {:ok, initialized_plugins} <- initialize_all_plugins_with_configs(manager, module_configs),
+    with {:ok, initialized_plugins} <-
+           initialize_all_plugins_with_configs(manager, module_configs),
          {:ok, sorted_plugin_names} <-
            resolve_plugin_order(initialized_plugins),
          {:ok, final_manager} <-
@@ -289,8 +294,11 @@ defmodule Raxol.Plugins.Lifecycle do
       # Build loaded_plugins map with atom keys, storing only the config
       loaded_plugins =
         final_manager.plugins
-        |> Enum.map(fn {name, plugin} -> {String.to_atom(name), plugin.config} end)
+        |> Enum.map(fn {name, plugin} ->
+          {String.to_atom(name), plugin.config}
+        end)
         |> Enum.into(%{})
+
       {:ok, %{final_manager | loaded_plugins: loaded_plugins}}
     else
       error -> handle_load_plugins_error(error)
@@ -298,7 +306,8 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp initialize_all_plugins_with_configs(manager, module_configs) do
-    Enum.reduce_while(module_configs, {:ok, []}, fn {module, config}, {:ok, acc_plugins} ->
+    Enum.reduce_while(module_configs, {:ok, []}, fn {module, config},
+                                                    {:ok, acc_plugins} ->
       plugin_name =
         Atom.to_string(module)
         |> String.split(".")
@@ -502,11 +511,17 @@ defmodule Raxol.Plugins.Lifecycle do
     case find_and_load_plugin(plugin_name, acc_manager, initialized_plugins) do
       {:ok, updated_manager} ->
         # Call start/1 on plugins that implement the Lifecycle behaviour
-        case call_plugin_start(plugin_name, updated_manager, initialized_plugins) do
+        case call_plugin_start(
+               plugin_name,
+               updated_manager,
+               initialized_plugins
+             ) do
           {:ok, final_manager} -> {:cont, {:ok, final_manager}}
           error -> {:halt, error}
         end
-      error -> {:halt, error}
+
+      error ->
+        {:halt, error}
     end
   end
 
@@ -519,15 +534,31 @@ defmodule Raxol.Plugins.Lifecycle do
             {:ok, updated_config} ->
               # Update the plugin's config with the result from start/1
               updated_plugin = %{plugin | config: updated_config}
-              updated_plugins = Map.put(manager.plugins, plugin_name, updated_plugin)
-              updated_loaded_plugins = Map.put(manager.loaded_plugins, String.to_atom(plugin_name), updated_plugin)
-              {:ok, %{manager | plugins: updated_plugins, loaded_plugins: updated_loaded_plugins}}
+
+              updated_plugins =
+                Map.put(manager.plugins, plugin_name, updated_plugin)
+
+              updated_loaded_plugins =
+                Map.put(
+                  manager.loaded_plugins,
+                  String.to_atom(plugin_name),
+                  updated_plugin
+                )
+
+              {:ok,
+               %{
+                 manager
+                 | plugins: updated_plugins,
+                   loaded_plugins: updated_loaded_plugins
+               }}
+
             {:error, reason} ->
               {:error, :start_failed, plugin_name, reason}
           end
         else
           {:ok, manager}
         end
+
       nil ->
         {:error, :start_failed, plugin_name, "Plugin not found"}
     end

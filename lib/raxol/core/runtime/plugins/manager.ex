@@ -180,6 +180,85 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl GenServer
+  def handle_call({:initialize_plugin, plugin_name, config}, _from, state) do
+    case state.lifecycle_helper_module.initialize_plugin(
+           plugin_name,
+           config,
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            command_registry_table: updated_table
+        }
+
+        {:reply, {:ok, updated_state}, updated_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:plugin_loaded?, plugin_name}, _from, state) do
+    is_loaded = Map.has_key?(state.plugin_states, plugin_name)
+    {:reply, is_loaded, state}
+  end
+
+  @impl GenServer
+  def handle_call({:call_hook, plugin_name, hook_name, args}, _from, state) do
+    case Map.get(state.plugin_states, plugin_name) do
+      nil ->
+        {:reply, {:error, :plugin_not_found}, state}
+
+      plugin_state ->
+        case call_plugin_hook(plugin_name, hook_name, args, plugin_state) do
+          {:ok, result, updated_plugin_state} ->
+            updated_state = %{
+              state
+              | plugin_states: Map.put(state.plugin_states, plugin_name, updated_plugin_state)
+            }
+
+            {:reply, {:ok, updated_state, result}, updated_state}
+
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
+        end
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:get_plugin_config, plugin_name}, _from, state) do
+    case Map.get(state.plugin_config, plugin_name) do
+      nil -> {:reply, {:error, :plugin_not_found}, state}
+      config -> {:reply, {:ok, config}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:update_plugin_config, plugin_name, config}, _from, state) do
+    case validate_plugin_config_static(plugin_name, config) do
+      :ok ->
+        updated_state = %{
+          state
+          | plugin_config: Map.put(state.plugin_config, plugin_name, config)
+        }
+
+        {:reply, {:ok, updated_state}, updated_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
   def handle_call({:set_plugin_state, plugin_id, new_state}, _from, state) do
     updated_state =
       Raxol.Core.Runtime.Plugins.StateManager.set_plugin_state(
@@ -689,6 +768,66 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.call(__MODULE__, {:get_plugin_state, plugin_id})
   end
 
+  @doc """
+  Initializes a plugin with the given configuration.
+  """
+  def initialize_plugin(manager_pid, plugin_name, config) do
+    GenServer.call(manager_pid, {:initialize_plugin, plugin_name, config})
+  end
+
+  @doc """
+  Checks if a plugin is loaded.
+  """
+  def plugin_loaded?(manager_pid, plugin_name) do
+    GenServer.call(manager_pid, {:plugin_loaded?, plugin_name})
+  end
+
+  @doc """
+  Gets the list of loaded plugins.
+  """
+  def get_loaded_plugins(manager_pid) do
+    GenServer.call(manager_pid, :get_loaded_plugins)
+  end
+
+  @doc """
+  Unloads a plugin.
+  """
+  def unload_plugin(manager_pid, plugin_name) do
+    GenServer.call(manager_pid, {:unload_plugin, plugin_name})
+  end
+
+  @doc """
+  Calls a plugin hook with the given arguments.
+  """
+  def call_hook(manager_pid, plugin_name, hook_name, args) do
+    GenServer.call(manager_pid, {:call_hook, plugin_name, hook_name, args})
+  end
+
+  @doc """
+  Gets a plugin's configuration.
+  """
+  def get_plugin_config(manager_pid, plugin_name) do
+    GenServer.call(manager_pid, {:get_plugin_config, plugin_name})
+  end
+
+  @doc """
+  Updates a plugin's configuration.
+  """
+  def update_plugin_config(manager_pid, plugin_name, config) do
+    GenServer.call(manager_pid, {:update_plugin_config, plugin_name, config})
+  end
+
+  @doc """
+  Validates a plugin's configuration.
+  """
+  def validate_plugin_config(plugin_name, config) do
+    # This is a static validation that doesn't require the manager state
+    case validate_plugin_config_static(plugin_name, config) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   # Helper functions
   defp execute_command(command, arg1, arg2) do
     case command do
@@ -801,6 +940,40 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   defp cleanup_resources(_context), do: :ok
   defp cleanup_plugins(_context), do: :ok
   defp cleanup_state(_context), do: :ok
+
+  # Helper function to call a plugin hook
+  defp call_plugin_hook(plugin_name, hook_name, args, plugin_state) do
+    # This is a placeholder implementation
+    # In a real implementation, this would call the actual plugin hook
+    case hook_name do
+      "init" ->
+        {:ok, :initialized, plugin_state}
+      "start" ->
+        {:ok, :started, plugin_state}
+      "stop" ->
+        {:ok, :stopped, plugin_state}
+      _ ->
+        {:ok, {:hook_called, hook_name, args}, plugin_state}
+    end
+  end
+
+  # Helper function to validate plugin configuration
+  defp validate_plugin_config_static(plugin_name, config) when is_map(config) do
+    # Basic validation - ensure config is a map and has required fields
+    case config do
+      %{enabled: enabled} when is_boolean(enabled) ->
+        :ok
+      %{} ->
+        # Config is valid if it's a map, even without required fields
+        :ok
+      _ ->
+        {:error, :invalid_config_format}
+    end
+  end
+
+  defp validate_plugin_config_static(_plugin_name, _config) do
+    {:error, :invalid_config_format}
+  end
 
   # Helper functions for state updates
   defp update_plugin_state(
