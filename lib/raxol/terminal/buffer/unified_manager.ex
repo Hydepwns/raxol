@@ -251,13 +251,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   @doc """
   Updates the buffer with new commands.
   """
-  def update(%__MODULE__{} = state, commands) when list?(commands) do
-    Enum.reduce(commands, {:ok, state}, fn command, {:ok, current_state} ->
-      case process_command(current_state, command) do
-        {:ok, new_state} -> {:ok, new_state}
-        error -> error
-      end
-    end)
+  def update(pid, commands) when is_pid(pid) do
+    GenServer.call(pid, {:update, commands})
+  end
+
+  def handle_call({:update, commands}, _from, state) do
+    case update_state(state, commands) do
+      {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
+      error -> {:reply, error, state}
+    end
   end
 
   @doc """
@@ -1017,5 +1019,66 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       end)
 
     %{buffer | cells: new_cells}
+  end
+
+  # Private function to update state with commands (including config updates)
+  defp update_state(state, commands) when is_list(commands) do
+    Enum.reduce_while(commands, {:ok, state}, fn command, {:ok, current_state} ->
+      case update_single_command(current_state, command) do
+        {:ok, new_state} -> {:cont, {:ok, new_state}}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp update_state(state, command) do
+    update_single_command(state, command)
+  end
+
+  # Handle individual command updates
+  defp update_single_command(state, %{width: width, height: height} = config) do
+    # Update dimensions and resize buffers if needed
+    if width != state.width or height != state.height do
+      # Resize buffers
+      new_active_buffer = ScreenBuffer.resize(state.active_buffer, height, width)
+      new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
+
+      # Clear cache since buffer dimensions changed
+      safe_cache_clear(:buffer)
+
+      {:ok, %{state |
+        width: width,
+        height: height,
+        active_buffer: new_active_buffer,
+        back_buffer: new_back_buffer
+      }}
+    else
+      {:ok, state}
+    end
+  end
+
+  defp update_single_command(state, %{scrollback_limit: limit}) do
+    # Update scrollback limit
+    new_scrollback_buffer = Scroll.set_max_height(state.scrollback_buffer, limit)
+    {:ok, %{state |
+      scrollback_limit: limit,
+      scrollback_buffer: new_scrollback_buffer
+    }}
+  end
+
+  defp update_single_command(state, %{memory_limit: limit}) do
+    # Update memory limit
+    {:ok, %{state | memory_limit: limit}}
+  end
+
+  defp update_single_command(state, config) when is_map(config) do
+    # Handle any other config fields by merging them into state
+    updated_state = Map.merge(state, config)
+    {:ok, updated_state}
+  end
+
+  defp update_single_command(state, _command) do
+    # Unknown command, return state unchanged
+    {:ok, state}
   end
 end

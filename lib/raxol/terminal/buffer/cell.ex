@@ -207,9 +207,13 @@ defmodule Raxol.Terminal.Buffer.Cell do
   defp valid_color?(_), do: false
 
   defp valid_attributes?(attrs) when is_map(attrs) do
+    valid_attribute_keys = [
+      :bold, :italic, :underline, :strikethrough, :blink, :reverse, :faint,
+      :conceal, :fraktur, :double_underline, :framed, :encircled, :overlined
+    ]
+
     Enum.all?(attrs, fn {key, value} ->
-      key in [:bold, :italic, :underline, :strikethrough] and
-        is_boolean(value)
+      key in valid_attribute_keys and is_boolean(value)
     end)
   end
 
@@ -245,7 +249,23 @@ defmodule Raxol.Terminal.Buffer.Cell do
 
   defp extract_attributes(style) do
     case Map.get(style, :attributes) do
-      nil -> %{}
+      nil ->
+        # Extract attributes from TextFormatting struct fields
+        %{
+          bold: Map.get(style, :bold, false),
+          italic: Map.get(style, :italic, false),
+          underline: Map.get(style, :underline, false),
+          strikethrough: Map.get(style, :strikethrough, false),
+          blink: Map.get(style, :blink, false),
+          reverse: Map.get(style, :reverse, false),
+          faint: Map.get(style, :faint, false),
+          conceal: Map.get(style, :conceal, false),
+          fraktur: Map.get(style, :fraktur, false),
+          double_underline: Map.get(style, :double_underline, false),
+          framed: Map.get(style, :framed, false),
+          encircled: Map.get(style, :encircled, false),
+          overlined: Map.get(style, :overlined, false)
+        }
       attrs -> attrs
     end
   end
