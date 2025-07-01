@@ -10,7 +10,9 @@ defmodule Raxol.Terminal.Split.Sync do
   # Client API
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   def broadcast_event(split_id, event_type, payload) do

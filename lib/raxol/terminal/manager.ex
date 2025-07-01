@@ -92,14 +92,17 @@ defmodule Raxol.Terminal.Manager do
       true
   """
   def start_link(opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    gen_server_opts = Keyword.delete(opts, :name)
+
     state = %{
       sessions: %{},
-      terminal: Keyword.get(opts, :terminal),
-      runtime_pid: Keyword.get(opts, :runtime_pid),
-      callback_module: Keyword.get(opts, :callback_module)
+      terminal: Keyword.get(gen_server_opts, :terminal),
+      runtime_pid: Keyword.get(gen_server_opts, :runtime_pid),
+      callback_module: Keyword.get(gen_server_opts, :callback_module)
     }
 
-    GenServer.start_link(__MODULE__, state, name: __MODULE__)
+    GenServer.start_link(__MODULE__, state, name: name)
   end
 
   @doc """

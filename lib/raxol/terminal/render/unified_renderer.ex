@@ -37,7 +37,9 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """

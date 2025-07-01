@@ -5,8 +5,10 @@ defmodule Raxol.Terminal.Split.Supervisor do
 
   use DynamicSupervisor
 
-  def start_link(init_arg) do
-    DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
+  def start_link(init_arg \\ []) do
+    opts = if is_map(init_arg), do: Enum.into(init_arg, []), else: init_arg
+    name = Keyword.get(opts, :name, __MODULE__)
+    DynamicSupervisor.start_link(__MODULE__, opts, name: name)
   end
 
   def start_split_manager(opts \\ []) do

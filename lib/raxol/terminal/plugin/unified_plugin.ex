@@ -25,7 +25,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   # Client API
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -66,10 +68,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   @doc """
   Executes a plugin function.
   """
-  def execute_plugin_function(plugin_id, function, _args \\ []) do
+  def execute_plugin_function(plugin_id, function, args \\ []) do
     GenServer.call(
       __MODULE__,
-      {:execute_plugin_function, plugin_id, function, _args}
+      {:execute_plugin_function, plugin_id, function, args}
     )
   end
 
@@ -254,7 +256,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
           {:error, _reason} ->
             # Set plugin status to error and return reload_failed
             error_plugin_state = %{plugin_state | status: :error, error: :reload_failed}
-            new_state = put_in(state.plugins[plugin_id], error_plugin_state)
+            _new_state = put_in(state.plugins[plugin_id], error_plugin_state)
             {:error, :reload_failed}
         end
     end
@@ -493,61 +495,84 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   # Script Plugin Functions
   defp load_script_plugin(path, opts) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
 
-    cond do
-      File.dir?(path) ->
-        # Look for script.ex or script.exs inside the directory
-        script_file =
-          cond do
-            File.exists?(Path.join(path, "script.ex")) -> Path.join(path, "script.ex")
-            File.exists?(Path.join(path, "script.exs")) -> Path.join(path, "script.exs")
-            true -> nil
-          end
-
-        if script_file do
-          load_script_plugin(script_file, opts)
-        else
-          {:error, :invalid_plugin_format}
-        end
-
-      not File.exists?(path) ->
-        {:error, :file_not_found}
-
-      File.dir?(path) ->
-        {:error, :eisdir}
-
-      true ->
-        with {:ok, script_content} <- File.read(path),
-             {:ok, script_module} <- compile_script(script_content),
-             {:ok, plugin_id} <- generate_plugin_id(path) do
-          script_state = %{
-            id: plugin_id,
-            type: :script,
-            name: Keyword.get(opts, :name, "Unnamed Script"),
-            version: Keyword.get(opts, :version, "1.0.0"),
-            description: Keyword.get(opts, :description, ""),
-            author: Keyword.get(opts, :author, "Unknown"),
-            dependencies: Keyword.get(opts, :dependencies, []),
-            config: Keyword.get(opts, :config, %{}),
-            status: :active,
-            error: nil,
-            module: script_module,
-            path: path
-          }
-
-          {:ok, script_state}
-        else
-          {:error, reason} -> {:error, reason}
-        end
+    case handle_script_path(path) do
+      {:ok, script_path} -> load_script_from_file(script_path, opts)
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp check_script_path(path) do
+  defp normalize_opts(opts) do
+    if is_map(opts), do: Enum.into(opts, []), else: opts
+  end
+
+  defp handle_script_path(path) do
     cond do
+      File.dir?(path) -> find_script_in_directory(path)
       not File.exists?(path) -> {:error, :file_not_found}
-      File.dir?(path) -> {:error, :eisdir}
-      true -> :ok
+      true -> {:ok, path}
+    end
+  end
+
+  defp find_script_in_directory(path) do
+    script_file = find_script_file(path)
+
+    if script_file do
+      {:ok, script_file}
+    else
+      {:error, :invalid_plugin_format}
+    end
+  end
+
+  defp find_script_file(path) do
+    cond do
+      File.exists?(Path.join(path, "script.ex")) -> Path.join(path, "script.ex")
+      File.exists?(Path.join(path, "script.exs")) -> Path.join(path, "script.exs")
+      true -> nil
+    end
+  end
+
+  defp load_script_from_file(path, opts) do
+    with {:ok, script_content} <- File.read(path),
+         {:ok, script_module} <- compile_script(script_content),
+         {:ok, plugin_id} <- generate_plugin_id(path) do
+      script_state = build_script_state(plugin_id, script_module, path, opts)
+      {:ok, script_state}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp build_script_state(plugin_id, script_module, path, opts) do
+    %{
+      id: plugin_id,
+      type: :script,
+      name: Keyword.get(opts, :name, "Unnamed Script"),
+      version: Keyword.get(opts, :version, "1.0.0"),
+      description: Keyword.get(opts, :description, ""),
+      author: Keyword.get(opts, :author, "Unknown"),
+      dependencies: Keyword.get(opts, :dependencies, []),
+      config: Keyword.get(opts, :config, %{}),
+      status: :active,
+      error: nil,
+      module: script_module,
+      path: path
+    }
+  end
+
+  defp compile_script(content) do
+    try do
+      {:ok, ast} = Code.string_to_quoted(content)
+      compiled = Code.compile_quoted(ast)
+      case compiled do
+        [{module, _bin} | _] -> {:ok, module}
+        _ -> {:error, :compilation_failed}
+      end
+    rescue
+      e ->
+        Logger.error("Failed to compile script: #{inspect(e)}")
+        {:error, :compilation_failed}
     end
   end
 
@@ -689,21 +714,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
           _ -> {:error, :invalid_plugin_format}
         end
       false -> {:error, :invalid_plugin_format}
-    end
-  end
-
-  defp compile_script(content) do
-    try do
-      {:ok, ast} = Code.string_to_quoted(content)
-      compiled = Code.compile_quoted(ast)
-      case compiled do
-        [{module, _bin} | _] -> {:ok, module}
-        _ -> {:error, :compilation_failed}
-      end
-    rescue
-      e ->
-        Logger.error("Failed to compile script: #{inspect(e)}")
-        {:error, :compilation_failed}
     end
   end
 

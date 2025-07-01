@@ -159,7 +159,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
       [op] when is_integer(op) and op == 4 -> parse_op_only()
       [w] when is_integer(w) -> parse_width_only(emulator, w)
       [w, h] when is_integer(w) and is_integer(h) -> parse_dimensions(w, h)
-      _ -> parse_default()
+      _ -> parse_current_size(emulator)
     end
   end
 
@@ -168,6 +168,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   defp parse_op_only(), do: {80 * default_char_width_px(), 24 * default_char_height_px()}
   defp parse_width_only(emulator, w), do: {w, elem(emulator.window_state.size_pixels, 1)}
   defp parse_dimensions(w, h), do: {w, h}
+  defp parse_current_size(emulator), do: emulator.window_state.size_pixels
   defp parse_default(), do: {80 * default_char_width_px(), 24 * default_char_height_px()}
 
   defp validate_dimension(value, fallback) do
