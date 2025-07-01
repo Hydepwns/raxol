@@ -124,7 +124,7 @@ defmodule Raxol.Core.Config.Manager do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     config_file = Keyword.get(opts, :config_file, "config/raxol.exs")
     env = Keyword.get(opts, :env, Mix.env())
@@ -147,13 +147,13 @@ defmodule Raxol.Core.Config.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get, key, default}, _from, state) do
     value = Map.get(state.config, key, default)
     {:reply, value, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set, key, value, opts}, _from, state) do
     with :ok <- maybe_validate(key, value, state),
          :ok <- maybe_persist(key, value, opts) do
@@ -164,7 +164,7 @@ defmodule Raxol.Core.Config.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update, key, fun, opts}, _from, state) do
     current_value = Map.get(state.config, key)
     new_value = fun.(current_value)
@@ -178,7 +178,7 @@ defmodule Raxol.Core.Config.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:delete, key, opts}, _from, state) do
     case maybe_persist_delete(key, opts) do
       :ok ->
@@ -190,12 +190,12 @@ defmodule Raxol.Core.Config.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_all, _from, state) do
     {:reply, state.config, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:reload, _from, state) do
     with {:ok, new_state} <- load_config(state) do
       {:reply, :ok, new_state}

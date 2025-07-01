@@ -127,43 +127,111 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
   @doc """
   Calculates the layout of flex children based on container size and options.
+  Supports wrapping if :wrap is true.
   """
   def calculate_layout(container, {width, height}) do
-    # Measure children to get their natural sizes
     measured_children = measure_children(container.children, {width, height})
+    direction = container.direction
+    wrap = Map.get(container, :wrap, false)
+    gap = container.gap
 
-    # Calculate flex direction and available space
-    {main_axis_size, cross_axis_size} =
-      get_axis_sizes(container.direction, {width, height})
+    if wrap do
+      wrap_flex_layout(measured_children, direction, {width, height}, gap)
+    else
+      # Existing non-wrapping logic
+      {main_axis_size, cross_axis_size} = get_axis_sizes(direction, {width, height})
+      total_content_size = calculate_total_content_size(measured_children, gap)
+      justified_children = apply_justification(measured_children, container.justify, main_axis_size, total_content_size, gap)
+      aligned_children = apply_alignment(justified_children, container.align, cross_axis_size, direction)
+      apply_gap_spacing(aligned_children, gap, direction)
+    end
+  end
 
-    # Calculate total content size and gaps
-    total_content_size =
-      calculate_total_content_size(measured_children, container.gap)
+  # New: Implements wrapping for flex layout
+  defp wrap_flex_layout(children, :row, {width, _height}, gap) do
+    {lines, current_line, _} =
+      Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_width} ->
+        {child_w, _child_h} = Map.get(child, :measured_size)
+        new_width = if line_width == 0, do: child_w, else: line_width + gap + child_w
+        if new_width > width and line_width > 0 do
+          # Start new line with current child
+          {[line | lines], [child], child_w}
+        else
+          # Add to current line
+          {lines, [child | line], new_width}
+        end
+      end)
 
-    # Apply justification to distribute items along main axis
-    justified_children =
-      apply_justification(
-        measured_children,
-        container.justify,
-        main_axis_size,
-        total_content_size,
-        container.gap
-      )
+    # Add the last line and filter out empty lines
+    all_lines =
+      [current_line | lines]
+      |> Enum.reverse()
+      |> Enum.map(&Enum.reverse/1)
+      |> Enum.reject(&(&1 == []))
 
-    # Apply alignment to position items along cross axis
-    aligned_children =
-      apply_alignment(
-        justified_children,
-        container.align,
-        cross_axis_size,
-        container.direction
-      )
+    # Position children in lines
+    all_lines
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {line, line_idx} ->
+      # Skip empty lines
+      if line == [] do
+        []
+      else
+        Enum.reduce(line, {0, []}, fn child, {x, acc} ->
+          {child_w, child_h} = Map.get(child, :measured_size)
+          pos_child =
+            child
+            |> Map.put(:position, {x, line_idx})
+            |> Map.put(:size, {child_w, child_h})
+          {x + child_w + gap, [pos_child | acc]}
+        end)
+        |> elem(1)
+        |> Enum.reverse()
+      end
+    end)
+  end
 
-    # Apply gap spacing between items
-    final_children =
-      apply_gap_spacing(aligned_children, container.gap, container.direction)
+  defp wrap_flex_layout(children, :column, {_width, height}, gap) do
+    {lines, current_line, _} =
+      Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_height} ->
+        {_child_w, child_h} = Map.get(child, :measured_size)
+        new_height = if line_height == 0, do: child_h, else: line_height + gap + child_h
+        if new_height > height and line_height > 0 do
+          # Start new column with current child
+          {[line | lines], [child], child_h}
+        else
+          # Add to current column
+          {lines, [child | line], new_height}
+        end
+      end)
 
-    final_children
+    # Add the last column and filter out empty columns
+    all_lines =
+      [current_line | lines]
+      |> Enum.reverse()
+      |> Enum.map(&Enum.reverse/1)
+      |> Enum.reject(&(&1 == []))
+
+    # Position children in columns
+    all_lines
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {line, col_idx} ->
+      # Skip empty lines
+      if line == [] do
+        []
+      else
+        Enum.reduce(line, {0, []}, fn child, {y, acc} ->
+          {child_w, child_h} = Map.get(child, :measured_size)
+          pos_child =
+            child
+            |> Map.put(:position, {col_idx, y})
+            |> Map.put(:size, {child_w, child_h})
+          {y + child_h + gap, [pos_child | acc]}
+        end)
+        |> elem(1)
+        |> Enum.reverse()
+      end
+    end)
   end
 
   defp measure_children(children, {width, height}) do
@@ -174,11 +242,14 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   end
 
   defp get_child_size(child, {width, height}) do
-    child_width = Map.get(child, :width)
-    child_height = Map.get(child, :height)
-
-    {calculate_width(child_width, width),
-     calculate_height(child_height, height)}
+    case Map.get(child, :size) do
+      {child_width, child_height} when is_integer(child_width) and is_integer(child_height) ->
+        {child_width, child_height}
+      _ ->
+        child_width = Map.get(child, :width)
+        child_height = Map.get(child, :height)
+        {calculate_width(child_width, width), calculate_height(child_height, height)}
+    end
   end
 
   defp calculate_width(nil, available_width), do: min(50, available_width)
@@ -269,12 +340,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     end
   end
 
-  defp justify_children(children, start_offset, spacing) do
+  defp justify_children(children, start_offset, gap) do
     children
     |> Enum.scan({start_offset, nil}, fn child, {pos, _prev_child} ->
       {child_width, _child_height} = Map.get(child, :measured_size)
       positioned_child = Map.put(child, :main_axis_position, pos)
-      {pos + child_width + spacing, positioned_child}
+      {pos + child_width + gap, positioned_child}
     end)
     |> Enum.map(fn {_pos, child} -> child end)
   end

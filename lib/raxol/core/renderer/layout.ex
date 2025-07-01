@@ -125,6 +125,12 @@ defmodule Raxol.Core.Renderer.Layout do
       %{type: :box} = box_view ->
         layout_box(box_view, available_space)
 
+      %{type: :shadow_wrapper} = shadow_view ->
+        layout_shadow_wrapper(shadow_view, available_space)
+
+      %{type: :scroll} = scroll_view ->
+        layout_scroll(scroll_view, available_space)
+
       %{type: :text} = text_view ->
         layout_text(text_view, available_space)
 
@@ -148,6 +154,33 @@ defmodule Raxol.Core.Renderer.Layout do
         # Unknown or simple view - return as is
         [view]
     end
+  end
+
+  defp layout_shadow_wrapper(shadow_view, available_space) do
+    children = shadow_view.children
+    children_list = if is_list(children), do: children, else: [children]
+    # For now, just layout the children as normal
+    Enum.flat_map(children_list, fn child ->
+      layout_single_view(child, available_space)
+    end)
+  end
+
+  defp layout_scroll(scroll_view, available_space) do
+    {offset_x, offset_y} = scroll_view.offset
+
+    # Layout the children normally first
+    children = scroll_view.children
+    children_list = if is_list(children), do: children, else: [children]
+
+    positioned_children = Enum.flat_map(children_list, fn child ->
+      layout_single_view(child, available_space)
+    end)
+
+    # Apply scroll offset by subtracting from positions
+    Enum.map(positioned_children, fn child ->
+      {x, y} = Map.get(child, :position, {0, 0})
+      Map.put(child, :position, {x - offset_x, y - offset_y})
+    end)
   end
 
   @doc """
