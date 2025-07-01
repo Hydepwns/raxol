@@ -3,7 +3,8 @@ import Config
 # Configure your database for tests - use MockDB adapter
 config :raxol, Raxol.Repo,
   adapter: Raxol.Test.MockDB,
-  pool: Ecto.Adapters.SQL.Sandbox,
+  # Remove SQL Sandbox pool as it's incompatible with MockDB
+  # pool: Ecto.Adapters.SQL.Sandbox,
   enabled: true
 
 # Configure database settings

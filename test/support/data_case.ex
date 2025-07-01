@@ -24,15 +24,16 @@ defmodule Raxol.DataCase do
   end
 
   setup tags do
-    result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
-
-    if result != :ok and result != {:already, :owner} do
-      raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
-    end
-
-    if !tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
-    end
+    # For MockDB, we don't need sandbox checkout
+    # result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+    #
+    # if result != :ok and result != {:already, :owner} do
+    #   raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
+    # end
+    #
+    # if !tags[:async] do
+    #   Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
+    # end
 
     :ok
   end
@@ -43,7 +44,8 @@ defmodule Raxol.DataCase do
   """
   def with_transaction(fun) do
     if Application.get_env(:raxol, :database_enabled, false) do
-      Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+      # For MockDB, just execute the function directly
+      # Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
       fun.()
     else
       fun.()
@@ -52,15 +54,16 @@ defmodule Raxol.DataCase do
 
   # Public setup/1 for use in other test helpers
   def setup(tags) do
-    result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
-
-    if result != :ok and result != {:already, :owner} do
-      raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
-    end
-
-    if !tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
-    end
+    # For MockDB, we don't need sandbox checkout
+    # result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+    #
+    # if result != :ok and result != {:already, :owner} do
+    #   raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
+    # end
+    #
+    # if !tags[:async] do
+    #   Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
+    # end
 
     :ok
   end

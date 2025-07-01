@@ -76,8 +76,8 @@ if Application.get_env(:raxol, :database_enabled, true) do
   IO.puts("[TestHelper] Starting application for testing...")
   {:ok, _} = Application.ensure_all_started(:raxol)
 
-  # Set up sandbox mode
-  Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, :manual)
+  # Don't set up sandbox mode for MockDB - it doesn't support it
+  # Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, :manual)
 else
   # Start the application without database setup
   IO.puts("[TestHelper] Starting application for testing...")
@@ -130,6 +130,7 @@ Raxol.UI.Theming.Theme.init()
 
 # Make UserPreferences globally available
 IO.puts("[TestHelper] Initializing UserPreferences...")
+
 # Raxol.Core.UserPreferences is started by the supervision tree; do not start it manually here.
 # Manual start_link removed to avoid race/duplication issues. See test stabilization notes.
 
