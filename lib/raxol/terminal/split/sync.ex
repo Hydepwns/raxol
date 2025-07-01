@@ -11,11 +11,14 @@ defmodule Raxol.Terminal.Split.Sync do
 
   def start_link(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
-    name = if Mix.env() == :test do
-      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-    else
-      Keyword.get(opts, :name, __MODULE__)
-    end
+
+    name =
+      if Mix.env() == :test do
+        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+      else
+        Keyword.get(opts, :name, __MODULE__)
+      end
+
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
@@ -64,9 +67,12 @@ defmodule Raxol.Terminal.Split.Sync do
 
     # Notify subscribers for this specific split_id
     case Map.get(state.subscribers, split_id) do
-      nil -> :ok
+      nil ->
+        :ok
+
       callbacks when is_list(callbacks) ->
         Enum.each(callbacks, fn callback -> callback.(event) end)
+
       callback when is_function(callback) ->
         callback.(event)
     end

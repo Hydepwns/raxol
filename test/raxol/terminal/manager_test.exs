@@ -8,11 +8,15 @@ defmodule Raxol.Terminal.ManagerTest do
     emulator = Raxol.Terminal.Emulator.new()
 
     # Start the manager with test configuration using unique naming
-    {:ok, pid} = start_supervised({Manager, [
-      terminal: emulator,
-      runtime_pid: self(),
-      name: Raxol.Test.ProcessNaming.generate_name(Manager)
-    ]})
+    {:ok, pid} =
+      start_supervised(
+        {Manager,
+         [
+           terminal: emulator,
+           runtime_pid: self(),
+           name: Raxol.Test.ProcessNaming.generate_name(Manager)
+         ]}
+      )
 
     %{pid: pid}
   end
@@ -70,7 +74,8 @@ defmodule Raxol.Terminal.ManagerTest do
     Manager.process_event(pid, event)
 
     assert_receive {:terminal_selection_changed,
-                     %{start_pos: {0, 0}, end_pos: {1, 1}, text: "hi"}}, 100
+                    %{start_pos: {0, 0}, end_pos: {1, 1}, text: "hi"}},
+                   100
   end
 
   test "paste event triggers notify_paste_event", %{pid: pid} do
@@ -88,12 +93,13 @@ defmodule Raxol.Terminal.ManagerTest do
     Manager.process_event(pid, event)
 
     assert_receive {:terminal_cursor_event,
-                     %{
-                       visible: true,
-                       style: :block,
-                       blink: true,
-                       position: {1, 2}
-                     }}, 100
+                    %{
+                      visible: true,
+                      style: :block,
+                      blink: true,
+                      position: {1, 2}
+                    }},
+                   100
   end
 
   test "scroll event triggers notify_scroll_event", %{pid: pid} do
@@ -121,7 +127,8 @@ defmodule Raxol.Terminal.ManagerTest do
     Manager.process_event(pid, event)
     # Assert that an error message is received for unknown event type
     assert_receive {:terminal_error, :unknown_event_type,
-                     %{action: :process_event, event: ^event}}, 100
+                    %{action: :process_event, event: ^event}},
+                   100
   end
 
   defp flush do
@@ -150,7 +157,8 @@ defmodule Raxol.Terminal.ManagerTest do
     assert {:error, :no_terminal} = Manager.process_event(pid, event)
 
     assert_receive {:terminal_error, :no_terminal,
-                     %{action: :process_event, event: ^event}}, 100
+                    %{action: :process_event, event: ^event}},
+                   100
   end
 
   describe "telemetry event emission" do

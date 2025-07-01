@@ -42,7 +42,11 @@ defmodule Raxol.Terminal.Sync.Protocol do
         timestamp: System.system_time(),
         source: Map.get(opts_map, :source, "unknown"),
         consistency:
-          Map.get(opts_map, :consistency, get_default_consistency(component_type))
+          Map.get(
+            opts_map,
+            :consistency,
+            get_default_consistency(component_type)
+          )
       }
     }
   end
@@ -242,6 +246,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
       # If state has metadata field, use it, but ensure :consistency is present
       Map.has_key?(state, :metadata) ->
         meta = state.metadata
+
         %{
           version: Map.get(meta, :version, 0),
           consistency: Map.get(meta, :consistency, :eventual)

@@ -16,7 +16,8 @@ defmodule Raxol.Terminal.Supervisor do
       {DynamicSupervisor,
        name: Raxol.Terminal.DynamicSupervisor, strategy: :one_for_one},
       {Raxol.Terminal.Manager, []},
-      {Raxol.Terminal.Cache.System, [
+      {Raxol.Terminal.Cache.System,
+       [
          max_size: 100 * 1024 * 1024,
          default_ttl: 3600,
          eviction_policy: :lru,

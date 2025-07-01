@@ -172,15 +172,16 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     with {:ok, plugin_id} <- generate_plugin_id(path),
          {:ok, plugin_state} <- load_plugin_state(path, type, opts),
          :ok <- validate_plugin(plugin_state) do
-
       # Check dependencies and set status accordingly
       case check_dependencies(plugin_state, state.plugins) do
         :ok ->
           {:ok, plugin_id, plugin_state}
+
         {:error, :module_not_found} ->
           # Plugin loads but is inactive due to missing dependencies
           inactive_plugin_state = %{plugin_state | status: :inactive}
           {:ok, plugin_id, inactive_plugin_state}
+
         {:error, reason} ->
           {:error, reason}
       end
@@ -253,9 +254,15 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
           {:ok, new_plugin_state} ->
             new_state = put_in(state.plugins[plugin_id], new_plugin_state)
             {:ok, new_state}
+
           {:error, _reason} ->
             # Set plugin status to error and return reload_failed
-            error_plugin_state = %{plugin_state | status: :error, error: :reload_failed}
+            error_plugin_state = %{
+              plugin_state
+              | status: :error,
+                error: :reload_failed
+            }
+
             _new_state = put_in(state.plugins[plugin_id], error_plugin_state)
             {:error, :reload_failed}
         end
@@ -477,6 +484,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         try do
           if function_exported?(module, function, length(args)) do
             result = apply(module, function, args)
+
             case result do
               {:ok, unwrapped_result} -> {:ok, unwrapped_result}
               {:error, reason} -> {:error, reason}
@@ -527,9 +535,14 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   defp find_script_file(path) do
     cond do
-      File.exists?(Path.join(path, "script.ex")) -> Path.join(path, "script.ex")
-      File.exists?(Path.join(path, "script.exs")) -> Path.join(path, "script.exs")
-      true -> nil
+      File.exists?(Path.join(path, "script.ex")) ->
+        Path.join(path, "script.ex")
+
+      File.exists?(Path.join(path, "script.exs")) ->
+        Path.join(path, "script.exs")
+
+      true ->
+        nil
     end
   end
 
@@ -565,6 +578,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     try do
       {:ok, ast} = Code.string_to_quoted(content)
       compiled = Code.compile_quoted(ast)
+
       case compiled do
         [{module, _bin} | _] -> {:ok, module}
         _ -> {:error, :compilation_failed}
@@ -605,6 +619,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         try do
           if function_exported?(module, function, length(args)) do
             result = apply(module, function, args)
+
             case result do
               {:ok, unwrapped_result} -> {:ok, unwrapped_result}
               {:error, reason} -> {:error, reason}
@@ -678,6 +693,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         try do
           if function_exported?(module, function, length(args)) do
             result = apply(module, function, args)
+
             case result do
               {:ok, unwrapped_result} -> {:ok, unwrapped_result}
               {:error, reason} -> {:error, reason}
@@ -713,7 +729,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
           [{module, _bin} | _] -> {:ok, module}
           _ -> {:error, :invalid_plugin_format}
         end
-      false -> {:error, :invalid_plugin_format}
+
+      false ->
+        {:error, :invalid_plugin_format}
     end
   end
 
@@ -735,7 +753,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
           [{module, _bin} | _] -> {:ok, module}
           _ -> {:error, :invalid_plugin_format}
         end
-      false -> {:error, :invalid_plugin_format}
+
+      false ->
+        {:error, :invalid_plugin_format}
     end
   end
 end

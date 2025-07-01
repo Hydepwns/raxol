@@ -21,9 +21,9 @@ defmodule Raxol.Terminal.Emulator.State do
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def set_mode(%EmulatorStruct{} = emulator, mode, value)
       when is_atom(mode) and is_boolean(value) do
-    case Raxol.Terminal.ModeManager.set_mode(emulator.mode_manager, [mode]) do
-      {:ok, updated_mode_manager} ->
-        {:ok, %{emulator | mode_manager: updated_mode_manager}}
+    case Raxol.Terminal.ModeManager.set_mode(emulator, mode, value, false) do
+      {:ok, updated_emulator} ->
+        {:ok, updated_emulator}
 
       {:error, reason} ->
         {:error, reason}

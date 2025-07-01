@@ -335,6 +335,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   defp percentile(sorted, p) do
     count = length(sorted)
+
     if count == 0 do
       nil
     else

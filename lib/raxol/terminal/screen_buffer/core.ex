@@ -107,7 +107,9 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_char(buffer, x, y) do
     case Enum.at(buffer.cells, y) do
-      nil -> " "
+      nil ->
+        " "
+
       row ->
         case Enum.at(row, x) do
           nil -> " "
@@ -243,12 +245,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     # Erase characters starting at position (x, y)
     if y < length(buffer.cells) do
       line = Enum.at(buffer.cells, y, [])
+
       if x < length(line) do
         # Replace characters from x to x+count with empty cells
         new_line =
           Enum.take(line, x) ++
-          List.duplicate(%{}, count) ++
-          Enum.drop(line, x + count)
+            List.duplicate(%{}, count) ++
+            Enum.drop(line, x + count)
 
         new_cells = List.replace_at(buffer.cells, y, new_line)
         %{buffer | cells: new_cells}

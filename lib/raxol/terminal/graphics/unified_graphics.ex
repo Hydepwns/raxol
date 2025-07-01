@@ -285,11 +285,12 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
         new_graphics = Map.delete(state.graphics, graphics_id)
 
         # Update active graphics if needed
-        new_active_graphics = update_active_graphics_after_close(
-          state.active_graphics,
-          graphics_id,
-          new_graphics
-        )
+        new_active_graphics =
+          update_active_graphics_after_close(
+            state.active_graphics,
+            graphics_id,
+            new_graphics
+          )
 
         new_state = %{
           state
@@ -321,7 +322,11 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  defp update_active_graphics_after_close(active_graphics, closed_graphics_id, new_graphics) do
+  defp update_active_graphics_after_close(
+         active_graphics,
+         closed_graphics_id,
+         new_graphics
+       ) do
     if active_graphics == closed_graphics_id do
       case Map.keys(new_graphics) do
         [] -> nil

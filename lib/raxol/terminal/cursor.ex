@@ -195,7 +195,8 @@ defmodule Raxol.Terminal.Cursor do
   @doc """
   Sets the cursor position.
   """
-  @spec set_position(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) :: EmulatorStruct.t()
+  @spec set_position(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) ::
+          EmulatorStruct.t()
   def set_position(emulator, position) do
     move_to(emulator, position)
   end

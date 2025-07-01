@@ -25,8 +25,14 @@ defmodule Raxol.Terminal.Session.Serializer do
       }
     rescue
       e ->
-        Raxol.Core.Runtime.Log.error("Session serialization failed: #{inspect(e)}")
-        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        Raxol.Core.Runtime.Log.error(
+          "Session serialization failed: #{inspect(e)}"
+        )
+
+        Raxol.Core.Runtime.Log.error(
+          "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
+        )
+
         raise e
     end
   end
@@ -63,7 +69,10 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   def deserialize(invalid_data) do
-    Raxol.Core.Runtime.Log.error("Invalid session data: #{inspect(invalid_data)}")
+    Raxol.Core.Runtime.Log.error(
+      "Invalid session data: #{inspect(invalid_data)}"
+    )
+
     {:error, :invalid_session_data}
   end
 
@@ -102,8 +111,14 @@ defmodule Raxol.Terminal.Session.Serializer do
       }
     rescue
       e ->
-        Raxol.Core.Runtime.Log.error("ScreenBuffer serialization failed: #{inspect(e)}")
-        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        Raxol.Core.Runtime.Log.error(
+          "ScreenBuffer serialization failed: #{inspect(e)}"
+        )
+
+        Raxol.Core.Runtime.Log.error(
+          "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
+        )
+
         raise e
     end
   end
@@ -125,8 +140,14 @@ defmodule Raxol.Terminal.Session.Serializer do
       end)
     rescue
       e ->
-        Raxol.Core.Runtime.Log.error("Cells serialization failed: #{inspect(e)}")
-        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+        Raxol.Core.Runtime.Log.error(
+          "Cells serialization failed: #{inspect(e)}"
+        )
+
+        Raxol.Core.Runtime.Log.error(
+          "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
+        )
+
         raise e
     end
   end
@@ -143,7 +164,11 @@ defmodule Raxol.Terminal.Session.Serializer do
       e ->
         Raxol.Core.Runtime.Log.error("Cell serialization failed: #{inspect(e)}")
         Raxol.Core.Runtime.Log.error("Cell data: #{inspect(cell)}")
-        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+
+        Raxol.Core.Runtime.Log.error(
+          "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
+        )
+
         raise e
     end
   end
@@ -172,9 +197,16 @@ defmodule Raxol.Terminal.Session.Serializer do
       }
     rescue
       e ->
-        Raxol.Core.Runtime.Log.error("Style serialization failed: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error(
+          "Style serialization failed: #{inspect(e)}"
+        )
+
         Raxol.Core.Runtime.Log.error("Style data: #{inspect(style)}")
-        Raxol.Core.Runtime.Log.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+
+        Raxol.Core.Runtime.Log.error(
+          "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
+        )
+
         raise e
     end
   end
@@ -193,7 +225,8 @@ defmodule Raxol.Terminal.Session.Serializer do
          charset_state: charset_state
        }) do
     with {:ok, active_buffer} <- deserialize_screen_buffer(active_buffer_data),
-         {:ok, scrollback_buffer} <- deserialize_screen_buffer(scrollback_buffer_data) do
+         {:ok, scrollback_buffer} <-
+           deserialize_screen_buffer(scrollback_buffer_data) do
       emulator = %EmulatorStruct{
         active_buffer: active_buffer,
         scrollback_buffer: scrollback_buffer,

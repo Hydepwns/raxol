@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
       nil -> :ok
       pid -> GenServer.stop(pid)
     end
+
     Process.sleep(50)
 
     # Start the cache system with test configuration
@@ -22,9 +23,14 @@ defmodule Raxol.Terminal.Scroll.ManagerTest do
              scroll: %{max_size: 128 * 1024}
            }
          ) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      other -> raise "Unexpected result from System.start_link: #{inspect(other)}"
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      other ->
+        raise "Unexpected result from System.start_link: #{inspect(other)}"
     end
 
     manager = Manager.new()

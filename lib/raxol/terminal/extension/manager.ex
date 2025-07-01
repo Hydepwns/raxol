@@ -264,7 +264,8 @@ defmodule Raxol.Terminal.Extension.Manager do
           acc
 
         event_list ->
-          filtered_events = Enum.reject(event_list, fn e -> e.extension == extension.name end)
+          filtered_events =
+            Enum.reject(event_list, fn e -> e.extension == extension.name end)
 
           if Enum.empty?(filtered_events) do
             Map.delete(acc, event_name)

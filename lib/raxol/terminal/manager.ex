@@ -365,6 +365,7 @@ defmodule Raxol.Terminal.Manager do
         %__MODULE__{} = s -> s
         map when is_map(map) -> struct(__MODULE__, map)
       end
+
     {:reply, :ok, struct_state}
   end
 

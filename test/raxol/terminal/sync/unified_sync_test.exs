@@ -44,7 +44,9 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
 
   describe "consistency levels" do
     test ~c"strong consistency", %{pid: pid} do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state, [consistency: :strong], pid)
+      {:ok, sync_id} =
+        UnifiedSync.create_sync(:state, [consistency: :strong], pid)
+
       data = %{value: "test"}
       assert :ok = UnifiedSync.sync(sync_id, data, [], pid)
       assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
@@ -52,7 +54,9 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
     end
 
     test ~c"eventual consistency", %{pid: pid} do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state, [consistency: :eventual], pid)
+      {:ok, sync_id} =
+        UnifiedSync.create_sync(:state, [consistency: :eventual], pid)
+
       data = %{value: "test"}
       assert :ok = UnifiedSync.sync(sync_id, data, [], pid)
       assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
@@ -63,27 +67,39 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   describe "conflict resolution" do
     test ~c"last write wins", %{pid: pid} do
       {:ok, sync_id} =
-        UnifiedSync.create_sync(:state, [conflict_resolution: :last_write_wins], pid)
+        UnifiedSync.create_sync(
+          :state,
+          [conflict_resolution: :last_write_wins],
+          pid
+        )
 
       conflicts = [
         {%{value: "old"}, 1000, 1},
         {%{value: "new"}, 2000, 1}
       ]
 
-      assert {:ok, resolved} = UnifiedSync.resolve_conflicts(sync_id, conflicts, [], pid)
+      assert {:ok, resolved} =
+               UnifiedSync.resolve_conflicts(sync_id, conflicts, [], pid)
+
       assert resolved.value == "new"
     end
 
     test ~c"version based", %{pid: pid} do
       {:ok, sync_id} =
-        UnifiedSync.create_sync(:state, [conflict_resolution: :version_based], pid)
+        UnifiedSync.create_sync(
+          :state,
+          [conflict_resolution: :version_based],
+          pid
+        )
 
       conflicts = [
         {%{value: "old"}, 2000, 1},
         {%{value: "new"}, 1000, 2}
       ]
 
-      assert {:ok, resolved} = UnifiedSync.resolve_conflicts(sync_id, conflicts, [], pid)
+      assert {:ok, resolved} =
+               UnifiedSync.resolve_conflicts(sync_id, conflicts, [], pid)
+
       assert resolved.value == "new"
     end
 
@@ -106,7 +122,8 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
       assert {:error, :sync_not_found} =
                UnifiedSync.get_sync_state("nonexistent", pid)
 
-      assert {:error, :sync_not_found} = UnifiedSync.sync("nonexistent", %{}, [], pid)
+      assert {:error, :sync_not_found} =
+               UnifiedSync.sync("nonexistent", %{}, [], pid)
 
       assert {:error, :sync_not_found} =
                UnifiedSync.resolve_conflicts("nonexistent", [], [], pid)
@@ -126,7 +143,9 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
     test ~c"cleans up sync context", %{pid: pid} do
       {:ok, sync_id} = UnifiedSync.create_sync(:state, [], pid)
       assert :ok = UnifiedSync.cleanup(sync_id, pid)
-      assert {:error, :sync_not_found} = UnifiedSync.get_sync_state(sync_id, pid)
+
+      assert {:error, :sync_not_found} =
+               UnifiedSync.get_sync_state(sync_id, pid)
     end
   end
 

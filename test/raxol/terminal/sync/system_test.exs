@@ -31,43 +31,55 @@ defmodule Raxol.Terminal.Sync.SystemTest do
     # Start the sync system with test configuration
     # Use unique name and store it for the test
     name = Raxol.Test.ProcessNaming.generate_name(System)
-    {:ok, pid} = System.start_link(
-      name: name,
-      consistency_levels: %{
-        split: :strong,
-        window: :strong,
-        tab: :eventual
-      }
-    )
+
+    {:ok, pid} =
+      System.start_link(
+        name: name,
+        consistency_levels: %{
+          split: :strong,
+          window: :strong,
+          tab: :eventual
+        }
+      )
+
     %{system_pid: pid, system_name: name}
   end
 
   describe "basic operations" do
     test ~c"sync and get", %{system_name: system_name} do
       # Sync a value
-      assert :ok == sync_system(system_name, "test_sync", "test_key", "test_value")
+      assert :ok ==
+               sync_system(system_name, "test_sync", "test_key", "test_value")
 
       # Get the value
-      assert {:ok, "test_value"} == get_system(system_name, "test_sync", "test_key")
+      assert {:ok, "test_value"} ==
+               get_system(system_name, "test_sync", "test_key")
     end
 
     test ~c"get non-existent sync", %{system_name: system_name} do
-      assert {:error, :not_found} == get_system(system_name, "nonexistent", "test_key")
+      assert {:error, :not_found} ==
+               get_system(system_name, "nonexistent", "test_key")
     end
 
     test ~c"get non-existent key", %{system_name: system_name} do
       sync_system(system_name, "test_sync", "test_key", "test_value")
-      assert {:error, :not_found} == get_system(system_name, "test_sync", "nonexistent")
+
+      assert {:error, :not_found} ==
+               get_system(system_name, "test_sync", "nonexistent")
     end
 
     test ~c"delete", %{system_name: system_name} do
       # Sync a value
       sync_system(system_name, "test_sync", "test_key", "test_value")
-      assert {:ok, "test_value"} == get_system(system_name, "test_sync", "test_key")
+
+      assert {:ok, "test_value"} ==
+               get_system(system_name, "test_sync", "test_key")
 
       # Delete the value
       assert :ok == delete_system(system_name, "test_sync", "test_key")
-      assert {:error, :not_found} == get_system(system_name, "test_sync", "test_key")
+
+      assert {:error, :not_found} ==
+               get_system(system_name, "test_sync", "test_key")
     end
 
     test ~c"clear", %{system_name: system_name} do
@@ -77,8 +89,12 @@ defmodule Raxol.Terminal.Sync.SystemTest do
 
       # Clear all values
       assert :ok == clear_system(system_name, "test_sync")
-      assert {:error, :not_found} == get_system(system_name, "test_sync", "key1")
-      assert {:error, :not_found} == get_system(system_name, "test_sync", "key2")
+
+      assert {:error, :not_found} ==
+               get_system(system_name, "test_sync", "key1")
+
+      assert {:error, :not_found} ==
+               get_system(system_name, "test_sync", "key2")
     end
   end
 
@@ -136,7 +152,9 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   describe "metadata handling" do
     test ~c"preserves metadata", %{system_name: system_name} do
       # Sync with metadata
-      sync_system(system_name, "test_sync", "test_key", "test_value", source: "test_source")
+      sync_system(system_name, "test_sync", "test_key", "test_value",
+        source: "test_source"
+      )
 
       # Get all data
       {:ok, sync_data} = get_all_system(system_name, "test_sync")

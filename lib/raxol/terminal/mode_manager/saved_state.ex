@@ -21,7 +21,8 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
       position: Cursor.get_position(emulator.cursor),
       visible: Cursor.visible?(emulator.cursor),
       style: Cursor.get_style(emulator.cursor),
-      blink: Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
+      blink:
+        Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
     }
 
     # Save screen state
@@ -110,27 +111,33 @@ defmodule Raxol.Terminal.ModeManager.SavedState do
   end
 
   defp restore_mode_state(emulator, mode_state) do
-    %{
-      emulator
-      | mode_manager: %{
-          emulator.mode_manager
-          | cursor_visible: mode_state.cursor_visible,
-            auto_wrap: mode_state.auto_wrap,
-            origin_mode: mode_state.origin_mode,
-            insert_mode: mode_state.insert_mode,
-            line_feed_mode: mode_state.line_feed_mode,
-            column_width_mode: mode_state.column_width_mode,
-            cursor_keys_mode: mode_state.cursor_keys_mode,
-            screen_mode_reverse: mode_state.screen_mode_reverse,
-            auto_repeat_mode: mode_state.auto_repeat_mode,
-            interlacing_mode: mode_state.interlacing_mode,
-            alternate_buffer_active: mode_state.alternate_buffer_active,
-            mouse_report_mode: mode_state.mouse_report_mode,
-            focus_events_enabled: mode_state.focus_events_enabled,
-            alt_screen_mode: mode_state.alt_screen_mode,
-            bracketed_paste_mode: mode_state.bracketed_paste_mode,
-            active_buffer_type: mode_state.active_buffer_type
-        }
+    mode_manager =
+      case emulator.mode_manager do
+        %Raxol.Terminal.ModeManager{} = mm -> mm
+        mm when is_map(mm) -> struct(Raxol.Terminal.ModeManager, mm)
+        _ -> Raxol.Terminal.ModeManager.new()
+      end
+
+    updated_mode_manager = %Raxol.Terminal.ModeManager{
+      mode_manager
+      | cursor_visible: mode_state.cursor_visible,
+        auto_wrap: mode_state.auto_wrap,
+        origin_mode: mode_state.origin_mode,
+        insert_mode: mode_state.insert_mode,
+        line_feed_mode: mode_state.line_feed_mode,
+        column_width_mode: mode_state.column_width_mode,
+        cursor_keys_mode: mode_state.cursor_keys_mode,
+        screen_mode_reverse: mode_state.screen_mode_reverse,
+        auto_repeat_mode: mode_state.auto_repeat_mode,
+        interlacing_mode: mode_state.interlacing_mode,
+        alternate_buffer_active: mode_state.alternate_buffer_active,
+        mouse_report_mode: mode_state.mouse_report_mode,
+        focus_events_enabled: mode_state.focus_events_enabled,
+        alt_screen_mode: mode_state.alt_screen_mode,
+        bracketed_paste_mode: mode_state.bracketed_paste_mode,
+        active_buffer_type: mode_state.active_buffer_type
     }
+
+    %{emulator | mode_manager: updated_mode_manager}
   end
 end

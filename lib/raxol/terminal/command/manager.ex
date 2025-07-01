@@ -143,7 +143,8 @@ defmodule Raxol.Terminal.Command.Manager do
   end
 
   @impl GenServer
-  def handle_call({:add_to_history, command}, _from, state) when binary?(command) do
+  def handle_call({:add_to_history, command}, _from, state)
+      when binary?(command) do
     new_state = add_to_history_state(state, command)
     {:reply, :ok, new_state}
   end
@@ -198,15 +199,18 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Adds a command to the history.
   """
-  def add_to_history_state(%Raxol.Terminal.Command{} = state, command) when binary?(command) do
+  def add_to_history_state(%Raxol.Terminal.Command{} = state, command)
+      when binary?(command) do
     new_history = state.history ++ [command]
     max_history = state.max_history || 100
+
     trimmed_history =
       if length(new_history) > max_history do
         Enum.slice(new_history, -max_history, max_history)
       else
         new_history
       end
+
     %{
       state
       | history: trimmed_history,
@@ -316,7 +320,8 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Searches command history for a matching command.
   """
-  def search_history(%Raxol.Terminal.Command{} = state, pattern) when binary?(pattern) do
+  def search_history(%Raxol.Terminal.Command{} = state, pattern)
+      when binary?(pattern) do
     matches = Enum.filter(state.history, &String.contains?(&1, pattern))
     if Enum.empty?(matches), do: {:error, :not_found}, else: {:ok, matches}
   end

@@ -39,11 +39,13 @@ defmodule Raxol.Terminal.Sync.Manager do
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
-    name = if Mix.env() == :test do
-      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-    else
-      Keyword.get(opts, :name, __MODULE__)
-    end
+    name =
+      if Mix.env() == :test do
+        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+      else
+        Keyword.get(opts, :name, __MODULE__)
+      end
+
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
@@ -103,6 +105,7 @@ defmodule Raxol.Terminal.Sync.Manager do
     case Map.get(state.components, component_id) do
       nil ->
         now = System.monotonic_time(:millisecond)
+
         component = %Component{
           id: component_id,
           type: component_type,
@@ -151,9 +154,18 @@ defmodule Raxol.Terminal.Sync.Manager do
         {:reply, {:error, :not_found}, state}
 
       existing_component ->
-        case do_sync_state(state, component_id, component_type, new_state, opts, existing_component) do
+        case do_sync_state(
+               state,
+               component_id,
+               component_type,
+               new_state,
+               opts,
+               existing_component
+             ) do
           {:ok, new_component} ->
-            new_components = Map.put(state.components, component_id, new_component)
+            new_components =
+              Map.put(state.components, component_id, new_component)
+
             {:reply, :ok, %{state | components: new_components}}
 
           {:error, reason} ->
@@ -168,9 +180,18 @@ defmodule Raxol.Terminal.Sync.Manager do
         {:reply, {:error, :not_found}, state}
 
       existing_component ->
-        case do_sync_state(state, component_id, existing_component.type, new_state, [], existing_component) do
+        case do_sync_state(
+               state,
+               component_id,
+               existing_component.type,
+               new_state,
+               [],
+               existing_component
+             ) do
           {:ok, new_component} ->
-            new_components = Map.put(state.components, component_id, new_component)
+            new_components =
+              Map.put(state.components, component_id, new_component)
+
             {:reply, :ok, %{state | components: new_components}}
 
           {:error, reason} ->
@@ -199,6 +220,7 @@ defmodule Raxol.Terminal.Sync.Manager do
           last_sync: component.timestamp,
           consistency_levels: %{strong: 0, eventual: 0, causal: 0}
         }
+
         {:reply, {:ok, stats}, state}
     end
   end
@@ -210,18 +232,29 @@ defmodule Raxol.Terminal.Sync.Manager do
     "#{timestamp}-#{random}"
   end
 
-  def do_sync_state(_state, component_id, component_type, new_state, opts, existing_component) do
+  def do_sync_state(
+        _state,
+        component_id,
+        component_type,
+        new_state,
+        opts,
+        existing_component
+      ) do
     require Logger
+
     # Use version from new_state if present, otherwise increment existing_version
     existing_version = existing_component.version
     new_version = Map.get(new_state, :version, existing_version + 1)
 
-    Logger.debug("[Manager] do_sync_state: component_id=#{component_id}, type=#{component_type}, new_version=#{inspect(new_version)}, existing_version=#{inspect(existing_version)}")
+    Logger.debug(
+      "[Manager] do_sync_state: component_id=#{component_id}, type=#{component_type}, new_version=#{inspect(new_version)}, existing_version=#{inspect(existing_version)}"
+    )
 
     # Apply consistency rules based on component type
     case should_update_state(component_type, new_version, existing_version) do
       :update ->
         Logger.debug("[Manager] Updating state for #{component_id}")
+
         component = %Component{
           id: component_id,
           type: component_type,
@@ -232,6 +265,7 @@ defmodule Raxol.Terminal.Sync.Manager do
           sync_count: existing_component.sync_count + 1,
           conflict_count: existing_component.conflict_count
         }
+
         {:ok, component}
 
       :keep_existing ->
@@ -245,6 +279,7 @@ defmodule Raxol.Terminal.Sync.Manager do
           existing_component
           | conflict_count: existing_component.conflict_count + 1
         }
+
         {:error, :version_conflict}
     end
   end

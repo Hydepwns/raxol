@@ -12,21 +12,26 @@ defmodule Raxol.Terminal.IO.UnifiedIOTest do
   describe "initialization" do
     test "initializes with default values", %{pid: pid} do
       assert :ok =
-               UnifiedIO.init_terminal(80, 24, %{
-                 scrollback_limit: 1000,
-                 memory_limit: 50 * 1024 * 1024,
-                 command_history_limit: 1000,
-                 rendering: %{
-                   fps: 60,
-                   theme: %{
-                     foreground: :white,
-                     background: :black
-                   },
-                   font_settings: %{
-                     size: 12
+               UnifiedIO.init_terminal(
+                 80,
+                 24,
+                 %{
+                   scrollback_limit: 1000,
+                   memory_limit: 50 * 1024 * 1024,
+                   command_history_limit: 1000,
+                   rendering: %{
+                     fps: 60,
+                     theme: %{
+                       foreground: :white,
+                       background: :black
+                     },
+                     font_settings: %{
+                       size: 12
+                     }
                    }
-                 }
-               }, pid)
+                 },
+                 pid
+               )
     end
 
     test "initializes with custom config", %{pid: pid} do

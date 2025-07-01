@@ -57,14 +57,17 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     gen_server_opts = Map.delete(opts, :name)
 
     # Ensure we have a valid name for GenServer
-    valid_name = case name do
-      nil -> __MODULE__
-      ref when is_reference(ref) -> nil  # Don't use references as names
-      atom when is_atom(atom) -> atom
-      {:global, term} -> {:global, term}
-      {:via, module, term} -> {:via, module, term}
-      _ -> __MODULE__  # Fallback to module name
-    end
+    valid_name =
+      case name do
+        nil -> __MODULE__
+        # Don't use references as names
+        ref when is_reference(ref) -> nil
+        atom when is_atom(atom) -> atom
+        {:global, term} -> {:global, term}
+        {:via, module, term} -> {:via, module, term}
+        # Fallback to module name
+        _ -> __MODULE__
+      end
 
     if valid_name do
       GenServer.start_link(__MODULE__, gen_server_opts, name: valid_name)

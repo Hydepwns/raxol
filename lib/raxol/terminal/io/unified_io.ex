@@ -153,7 +153,10 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   Initializes the terminal IO system.
   """
   def init_terminal(width, height, config, process \\ __MODULE__) do
-    GenServer.call(process_name(process), {:init_terminal, width, height, config})
+    GenServer.call(
+      process_name(process),
+      {:init_terminal, width, height, config}
+    )
   end
 
   @doc """
@@ -339,6 +342,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     if Process.whereis(Raxol.Terminal.Render.UnifiedRenderer) do
       UnifiedRenderer.set_cursor_visibility(visible)
     end
+
     {:reply, :ok, state}
   end
 
@@ -489,8 +493,12 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp update_existing_components(state, config) do
-    {:ok, new_buffer_manager} = UnifiedManager.update_config(state.buffer_manager, config)
-    new_scroll_buffer = UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
+    {:ok, new_buffer_manager} =
+      UnifiedManager.update_config(state.buffer_manager, config)
+
+    new_scroll_buffer =
+      UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
+
     UnifiedRenderer.update_config(config.rendering)
     new_command_history = History.update_config(state.command_history, config)
 
@@ -498,12 +506,13 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp initialize_new_components(config) do
-    {:ok, new_buffer_manager} = UnifiedManager.start_link([
-      width: config.width || 80,
-      height: config.height || 24,
-      scrollback_limit: config.scrollback_limit || 1000,
-      memory_limit: config.memory_limit || 50 * 1024 * 1024
-    ])
+    {:ok, new_buffer_manager} =
+      UnifiedManager.start_link(
+        width: config.width || 80,
+        height: config.height || 24,
+        scrollback_limit: config.scrollback_limit || 1000,
+        memory_limit: config.memory_limit || 50 * 1024 * 1024
+      )
 
     new_scroll_buffer = UnifiedScroll.new(config.scrollback_limit || 1000)
     {:ok, new_renderer} = UnifiedRenderer.start_link(config.rendering || %{})
@@ -514,11 +523,17 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp handle_resize(state, width, height) do
     # Ensure buffer manager exists
-    buffer_manager = state.buffer_manager ||
-      case UnifiedManager.new(width, height, state.config[:scrollback_limit] || 1000, state.config[:memory_limit] || 50 * 1024 * 1024) do
-        {:ok, manager} -> manager
-        _ -> nil
-      end
+    buffer_manager =
+      state.buffer_manager ||
+        case UnifiedManager.new(
+               width,
+               height,
+               state.config[:scrollback_limit] || 1000,
+               state.config[:memory_limit] || 50 * 1024 * 1024
+             ) do
+          {:ok, manager} -> manager
+          _ -> nil
+        end
 
     if buffer_manager do
       # Update buffer manager

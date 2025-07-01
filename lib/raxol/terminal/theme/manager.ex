@@ -216,25 +216,31 @@ defmodule Raxol.Terminal.Theme.Manager do
   @spec get_style(t(), String.t()) :: {:ok, style(), t()} | {:error, term()}
   def get_style(manager, style_name) do
     # Try atom and string keys for theme styles
-    style = Map.get(manager.current_theme.styles, style_name) ||
-            Map.get(manager.current_theme.styles, String.to_atom(style_name))
+    style =
+      Map.get(manager.current_theme.styles, style_name) ||
+        Map.get(manager.current_theme.styles, String.to_atom(style_name))
+
     case style do
       nil ->
         case Map.get(manager.custom_styles, style_name) do
           nil ->
             {:error, :style_not_found}
+
           style ->
             updated_manager = %{
               manager
               | metrics: update_metrics(manager.metrics, :style_applications)
             }
+
             {:ok, style, updated_manager}
         end
+
       style ->
         updated_manager = %{
           manager
           | metrics: update_metrics(manager.metrics, :style_applications)
         }
+
         {:ok, style, updated_manager}
     end
   end

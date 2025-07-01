@@ -83,14 +83,18 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       check_element = Enum.at(hbox_element.children, 0)
       assert check_element.tag == :text
       # Access text from attributes
-      text_attr = Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+      text_attr =
+        Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+
       assert text_attr == {:text, "[ ]"}
 
       # Check the label text element using struct field access
       label_element = Enum.at(hbox_element.children, 1)
       assert label_element.tag == :text
       # Access text from attributes
-      text_attr = Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
+      text_attr =
+        Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
+
       assert text_attr == {:text, " Option"}
     end
 
@@ -106,14 +110,18 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       check_element = Enum.at(hbox_element.children, 0)
       assert check_element.tag == :text
       # Access text from attributes
-      text_attr = Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+      text_attr =
+        Enum.find(check_element.attributes, fn {key, _} -> key == :text end)
+
       assert text_attr == {:text, "[x]"}
 
       # Check the label text element using struct field access
       label_element = Enum.at(hbox_element.children, 1)
       assert label_element.tag == :text
       # Access text from attributes
-      text_attr = Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
+      text_attr =
+        Enum.find(label_element.attributes, fn {key, _} -> key == :text end)
+
       assert text_attr == {:text, " Option"}
     end
 
@@ -135,7 +143,9 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
       # Check that the style applied to the hbox reflects the disabled state
       # Access style from attributes
-      style_attr = Enum.find(hbox_element.attributes, fn {key, _} -> key == :style end)
+      style_attr =
+        Enum.find(hbox_element.attributes, fn {key, _} -> key == :style end)
+
       assert style_attr == {:style, %{fg: :gray, bg: :default}}
     end
   end

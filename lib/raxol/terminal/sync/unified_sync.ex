@@ -45,11 +45,13 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   defp process_name(_), do: __MODULE__
 
   def start_link(opts \\ []) do
-    name = if Mix.env() == :test do
-      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-    else
-      opts[:name] || __MODULE__
-    end
+    name =
+      if Mix.env() == :test do
+        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+      else
+        opts[:name] || __MODULE__
+      end
+
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
@@ -102,7 +104,10 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
       * `:strategy` - Override the default conflict resolution strategy
   """
   def resolve_conflicts(sync_id, conflicts, opts \\ [], process \\ __MODULE__) do
-    GenServer.call(process_name(process), {:resolve_conflicts, sync_id, conflicts, opts})
+    GenServer.call(
+      process_name(process),
+      {:resolve_conflicts, sync_id, conflicts, opts}
+    )
   end
 
   @doc """
