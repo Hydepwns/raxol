@@ -346,4 +346,115 @@ defmodule Raxol.Terminal.ModeManager do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  # Mode update functions for emulator delegation
+  @doc """
+  Updates the insert mode.
+  """
+  @spec update_insert_mode(Emulator.t(), boolean()) :: Emulator.t()
+  def update_insert_mode(emulator, value) do
+    case set_mode(emulator, :irm, value, false) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the line feed mode.
+  """
+  @spec update_line_feed_mode(Emulator.t(), boolean()) :: Emulator.t()
+  def update_line_feed_mode(emulator, value) do
+    case set_mode(emulator, :lnm, value, false) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the origin mode.
+  """
+  @spec update_origin_mode(Emulator.t(), boolean()) :: Emulator.t()
+  def update_origin_mode(emulator, value) do
+    case set_mode(emulator, :decom, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the auto wrap mode.
+  """
+  @spec update_auto_wrap_mode(Emulator.t(), boolean()) :: Emulator.t()
+  def update_auto_wrap_mode(emulator, value) do
+    case set_mode(emulator, :decawm, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the cursor visible mode.
+  """
+  @spec update_cursor_visible(Emulator.t(), boolean()) :: Emulator.t()
+  def update_cursor_visible(emulator, value) do
+    case set_mode(emulator, :dectcem, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the screen mode reverse.
+  """
+  @spec update_screen_mode_reverse(Emulator.t(), boolean()) :: Emulator.t()
+  def update_screen_mode_reverse(emulator, value) do
+    case set_mode(emulator, :decscnm, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the auto repeat mode.
+  """
+  @spec update_auto_repeat_mode(Emulator.t(), boolean()) :: Emulator.t()
+  def update_auto_repeat_mode(emulator, value) do
+    case set_mode(emulator, :decarm, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the interlacing mode.
+  """
+  @spec update_interlacing_mode(Emulator.t(), boolean()) :: Emulator.t()
+  def update_interlacing_mode(emulator, value) do
+    case set_mode(emulator, :decinlm, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the bracketed paste mode.
+  """
+  @spec update_bracketed_paste_mode(Emulator.t(), boolean()) :: Emulator.t()
+  def update_bracketed_paste_mode(emulator, value) do
+    case set_mode(emulator, :bracketed_paste, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
+
+  @doc """
+  Updates the column width 132 mode.
+  """
+  @spec update_column_width_132(Emulator.t(), boolean()) :: Emulator.t()
+  def update_column_width_132(emulator, value) do
+    case set_mode(emulator, :deccolm_132, value, true) do
+      {:ok, new_emu} -> new_emu
+      {:error, _} -> emulator
+    end
+  end
 end

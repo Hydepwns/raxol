@@ -24,6 +24,15 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
     end
   end
 
+  @doc """
+  Handles a standard mode change (alias for handle_mode_change/3 for compatibility).
+  """
+  @spec handle_mode(Emulator.t(), atom(), ModeTypes.mode_value()) ::
+          {:ok, Emulator.t()} | {:error, term()}
+  def handle_mode(emulator, mode_name, value) do
+    handle_mode_change(mode_name, value, emulator)
+  end
+
   # Private Functions
 
   defp find_mode_definition(mode_name) do

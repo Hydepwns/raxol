@@ -57,8 +57,9 @@ defmodule Raxol.Terminal.CommandProcessor do
   def execute_command(emulator, %{type: :dcs} = command) do
     Executor.execute_dcs_command(
       emulator,
-      command.command,
-      command.params
+      command.params_buffer || "",
+      command.intermediates_buffer || "",
+      command.data_string || ""
     )
   end
 
