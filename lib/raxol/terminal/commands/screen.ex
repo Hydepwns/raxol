@@ -18,17 +18,20 @@ defmodule Raxol.Terminal.Commands.Screen do
     buffer = Emulator.get_active_buffer(emulator)
     {x, y} = Emulator.get_cursor_position(emulator)
     scroll_region = ScreenBuffer.get_scroll_region(buffer)
-    {top, bottom} = case scroll_region do
-      nil -> {0, buffer.height - 1}
-      {t, b} -> {t, b}
-    end
+
+    {top, bottom} =
+      case scroll_region do
+        nil -> {0, buffer.height - 1}
+        {t, b} -> {t, b}
+      end
 
     new_buffer =
       case mode do
         0 -> ScreenBuffer.erase_from_cursor_to_end(buffer, x, y, top, bottom)
         1 -> ScreenBuffer.erase_from_start_to_cursor(buffer, x, y, top, bottom)
         2 -> ScreenBuffer.erase_all(buffer)
-        3 -> ScreenBuffer.erase_all(buffer)  # Clear entire screen and scrollback
+        # Clear entire screen and scrollback
+        3 -> ScreenBuffer.erase_all(buffer)
       end
 
     Emulator.update_active_buffer(emulator, new_buffer)

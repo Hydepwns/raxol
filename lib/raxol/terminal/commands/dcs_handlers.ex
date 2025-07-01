@@ -77,13 +77,15 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
       %{style: :steady_underline} -> 4
       %{style: :blinking_bar} -> 5
       %{style: :steady_bar} -> 6
-      _ -> 1  # Default to blinking block
+      # Default to blinking block
+      _ -> 1
     end
   end
 
   defp get_scroll_region(emulator) do
     case emulator.scroll_region do
-      {top, bottom} -> "#{top + 1};#{bottom + 1}"  # Convert to 1-indexed
+      # Convert to 1-indexed
+      {top, bottom} -> "#{top + 1};#{bottom + 1}"
       nil -> "1;#{emulator.height}"
       _ -> "1;#{emulator.height}"
     end
@@ -92,7 +94,8 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
   # Sixel Graphics support
   defp handle_sixel(emulator, data) do
     # Initialize sixel state if not present
-    sixel_state = emulator.sixel_state || Raxol.Terminal.ANSI.SixelGraphics.new()
+    sixel_state =
+      emulator.sixel_state || Raxol.Terminal.ANSI.SixelGraphics.new()
 
     # Process sixel data using the proper SixelGraphics module
     case Raxol.Terminal.ANSI.SixelGraphics.process_sequence(sixel_state, data) do
@@ -100,7 +103,10 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
         # Successfully processed, update emulator with new sixel state
         # and blit the graphics to the screen buffer
         emulator_with_sixel = %{emulator | sixel_state: updated_sixel_state}
-        emulator_with_blit = blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
+
+        emulator_with_blit =
+          blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
+
         {:ok, emulator_with_blit}
 
       {_sixel_state, {:error, reason}} ->
@@ -112,7 +118,10 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
       {updated_sixel_state, _} ->
         # Any other response, use the updated state
         emulator_with_sixel = %{emulator | sixel_state: updated_sixel_state}
-        emulator_with_blit = blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
+
+        emulator_with_blit =
+          blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
+
         {:ok, emulator_with_blit}
     end
   end
@@ -122,48 +131,84 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
     %{pixel_buffer: pixel_buffer, palette: palette} = sixel_state
 
     # Get cursor position from the emulator's cursor field
-    cursor_position = case emulator.cursor do
-      cursor when is_pid(cursor) ->
-        # If cursor is a PID, get position via GenServer call
-        GenServer.call(cursor, :get_position)
-      cursor when is_map(cursor) ->
-        # If cursor is a struct, get position directly
-        cursor.position
-      _ ->
-        {0, 0}  # Fallback
-    end
+    cursor_position =
+      case emulator.cursor do
+        cursor when is_pid(cursor) ->
+          # If cursor is a PID, get position via GenServer call
+          GenServer.call(cursor, :get_position)
+
+        cursor when is_map(cursor) ->
+          # If cursor is a struct, get position directly
+          cursor.position
+
+        _ ->
+          # Fallback
+          {0, 0}
+      end
 
     {cursor_x, cursor_y} = cursor_position
 
     log_sixel_debug_info(pixel_buffer, palette, cursor_x, cursor_y)
 
     buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
-    updated_buffer = blit_pixels_to_buffer(buffer, pixel_buffer, palette, cursor_x, cursor_y)
+
+    updated_buffer =
+      blit_pixels_to_buffer(buffer, pixel_buffer, palette, cursor_x, cursor_y)
+
     update_emulator_buffer(emulator, updated_buffer)
   end
 
   defp log_sixel_debug_info(pixel_buffer, palette, cursor_x, cursor_y) do
-    Logger.debug("Blitting Sixel graphics: pixel_buffer=#{inspect(pixel_buffer)}, palette=#{inspect(palette)}")
+    Logger.debug(
+      "Blitting Sixel graphics: pixel_buffer=#{inspect(pixel_buffer)}, palette=#{inspect(palette)}"
+    )
+
     Logger.debug("Cursor position: {#{cursor_x}, #{cursor_y}}")
   end
 
   defp blit_pixels_to_buffer(buffer, pixel_buffer, palette, cursor_x, cursor_y) do
-    Enum.reduce(pixel_buffer, buffer, fn {{sixel_x, sixel_y}, color_index}, buffer ->
-      blit_single_pixel(buffer, sixel_x, sixel_y, color_index, palette, cursor_x, cursor_y)
+    Enum.reduce(pixel_buffer, buffer, fn {{sixel_x, sixel_y}, color_index},
+                                         buffer ->
+      blit_single_pixel(
+        buffer,
+        sixel_x,
+        sixel_y,
+        color_index,
+        palette,
+        cursor_x,
+        cursor_y
+      )
     end)
   end
 
-  defp blit_single_pixel(buffer, sixel_x, sixel_y, color_index, palette, cursor_x, cursor_y) do
+  defp blit_single_pixel(
+         buffer,
+         sixel_x,
+         sixel_y,
+         color_index,
+         palette,
+         cursor_x,
+         cursor_y
+       ) do
     screen_x = cursor_x + sixel_x
     screen_y = cursor_y + sixel_y
 
-    Logger.debug("Blitting pixel at sixel {#{sixel_x}, #{sixel_y}} -> screen {#{screen_x}, #{screen_y}} with color_index #{color_index}")
+    Logger.debug(
+      "Blitting pixel at sixel {#{sixel_x}, #{sixel_y}} -> screen {#{screen_x}, #{screen_y}} with color_index #{color_index}"
+    )
 
     case Map.get(palette, color_index) do
       {r, g, b} ->
         Logger.debug("Found color {#{r}, #{g}, #{b}} for index #{color_index}")
         style = %{background: {:rgb, r, g, b}}
-        Raxol.Terminal.ScreenBuffer.write_char(buffer, screen_x, screen_y, " ", style)
+
+        Raxol.Terminal.ScreenBuffer.write_char(
+          buffer,
+          screen_x,
+          screen_y,
+          " ",
+          style
+        )
 
       nil ->
         Logger.debug("No color found for index #{color_index}")
@@ -181,10 +226,11 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
   defp process_sixel_data(sixel_state, data) do
     # Basic sixel processing - this is a simplified implementation
     # In a full implementation, this would parse the sixel data and update the screen buffer
-    %{sixel_state |
-      data: sixel_state.data ++ [data],
-      width: max(sixel_state.width, String.length(data)),
-      height: sixel_state.height + 1
+    %{
+      sixel_state
+      | data: sixel_state.data ++ [data],
+        width: max(sixel_state.width, String.length(data)),
+        height: sixel_state.height + 1
     }
   end
 end

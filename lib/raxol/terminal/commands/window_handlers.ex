@@ -22,7 +22,8 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
     div(pixel_height, default_char_height_px())
   end
 
-  @spec handle_t(Emulator.t(), list()) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  @spec handle_t(Emulator.t(), list()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_t(emulator, params) do
     op = Enum.at(params, 0, 0)
     handler = get_handler(op)
@@ -124,8 +125,11 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   def handle_resize(emulator, params) do
     {width_px, height_px} = parse_resize_params(emulator, params)
 
-    safe_width_px = validate_dimension(width_px, elem(emulator.window_state.size_pixels, 0))
-    safe_height_px = validate_dimension(height_px, elem(emulator.window_state.size_pixels, 1))
+    safe_width_px =
+      validate_dimension(width_px, elem(emulator.window_state.size_pixels, 0))
+
+    safe_height_px =
+      validate_dimension(height_px, elem(emulator.window_state.size_pixels, 1))
 
     char_width = calculate_width_chars(safe_width_px)
     char_height = calculate_height_chars(safe_height_px)
@@ -139,7 +143,8 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
         size_pixels: size_pixels
     }
 
-    updated_main_buffer = resize_screen_buffer(emulator.main_screen_buffer, char_width, char_height)
+    updated_main_buffer =
+      resize_screen_buffer(emulator.main_screen_buffer, char_width, char_height)
 
     updated_emulator = %{
       emulator
@@ -154,22 +159,40 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
 
   defp parse_resize_params(emulator, params) do
     case params do
-      [op, h, w] when is_integer(op) and op == 4 -> parse_op_with_dimensions(w, h)
-      [op, h] when is_integer(op) and op == 4 -> parse_op_with_height(h)
-      [op] when is_integer(op) and op == 4 -> parse_op_only()
-      [w] when is_integer(w) -> parse_width_only(emulator, w)
-      [w, h] when is_integer(w) and is_integer(h) -> parse_dimensions(w, h)
-      _ -> parse_current_size(emulator)
+      [op, h, w] when is_integer(op) and op == 4 ->
+        parse_op_with_dimensions(w, h)
+
+      [op, h] when is_integer(op) and op == 4 ->
+        parse_op_with_height(h)
+
+      [op] when is_integer(op) and op == 4 ->
+        parse_op_only()
+
+      [w] when is_integer(w) ->
+        parse_width_only(emulator, w)
+
+      [w, h] when is_integer(w) and is_integer(h) ->
+        parse_dimensions(w, h)
+
+      _ ->
+        parse_current_size(emulator)
     end
   end
 
   defp parse_op_with_dimensions(w, h), do: {w, h}
   defp parse_op_with_height(h), do: {80 * default_char_width_px(), h}
-  defp parse_op_only(), do: {80 * default_char_width_px(), 24 * default_char_height_px()}
-  defp parse_width_only(emulator, w), do: {w, elem(emulator.window_state.size_pixels, 1)}
+
+  defp parse_op_only(),
+    do: {80 * default_char_width_px(), 24 * default_char_height_px()}
+
+  defp parse_width_only(emulator, w),
+    do: {w, elem(emulator.window_state.size_pixels, 1)}
+
   defp parse_dimensions(w, h), do: {w, h}
   defp parse_current_size(emulator), do: emulator.window_state.size_pixels
-  defp parse_default(), do: {80 * default_char_width_px(), 24 * default_char_height_px()}
+
+  defp parse_default(),
+    do: {80 * default_char_width_px(), 24 * default_char_height_px()}
 
   defp validate_dimension(value, fallback) do
     if is_integer(value) and value > 0, do: value, else: fallback
@@ -177,14 +200,18 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
 
   defp resize_screen_buffer(buffer, width, height) do
     case {buffer, width, height} do
-      {nil, _, _} -> ScreenBuffer.new(width, height)
+      {nil, _, _} ->
+        ScreenBuffer.new(width, height)
+
       {buf, w, h} when w > 0 and h > 0 ->
         try do
           ScreenBuffer.resize(buf, w, h)
         rescue
           _ -> ScreenBuffer.new(w, h)
         end
-      _ -> buffer
+
+      _ ->
+        buffer
     end
   end
 
@@ -208,19 +235,23 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   def handle_maximize(emulator) do
     # Store current size before maximizing
     current_size = emulator.window_state.size
-    maximized_size = {160, 60}  # Default maximized size
+    # Default maximized size
+    maximized_size = {160, 60}
 
     updated_window_state = %{
       emulator.window_state
       | maximized: true,
         previous_size: current_size,
         size: maximized_size,
-        size_pixels: {elem(maximized_size, 0) * default_char_width_px(),
-                     elem(maximized_size, 1) * default_char_height_px()}
+        size_pixels:
+          {elem(maximized_size, 0) * default_char_width_px(),
+           elem(maximized_size, 1) * default_char_height_px()}
     }
 
     # Update screen buffer dimensions
-    updated_main_buffer = ScreenBuffer.resize(emulator.main_screen_buffer, 160, 60)
+    updated_main_buffer =
+      ScreenBuffer.resize(emulator.main_screen_buffer, 160, 60)
+
     updated_emulator = %{
       emulator
       | window_state: updated_window_state,
@@ -236,9 +267,13 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
     # Restore to previous size, fallback to {80, 24} if missing/invalid
     previous_size =
       case emulator.window_state.previous_size do
-        {w, h} when is_integer(w) and is_integer(h) and w > 0 and h > 0 -> {w, h}
-        _ -> {80, 24}
+        {w, h} when is_integer(w) and is_integer(h) and w > 0 and h > 0 ->
+          {w, h}
+
+        _ ->
+          {80, 24}
       end
+
     char_width = elem(previous_size, 0)
     char_height = elem(previous_size, 1)
 
@@ -246,8 +281,9 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
       emulator.window_state
       | maximized: false,
         size: previous_size,
-        size_pixels: {char_width * default_char_width_px(),
-                     char_height * default_char_height_px()}
+        size_pixels:
+          {char_width * default_char_width_px(),
+           char_height * default_char_height_px()}
     }
 
     # Update screen buffer dimensions, create new if nil

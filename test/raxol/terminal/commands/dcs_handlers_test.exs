@@ -267,7 +267,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # Based on the debug output, "#1A" places a pixel at {0, 1} relative to cursor
       sixel_pixel_x = cx + 0
       sixel_pixel_y = cy + 1
-      cell_at_sixel = ScreenBuffer.get_cell(active_buffer, sixel_pixel_x, sixel_pixel_y)
+
+      cell_at_sixel =
+        ScreenBuffer.get_cell(active_buffer, sixel_pixel_x, sixel_pixel_y)
 
       refute is_nil(cell_at_sixel),
              "Cell at Sixel pixel position should exist after Sixel blit"
@@ -359,7 +361,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
           # Check that the emulator is still valid and unchanged in key aspects
           assert updated_emulator.width == emulator.width
           assert updated_emulator.height == emulator.height
-          assert updated_emulator.active_buffer_type == emulator.active_buffer_type
+
+          assert updated_emulator.active_buffer_type ==
+                   emulator.active_buffer_type
         end)
 
       assert log =~ "DECDLD"

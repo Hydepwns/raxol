@@ -103,7 +103,10 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       # Debug output
       IO.puts("DEBUG: Pixel buffer: #{inspect(new_state.pixel_buffer)}")
       IO.puts("DEBUG: Final position: #{inspect(new_state.position)}")
-      IO.puts("DEBUG: Expected pixel at {0, 13}: #{Map.get(new_state.pixel_buffer, {0, 13})}")
+
+      IO.puts(
+        "DEBUG: Expected pixel at {0, 13}: #{Map.get(new_state.pixel_buffer, {0, 13})}"
+      )
 
       # Verify final state attributes
       assert new_state.attributes.width == 100

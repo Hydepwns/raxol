@@ -10,48 +10,19 @@ defmodule Raxol.Terminal.ANSI.Processor do
   @doc """
   Processes an ANSI escape sequence and updates the terminal state accordingly.
   """
-  def process_sequence(emulator, sequence) do
-    case sequence do
-      {:cursor_up, n} ->
-        handle_cursor_up(emulator, n)
-
-      {:cursor_down, n} ->
-        handle_cursor_down(emulator, n)
-
-      {:cursor_forward, n} ->
-        handle_cursor_forward(emulator, n)
-
-      {:cursor_backward, n} ->
-        handle_cursor_backward(emulator, n)
-
-      {:cursor_move, row, col} ->
-        handle_cursor_move(emulator, row, col)
-
-      {:set_foreground, color} ->
-        TextFormatting.set_foreground(emulator, color)
-
-      {:set_background, color} ->
-        TextFormatting.set_background(emulator, color)
-
-      {:set_attribute, attr} ->
-        TextFormatting.set_attribute(emulator, attr)
-
-      {:reset_attributes} ->
-        TextFormatting.reset_attributes(emulator)
-
-      {:clear_screen, mode} ->
-        Eraser.clear_screen(emulator, mode)
-
-      {:clear_line, mode} ->
-        Eraser.clear_line(emulator, mode)
-
-      {:set_charset, charset} ->
-        CharacterSets.switch_charset(emulator, charset, :g0)
-
-      _ ->
-        emulator
-    end
-  end
+  def process_sequence(emulator, {:cursor_up, n}), do: handle_cursor_up(emulator, n)
+  def process_sequence(emulator, {:cursor_down, n}), do: handle_cursor_down(emulator, n)
+  def process_sequence(emulator, {:cursor_forward, n}), do: handle_cursor_forward(emulator, n)
+  def process_sequence(emulator, {:cursor_backward, n}), do: handle_cursor_backward(emulator, n)
+  def process_sequence(emulator, {:cursor_move, row, col}), do: handle_cursor_move(emulator, row, col)
+  def process_sequence(emulator, {:set_foreground, color}), do: TextFormatting.set_foreground(emulator, color)
+  def process_sequence(emulator, {:set_background, color}), do: TextFormatting.set_background(emulator, color)
+  def process_sequence(emulator, {:set_attribute, attr}), do: TextFormatting.set_attribute(emulator, attr)
+  def process_sequence(emulator, {:reset_attributes}), do: TextFormatting.reset_attributes(emulator)
+  def process_sequence(emulator, {:clear_screen, mode}), do: Eraser.clear_screen(emulator, mode)
+  def process_sequence(emulator, {:clear_line, mode}), do: Eraser.clear_line(emulator, mode)
+  def process_sequence(emulator, {:set_charset, charset}), do: CharacterSets.switch_charset(emulator, charset, :g0)
+  def process_sequence(emulator, _), do: emulator
 
   defp handle_cursor_up(emulator, n), do: Cursor.move_up(emulator, n)
   defp handle_cursor_down(emulator, n), do: Cursor.move_down(emulator, n)

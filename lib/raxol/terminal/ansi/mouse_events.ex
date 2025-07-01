@@ -38,6 +38,107 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
 
   @type modifier :: :shift | :alt | :ctrl | :meta
 
+  # Cache button codes to avoid repeated calculations
+  @button_codes %{
+    none: "0",
+    left: "1",
+    middle: "2",
+    right: "3",
+    release: "0",
+    scroll_up: "64",
+    scroll_down: "65"
+  }
+
+  @sgr_button_codes %{
+    none: "0",
+    left: "0",
+    middle: "1",
+    right: "2",
+    release: "3",
+    scroll_up: "64",
+    scroll_down: "65"
+  }
+
+  defp button_to_code(button_state) do
+    Map.get(@button_codes, button_state, "0")
+  end
+
+  defp sgr_button_to_code(button_state) do
+    Map.get(@sgr_button_codes, button_state, "0")
+  end
+
+  def generate_basic_report(state) do
+    # Format: \e[M<button><x><y>
+    # Button: 0=release, 1=left, 2=middle, 3=right, 64=scroll up, 65=scroll down
+    # x, y: 1-based coordinates
+    {x, y} = state.position
+    button_code = button_to_code(state.button_state)
+    "\e[M#{button_code}#{x + 32}#{y + 32}"
+  end
+
+  def generate_highlight_report(state) do
+    # Highlight mouse tracking (mode 1001)
+    # Similar to basic but with highlighting
+    generate_basic_report(state)
+  end
+
+  def generate_cell_report(state) do
+    # Cell mouse tracking (mode 1002)
+    # Reports cell changes
+    generate_basic_report(state)
+  end
+
+  def generate_all_report(state) do
+    # All mouse tracking (mode 1003)
+    # Reports all mouse events
+    generate_basic_report(state)
+  end
+
+  def generate_focus_report(state) do
+    # Format: \e[I for focus in, \e[O for focus out
+    case state.button_state do
+      :focus_in -> "\e[I"
+      :focus_out -> "\e[O"
+      _ -> ""
+    end
+  end
+
+  def generate_utf8_report(state) do
+    {x, y} = state.position
+    button_code = button_to_code(state.button_state)
+    :erlang.binary_to_list(<<27, "M", button_code, x + 32, y + 32>>)
+  end
+
+  def generate_sgr_report(state) do
+    {x, y} = state.position
+    button_code = sgr_button_to_code(state.button_state)
+    :erlang.binary_to_list(<<27, "[<", button_code, ";", x, ";", y, "M">>)
+  end
+
+  def generate_urxvt_report(state) do
+    # Reuse SGR report format for URXVT
+    generate_sgr_report(state)
+  end
+
+  def generate_sgr_pixels_report(state) do
+    # Optimize SGR pixels mouse reporting by using binary concatenation
+    {x, y} = state.position
+    button_code = sgr_button_to_code(state.button_state)
+    :erlang.binary_to_list(<<27, "[<", button_code, ";", x, ";", y, "M">>)
+  end
+
+  # @report_generators %{
+  #   basic: &generate_basic_report/1,
+  #   highlight: &generate_highlight_report/1,
+  #   cell: &generate_cell_report/1,
+  #   all: &generate_all_report/1,
+  #   focus: &generate_focus_report/1,
+  #   utf8: &generate_utf8_report/1,
+  #   sgr: &generate_sgr_report/1,
+  #   urxvt: &generate_urxvt_report/1,
+  #   sgr_pixels: &generate_sgr_pixels_report/1
+  # }
+
   @doc """
   Creates a new mouse state with default values.
   """
@@ -110,19 +211,16 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   Generates a mouse event report based on the current state.
   """
   @spec generate_report(mouse_state()) :: String.t()
-  def generate_report(state) do
-    case state.mode do
-      :basic -> generate_basic_report(state)
-      :highlight -> generate_highlight_report(state)
-      :cell -> generate_cell_report(state)
-      :all -> generate_all_report(state)
-      :focus -> generate_focus_report(state)
-      :utf8 -> generate_utf8_report(state)
-      :sgr -> generate_sgr_report(state)
-      :urxvt -> generate_urxvt_report(state)
-      :sgr_pixels -> generate_sgr_pixels_report(state)
-    end
-  end
+  def generate_report(%{mode: :basic} = state), do: generate_basic_report(state)
+  def generate_report(%{mode: :highlight} = state), do: generate_highlight_report(state)
+  def generate_report(%{mode: :cell} = state), do: generate_cell_report(state)
+  def generate_report(%{mode: :all} = state), do: generate_all_report(state)
+  def generate_report(%{mode: :focus} = state), do: generate_focus_report(state)
+  def generate_report(%{mode: :utf8} = state), do: generate_utf8_report(state)
+  def generate_report(%{mode: :sgr} = state), do: generate_sgr_report(state)
+  def generate_report(%{mode: :urxvt} = state), do: generate_urxvt_report(state)
+  def generate_report(%{mode: :sgr_pixels} = state), do: generate_sgr_pixels_report(state)
+  def generate_report(_state), do: generate_basic_report(_state)
 
   @doc """
   Processes a mouse event and returns the updated state and event data.
@@ -376,94 +474,5 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     }
 
     {state, event_data}
-  end
-
-  defp generate_basic_report(state) do
-    # Format: \e[M<button><x><y>
-    # Button: 0=release, 1=left, 2=middle, 3=right, 64=scroll up, 65=scroll down
-    # x, y: 1-based coordinates
-    {x, y} = state.position
-    button_code = button_to_code(state.button_state)
-    "\e[M#{button_code}#{x + 32}#{y + 32}"
-  end
-
-  defp generate_highlight_report(state) do
-    # Highlight mouse tracking (mode 1001)
-    # Similar to basic but with highlighting
-    generate_basic_report(state)
-  end
-
-  defp generate_cell_report(state) do
-    # Cell mouse tracking (mode 1002)
-    # Reports cell changes
-    generate_basic_report(state)
-  end
-
-  defp generate_all_report(state) do
-    # All mouse tracking (mode 1003)
-    # Reports all mouse events
-    generate_basic_report(state)
-  end
-
-  defp generate_focus_report(state) do
-    # Format: \e[I for focus in, \e[O for focus out
-    case state.button_state do
-      :focus_in -> "\e[I"
-      :focus_out -> "\e[O"
-      _ -> ""
-    end
-  end
-
-  defp generate_utf8_report(state) do
-    {x, y} = state.position
-    button_code = button_to_code(state.button_state)
-    :erlang.binary_to_list(<<27, "M", button_code, x + 32, y + 32>>)
-  end
-
-  defp generate_sgr_report(state) do
-    {x, y} = state.position
-    button_code = sgr_button_to_code(state.button_state)
-    :erlang.binary_to_list(<<27, "[<", button_code, ";", x, ";", y, "M">>)
-  end
-
-  defp generate_urxvt_report(state) do
-    # Reuse SGR report format for URXVT
-    generate_sgr_report(state)
-  end
-
-  defp generate_sgr_pixels_report(state) do
-    # Optimize SGR pixels mouse reporting by using binary concatenation
-    {x, y} = state.position
-    button_code = sgr_button_to_code(state.button_state)
-    :erlang.binary_to_list(<<27, "[<", button_code, ";", x, ";", y, "M">>)
-  end
-
-  # Cache button codes to avoid repeated calculations
-  @button_codes %{
-    none: "0",
-    left: "1",
-    middle: "2",
-    right: "3",
-    release: "0",
-    scroll_up: "64",
-    scroll_down: "65"
-  }
-
-  @sgr_button_codes %{
-    none: "0",
-    left: "0",
-    middle: "1",
-    right: "2",
-    release: "3",
-    scroll_up: "64",
-    scroll_down: "65"
-  }
-
-  defp button_to_code(button_state) do
-    Map.get(@button_codes, button_state, "0")
-  end
-
-  defp sgr_button_to_code(button_state) do
-    Map.get(@sgr_button_codes, button_state, "0")
   end
 end

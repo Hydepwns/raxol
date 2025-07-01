@@ -390,7 +390,9 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
 
       # Print buffer contents for lines 0-4
       for y <- 0..4 do
-        IO.inspect(Enum.map(ScreenBuffer.get_line(buffer, y), & &1.char), label: "Line \\#{y}")
+        IO.inspect(Enum.map(ScreenBuffer.get_line(buffer, y), & &1.char),
+          label: "Line \\#{y}"
+        )
       end
 
       # Lines 0, 1, 2 should be all spaces

@@ -69,6 +69,7 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
       # For non-blinking cursors, ensure they're visible
       CursorManager.set_visibility(emulator.cursor, true)
     end
+
     emulator
   end
 

@@ -124,7 +124,13 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
     test ~c"handles single shift translation" do
       state = CharacterSets.new()
       # Set G2 to DEC Special Graphics for the test
-      state = CharacterSets.switch_charset(state, :g2, Raxol.Terminal.ANSI.CharacterSets.DEC)
+      state =
+        CharacterSets.switch_charset(
+          state,
+          :g2,
+          Raxol.Terminal.ANSI.CharacterSets.DEC
+        )
+
       state = CharacterSets.set_single_shift(state, :ss2)
       # Test DEC Special Graphics translation with single shift
       {value, _} = CharacterSets.translate_char(?_, state)

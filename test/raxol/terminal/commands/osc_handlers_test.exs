@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
       },
       saved_cursor: nil,
       cursor_manager: nil,
-      mode_manager: nil,
+      mode_manager: Raxol.Terminal.ModeManager.new(),
       command: nil,
       window_title: nil
     }

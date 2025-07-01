@@ -119,10 +119,22 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   }
 
   @ansi_color_map %{
-    30 => :black, 31 => :red, 32 => :green, 33 => :yellow,
-    34 => :blue, 35 => :magenta, 36 => :cyan, 37 => :white,
-    40 => :black, 41 => :red, 42 => :green, 43 => :yellow,
-    44 => :blue, 45 => :magenta, 46 => :cyan, 47 => :white
+    30 => :black,
+    31 => :red,
+    32 => :green,
+    33 => :yellow,
+    34 => :blue,
+    35 => :magenta,
+    36 => :cyan,
+    37 => :white,
+    40 => :black,
+    41 => :red,
+    42 => :green,
+    43 => :yellow,
+    44 => :blue,
+    45 => :magenta,
+    46 => :cyan,
+    47 => :white
   }
 
   @reset_attribute_map %{
@@ -678,11 +690,17 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   end
 
   defp build_foreground_codes(nil), do: []
-  defp build_foreground_codes(color) when is_atom(color), do: [30 + color_to_code(color)]
+
+  defp build_foreground_codes(color) when is_atom(color),
+    do: [30 + color_to_code(color)]
+
   defp build_foreground_codes(_), do: []
 
   defp build_background_codes(nil), do: []
-  defp build_background_codes(color) when is_atom(color), do: [40 + color_to_code(color)]
+
+  defp build_background_codes(color) when is_atom(color),
+    do: [40 + color_to_code(color)]
+
   defp build_background_codes(_), do: []
 
   defp color_to_code(:black), do: 0

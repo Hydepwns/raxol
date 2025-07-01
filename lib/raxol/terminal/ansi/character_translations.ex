@@ -605,45 +605,25 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   """
   @spec translate_string(string :: String.t(), charset :: atom()) :: String.t()
   def translate_string(string, charset) when binary?(string) do
+    charlist = get_charlist(string)
+    translated = translate_charlist(charlist, charset)
+    IO.iodata_to_binary(translated)
+  end
+
+  defp get_charlist(string) do
     case :unicode.characters_to_list(string, :utf8) do
-      {:ok, charlist, _} ->
-        translated =
-          Enum.map(charlist, fn
-            # Handle [0] explicitly
-            [0] -> translate_char(0, charset)
-            int when integer?(int) -> translate_char(int, charset)
-            # skip non-integer (shouldn't happen)
-            _ -> ""
-          end)
-
-        IO.iodata_to_binary(translated)
-
-      {:error, _charlist, _} ->
-        # Handle invalid UTF-8 by treating as bytes
-        translated =
-          Enum.map(:binary.bin_to_list(string), fn
-            # Handle [0] explicitly
-            [0] -> translate_char(0, charset)
-            int when integer?(int) -> translate_char(int, charset)
-            # skip non-integer (shouldn't happen)
-            _ -> ""
-          end)
-
-        IO.iodata_to_binary(translated)
-
-      {:incomplete, _charlist, _} ->
-        # Handle incomplete UTF-8 by treating as bytes
-        translated =
-          Enum.map(:binary.bin_to_list(string), fn
-            # Handle [0] explicitly
-            [0] -> translate_char(0, charset)
-            int when integer?(int) -> translate_char(int, charset)
-            # skip non-integer (shouldn't happen)
-            _ -> ""
-          end)
-
-        IO.iodata_to_binary(translated)
+      {:ok, charlist, _} -> charlist
+      {:error, _, _} -> :binary.bin_to_list(string)
+      {:incomplete, _, _} -> :binary.bin_to_list(string)
     end
+  end
+
+  defp translate_charlist(charlist, charset) do
+    Enum.map(charlist, fn
+      [0] -> translate_char(0, charset)
+      int when integer?(int) -> translate_char(int, charset)
+      _ -> ""
+    end)
   end
 
   @doc """

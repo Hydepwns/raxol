@@ -133,7 +133,13 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     end
   end
 
-  defp shift_lines_up(buffer, region_start, region_start_plus_n, region_height, blank_style) do
+  defp shift_lines_up(
+         buffer,
+         region_start,
+         region_start_plus_n,
+         region_height,
+         blank_style
+       ) do
     cells = buffer.cells
     region_end = region_start + region_height - 1
     n = region_start_plus_n - region_start
@@ -141,13 +147,31 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     new_cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, idx} ->
-        map_line_for_shift_up(idx, cells, line, region_start, region_end, n, buffer.width, blank_style)
+        map_line_for_shift_up(
+          idx,
+          cells,
+          line,
+          region_start,
+          region_end,
+          n,
+          buffer.width,
+          blank_style
+        )
       end)
 
     %{buffer | cells: new_cells}
   end
 
-  defp map_line_for_shift_up(idx, cells, line, region_start, region_end, n, width, blank_style) do
+  defp map_line_for_shift_up(
+         idx,
+         cells,
+         line,
+         region_start,
+         region_end,
+         n,
+         width,
+         blank_style
+       ) do
     cond do
       idx >= region_start and idx <= region_end - n ->
         get_source_line(cells, idx + n, line)
@@ -161,7 +185,13 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     end
   end
 
-  defp shift_lines_down(buffer, region_start_plus_n, region_start, count, blank_style) do
+  defp shift_lines_down(
+         buffer,
+         region_start_plus_n,
+         region_start,
+         count,
+         blank_style
+       ) do
     cells = buffer.cells
     region_height = count
     n = region_start_plus_n - region_start
@@ -170,13 +200,31 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     new_cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, idx} ->
-        map_line_for_shift_down(idx, cells, line, region_start, region_end, n, buffer.width, blank_style)
+        map_line_for_shift_down(
+          idx,
+          cells,
+          line,
+          region_start,
+          region_end,
+          n,
+          buffer.width,
+          blank_style
+        )
       end)
 
     %{buffer | cells: new_cells}
   end
 
-  defp map_line_for_shift_down(idx, cells, line, region_start, region_end, n, width, blank_style) do
+  defp map_line_for_shift_down(
+         idx,
+         cells,
+         line,
+         region_start,
+         region_end,
+         n,
+         width,
+         blank_style
+       ) do
     cond do
       idx >= region_start + n and idx <= region_end ->
         get_source_line(cells, idx - n, line)
