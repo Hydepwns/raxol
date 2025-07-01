@@ -436,86 +436,85 @@ defmodule Raxol.UI.Components.Modal do
   @spec render(map(), map()) :: any()
   def render(state, %{} = _props) do
     if state.visible do
-      # Render modal content (title, body, buttons)
-      # Use View Elements macros
-
-      title_element =
-        Raxol.View.Elements.label(content: state.title, style: %{bold: true})
-
-      content_element =
-        cond do
-          # Render based on content type (text, custom elements, form)
-          is_binary(state.content) ->
-            Raxol.View.Elements.label(content: state.content)
-
-          # Handle prompt/form input rendering
-          state.type in [:prompt, :form] ->
-            render_form_content(state)
-
-          # Assume it's already a view element/list if not text
-          state.content != nil ->
-            state.content
-
-          true ->
-            # No content
-            nil
-        end
-
-      button_elements =
-        Enum.map(state.buttons, fn {label, msg} ->
-          # Pass the original message tuple to the button
-          Raxol.View.Elements.button(
-            label: label,
-            on_click: {:button_click, msg}
-          )
-        end)
-
-      # Use a unique ID for the modal box itself if the state has an ID
-      modal_box_id =
-        if Map.get(state, :id, nil),
-          do: "#{Map.get(state, :id, nil)}-box",
-          else: nil
-
-      Raxol.View.Elements.box id: modal_box_id,
-                              style:
-                                Map.merge(
-                                  %{
-                                    border: :double,
-                                    width: state.width,
-                                    align: :center
-                                  },
-                                  state.style
-                                ) do
-        Raxol.View.Elements.column style: %{width: :fill, padding: 1} do
-          [
-            title_element,
-            # Spacer
-            if(title_element && content_element,
-              do: Raxol.View.Elements.label(content: "")
-            ),
-            content_element,
-            # Spacer
-            if(content_element && button_elements != [],
-              do: Raxol.View.Elements.label(content: "")
-            ),
-            Raxol.View.Elements.row style: %{
-                                      justify: :center,
-                                      width: :fill,
-                                      gap: 2
-                                    } do
-              button_elements
-            end
-          ]
-          |> Enum.reject(&is_nil/1)
-        end
-      end
-
-      # Modal needs to be wrapped in something that centers it or overlays it.
-      # This simple render just returns the box structure.
-      # The runtime/layout needs to handle overlay placement.
+      render_modal_content(state)
     else
-      # Render nothing if not visible
       nil
+    end
+  end
+
+  defp render_modal_content(state) do
+    Raxol.View.Elements.box id: get_modal_box_id(state),
+                            style: get_modal_style(state) do
+      Raxol.View.Elements.column style: %{width: :fill, padding: 1} do
+        build_modal_elements(
+          render_title(state.title),
+          render_content(state),
+          render_buttons(state.buttons)
+        )
+      end
+    end
+  end
+
+  defp render_title(title) do
+    Raxol.View.Elements.label(content: title, style: %{bold: true})
+  end
+
+  defp render_content(state) do
+    cond do
+      is_binary(state.content) ->
+        Raxol.View.Elements.label(content: state.content)
+
+      state.type in [:prompt, :form] ->
+        render_form_content(state)
+
+      state.content != nil ->
+        state.content
+
+      true ->
+        nil
+    end
+  end
+
+  defp render_buttons(buttons) do
+    Enum.map(buttons, fn {label, msg} ->
+      Raxol.View.Elements.button(
+        label: label,
+        on_click: {:button_click, msg}
+      )
+    end)
+  end
+
+  defp get_modal_box_id(state) do
+    if Map.get(state, :id, nil),
+      do: "#{Map.get(state, :id, nil)}-box",
+      else: nil
+  end
+
+  defp get_modal_style(state) do
+    Map.merge(
+      %{border: :double, width: state.width, align: :center},
+      state.style
+    )
+  end
+
+  defp build_modal_elements(title_element, content_element, button_elements) do
+    [
+      title_element,
+      render_spacer(title_element && content_element),
+      content_element,
+      render_spacer(content_element && button_elements != []),
+      render_button_row(button_elements)
+    ]
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp render_spacer(condition) do
+    if condition, do: Raxol.View.Elements.label(content: "")
+  end
+
+  defp render_button_row(button_elements) do
+    Raxol.View.Elements.row style: %{justify: :center, width: :fill, gap: 2} do
+      button_elements
     end
   end
 
