@@ -32,12 +32,15 @@ defmodule Raxol.Core.Renderer.Buffer do
     unless is_integer(width) and width > 0 do
       raise ArgumentError, "Buffer width must be positive"
     end
+
     unless is_integer(height) and height > 0 do
       raise ArgumentError, "Buffer height must be positive"
     end
+
     unless is_integer(fps) and fps > 0 do
       raise ArgumentError, "FPS must be positive"
     end
+
     empty_buffer = %{
       size: {width, height},
       cells: %{},
@@ -60,7 +63,9 @@ defmodule Raxol.Core.Renderer.Buffer do
     unless is_tuple(pos) and tuple_size(pos) == 2 do
       raise ArgumentError, "Cell coordinates must be a tuple of two integers"
     end
+
     {x, y} = pos
+
     unless is_integer(x) and is_integer(y) do
       raise ArgumentError, "Cell coordinates must be a tuple of two integers"
     end
@@ -128,7 +133,9 @@ defmodule Raxol.Core.Renderer.Buffer do
       }
 
       # Deep copy the back buffer to avoid shared references
-      copied_back_buffer = :erlang.term_to_binary(buffer.back_buffer) |> :erlang.binary_to_term()
+      copied_back_buffer =
+        :erlang.term_to_binary(buffer.back_buffer) |> :erlang.binary_to_term()
+
       new_buffer = %__MODULE__{
         front_buffer: copied_back_buffer,
         back_buffer: new_empty_back_buffer,

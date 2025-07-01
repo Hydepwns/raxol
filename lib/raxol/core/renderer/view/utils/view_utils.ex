@@ -19,22 +19,26 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     if spacing < 0 do
       raise ArgumentError, "Padding must be a positive integer or tuple"
     end
+
     {spacing, spacing, spacing, spacing}
   end
 
   def normalize_spacing({top, right, bottom, left}) do
-    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and is_integer(left)) or
-       top < 0 or right < 0 or bottom < 0 or left < 0 do
+    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and
+              is_integer(left)) or
+         top < 0 or right < 0 or bottom < 0 or left < 0 do
       raise ArgumentError, "Padding must be a positive integer or tuple"
     end
+
     {top, right, bottom, left}
   end
 
   def normalize_spacing({vertical, horizontal}) do
     if not (is_integer(vertical) and is_integer(horizontal)) or
-       vertical < 0 or horizontal < 0 do
+         vertical < 0 or horizontal < 0 do
       raise ArgumentError, "Padding must be a positive integer or tuple"
     end
+
     {vertical, horizontal, vertical, horizontal}
   end
 
@@ -64,22 +68,26 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     if spacing < 0 do
       raise ArgumentError, "Margin must be a positive integer or tuple"
     end
+
     {spacing, spacing, spacing, spacing}
   end
 
   def normalize_margin({top, right, bottom, left}) do
-    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and is_integer(left)) or
-       top < 0 or right < 0 or bottom < 0 or left < 0 do
+    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and
+              is_integer(left)) or
+         top < 0 or right < 0 or bottom < 0 or left < 0 do
       raise ArgumentError, "Margin must be a positive integer or tuple"
     end
+
     {top, right, bottom, left}
   end
 
   def normalize_margin({vertical, horizontal}) do
     if not (is_integer(vertical) and is_integer(horizontal)) or
-       vertical < 0 or horizontal < 0 do
+         vertical < 0 or horizontal < 0 do
       raise ArgumentError, "Margin must be a positive integer or tuple"
     end
+
     {vertical, horizontal, vertical, horizontal}
   end
 

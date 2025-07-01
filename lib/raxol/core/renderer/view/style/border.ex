@@ -25,6 +25,7 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
 
     # Validate border style
     valid_styles = [:single, :double, :rounded, :bold, :dashed, :none]
+
     if border_type not in valid_styles do
       raise ArgumentError, "Invalid border style: #{inspect(border_type)}"
     end

@@ -168,27 +168,41 @@ defmodule Raxol.UI.Rendering.Layouter do
     case child_diff_details_map do
       %{type: :indexed_children, diffs: indexed_child_diffs_list} ->
         # Process indexed child diffs
-        Enum.reduce(indexed_child_diffs_list, children_in_current_node, fn {index, child_diff}, acc ->
-          case child_diff do
-            {:replace, new_child} ->
-              # Replace child at index
-              List.replace_at(acc, index, do_layout_node_and_children(new_child, {:replace, new_child}))
+        Enum.reduce(
+          indexed_child_diffs_list,
+          children_in_current_node,
+          fn {index, child_diff}, acc ->
+            case child_diff do
+              {:replace, new_child} ->
+                # Replace child at index
+                List.replace_at(
+                  acc,
+                  index,
+                  do_layout_node_and_children(new_child, {:replace, new_child})
+                )
 
-            {:update, child_path, child_changes} ->
-              # Update child at index with partial changes
-              current_child = Enum.at(acc, index)
-              if current_child do
-                updated_child = do_layout_node_and_children(current_child, {:update_children, child_changes})
-                List.replace_at(acc, index, updated_child)
-              else
+              {:update, child_path, child_changes} ->
+                # Update child at index with partial changes
+                current_child = Enum.at(acc, index)
+
+                if current_child do
+                  updated_child =
+                    do_layout_node_and_children(
+                      current_child,
+                      {:update_children, child_changes}
+                    )
+
+                  List.replace_at(acc, index, updated_child)
+                else
+                  acc
+                end
+
+              _ ->
+                # Unknown diff type, keep original
                 acc
-              end
-
-            _ ->
-              # Unknown diff type, keep original
-              acc
+            end
           end
-        end)
+        )
 
       %{type: :keyed_children, diffs: _keyed_child_diffs_list} ->
         # TODO: Implement keyed children handling

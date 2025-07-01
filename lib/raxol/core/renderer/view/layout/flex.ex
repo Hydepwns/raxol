@@ -139,10 +139,28 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       wrap_flex_layout(measured_children, direction, {width, height}, gap)
     else
       # Existing non-wrapping logic
-      {main_axis_size, cross_axis_size} = get_axis_sizes(direction, {width, height})
+      {main_axis_size, cross_axis_size} =
+        get_axis_sizes(direction, {width, height})
+
       total_content_size = calculate_total_content_size(measured_children, gap)
-      justified_children = apply_justification(measured_children, container.justify, main_axis_size, total_content_size, gap)
-      aligned_children = apply_alignment(justified_children, container.align, cross_axis_size, direction)
+
+      justified_children =
+        apply_justification(
+          measured_children,
+          container.justify,
+          main_axis_size,
+          total_content_size,
+          gap
+        )
+
+      aligned_children =
+        apply_alignment(
+          justified_children,
+          container.align,
+          cross_axis_size,
+          direction
+        )
+
       apply_gap_spacing(aligned_children, gap, direction)
     end
   end
@@ -152,7 +170,10 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     {lines, current_line, _} =
       Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_width} ->
         {child_w, _child_h} = Map.get(child, :measured_size)
-        new_width = if line_width == 0, do: child_w, else: line_width + gap + child_w
+
+        new_width =
+          if line_width == 0, do: child_w, else: line_width + gap + child_w
+
         if new_width > width and line_width > 0 do
           # Start new line with current child
           {[line | lines], [child], child_w}
@@ -179,10 +200,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       else
         Enum.reduce(line, {0, []}, fn child, {x, acc} ->
           {child_w, child_h} = Map.get(child, :measured_size)
+
           pos_child =
             child
             |> Map.put(:position, {x, line_idx})
             |> Map.put(:size, {child_w, child_h})
+
           {x + child_w + gap, [pos_child | acc]}
         end)
         |> elem(1)
@@ -195,7 +218,10 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     {lines, current_line, _} =
       Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_height} ->
         {_child_w, child_h} = Map.get(child, :measured_size)
-        new_height = if line_height == 0, do: child_h, else: line_height + gap + child_h
+
+        new_height =
+          if line_height == 0, do: child_h, else: line_height + gap + child_h
+
         if new_height > height and line_height > 0 do
           # Start new column with current child
           {[line | lines], [child], child_h}
@@ -222,10 +248,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       else
         Enum.reduce(line, {0, []}, fn child, {y, acc} ->
           {child_w, child_h} = Map.get(child, :measured_size)
+
           pos_child =
             child
             |> Map.put(:position, {col_idx, y})
             |> Map.put(:size, {child_w, child_h})
+
           {y + child_h + gap, [pos_child | acc]}
         end)
         |> elem(1)
@@ -243,12 +271,16 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
   defp get_child_size(child, {width, height}) do
     case Map.get(child, :size) do
-      {child_width, child_height} when is_integer(child_width) and is_integer(child_height) ->
+      {child_width, child_height}
+      when is_integer(child_width) and is_integer(child_height) ->
         {child_width, child_height}
+
       _ ->
         child_width = Map.get(child, :width)
         child_height = Map.get(child, :height)
-        {calculate_width(child_width, width), calculate_height(child_height, height)}
+
+        {calculate_width(child_width, width),
+         calculate_height(child_height, height)}
     end
   end
 

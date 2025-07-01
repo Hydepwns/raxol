@@ -58,6 +58,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     # Get lines before the target row
     prefix_lines = Enum.slice(text_lines, 0, safe_row)
     prefix_sum = Enum.sum(Enum.map(prefix_lines, &String.length(&1)))
+
     # Add count for newline characters (\n) - one newline per line except the last
     newline_count = safe_row
     # Add the clamped column index on the target row
@@ -193,9 +194,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     # Calculate new cursor position based on inserted char
     {new_row, new_col} =
       case char_or_codepoint do
-        10 -> # Newline character
+        # Newline character
+        10 ->
           # Move to start of next line
           {row + 1, 0}
+
         _ ->
           # For other characters, move cursor one position right
           {row, col + 1}

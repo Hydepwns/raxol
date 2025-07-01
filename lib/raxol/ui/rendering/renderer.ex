@@ -15,11 +15,13 @@ defmodule Raxol.UI.Rendering.Renderer do
   Starts the rendering process.
   """
   def start_link(opts \\ []) do
-    name = if Mix.env() == :test do
-      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-    else
-      Keyword.get(opts, :name)
-    end
+    name =
+      if Mix.env() == :test do
+        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+      else
+        Keyword.get(opts, :name)
+      end
+
     gen_server_opts = Keyword.delete(opts, :name)
 
     if name do
@@ -62,7 +64,10 @@ defmodule Raxol.UI.Rendering.Renderer do
   end
 
   # Recursively applies a diff to a tree, returning the updated tree
-  defp apply_diff_to_tree(tree, {:update, [], %{diffs: diffs, type: :indexed_children}}) do
+  defp apply_diff_to_tree(
+         tree,
+         {:update, [], %{diffs: diffs, type: :indexed_children}}
+       ) do
     # At root, apply all child diffs from the indexed_children format
     apply_child_diffs(tree, diffs)
   end
@@ -180,13 +185,27 @@ defmodule Raxol.UI.Rendering.Renderer do
   @impl GenServer
   def handle_cast({:render, data}, state) do
     require Logger
-    Logger.debug("[Renderer] handle_cast {:render, data} called with data=#{inspect(data)}, test_pid=#{inspect(state.test_pid)}")
+
+    Logger.debug(
+      "[Renderer] handle_cast {:render, data} called with data=#{inspect(data)}, test_pid=#{inspect(state.test_pid)}"
+    )
+
     # Convert the tree to paint operations
     ops = ui_tree_to_terminal_ops_with_lines(data)
 
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], data, data, state)
-    if state.test_pid, do: (Logger.debug("[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(state.test_pid)} with ops=#{inspect(ops)}"); send(state.test_pid, {:renderer_rendered, ops}))
+
+    if state.test_pid,
+      do:
+        (
+          Logger.debug(
+            "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(state.test_pid)} with ops=#{inspect(ops)}"
+          )
+
+          send(state.test_pid, {:renderer_rendered, ops})
+        )
+
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(

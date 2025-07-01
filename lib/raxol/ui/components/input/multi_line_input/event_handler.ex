@@ -48,28 +48,65 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     end
   end
 
-  defp is_key_event?(%Event{type: :key, data: %{state: state}}) when state in [:pressed, :repeat], do: true
+  defp is_key_event?(%Event{type: :key, data: %{state: state}})
+       when state in [:pressed, :repeat],
+       do: true
+
   defp is_key_event?(_), do: false
 
-  defp is_mouse_event?(%Event{type: :mouse, data: %{button: :left, state: :pressed}}), do: true
+  defp is_mouse_event?(%Event{
+         type: :mouse,
+         data: %{button: :left, state: :pressed}
+       }),
+       do: true
+
   defp is_mouse_event?(_), do: false
 
-  defp is_system_event?(%Event{type: type}) when type in [:scroll, :resize], do: true
+  defp is_system_event?(%Event{type: type}) when type in [:scroll, :resize],
+    do: true
+
   defp is_system_event?(_), do: false
 
-  defp is_special_key_event?(%Event{type: :key, data: %{key: key}}) when key in [:pageup, :pagedown], do: true
-  defp is_special_key_event?(%Event{type: :key, data: %{key: key, modifiers: [:shift]}}) when key in [:left, :right, :up, :down], do: true
+  defp is_special_key_event?(%Event{type: :key, data: %{key: key}})
+       when key in [:pageup, :pagedown],
+       do: true
+
+  defp is_special_key_event?(%Event{
+         type: :key,
+         data: %{key: key, modifiers: [:shift]}
+       })
+       when key in [:left, :right, :up, :down],
+       do: true
+
   defp is_special_key_event?(_), do: false
 
   defp is_key_down_event?(%Event{type: :key_down}), do: true
   defp is_key_down_event?(_), do: false
 
-  defp handle_system_event(%Event{type: :scroll} = event, state), do: handle_scroll_event(event, state)
-  defp handle_system_event(%Event{type: :resize} = event, state), do: handle_resize_event(event, state)
+  defp handle_system_event(%Event{type: :scroll} = event, state),
+    do: handle_scroll_event(event, state)
 
-  defp handle_special_key_event(%Event{type: :key, data: %{key: :pageup}} = event, state), do: handle_special_case_pageup(event, state)
-  defp handle_special_key_event(%Event{type: :key, data: %{key: :pagedown}} = event, state), do: handle_special_case_pagedown(event, state)
-  defp handle_special_key_event(%Event{type: :key, data: %{key: key, modifiers: [:shift]}} = event, state) when key in [:left, :right, :up, :down], do: handle_special_case_shift_arrow(event, state)
+  defp handle_system_event(%Event{type: :resize} = event, state),
+    do: handle_resize_event(event, state)
+
+  defp handle_special_key_event(
+         %Event{type: :key, data: %{key: :pageup}} = event,
+         state
+       ),
+       do: handle_special_case_pageup(event, state)
+
+  defp handle_special_key_event(
+         %Event{type: :key, data: %{key: :pagedown}} = event,
+         state
+       ),
+       do: handle_special_case_pagedown(event, state)
+
+  defp handle_special_key_event(
+         %Event{type: :key, data: %{key: key, modifiers: [:shift]}} = event,
+         state
+       )
+       when key in [:left, :right, :up, :down],
+       do: handle_special_case_shift_arrow(event, state)
 
   defp handle_key_down_event(%Event{type: :key_down, data: data} = event, state) do
     cond do
@@ -87,10 +124,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     end
   end
 
-  defp is_navigation_key?(%{key: key}) when key in [:up, :down, :left, :right], do: true
+  defp is_navigation_key?(%{key: key}) when key in [:up, :down, :left, :right],
+    do: true
+
   defp is_navigation_key?(_), do: false
 
-  defp is_input_key?(%{key: key}) when key in [:tab, :enter, :backspace, :delete] or is_binary(key), do: true
+  defp is_input_key?(%{key: key})
+       when key in [:tab, :enter, :backspace, :delete] or is_binary(key),
+       do: true
+
   defp is_input_key?(_), do: false
 
   defp is_special_key?(%{key: :enter, modifiers: [:ctrl]}), do: true
@@ -181,16 +223,34 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
         Raxol.Core.Runtime.Log.debug(
           "Unhandled key combination: #{inspect(key)} with modifiers #{inspect(modifiers)}"
         )
+
         nil
     end
   end
 
-  defp is_basic_input?(key, modifiers), do: modifiers == [] and is_binary(key) or key in [:backspace, :delete, :enter]
-  defp is_basic_navigation?(key, modifiers), do: modifiers == [] and key in [:left, :right, :up, :down, :home, :end, :pageup, :pagedown]
-  defp is_ctrl_navigation?(key, modifiers), do: modifiers == [:ctrl] and key in [:left, :right, :home, :end]
-  defp is_shift_selection?(key, modifiers), do: modifiers == [:shift] and key in [:left, :right, :up, :down, :home, :end, :pageup, :pagedown]
-  defp is_ctrl_shift_selection?(key, modifiers), do: modifiers == [:shift, :ctrl] and key in [:left, :right, :home, :end]
-  defp is_special_ctrl_command?(key, modifiers), do: modifiers == [:ctrl] and key in [:a, :c, :x, :v]
+  defp is_basic_input?(key, modifiers),
+    do:
+      (modifiers == [] and is_binary(key)) or
+        key in [:backspace, :delete, :enter]
+
+  defp is_basic_navigation?(key, modifiers),
+    do:
+      modifiers == [] and
+        key in [:left, :right, :up, :down, :home, :end, :pageup, :pagedown]
+
+  defp is_ctrl_navigation?(key, modifiers),
+    do: modifiers == [:ctrl] and key in [:left, :right, :home, :end]
+
+  defp is_shift_selection?(key, modifiers),
+    do:
+      modifiers == [:shift] and
+        key in [:left, :right, :up, :down, :home, :end, :pageup, :pagedown]
+
+  defp is_ctrl_shift_selection?(key, modifiers),
+    do: modifiers == [:shift, :ctrl] and key in [:left, :right, :home, :end]
+
+  defp is_special_ctrl_command?(key, modifiers),
+    do: modifiers == [:ctrl] and key in [:a, :c, :x, :v]
 
   defp handle_basic_input(key, []) do
     case key do
@@ -200,9 +260,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
         else
           nil
         end
-      :backspace -> {:backspace}
-      :delete -> {:delete}
-      :enter -> {:enter}
+
+      :backspace ->
+        {:backspace}
+
+      :delete ->
+        {:delete}
+
+      :enter ->
+        {:enter}
     end
   end
 

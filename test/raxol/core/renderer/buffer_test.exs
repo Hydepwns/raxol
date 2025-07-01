@@ -286,8 +286,14 @@ defmodule Raxol.Core.Renderer.BufferTest do
 
       # Debug: Print buffer struct after swap
       IO.puts("DEBUG: Buffer struct after swap: #{inspect(buffer_after_swap)}")
-      IO.puts("DEBUG: Front buffer cells: #{inspect(buffer_after_swap.front_buffer.cells)}")
-      IO.puts("DEBUG: Front buffer damage: #{inspect(buffer_after_swap.front_buffer.damage)}")
+
+      IO.puts(
+        "DEBUG: Front buffer cells: #{inspect(buffer_after_swap.front_buffer.cells)}"
+      )
+
+      IO.puts(
+        "DEBUG: Front buffer damage: #{inspect(buffer_after_swap.front_buffer.damage)}"
+      )
 
       # Directly inspect the front buffer's damage set after swap
       damage_set = buffer_after_swap.front_buffer.damage
