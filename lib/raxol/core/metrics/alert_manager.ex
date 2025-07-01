@@ -38,46 +38,53 @@ defmodule Raxol.Core.Metrics.AlertManager do
     default_severity: :warning
   }
 
+  # Helper function to get the process name
+  defp process_name(pid_or_name \\ __MODULE__)
+  defp process_name(pid) when is_pid(pid), do: pid
+  defp process_name(name) when is_atom(name), do: name
+  defp process_name(_), do: __MODULE__
+
   @doc """
   Starts the alert manager.
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = opts[:name] || __MODULE__
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
   Adds a new alert rule.
   """
-  def add_rule(rule) do
-    GenServer.call(__MODULE__, {:add_rule, rule})
+  def add_rule(rule, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:add_rule, rule})
   end
 
   @doc """
   Gets all alert rules.
   """
-  def get_rules do
-    GenServer.call(__MODULE__, :get_rules)
+  def get_rules(process \\ __MODULE__) do
+    GenServer.call(process_name(process), :get_rules)
   end
 
   @doc """
   Gets the current alert state for a rule.
   """
-  def get_alert_state(rule_id) do
-    GenServer.call(__MODULE__, {:get_alert_state, rule_id})
+  def get_alert_state(rule_id, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:get_alert_state, rule_id})
   end
 
   @doc """
   Gets the alert history.
   """
-  def get_alert_history(rule_id) do
-    GenServer.call(__MODULE__, {:get_alert_history, rule_id})
+  def get_alert_history(rule_id, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:get_alert_history, rule_id})
   end
 
   @doc """
   Acknowledges an alert.
   """
-  def acknowledge_alert(rule_id) do
-    GenServer.call(__MODULE__, {:acknowledge_alert, rule_id})
+  def acknowledge_alert(rule_id, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:acknowledge_alert, rule_id})
   end
 
   @impl GenServer
@@ -216,8 +223,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
         metrics
         |> Enum.group_by(fn metric ->
           group_by
-          |> Enum.map(&Map.get(metric.tags, &1))
-          |> Enum.join(":")
+          |> Enum.map_join(":", &Map.get(metric.tags, &1))
         end)
         |> Enum.map(fn {group, group_metrics} ->
           values = Enum.map(group_metrics, & &1.value)
@@ -228,24 +234,8 @@ defmodule Raxol.Core.Metrics.AlertManager do
 
   defp evaluate_alert(current_value, rule, alert_state) do
     now = DateTime.utc_now()
-
-    in_cooldown =
-      case alert_state.last_triggered do
-        nil ->
-          false
-
-        last_triggered ->
-          DateTime.diff(now, last_triggered) < rule.cooldown
-      end
-
-    should_trigger =
-      case {rule.condition, current_value, rule.threshold} do
-        {:above, value, threshold} when value > threshold -> true
-        {:below, value, threshold} when value < threshold -> true
-        {:equals, value, threshold} when value == threshold -> true
-        {:not_equals, value, threshold} when value != threshold -> true
-        _ -> false
-      end
+    in_cooldown = is_in_cooldown?(alert_state.last_triggered, rule.cooldown, now)
+    should_trigger = evaluate_condition(rule.condition, current_value, rule.threshold)
 
     new_alert_state = %{
       alert_state
@@ -254,6 +244,23 @@ defmodule Raxol.Core.Metrics.AlertManager do
     }
 
     {new_alert_state, should_trigger and not in_cooldown}
+  end
+
+  defp is_in_cooldown?(last_triggered, cooldown, now) do
+    case last_triggered do
+      nil -> false
+      triggered -> DateTime.diff(now, triggered) < cooldown
+    end
+  end
+
+  defp evaluate_condition(condition, value, threshold) do
+    case {condition, value, threshold} do
+      {:above, val, thresh} when val > thresh -> true
+      {:below, val, thresh} when val < thresh -> true
+      {:equals, val, thresh} when val == thresh -> true
+      {:not_equals, val, thresh} when val != thresh -> true
+      _ -> false
+    end
   end
 
   defp trigger_alert(rule_id, rule, current_value, state) do
@@ -303,16 +310,43 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end)
   end
 
-  defp send_email_notification(_alert) do
-    # TODO: Implementation
+  defp send_email_notification(alert) do
+    Raxol.Core.Runtime.Log.info(
+      "Alert: #{alert.rule_name} - #{alert.severity} threshold exceeded",
+      %{
+        rule_id: alert.rule_id,
+        current_value: alert.current_value,
+        threshold: alert.threshold,
+        condition: alert.condition,
+        channel: "email"
+      }
+    )
   end
 
-  defp send_slack_notification(_alert) do
-    # TODO: Implementation
+  defp send_slack_notification(alert) do
+    Raxol.Core.Runtime.Log.info(
+      "Alert: #{alert.rule_name} - #{alert.severity} threshold exceeded",
+      %{
+        rule_id: alert.rule_id,
+        current_value: alert.current_value,
+        threshold: alert.threshold,
+        condition: alert.condition,
+        channel: "slack"
+      }
+    )
   end
 
-  defp send_webhook_notification(_alert) do
-    # TODO: Implementation
+  defp send_webhook_notification(alert) do
+    Raxol.Core.Runtime.Log.info(
+      "Alert: #{alert.rule_name} - #{alert.severity} threshold exceeded",
+      %{
+        rule_id: alert.rule_id,
+        current_value: alert.current_value,
+        threshold: alert.threshold,
+        condition: alert.condition,
+        channel: "webhook"
+      }
+    )
   end
 
   defp schedule_check do

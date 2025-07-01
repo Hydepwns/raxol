@@ -32,6 +32,12 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
 
   # Client API
 
+  # Helper function to get the process name
+  defp process_name(pid_or_name \\ __MODULE__)
+  defp process_name(pid) when is_pid(pid), do: pid
+  defp process_name(name) when is_atom(name), do: name
+  defp process_name(_), do: __MODULE__
+
   @doc """
   Starts the unified metrics manager.
 
@@ -42,7 +48,9 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     * `:export_format` - Format for exporting metrics
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -56,8 +64,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       * `:labels` - Metric labels
       * `:metadata` - Additional metadata
   """
-  def record_metric(name, value, opts \\ []) do
-    GenServer.call(__MODULE__, {:record_metric, name, value, opts})
+  def record_metric(name, value, opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:record_metric, name, value, opts})
   end
 
   @doc """
@@ -69,8 +77,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       * `:labels` - Filter by labels
       * `:time_range` - Time range to query
   """
-  def get_metric(name, opts \\ []) do
-    GenServer.call(__MODULE__, {:get_metric, name, opts})
+  def get_metric(name, opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:get_metric, name, opts})
   end
 
   @doc """
@@ -83,8 +91,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       * `:context` - Error context
       * `:metadata` - Additional metadata
   """
-  def record_error(error, opts \\ []) do
-    GenServer.call(__MODULE__, {:record_error, error, opts})
+  def record_error(error, opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:record_error, error, opts})
   end
 
   @doc """
@@ -95,8 +103,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       * `:time_range` - Time range to query
       * `:severity` - Filter by severity
   """
-  def get_error_stats(opts \\ []) do
-    GenServer.call(__MODULE__, {:get_error_stats, opts})
+  def get_error_stats(opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:get_error_stats, opts})
   end
 
   @doc """
@@ -107,8 +115,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
       * `:format` - Override the default export format
       * `:time_range` - Time range to export
   """
-  def export_metrics(opts \\ []) do
-    GenServer.call(__MODULE__, {:export_metrics, opts})
+  def export_metrics(opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:export_metrics, opts})
   end
 
   @doc """
@@ -118,8 +126,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     * `opts` - Cleanup options
       * `:before` - Timestamp before which to clean up
   """
-  def cleanup_metrics(opts \\ []) do
-    GenServer.call(__MODULE__, {:cleanup_metrics, opts})
+  def cleanup_metrics(opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:cleanup_metrics, opts})
   end
 
   # Server Callbacks
@@ -233,7 +241,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     {:reply, :ok, updated_state}
   end
 
-  def handle_info({:aggregate_metrics, timer_id}, state) do
+  def handle_info({:aggregate_metrics, _timer_id}, state) do
     updated_metrics = aggregate_all_metrics(state.metrics)
 
     updated_state = %{
@@ -395,8 +403,22 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     |> Jason.encode!()
   end
 
-  defp export_custom(_metrics) do
-    # TODO: Implementation
+  defp export_custom(metrics) do
+    metrics
+    |> Enum.map(fn {name, values} ->
+      value = aggregate_metrics(values)
+      labels = hd(values).labels
+      timestamp = hd(values).timestamp
+
+      %{
+        metric_name: name,
+        current_value: value,
+        labels: labels,
+        last_updated: timestamp,
+        sample_count: length(values)
+      }
+    end)
+    |> inspect(pretty: true)
   end
 
   defp format_labels(labels) do
