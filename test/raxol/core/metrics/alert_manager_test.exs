@@ -88,7 +88,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       end)
 
       # Force alert check
-      Process.send(AlertManager, {:check_alerts, 1}, [])
+      Process.send(:alert_manager_test, {:check_alerts, 1}, [])
 
       # Wait for alert to be processed
       Process.sleep(100)
@@ -122,7 +122,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       end)
 
       # Force alert check
-      Process.send(AlertManager, {:check_alerts, 1}, [])
+      Process.send(:alert_manager_test, {:check_alerts, 1}, [])
 
       # Wait for alert to be processed
       Process.sleep(100)
@@ -156,11 +156,11 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       end)
 
       # Force first alert check
-      Process.send(AlertManager, {:check_alerts, 1}, [])
+      Process.send(:alert_manager_test, {:check_alerts, 1}, [])
       Process.sleep(100)
 
       # Force second alert check immediately
-      Process.send(AlertManager, {:check_alerts, 2}, [])
+      Process.send(:alert_manager_test, {:check_alerts, 2}, [])
       Process.sleep(100)
 
       assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id, :alert_manager_test)
@@ -212,7 +212,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       end)
 
       # Force alert check
-      Process.send(AlertManager, {:check_alerts, 1}, [])
+      Process.send(:alert_manager_test, {:check_alerts, 1}, [])
       Process.sleep(100)
 
       # Acknowledge alert
@@ -263,7 +263,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       end)
 
       # Force alert check
-      Process.send(AlertManager, {:check_alerts, 1}, [])
+      Process.send(:alert_manager_test, {:check_alerts, 1}, [])
       Process.sleep(100)
 
       assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id, :alert_manager_test)

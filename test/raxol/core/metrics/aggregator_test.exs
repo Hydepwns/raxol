@@ -3,12 +3,36 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
   Tests for the metrics aggregator, including rule management, metric aggregation,
   error handling, and statistical calculations.
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Core.Metrics.Aggregator
 
   setup do
     {:ok, _pid} = Aggregator.start_link()
+
+    # Setup meck for UnifiedCollector once for all tests
+    setup_meck()
+
+    on_exit(fn ->
+      cleanup_meck()
+    end)
+
     :ok
+  end
+
+  defp setup_meck do
+    try do
+      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
+    catch
+      :error, {:already_started, _} -> :ok
+    end
+  end
+
+  defp cleanup_meck do
+    try do
+      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+    catch
+      :error, {:not_mocked, _} -> :ok
+    end
   end
 
   defp create_test_metrics(values, tags \\ %{service: "test"}) do
@@ -64,24 +88,14 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       {:ok, rule_id} = Aggregator.add_rule(rule)
 
-      # Setup meck for UnifiedCollector
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
-
-      on_exit(fn ->
-        try do
-          :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
-        catch
-          :error, {:not_mocked, _} -> :ok
-        end
-      end)
-
       %{rule_id: rule_id}
     end
 
     test "aggregates metrics by mean", %{rule_id: rule_id} do
       metrics = create_test_metrics([10, 20, 30])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+                                                                         _tags ->
         metrics
       end)
 
@@ -103,7 +117,8 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+                                                                         _tags ->
         metrics
       end)
 
@@ -141,7 +156,8 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
         }
       ]
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+                                                                         _tags ->
         metrics
       end)
 
@@ -165,21 +181,6 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
   end
 
   describe "statistical calculations" do
-    setup do
-      # Setup meck for UnifiedCollector
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
-
-      on_exit(fn ->
-        try do
-          :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
-        catch
-          :error, {:not_mocked, _} -> :ok
-        end
-      end)
-
-      :ok
-    end
-
     test "calculates median correctly" do
       rule = %{
         type: :median,
@@ -192,7 +193,8 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30, 40])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+                                                                         _tags ->
         metrics
       end)
 
@@ -213,12 +215,14 @@ defmodule Raxol.Core.Metrics.AggregatorTest do
 
       metrics = create_test_metrics([10, 20, 30, 40, 50])
 
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name, _tags ->
+      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
+                                                                         _tags ->
         metrics
       end)
 
       assert {:ok, aggregated} = Aggregator.update_aggregation(rule_id)
       assert length(aggregated) == 1
+
       # For 90th percentile of [10, 20, 30, 40, 50], we expect 50 (the 5th element)
       assert aggregated |> List.first() |> Map.get(:value) == 50.0
     end
