@@ -25,8 +25,9 @@ defmodule Raxol.Terminal.Buffer.ScrollbackManager do
   @doc """
   Starts the scrollback manager process.
   """
-  def start_link do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  def start_link(opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
