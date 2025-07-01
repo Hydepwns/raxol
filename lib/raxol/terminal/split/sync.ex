@@ -11,7 +11,11 @@ defmodule Raxol.Terminal.Split.Sync do
 
   def start_link(opts \\ []) do
     opts = if is_map(opts), do: Enum.into(opts, []), else: opts
-    name = Keyword.get(opts, :name, __MODULE__)
+    name = if Mix.env() == :test do
+      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+    else
+      Keyword.get(opts, :name, __MODULE__)
+    end
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 

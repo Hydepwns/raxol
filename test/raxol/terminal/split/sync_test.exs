@@ -16,12 +16,12 @@ defmodule Raxol.Terminal.Split.SyncTest do
 
       # Subscribe to events
       :ok =
-        Sync.subscribe_to_events(split_id, fn event ->
+        GenServer.call(pid, {:subscribe, split_id, fn event ->
           send(test_pid, {:event_received, event})
-        end)
+        end})
 
       # Broadcast event
-      :ok = Sync.broadcast_event(split_id, event_type, payload)
+      :ok = GenServer.cast(pid, {:broadcast_event, split_id, event_type, payload})
 
       # Verify event was received
       assert_receive {:event_received, event}
@@ -39,17 +39,17 @@ defmodule Raxol.Terminal.Split.SyncTest do
 
       # Subscribe multiple times
       :ok =
-        Sync.subscribe_to_events(split_id, fn event ->
+        GenServer.call(pid, {:subscribe, split_id, fn event ->
           send(test_pid, {:event_received_1, event})
-        end)
+        end})
 
       :ok =
-        Sync.subscribe_to_events(split_id, fn event ->
+        GenServer.call(pid, {:subscribe, split_id, fn event ->
           send(test_pid, {:event_received_2, event})
-        end)
+        end})
 
       # Broadcast event
-      :ok = Sync.broadcast_event(split_id, event_type, payload)
+      :ok = GenServer.cast(pid, {:broadcast_event, split_id, event_type, payload})
 
       # Verify both subscribers received the event
       assert_receive {:event_received_1, event1}
@@ -65,21 +65,21 @@ defmodule Raxol.Terminal.Split.SyncTest do
       state_updates = %{new_key: "new_value"}
 
       # Update state
-      updated_state = Sync.update_shared_state(split_id, initial_state)
+      updated_state = GenServer.call(pid, {:update_shared_state, split_id, initial_state})
       assert updated_state == initial_state
 
       # Update state again
-      final_state = Sync.update_shared_state(split_id, state_updates)
+      final_state = GenServer.call(pid, {:update_shared_state, split_id, state_updates})
       assert final_state == Map.merge(initial_state, state_updates)
 
       # Retrieve state
-      retrieved_state = Sync.get_shared_state(split_id)
+      retrieved_state = GenServer.call(pid, {:get_shared_state, split_id})
       assert retrieved_state == final_state
     end
 
     test "handles non-existent state", %{pid: pid} do
       split_id = 999
-      state = Sync.get_shared_state(split_id)
+      state = GenServer.call(pid, {:get_shared_state, split_id})
       assert state == %{}
     end
   end
@@ -91,15 +91,15 @@ defmodule Raxol.Terminal.Split.SyncTest do
 
       # Subscribe
       :ok =
-        Sync.subscribe_to_events(split_id, fn event ->
+        GenServer.call(pid, {:subscribe, split_id, fn event ->
           send(test_pid, {:event_received, event})
-        end)
+        end})
 
       # Unsubscribe
-      :ok = Sync.unsubscribe_from_events(split_id)
+      :ok = GenServer.call(pid, {:unsubscribe, split_id})
 
       # Broadcast event
-      :ok = Sync.broadcast_event(split_id, :test_event, %{data: "test"})
+      :ok = GenServer.cast(pid, {:broadcast_event, split_id, :test_event, %{data: "test"}})
 
       # Verify no event was received
       refute_receive {:event_received, _}

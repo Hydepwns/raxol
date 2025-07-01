@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Split.ManagerTest do
   alias Raxol.Terminal.Split.Manager
 
   setup do
-    {:ok, pid} = Manager.start_link(name: :split_manager_test)
+    {:ok, pid} = Manager.start_link()
     %{pid: pid}
   end
 
