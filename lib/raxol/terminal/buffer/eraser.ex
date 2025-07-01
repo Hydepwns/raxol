@@ -85,15 +85,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     new_cells =
       Enum.reduce(y..(y + height - 1), buffer.cells, fn row, cells ->
         if row < buffer.height do
-          List.update_at(cells, row, fn line ->
-            Enum.reduce(x..(x + width - 1), line, fn col, acc ->
-              if col < buffer.width do
-                List.update_at(acc, col, fn _ -> empty_cell end)
-              else
-                acc
-              end
-            end)
-          end)
+          List.update_at(cells, row, &clear_line_segment(&1, x, width, empty_cell))
         else
           cells
         end
@@ -188,7 +180,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
   def clear_line_from(%ScreenBuffer{} = buffer, row, col, style) do
     style = style || TextFormatting.new()
-    clear_region(buffer, row, col, row, buffer.width - 1, style)
+    clear_region(buffer, col, row, buffer.width - col, 1, style)
   end
 
   def clear_line_from(buffer, _row, _col, _style) do
@@ -209,7 +201,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
   def clear_line_to(%ScreenBuffer{} = buffer, row, col, style) do
     style = style || TextFormatting.new()
-    clear_region(buffer, row, 0, row, col, style)
+    clear_region(buffer, 0, row, col + 1, 1, style)
   end
 
   def clear_line_to(buffer, _row, _col, _style) do
@@ -433,6 +425,16 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   end
 
   # Private helper functions
+
+  defp clear_line_segment(line, x, width, empty_cell) do
+    Enum.reduce(x..(x + width - 1), line, fn col, acc ->
+      if col < length(line) do
+        List.update_at(acc, col, fn _ -> empty_cell end)
+      else
+        acc
+      end
+    end)
+  end
 
   defp create_empty_line(width, style) do
     for _ <- 1..width do
