@@ -169,8 +169,10 @@ defmodule Raxol.Terminal.Emulator.Struct do
     case mode do
       :show_cursor ->
         %{emulator | cursor: %{emulator.cursor | visible: true}}
+
       :insert_mode ->
         %{emulator | state: :insert}
+
       _ ->
         # For other modes, just return the emulator unchanged
         emulator
@@ -185,8 +187,10 @@ defmodule Raxol.Terminal.Emulator.Struct do
     case mode do
       :show_cursor ->
         %{emulator | cursor: %{emulator.cursor | visible: false}}
+
       :insert_mode ->
         %{emulator | state: :normal}
+
       _ ->
         # For other modes, just return the emulator unchanged
         emulator
@@ -211,8 +215,10 @@ defmodule Raxol.Terminal.Emulator.Struct do
     case emulator.active_buffer_type do
       :main ->
         %{emulator | main_screen_buffer: new_buffer}
+
       :alternate ->
         %{emulator | alternate_screen_buffer: new_buffer}
+
       _ ->
         %{emulator | main_screen_buffer: new_buffer}
     end

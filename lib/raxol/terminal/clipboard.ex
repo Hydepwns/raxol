@@ -150,7 +150,8 @@ defmodule Raxol.Terminal.Clipboard do
       iex> Clipboard.get_content(clipboard)
       "Hello, World!"
   """
-  @spec set_content(Manager.t(), String.t()) :: {:ok, Manager.t()} | {:error, term()}
+  @spec set_content(Manager.t(), String.t()) ::
+          {:ok, Manager.t()} | {:error, term()}
   def set_content(clipboard, content) do
     {:ok, Manager.set_content(clipboard, content)}
   end
@@ -202,7 +203,8 @@ defmodule Raxol.Terminal.Clipboard do
       iex> content
       "Selected text"
   """
-  @spec set_selection(Manager.t(), String.t()) :: {:ok, Manager.t()} | {:error, term()}
+  @spec set_selection(Manager.t(), String.t()) ::
+          {:ok, Manager.t()} | {:error, term()}
   def set_selection(clipboard, content) do
     # For now, set the same content as the main clipboard
     # In a real implementation, this would handle separate selection buffer

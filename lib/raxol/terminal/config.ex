@@ -441,7 +441,9 @@ defmodule Raxol.Terminal.Config do
   end
 
   defp update_config_fields(config, updates) do
-    Enum.reduce(updates, config, fn {key, value}, acc -> update_field({key, value}, acc) end)
+    Enum.reduce(updates, config, fn {key, value}, acc ->
+      update_field({key, value}, acc)
+    end)
   end
 
   defp update_field({:width, value}, acc) when integer?(value) and value > 0,

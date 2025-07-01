@@ -3,16 +3,33 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
   alias Raxol.Terminal.Sync.Manager
 
   # Test-specific wrapper functions that use the process name
-  defp register_component(manager_name, component_id, component_type, initial_state \\ %{}) do
-    GenServer.call(manager_name, {:register_component, component_id, component_type, initial_state})
+  defp register_component(
+         manager_name,
+         component_id,
+         component_type,
+         initial_state \\ %{}
+       ) do
+    GenServer.call(
+      manager_name,
+      {:register_component, component_id, component_type, initial_state}
+    )
   end
 
   defp unregister_component(manager_name, component_id) do
     GenServer.call(manager_name, {:unregister_component, component_id})
   end
 
-  defp sync_state(manager_name, component_id, component_type, new_state, opts \\ []) do
-    GenServer.call(manager_name, {:sync_state, component_id, component_type, new_state, opts})
+  defp sync_state(
+         manager_name,
+         component_id,
+         component_type,
+         new_state,
+         opts \\ []
+       ) do
+    GenServer.call(
+      manager_name,
+      {:sync_state, component_id, component_type, new_state, opts}
+    )
   end
 
   defp sync_state_simple(manager_name, component_id, new_state) do
@@ -70,9 +87,13 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
       assert {:ok, ^state} = get_state(manager_name, "test_split")
     end
 
-    test "handles sync for non-existent component", %{manager_name: manager_name} do
+    test "handles sync for non-existent component", %{
+      manager_name: manager_name
+    } do
       state = %{content: "test content"}
-      assert {:error, :not_found} == sync_state_simple(manager_name, "nonexistent", state)
+
+      assert {:error, :not_found} ==
+               sync_state_simple(manager_name, "nonexistent", state)
     end
 
     test "updates state with new values", %{manager_name: manager_name} do
@@ -81,11 +102,15 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
 
       # Initial state
       initial_state = %{content: "initial", cursor: {0, 0}}
-      assert :ok == sync_state_simple(manager_name, "test_window", initial_state)
+
+      assert :ok ==
+               sync_state_simple(manager_name, "test_window", initial_state)
 
       # Update state
       updated_state = %{content: "updated", cursor: {1, 1}}
-      assert :ok == sync_state_simple(manager_name, "test_window", updated_state)
+
+      assert :ok ==
+               sync_state_simple(manager_name, "test_window", updated_state)
 
       # Verify update
       assert {:ok, ^updated_state} = get_state(manager_name, "test_window")
@@ -146,13 +171,18 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
       assert is_integer(stats.last_sync)
     end
 
-    test "handles stats for non-existent component", %{manager_name: manager_name} do
-      assert {:error, :not_found} == get_component_stats(manager_name, "nonexistent")
+    test "handles stats for non-existent component", %{
+      manager_name: manager_name
+    } do
+      assert {:error, :not_found} ==
+               get_component_stats(manager_name, "nonexistent")
     end
   end
 
   describe "multiple components" do
-    test "manages multiple components independently", %{manager_name: manager_name} do
+    test "manages multiple components independently", %{
+      manager_name: manager_name
+    } do
       # Register multiple components
       assert :ok == register_component(manager_name, "split1", :split)
       assert :ok == register_component(manager_name, "window1", :window)
@@ -176,7 +206,11 @@ defmodule Raxol.Terminal.Sync.ManagerTest do
     test ~c"handles component cleanup", %{manager_name: manager_name} do
       # Register and sync state
       assert :ok == register_component(manager_name, "test_component", :split)
-      assert :ok == sync_state_simple(manager_name, "test_component", %{content: "test"})
+
+      assert :ok ==
+               sync_state_simple(manager_name, "test_component", %{
+                 content: "test"
+               })
 
       # Unregister
       assert :ok == unregister_component(manager_name, "test_component")

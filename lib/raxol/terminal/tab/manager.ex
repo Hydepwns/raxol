@@ -194,6 +194,7 @@ defmodule Raxol.Terminal.Tab.Manager do
 
       current_config ->
         updated_config = Map.merge(current_config, updates)
+
         updated_manager = %{
           manager
           | tabs: Map.put(manager.tabs, tab_id, updated_config)

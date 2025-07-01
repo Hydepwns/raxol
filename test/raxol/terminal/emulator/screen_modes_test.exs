@@ -38,7 +38,9 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Get the mode manager to check if the mode is set
       mode_manager = Emulator.get_mode_manager_struct(emulator_alt)
-      assert ModeManager.mode_enabled?(mode_manager, :dec_alt_screen_save) == true
+
+      assert ModeManager.mode_enabled?(mode_manager, :dec_alt_screen_save) ==
+               true
 
       # Switch back to main buffer (DECRST ?1047l)
       {emulator_after, _} = Emulator.process_input(emulator_alt, "\e[?1047l")

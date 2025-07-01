@@ -82,7 +82,9 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
 
       # Then optimize
       optimized_renderer = GPURenderer.optimize_pipeline(updated_renderer)
-      assert optimized_renderer.render_pipeline != updated_renderer.render_pipeline
+
+      assert optimized_renderer.render_pipeline !=
+               updated_renderer.render_pipeline
     end
   end
 

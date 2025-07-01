@@ -173,27 +173,20 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Call present/0 afterwards to make it visible.
   Returns :ok or {:error, reason}.
   """
-  # state is not used in the body with tb_clear
   def clear_screen(%State{} = _state) do
     # Check if we're in test mode
     if Application.get_env(:raxol, :terminal_test_mode, false) do
       # In test mode, just return success
       :ok
     else
-      case :termbox2_nif.tb_clear() do
-        0 ->
-          # Also present immediately as per previous logic
-          case :termbox2_nif.tb_present() do
-            0 ->
-              :ok
+      clear_and_present()
+    end
+  end
 
-            present_error_code ->
-              {:error, {:present_after_clear_failed, present_error_code}}
-          end
-
-        clear_error_code ->
-          {:error, {:clear_failed, clear_error_code}}
-      end
+  defp clear_and_present do
+    case :termbox2_nif.tb_clear() do
+      0 -> present_buffer()
+      clear_error_code -> {:error, {:clear_failed, clear_error_code}}
     end
   end
 
@@ -203,90 +196,275 @@ defmodule Raxol.Terminal.Integration.Renderer do
   The cursor position is typically updated with present/0.
   Returns :ok or {:error, reason}.
   """
-  # state is not used in the body
   def move_cursor(%State{} = _state, x, y) do
     # Check if we're in test mode
     if Application.get_env(:raxol, :terminal_test_mode, false) do
       # In test mode, just return success
       :ok
     else
-      case :termbox2_nif.tb_set_cursor(x, y) do
-        0 ->
-          # Also present immediately as per previous logic
-          case :termbox2_nif.tb_present() do
-            0 ->
-              :ok
+      set_cursor_and_present(x, y)
+    end
+  end
 
-            present_error_code ->
-              {:error, {:present_after_move_cursor_failed, present_error_code}}
-          end
-
-        set_cursor_error_code ->
-          {:error, {:set_cursor_failed, set_cursor_error_code}}
-      end
+  defp set_cursor_and_present(x, y) do
+    case :termbox2_nif.tb_set_cursor(x, y) do
+      0 -> present_buffer()
+      set_cursor_error_code -> {:error, {:set_cursor_failed, set_cursor_error_code}}
     end
   end
 
   @doc """
   Creates a new renderer with the given options.
   """
-  def new(_opts \\ []) do
-    {:ok, %State{}}
+  def new(opts \\ []) do
+    # Initialize terminal if not in test mode
+    case init_terminal() do
+      :ok ->
+        # Create initial state with configuration
+        config = build_initial_config(opts)
+        state = %State{
+          width: Map.get(config, :width, 80),
+          height: Map.get(config, :height, 24),
+          config: config
+        }
+        {:ok, state}
+
+      error ->
+        error
+    end
   end
 
   @doc """
   Updates the renderer configuration.
   """
-  def update_config(state, _config) do
-    # TODO:Implementation details...
-    state
+  def update_config(%State{} = state, config) do
+    # Merge new config with existing config
+    updated_config = Map.merge(state.config || %{}, config)
+
+    # Apply configuration changes
+    case apply_config_changes(updated_config) do
+      :ok ->
+        %{state | config: updated_config}
+
+      {:error, reason} ->
+        Logger.error("Failed to apply renderer configuration: #{inspect(reason)}")
+        state
+    end
   end
 
   @doc """
   Sets a specific configuration value.
   """
-  def set_config_value(state, _key, _value) do
-    # Implementation details...
-    state
+  def set_config_value(%State{} = state, key, value) do
+    # Update the specific key in the config
+    updated_config = Map.put(state.config || %{}, key, value)
+
+    # Apply the configuration change
+    case apply_config_value(key, value) do
+      :ok ->
+        %{state | config: updated_config}
+
+      {:error, reason} ->
+        Logger.error("Failed to set config value #{key}: #{inspect(reason)}")
+        state
+    end
   end
 
   @doc """
   Resets the renderer configuration to defaults.
   """
-  def reset_config(state) do
-    # Implementation details...
-    state
+  def reset_config(%State{} = state) do
+    # Get default configuration
+    default_config = build_initial_config([])
+
+    # Apply default configuration
+    case apply_config_changes(default_config) do
+      :ok ->
+        %{state | config: default_config}
+
+      {:error, reason} ->
+        Logger.error("Failed to reset renderer configuration: #{inspect(reason)}")
+        state
+    end
   end
 
   @doc """
   Resizes the renderer to the given dimensions.
   """
-  def resize(state, _width, _height) do
-    # Implementation details...
-    state
+  def resize(%State{} = state, width, height) when is_integer(width) and is_integer(height) do
+    # Check if we're in test mode
+    if Application.get_env(:raxol, :terminal_test_mode, false) do
+      # In test mode, just update the state
+      %{state | width: width, height: height}
+    else
+      # In real mode, we need to handle terminal resize
+      # Note: Termbox2 doesn't have a direct resize function, so we update our state
+      # and let the next render cycle handle the new dimensions
+      case validate_dimensions(width, height) do
+        :ok ->
+          %{state | width: width, height: height}
+
+        {:error, reason} ->
+          Logger.error("Invalid resize dimensions: #{inspect(reason)}")
+          state
+      end
+    end
   end
 
   @doc """
   Sets the cursor visibility.
   """
-  def set_cursor_visibility(state, _visible) do
-    # Implementation details...
-    state
+  def set_cursor_visibility(%State{} = state, visible) when is_boolean(visible) do
+    # Check if we're in test mode
+    if Application.get_env(:raxol, :terminal_test_mode, false) do
+      # In test mode, just update the state
+      %{state | config: Map.put(state.config || %{}, :cursor_visible, visible)}
+    else
+      # In real mode, use termbox2 to hide/show cursor
+      case set_terminal_cursor_visibility(visible) do
+        :ok ->
+          %{state | config: Map.put(state.config || %{}, :cursor_visible, visible)}
+
+        {:error, reason} ->
+          Logger.error("Failed to set cursor visibility: #{inspect(reason)}")
+          state
+      end
+    end
   end
 
   @doc """
   Sets the terminal title.
   """
-  def set_title(state, _title) do
-    # Implementation details...
-    state
+  def set_title(%State{} = state, title) when is_binary(title) do
+    # Check if we're in test mode
+    if Application.get_env(:raxol, :terminal_test_mode, false) do
+      # In test mode, just update the state
+      %{state | config: Map.put(state.config || %{}, :title, title)}
+    else
+      # In real mode, use termbox2 to set the title
+      case :termbox2_nif.tb_set_title(title) do
+        {:ok, "set"} ->
+          %{state | config: Map.put(state.config || %{}, :title, title)}
+
+        {:error, reason} ->
+          Logger.error("Failed to set terminal title: #{inspect(reason)}")
+          state
+
+        other ->
+          Logger.error("Unexpected response from tb_set_title: #{inspect(other)}")
+          state
+      end
+    end
   end
 
   @doc """
   Gets the terminal title.
   """
-  def get_title(_state) do
-    # Implementation details...
-    ""
+  def get_title(%State{} = state) do
+    # Return the title from our state
+    Map.get(state.config || %{}, :title, "")
+  end
+
+  # Private helper functions
+
+  defp build_initial_config(opts) do
+    %{
+      width: Keyword.get(opts, :width, 80),
+      height: Keyword.get(opts, :height, 24),
+      cursor_visible: Keyword.get(opts, :cursor_visible, true),
+      title: Keyword.get(opts, :title, "Raxol Terminal"),
+      theme: Keyword.get(opts, :theme, %{foreground: :white, background: :black}),
+      fps: Keyword.get(opts, :fps, 60),
+      font_settings: Keyword.get(opts, :font_settings, %{size: 12})
+    }
+  end
+
+  defp apply_config_changes(config) do
+    # Apply theme changes if present
+    if Map.has_key?(config, :theme) do
+      case apply_theme_config(config.theme) do
+        :ok -> :ok
+        error -> error
+      end
+    else
+      :ok
+    end
+  end
+
+  defp apply_config_value(:cursor_visible, visible) do
+    set_terminal_cursor_visibility(visible)
+  end
+
+  defp apply_config_value(:title, title) do
+    case :termbox2_nif.tb_set_title(title) do
+      {:ok, "set"} -> :ok
+      {:error, reason} -> {:error, reason}
+      other -> {:error, {:unexpected_response, other}}
+    end
+  end
+
+  defp apply_config_value(:theme, theme) do
+    apply_theme_config(theme)
+  end
+
+  defp apply_config_value(_key, _value) do
+    # For other config values, just return success
+    :ok
+  end
+
+  defp apply_theme_config(theme) do
+    # Apply theme colors to terminal
+    # Note: Termbox2 doesn't have a direct theme setting function,
+    # so we just validate the theme structure
+    case validate_theme(theme) do
+      :ok -> :ok
+      error -> error
+    end
+  end
+
+  defp set_terminal_cursor_visibility(visible) do
+    if visible do
+      # Show cursor by setting it to a valid position (will be updated during render)
+      :ok
+    else
+      # Hide cursor by setting it to -1, -1
+      case :termbox2_nif.tb_set_cursor(-1, -1) do
+        :ok -> :ok
+        error_code -> {:error, {:hide_cursor_failed, error_code}}
+      end
+    end
+  end
+
+  defp validate_dimensions(width, height) do
+    cond do
+      width <= 0 ->
+        {:error, {:invalid_width, width}}
+
+      height <= 0 ->
+        {:error, {:invalid_height, height}}
+
+      width > 1000 ->
+        {:error, {:width_too_large, width}}
+
+      height > 1000 ->
+        {:error, {:height_too_large, height}}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp validate_theme(theme) when is_map(theme) do
+    # Basic theme validation
+    required_keys = [:foreground, :background]
+
+    case Enum.find(required_keys, fn key -> !Map.has_key?(theme, key) end) do
+      nil -> :ok
+      missing_key -> {:error, {:missing_theme_key, missing_key}}
+    end
+  end
+
+  defp validate_theme(_theme) do
+    {:error, :invalid_theme_format}
   end
 end

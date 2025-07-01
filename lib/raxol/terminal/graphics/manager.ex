@@ -187,6 +187,7 @@ defmodule Raxol.Terminal.Graphics.Manager do
       ],
       data: <<0, 1, 2>>
     }
+
     {:ok, sixel_data}
   end
 

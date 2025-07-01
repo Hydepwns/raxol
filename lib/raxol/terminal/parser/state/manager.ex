@@ -545,13 +545,24 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   def transition_to(manager, new_state) do
     case new_state do
       :csi_entry ->
-        %{manager | state: :csi_entry, params_buffer: "", intermediates_buffer: ""}
+        %{
+          manager
+          | state: :csi_entry,
+            params_buffer: "",
+            intermediates_buffer: ""
+        }
 
       :osc_string ->
         %{manager | state: :osc_string, payload_buffer: ""}
 
       :dcs_entry ->
-        %{manager | state: :dcs_entry, params_buffer: "", intermediates_buffer: "", payload_buffer: ""}
+        %{
+          manager
+          | state: :dcs_entry,
+            params_buffer: "",
+            intermediates_buffer: "",
+            payload_buffer: ""
+        }
 
       _ ->
         %{manager | state: :ground}
@@ -565,12 +576,22 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   def append_intermediate(manager, intermediate) do
     append =
       cond do
-        is_integer(intermediate) -> <<intermediate>>
-        is_binary(intermediate) -> intermediate
-        is_list(intermediate) and length(intermediate) == 1 -> <<hd(intermediate)>>
-        is_list(intermediate) -> to_string(intermediate)
-        true -> ""
+        is_integer(intermediate) ->
+          <<intermediate>>
+
+        is_binary(intermediate) ->
+          intermediate
+
+        is_list(intermediate) and length(intermediate) == 1 ->
+          <<hd(intermediate)>>
+
+        is_list(intermediate) ->
+          to_string(intermediate)
+
+        true ->
+          ""
       end
+
     %{manager | intermediates_buffer: manager.intermediates_buffer <> append}
   end
 
@@ -609,27 +630,33 @@ defmodule Raxol.Terminal.Parser.State.Manager do
 
   defp handle_ground_state(emulator, state, input) do
     case input do
-      <<142, next::binary>> ->  # C1 SS2 (0x8E)
+      # C1 SS2 (0x8E)
+      <<142, next::binary>> ->
         if byte_size(next) > 0 do
           <<_char, rest::binary>> = next
           {:continue, emulator, %{state | single_shift: nil}, rest}
         else
           {:continue, emulator, %{state | single_shift: :ss2}, next}
         end
-      <<143, next::binary>> ->  # C1 SS3 (0x8F)
+
+      # C1 SS3 (0x8F)
+      <<143, next::binary>> ->
         if byte_size(next) > 0 do
           <<_char, rest::binary>> = next
           {:continue, emulator, %{state | single_shift: nil}, rest}
         else
           {:continue, emulator, %{state | single_shift: :ss3}, next}
         end
+
       _ ->
         cond do
           state.single_shift != nil and byte_size(input) > 0 ->
             <<_char, rest::binary>> = input
             {:continue, emulator, %{state | single_shift: nil}, rest}
+
           state.single_shift != nil and byte_size(input) == 0 ->
             {:continue, emulator, %{state | single_shift: nil}, input}
+
           true ->
             {:continue, emulator, state, input}
         end
@@ -638,31 +665,44 @@ defmodule Raxol.Terminal.Parser.State.Manager do
 
   defp handle_escape_state(emulator, state, input) do
     case input do
-      <<27, 91, rest::binary>> ->  # ESC [ (CSI) as two bytes
+      # ESC [ (CSI) as two bytes
+      <<27, 91, rest::binary>> ->
         {:continue, emulator, %{state | state: :csi_entry}, rest}
-      <<78, next::binary>> ->  # ESC N (SS2)
+
+      # ESC N (SS2)
+      <<78, next::binary>> ->
         if byte_size(next) > 0 do
           <<_char, rest::binary>> = next
           {:continue, emulator, %{state | single_shift: nil}, rest}
         else
           {:continue, emulator, %{state | single_shift: :ss2}, next}
         end
-      <<79, next::binary>> ->  # ESC O (SS3)
+
+      # ESC O (SS3)
+      <<79, next::binary>> ->
         if byte_size(next) > 0 do
           <<_char, rest::binary>> = next
           {:continue, emulator, %{state | single_shift: nil}, rest}
         else
           {:continue, emulator, %{state | single_shift: :ss3}, next}
         end
-      <<91, rest::binary>> ->  # ESC [ (CSI)
+
+      # ESC [ (CSI)
+      <<91, rest::binary>> ->
         {:continue, emulator, %{state | state: :csi_entry}, rest}
+
       _ ->
         cond do
           state.single_shift != nil and byte_size(input) > 0 ->
             <<_char, rest::binary>> = input
-            {:continue, emulator, %{state | state: :ground, single_shift: nil}, rest}
+
+            {:continue, emulator, %{state | state: :ground, single_shift: nil},
+             rest}
+
           state.single_shift != nil and byte_size(input) == 0 ->
-            {:continue, emulator, %{state | state: :ground, single_shift: nil}, input}
+            {:continue, emulator, %{state | state: :ground, single_shift: nil},
+             input}
+
           true ->
             {:continue, emulator, %{state | state: :ground}, input}
         end

@@ -20,7 +20,14 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
       {:ok, tab_config} ->
         window_id = generate_window_id()
         updated_tab_config = Map.put(tab_config, :window_id, window_id)
-        updated_tab_manager = Map.put(tab_manager, :tabs, Map.put(tab_manager.tabs || %{}, tab_id, updated_tab_config))
+
+        updated_tab_manager =
+          Map.put(
+            tab_manager,
+            :tabs,
+            Map.put(tab_manager.tabs || %{}, tab_id, updated_tab_config)
+          )
+
         {:ok, window_id, updated_tab_manager, window_manager}
 
       {:error, :not_found} ->
@@ -46,7 +53,14 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, tab_config} ->
         updated_tab_config = Map.put(tab_config, :window_id, nil)
-        updated_tab_manager = Map.put(tab_manager, :tabs, Map.put(tab_manager.tabs || %{}, tab_id, updated_tab_config))
+
+        updated_tab_manager =
+          Map.put(
+            tab_manager,
+            :tabs,
+            Map.put(tab_manager.tabs || %{}, tab_id, updated_tab_config)
+          )
+
         {:ok, updated_tab_manager, window_manager}
 
       {:error, :not_found} ->

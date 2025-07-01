@@ -95,7 +95,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def resize(buffer, new_width, new_height) do
     # Validate input dimensions
     if new_width <= 0 or new_height <= 0 do
-      raise ArgumentError, "ScreenBuffer dimensions must be positive integers, got: #{new_width}x#{new_height}"
+      raise ArgumentError,
+            "ScreenBuffer dimensions must be positive integers, got: #{new_width}x#{new_height}"
     end
 
     # Create a new ScreenBuffer with the new dimensions
@@ -124,7 +125,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
           existing_cell =
             Enum.at(row_data, col) || default_cell
 
-          current_row = Enum.at(row_acc, row, List.duplicate(default_cell, new_width))
+          current_row =
+            Enum.at(row_acc, row, List.duplicate(default_cell, new_width))
+
           updated_row = List.replace_at(current_row, col, existing_cell)
 
           List.replace_at(row_acc, row, updated_row)
@@ -424,7 +427,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
-    IO.puts("DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}")
+    IO.puts(
+      "DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}"
+    )
 
     # Clear from start of line to cursor
     line = Enum.at(buffer.cells, y, [])
@@ -445,9 +450,14 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_all(buffer) do
     empty_cell = Raxol.Terminal.Cell.new()
+
     %{
       buffer
-      | cells: List.duplicate(List.duplicate(empty_cell, buffer.width), buffer.height),
+      | cells:
+          List.duplicate(
+            List.duplicate(empty_cell, buffer.width),
+            buffer.height
+          ),
         scrollback: []
     }
   end
@@ -621,7 +631,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
     empty_cell = Raxol.Terminal.Cell.new()
 
     cleared_line =
-      List.duplicate(empty_cell, x) ++ List.duplicate(empty_cell, buffer.width - x)
+      List.duplicate(empty_cell, x) ++
+        List.duplicate(empty_cell, buffer.width - x)
 
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
     %{buffer | cells: new_cells}
@@ -731,13 +742,16 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def erase_all_with_scrollback(buffer), do: Eraser.clear(buffer)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_from_cursor_to_end_of_line(buffer), do: Eraser.erase_from_cursor_to_end_of_line(buffer)
+  def erase_from_cursor_to_end_of_line(buffer),
+    do: Eraser.erase_from_cursor_to_end_of_line(buffer)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_from_start_of_line_to_cursor(buffer), do: Eraser.erase_from_start_of_line_to_cursor(buffer)
+  def erase_from_start_of_line_to_cursor(buffer),
+    do: Eraser.erase_from_start_of_line_to_cursor(buffer)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_from_start_to_cursor(buffer), do: Eraser.erase_from_start_to_cursor(buffer)
+  def erase_from_start_to_cursor(buffer),
+    do: Eraser.erase_from_start_to_cursor(buffer)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_line(buffer), do: Eraser.erase_line(buffer, 0)
@@ -843,11 +857,19 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Fills a region of the buffer with a specified cell.
   """
-  @spec fill_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), Cell.t()) :: t()
+  @spec fill_region(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          Cell.t()
+        ) :: t()
   def fill_region(buffer, x, y, width, height, cell) do
     # Validate coordinates
     if x < 0 or y < 0 or width <= 0 or height <= 0 do
-      raise ArgumentError, "Invalid region parameters: x=#{x}, y=#{y}, width=#{width}, height=#{height}"
+      raise ArgumentError,
+            "Invalid region parameters: x=#{x}, y=#{y}, width=#{width}, height=#{height}"
     end
 
     if x + width > buffer.width or y + height > buffer.height do

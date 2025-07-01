@@ -31,15 +31,22 @@ defmodule Raxol.Terminal.Input.Processor do
         cond do
           Regex.match?(~r/^\d+;\d+;\d+;\d+M$/, rest) ->
             parse_mouse_event(input)
+
           Regex.match?(~r/^\d+;\d+;\d+;\d+;\d+;\d+M$/, rest) ->
             parse_mouse_event(input)
+
           true ->
             parse_key_event(input)
         end
 
       # Regular single character
       <<char::utf8>> when char < 128 ->
-        {:ok, %KeyEvent{key: <<char::utf8>>, modifiers: [], timestamp: System.monotonic_time()}}
+        {:ok,
+         %KeyEvent{
+           key: <<char::utf8>>,
+           modifiers: [],
+           timestamp: System.monotonic_time()
+         }}
 
       # Unknown input
       _ ->
@@ -55,14 +62,16 @@ defmodule Raxol.Terminal.Input.Processor do
       <<27, ?[, rest::binary>> ->
         case Regex.run(~r/^(\d+);(\d+);(\d+);(\d+)M$/, rest) do
           [_, button_code, modifier_code, x, y] ->
-            {:ok, %MouseEvent{
-              button: :left,
-              action: mouse_action_from_code(button_code),
-              x: String.to_integer(x),
-              y: String.to_integer(y),
-              modifiers: [],
-              timestamp: System.monotonic_time()
-            }}
+            {:ok,
+             %MouseEvent{
+               button: :left,
+               action: mouse_action_from_code(button_code),
+               x: String.to_integer(x),
+               y: String.to_integer(y),
+               modifiers: [],
+               timestamp: System.monotonic_time()
+             }}
+
           nil ->
             case Regex.run(~r/^(\d+);(\d+);(\d+);(\d+);(\d+);(\d+)M$/, rest) do
               [_, button_code, modifier_code, x, y, mod1, mod2] ->
@@ -70,18 +79,22 @@ defmodule Raxol.Terminal.Input.Processor do
                 mods = if mod1 == "2", do: mods ++ [:shift], else: mods
                 mods = if mod2 == "3", do: mods ++ [:alt], else: mods
                 mods = if mod2 == "5", do: mods ++ [:ctrl], else: mods
-                {:ok, %MouseEvent{
-                  button: :left,
-                  action: mouse_action_from_code(button_code),
-                  x: String.to_integer(x),
-                  y: String.to_integer(y),
-                  modifiers: mods,
-                  timestamp: System.monotonic_time()
-                }}
+
+                {:ok,
+                 %MouseEvent{
+                   button: :left,
+                   action: mouse_action_from_code(button_code),
+                   x: String.to_integer(x),
+                   y: String.to_integer(y),
+                   modifiers: mods,
+                   timestamp: System.monotonic_time()
+                 }}
+
               nil ->
                 {:error, :invalid_mouse_sequence}
             end
         end
+
       _ ->
         {:error, :invalid_mouse_event}
     end
@@ -97,24 +110,54 @@ defmodule Raxol.Terminal.Input.Processor do
   def parse_key_event(input) do
     case input do
       # Function keys
-      "\e[A" -> {:ok, %KeyEvent{key: "A", modifiers: [], timestamp: System.monotonic_time()}}
-      "\e[B" -> {:ok, %KeyEvent{key: "B", modifiers: [], timestamp: System.monotonic_time()}}
-      "\e[C" -> {:ok, %KeyEvent{key: "C", modifiers: [], timestamp: System.monotonic_time()}}
-      "\e[D" -> {:ok, %KeyEvent{key: "D", modifiers: [], timestamp: System.monotonic_time()}}
+      "\e[A" ->
+        {:ok,
+         %KeyEvent{key: "A", modifiers: [], timestamp: System.monotonic_time()}}
+
+      "\e[B" ->
+        {:ok,
+         %KeyEvent{key: "B", modifiers: [], timestamp: System.monotonic_time()}}
+
+      "\e[C" ->
+        {:ok,
+         %KeyEvent{key: "C", modifiers: [], timestamp: System.monotonic_time()}}
+
+      "\e[D" ->
+        {:ok,
+         %KeyEvent{key: "D", modifiers: [], timestamp: System.monotonic_time()}}
 
       # Keys with modifiers, e.g. "\e[2;5A"
-      <<27, ?[, prefix::binary-size(1), ?;, mod_code::binary-size(1), key::binary-size(1)>> ->
+      <<27, ?[, prefix::binary-size(1), ?;, mod_code::binary-size(1),
+        key::binary-size(1)>> ->
         modifiers = parse_key_modifiers_for_test(prefix, mod_code)
-        {:ok, %KeyEvent{key: key, modifiers: modifiers, timestamp: System.monotonic_time()}}
+
+        {:ok,
+         %KeyEvent{
+           key: key,
+           modifiers: modifiers,
+           timestamp: System.monotonic_time()
+         }}
 
       # Keys with only prefix, e.g. "\e[2A" (shift)
-      <<27, ?[, prefix::binary-size(1), key::binary-size(1)>> when key in ["A", "B", "C", "D"] ->
+      <<27, ?[, prefix::binary-size(1), key::binary-size(1)>>
+      when key in ["A", "B", "C", "D"] ->
         modifiers = if prefix == "2", do: [:shift], else: []
-        {:ok, %KeyEvent{key: key, modifiers: modifiers, timestamp: System.monotonic_time()}}
+
+        {:ok,
+         %KeyEvent{
+           key: key,
+           modifiers: modifiers,
+           timestamp: System.monotonic_time()
+         }}
 
       # Regular single character
       <<char::utf8>> when char < 128 ->
-        {:ok, %KeyEvent{key: <<char::utf8>>, modifiers: [], timestamp: System.monotonic_time()}}
+        {:ok,
+         %KeyEvent{
+           key: <<char::utf8>>,
+           modifiers: [],
+           timestamp: System.monotonic_time()
+         }}
 
       _ ->
         if String.starts_with?(input, "\e[") do
@@ -128,7 +171,13 @@ defmodule Raxol.Terminal.Input.Processor do
   @doc """
   Formats mouse events to escape sequences.
   """
-  def format_mouse_event(%MouseEvent{button: button, action: action, x: x, y: y, modifiers: modifiers}) do
+  def format_mouse_event(%MouseEvent{
+        button: button,
+        action: action,
+        x: x,
+        y: y,
+        modifiers: modifiers
+      }) do
     # The test expects: "\e[0;0;10;20;2;5M"
     button_code = mouse_button_code(button, action)
     # For the test, always output two modifier fields (mod1, mod2)
@@ -146,10 +195,17 @@ defmodule Raxol.Terminal.Input.Processor do
         char
 
       # Function keys
-      {"A", []} -> "\e[A"
-      {"B", []} -> "\e[B"
-      {"C", []} -> "\e[C"
-      {"D", []} -> "\e[D"
+      {"A", []} ->
+        "\e[A"
+
+      {"B", []} ->
+        "\e[B"
+
+      {"C", []} ->
+        "\e[C"
+
+      {"D", []} ->
+        "\e[D"
 
       # Keys with modifiers
       {key, modifiers} when length(modifiers) > 0 ->
@@ -184,15 +240,18 @@ defmodule Raxol.Terminal.Input.Processor do
       [_, button_code, modifier_code, x, y, extra1, extra2] ->
         case parse_mouse_codes(button_code, modifier_code, extra1, extra2) do
           {:ok, button, action, modifiers} ->
-            {:ok, %MouseEvent{
-              button: button,
-              action: action,
-              x: String.to_integer(x),
-              y: String.to_integer(y),
-              modifiers: modifiers,
-              timestamp: System.monotonic_time()
-            }}
-          {:error, reason} -> {:error, reason}
+            {:ok,
+             %MouseEvent{
+               button: button,
+               action: action,
+               x: String.to_integer(x),
+               y: String.to_integer(y),
+               modifiers: modifiers,
+               timestamp: System.monotonic_time()
+             }}
+
+          {:error, reason} ->
+            {:error, reason}
         end
 
       _ ->
@@ -217,9 +276,16 @@ defmodule Raxol.Terminal.Input.Processor do
 
   defp parse_mouse_modifiers(code) do
     modifiers = []
-    modifiers = if Bitwise.band(code, 4) != 0, do: [:shift | modifiers], else: modifiers
-    modifiers = if Bitwise.band(code, 8) != 0, do: [:alt | modifiers], else: modifiers
-    modifiers = if Bitwise.band(code, 16) != 0, do: [:ctrl | modifiers], else: modifiers
+
+    modifiers =
+      if Bitwise.band(code, 4) != 0, do: [:shift | modifiers], else: modifiers
+
+    modifiers =
+      if Bitwise.band(code, 8) != 0, do: [:alt | modifiers], else: modifiers
+
+    modifiers =
+      if Bitwise.band(code, 16) != 0, do: [:ctrl | modifiers], else: modifiers
+
     modifiers
   end
 
@@ -239,9 +305,16 @@ defmodule Raxol.Terminal.Input.Processor do
 
   defp parse_key_modifiers(code) do
     modifiers = []
-    modifiers = if Bitwise.band(code, 1) != 0, do: [:shift | modifiers], else: modifiers
-    modifiers = if Bitwise.band(code, 4) != 0, do: [:ctrl | modifiers], else: modifiers
-    modifiers = if Bitwise.band(code, 8) != 0, do: [:alt | modifiers], else: modifiers
+
+    modifiers =
+      if Bitwise.band(code, 1) != 0, do: [:shift | modifiers], else: modifiers
+
+    modifiers =
+      if Bitwise.band(code, 4) != 0, do: [:ctrl | modifiers], else: modifiers
+
+    modifiers =
+      if Bitwise.band(code, 8) != 0, do: [:alt | modifiers], else: modifiers
+
     modifiers
   end
 
@@ -270,6 +343,7 @@ defmodule Raxol.Terminal.Input.Processor do
     # Let's use 2 for shift, 5 for ctrl, 3 for alt, etc.
     # This is a simplification for the test's expected output
     prefix = 2
+
     mod_code =
       cond do
         :ctrl in modifiers and :shift in modifiers -> 5
@@ -278,6 +352,7 @@ defmodule Raxol.Terminal.Input.Processor do
         :alt in modifiers -> 3
         true -> 1
       end
+
     {mod_code, prefix}
   end
 

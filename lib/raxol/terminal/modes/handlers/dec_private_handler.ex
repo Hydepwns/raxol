@@ -9,6 +9,21 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
 
+  @mode_handlers %{
+    decckm: &__MODULE__.handle_cursor_keys_mode/2,
+    deccolm_132: &__MODULE__.handle_column_width_mode_wide/2,
+    deccolm_80: &__MODULE__.handle_column_width_mode_normal/2,
+    decscnm: &__MODULE__.handle_screen_mode/2,
+    decom: &__MODULE__.handle_origin_mode/2,
+    decawm: &__MODULE__.handle_auto_wrap_mode/2,
+    decarm: &__MODULE__.handle_auto_repeat_mode/2,
+    decinlm: &__MODULE__.handle_interlace_mode/2,
+    dectcem: &__MODULE__.handle_cursor_visibility/2,
+    focus_events: &__MODULE__.handle_focus_events/2,
+    bracketed_paste: &__MODULE__.handle_bracketed_paste/2,
+    dec_alt_screen_save: &__MODULE__.handle_alt_screen_save/2
+  }
+
   @doc """
   Handles a DEC private mode change and applies its effects to the emulator.
   """
@@ -49,37 +64,22 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   defp get_mode_handler(mode_name) do
-    handlers = %{
-      decckm: &handle_cursor_keys_mode/2,
-      deccolm_132: &handle_column_width_mode_wide/2,
-      deccolm_80: &handle_column_width_mode_normal/2,
-      decscnm: &handle_screen_mode/2,
-      decom: &handle_origin_mode/2,
-      decawm: &handle_auto_wrap_mode/2,
-      decarm: &handle_auto_repeat_mode/2,
-      decinlm: &handle_interlace_mode/2,
-      dectcem: &handle_cursor_visibility/2,
-      focus_events: &handle_focus_events/2,
-      bracketed_paste: &handle_bracketed_paste/2,
-      dec_alt_screen_save: &handle_alt_screen_save/2
-    }
-
-    Map.fetch(handlers, mode_name)
+    Map.fetch(@mode_handlers, mode_name)
   end
 
-  defp handle_column_width_mode_wide(value, emulator) do
+  def handle_column_width_mode_wide(value, emulator) do
     handle_column_width_mode(value, emulator, :wide)
   end
 
-  defp handle_column_width_mode_normal(value, emulator) do
+  def handle_column_width_mode_normal(value, emulator) do
     handle_column_width_mode(value, emulator, :normal)
   end
 
-  defp handle_cursor_keys_mode(value, emulator) do
+  def handle_cursor_keys_mode(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | cursor_keys_mode: value}}}
   end
 
-  defp handle_column_width_mode(value, emulator, width_mode) do
+  def handle_column_width_mode(value, emulator, width_mode) do
     target_width = calculate_target_width(width_mode, value)
     new_column_width_mode = calculate_column_width_mode(width_mode, value)
 
@@ -98,9 +98,15 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   defp resize_emulator_buffers(emulator, target_width) do
     main_buffer = resize_buffer(emulator.main_screen_buffer, target_width)
-    alt_buffer = maybe_resize_alt_buffer(emulator.alternate_screen_buffer, target_width)
 
-    %{emulator | main_screen_buffer: main_buffer, alternate_screen_buffer: alt_buffer}
+    alt_buffer =
+      maybe_resize_alt_buffer(emulator.alternate_screen_buffer, target_width)
+
+    %{
+      emulator
+      | main_screen_buffer: main_buffer,
+        alternate_screen_buffer: alt_buffer
+    }
   end
 
   defp maybe_resize_alt_buffer(nil, _), do: nil
@@ -110,39 +116,39 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     %{emulator | mode_manager: %{emulator.mode_manager | column_width_mode: new_mode}}
   end
 
-  defp handle_screen_mode(value, emulator) do
+  def handle_screen_mode(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | screen_mode_reverse: value}}}
   end
 
-  defp handle_origin_mode(value, emulator) do
+  def handle_origin_mode(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | origin_mode: value}}}
   end
 
-  defp handle_auto_wrap_mode(value, emulator) do
+  def handle_auto_wrap_mode(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | auto_wrap: value}}}
   end
 
-  defp handle_auto_repeat_mode(value, emulator) do
+  def handle_auto_repeat_mode(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | auto_repeat_mode: value}}}
   end
 
-  defp handle_interlace_mode(value, emulator) do
+  def handle_interlace_mode(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | interlacing_mode: value}}}
   end
 
-  defp handle_cursor_visibility(value, emulator) do
+  def handle_cursor_visibility(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | cursor_visible: value}}}
   end
 
-  defp handle_focus_events(value, emulator) do
+  def handle_focus_events(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | focus_events_enabled: value}}}
   end
 
-  defp handle_bracketed_paste(value, emulator) do
+  def handle_bracketed_paste(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | bracketed_paste_mode: value}}}
   end
 
-  defp handle_alt_screen_save(value, emulator) do
+  def handle_alt_screen_save(value, emulator) do
     IO.puts("DEBUG: DECPrivateHandler.handle_alt_screen_save called with value=#{inspect(value)}")
     result = {:ok, %{emulator | mode_manager: %{emulator.mode_manager | alternate_buffer_active: value}}}
     IO.puts("DEBUG: DECPrivateHandler.handle_alt_screen_save result: #{inspect(result)}")

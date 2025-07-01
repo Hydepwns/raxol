@@ -92,7 +92,9 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
 
     # Update performance metrics
     end_time = System.monotonic_time()
-    updated_renderer = update_performance_metrics(gpu_renderer, start_time, end_time)
+
+    updated_renderer =
+      update_performance_metrics(gpu_renderer, start_time, end_time)
 
     {output, updated_renderer}
   end
@@ -339,13 +341,14 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     # Update pipeline configuration with the provided config
     stages = pipeline.stages
 
-    updated_stages = stages
-    |> Enum.map(fn {stage_name, stage_config} ->
-      case Map.get(config, stage_name) do
-        nil -> {stage_name, stage_config}
-        new_config -> {stage_name, Map.merge(stage_config, new_config)}
-      end
-    end)
+    updated_stages =
+      stages
+      |> Enum.map(fn {stage_name, stage_config} ->
+        case Map.get(config, stage_name) do
+          nil -> {stage_name, stage_config}
+          new_config -> {stage_name, Map.merge(stage_config, new_config)}
+        end
+      end)
 
     %{pipeline | stages: updated_stages}
   end
@@ -355,28 +358,30 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     stages = pipeline.stages
 
     # Example optimizations based on metrics
-    optimizations = cond do
-      # If render calls are high, optimize for performance
-      metrics.render_calls > 10 ->
-        %{
-          vertex_processing: %{optimization_level: :high},
-          fragment_processing: %{optimization_level: :high}
-        }
+    optimizations =
+      cond do
+        # If render calls are high, optimize for performance
+        metrics.render_calls > 10 ->
+          %{
+            vertex_processing: %{optimization_level: :high},
+            fragment_processing: %{optimization_level: :high}
+          }
 
-      # If frame times are slow, optimize for speed
-      length(metrics.frame_times) > 0 and List.first(metrics.frame_times) > 16.67 ->
-        %{
-          vertex_processing: %{optimization_level: :speed},
-          fragment_processing: %{optimization_level: :speed}
-        }
+        # If frame times are slow, optimize for speed
+        length(metrics.frame_times) > 0 and
+            List.first(metrics.frame_times) > 16.67 ->
+          %{
+            vertex_processing: %{optimization_level: :speed},
+            fragment_processing: %{optimization_level: :speed}
+          }
 
-      # Default optimizations
-      true ->
-        %{
-          vertex_processing: %{optimization_level: :balanced},
-          fragment_processing: %{optimization_level: :balanced}
-        }
-    end
+        # Default optimizations
+        true ->
+          %{
+            vertex_processing: %{optimization_level: :balanced},
+            fragment_processing: %{optimization_level: :balanced}
+          }
+      end
 
     update_render_pipeline(pipeline, optimizations)
   end

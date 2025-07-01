@@ -26,7 +26,17 @@ defmodule Raxol.Terminal.SessionTest do
 
   defp minimal_session_struct(id, width, height, title, theme) do
     # Create a minimal screen buffer with just 1x1 cells to avoid serialization issues
-    minimal_cells = [[%Raxol.Terminal.Cell{char: " ", style: Raxol.Terminal.ANSI.TextFormatting.new(), dirty: false, wide_placeholder: false}]]
+    minimal_cells = [
+      [
+        %Raxol.Terminal.Cell{
+          char: " ",
+          style: Raxol.Terminal.ANSI.TextFormatting.new(),
+          dirty: false,
+          wide_placeholder: false
+        }
+      ]
+    ]
+
     minimal_screen_buffer = %ScreenBuffer{
       width: 1,
       height: 1,
@@ -85,7 +95,7 @@ defmodule Raxol.Terminal.SessionTest do
       state_stack: [],
       command: nil,
       cursor_manager: nil,
-      mode_manager: nil
+      mode_manager: Raxol.Terminal.ModeManager.new()
     }
 
     # Create minimal renderer
@@ -110,7 +120,10 @@ defmodule Raxol.Terminal.SessionTest do
   describe "session persistence" do
     test "can save and load a session", %{pid: pid} do
       # Create a minimal session state for testing
-      minimal_state = minimal_session_struct("test_session", 1, 1, "Test Session", %{background: :black})
+      minimal_state =
+        minimal_session_struct("test_session", 1, 1, "Test Session", %{
+          background: :black
+        })
 
       # Inject the minimal state into the GenServer
       :sys.replace_state(pid, fn _current_state -> minimal_state end)
@@ -128,7 +141,11 @@ defmodule Raxol.Terminal.SessionTest do
 
     test "can disable auto-save", %{pid: pid} do
       # Create a minimal session state
-      minimal_state = minimal_session_struct("test_session", 1, 1, "Test Session", %{background: :black})
+      minimal_state =
+        minimal_session_struct("test_session", 1, 1, "Test Session", %{
+          background: :black
+        })
+
       minimal_state = %{minimal_state | auto_save: false}
 
       # Inject the minimal state into the GenServer
@@ -148,7 +165,10 @@ defmodule Raxol.Terminal.SessionTest do
 
     test "can recover from saved state", %{pid: pid} do
       # Create a minimal session state with some content
-      minimal_state = minimal_session_struct("test_session", 1, 1, "Test Session", %{background: :blue})
+      minimal_state =
+        minimal_session_struct("test_session", 1, 1, "Test Session", %{
+          background: :blue
+        })
 
       # Inject the minimal state into the GenServer
       :sys.replace_state(pid, fn _current_state -> minimal_state end)

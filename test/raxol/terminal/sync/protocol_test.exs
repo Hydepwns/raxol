@@ -68,6 +68,7 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
         )
 
       result = Protocol.handle_sync_message(message, %{metadata: %{version: 0}})
+
       case result do
         {:ok, %{content: "test"}, version} -> assert version == 1
         other -> flunk("Unexpected result: #{inspect(other)}")

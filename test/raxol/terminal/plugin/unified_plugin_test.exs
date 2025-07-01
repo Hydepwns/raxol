@@ -11,6 +11,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
 
     theme_file = "test/fixtures/plugins/theme/theme.ex"
     original_content = File.read!(theme_file)
+
     on_exit(fn ->
       # Always restore the theme file after each test
       File.write!(theme_file, original_content)
@@ -292,7 +293,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
     test ~c"handles reload errors" do
       # Create a temporary copy of the theme plugin for this test
       original_theme_dir = "test/fixtures/plugins/theme"
-      temp_theme_dir = "test/fixtures/plugins/theme_temp_#{System.system_time()}"
+
+      temp_theme_dir =
+        "test/fixtures/plugins/theme_temp_#{System.system_time()}"
 
       # Copy the theme plugin to a temporary location
       File.cp_r!(original_theme_dir, temp_theme_dir)
@@ -310,7 +313,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       original_content = File.read!(temp_theme_file)
 
       # Corrupt the temporary theme file
-      File.write!(temp_theme_file, "defmodule InvalidModule do\n  invalid syntax\nend")
+      File.write!(
+        temp_theme_file,
+        "defmodule InvalidModule do\n  invalid syntax\nend"
+      )
 
       try do
         # Attempt to reload - should fail

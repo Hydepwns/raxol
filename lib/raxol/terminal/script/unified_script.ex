@@ -259,6 +259,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
+
       %{output: [latest | _]} ->
         # If latest is a string and output is a single string, return it directly
         if is_binary(latest) and length([latest | []]) == 1 do
@@ -266,8 +267,10 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         else
           {:reply, {:ok, [latest | []]}, state}
         end
+
       %{output: []} ->
         {:reply, {:ok, ""}, state}
+
       _ ->
         {:reply, {:ok, ""}, state}
     end
@@ -333,9 +336,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         case validate_script_source(script.source) do
           :ok ->
             validate_script_config(script.config)
+
           {:error, reason} ->
             {:error, reason}
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -374,6 +379,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   defp execute_elixir_script(script, args, timeout) do
     # Wrap Elixir code in a module to handle def/2 properly
     module_name = "ScriptModule_#{generate_script_id()}"
+
     wrapped_code = """
     defmodule #{module_name} do
       #{script.source}

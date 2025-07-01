@@ -66,11 +66,12 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         scroll_buffer: mock_scroll_buffer,
         style: %{},
         charset_state: %{},
-        mode_manager: %{},
+        mode_manager: Raxol.Terminal.ModeManager.new(),
         cursor: %{}
       }
 
-      expected = 1000 + 2000 + 24  # 24 bytes from calculate_other_usage
+      # 24 bytes from calculate_other_usage
+      expected = 1000 + 2000 + 24
       assert MemoryManager.estimate_memory_usage(state) == expected
     end
 
@@ -83,7 +84,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         scroll_buffer: mock_scroll_buffer,
         style: %{},
         charset_state: %{},
-        mode_manager: %{},
+        mode_manager: Raxol.Terminal.ModeManager.new(),
         cursor: %{}
       }
 
@@ -99,7 +100,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         scroll_buffer: nil,
         style: %{},
         charset_state: %{},
-        mode_manager: %{},
+        mode_manager: Raxol.Terminal.ModeManager.new(),
         cursor: %{}
       }
 
@@ -115,7 +116,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         scroll_buffer: mock_scroll_buffer,
         style: %{},
         charset_state: %{},
-        mode_manager: %{},
+        mode_manager: Raxol.Terminal.ModeManager.new(),
         cursor: %{}
       }
 

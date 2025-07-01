@@ -164,8 +164,11 @@ defmodule Raxol.Terminal.MemoryManager do
     charset_usage =
       byte_size(:erlang.term_to_binary(Map.get(state, :charset_state, %{})))
 
-    mode_usage = byte_size(:erlang.term_to_binary(Map.get(state, :mode_manager, %{})))
-    cursor_usage = byte_size(:erlang.term_to_binary(Map.get(state, :cursor, %{})))
+    mode_usage =
+      byte_size(:erlang.term_to_binary(Map.get(state, :mode_manager, %{})))
+
+    cursor_usage =
+      byte_size(:erlang.term_to_binary(Map.get(state, :cursor, %{})))
 
     style_usage + charset_usage + mode_usage + cursor_usage
   end

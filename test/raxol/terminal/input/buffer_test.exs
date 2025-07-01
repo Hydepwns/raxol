@@ -13,7 +13,11 @@ defmodule Raxol.Terminal.Input.BufferTest do
   end
 
   describe "input buffering" do
-    test "processes complete sequences immediately", %{pid: pid, events: events, counter: counter} do
+    test "processes complete sequences immediately", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       Buffer.register_callback(pid, fn event ->
         idx = :atomics.add_get(counter, 1, 1)
         :ets.insert(events, {idx, event})
@@ -23,13 +27,19 @@ defmodule Raxol.Terminal.Input.BufferTest do
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
       # Get events from ETS after process termination
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [event] = collected_events
       assert event.key == "a"
       assert event.modifiers == []
     end
 
-    test "buffers partial sequences", %{pid: pid, events: events, counter: counter} do
+    test "buffers partial sequences", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       Buffer.register_callback(pid, fn event ->
         idx = :atomics.add_get(counter, 1, 1)
         :ets.insert(events, {idx, event})
@@ -40,11 +50,17 @@ defmodule Raxol.Terminal.Input.BufferTest do
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
       # Should not have processed the partial sequence
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [] = collected_events
     end
 
-    test "handles multiple sequences in one input", %{pid: pid, events: events, counter: counter} do
+    test "handles multiple sequences in one input", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       Buffer.register_callback(pid, fn event ->
         idx = :atomics.add_get(counter, 1, 1)
         :ets.insert(events, {idx, event})
@@ -55,7 +71,9 @@ defmodule Raxol.Terminal.Input.BufferTest do
       Buffer.feed_input(pid, input)
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert length(collected_events) == 3
 
       # Check first event (key "b")
@@ -78,7 +96,11 @@ defmodule Raxol.Terminal.Input.BufferTest do
   end
 
   describe "callback handling" do
-    test "calls callback for each complete event", %{pid: pid, events: events, counter: counter} do
+    test "calls callback for each complete event", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       Buffer.register_callback(pid, fn event ->
         idx = :atomics.add_get(counter, 1, 1)
         :ets.insert(events, {idx, event})
@@ -87,7 +109,9 @@ defmodule Raxol.Terminal.Input.BufferTest do
       Buffer.feed_input(pid, "abc")
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert length(collected_events) == 3
 
       # Check all events have correct keys and modifiers
@@ -99,7 +123,11 @@ defmodule Raxol.Terminal.Input.BufferTest do
       end)
     end
 
-    test "handles callback errors gracefully", %{pid: pid, events: events, counter: counter} do
+    test "handles callback errors gracefully", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       # Callback that raises an error
       Buffer.register_callback(pid, fn _event -> raise "Callback error" end)
 
@@ -108,7 +136,9 @@ defmodule Raxol.Terminal.Input.BufferTest do
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
       # No events should be stored due to callback error
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [] = collected_events
     end
   end
@@ -124,11 +154,17 @@ defmodule Raxol.Terminal.Input.BufferTest do
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
       # Buffer should be cleared
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [] = collected_events
     end
 
-    test "handles timeout for partial sequences", %{pid: pid, events: events, counter: counter} do
+    test "handles timeout for partial sequences", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       Buffer.register_callback(pid, fn event ->
         idx = :atomics.add_get(counter, 1, 1)
         :ets.insert(events, {idx, event})
@@ -139,7 +175,9 @@ defmodule Raxol.Terminal.Input.BufferTest do
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
       # Should not have processed the partial sequence
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [] = collected_events
     end
   end
@@ -151,25 +189,35 @@ defmodule Raxol.Terminal.Input.BufferTest do
         :ets.insert(events, {idx, event})
       end)
 
-      Buffer.feed_input(pid, "\e[1;2;5A")  # Ctrl+Shift+A
+      # Ctrl+Shift+A
+      Buffer.feed_input(pid, "\e[1;2;5A")
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [event] = collected_events
       assert event.key == "A"
       assert event.modifiers == [:shift, :ctrl]
     end
 
-    test "detects mouse sequences", %{pid: pid, events: events, counter: counter} do
+    test "detects mouse sequences", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       Buffer.register_callback(pid, fn event ->
         idx = :atomics.add_get(counter, 1, 1)
         :ets.insert(events, {idx, event})
       end)
 
-      Buffer.feed_input(pid, "\e[0;0;10;20M")  # Left mouse press at (10,20)
+      # Left mouse press at (10,20)
+      Buffer.feed_input(pid, "\e[0;0;10;20M")
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [event] = collected_events
       assert event.button == :left
       assert event.action == :press
@@ -177,7 +225,11 @@ defmodule Raxol.Terminal.Input.BufferTest do
       assert event.y == 20
     end
 
-    test "handles invalid sequences", %{pid: pid, events: events, counter: counter} do
+    test "handles invalid sequences", %{
+      pid: pid,
+      events: events,
+      counter: counter
+    } do
       Buffer.register_callback(pid, fn event ->
         idx = :atomics.add_get(counter, 1, 1)
         :ets.insert(events, {idx, event})
@@ -187,7 +239,9 @@ defmodule Raxol.Terminal.Input.BufferTest do
       assert_receive {:DOWN, _, :process, ^pid, :normal}
 
       # Should not process invalid sequences
-      collected_events = :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+      collected_events =
+        :ets.tab2list(events) |> Enum.map(fn {_, event} -> event end)
+
       assert [] = collected_events
     end
   end
