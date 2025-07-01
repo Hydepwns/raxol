@@ -6,6 +6,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
+  @behaviour Raxol.Plugins.LifecycleBehaviour
   alias Raxol.Plugins.Plugin
 
   # Require Raxol.Core.Runtime.Log for logging macros

@@ -21,7 +21,8 @@ defmodule Raxol.Plugins.Plugin do
     :enabled,
     :config,
     :dependencies,
-    :api_version
+    :api_version,
+    :module
   ]
 
   @callback init(config :: map()) :: {:ok, term()} | {:error, String.t()}

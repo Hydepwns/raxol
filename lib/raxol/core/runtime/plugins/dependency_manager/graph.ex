@@ -29,7 +29,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
   """
   def build_dependency_graph(plugins) do
     Enum.reduce(plugins, %{}, fn {id, metadata}, acc ->
-      deps = Map.get(metadata, :dependencies, [])
+      # Handle both Plugin structs and plain metadata maps
+      deps =
+        case metadata do
+          %Raxol.Plugins.Plugin{} -> Map.get(metadata, :dependencies, [])
+          _ -> Map.get(metadata, :dependencies, [])
+        end
 
       dep_info =
         Enum.map(deps, fn
@@ -88,19 +93,25 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
       visited = MapSet.put(visited, plugin_id)
       deps = Map.get(graph, plugin_id, [])
 
-      Enum.reduce_while(deps, {:ok, []}, fn {dep_id, _, _}, {:ok, acc} ->
-        case get_all_dependencies(dep_id, graph, visited) do
-          {:ok, dep_deps} ->
-            {:cont, {:ok, [dep_id | acc] ++ dep_deps}}
-
-          {:error, :circular_dependency, cycle} ->
-            {:halt, {:error, :circular_dependency, [plugin_id | cycle]}}
-        end
-      end)
+      Enum.reduce_while(
+        deps,
+        {:ok, []},
+        &process_dependency(&1, &2, graph, visited)
+      )
       |> case do
         {:ok, deps} -> {:ok, Enum.uniq(deps)}
         error -> error
       end
+    end
+  end
+
+  defp process_dependency({dep_id, _, _}, {:ok, acc}, graph, visited) do
+    case get_all_dependencies(dep_id, graph, visited) do
+      {:ok, dep_deps} ->
+        {:cont, {:ok, [dep_id | acc] ++ dep_deps}}
+
+      {:error, :circular_dependency, cycle} ->
+        {:halt, {:error, :circular_dependency, [dep_id | cycle]}}
     end
   end
 end
