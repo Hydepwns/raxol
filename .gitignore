@@ -77,7 +77,6 @@ yarn-error.log
 *.swp
 *.swo
 *~
-!*.log
 *.pid
 *.beam
 *.dump
@@ -90,6 +89,6 @@ themes/staged_version.json
 # Editor / Development Artifacts
 preferences.json
 
-# Documentation build artifacts
+# Heavy Documentation build artifacts
 docs/search-index.json
 tmp/eviction_debug.log
