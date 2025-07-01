@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   end
 
   def set_cursor_position(emulator, x, y) do
-    CursorManager.set_position(emulator.cursor, {y, x})
+    CursorManager.set_position(emulator.cursor, {x, y})
     emulator
   end
 

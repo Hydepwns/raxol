@@ -19,26 +19,6 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
-  def erase_display(emulator, mode) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    cursor_pos = ScreenBuffer.get_cursor_position(buffer)
-
-    new_buffer =
-      ScreenBuffer.erase_in_display(buffer, cursor_pos, mode_to_type(mode))
-
-    ScreenManager.update_active_buffer(emulator, new_buffer)
-  end
-
-  def erase_in_display(emulator, mode) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    cursor_pos = ScreenBuffer.get_cursor_position(buffer)
-
-    new_buffer =
-      ScreenBuffer.erase_in_display(buffer, cursor_pos, mode_to_type(mode))
-
-    ScreenManager.update_active_buffer(emulator, new_buffer)
-  end
-
   def erase_line(emulator) do
     buffer = ScreenManager.get_active_buffer(emulator)
     {_, y} = ScreenBuffer.get_cursor_position(buffer) || {0, 0}
@@ -135,15 +115,17 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   """
   @spec erase_display(Emulator.t()) :: Emulator.t()
   def erase_display(emulator) do
-    erase_display(emulator, %{})
+    erase_display(emulator, 0)
   end
 
   @doc """
-  Erases from cursor to end of display (1-arity version).
+  Erases the display based on the specified mode.
   """
-  @spec erase_in_display(Emulator.t()) :: Emulator.t()
-  def erase_in_display(emulator) do
-    erase_in_display(emulator, %{})
+  @spec erase_display(Emulator.t(), integer()) :: Emulator.t()
+  def erase_display(emulator, mode) do
+    buffer = ScreenManager.get_active_buffer(emulator)
+    new_buffer = ScreenBuffer.erase_display(buffer, mode)
+    ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
   @doc """
@@ -152,5 +134,27 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   @spec erase_in_line(Emulator.t()) :: Emulator.t()
   def erase_in_line(emulator) do
     erase_in_line(emulator, %{})
+  end
+
+  @doc """
+  Erases the display based on the specified mode.
+  """
+  @spec erase_in_display(Emulator.t(), atom()) :: Emulator.t()
+  def erase_in_display(emulator, mode) do
+    buffer = ScreenManager.get_active_buffer(emulator)
+    # Synchronize buffer's cursor with emulator's cursor
+    {x, y} = emulator.cursor.position
+    buffer = ScreenBuffer.set_cursor_position(buffer, x, y)
+    cursor_pos = {x, y}
+    new_buffer = ScreenBuffer.erase_in_display(buffer, cursor_pos, mode_to_type(mode))
+    ScreenManager.update_active_buffer(emulator, new_buffer)
+  end
+
+  @doc """
+  Erases from cursor to end of display (1-arity version).
+  """
+  @spec erase_in_display(Emulator.t()) :: Emulator.t()
+  def erase_in_display(emulator) do
+    erase_in_display(emulator, 0)
   end
 end

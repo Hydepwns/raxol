@@ -388,6 +388,11 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       {emulator, _output} = Emulator.process_input(emulator, input_str)
       buffer = Emulator.get_active_buffer(emulator)
 
+      # Print buffer contents for lines 0-4
+      for y <- 0..4 do
+        IO.inspect(Enum.map(ScreenBuffer.get_line(buffer, y), & &1.char), label: "Line \\#{y}")
+      end
+
       # Lines 0, 1, 2 should be all spaces
       for y <- 0..2 do
         assert Enum.map(ScreenBuffer.get_line(buffer, y), & &1.char) ==

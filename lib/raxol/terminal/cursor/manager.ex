@@ -637,7 +637,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
       "Getting cursor position: {#{state.x}, #{state.y}}"
     )
 
-    {:reply, {state.x, state.y}, state}
+    {:reply, state.position, state}
   end
 
   @impl GenServer
@@ -646,7 +646,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
       "Setting cursor position from {#{state.x}, #{state.y}} to {#{row}, #{col}}"
     )
 
-    new_state = %{state | x: row, y: col}
+    new_state = %{state | x: row, y: col, position: {row, col}}
     {:reply, :ok, new_state}
   end
 
@@ -721,7 +721,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call({:update_position, row, col}, _from, state) do
-    {:reply, :ok, %{state | x: row, y: col}}
+    {:reply, :ok, %{state | x: row, y: col, position: {row, col}}}
   end
 
   @impl GenServer
