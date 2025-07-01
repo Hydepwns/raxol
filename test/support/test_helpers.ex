@@ -124,17 +124,17 @@ defmodule Raxol.Test.Helpers do
   """
   def setup_rendering_test do
     # Start the Renderer GenServer with unique name
-    {:ok, renderer_pid} = start_supervised!(
+    {:ok, renderer_pid} = start_supervised(
       {Raxol.UI.Rendering.Renderer, name: Raxol.Test.ProcessNaming.generate_name(Raxol.UI.Rendering.Renderer)}
     )
 
-    # Start the Pipeline GenServer with unique name
+    # Start the Pipeline GenServer with global registration (as expected by tests)
     {:ok, pipeline_pid} = start_supervised(
-      {Raxol.UI.Rendering.Pipeline, name: Raxol.Test.ProcessNaming.generate_name(Raxol.UI.Rendering.Pipeline)}
+      {Raxol.UI.Rendering.Pipeline, name: Raxol.UI.Rendering.Pipeline}
     )
 
-    # Set test notification for renderer
-    Raxol.UI.Rendering.Renderer.set_test_pid(self())
+    # Set test notification for renderer using the actual PID
+    GenServer.cast(renderer_pid, {:set_test_pid, self()})
 
     %{renderer_pid: renderer_pid, pipeline_pid: pipeline_pid}
   end
