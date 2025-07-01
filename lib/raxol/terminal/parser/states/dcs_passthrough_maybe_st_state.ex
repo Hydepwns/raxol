@@ -29,7 +29,6 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
-            parser_state.final_byte,
             parser_state.payload_buffer
           )
 
