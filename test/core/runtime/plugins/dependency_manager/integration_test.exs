@@ -15,8 +15,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       }
     end
 
-    @impl true
-    def init(config), do: {:ok, config}
+    def init(config) do
+      plugin = %{
+        name: "plugin_a",
+        version: "1.0.0",
+        enabled: true,
+        config: config,
+        api_version: "1.0.0"
+      }
+
+      {:ok, plugin}
+    end
+
+    def cleanup(_config), do: :ok
   end
 
   defmodule TestPluginB do
@@ -32,8 +43,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       }
     end
 
-    @impl true
-    def init(config), do: {:ok, config}
+    def init(config) do
+      plugin = %{
+        name: "plugin_b",
+        version: "1.0.0",
+        enabled: true,
+        config: config,
+        api_version: "1.0.0"
+      }
+
+      {:ok, plugin}
+    end
+
+    def cleanup(_config), do: :ok
   end
 
   defmodule TestPluginC do
@@ -49,8 +71,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       }
     end
 
-    @impl true
-    def init(config), do: {:ok, config}
+    def init(config) do
+      plugin = %{
+        name: "plugin_c",
+        version: "1.0.0",
+        enabled: true,
+        config: config,
+        api_version: "1.0.0"
+      }
+
+      {:ok, plugin}
+    end
+
+    def cleanup(_config), do: :ok
   end
 
   defmodule TestPluginD do
@@ -66,8 +99,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       }
     end
 
-    @impl true
-    def init(config), do: {:ok, config}
+    def init(config) do
+      plugin = %{
+        name: "plugin_d",
+        version: "1.0.0",
+        enabled: true,
+        config: config,
+        api_version: "1.0.0"
+      }
+
+      {:ok, plugin}
+    end
+
+    def cleanup(_config), do: :ok
   end
 
   describe "plugin manager integration" do
@@ -101,8 +145,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           }
         end
 
-        @impl true
-        def init(config), do: {:ok, config}
+        def init(config) do
+          plugin = %{
+            name: "plugin_e",
+            version: "2.0.0",
+            enabled: true,
+            config: config,
+            api_version: "1.0.0"
+          }
+
+          {:ok, plugin}
+        end
+
+        def cleanup(_config), do: :ok
       end
 
       defmodule TestPluginF do
@@ -118,8 +173,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           }
         end
 
-        @impl true
-        def init(config), do: {:ok, config}
+        def init(config) do
+          plugin = %{
+            name: "plugin_f",
+            version: "1.5.0",
+            enabled: true,
+            config: config,
+            api_version: "1.0.0"
+          }
+
+          {:ok, plugin}
+        end
+
+        def cleanup(_config), do: :ok
       end
 
       plugins = [TestPluginE, TestPluginF]
@@ -148,8 +214,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           }
         end
 
-        @impl true
-        def init(config), do: {:ok, config}
+        def init(config) do
+          plugin = %{
+            name: "plugin_g",
+            version: "1.0.0",
+            enabled: true,
+            config: config,
+            api_version: "1.0.0"
+          }
+
+          {:ok, plugin}
+        end
+
+        def cleanup(_config), do: :ok
       end
 
       defmodule TestPluginH do
@@ -165,8 +242,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           }
         end
 
-        @impl true
-        def init(config), do: {:ok, config}
+        def init(config) do
+          plugin = %{
+            name: "plugin_h",
+            version: "1.0.0",
+            enabled: true,
+            config: config,
+            api_version: "1.0.0"
+          }
+
+          {:ok, plugin}
+        end
+
+        def cleanup(_config), do: :ok
       end
 
       plugins = [TestPluginG, TestPluginH]
@@ -195,8 +283,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           }
         end
 
-        @impl true
-        def init(config), do: {:ok, config}
+        def init(config) do
+          plugin = %{
+            name: "plugin_i",
+            version: "1.0.0",
+            enabled: true,
+            config: config,
+            api_version: "1.0.0"
+          }
+
+          {:ok, plugin}
+        end
+
+        def cleanup(_config), do: :ok
       end
 
       defmodule TestPluginK do
@@ -212,8 +311,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           }
         end
 
-        @impl true
-        def init(config), do: {:ok, config}
+        def init(config) do
+          plugin = %{
+            name: "plugin_k",
+            version: "1.0.0",
+            enabled: true,
+            config: config,
+            api_version: "1.0.0"
+          }
+
+          {:ok, plugin}
+        end
+
+        def cleanup(_config), do: :ok
       end
 
       plugins = [TestPluginI, TestPluginK]

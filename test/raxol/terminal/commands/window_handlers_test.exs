@@ -245,62 +245,20 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     test "handles non-positive window size values for resize (op 4)", %{
       emulator: emulator
     } do
-      default_px_w = 80 * @default_char_width_px
-      default_px_h = 24 * @default_char_height_px
-      expected_default_char_w = 80
-      expected_default_char_h = 24
+      # Test negative values
+      new_emulator_neg = unwrap_ok(WindowHandlers.handle_t(emulator, [4, -100, -50]))
+      Raxol.Test.Helpers.assert_window_size(new_emulator_neg, 80, 24)
 
-      # height_px, width_px
-      new_emulator_neg =
-        unwrap_ok(WindowHandlers.handle_t(emulator, [4, -100, -50]))
-
-      if new_emulator_neg.window_state.size_pixels != {640, 384} do
-        File.write!("tmp/window_handlers_debug.txt", """
-        size_pixels mismatch:
-        got: #{inspect(new_emulator_neg.window_state.size_pixels)}
-        expected: {640, 384}
-        """)
-        flunk("size_pixels mismatch - check tmp/window_handlers_debug.txt")
-      end
-      if new_emulator_neg.window_state.size != {80, 24} do
-        File.write!("tmp/window_handlers_debug.txt", """
-        size mismatch:
-        got: #{inspect(new_emulator_neg.window_state.size)}
-        expected: {80, 24}
-        """)
-        flunk("size mismatch - check tmp/window_handlers_debug.txt")
-      end
-
-      new_emulator_zero =
-        unwrap_ok(WindowHandlers.handle_t(emulator, [4, 0, 0]))
-
-      if new_emulator_zero.window_state.size_pixels != {640, 384} do
-        File.write!("tmp/window_handlers_debug.txt", """
-        size_pixels mismatch:
-        got: #{inspect(new_emulator_zero.window_state.size_pixels)}
-        expected: {640, 384}
-        """)
-        flunk("size_pixels mismatch - check tmp/window_handlers_debug.txt")
-      end
-      if new_emulator_zero.window_state.size != {80, 24} do
-        File.write!("tmp/window_handlers_debug.txt", """
-        size mismatch:
-        got: #{inspect(new_emulator_zero.window_state.size)}
-        expected: {80, 24}
-        """)
-        flunk("size mismatch - check tmp/window_handlers_debug.txt")
-      end
+      # Test zero values
+      new_emulator_zero = unwrap_ok(WindowHandlers.handle_t(emulator, [4, 0, 0]))
+      Raxol.Test.Helpers.assert_window_size(new_emulator_zero, 80, 24)
     end
 
     test "handles missing parameters for window resize (op 4)", %{
       emulator: emulator
     } do
       new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [4]))
-      assert new_emulator.window_state.size_pixels == {640, 384}
-
-      assert new_emulator.window_state.size ==
-               {div(640, @default_char_width_px),
-                div(384, @default_char_height_px)}
+      Raxol.Test.Helpers.assert_window_size(new_emulator, 80, 24)
     end
 
     test "handles window resize (op 4) with partial height_px param only", %{
@@ -308,12 +266,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     } do
       # height_px=160, width_px defaults
       new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [4, 160]))
-      # uses default if not enough params
-      assert new_emulator.window_state.size_pixels == {640, 160}
-
-      assert new_emulator.window_state.size ==
-               {div(640, @default_char_width_px),
-                div(160, @default_char_height_px)}
+      # Calculate expected dimensions: 640/8 = 80 chars wide, 160/16 = 10 chars high
+      expected_width = div(640, @default_char_width_px)
+      expected_height = div(160, @default_char_height_px)
+      Raxol.Test.Helpers.assert_window_size(new_emulator, expected_width, expected_height)
     end
 
     # General invalid param types
@@ -330,11 +286,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       new_emulator =
         unwrap_ok(WindowHandlers.handle_t(emulator, [4, "invalid", "invalid"]))
 
-      assert new_emulator.window_state.size_pixels == {640, 384}
-
-      assert new_emulator.window_state.size ==
-               {div(640, @default_char_width_px),
-                div(384, @default_char_height_px)}
+      Raxol.Test.Helpers.assert_window_size(new_emulator, 80, 24)
     end
   end
 

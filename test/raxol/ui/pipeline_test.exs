@@ -3,15 +3,8 @@ defmodule Raxol.UI.Rendering.PipelineTest do
 
   alias Raxol.UI.Rendering.Pipeline
 
-  setup do
-    # Start the Renderer GenServer globally for test notifications
-    start_supervised!(
-      {Raxol.UI.Rendering.Renderer, name: Raxol.UI.Rendering.Renderer}
-    )
-
-    # Start the Pipeline GenServer fresh for each test
-    {:ok, pid} = start_supervised({Pipeline, name: Pipeline})
-    %{pid: pid}
+    setup do
+    Raxol.Test.Helpers.setup_rendering_test()
   end
 
   test "starts and initializes state" do
@@ -24,13 +17,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     Pipeline.update_tree(tree)
-    assert_receive {:renderer_rendered, ops}, 100
-    assert Enum.any?(ops, fn op ->
-      case op do
-        {:draw_text, _line, text} -> text == "Hello"
-        _ -> false
-      end
-    end)
+    Raxol.Test.Helpers.assert_render_event("Hello")
   end
 
   test "trigger_render/1 uses the current tree if data is nil" do
@@ -39,13 +26,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     Pipeline.trigger_render(nil)
-    assert_receive {:renderer_rendered, ops}, 100
-    assert Enum.any?(ops, fn op ->
-      case op do
-        {:draw_text, _line, text} -> text == "World"
-        _ -> false
-      end
-    end)
+    Raxol.Test.Helpers.assert_render_event("World")
   end
 
   test "trigger_render/1 uses provided data if not nil" do
