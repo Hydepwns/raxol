@@ -69,13 +69,30 @@ defmodule Raxol.Test.Support.MockImplementations do
   def terminal_screen_buffer_clear_buffer, do: {:ok, []}
 
   def terminal_emulator_new, do: %{mock: :emulator}
-  def terminal_emulator_new(width, height), do: %{mock: :emulator, width: width, height: height}
-  def terminal_emulator_new(width, height, opts), do: %{mock: :emulator, width: width, height: height, opts: opts}
+
+  def terminal_emulator_new(width, height),
+    do: %{mock: :emulator, width: width, height: height}
+
+  def terminal_emulator_new(width, height, opts),
+    do: %{mock: :emulator, width: width, height: height, opts: opts}
+
   def terminal_emulator_new(width, height, session_id, client_options) do
-    {:ok, %{mock: :emulator, width: width, height: height, session_id: session_id, client_options: client_options}}
+    {:ok,
+     %{
+       mock: :emulator,
+       width: width,
+       height: height,
+       session_id: session_id,
+       client_options: client_options
+     }}
   end
-  def terminal_emulator_get_active_buffer(_emulator), do: %{mock: :screen_buffer}
-  def terminal_emulator_update_active_buffer(emulator, _new_buffer), do: emulator
+
+  def terminal_emulator_get_active_buffer(_emulator),
+    do: %{mock: :screen_buffer}
+
+  def terminal_emulator_update_active_buffer(emulator, _new_buffer),
+    do: emulator
+
   def terminal_emulator_process_input(emulator, _input), do: {emulator, ""}
   def terminal_emulator_resize(emulator, _new_width, _new_height), do: emulator
   def terminal_emulator_get_cursor_position(_emulator), do: {0, 0}
@@ -89,13 +106,17 @@ defmodule Raxol.Test.Support.MockImplementations do
   def plugin_event_filter_filter_event(_event), do: {:ok, _event}
   def plugin_event_filter_should_process_event?(_event), do: true
 
-  def plugin_command_dispatcher_dispatch_command(_command, _args), do: {:ok, %{}}
+  def plugin_command_dispatcher_dispatch_command(_command, _args),
+    do: {:ok, %{}}
+
   def plugin_command_dispatcher_register_command(_command, _handler), do: :ok
 
   def plugin_reloader_reload_plugin(_module), do: {:ok, _module}
   def plugin_reloader_reload_all_plugins, do: {:ok, []}
 
-  def plugin_command_handler_handle_command(_command, _args, state), do: {:ok, state}
+  def plugin_command_handler_handle_command(_command, _args, state),
+    do: {:ok, state}
+
   def plugin_command_handler_register_handler(_command, _handler), do: :ok
 
   def timer_manager_start_timer(_duration, _callback), do: {:ok, self()}
@@ -122,7 +143,9 @@ defmodule Raxol.Test.Support.MockImplementations do
   def terminal_buffer_scrollback_clear_scrollback, do: {:ok, []}
 
   def terminal_buffer_scroll_region_get_scroll_region, do: {:ok, {0, 0}}
-  def terminal_buffer_scroll_region_set_scroll_region(_region), do: {:ok, {0, 0}}
+
+  def terminal_buffer_scroll_region_set_scroll_region(_region),
+    do: {:ok, {0, 0}}
 
   def terminal_buffer_selection_get_selection, do: {:ok, nil}
   def terminal_buffer_selection_set_selection(_selection), do: {:ok, nil}

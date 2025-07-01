@@ -56,13 +56,17 @@ defmodule Raxol.Test.Helpers do
     receive do
       {:renderer_rendered, ops} ->
         assert Enum.any?(ops, fn op ->
-          case op do
-            {:draw_text, _line, text} -> text == expected_content
-            _ -> false
-          end
-        end), "Expected render event with content '#{expected_content}' but got #{inspect(ops)}"
+                 case op do
+                   {:draw_text, _line, text} -> text == expected_content
+                   _ -> false
+                 end
+               end),
+               "Expected render event with content '#{expected_content}' but got #{inspect(ops)}"
     after
-      timeout -> flunk("Expected render event with content '#{expected_content}' not received within #{timeout}ms")
+      timeout ->
+        flunk(
+          "Expected render event with content '#{expected_content}' not received within #{timeout}ms"
+        )
     end
   end
 
@@ -79,14 +83,25 @@ defmodule Raxol.Test.Helpers do
       iex> Raxol.Test.Helpers.assert_partial_render_event([], subtree, full_tree)
       :ok
   """
-  def assert_partial_render_event(expected_path, expected_subtree, expected_tree, timeout \\ 100) do
+  def assert_partial_render_event(
+        expected_path,
+        expected_subtree,
+        expected_tree,
+        timeout \\ 100
+      ) do
     receive do
       {:renderer_partial_update, path, subtree, tree} ->
-        assert path == expected_path, "Expected path #{inspect(expected_path)}, got #{inspect(path)}"
-        assert subtree == expected_subtree, "Expected subtree #{inspect(expected_subtree)}, got #{inspect(subtree)}"
-        assert tree == expected_tree, "Expected tree #{inspect(expected_tree)}, got #{inspect(tree)}"
+        assert path == expected_path,
+               "Expected path #{inspect(expected_path)}, got #{inspect(path)}"
+
+        assert subtree == expected_subtree,
+               "Expected subtree #{inspect(expected_subtree)}, got #{inspect(subtree)}"
+
+        assert tree == expected_tree,
+               "Expected tree #{inspect(expected_tree)}, got #{inspect(tree)}"
     after
-      timeout -> flunk("Expected partial render event not received within #{timeout}ms")
+      timeout ->
+        flunk("Expected partial render event not received within #{timeout}ms")
     end
   end
 
@@ -104,8 +119,11 @@ defmodule Raxol.Test.Helpers do
     receive do
       {:renderer_rendered, ops} ->
         flunk("Unexpected render event received: #{inspect(ops)}")
+
       {:renderer_partial_update, path, subtree, tree} ->
-        flunk("Unexpected partial render event received: path=#{inspect(path)}, subtree=#{inspect(subtree)}, tree=#{inspect(tree)}")
+        flunk(
+          "Unexpected partial render event received: path=#{inspect(path)}, subtree=#{inspect(subtree)}, tree=#{inspect(tree)}"
+        )
     after
       timeout -> :ok
     end
@@ -124,14 +142,18 @@ defmodule Raxol.Test.Helpers do
   """
   def setup_rendering_test do
     # Start the Renderer GenServer with unique name
-    {:ok, renderer_pid} = start_supervised(
-      {Raxol.UI.Rendering.Renderer, name: Raxol.Test.ProcessNaming.generate_name(Raxol.UI.Rendering.Renderer)}
-    )
+    {:ok, renderer_pid} =
+      start_supervised(
+        {Raxol.UI.Rendering.Renderer,
+         name:
+           Raxol.Test.ProcessNaming.generate_name(Raxol.UI.Rendering.Renderer)}
+      )
 
     # Start the Pipeline GenServer with global registration (as expected by tests)
-    {:ok, pipeline_pid} = start_supervised(
-      {Raxol.UI.Rendering.Pipeline, name: Raxol.UI.Rendering.Pipeline}
-    )
+    {:ok, pipeline_pid} =
+      start_supervised(
+        {Raxol.UI.Rendering.Pipeline, name: Raxol.UI.Rendering.Pipeline}
+      )
 
     # Set test notification for renderer using the actual PID
     GenServer.cast(renderer_pid, {:set_test_pid, self()})
@@ -155,11 +177,16 @@ defmodule Raxol.Test.Helpers do
     assert emulator.window_state.size == {expected_width, expected_height}
 
     # Calculate expected pixel dimensions
-    char_width_px = Raxol.Terminal.Commands.WindowHandlers.default_char_width_px()
-    char_height_px = Raxol.Terminal.Commands.WindowHandlers.default_char_height_px()
+    char_width_px =
+      Raxol.Terminal.Commands.WindowHandlers.default_char_width_px()
+
+    char_height_px =
+      Raxol.Terminal.Commands.WindowHandlers.default_char_height_px()
+
     expected_pixel_width = expected_width * char_width_px
     expected_pixel_height = expected_height * char_height_px
 
-    assert emulator.window_state.size_pixels == {expected_pixel_width, expected_pixel_height}
+    assert emulator.window_state.size_pixels ==
+             {expected_pixel_width, expected_pixel_height}
   end
 end

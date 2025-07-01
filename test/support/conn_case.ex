@@ -97,7 +97,9 @@ defmodule RaxolWeb.ConnCase do
     session_token = "placeholder_id_#{user.id}"
 
     conn
-    |> Phoenix.ConnTest.init_test_session(%{secret_key_base: String.duplicate("a", 64)})
+    |> Phoenix.ConnTest.init_test_session(%{
+      secret_key_base: String.duplicate("a", 64)
+    })
     |> put_session(:user_token, session_token)
   end
 end

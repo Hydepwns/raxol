@@ -50,7 +50,7 @@ defmodule Raxol.I18nTestHelpers do
   """
   def assert_translation_exists(locale, key)
       when is_binary(locale) and is_binary(key) do
-    translated = Gettext.t(key, %{}, locale: locale, default: key)
+    translated = RaxolWeb.Gettext.t(key, %{}, locale: locale, default: key)
 
     assert translated != key,
            # {key}" to exist for locale "#{locale}", but it doesn't"
@@ -66,7 +66,7 @@ defmodule Raxol.I18nTestHelpers do
   """
   def assert_translation(locale, key, expected)
       when is_binary(locale) and is_binary(key) do
-    actual = Gettext.t(key, %{}, locale)
+    actual = RaxolWeb.Gettext.t(key, %{}, locale)
 
     assert actual == expected,
            # {key}" in "#{locale}" to be "#{expected}", but got "#{actual}""
@@ -106,8 +106,8 @@ defmodule Raxol.I18nTestHelpers do
   """
   def with_rtl_locale(fun) when is_function(fun, 0) do
     rtl_locale =
-      Gettext.available_locales()
-      |> Enum.find(fn locale -> Gettext.rtl?(locale) end)
+      RaxolWeb.Gettext.available_locales()
+      |> Enum.find(fn locale -> RaxolWeb.Gettext.rtl?(locale) end)
 
     if rtl_locale do
       with_locale(rtl_locale, fun)
@@ -139,7 +139,7 @@ defmodule Raxol.I18nTestHelpers do
 
     missing_keys =
       Enum.filter(essential_keys, fn key ->
-        translated = Gettext.t(key, %{}, locale: locale, default: key)
+        translated = RaxolWeb.Gettext.t(key, %{}, locale: locale, default: key)
         translated == key
       end)
 
@@ -159,9 +159,10 @@ defmodule Raxol.I18nTestHelpers do
     with_locale(locale, fn ->
       key = "accessibility.screen_reader.#{announcement_type}"
 
-      _raw_translation = Gettext.t(key, %{}, locale: locale, default: key)
+      _raw_translation =
+        RaxolWeb.Gettext.t(key, %{}, locale: locale, default: key)
 
-      formatted = Gettext.t(key, bindings)
+      formatted = RaxolWeb.Gettext.t(key, bindings)
 
       refute formatted == key,
              # {announcement_type}" not properly formatted for locale "#{locale}""
@@ -203,7 +204,7 @@ defmodule Raxol.I18nTestHelpers do
                # {component_id}" is missing "#{label_type}" accessibility label in locale "#{locale}""
                "Component "
 
-        default_locale = Gettext.get_locale()
+        default_locale = RaxolWeb.Gettext.get_locale()
 
         if locale != default_locale do
           default_label =
