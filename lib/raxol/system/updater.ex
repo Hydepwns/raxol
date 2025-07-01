@@ -324,7 +324,11 @@ defmodule Raxol.System.Updater do
 
   # --- Private Functions ---
 
-  defp default_update_settings do
+  @doc """
+  Returns the default update settings.
+  """
+  @spec default_update_settings() :: map()
+  def default_update_settings do
     %{
       auto_update: true,
       # 24 hours in seconds
