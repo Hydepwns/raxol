@@ -68,7 +68,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
     %{
       state
       | search_text: search_text,
-        filtering: search_text != "",
+        is_filtering: search_text != "",
         filtered_options:
           filter_options(state.options, search_text, state.searchable_fields),
         focused_index: 0,

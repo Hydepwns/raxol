@@ -7,6 +7,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   import Raxol.Guards
   use GenServer
   require Raxol.Core.Runtime.Log
+  require Logger
 
   # Public API
 
@@ -174,12 +175,14 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   @impl GenServer
   def handle_cast({:render, data}, state) do
+    require Logger
+    Logger.debug("[Renderer] handle_cast {:render, data} called with data=#{inspect(data)}, test_pid=#{inspect(state.test_pid)}")
     # Convert the tree to paint operations
     ops = ui_tree_to_terminal_ops_with_lines(data)
 
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], data, data, state)
-    if state.test_pid, do: send(state.test_pid, {:renderer_rendered, ops})
+    if state.test_pid, do: (Logger.debug("[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(state.test_pid)} with ops=#{inspect(ops)}"); send(state.test_pid, {:renderer_rendered, ops}))
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(

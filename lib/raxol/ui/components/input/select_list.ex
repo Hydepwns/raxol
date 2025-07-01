@@ -69,9 +69,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :scroll_offset => integer(),
           :search_text => String.t(),
           :filtered_options => options() | nil,
-          :filtering => boolean(),
+          :is_filtering => boolean(),
           :selected_indices => MapSet.t(),
-          :search_focused => boolean(),
+          :is_search_focused => boolean(),
           :page_size => integer(),
           :current_page => integer(),
           :has_focus => boolean(),
@@ -97,9 +97,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
       scroll_offset: 0,
       search_text: "",
       filtered_options: nil,
-      filtering: false,
+      is_filtering: false,
       selected_indices: MapSet.new(),
-      search_focused: false,
+      is_search_focused: false,
       page_size: 10,
       current_page: 0,
       enable_search: false,
@@ -143,7 +143,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
         Map.merge(reset_state, %{
           filtered_options: nil,
-          filtering: false,
+          is_filtering: false,
           search_text: "",
           search_buffer: "",
           search_timer: nil,
@@ -206,14 +206,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def update({:toggle_search_focus}, state) do
     if state.enable_search do
-      new_state = %{state | search_focused: !state.search_focused}
+      new_state = %{state | is_search_focused: !state.is_search_focused}
 
       cleared_state = %{
         new_state
         | search_text: "",
           search_buffer: "",
           filtered_options: nil,
-          filtering: false
+          is_filtering: false
       }
 
       {cleared_state, nil}
@@ -229,11 +229,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
   def update({:set_search_focus, true}, state) do
     new_state = %{
       state
-      | search_focused: true,
+      | is_search_focused: true,
         search_text: "",
         search_buffer: "",
         filtered_options: nil,
-        filtering: false
+        is_filtering: false
     }
 
     {new_state, nil}
@@ -300,10 +300,10 @@ defmodule Raxol.UI.Components.Input.SelectList do
       key in ["Up", :up] ->
         Navigation.handle_arrow_up(state) |> then(&{&1, nil})
 
-      key in ["PageDown", :pagedown] ->
+      key in ["PageDown", :pagedown, :page_down] ->
         Navigation.handle_page_down(state) |> then(&{&1, nil})
 
-      key in ["PageUp", :pageup] ->
+      key in ["PageUp", :pageup, :page_up] ->
         Navigation.handle_page_up(state) |> then(&{&1, nil})
 
       key in ["Home", :home] ->
@@ -316,23 +316,18 @@ defmodule Raxol.UI.Components.Input.SelectList do
         {new_state, commands} =
           Selection.update_selection_state(state, state.focused_index)
 
-        Enum.each(commands, fn
-          {:callback, fun, args} -> apply(fun, args)
-          _ -> :ok
-        end)
-
-        {new_state, nil}
+        {new_state, commands}
 
       key in ["Tab", :tab] ->
         if state.enable_search do
-          new_state = %{state | search_focused: !state.search_focused}
+          new_state = %{state | is_search_focused: !state.is_search_focused}
 
           cleared_state = %{
             new_state
             | search_text: "",
               search_buffer: "",
               filtered_options: nil,
-              filtering: false
+              is_filtering: false
           }
 
           {cleared_state, nil}
@@ -341,7 +336,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
         end
 
       key in ["Backspace", :backspace] ->
-        if state.search_focused and state.search_buffer != "" do
+        if state.is_search_focused and state.search_buffer != "" do
           new_buffer =
             String.slice(
               state.search_buffer,
@@ -356,7 +351,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
         end
 
       binary?(key) and String.length(key) == 1 and state.enable_search and
-          state.search_focused ->
+          state.is_search_focused ->
         # Always update search_buffer immediately for character keys
         {new_state, _} = update({:search, state.search_buffer <> key}, state)
         {new_state, nil}
@@ -392,14 +387,17 @@ defmodule Raxol.UI.Components.Input.SelectList do
     state = ensure_state(state)
 
     cond do
-      state.enable_search and y == 1 ->
-        # Always set search_focused to true on search box click
+      state.enable_search and y == 0 ->
+        # Click on search input (y=0)
         {new_state, _} = update({:set_search_focus, true}, state)
         {new_state, nil}
 
-      y >= 2 ->
-        # Option click: y-2 (0-based index)
-        index = Navigation.calculate_clicked_index(y - 2, state)
+      y >= 1 ->
+        # Option click: y gives us the 0-based index directly
+        # y=1 should select index 1 (second option)
+        # y=2 should select index 2 (third option)
+        # etc.
+        index = y
         effective_options = Pagination.get_effective_options(state)
 
         if index >= 0 and index < length(effective_options) do

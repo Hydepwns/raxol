@@ -203,11 +203,20 @@ defmodule Raxol.UI.Components.Display.Table do
     current_visible_height = get_visible_height(context)
 
     case event do
-      {:keypress, key} -> handle_keypress(state, key, attrs, current_visible_height)
-      {:click, click_data} -> handle_click(state, click_data, attrs)
-      {:input, input_data} -> handle_input(state, input_data, attrs)
-      {:focus, focus_data} -> handle_focus(state, focus_data)
-      _ -> {:noreply, state}
+      {:keypress, key} ->
+        handle_keypress(state, key, attrs, current_visible_height)
+
+      {:click, click_data} ->
+        handle_click(state, click_data, attrs)
+
+      {:input, input_data} ->
+        handle_input(state, input_data, attrs)
+
+      {:focus, focus_data} ->
+        handle_focus(state, focus_data)
+
+      _ ->
+        {:noreply, state}
     end
   end
 
@@ -291,14 +300,18 @@ defmodule Raxol.UI.Components.Display.Table do
 
   defp calculate_header_widths(nil), do: []
   defp calculate_header_widths([]), do: []
+
   defp calculate_header_widths(columns) when list?(columns) do
     Enum.map(columns, fn col -> String.length(Map.get(col, :header, "")) end)
   end
+
   defp calculate_header_widths(_), do: []
 
   defp calculate_data_widths(nil, _columns), do: []
   defp calculate_data_widths([], _columns), do: []
-  defp calculate_data_widths(data, columns) when list?(data) and list?(columns) do
+
+  defp calculate_data_widths(data, columns)
+       when list?(data) and list?(columns) do
     Enum.reduce(data, List.duplicate(0, length(columns)), fn row, acc ->
       Enum.zip_with(acc, columns, fn max_width, col ->
         value = Map.get(row, Map.get(col, :key))
@@ -306,6 +319,7 @@ defmodule Raxol.UI.Components.Display.Table do
       end)
     end)
   end
+
   defp calculate_data_widths(_, _), do: []
 
   defp process_data(data, state) do
@@ -405,7 +419,8 @@ defmodule Raxol.UI.Components.Display.Table do
     theme_style_struct = Raxol.Style.new(theme_style_def)
     component_style_struct = Raxol.Style.new(component_style)
     base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
-    max_height = Map.get(base_style.layout, :height, nil)
+    # Height is in layout.margin.height after Raxol.Style.merge
+    max_height = Map.get(base_style.layout.margin, :height, nil)
     visible_height(%{max_height: max_height})
   end
 
@@ -433,7 +448,8 @@ defmodule Raxol.UI.Components.Display.Table do
         new_scroll_top = min(max_scroll, state.scroll_top + page_size)
         {:noreply, %{state | scroll_top: new_scroll_top}}
 
-      _ -> {:noreply, state}
+      _ ->
+        {:noreply, state}
     end
   end
 
