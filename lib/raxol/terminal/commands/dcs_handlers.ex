@@ -98,7 +98,10 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
     case Raxol.Terminal.ANSI.SixelGraphics.process_sequence(sixel_state, data) do
       {updated_sixel_state, :ok} ->
         # Successfully processed, update emulator with new sixel state
-        {:ok, %{emulator | sixel_state: updated_sixel_state}}
+        # and blit the graphics to the screen buffer
+        emulator_with_sixel = %{emulator | sixel_state: updated_sixel_state}
+        emulator_with_blit = blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
+        {:ok, emulator_with_blit}
 
       {_sixel_state, {:error, reason}} ->
         # Processing failed, log the error but still update the sixel_state
@@ -108,7 +111,70 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
 
       {updated_sixel_state, _} ->
         # Any other response, use the updated state
-        {:ok, %{emulator | sixel_state: updated_sixel_state}}
+        emulator_with_sixel = %{emulator | sixel_state: updated_sixel_state}
+        emulator_with_blit = blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
+        {:ok, emulator_with_blit}
+    end
+  end
+
+  # Blit Sixel graphics to the screen buffer
+  defp blit_sixel_to_buffer(emulator, sixel_state) do
+    %{pixel_buffer: pixel_buffer, palette: palette} = sixel_state
+
+    # Get cursor position from the emulator's cursor field
+    cursor_position = case emulator.cursor do
+      cursor when is_pid(cursor) ->
+        # If cursor is a PID, get position via GenServer call
+        GenServer.call(cursor, :get_position)
+      cursor when is_map(cursor) ->
+        # If cursor is a struct, get position directly
+        cursor.position
+      _ ->
+        {0, 0}  # Fallback
+    end
+
+    {cursor_x, cursor_y} = cursor_position
+
+    log_sixel_debug_info(pixel_buffer, palette, cursor_x, cursor_y)
+
+    buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
+    updated_buffer = blit_pixels_to_buffer(buffer, pixel_buffer, palette, cursor_x, cursor_y)
+    update_emulator_buffer(emulator, updated_buffer)
+  end
+
+  defp log_sixel_debug_info(pixel_buffer, palette, cursor_x, cursor_y) do
+    Logger.debug("Blitting Sixel graphics: pixel_buffer=#{inspect(pixel_buffer)}, palette=#{inspect(palette)}")
+    Logger.debug("Cursor position: {#{cursor_x}, #{cursor_y}}")
+  end
+
+  defp blit_pixels_to_buffer(buffer, pixel_buffer, palette, cursor_x, cursor_y) do
+    Enum.reduce(pixel_buffer, buffer, fn {{sixel_x, sixel_y}, color_index}, buffer ->
+      blit_single_pixel(buffer, sixel_x, sixel_y, color_index, palette, cursor_x, cursor_y)
+    end)
+  end
+
+  defp blit_single_pixel(buffer, sixel_x, sixel_y, color_index, palette, cursor_x, cursor_y) do
+    screen_x = cursor_x + sixel_x
+    screen_y = cursor_y + sixel_y
+
+    Logger.debug("Blitting pixel at sixel {#{sixel_x}, #{sixel_y}} -> screen {#{screen_x}, #{screen_y}} with color_index #{color_index}")
+
+    case Map.get(palette, color_index) do
+      {r, g, b} ->
+        Logger.debug("Found color {#{r}, #{g}, #{b}} for index #{color_index}")
+        style = %{background: {:rgb, r, g, b}}
+        Raxol.Terminal.ScreenBuffer.write_char(buffer, screen_x, screen_y, " ", style)
+
+      nil ->
+        Logger.debug("No color found for index #{color_index}")
+        buffer
+    end
+  end
+
+  defp update_emulator_buffer(emulator, updated_buffer) do
+    case emulator.active_buffer_type do
+      :main -> %{emulator | main_screen_buffer: updated_buffer}
+      :alternate -> %{emulator | alternate_screen_buffer: updated_buffer}
     end
   end
 

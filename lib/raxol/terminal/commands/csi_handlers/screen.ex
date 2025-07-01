@@ -203,14 +203,19 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Handle Erase Display (ED) command.
   Erases the screen from the cursor to the end of the screen.
   """
-  def handle_ed(emulator, _params) do
+  def handle_ed(emulator, params) do
+    mode = Enum.at(params, 0, 0)
     {x, y} = Emulator.get_cursor_position(emulator)
-    {top, bottom} = get_scroll_region(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
 
     new_buffer =
-      Raxol.Terminal.ScreenBuffer.erase_display(buffer, x, y, top, bottom)
+      case mode do
+        0 -> Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :to_end)
+        1 -> Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :to_beginning)
+        2 -> Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :all)
+        _ -> buffer
+      end
 
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
@@ -220,14 +225,18 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Erases the line from the cursor to the end of the line.
   """
   def handle_el(emulator, params) do
-    lines = Enum.at(params, 0, 1)
-    {_x, y} = Emulator.get_cursor_position(emulator)
-    {top, bottom} = get_scroll_region(emulator)
+    mode = Enum.at(params, 0, 0)
+    {x, y} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
 
     new_buffer =
-      Raxol.Terminal.ScreenBuffer.erase_line(buffer, lines, y, top, bottom)
+      case mode do
+        0 -> Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :to_end)
+        1 -> Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :to_beginning)
+        2 -> Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :all)
+        _ -> buffer
+      end
 
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end

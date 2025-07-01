@@ -21,6 +21,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     12 => :blinking_cursor,
     25 => :show_cursor,
     47 => :alternate_screen,
+    1047 => :dec_alt_screen_save,
     1049 => :alternate_screen_buffer
   }
 
@@ -123,6 +124,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
         {:ok, emulator}
 
       mode_name ->
+        IO.puts(
+          "DEBUG: CSIHandlers.handle_private_mode mode=#{inspect(mode)} mode_name=#{inspect(mode_name)} final_byte=#{inspect(final_byte)}"
+        )
+
         case final_byte do
           ?h -> Emulator.set_mode(emulator, mode_name)
           ?l -> Emulator.reset_mode(emulator, mode_name)
@@ -253,7 +258,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
       nil ->
         # Check if it's a private mode
         case Map.get(@private_modes, mode) do
-          nil -> {:ok, emulator}
+          nil ->
+            {:ok, emulator}
+
           mode_name ->
             if enabled do
               Emulator.set_mode(emulator, mode_name)
@@ -261,6 +268,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
               Emulator.reset_mode(emulator, mode_name)
             end
         end
+
       mode_name ->
         if enabled do
           Emulator.set_mode(emulator, mode_name)
@@ -397,7 +405,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   def handle_window_fullscreen(emulator) do
     # Set stacking order to fullscreen
-    updated_window_state = %{emulator.window_state | stacking_order: :fullscreen}
+    updated_window_state = %{
+      emulator.window_state
+      | stacking_order: :fullscreen
+    }
+
     %{emulator | window_state: updated_window_state}
   end
 
@@ -410,6 +422,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   def handle_window_title(emulator) do
     # Get title from emulator.window_title or use empty string
     title = emulator.window_title || ""
+
     case WindowHandlers.handle_t(emulator, [0, title]) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _, emulator} -> emulator
@@ -419,6 +432,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   def handle_window_icon_name(emulator) do
     # Get icon name from window_state if available
     icon_name = Map.get(emulator.window_state, :icon_name, "")
+
     case WindowHandlers.handle_t(emulator, [8, icon_name]) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _, emulator} -> emulator
@@ -462,10 +476,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   end
 
   def handle_window_size_pixels(emulator) do
-    case WindowHandlers.handle_t(emulator, [13]) do
-      {:ok, updated_emulator} -> updated_emulator
-      {:error, _, emulator} -> emulator
-    end
+    {w, h} = emulator.window_state.size
+
+    width_px =
+      w * Raxol.Terminal.Commands.WindowHandlers.default_char_width_px()
+
+    height_px =
+      h * Raxol.Terminal.Commands.WindowHandlers.default_char_height_px()
+
+    output = "\x1b[4;#{height_px};#{width_px}t"
+    %{emulator | output_buffer: output}
   end
 
   @doc """
@@ -475,19 +495,44 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_csi_sequence(emulator, command, params) do
     case command do
-      :cursor_up -> handle_cursor_up(emulator, List.first(params) || 1)
-      :cursor_down -> handle_cursor_down(emulator, List.first(params) || 1)
-      :cursor_forward -> handle_cursor_forward(emulator, List.first(params) || 1)
-      :cursor_backward -> handle_cursor_backward(emulator, List.first(params) || 1)
-      :cursor_position -> handle_cursor_position(emulator, params)
-      :cursor_column -> handle_cursor_column(emulator, List.first(params) || 1)
-      :screen_clear -> handle_screen_clear(emulator, params)
-      :line_clear -> handle_erase_line(emulator, List.first(params) || 0)
-      :text_attributes -> handle_text_attributes(emulator, params)
-      :scroll_up -> handle_scroll_up(emulator, List.first(params) || 1)
-      :scroll_down -> handle_scroll_down(emulator, List.first(params) || 1)
-      :device_status -> handle_device_status(emulator, params)
-      _ -> {:ok, emulator}
+      :cursor_up ->
+        handle_cursor_up(emulator, List.first(params) || 1)
+
+      :cursor_down ->
+        handle_cursor_down(emulator, List.first(params) || 1)
+
+      :cursor_forward ->
+        handle_cursor_forward(emulator, List.first(params) || 1)
+
+      :cursor_backward ->
+        handle_cursor_backward(emulator, List.first(params) || 1)
+
+      :cursor_position ->
+        handle_cursor_position(emulator, params)
+
+      :cursor_column ->
+        handle_cursor_column(emulator, List.first(params) || 1)
+
+      :screen_clear ->
+        handle_screen_clear(emulator, params)
+
+      :line_clear ->
+        handle_erase_line(emulator, List.first(params) || 0)
+
+      :text_attributes ->
+        handle_text_attributes(emulator, params)
+
+      :scroll_up ->
+        handle_scroll_up(emulator, List.first(params) || 1)
+
+      :scroll_down ->
+        handle_scroll_down(emulator, List.first(params) || 1)
+
+      :device_status ->
+        handle_device_status(emulator, params)
+
+      _ ->
+        {:ok, emulator}
     end
   end
 end
