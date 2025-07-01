@@ -62,7 +62,10 @@ defmodule Raxol.Terminal.Session do
     theme = Keyword.get(opts, :theme, %{})
     auto_save = Keyword.get(opts, :auto_save, true)
 
-    GenServer.start_link(__MODULE__, {id, width, height, title, theme, auto_save})
+    GenServer.start_link(
+      __MODULE__,
+      {id, width, height, title, theme, auto_save}
+    )
   end
 
   @doc """
@@ -282,12 +285,18 @@ defmodule Raxol.Terminal.Session do
   end
 
   def handle_call(:save_session, _from, state) do
-    Raxol.Core.Runtime.Log.info("Starting save_session for session: #{state.id}")
+    Raxol.Core.Runtime.Log.info(
+      "Starting save_session for session: #{state.id}"
+    )
 
     try do
       Raxol.Core.Runtime.Log.info("Calling Storage.save_session...")
       result = Storage.save_session(state)
-      Raxol.Core.Runtime.Log.info("Storage.save_session completed with result: #{inspect(result)}")
+
+      Raxol.Core.Runtime.Log.info(
+        "Storage.save_session completed with result: #{inspect(result)}"
+      )
+
       {:reply, result, state}
     rescue
       e ->
@@ -301,15 +310,23 @@ defmodule Raxol.Terminal.Session do
       try do
         case Storage.save_session(state) do
           :ok ->
-            Raxol.Core.Runtime.Log.info("Session saved successfully: #{state.id}")
+            Raxol.Core.Runtime.Log.info(
+              "Session saved successfully: #{state.id}"
+            )
+
           {:error, reason} ->
-            Raxol.Core.Runtime.Log.error("Failed to save session #{state.id}: #{inspect(reason)}")
+            Raxol.Core.Runtime.Log.error(
+              "Failed to save session #{state.id}: #{inspect(reason)}"
+            )
         end
       rescue
         e ->
-          Raxol.Core.Runtime.Log.error("Exception saving session #{state.id}: #{inspect(e)}")
+          Raxol.Core.Runtime.Log.error(
+            "Exception saving session #{state.id}: #{inspect(e)}"
+          )
       end
     end)
+
     {:noreply, state}
   end
 
