@@ -63,12 +63,18 @@ defmodule Raxol.UI.Renderer do
     []
   end
 
-  defp render_element(%{type: :text, text: text_content, x: x, y: y} = text_element, theme) do
+  defp render_element(
+         %{type: :text, text: text_content, x: x, y: y} = text_element,
+         theme
+       ) do
     attrs = Map.get(text_element, :style, %{})
     render_text(x, y, text_content, attrs, theme)
   end
 
-  defp render_element(%{type: :box, x: x, y: y, width: w, height: h} = box_element, theme) do
+  defp render_element(
+         %{type: :box, x: x, y: y, width: w, height: h} = box_element,
+         theme
+       ) do
     attrs = Map.get(box_element, :style, %{})
     render_box(x, y, w, h, attrs, theme)
   end
@@ -107,7 +113,10 @@ defmodule Raxol.UI.Renderer do
     render_table(x, y, width, height, table_attrs, theme)
   end
 
-  defp render_element(%{type: :panel, x: x, y: y, width: w, height: h} = panel_element, theme) do
+  defp render_element(
+         %{type: :panel, x: x, y: y, width: w, height: h} = panel_element,
+         theme
+       ) do
     attrs = Map.get(panel_element, :style, %{})
     panel_box_cells = render_box(x, y, w, h, attrs, theme)
     children = Map.get(panel_element, :children)
@@ -119,6 +128,7 @@ defmodule Raxol.UI.Renderer do
     Raxol.Core.Runtime.Log.warning(
       "[#{__MODULE__}] Unknown or unhandled element type for rendering: #{inspect(Map.get(element, :type))} - Element: #{inspect(element)}"
     )
+
     []
   end
 
@@ -151,18 +161,23 @@ defmodule Raxol.UI.Renderer do
     border_style = get_border_style(attrs, theme)
 
     background_cells = render_box_background(x, y, w, h, fg, bg, style_attrs)
-    border_cells = render_box_border(x, y, w, h, border_style, fg, bg, style_attrs)
+
+    border_cells =
+      render_box_border(x, y, w, h, border_style, fg, bg, style_attrs)
 
     background_cells ++ border_cells
   end
 
   defp resolve_box_styles(attrs, theme) do
-    component_type = Map.get(attrs, :component_type) || Map.get(attrs, :original_type)
+    component_type =
+      Map.get(attrs, :component_type) || Map.get(attrs, :original_type)
+
     resolve_styles(attrs, component_type, theme)
   end
 
   defp get_border_style(attrs, theme) do
-    component_type = Map.get(attrs, :component_type) || Map.get(attrs, :original_type)
+    component_type =
+      Map.get(attrs, :component_type) || Map.get(attrs, :original_type)
 
     Map.get(attrs, :border) ||
       Map.get(theme.component_styles[component_type] || %{}, :border, :none)
@@ -181,9 +196,24 @@ defmodule Raxol.UI.Renderer do
   defp render_box_border(x, y, w, h, border_style, fg, bg, style_attrs) do
     if border_style != :none and w > 0 and h > 0 do
       border_chars = get_border_chars(border_style)
-      corner_cells = render_box_corners(x, y, w, h, border_chars, fg, bg, style_attrs)
-      horizontal_cells = render_box_horizontal_lines(x, y, w, h, border_chars, fg, bg, style_attrs)
-      vertical_cells = render_box_vertical_lines(x, y, w, h, border_chars, fg, bg, style_attrs)
+
+      corner_cells =
+        render_box_corners(x, y, w, h, border_chars, fg, bg, style_attrs)
+
+      horizontal_cells =
+        render_box_horizontal_lines(
+          x,
+          y,
+          w,
+          h,
+          border_chars,
+          fg,
+          bg,
+          style_attrs
+        )
+
+      vertical_cells =
+        render_box_vertical_lines(x, y, w, h, border_chars, fg, bg, style_attrs)
 
       corner_cells ++ horizontal_cells ++ vertical_cells
     else
@@ -200,7 +230,16 @@ defmodule Raxol.UI.Renderer do
     ]
   end
 
-  defp render_box_horizontal_lines(x, y, w, h, border_chars, fg, bg, style_attrs) do
+  defp render_box_horizontal_lines(
+         x,
+         y,
+         w,
+         h,
+         border_chars,
+         fg,
+         bg,
+         style_attrs
+       ) do
     if w > 1 do
       for cur_x <- (x + 1)..(x + w - 2) do
         [
@@ -247,7 +286,9 @@ defmodule Raxol.UI.Renderer do
 
   defp build_table_styles(attrs, theme) do
     component_type = Map.get(attrs, :_component_type, :table)
-    table_base_styles = Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
+
+    table_base_styles =
+      Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
 
     %{
       header: %{
@@ -270,30 +311,74 @@ defmodule Raxol.UI.Renderer do
     all_cells = []
 
     # Render headers
-    {header_cells, current_y} = render_table_headers(x, current_y, table_data, table_styles, width, theme)
+    {header_cells, current_y} =
+      render_table_headers(x, current_y, table_data, table_styles, width, theme)
+
     all_cells = all_cells ++ header_cells
 
     # Render separator
-    {separator_cells, current_y} = render_table_separator(x, current_y, table_data, table_styles, width, theme)
+    {separator_cells, current_y} =
+      render_table_separator(
+        x,
+        current_y,
+        table_data,
+        table_styles,
+        width,
+        theme
+      )
+
     all_cells = all_cells ++ separator_cells
 
     # Render data rows
-    data_cells = render_table_data_rows(x, current_y, table_data, table_styles, width, theme)
+    data_cells =
+      render_table_data_rows(
+        x,
+        current_y,
+        table_data,
+        table_styles,
+        width,
+        theme
+      )
+
     all_cells = all_cells ++ data_cells
 
     all_cells
   end
 
-  defp render_table_headers(x, y, %{headers: headers, col_widths: col_widths}, table_styles, width, theme) do
+  defp render_table_headers(
+         x,
+         y,
+         %{headers: headers, col_widths: col_widths},
+         table_styles,
+         width,
+         theme
+       ) do
     if headers != [] do
-      cells = render_table_row(x, y, headers, col_widths, table_styles.header, width, theme)
+      cells =
+        render_table_row(
+          x,
+          y,
+          headers,
+          col_widths,
+          table_styles.header,
+          width,
+          theme
+        )
+
       {cells, y + 1}
     else
       {[], y}
     end
   end
 
-  defp render_table_separator(x, y, %{headers: headers}, table_styles, width, theme) do
+  defp render_table_separator(
+         x,
+         y,
+         %{headers: headers},
+         table_styles,
+         width,
+         theme
+       ) do
     if headers != [] do
       separator_char = Map.get(table_styles.separator, :char, "─")
       sep_text = String.duplicate(separator_char, width)
@@ -304,20 +389,63 @@ defmodule Raxol.UI.Renderer do
     end
   end
 
-  defp render_table_data_rows(x, y, %{data: data, col_widths: col_widths}, table_styles, width, theme) do
+  defp render_table_data_rows(
+         x,
+         y,
+         %{data: data, col_widths: col_widths},
+         table_styles,
+         width,
+         theme
+       ) do
     Enum.flat_map(Enum.with_index(data), fn {row_data, index} ->
       row_y = y + index
-      render_table_row(x, row_y, row_data, col_widths, table_styles.data, width, theme)
+
+      render_table_row(
+        x,
+        row_y,
+        row_data,
+        col_widths,
+        table_styles.data,
+        width,
+        theme
+      )
     end)
   end
 
   # Helper to render a single row (header or data)
-  defp render_table_row(start_x, y, row_items, col_widths, style, max_width, theme) do
+  defp render_table_row(
+         start_x,
+         y,
+         row_items,
+         col_widths,
+         style,
+         max_width,
+         theme
+       ) do
     {row_fg, row_bg, row_attrs} = resolve_styles(style, nil, theme)
-    render_table_row_cells(start_x, y, row_items, col_widths, row_fg, row_bg, row_attrs, max_width)
+
+    render_table_row_cells(
+      start_x,
+      y,
+      row_items,
+      col_widths,
+      row_fg,
+      row_bg,
+      row_attrs,
+      max_width
+    )
   end
 
-  defp render_table_row_cells(start_x, y, row_items, col_widths, fg, bg, attrs, max_width) do
+  defp render_table_row_cells(
+         start_x,
+         y,
+         row_items,
+         col_widths,
+         fg,
+         bg,
+         attrs,
+         max_width
+       ) do
     context = %{
       start_x: start_x,
       y: y,
@@ -329,7 +457,9 @@ defmodule Raxol.UI.Renderer do
       row_items: row_items
     }
 
-    Enum.reduce_while(Enum.with_index(row_items), {start_x, []}, fn {item, col_index}, {x, cells} ->
+    Enum.reduce_while(Enum.with_index(row_items), {start_x, []}, fn {item,
+                                                                     col_index},
+                                                                    {x, cells} ->
       case process_table_column(item, col_index, x, context) do
         {:continue, new_x, new_cells} -> {:cont, {new_x, cells ++ new_cells}}
         {:stop, final_cells} -> {:halt, {x, cells ++ final_cells}}
@@ -344,13 +474,31 @@ defmodule Raxol.UI.Renderer do
     projected_width = if is_last_col, do: col_width, else: col_width + 3
 
     if x + projected_width <= context.max_width do
-      item_cells = render_table_cell(x, context.y, item, col_width, context.fg, context.bg, context.attrs)
+      item_cells =
+        render_table_cell(
+          x,
+          context.y,
+          item,
+          col_width,
+          context.fg,
+          context.bg,
+          context.attrs
+        )
+
       new_x = x + col_width
 
       if is_last_col do
         {:continue, new_x, item_cells}
       else
-        separator_cells = render_table_separator(new_x, context.y, context.fg, context.bg, context.attrs)
+        separator_cells =
+          render_table_separator(
+            new_x,
+            context.y,
+            context.fg,
+            context.bg,
+            context.attrs
+          )
+
         {:continue, new_x + 3, item_cells ++ separator_cells}
       end
     else
