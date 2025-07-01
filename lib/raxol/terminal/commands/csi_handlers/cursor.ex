@@ -122,6 +122,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     active_buffer = BufferManager.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
+
+    IO.puts(
+      "DEBUG: handle_cup called with params=#{inspect(params)}, row=#{row}, col=#{col}"
+    )
+
+    IO.puts("DEBUG: calculated position: {#{col - 1}, #{row - 1}}")
+
     Emulator.move_cursor_to(emulator, {col - 1, row - 1}, width, height)
   end
 

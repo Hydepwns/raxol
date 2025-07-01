@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   import Raxol.Guards
   alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.SGRHandler
-  alias Raxol.Terminal.{Buffer.Operations, ScreenBuffer}
+  alias Raxol.Terminal.ScreenBuffer
 
   @command_handlers %{
     ?A => {:handle_cuu, "Cursor Up"},
