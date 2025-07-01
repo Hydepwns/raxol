@@ -9,7 +9,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour}
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker, ScrollbackManager}
-  alias Raxol.Terminal.{MemoryManager, ScreenBuffer, Emulator, Buffer}
+  alias Raxol.Terminal.{ScreenBuffer, Emulator, Buffer}
+  alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
 
   @behaviour Behaviour
@@ -103,7 +104,18 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @impl GenServer
   def init(opts) do
-    {:ok, memory_manager} = MemoryManager.start_link()
+    memory_manager =
+      case MemoryManager.start_link() do
+        {:ok, pid} ->
+          pid
+
+        {:error, {:already_started, pid}} ->
+          pid
+
+        {:error, reason} ->
+          raise "Failed to start MemoryManager: #{inspect(reason)}"
+      end
+
     lock = :ets.new(:buffer_lock, [:set, :private])
 
     state = %__MODULE__{
@@ -622,27 +634,30 @@ defmodule Raxol.Terminal.Buffer.Manager do
   # Helper function to get the buffer manager PID
   defp get_buffer_manager_pid do
     if Mix.env() == :test do
-      # In test environment, we need to find the process by name or use a different approach
-      # For now, let's use the global name if it exists, otherwise raise an error
-      case GenServer.whereis(__MODULE__) do
-        nil ->
-          # Try to find any buffer manager process
-          case Process.list()
-               |> Enum.find(fn pid ->
-                 case Process.info(pid, :initial_call) do
-                   {:initial_call, {__MODULE__, :init, 1}} -> true
-                   _ -> false
-                 end
-               end) do
-            nil -> raise "No buffer manager process found in test environment"
-            pid -> pid
-          end
-
-        pid ->
-          pid
-      end
+      find_buffer_manager_in_test()
     else
       __MODULE__
+    end
+  end
+
+  defp find_buffer_manager_in_test do
+    case GenServer.whereis(__MODULE__) do
+      nil -> find_buffer_manager_by_initial_call()
+      pid -> pid
+    end
+  end
+
+  defp find_buffer_manager_by_initial_call do
+    case Process.list() |> Enum.find(&is_buffer_manager_process?/1) do
+      nil -> raise "No buffer manager process found in test environment"
+      pid -> pid
+    end
+  end
+
+  defp is_buffer_manager_process?(pid) do
+    case Process.info(pid, :initial_call) do
+      {:initial_call, {__MODULE__, :init, 1}} -> true
+      _ -> false
     end
   end
 end
