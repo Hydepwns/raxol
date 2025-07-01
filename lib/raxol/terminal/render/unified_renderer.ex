@@ -193,11 +193,14 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   end
 
   def handle_call({:update_config, _state, config}, _from, renderer) do
+    # Handle config structure where rendering settings are under :rendering key
+    rendering_config = config[:rendering] || config
+
     new_state = %{
       renderer
-      | style: Map.merge(renderer.style, config.style || %{}),
+      | style: Map.merge(renderer.style, rendering_config[:style] || %{}),
         cursor_visible:
-          Map.get(config, :cursor_visible, renderer.cursor_visible)
+          Map.get(rendering_config, :cursor_visible, renderer.cursor_visible)
     }
 
     {:reply, :ok, new_state}

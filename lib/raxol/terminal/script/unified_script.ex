@@ -59,8 +59,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   @doc """
   Executes a script with optional arguments.
   """
-  def execute_script(script_id, _args \\ []) do
-    GenServer.call(__MODULE__, {:execute_script, script_id, _args})
+  def execute_script(script_id, args \\ []) do
+    GenServer.call(__MODULE__, {:execute_script, script_id, args})
   end
 
   @doc """
@@ -170,19 +170,25 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        new_script = update_in(script.config, &Map.merge(&1, config))
-        new_state = put_in(state.scripts[script_id], new_script)
-        {:reply, :ok, new_state}
+        if not is_map(config) do
+          {:reply, {:error, :invalid_script_config}, state}
+        else
+          config_map = config
+          script_config = if is_map(script.config), do: script.config, else: %{}
+          new_script = %{script | config: Map.merge(script_config, config_map)}
+          new_state = put_in(state.scripts[script_id], new_script)
+          {:reply, :ok, new_state}
+        end
     end
   end
 
-  def handle_call({:execute_script, script_id, _args}, _from, state) do
+  def handle_call({:execute_script, script_id, args}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        case do_execute_script(script, state.script_timeout) do
+        case do_execute_script(script, args, state.script_timeout) do
           {:ok, result} ->
             new_script = %{
               script
@@ -253,9 +259,17 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
-
-      script ->
-        {:reply, {:ok, script.output}, state}
+      %{output: [latest | _]} ->
+        # If latest is a string and output is a single string, return it directly
+        if is_binary(latest) and length([latest | []]) == 1 do
+          {:reply, {:ok, latest}, state}
+        else
+          {:reply, {:ok, [latest | []]}, state}
+        end
+      %{output: []} ->
+        {:reply, {:ok, ""}, state}
+      _ ->
+        {:reply, {:ok, ""}, state}
     end
   end
 
@@ -342,13 +356,13 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   defp validate_script_config(config) when map?(config), do: :ok
   defp validate_script_config(_), do: {:error, :invalid_script_config}
 
-  defp do_execute_script(script, timeout) do
+  defp do_execute_script(script, args, timeout) do
     try do
       case script.type do
-        :elixir -> execute_elixir_script(script, timeout)
-        :lua -> execute_lua_script(script, timeout)
-        :python -> execute_python_script(script, timeout)
-        :javascript -> execute_javascript_script(script, timeout)
+        :elixir -> execute_elixir_script(script, args, timeout)
+        :lua -> execute_lua_script(script, args, timeout)
+        :python -> execute_python_script(script, args, timeout)
+        :javascript -> execute_javascript_script(script, args, timeout)
       end
     rescue
       e ->
@@ -357,42 +371,58 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  defp execute_elixir_script(script, timeout) do
-    # Execute Elixir code using Code.eval_string
-    case Code.eval_string(script.source) do
-      {result, _bindings} ->
-        {:ok, inspect(result)}
+  defp execute_elixir_script(script, args, timeout) do
+    # Wrap Elixir code in a module to handle def/2 properly
+    module_name = "ScriptModule_#{generate_script_id()}"
+    wrapped_code = """
+    defmodule #{module_name} do
+      #{script.source}
+    end
+    """
 
-      _ ->
+    try do
+      # Compile and load the module, get the module atom from the result
+      [{mod, _bin}] = Code.compile_string(wrapped_code)
+
+      # Always call main/arity
+      if function_exported?(mod, :main, length(args)) do
+        result = apply(mod, :main, args)
+        if is_binary(result), do: {:ok, result}, else: {:ok, inspect(result)}
+      else
         {:ok, "Elixir script executed successfully"}
+      end
+    rescue
+      e ->
+        Logger.error("Script execution failed: #{inspect(e)}")
+        {:error, :execution_failed}
     end
   end
 
-  defp execute_lua_script(script, timeout) do
+  defp execute_lua_script(script, args, timeout) do
     # Execute Lua script using Port or external Lua interpreter
-    case execute_external_script("lua", script.source, timeout) do
+    case execute_external_script("lua", script.source, args, timeout) do
       {:ok, output} -> {:ok, output}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp execute_python_script(script, timeout) do
+  defp execute_python_script(script, args, timeout) do
     # Execute Python script using Port or external Python interpreter
-    case execute_external_script("python3", script.source, timeout) do
+    case execute_external_script("python3", script.source, args, timeout) do
       {:ok, output} -> {:ok, output}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp execute_javascript_script(script, timeout) do
+  defp execute_javascript_script(script, args, timeout) do
     # Execute JavaScript using Node.js
-    case execute_external_script("node", script.source, timeout) do
+    case execute_external_script("node", script.source, args, timeout) do
       {:ok, output} -> {:ok, output}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp execute_external_script(interpreter, source, timeout) do
+  defp execute_external_script(interpreter, source, args, timeout) do
     # Create temporary file for script
     temp_file =
       Path.join(
@@ -405,7 +435,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       File.write!(temp_file, source)
 
       # Execute script with arguments
-      cmd = [interpreter, temp_file]
+      cmd = [interpreter, temp_file] ++ args
 
       case System.cmd(interpreter, cmd,
              timeout: timeout,

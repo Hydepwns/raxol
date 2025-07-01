@@ -213,29 +213,28 @@ defmodule Raxol.Terminal.Theme.Manager do
   @doc """
   Gets a style from the current theme or custom styles.
   """
-  @spec get_style(t(), String.t()) :: {:ok, style()} | {:error, term()}
+  @spec get_style(t(), String.t()) :: {:ok, style(), t()} | {:error, term()}
   def get_style(manager, style_name) do
-    case Map.get(manager.current_theme.styles, style_name) do
+    # Try atom and string keys for theme styles
+    style = Map.get(manager.current_theme.styles, style_name) ||
+            Map.get(manager.current_theme.styles, String.to_atom(style_name))
+    case style do
       nil ->
         case Map.get(manager.custom_styles, style_name) do
           nil ->
             {:error, :style_not_found}
-
           style ->
             updated_manager = %{
               manager
               | metrics: update_metrics(manager.metrics, :style_applications)
             }
-
             {:ok, style, updated_manager}
         end
-
       style ->
         updated_manager = %{
           manager
           | metrics: update_metrics(manager.metrics, :style_applications)
         }
-
         {:ok, style, updated_manager}
     end
   end
@@ -290,18 +289,18 @@ defmodule Raxol.Terminal.Theme.Manager do
   end
 
   defp update_metrics(metrics, :theme_switches) do
-    update_in(metrics.theme_switches, &(&1 + 1))
+    %{metrics | theme_switches: metrics.theme_switches + 1}
   end
 
   defp update_metrics(metrics, :style_applications) do
-    update_in(metrics.style_applications, &(&1 + 1))
+    %{metrics | style_applications: metrics.style_applications + 1}
   end
 
   defp update_metrics(metrics, :customizations) do
-    update_in(metrics.customizations, &(&1 + 1))
+    %{metrics | customizations: metrics.customizations + 1}
   end
 
   defp update_metrics(metrics, :load_operations) do
-    update_in(metrics.load_operations, &(&1 + 1))
+    %{metrics | load_operations: metrics.load_operations + 1}
   end
 end

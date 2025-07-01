@@ -465,7 +465,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
            id: generate_metric_id(),
            type: hd(values).type,
            value: aggregated,
-           timestamp: System.system_time(:millisecond),
+           timestamp: hd(values).timestamp,
            labels: hd(values).labels,
            metadata: hd(values).metadata
          }

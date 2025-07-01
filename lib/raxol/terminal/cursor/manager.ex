@@ -633,11 +633,19 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call(:get_position, _from, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "Getting cursor position: {#{state.x}, #{state.y}}"
+    )
+
     {:reply, {state.x, state.y}, state}
   end
 
   @impl GenServer
   def handle_call({:set_position, row, col}, _from, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "Setting cursor position from {#{state.x}, #{state.y}} to {#{row}, #{col}}"
+    )
+
     new_state = %{state | x: row, y: col}
     {:reply, :ok, new_state}
   end
