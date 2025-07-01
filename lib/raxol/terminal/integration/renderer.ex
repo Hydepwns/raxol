@@ -208,8 +208,11 @@ defmodule Raxol.Terminal.Integration.Renderer do
 
   defp set_cursor_and_present(x, y) do
     case :termbox2_nif.tb_set_cursor(x, y) do
-      0 -> present_buffer()
-      set_cursor_error_code -> {:error, {:set_cursor_failed, set_cursor_error_code}}
+      0 ->
+        present_buffer()
+
+      set_cursor_error_code ->
+        {:error, {:set_cursor_failed, set_cursor_error_code}}
     end
   end
 
@@ -222,11 +225,13 @@ defmodule Raxol.Terminal.Integration.Renderer do
       :ok ->
         # Create initial state with configuration
         config = build_initial_config(opts)
+
         state = %State{
           width: Map.get(config, :width, 80),
           height: Map.get(config, :height, 24),
           config: config
         }
+
         {:ok, state}
 
       error ->
@@ -247,7 +252,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: updated_config}
 
       {:error, reason} ->
-        Logger.error("Failed to apply renderer configuration: #{inspect(reason)}")
+        Logger.error(
+          "Failed to apply renderer configuration: #{inspect(reason)}"
+        )
+
         state
     end
   end
@@ -283,7 +291,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
         %{state | config: default_config}
 
       {:error, reason} ->
-        Logger.error("Failed to reset renderer configuration: #{inspect(reason)}")
+        Logger.error(
+          "Failed to reset renderer configuration: #{inspect(reason)}"
+        )
+
         state
     end
   end
@@ -291,7 +302,8 @@ defmodule Raxol.Terminal.Integration.Renderer do
   @doc """
   Resizes the renderer to the given dimensions.
   """
-  def resize(%State{} = state, width, height) when is_integer(width) and is_integer(height) do
+  def resize(%State{} = state, width, height)
+      when is_integer(width) and is_integer(height) do
     # Check if we're in test mode
     if Application.get_env(:raxol, :terminal_test_mode, false) do
       # In test mode, just update the state
@@ -314,7 +326,8 @@ defmodule Raxol.Terminal.Integration.Renderer do
   @doc """
   Sets the cursor visibility.
   """
-  def set_cursor_visibility(%State{} = state, visible) when is_boolean(visible) do
+  def set_cursor_visibility(%State{} = state, visible)
+      when is_boolean(visible) do
     # Check if we're in test mode
     if Application.get_env(:raxol, :terminal_test_mode, false) do
       # In test mode, just update the state
@@ -323,7 +336,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
       # In real mode, use termbox2 to hide/show cursor
       case set_terminal_cursor_visibility(visible) do
         :ok ->
-          %{state | config: Map.put(state.config || %{}, :cursor_visible, visible)}
+          %{
+            state
+            | config: Map.put(state.config || %{}, :cursor_visible, visible)
+          }
 
         {:error, reason} ->
           Logger.error("Failed to set cursor visibility: #{inspect(reason)}")
@@ -351,7 +367,10 @@ defmodule Raxol.Terminal.Integration.Renderer do
           state
 
         other ->
-          Logger.error("Unexpected response from tb_set_title: #{inspect(other)}")
+          Logger.error(
+            "Unexpected response from tb_set_title: #{inspect(other)}"
+          )
+
           state
       end
     end
@@ -373,7 +392,8 @@ defmodule Raxol.Terminal.Integration.Renderer do
       height: Keyword.get(opts, :height, 24),
       cursor_visible: Keyword.get(opts, :cursor_visible, true),
       title: Keyword.get(opts, :title, "Raxol Terminal"),
-      theme: Keyword.get(opts, :theme, %{foreground: :white, background: :black}),
+      theme:
+        Keyword.get(opts, :theme, %{foreground: :white, background: :black}),
       fps: Keyword.get(opts, :fps, 60),
       font_settings: Keyword.get(opts, :font_settings, %{size: 12})
     }
