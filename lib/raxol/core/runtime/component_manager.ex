@@ -62,7 +62,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     runtime_pid = Keyword.get(opts, :runtime_pid, nil)
 
@@ -79,7 +79,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
      }}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:mount, component_module, props}, _from, state) do
     # Generate a unique ID
     component_id = inspect(component_module) <> "-" <> UUID.uuid4()
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     {:reply, {:ok, component_id}, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:unmount, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
@@ -135,7 +135,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update, component_id, message}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
@@ -164,7 +164,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_and_clear_render_queue, _from, state) do
     # Get current queue and clear it
     queue = state.render_queue
@@ -172,13 +172,13 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     {:reply, queue, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_component, component_id}, _from, state) do
     component = Map.get(state.components, component_id)
     {:reply, component, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:update, component_id, message}, state) do
     case Map.get(state.components, component_id) do
       nil ->

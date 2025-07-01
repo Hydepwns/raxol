@@ -32,7 +32,7 @@ defmodule Raxol.Core.UserPreferences do
     )
   end
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     preferences =
       if Keyword.get(opts, :test_mode?, false) do
@@ -87,14 +87,14 @@ defmodule Raxol.Core.UserPreferences do
     GenServer.call(pid_or_name, :reset_to_defaults)
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get, key_or_path}, _from, state) do
     path = normalize_path(key_or_path)
     value = get_in(state.preferences, path)
     {:reply, value, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:set, key_or_path, value}, _from, state) do
     path = normalize_path(key_or_path)
     current_value = get_in(state.preferences, path)
@@ -115,12 +115,12 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_all, _from, state) do
     {:reply, state.preferences, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:save_now, _from, state) do
     # Cancel any pending delayed save
     cancel_save_timer(state.save_timer)
@@ -139,7 +139,7 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:reset_to_defaults, _from, state) do
     Raxol.Core.Runtime.Log.info(
       "UserPreferences resetting to defaults for test."
@@ -181,7 +181,7 @@ defmodule Raxol.Core.UserPreferences do
   defp cancel_save_timer(_), do: :ok
 
   # Handle the delayed save message
-  @impl true
+  @impl GenServer
   def handle_info({:perform_delayed_save, timer_id}, state) do
     if timer_id == state.save_timer do
       case Persistence.save(state.preferences) do

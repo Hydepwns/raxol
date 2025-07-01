@@ -34,14 +34,14 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               current_theme_id: :default
   end
 
-  @impl true
+  @impl GenServer
   def start_link(runtime_pid, initial_state) do
     GenServer.start_link(__MODULE__, {runtime_pid, initial_state},
       name: __MODULE__
     )
   end
 
-  @impl true
+  @impl GenServer
   def init({runtime_pid, initial_state}) do
     state = %State{
       runtime_pid: runtime_pid,
@@ -238,7 +238,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- GenServer Callbacks ---
 
-  @impl true
+  @impl GenServer
   def handle_cast({:dispatch, event}, state) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher] handle_cast :dispatch event: #{inspect(event)}"
@@ -384,12 +384,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_model, _from, state) do
     {:reply, {:ok, state.model}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_render_context, _from, state) do
     Raxol.Core.Runtime.Log.debug(
       "Dispatcher received :get_render_context call. State: #{inspect(state)}"
