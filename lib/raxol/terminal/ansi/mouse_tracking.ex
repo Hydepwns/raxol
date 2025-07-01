@@ -33,14 +33,10 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   @mouse_actions %{
     0 => :press,
     3 => :release,
-    # Left button press
-    32 => :press,
-    # Left button release
-    35 => :release,
-    # Mouse move
-    64 => :move,
-    # Mouse drag
-    67 => :drag,
+    32 => :press,    # Left button press
+    35 => :release,  # Left button release
+    64 => :move,     # Mouse move
+    67 => :drag,     # Mouse drag
     240 => :wheel_up,
     243 => :wheel_down
   }
@@ -110,7 +106,6 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
           sequence: sequence,
           stacktrace: Exception.format_stacktrace(__STACKTRACE__)
         })
-
         nil
     end
   end
@@ -143,47 +138,21 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   @spec format_mouse_event(mouse_event()) :: String.t()
   def format_mouse_event({button, action, x, y}) do
     # Match the test expectations which use a mix of protocols
-    button_code =
-      case {button, action} do
-        # Standard protocol
-        {:left, :press} ->
-          0
-
-        # Standard protocol
-        {:left, :release} ->
-          3
-
-        # X10 protocol
-        {:left, :move} ->
-          32
-
-        # X10 protocol
-        {:left, :drag} ->
-          35
-
-        # Standard protocol
-        {:middle, :press} ->
-          1
-
-        # Standard protocol
-        {:right, :press} ->
-          2
-
-        # Wheel protocol
-        {:wheel_up, :press} ->
-          64
-
-        # Wheel protocol
-        {:wheel_down, :press} ->
-          65
-
-        _ ->
-          # Fallback to the old logic for other protocols
-          button_code = get_button_code(button)
-          action_code = get_action_code(action)
-          button_code + action_code
-      end
-
+    button_code = case {button, action} do
+      {:left, :press} -> 0     # Standard protocol
+      {:left, :release} -> 3   # Standard protocol
+      {:left, :move} -> 32     # X10 protocol
+      {:left, :drag} -> 35     # X10 protocol
+      {:middle, :press} -> 1   # Standard protocol
+      {:right, :press} -> 2    # Standard protocol
+      {:wheel_up, :press} -> 64    # Wheel protocol
+      {:wheel_down, :press} -> 65  # Wheel protocol
+      _ ->
+        # Fallback to the old logic for other protocols
+        button_code = get_button_code(button)
+        action_code = get_action_code(action)
+        button_code + action_code
+    end
     "\e[M#{button_code}#{x + 32}#{y + 32}"
   end
 
@@ -194,30 +163,17 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   def format_focus_event(:focus_in), do: "\e[I"
   def format_focus_event(:focus_out), do: "\e[O"
 
-  defp parse_mouse_event(button_code, x, y),
-    do: parse_mouse_event_fallback(button_code, x, y)
+  defp parse_mouse_event(button_code, x, y), do: parse_mouse_event_fallback(button_code, x, y)
 
   defp parse_mouse_event_fallback(button_code, x, y) do
     import Bitwise
     # For X10 mouse tracking, the entire byte represents the action
     # We need to map the button_code directly to the action
     case button_code do
-      # Space - left button press
-      32 ->
-        {:left, :press, x, y}
-
-      # # - left button release
-      35 ->
-        {:left, :release, x, y}
-
-      # @ - mouse move
-      64 ->
-        {:left, :move, x, y}
-
-      # C - mouse drag
-      67 ->
-        {:left, :drag, x, y}
-
+      32 -> {:left, :press, x, y}      # Space - left button press
+      35 -> {:left, :release, x, y}    # # - left button release
+      64 -> {:left, :move, x, y}       # @ - mouse move
+      67 -> {:left, :drag, x, y}       # C - mouse drag
       _ ->
         # Fallback to the old logic for other protocols
         button = Map.get(@mouse_buttons, button_code &&& 0x03)
