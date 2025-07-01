@@ -88,14 +88,46 @@ defmodule Raxol.Renderer.Layout do
     }
 
     # Deeply normalize the view tree before processing
-    [normalized_view] = deep_normalize_child(view, available_space, :box, true)
+    normalized_views = deep_normalize_child(view, available_space, :box, true)
+
+    # Handle the case where deep_normalize_child returns multiple elements
+    # For layout processing, we typically want the first (root) element
+    normalized_view =
+      case normalized_views do
+        [single_view] ->
+          single_view
+
+        [first_view | _rest] ->
+          first_view
+
+        [] ->
+          %{
+            type: :box,
+            position: {0, 0},
+            size: {dimensions.width, dimensions.height},
+            children: []
+          }
+
+        single_map when map?(single_map) ->
+          single_map
+
+        other ->
+          # Fallback for any other case
+          %{
+            type: :box,
+            position: {0, 0},
+            size: {dimensions.width, dimensions.height},
+            children: []
+          }
+      end
 
     # Process the view tree
     result = process_element(normalized_view, available_space, [])
+
     flat = List.flatten(result) |> Enum.reject(&nil?/1)
 
     case flat do
-      [single_map] when map?(single_map) -> [single_map]
+      [single_map] when map?(single_map) -> single_map
       _ -> flat
     end
   end
@@ -218,29 +250,24 @@ defmodule Raxol.Renderer.Layout do
   end
 
   def process_table_element(element_map, space, acc) do
-    column_defs = Map.get(element_map, :columns, [])
-    table_data = Map.get(element_map, :data, [])
-    styles = extract_table_styles(element_map)
+    # Check if this is a table struct that has been converted to a map
+    if Map.get(element_map, :__struct__) == Raxol.Core.Renderer.Views.Table do
+      # Use the table's build_table_content function to get proper children with separator row
+      table_children =
+        Raxol.Core.Renderer.Views.Table.build_table_content(element_map)
 
-    header_elements = create_table_header(column_defs, space, styles)
-
-    data_elements =
-      create_table_data_rows(
-        table_data,
-        column_defs,
-        space,
-        styles,
-        length(header_elements)
-      )
-
-    [
-      Map.merge(element_map, %{
-        position: {space.x, space.y},
-        size: {space.width, space.height},
-        children: header_elements ++ data_elements
-      })
-      | acc
-    ]
+      [
+        Map.merge(element_map, %{
+          position: {space.x, space.y},
+          size: {space.width, space.height},
+          children: table_children
+        })
+        | acc
+      ]
+    else
+      # For non-table elements, process normally
+      [element_map | acc]
+    end
   end
 
   def process_scroll_element(%{children: children} = scroll_map, space, acc)
@@ -390,16 +417,28 @@ defmodule Raxol.Renderer.Layout do
       position: {space.x, space.y},
       size: {space.width, space.height},
       style: Map.get(element_map, :style, @default_style),
-      border: border_style
+      border: border_style,
+      children: []
     }
 
-    # Process children without border offset (content should be at original position)
-    if list?(children) and children != [] do
-      processed_children = process_children(children, space, [])
-      [Map.put(border_container, :children, processed_children) | acc]
-    else
-      [border_container | acc]
-    end
+    # Always process children if present (even if empty or not a list)
+    processed_children =
+      case children do
+        nil ->
+          []
+
+        list when is_list(list) ->
+          Enum.flat_map(list, fn child ->
+            normalized_child = ensure_required_keys(child, space)
+            process_element(normalized_child, space, [])
+          end)
+
+        single ->
+          normalized_child = ensure_required_keys(single, space)
+          process_element(normalized_child, space, [])
+      end
+
+    [Map.put(border_container, :children, processed_children) | acc]
   end
 
   defp extract_flex_config(element_map) do
@@ -959,9 +998,36 @@ defmodule Raxol.Renderer.Layout do
 
   # --- RECURSIVE NORMALIZATION FOR ALL CHILDREN ---
   # Helper to deeply normalize a child (struct, map, keyword, atom, etc)
-  defp deep_normalize_child(child, space, default_type, for_layout) do
-    normalized = normalize_child_by_type(child, space, default_type, for_layout)
-    List.wrap(normalized)
+  defp deep_normalize_child(child, space, default_type, for_layout \\ false) do
+    normalize_by_type(child, space, default_type)
+  end
+
+  defp normalize_by_type(child, space, default_type) do
+    cond do
+      is_struct(child) ->
+        [normalize_struct(child, space, default_type)]
+
+      Keyword.keyword?(child) ->
+        [normalize_keyword(child, space, default_type)]
+
+      list?(child) ->
+        normalize_list(child, space, default_type)
+
+      map?(child) ->
+        normalize_map(child, space, default_type)
+
+      is_binary(child) ->
+        [normalize_text(child, space, default_type)]
+
+      is_number(child) ->
+        [normalize_number(child, space, default_type)]
+
+      is_atom(child) ->
+        [normalize_atom(child, space, default_type)]
+
+      true ->
+        [normalize_unknown(child, space, default_type)]
+    end
   end
 
   defp normalize_child_by_type(child, space, default_type, for_layout) do
@@ -979,7 +1045,7 @@ defmodule Raxol.Renderer.Layout do
   defp get_child_type(child, for_layout) do
     cond do
       struct?(child) -> :struct
-      keyword_list?(child, for_layout) -> :keyword
+      Keyword.keyword?(child, for_layout) -> :keyword
       list?(child) -> :list
       map?(child) -> :map
       atom_for_layout?(child, for_layout) -> :atom_for_layout
@@ -999,9 +1065,22 @@ defmodule Raxol.Renderer.Layout do
     struct_name = get_struct_name(child)
     intended_type = resolve_type(map, struct_name)
 
+    # For table structs, always set children using build_table_content
+    map =
+      if intended_type == :table and struct_name == "table" do
+        table_children =
+          Raxol.Core.Renderer.Views.Table.build_table_content(child)
+
+        Map.put(map, :children, table_children)
+      else
+        map
+      end
+
     map
-    |> Map.put(:type, intended_type)
-    |> add_children_if_container(intended_type, space)
+    |> Map.put_new(:position, {space.x, space.y})
+    |> Map.put_new(:size, {space.width, space.height})
+    |> add_children_if_needed(space)
+    |> resolve_final_type(intended_type)
     |> ensure_required_keys(space)
   end
 
@@ -1022,12 +1101,17 @@ defmodule Raxol.Renderer.Layout do
   end
 
   defp normalize_map(child, space, default_type) do
-    child
-    |> Map.put_new(:position, {space.x, space.y})
-    |> Map.put_new(:size, {space.width, space.height})
-    |> add_children_if_needed(space)
-    |> resolve_final_type(default_type)
-    |> ensure_required_keys(space)
+    if Map.has_key?(child, :__struct__) do
+      # Treat as struct
+      normalize_struct(child, space, default_type)
+    else
+      child
+      |> Map.put_new(:position, {space.x, space.y})
+      |> Map.put_new(:size, {space.width, space.height})
+      |> add_children_if_needed(space)
+      |> resolve_final_type(default_type)
+      |> ensure_required_keys(space)
+    end
   end
 
   defp normalize_atom_for_layout(child, space) do
@@ -1085,17 +1169,11 @@ defmodule Raxol.Renderer.Layout do
     end
   end
 
-  defp normalize_children(children, space) do
-    case children do
-      list when list?(list) ->
-        Enum.flat_map(list, &normalize_single_child(&1, space))
-
-      nil ->
-        []
-
-      single_item ->
-        deep_normalize_child(single_item, space, :box, true)
-    end
+  defp normalize_children(children, space) when is_list(children) do
+    children
+    |> Enum.flat_map(fn child ->
+      normalize_single_child(child, space)
+    end)
   end
 
   defp normalize_single_child(child_node, space) do
@@ -1106,8 +1184,8 @@ defmodule Raxol.Renderer.Layout do
         ensure_required_keys(child_node, space)
       end
 
-    # Pass empty acc, collect this child's elements
-    process_element(normalized_child, space, [])
+    # Always return a list, let normalize_children handle flattening
+    [normalized_child]
   end
 
   defp child_node_fully_normalized?(child_node) do
@@ -1204,7 +1282,7 @@ defmodule Raxol.Renderer.Layout do
         }
       end)
 
-    [%{type: :row, children: header_cells}]
+    %{type: :row, children: header_cells}
   end
 
   defp create_table_data_rows(
@@ -1433,5 +1511,39 @@ defmodule Raxol.Renderer.Layout do
     }
 
     [grid_container | acc]
+  end
+
+  # Add normalization helpers for text, number, and atom
+  defp normalize_text(child, space, _default_type) do
+    [
+      %{
+        type: :text,
+        content: child,
+        position: {space.x, space.y},
+        size: {space.width, 1}
+      }
+    ]
+  end
+
+  defp normalize_number(child, space, _default_type) do
+    [
+      %{
+        type: :number,
+        value: child,
+        position: {space.x, space.y},
+        size: {space.width, 1}
+      }
+    ]
+  end
+
+  defp normalize_atom(child, space, _default_type) do
+    [
+      %{
+        type: :atom,
+        value: child,
+        position: {space.x, space.y},
+        size: {space.width, 1}
+      }
+    ]
   end
 end
