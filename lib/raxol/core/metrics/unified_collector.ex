@@ -150,12 +150,18 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     }
 
     # Update metrics by type
-    updated_metrics = Map.update(state.metrics, type, %{name => [metric_entry]}, fn type_metrics ->
-      Map.update(type_metrics, name, [metric_entry], fn existing_entries ->
-        # Add new entry and limit history
-        [metric_entry | existing_entries] |> Enum.take(@history_limit)
-      end)
-    end)
+    updated_metrics =
+      Map.update(
+        state.metrics,
+        type,
+        %{name => [metric_entry]},
+        fn type_metrics ->
+          Map.update(type_metrics, name, [metric_entry], fn existing_entries ->
+            # Add new entry and limit history
+            [metric_entry | existing_entries] |> Enum.take(@history_limit)
+          end)
+        end
+      )
 
     {:noreply,
      %{state | metrics: updated_metrics, last_update: System.monotonic_time()}}
@@ -173,11 +179,12 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     metric_entries = Map.get(type_metrics, name, [])
 
     # Filter by tags if specified
-    filtered_entries = if tags == [] do
-      metric_entries
-    else
-      Enum.filter(metric_entries, fn entry -> entry.tags == tags end)
-    end
+    filtered_entries =
+      if tags == [] do
+        metric_entries
+      else
+        Enum.filter(metric_entries, fn entry -> entry.tags == tags end)
+      end
 
     {:reply, filtered_entries, state}
   end
@@ -194,13 +201,17 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
       state.metrics
       |> Enum.flat_map(fn {type, type_metrics} ->
         case Map.get(type_metrics, metric_name) do
-          nil -> []
+          nil ->
+            []
+
           entries ->
-            filtered = if tags == %{} do
-              entries
-            else
-              Enum.filter(entries, fn entry -> entry.tags == tags end)
-            end
+            filtered =
+              if tags == %{} do
+                entries
+              else
+                Enum.filter(entries, fn entry -> entry.tags == tags end)
+              end
+
             Enum.map(filtered, fn entry -> Map.put(entry, :type, type) end)
         end
       end)

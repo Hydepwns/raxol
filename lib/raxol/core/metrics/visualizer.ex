@@ -356,12 +356,20 @@ defmodule Raxol.Core.Metrics.Visualizer do
     IO.puts("DEBUG: Filtering metrics with time range: #{start} to #{end_}")
     IO.puts("DEBUG: Total metrics before filtering: #{length(metrics)}")
 
-    filtered = Enum.filter(metrics, fn metric ->
-      timestamp = DateTime.from_unix!(metric.timestamp, :millisecond)
-      result = DateTime.compare(timestamp, start) != :lt and DateTime.compare(timestamp, end_) != :gt
-      IO.puts("DEBUG: Metric timestamp: #{timestamp}, value: #{metric.value}, included: #{result}")
-      result
-    end)
+    filtered =
+      Enum.filter(metrics, fn metric ->
+        timestamp = DateTime.from_unix!(metric.timestamp, :millisecond)
+
+        result =
+          DateTime.compare(timestamp, start) != :lt and
+            DateTime.compare(timestamp, end_) != :gt
+
+        IO.puts(
+          "DEBUG: Metric timestamp: #{timestamp}, value: #{metric.value}, included: #{result}"
+        )
+
+        result
+      end)
 
     IO.puts("DEBUG: Total metrics after filtering: #{length(filtered)}")
     filtered

@@ -234,8 +234,12 @@ defmodule Raxol.Core.Metrics.AlertManager do
 
   defp evaluate_alert(current_value, rule, alert_state) do
     now = DateTime.utc_now()
-    in_cooldown = is_in_cooldown?(alert_state.last_triggered, rule.cooldown, now)
-    should_trigger = evaluate_condition(rule.condition, current_value, rule.threshold)
+
+    in_cooldown =
+      is_in_cooldown?(alert_state.last_triggered, rule.cooldown, now)
+
+    should_trigger =
+      evaluate_condition(rule.condition, current_value, rule.threshold)
 
     new_alert_state = %{
       alert_state

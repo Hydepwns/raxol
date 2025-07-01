@@ -93,4 +93,46 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
 
     {:error, :reload_failed}
   end
+
+  @doc """
+  Reloads a plugin by its ID.
+  """
+  def reload_plugin_by_id(plugin_id_string, state) do
+    # This is a simplified implementation
+    # In a real implementation, this would reload the plugin from disk
+    case Map.get(state.plugin_states, plugin_id_string) do
+      nil ->
+        {:error, :plugin_not_found, state}
+
+      plugin_state ->
+        # Simulate successful reload
+        updated_state = %{
+          state
+          | plugin_states: Map.put(state.plugin_states, plugin_id_string, plugin_state)
+        }
+
+        {:ok, updated_state}
+    end
+  end
+
+  @doc """
+  Reloads a plugin.
+  """
+  def reload_plugin(plugin_id, state) do
+    # This is a simplified implementation
+    # In a real implementation, this would reload the plugin from disk
+    case Map.get(state.plugin_states, plugin_id) do
+      nil ->
+        {:error, :plugin_not_found, state}
+
+      plugin_state ->
+        # Simulate successful reload
+        updated_state = %{
+          state
+          | plugin_states: Map.put(state.plugin_states, plugin_id, plugin_state)
+        }
+
+        {:ok, updated_state}
+    end
+  end
 end

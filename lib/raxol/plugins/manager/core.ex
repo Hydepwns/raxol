@@ -39,6 +39,7 @@ defmodule Raxol.Plugins.Manager.Core do
   """
   def new(_opts \\ []) do
     plugin_config = Raxol.Plugins.PluginConfig.new()
+
     manager = %__MODULE__{
       plugins: %{},
       plugin_states: %{},
