@@ -84,7 +84,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
     test ~c"executes scripts with arguments" do
       # Load script
       source = """
-      def hello(name) do
+      def main(name) do
         "Hello, \#{name}!"
       end
       """

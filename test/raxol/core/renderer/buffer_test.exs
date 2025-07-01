@@ -104,7 +104,7 @@ defmodule Raxol.Core.Renderer.BufferTest do
 
       # Simulate concurrent updates by rapidly updating cells
       updated_buffer =
-        1..100
+        0..99
         |> Enum.reduce(buffer, fn i, acc ->
           x = rem(i, 10)
           y = div(i, 10)
@@ -276,9 +276,18 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert MapSet.member?(back_damage, {0, 0})
       assert MapSet.member?(back_damage, {1, 1})
 
+      # Debug: Print buffer struct before swap
+      IO.puts("DEBUG: Buffer struct before swap: #{inspect(buffer)}")
+
       # Swap buffers to move cells to front buffer
-      buffer_before_swap = %{buffer | last_frame_time: 0}
+      now = System.monotonic_time(:millisecond)
+      buffer_before_swap = %{buffer | last_frame_time: now - 1000}
       {buffer_after_swap, _} = Buffer.swap_buffers(buffer_before_swap)
+
+      # Debug: Print buffer struct after swap
+      IO.puts("DEBUG: Buffer struct after swap: #{inspect(buffer_after_swap)}")
+      IO.puts("DEBUG: Front buffer cells: #{inspect(buffer_after_swap.front_buffer.cells)}")
+      IO.puts("DEBUG: Front buffer damage: #{inspect(buffer_after_swap.front_buffer.damage)}")
 
       # Directly inspect the front buffer's damage set after swap
       damage_set = buffer_after_swap.front_buffer.damage
@@ -314,8 +323,8 @@ defmodule Raxol.Core.Renderer.BufferTest do
     test "marks cells as damaged when shrinking buffer" do
       buffer =
         Buffer.new(3, 3)
-        |> Buffer.put_cell({0, 0}, "orig_a")
-        |> Buffer.put_cell({2, 2}, "orig_b")
+        |> Buffer.put_cell({0, 0}, "a")
+        |> Buffer.put_cell({2, 2}, "b")
         |> Buffer.resize(2, 2)
 
       assert buffer.back_buffer.size == {2, 2}

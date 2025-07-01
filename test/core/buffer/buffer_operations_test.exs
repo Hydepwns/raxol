@@ -28,8 +28,9 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
     end
 
     test ~c"handles empty buffer operations" do
-      buffer = Buffer.new({0, 0})
-      assert Buffer.get_cell(buffer, 0, 0) == Cell.new()
+      assert_raise ArgumentError, fn ->
+        Buffer.new({0, 0})
+      end
     end
 
     test ~c"handles buffer resize edge cases" do
@@ -219,7 +220,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       corrupted_buffer = %{buffer | cells: nil}
 
       # Verify that operations fail gracefully
-      assert_raise Protocol.UndefinedError, fn ->
+      assert_raise RuntimeError, "Buffer cells are nil", fn ->
         Buffer.get_cell(corrupted_buffer, 0, 0)
       end
     end

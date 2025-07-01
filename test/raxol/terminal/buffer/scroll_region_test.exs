@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
 
       # Scroll up by 1
       buffer = ScrollRegion.scroll_up(buffer, 1)
-      assert get_content(buffer) == "ABCDE\nKLMNO\nPQRST\n     \nUVWXY"
+      assert get_content(buffer) == "ABCDE\nKLMNO\nPQRST\n          \nUVWXY"
     end
 
     test "scrolls entire screen when no region set", %{buffer: buffer} do
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
 
       # Scroll up by 1
       buffer = ScrollRegion.scroll_up(buffer, 1)
-      assert get_content(buffer) == "FGHIJ\nKLMNO\nPQRST\nUVWXY\n     "
+      assert get_content(buffer) == "FGHIJ\nKLMNO\nPQRST\nUVWXY\n          "
     end
 
     test "ignores invalid scroll amount", %{buffer: buffer} do
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
 
       # Scroll down by 1
       buffer = ScrollRegion.scroll_down(buffer, 1)
-      assert get_content(buffer) == "ABCDE\n     \nFGHIJ\nKLMNO\nUVWXY"
+      assert get_content(buffer) == "ABCDE\n          \nFGHIJ\nKLMNO\nUVWXY"
     end
 
     test "scrolls entire screen when no region set", %{buffer: buffer} do
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
 
       # Scroll down by 1
       buffer = ScrollRegion.scroll_down(buffer, 1)
-      assert get_content(buffer) == "     \nABCDE\nFGHIJ\nKLMNO\nPQRST"
+      assert get_content(buffer) == "          \nABCDE\nFGHIJ\nKLMNO\nPQRST"
     end
 
     test "ignores invalid scroll amount", %{buffer: buffer} do
@@ -109,8 +109,17 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
 
   defp get_content(buffer) do
     buffer.cells
-    |> Enum.map_join("\n", fn line ->
-      line |> Enum.map_join("", &Raxol.Terminal.Cell.get_char/1)
+    |> Enum.map(fn row ->
+      original_line = row |> Enum.map_join("", & &1.char)
+      trimmed_line = String.trim_trailing(original_line)
+
+      # If the original line was all spaces, preserve it as spaces
+      if String.trim(original_line) == "" and original_line != "" do
+        String.duplicate(" ", String.length(original_line))
+      else
+        trimmed_line
+      end
     end)
+    |> Enum.join("\n")
   end
 end

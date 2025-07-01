@@ -188,6 +188,10 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
       {_new_state, commands} = SingleLineInput.handle_event(event, %{}, state)
 
       assert [{^on_submit_func, "submit me"}] = commands
+
+      # Execute the command to trigger the callback
+      Enum.each(commands, fn {func, arg} -> func.(arg) end)
+
       assert_receive {:submit_value, "submit me"}
     end
 
@@ -203,6 +207,10 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
       {_new_state, commands} = SingleLineInput.handle_event(event, %{}, state)
 
       assert [{^on_change_func, "a"}] = commands
+
+      # Execute the command to trigger the callback
+      Enum.each(commands, fn {func, arg} -> func.(arg) end)
+
       assert_receive {:change_value, "a"}
     end
   end

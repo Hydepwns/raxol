@@ -356,7 +356,10 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       padding_needed = width - length(new_line)
       new_line =
         if padding_needed > 0 do
-          new_line ++ List.duplicate(Cell.new(" "), padding_needed)
+          last_cell = List.last(new_line) || Cell.new(" ", buffer.default_style)
+          style = Map.get(last_cell, :style)
+          # Padding cells should always have dirty: false since they don't represent changes
+          new_line ++ Enum.map(1..padding_needed, fn _ -> %Cell{char: " ", style: style, dirty: false, wide_placeholder: false} end)
         else
           new_line
         end

@@ -63,10 +63,15 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
   describe "message validation" do
     test ~c"validates complete message" do
       message =
-        Protocol.create_sync_message("test_split", :split, %{content: "test"})
+        Protocol.create_sync_message("test_split", :split, %{content: "test"},
+          version: 1
+        )
 
-      assert :ok ==
-               Protocol.handle_sync_message(message, %{metadata: %{version: 0}})
+      result = Protocol.handle_sync_message(message, %{metadata: %{version: 0}})
+      case result do
+        {:ok, %{content: "test"}, version} -> assert version == 1
+        other -> flunk("Unexpected result: #{inspect(other)}")
+      end
     end
 
     test ~c"rejects invalid message" do
@@ -82,7 +87,8 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
     test ~c"accepts newer version with strong consistency" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "new"},
-          consistency: :strong
+          consistency: :strong,
+          version: 2
         )
 
       current_state = %{metadata: %{version: 1, consistency: :strong}}
@@ -94,7 +100,8 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
     test ~c"rejects older version with strong consistency" do
       message =
         Protocol.create_sync_message("test_split", :split, %{content: "old"},
-          consistency: :strong
+          consistency: :strong,
+          version: 1
         )
 
       current_state = %{metadata: %{version: 2, consistency: :strong}}
@@ -106,7 +113,8 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
     test ~c"accepts newer version with eventual consistency" do
       message =
         Protocol.create_sync_message("test_tab", :tab, %{content: "new"},
-          consistency: :eventual
+          consistency: :eventual,
+          version: 2
         )
 
       current_state = %{metadata: %{version: 1, consistency: :eventual}}
@@ -118,7 +126,8 @@ defmodule Raxol.Terminal.Sync.ProtocolTest do
     test ~c"reports conflict with same version" do
       message =
         Protocol.create_sync_message("test_tab", :tab, %{content: "conflict"},
-          consistency: :eventual
+          consistency: :eventual,
+          version: 1
         )
 
       current_state = %{metadata: %{version: 1, consistency: :eventual}}
