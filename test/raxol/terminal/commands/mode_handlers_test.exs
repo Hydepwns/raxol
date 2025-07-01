@@ -33,7 +33,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
       # Ensure it's set before reset for a clear test
       emulator_awm_on = %{
         emulator
-        | mode_manager: %Raxol.Terminal.ModeManager{emulator.mode_manager | auto_wrap: true}
+        | mode_manager: %Raxol.Terminal.ModeManager{
+            emulator.mode_manager
+            | auto_wrap: true
+          }
       }
 
       {:ok, res_reset} =
@@ -48,7 +51,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
       # Reset first to ensure it can be set (default is often true)
       emulator_cursor_hidden = %{
         emulator
-        | mode_manager: %Raxol.Terminal.ModeManager{emulator.mode_manager | cursor_visible: false}
+        | mode_manager: %Raxol.Terminal.ModeManager{
+            emulator.mode_manager
+            | cursor_visible: false
+          }
       }
 
       {:ok, res_set} =
@@ -67,7 +73,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
 
       emulator_om_on = %{
         emulator
-        | mode_manager: %Raxol.Terminal.ModeManager{emulator.mode_manager | origin_mode: true}
+        | mode_manager: %Raxol.Terminal.ModeManager{
+            emulator.mode_manager
+            | origin_mode: true
+          }
       }
 
       {:ok, res_reset} =
@@ -84,7 +93,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
 
       emulator_smr_on = %{
         emulator
-        | mode_manager: %Raxol.Terminal.ModeManager{emulator.mode_manager | screen_mode_reverse: true}
+        | mode_manager: %Raxol.Terminal.ModeManager{
+            emulator.mode_manager
+            | screen_mode_reverse: true
+          }
       }
 
       {:ok, res_reset} =
@@ -99,7 +111,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
 
       emulator_bpm_on = %{
         emulator
-        | mode_manager: %Raxol.Terminal.ModeManager{emulator.mode_manager | bracketed_paste_mode: true}
+        | mode_manager: %Raxol.Terminal.ModeManager{
+            emulator.mode_manager
+            | bracketed_paste_mode: true
+          }
       }
 
       {:ok, res_reset} =

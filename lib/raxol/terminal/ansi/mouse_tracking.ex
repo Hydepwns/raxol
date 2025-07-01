@@ -206,14 +206,30 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
 
   defp get_mouse_button_code(button, action) do
     case {button, action} do
-      {:left, :press} -> 0
-      {:left, :release} -> 3
-      {:left, :move} -> 32
-      {:left, :drag} -> 35
-      {:middle, :press} -> 1
-      {:right, :press} -> 2
-      {:wheel_up, :press} -> 64
-      {:wheel_down, :press} -> 65
+      {:left, :press} ->
+        0
+
+      {:left, :release} ->
+        3
+
+      {:left, :move} ->
+        32
+
+      {:left, :drag} ->
+        35
+
+      {:middle, :press} ->
+        1
+
+      {:right, :press} ->
+        2
+
+      {:wheel_up, :press} ->
+        64
+
+      {:wheel_down, :press} ->
+        65
+
       _ ->
         button_code = get_button_code(button)
         action_code = get_action_code(action)
