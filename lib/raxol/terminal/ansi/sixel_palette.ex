@@ -157,31 +157,27 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     else
       # Handle hue = 360.0 by treating it as 0.0
       h = if h == 360.0, do: 0.0, else: h
-
-      c = (1.0 - abs(2.0 * l - 1.0)) * s
-      h_prime = h / 60.0
-      x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
-      m = l - c / 2.0
-
-      {r_prime, g_prime, b_prime} =
-        cond do
-          h_prime >= 0.0 and h_prime < 1.0 -> {c, x, 0.0}
-          h_prime >= 1.0 and h_prime < 2.0 -> {x, c, 0.0}
-          h_prime >= 2.0 and h_prime < 3.0 -> {0.0, c, x}
-          h_prime >= 3.0 and h_prime < 4.0 -> {0.0, x, c}
-          h_prime >= 4.0 and h_prime < 5.0 -> {x, 0.0, c}
-          h_prime >= 5.0 and h_prime < 6.0 -> {c, 0.0, x}
-          # Should not happen with valid h
-          true -> {0.0, 0.0, 0.0}
-        end
-
-      r = round((r_prime + m) * 255)
-      g = round((g_prime + m) * 255)
-      b = round((b_prime + m) * 255)
-
-      # Clamp values just in case of float inaccuracies
-      {:ok, {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}}
+      calculate_chromatic_rgb(h, l, s)
     end
+  end
+
+  defp calculate_chromatic_rgb(h, l, s) do
+    c = (1.0 - abs(2.0 * l - 1.0)) * s
+    h_prime = h / 60.0
+    x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
+    m = l - c / 2.0
+
+    {r_prime, g_prime, b_prime} = get_rgb_from_hue(h_prime, c, x)
+    scale_and_clamp_rgb(r_prime, g_prime, b_prime, m)
+  end
+
+  defp scale_and_clamp_rgb(r_prime, g_prime, b_prime, m) do
+    r = round((r_prime + m) * 255)
+    g = round((g_prime + m) * 255)
+    b = round((b_prime + m) * 255)
+
+    # Clamp values just in case of float inaccuracies
+    {:ok, {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}}
   end
 
   defp calculate_rgb_components(h, l, s) do
@@ -208,15 +204,5 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   defp get_rgb_from_hue(h_prime, c, x) do
     segment = trunc(h_prime)
     Map.get(get_hue_segments(), segment, fn _, _ -> {0.0, 0.0, 0.0} end).(c, x)
-  end
-
-  defp scale_and_clamp_rgb(r1, g1, b1, l) do
-    # s = 1.0 for full saturation
-    c = (1.0 - abs(2.0 * l - 1.0)) * 1.0
-    m = l - c / 2.0
-    r = max(0, min(255, round((r1 + m) * 255)))
-    g = max(0, min(255, round((g1 + m) * 255)))
-    b = max(0, min(255, round((b1 + m) * 255)))
-    {r, g, b}
   end
 end

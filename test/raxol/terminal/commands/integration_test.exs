@@ -9,9 +9,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
   defp unwrap_ok(value) when is_map(value), do: value
 
   setup do
-    emulator = Raxol.Terminal.Emulator.Struct.new(80, 24,
-      window_manager: Raxol.Terminal.Window.Manager.new_for_test()
-    )
+    emulator =
+      Raxol.Terminal.Emulator.Struct.new(80, 24,
+        window_manager: Raxol.Terminal.Window.Manager.new_for_test()
+      )
+
     {:ok, emulator: emulator}
   end
 

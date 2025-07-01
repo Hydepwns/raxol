@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       # Set cursor to position (5, 1)
       CursorManager.set_position(emulator.cursor, {5, 1})
       result = unwrap_ok(CursorHandlers.handle_A(emulator, [5]))
-      assert CursorManager.get_position(result.cursor) == {0, 5}
+      assert CursorManager.get_position(result.cursor) == {0, 1}
     end
 
     test "handles missing parameter", %{emulator: emulator} do
@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       # Set cursor to position (8, 5)
       CursorManager.set_position(emulator.cursor, {8, 5})
       result = unwrap_ok(CursorHandlers.handle_C(emulator, [5]))
-      assert CursorManager.get_position(result.cursor) == {5, 9}
+      assert CursorManager.get_position(result.cursor) == {8, 9}
     end
 
     test "handles missing parameter", %{emulator: emulator} do
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       # Set cursor to position (1, 5)
       CursorManager.set_position(emulator.cursor, {1, 5})
       result = unwrap_ok(CursorHandlers.handle_D(emulator, [5]))
-      assert CursorManager.get_position(result.cursor) == {5, 0}
+      assert CursorManager.get_position(result.cursor) == {1, 0}
     end
 
     test "handles missing parameter", %{emulator: emulator} do
@@ -128,21 +128,21 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       # Set cursor to position (5, 5)
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_E(emulator, [2]))
-      assert CursorManager.get_position(result.cursor) == {0, 7}
+      assert CursorManager.get_position(result.cursor) == {7, 0}
     end
 
     test "clamps to bottom of screen", %{emulator: emulator} do
       # Set cursor to position (5, 8)
       CursorManager.set_position(emulator.cursor, {5, 8})
       result = unwrap_ok(CursorHandlers.handle_E(emulator, [5]))
-      assert CursorManager.get_position(result.cursor) == {0, 9}
+      assert CursorManager.get_position(result.cursor) == {9, 0}
     end
 
     test "handles missing parameter", %{emulator: emulator} do
       # Set cursor to position (5, 5)
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_E(emulator, []))
-      assert CursorManager.get_position(result.cursor) == {0, 6}
+      assert CursorManager.get_position(result.cursor) == {6, 0}
     end
   end
 
@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       # Set cursor to position (5, 5)
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_F(emulator, [2]))
-      assert CursorManager.get_position(result.cursor) == {0, 3}
+      assert CursorManager.get_position(result.cursor) == {3, 0}
     end
 
     test "clamps to top of screen", %{emulator: emulator} do
@@ -165,7 +165,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       # Set cursor to position (5, 5)
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_F(emulator, []))
-      assert CursorManager.get_position(result.cursor) == {0, 4}
+      assert CursorManager.get_position(result.cursor) == {4, 0}
     end
   end
 
@@ -174,19 +174,19 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       # Start at position (5,5)
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_G(emulator, [3]))
-      assert CursorManager.get_position(result.cursor) == {2, 5}
+      assert CursorManager.get_position(result.cursor) == {5, 2}
     end
 
     test "clamps to screen width", %{emulator: emulator} do
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_G(emulator, [20]))
-      assert CursorManager.get_position(result.cursor) == {9, 5}
+      assert CursorManager.get_position(result.cursor) == {5, 9}
     end
 
     test "handles missing parameter", %{emulator: emulator} do
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_G(emulator, []))
-      assert CursorManager.get_position(result.cursor) == {0, 5}
+      assert CursorManager.get_position(result.cursor) == {5, 0}
     end
   end
 
@@ -194,19 +194,19 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
     test "moves cursor to specified row", %{emulator: emulator} do
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_d(emulator, [3]))
-      assert CursorManager.get_position(result.cursor) == {5, 2}
+      assert CursorManager.get_position(result.cursor) == {2, 5}
     end
 
     test "clamps to screen height", %{emulator: emulator} do
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_d(emulator, [20]))
-      assert CursorManager.get_position(result.cursor) == {5, 9}
+      assert CursorManager.get_position(result.cursor) == {9, 5}
     end
 
     test "handles missing parameter", %{emulator: emulator} do
       CursorManager.set_position(emulator.cursor, {5, 5})
       result = unwrap_ok(CursorHandlers.handle_d(emulator, []))
-      assert CursorManager.get_position(result.cursor) == {5, 0}
+      assert CursorManager.get_position(result.cursor) == {0, 5}
     end
   end
 end

@@ -22,12 +22,13 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     cursor = emulator.cursor
     {row, col} = get_cursor_position(cursor)
 
-    {new_row, new_col} = case direction do
-      :up -> {max(0, row - amount), col}
-      :down -> {min(emulator.height - 1, row + amount), col}
-      :left -> {row, max(0, col - amount)}
-      :right -> {row, min(emulator.width - 1, col + amount)}
-    end
+    {new_row, new_col} =
+      case direction do
+        :up -> {max(0, row - amount), col}
+        :down -> {min(emulator.height - 1, row + amount), col}
+        :left -> {row, max(0, col - amount)}
+        :right -> {row, min(emulator.width - 1, col + amount)}
+      end
 
     updated_cursor = set_cursor_position(cursor, {new_row, new_col})
     {:ok, %{emulator | cursor: updated_cursor}}
@@ -49,7 +50,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     col_clamped = max(0, min(col_0, emulator.width - 1))
 
     # Position is {row, col} where row is y and col is x
-    updated_cursor = set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+    updated_cursor =
+      set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
@@ -144,7 +147,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g(emulator, params) do
     column = Enum.at(params, 0, 1)
-    column_0 = column - 1  # Convert to 0-based
+    # Convert to 0-based
+    column_0 = column - 1
 
     # Clamp to screen width
     column_clamped = max(0, min(column_0, emulator.width - 1))
@@ -170,7 +174,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_decvpa(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
-    row_0 = row - 1  # Convert to 0-based
+    # Convert to 0-based
+    row_0 = row - 1
 
     # Clamp to screen height
     row_clamped = max(0, min(row_0, emulator.height - 1))

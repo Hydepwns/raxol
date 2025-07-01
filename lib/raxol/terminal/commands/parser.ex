@@ -128,6 +128,7 @@ defmodule Raxol.Terminal.Commands.Parser do
         case parse_csi_command(rest) do
           {:ok, params, final_byte} ->
             {:ok, %{type: :csi, params_buffer: params, final_byte: final_byte}}
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -137,6 +138,7 @@ defmodule Raxol.Terminal.Commands.Parser do
         case parse_osc_command(rest) do
           {:ok, command_num, params} ->
             {:ok, %{type: :osc, command: command_num, params: params}}
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -149,12 +151,16 @@ defmodule Raxol.Terminal.Commands.Parser do
   defp parse_csi_command(rest) do
     # Simplified CSI parsing
     case String.last(rest) do
-      nil -> {:error, "No final byte"}
+      nil ->
+        {:error, "No final byte"}
+
       final_byte when final_byte in ?A..?Z or final_byte in ?a..?z ->
         params_string = String.slice(rest, 0..-2)
         params = parse_params(params_string)
         {:ok, params, final_byte}
-      _ -> {:error, "Invalid final byte"}
+
+      _ ->
+        {:error, "Invalid final byte"}
     end
   end
 
@@ -163,12 +169,16 @@ defmodule Raxol.Terminal.Commands.Parser do
     case String.split(rest, ";", parts: 2) do
       [command_str, params_str] ->
         case parse_int(command_str) do
-          nil -> {:error, "Invalid OSC command number"}
+          nil ->
+            {:error, "Invalid OSC command number"}
+
           command_num ->
             params = [params_str]
             {:ok, command_num, params}
         end
-      _ -> {:error, "Invalid OSC format"}
+
+      _ ->
+        {:error, "Invalid OSC format"}
     end
   end
 end

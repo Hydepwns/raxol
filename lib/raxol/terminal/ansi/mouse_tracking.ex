@@ -142,48 +142,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   """
   @spec format_mouse_event(mouse_event()) :: String.t()
   def format_mouse_event({button, action, x, y}) do
-    # Match the test expectations which use a mix of protocols
-    button_code =
-      case {button, action} do
-        # Standard protocol
-        {:left, :press} ->
-          0
-
-        # Standard protocol
-        {:left, :release} ->
-          3
-
-        # X10 protocol
-        {:left, :move} ->
-          32
-
-        # X10 protocol
-        {:left, :drag} ->
-          35
-
-        # Standard protocol
-        {:middle, :press} ->
-          1
-
-        # Standard protocol
-        {:right, :press} ->
-          2
-
-        # Wheel protocol
-        {:wheel_up, :press} ->
-          64
-
-        # Wheel protocol
-        {:wheel_down, :press} ->
-          65
-
-        _ ->
-          # Fallback to the old logic for other protocols
-          button_code = get_button_code(button)
-          action_code = get_action_code(action)
-          button_code + action_code
-      end
-
+    button_code = get_mouse_button_code(button, action)
     "\e[M#{button_code}#{x + 32}#{y + 32}"
   end
 
@@ -242,6 +201,23 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
 
       _ ->
         nil
+    end
+  end
+
+  defp get_mouse_button_code(button, action) do
+    case {button, action} do
+      {:left, :press} -> 0
+      {:left, :release} -> 3
+      {:left, :move} -> 32
+      {:left, :drag} -> 35
+      {:middle, :press} -> 1
+      {:right, :press} -> 2
+      {:wheel_up, :press} -> 64
+      {:wheel_down, :press} -> 65
+      _ ->
+        button_code = get_button_code(button)
+        action_code = get_action_code(action)
+        button_code + action_code
     end
   end
 

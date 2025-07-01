@@ -270,14 +270,23 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   @spec process_sequence(t(), binary()) :: {t(), :ok | {:error, atom()}}
   def process_sequence(state, data) when binary?(data) do
     # Ensure palette is initialized
-    state_with_palette = if map_size(state.palette) == 0 do
-      %{state | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()}
-    else
-      state
-    end
+    state_with_palette =
+      if map_size(state.palette) == 0 do
+        %{
+          state
+          | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
+        }
+      else
+        state
+      end
 
-    Logger.debug("SixelGraphics: Initial palette has #{map_size(state_with_palette.palette)} colors")
-    Logger.debug("SixelGraphics: Color index 1 is #{inspect(Map.get(state_with_palette.palette, 1, :not_found))}")
+    Logger.debug(
+      "SixelGraphics: Initial palette has #{map_size(state_with_palette.palette)} colors"
+    )
+
+    Logger.debug(
+      "SixelGraphics: Color index 1 is #{inspect(Map.get(state_with_palette.palette, 1, :not_found))}"
+    )
 
     case Raxol.Terminal.ANSI.SixelParser.parse(
            data,
@@ -294,18 +303,29 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
            }
          ) do
       {:ok, parser_state} ->
-        Logger.debug("SixelGraphics: Parser returned palette with #{map_size(parser_state.palette)} colors")
-        Logger.debug("SixelGraphics: Parser color index 1 is #{inspect(Map.get(parser_state.palette, 1, :not_found))}")
+        Logger.debug(
+          "SixelGraphics: Parser returned palette with #{map_size(parser_state.palette)} colors"
+        )
+
+        Logger.debug(
+          "SixelGraphics: Parser color index 1 is #{inspect(Map.get(parser_state.palette, 1, :not_found))}"
+        )
 
         # Preserve the original palette if the parser didn't modify it
-        final_palette = if map_size(parser_state.palette) == 0 do
-          state_with_palette.palette
-        else
-          parser_state.palette
-        end
+        final_palette =
+          if map_size(parser_state.palette) == 0 do
+            state_with_palette.palette
+          else
+            parser_state.palette
+          end
 
-        Logger.debug("SixelGraphics: Final palette has #{map_size(final_palette)} colors")
-        Logger.debug("SixelGraphics: Final color index 1 is #{inspect(Map.get(final_palette, 1, :not_found))}")
+        Logger.debug(
+          "SixelGraphics: Final palette has #{map_size(final_palette)} colors"
+        )
+
+        Logger.debug(
+          "SixelGraphics: Final color index 1 is #{inspect(Map.get(final_palette, 1, :not_found))}"
+        )
 
         updated_state = %{
           state_with_palette

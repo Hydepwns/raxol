@@ -211,10 +211,21 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
     new_buffer =
       case mode do
-        0 -> Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :to_end)
-        1 -> Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :to_beginning)
-        2 -> Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :all)
-        _ -> buffer
+        0 ->
+          Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :to_end)
+
+        1 ->
+          Raxol.Terminal.ScreenBuffer.erase_in_display(
+            buffer,
+            {x, y},
+            :to_beginning
+          )
+
+        2 ->
+          Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :all)
+
+        _ ->
+          buffer
       end
 
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
@@ -232,10 +243,21 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
     new_buffer =
       case mode do
-        0 -> Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :to_end)
-        1 -> Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :to_beginning)
-        2 -> Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :all)
-        _ -> buffer
+        0 ->
+          Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :to_end)
+
+        1 ->
+          Raxol.Terminal.ScreenBuffer.erase_in_line(
+            buffer,
+            {x, y},
+            :to_beginning
+          )
+
+        2 ->
+          Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :all)
+
+        _ ->
+          buffer
       end
 
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}

@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.ANSI.Parser do
   def strip_ansi(input) do
     state = StateMachine.new()
     {_state, sequences} = StateMachine.process(state, input)
-    Enum.map(sequences, & &1.text) |> Enum.join()
+    Enum.map_join(sequences, "", & &1.text)
   end
 
   defp log_parse_error(reason, input) do

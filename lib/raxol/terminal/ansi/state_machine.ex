@@ -154,7 +154,71 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
         {:continue, %{state | state: :ground}}
 
       # Only emit escape sequences for specific valid escape characters
-      byte in [?@, ?A, ?B, ?C, ?D, ?E, ?F, ?G, ?H, ?I, ?J, ?K, ?L, ?M, ?N, ?O, ?P, ?Q, ?R, ?S, ?T, ?U, ?V, ?W, ?X, ?Y, ?Z, ?[, ?\\, ?], ?^, ?_, ?`, ?a, ?b, ?c, ?d, ?e, ?f, ?g, ?h, ?i, ?j, ?k, ?l, ?m, ?n, ?o, ?p, ?q, ?r, ?s, ?t, ?u, ?v, ?w, ?x, ?y, ?z, ?{, ?|, ?}, ?~] ->
+      byte in [
+        ?@,
+        ?A,
+        ?B,
+        ?C,
+        ?D,
+        ?E,
+        ?F,
+        ?G,
+        ?H,
+        ?I,
+        ?J,
+        ?K,
+        ?L,
+        ?M,
+        ?N,
+        ?O,
+        ?P,
+        ?Q,
+        ?R,
+        ?S,
+        ?T,
+        ?U,
+        ?V,
+        ?W,
+        ?X,
+        ?Y,
+        ?Z,
+        ?[,
+        ?\\,
+        ?],
+        ?^,
+        ?_,
+        ?`,
+        ?a,
+        ?b,
+        ?c,
+        ?d,
+        ?e,
+        ?f,
+        ?g,
+        ?h,
+        ?i,
+        ?j,
+        ?k,
+        ?l,
+        ?m,
+        ?n,
+        ?o,
+        ?p,
+        ?q,
+        ?r,
+        ?s,
+        ?t,
+        ?u,
+        ?v,
+        ?w,
+        ?x,
+        ?y,
+        ?z,
+        ?{,
+        ?|,
+        ?},
+        ?~
+      ] ->
         create_escape_sequence(state, byte)
 
       true ->
@@ -200,11 +264,13 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
 
       cancel_byte?(byte) ->
         # On cancel, reset buffers and return to ground state
-        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
 
       true ->
         # On any other invalid byte, transition to ignore state to consume the invalid sequence
-        {:continue, %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
@@ -225,11 +291,13 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
 
       cancel_byte?(byte) ->
         # On cancel, reset buffers and return to ground state
-        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
 
       true ->
         # On any other invalid byte, transition to ignore state to consume the invalid sequence
-        {:continue, %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
@@ -244,11 +312,13 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
 
       cancel_byte?(byte) ->
         # On cancel, reset buffers and return to ground state
-        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
 
       true ->
         # On any other invalid byte, transition to ignore state to consume the invalid sequence
-        {:continue, %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
@@ -341,6 +411,60 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
   defp param_byte?(byte), do: byte >= ?0 and byte <= ?9
   defp intermediate_byte?(byte), do: byte >= 0x20 and byte <= 0x2F
   defp final_byte?(byte), do: byte >= 0x40 and byte <= 0x7E
-  defp csi_final_byte?(byte), do: byte in [?@, ?A, ?B, ?C, ?D, ?E, ?F, ?G, ?H, ?I, ?J, ?K, ?L, ?M, ?P, ?S, ?T, ?X, ?Z, ?`, ?a, ?b, ?c, ?d, ?e, ?f, ?g, ?h, ?j, ?k, ?l, ?m, ?n, ?o, ?p, ?q, ?r, ?s, ?t, ?u, ?v, ?w, ?x, ?y, ?z, ?{, ?|, ?}, ?~]
+
+  defp csi_final_byte?(byte),
+    do:
+      byte in [
+        ?@,
+        ?A,
+        ?B,
+        ?C,
+        ?D,
+        ?E,
+        ?F,
+        ?G,
+        ?H,
+        ?I,
+        ?J,
+        ?K,
+        ?L,
+        ?M,
+        ?P,
+        ?S,
+        ?T,
+        ?X,
+        ?Z,
+        ?`,
+        ?a,
+        ?b,
+        ?c,
+        ?d,
+        ?e,
+        ?f,
+        ?g,
+        ?h,
+        ?j,
+        ?k,
+        ?l,
+        ?m,
+        ?n,
+        ?o,
+        ?p,
+        ?q,
+        ?r,
+        ?s,
+        ?t,
+        ?u,
+        ?v,
+        ?w,
+        ?x,
+        ?y,
+        ?z,
+        ?{,
+        ?|,
+        ?},
+        ?~
+      ]
+
   defp cancel_byte?(byte), do: byte in [0x18, 0x1A]
 end

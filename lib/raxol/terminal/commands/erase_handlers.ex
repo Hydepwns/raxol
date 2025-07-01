@@ -183,6 +183,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   end
 
   defp get_cursor_position(_) do
-    {0, 0}  # Default fallback
+    # Default fallback
+    {0, 0}
   end
 end

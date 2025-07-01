@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
       :timer.tc(fn ->
         # Placeholder: simulate state machine processing
         Enum.each(1..iterations, fn _ ->
-          Enum.each(inputs, fn input -> :ok end)
+          process_state_machine_iteration(inputs)
         end)
       end)
 
@@ -102,6 +102,10 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
       average_time_per_input_ms:
         state_machine_time / (iterations * length(inputs)) / 1000
     }
+  end
+
+  defp process_state_machine_iteration(inputs) do
+    Enum.each(inputs, fn input -> :ok end)
   end
 
   defp generate_test_sequences do
