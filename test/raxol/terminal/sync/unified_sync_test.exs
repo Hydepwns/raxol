@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   alias Raxol.Terminal.Sync.UnifiedSync
 
   setup do
-    {:ok, _pid} =
+    {:ok, pid} =
       UnifiedSync.start_link(
         consistency: :strong,
         conflict_resolution: :last_write_wins,
@@ -11,85 +11,85 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
         retry_count: 3
       )
 
-    :ok
+    %{pid: pid}
   end
 
   describe "basic operations" do
-    test ~c"creates sync context" do
-      assert {:ok, sync_id} = UnifiedSync.create_sync(:state)
-      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
+    test ~c"creates sync context", %{pid: pid} do
+      assert {:ok, sync_id} = UnifiedSync.create_sync(:state, [], pid)
+      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
       assert sync_state.type == :state
       assert sync_state.version == 0
     end
 
-    test ~c"syncs data" do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state)
+    test ~c"syncs data", %{pid: pid} do
+      {:ok, sync_id} = UnifiedSync.create_sync(:state, [], pid)
       data = %{value: "test"}
-      assert :ok = UnifiedSync.sync(sync_id, data)
-      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
+      assert :ok = UnifiedSync.sync(sync_id, data, [], pid)
+      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
       assert sync_state.data == data
       assert sync_state.version == 1
     end
 
-    test ~c"handles version conflicts" do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state)
+    test ~c"handles version conflicts", %{pid: pid} do
+      {:ok, sync_id} = UnifiedSync.create_sync(:state, [], pid)
       data1 = %{value: "test1"}
       data2 = %{value: "test2"}
-      assert :ok = UnifiedSync.sync(sync_id, data1)
+      assert :ok = UnifiedSync.sync(sync_id, data1, [], pid)
 
       assert {:error, :version_conflict} =
-               UnifiedSync.sync(sync_id, data2, version: 0)
+               UnifiedSync.sync(sync_id, data2, [version: 0], pid)
     end
   end
 
   describe "consistency levels" do
-    test ~c"strong consistency" do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state, consistency: :strong)
+    test ~c"strong consistency", %{pid: pid} do
+      {:ok, sync_id} = UnifiedSync.create_sync(:state, [consistency: :strong], pid)
       data = %{value: "test"}
-      assert :ok = UnifiedSync.sync(sync_id, data)
-      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
+      assert :ok = UnifiedSync.sync(sync_id, data, [], pid)
+      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
       assert sync_state.data == data
     end
 
-    test ~c"eventual consistency" do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state, consistency: :eventual)
+    test ~c"eventual consistency", %{pid: pid} do
+      {:ok, sync_id} = UnifiedSync.create_sync(:state, [consistency: :eventual], pid)
       data = %{value: "test"}
-      assert :ok = UnifiedSync.sync(sync_id, data)
-      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
+      assert :ok = UnifiedSync.sync(sync_id, data, [], pid)
+      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
       assert sync_state.data == data
     end
   end
 
   describe "conflict resolution" do
-    test ~c"last write wins" do
+    test ~c"last write wins", %{pid: pid} do
       {:ok, sync_id} =
-        UnifiedSync.create_sync(:state, conflict_resolution: :last_write_wins)
+        UnifiedSync.create_sync(:state, [conflict_resolution: :last_write_wins], pid)
 
       conflicts = [
         {%{value: "old"}, 1000, 1},
         {%{value: "new"}, 2000, 1}
       ]
 
-      assert {:ok, resolved} = UnifiedSync.resolve_conflicts(sync_id, conflicts)
+      assert {:ok, resolved} = UnifiedSync.resolve_conflicts(sync_id, conflicts, [], pid)
       assert resolved.value == "new"
     end
 
-    test ~c"version based" do
+    test ~c"version based", %{pid: pid} do
       {:ok, sync_id} =
-        UnifiedSync.create_sync(:state, conflict_resolution: :version_based)
+        UnifiedSync.create_sync(:state, [conflict_resolution: :version_based], pid)
 
       conflicts = [
         {%{value: "old"}, 2000, 1},
         {%{value: "new"}, 1000, 2}
       ]
 
-      assert {:ok, resolved} = UnifiedSync.resolve_conflicts(sync_id, conflicts)
+      assert {:ok, resolved} = UnifiedSync.resolve_conflicts(sync_id, conflicts, [], pid)
       assert resolved.value == "new"
     end
 
-    test ~c"custom strategy" do
+    test ~c"custom strategy", %{pid: pid} do
       {:ok, sync_id} =
-        UnifiedSync.create_sync(:state, conflict_resolution: :custom)
+        UnifiedSync.create_sync(:state, [conflict_resolution: :custom], pid)
 
       conflicts = [
         {%{value: "old"}, 1000, 1},
@@ -97,67 +97,67 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
       ]
 
       assert {:error, :not_implemented} =
-               UnifiedSync.resolve_conflicts(sync_id, conflicts)
+               UnifiedSync.resolve_conflicts(sync_id, conflicts, [], pid)
     end
   end
 
   describe "error handling" do
-    test ~c"handles non-existent sync" do
+    test ~c"handles non-existent sync", %{pid: pid} do
       assert {:error, :sync_not_found} =
-               UnifiedSync.get_sync_state("nonexistent")
+               UnifiedSync.get_sync_state("nonexistent", pid)
 
-      assert {:error, :sync_not_found} = UnifiedSync.sync("nonexistent", %{})
+      assert {:error, :sync_not_found} = UnifiedSync.sync("nonexistent", %{}, [], pid)
 
       assert {:error, :sync_not_found} =
-               UnifiedSync.resolve_conflicts("nonexistent", [])
+               UnifiedSync.resolve_conflicts("nonexistent", [], [], pid)
 
-      assert {:error, :sync_not_found} = UnifiedSync.cleanup("nonexistent")
+      assert {:error, :sync_not_found} = UnifiedSync.cleanup("nonexistent", pid)
     end
 
-    test "handles invalid sync type" do
+    test "handles invalid sync type", %{pid: pid} do
       # The implementation doesn't validate sync types, so :invalid is accepted
-      assert {:ok, sync_id} = UnifiedSync.create_sync(:invalid)
-      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
+      assert {:ok, sync_id} = UnifiedSync.create_sync(:invalid, [], pid)
+      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
       assert sync_state.type == :invalid
     end
   end
 
   describe "cleanup" do
-    test ~c"cleans up sync context" do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state)
-      assert :ok = UnifiedSync.cleanup(sync_id)
-      assert {:error, :sync_not_found} = UnifiedSync.get_sync_state(sync_id)
+    test ~c"cleans up sync context", %{pid: pid} do
+      {:ok, sync_id} = UnifiedSync.create_sync(:state, [], pid)
+      assert :ok = UnifiedSync.cleanup(sync_id, pid)
+      assert {:error, :sync_not_found} = UnifiedSync.get_sync_state(sync_id, pid)
     end
   end
 
   describe "metadata" do
-    test ~c"handles metadata in sync" do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state)
+    test ~c"handles metadata in sync", %{pid: pid} do
+      {:ok, sync_id} = UnifiedSync.create_sync(:state, [], pid)
       data = %{value: "test"}
       metadata = %{source: "test", priority: 1}
-      assert :ok = UnifiedSync.sync(sync_id, data, metadata: metadata)
-      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
+      assert :ok = UnifiedSync.sync(sync_id, data, [metadata: metadata], pid)
+      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
       assert sync_state.metadata == metadata
     end
   end
 
   describe "concurrent operations" do
-    test ~c"handles concurrent syncs" do
-      {:ok, sync_id} = UnifiedSync.create_sync(:state)
+    test ~c"handles concurrent syncs", %{pid: pid} do
+      {:ok, sync_id} = UnifiedSync.create_sync(:state, [], pid)
       data1 = %{value: "test1"}
       data2 = %{value: "test2"}
 
       # Simulate concurrent syncs
       Task.async(fn ->
-        UnifiedSync.sync(sync_id, data1, version: 0)
+        UnifiedSync.sync(sync_id, data1, [version: 0], pid)
       end)
 
       Task.async(fn ->
-        UnifiedSync.sync(sync_id, data2, version: 0)
+        UnifiedSync.sync(sync_id, data2, [version: 0], pid)
       end)
       |> Task.await()
 
-      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id)
+      assert {:ok, sync_state} = UnifiedSync.get_sync_state(sync_id, pid)
       assert sync_state.version == 1
     end
   end

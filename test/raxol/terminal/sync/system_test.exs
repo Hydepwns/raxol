@@ -2,106 +2,131 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   use ExUnit.Case, async: false
   alias Raxol.Terminal.Sync.System
 
+  # Test-specific wrapper functions that use the process name
+  defp sync_system(system_name, sync_id, key, value, opts \\ []) do
+    GenServer.call(system_name, {:sync, sync_id, key, value, opts})
+  end
+
+  defp get_system(system_name, sync_id, key) do
+    GenServer.call(system_name, {:get, sync_id, key})
+  end
+
+  defp get_all_system(system_name, sync_id) do
+    GenServer.call(system_name, {:get_all, sync_id})
+  end
+
+  defp delete_system(system_name, sync_id, key) do
+    GenServer.call(system_name, {:delete, sync_id, key})
+  end
+
+  defp clear_system(system_name, sync_id) do
+    GenServer.call(system_name, {:clear, sync_id})
+  end
+
+  defp stats_system(system_name, sync_id) do
+    GenServer.call(system_name, {:stats, sync_id})
+  end
+
   setup do
     # Start the sync system with test configuration
-    case System.start_link(
-           consistency_levels: %{
-             split: :strong,
-             window: :strong,
-             tab: :eventual
-           }
-         ) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      other -> raise "Unexpected result from System.start_link: #{inspect(other)}"
-    end
+    # Use unique name and store it for the test
+    name = Raxol.Test.ProcessNaming.generate_name(System)
+    {:ok, pid} = System.start_link(
+      name: name,
+      consistency_levels: %{
+        split: :strong,
+        window: :strong,
+        tab: :eventual
+      }
+    )
+    %{system_pid: pid, system_name: name}
   end
 
   describe "basic operations" do
-    test ~c"sync and get" do
+    test ~c"sync and get", %{system_name: system_name} do
       # Sync a value
-      assert :ok == System.sync("test_sync", "test_key", "test_value")
+      assert :ok == sync_system(system_name, "test_sync", "test_key", "test_value")
 
       # Get the value
-      assert {:ok, "test_value"} == System.get("test_sync", "test_key")
+      assert {:ok, "test_value"} == get_system(system_name, "test_sync", "test_key")
     end
 
-    test ~c"get non-existent sync" do
-      assert {:error, :not_found} == System.get("nonexistent", "test_key")
+    test ~c"get non-existent sync", %{system_name: system_name} do
+      assert {:error, :not_found} == get_system(system_name, "nonexistent", "test_key")
     end
 
-    test ~c"get non-existent key" do
-      System.sync("test_sync", "test_key", "test_value")
-      assert {:error, :not_found} == System.get("test_sync", "nonexistent")
+    test ~c"get non-existent key", %{system_name: system_name} do
+      sync_system(system_name, "test_sync", "test_key", "test_value")
+      assert {:error, :not_found} == get_system(system_name, "test_sync", "nonexistent")
     end
 
-    test ~c"delete" do
+    test ~c"delete", %{system_name: system_name} do
       # Sync a value
-      System.sync("test_sync", "test_key", "test_value")
-      assert {:ok, "test_value"} == System.get("test_sync", "test_key")
+      sync_system(system_name, "test_sync", "test_key", "test_value")
+      assert {:ok, "test_value"} == get_system(system_name, "test_sync", "test_key")
 
       # Delete the value
-      assert :ok == System.delete("test_sync", "test_key")
-      assert {:error, :not_found} == System.get("test_sync", "test_key")
+      assert :ok == delete_system(system_name, "test_sync", "test_key")
+      assert {:error, :not_found} == get_system(system_name, "test_sync", "test_key")
     end
 
-    test ~c"clear" do
+    test ~c"clear", %{system_name: system_name} do
       # Sync multiple values
-      System.sync("test_sync", "key1", "value1")
-      System.sync("test_sync", "key2", "value2")
+      sync_system(system_name, "test_sync", "key1", "value1")
+      sync_system(system_name, "test_sync", "key2", "value2")
 
       # Clear all values
-      assert :ok == System.clear("test_sync")
-      assert {:error, :not_found} == System.get("test_sync", "key1")
-      assert {:error, :not_found} == System.get("test_sync", "key2")
+      assert :ok == clear_system(system_name, "test_sync")
+      assert {:error, :not_found} == get_system(system_name, "test_sync", "key1")
+      assert {:error, :not_found} == get_system(system_name, "test_sync", "key2")
     end
   end
 
   describe "consistency levels" do
-    test ~c"strong consistency" do
+    test ~c"strong consistency", %{system_name: system_name} do
       # First sync with strong consistency
-      System.sync("split", "test_key", "value1",
+      sync_system(system_name, "split", "test_key", "value1",
         consistency: :strong,
         version: 1
       )
 
       # Second sync with lower version
-      System.sync("split", "test_key", "value2",
+      sync_system(system_name, "split", "test_key", "value2",
         consistency: :strong,
         version: 0
       )
 
       # Should keep the first value due to strong consistency
-      assert {:ok, "value1"} == System.get("split", "test_key")
+      assert {:ok, "value1"} == get_system(system_name, "split", "test_key")
     end
 
-    test ~c"eventual consistency" do
+    test ~c"eventual consistency", %{system_name: system_name} do
       # First sync with eventual consistency
-      System.sync("tab", "test_key", "value1",
+      sync_system(system_name, "tab", "test_key", "value1",
         consistency: :eventual,
         version: 1
       )
 
       # Second sync with higher version
-      System.sync("tab", "test_key", "value2",
+      sync_system(system_name, "tab", "test_key", "value2",
         consistency: :eventual,
         version: 2
       )
 
       # Should use the second value due to higher version
-      assert {:ok, "value2"} == System.get("tab", "test_key")
+      assert {:ok, "value2"} == get_system(system_name, "tab", "test_key")
     end
 
-    test ~c"conflict resolution" do
+    test ~c"conflict resolution", %{system_name: system_name} do
       # First sync with eventual consistency
-      System.sync("tab", "test_key", "value1",
+      sync_system(system_name, "tab", "test_key", "value1",
         consistency: :eventual,
         version: 1
       )
 
       # Second sync with same version
       assert {:error, :conflict} ==
-               System.sync("tab", "test_key", "value2",
+               sync_system(system_name, "tab", "test_key", "value2",
                  consistency: :eventual,
                  version: 1
                )
@@ -109,12 +134,12 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   end
 
   describe "metadata handling" do
-    test ~c"preserves metadata" do
+    test ~c"preserves metadata", %{system_name: system_name} do
       # Sync with metadata
-      System.sync("test_sync", "test_key", "test_value", source: "test_source")
+      sync_system(system_name, "test_sync", "test_key", "test_value", source: "test_source")
 
       # Get all data
-      {:ok, sync_data} = System.get_all("test_sync")
+      {:ok, sync_data} = get_all_system(system_name, "test_sync")
       entry = Map.get(sync_data, "test_key")
 
       assert entry.value == "test_value"
@@ -126,28 +151,28 @@ defmodule Raxol.Terminal.Sync.SystemTest do
   end
 
   describe "statistics" do
-    test ~c"tracks sync statistics" do
+    test ~c"tracks sync statistics", %{system_name: system_name} do
       # Clear any existing sync data to ensure clean state
-      System.clear("test_sync")
+      clear_system(system_name, "test_sync")
 
       # Perform some syncs
-      System.sync("test_sync", "key1", "value1",
+      sync_system(system_name, "test_sync", "key1", "value1",
         consistency: :strong,
         version: 1
       )
 
-      System.sync("test_sync", "key2", "value2",
+      sync_system(system_name, "test_sync", "key2", "value2",
         consistency: :eventual,
         version: 2
       )
 
-      System.sync("test_sync", "key3", "value3",
+      sync_system(system_name, "test_sync", "key3", "value3",
         consistency: :causal,
         version: 3
       )
 
       # Get stats
-      {:ok, stats} = System.stats("test_sync")
+      {:ok, stats} = stats_system(system_name, "test_sync")
       assert stats.sync_count == 3
       assert stats.conflict_count == 0
       assert is_integer(stats.last_sync)
@@ -156,46 +181,46 @@ defmodule Raxol.Terminal.Sync.SystemTest do
       assert stats.consistency_levels.causal == 1
     end
 
-    test ~c"tracks conflicts" do
+    test ~c"tracks conflicts", %{system_name: system_name} do
       # First sync
-      System.sync("test_sync", "test_key", "value1",
+      sync_system(system_name, "test_sync", "test_key", "value1",
         consistency: :eventual,
         version: 1
       )
 
       # Second sync with same version (should cause conflict)
-      System.sync("test_sync", "test_key", "value2",
+      sync_system(system_name, "test_sync", "test_key", "value2",
         consistency: :eventual,
         version: 1
       )
 
       # Get stats
-      {:ok, stats} = System.stats("test_sync")
+      {:ok, stats} = stats_system(system_name, "test_sync")
       assert stats.conflict_count == 1
     end
   end
 
   describe "multiple syncs" do
-    test ~c"handles multiple sync types" do
+    test ~c"handles multiple sync types", %{system_name: system_name} do
       # Sync to different types
-      System.sync("split", "key1", "split_value")
-      System.sync("window", "key1", "window_value")
-      System.sync("tab", "key1", "tab_value")
+      sync_system(system_name, "split", "key1", "split_value")
+      sync_system(system_name, "window", "key1", "window_value")
+      sync_system(system_name, "tab", "key1", "tab_value")
 
       # Verify each type has its own data
-      assert {:ok, "split_value"} == System.get("split", "key1")
-      assert {:ok, "window_value"} == System.get("window", "key1")
-      assert {:ok, "tab_value"} == System.get("tab", "key1")
+      assert {:ok, "split_value"} == get_system(system_name, "split", "key1")
+      assert {:ok, "window_value"} == get_system(system_name, "window", "key1")
+      assert {:ok, "tab_value"} == get_system(system_name, "tab", "key1")
     end
 
-    test ~c"get_all returns all data for sync" do
+    test ~c"get_all returns all data for sync", %{system_name: system_name} do
       # Sync multiple values
-      System.sync("test_sync", "key1", "value1")
-      System.sync("test_sync", "key2", "value2")
-      System.sync("test_sync", "key3", "value3")
+      sync_system(system_name, "test_sync", "key1", "value1")
+      sync_system(system_name, "test_sync", "key2", "value2")
+      sync_system(system_name, "test_sync", "key3", "value3")
 
       # Get all data
-      {:ok, sync_data} = System.get_all("test_sync")
+      {:ok, sync_data} = get_all_system(system_name, "test_sync")
       assert map_size(sync_data) == 3
       assert Map.get(sync_data, "key1").value == "value1"
       assert Map.get(sync_data, "key2").value == "value2"

@@ -7,7 +7,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   alias Raxol.Core.Metrics.AlertManager
 
   setup do
-    {:ok, _pid} = AlertManager.start_link()
+    {:ok, _pid} = AlertManager.start_link(name: :alert_manager_test)
     :ok
   end
 
@@ -26,8 +26,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         notification_channels: ["email"]
       }
 
-      assert {:ok, rule_id} = AlertManager.add_rule(rule)
-      assert {:ok, rules} = AlertManager.get_rules()
+      assert {:ok, rule_id} = AlertManager.add_rule(rule, :alert_manager_test)
+      assert {:ok, rules} = AlertManager.get_rules(:alert_manager_test)
       assert Map.has_key?(rules, rule_id)
     end
 
@@ -37,8 +37,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         threshold: 50
       }
 
-      assert {:ok, rule_id} = AlertManager.add_rule(rule)
-      assert {:ok, rules} = AlertManager.get_rules()
+      assert {:ok, rule_id} = AlertManager.add_rule(rule, :alert_manager_test)
+      assert {:ok, rules} = AlertManager.get_rules(:alert_manager_test)
       stored_rule = rules[rule_id]
 
       assert stored_rule.name == "Unnamed Alert"
@@ -62,7 +62,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         tags: %{service: "test"}
       }
 
-      {:ok, rule_id} = AlertManager.add_rule(rule)
+      {:ok, rule_id} = AlertManager.add_rule(rule, :alert_manager_test)
       %{rule_id: rule_id}
     end
 
@@ -93,7 +93,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       # Wait for alert to be processed
       Process.sleep(100)
 
-      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id)
+      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id, :alert_manager_test)
       assert alert_state.active == true
       assert alert_state.current_value == 60
 
@@ -127,7 +127,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       # Wait for alert to be processed
       Process.sleep(100)
 
-      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id)
+      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id, :alert_manager_test)
       assert alert_state.active == false
       assert alert_state.current_value == 40
 
@@ -163,11 +163,11 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       Process.send(AlertManager, {:check_alerts, 2}, [])
       Process.sleep(100)
 
-      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id)
+      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id, :alert_manager_test)
       assert alert_state.active == false
 
       # Check alert history
-      assert {:ok, history} = AlertManager.get_alert_history(rule_id)
+      assert {:ok, history} = AlertManager.get_alert_history(rule_id, :alert_manager_test)
       # Only one alert should be recorded due to cooldown
       assert length(history) == 1
 
@@ -186,7 +186,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         tags: %{service: "test"}
       }
 
-      {:ok, rule_id} = AlertManager.add_rule(rule)
+      {:ok, rule_id} = AlertManager.add_rule(rule, :alert_manager_test)
       %{rule_id: rule_id}
     end
 
@@ -216,7 +216,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       Process.sleep(100)
 
       # Acknowledge alert
-      assert {:ok, alert_state} = AlertManager.acknowledge_alert(rule_id)
+      assert {:ok, alert_state} = AlertManager.acknowledge_alert(rule_id, :alert_manager_test)
       assert alert_state.acknowledged == true
 
       :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
@@ -235,7 +235,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         group_by: ["service", "region"]
       }
 
-      {:ok, rule_id} = AlertManager.add_rule(rule)
+      {:ok, rule_id} = AlertManager.add_rule(rule, :alert_manager_test)
 
       metrics = [
         %{
@@ -266,7 +266,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       Process.send(AlertManager, {:check_alerts, 1}, [])
       Process.sleep(100)
 
-      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id)
+      assert {:ok, alert_state} = AlertManager.get_alert_state(rule_id, :alert_manager_test)
       assert alert_state.active == true
 
       :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
@@ -275,10 +275,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
   describe "error handling" do
     test "returns error for non-existent rule" do
-      assert {:error, :rule_not_found} = AlertManager.get_alert_state(999)
-      assert {:error, :rule_not_found} = AlertManager.get_alert_history(999)
-      assert {:error, :rule_not_found} = AlertManager.acknowledge_alert(999)
-      assert {:ok, %{}} = AlertManager.get_rules()
+      assert {:error, :rule_not_found} = AlertManager.get_alert_state(999, :alert_manager_test)
+      assert {:error, :rule_not_found} = AlertManager.get_alert_history(999, :alert_manager_test)
+      assert {:error, :rule_not_found} = AlertManager.acknowledge_alert(999, :alert_manager_test)
+      assert {:ok, %{}} = AlertManager.get_rules(:alert_manager_test)
     end
   end
 end
