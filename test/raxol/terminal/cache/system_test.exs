@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       nil -> :ok
       pid -> GenServer.stop(pid)
     end
+
     Process.sleep(50)
     # Start the cache system with test configuration
     {:ok, _pid} =
@@ -30,6 +31,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
           general: %{max_size: 20_000}
         }
       )
+
     :ok
   end
 
@@ -140,7 +142,8 @@ defmodule Raxol.Terminal.Cache.SystemTest do
     test ~c"LFU eviction" do
       # Stop the existing cache system and start with LFU policy
       GenServer.stop(Raxol.Terminal.Cache.System)
-      Process.sleep(100) # Give it time to stop
+      # Give it time to stop
+      Process.sleep(100)
 
       {:ok, _pid} =
         System.start_link(
@@ -182,7 +185,8 @@ defmodule Raxol.Terminal.Cache.SystemTest do
     test ~c"FIFO eviction" do
       # Stop the existing cache system and start with FIFO policy
       GenServer.stop(Raxol.Terminal.Cache.System)
-      Process.sleep(100) # Give it time to stop
+      # Give it time to stop
+      Process.sleep(100)
 
       {:ok, _pid} =
         System.start_link(

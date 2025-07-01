@@ -76,7 +76,9 @@ defmodule Raxol.Terminal.Buffer.Content do
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       case buffer.cells do
-        nil -> raise RuntimeError, "Buffer cells is nil"
+        nil ->
+          raise RuntimeError, "Buffer cells is nil"
+
         cells ->
           cells
           |> Enum.at(y)
@@ -164,7 +166,9 @@ defmodule Raxol.Terminal.Buffer.Content do
   @doc false
   defp update_cell_at(cells, x, y, cell) do
     case Enum.at(cells, y) do
-      nil -> cells
+      nil ->
+        cells
+
       row ->
         updated_row = List.replace_at(row, x, cell)
         List.replace_at(cells, y, updated_row)

@@ -43,19 +43,22 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       assert get_line_text(buffer, 1) == "       Hel"
     end
 
-    test "ignores invalid position", %{buffer: buffer} do
+    test "write_string/4 ignores invalid position", %{buffer: buffer} do
       original = buffer
       buffer = CharEditor.write_string(original, 10, 1, "Hello")
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = buffer
       buffer = CharEditor.write_string(original, 2, 5, "Hello")
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = buffer
       buffer = CharEditor.write_string(original, -1, 1, "Hello")
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = buffer
       buffer = CharEditor.write_string(original, 2, -1, "Hello")
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
     end
   end
 
@@ -66,25 +69,28 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       assert get_line_text_with_spaces(buffer, 1) == "FG  HIJ   "
     end
 
-    test "ignores invalid position", %{buffer: buffer} do
+    test "insert_chars/4 ignores invalid position", %{buffer: buffer} do
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.insert_chars(original, 10, 1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.insert_chars(original, 2, 5, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.insert_chars(original, -1, 1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.insert_chars(original, 2, -1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
     end
 
     test "ignores invalid count", %{buffer: buffer} do
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.insert_chars(original, 2, 1, 0)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
     end
   end
 
@@ -98,22 +104,26 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
     test "ignores invalid position", %{buffer: buffer} do
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.delete_chars(original, 10, 1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      # Use fresh copy for each test
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.delete_chars(original, 2, 5, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.delete_chars(original, -1, 1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.delete_chars(original, 2, -1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
     end
 
     test "ignores invalid count", %{buffer: buffer} do
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.delete_chars(original, 2, 1, 0)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
     end
   end
 
@@ -136,22 +146,26 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
     test "ignores invalid position", %{buffer: buffer} do
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.erase_chars(original, 10, 1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      # Use fresh copy for each test
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.erase_chars(original, 2, 5, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.erase_chars(original, -1, 1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
 
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.erase_chars(original, 2, -1, 2)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
     end
 
     test "ignores invalid count", %{buffer: buffer} do
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = CharEditor.erase_chars(original, 2, 1, 0)
-      assert buffer == original
+      assert_buffer_equal(buffer, original)
     end
   end
 
@@ -161,7 +175,10 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
 
       # Debug: print the original line
       original_line = get_line_text(buffer, 1)
-      IO.puts("Original line: '#{original_line}' (length: #{String.length(original_line)})")
+
+      IO.puts(
+        "Original line: '#{original_line}' (length: #{String.length(original_line)})"
+      )
 
       # Debug: print the line cells
       line = Enum.at(buffer.cells, 1)
@@ -175,7 +192,10 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
 
       # Debug: print the result line
       result_line = get_line_text_with_spaces(buffer, 1)
-      IO.puts("Result line: '#{result_line}' (length: #{String.length(result_line)})")
+
+      IO.puts(
+        "Result line: '#{result_line}' (length: #{String.length(result_line)})"
+      )
 
       # Debug: print the result line cells
       result_line_cells = Enum.at(buffer.cells, 1)
@@ -198,7 +218,10 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
 
       # Debug: print the original line
       original_line = get_line_text_with_spaces(buffer, 1)
-      IO.puts("Original line: '#{original_line}' (length: #{String.length(original_line)})")
+
+      IO.puts(
+        "Original line: '#{original_line}' (length: #{String.length(original_line)})"
+      )
 
       # Debug: print the line cells
       line = Enum.at(buffer.cells, 1)
@@ -208,24 +231,30 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
 
       # Debug: print the result line
       result_line = get_line_text_with_spaces(buffer, 1)
-      IO.puts("Result line: '#{result_line}' (length: #{String.length(result_line)})")
+
+      IO.puts(
+        "Result line: '#{result_line}' (length: #{String.length(result_line)})"
+      )
 
       assert get_line_text_with_spaces(buffer, 1) == "FGHIJ   XX"
     end
 
-    test "ignores invalid position", %{buffer: buffer} do
+    test "replace_chars/5 ignores invalid position", %{buffer: buffer} do
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
-      buffer = CharEditor.replace_chars(original, 10, 1, "XX")
-      assert buffer == original
+      result = CharEditor.replace_chars(original, 10, 1, "XX")
+      assert_buffer_equal(result, original)
 
-      buffer = CharEditor.replace_chars(original, 2, 5, "XX")
-      assert buffer == original
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
+      result = CharEditor.replace_chars(original, 2, 5, "XX")
+      assert_buffer_equal(result, original)
 
-      buffer = CharEditor.replace_chars(original, -1, 1, "XX")
-      assert buffer == original
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
+      result = CharEditor.replace_chars(original, -1, 1, "XX")
+      assert_buffer_equal(result, original)
 
-      buffer = CharEditor.replace_chars(original, 2, -1, "XX")
-      assert buffer == original
+      original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
+      result = CharEditor.replace_chars(original, 2, -1, "XX")
+      assert_buffer_equal(result, original)
     end
   end
 
@@ -233,8 +262,16 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
     test "debug delete_from_line behavior", %{buffer: buffer} do
       # Create a simple line with "FGHIJ     "
       line = [
-        Cell.new("F"), Cell.new("G"), Cell.new("H"), Cell.new("I"), Cell.new("J"),
-        Cell.new(" "), Cell.new(" "), Cell.new(" "), Cell.new(" "), Cell.new(" ")
+        Cell.new("F"),
+        Cell.new("G"),
+        Cell.new("H"),
+        Cell.new("I"),
+        Cell.new("J"),
+        Cell.new(" "),
+        Cell.new(" "),
+        Cell.new(" "),
+        Cell.new(" "),
+        Cell.new(" ")
       ]
 
       # Debug: print the original line
@@ -276,8 +313,16 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
     test "debug slice behavior", %{buffer: buffer} do
       # Create a simple line with "FGHIJ     "
       line = [
-        Cell.new("F"), Cell.new("G"), Cell.new("H"), Cell.new("I"), Cell.new("J"),
-        Cell.new(" "), Cell.new(" "), Cell.new(" "), Cell.new(" "), Cell.new(" ")
+        Cell.new("F"),
+        Cell.new("G"),
+        Cell.new("H"),
+        Cell.new("I"),
+        Cell.new("J"),
+        Cell.new(" "),
+        Cell.new(" "),
+        Cell.new(" "),
+        Cell.new(" "),
+        Cell.new(" ")
       ]
 
       # Debug: print the original line
@@ -290,11 +335,20 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       count = 2
 
       {left_part, right_part} = Enum.split(line, col)
-      IO.puts("Left part: '#{Enum.map_join(left_part, "", &extract_char/1)}' (length: #{length(left_part)})")
-      IO.puts("Right part: '#{Enum.map_join(right_part, "", &extract_char/1)}' (length: #{length(right_part)})")
+
+      IO.puts(
+        "Left part: '#{Enum.map_join(left_part, "", &extract_char/1)}' (length: #{length(left_part)})"
+      )
+
+      IO.puts(
+        "Right part: '#{Enum.map_join(right_part, "", &extract_char/1)}' (length: #{length(right_part)})"
+      )
 
       remaining_right = Enum.slice(right_part, count, line_length - col - count)
-      IO.puts("Remaining right: '#{Enum.map_join(remaining_right, "", &extract_char/1)}' (length: #{length(remaining_right)})")
+
+      IO.puts(
+        "Remaining right: '#{Enum.map_join(remaining_right, "", &extract_char/1)}' (length: #{length(remaining_right)})"
+      )
 
       blanks_needed = line_length - length(left_part) - length(remaining_right)
       IO.puts("Blanks needed: #{blanks_needed}")
@@ -339,39 +393,140 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
     IO.puts("put_content called with text: '#{text}'")
     IO.puts("Buffer dimensions: #{buffer.width}x#{buffer.height}")
 
-    result = text
-    |> String.split("\n")
-    |> Enum.with_index()
-    |> Enum.reduce(buffer, fn {line, y}, buffer ->
-      IO.puts("Processing line #{y}: '#{line}'")
-      chars = String.graphemes(line)
-      width = buffer.width
-
-      # Create a new line with the characters, limited to buffer width
-      new_line = chars
-      |> Enum.take(width)
-      |> Enum.map(&Cell.new/1)
-
-      # Pad the rest of the line with spaces to fill the full width
-      padding_needed = width - length(new_line)
-      new_line =
-        if padding_needed > 0 do
-          last_cell = List.last(new_line) || Cell.new(" ", buffer.default_style)
-          style = Map.get(last_cell, :style)
-          # Padding cells should always have dirty: false since they don't represent changes
-          new_line ++ Enum.map(1..padding_needed, fn _ -> %Cell{char: " ", style: style, dirty: false, wide_placeholder: false} end)
-        else
-          new_line
-        end
-
-      IO.puts("New line #{y} (length: #{length(new_line)}): #{inspect(new_line)}")
-
-      # Replace the line in the buffer
-      cells = List.replace_at(buffer.cells, y, new_line)
-      %{buffer | cells: cells}
-    end)
+    result = process_text_lines(buffer, text)
+    result = normalize_cell_dirty_flags(result)
 
     IO.puts("Final buffer cells: #{inspect(result.cells)}")
     result
+  end
+
+  defp process_text_lines(buffer, text) do
+    text
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.reduce(buffer, fn {line, y}, buffer ->
+      process_single_line(buffer, line, y)
+    end)
+  end
+
+  defp process_single_line(buffer, line, y) do
+    IO.puts("Processing line #{y}: '#{line}'")
+    new_line = create_line_with_padding(line, buffer.width, buffer.default_style)
+
+    IO.puts("New line #{y} (length: #{length(new_line)}): #{inspect(new_line)}")
+
+    cells = List.replace_at(buffer.cells, y, new_line)
+    %{buffer | cells: cells}
+  end
+
+  defp create_line_with_padding(line, width, default_style) do
+    chars = String.graphemes(line)
+
+    new_line =
+      chars
+      |> Enum.take(width)
+      |> Enum.map(&Cell.new/1)
+
+    padding_needed = width - length(new_line)
+
+    if padding_needed > 0 do
+      new_line ++ create_padding_cells(padding_needed, default_style)
+    else
+      new_line
+    end
+  end
+
+  defp normalize_cell_dirty_flags(buffer) do
+    %{
+      buffer
+      | cells:
+          Enum.map(buffer.cells, fn line ->
+            Enum.map(line, fn cell -> %{cell | dirty: false} end)
+          end)
+    }
+  end
+
+  defp create_padding_cells(count, default_style) do
+    Enum.map(1..count, fn _ ->
+      %Cell{
+        char: " ",
+        style: default_style,
+        dirty: false,
+        wide_placeholder: false
+      }
+    end)
+  end
+
+  # Custom deep equality assertion for buffer structs
+  defp assert_buffer_equal(buffer1, buffer2) do
+    assert_buffer_metadata_equal(buffer1, buffer2)
+    assert_buffer_cells_equal(buffer1, buffer2)
+  end
+
+  defp assert_buffer_metadata_equal(buffer1, buffer2) do
+    assert buffer1.width == buffer2.width
+    assert buffer1.height == buffer2.height
+    assert buffer1.scrollback_limit == buffer2.scrollback_limit
+    assert buffer1.cursor_position == buffer2.cursor_position
+    assert buffer1.alternate_screen == buffer2.alternate_screen
+    assert buffer1.cursor_visible == buffer2.cursor_visible
+    assert buffer1.scroll_position == buffer2.scroll_position
+    assert buffer1.scroll_region == buffer2.scroll_region
+    assert buffer1.selection == buffer2.selection
+    assert buffer1.damage_regions == buffer2.damage_regions
+    assert_style_equal(buffer1.default_style, buffer2.default_style)
+  end
+
+  defp assert_buffer_cells_equal(buffer1, buffer2) do
+    assert length(buffer1.cells) == length(buffer2.cells)
+
+    Enum.zip(buffer1.cells, buffer2.cells)
+    |> Enum.with_index()
+    |> Enum.each(fn {{row1, row2}, row_index} ->
+      assert_buffer_row_equal(row1, row2, row_index)
+    end)
+  end
+
+  defp assert_buffer_row_equal(row1, row2, row_index) do
+    assert length(row1) == length(row2)
+
+    Enum.zip(row1, row2)
+    |> Enum.with_index()
+    |> Enum.each(fn {{cell1, cell2}, col_index} ->
+      assert_cell_equal(cell1, cell2, row_index, col_index)
+    end)
+  end
+
+  defp assert_style_equal(style1, style2) do
+    assert style1.bold == style2.bold
+    assert style1.italic == style2.italic
+    assert style1.underline == style2.underline
+    assert style1.blink == style2.blink
+    assert style1.reverse == style2.reverse
+    assert style1.foreground == style2.foreground
+    assert style1.background == style2.background
+    assert style1.double_width == style2.double_width
+    assert style1.double_height == style2.double_height
+    assert style1.faint == style2.faint
+    assert style1.conceal == style2.conceal
+    assert style1.strikethrough == style2.strikethrough
+    assert style1.fraktur == style2.fraktur
+    assert style1.double_underline == style2.double_underline
+    assert style1.framed == style2.framed
+    assert style1.encircled == style2.encircled
+    assert style1.overlined == style2.overlined
+    assert style1.hyperlink == style2.hyperlink
+  end
+
+  defp assert_cell_equal(cell1, cell2, row_index, col_index) do
+    if cell1.char != cell2.char or cell1.dirty != cell2.dirty or cell1.wide_placeholder != cell2.wide_placeholder do
+      flunk("""
+      Cell mismatch at position (#{row_index}, #{col_index}):
+      Expected: char="#{cell1.char}", dirty=#{cell1.dirty}, wide_placeholder=#{cell1.wide_placeholder}
+      Got:      char="#{cell2.char}", dirty=#{cell2.dirty}, wide_placeholder=#{cell2.wide_placeholder}
+      """)
+    end
+
+    assert_style_equal(cell1.style, cell2.style)
   end
 end

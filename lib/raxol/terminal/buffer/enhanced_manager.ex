@@ -471,8 +471,10 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     cond do
       avg_recent_update > 30 ->
         %{state | level: Kernel.max(state.level - 1, 1)}
+
       avg_recent_compression < 20 ->
         %{state | level: Kernel.min(state.level + 1, 9)}
+
       true ->
         state
     end

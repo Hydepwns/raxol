@@ -12,7 +12,9 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
     test "inserts lines at valid position", %{buffer: buffer} do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = LineOperations.insert_lines(buffer, 2, 2)
-      assert get_content(buffer) == "ABCDE     \nFGHIJ     \n          \n          \nKLMNO     "
+
+      assert get_content(buffer) ==
+               "ABCDE     \nFGHIJ     \n          \n          \nKLMNO     "
     end
 
     test "ignores invalid position", %{buffer: buffer} do
@@ -35,7 +37,9 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
     test "deletes lines at valid position", %{buffer: buffer} do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = LineOperations.delete_lines(buffer, 1, 2)
-      assert get_content(buffer) == "ABCDE     \nPQRST     \nUVWXY     \n          \n          "
+
+      assert get_content(buffer) ==
+               "ABCDE     \nPQRST     \nUVWXY     \n          \n          "
     end
 
     test "ignores invalid position", %{buffer: buffer} do
@@ -58,7 +62,9 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
     test "prepends lines", %{buffer: buffer} do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = LineOperations.prepend_lines(buffer, 2)
-      assert get_content(buffer) == "          \n          \nABCDE     \nFGHIJ     \nKLMNO     "
+
+      assert get_content(buffer) ==
+               "          \n          \nABCDE     \nFGHIJ     \nKLMNO     "
     end
 
     test "ignores invalid count", %{buffer: buffer} do
@@ -72,7 +78,9 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
     test "removes lines from top", %{buffer: buffer} do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       buffer = LineOperations.pop_top_lines(buffer, 2)
-      assert get_content(buffer) == "KLMNO     \nPQRST     \nUVWXY     \n          \n          "
+
+      assert get_content(buffer) ==
+               "KLMNO     \nPQRST     \nUVWXY     \n          \n          "
     end
 
     test "ignores invalid count", %{buffer: buffer} do
@@ -102,7 +110,9 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       new_line = List.duplicate(Raxol.Terminal.Cell.new("X"), 10)
       buffer = LineOperations.set_line(buffer, 2, new_line)
-      assert get_content(buffer) == "ABCDE     \nFGHIJ     \nXXXXXXXXXX\nPQRST     \nUVWXY     "
+
+      assert get_content(buffer) ==
+               "ABCDE     \nFGHIJ     \nXXXXXXXXXX\nPQRST     \nUVWXY     "
     end
 
     test "ignores invalid position", %{buffer: buffer} do
@@ -125,6 +135,7 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
     |> Enum.reduce(buffer, fn {line, y}, buffer ->
       # Pad the line to the full buffer width
       padded_line = String.pad_trailing(line, buffer.width)
+
       padded_line
       |> String.graphemes()
       |> Enum.with_index()

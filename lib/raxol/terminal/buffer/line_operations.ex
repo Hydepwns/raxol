@@ -11,24 +11,26 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
-  Inserts a specified number of blank lines at the current cursor position.
+  Inserts blank lines at the cursor position, shifting lines down and pushing out the bottom lines.
   Lines below the cursor are shifted down, and lines shifted off the bottom are discarded.
   """
   @spec insert_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def insert_lines(buffer, count) when integer?(count) and count > 0 do
-    {_, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    {_, y} = buffer.cursor_position
 
-    {top, bottom} =
-      Raxol.Terminal.ScreenBuffer.ScrollRegion.get_boundaries(
-        buffer.scroll_state
-      )
+    # Split the content at the cursor position
+    {before_cursor, after_cursor} = Enum.split(buffer.cells, y)
 
-    # Only insert lines within the scroll region
-    if y >= top and y <= bottom do
-      do_insert_lines(buffer, y, count, bottom)
-    else
-      buffer
-    end
+    # Create blank lines
+    blank_lines = create_empty_lines(buffer.width, count)
+
+    # Combine: before cursor + blank lines + after cursor
+    combined = before_cursor ++ blank_lines ++ after_cursor
+
+    # Take only the first buffer.height lines (truncate if necessary)
+    new_cells = Enum.take(combined, buffer.height)
+
+    %{buffer | cells: new_cells}
   end
 
   @doc """
@@ -97,11 +99,11 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   """
   @spec delete_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def delete_lines(buffer, count) when is_integer(count) and count > 0 do
-    {_x, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    {_x, y} = buffer.cursor_position
 
     {top, bottom} =
       Raxol.Terminal.ScreenBuffer.ScrollRegion.get_boundaries(
-        buffer.scroll_state
+        buffer.scroll_region
       )
 
     # Only delete lines within the scroll region
@@ -144,36 +146,12 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @spec prepend_lines(ScreenBuffer.t(), non_neg_integer()) ::
           ScreenBuffer.t()
   def prepend_lines(buffer, count) when count > 0 do
-    # Create empty lines to prepend
     empty_lines = create_empty_lines(buffer.width, count)
-
-    # Calculate how many lines will be shifted to scrollback
-    overflow = max(0, count - buffer.height)
-
-    # Split lines into those that fit and those that go to scrollback
-    {visible_lines, scrollback_lines} = Enum.split(empty_lines, buffer.height)
-
-    # Shift existing content down
-    {shifted_content, new_scrollback} =
-      if overflow > 0 do
-        # Some existing content will be moved to scrollback
-        {existing_visible, existing_scrollback} =
-          Enum.split(buffer.cells, buffer.height - length(visible_lines))
-
-        {visible_lines ++ existing_visible,
-         existing_scrollback ++ buffer.scrollback}
-      else
-        # All existing content stays visible
-        {visible_lines ++
-           Enum.take(buffer.cells, buffer.height - length(visible_lines)),
-         buffer.scrollback}
-      end
-
-    # Update scrollback buffer, respecting the limit
-    final_scrollback =
-      Enum.take(scrollback_lines ++ new_scrollback, buffer.scrollback_limit)
-
-    %{buffer | cells: shifted_content, scrollback: final_scrollback}
+    combined = empty_lines ++ buffer.cells
+    new_cells = Enum.take(combined, buffer.height)
+    removed = Enum.drop(combined, buffer.height)
+    new_scrollback = Enum.take(removed ++ buffer.scrollback, buffer.scrollback_limit)
+    %{buffer | cells: new_cells, scrollback: new_scrollback}
   end
 
   def prepend_lines(buffer, _count), do: buffer
@@ -413,7 +391,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   """
   @spec delete_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def delete_chars(buffer, count) when count > 0 do
-    {x, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    {x, y} = buffer.cursor_position
     delete_chars_at(buffer, y, x, count)
   end
 
@@ -422,9 +400,15 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Deletes characters at a specific position.
   """
-  @spec delete_chars_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec delete_chars_at(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def delete_chars_at(buffer, row, col, count) do
-    if row >= 0 and row < length(buffer.cells) and col >= 0 and col < buffer.width do
+    if row >= 0 and row < length(buffer.cells) and col >= 0 and
+         col < buffer.width do
       line = get_line(buffer, row)
       new_line = delete_chars_from_line(line, col, count, buffer.width)
       update_line(buffer, row, new_line)
@@ -438,7 +422,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   """
   @spec insert_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def insert_chars(buffer, count) when count > 0 do
-    {x, y} = Raxol.Terminal.Cursor.get_position(buffer)
+    {x, y} = buffer.cursor_position
     insert_chars_at(buffer, y, x, count)
   end
 
@@ -447,9 +431,15 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Inserts characters at a specific position.
   """
-  @spec insert_chars_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec insert_chars_at(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def insert_chars_at(buffer, row, col, count) do
-    if row >= 0 and row < length(buffer.cells) and col >= 0 and col < buffer.width do
+    if row >= 0 and row < length(buffer.cells) and col >= 0 and
+         col < buffer.width do
       line = get_line(buffer, row)
       new_line = insert_chars_into_line(line, col, count, buffer.width)
       update_line(buffer, row, new_line)
@@ -462,7 +452,9 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   defp delete_chars_from_line(line, col, count, width) do
     {before, after_part} = Enum.split(line, col)
     {_, remaining} = Enum.split(after_part, count)
-    before ++ remaining ++ create_empty_line(width - length(before) - length(remaining))
+
+    before ++
+      remaining ++ create_empty_line(width - length(before) - length(remaining))
   end
 
   defp insert_chars_into_line(line, col, count, width) do
