@@ -224,7 +224,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:reply, state.plugin_states, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:load_plugin_by_module, module, config}, _from, state) do
     # Send plugin load attempted event
     send(state.runtime_pid, {:plugin_load_attempted, module})
@@ -261,7 +261,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:initialize, _from, state) do
     # This public API might still be used for re-initialization or explicit trigger.
     # However, primary initialization is now async via :__internal_initialize__.
@@ -291,13 +291,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:reply, :ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:list_plugins, _from, state) do
     plugins = Discovery.list_plugins(state)
     {:reply, plugins, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_plugin, plugin_id}, _from, state) do
     case Discovery.get_plugin(plugin_id, state) do
       {:ok, plugin} -> {:reply, {:ok, plugin}, state}
@@ -305,7 +305,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:enable_plugin, plugin_id}, _from, state) do
     case Raxol.Core.Runtime.Plugins.LifecycleManager.enable_plugin(
            plugin_id,
@@ -316,7 +316,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:disable_plugin, plugin_id}, _from, state) do
     case Raxol.Core.Runtime.Plugins.LifecycleManager.disable_plugin(
            plugin_id,
@@ -327,7 +327,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:reload_plugin, plugin_id}, _from, state) do
     # Send plugin reload attempted event
     send(state.runtime_pid, {:plugin_reload_attempted, plugin_id})
@@ -346,12 +346,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     handle_plugin_operation(operation, plugin_id, state, "reload")
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_full_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(unhandled_message, _from, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled call message: #{inspect(unhandled_message)}",
