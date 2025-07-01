@@ -215,10 +215,9 @@ defmodule Raxol.Core.Metrics.Aggregator do
     metrics
     |> Enum.group_by(fn metric ->
       group_by
-      |> Enum.map(fn key ->
+      |> Enum.map_join(":", fn key ->
         Map.get(metric.tags, key) || Map.get(metric.tags, String.to_atom(key))
       end)
-      |> Enum.join(":")
     end)
   end
 
