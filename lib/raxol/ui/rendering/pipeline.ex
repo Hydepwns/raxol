@@ -43,6 +43,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   import Raxol.Guards
 
   require Raxol.Core.Runtime.Log
+  require Logger
 
   @default_renderer Raxol.UI.Rendering.Renderer
   # Animation frame timing (16ms = ~60fps)
@@ -190,6 +191,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
   @spec commit(painted_output :: list(map()), renderer :: module(), diff_result :: any(), new_tree :: any()) :: :ok
   # Updated default usage
   def commit(painted_output, renderer \\ @default_renderer, diff_result \\ nil, new_tree \\ nil) do
+    require Logger
+    Logger.debug("[Pipeline] commit called with painted_output=#{inspect(painted_output)}, diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree)}")
     # painted_output is now a list of paint operation maps from the paint/2 stage.
     Raxol.Core.Runtime.Log.debug(
       "Commit Stage: Sending #{Enum.count(painted_output)} paint operations to renderer #{inspect(renderer)}."
@@ -199,11 +202,11 @@ defmodule Raxol.UI.Rendering.Pipeline do
     case diff_result do
       {:update, path, changes} ->
         # Partial update - send diff to renderer
-        renderer.apply_diff(diff_result, new_tree)
+        GenServer.cast(renderer, {:apply_diff, diff_result, new_tree})
 
       {:replace, _} ->
         # Full replacement - send full tree to renderer
-        renderer.render(new_tree)
+        GenServer.cast(renderer, {:render, new_tree})
 
       :no_change ->
         # No change - do nothing
@@ -211,7 +214,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
       _ ->
         # Fallback - send full tree to renderer
-        renderer.render(new_tree)
+        GenServer.cast(renderer, {:render, new_tree})
     end
 
     # The renderer module is expected to handle this list of operations.
@@ -487,6 +490,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
   ## Private Helpers
 
   defp schedule_or_execute_render(diff_result, new_tree_for_reference, state) do
+    require Logger
+    Logger.debug("[Pipeline] schedule_or_execute_render called with diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree_for_reference)}")
     # Handle partial updates immediately - they don't need debouncing
     case diff_result do
       {:update, _path, _changes} ->

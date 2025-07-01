@@ -191,8 +191,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       replace_text_range(lines, start_pos, start_pos, char_binary)
 
     # Calculate new cursor position based on inserted char
-    # Simply move cursor one position right after insertion
-    new_col = col + 1
+    {new_row, new_col} =
+      case char_or_codepoint do
+        10 -> # Newline character
+          # Move to start of next line
+          {row + 1, 0}
+        _ ->
+          # For other characters, move cursor one position right
+          {row, col + 1}
+      end
 
     # Split the new full text back into lines
     new_lines = String.split(new_full_text, "\n")
@@ -203,7 +210,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       | # Use state | pattern for brevity
         # Update lines
         lines: new_lines,
-        cursor_pos: {row, new_col},
+        cursor_pos: {new_row, new_col},
         # Clear selection after insertion
         selection_start: nil,
         selection_end: nil,
