@@ -144,24 +144,57 @@ defmodule Raxol.Terminal.ModeManager do
   @spec mode_enabled?(t(), mode()) :: boolean()
   def mode_enabled?(state, mode) do
     case mode do
-      :irm -> state.insert_mode
-      :lnm -> state.line_feed_mode
-      :decom -> state.origin_mode
-      :decawm -> state.auto_wrap
-      :dectcem -> state.cursor_visible
-      :decscnm -> state.screen_mode_reverse
-      :decarm -> state.auto_repeat_mode
-      :decinlm -> state.interlacing_mode
-      :bracketed_paste -> state.bracketed_paste_mode
-      :decckm -> state.cursor_keys_mode == :application
-      :deccolm_132 -> state.column_width_mode == :wide
-      :deccolm_80 -> state.column_width_mode == :normal
-      :dec_alt_screen -> state.alternate_buffer_active
-      :dec_alt_screen_save ->
-        IO.puts("DEBUG: mode_enabled? :dec_alt_screen_save = #{inspect(state.alternate_buffer_active)}")
+      :irm ->
+        state.insert_mode
+
+      :lnm ->
+        state.line_feed_mode
+
+      :decom ->
+        state.origin_mode
+
+      :decawm ->
+        state.auto_wrap
+
+      :dectcem ->
+        state.cursor_visible
+
+      :decscnm ->
+        state.screen_mode_reverse
+
+      :decarm ->
+        state.auto_repeat_mode
+
+      :decinlm ->
+        state.interlacing_mode
+
+      :bracketed_paste ->
+        state.bracketed_paste_mode
+
+      :decckm ->
+        state.cursor_keys_mode == :application
+
+      :deccolm_132 ->
+        state.column_width_mode == :wide
+
+      :deccolm_80 ->
+        state.column_width_mode == :normal
+
+      :dec_alt_screen ->
         state.alternate_buffer_active
-      :alt_screen_buffer -> state.alternate_buffer_active
-      _ -> false
+
+      :dec_alt_screen_save ->
+        IO.puts(
+          "DEBUG: mode_enabled? :dec_alt_screen_save = #{inspect(state.alternate_buffer_active)}"
+        )
+
+        state.alternate_buffer_active
+
+      :alt_screen_buffer ->
+        state.alternate_buffer_active
+
+      _ ->
+        false
     end
   end
 
@@ -186,7 +219,9 @@ defmodule Raxol.Terminal.ModeManager do
   defp do_set_mode(mode_name, emulator) do
     with {:ok, mode_def} <- find_mode_definition(mode_name),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, true) do
-      new_mode_manager = update_mode_manager_state(emulator.mode_manager, mode_name, true)
+      new_mode_manager =
+        update_mode_manager_state(emulator.mode_manager, mode_name, true)
+
       {:ok, %{new_emu | mode_manager: new_mode_manager}}
     end
   end
@@ -194,7 +229,9 @@ defmodule Raxol.Terminal.ModeManager do
   defp do_reset_mode(mode_name, emulator) do
     with {:ok, mode_def} <- find_mode_definition(mode_name),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, false) do
-      new_mode_manager = update_mode_manager_state(emulator.mode_manager, mode_name, false)
+      new_mode_manager =
+        update_mode_manager_state(emulator.mode_manager, mode_name, false)
+
       {:ok, %{new_emu | mode_manager: new_mode_manager}}
     end
   end
@@ -226,24 +263,60 @@ defmodule Raxol.Terminal.ModeManager do
 
   defp update_mode_manager_state(mode_manager, mode_name, value) do
     case mode_name do
-      :irm -> %{mode_manager | insert_mode: value}
-      :lnm -> %{mode_manager | line_feed_mode: value}
-      :decom -> %{mode_manager | origin_mode: value}
-      :decawm -> %{mode_manager | auto_wrap: value}
-      :dectcem -> %{mode_manager | cursor_visible: value}
-      :decscnm -> %{mode_manager | screen_mode_reverse: value}
-      :decarm -> %{mode_manager | auto_repeat_mode: value}
-      :decinlm -> %{mode_manager | interlacing_mode: value}
-      :bracketed_paste -> %{mode_manager | bracketed_paste_mode: value}
-      :decckm -> %{mode_manager | cursor_keys_mode: if(value, do: :application, else: :normal)}
-      :deccolm_132 -> %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
-      :deccolm_80 -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
-      :dec_alt_screen -> %{mode_manager | alternate_buffer_active: value}
-      :dec_alt_screen_save ->
-        IO.puts("DEBUG: update_mode_manager_state :dec_alt_screen_save set to #{inspect(value)}")
+      :irm ->
+        %{mode_manager | insert_mode: value}
+
+      :lnm ->
+        %{mode_manager | line_feed_mode: value}
+
+      :decom ->
+        %{mode_manager | origin_mode: value}
+
+      :decawm ->
+        %{mode_manager | auto_wrap: value}
+
+      :dectcem ->
+        %{mode_manager | cursor_visible: value}
+
+      :decscnm ->
+        %{mode_manager | screen_mode_reverse: value}
+
+      :decarm ->
+        %{mode_manager | auto_repeat_mode: value}
+
+      :decinlm ->
+        %{mode_manager | interlacing_mode: value}
+
+      :bracketed_paste ->
+        %{mode_manager | bracketed_paste_mode: value}
+
+      :decckm ->
+        %{
+          mode_manager
+          | cursor_keys_mode: if(value, do: :application, else: :normal)
+        }
+
+      :deccolm_132 ->
+        %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
+
+      :deccolm_80 ->
+        %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
+
+      :dec_alt_screen ->
         %{mode_manager | alternate_buffer_active: value}
-      :alt_screen_buffer -> %{mode_manager | alternate_buffer_active: value}
-      _ -> mode_manager
+
+      :dec_alt_screen_save ->
+        IO.puts(
+          "DEBUG: update_mode_manager_state :dec_alt_screen_save set to #{inspect(value)}"
+        )
+
+        %{mode_manager | alternate_buffer_active: value}
+
+      :alt_screen_buffer ->
+        %{mode_manager | alternate_buffer_active: value}
+
+      _ ->
+        mode_manager
     end
   end
 

@@ -232,7 +232,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
     cond do
       is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
-        updated_cells = erase_in_line(buffer.cells, mode, cursor)
+        updated_cells = erase_in_line_cells(buffer.cells, mode, row, col)
         %{buffer | cells: updated_cells}
 
       is_list(buffer) ->
@@ -256,7 +256,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
     cond do
       is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
-        updated_cells = erase_in_display(buffer.cells, mode, cursor)
+        updated_cells = erase_in_display_cells(buffer.cells, mode, row, col)
         %{buffer | cells: updated_cells}
 
       is_list(buffer) ->
@@ -270,6 +270,26 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
       true ->
         buffer
+    end
+  end
+
+  # Helper functions for cell-based operations
+  defp erase_in_line_cells(cells, mode, row, col) do
+    case mode do
+      0 -> erase_from_cursor_to_line_end(cells, row, col)
+      1 -> erase_from_line_start_to_cursor(cells, row, col)
+      2 -> erase_entire_line(cells, row)
+      _ -> cells
+    end
+  end
+
+  defp erase_in_display_cells(cells, mode, row, col) do
+    case mode do
+      0 -> erase_from_cursor_to_end(cells, row, col)
+      1 -> erase_from_start_to_cursor(cells, row, col)
+      2 -> erase_all(cells)
+      3 -> erase_all_with_scrollback(cells)
+      _ -> cells
     end
   end
 
