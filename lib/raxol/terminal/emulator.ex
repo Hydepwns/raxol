@@ -77,6 +77,9 @@ defmodule Raxol.Terminal.Emulator do
       icon_name: ""
     },
 
+    # State stack for terminal state management
+    state_stack: [],
+
     # Other fields
     output_buffer: "",
     style: Raxol.Terminal.ANSI.TextFormatting.new(),
@@ -90,30 +93,31 @@ defmodule Raxol.Terminal.Emulator do
   ]
 
   @type t :: %__MODULE__{
-    state: pid() | nil,
-    event: pid() | nil,
-    buffer: pid() | nil,
-    config: pid() | nil,
-    command: pid() | nil,
-    cursor: pid() | nil,
-    window_manager: pid() | nil,
-    mode_manager: pid() | nil,
-    active_buffer_type: :main | :alternate,
-    main_screen_buffer: ScreenBuffer.t() | nil,
-    alternate_screen_buffer: ScreenBuffer.t() | nil,
-    charset_state: map(),
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    window_state: map(),
-    output_buffer: String.t(),
-    style: Raxol.Terminal.ANSI.TextFormatting.t(),
-    scrollback_limit: non_neg_integer(),
-    window_title: String.t() | nil,
-    plugin_manager: any() | nil,
-    saved_cursor: any() | nil,
-    scroll_region: any() | nil,
-    sixel_state: any() | nil
-  }
+          state: pid() | nil,
+          event: pid() | nil,
+          buffer: pid() | nil,
+          config: pid() | nil,
+          command: pid() | nil,
+          cursor: pid() | nil,
+          window_manager: pid() | nil,
+          mode_manager: pid() | nil,
+          active_buffer_type: :main | :alternate,
+          main_screen_buffer: ScreenBuffer.t() | nil,
+          alternate_screen_buffer: ScreenBuffer.t() | nil,
+          charset_state: map(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          window_state: map(),
+          state_stack: list(),
+          output_buffer: String.t(),
+          style: Raxol.Terminal.ANSI.TextFormatting.t(),
+          scrollback_limit: non_neg_integer(),
+          window_title: String.t() | nil,
+          plugin_manager: any() | nil,
+          saved_cursor: any() | nil,
+          scroll_region: any() | nil,
+          sixel_state: any() | nil
+        }
 
   # Cursor Operations
   defdelegate get_cursor_position(emulator), to: CursorOperations
@@ -164,7 +168,6 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate in_selection?(emulator, x, y), to: SelectionOperations
 
   # Scroll Operations
-  defdelegate get_scroll_region(emulator), to: ScrollOperations
   defdelegate set_scroll_region(emulator, region), to: ScrollOperations
 
   # State Operations
@@ -183,9 +186,14 @@ defmodule Raxol.Terminal.Emulator do
   Sets an attribute on the emulator.
   """
   @spec set_attribute(t(), atom(), any()) :: t()
-  def set_attribute(emulator, _attribute, _value) do
-    # TODO: Implement attribute setting
-    emulator
+  def set_attribute(emulator, attribute, value) do
+    updated_style =
+      Raxol.Terminal.ANSI.TextFormatting.apply_attribute(
+        emulator.style,
+        attribute
+      )
+
+    %{emulator | style: updated_style}
   end
 
   @doc """
@@ -322,19 +330,38 @@ defmodule Raxol.Terminal.Emulator do
     case get_charset_command(input) do
       {field, value} ->
         # If it's a charset command, handle it completely and return
-        updated_emulator = %{emulator | charset_state: %{emulator.charset_state | field => value}}
+        updated_emulator = %{
+          emulator
+          | charset_state: %{emulator.charset_state | field => value}
+        }
+
         {updated_emulator, ""}
 
       :no_match ->
         # Not a charset command, proceed with normal processing
         # Handle ANSI sequences and get remaining text
-        {emulator, remaining_text} = handle_ansi_sequences(input, emulator)
+        {updated_emulator, remaining_text} =
+          handle_ansi_sequences(input, emulator)
 
-        # Handle remaining text input
-        emulator = handle_text_input(remaining_text, emulator)
+        IO.puts(
+          "DEBUG: After handle_ansi_sequences, scroll_region: #{inspect(updated_emulator.scroll_region)}"
+        )
 
-        # For now, just return the emulator and empty string as expected by tests
-        {emulator, ""}
+        if remaining_text == "" do
+          IO.puts(
+            "DEBUG: No remaining text, returning emulator with scroll_region: #{inspect(updated_emulator.scroll_region)}"
+          )
+
+          {updated_emulator, ""}
+        else
+          updated_emulator = handle_text_input(remaining_text, updated_emulator)
+
+          IO.puts(
+            "DEBUG: After handle_text_input, scroll_region: #{inspect(updated_emulator.scroll_region)}"
+          )
+
+          {updated_emulator, ""}
+        end
     end
   end
 
@@ -374,6 +401,30 @@ defmodule Raxol.Terminal.Emulator do
 
         handle_ansi_sequences(remaining, new_emulator)
     end
+  end
+
+  defp handle_parsed_sequence(
+         {:osc, remaining, _},
+         _rest,
+         emulator
+       ) do
+    handle_ansi_sequences(remaining, emulator)
+  end
+
+  defp handle_parsed_sequence(
+         {:dcs, remaining, _},
+         _rest,
+         emulator
+       ) do
+    handle_ansi_sequences(remaining, emulator)
+  end
+
+  defp handle_parsed_sequence(
+         {:incomplete, _},
+         _rest,
+         emulator
+       ) do
+    {emulator, <<>>}
   end
 
   defp handle_parsed_sequence(
@@ -484,6 +535,14 @@ defmodule Raxol.Terminal.Emulator do
     handle_ansi_sequences(remaining, emulator)
   end
 
+  defp handle_parsed_sequence(
+         {:csi_set_scroll_region, params, remaining, _},
+         _rest,
+         emulator
+       ) do
+    {handle_set_scroll_region(params, emulator), remaining}
+  end
+
   defp parse_ansi_sequence(rest) do
     case find_matching_parser(rest) do
       nil -> {:incomplete, nil}
@@ -578,47 +637,64 @@ defmodule Raxol.Terminal.Emulator do
 
   def parse_csi_clear_line(_), do: nil
 
-  def parse_sgr(<<0x1B, 0x5B, remaining::binary>>) do
-    # Only match if the remaining part contains 'm' and has valid SGR parameters
-    case String.split(remaining, "m", parts: 2) do
-      [params, rest] when binary?(params) and byte_size(params) > 0 ->
-        # Validate that params contains only digits, semicolons, and colons
-        if String.match?(params, ~r/^[\d;:]*$/) do
-          {:sgr, params, rest, nil}
-        else
-          nil
-        end
-
-      _ ->
-        nil
-    end
-  end
-
-  def parse_sgr(_), do: nil
-
-  def parse_unknown(<<0x1B, remaining::binary>>) do
-    # Skip one character after ESC
-    case remaining do
-      <<_char, rest::binary>> -> {:unknown, rest, nil}
+  def parse_csi_set_mode(<<0x1B, 0x5B, 0x3F, remaining::binary>>) do
+    case String.split(remaining, "h", parts: 2) do
+      [params, rest] -> {:csi_set_mode, params, rest, nil}
       _ -> nil
     end
   end
 
-  def parse_unknown(_), do: nil
+  def parse_csi_set_mode(_), do: nil
 
-  # Move the @ansi_parsers list and related functions to after all parse functions are defined
-  # This will be moved to the end of the file
+  def parse_csi_reset_mode(<<0x1B, 0x5B, 0x3F, remaining::binary>>) do
+    case String.split(remaining, "l", parts: 2) do
+      [params, rest] -> {:csi_reset_mode, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_reset_mode(_), do: nil
+
+  def parse_csi_set_standard_mode(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, "h", parts: 2) do
+      [params, rest] -> {:csi_set_standard_mode, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_set_standard_mode(_), do: nil
+
+  def parse_csi_reset_standard_mode(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, "l", parts: 2) do
+      [params, rest] -> {:csi_reset_standard_mode, params, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_csi_reset_standard_mode(_), do: nil
+
+  def parse_esc_equals(<<0x1B, 0x3D, remaining::binary>>),
+    do: {:esc_equals, remaining, nil}
+
+  def parse_esc_equals(_), do: nil
+
+  def parse_esc_greater(<<0x1B, 0x3E, remaining::binary>>),
+    do: {:esc_greater, remaining, nil}
+
+  def parse_esc_greater(_), do: nil
 
   defp handle_cursor_position(params, emulator) do
     case String.split(params, ";") do
       [row_str, col_str] ->
         row = String.to_integer(row_str)
         col = String.to_integer(col_str)
-        move_cursor_to(emulator, row, col)
+        # Convert from 1-indexed to 0-indexed coordinates
+        move_cursor_to(emulator, row - 1, col - 1)
 
       [pos_str] ->
         pos = String.to_integer(pos_str)
-        move_cursor_to(emulator, pos, 1)
+        # Convert from 1-indexed to 0-indexed coordinates
+        move_cursor_to(emulator, pos - 1, 0)
 
       _ ->
         emulator
@@ -682,10 +758,77 @@ defmodule Raxol.Terminal.Emulator do
     emulator
   end
 
-  defp handle_sgr(_params, emulator) do
-    # Handle Select Graphic Rendition (colors, formatting)
-    # For now, just return emulator unchanged
-    emulator
+  defp handle_sgr(params, emulator) do
+    # Parse SGR parameters (e.g., "31;1;4")
+    codes =
+      params
+      |> String.split(";")
+      |> Enum.map(fn code ->
+        case Integer.parse(code) do
+          {int, _} -> int
+          :error -> nil
+        end
+      end)
+      |> Enum.filter(& &1)
+
+    # Start with current style
+    style = emulator.style || Raxol.Terminal.ANSI.TextFormatting.new()
+
+    # Apply each SGR code
+    updated_style = Enum.reduce(codes, style, &apply_sgr_code/2)
+
+    %{emulator | style: updated_style}
+  end
+
+  defp apply_sgr_code(code, style) do
+    case code do
+      # Reset all
+      0 -> Raxol.Terminal.ANSI.TextFormatting.new()
+      1 -> Raxol.Terminal.ANSI.TextFormatting.set_bold(style)
+      4 -> Raxol.Terminal.ANSI.TextFormatting.set_underline(style)
+      30 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :black)
+      31 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :red)
+      32 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :green)
+      33 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :yellow)
+      34 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :blue)
+      35 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :magenta)
+      36 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :cyan)
+      37 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, :white)
+      39 -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, nil)
+      _ -> style
+    end
+  end
+
+  defp handle_set_scroll_region(params, emulator) do
+    # Debug output
+    IO.puts(
+      "DEBUG: handle_set_scroll_region called with params: #{inspect(params)}"
+    )
+
+    # Parse scroll region parameters (e.g., "2;10")
+    case String.split(params, ";") do
+      [top_str, bottom_str] ->
+        top = String.to_integer(top_str)
+        bottom = String.to_integer(bottom_str)
+        # Convert from 1-based to 0-based indexing
+        result = %{emulator | scroll_region: {top - 1, bottom - 1}}
+
+        IO.puts(
+          "DEBUG: Setting scroll region to: #{inspect(result.scroll_region)}"
+        )
+
+        result
+
+      [""] ->
+        # Empty parameters (e.g., "\e[r") - reset to full viewport
+        result = %{emulator | scroll_region: nil}
+        IO.puts("DEBUG: Resetting scroll region to nil")
+        result
+
+      _ ->
+        IO.puts("DEBUG: No valid scroll region parameters found")
+        emulator
+    end
   end
 
   defp handle_set_mode(params, emulator) do
@@ -810,8 +953,11 @@ defmodule Raxol.Terminal.Emulator do
 
   defp get_mode_update_function(mode_name, value) do
     case Map.fetch(mode_updates(), mode_name) do
-      {:ok, update_fn} -> {:ok, fn mode_manager -> update_fn.(mode_manager, value) end}
-      :error -> :error
+      {:ok, update_fn} ->
+        {:ok, fn mode_manager -> update_fn.(mode_manager, value) end}
+
+      :error ->
+        :error
     end
   end
 
@@ -821,11 +967,21 @@ defmodule Raxol.Terminal.Emulator do
       emulator.alternate_screen_buffer ||
         Raxol.Terminal.ScreenBuffer.new(emulator.width, emulator.height)
 
-    %{emulator | active_buffer_type: :alternate, alternate_screen_buffer: alt_buf}
+    # Reset cursor position to (0, 0) when switching to alternate buffer
+    Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {0, 0})
+
+    %{
+      emulator
+      | active_buffer_type: :alternate,
+        alternate_screen_buffer: alt_buf
+    }
   end
 
   defp handle_screen_buffer_switch(emulator, mode, false)
        when mode in [:alt_screen_buffer, :dec_alt_screen_save] do
+    # Reset cursor position to (0, 0) when switching back to main buffer
+    Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {0, 0})
+
     %{emulator | active_buffer_type: :main}
   end
 
@@ -925,12 +1081,59 @@ defmodule Raxol.Terminal.Emulator do
     set_cursor_position(emulator, x, y)
   end
 
-  def update_style(emulator, style) do
-    %{
-      emulator
-      | style:
-          FormattingManager.update_style(emulator.style || %{}, style).style
-    }
+  def update_style(emulator, style_attrs) when is_map(style_attrs) do
+    current_style = emulator.style || Raxol.Terminal.ANSI.TextFormatting.new()
+
+    # Convert current_style to TextFormatting struct if it's a plain map
+    current_style =
+      if Map.has_key?(current_style, :__struct__) do
+        current_style
+      else
+        Raxol.Terminal.ANSI.TextFormatting.new(current_style)
+      end
+
+    updated_style =
+      Enum.reduce(style_attrs, current_style, &apply_style_attribute/2)
+
+    %{emulator | style: updated_style}
+  end
+
+  defp apply_style_attribute({attr, value}, style) do
+    case get_style_update_function(attr, value) do
+      {:ok, update_fn} -> update_fn.(style)
+      :error -> style
+    end
+  end
+
+  defp get_style_update_function(attr, value) do
+    case Map.fetch(get_style_updates(), {attr, value}) do
+      {:ok, update_fn} -> {:ok, update_fn}
+      :error -> :error
+    end
+  end
+
+  defp get_style_updates do
+    [
+      {{:bold, true}, &Raxol.Terminal.ANSI.TextFormatting.set_bold/1},
+      {{:bold, false}, &Raxol.Terminal.ANSI.TextFormatting.reset_bold/1},
+      {{:faint, true}, &Raxol.Terminal.ANSI.TextFormatting.set_faint/1},
+      {{:italic, true}, &Raxol.Terminal.ANSI.TextFormatting.set_italic/1},
+      {{:italic, false}, &Raxol.Terminal.ANSI.TextFormatting.reset_italic/1},
+      {{:underline, true}, &Raxol.Terminal.ANSI.TextFormatting.set_underline/1},
+      {{:underline, false},
+       &Raxol.Terminal.ANSI.TextFormatting.reset_underline/1},
+      {{:blink, true}, &Raxol.Terminal.ANSI.TextFormatting.set_blink/1},
+      {{:blink, false}, &Raxol.Terminal.ANSI.TextFormatting.reset_blink/1},
+      {{:reverse, true}, &Raxol.Terminal.ANSI.TextFormatting.set_reverse/1},
+      {{:reverse, false}, &Raxol.Terminal.ANSI.TextFormatting.reset_reverse/1},
+      {{:conceal, true}, &Raxol.Terminal.ANSI.TextFormatting.set_conceal/1},
+      {{:conceal, false}, &Raxol.Terminal.ANSI.TextFormatting.reset_conceal/1},
+      {{:crossed_out, true},
+       &Raxol.Terminal.ANSI.TextFormatting.set_strikethrough/1},
+      {{:crossed_out, false},
+       &Raxol.Terminal.ANSI.TextFormatting.reset_strikethrough/1}
+    ]
+    |> Map.new()
   end
 
   def write_to_output(emulator, data) do
@@ -986,12 +1189,12 @@ defmodule Raxol.Terminal.Emulator do
   Gets the cursor struct from the emulator.
   """
   @spec get_cursor_struct(t()) :: Cursor.t()
-  def get_cursor_struct(%__MODULE__{cursor: cursor}) when pid?(cursor) do
-    GenServer.call(cursor, :get_state)
-  end
-
-  def get_cursor_struct(%__MODULE__{cursor: cursor}) when map?(cursor) do
-    cursor
+  def get_cursor_struct(%__MODULE__{cursor: cursor}) do
+    if is_pid(cursor) do
+      GenServer.call(cursor, :get_state)
+    else
+      cursor
+    end
   end
 
   @spec get_mode_manager_struct(t()) :: any()
@@ -1000,14 +1203,13 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Override the delegate functions to handle PIDs properly
-  def get_cursor_position(%__MODULE__{cursor: pid} = emulator)
-      when pid?(pid) do
-    cursor = get_cursor_struct(emulator)
-    cursor.position
-  end
-
-  def get_cursor_position(%__MODULE__{} = emulator) do
-    CursorOperations.get_cursor_position(emulator)
+  def get_cursor_position(%__MODULE__{cursor: cursor} = emulator) do
+    if is_pid(cursor) do
+      cursor_struct = get_cursor_struct(emulator)
+      cursor_struct.position
+    else
+      cursor.position
+    end
   end
 
   def cursor_visible?(%__MODULE__{cursor: pid} = emulator) when pid?(pid) do
@@ -1253,7 +1455,10 @@ defmodule Raxol.Terminal.Emulator do
       # Process each codepoint through the character processor for charset translation
       String.to_charlist(input)
       |> Enum.reduce(emulator, fn codepoint, emu ->
-        Raxol.Terminal.Input.CharacterProcessor.process_character(emu, codepoint)
+        Raxol.Terminal.Input.CharacterProcessor.process_character(
+          emu,
+          codepoint
+        )
       end)
     else
       emulator
@@ -1284,56 +1489,167 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp ansi_parsers do
+    get_parser_functions()
+    |> Enum.map(&Function.capture(__MODULE__, &1, 1))
+  end
+
+  defp get_parser_functions do
     [
-      &parse_osc/1,
-      &parse_dcs/1,
-      &parse_csi_cursor_pos/1,
-      &parse_csi_cursor_up/1,
-      &parse_csi_cursor_down/1,
-      &parse_csi_cursor_forward/1,
-      &parse_csi_cursor_back/1,
-      &parse_csi_cursor_show/1,
-      &parse_csi_cursor_hide/1,
-      &parse_csi_clear_screen/1,
-      &parse_csi_clear_line/1,
-      &parse_csi_set_mode/1,
-      &parse_csi_reset_mode/1,
-      &parse_csi_set_standard_mode/1,
-      &parse_csi_reset_standard_mode/1,
-      &parse_esc_equals/1,
-      &parse_esc_greater/1,
-      &parse_sgr/1,
-      &parse_unknown/1
+      :parse_osc,
+      :parse_dcs,
+      :parse_csi_cursor_pos,
+      :parse_csi_cursor_up,
+      :parse_csi_cursor_down,
+      :parse_csi_cursor_forward,
+      :parse_csi_cursor_back,
+      :parse_csi_cursor_show,
+      :parse_csi_cursor_hide,
+      :parse_csi_clear_screen,
+      :parse_csi_clear_line,
+      :parse_csi_set_scroll_region,
+      :parse_csi_set_mode,
+      :parse_csi_reset_mode,
+      :parse_csi_set_standard_mode,
+      :parse_csi_reset_standard_mode,
+      :parse_esc_equals,
+      :parse_esc_greater,
+      :parse_sgr,
+      :parse_unknown
     ]
   end
 
   defp mode_updates do
-    %{
-      irm: &%{&1 | insert_mode: &2},
-      lnm: &%{&1 | line_feed_mode: &2},
-      decom: &%{&1 | origin_mode: &2},
-      decawm: &%{&1 | auto_wrap: &2},
-      dectcem: &%{&1 | cursor_visible: &2},
-      decscnm: &%{&1 | screen_mode_reverse: &2},
-      decarm: &%{&1 | auto_repeat_mode: &2},
-      decinlm: &%{&1 | interlacing_mode: &2},
-      bracketed_paste: &%{&1 | bracketed_paste_mode: &2},
-      decckm: &%{&1 | cursor_keys_mode: if(&2, do: :application, else: :normal)},
-      deccolm_132: &%{&1 | column_width_mode: if(&2, do: :wide, else: :normal)},
-      deccolm_80: &%{&1 | column_width_mode: if(&2, do: :normal, else: :wide)},
-      dec_alt_screen: &%{&1 | alternate_buffer_active: &2},
-      alt_screen_buffer: &%{&1 | alternate_buffer_active: &2}
-    }
+    get_mode_update_mappings()
+    |> Enum.map(fn {key, func} ->
+      {key, Function.capture(__MODULE__, func, 2)}
+    end)
+    |> Map.new()
+  end
+
+  defp get_mode_update_mappings do
+    [
+      {:irm, :update_insert_mode},
+      {:lnm, :update_line_feed_mode},
+      {:decom, :update_origin_mode},
+      {:decawm, :update_auto_wrap},
+      {:dectcem, :update_cursor_visible},
+      {:decscnm, :update_screen_mode_reverse},
+      {:decarm, :update_auto_repeat_mode},
+      {:decinlm, :update_interlacing_mode},
+      {:bracketed_paste, :update_bracketed_paste_mode},
+      {:decckm, :update_cursor_keys_mode},
+      {:deccolm_132, :update_column_width_132},
+      {:deccolm_80, :update_column_width_80},
+      {:dec_alt_screen, :update_alternate_buffer_active},
+      {:dec_alt_screen_save, :update_alternate_buffer_active},
+      {:alt_screen_buffer, :update_alternate_buffer_active}
+    ]
   end
 
   def update_active_buffer(emulator, new_buffer) do
     case emulator.active_buffer_type do
       :main ->
         %{emulator | main_screen_buffer: new_buffer}
+
       :alternate ->
         %{emulator | alternate_screen_buffer: new_buffer}
+
       _ ->
         %{emulator | main_screen_buffer: new_buffer}
     end
+  end
+
+  def parse_csi_clear_line(<<0x1B, 0x5B, 0x32, 0x4B, remaining::binary>>),
+    do: {:csi_clear_line, remaining, nil}
+
+  def parse_csi_clear_line(_), do: nil
+
+  def parse_csi_set_scroll_region(<<0x1B, 0x5B, remaining::binary>>) do
+    case String.split(remaining, "r", parts: 2) do
+      [params, rest] when binary?(params) ->
+        {:csi_set_scroll_region, params, rest, nil}
+
+      _ ->
+        nil
+    end
+  end
+
+  def parse_csi_set_scroll_region(_), do: nil
+
+  def parse_sgr(<<0x1B, 0x5B, remaining::binary>>) do
+    # Only match if the remaining part contains 'm' and has valid SGR parameters
+    case String.split(remaining, "m", parts: 2) do
+      [params, rest] when binary?(params) and byte_size(params) > 0 ->
+        # Validate that params contains only digits, semicolons, and colons
+        if String.match?(params, ~r/^[\d;:]*$/) do
+          {:sgr, params, rest, nil}
+        else
+          nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  def parse_sgr(_), do: nil
+
+  def parse_unknown(<<0x1B, remaining::binary>>) do
+    # Skip one character after ESC
+    case remaining do
+      <<_char, rest::binary>> -> {:unknown, rest, nil}
+      _ -> nil
+    end
+  end
+
+  def parse_unknown(_), do: nil
+
+  # Implement get_scroll_region directly to return the emulator's scroll_region field
+  def get_scroll_region(%__MODULE__{} = emulator) do
+    emulator.scroll_region
+  end
+
+  # Missing functions that are being called by tests
+  # These should update the mode manager state
+
+  @doc """
+  Updates the insert mode in the mode manager.
+  """
+  @spec update_insert_mode(Raxol.Terminal.ModeManager.t(), boolean()) ::
+          Raxol.Terminal.ModeManager.t()
+  def update_insert_mode(mode_manager, value) do
+    %{mode_manager | insert_mode: value}
+  end
+
+  @doc """
+  Updates the alternate buffer active state in the mode manager.
+  """
+  @spec update_alternate_buffer_active(
+          Raxol.Terminal.ModeManager.t(),
+          boolean()
+        ) :: Raxol.Terminal.ModeManager.t()
+  def update_alternate_buffer_active(mode_manager, value) do
+    %{mode_manager | alternate_buffer_active: value}
+  end
+
+  @doc """
+  Updates the cursor keys mode in the mode manager.
+  """
+  @spec update_cursor_keys_mode(Raxol.Terminal.ModeManager.t(), boolean()) ::
+          Raxol.Terminal.ModeManager.t()
+  def update_cursor_keys_mode(mode_manager, value) do
+    %{
+      mode_manager
+      | cursor_keys_mode: if(value, do: :application, else: :normal)
+    }
+  end
+
+  @doc """
+  Updates the origin mode in the mode manager.
+  """
+  @spec update_origin_mode(Raxol.Terminal.ModeManager.t(), boolean()) ::
+          Raxol.Terminal.ModeManager.t()
+  def update_origin_mode(mode_manager, value) do
+    %{mode_manager | origin_mode: value}
   end
 end
