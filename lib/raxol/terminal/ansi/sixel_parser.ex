@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   import Raxol.Guards
 
   require Raxol.Core.Runtime.Log
+  require Logger
 
   alias Raxol.Terminal.ANSI.SixelPatternMap
   alias Raxol.Terminal.ANSI.SixelPalette
@@ -44,12 +45,13 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   @spec parse(binary(), ParserState.t()) ::
           {:ok, ParserState.t()} | {:error, atom()}
   def parse(data, state) when binary?(data) do
+    Logger.debug("SixelParser: Incoming palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}")
     case data do
       <<>> -> {:ok, state}
-      <<"\eP", rest::binary>> -> handle_dcs_start(rest, state)
+      <<"\eP", rest::binary>> -> handle_dcs_start(rest, %{state | palette: Map.new(state.palette)})
       <<"\e\\", _rest::binary>> -> {:ok, state}
-      <<" ", rest::binary>> -> parse(rest, state)
-      _ -> handle_command(data, state)
+      <<" ", rest::binary>> -> parse(rest, %{state | palette: Map.new(state.palette)})
+      _ -> handle_command(data, %{state | palette: Map.new(state.palette)})
     end
   end
 
@@ -63,22 +65,22 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   defp handle_command(data, state) do
     case data do
       <<"\"", rest::binary>> ->
-        handle_raster_attributes(rest, state)
+        handle_raster_attributes(rest, %{state | palette: Map.new(state.palette)})
 
       <<"#", rest::binary>> ->
-        handle_color_definition(rest, state)
+        handle_color_definition(rest, %{state | palette: Map.new(state.palette)})
 
       <<"!", rest::binary>> ->
-        handle_repeat_command(rest, state)
+        handle_repeat_command(rest, %{state | palette: Map.new(state.palette)})
 
       <<"$", rest::binary>> ->
-        handle_carriage_return(rest, state)
+        handle_carriage_return(rest, %{state | palette: Map.new(state.palette)})
 
       <<"-", rest::binary>> ->
-        handle_new_line(rest, state)
+        handle_new_line(rest, %{state | palette: Map.new(state.palette)})
 
       <<char_byte, remaining_data::binary>> ->
-        handle_data_character(char_byte, remaining_data, state)
+        handle_data_character(char_byte, remaining_data, %{state | palette: Map.new(state.palette)})
     end
   end
 
@@ -117,7 +119,11 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   defp handle_color_definition(rest, state) do
     case consume_integer_params(rest) do
       {:ok, [pc | color_params], remaining_data} ->
-        handle_color_params(pc, color_params, remaining_data, state)
+        if color_params == [] do
+          handle_color_selection([pc], remaining_data, state)
+        else
+          handle_color_params(pc, color_params, remaining_data, state)
+        end
 
       {:ok, params, remaining_data} ->
         handle_color_selection(params, remaining_data, state)
@@ -232,6 +238,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   end
 
   defp handle_data_character(char_byte, remaining_data, state) do
+    Logger.debug("SixelParser: [handle_data_character] BEFORE pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}")
     case SixelPatternMap.get_pattern(char_byte) do
       pattern_int when integer?(pattern_int) ->
         {final_buffer, final_x, final_max_x} =
@@ -244,23 +251,24 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             state.pixel_buffer,
             state.max_x
           )
-
+        Logger.debug("SixelParser: [handle_data_character] AFTER pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}")
         parse(remaining_data, %{
           state
           | x: final_x,
             repeat_count: 1,
             pixel_buffer: final_buffer,
             max_x: final_max_x,
-            max_y: max(state.max_y, state.y + 5)
+            max_y: max(state.max_y, state.y + 5),
+            palette: Map.new(state.palette)
         })
 
       nil ->
         case remaining_data do
           <<"\e\\", _::binary>> ->
-            parse(remaining_data, state)
+            parse(remaining_data, %{state | palette: Map.new(state.palette)})
           _ ->
             if String.contains?(remaining_data, "\e\\") do
-              parse(remaining_data, state)
+              parse(remaining_data, %{state | palette: Map.new(state.palette)})
             else
               {:error, :missing_st}
             end

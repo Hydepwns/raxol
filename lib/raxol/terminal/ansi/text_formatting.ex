@@ -118,6 +118,28 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     strikethrough: 9
   }
 
+  @ansi_color_map %{
+    30 => :black, 31 => :red, 32 => :green, 33 => :yellow,
+    34 => :blue, 35 => :magenta, 36 => :cyan, 37 => :white,
+    40 => :black, 41 => :red, 42 => :green, 43 => :yellow,
+    44 => :blue, 45 => :magenta, 46 => :cyan, 47 => :white
+  }
+
+  @reset_attribute_map %{
+    no_bold: :bold,
+    no_italic: :italic,
+    no_underline: :underline,
+    no_blink: :blink,
+    no_reverse: :reverse,
+    no_conceal: :conceal,
+    no_strikethrough: :strikethrough,
+    no_fraktur: :fraktur,
+    no_double_underline: :double_underline,
+    no_framed: :framed,
+    no_encircled: :encircled,
+    no_overlined: :overlined
+  }
+
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   @doc """
   Creates a new text formatting struct with default values.
@@ -273,50 +295,22 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @spec apply_attribute(text_style(), atom()) :: text_style()
   def apply_attribute(style, attribute) do
     case attribute do
-      :reset ->
-        new()
+      :reset -> new()
+      _ -> handle_reset_attribute(style, attribute)
+    end
+  end
 
-      :no_bold ->
-        %{style | bold: false}
+  defp handle_reset_attribute(style, attribute) do
+    case Map.get(@reset_attribute_map, attribute) do
+      nil -> handle_positive_attribute(style, attribute)
+      field -> %{style | field => false}
+    end
+  end
 
-      :no_italic ->
-        %{style | italic: false}
-
-      :no_underline ->
-        %{style | underline: false}
-
-      :no_blink ->
-        %{style | blink: false}
-
-      :no_reverse ->
-        %{style | reverse: false}
-
-      :no_conceal ->
-        %{style | conceal: false}
-
-      :no_strikethrough ->
-        %{style | strikethrough: false}
-
-      :no_fraktur ->
-        %{style | fraktur: false}
-
-      :no_double_underline ->
-        %{style | double_underline: false}
-
-      :no_framed ->
-        %{style | framed: false}
-
-      :no_encircled ->
-        %{style | encircled: false}
-
-      :no_overlined ->
-        %{style | overlined: false}
-
-      _ ->
-        case Map.get(@attribute_handlers, attribute) do
-          nil -> style
-          handler -> handler.(style)
-        end
+  defp handle_positive_attribute(style, attribute) do
+    case Map.get(@attribute_handlers, attribute) do
+      nil -> style
+      handler -> handler.(style)
     end
   end
 
@@ -534,25 +528,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   """
   @spec ansi_code_to_color_name(integer()) :: atom()
   def ansi_code_to_color_name(code) do
-    case code do
-      30 -> :black
-      31 -> :red
-      32 -> :green
-      33 -> :yellow
-      34 -> :blue
-      35 -> :magenta
-      36 -> :cyan
-      37 -> :white
-      40 -> :black
-      41 -> :red
-      42 -> :green
-      43 -> :yellow
-      44 -> :blue
-      45 -> :magenta
-      46 -> :cyan
-      47 -> :white
-      _ -> nil
-    end
+    Map.get(@ansi_color_map, code)
   end
 
   @doc """
@@ -687,29 +663,27 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   Returns a string of ANSI SGR codes.
   """
   def format_sgr_params(style) do
-    codes =
-      Enum.reduce(@sgr_style_map, [], fn {attr, code}, acc ->
-        if Map.get(style, attr), do: [code] ++ acc, else: acc
-      end)
+    style_codes = build_style_codes(style)
+    fg_codes = build_foreground_codes(style.foreground)
+    bg_codes = build_background_codes(style.background)
 
-    # Add foreground color if set
-    codes =
-      case style.foreground do
-        nil -> codes
-        color when is_atom(color) -> codes ++ [30 + color_to_code(color)]
-        _ -> codes
-      end
-
-    # Add background color if set
-    codes =
-      case style.background do
-        nil -> codes
-        color when is_atom(color) -> codes ++ [40 + color_to_code(color)]
-        _ -> codes
-      end
-
-    Enum.join(codes, ";")
+    (style_codes ++ fg_codes ++ bg_codes)
+    |> Enum.join(";")
   end
+
+  defp build_style_codes(style) do
+    Enum.reduce(@sgr_style_map, [], fn {attr, code}, acc ->
+      if Map.get(style, attr), do: [code] ++ acc, else: acc
+    end)
+  end
+
+  defp build_foreground_codes(nil), do: []
+  defp build_foreground_codes(color) when is_atom(color), do: [30 + color_to_code(color)]
+  defp build_foreground_codes(_), do: []
+
+  defp build_background_codes(nil), do: []
+  defp build_background_codes(color) when is_atom(color), do: [40 + color_to_code(color)]
+  defp build_background_codes(_), do: []
 
   defp color_to_code(:black), do: 0
   defp color_to_code(:red), do: 1
@@ -746,45 +720,12 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   defp handle_integer_param(code, style) do
     cond do
       # Basic attributes
-      code == 1 ->
-        %{style | bold: true}
-
-      code == 2 ->
-        %{style | faint: true}
-
-      code == 3 ->
-        %{style | italic: true}
-
-      code == 4 ->
-        %{style | underline: true}
-
-      code == 5 ->
-        %{style | blink: true}
-
-      code == 7 ->
-        %{style | reverse: true}
-
-      code == 8 ->
-        %{style | conceal: true}
-
-      code == 9 ->
-        %{style | strikethrough: true}
+      code in [1, 2, 3, 4, 5, 7, 8, 9] ->
+        handle_basic_attribute(code, style)
 
       # Advanced attributes
-      code == 51 ->
-        %{style | framed: true}
-
-      code == 52 ->
-        %{style | encircled: true}
-
-      code == 53 ->
-        %{style | overlined: true}
-
-      code == 54 ->
-        %{style | framed: false, encircled: false}
-
-      code == 55 ->
-        %{style | overlined: false}
+      code in [51, 52, 53, 54, 55] ->
+        handle_advanced_attribute(code, style)
 
       # Colors
       code in [30, 31, 32, 33, 34, 35, 36, 37] ->
@@ -801,6 +742,29 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
       true ->
         style
+    end
+  end
+
+  defp handle_basic_attribute(code, style) do
+    case code do
+      1 -> %{style | bold: true}
+      2 -> %{style | faint: true}
+      3 -> %{style | italic: true}
+      4 -> %{style | underline: true}
+      5 -> %{style | blink: true}
+      7 -> %{style | reverse: true}
+      8 -> %{style | conceal: true}
+      9 -> %{style | strikethrough: true}
+    end
+  end
+
+  defp handle_advanced_attribute(code, style) do
+    case code do
+      51 -> %{style | framed: true}
+      52 -> %{style | encircled: true}
+      53 -> %{style | overlined: true}
+      54 -> %{style | framed: false, encircled: false}
+      55 -> %{style | overlined: false}
     end
   end
 
@@ -823,5 +787,53 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   defp handle_tuple_param(_, style) do
     style
+  end
+
+  @doc """
+  Resets conceal text mode.
+  """
+  @spec reset_conceal(text_style()) :: text_style()
+  def reset_conceal(style) do
+    %{style | conceal: false}
+  end
+
+  @doc """
+  Resets strikethrough text mode.
+  """
+  @spec reset_strikethrough(text_style()) :: text_style()
+  def reset_strikethrough(style) do
+    %{style | strikethrough: false}
+  end
+
+  @doc """
+  Resets fraktur text mode.
+  """
+  @spec reset_fraktur(text_style()) :: text_style()
+  def reset_fraktur(style) do
+    %{style | fraktur: false}
+  end
+
+  @doc """
+  Resets double underline text mode.
+  """
+  @spec reset_double_underline(text_style()) :: text_style()
+  def reset_double_underline(style) do
+    %{style | double_underline: false}
+  end
+
+  @doc """
+  Resets framed text mode.
+  """
+  @spec reset_framed(text_style()) :: text_style()
+  def reset_framed(style) do
+    %{style | framed: false}
+  end
+
+  @doc """
+  Resets encircled text mode.
+  """
+  @spec reset_encircled(text_style()) :: text_style()
+  def reset_encircled(style) do
+    %{style | encircled: false}
   end
 end
