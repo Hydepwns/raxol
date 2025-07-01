@@ -157,6 +157,9 @@ defmodule Raxol.Terminal.ModeManager do
       :deccolm_132 -> state.column_width_mode == :wide
       :deccolm_80 -> state.column_width_mode == :normal
       :dec_alt_screen -> state.alternate_buffer_active
+      :dec_alt_screen_save ->
+        IO.puts("DEBUG: mode_enabled? :dec_alt_screen_save = #{inspect(state.alternate_buffer_active)}")
+        state.alternate_buffer_active
       :alt_screen_buffer -> state.alternate_buffer_active
       _ -> false
     end
@@ -236,6 +239,9 @@ defmodule Raxol.Terminal.ModeManager do
       :deccolm_132 -> %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
       :deccolm_80 -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
       :dec_alt_screen -> %{mode_manager | alternate_buffer_active: value}
+      :dec_alt_screen_save ->
+        IO.puts("DEBUG: update_mode_manager_state :dec_alt_screen_save set to #{inspect(value)}")
+        %{mode_manager | alternate_buffer_active: value}
       :alt_screen_buffer -> %{mode_manager | alternate_buffer_active: value}
       _ -> mode_manager
     end

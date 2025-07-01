@@ -56,10 +56,14 @@ defmodule Raxol.Terminal.Split.Sync do
       timestamp: DateTime.utc_now()
     }
 
-    # Notify subscribers
-    state.subscribers
-    |> Map.values()
-    |> Enum.each(fn callback -> callback.(event) end)
+    # Notify subscribers for this specific split_id
+    case Map.get(state.subscribers, split_id) do
+      nil -> :ok
+      callbacks when is_list(callbacks) ->
+        Enum.each(callbacks, fn callback -> callback.(event) end)
+      callback when is_function(callback) ->
+        callback.(event)
+    end
 
     # Update event history
     new_history = [event | state.event_history] |> Enum.take(100)
@@ -68,7 +72,9 @@ defmodule Raxol.Terminal.Split.Sync do
   end
 
   def handle_call({:subscribe, split_id, callback}, _from, state) do
-    new_subscribers = Map.put(state.subscribers, split_id, callback)
+    current_callbacks = Map.get(state.subscribers, split_id, [])
+    new_callbacks = [callback | current_callbacks]
+    new_subscribers = Map.put(state.subscribers, split_id, new_callbacks)
     {:reply, :ok, %{state | subscribers: new_subscribers}}
   end
 

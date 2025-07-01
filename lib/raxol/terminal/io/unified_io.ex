@@ -301,8 +301,14 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   def handle_call({:set_config_value, path, value}, _from, state) do
     # Ensure we have a config to work with
     config = state.config || get_default_config()
+
+    # Ensure the path structure exists before using put_in
+    config = ensure_config_path(config, path)
+
     new_config = put_in(config, path, value)
-    new_state = update_io_config(state, new_config)
+    # Deep merge with defaults to ensure all required keys are present
+    merged_config = deep_merge(get_default_config(), new_config)
+    new_state = update_io_config(state, merged_config)
     {:reply, :ok, new_state}
   end
 
@@ -671,5 +677,23 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
       "S" -> {:ok, :f4}
       _ -> :invalid
     end
+  end
+
+  # Private helper to ensure config path exists
+  defp ensure_config_path(config, path) do
+    update_in(config, Enum.map(path, &Access.key(&1, %{})), fn
+      nil -> %{}
+      val -> val
+    end)
+  end
+
+  # Deep merge two maps, recursively merging nested maps
+  defp deep_merge(map1, map2) do
+    Map.merge(map1, map2, fn _key, val1, val2 ->
+      cond do
+        is_map(val1) and is_map(val2) -> deep_merge(val1, val2)
+        true -> val2
+      end
+    end)
   end
 end

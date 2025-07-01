@@ -95,14 +95,21 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       end
 
     # Use the existing helper function to calculate positions
-    calculate_write_and_cursor_position(
-      current_cursor_x,
-      current_cursor_y,
-      buffer_width,
-      char_width,
-      emulator.last_col_exceeded,
-      auto_wrap_mode
+    {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded} =
+      calculate_write_and_cursor_position(
+        current_cursor_x,
+        current_cursor_y,
+        buffer_width,
+        char_width,
+        emulator.last_col_exceeded,
+        auto_wrap_mode
+      )
+
+    Raxol.Core.Runtime.Log.debug(
+      "Cursor positions - Current: {#{current_cursor_x}, #{current_cursor_y}}, Write: {#{write_x}, #{write_y}}, Next: {#{next_cursor_x}, #{next_cursor_y}}"
     )
+
+    {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
   end
 
   defp write_character(
@@ -150,7 +157,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     # Update cursor position by calling the cursor manager
     Raxol.Terminal.Cursor.Manager.set_position(
       emulator.cursor,
-      {next_cursor_y, next_cursor_x}
+      {next_cursor_x, next_cursor_y}
     )
 
     %{

@@ -51,7 +51,8 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
       decinlm: &handle_interlace_mode/2,
       dectcem: &handle_cursor_visibility/2,
       focus_events: &handle_focus_events/2,
-      bracketed_paste: &handle_bracketed_paste/2
+      bracketed_paste: &handle_bracketed_paste/2,
+      dec_alt_screen_save: &handle_alt_screen_save/2
     }
 
     Map.fetch(handlers, mode_name)
@@ -130,6 +131,13 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   defp handle_bracketed_paste(value, emulator) do
     {:ok, %{emulator | mode_manager: %{emulator.mode_manager | bracketed_paste_mode: value}}}
+  end
+
+  defp handle_alt_screen_save(value, emulator) do
+    IO.puts("DEBUG: DECPrivateHandler.handle_alt_screen_save called with value=#{inspect(value)}")
+    result = {:ok, %{emulator | mode_manager: %{emulator.mode_manager | alternate_buffer_active: value}}}
+    IO.puts("DEBUG: DECPrivateHandler.handle_alt_screen_save result: #{inspect(result)}")
+    result
   end
 
   defp resize_buffer(buffer, new_width) do

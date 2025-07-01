@@ -404,16 +404,19 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
     # Clear from cursor to end of line
     line = Enum.at(buffer.cells, y, [])
+    empty_cell = Raxol.Terminal.Cell.new()
 
-    cleared_line =
-      List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+    # Preserve existing cells before cursor, clear from cursor onwards
+    preserved_cells = Enum.take(line, x)
+    cleared_cells = List.duplicate(empty_cell, buffer.width - x)
+    cleared_line = preserved_cells ++ cleared_cells
 
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
 
     # Clear remaining lines
     new_cells =
-      Enum.reduce((y + 1)..(bottom - 1), new_cells, fn line_num, acc ->
-        List.replace_at(acc, line_num, List.duplicate(%{}, buffer.width))
+      Enum.reduce((y + 1)..bottom, new_cells, fn line_num, acc ->
+        List.replace_at(acc, line_num, List.duplicate(empty_cell, buffer.width))
       end)
 
     %{buffer | cells: new_cells}
@@ -423,13 +426,14 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
     # Clear from start of line to cursor
     line = Enum.at(buffer.cells, y, [])
-    cleared_line = List.duplicate(%{}, x + 1) ++ Enum.drop(line, x + 1)
+    empty_cell = Raxol.Terminal.Cell.new()
+    cleared_line = List.duplicate(empty_cell, x + 1) ++ Enum.drop(line, x + 1)
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
 
     # Clear previous lines
     new_cells =
       Enum.reduce(top..(y - 1), new_cells, fn line_num, acc ->
-        List.replace_at(acc, line_num, List.duplicate(%{}, buffer.width))
+        List.replace_at(acc, line_num, List.duplicate(empty_cell, buffer.width))
       end)
 
     %{buffer | cells: new_cells}
@@ -437,9 +441,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_all(buffer) do
+    empty_cell = Raxol.Terminal.Cell.new()
     %{
       buffer
-      | cells: List.duplicate(List.duplicate(%{}, buffer.width), buffer.height),
+      | cells: List.duplicate(List.duplicate(empty_cell, buffer.width), buffer.height),
         scrollback: []
     }
   end
@@ -610,9 +615,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   defp erase_line_to_end(buffer, x, y) do
     line = Enum.at(buffer.cells, y, [])
+    empty_cell = Raxol.Terminal.Cell.new()
 
     cleared_line =
-      List.duplicate(%{}, x) ++ List.duplicate(%{}, buffer.width - x)
+      List.duplicate(empty_cell, x) ++ List.duplicate(empty_cell, buffer.width - x)
 
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
     %{buffer | cells: new_cells}
@@ -620,7 +626,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   defp erase_line_to_beginning(buffer, x, y) do
     line = Enum.at(buffer.cells, y, [])
-    cleared_line = List.duplicate(%{}, x + 1) ++ Enum.drop(line, x + 1)
+    empty_cell = Raxol.Terminal.Cell.new()
+    cleared_line = List.duplicate(empty_cell, x + 1) ++ Enum.drop(line, x + 1)
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
     %{buffer | cells: new_cells}
   end

@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
       component_type: component_type,
       state: state,
       metadata: %{
-        version: System.monotonic_time(),
+        version: Map.get(opts_map, :version, System.monotonic_time()),
         timestamp: System.system_time(),
         source: Map.get(opts_map, :source, "unknown"),
         consistency:
@@ -182,13 +182,14 @@ defmodule Raxol.Terminal.Sync.Protocol do
     end
   end
 
-  defp handle_valid_conflict(message, _current_state) do
-    case resolve_conflict(message.states.current, message.states.incoming) do
+  defp handle_valid_conflict(message, current_state) do
+    # Compare incoming state with current state
+    case resolve_conflict(message.states.incoming, current_state) do
       :accept ->
         {:ok, message.states.incoming}
 
       :reject ->
-        {:ok, message.states.current}
+        {:ok, current_state}
 
       :conflict ->
         {:error, :unresolved_conflict}
@@ -223,19 +224,28 @@ defmodule Raxol.Terminal.Sync.Protocol do
         :reject
 
       _ ->
+        # Both eventual consistency
         if message_metadata.version > current_metadata.version do
           :accept
         else
-          :conflict
+          if message_metadata.version == current_metadata.version do
+            :conflict
+          else
+            :reject
+          end
         end
     end
   end
 
   defp extract_metadata(state) do
     cond do
-      # If state has metadata field, use it
+      # If state has metadata field, use it, but ensure :consistency is present
       Map.has_key?(state, :metadata) ->
-        state.metadata
+        meta = state.metadata
+        %{
+          version: Map.get(meta, :version, 0),
+          consistency: Map.get(meta, :consistency, :eventual)
+        }
 
       # If state has version field directly, create metadata
       Map.has_key?(state, :version) ->
