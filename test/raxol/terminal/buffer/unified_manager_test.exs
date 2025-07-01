@@ -6,48 +6,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   alias Raxol.Terminal.Cache.System
 
   setup do
-    # Stop any existing UnifiedManager process
-    case GenServer.whereis(UnifiedManager) do
-      nil -> :ok
-      pid -> GenServer.stop(pid)
-    end
-
-    # Stop any existing cache system
-    case GenServer.whereis(Raxol.Terminal.Cache.System) do
-      nil -> :ok
-      pid -> GenServer.stop(pid)
-    end
-
-    # Start the cache system first
-    {:ok, _cache_pid} = Raxol.Terminal.Cache.System.start_link(
-      max_size: 1024 * 1024,
-      default_ttl: 3600,
-      eviction_policy: :lru,
-      namespace_configs: %{
-        buffer: %{max_size: 512 * 1024}
-      }
-    )
-
-    # Start the buffer manager with a reasonable height for all tests
-    {:ok, pid} = UnifiedManager.start_link(width: 80, height: 50)
+    # Start the buffer manager with supervision
+    # Cache.System is already started globally in Terminal.Supervisor
+    {:ok, pid} = start_supervised({UnifiedManager, [width: 80, height: 50]})
     %{pid: pid}
-  end
-
-  # Clean up processes after each test
-  setup do
-    on_exit(fn ->
-      # Stop the buffer manager
-      case GenServer.whereis(UnifiedManager) do
-        nil -> :ok
-        pid -> GenServer.stop(pid)
-      end
-
-      # Stop the cache system
-      case GenServer.whereis(Raxol.Terminal.Cache.System) do
-        nil -> :ok
-        pid -> GenServer.stop(pid)
-      end
-    end)
   end
 
   describe "new/4" do

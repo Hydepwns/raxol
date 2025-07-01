@@ -424,6 +424,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
+    IO.puts("DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}")
+
     # Clear from start of line to cursor
     line = Enum.at(buffer.cells, y, [])
     empty_cell = Raxol.Terminal.Cell.new()
@@ -433,6 +435,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
     # Clear previous lines
     new_cells =
       Enum.reduce(top..(y - 1), new_cells, fn line_num, acc ->
+        IO.puts("DEBUG: Clearing line #{line_num}")
         List.replace_at(acc, line_num, List.duplicate(empty_cell, buffer.width))
       end)
 
@@ -854,13 +857,15 @@ defmodule Raxol.Terminal.ScreenBuffer do
     # Fill the region with the specified cell
     new_cells =
       Enum.reduce(y..(y + height - 1), buffer.cells, fn row_y, acc_cells ->
-        List.update_at(acc_cells, row_y, fn row ->
-          Enum.reduce(x..(x + width - 1), row, fn col_x, acc_row ->
-            List.replace_at(acc_row, col_x, cell)
-          end)
-        end)
+        List.update_at(acc_cells, row_y, &fill_row(&1, x, width, cell))
       end)
 
     %{buffer | cells: new_cells}
+  end
+
+  defp fill_row(row, x, width, cell) do
+    Enum.reduce(x..(x + width - 1), row, fn col_x, acc_row ->
+      List.replace_at(acc_row, col_x, cell)
+    end)
   end
 end
