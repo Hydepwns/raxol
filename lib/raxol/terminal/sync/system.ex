@@ -31,10 +31,15 @@ defmodule Raxol.Terminal.Sync.System do
 
   # Client API
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = if Mix.env() == :test do
+      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+    else
+      Keyword.get(opts, :name, __MODULE__)
+    end
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  def sync(sync_id, key, value, opts \\ []) do
+    def sync(sync_id, key, value, opts \\ []) do
     require Logger
     Logger.debug("[System] sync called: sync_id=#{sync_id}, key=#{key}, value=#{inspect(value)}, opts=#{inspect(opts)}")
     GenServer.call(__MODULE__, {:sync, sync_id, key, value, opts})

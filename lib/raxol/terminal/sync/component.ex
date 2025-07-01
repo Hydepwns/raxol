@@ -9,7 +9,9 @@ defmodule Raxol.Terminal.Sync.Component do
     :state,
     :version,
     :timestamp,
-    :metadata
+    :metadata,
+    :sync_count,
+    :conflict_count
   ]
 
   @type t :: %__MODULE__{
@@ -18,6 +20,8 @@ defmodule Raxol.Terminal.Sync.Component do
           state: term(),
           version: integer(),
           timestamp: integer(),
-          metadata: map()
+          metadata: map(),
+          sync_count: non_neg_integer(),
+          conflict_count: non_neg_integer()
         }
 end
