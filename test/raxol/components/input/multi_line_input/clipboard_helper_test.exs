@@ -95,7 +95,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
     # extract the start and end positions
     {selection_start_pos, selection_end_pos} =
       case selection_range do
-        nil -> {nil, nil}
+        nil ->
+          {nil, nil}
+
         {{start_row, start_col}, {end_row, end_col}} ->
           {{start_row, start_col}, {end_row, end_col}}
       end
