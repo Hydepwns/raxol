@@ -38,8 +38,19 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     * `:timeout` - Default synchronization timeout in milliseconds
     * `:retry_count` - Default number of retry attempts
   """
+
+  # Helper function to get the process name
+  defp process_name(pid \\ __MODULE__) when is_pid(pid), do: pid
+  defp process_name(name) when is_atom(name), do: name
+  defp process_name(_), do: __MODULE__
+
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = if Mix.env() == :test do
+      Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+    else
+      opts[:name] || __MODULE__
+    end
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -53,8 +64,8 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
       * `:timeout` - Synchronization timeout
       * `:retry_count` - Number of retry attempts
   """
-  def create_sync(type, opts \\ []) do
-    GenServer.call(__MODULE__, {:create_sync, type, opts})
+  def create_sync(type, opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:create_sync, type, opts})
   end
 
   @doc """
@@ -67,8 +78,8 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
       * `:version` - Current version of the data
       * `:metadata` - Additional metadata
   """
-  def sync(sync_id, data, opts \\ []) do
-    GenServer.call(__MODULE__, {:sync, sync_id, data, opts})
+  def sync(sync_id, data, opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:sync, sync_id, data, opts})
   end
 
   @doc """
@@ -77,8 +88,8 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   ## Parameters
     * `sync_id` - The synchronization context ID
   """
-  def get_sync_state(sync_id) do
-    GenServer.call(__MODULE__, {:get_sync_state, sync_id})
+  def get_sync_state(sync_id, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:get_sync_state, sync_id})
   end
 
   @doc """
@@ -90,8 +101,8 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     * `opts` - Resolution options
       * `:strategy` - Override the default conflict resolution strategy
   """
-  def resolve_conflicts(sync_id, conflicts, opts \\ []) do
-    GenServer.call(__MODULE__, {:resolve_conflicts, sync_id, conflicts, opts})
+  def resolve_conflicts(sync_id, conflicts, opts \\ [], process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:resolve_conflicts, sync_id, conflicts, opts})
   end
 
   @doc """
@@ -100,8 +111,8 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   ## Parameters
     * `sync_id` - The synchronization context ID
   """
-  def cleanup(sync_id) do
-    GenServer.call(__MODULE__, {:cleanup, sync_id})
+  def cleanup(sync_id, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:cleanup, sync_id})
   end
 
   # Server Callbacks
