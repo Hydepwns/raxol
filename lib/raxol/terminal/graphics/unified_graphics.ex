@@ -24,7 +24,10 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    gen_server_opts = Keyword.delete(opts, :name)
+    GenServer.start_link(__MODULE__, gen_server_opts, name: name)
   end
 
   @doc """
@@ -212,12 +215,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
         # Only update if data has changed
         if data != graphics_state.buffer do
           # Use double buffering for smooth rendering
-          new_buffer =
-            if graphics_state.back_buffer == nil do
-              data
-            else
-              graphics_state.back_buffer
-            end
+          new_buffer = get_new_buffer(graphics_state.back_buffer, data)
 
           new_graphics_state = %{
             graphics_state
@@ -287,15 +285,11 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
         new_graphics = Map.delete(state.graphics, graphics_id)
 
         # Update active graphics if needed
-        new_active_graphics =
-          if state.active_graphics == graphics_id do
-            case Map.keys(new_graphics) do
-              [] -> nil
-              [first_graphics | _] -> first_graphics
-            end
-          else
-            state.active_graphics
-          end
+        new_active_graphics = update_active_graphics_after_close(
+          state.active_graphics,
+          graphics_id,
+          new_graphics
+        )
 
         new_state = %{
           state
@@ -319,6 +313,25 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   end
 
   # Private Functions
+  defp get_new_buffer(back_buffer, data) do
+    if back_buffer == nil do
+      data
+    else
+      back_buffer
+    end
+  end
+
+  defp update_active_graphics_after_close(active_graphics, closed_graphics_id, new_graphics) do
+    if active_graphics == closed_graphics_id do
+      case Map.keys(new_graphics) do
+        [] -> nil
+        [first_graphics | _] -> first_graphics
+      end
+    else
+      active_graphics
+    end
+  end
+
   defp default_config do
     %{
       max_graphics: 10,

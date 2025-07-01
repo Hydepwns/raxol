@@ -25,7 +25,9 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
 
   # Client API
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -193,7 +195,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   end
 
   # Private Functions
-  defp do_load_theme(path, opts, state) do
+  defp do_load_theme(path, opts, _state) do
     with {:ok, theme_id} <- generate_theme_id(path),
          {:ok, theme_state} <- load_theme_state(path, opts),
          :ok <- validate_theme(theme_state) do
@@ -307,35 +309,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     {:ok, :crypto.hash(:sha256, path) |> Base.encode16()}
   end
 
-  defp load_theme_state(path, opts) do
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, theme_data} ->
-            theme_state = %{
-              # Will be set by generate_theme_id
-              id: nil,
-              name: theme_data["name"],
-              version: theme_data["version"],
-              description: theme_data["description"],
-              author: theme_data["author"],
-              colors: theme_data["colors"],
-              font: theme_data["font"],
-              cursor: theme_data["cursor"],
-              padding: theme_data["padding"],
-              status: :active,
-              error: nil
-            }
-
-            {:ok, theme_state}
-
-          {:error, reason} ->
-            {:error, {:invalid_theme_format, reason}}
-        end
-
-      {:error, reason} ->
-        {:error, {:file_read_error, reason}}
-    end
+  defp load_theme_state(path, _opts) do
+    parse_theme_file(path)
   end
 
   defp validate_theme(theme_state) do
@@ -364,7 +339,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  defp cleanup_theme(theme_state) do
+  defp cleanup_theme(_theme_state) do
     # In a real implementation, this would clean up any resources used by the theme
     :ok
   end
@@ -381,30 +356,34 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   end
 
   defp load_themes_from_paths(paths) do
-    Enum.each(paths, fn path ->
-      case File.ls(path) do
-        {:ok, files} ->
-          Enum.each(files, fn file ->
-            full_path = Path.join(path, file)
-
-            case File.dir?(full_path) do
-              true -> load_theme_from_directory(full_path)
-              false -> load_theme_from_file(full_path)
-            end
-          end)
-
-        {:error, reason} ->
-          Logger.error("Failed to list theme directory #{path}: #{reason}")
-      end
-    end)
+    Enum.each(paths, &load_themes_from_path/1)
   end
 
-  defp load_theme_from_directory(path) do
+  defp load_themes_from_path(path) do
+    case File.ls(path) do
+      {:ok, files} ->
+        Enum.each(files, &load_theme_from_path(path, &1))
+
+      {:error, reason} ->
+        Logger.error("Failed to list theme directory #{path}: #{reason}")
+    end
+  end
+
+  defp load_theme_from_path(base_path, file) do
+    full_path = Path.join(base_path, file)
+
+    case File.dir?(full_path) do
+      true -> load_theme_from_directory(full_path)
+      false -> load_theme_from_file(full_path)
+    end
+  end
+
+  defp load_theme_from_directory(_path) do
     # Implementation for loading theme from directory
     :ok
   end
 
-  defp load_theme_from_file(path) do
+  defp load_theme_from_file(_path) do
     # Implementation for loading theme from file
     :ok
   end
@@ -423,26 +402,15 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   end
 
   defp import_theme_from_file(path) do
+    parse_theme_file(path)
+  end
+
+  defp parse_theme_file(path) do
     case File.read(path) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, theme_data} ->
-            theme_state = %{
-              # Will be set by generate_theme_id
-              id: nil,
-              name: theme_data["name"],
-              version: theme_data["version"],
-              description: theme_data["description"],
-              author: theme_data["author"],
-              colors: theme_data["colors"],
-              font: theme_data["font"],
-              cursor: theme_data["cursor"],
-              padding: theme_data["padding"],
-              status: :active,
-              error: nil
-            }
-
-            {:ok, theme_state}
+            {:ok, build_theme_state(theme_data)}
 
           {:error, reason} ->
             {:error, {:invalid_theme_format, reason}}
@@ -451,5 +419,22 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
       {:error, reason} ->
         {:error, {:file_read_error, reason}}
     end
+  end
+
+  defp build_theme_state(theme_data) do
+    %{
+      # Will be set by generate_theme_id
+      id: nil,
+      name: theme_data["name"],
+      version: theme_data["version"],
+      description: theme_data["description"],
+      author: theme_data["author"],
+      colors: theme_data["colors"],
+      font: theme_data["font"],
+      cursor: theme_data["cursor"],
+      padding: theme_data["padding"],
+      status: :active,
+      error: nil
+    }
   end
 end

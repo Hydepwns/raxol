@@ -7,8 +7,6 @@ defmodule Raxol.Terminal.Plugin.Manager do
   - Plugin configuration and state management
   """
 
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-
   @type plugin :: %{
           name: String.t(),
           version: String.t(),

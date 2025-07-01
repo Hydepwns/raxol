@@ -9,24 +9,32 @@ defmodule Raxol.Terminal.Split.Manager do
 
   # Client API
 
+  # Helper function to get the process name
+  defp process_name(pid_or_name \\ __MODULE__)
+  defp process_name(pid) when is_pid(pid), do: pid
+  defp process_name(name) when is_atom(name), do: name
+  defp process_name(_), do: __MODULE__
+
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  def create_split(opts \\ %{}) do
-    GenServer.call(__MODULE__, {:create_split, opts})
+  def create_split(opts \\ %{}, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:create_split, opts})
   end
 
-  def resize_split(split_id, dimensions) do
-    GenServer.call(__MODULE__, {:resize_split, split_id, dimensions})
+  def resize_split(split_id, dimensions, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:resize_split, split_id, dimensions})
   end
 
-  def navigate_to_split(split_id) do
-    GenServer.call(__MODULE__, {:navigate_to_split, split_id})
+  def navigate_to_split(split_id, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:navigate_to_split, split_id})
   end
 
-  def list_splits do
-    GenServer.call(__MODULE__, :list_splits)
+  def list_splits(process \\ __MODULE__) do
+    GenServer.call(process_name(process), :list_splits)
   end
 
   # Server Callbacks

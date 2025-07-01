@@ -134,78 +134,86 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   # Client API
 
+  # Helper function to get the process name
+  defp process_name(pid_or_name \\ __MODULE__)
+  defp process_name(pid) when is_pid(pid), do: pid
+  defp process_name(name) when is_atom(name), do: name
+  defp process_name(_), do: __MODULE__
+
   @doc """
   Starts the unified IO system.
   """
   def start_link(opts \\ %{}) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
   Initializes the terminal IO system.
   """
-  def init_terminal(width, height, config) do
-    GenServer.call(__MODULE__, {:init_terminal, width, height, config})
+  def init_terminal(width, height, config, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:init_terminal, width, height, config})
   end
 
   @doc """
   Processes an input event.
   """
-  def process_input(event) do
-    GenServer.call(__MODULE__, {:process_input, event})
+  def process_input(event, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:process_input, event})
   end
 
   @doc """
   Processes output data.
   """
-  def process_output(data) do
-    GenServer.call(__MODULE__, {:process_output, data})
+  def process_output(data, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:process_output, data})
   end
 
   @doc """
   Updates the IO configuration.
   """
-  def update_config(config) do
-    GenServer.call(__MODULE__, {:update_config, config})
+  def update_config(config, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:update_config, config})
   end
 
   @doc """
   Sets a specific configuration value.
   """
-  def set_config_value(path, value) do
-    GenServer.call(__MODULE__, {:set_config_value, path, value})
+  def set_config_value(path, value, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:set_config_value, path, value})
   end
 
   @doc """
   Resets the configuration to defaults.
   """
-  def reset_config do
-    GenServer.call(__MODULE__, :reset_config)
+  def reset_config(process \\ __MODULE__) do
+    GenServer.call(process_name(process), :reset_config)
   end
 
   @doc """
   Resizes the terminal.
   """
-  def resize(width, height) do
-    GenServer.call(__MODULE__, {:resize, width, height})
+  def resize(width, height, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:resize, width, height})
   end
 
   @doc """
   Sets cursor visibility.
   """
-  def set_cursor_visibility(visible) do
-    GenServer.call(__MODULE__, {:set_cursor_visibility, visible})
+  def set_cursor_visibility(visible, process \\ __MODULE__) do
+    GenServer.call(process_name(process), {:set_cursor_visibility, visible})
   end
 
   @doc """
   Cleans up the I/O manager.
   """
-  def cleanup(_io) do
+  def cleanup(_io, process \\ __MODULE__) do
     # Stop the renderer
     UnifiedRenderer.shutdown_terminal()
 
     # Reset the state
-    GenServer.call(__MODULE__, :cleanup)
+    GenServer.call(process_name(process), :cleanup)
   end
 
   # Server Callbacks
@@ -455,46 +463,9 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     # Ensure we have a valid config
     config = config || get_default_config()
 
-    # Initialize components if they don't exist yet
+    # Initialize or update components
     {buffer_manager, scroll_buffer, renderer, command_history} =
-      if state.buffer_manager do
-        # Components already exist, update them
-        {:ok, new_buffer_manager} =
-          UnifiedManager.update_config(state.buffer_manager, config)
-
-        new_scroll_buffer =
-          UnifiedScroll.set_max_height(
-            state.scroll_buffer,
-            config.scrollback_limit
-          )
-
-        UnifiedRenderer.update_config(config.rendering)
-
-        new_command_history =
-          History.update_config(state.command_history, config)
-
-        {new_buffer_manager, new_scroll_buffer, state.renderer,
-         new_command_history}
-      else
-        # Initialize components for the first time
-        {:ok, new_buffer_manager} =
-          UnifiedManager.start_link([
-            width: config.width || 80,
-            height: config.height || 24,
-            scrollback_limit: config.scrollback_limit || 1000,
-            memory_limit: config.memory_limit || 50 * 1024 * 1024
-          ])
-
-        new_scroll_buffer = UnifiedScroll.new(config.scrollback_limit || 1000)
-
-        {:ok, new_renderer} =
-          UnifiedRenderer.start_link(config.rendering || %{})
-
-        new_command_history = History.new(config.command_history_limit || 1000)
-
-        {new_buffer_manager, new_scroll_buffer, new_renderer,
-         new_command_history}
-      end
+      initialize_or_update_components(state, config)
 
     %{
       state
@@ -504,6 +475,38 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
         command_history: command_history,
         config: config
     }
+  end
+
+  defp initialize_or_update_components(state, config) do
+    if state.buffer_manager do
+      update_existing_components(state, config)
+    else
+      initialize_new_components(config)
+    end
+  end
+
+  defp update_existing_components(state, config) do
+    {:ok, new_buffer_manager} = UnifiedManager.update_config(state.buffer_manager, config)
+    new_scroll_buffer = UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
+    UnifiedRenderer.update_config(config.rendering)
+    new_command_history = History.update_config(state.command_history, config)
+
+    {new_buffer_manager, new_scroll_buffer, state.renderer, new_command_history}
+  end
+
+  defp initialize_new_components(config) do
+    {:ok, new_buffer_manager} = UnifiedManager.start_link([
+      width: config.width || 80,
+      height: config.height || 24,
+      scrollback_limit: config.scrollback_limit || 1000,
+      memory_limit: config.memory_limit || 50 * 1024 * 1024
+    ])
+
+    new_scroll_buffer = UnifiedScroll.new(config.scrollback_limit || 1000)
+    {:ok, new_renderer} = UnifiedRenderer.start_link(config.rendering || %{})
+    new_command_history = History.new(config.command_history_limit || 1000)
+
+    {new_buffer_manager, new_scroll_buffer, new_renderer, new_command_history}
   end
 
   defp handle_resize(state, width, height) do
@@ -690,9 +693,10 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   # Deep merge two maps, recursively merging nested maps
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
-      cond do
-        is_map(val1) and is_map(val2) -> deep_merge(val1, val2)
-        true -> val2
+      if is_map(val1) and is_map(val2) do
+        deep_merge(val1, val2)
+      else
+        val2
       end
     end)
   end
