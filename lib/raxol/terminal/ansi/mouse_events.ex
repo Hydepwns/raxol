@@ -212,14 +212,20 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   """
   @spec generate_report(mouse_state()) :: String.t()
   def generate_report(%{mode: :basic} = state), do: generate_basic_report(state)
-  def generate_report(%{mode: :highlight} = state), do: generate_highlight_report(state)
+
+  def generate_report(%{mode: :highlight} = state),
+    do: generate_highlight_report(state)
+
   def generate_report(%{mode: :cell} = state), do: generate_cell_report(state)
   def generate_report(%{mode: :all} = state), do: generate_all_report(state)
   def generate_report(%{mode: :focus} = state), do: generate_focus_report(state)
   def generate_report(%{mode: :utf8} = state), do: generate_utf8_report(state)
   def generate_report(%{mode: :sgr} = state), do: generate_sgr_report(state)
   def generate_report(%{mode: :urxvt} = state), do: generate_urxvt_report(state)
-  def generate_report(%{mode: :sgr_pixels} = state), do: generate_sgr_pixels_report(state)
+
+  def generate_report(%{mode: :sgr_pixels} = state),
+    do: generate_sgr_pixels_report(state)
+
   def generate_report(_state), do: generate_basic_report(_state)
 
   @doc """

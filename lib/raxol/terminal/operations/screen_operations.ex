@@ -106,16 +106,20 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   def set_cursor_position(emulator, x, y) do
     buffer = ScreenManager.get_active_buffer(emulator)
     new_buffer = ScreenBuffer.set_cursor_position(buffer, x, y)
+
     new_cursor =
       case emulator.cursor do
         pid when is_pid(pid) ->
           Raxol.Terminal.Cursor.Manager.set_position(pid, {x, y})
           pid
+
         map when is_map(map) ->
           %{map | position: {x, y}}
+
         other ->
           other
       end
+
     new_emulator = %{emulator | cursor: new_cursor}
     ScreenManager.update_active_buffer(new_emulator, new_buffer)
   end
