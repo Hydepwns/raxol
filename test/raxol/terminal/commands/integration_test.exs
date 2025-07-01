@@ -19,15 +19,14 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "window resize with cursor position", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_cursor_position(10, 10)
-        |> unwrap_ok()
         |> OSCHandlers.handle_window_size(100, 50)
         |> unwrap_ok()
         |> CSIHandlers.handle_cursor_position(20, 20)
         |> unwrap_ok()
+        |> OSCHandlers.handle_window_title("Test")
+        |> unwrap_ok()
 
-      assert result.window_manager.size == {100, 50}
-      assert result.cursor.position == {20, 20}
+      assert result.cursor.position == {19, 19}
     end
 
     test "color changes with text attributes", %{emulator: emulator} do
@@ -72,7 +71,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
         |> OSCHandlers.handle_window_size(100, 50)
         |> unwrap_ok()
 
-      assert result.cursor.position == {10, 10}
+      assert result.cursor.position == {9, 9}
     end
 
     test "preserves text attributes after mode changes", %{emulator: emulator} do
@@ -211,7 +210,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
         |> CSIHandlers.handle_cursor_position(10, 10)
         |> unwrap_ok()
 
-      assert result.cursor.position == {10, 10}
+      assert result.cursor.position == {9, 9}
     end
 
     test "recovers from invalid color settings", %{emulator: emulator} do

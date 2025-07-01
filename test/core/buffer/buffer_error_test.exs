@@ -146,8 +146,8 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
 
       # Test writing beyond buffer capacity
       assert_raise ArgumentError, fn ->
-        # Try to write a string that's too long
-        long_string = String.duplicate("X", 1000)
+        # Try to write a string that's too long (80*24 = 1920, so use 2000)
+        long_string = String.duplicate("X", 2000)
         Buffer.write(buffer, long_string)
       end
     end
@@ -173,7 +173,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
       buffer =
         Enum.reduce(0..23, buffer, fn y, acc ->
           Enum.reduce(0..79, acc, fn x, acc ->
-            cell = Cell.new("X", TextFormatting.new(fg: :red))
+            cell = Cell.new("X", TextFormatting.new(foreground: :red))
             Buffer.set_cell(acc, x, y, cell)
           end)
         end)
@@ -185,7 +185,7 @@ defmodule Raxol.Core.Buffer.BufferErrorTest do
 
       # Verify buffer content is unchanged
       assert Buffer.get_cell(buffer, 0, 0).char == "X"
-      assert Buffer.get_cell(buffer, 0, 0).fg == :red
+      assert Buffer.get_cell(buffer, 0, 0).foreground == :red
     end
   end
 end

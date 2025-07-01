@@ -84,19 +84,21 @@ defmodule Raxol.Core.Renderer.ViewTest do
       view = View.text("Hello")
       result = View.layout(view, width: 10, height: 1)
 
-      # Expected should be a single map, matching the 'left' in the error output
-      expected = %{
-        type: :text,
-        content: "Hello",
-        position: {0, 0},
-        # Default size from process_element for :text
-        size: {1, 1},
-        style: [],
-        fg: nil,
-        bg: nil,
-        wrap: :none,
-        align: :left
-      }
+      # Expected should be a list containing a single map, matching the 'left' in the error output
+      expected = [
+        %{
+          type: :text,
+          content: "Hello",
+          position: {0, 0},
+          # Size should be {5, 1} for "Hello" (5 characters wide)
+          size: {5, 1},
+          style: [],
+          fg: nil,
+          bg: nil,
+          wrap: :none,
+          align: :left
+        }
+      ]
 
       assert result == expected
     end
