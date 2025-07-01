@@ -29,6 +29,15 @@ defmodule Raxol.Core.Renderer.Buffer do
   Creates a new buffer manager with the given size and FPS.
   """
   def new(width, height, fps \\ 60) do
+    unless is_integer(width) and width > 0 do
+      raise ArgumentError, "Buffer width must be positive"
+    end
+    unless is_integer(height) and height > 0 do
+      raise ArgumentError, "Buffer height must be positive"
+    end
+    unless is_integer(fps) and fps > 0 do
+      raise ArgumentError, "FPS must be positive"
+    end
     empty_buffer = %{
       size: {width, height},
       cells: %{},
@@ -46,7 +55,21 @@ defmodule Raxol.Core.Renderer.Buffer do
   @doc """
   Updates a cell in the back buffer and marks it as damaged.
   """
-  def put_cell(buffer, {x, y} = pos, char, opts \\ []) do
+  def put_cell(buffer, pos, char, opts \\ []) do
+    # Validate position is a tuple of exactly 2 integers
+    unless is_tuple(pos) and tuple_size(pos) == 2 do
+      raise ArgumentError, "Cell coordinates must be a tuple of two integers"
+    end
+    {x, y} = pos
+    unless is_integer(x) and is_integer(y) do
+      raise ArgumentError, "Cell coordinates must be a tuple of two integers"
+    end
+
+    # Validate char is a string of length 1
+    unless is_binary(char) and String.length(char) == 1 do
+      raise ArgumentError, "Cell content must be a string of length 1"
+    end
+
     {width, height} = buffer.back_buffer.size
 
     if x >= 0 and x < width and y >= 0 and y < height do
@@ -94,26 +117,23 @@ defmodule Raxol.Core.Renderer.Buffer do
   """
   def swap_buffers(buffer) do
     now = System.monotonic_time(:millisecond)
-    # Ensure frame_time is an integer for comparison
     frame_time = trunc(1000 / buffer.fps)
 
     if now - buffer.last_frame_time >= frame_time do
-      # Swap buffers
+      # Create new empty back buffer
       new_empty_back_buffer = %{
-        # Keep the same size
-        size: buffer.back_buffer.size,
-        # Empty cells
         cells: %{},
-        # Empty damage set
-        damage: MapSet.new()
+        damage: MapSet.new([]),
+        size: buffer.back_buffer.size
       }
 
-      new_buffer = %{
-        buffer
-        | front_buffer: buffer.back_buffer,
-          # Use the new empty buffer
-          back_buffer: new_empty_back_buffer,
-          last_frame_time: now
+      # Deep copy the back buffer to avoid shared references
+      copied_back_buffer = :erlang.term_to_binary(buffer.back_buffer) |> :erlang.binary_to_term()
+      new_buffer = %__MODULE__{
+        front_buffer: copied_back_buffer,
+        back_buffer: new_empty_back_buffer,
+        fps: buffer.fps,
+        last_frame_time: now
       }
 
       {new_buffer, true}
