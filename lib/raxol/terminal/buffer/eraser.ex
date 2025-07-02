@@ -403,6 +403,14 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   end
 
   @doc """
+  Erases characters at a specific position.
+  """
+  @spec erase_chars(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_chars(buffer, x, y, count) do
+    clear_region(buffer, x, y, count, 1)
+  end
+
+  @doc """
   Erases the display with the specified mode.
   """
   @spec erase_display(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
@@ -432,6 +440,22 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       1 -> clear_line_to(buffer, y, x)
       # Entire line
       2 -> clear_line(buffer, y)
+      _ -> buffer
+    end
+  end
+
+  @doc """
+  Erases the specified line with the specified mode.
+  """
+  @spec erase_line(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def erase_line(buffer, line, mode) do
+    case mode do
+      # From cursor to end of line
+      0 -> clear_line_from(buffer, line, 0)
+      # From start of line to cursor
+      1 -> clear_line_to(buffer, line, 0)
+      # Entire line
+      2 -> clear_line(buffer, line)
       _ -> buffer
     end
   end

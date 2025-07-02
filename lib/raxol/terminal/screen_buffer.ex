@@ -169,8 +169,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate clear_line(buffer, line, style \\ nil), to: Eraser
   defdelegate erase_chars(buffer, count), to: Eraser
+  defdelegate erase_chars(buffer, x, y, count), to: Eraser
   defdelegate erase_display(buffer, mode), to: Eraser
   defdelegate erase_line(buffer, mode), to: Eraser
+  defdelegate erase_line(buffer, line, mode), to: Eraser
 
   # === Line Operations ===
 
@@ -889,5 +891,43 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Enum.reduce(x..(x + width - 1), row, fn col_x, acc_row ->
       List.replace_at(acc_row, col_x, cell)
     end)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  defdelegate write_string(buffer, x, y, string, style), to: Content
+
+  @doc """
+  Updates the buffer with a list of changes.
+  """
+  def update(buffer, changes) do
+    Raxol.Terminal.Buffer.Content.update(buffer, changes)
+  end
+
+  @doc """
+  Gets the content of the buffer.
+  """
+  def get_content(buffer, _opts \\ []) do
+    Raxol.Terminal.Buffer.Content.get_content(buffer)
+  end
+
+  @doc """
+  Gets all damaged regions in the buffer.
+  """
+  def get_damaged_regions(buffer) do
+    case buffer.screen_state do
+      %{damage_regions: regions} -> regions
+      _ -> []
+    end
+  end
+
+  @doc """
+  Clears all damaged regions in the buffer.
+  """
+  def clear_damaged_regions(buffer) do
+    case buffer.screen_state do
+      %{damage_regions: _} = screen_state ->
+        %{buffer | screen_state: %{screen_state | damage_regions: []}}
+      _ -> buffer
+    end
   end
 end

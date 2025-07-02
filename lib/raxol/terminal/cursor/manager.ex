@@ -232,6 +232,25 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
+  Moves the cursor to the specified column with bounds clamping.
+  """
+  @spec move_to_column(t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
+  def move_to_column(cursor, column, width, height) do
+    clamped_col = max(0, min(column, width - 1))
+    %{cursor | col: clamped_col, position: {cursor.row, clamped_col}}
+  end
+
+  @doc """
+  Constrains the cursor position to within the specified bounds.
+  """
+  @spec constrain_position(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def constrain_position(cursor, width, height) do
+    clamped_row = max(0, min(cursor.row, height - 1))
+    clamped_col = max(0, min(cursor.col, width - 1))
+    %{cursor | row: clamped_row, col: clamped_col, position: {clamped_row, clamped_col}}
+  end
+
+  @doc """
   Moves the cursor to the specified line.
   """
   def move_to_line(cursor, line) do

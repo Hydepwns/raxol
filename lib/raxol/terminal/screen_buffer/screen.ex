@@ -80,4 +80,18 @@ defmodule Raxol.Terminal.ScreenBuffer.Screen do
   def erase_line(screen_state) do
     %{screen_state | damage_regions: [{0, 0, 80, 1}]}
   end
+
+  @doc """
+  Gets the list of damaged regions in the screen.
+  """
+  def get_damaged_regions(screen_state) do
+    screen_state.damage_regions
+  end
+
+  @doc """
+  Clears all damaged regions in the screen.
+  """
+  def clear_damaged_regions(screen_state) do
+    %{screen_state | damage_regions: []}
+  end
 end

@@ -170,14 +170,14 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        if not is_map(config) do
-          {:reply, {:error, :invalid_script_config}, state}
-        else
+        if is_map(config) do
           config_map = config
           script_config = if is_map(script.config), do: script.config, else: %{}
           new_script = %{script | config: Map.merge(script_config, config_map)}
           new_state = put_in(state.scripts[script_id], new_script)
           {:reply, :ok, new_state}
+        else
+          {:reply, {:error, :invalid_script_config}, state}
         end
     end
   end

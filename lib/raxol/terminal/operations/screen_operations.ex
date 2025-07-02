@@ -22,10 +22,23 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
+  def clear_line(emulator, line) do
+    buffer = ScreenManager.get_active_buffer(emulator)
+    new_buffer = ScreenBuffer.clear_line(buffer, line)
+    ScreenManager.update_active_buffer(emulator, new_buffer)
+  end
+
   def erase_line(emulator) do
     buffer = ScreenManager.get_active_buffer(emulator)
     {_, y} = ScreenBuffer.get_cursor_position(buffer) || {0, 0}
     new_buffer = ScreenBuffer.erase_line(buffer, y)
+    ScreenManager.update_active_buffer(emulator, new_buffer)
+  end
+
+  def erase_line(emulator, mode) do
+    buffer = ScreenManager.get_active_buffer(emulator)
+    {_, y} = ScreenBuffer.get_cursor_position(buffer) || {0, 0}
+    new_buffer = ScreenBuffer.erase_line(buffer, y, mode)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 

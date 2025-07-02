@@ -191,6 +191,28 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   @doc """
+  Inserts the specified number of blank lines at the cursor position with style.
+  """
+  def insert_lines(buffer, y, count, style)
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
+             is_integer(y) and is_integer(count) and count > 0 and
+             is_map(style) do
+    # For ScreenBuffer structs, delegate to LineOperations
+    Raxol.Terminal.Buffer.LineOperations.insert_lines(buffer, y, count, style)
+  end
+
+  @doc """
+  Inserts the specified number of blank lines at the cursor position with region boundaries.
+  """
+  def insert_lines(buffer, lines, y, top, bottom)
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
+             is_integer(lines) and is_integer(y) and lines > 0 and
+             is_integer(top) and is_integer(bottom) do
+    # For ScreenBuffer structs, delegate to LineOperations
+    Raxol.Terminal.Buffer.LineOperations.insert_lines(buffer, lines, y, top, bottom)
+  end
+
+  @doc """
   Deletes the specified number of lines at the cursor position.
   """
   def delete_lines(buffer, count, cursor_y, cursor_x)
@@ -223,6 +245,28 @@ defmodule Raxol.Terminal.Buffer.Operations do
     else
       {buffer, cursor_y, cursor_x}
     end
+  end
+
+  @doc """
+  Deletes the specified number of lines at the cursor position with style and region.
+  """
+  def delete_lines(buffer, y, count, style, {top, bottom})
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
+             is_integer(y) and is_integer(count) and count > 0 and
+             is_map(style) and is_tuple({top, bottom}) do
+    # For ScreenBuffer structs, delegate to LineOperations
+    Raxol.Terminal.Buffer.LineOperations.delete_lines(buffer, y, count, style, {top, bottom})
+  end
+
+  @doc """
+  Deletes the specified number of lines at the cursor position with region boundaries.
+  """
+  def delete_lines(buffer, lines, y, top, bottom)
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
+             is_integer(lines) and is_integer(y) and lines > 0 and
+             is_integer(top) and is_integer(bottom) do
+    # For ScreenBuffer structs, delegate to LineOperations
+    Raxol.Terminal.Buffer.LineOperations.delete_lines(buffer, lines, y, top, bottom)
   end
 
   @doc """

@@ -34,6 +34,46 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   @doc """
+  Inserts a specified number of lines with explicit parameters.
+  """
+  def insert_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom) do
+    if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
+      # Split the content at the cursor position
+      {before_cursor, after_cursor} = Enum.split(buffer.cells, cursor_y)
+
+      # Create blank lines
+      blank_lines = create_empty_lines(buffer.width, count)
+
+      # Calculate how many lines to keep from after_cursor
+      lines_to_keep = max(0, scroll_bottom - cursor_y - count + 1)
+      kept_lines = Enum.take(after_cursor, lines_to_keep)
+
+      # Combine the parts
+      new_cells = before_cursor ++ blank_lines ++ kept_lines
+
+      # Ensure the buffer maintains its correct size
+      final_cells =
+        if length(new_cells) < length(buffer.cells) do
+          # Add any additional blank lines needed
+          additional_lines =
+            create_empty_lines(
+              buffer.width,
+              length(buffer.cells) - length(new_cells)
+            )
+
+          new_cells ++ additional_lines
+        else
+          # Truncate if necessary
+          Enum.take(new_cells, length(buffer.cells))
+        end
+
+      %{buffer | cells: final_cells}
+    else
+      buffer
+    end
+  end
+
+  @doc """
   Helper function to handle the line insertion logic.
 
   ## Parameters
@@ -94,6 +134,49 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   @doc """
+  Inserts lines at a specific position with style.
+  """
+  @spec do_insert_lines_with_style(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
+  def do_insert_lines_with_style(buffer, cursor_y, count, bottom, style) do
+    # Split the content at the cursor position
+    {before_cursor, after_cursor} = Enum.split(buffer.cells, cursor_y)
+
+    # Create blank lines with style
+    blank_lines = create_empty_lines(buffer.width, count, style)
+
+    # Calculate how many lines to keep from after_cursor
+    lines_to_keep = max(0, bottom - cursor_y - count + 1)
+    kept_lines = Enum.take(after_cursor, lines_to_keep)
+
+    # Combine the parts
+    new_cells = before_cursor ++ blank_lines ++ kept_lines
+
+    # Ensure the buffer maintains its correct size
+    final_cells =
+      if length(new_cells) < length(buffer.cells) do
+        # Add any additional blank lines needed
+        additional_lines =
+          create_empty_lines(
+            buffer.width,
+            length(buffer.cells) - length(new_cells)
+          )
+
+        new_cells ++ additional_lines
+      else
+        # Truncate if necessary
+        Enum.take(new_cells, length(buffer.cells))
+      end
+
+    %{buffer | cells: final_cells}
+  end
+
+  @doc """
   Deletes a specified number of lines starting from the current cursor position.
   Lines below the deleted lines are shifted up, and blank lines are added at the bottom.
   """
@@ -110,6 +193,27 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     if y >= top and y <= bottom do
       # Split the content at the cursor position
       {before, after_cursor} = Enum.split(buffer.cells, y)
+
+      # Remove the specified number of lines and shift remaining lines up
+      remaining_lines = Enum.drop(after_cursor, count)
+
+      # Add blank lines at the bottom
+      blank_lines = create_empty_lines(buffer.width, count)
+      new_cells = before ++ remaining_lines ++ blank_lines
+
+      %{buffer | cells: new_cells}
+    else
+      buffer
+    end
+  end
+
+  @doc """
+  Deletes a specified number of lines with explicit parameters.
+  """
+  def delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom) do
+    if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
+      # Split the content at the cursor position
+      {before, after_cursor} = Enum.split(buffer.cells, cursor_y)
 
       # Remove the specified number of lines and shift remaining lines up
       remaining_lines = Enum.drop(after_cursor, count)
@@ -278,6 +382,35 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   @doc """
+  Creates empty lines with the given width and style.
+
+  ## Parameters
+
+  * `width` - The width of each line
+  * `count` - The number of lines to create
+  * `style` - The text style for the cells
+
+  ## Returns
+
+  A list of empty lines with the specified style.
+
+  ## Examples
+
+      iex> lines = LineOperations.create_empty_lines(80, 3, %{fg: :red})
+      iex> length(lines)
+      3
+      iex> hd(hd(lines)).style.fg
+      :red
+  """
+  @spec create_empty_lines(non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) ::
+          list(list(Cell.t()))
+  def create_empty_lines(width, count, style) do
+    for _ <- 1..count do
+      create_empty_line(width, style)
+    end
+  end
+
+  @doc """
   Creates a single empty line with the given width and optional style.
 
   ## Parameters
@@ -359,6 +492,32 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   @doc """
+  Inserts lines at a specific position with style.
+  """
+  @spec insert_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) ::
+          ScreenBuffer.t()
+  def insert_lines(buffer, position, count, style) do
+    if position >= 0 and position < length(buffer.cells) and count > 0 do
+      do_insert_lines_with_style(buffer, position, count, length(buffer.cells) - 1, style)
+    else
+      buffer
+    end
+  end
+
+  @doc """
+  Inserts lines at a specific position with region boundaries.
+  """
+  @spec insert_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
+  def insert_lines(buffer, lines, y, top, bottom) do
+    if y >= top and y <= bottom and lines > 0 do
+      do_insert_lines(buffer, y, lines, bottom)
+    else
+      buffer
+    end
+  end
+
+  @doc """
   Deletes lines at a specific position.
   """
   @spec delete_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
@@ -368,6 +527,23 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
       {before, after_cursor} = Enum.split(buffer.cells, position)
       remaining_lines = Enum.drop(after_cursor, count)
       blank_lines = create_empty_lines(buffer.width, count)
+      new_cells = before ++ remaining_lines ++ blank_lines
+      %{buffer | cells: new_cells}
+    else
+      buffer
+    end
+  end
+
+  @doc """
+  Deletes lines at a specific position with style and region boundaries.
+  """
+  @spec delete_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style(), {non_neg_integer(), non_neg_integer()}) ::
+          ScreenBuffer.t()
+  def delete_lines(buffer, y, count, style, {top, bottom}) do
+    if y >= top and y <= bottom and count > 0 do
+      {before, after_cursor} = Enum.split(buffer.cells, y)
+      remaining_lines = Enum.drop(after_cursor, count)
+      blank_lines = create_empty_lines(buffer.width, count, style)
       new_cells = before ++ remaining_lines ++ blank_lines
       %{buffer | cells: new_cells}
     else
