@@ -20,7 +20,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   require Raxol.Core.Runtime.Log
 
-  @impl true
   def init(opts) do
     {:ok, opts}
   end

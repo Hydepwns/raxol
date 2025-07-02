@@ -38,14 +38,17 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
 
       dep_info =
         Enum.map(deps, fn
-          {dep_id, version_req, opts} -> {dep_id, version_req, opts}
-          {dep_id, version_req} -> {dep_id, version_req, %{optional: false}}
-          dep_id -> {dep_id, nil, %{optional: false}}
+          {dep_id, version_req, opts} -> {to_atom(dep_id), version_req, opts}
+          {dep_id, version_req} -> {to_atom(dep_id), version_req, %{optional: false}}
+          dep_id -> {to_atom(dep_id), nil, %{optional: false}}
         end)
 
-      Map.put(acc, id, dep_info)
+      Map.put(acc, to_atom(id), dep_info)
     end)
   end
+
+  defp to_atom(id) when is_atom(id), do: id
+  defp to_atom(id) when is_binary(id), do: String.to_atom(id)
 
   @doc """
   Builds a dependency chain for error reporting.
@@ -87,11 +90,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
   * `{:error, :circular_dependency, cycle}` - If a circular dependency is detected
   """
   def get_all_dependencies(plugin_id, graph, visited \\ MapSet.new()) do
-    if MapSet.member?(visited, plugin_id) do
-      {:error, :circular_dependency, [plugin_id]}
+    # Normalize plugin_id to atom
+    normalized_plugin_id = to_atom(plugin_id)
+
+    if MapSet.member?(visited, normalized_plugin_id) do
+      {:error, :circular_dependency, [normalized_plugin_id]}
     else
-      visited = MapSet.put(visited, plugin_id)
-      deps = Map.get(graph, plugin_id, [])
+      visited = MapSet.put(visited, normalized_plugin_id)
+      deps = Map.get(graph, normalized_plugin_id, [])
 
       Enum.reduce_while(
         deps,
@@ -106,12 +112,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
   end
 
   defp process_dependency({dep_id, _, _}, {:ok, acc}, graph, visited) do
-    case get_all_dependencies(dep_id, graph, visited) do
+    # Ensure dep_id is an atom
+    normalized_dep_id = to_atom(dep_id)
+
+    case get_all_dependencies(normalized_dep_id, graph, visited) do
       {:ok, dep_deps} ->
-        {:cont, {:ok, [dep_id | acc] ++ dep_deps}}
+        {:cont, {:ok, [normalized_dep_id | acc] ++ dep_deps}}
 
       {:error, :circular_dependency, cycle} ->
-        {:halt, {:error, :circular_dependency, [dep_id | cycle]}}
+        {:halt, {:error, :circular_dependency, [normalized_dep_id | cycle]}}
     end
   end
 end

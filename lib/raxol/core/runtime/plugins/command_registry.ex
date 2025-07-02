@@ -26,8 +26,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   @impl true
   def register_command(
-        _table_name,
-        _namespace,
+        table_name,
+        namespace,
         command_name,
         module,
         function,
@@ -35,22 +35,73 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       ) do
     handler = {module, function, arity}
     metadata = %{}
-    {:ok, {command_name, handler, metadata}}
+
+    # Store the command in the table
+    case table_name do
+      table when map?(table) ->
+        # If table is a map, store commands by namespace
+        namespace_commands = Map.get(table, namespace, [])
+        updated_commands = [{command_name, handler, metadata} | namespace_commands]
+        updated_table = Map.put(table, namespace, updated_commands)
+        {:ok, updated_table}
+
+      _ ->
+        # If table is not a map, return error
+        {:error, :invalid_table}
+    end
   end
 
   @impl true
-  def unregister_command(_table_name, _namespace, _command_name) do
-    {:ok, nil}
+  def unregister_command(table_name, namespace, command_name) do
+    case table_name do
+      table when map?(table) ->
+        namespace_commands = Map.get(table, namespace, [])
+        updated_commands = Enum.reject(namespace_commands, fn {name, _, _} -> name == command_name end)
+
+        if updated_commands == namespace_commands do
+          {:error, :not_found}
+        else
+          updated_table = Map.put(table, namespace, updated_commands)
+          {:ok, updated_table}
+        end
+
+      _ ->
+        {:error, :invalid_table}
+    end
   end
 
   @impl true
-  def lookup_command(_table_name, _namespace, _command_name) do
-    {:error, :not_found}
+  def lookup_command(table_name, namespace, command_name) do
+    case table_name do
+      table when map?(table) ->
+        namespace_commands = Map.get(table, namespace, [])
+
+        case Enum.find(namespace_commands, fn {name, _, _} -> name == command_name end) do
+          nil -> {:error, :not_found}
+          {_name, {module, function, arity}, _metadata} ->
+            # Create a function that calls the module function
+            handler = fn args, state ->
+              apply(module, function, [args, state])
+            end
+            {:ok, {module, handler, arity}}
+        end
+
+      _ ->
+        {:error, :invalid_table}
+    end
   end
 
   @impl true
-  def unregister_commands_by_module(_table_name, _module) do
-    {:ok, nil}
+  def unregister_commands_by_module(table_name, module) do
+    case table_name do
+      table when map?(table) ->
+        # Remove all commands for this module
+        updated_table = Map.delete(table, module)
+        {:ok, updated_table}
+
+      _ ->
+        {:error, :invalid_table}
+    end
   end
 
   @doc """

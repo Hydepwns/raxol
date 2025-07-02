@@ -747,7 +747,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:ok, state}
   end
 
-  @impl true
   def stop(pid \\ __MODULE__) do
     GenServer.stop(pid)
   end

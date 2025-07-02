@@ -14,7 +14,6 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     {:ok, %{clipboard_impl: clipboard_impl}}
   end
 
-  @impl true
   def terminate(_reason, _state) do
     :ok
   end

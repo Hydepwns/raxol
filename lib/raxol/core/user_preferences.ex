@@ -83,6 +83,10 @@ defmodule Raxol.Core.UserPreferences do
     GenServer.call(pid_or_name, :get_all)
   end
 
+  def set_preferences(preferences, pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, {:set_preferences, preferences})
+  end
+
   def reset_to_defaults_for_test!(pid_or_name \\ __MODULE__) do
     GenServer.call(pid_or_name, :reset_to_defaults)
   end
@@ -118,6 +122,19 @@ defmodule Raxol.Core.UserPreferences do
   @impl GenServer
   def handle_call(:get_all, _from, state) do
     {:reply, state.preferences, state}
+  end
+
+  @impl GenServer
+  def handle_call({:set_preferences, preferences}, _from, state) do
+    new_preferences = deep_merge(state.preferences, preferences)
+
+    Raxol.Core.Runtime.Log.debug(
+      "All preferences updated: #{inspect(preferences)}"
+    )
+
+    new_state = %{state | preferences: new_preferences}
+    # Schedule a save after a delay
+    {:reply, :ok, schedule_save(new_state)}
   end
 
   @impl GenServer

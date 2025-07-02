@@ -194,8 +194,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
   end
 
   defp validate_component(component, on_stk) do
-    if !(list?(component) and Enum.all?(component, &binary?/1)),
-      do: raise("Component must be a list of strings")
+    if !(list?(component) and Enum.all?(component, &atom?/1)),
+      do: raise("Component must be a list of atoms")
 
     if not struct?(on_stk, MapSet), do: raise("on_stk must be a MapSet")
   end
