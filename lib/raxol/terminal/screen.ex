@@ -258,8 +258,8 @@ defmodule Raxol.Terminal.Screen do
     {width, height} = ScreenBuffer.get_dimensions(buffer)
 
     case mode do
-      0 -> ScreenBuffer.erase_from_cursor_to_end(buffer, x, y, width, height)
-      1 -> ScreenBuffer.erase_from_start_to_cursor(buffer, x, y, width, height)
+      0 -> ScreenBuffer.erase_from_cursor_to_end(buffer, x, y, 0, height)
+      1 -> ScreenBuffer.erase_from_start_to_cursor(buffer, x, y, 0, height)
       2 -> clear_screen(buffer)
       3 -> ScreenBuffer.erase_all(buffer)
     end

@@ -228,7 +228,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
           buffer
       end
 
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -260,7 +260,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
           buffer
       end
 
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -277,7 +277,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     new_buffer =
       Raxol.Terminal.ScreenBuffer.insert_lines(buffer, lines, y, top, bottom)
 
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -294,7 +294,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     new_buffer =
       Raxol.Terminal.ScreenBuffer.delete_lines(buffer, lines, y, top, bottom)
 
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -307,7 +307,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
     buffer = Emulator.get_active_buffer(emulator)
     new_buffer = Raxol.Terminal.ScreenBuffer.delete_chars(buffer, x, y, chars)
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -320,7 +320,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
     buffer = Emulator.get_active_buffer(emulator)
     new_buffer = Raxol.Terminal.ScreenBuffer.insert_chars(buffer, x, y, chars)
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -336,7 +336,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     new_buffer =
       Raxol.Terminal.ScreenBuffer.scroll_up(buffer, lines, top, bottom)
 
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -352,7 +352,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     new_buffer =
       Raxol.Terminal.ScreenBuffer.scroll_down(buffer, lines, top, bottom)
 
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """
@@ -365,7 +365,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
     buffer = Emulator.get_active_buffer(emulator)
     new_buffer = Raxol.Terminal.ScreenBuffer.erase_chars(buffer, x, y, chars)
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc """

@@ -148,7 +148,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(emulator) do
-    emulator.cursor.position
+    {emulator.cursor.row, emulator.cursor.col}
   end
 
   @doc """
@@ -228,10 +228,10 @@ defmodule Raxol.Terminal.Emulator.Struct do
   Moves the cursor to the specified position.
   """
   @spec move_cursor(t(), integer(), integer()) :: t()
-  def move_cursor(emulator, x, y) do
-    x = max(0, min(x, emulator.width - 1))
-    y = max(0, min(y, emulator.height - 1))
-    %{emulator | cursor: %{emulator.cursor | position: {x, y}}}
+  def move_cursor(emulator, row, col) do
+    row = max(0, min(row, emulator.height - 1))
+    col = max(0, min(col, emulator.width - 1))
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, row, col, emulator.width, emulator.height)}
   end
 
   @doc """
@@ -239,9 +239,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_up(t(), integer(), integer(), integer()) :: t()
   def move_cursor_up(emulator, lines, _width, _height) do
-    {x, y} = emulator.cursor.position
-    new_y = max(0, y - lines)
-    %{emulator | cursor: %{emulator.cursor | position: {x, new_y}}}
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_up(emulator.cursor, lines, emulator.width, emulator.height)}
   end
 
   @doc """
@@ -249,9 +247,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_down(t(), integer(), integer(), integer()) :: t()
   def move_cursor_down(emulator, lines, _width, height) do
-    {x, y} = emulator.cursor.position
-    new_y = min(height - 1, y + lines)
-    %{emulator | cursor: %{emulator.cursor | position: {x, new_y}}}
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_down(emulator.cursor, lines, emulator.width, emulator.height)}
   end
 
   @doc """
@@ -259,9 +255,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_right(t(), integer(), integer(), integer()) :: t()
   def move_cursor_right(emulator, cols, width, _height) do
-    {x, y} = emulator.cursor.position
-    new_x = min(width - 1, x + cols)
-    %{emulator | cursor: %{emulator.cursor | position: {new_x, y}}}
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_right(emulator.cursor, cols, emulator.width, emulator.height)}
   end
 
   @doc """
@@ -269,9 +263,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_left(t(), integer(), integer(), integer()) :: t()
   def move_cursor_left(emulator, cols, _width, _height) do
-    {x, y} = emulator.cursor.position
-    new_x = max(0, x - cols)
-    %{emulator | cursor: %{emulator.cursor | position: {new_x, y}}}
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_left(emulator.cursor, cols, emulator.width, emulator.height)}
   end
 
   @doc """
@@ -279,8 +271,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_to_line_start(t()) :: t()
   def move_cursor_to_line_start(emulator) do
-    {_x, y} = emulator.cursor.position
-    %{emulator | cursor: %{emulator.cursor | position: {0, y}}}
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_to_line_start(emulator.cursor)}
   end
 
   @doc """
@@ -288,19 +279,15 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_to_column(t(), integer(), integer(), integer()) :: t()
   def move_cursor_to_column(emulator, column, width, _height) do
-    {_x, y} = emulator.cursor.position
-    new_x = max(0, min(column, width - 1))
-    %{emulator | cursor: %{emulator.cursor | position: {new_x, y}}}
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_to_column(emulator.cursor, column, emulator.width, emulator.height)}
   end
 
   @doc """
   Moves the cursor to the specified position.
   """
   @spec move_cursor_to(t(), {integer(), integer()}, integer(), integer()) :: t()
-  def move_cursor_to(emulator, {x, y}, width, height) do
-    new_x = max(0, min(x, width - 1))
-    new_y = max(0, min(y, height - 1))
-    %{emulator | cursor: %{emulator.cursor | position: {new_x, new_y}}}
+  def move_cursor_to(emulator, {row, col}, width, height) do
+    %{emulator | cursor: Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, row, col, emulator.width, emulator.height)}
   end
 
   # Private helper functions
@@ -343,12 +330,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
       style: %{},
       color_palette: %{},
       tab_stops: [],
-      cursor: %{
-        position: {0, 0},
-        style: :block,
-        visible: true,
-        blink_state: true
-      },
+      cursor: Raxol.Terminal.Cursor.Manager.new(),
       cursor_style: :block,
       saved_cursor: nil,
       charset_state: %{

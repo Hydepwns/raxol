@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     col = min(col, width - 1)
 
     # Update cursor position (correctly update nested cursor struct)
-    %{emulator | cursor: %{emulator.cursor | position: {col, row}}}
+    %{emulator | cursor: %{emulator.cursor | position: {row, col}}}
   end
 
   @doc """

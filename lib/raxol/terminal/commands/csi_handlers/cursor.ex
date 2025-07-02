@@ -123,13 +123,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
 
-    IO.puts(
-      "DEBUG: handle_cup called with params=#{inspect(params)}, row=#{row}, col=#{col}"
-    )
+    IO.puts("DEBUG: handle_cup params=#{inspect(params)}, row=#{row}, col=#{col}")
 
-    IO.puts("DEBUG: calculated position: {#{col - 1}, #{row - 1}}")
+    # Convert 1-indexed ANSI coordinates to 0-indexed internal coordinates
+    # ANSI CUP command expects {row, col} format, emulator now expects {row, col}
+    row_0 = row - 1
+    col_0 = col - 1
 
-    Emulator.move_cursor_to(emulator, {col - 1, row - 1}, width, height)
+    IO.puts("DEBUG: handle_cup calling move_cursor_to with {#{row_0}, #{col_0}}")
+
+    Emulator.move_cursor_to(emulator, {row_0, col_0}, width, height)
   end
 
   @doc "Handles Horizontal Position Absolute (HPA - '`')"
