@@ -97,6 +97,15 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
       dependencies: [],
       conflicts: []
     },
+    # Blink Attribute Mode
+    12 => %{
+      category: :dec_private,
+      code: 12,
+      name: :att_blink,
+      default_value: true,
+      dependencies: [],
+      conflicts: []
+    },
     # Text Cursor Enable Mode
     25 => %{
       category: :dec_private,
@@ -158,6 +167,14 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
       dependencies: [],
       conflicts: [:dec_alt_screen, :alt_screen_buffer]
     },
+    1048 => %{
+      category: :screen_buffer,
+      code: 1048,
+      name: :decsc_deccara,
+      default_value: false,
+      dependencies: [],
+      conflicts: []
+    },
     1049 => %{
       category: :screen_buffer,
       code: 1049,
@@ -196,6 +213,33 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
       default_value: false,
       dependencies: [],
       conflicts: []
+    },
+    # Column Width Mode (132 columns)
+    3 => %{
+      category: :standard,
+      code: 3,
+      name: :deccolm_132,
+      default_value: false,
+      dependencies: [],
+      conflicts: [:deccolm_80]
+    },
+    # Column Width Mode (132 columns) - alternative code
+    132 => %{
+      category: :standard,
+      code: 132,
+      name: :deccolm_132,
+      default_value: false,
+      dependencies: [],
+      conflicts: [:deccolm_80]
+    },
+    # Column Width Mode (80 columns)
+    80 => %{
+      category: :standard,
+      code: 80,
+      name: :deccolm_80,
+      default_value: true,
+      dependencies: [],
+      conflicts: [:deccolm_132]
     }
   }
 

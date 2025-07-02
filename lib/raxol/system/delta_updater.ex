@@ -8,42 +8,51 @@ defmodule Raxol.System.DeltaUpdater do
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl
   import Raxol.Guards
 
-  @system_adapter Application.compile_env(
-                    :raxol,
-                    :system_adapter,
-                    DeltaUpdaterSystemAdapterImpl
-                  )
+  defp system_adapter do
+    Application.get_env(:raxol, :system_adapter, DeltaUpdaterSystemAdapterImpl)
+  end
 
   def check_delta_availability(target_version) do
     with {:ok, releases} <- get_releases(),
-         {:ok, assets} <- extract_assets(releases),
+         {:ok, assets} <- extract_assets(releases, target_version),
          {:ok, full_asset} <- find_full_asset(assets, target_version),
          {:ok, delta_asset} <- find_delta_asset(assets, target_version) do
-      # Compare sizes to determine if delta update is beneficial
-      full_size = full_asset["size"]
-      delta_size = delta_asset["size"]
-
-      if delta_size < full_size * 0.5 do
-        {:ok, delta_asset}
-      else
-        {:error, :delta_too_large}
-      end
+      compare_asset_sizes(full_asset, delta_asset)
     else
       error -> error
+    end
+  end
+
+  defp compare_asset_sizes(full_asset, delta_asset) do
+    full_size = full_asset["size"]
+    delta_size = delta_asset["size"]
+
+    if delta_size < full_size * 0.5 do
+      savings_percent = round((1 - delta_size / full_size) * 100)
+
+      {:ok, %{
+        delta_size: delta_size,
+        full_size: full_size,
+        savings_percent: savings_percent,
+        delta_url: delta_asset["browser_download_url"],
+        full_url: full_asset["browser_download_url"]
+      }}
+    else
+      {:error, :delta_too_large}
     end
   end
 
   def apply_delta_update(delta_url, target_version) do
     random_suffix = :rand.uniform(1_000_000)
 
-    with {:ok, base_tmp_dir} <- @system_adapter.system_tmp_dir(),
+    with {:ok, base_tmp_dir} <- system_adapter().system_tmp_dir(),
          tmp_dir_path =
            Path.join(base_tmp_dir, "raxol_update_#{random_suffix}"),
-         :ok <- @system_adapter.file_mkdir_p(tmp_dir_path) do
+         :ok <- system_adapter().file_mkdir_p(tmp_dir_path) do
       try do
         perform_update(tmp_dir_path, delta_url, target_version)
       after
-        @system_adapter.file_rm_rf(tmp_dir_path)
+        system_adapter().file_rm_rf(tmp_dir_path)
       end
     else
       {:error, reason} -> {:error, reason}
@@ -64,13 +73,23 @@ defmodule Raxol.System.DeltaUpdater do
 
   # Private functions
 
-  defp extract_assets(%{"assets" => assets}) when list?(assets),
+  defp extract_assets(releases, target_version) when is_list(releases) do
+    # Find the release with the target version
+    case Enum.find(releases, &(&1["tag_name"] == "v#{target_version}")) do
+      nil -> {:error, :release_not_found}
+      release -> extract_assets(release, target_version)
+    end
+  end
+
+  defp extract_assets(%{"assets" => assets}, target_version) when is_list(assets),
     do: {:ok, assets}
 
-  defp extract_assets(_), do: {:error, "No assets found in release data"}
+  defp extract_assets(_, _), do: {:error, "No assets found in release data"}
 
   defp find_delta_asset(assets, target_version) do
-    case Enum.find(assets, &(&1["name"] =~ ~r/delta-#{target_version}/)) do
+    # Match assets like raxol-delta-*-<from>-<to>-*.bin
+    regex = ~r/raxol-delta-[^-]+-#{Regex.escape(target_version)}-[^.]+\.bin/
+    case Enum.find(assets, &(&1["name"] =~ regex)) do
       nil -> {:error, :delta_not_found}
       asset -> {:ok, asset}
     end
@@ -84,7 +103,7 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   defp download_delta(url, destination) do
-    case @system_adapter.httpc_request(
+    case system_adapter().httpc_request(
            :get,
            {String.to_charlist(url), []},
            [],
@@ -101,8 +120,8 @@ defmodule Raxol.System.DeltaUpdater do
 
   defp get_current_executable do
     # Use adapter for system calls
-    exe_path_env = @system_adapter.system_get_env("BURRITO_EXECUTABLE_PATH")
-    argv = @system_adapter.system_argv()
+    exe_path_env = system_adapter().system_get_env("BURRITO_EXECUTABLE_PATH")
+    argv = system_adapter().system_argv()
 
     exe = exe_path_env || List.first(argv)
 
@@ -117,7 +136,7 @@ defmodule Raxol.System.DeltaUpdater do
   defp apply_binary_delta(original_file, delta_file, output_file) do
     # We use bsdiff/bspatch for binary deltas
     # This assumes bspatch is available on the system
-    case @system_adapter.system_cmd(
+    case system_adapter().system_cmd(
            "bspatch",
            [original_file, output_file, delta_file],
            []
@@ -132,7 +151,7 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   defp verify_patched_executable(exe_path, expected_version) do
-    case @system_adapter.file_chmod(exe_path, 0o755) do
+    case system_adapter().file_chmod(exe_path, 0o755) do
       :ok -> check_version(exe_path, expected_version)
       {:error, reason} -> {:error, {:chmod_failed, reason}}
       error -> error
@@ -140,7 +159,7 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   defp check_version(exe_path, expected_version) do
-    case @system_adapter.system_cmd(exe_path, ["--version"],
+    case system_adapter().system_cmd(exe_path, ["--version"],
            stderr_to_stdout: true
          ) do
       {output, 0} ->
@@ -156,14 +175,14 @@ defmodule Raxol.System.DeltaUpdater do
   defp replace_executable(current_exe, new_exe) do
     # Determine platform using adapter
     platform =
-      case @system_adapter.os_type() do
+      case system_adapter().os_type() do
         {:win32, _} -> "windows"
         # Default to unix for other :os.type() results
         _ -> "unix"
       end
 
     # Call the shared helper function via adapter
-    @system_adapter.updater_do_replace_executable(
+    system_adapter().updater_do_replace_executable(
       current_exe,
       new_exe,
       platform
@@ -172,24 +191,18 @@ defmodule Raxol.System.DeltaUpdater do
 
   defp get_releases do
     url = "https://api.github.com/repos/raxol/raxol/releases"
-    headers = [{~c"User-Agent", ~c"Raxol-Updater"}]
 
-    case @system_adapter.httpc_request(
-           :get,
-           {String.to_charlist(url), headers},
-           [],
-           []
-         ) do
-      {:ok, {{_http_vsn, 200, _reason_phrase}, _response_headers, body}} ->
+    case system_adapter().http_get(url) do
+      {:ok, body} ->
         # Assuming body is a string that needs decoding
         try do
-          {:ok, Jason.decode!(body)}
+          releases = Jason.decode!(body)
+          {:ok, releases}
         rescue
           Jason.DecodeError -> {:error, :json_decode_error}
         end
 
-      {:ok,
-       {{_http_vsn, status_code, _reason_phrase}, _response_headers, _body}} ->
+      {:error, {:http_error, status_code, _body}} ->
         {:error, {:fetch_releases_failed_status, status_code}}
 
       {:error, reason} ->

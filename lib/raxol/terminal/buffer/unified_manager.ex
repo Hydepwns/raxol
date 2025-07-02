@@ -334,7 +334,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     ScreenBuffer.cleanup(state.active_buffer)
     ScreenBuffer.cleanup(state.back_buffer)
     Scroll.cleanup(state.scrollback_buffer)
-    Buffer.DamageTracker.cleanup(state.damage_tracker)
+    Raxol.Terminal.Buffer.DamageTracker.cleanup(state.damage_tracker)
     :ok
   end
 

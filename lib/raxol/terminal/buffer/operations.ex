@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.Buffer.{Cursor, LineOperations}
+  alias Raxol.Terminal.Emulator
 
   @doc """
   Resizes the buffer to the specified dimensions.
@@ -257,7 +258,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
     cond do
       is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
         updated_cells = erase_in_display_cells(buffer.cells, mode, row, col)
-        %{buffer | cells: updated_cells}
+        updated_buffer = %{buffer | cells: updated_cells}
+        # If called from an emulator, ensure the emulator's active buffer is updated
+        if Map.has_key?(buffer, :emulator_owner) and is_map(buffer.emulator_owner) do
+          Emulator.update_active_buffer(buffer.emulator_owner, updated_buffer)
+        else
+          updated_buffer
+        end
 
       is_list(buffer) ->
         case mode do
@@ -601,7 +608,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   defp map_cells_up_to_column(line, col) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if cell_col <= col, do: Cell.new(), else: cell
+      if cell_col < col, do: Cell.new(), else: cell
     end)
   end
 

@@ -189,14 +189,17 @@ defmodule Raxol.Terminal.Buffer.Writer do
           ScreenBuffer.t()
   def write_string(%ScreenBuffer{} = buffer, x, y, string)
       when x >= 0 and y >= 0 do
-    segments = Raxol.Terminal.CharacterHandling.process_bidi_text(string)
+    if y < buffer.height and x < buffer.width do
+      segments = Raxol.Terminal.CharacterHandling.process_bidi_text(string)
 
-    Enum.reduce(segments, {buffer, x}, fn {_type, segment},
-                                          {acc_buffer, acc_x} ->
-      {new_buffer, new_x} = write_segment(acc_buffer, acc_x, y, segment)
-      {new_buffer, new_x}
-    end)
-    |> elem(0)
+      Enum.reduce(segments, {buffer, x}, fn {_type, segment}, {acc_buffer, acc_x} ->
+        {new_buffer, new_x} = write_segment(acc_buffer, acc_x, y, segment)
+        {new_buffer, new_x}
+      end)
+      |> elem(0)
+    else
+      buffer
+    end
   end
 
   @doc """
@@ -227,11 +230,11 @@ defmodule Raxol.Terminal.Buffer.Writer do
           String.t()
         ) :: {ScreenBuffer.t(), non_neg_integer()}
   def write_segment(buffer, x, y, segment) do
-    Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,
-                                                           {acc_buffer, acc_x} ->
+    Enum.reduce(String.graphemes(segment), {buffer, x}, fn char, {acc_buffer, acc_x} ->
       codepoint = hd(String.to_charlist(char))
       width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
       {write_char(acc_buffer, acc_x, y, char), acc_x + width}
     end)
   end
+
 end

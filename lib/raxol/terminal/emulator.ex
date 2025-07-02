@@ -119,6 +119,23 @@ defmodule Raxol.Terminal.Emulator do
           sixel_state: any() | nil
         }
 
+  defp sgr_code_mappings do
+    %{
+      0 => fn _style -> Raxol.Terminal.ANSI.TextFormatting.new() end,
+      1 => &Raxol.Terminal.ANSI.TextFormatting.set_bold/1,
+      4 => &Raxol.Terminal.ANSI.TextFormatting.set_underline/1,
+      30 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :black),
+      31 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :red),
+      32 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :green),
+      33 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :yellow),
+      34 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :blue),
+      35 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :magenta),
+      36 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :cyan),
+      37 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :white),
+      39 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, nil)
+    }
+  end
+
   # Cursor Operations
   defdelegate get_cursor_position(emulator), to: CursorOperations
   defdelegate set_cursor_position(emulator, x, y), to: CursorOperations
@@ -752,13 +769,13 @@ defmodule Raxol.Terminal.Emulator do
         row = String.to_integer(row_str)
         col = String.to_integer(col_str)
         # Convert from 1-indexed to 0-indexed coordinates
-        # Note: move_cursor_to expects (col, row) order
-        move_cursor_to(emulator, col - 1, row - 1)
+        # Note: move_cursor_to expects {row, col} order
+        move_cursor_to(emulator, {row - 1, col - 1}, emulator.width, emulator.height)
 
       [pos_str] ->
         pos = String.to_integer(pos_str)
         # Convert from 1-indexed to 0-indexed coordinates
-        move_cursor_to(emulator, pos - 1, 0)
+        move_cursor_to(emulator, {0, pos - 1}, emulator.width, emulator.height)
 
       _ ->
         emulator
@@ -820,23 +837,6 @@ defmodule Raxol.Terminal.Emulator do
     end
 
     emulator
-  end
-
-  defp sgr_code_mappings do
-    %{
-      0 => fn _style -> Raxol.Terminal.ANSI.TextFormatting.new() end,
-      1 => &Raxol.Terminal.ANSI.TextFormatting.set_bold/1,
-      4 => &Raxol.Terminal.ANSI.TextFormatting.set_underline/1,
-      30 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :black),
-      31 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :red),
-      32 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :green),
-      33 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :yellow),
-      34 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :blue),
-      35 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :magenta),
-      36 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :cyan),
-      37 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :white),
-      39 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, nil)
-    }
   end
 
   defp log_sgr_debug(msg) do
@@ -1091,11 +1091,11 @@ defmodule Raxol.Terminal.Emulator do
           non_neg_integer() | nil,
           non_neg_integer() | nil
         ) :: t()
-  def move_cursor_to(emulator, {x, y}, _width, _height) do
+  def move_cursor_to(emulator, {row, col}, _width, _height) do
     cursor = emulator.cursor
 
     if pid?(cursor) do
-      GenServer.call(cursor, {:set_position, x, y})
+      GenServer.call(cursor, {:set_position, row, col})
     end
 
     emulator

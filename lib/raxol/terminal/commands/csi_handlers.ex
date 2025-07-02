@@ -51,6 +51,95 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     66 => :application_keypad
   }
 
+  # Cursor movement functions (defined before the map that references them)
+  def handle_cursor_up(emulator, amount) do
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?A)
+  end
+
+  def handle_cursor_down(emulator, amount) do
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?B)
+  end
+
+  def handle_cursor_forward(emulator, amount) do
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?C)
+  end
+
+  def handle_cursor_backward(emulator, amount) do
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?D)
+  end
+
+  def handle_cursor_position(emulator, row, col) do
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [row, col], ?H)
+  end
+
+  def handle_cursor_position(emulator, params) do
+    case params do
+      [] -> Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [1, 1], ?H)
+      [row] -> Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [row, 1], ?H)
+      [row, col] -> Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [row, col], ?H)
+    end
+  end
+
+  def handle_cursor_column(emulator, column) do
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [column], ?G)
+  end
+
+  # Screen operations (defined before the map that references them)
+  def handle_erase_display(emulator, mode) do
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [mode], ?J)
+  end
+
+  def handle_erase_line(emulator, mode) do
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [mode], ?K)
+  end
+
+  def handle_screen_clear(emulator, params) do
+    case params do
+      [] -> handle_erase_display(emulator, 0)
+      [0] -> handle_erase_display(emulator, 0)
+      [1] -> handle_erase_display(emulator, 1)
+      [2] -> handle_erase_display(emulator, 2)
+      _ -> {:ok, emulator}
+    end
+  end
+
+  def handle_line_clear(emulator, params) do
+    case params do
+      [] -> handle_erase_line(emulator, 0)
+      [0] -> handle_erase_line(emulator, 0)
+      [1] -> handle_erase_line(emulator, 1)
+      [2] -> handle_erase_line(emulator, 2)
+      _ -> {:ok, emulator}
+    end
+  end
+
+  # Scrolling operations (defined before the map that references them)
+  def handle_scroll_up(emulator, lines) do
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [lines], ?S)
+  end
+
+  def handle_scroll_down(emulator, lines) do
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [lines], ?T)
+  end
+
+  # Device operations (defined before the map that references them)
+  def handle_device_status(emulator, params) do
+    case params do
+      [?6, ?n] -> Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(emulator, [6], "", ?n)
+      _ -> {:ok, emulator}
+    end
+  end
+
+  # Text attributes (defined before the map that references them)
+  def handle_text_attributes(emulator, params) do
+    Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(emulator, params, ?m)
+  end
+
+  # Save/Restore cursor (defined before the map that references them)
+  def handle_save_restore_cursor(emulator, params) do
+    Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(emulator, params, ?s)
+  end
+
   @sequence_handlers %{
     [?A] => {:cursor_up, 1},
     [?B] => {:cursor_down, 1},
@@ -68,6 +157,24 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     [?T] => {:scroll_down, 1},
     [?6, ?n] => {:device_status, [?6, ?n]}
   }
+
+  def csi_command_handlers do
+    %{
+      :cursor_up => &handle_cursor_up(&1, List.first(&2) || 1),
+      :cursor_down => &handle_cursor_down(&1, List.first(&2) || 1),
+      :cursor_forward => &handle_cursor_forward(&1, List.first(&2) || 1),
+      :cursor_backward => &handle_cursor_backward(&1, List.first(&2) || 1),
+      :cursor_position => &handle_cursor_position(&1, &2),
+      :cursor_column => &handle_cursor_column(&1, List.first(&2) || 1),
+      :screen_clear => &handle_screen_clear(&1, &2),
+      :line_clear => &handle_erase_line(&1, List.first(&2) || 0),
+      :text_attributes => &handle_text_attributes(&1, &2),
+      :scroll_up => &handle_scroll_up(&1, List.first(&2) || 1),
+      :scroll_down => &handle_scroll_down(&1, List.first(&2) || 1),
+      :device_status => &handle_device_status(&1, &2),
+      :save_restore_cursor => &handle_save_restore_cursor(&1, &2)
+    }
+  end
 
   def handle_basic_command(emulator, params, byte) do
     Basic.handle_command(emulator, params, byte)
@@ -148,38 +255,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     end
   end
 
-  # Cursor movement functions
-  def handle_cursor_up(emulator, amount) do
-    Cursor.handle_command(emulator, [amount], ?A)
-  end
 
-  def handle_cursor_down(emulator, amount) do
-    Cursor.handle_command(emulator, [amount], ?B)
-  end
-
-  def handle_cursor_forward(emulator, amount) do
-    Cursor.handle_command(emulator, [amount], ?C)
-  end
-
-  def handle_cursor_backward(emulator, amount) do
-    Cursor.handle_command(emulator, [amount], ?D)
-  end
-
-  def handle_cursor_position(emulator, row, col) do
-    Cursor.handle_command(emulator, [row, col], ?H)
-  end
-
-  def handle_cursor_position(emulator, params) do
-    case params do
-      [] -> Cursor.handle_command(emulator, [1, 1], ?H)
-      [row] -> Cursor.handle_command(emulator, [row, 1], ?H)
-      [row, col] -> Cursor.handle_command(emulator, [row, col], ?H)
-    end
-  end
-
-  def handle_cursor_column(emulator, column) do
-    Cursor.handle_command(emulator, [column], ?G)
-  end
 
   def handle_cursor_movement(emulator, sequence) do
     case sequence do
@@ -191,90 +267,25 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     end
   end
 
-  # Screen operations
-  def handle_erase_display(emulator, mode) do
-    Screen.handle_command(emulator, [mode], ?J)
-  end
 
-  def handle_erase_line(emulator, mode) do
-    Screen.handle_command(emulator, [mode], ?K)
-  end
-
-  def handle_screen_clear(emulator, params) do
-    case params do
-      [] -> handle_erase_display(emulator, 0)
-      [0] -> handle_erase_display(emulator, 0)
-      [1] -> handle_erase_display(emulator, 1)
-      [2] -> handle_erase_display(emulator, 2)
-      _ -> {:ok, emulator}
-    end
-  end
-
-  def handle_line_clear(emulator, params) do
-    case params do
-      [] -> handle_erase_line(emulator, 0)
-      [0] -> handle_erase_line(emulator, 0)
-      [1] -> handle_erase_line(emulator, 1)
-      [2] -> handle_erase_line(emulator, 2)
-      _ -> {:ok, emulator}
-    end
-  end
-
-  # Scrolling operations
-  def handle_scroll_up(emulator, lines) do
-    Screen.handle_command(emulator, [lines], ?S)
-  end
-
-  def handle_scroll_down(emulator, lines) do
-    Screen.handle_command(emulator, [lines], ?T)
-  end
-
-  # Device operations
-  def handle_device_status(emulator, params) do
-    case params do
-      [?6, ?n] -> Device.handle_command(emulator, [6], "", ?n)
-      _ -> {:ok, emulator}
-    end
-  end
-
-  # Save/Restore cursor
-  def handle_save_restore_cursor(emulator, params) do
-    case params do
-      [?s] -> Basic.handle_command(emulator, [], ?s)
-      [?u] -> Basic.handle_command(emulator, [], ?u)
-      _ -> {:ok, emulator}
-    end
-  end
-
-  # Text attributes
-  def handle_text_attributes(emulator, params) do
-    Basic.handle_command(emulator, params, ?m)
-  end
 
   # Mode changes
   def handle_mode_change(emulator, mode, enabled) do
-    # Check if it's a public mode first
-    case Map.get(@public_modes, mode) do
-      nil ->
-        # Check if it's a private mode
-        case Map.get(@private_modes, mode) do
-          nil ->
-            {:ok, emulator}
+    case get_mode_name(mode) do
+      nil -> {:ok, emulator}
+      mode_name -> set_or_reset_mode(emulator, mode_name, enabled)
+    end
+  end
 
-          mode_name ->
-            if enabled do
-              Emulator.set_mode(emulator, mode_name)
-            else
-              Emulator.reset_mode(emulator, mode_name)
-            end
-        end
+  defp get_mode_name(mode) do
+    Map.get(@public_modes, mode) || Map.get(@private_modes, mode)
+  end
 
-      mode_name ->
-        if enabled do
-          Emulator.set_mode(emulator, mode_name)
-        else
-          Emulator.reset_mode(emulator, mode_name)
-        end
+  defp set_or_reset_mode(emulator, mode_name, enabled) do
+    if enabled do
+      Emulator.set_mode(emulator, mode_name)
+    else
+      Emulator.reset_mode(emulator, mode_name)
     end
   end
 
@@ -494,45 +505,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   @spec handle_csi_sequence(Emulator.t(), atom(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_csi_sequence(emulator, command, params) do
-    case command do
-      :cursor_up ->
-        handle_cursor_up(emulator, List.first(params) || 1)
-
-      :cursor_down ->
-        handle_cursor_down(emulator, List.first(params) || 1)
-
-      :cursor_forward ->
-        handle_cursor_forward(emulator, List.first(params) || 1)
-
-      :cursor_backward ->
-        handle_cursor_backward(emulator, List.first(params) || 1)
-
-      :cursor_position ->
-        handle_cursor_position(emulator, params)
-
-      :cursor_column ->
-        handle_cursor_column(emulator, List.first(params) || 1)
-
-      :screen_clear ->
-        handle_screen_clear(emulator, params)
-
-      :line_clear ->
-        handle_erase_line(emulator, List.first(params) || 0)
-
-      :text_attributes ->
-        handle_text_attributes(emulator, params)
-
-      :scroll_up ->
-        handle_scroll_up(emulator, List.first(params) || 1)
-
-      :scroll_down ->
-        handle_scroll_down(emulator, List.first(params) || 1)
-
-      :device_status ->
-        handle_device_status(emulator, params)
-
-      _ ->
-        {:ok, emulator}
+    case Map.get(@csi_handlers, command) do
+      nil -> {:ok, emulator}
+      handler -> handler.(emulator, params)
     end
   end
 end

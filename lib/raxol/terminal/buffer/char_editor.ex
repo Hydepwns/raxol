@@ -458,13 +458,16 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     else
       line = Enum.at(buffer.cells, row)
       chars = String.graphemes(string)
-      max_len = length(line) - col
-      chars = Enum.take(chars, max_len)
 
-      updated_line = update_line_with_chars(line, col, chars)
-      updated_line = pad_or_truncate_line(updated_line, buffer.width)
-      cells = List.replace_at(buffer.cells, row, updated_line)
-      %{buffer | cells: cells}
+      # Check if the string would fit within the buffer bounds
+      if col + length(chars) > buffer.width do
+        buffer
+      else
+        updated_line = update_line_with_chars(line, col, chars)
+        updated_line = pad_or_truncate_line(updated_line, buffer.width)
+        cells = List.replace_at(buffer.cells, row, updated_line)
+        %{buffer | cells: cells}
+      end
     end
   end
 

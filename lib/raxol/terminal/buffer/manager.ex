@@ -118,12 +118,15 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
     lock = :ets.new(:buffer_lock, [:set, :private])
 
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+
     state = %__MODULE__{
-      buffer: Operations.new(opts),
+      buffer: BufferImpl.new(width, height),
       memory_manager: memory_manager,
       damage_tracker: DamageTracker.new(),
       scrollback_manager: ScrollbackManager.new(),
-      renderer: Renderer.new(width: 80, height: 24),
+      renderer: Renderer.new(width: width, height: height),
       metrics: %{
         writes: 0,
         reads: 0,

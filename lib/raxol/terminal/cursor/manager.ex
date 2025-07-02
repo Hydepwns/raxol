@@ -10,14 +10,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
-  defstruct x: 0,
-            y: 0,
+  defstruct row: 0,
+            col: 0,
             visible: true,
             blinking: true,
             style: :block,
             color: nil,
-            saved_x: nil,
-            saved_y: nil,
+            saved_row: nil,
+            saved_col: nil,
             saved_style: nil,
             saved_visible: nil,
             saved_blinking: nil,
@@ -41,14 +41,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @type color :: {non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
 
   @type t :: %__MODULE__{
-          x: non_neg_integer(),
-          y: non_neg_integer(),
+          row: non_neg_integer(),
+          col: non_neg_integer(),
           visible: boolean(),
           blinking: boolean(),
           style: cursor_style(),
           color: color(),
-          saved_x: non_neg_integer() | nil,
-          saved_y: non_neg_integer() | nil,
+          saved_row: non_neg_integer() | nil,
+          saved_col: non_neg_integer() | nil,
           saved_style: cursor_style() | nil,
           saved_visible: boolean() | nil,
           saved_blinking: boolean() | nil,
@@ -104,13 +104,13 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Creates a new cursor manager with specified x and y coordinates.
+  Creates a new cursor manager with specified row and col coordinates.
   """
-  def new(x, y) when is_integer(x) and is_integer(y) do
+  def new(row, col) when is_integer(row) and is_integer(col) do
     %__MODULE__{
-      x: x,
-      y: y,
-      position: {x, y}
+      row: row,
+      col: col,
+      position: {row, col}
     }
   end
 
@@ -152,15 +152,15 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Moves the cursor to a specific position.
   """
-  def move_to(cursor, {x, y}) do
-    %{cursor | x: x, y: y, position: {x, y}}
+  def move_to(cursor, {row, col}) do
+    %{cursor | row: row, col: col, position: {row, col}}
   end
 
   @doc """
   Moves the cursor to a specific position.
   """
   def move_to(cursor, row, col) do
-    %{cursor | x: row, y: col, position: {row, col}}
+    %{cursor | row: row, col: col, position: {row, col}}
   end
 
   @doc """
@@ -172,8 +172,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
     %{
       cursor
-      | x: clamped_row,
-        y: clamped_col,
+      | row: clamped_row,
+        col: clamped_col,
         position: {clamped_row, clamped_col}
     }
   end
@@ -182,85 +182,85 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Moves the cursor up by the specified number of lines.
   """
   def move_up(cursor, lines, _width, _height) do
-    new_y = max(cursor.top_margin, cursor.y - lines)
-    %{cursor | y: new_y}
+    new_row = max(cursor.top_margin, cursor.row - lines)
+    %{cursor | row: new_row}
   end
 
   @doc """
   Moves the cursor down by the specified number of lines.
   """
   def move_down(cursor, lines, _width, _height) do
-    new_y = min(cursor.bottom_margin, cursor.y + lines)
-    %{cursor | y: new_y}
+    new_row = min(cursor.bottom_margin, cursor.row + lines)
+    %{cursor | row: new_row}
   end
 
   @doc """
   Moves the cursor left by the specified number of columns.
   """
   def move_left(cursor, cols, _width, _height) do
-    new_x = max(0, cursor.x - cols)
-    %{cursor | x: new_x}
+    new_col = max(0, cursor.col - cols)
+    %{cursor | col: new_col}
   end
 
   @doc """
   Moves the cursor right by the specified number of columns.
   """
   def move_right(cursor, cols, _width, _height) do
-    new_x = cursor.x + cols
-    %{cursor | x: new_x}
+    new_col = cursor.col + cols
+    %{cursor | col: new_col}
   end
 
   @doc """
   Moves the cursor to the beginning of the line.
   """
   def move_to_line_start(cursor) do
-    %{cursor | x: 0}
+    %{cursor | col: 0}
   end
 
   @doc """
   Moves the cursor to the end of the line.
   """
   def move_to_line_end(cursor, line_width) do
-    %{cursor | x: line_width - 1}
+    %{cursor | col: line_width - 1}
   end
 
   @doc """
   Moves the cursor to the specified column.
   """
   def move_to_column(cursor, column) do
-    %{cursor | x: column}
+    %{cursor | col: column}
   end
 
   @doc """
   Moves the cursor to the specified line.
   """
   def move_to_line(cursor, line) do
-    %{cursor | y: line}
+    %{cursor | row: line}
   end
 
   @doc """
   Moves the cursor to the home position (0, 0).
   """
   def move_home(cursor, _width, _height) do
-    %{cursor | x: 0, y: 0}
+    %{cursor | col: 0, row: 0}
   end
 
   @doc """
   Moves the cursor to the next tab stop.
   """
   def move_to_next_tab(cursor, tab_size, width, _height) do
-    next_tab = div(cursor.x + tab_size, tab_size) * tab_size
-    new_x = min(next_tab, width - 1)
-    %{cursor | x: new_x}
+    next_tab = div(cursor.col + tab_size, tab_size) * tab_size
+    new_col = min(next_tab, width - 1)
+    %{cursor | col: new_col}
   end
 
   @doc """
   Moves the cursor to the previous tab stop.
   """
   def move_to_prev_tab(cursor, tab_size, _width, _height) do
-    prev_tab = div(cursor.x - 1, tab_size) * tab_size
-    new_x = max(prev_tab, 0)
-    %{cursor | x: new_x}
+    prev_tab = div(cursor.col - 1, tab_size) * tab_size
+    new_col = max(prev_tab, 0)
+    %{cursor | col: new_col}
   end
 
   @doc """
@@ -332,8 +332,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def save_state(%__MODULE__{} = state) do
     %{
       state
-      | saved_x: state.x,
-        saved_y: state.y,
+      | saved_row: state.row,
+        saved_col: state.col,
         saved_style: state.style,
         saved_visible: state.visible,
         saved_blinking: state.blinking,
@@ -347,8 +347,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def restore_state(%__MODULE__{} = state) do
     %{
       state
-      | x: state.saved_x || state.x,
-        y: state.saved_y || state.y,
+      | row: state.saved_row || state.row,
+        col: state.saved_col || state.col,
         style: state.saved_style || state.style,
         visible: state.saved_visible || state.visible,
         blinking: state.saved_blinking || state.blinking,
@@ -362,14 +362,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def reset(%__MODULE__{} = state) do
     %{
       state
-      | x: 0,
-        y: 0,
+      | row: 0,
+        col: 0,
         visible: true,
         blinking: true,
         style: :block,
         color: nil,
-        saved_x: nil,
-        saved_y: nil,
+        saved_row: nil,
+        saved_col: nil,
         saved_style: nil,
         saved_visible: nil,
         saved_blinking: nil,
@@ -558,8 +558,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def save_position(%__MODULE__{} = state) do
     %{
       state
-      | saved_x: state.x,
-        saved_y: state.y,
+      | saved_row: state.row,
+        saved_col: state.col,
         saved_position: state.position
     }
   end
@@ -568,12 +568,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Restores the saved cursor position.
   """
   def restore_position(%__MODULE__{} = state) do
-    if state.saved_x && state.saved_y do
+    if state.saved_row && state.saved_col do
       %{
         state
-        | x: state.saved_x,
-          y: state.saved_y,
-          position: {state.saved_x, state.saved_y}
+        | row: state.saved_row,
+          col: state.saved_col,
+          position: {state.saved_row, state.saved_col}
       }
     else
       state
@@ -585,8 +585,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def add_to_history(%__MODULE__{} = state) do
     history_entry = %{
-      x: state.x,
-      y: state.y,
+      row: state.row,
+      col: state.col,
       style: state.style,
       visible: state.visible,
       blinking: state.blinking,
@@ -609,8 +609,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
       [entry | rest] ->
         %{
           state
-          | x: entry.x,
-            y: entry.y,
+          | row: entry.row,
+            col: entry.col,
             style: entry.style,
             visible: entry.visible,
             blinking: entry.blinking,
@@ -634,7 +634,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @impl GenServer
   def handle_call(:get_position, _from, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Getting cursor position: {#{state.x}, #{state.y}}"
+      "Getting cursor position: {#{state.row}, #{state.col}}"
     )
 
     {:reply, state.position, state}
@@ -643,10 +643,10 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @impl GenServer
   def handle_call({:set_position, row, col}, _from, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Setting cursor position from {#{state.x}, #{state.y}} to {#{row}, #{col}}"
+      "Setting cursor position from {#{state.row}, #{state.col}} to {#{row}, #{col}}"
     )
 
-    new_state = %{state | x: row, y: col, position: {row, col}}
+    new_state = %{state | row: row, col: col, position: {row, col}}
     {:reply, :ok, new_state}
   end
 
@@ -721,12 +721,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call({:update_position, row, col}, _from, state) do
-    {:reply, :ok, %{state | x: row, y: col, position: {row, col}}}
+    {:reply, :ok, %{state | row: row, col: col, position: {row, col}}}
   end
 
   @impl GenServer
   def handle_call(:reset_position, _from, state) do
-    {:reply, :ok, %{state | x: 0, y: 0}}
+    {:reply, :ok, %{state | row: 0, col: 0}}
   end
 
   @impl GenServer
@@ -770,10 +770,10 @@ defmodule Raxol.Terminal.Cursor.Manager do
   defp cancel_blink(timer_id), do: Process.cancel_timer(timer_id)
 
   @doc """
-  Gets the cursor position as a tuple {x, y}.
+  Gets the cursor position as a tuple {row, col}.
   """
   def get_position_tuple(cursor) do
-    {cursor.x, cursor.y}
+    {cursor.row, cursor.col}
   end
 
   @doc """

@@ -431,7 +431,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
       "DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}"
     )
 
-    # Clear from start of line to cursor
+    # Clear from start of line to cursor (inclusive)
     line = Enum.at(buffer.cells, y, [])
     empty_cell = Raxol.Terminal.Cell.new()
     cleared_line = List.duplicate(empty_cell, x + 1) ++ Enum.drop(line, x + 1)
