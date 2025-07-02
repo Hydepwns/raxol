@@ -143,19 +143,23 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   defp get_selected_text(%__MODULE__{} = state) do
-    with %{
-           selection_start: start_pos,
-           selection_end: end_pos,
-           last_cells_at_selection: cells
-         } <- state do
-      if valid_selection?(start_pos, end_pos, cells) do
-        {min_x, max_x, min_y, max_y} = get_selection_bounds(start_pos, end_pos)
-        {:ok, build_selected_text(cells, min_x, max_x, min_y, max_y)}
-      else
+    case state do
+      %{
+        selection_start: start_pos,
+        selection_end: end_pos,
+        last_cells_at_selection: cells
+      } ->
+        if valid_selection?(start_pos, end_pos, cells) do
+          {min_x, max_x, min_y, max_y} =
+            get_selection_bounds(start_pos, end_pos)
+
+          {:ok, build_selected_text(cells, min_x, max_x, min_y, max_y)}
+        else
+          {:error, :no_selection}
+        end
+
+      _ ->
         {:error, :no_selection}
-      end
-    else
-      _ -> {:error, :no_selection}
     end
   end
 
