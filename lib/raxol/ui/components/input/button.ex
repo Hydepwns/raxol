@@ -115,24 +115,12 @@ defmodule Raxol.UI.Components.Input.Button do
   """
   @impl Component
   def render(button, context) do
-    # Access component styles correctly from context.component_styles
-    component_styles = context.component_styles || %{}
-    button_theme_from_context = component_styles.button || %{}
-    theme = Map.merge(button_theme_from_context, button.theme || %{})
-    style = button.style || %{}
-    merged_style = Map.merge(theme, style)
-
-    # Determine colors based on state (including focus) and role
+    merged_style = build_merged_style(button, context)
     {fg, bg} = resolve_colors(button, merged_style)
 
-    button_width =
-      button.width || min(String.length(button.label) + 4, context.max_width)
-
+    button_width = calculate_width(button, context)
     button_height = button.height || 3
-
-    # Add focus indicator to label if focused
-    display_label =
-      if button.focused, do: "> #{button.label} <", else: button.label
+    display_label = build_display_label(button)
 
     %{
       type: :button,
@@ -151,7 +139,6 @@ defmodule Raxol.UI.Components.Input.Button do
       },
       events: [
         Raxol.Core.Events.Event.new(:click, fn ->
-          # Access on_click and disabled directly from the button state map
           if button.on_click && !button.disabled, do: button.on_click.()
         end)
       ]
@@ -202,6 +189,16 @@ defmodule Raxol.UI.Components.Input.Button do
 
   def handle_event(
         button,
+        %Raxol.Core.Events.Event{type: :focus},
+        _context
+      ) do
+    # Handle focus event without data (default to focused: true)
+    updated_button = %{button | focused: true}
+    {:update, updated_button, []}
+  end
+
+  def handle_event(
+        button,
         %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
         _context
       ) do
@@ -225,32 +222,48 @@ defmodule Raxol.UI.Components.Input.Button do
 
   # Private helpers
 
+  defp build_merged_style(button, context) do
+    component_styles = context.component_styles || %{}
+    button_theme_from_context = component_styles.button || %{}
+    theme = Map.merge(button_theme_from_context, button.theme || %{})
+    style = button.style || %{}
+    Map.merge(theme, style)
+  end
+
+  defp calculate_width(button, context) do
+    button.width || min(String.length(button.label) + 4, context.max_width)
+  end
+
+  defp build_display_label(button) do
+    if button.focused, do: "> #{button.label} <", else: button.label
+  end
+
   defp resolve_colors(button, style) do
-    # Default fg from theme or :default
     default_fg = Map.get(style, :fg, :default)
-    # Default bg from theme or :default
     default_bg = Map.get(style, :bg, :default)
 
     cond do
-      button.disabled ->
-        # Use Map.get with fallback to default_fg/default_bg
-        {Map.get(style, :disabled_fg, default_fg),
-         Map.get(style, :disabled_bg, default_bg)}
-
-      button.focused ->
-        {Map.get(style, :focused_fg, default_fg),
-         Map.get(style, :focused_bg, default_bg)}
-
-      button.role == :primary ->
-        {Map.get(style, :primary_fg, default_fg),
-         Map.get(style, :primary_bg, default_bg)}
-
-      button.role == :secondary ->
-        {Map.get(style, :secondary_fg, default_fg),
-         Map.get(style, :secondary_bg, default_bg)}
-
-      true ->
-        {default_fg, default_bg}
+      button.disabled -> get_disabled_colors(style, default_fg, default_bg)
+      button.focused -> get_focused_colors(style, default_fg, default_bg)
+      button.role == :primary -> get_primary_colors(style, default_fg, default_bg)
+      button.role == :secondary -> get_secondary_colors(style, default_fg, default_bg)
+      true -> {default_fg, default_bg}
     end
+  end
+
+  defp get_disabled_colors(style, default_fg, default_bg) do
+    {Map.get(style, :disabled_fg, default_fg), Map.get(style, :disabled_bg, default_bg)}
+  end
+
+  defp get_focused_colors(style, default_fg, default_bg) do
+    {Map.get(style, :focused_fg, default_fg), Map.get(style, :focused_bg, default_bg)}
+  end
+
+  defp get_primary_colors(style, default_fg, default_bg) do
+    {Map.get(style, :primary_fg, default_fg), Map.get(style, :primary_bg, default_bg)}
+  end
+
+  defp get_secondary_colors(style, default_fg, default_bg) do
+    {Map.get(style, :secondary_fg, default_fg), Map.get(style, :secondary_bg, default_bg)}
   end
 end

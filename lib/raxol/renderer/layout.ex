@@ -79,7 +79,6 @@ defmodule Raxol.Renderer.Layout do
   A list of positioned elements with absolute coordinates.
   """
   def apply_layout(view, dimensions) do
-    # Start with the full screen as available space
     available_space = %{
       x: 0,
       y: 0,
@@ -87,43 +86,33 @@ defmodule Raxol.Renderer.Layout do
       height: dimensions.height
     }
 
-    # Deeply normalize the view tree before processing
+    normalized_view = normalize_view_for_layout(view, available_space, dimensions)
+    result = process_element(normalized_view, available_space, [])
+    flatten_result(result)
+  end
+
+  defp normalize_view_for_layout(view, available_space, dimensions) do
     normalized_views = deep_normalize_child(view, available_space, :box, true)
 
-    # Handle the case where deep_normalize_child returns multiple elements
-    # For layout processing, we typically want the first (root) element
-    normalized_view =
-      case normalized_views do
-        [single_view] ->
-          single_view
+    case normalized_views do
+      [single_view] -> single_view
+      [first_view | _rest] -> first_view
+      [] -> create_default_view(dimensions)
+      single_map when map?(single_map) -> single_map
+      _other -> create_default_view(dimensions)
+    end
+  end
 
-        [first_view | _rest] ->
-          first_view
+  defp create_default_view(dimensions) do
+    %{
+      type: :box,
+      position: {0, 0},
+      size: {dimensions.width, dimensions.height},
+      children: []
+    }
+  end
 
-        [] ->
-          %{
-            type: :box,
-            position: {0, 0},
-            size: {dimensions.width, dimensions.height},
-            children: []
-          }
-
-        single_map when map?(single_map) ->
-          single_map
-
-        other ->
-          # Fallback for any other case
-          %{
-            type: :box,
-            position: {0, 0},
-            size: {dimensions.width, dimensions.height},
-            children: []
-          }
-      end
-
-    # Process the view tree
-    result = process_element(normalized_view, available_space, [])
-
+  defp flatten_result(result) do
     flat = List.flatten(result) |> Enum.reject(&nil?/1)
 
     case flat do
@@ -133,12 +122,16 @@ defmodule Raxol.Renderer.Layout do
   end
 
   # Process element functions - simplified main function
-  defp process_element(%{type: type} = element, space, acc) do
-    process_function = @element_processors[type]
-
-    if process_function,
-      do: apply(__MODULE__, process_function, [element, space, acc]),
-      else: acc
+  defp process_element(element, space, acc) do
+    case element do
+      %{type: type} = el ->
+        process_function = @element_processors[type]
+        if process_function,
+          do: apply(__MODULE__, process_function, [el, space, acc]),
+          else: acc
+      _ ->
+        acc
+    end
   end
 
   # Extract each element type into its own function
@@ -999,6 +992,9 @@ defmodule Raxol.Renderer.Layout do
   # --- RECURSIVE NORMALIZATION FOR ALL CHILDREN ---
   # Helper to deeply normalize a child (struct, map, keyword, atom, etc)
   defp deep_normalize_child(child, space, default_type, for_layout \\ false) do
+    if is_tuple(child) do
+      raise "deep_normalize_child received a tuple: #{inspect(child)}"
+    end
     normalize_by_type(child, space, default_type)
   end
 
@@ -1340,7 +1336,7 @@ defmodule Raxol.Renderer.Layout do
   end
 
   # Re-add the missing process_children/3 function
-  defp process_children(children, space, acc) when list?(children) do
+  defp process_children(children, space, acc) when is_list(children) do
     # Process each child and flatten the results, then add to the accumulator
     new_child_elements =
       Enum.flat_map(children, fn child_node ->
@@ -1361,11 +1357,9 @@ defmodule Raxol.Renderer.Layout do
     new_child_elements ++ acc
   end
 
-  # Single child map passed
-  defp process_children(child, space, acc) do
+  defp process_children(child, space, acc) when map?(child) do
     normalized_child =
-      if map?(child) and Map.has_key?(child, :type) and
-           Map.has_key?(child, :position) and Map.has_key?(child, :size) do
+      if Map.has_key?(child, :type) and Map.has_key?(child, :position) and Map.has_key?(child, :size) do
         child
       else
         ensure_required_keys(child, space)
@@ -1373,6 +1367,8 @@ defmodule Raxol.Renderer.Layout do
 
     process_element(normalized_child, space, acc)
   end
+
+  defp process_children(_other, _space, acc), do: acc
 
   defp extract_scroll_config(scroll_map, space) do
     {ox, oy} = Map.get(scroll_map, :offset, {0, 0})

@@ -192,33 +192,41 @@ defmodule Raxol.UI.Terminal do
 
     _ = :io.setopts([{:binary, true}, {:echo, false}, {:raw, true}])
 
-    result =
-      receive do
-        {:io_request, from, reply_as, {:get_chars, _, _, 1}} ->
-          # Ideally, we'd read just one char, but :io interacts strangely.
-          # Instead, we read what's available immediately.
-          chars = :io.get_chars("", 1)
-          send(from, {:io_reply, reply_as, chars})
-
-          case chars do
-            :eof -> {:error, :eof}
-            {:error, reason} -> {:error, reason}
-            data when binary?(data) -> {:ok, parse_key(data)}
-            _ -> {:error, :unknown_reply}
-          end
-
-        {:io_request, from, reply_as, req} ->
-          # Forward other IO requests
-          reply = :io.request(req)
-          send(from, {:io_reply, reply_as, reply})
-          # Re-enter receive to wait for our char or timeout
-          read_key(opts)
-      after
-        timeout -> :timeout
-      end
-
+    result = handle_key_input(timeout)
     _ = :io.setopts(original_opts)
     result
+  end
+
+  defp handle_key_input(timeout) do
+    receive do
+      {:io_request, from, reply_as, {:get_chars, _, _, 1}} ->
+        handle_char_request(from, reply_as)
+      {:io_request, from, reply_as, req} ->
+        handle_other_io_request(from, reply_as, req)
+    after
+      timeout -> :timeout
+    end
+  end
+
+  defp handle_char_request(from, reply_as) do
+    chars = :io.get_chars("", 1)
+    send(from, {:io_reply, reply_as, chars})
+    parse_char_result(chars)
+  end
+
+  defp handle_other_io_request(from, reply_as, req) do
+    reply = :io.request(req)
+    send(from, {:io_reply, reply_as, reply})
+    read_key([])
+  end
+
+  defp parse_char_result(chars) do
+    case chars do
+      :eof -> {:error, :eof}
+      {:error, reason} -> {:error, reason}
+      data when binary?(data) -> {:ok, parse_key(data)}
+      _ -> {:error, :unknown_reply}
+    end
   end
 
   @spec print_box(String.t(), keyword()) :: :ok
@@ -245,157 +253,121 @@ defmodule Raxol.UI.Terminal do
       :ok
   """
   def print_box(content, opts \\ []) do
-    # Parse content into lines
     lines = String.split(content, "\n")
+    dimensions = calculate_box_dimensions(lines, opts)
+    box_config = build_box_config(opts, dimensions)
 
-    # Calculate dimensions
+    print_box_borders(box_config)
+    print_box_content(lines, box_config)
+    :ok
+  end
+
+  defp calculate_box_dimensions(lines, opts) do
     content_width = Enum.max_by(lines, &String.length/1) |> String.length()
     content_height = length(lines)
-
     width = Keyword.get(opts, :width, content_width + 4)
-    _height = Keyword.get(opts, :height, content_height + 2)
+    height = Keyword.get(opts, :height, content_height + 2)
 
-    # Get title
-    title = Keyword.get(opts, :title)
+    %{width: width, height: height, content_width: content_width}
+  end
 
-    # Get colors
-    border_color = Keyword.get(opts, :border_color)
-    title_color = Keyword.get(opts, :title_color, border_color)
+  defp build_box_config(opts, dimensions) do
+    %{
+      width: dimensions.width,
+      title: Keyword.get(opts, :title),
+      border_color: Keyword.get(opts, :border_color),
+      title_color: Keyword.get(opts, :title_color, Keyword.get(opts, :border_color)),
+      centered: Keyword.get(opts, :centered, false)
+    }
+  end
 
-    # Get centering option
-    centered = Keyword.get(opts, :centered, false)
+  defp print_box_borders(config) do
+    top_border = "┌" <> String.duplicate("─", config.width - 2) <> "┐"
+    print_border_line(top_border, config)
 
-    # Print top border
-    border_top = "┌" <> String.duplicate("─", width - 2) <> "┐"
+    if config.title do
+      print_title(config)
+    end
+  end
 
-    if centered do
-      print_centered(border_top, color: border_color)
+  defp print_border_line(border, config) do
+    if config.centered do
+      print_centered(border, color: config.border_color)
       println()
     else
-      println(border_top, color: border_color)
+      println(border, color: config.border_color)
     end
+  end
 
-    # Print title if provided
-    if title do
-      title_line = "│ " <> String.pad_trailing(title, width - 4) <> " │"
+  defp print_title(config) do
+    title_line = "│ " <> String.pad_trailing(config.title, config.width - 4) <> " │"
+    print_border_line(title_line, config)
 
-      if centered do
-        print_centered(title_line, color: title_color)
-        println()
+    separator = "├" <> String.duplicate("─", config.width - 2) <> "┤"
+    print_border_line(separator, config)
+  end
 
-        # Print separator
-        separator = "├" <> String.duplicate("─", width - 2) <> "┤"
-        print_centered(separator, color: border_color)
-        println()
-      else
-        println(title_line, color: title_color)
-
-        println("├" <> String.duplicate("─", width - 2) <> "┤",
-          color: border_color
-        )
-      end
-    end
-
-    # Print content
-    # Prefixed with underscore to avoid unused variable warning
-    _content_padding = div(width - 2 - content_width, 2)
-
+  defp print_box_content(lines, config) do
     Enum.each(lines, fn line ->
-      line_str = "│ " <> String.pad_trailing(line, width - 4) <> " │"
-
-      if centered do
-        print_centered(line_str, color: border_color)
-        println()
-      else
-        println(line_str, color: border_color)
-      end
+      line_str = "│ " <> String.pad_trailing(line, config.width - 4) <> " │"
+      print_border_line(line_str, config)
     end)
 
-    # Print bottom border
-    border_bottom = "└" <> String.duplicate("─", width - 2) <> "┘"
-
-    if centered do
-      print_centered(border_bottom, color: border_color)
-      println()
-    else
-      println(border_bottom, color: border_color)
-    end
-
-    :ok
+    bottom_border = "└" <> String.duplicate("─", config.width - 2) <> "┘"
+    print_border_line(bottom_border, config)
   end
 
   # Private functions
 
   defp apply_styles(text, opts) do
-    # Start with an empty list of style codes
-    style_codes = []
+    style_codes = build_style_codes(opts)
+    format_text_with_styles(text, style_codes)
+  end
 
-    # Add color codes if provided
-    style_codes =
-      case Keyword.get(opts, :color) do
-        nil ->
-          style_codes
+  defp build_style_codes(opts) do
+    []
+    |> add_color_codes(opts)
+    |> add_background_codes(opts)
+    |> add_text_style_codes(opts)
+  end
 
-        color when atom?(color) ->
-          # Resolve color from ColorSystem if it's an atom
-          hex = ColorSystem.get_color(color)
-          [fg_color_code(hex) | style_codes]
-
-        hex ->
-          # Use the hex color directly
-          [fg_color_code(hex) | style_codes]
-      end
-
-    # Add background color codes if provided
-    style_codes =
-      case Keyword.get(opts, :background) do
-        nil ->
-          style_codes
-
-        color when atom?(color) ->
-          # Resolve color from ColorSystem if it's an atom
-          hex = ColorSystem.get_color(color)
-          [bg_color_code(hex) | style_codes]
-
-        hex ->
-          # Use the hex color directly
-          [bg_color_code(hex) | style_codes]
-      end
-
-    # Add other style codes
-    style_codes =
-      if Keyword.get(opts, :bold, false),
-        do: ["1" | style_codes],
-        else: style_codes
-
-    style_codes =
-      if Keyword.get(opts, :italic, false),
-        do: ["3" | style_codes],
-        else: style_codes
-
-    style_codes =
-      if Keyword.get(opts, :underline, false),
-        do: ["4" | style_codes],
-        else: style_codes
-
-    style_codes =
-      if Keyword.get(opts, :dim, false),
-        do: ["2" | style_codes],
-        else: style_codes
-
-    style_codes =
-      if Keyword.get(opts, :blink, false),
-        do: ["5" | style_codes],
-        else: style_codes
-
-    # Format the text with style codes
-    if Enum.empty?(style_codes) do
-      text
-    else
-      # Join codes and wrap text
-      codes = Enum.join(style_codes, ";")
-      "\e[#{codes}m#{text}\e[0m"
+  defp add_color_codes(codes, opts) do
+    case Keyword.get(opts, :color) do
+      nil -> codes
+      color when atom?(color) -> [fg_color_code(ColorSystem.get_color(color)) | codes]
+      hex -> [fg_color_code(hex) | codes]
     end
+  end
+
+  defp add_background_codes(codes, opts) do
+    case Keyword.get(opts, :background) do
+      nil -> codes
+      color when atom?(color) -> [bg_color_code(ColorSystem.get_color(color)) | codes]
+      hex -> [bg_color_code(hex) | codes]
+    end
+  end
+
+  defp add_text_style_codes(codes, opts) do
+    style_mappings = [
+      {:bold, "1"},
+      {:italic, "3"},
+      {:underline, "4"},
+      {:dim, "2"},
+      {:blink, "5"}
+    ]
+
+    Enum.reduce(style_mappings, codes, fn {key, code}, acc ->
+      if Keyword.get(opts, key, false), do: [code | acc], else: acc
+    end)
+  end
+
+  defp format_text_with_styles(text, []) do
+    text
+  end
+
+  defp format_text_with_styles(text, style_codes) do
+    codes = Enum.join(style_codes, ";")
+    "\e[#{codes}m#{text}\e[0m"
   end
 
   defp fg_color_code(hex) do
@@ -419,30 +391,37 @@ defmodule Raxol.UI.Terminal do
   end
 
   defp parse_key(data) do
-    case data do
+    key_mappings = %{
       # Control keys
-      "\r" -> :enter
-      "\n" -> :enter
-      " " -> :space
-      "\t" -> :tab
-      "\e" -> :escape
-      "\b" -> :backspace
-      "\x7F" -> :backspace
-      "\x03" -> :ctrl_c
-      "\x04" -> :ctrl_d
+      "\r" => :enter,
+      "\n" => :enter,
+      " " => :space,
+      "\t" => :tab,
+      "\e" => :escape,
+      "\b" => :backspace,
+      "\x7F" => :backspace,
+      "\x03" => :ctrl_c,
+      "\x04" => :ctrl_d,
       # Arrow keys
-      "\e[A" -> {:arrow, :up}
-      "\e[B" -> {:arrow, :down}
-      "\e[C" -> {:arrow, :right}
-      "\e[D" -> {:arrow, :left}
+      "\e[A" => {:arrow, :up},
+      "\e[B" => {:arrow, :down},
+      "\e[C" => {:arrow, :right},
+      "\e[D" => {:arrow, :left},
       # Function keys
-      "\e[11~" -> :f1
-      "\e[12~" -> :f2
-      "\e[13~" -> :f3
-      "\e[14~" -> :f4
-      # Default - regular character
-      <<char::utf8, _rest::binary>> -> {:char, <<char::utf8>>}
-      _ -> {:unknown, data}
+      "\e[11~" => :f1,
+      "\e[12~" => :f2,
+      "\e[13~" => :f3,
+      "\e[14~" => :f4
+    }
+
+    case Map.get(key_mappings, data) do
+      nil ->
+        # Handle regular characters
+        case data do
+          <<char::utf8, _rest::binary>> -> {:char, <<char::utf8>>}
+          _ -> {:unknown, data}
+        end
+      key -> key
     end
   end
 

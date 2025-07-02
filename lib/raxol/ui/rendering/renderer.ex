@@ -228,14 +228,20 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   def handle_cast({:apply_diff, {:replace, new_tree}, _new_tree}, state) do
     # Full replacement
-    if state.test_pid, do: send(state.test_pid, {:renderer_rendered, new_tree})
+    # Convert the tree to paint operations for consistency with other handlers
+    ops = ui_tree_to_terminal_ops_with_lines(new_tree)
+
+    # Update the buffer for the full tree render
+    {new_state, _} = do_partial_render([], new_tree, new_tree, state)
+
+    if state.test_pid, do: send(state.test_pid, {:renderer_rendered, ops})
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Renderer received full replacement diff: #{inspect(new_tree)}"
     )
 
-    {:noreply, %{state | last_render: new_tree}}
+    {:noreply, %{new_state | last_render: new_tree}}
   end
 
   @impl GenServer
