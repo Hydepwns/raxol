@@ -70,6 +70,13 @@ defmodule Raxol.Core.Metrics.Visualizer do
     GenServer.call(__MODULE__, {:export_chart, chart_id, format})
   end
 
+  @doc """
+  Stops the metrics visualizer.
+  """
+  def stop(pid \\ __MODULE__) do
+    GenServer.stop(pid)
+  end
+
   @impl GenServer
   def init(opts) do
     state = %{

@@ -87,6 +87,13 @@ defmodule Raxol.Core.Metrics.AlertManager do
     GenServer.call(process_name(process), {:acknowledge_alert, rule_id})
   end
 
+  @doc """
+  Stops the alert manager.
+  """
+  def stop(pid \\ __MODULE__) do
+    GenServer.stop(process_name(pid))
+  end
+
   @impl GenServer
   def init(opts) do
     state = %{
