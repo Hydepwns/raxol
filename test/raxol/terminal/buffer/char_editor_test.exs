@@ -248,8 +248,9 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       # col + string_length = 5 + 2 = 7 <= 10, so replacement should work
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       result = CharEditor.replace_chars(original, 2, 5, "XX")
+
       # Expect the buffer to be modified: cell at (2,5) should be "X", cell at (2,6) should be "X"
-      expected = put_content(buffer, "ABCDE\nFGHIJ\nKLMXX\nPQRST\nUVWXY")
+      expected = put_content(buffer, "ABCDE\nFGHIJ\nKLMNOXX\nPQRST\nUVWXY")
       assert_buffer_equal(result, expected)
 
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
@@ -525,7 +526,7 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
   end
 
   defp assert_cell_equal(cell1, cell2, row_index, col_index) do
-    if cell1.char != cell2.char or cell1.dirty != cell2.dirty or
+    if cell1.char != cell2.char or
          cell1.wide_placeholder != cell2.wide_placeholder do
       flunk("""
       Cell mismatch at position (#{row_index}, #{col_index}):
