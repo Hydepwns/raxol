@@ -49,6 +49,13 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   end
 
   @doc """
+  Gets all metrics (alias for get_metrics/0).
+  """
+  def get_all_metrics do
+    GenServer.call(__MODULE__, :get_all_metrics)
+  end
+
+  @doc """
   Clears all metrics.
   """
   def clear_metrics do
@@ -117,6 +124,13 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   @spec record_custom(String.t(), number()) :: :ok
   def record_custom(name, value) do
     record_metric(name, :custom, value)
+  end
+
+  @doc """
+  Stops the unified collector.
+  """
+  def stop(pid \\ __MODULE__) do
+    GenServer.stop(pid)
   end
 
   # --- GenServer Callbacks ---
@@ -200,20 +214,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     result =
       state.metrics
       |> Enum.flat_map(fn {type, type_metrics} ->
-        case Map.get(type_metrics, metric_name) do
-          nil ->
-            []
-
-          entries ->
-            filtered =
-              if tags == %{} do
-                entries
-              else
-                Enum.filter(entries, fn entry -> entry.tags == tags end)
-              end
-
-            Enum.map(filtered, fn entry -> Map.put(entry, :type, type) end)
-        end
+        get_metrics_for_name_and_type(type_metrics, metric_name, type, tags)
       end)
 
     {:reply, {:ok, result}, state}
@@ -238,6 +239,18 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   end
 
   # Private helper functions
+
+  defp get_metrics_for_name_and_type(type_metrics, metric_name, type, tags) do
+    case Map.get(type_metrics, metric_name) do
+      nil -> []
+      entries -> filter_and_map_entries(entries, type, tags)
+    end
+  end
+
+  defp filter_and_map_entries(entries, type, tags) do
+    filtered = if tags == %{}, do: entries, else: Enum.filter(entries, &(&1.tags == tags))
+    Enum.map(filtered, &Map.put(&1, :type, type))
+  end
 
   defp schedule_system_metrics_collection do
     Process.send_after(self(), :collect_system_metrics, 100)

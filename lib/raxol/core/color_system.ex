@@ -60,6 +60,27 @@ defmodule Raxol.Core.ColorSystem do
   end
 
   @doc """
+  Gets a color from the theme by its semantic name with additional context.
+
+  ## Examples
+
+      iex> theme = create_theme("dark", %{primary: "#FF0000"})
+      iex> get_color(theme, :primary, :foreground)
+      %Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
+  """
+  def get_color(theme, name, context)
+      when map?(theme) and atom?(name) and atom?(context) do
+    color = get_in(theme, [:colors, name])
+
+    case context do
+      :foreground -> color
+      :background -> color
+      :accent -> color
+      _ -> color
+    end
+  end
+
+  @doc """
   Checks if two colors meet WCAG contrast requirements.
 
   ## Examples
