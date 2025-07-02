@@ -84,6 +84,7 @@ defmodule Raxol.Terminal.Emulator do
     output_buffer: "",
     style: Raxol.Terminal.ANSI.TextFormatting.new(),
     scrollback_limit: 1000,
+    scrollback_buffer: [],
     window_title: nil,
     plugin_manager: nil,
     saved_cursor: nil,
@@ -112,6 +113,7 @@ defmodule Raxol.Terminal.Emulator do
           output_buffer: String.t(),
           style: Raxol.Terminal.ANSI.TextFormatting.t(),
           scrollback_limit: non_neg_integer(),
+          scrollback_buffer: list(),
           window_title: String.t() | nil,
           plugin_manager: any() | nil,
           saved_cursor: any() | nil,
@@ -200,7 +202,15 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate update_active_buffer(emulator, new_buffer),
     to: Raxol.Terminal.BufferManager
 
-  defdelegate clear_scrollback(emulator), to: Raxol.Terminal.Buffer.Manager
+  # Clear scrollback buffer
+  def clear_scrollback(emulator) do
+    %{emulator | scrollback_buffer: []}
+  end
+
+  # Get scrollback buffer
+  def get_scrollback(emulator) do
+    emulator.scrollback_buffer
+  end
 
   # Mode update functions
   defdelegate update_insert_mode(emulator, value),
@@ -286,6 +296,7 @@ defmodule Raxol.Terminal.Emulator do
       mode_manager: mode_manager,
       cursor: cursor_pid,
       style: Raxol.Terminal.ANSI.TextFormatting.new(),
+      scrollback_buffer: [],
       charset_state: %{
         g0: :us_ascii,
         g1: :us_ascii,
@@ -347,7 +358,8 @@ defmodule Raxol.Terminal.Emulator do
       height: height,
       output_buffer: "",
       style: Raxol.Terminal.ANSI.TextFormatting.new(),
-      scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000)
+      scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000),
+      scrollback_buffer: []
     }
   end
 
@@ -770,7 +782,12 @@ defmodule Raxol.Terminal.Emulator do
         col = String.to_integer(col_str)
         # Convert from 1-indexed to 0-indexed coordinates
         # Note: move_cursor_to expects {row, col} order
-        move_cursor_to(emulator, {row - 1, col - 1}, emulator.width, emulator.height)
+        move_cursor_to(
+          emulator,
+          {row - 1, col - 1},
+          emulator.width,
+          emulator.height
+        )
 
       [pos_str] ->
         pos = String.to_integer(pos_str)
