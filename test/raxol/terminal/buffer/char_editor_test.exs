@@ -244,9 +244,13 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       result = CharEditor.replace_chars(original, 10, 1, "XX")
       assert_buffer_equal(result, original)
 
+      # This should be valid: col=5, string="XX", buffer width=10
+      # col + string_length = 5 + 2 = 7 <= 10, so replacement should work
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       result = CharEditor.replace_chars(original, 2, 5, "XX")
-      assert_buffer_equal(result, original)
+      # Expect the buffer to be modified: cell at (2,5) should be "X", cell at (2,6) should be "X"
+      expected = put_content(buffer, "ABCDE\nFGHIJ\nKLMXX\nPQRST\nUVWXY")
+      assert_buffer_equal(result, expected)
 
       original = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       result = CharEditor.replace_chars(original, -1, 1, "XX")

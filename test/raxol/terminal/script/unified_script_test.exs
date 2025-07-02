@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Script.UnifiedScriptTest do
-  use ExUnit.Case, async: true
+  @moduledoc false
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Script.UnifiedScript
 
   setup do
@@ -13,7 +14,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
   end
 
   describe "basic operations" do
-    test ~c"loads and unloads scripts" do
+    test "loads and unloads scripts" do
       # Load script
       source = """
       def hello do
@@ -42,7 +43,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
                UnifiedScript.get_script_state(script_id)
     end
 
-    test ~c"handles script configuration" do
+    test "handles script configuration" do
       # Load script with config
       source = """
       def hello do
@@ -67,7 +68,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
 
       # Update config
       new_config = %{
-        timeout: 10000,
+        timeout: 10_000,
         retries: 5,
         debug: false
       }
@@ -81,7 +82,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
   end
 
   describe "script execution" do
-    test ~c"executes scripts with arguments" do
+    test "executes scripts with arguments" do
       # Load script
       source = """
       def main(name) do
@@ -105,7 +106,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
       assert output == "Hello, World!"
     end
 
-    test ~c"handles script states" do
+    test "handles script states" do
       # Load script
       source = """
       def long_running do
@@ -142,7 +143,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
   end
 
   describe "script management" do
-    test ~c"lists scripts with filters" do
+    test "lists scripts with filters" do
       # Load different scripts
       assert {:ok, elixir_id} =
                UnifiedScript.load_script(
@@ -171,7 +172,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
       assert map_size(idle_scripts) == 2
     end
 
-    test ~c"exports and imports scripts" do
+    test "exports and imports scripts" do
       # Load script
       source = """
       def hello do
@@ -205,7 +206,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
   end
 
   describe "error handling" do
-    test ~c"handles invalid script types" do
+    test "handles invalid script types" do
       assert {:error, :invalid_script_type} =
                UnifiedScript.load_script(
                  "def hello do end",
@@ -214,7 +215,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
                )
     end
 
-    test ~c"handles invalid script sources" do
+    test "handles invalid script sources" do
       assert {:error, :invalid_script_source} =
                UnifiedScript.load_script(
                  "",
@@ -223,7 +224,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
                )
     end
 
-    test ~c"handles invalid configurations" do
+    test "handles invalid configurations" do
       assert {:ok, script_id} =
                UnifiedScript.load_script(
                  "def hello do end",
@@ -238,7 +239,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
                )
     end
 
-    test ~c"handles non-existent scripts" do
+    test "handles non-existent scripts" do
       assert {:error, :script_not_found} =
                UnifiedScript.get_script_state("non_existent")
 
@@ -249,7 +250,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
                UnifiedScript.update_script_config("non_existent", %{})
     end
 
-    test ~c"handles invalid script states" do
+    test "handles invalid script states" do
       # Load script
       assert {:ok, script_id} =
                UnifiedScript.load_script(
@@ -273,7 +274,7 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
   end
 
   describe "script types" do
-    test ~c"handles different script types" do
+    test "handles different script types" do
       # Elixir script
       elixir_source = """
       def hello do

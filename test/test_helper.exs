@@ -153,3 +153,16 @@ Application.put_env(:raxol, :terminal, test_mode: true)
 Application.put_env(:raxol, :web, test_mode: true)
 Application.put_env(:raxol, :core, test_mode: true)
 Application.put_env(:raxol, :plugins, test_mode: true)
+
+# Start the endpoint globally for all tests
+IO.puts("[TestHelper] Starting endpoint globally for tests...")
+Application.ensure_all_started(:phoenix)
+Application.ensure_all_started(:plug_cowboy)
+
+# Only start the endpoint if it's not already running
+if !Process.whereis(RaxolWeb.Endpoint) do
+  {:ok, _pid} = RaxolWeb.Endpoint.start_link()
+  IO.puts("[TestHelper] Endpoint started successfully")
+else
+  IO.puts("[TestHelper] Endpoint already running")
+end

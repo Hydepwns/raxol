@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
-  use ExUnit.Case, async: true
+  @moduledoc false
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Buffer.UnifiedManager
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
@@ -9,11 +10,13 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
     # Start the buffer manager with supervision
     # Cache.System is already started globally in Terminal.Supervisor
     {:ok, pid} = start_supervised({UnifiedManager, [width: 80, height: 50]})
+    # Ensure the buffer is cleared before each test
+    {:ok, _} = UnifiedManager.clear(pid)
     %{pid: pid}
   end
 
   describe "new/4" do
-    test ~c"creates a new buffer manager with default values" do
+    test "creates a new buffer manager with default values" do
       {:ok, state} = UnifiedManager.new(80, 24)
       assert state.width == 80
       assert state.height == 24
@@ -21,7 +24,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       assert state.memory_limit == 10_000_000
     end
 
-    test ~c"creates a new buffer manager with custom values" do
+    test "creates a new buffer manager with custom values" do
       {:ok, state} = UnifiedManager.new(100, 30, 2000, 20_000_000)
       assert state.width == 100
       assert state.height == 30
