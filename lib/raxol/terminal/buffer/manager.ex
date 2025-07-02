@@ -519,6 +519,11 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:reply, :ok, new_state}
   end
 
+  def handle_call(:clear_scrollback, _from, state) do
+    new_state = %{state | scrollback: []}
+    {:reply, new_state, new_state}
+  end
+
   # Private functions
 
   defp update_metrics(state, operation) do
@@ -622,7 +627,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
   """
   @spec clear_scrollback(Emulator.t()) :: Emulator.t()
   def clear_scrollback(emulator) do
-    %{emulator | buffer: %{emulator.buffer | scrollback: []}}
+    if is_pid(emulator.buffer) do
+      # If buffer is a PID, call the GenServer
+      GenServer.call(emulator.buffer, :clear_scrollback)
+    else
+      # If buffer is a map (for backward compatibility)
+      %{emulator | buffer: %{emulator.buffer | scrollback: []}}
+    end
   end
 
   @doc """

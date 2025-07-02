@@ -184,13 +184,22 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           non_neg_integer(),
           non_neg_integer()
         ) :: Raxol.Terminal.ScreenBuffer.t()
+
   def insert_chars(buffer, row, col, count) do
     if valid_insert_params?(buffer, row, col, count) do
       # Check if the insertion would fit within the buffer bounds
       if col + count > buffer.width do
         buffer
       else
-        insert_characters(buffer, row, col, count, buffer.default_style)
+        # Check if insertion position is beyond content length
+        line = Enum.at(buffer.cells, row)
+        content_len = content_length(line)
+
+        if col > content_len do
+          buffer
+        else
+          insert_characters(buffer, row, col, count, buffer.default_style)
+        end
       end
     else
       buffer
@@ -201,8 +210,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     is_struct(buffer) and
       is_integer(row) and is_integer(col) and is_integer(count) and
       row >= 0 and col >= 0 and count > 0 and
-      row < buffer.height and col < buffer.width and
-      col + count <= buffer.width
+      row < buffer.height and col < buffer.width
   end
 
   defp insert_chars_in_line(line, col, count, width) do
@@ -459,9 +467,8 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   Writes a string at the specified position in the buffer.
   """
   def write_string(buffer, row, col, string) when binary?(string) do
-    # Check if position is valid and string would fit entirely within buffer bounds
-    if row < 0 or row >= buffer.height or col < 0 or col >= buffer.width or
-         col + String.length(string) >= buffer.width do
+    # Check if position is valid
+    if row < 0 or row >= buffer.height or col < 0 or col >= buffer.width do
       buffer
     else
       line = Enum.at(buffer.cells, row)
@@ -619,26 +626,31 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   end
 
   def replace_chars(buffer, row, col, string, style \\ nil) do
-    if valid_replace_params?(buffer, row, col, string) do
-      # Allow truncation if the string would exceed buffer width
+    if not valid_replace_params?(buffer, row, col, string) do
+      buffer
+    else
       chars = String.graphemes(string)
       max_replace = max(0, buffer.width - col)
       truncated_chars = Enum.take(chars, max_replace)
 
-      # Only replace if we have characters to write
-      if length(truncated_chars) > 0 do
-        replace_chars_in_buffer(
-          buffer,
-          row,
-          col,
-          Enum.join(truncated_chars),
-          style || buffer.default_style
-        )
-      else
+      if truncated_chars == [] do
         buffer
+      else
+        line = Enum.at(buffer.cells, row)
+        content_len = content_length(line)
+
+        if col > content_len do
+          buffer
+        else
+          replace_chars_in_buffer(
+            buffer,
+            row,
+            col,
+            Enum.join(truncated_chars),
+            style || buffer.default_style
+          )
+        end
       end
-    else
-      buffer
     end
   end
 
@@ -646,8 +658,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     is_struct(buffer) and
       is_integer(row) and is_integer(col) and is_binary(string) and
       row >= 0 and col >= 0 and
-      row < buffer.height and col < buffer.width and
-      col + String.length(string) <= buffer.width
+      row < buffer.height and col < buffer.width
   end
 
   defp replace_chars_in_buffer(buffer, row, col, string, style) do
