@@ -10,25 +10,22 @@ defmodule Raxol.Auth do
   """
 
   alias Raxol.Accounts
-  # alias Raxol.Auth.Session # Removed - Session module undefined
+  alias Raxol.Auth.Session
 
   require Raxol.Core.Runtime.Log
 
   @doc """
   Validates a session token and returns the associated user ID.
-  WARNING: This is a placeholder and insecure. Needs proper implementation.
   """
-  def validate_token(_session_id, _token) do
-    # Placeholder implementation: Always returns {:ok, "user"} for testing UI flows.
-    # WARNING: This is insecure and should be replaced with real session/token validation logic.
-    {:ok, "user"}
+  def validate_token(session_id, token) do
+    Session.validate_session(session_id, token)
   end
 
   @doc """
   Checks if a user has the required role.
   """
   def has_role?(user_id, required_role) do
-    # Placeholder implementation: Only "admin" and "user" roles are recognized for testing.
+    # TODO:Placeholder implementation: Only "admin" and "user" roles are recognized for testing.
     # WARNING: Replace with real role checking logic using your user schema/roles.
     case user_id do
       "admin" -> true
@@ -39,29 +36,36 @@ defmodule Raxol.Auth do
 
   @doc """
   Creates a new session for an authenticated user.
-  (Session logic currently commented out, returns :ok)
   """
-  @spec create_user_session(integer(), map()) :: :ok
-  def create_user_session(user_id, _metadata \\ %{}) do
+  @spec create_user_session(String.t(), map()) ::
+          {:ok, map()} | {:error, term()}
+  def create_user_session(user_id, metadata \\ %{}) do
     Raxol.Core.Runtime.Log.debug("Creating session for user ID: #{user_id}")
-    # case Session.create_session(user_id, metadata) do
-    #   {:ok, session} ->
-    #     Raxol.Core.Runtime.Log.debug("Session created successfully: #{session.session_id}")
-    #     {:ok, session}
-    #   {:error, reason} ->
-    #     Raxol.Core.Runtime.Log.error("Failed to create session: #{inspect(reason)}")
-    #     {:error, reason}
-    # end
-    :ok
+
+    case Session.create_session(user_id, metadata) do
+      {:ok, session_data} ->
+        Raxol.Core.Runtime.Log.debug(
+          "Session created successfully: #{session_data.session_id}"
+        )
+
+        {:ok, session_data}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to create session: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
   end
 
   @doc """
   Cleans up a user session.
   """
-  @spec cleanup_user_session(String.t()) :: :ok
+  @spec cleanup_user_session(String.t()) :: :ok | {:error, term()}
   def cleanup_user_session(session_id) do
     Raxol.Core.Runtime.Log.debug("Cleaning up session: #{session_id}")
-    :ok
+    Session.cleanup_session(session_id)
   end
 
   @doc """
@@ -96,15 +100,15 @@ defmodule Raxol.Auth do
 
   @doc """
   Retrieves a user by their session ID.
-  NOTE: This function is a stub. Returns the user or nil if not found or session is invalid.
   """
-  def get_user_by_session(_session_id) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "get_user_by_session called, but session lookup is not implemented. This is a stub.",
-      %{}
-    )
+  def get_user_by_session(session_id) do
+    case Session.get_session(session_id) do
+      {:ok, session} ->
+        get_user(session.user_id)
 
-    nil
+      {:error, _reason} ->
+        nil
+    end
   end
 
   # @doc """
