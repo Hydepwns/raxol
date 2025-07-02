@@ -72,8 +72,10 @@ defmodule Raxol.Web.Session.Monitor do
     # Update active users
     active_users = update_active_users(sessions)
 
-    # Report metrics
-    report_metrics(stats)
+    # Report metrics (skip in test environment)
+    unless function_exported?(Mix, :env, 0) and Mix.env() == :test do
+      report_metrics(stats)
+    end
 
     {:noreply, %{state | stats: stats, active_users: active_users}}
   end
