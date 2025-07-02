@@ -436,16 +436,20 @@ defmodule Raxol.Terminal.ScreenBuffer do
     # Clear from start of line to cursor (inclusive)
     line = Enum.at(buffer.cells, y, [])
     empty_cell = Raxol.Terminal.Cell.new()
+    # Clear from start of line to cursor position (inclusive)
     cleared_line = List.duplicate(empty_cell, x + 1) ++ Enum.drop(line, x + 1)
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
 
-    # Clear previous lines
+    # Clear all previous lines completely
+    IO.puts("DEBUG: Clearing lines from #{top} to #{y - 1}")
+
     new_cells =
       Enum.reduce(top..(y - 1), new_cells, fn line_num, acc ->
         IO.puts("DEBUG: Clearing line #{line_num}")
         List.replace_at(acc, line_num, List.duplicate(empty_cell, buffer.width))
       end)
 
+    IO.puts("DEBUG: Final buffer has #{length(new_cells)} lines")
     %{buffer | cells: new_cells}
   end
 
@@ -927,7 +931,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
     case buffer.screen_state do
       %{damage_regions: _} = screen_state ->
         %{buffer | screen_state: %{screen_state | damage_regions: []}}
-      _ -> buffer
+
+      _ ->
+        buffer
     end
   end
 end

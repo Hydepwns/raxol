@@ -179,7 +179,11 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
   @spec erase_in_display(Emulator.t(), atom()) :: Emulator.t()
   def erase_in_display(emulator, mode) do
     buffer = ScreenManager.get_active_buffer(emulator)
-    new_buffer = Eraser.erase_in_display(buffer, mode)
+    {x, y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
+    # Update the buffer's cursor position before erasing
+    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, x, y)
+    new_buffer = Eraser.erase_in_display(buffer_with_cursor, mode)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
