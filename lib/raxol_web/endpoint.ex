@@ -64,4 +64,12 @@ defmodule RaxolWeb.Endpoint do
   plug Plug.Session, @session_options
 
   plug RaxolWeb.Router
+
+  @doc """
+  Stops the endpoint.
+  """
+  def stop do
+    # Phoenix.Endpoint doesn't have a stop/1 function, so we'll use GenServer.stop
+    GenServer.stop(__MODULE__)
+  end
 end

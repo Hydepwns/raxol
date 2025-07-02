@@ -15,6 +15,7 @@ defmodule Raxol.Web.Session.Session do
     field :last_active, :utc_datetime
     field :ended_at, :utc_datetime
     field :metadata, :map
+    field :token, :string
 
     timestamps()
   end
@@ -31,7 +32,8 @@ defmodule Raxol.Web.Session.Session do
       :created_at,
       :last_active,
       :ended_at,
-      :metadata
+      :metadata,
+      :token
     ])
     |> validate_required([:id, :user_id, :status, :created_at, :last_active])
     |> validate_inclusion(:status, [:active, :ended, :expired])

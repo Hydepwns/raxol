@@ -13,9 +13,14 @@ defmodule Raxol.Web.Session.Recovery do
   Initialize the session recovery system.
   """
   def init do
-    # Recover any active sessions from the database
-    _ = recover_active_sessions()
-    :ok
+    # Skip database operations in test environment
+    if function_exported?(Mix, :env, 0) and Mix.env() == :test do
+      :ok
+    else
+      # Recover any active sessions from the database
+      _ = recover_active_sessions()
+      :ok
+    end
   end
 
   @doc """
