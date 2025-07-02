@@ -117,7 +117,10 @@ defmodule Raxol.Terminal.ManagerTest do
     flush()
     # Create a separate manager for this test - handle already started case
     pid =
-      case Manager.start_link([]) do
+      case Manager.start_link(
+             terminal: Raxol.Terminal.Emulator.new(),
+             runtime_pid: self()
+           ) do
         {:ok, pid} -> pid
         {:error, {:already_started, pid}} -> pid
       end

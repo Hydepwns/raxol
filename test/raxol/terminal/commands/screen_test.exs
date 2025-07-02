@@ -182,7 +182,8 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Check that all cells are cleared
       assert_entire_buffer_cleared(result.main_screen_buffer)
 
-      # TODO: Add check for scrollback buffer if it's implemented and accessible
+      # Check that scrollback buffer is also cleared
+      assert result.scrollback_buffer == []
     end
   end
 
@@ -383,7 +384,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
 
       # Move to position (1,3) and erase from beginning to cursor
       # Cursor to (1,3) (0-indexed), then erase to beginning
-      input_str = "\e[4;2H\e[1J"
+      input_str = "\e[2;4H\e[1J"
 
       {emulator, _output} = Emulator.process_input(emulator, input_str)
       buffer = Emulator.get_active_buffer(emulator)
@@ -401,11 +402,14 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
                  List.duplicate(" ", buffer.width)
       end
 
-      # Line 3: Cursor was at (1,3). " DDDDDDDDDD" -> "  DDDDDDDDD"
-      # First char (index 0) and second char (index 1, cursor pos) cleared.
-      # Expected: "  DDDDDDDDD"
-      assert Enum.map(ScreenBuffer.get_line(buffer, 3), & &1.char) ==
-               List.duplicate(" ", 2) ++ String.graphemes("DDDDDDDD")
+      # Line 3: Cursor was at (3,1). "DDDDDDDDDD" -> " DDDDDDDDD"
+      # First char (index 0) cleared, second char (index 1, cursor pos) cleared.
+      # Expected: "  DDDDDDDD"
+      line3_content = Enum.map(ScreenBuffer.get_line(buffer, 3), & &1.char)
+      IO.inspect(line3_content, label: "Line 3 actual content")
+      expected_line3 = List.duplicate(" ", 2) ++ String.graphemes("DDDDDDDD")
+      IO.inspect(expected_line3, label: "Line 3 expected content")
+      assert line3_content == expected_line3
 
       # Line 4 should be untouched "AAAAAAAAAA"
       assert Enum.map(ScreenBuffer.get_line(buffer, 4), & &1.char) ==
