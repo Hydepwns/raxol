@@ -222,17 +222,28 @@ defmodule Raxol.UI.Rendering.Pipeline do
     case renderer do
       module when is_atom(module) ->
         Process.whereis(module) || module
-      pid when is_pid(pid) -> pid
-      other -> other
+
+      pid when is_pid(pid) ->
+        pid
+
+      other ->
+        other
     end
   end
 
   defp send_to_renderer(renderer_pid, diff_result, new_tree) do
     case diff_result do
-      {:update, _path, _changes} -> GenServer.cast(renderer_pid, {:apply_diff, diff_result, new_tree})
-      {:replace, _} -> GenServer.cast(renderer_pid, {:render, new_tree})
-      :no_change -> :ok
-      _ -> GenServer.cast(renderer_pid, {:render, new_tree})
+      {:update, _path, _changes} ->
+        GenServer.cast(renderer_pid, {:apply_diff, diff_result, new_tree})
+
+      {:replace, _} ->
+        GenServer.cast(renderer_pid, {:render, new_tree})
+
+      :no_change ->
+        :ok
+
+      _ ->
+        GenServer.cast(renderer_pid, {:render, new_tree})
     end
   end
 
@@ -515,20 +526,29 @@ defmodule Raxol.UI.Rendering.Pipeline do
     )
 
     case diff_result do
-      {:update, _path, _changes} -> handle_partial_update(state, diff_result, new_tree_for_reference)
-      _ -> handle_full_render(state, diff_result, new_tree_for_reference)
+      {:update, _path, _changes} ->
+        handle_partial_update(state, diff_result, new_tree_for_reference)
+
+      _ ->
+        handle_full_render(state, diff_result, new_tree_for_reference)
     end
   end
 
   defp handle_partial_update(state, diff_result, new_tree_for_reference) do
-    Raxol.Core.Runtime.Log.debug("Pipeline: Executing partial update immediately.")
+    Raxol.Core.Runtime.Log.debug(
+      "Pipeline: Executing partial update immediately."
+    )
 
     cancel_timer_if_exists(state.render_timer_ref)
 
-    {painted_data, composed_data} = execute_render_stages(
-      diff_result, new_tree_for_reference, state.renderer_module,
-      state.previous_composed_tree, state.previous_painted_output
-    )
+    {painted_data, composed_data} =
+      execute_render_stages(
+        diff_result,
+        new_tree_for_reference,
+        state.renderer_module,
+        state.previous_composed_tree,
+        state.previous_painted_output
+      )
 
     %{
       state
@@ -542,12 +562,19 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   defp handle_full_render(state, diff_result, new_tree_for_reference) do
     now = System.monotonic_time(:millisecond)
-    time_since_last_render = calculate_time_since_last_render(state.last_render_time, now)
+
+    time_since_last_render =
+      calculate_time_since_last_render(state.last_render_time, now)
 
     if time_since_last_render >= @animation_tick_interval_ms do
       execute_immediate_render(state, diff_result, new_tree_for_reference, now)
     else
-      schedule_deferred_render(state, diff_result, new_tree_for_reference, time_since_last_render)
+      schedule_deferred_render(
+        state,
+        diff_result,
+        new_tree_for_reference,
+        time_since_last_render
+      )
     end
   end
 
@@ -556,10 +583,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
     cancel_timer_if_exists(state.render_timer_ref)
 
-    {painted_data, composed_data} = execute_render_stages(
-      diff_result, new_tree_for_reference, state.renderer_module,
-      state.previous_composed_tree, state.previous_painted_output
-    )
+    {painted_data, composed_data} =
+      execute_render_stages(
+        diff_result,
+        new_tree_for_reference,
+        state.renderer_module,
+        state.previous_composed_tree,
+        state.previous_painted_output
+      )
 
     %{
       state
@@ -571,24 +602,35 @@ defmodule Raxol.UI.Rendering.Pipeline do
     }
   end
 
-  defp schedule_deferred_render(state, diff_result, new_tree_for_reference, time_since_last_render) do
+  defp schedule_deferred_render(
+         state,
+         diff_result,
+         new_tree_for_reference,
+         time_since_last_render
+       ) do
     delay = @animation_tick_interval_ms - time_since_last_render
 
-    Raxol.Core.Runtime.Log.debug("Pipeline: Debouncing render. Will render in #{delay}ms.")
+    Raxol.Core.Runtime.Log.debug(
+      "Pipeline: Debouncing render. Will render in #{delay}ms."
+    )
 
     cancel_timer_if_exists(state.render_timer_ref)
 
-    timer_ref = Process.send_after(
-      self(),
-      {:deferred_render, diff_result, new_tree_for_reference, System.unique_integer([:positive])},
-      delay
-    )
+    timer_ref =
+      Process.send_after(
+        self(),
+        {:deferred_render, diff_result, new_tree_for_reference,
+         System.unique_integer([:positive])},
+        delay
+      )
 
     %{state | render_timer_ref: timer_ref}
   end
 
   defp calculate_time_since_last_render(last_render_time, now) do
-    if last_render_time, do: now - last_render_time, else: @animation_tick_interval_ms + 1
+    if last_render_time,
+      do: now - last_render_time,
+      else: @animation_tick_interval_ms + 1
   end
 
   defp cancel_timer_if_exists(timer_ref) do
@@ -607,6 +649,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         Raxol.Core.Runtime.Log.debug(
           "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
         )
+
         {previous_painted_output, previous_composed_tree}
 
       true ->
@@ -616,19 +659,38 @@ defmodule Raxol.UI.Rendering.Pipeline do
           Raxol.Core.Runtime.Log.debug(
             "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
           )
+
           {previous_painted_output, previous_composed_tree}
         else
-          composed_data = Composer.compose_render_tree(layout_data, new_tree_for_reference, previous_composed_tree)
+          composed_data =
+            Composer.compose_render_tree(
+              layout_data,
+              new_tree_for_reference,
+              previous_composed_tree
+            )
 
           if not should_process_composition?(composed_data, layout_data) do
             Raxol.Core.Runtime.Log.debug(
               "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
             )
+
             {previous_painted_output, composed_data}
           else
-            painted_data = Painter.paint(composed_data, new_tree_for_reference, previous_composed_tree, previous_painted_output)
+            painted_data =
+              Painter.paint(
+                composed_data,
+                new_tree_for_reference,
+                previous_composed_tree,
+                previous_painted_output
+              )
 
-            commit(painted_data, renderer_module, diff_result, new_tree_for_reference)
+            commit(
+              painted_data,
+              renderer_module,
+              diff_result,
+              new_tree_for_reference
+            )
+
             {painted_data, composed_data}
           end
         end
@@ -637,19 +699,20 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   defp should_process_tree?(diff_result, new_tree_for_reference) do
     is_map(new_tree_for_reference) or
-    diff_result == {:replace, nil} or
-    (is_tuple(diff_result) and elem(diff_result, 0) == :replace)
+      diff_result == {:replace, nil} or
+      (is_tuple(diff_result) and elem(diff_result, 0) == :replace)
   end
 
   defp should_process_layout?(diff_result, layout_data) do
     is_map(layout_data) or
-    (is_tuple(diff_result) and elem(diff_result, 0) == :replace and elem(diff_result, 1) == nil)
+      (is_tuple(diff_result) and elem(diff_result, 0) == :replace and
+         elem(diff_result, 1) == nil)
   end
 
   defp should_process_composition?(composed_data, layout_data) do
     is_map(composed_data) or
-    (is_map(layout_data) and map_size(layout_data) == 0) or
-    layout_data == nil
+      (is_map(layout_data) and map_size(layout_data) == 0) or
+      layout_data == nil
   end
 
   defp ensure_animation_ticker_running(state) do
