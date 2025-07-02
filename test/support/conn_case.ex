@@ -35,13 +35,22 @@ defmodule RaxolWeb.ConnCase do
   end
 
   setup tags do
-    # Use DataCase for database setup
     :ok = Raxol.DataCase.setup(tags)
-
-    # Ensure Endpoint is started for LiveView tests
     start_endpoint(tags)
 
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+    conn =
+      Phoenix.ConnTest.build_conn()
+      |> Plug.Session.call(
+        Plug.Session.init(
+          store: :cookie,
+          key: "_raxol_key",
+          signing_salt: "raxol_salt",
+          secret_key_base: String.duplicate("a", 64)
+        )
+      )
+      |> fetch_session()
+
+    {:ok, conn: conn}
   end
 
   @doc """
@@ -53,8 +62,13 @@ defmodule RaxolWeb.ConnCase do
     Application.ensure_all_started(:plug_cowboy)
     # If your endpoint relies on other applications, start them here
 
+    # Ensure the endpoint is stopped if it was already running
+    if Process.whereis(RaxolWeb.Endpoint) do
+      RaxolWeb.Endpoint.stop()
+    end
+
     # Start the endpoint itself
-    RaxolWeb.Endpoint.start_link()
+    {:ok, _pid} = RaxolWeb.Endpoint.start_link()
     :ok
   end
 
@@ -95,11 +109,8 @@ defmodule RaxolWeb.ConnCase do
   """
   def log_in_user(conn, user) do
     session_token = "placeholder_id_#{user.id}"
-
     conn
-    |> Phoenix.ConnTest.init_test_session(%{
-      secret_key_base: String.duplicate("a", 64)
-    })
+    |> fetch_session()
     |> put_session(:user_token, session_token)
   end
 end

@@ -141,12 +141,11 @@ defmodule Raxol.Test.Helpers do
       true
   """
   def setup_rendering_test do
-    # Start the Renderer GenServer with unique name
+    # Start the Renderer GenServer with module name registration
     {:ok, renderer_pid} =
       start_supervised(
         {Raxol.UI.Rendering.Renderer,
-         name:
-           Raxol.Test.ProcessNaming.generate_name(Raxol.UI.Rendering.Renderer)}
+         name: Raxol.UI.Rendering.Renderer}
       )
 
     # Start the Pipeline GenServer with global registration (as expected by tests)

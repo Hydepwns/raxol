@@ -7,21 +7,36 @@ defmodule Raxol.Test.PluginTestFixtures do
   used in parallel test runs without interference.
   """
 
-  # Test plugin that implements the Plugin behaviour correctly
   defmodule TestPlugin do
+    @moduledoc """
+    Test plugin that implements the Plugin behaviour correctly
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
       state_id = :rand.uniform(1_000_000)
-      {:ok, %{name: "test_plugin", state_id: state_id, handled: false}}
+
+      {:ok,
+       %Raxol.Plugins.Plugin{
+         name: "test_plugin",
+         version: "1.0.0",
+         description: "Test plugin for unit testing",
+         enabled: true,
+         config: %{},
+         dependencies: [],
+         api_version: "1.0.0",
+         module: __MODULE__
+       }}
     end
 
     def terminate(_reason, state) do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands, do: [{:test_cmd, :handle_test_cmd, 1}]
 
@@ -53,8 +68,13 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Broken plugin that fails to implement required functions
+  @moduledoc """
+  Broken plugin that fails to implement required functions
+  """
   defmodule BrokenPlugin do
+    @moduledoc """
+    Broken plugin that fails to implement required functions
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -63,10 +83,15 @@ defmodule Raxol.Test.PluginTestFixtures do
       state_id = :rand.uniform(1_000_000)
 
       {:ok,
-       %{
+       %Raxol.Plugins.Plugin{
          name: "broken_plugin",
-         state_id: state_id,
-         error_type: :missing_implementation
+         version: "1.0.0",
+         description: "Plugin that breaks during command execution",
+         enabled: true,
+         config: %{},
+         dependencies: [],
+         api_version: "1.0.0",
+         module: __MODULE__
        }}
     end
 
@@ -74,6 +99,8 @@ defmodule Raxol.Test.PluginTestFixtures do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands, do: [{:broken_cmd, :handle_broken_cmd, 1}]
 
@@ -101,8 +128,13 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Plugin with bad return values
+  @moduledoc """
+  Plugin with bad return values
+  """
   defmodule BadReturnPlugin do
+    @moduledoc """
+    Plugin with bad return values
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -110,13 +142,24 @@ defmodule Raxol.Test.PluginTestFixtures do
       state_id = System.unique_integer([:positive])
 
       {:ok,
-       %{name: "bad_return_plugin", state_id: state_id, error_type: :bad_return}}
+       %Raxol.Plugins.Plugin{
+         name: "bad_return_plugin",
+         version: "1.0.0",
+         description: "Plugin that returns invalid values",
+         enabled: true,
+         config: %{},
+         dependencies: [],
+         api_version: "1.0.0",
+         module: __MODULE__
+       }}
     end
 
     def terminate(_reason, state) do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands, do: [{:bad_return_cmd, :handle_bad_return_cmd, 1}]
 
@@ -158,8 +201,10 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Plugin with invalid dependencies
   defmodule DependentPlugin do
+    @moduledoc """
+    Plugin with invalid dependencies
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -167,10 +212,15 @@ defmodule Raxol.Test.PluginTestFixtures do
       state_id = System.unique_integer([:positive])
 
       {:ok,
-       %{
+       %Raxol.Plugins.Plugin{
          name: "dependent_plugin",
-         state_id: state_id,
-         dependencies: dependencies()
+         version: "1.0.0",
+         description: "Plugin that depends on TestPlugin",
+         enabled: true,
+         config: %{},
+         dependencies: dependencies(),
+         api_version: "1.0.0",
+         module: __MODULE__
        }}
     end
 
@@ -178,6 +228,8 @@ defmodule Raxol.Test.PluginTestFixtures do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands, do: []
 
@@ -203,8 +255,10 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Plugin that times out during initialization
   defmodule TimeoutPlugin do
+    @moduledoc """
+    Plugin that times out during initialization
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -222,6 +276,8 @@ defmodule Raxol.Test.PluginTestFixtures do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands, do: []
 
@@ -247,6 +303,9 @@ defmodule Raxol.Test.PluginTestFixtures do
 
   # Plugin that crashes during initialization
   defmodule CrashPlugin do
+    @moduledoc """
+    Plugin that crashes during initialization
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -260,6 +319,8 @@ defmodule Raxol.Test.PluginTestFixtures do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands,
       do: [
@@ -303,20 +364,35 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Plugin that returns invalid metadata
   defmodule InvalidMetadataPlugin do
+    @moduledoc """
+    Plugin that returns invalid metadata
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
       state_id = System.unique_integer([:positive])
-      {:ok, %{state_id: state_id, metadata_errors: metadata_errors()}}
+
+      {:ok,
+       %Raxol.Plugins.Plugin{
+         name: "invalid_metadata_plugin",
+         version: "1.0.0",
+         description: "Plugin with invalid metadata for testing",
+         enabled: true,
+         config: %{},
+         dependencies: [],
+         api_version: "1.0.0",
+         module: __MODULE__
+       }}
     end
 
     def terminate(_reason, state) do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands, do: []
 
@@ -371,21 +447,27 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Plugin with version mismatch dependency
   defmodule VersionMismatchPlugin do
+    @moduledoc """
+    Plugin with version mismatch dependency
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
       state_id = :rand.uniform(1_000_000)
-      {:ok, %{state_id: state_id, dependencies: dependencies()}}
+
+      {:ok,
+       %{state_id: state_id, dependencies: dependencies(), module: __MODULE__}}
     end
 
     def terminate(_reason, state) do
       # Clean up any resources if needed
       state
     end
+
+    def cleanup(_config), do: :ok
 
     def get_commands, do: []
 
@@ -412,15 +494,28 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Plugin with circular dependency
   defmodule CircularDependencyPlugin do
+    @moduledoc """
+    Plugin with circular dependency
+    """
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
       state_id = :rand.uniform(1_000_000)
-      {:ok, %{state_id: state_id, dependencies: dependencies()}}
+
+      {:ok,
+       %Raxol.Plugins.Plugin{
+         name: "circular_dependency_plugin",
+         version: "1.0.0",
+         description: "Plugin with circular dependency for testing",
+         enabled: true,
+         config: %{},
+         dependencies: dependencies(),
+         api_version: "1.0.0",
+         module: __MODULE__
+       }}
     end
 
     def terminate(_reason, state) do
@@ -428,11 +523,13 @@ defmodule Raxol.Test.PluginTestFixtures do
       state
     end
 
+    def cleanup(_config), do: :ok
+
     def get_commands, do: []
 
     def id, do: :circular_dependency_plugin
     def version, do: "1.0.0"
-    def dependencies, do: [{:circular_dependency_plugin, ">= 1.0.0"}]
+    def dependencies, do: [{"circular_dependency_plugin", ">= 1.0.0"}]
 
     def get_metadata do
       %{
@@ -453,7 +550,9 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  # Helper function to create a unique plugin state
+  @moduledoc """
+  Helper function to create a unique plugin state
+  """
   def create_unique_state do
     %{
       state_id: :rand.uniform(1_000_000),

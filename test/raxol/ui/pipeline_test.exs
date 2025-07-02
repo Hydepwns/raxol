@@ -26,7 +26,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     Pipeline.trigger_render(nil)
-    Raxol.Test.Helpers.assert_render_event("World")
+    Raxol.Test.Helpers.assert_render_event("World", 200)
   end
 
   test "trigger_render/1 uses provided data if not nil", _context do

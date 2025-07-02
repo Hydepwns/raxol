@@ -9,7 +9,7 @@ defmodule RaxolWeb.SettingsLiveTest do
   alias Raxol.Accounts
 
   describe "Settings page" do
-    setup do
+    setup %{conn: conn} do
       # Create a test user
       {:ok, user} =
         Accounts.register_user(%{
@@ -17,8 +17,7 @@ defmodule RaxolWeb.SettingsLiveTest do
           password: "password123"
         })
 
-      # Log in the user
-      conn = build_conn()
+      # Log in the user using the conn from ConnCase setup
       conn = log_in_user(conn, user)
 
       # Create a token for the live view

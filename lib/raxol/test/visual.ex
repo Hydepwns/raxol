@@ -85,69 +85,59 @@ defmodule Raxol.Test.Visual do
   """
   @spec capture_render(Raxol.Core.Types.Component.t() | map()) :: String.t()
   def capture_render(component_or_map_or_view, opts \\ []) do
-    # IO.inspect("MARKER VISUAL_EX TOP CAPTURE_RENDER")
+    {view_map, width, height, theme} = extract_render_context(component_or_map_or_view, opts)
+    elements_to_layout = ensure_list(view_map)
 
-    # If a pre-rendered view_map is passed, use it directly
-    {view_map, width, height, theme} =
-      if map?(component_or_map_or_view) &&
-           Map.has_key?(component_or_map_or_view, :type) do
-        # This is likely a view_map already, extract details or use defaults
-        extract_render_details_from_view_map(component_or_map_or_view, opts)
-      else
-        # This is a component struct or a map of props to build one
-        extract_render_details(component_or_map_or_view)
-      end
+    layout_elements = apply_layout(elements_to_layout, width, height)
+    raw_cells = render_to_cells(layout_elements, theme)
+    cells_list = ensure_list(raw_cells)
 
-    # Ensure elements to layout is a list
-    elements_to_layout = if list?(view_map), do: view_map, else: [view_map]
+    final_buffer = populate_buffer(cells_list, width, height)
+    render_to_string(final_buffer, theme)
+  end
 
-    # Log dimensions being used for layout
-    # Raxol.Core.Runtime.Log.info("[VisualTest] Layout Dimensions: W=#{width}, H=#{height}")
+  defp extract_render_context(component_or_map_or_view, opts) do
+    if is_view_map?(component_or_map_or_view) do
+      extract_render_details_from_view_map(component_or_map_or_view, opts)
+    else
+      extract_render_details(component_or_map_or_view)
+    end
+  end
 
-    layout_elements =
-      Raxol.Renderer.Layout.apply_layout(elements_to_layout, %{
-        width: width,
-        height: height
-      })
+  defp is_view_map?(map) when map?(map), do: Map.has_key?(map, :type)
+  defp is_view_map?(_), do: false
 
-    # IO.inspect(layout_elements, label: "CR_LAYOUT_ELEMENTS") # CR = Capture Render
-    # IO.inspect(&Raxol.UI.Renderer.render_to_cells/2, label: "FUNCTION_REF_VISUAL_EX")
-    raw_cells = Raxol.UI.Renderer.render_to_cells(layout_elements, theme)
-    # IO.inspect(raw_cells, label: "CR_RAW_CELLS")
+  defp ensure_list(item) when list?(item), do: item
+  defp ensure_list(item), do: [item]
 
-    # Ensure raw_cells is a list, even if it's empty or contains non-cell data (error case)
-    cells_list = if list?(raw_cells), do: raw_cells, else: []
+  defp apply_layout(elements, width, height) do
+    Raxol.Renderer.Layout.apply_layout(elements, %{width: width, height: height})
+  end
 
-    # Populate the screen buffer with raw cells
+  defp render_to_cells(layout_elements, theme) do
+    Raxol.UI.Renderer.render_to_cells(layout_elements, theme)
+  end
+
+  defp populate_buffer(cells_list, width, height) do
     initial_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
 
-    final_buffer =
-      Enum.reduce(cells_list, initial_buffer, fn
-        {x, y, char, fg, bg, attrs}, acc_buffer ->
-          # Default to space if nil
-          actual_char = if nil?(char), do: ~c" ", else: char
+    Enum.reduce(cells_list, initial_buffer, &write_cell_to_buffer/2)
+  end
 
-          # IO.inspect(unexpected_cell_data, label: "UNEXPECTED_RAW_CELL_DATA_IN_REDUCE") # This was an error, it should be the tuple {x,y,char...}
-          Operations.write_char(acc_buffer, x, y, actual_char, %{
-            foreground: fg,
-            background: bg,
-            attrs: attrs
-          })
+  defp write_cell_to_buffer({x, y, char, fg, bg, attrs}, buffer) do
+    actual_char = if nil?(char), do: ~c" ", else: char
+    Operations.write_char(buffer, x, y, actual_char, %{
+      foreground: fg,
+      background: bg,
+      attrs: attrs
+    })
+  end
 
-        # Handle non-tuple data
-        _unexpected_cell_data, acc_buffer ->
-          # IO.inspect(unexpected_cell_data, label: "UNEXPECTED_RAW_CELL_DATA_IN_REDUCE")
-          # Ignore and return buffer
-          acc_buffer
-      end)
+  defp write_cell_to_buffer(_unexpected_cell_data, buffer), do: buffer
 
-    # IO.inspect(final_buffer, label: "CAPTURE_RENDER_FINAL_BUFFER")
-
-    # Render the buffer to a string
-    renderer_instance = Raxol.Terminal.Renderer.new(final_buffer, theme)
-    output_string = Raxol.Terminal.Renderer.render(renderer_instance)
-    # IO.inspect(output_string, label: "CAPTURE_RENDER_OUTPUT_STRING")
-    output_string
+  defp render_to_string(buffer, theme) do
+    renderer_instance = Raxol.Terminal.Renderer.new(buffer, theme)
+    Raxol.Terminal.Renderer.render(renderer_instance)
   end
 
   defp extract_render_details_from_view_map(view_map, _opts) do
@@ -156,76 +146,83 @@ defmodule Raxol.Test.Visual do
 
   defp extract_render_details_from_view_map(view_map) do
     default_ctx = default_render_context()
-
-    # Try to get dimensions and theme from the view_map's render_context, then view_map itself, then defaults
     render_context_from_view_map = Map.get(view_map, :render_context)
 
-    width =
-      get_in(render_context_from_view_map, [:max_width]) ||
-        get_in(render_context_from_view_map, [:terminal, :width]) ||
-        Map.get(view_map, :max_width) ||
-        Map.get(view_map, :width) ||
-        default_ctx.max_width
-
-    height =
-      get_in(render_context_from_view_map, [:max_height]) ||
-        get_in(render_context_from_view_map, [:terminal, :height]) ||
-        Map.get(view_map, :max_height) ||
-        Map.get(view_map, :height) ||
-        default_ctx.max_height
-
-    theme =
-      get_in(render_context_from_view_map, [:theme]) ||
-        Map.get(view_map, :theme) ||
-        default_ctx.theme
+    width = extract_dimension(render_context_from_view_map, view_map, :width, default_ctx.max_width)
+    height = extract_dimension(render_context_from_view_map, view_map, :height, default_ctx.max_height)
+    theme = extract_theme(render_context_from_view_map, view_map, default_ctx.theme)
 
     {view_map, width, height, theme}
   end
 
+  defp extract_dimension(render_context, view_map, dimension, default) do
+    [
+      get_in(render_context, [:"max_#{dimension}"]),
+      get_in(render_context, [:terminal, dimension]),
+      Map.get(view_map, :"max_#{dimension}"),
+      Map.get(view_map, dimension),
+      default
+    ]
+    |> Enum.find(&(&1 != nil))
+  end
+
+  defp extract_theme(render_context, view_map, default) do
+    [
+      get_in(render_context, [:theme]),
+      Map.get(view_map, :theme),
+      default
+    ]
+    |> Enum.find(&(&1 != nil))
+  end
+
   defp extract_render_details(component_or_map) when map?(component_or_map) do
-    # IO.inspect("MARKER VISUAL_EX TOP EXTRACT_RENDER_DETAILS")
-    # Extract or default the rendering context
     render_context_from_component = Map.get(component_or_map, :render_context)
     default_ctx = default_render_context()
 
-    # Prioritize keys from component's render_context, then defaults
-    width =
-      get_in(render_context_from_component, [:max_width]) ||
-        get_in(render_context_from_component, [:terminal, :width]) ||
-        default_ctx.max_width
-
-    height =
-      get_in(render_context_from_component, [:max_height]) ||
-        get_in(render_context_from_component, [:terminal, :height]) ||
-        default_ctx.max_height
-
+    width = extract_dimension(render_context_from_component, :width, default_ctx.max_width)
+    height = extract_dimension(render_context_from_component, :height, default_ctx.max_height)
     theme = get_in(render_context_from_component, [:theme]) || default_ctx.theme
 
-    base_context =
-      default_ctx |> Map.merge(render_context_from_component || %{})
-
-    current_context_for_render =
-      base_context
-      |> Map.put(:max_width, width)
-      |> Map.put(:max_height, height)
-      # Ensure theme is set before accessing terminal/viewport
-      |> Map.put(:theme, theme)
-      |> Map.update(:terminal, %{}, fn terminal_map ->
-        terminal_map
-        |> Map.put(:width, width)
-        |> Map.put(:height, height)
-      end)
-      |> Map.update(:viewport, %{}, fn viewport_map ->
-        viewport_map
-        |> Map.put(:width, width)
-        |> Map.put(:height, height)
-      end)
-
+    current_context_for_render = build_render_context(default_ctx, render_context_from_component, width, height, theme)
     view_map = render_component(component_or_map, current_context_for_render)
 
-    # Return the extracted details, not the fully rendered string.
-    # The main capture_render function will handle layout, cell rendering, and string output.
     {view_map, width, height, theme}
+  end
+
+  defp extract_dimension(render_context, dimension, default) do
+    [
+      get_in(render_context, [:"max_#{dimension}"]),
+      get_in(render_context, [:terminal, dimension]),
+      default
+    ]
+    |> Enum.find(&(&1 != nil))
+  end
+
+  defp build_render_context(default_ctx, render_context_from_component, width, height, theme) do
+    base_context = Map.merge(default_ctx, render_context_from_component || %{})
+
+    base_context
+    |> Map.put(:max_width, width)
+    |> Map.put(:max_height, height)
+    |> Map.put(:theme, theme)
+    |> update_terminal_dimensions(width, height)
+    |> update_viewport_dimensions(width, height)
+  end
+
+  defp update_terminal_dimensions(context, width, height) do
+    Map.update(context, :terminal, %{}, fn terminal_map ->
+      terminal_map
+      |> Map.put(:width, width)
+      |> Map.put(:height, height)
+    end)
+  end
+
+  defp update_viewport_dimensions(context, width, height) do
+    Map.update(context, :viewport, %{}, fn viewport_map ->
+      viewport_map
+      |> Map.put(:width, width)
+      |> Map.put(:height, height)
+    end)
   end
 
   @doc """

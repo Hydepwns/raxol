@@ -15,29 +15,35 @@ defmodule Raxol.System.DeltaUpdaterTest do
     # Add Mox verification
     setup :verify_on_exit!
 
+    setup do
+      # Configure the application to use our mock adapter
+      Application.put_env(:raxol, :system_adapter, DeltaUpdaterSystemAdapterMock)
+      :ok
+    end
+
     test ~c"returns delta info when delta is available" do
       # Mock the adapter behaviour
       DeltaUpdaterSystemAdapterMock
-      |> expect(:current_version, fn -> "1.1.0" end)
-      |> expect(:os_type, fn -> {:unix, :darwin} end)
       |> expect(:http_get, fn url ->
-        # Simulate response for release v1.2.0
-        if String.contains?(url, "releases/tags/v1.2.0") do
+        if url == "https://api.github.com/repos/raxol/raxol/releases" do
           body = """
-          {
-            "assets": [
-              {
-                "name": "raxol-1.2.0-macos.tar.gz",
-                "size": 15000000,
-                "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-1.2.0-macos.tar.gz"
-              },
-              {
-                "name": "raxol-delta-1.1.0-1.2.0-macos.bin",
-                "size": 1500000,
-                "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-delta-1.1.0-1.2.0-macos.bin"
-              }
-            ]
-          }
+          [
+            {
+              "tag_name": "v1.2.0",
+              "assets": [
+                {
+                  "name": "raxol-1.2.0-macos.tar.gz",
+                  "size": 15000000,
+                  "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-1.2.0-macos.tar.gz"
+                },
+                {
+                  "name": "raxol-delta-1.1.0-1.2.0-macos.bin",
+                  "size": 1500000,
+                  "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-delta-1.1.0-1.2.0-macos.bin"
+                }
+              ]
+            }
+          ]
           """
 
           {:ok, body}
@@ -59,26 +65,26 @@ defmodule Raxol.System.DeltaUpdaterTest do
     test ~c"returns error when delta is not available" do
       # Mock the adapter behaviour
       DeltaUpdaterSystemAdapterMock
-      |> expect(:current_version, fn -> "1.1.0" end)
-      |> expect(:os_type, fn -> {:unix, :darwin} end)
       |> expect(:http_get, fn url ->
-        # Simulate response for release v1.3.0
-        if String.contains?(url, "releases/tags/v1.3.0") do
+        if url == "https://api.github.com/repos/raxol/raxol/releases" do
           body = """
-          {
-            "assets": [
-              {
-                "name": "raxol-1.3.0-macos.tar.gz",
-                "size": 16000000,
-                "browser_download_url": "https://github.com/username/raxol/releases/download/v1.3.0/raxol-1.3.0-macos.tar.gz"
-              },
-              {
-                "name": "raxol-1.3.0-linux.tar.gz",
-                "size": 15000000,
-                "browser_download_url": "https://github.com/username/raxol/releases/download/v1.3.0/raxol-1.3.0-linux.tar.gz"
-              }
-            ]
-          }
+          [
+            {
+              "tag_name": "v1.3.0",
+              "assets": [
+                {
+                  "name": "raxol-1.3.0-macos.tar.gz",
+                  "size": 16000000,
+                  "browser_download_url": "https://github.com/username/raxol/releases/download/v1.3.0/raxol-1.3.0-macos.tar.gz"
+                },
+                {
+                  "name": "raxol-1.3.0-linux.tar.gz",
+                  "size": 15000000,
+                  "browser_download_url": "https://github.com/username/raxol/releases/download/v1.3.0/raxol-1.3.0-linux.tar.gz"
+                }
+              ]
+            }
+          ]
           """
 
           {:ok, body}
