@@ -45,8 +45,8 @@ defmodule Raxol.Terminal.ModeManagerTest do
         initial_emulator_state
         | state_stack: [],
           cursor: %CursorManager{
-            x: 0,
-            y: 0,
+            row: 0,
+            col: 0,
             visible: true,
             style: :block
           },

@@ -10,7 +10,8 @@ defmodule RaxolWeb.Endpoint do
     store: :cookie,
     key: "_raxol_key",
     signing_salt: "raxol_salt",
-    same_site: "Lax"
+    same_site: "Lax",
+    secret_key_base: String.duplicate("a", 64)
   ]
 
   socket("/live", Phoenix.LiveView.Socket,

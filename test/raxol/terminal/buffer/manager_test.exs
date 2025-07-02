@@ -338,7 +338,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   defp create_test_cells(width \\ 10, height \\ 5) do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do
-        Raxol.Terminal.Cell.new("X")
+        Raxol.Terminal.Buffer.Cell.new("X")
       end
     end
   end

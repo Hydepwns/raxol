@@ -82,14 +82,18 @@ defmodule Raxol.Test.Support.TestHelper do
   @doc """
   Cleans up test resources and resets the environment.
   """
-  def cleanup_test_env(context) do
-    # Clean up any processes started during the test
-    if pid = Process.whereis(context.test_id), do: Process.exit(pid, :shutdown)
-
+  def cleanup_test_env() do
     # Reset any global state
     Application.put_env(:raxol, :test_mode, true)
 
     :ok
+  end
+
+  @doc """
+  Cleans up test resources and resets the environment (with context).
+  """
+  def cleanup_test_env(_context) do
+    cleanup_test_env()
   end
 
   @doc """
@@ -129,51 +133,100 @@ defmodule Raxol.Test.Support.TestHelper do
   """
   def create_test_plugin_module(name, callbacks \\ %{}) do
     module_name = String.to_atom("Elixir.Raxol.Test.Plugins.#{name}")
+    create_plugin_module_impl(module_name, name, callbacks)
+    module_name
+  end
 
-    defmodule module_name do
-      @behaviour Raxol.Core.Runtime.Plugins.Plugin.Behaviour
+  defp create_plugin_module_impl(module_name, name, callbacks) do
+    module_ast = build_plugin_module_ast(module_name, name, callbacks)
+    Code.eval_quoted(module_ast)
+  end
 
+  defp build_plugin_module_ast(module_name, name, callbacks) do
+    quote do
+      defmodule unquote(module_name) do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin.Behaviour
+        unquote(build_plugin_functions(name, callbacks))
+      end
+    end
+  end
+
+  defp build_plugin_functions(name, callbacks) do
+    [
+      build_init_function(),
+      build_handle_event_function(callbacks),
+      build_handle_command_function(callbacks),
+      build_get_commands_function(callbacks),
+      build_get_metadata_function(name, callbacks),
+      build_helper_functions(name)
+    ]
+  end
+
+  defp build_init_function do
+    quote do
       @impl true
       def init(config) do
         {:ok, Map.merge(%{initialized: true}, config)}
       end
+    end
+  end
 
+  defp build_handle_event_function(callbacks) do
+    quote do
       @impl true
       def handle_event(event, state) do
-        if callback = Map.get(callbacks, :handle_event) do
-          callback.(event, state)
-        else
-          {:ok, state}
-        end
+        execute_callback(:handle_event, [event, state], unquote(callbacks), {:ok, state})
       end
+    end
+  end
 
+  defp build_handle_command_function(callbacks) do
+    quote do
       @impl true
       def handle_command(command, args, state) do
-        if callback = Map.get(callbacks, :handle_command) do
-          callback.(command, args, state)
+        execute_callback(:handle_command, [command, args, state], unquote(callbacks), {:ok, state})
+      end
+    end
+  end
+
+  defp build_get_commands_function(callbacks) do
+    quote do
+      @impl true
+      def get_commands do
+        Map.get(unquote(callbacks), :get_commands, [])
+      end
+    end
+  end
+
+  defp build_get_metadata_function(name, callbacks) do
+    quote do
+      @impl true
+      def get_metadata do
+        Map.get(unquote(callbacks), :get_metadata, default_metadata(unquote(name)))
+      end
+    end
+  end
+
+  defp build_helper_functions(name) do
+    quote do
+      defp execute_callback(callback_name, args, callbacks, default_result) do
+        if callback = Map.get(callbacks, callback_name) do
+          apply(callback, args)
         else
-          {:ok, state}
+          default_result
         end
       end
 
-      @impl true
-      def get_commands do
-        Map.get(callbacks, :get_commands, [])
-      end
-
-      @impl true
-      def get_metadata do
-        Map.get(callbacks, :get_metadata, %{
+      defp default_metadata(name) do
+        %{
           name: name,
           version: "1.0.0",
           description: "Test plugin #{name}",
           author: "Test Author",
           dependencies: []
-        })
+        }
       end
     end
-
-    module_name
   end
 
   @doc """
