@@ -97,7 +97,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
   Processes a command by delegating to the appropriate handler.
   Returns an updated state and any necessary side effects.
   """
-  @impl true
   def process_command(command, state) do
     case command do
       {command_atom, namespace, data} ->

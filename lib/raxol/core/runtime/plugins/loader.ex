@@ -70,6 +70,34 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     GenServer.call(__MODULE__, {:plugin_loaded?, plugin})
   end
 
+  @doc """
+  Discovers plugins in the given directories.
+  Returns a list of discovered plugin paths.
+  """
+  def discover_plugins(plugin_dirs) when is_list(plugin_dirs) do
+    discovered_plugins =
+      plugin_dirs
+      |> Enum.flat_map(fn dir ->
+        case File.dir?(dir) do
+          true ->
+            dir
+            |> File.ls!()
+            |> Enum.filter(&String.ends_with?(&1, ".ex"))
+            |> Enum.map(&Path.join(dir, &1))
+
+          false ->
+            []
+        end
+      end)
+      |> Enum.uniq()
+
+    {:ok, discovered_plugins}
+  end
+
+  def discover_plugins(_) do
+    {:error, :invalid_directories}
+  end
+
   # Server Callbacks
 
   @impl true

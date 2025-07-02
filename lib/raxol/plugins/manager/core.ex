@@ -20,7 +20,8 @@ defmodule Raxol.Plugins.Manager.Core do
           event_handler: function() | nil,
           api_version: String.t(),
           loaded_plugins: %{String.t() => Plugin.t()},
-          config: map()
+          config: map(),
+          load_order: [atom()]
         }
 
   defstruct [
@@ -31,7 +32,8 @@ defmodule Raxol.Plugins.Manager.Core do
     :event_handler,
     api_version: "1.0.0",
     loaded_plugins: %{},
-    config: %{}
+    config: %{},
+    load_order: []
   ]
 
   @doc """
