@@ -34,7 +34,13 @@ defmodule Raxol.Terminal.Commands.Screen do
         3 -> ScreenBuffer.erase_all(buffer)
       end
 
-    Emulator.update_active_buffer(emulator, new_buffer)
+    emulator = Emulator.update_active_buffer(emulator, new_buffer)
+
+    # For mode 3, also clear the scrollback buffer
+    case mode do
+      3 -> Emulator.clear_scrollback(emulator)
+      _ -> emulator
+    end
   end
 
   @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
@@ -141,18 +147,19 @@ defmodule Raxol.Terminal.Commands.Screen do
       "[Screen.scroll_up_screen_command] CALLED with count: #{count}"
     )
 
-    scrollback = emulator.scrollback_buffer || []
+    scrollback = Emulator.get_scrollback(emulator) || []
     buffer = emulator.main_screen_buffer
     {to_restore, remaining_scrollback} = Enum.split(scrollback, count)
 
     # Move lines from scrollback to the top of the screen buffer
     new_buffer = ScreenBuffer.prepend_lines(buffer, Enum.reverse(to_restore))
 
-    %{
-      emulator
-      | scrollback_buffer: remaining_scrollback,
-        main_screen_buffer: new_buffer
-    }
+    # Update the emulator with the new buffer and remaining scrollback
+    emulator = Emulator.update_active_buffer(emulator, new_buffer)
+
+    # Note: The scrollback is managed by the Buffer.Manager process,
+    # so we don't need to update it directly here
+    emulator
   end
 
   @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
