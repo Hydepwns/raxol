@@ -96,13 +96,17 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     # Add Terminal Supervisor for tests
     terminal_supervisor_child_spec = {Raxol.Terminal.Supervisor, []}
 
+    # Add Web Supervisor for tests (includes Presence and Session Manager)
+    web_supervisor_child_spec = Raxol.Web.Supervisor
+
     children = [
       pubsub_child_spec,
       repo_child_spec,
       user_preferences_child_spec,
       accounts_child_spec,
       sync_system_child_spec,
-      terminal_supervisor_child_spec
+      terminal_supervisor_child_spec,
+      web_supervisor_child_spec
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.IO.UnifiedIOTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.Terminal.IO.UnifiedIO
 

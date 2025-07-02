@@ -297,6 +297,24 @@ defmodule Raxol.Test.MetricsHelper do
   end
 
   @doc """
+  Gets a metric value by name and type.
+  """
+  def get_metric_value(name, type) do
+    case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type) do
+      [] -> nil
+      [metric | _] -> metric.value
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Collects metrics of a specific type.
+  """
+  def collect_metrics(type, opts \\ []) do
+    Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(type)
+  end
+
+  @doc """
   Gets all metrics from the collector.
   """
   def get_all_metrics(collector) do

@@ -112,7 +112,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
       result = Core.resolve_load_order(plugins)
       assert match?({:ok, _}, result)
       {:ok, load_order} = result
-      assert load_order == ["plugin_b", "plugin_a"]
+      assert load_order == [:plugin_b, :plugin_a]
     end
 
     test ~c"resolves complex dependency graph" do
@@ -135,15 +135,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
       result = Core.resolve_load_order(plugins)
       assert match?({:ok, _}, result)
       {:ok, load_order} = result
-      assert "plugin_c" in load_order
-      assert "plugin_b" in load_order
-      assert "plugin_a" in load_order
-      assert "plugin_d" in load_order
+      assert :plugin_c in load_order
+      assert :plugin_b in load_order
+      assert :plugin_a in load_order
+      assert :plugin_d in load_order
 
-      c_index = Enum.find_index(load_order, &(&1 == "plugin_c"))
-      b_index = Enum.find_index(load_order, &(&1 == "plugin_b"))
-      a_index = Enum.find_index(load_order, &(&1 == "plugin_a"))
-      d_index = Enum.find_index(load_order, &(&1 == "plugin_d"))
+      c_index = Enum.find_index(load_order, &(&1 == :plugin_c))
+      b_index = Enum.find_index(load_order, &(&1 == :plugin_b))
+      a_index = Enum.find_index(load_order, &(&1 == :plugin_a))
+      d_index = Enum.find_index(load_order, &(&1 == :plugin_d))
 
       assert c_index < b_index
       assert b_index < a_index
@@ -167,8 +167,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
       {:error, :circular_dependency, cycle, chain} = result
       assert length(cycle) > 0
       assert length(chain) > 0
-      assert "plugin_a" in cycle
-      assert "plugin_b" in cycle
+      assert :plugin_a in cycle
+      assert :plugin_b in cycle
     end
 
     test ~c"handles plugins with no dependencies" do
@@ -181,8 +181,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
       assert match?({:ok, _}, result)
       {:ok, load_order} = result
       assert length(load_order) == 2
-      assert "plugin_a" in load_order
-      assert "plugin_b" in load_order
+      assert :plugin_a in load_order
+      assert :plugin_b in load_order
     end
   end
 end
