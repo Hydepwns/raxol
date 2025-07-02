@@ -311,4 +311,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
       do_extract_component(node, rest, acc)
     end
   end
+
+  @doc """
+  Finds cycles in the dependency graph.
+  """
+  def find_cycles(graph) do
+    case tarjan_sort(graph) do
+      {:ok, _order} -> {:ok, []}
+      {:error, cycle} -> {:ok, [cycle]}
+    end
+  end
 end

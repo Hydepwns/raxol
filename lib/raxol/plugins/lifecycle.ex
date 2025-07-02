@@ -28,6 +28,7 @@ defmodule Raxol.Plugins.Lifecycle do
 
     with {:ok, plugin, merged_config} <-
            initialize_plugin_with_config(manager, plugin_name, module, config),
+         :ok <- check_for_circular_dependency(plugin, manager),
          {:ok, updated_manager} <-
            update_manager_with_plugin(
              manager,
@@ -51,7 +52,7 @@ defmodule Raxol.Plugins.Lifecycle do
          :ok <- validate_plugin_state(plugin),
          :ok <- validate_plugin_compatibility(plugin, manager) do
       # Add module reference to plugin struct, but keep the config from init/1
-      plugin_with_module = %{plugin | module: module}
+      plugin_with_module = Map.put(plugin, :module, module)
       {:ok, plugin_with_module, plugin.config}
     end
   end
@@ -230,8 +231,8 @@ defmodule Raxol.Plugins.Lifecycle do
   defp format_error({:error, reason}, module),
     do: "Failed to initialize plugin #{module}: #{inspect(reason)}"
 
-  defp format_error(reason, module),
-    do: "Unknown error for plugin #{module}: #{inspect(reason)}"
+  defp format_error({:circular_dependency, name}, module),
+    do: "Dependency cycle detected for plugin #{name}"
 
   defp log_plugin_init_error(module, error) do
     Raxol.Core.Runtime.Log.error(
@@ -274,35 +275,31 @@ defmodule Raxol.Plugins.Lifecycle do
   @spec load_plugins(Core.t(), list(atom())) ::
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugins(%Core{} = manager, modules) when list?(modules) do
-    # Convert module list to module-config tuples, defaulting to empty config
-    module_configs =
-      Enum.map(modules, fn
-        {module, config} -> {module, config}
-        module -> {module, %{}}
-      end)
+    module_configs = prepare_module_configs(modules)
 
-    with {:ok, initialized_plugins} <-
-           initialize_all_plugins_with_configs(manager, module_configs),
-         {:ok, sorted_plugin_names} <-
-           resolve_plugin_order(initialized_plugins),
-         {:ok, final_manager} <-
-           load_plugins_in_order(
-             manager,
-             initialized_plugins,
-             sorted_plugin_names
-           ) do
-      # Build loaded_plugins map with atom keys, storing only the config
-      loaded_plugins =
-        final_manager.plugins
-        |> Enum.map(fn {name, plugin} ->
-          {String.to_atom(name), plugin.config}
-        end)
-        |> Enum.into(%{})
-
-      {:ok, %{final_manager | loaded_plugins: loaded_plugins}}
+    with {:ok, initialized_plugins} <- initialize_all_plugins_with_configs(manager, module_configs),
+         {:ok, sorted_plugin_names} <- resolve_plugin_order(initialized_plugins),
+         {:ok, final_manager} <- load_plugins_in_order(manager, initialized_plugins, sorted_plugin_names) do
+      {:ok, build_final_manager(final_manager)}
     else
       error -> handle_load_plugins_error(error)
     end
+  end
+
+  defp prepare_module_configs(modules) do
+    Enum.map(modules, fn
+      {module, config} -> {module, config}
+      module -> {module, %{}}
+    end)
+  end
+
+  defp build_final_manager(manager) do
+    loaded_plugins =
+      manager.plugins
+      |> Enum.map(fn {name, plugin} -> {String.to_atom(name), plugin} end)
+      |> Enum.into(%{})
+
+    %{manager | loaded_plugins: loaded_plugins}
   end
 
   defp initialize_all_plugins_with_configs(manager, module_configs) do
@@ -325,11 +322,15 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp resolve_plugin_order(initialized_plugins) do
-    DependencyManager.resolve_load_order(
-      for plugin <- initialized_plugins,
-          into: %{},
-          do: {plugin.name, plugin}
-    )
+    case DependencyManager.resolve_load_order(
+           for plugin <- initialized_plugins,
+               into: %{},
+               do: {plugin.name, plugin}
+         ) do
+      {:ok, sorted_plugin_names} -> {:ok, sorted_plugin_names}
+      {:error, cycle} -> {:error, :circular_dependency, cycle, nil}
+      other -> {:error, :resolve_failed, other}
+    end
   end
 
   defp handle_load_plugins_error({:error, :init_failed, module, reason}),
@@ -342,7 +343,7 @@ defmodule Raxol.Plugins.Lifecycle do
     do: {:error, "Failed to load plugin #{name}: #{inspect(reason)}"}
 
   defp handle_load_plugins_error({:error, :circular_dependency, cycle, _}),
-    do: {:error, :circular_dependency, cycle}
+    do: {:error, "Circular dependency detected: #{Enum.join(cycle, " -> ")}"}
 
   defp handle_load_plugins_error({:error, reason}),
     do: {:error, "Failed to load plugins: #{inspect(reason)}"}
@@ -360,45 +361,38 @@ defmodule Raxol.Plugins.Lifecycle do
     case Map.get(manager.plugins, name) do
       nil ->
         {:error, "Plugin #{name} not found"}
-
       plugin ->
-        module = plugin.module
-
-        with :ok <- call_plugin_stop(plugin, module),
-             :ok <- module.cleanup(plugin),
-             # Update config to disable plugin
-             updated_config = PluginConfig.disable_plugin(manager.config, name),
-             # Attempt to save updated config
-             {:ok_or_error, saved_or_original_config} <-
-               {:ok_or_error, PluginConfig.save(updated_config)} do
-          # Determine final config (saved or original if save failed)
-          final_config =
-            case saved_or_original_config do
-              {:ok, saved_config} ->
-                saved_config
-
-              {:error, reason} ->
-                Raxol.Core.Runtime.Log.warning_with_context(
-                  "Failed to save config after unloading plugin #{name}: #{inspect(reason)}. Proceeding anyway.",
-                  %{}
-                )
-
-                # Use config state before failed save
-                manager.config
-            end
-
-          {:ok,
-           %{
-             manager
-             | plugins: Map.delete(manager.plugins, name),
-               config: final_config
-           }}
+        with :ok <- do_plugin_cleanup_and_stop(plugin),
+             {:ok, updated_manager} <- update_config_and_remove_plugin(manager, plugin, name) do
+          {:ok, updated_manager}
         else
           {:error, reason} ->
             {:error, "Failed to cleanup plugin #{name}: #{inspect(reason)}"}
-
-            # _ -> {:error, "Unknown error unloading plugin #{name}"} # Consider more specific errors
         end
+    end
+  end
+
+  defp do_plugin_cleanup_and_stop(plugin) do
+    module = plugin.module
+    with :ok <- call_plugin_stop(plugin, module),
+         :ok <- module.cleanup(plugin) do
+      :ok
+    else
+      error -> error
+    end
+  end
+
+  defp update_config_and_remove_plugin(manager, plugin, name) do
+    updated_config = PluginConfig.disable_plugin(manager.config, name)
+    case PluginConfig.save(updated_config) do
+      {:ok, saved_config} ->
+        {:ok, %{manager | plugins: Map.delete(manager.plugins, name), config: saved_config}}
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Failed to save config after unloading plugin #{name}: #{inspect(reason)}. Proceeding anyway.",
+          %{}
+        )
+        {:ok, %{manager | plugins: Map.delete(manager.plugins, name), config: manager.config}}
     end
   end
 
@@ -526,42 +520,40 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp call_plugin_start(plugin_name, manager, initialized_plugins) do
-    case Enum.find(initialized_plugins, &(&1.name == plugin_name)) do
-      plugin when not nil?(plugin) ->
-        # Check if the plugin module implements the Lifecycle behaviour by checking for start/1 function
-        if function_exported?(plugin.module, :start, 1) do
-          case plugin.module.start(plugin.config) do
-            {:ok, updated_config} ->
-              # Update the plugin's config with the result from start/1
-              updated_plugin = %{plugin | config: updated_config}
-
-              updated_plugins =
-                Map.put(manager.plugins, plugin_name, updated_plugin)
-
-              updated_loaded_plugins =
-                Map.put(
-                  manager.loaded_plugins,
-                  String.to_atom(plugin_name),
-                  updated_plugin
-                )
-
-              {:ok,
-               %{
-                 manager
-                 | plugins: updated_plugins,
-                   loaded_plugins: updated_loaded_plugins
-               }}
-
-            {:error, reason} ->
-              {:error, :start_failed, plugin_name, reason}
-          end
-        else
-          {:ok, manager}
-        end
-
-      nil ->
-        {:error, :start_failed, plugin_name, "Plugin not found"}
+    case find_plugin_and_start(plugin_name, manager, initialized_plugins) do
+      {:ok, updated_manager} -> {:ok, updated_manager}
+      {:error, reason} -> {:error, :start_failed, plugin_name, reason}
     end
+  end
+
+  defp find_plugin_and_start(plugin_name, manager, initialized_plugins) do
+    case Enum.find(initialized_plugins, &(&1.name == plugin_name)) do
+      nil -> {:error, "Plugin not found"}
+      plugin -> start_plugin_if_supported(plugin, manager)
+    end
+  end
+
+  defp start_plugin_if_supported(plugin, manager) do
+    if function_exported?(plugin.module, :start, 1) do
+      handle_plugin_start(plugin, manager)
+    else
+      {:ok, manager}
+    end
+  end
+
+  defp handle_plugin_start(plugin, manager) do
+    case plugin.module.start(plugin.config) do
+      {:ok, updated_config} -> update_manager_with_plugin_config(manager, plugin, updated_config)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp update_manager_with_plugin_config(manager, plugin, updated_config) do
+    updated_plugin = %{plugin | config: updated_config}
+    updated_plugins = Map.put(manager.plugins, plugin.name, updated_plugin)
+    updated_loaded_plugins = Map.put(manager.loaded_plugins, String.to_atom(plugin.name), updated_plugin)
+
+    {:ok, %{manager | plugins: updated_plugins, loaded_plugins: updated_loaded_plugins}}
   end
 
   defp find_and_load_plugin(plugin_name, acc_manager, initialized_plugins) do
@@ -614,5 +606,16 @@ defmodule Raxol.Plugins.Lifecycle do
         module: __MODULE__
       }
     )
+  end
+
+  defp check_for_circular_dependency(plugin, manager) do
+    plugins = Map.put(manager.plugins, plugin.name, plugin)
+    case Raxol.Core.Runtime.Plugins.DependencyManager.Core.resolve_load_order(plugins) do
+      {:ok, _order} -> :ok
+      {:error, :circular_dependency, _cycle, _chain} ->
+        {:error, {:circular_dependency, plugin.name}}
+      other ->
+        :ok # fallback, should not happen
+    end
   end
 end
