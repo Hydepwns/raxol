@@ -476,7 +476,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
       # Only write if we have characters to write
       if length(chars) > 0 do
-        updated_line = update_line_with_chars(line, col, chars)
+        updated_line = update_line_with_chars_wide_aware(line, col, chars, buffer.width)
         updated_line = pad_or_truncate_line(updated_line, buffer.width)
         cells = List.replace_at(buffer.cells, row, updated_line)
         %{buffer | cells: cells}
@@ -486,21 +486,29 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     end
   end
 
-  defp update_line_with_chars(line, col, chars) do
-    Enum.with_index(line)
-    |> Enum.map(fn {cell, idx} ->
-      update_cell_if_in_range(cell, idx, col, chars)
-    end)
-  end
+  defp update_line_with_chars_wide_aware(line, col, chars, width) do
+    Enum.reduce(Enum.with_index(chars), {line, col}, fn {char, _index}, {acc_line, current_col} ->
+      if current_col < width do
+        char_width = char_width(char)
+        # Check if we have enough space for this character
+        if current_col + char_width <= width do
+          # Update the current cell with the character
+          updated_line = List.replace_at(acc_line, current_col, %{Enum.at(acc_line, current_col) | char: char, dirty: true})
 
-  defp update_cell_if_in_range(cell, idx, col, chars) do
-    if idx >= col and idx < col + length(chars) do
-      char = Enum.at(chars, idx - col)
-      %{cell | char: char, dirty: true}
-    else
-      # Always return a new cell to avoid shared references
-      %{cell | dirty: cell.dirty}
-    end
+          # If it's a wide character, mark the next cell as a placeholder
+          if char_width > 1 do
+            updated_line = List.replace_at(updated_line, current_col + 1, %{Enum.at(updated_line, current_col + 1) | wide_placeholder: true, dirty: true})
+          end
+
+          {updated_line, current_col + char_width}
+        else
+          {acc_line, current_col}
+        end
+      else
+        {acc_line, current_col}
+      end
+    end)
+    |> elem(0)
   end
 
   def update_line_with_string(line, col, string, width) do
@@ -636,20 +644,13 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       if truncated_chars == [] do
         buffer
       else
-        line = Enum.at(buffer.cells, row)
-        content_len = content_length(line)
-
-        if col > content_len do
-          buffer
-        else
-          replace_chars_in_buffer(
-            buffer,
-            row,
-            col,
-            Enum.join(truncated_chars),
-            style || buffer.default_style
-          )
-        end
+        replace_chars_in_buffer(
+          buffer,
+          row,
+          col,
+          Enum.join(truncated_chars),
+          style || buffer.default_style
+        )
       end
     end
   end
