@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Inserts a specified number of lines with explicit parameters.
   """
-  def insert_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom) do
+  def insert_lines(buffer, count, cursor_y, _cursor_x, scroll_top, scroll_bottom) do
     if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
       # Split the content at the cursor position
       {before_cursor, after_cursor} = Enum.split(buffer.cells, cursor_y)
@@ -210,7 +210,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @doc """
   Deletes a specified number of lines with explicit parameters.
   """
-  def delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom) do
+  def delete_lines(buffer, count, cursor_y, _cursor_x, scroll_top, scroll_bottom) do
     if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
       # Split the content at the cursor position
       {before, after_cursor} = Enum.split(buffer.cells, cursor_y)
@@ -268,7 +268,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   """
   @spec pop_top_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def pop_top_lines(buffer, count) when count > 0 do
-    {popped_lines, remaining_cells} = Enum.split(buffer.cells, count)
+    {_popped_lines, remaining_cells} = Enum.split(buffer.cells, count)
 
     # Add empty lines at the bottom
     empty_lines = create_empty_lines(buffer.width, count)
@@ -466,7 +466,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
           non_neg_integer(),
           non_neg_integer()
         ) :: ScreenBuffer.t()
-  def erase_chars(buffer, row, col, count) do
+  def erase_chars(buffer, row, col, _count) do
     line = get_line(buffer, row)
 
     if line do

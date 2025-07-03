@@ -129,23 +129,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
     buffer.cursor.visible
   end
 
-  @doc """
-  Checks if the cursor is visible.
-
-  ## Parameters
-
-  * `cursor` - The cursor to query
-
-  ## Returns
-
-  A boolean indicating cursor visibility.
-
-  ## Examples
-
-      iex> cursor = Cursor.init()
-      iex> Cursor.visible?(cursor)
-      true
-  """
   @spec visible?(t()) :: boolean()
   def visible?(cursor) do
     cursor.visible
@@ -245,23 +228,6 @@ defmodule Raxol.Terminal.Buffer.Cursor do
     buffer.cursor.blink_state
   end
 
-  @doc """
-  Checks if the cursor is blinking.
-
-  ## Parameters
-
-  * `cursor` - The cursor to query
-
-  ## Returns
-
-  A boolean indicating if the cursor is blinking.
-
-  ## Examples
-
-      iex> cursor = Cursor.init()
-      iex> Cursor.blinking?(cursor)
-      true
-  """
   @spec blinking?(t()) :: boolean()
   def blinking?(cursor) do
     cursor.blink_state

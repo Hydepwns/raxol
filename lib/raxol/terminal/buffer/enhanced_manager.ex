@@ -439,7 +439,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     %{
       state
       | level: Kernel.min(state.level + 1, 9),
-        threshold: Kernel.max(state.threshold(div(2, 256)))
+        threshold: Kernel.max(state.threshold, div(2, 256))
     }
   end
 

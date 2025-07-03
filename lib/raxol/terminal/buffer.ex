@@ -390,13 +390,20 @@ defmodule Raxol.Terminal.Buffer do
   defp from_screen_buffer(screen_buffer, original_buffer) do
     {cursor_x, cursor_y} = screen_buffer.cursor_position
 
+    # Handle case where scroll_region might be nil (e.g., after resize)
+    {scroll_region_top, scroll_region_bottom} =
+      case screen_buffer.scroll_region do
+        nil -> {0, screen_buffer.height - 1}
+        {top, bottom} -> {top, bottom}
+      end
+
     %{
       original_buffer
       | cells: screen_buffer.cells,
         cursor_x: cursor_x,
         cursor_y: cursor_y,
-        scroll_region_top: elem(screen_buffer.scroll_region, 0),
-        scroll_region_bottom: elem(screen_buffer.scroll_region, 1),
+        scroll_region_top: scroll_region_top,
+        scroll_region_bottom: scroll_region_bottom,
         damage_regions: screen_buffer.damage_regions
     }
   end
