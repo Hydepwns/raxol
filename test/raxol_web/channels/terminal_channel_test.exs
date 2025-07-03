@@ -274,10 +274,12 @@ defmodule RaxolWeb.TerminalChannelTest do
     Mox.stub(RendererMock, :new, fn _ -> %{} end)
     Mox.stub(RendererMock, :render, fn _ -> "<html>test output</html>" end)
     Mox.stub(RendererMock, :set_theme, fn renderer, _theme -> renderer end)
+
     on_exit(fn ->
       Application.delete_env(:raxol, :terminal_emulator_module)
       Application.delete_env(:raxol, :terminal_renderer_module)
     end)
+
     :ok
   end
 end

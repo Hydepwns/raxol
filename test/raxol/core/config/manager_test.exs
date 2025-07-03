@@ -36,12 +36,14 @@ defmodule Raxol.Core.Config.ManagerTest do
     File.write!(config_file, config_content)
 
     # Start the manager with the temp file
-    {:ok, pid} = Manager.start_link(
-      config_file: config_file,
-      persistent_file: temp_file,
-      env: :dev,
-      validate: false  # Disable validation for tests
-    )
+    {:ok, pid} =
+      Manager.start_link(
+        config_file: config_file,
+        persistent_file: temp_file,
+        env: :dev,
+        # Disable validation for tests
+        validate: false
+      )
 
     on_exit(fn ->
       # Clean up the temp files
