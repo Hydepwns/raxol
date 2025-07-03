@@ -13,7 +13,6 @@ defmodule Raxol.Terminal.ModeManager do
 
   alias Raxol.Terminal.Emulator
 
-
   alias Raxol.Terminal.Modes.Handlers.{
     DECPrivateHandler,
     StandardHandler,
