@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   Handles parsing in the ground state, the default state of the terminal.
   """
   alias Raxol.Terminal.Commands.History
-  alias Raxol.Terminal.InputHandler
+  alias Raxol.Terminal.Input.InputHandler
   alias Raxol.Terminal.Parser
   require Raxol.Core.Runtime.Log
 
