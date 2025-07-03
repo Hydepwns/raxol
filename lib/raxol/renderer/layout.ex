@@ -86,7 +86,9 @@ defmodule Raxol.Renderer.Layout do
       height: dimensions.height
     }
 
-    normalized_view = normalize_view_for_layout(view, available_space, dimensions)
+    normalized_view =
+      normalize_view_for_layout(view, available_space, dimensions)
+
     result = process_element(normalized_view, available_space, [])
     flatten_result(result)
   end
@@ -126,9 +128,11 @@ defmodule Raxol.Renderer.Layout do
     case element do
       %{type: type} = el ->
         process_function = @element_processors[type]
+
         if process_function,
           do: apply(__MODULE__, process_function, [el, space, acc]),
           else: acc
+
       _ ->
         acc
     end
@@ -995,6 +999,7 @@ defmodule Raxol.Renderer.Layout do
     if is_tuple(child) do
       raise "deep_normalize_child received a tuple: #{inspect(child)}"
     end
+
     normalize_by_type(child, space, default_type)
   end
 
@@ -1359,7 +1364,8 @@ defmodule Raxol.Renderer.Layout do
 
   defp process_children(child, space, acc) when map?(child) do
     normalized_child =
-      if Map.has_key?(child, :type) and Map.has_key?(child, :position) and Map.has_key?(child, :size) do
+      if Map.has_key?(child, :type) and Map.has_key?(child, :position) and
+           Map.has_key?(child, :size) do
         child
       else
         ensure_required_keys(child, space)
