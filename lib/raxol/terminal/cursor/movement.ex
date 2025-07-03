@@ -27,8 +27,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
         ) :: Cursor.t()
   def move_up(cursor, count \\ 1, _width, _height) do
     # Move cursor up by count lines, but not above the top margin
-    new_y = max(cursor.y - count, cursor.top_margin)
-    Manager.move_to(cursor, cursor.x, new_y)
+    new_row = max(cursor.row - count, cursor.top_margin)
+    Manager.move_to(cursor, new_row, cursor.col)
   end
 
   # 2-arity version for tests
@@ -55,8 +55,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
         ) :: Cursor.t()
   def move_down(cursor, count \\ 1, _width, _height) do
     # Move cursor down by count lines, but not below the bottom margin
-    new_y = min(cursor.y + count, cursor.bottom_margin)
-    Manager.move_to(cursor, cursor.x, new_y)
+    new_row = min(cursor.row + count, cursor.bottom_margin)
+    Manager.move_to(cursor, new_row, cursor.col)
   end
 
   # 2-arity version for tests
@@ -71,14 +71,14 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
       iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
       iex> cursor = Manager.new()
-      iex> cursor = Manager.move_to(cursor, 5, 0)
+      iex> cursor = Manager.move_to(cursor, 0, 5)
       iex> cursor = Movement.move_left(cursor, 2)
       iex> cursor.position
       {3, 0}
   """
   def move_left(cursor, count \\ 1) do
-    new_x = max(0, cursor.x - count)
-    Manager.move_to(cursor, {new_x, cursor.y})
+    new_col = max(0, cursor.col - count)
+    Manager.move_to(cursor, cursor.row, new_col)
   end
 
   @doc """
@@ -93,8 +93,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
       {2, 0}
   """
   def move_right(cursor, count \\ 1) do
-    new_x = cursor.x + count
-    Manager.move_to(cursor, {new_x, cursor.y})
+    new_col = cursor.col + count
+    Manager.move_to(cursor, cursor.row, new_col)
   end
 
   @doc """
@@ -104,13 +104,13 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
       iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
       iex> cursor = Manager.new()
-      iex> cursor = Manager.move_to(cursor, 10, 0)
+      iex> cursor = Manager.move_to(cursor, 0, 10)
       iex> cursor = Movement.move_to_line_start(cursor)
       iex> cursor.position
       {0, 0}
   """
   def move_to_line_start(cursor) do
-    Manager.move_to(cursor, {0, cursor.y})
+    Manager.move_to(cursor, cursor.row, 0)
   end
 
   @doc """
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Cursor.Movement do
       {79, 0}
   """
   def move_to_line_end(cursor, line_width) do
-    Manager.move_to(cursor, {line_width - 1, cursor.y})
+    Manager.move_to(cursor, cursor.row, line_width - 1)
   end
 
   @doc """
@@ -140,7 +140,7 @@ defmodule Raxol.Terminal.Cursor.Movement do
       {10, 0}
   """
   def move_to_column(cursor, column) do
-    Manager.move_to(cursor, {column, cursor.y})
+    Manager.move_to(cursor, cursor.row, column)
   end
 
   @doc """
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Cursor.Movement do
       {0, 5}
   """
   def move_to_line(cursor, line) do
-    Manager.move_to(cursor, {cursor.x, line})
+    Manager.move_to(cursor, line, cursor.col)
   end
 
   @doc """
@@ -168,8 +168,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
   @doc """
   Moves the cursor to a specific position with row bounds.
   """
-  def move_to(cursor, row, col, min_row, max_row) do
-    {_, current_col} = Manager.get_position(cursor)
+  def move_to(cursor, row, _col, min_row, max_row) do
+    {_current_row, current_col} = Manager.get_position(cursor)
     new_row = max(min_row, min(max_row, row))
     Manager.move_to(cursor, new_row, current_col)
   end
@@ -216,14 +216,14 @@ defmodule Raxol.Terminal.Cursor.Movement do
       {8, 0}
   """
   def move_to_next_tab(cursor, tab_stops, width, height) do
-    next_tab = find_next_tab(cursor.x, tab_stops, width)
-    Manager.move_to(cursor, next_tab, cursor.y, width, height)
+    next_tab = find_next_tab(cursor.col, tab_stops, width)
+    Manager.move_to(cursor, cursor.row, next_tab, width, height)
   end
 
   # 2-arity version for tests
   def move_to_next_tab(cursor, tab_size) do
-    next_tab = div(cursor.x + tab_size, tab_size) * tab_size
-    Manager.move_to(cursor, {next_tab, cursor.y})
+    next_tab = div(cursor.col + tab_size, tab_size) * tab_size
+    Manager.move_to(cursor, cursor.row, next_tab)
   end
 
   @doc """
@@ -233,34 +233,34 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
       iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
       iex> cursor = Manager.new()
-      iex> cursor = Manager.move_to(cursor, 10, 0)
+      iex> cursor = Manager.move_to(cursor, 0, 10)
       iex> cursor = Movement.move_to_prev_tab(cursor, 8)
       iex> cursor.position
       {8, 0}
   """
   def move_to_prev_tab(cursor, tab_stops, width, height) do
-    prev_tab = find_previous_tab(cursor.x, tab_stops)
-    Manager.move_to(cursor, prev_tab, cursor.y, width, height)
+    prev_tab = find_previous_tab(cursor.col, tab_stops)
+    Manager.move_to(cursor, cursor.row, prev_tab, width, height)
   end
 
   # 2-arity version for tests
   def move_to_prev_tab(cursor, tab_size) do
-    prev_tab = div(cursor.x - 1, tab_size) * tab_size
+    prev_tab = div(cursor.col - 1, tab_size) * tab_size
     prev_tab = max(prev_tab, 0)
-    Manager.move_to(cursor, {prev_tab, cursor.y})
+    Manager.move_to(cursor, cursor.row, prev_tab)
   end
 
   # Helper functions
 
-  defp find_next_tab(current_x, tab_stops, width) do
-    case Enum.find(tab_stops, fn stop -> stop > current_x end) do
+  defp find_next_tab(current_col, tab_stops, width) do
+    case Enum.find(tab_stops, fn stop -> stop > current_col end) do
       nil -> width - 1
       stop -> stop
     end
   end
 
-  defp find_previous_tab(current_x, tab_stops) do
-    case Enum.find(Enum.reverse(tab_stops), fn stop -> stop < current_x end) do
+  defp find_previous_tab(current_col, tab_stops) do
+    case Enum.find(Enum.reverse(tab_stops), fn stop -> stop < current_col end) do
       nil -> 0
       stop -> stop
     end
