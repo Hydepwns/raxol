@@ -135,12 +135,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
       end)
 
     # Clear selection and scroll region after resize
-    %{buffer |
-      width: new_width,
-      height: new_height,
-      cells: new_cells,
-      selection: nil,
-      scroll_region: nil
+    %{
+      buffer
+      | width: new_width,
+        height: new_height,
+        cells: new_cells,
+        selection: nil,
+        scroll_region: nil
     }
   end
 
