@@ -145,4 +145,53 @@ defmodule Raxol.Terminal.InputManager do
   defp handle_character(emulator, char) do
     {emulator, <<char::utf8>>}
   end
+
+  # Functions that are delegated to this module from Raxol.Terminal.Input.Manager
+
+  @doc """
+  Processes keyboard input.
+  """
+  @spec process_keyboard(Emulator.t(), String.t()) :: {Emulator.t(), any()}
+  def process_keyboard(emulator, input) when is_binary(input) do
+    # Process each character in the input string
+    Enum.reduce(String.graphemes(input), {emulator, nil}, fn char, {emu, _} ->
+      process_input(emu, String.to_charlist(char) |> hd())
+    end)
+  end
+
+  @doc """
+  Processes mouse events.
+  """
+  @spec process_mouse(Emulator.t(), map()) :: {Emulator.t(), any()}
+  def process_mouse(emulator, event) do
+    # For now, just return the emulator unchanged
+    # This can be expanded later to handle mouse events properly
+    {emulator, nil}
+  end
+
+  @doc """
+  Processes special keys.
+  """
+  @spec process_special_key(Emulator.t(), atom()) :: {Emulator.t(), any()}
+  def process_special_key(emulator, key) do
+    handle_special_key(emulator, key)
+  end
+
+  @doc """
+  Sets the input mode.
+  """
+  @spec set_mode(Emulator.t(), atom()) :: Emulator.t()
+  def set_mode(emulator, mode) do
+    set_input_mode(emulator, mode)
+  end
+
+  @doc """
+  Updates modifier key state.
+  """
+  @spec update_modifier(Emulator.t(), String.t(), boolean()) :: Emulator.t()
+  def update_modifier(emulator, modifier, value) do
+    # For now, just return the emulator unchanged
+    # This can be expanded later to handle modifier states properly
+    emulator
+  end
 end
