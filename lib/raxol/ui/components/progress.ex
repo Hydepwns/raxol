@@ -9,6 +9,20 @@ defmodule Raxol.UI.Components.Progress do
   # Require view macros
   require Raxol.View.Elements
 
+  # NOTE: This file must be saved as UTF-8 for Unicode characters to work correctly.
+  @spinner_frames [
+    "⠋",
+    "⠙",
+    "⠹",
+    "⠸",
+    "⠼",
+    "⠴",
+    "⠦",
+    "⠧",
+    "⠇",
+    "⠏"
+  ]
+
   # Define state struct (example - might need merging/refactoring existing logic)
   defstruct id: nil,
             # :bar, :spinner, :indeterminate, :circular
@@ -661,20 +675,6 @@ defmodule Raxol.UI.Components.Progress do
   defp clamp(value, min, max) do
     value |> Kernel.max(min) |> Kernel.min(max)
   end
-
-  # NOTE: This file must be saved as UTF-8 for Unicode characters to work correctly.
-  @spinner_frames [
-    "⠋",
-    "⠙",
-    "⠹",
-    "⠸",
-    "⠼",
-    "⠴",
-    "⠦",
-    "⠧",
-    "⠇",
-    "⠏"
-  ]
 
   @spec spinner_types() :: map()
   @doc """

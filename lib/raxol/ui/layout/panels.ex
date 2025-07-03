@@ -11,7 +11,7 @@ defmodule Raxol.UI.Layout.Panels do
 
   import Raxol.Guards
   import Kernel, except: [nil?: 1]
-  alias Raxol.UI.Theming.Theme
+
   alias Raxol.UI.Layout.Engine
   require Raxol.Core.Runtime.Log
 

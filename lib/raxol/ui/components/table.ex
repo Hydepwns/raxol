@@ -386,7 +386,7 @@ defmodule Raxol.UI.Components.Table do
 
         Raxol.Core.Renderer.View.text(
           content,
-          style: [:bold | Enum.uniq(Keyword.keys(cell_style))],
+          style: [:bold | Enum.uniq(Map.keys(cell_style))],
           align: column.align
         )
       end)
@@ -446,7 +446,7 @@ defmodule Raxol.UI.Components.Table do
       Raxol.Core.Renderer.View.text(
         formatted,
         align: column.align,
-        style: Enum.uniq(Keyword.keys(style))
+        style: Enum.uniq(Map.keys(style))
       )
     end)
   end

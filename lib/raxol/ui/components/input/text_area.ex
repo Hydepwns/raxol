@@ -5,8 +5,6 @@ defmodule Raxol.UI.Components.Input.TextArea do
   All features, options, and behaviour are inherited from MultiLineInput.
   """
 
-  import Raxol.Guards
-  alias Raxol.UI.Theming.Theme
   alias Raxol.UI.Components.Input.MultiLineInput
 
   @behaviour Raxol.UI.Components.Base.Component

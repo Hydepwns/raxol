@@ -16,11 +16,9 @@ defmodule Raxol.UI.Terminal do
   - Accessibility-friendly output formatting
   """
 
-  import Raxol.Guards
   alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Core.I18n
   alias Raxol.Terminal.Emulator.Struct, as: Emulator
-  alias Raxol.UI.Theming.Theme
 
   @spec clear() :: :ok
   @doc """
@@ -224,7 +222,7 @@ defmodule Raxol.UI.Terminal do
     case chars do
       :eof -> {:error, :eof}
       {:error, reason} -> {:error, reason}
-      data when binary?(data) -> {:ok, parse_key(data)}
+      data when is_binary(data) -> {:ok, parse_key(data)}
       _ -> {:error, :unknown_reply}
     end
   end
@@ -334,7 +332,7 @@ defmodule Raxol.UI.Terminal do
   defp add_color_codes(codes, opts) do
     case Keyword.get(opts, :color) do
       nil -> codes
-      color when atom?(color) -> [fg_color_code(ColorSystem.get_color(color)) | codes]
+      color when is_atom(color) -> [fg_color_code(ColorSystem.get_color(color)) | codes]
       hex -> [fg_color_code(hex) | codes]
     end
   end
@@ -342,7 +340,7 @@ defmodule Raxol.UI.Terminal do
   defp add_background_codes(codes, opts) do
     case Keyword.get(opts, :background) do
       nil -> codes
-      color when atom?(color) -> [bg_color_code(ColorSystem.get_color(color)) | codes]
+      color when is_atom(color) -> [bg_color_code(ColorSystem.get_color(color)) | codes]
       hex -> [bg_color_code(hex) | codes]
     end
   end
