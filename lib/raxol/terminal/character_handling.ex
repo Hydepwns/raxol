@@ -219,5 +219,4 @@ defmodule Raxol.Terminal.CharacterHandling do
       {acc, <<char::utf8, rest::binary>>}
     end
   end
-
 end
