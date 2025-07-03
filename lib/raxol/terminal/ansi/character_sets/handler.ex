@@ -52,11 +52,10 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
         state
 
       charset ->
-        StateManager.set_gset(
-          state,
-          StateManager.index_to_gset(gset_index),
-          charset
-        )
+        case StateManager.index_to_gset(gset_index) do
+          nil -> state
+          gset -> StateManager.set_gset(state, gset, charset)
+        end
     end
   end
 

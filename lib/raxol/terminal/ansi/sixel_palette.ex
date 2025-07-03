@@ -180,15 +180,7 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     {:ok, {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}}
   end
 
-  defp calculate_rgb_components(h, l, s) do
-    c = (1.0 - abs(2.0 * l - 1.0)) * s
-    h_prime = h / 60.0
-    x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
-    _m = l - c / 2.0
 
-    {r1, g1, b1} = get_rgb_from_hue(h_prime, c, x)
-    {r1, g1, b1}
-  end
 
   defp get_hue_segments do
     %{

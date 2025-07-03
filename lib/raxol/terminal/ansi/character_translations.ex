@@ -615,6 +615,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
       {:ok, charlist, _} -> charlist
       {:error, _, _} -> :binary.bin_to_list(string)
       {:incomplete, _, _} -> :binary.bin_to_list(string)
+      charlist when is_list(charlist) -> charlist
     end
   end
 

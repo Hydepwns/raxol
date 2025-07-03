@@ -134,7 +134,16 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     44 => :blue,
     45 => :magenta,
     46 => :cyan,
-    47 => :white
+    47 => :white,
+    # Bright colors (90-97 for foreground, 100-107 for background)
+    0 => :black,
+    1 => :red,
+    2 => :green,
+    3 => :yellow,
+    4 => :blue,
+    5 => :magenta,
+    6 => :cyan,
+    7 => :white
   }
 
   @reset_attribute_map %{

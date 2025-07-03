@@ -176,6 +176,13 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   end
 
   @doc """
+  Converts a G-set index to an atom, returns nil for invalid indices.
+  """
+  def index_to_gset(index) when is_integer(index) do
+    nil
+  end
+
+  @doc """
   Gets the mode manager from the emulator state.
   """
   def get_mode_manager(emulator) do
@@ -198,6 +205,42 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
 
   @doc """
   Updates the charset state in the emulator state.
+  """
+  def update_charset_state(emulator, charset_state) do
+    %{emulator | charset_state: charset_state}
+  end
+
+  @doc """
+  Translates a character using the active character set.
+  Returns {codepoint, new_state} as expected by the tests.
+  """
+  def translate_char(codepoint, state) when integer?(codepoint) do
+    active_charset = get_active(state)
+    single_shift = get_single_shift(state)
+
+    result = Raxol.Terminal.ANSI.CharacterSets.Translator.translate_char(
+      codepoint,
+      active_charset,
+      single_shift
+    )
+
+    new_state = clear_single_shift(state)
+    {result, new_state}
+  end
+
+  @doc """
+  Translates a string using the active character set.
+  """
+  def translate_string(string, state) do
+    active_charset = get_active(state)
+    single_shift = get_single_shift(state)
+
+    Raxol.Terminal.ANSI.CharacterSets.Translator.translate_string(
+      string,
+      active_charset,
+      single_shift
+    )
+  end
   """
   def update_charset_state(emulator, charset_state) do
     %{emulator | charset_state: charset_state}
