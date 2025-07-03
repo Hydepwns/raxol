@@ -26,11 +26,11 @@ defmodule Raxol.Test.ComponentManagerTestMocks do
     end
 
     def update(:increment, state) do
-      Map.update!(state, :counter, &(&1 + 1))
+      {Map.update!(state, :counter, &(&1 + 1)), []}
     end
 
     def update(:decrement, state) do
-      Map.update!(state, :counter, &(&1 - 1))
+      {Map.update!(state, :counter, &(&1 - 1)), []}
     end
 
     def update(:trigger_broadcast, state) do
