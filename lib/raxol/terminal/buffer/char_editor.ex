@@ -476,7 +476,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
       # Only write if we have characters to write
       if length(chars) > 0 do
-        updated_line = update_line_with_chars_wide_aware(line, col, chars, buffer.width)
+        updated_line =
+          update_line_with_chars_wide_aware(line, col, chars, buffer.width)
+
         updated_line = pad_or_truncate_line(updated_line, buffer.width)
         cells = List.replace_at(buffer.cells, row, updated_line)
         %{buffer | cells: cells}
@@ -487,17 +489,28 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   end
 
   defp update_line_with_chars_wide_aware(line, col, chars, width) do
-    Enum.reduce(Enum.with_index(chars), {line, col}, fn {char, _index}, {acc_line, current_col} ->
+    Enum.reduce(Enum.with_index(chars), {line, col}, fn {char, _index},
+                                                        {acc_line, current_col} ->
       if current_col < width do
         char_width = char_width(char)
         # Check if we have enough space for this character
         if current_col + char_width <= width do
           # Update the current cell with the character
-          updated_line = List.replace_at(acc_line, current_col, %{Enum.at(acc_line, current_col) | char: char, dirty: true})
+          updated_line =
+            List.replace_at(acc_line, current_col, %{
+              Enum.at(acc_line, current_col)
+              | char: char,
+                dirty: true
+            })
 
           # If it's a wide character, mark the next cell as a placeholder
           if char_width > 1 do
-            updated_line = List.replace_at(updated_line, current_col + 1, %{Enum.at(updated_line, current_col + 1) | wide_placeholder: true, dirty: true})
+            updated_line =
+              List.replace_at(updated_line, current_col + 1, %{
+                Enum.at(updated_line, current_col + 1)
+                | wide_placeholder: true,
+                  dirty: true
+              })
           end
 
           {updated_line, current_col + char_width}
