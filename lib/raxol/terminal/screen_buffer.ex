@@ -134,7 +134,14 @@ defmodule Raxol.Terminal.ScreenBuffer do
         end)
       end)
 
-    %{buffer | width: new_width, height: new_height, cells: new_cells}
+    # Clear selection and scroll region after resize
+    %{buffer |
+      width: new_width,
+      height: new_height,
+      cells: new_cells,
+      selection: nil,
+      scroll_region: nil
+    }
   end
 
   # === Content Operations ===
@@ -713,6 +720,16 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Raxol.Terminal.Commands.Scrolling.scroll_down(
       buffer,
       lines,
+      buffer.scroll_region,
+      %{}
+    )
+  end
+
+  # Handle case where lines parameter is a list (from tests)
+  def scroll_down(buffer, _lines, count) when integer?(count) do
+    Raxol.Terminal.Commands.Scrolling.scroll_down(
+      buffer,
+      count,
       buffer.scroll_region,
       %{}
     )

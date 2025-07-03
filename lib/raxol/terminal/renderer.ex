@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.Renderer do
+  @behaviour Raxol.Terminal.RendererBehaviour
+
   @moduledoc """
   Terminal renderer module.
 
