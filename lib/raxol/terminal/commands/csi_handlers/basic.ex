@@ -173,8 +173,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   def handle_decsc(emulator, _params) do
     saved_cursor = %{
       position: Emulator.get_cursor_position(emulator),
-      style: emulator.style,
-      attributes: emulator.cursor.attributes
+      style: emulator.style
     }
 
     {:ok, %{emulator | saved_cursor: saved_cursor}}
@@ -232,14 +231,14 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   def handle_decscusr(emulator, params) do
     case params do
-      [0] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :block}}}
-      [1] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :block}}}
-      [2] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :block}}}
-      [3] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :underline}}}
-      [4] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :underline}}}
-      [5] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :bar}}}
-      [6] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :bar}}}
-      _ -> {:ok, emulator}
+      [0] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :blink_block}}}
+      [1] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :blink_block}}}
+      [2] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :steady_block}}}
+      [3] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :blink_underline}}}
+      [4] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :steady_underline}}}
+      [5] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :blink_bar}}}
+      [6] -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :steady_bar}}}
+      _ -> {:ok, %{emulator | cursor: %{emulator.cursor | style: :blink_block}}}
     end
   end
 

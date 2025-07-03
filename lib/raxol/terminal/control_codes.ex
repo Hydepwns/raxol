@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Movement
   alias Raxol.Terminal.Cursor.Manager
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.ControlCodes do
   Handles a C0 control code (0-31) or DEL (127).
   Delegates to specific handlers based on the codepoint.
   """
-  @spec handle_c0(EmulatorStruct.t(), non_neg_integer()) :: EmulatorStruct.t()
+  @spec handle_c0(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def handle_c0(emulator, char_codepoint) do
     handler = c0_handler_for(char_codepoint)
     handler.(emulator)
@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   @doc "Handle Backspace (BS)"
-  def handle_bs(%EmulatorStruct{} = emulator) do
+  def handle_bs(%Emulator{} = emulator) do
     # Move cursor left by one, respecting margins
     # Use alias
     new_cursor = Movement.move_left(emulator.cursor, 1)
@@ -103,12 +103,12 @@ defmodule Raxol.Terminal.ControlCodes do
   @doc """
   Handles the Horizontal Tab (HT) action.
   """
-  def handle_ht(%EmulatorStruct{} = emulator) do
+  def handle_ht(%Emulator{} = emulator) do
     # Move cursor to the next tab stop
     {current_col, _} =
       Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
-    active_buffer = EmulatorStruct.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     # Placeholder: move to next multiple of 8 or end of line
     next_stop = min(width - 1, div(current_col, 8) * 8 + 8)
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
-  def handle_lf(%EmulatorStruct{} = emulator) do
+  def handle_lf(%Emulator{} = emulator) do
     emulator
     |> handle_pending_wrap()
     |> move_cursor_down()
@@ -127,32 +127,32 @@ defmodule Raxol.Terminal.ControlCodes do
 
   defp handle_pending_wrap(emulator) do
     if emulator.last_col_exceeded do
-      {_cx, cy} = Manager.get_position(emulator.cursor)
-      wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
+      {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+      wrapped_cursor = Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
 
-      EmulatorStruct.maybe_scroll(%{
+      Emulator.maybe_scroll(%{
         emulator
         | cursor: wrapped_cursor,
           last_col_exceeded: false
       })
     else
-      EmulatorStruct.maybe_scroll(emulator)
+      Emulator.maybe_scroll(emulator)
     end
   end
 
   defp move_cursor_down(emulator) do
-    active_buffer = EmulatorStruct.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
     {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
     cursor = emulator.cursor
 
-    moved_cursor = Movement.move_down(cursor, 1, buffer_width, buffer_height)
+    moved_cursor = Raxol.Terminal.Cursor.Manager.move_down(cursor, 1)
     final_cursor = apply_lnm_mode(emulator.mode_manager, moved_cursor)
     %{emulator | cursor: final_cursor}
   end
 
   defp apply_lnm_mode(mode_manager, cursor) do
     if ModeManager.mode_enabled?(mode_manager, :lnm) do
-      Movement.move_to_column(cursor, 0)
+      Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
     else
       cursor
     end
@@ -166,12 +166,12 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   defp clamp_cursor_to_scroll_region(emulator, cursor) do
-    active_buffer = EmulatorStruct.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
     {scroll_top, scroll_bottom} =
       get_scroll_region_bounds(emulator, active_buffer)
 
-    {x, y} = cursor.position
+    {x, y} = Raxol.Terminal.Cursor.Manager.get_position(cursor)
     clamped_y = max(scroll_top, min(y, scroll_bottom))
 
     if y != clamped_y do
@@ -188,7 +188,7 @@ defmodule Raxol.Terminal.ControlCodes do
     )
   end
 
-  defp move_cursor_to_position(cursor, x, y), do: Manager.move_to(cursor, x, y)
+  defp move_cursor_to_position(cursor, x, y), do: Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
 
   defp get_scroll_region_bounds(emulator, active_buffer) do
     buffer_height = ScreenBuffer.get_height(active_buffer)
@@ -204,7 +204,7 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   @doc "Handle Carriage Return (CR)"
-  def handle_cr(%EmulatorStruct{} = emulator) do
+  def handle_cr(%Emulator{} = emulator) do
     Raxol.Core.Runtime.Log.debug(
       "[handle_cr] Input: cursor=#{inspect(Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor))}, last_exceeded=#{emulator.last_col_exceeded}"
     )
@@ -215,15 +215,15 @@ defmodule Raxol.Terminal.ControlCodes do
         Raxol.Core.Runtime.Log.debug("[handle_cr] Pending wrap detected")
         # Perform the deferred wrap: move cursor to col 0, next line
         {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-        wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
+        wrapped_cursor = Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
 
         Raxol.Core.Runtime.Log.debug(
-          "[handle_cr] Cursor after wrap: #{inspect(wrapped_cursor.position)}"
+          "[handle_cr] Cursor after wrap: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(wrapped_cursor))}"
         )
 
         # Also scroll if needed after wrap (use maybe_scroll on potentially wrapped state)
         maybe_scrolled_emulator =
-          EmulatorStruct.maybe_scroll(%{
+          Emulator.maybe_scroll(%{
             emulator
             | cursor: wrapped_cursor,
               last_col_exceeded: false
@@ -245,16 +245,16 @@ defmodule Raxol.Terminal.ControlCodes do
     {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     final_cursor =
-      Movement.move_to_position(emulator_after_pending_wrap.cursor, 0, cy)
+      Raxol.Terminal.Cursor.Manager.move_to(emulator_after_pending_wrap.cursor, 0, cy)
 
     Raxol.Core.Runtime.Log.debug(
-      "[handle_cr] Final cursor: #{inspect(final_cursor.position)}"
+      "[handle_cr] Final cursor: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(final_cursor))}"
     )
 
     %{emulator_after_pending_wrap | cursor: final_cursor}
   end
 
-  @spec handle_so(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_so(Emulator.t()) :: Emulator.t()
   def handle_so(emulator) do
     # SO: Shift Out. Invoke G1 character set.
     %{
@@ -264,7 +264,7 @@ defmodule Raxol.Terminal.ControlCodes do
     }
   end
 
-  @spec handle_si(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_si(Emulator.t()) :: Emulator.t()
   def handle_si(emulator) do
     # SI: Shift In. Invoke G0 character set.
     %{
@@ -274,7 +274,7 @@ defmodule Raxol.Terminal.ControlCodes do
     }
   end
 
-  @spec handle_can(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_can(Emulator.t()) :: Emulator.t()
   def handle_can(emulator) do
     # CAN: Cancel. Parser should handle this within sequences.
     # If it reaches here, it was outside a sequence.
@@ -294,31 +294,31 @@ defmodule Raxol.Terminal.ControlCodes do
     emulator
   end
 
-  @spec handle_ris(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_ris(Emulator.t()) :: Emulator.t()
   # ESC c - Reset to Initial State
   def handle_ris(emulator) do
     Raxol.Core.Runtime.Log.info("RIS (Reset to Initial State) received")
     # Re-initialize most state components, keeping buffer dimensions
-    active_buffer = EmulatorStruct.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
     scrollback_limit = active_buffer.scrollback_limit
 
     # Create a completely new default state, preserving only dimensions/limits
-    EmulatorStruct.new(width, height,
+    Emulator.new(width, height,
       scrollback: scrollback_limit,
       memorylimit: emulator.memory_limit
     )
   end
 
-  @spec handle_ind(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_ind(Emulator.t()) :: Emulator.t()
   # ESC D - Index
   def handle_ind(emulator) do
     # Move cursor down one line, scroll if at bottom margin. Same as LF.
     handle_lf(emulator)
   end
 
-  @spec handle_nel(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_nel(Emulator.t()) :: Emulator.t()
   # ESC E - Next Line
   def handle_nel(emulator) do
     # Move cursor to start of next line. Like CR + LF.
@@ -329,7 +329,7 @@ defmodule Raxol.Terminal.ControlCodes do
     |> handle_cr()
   end
 
-  @spec handle_hts(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_hts(Emulator.t()) :: Emulator.t()
   # ESC H - Horizontal Tabulation Set
   def handle_hts(emulator) do
     # Set a tab stop at the current cursor column.
@@ -339,10 +339,10 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   @doc "Handle Reverse Index (RI) - ESC M"
-  def handle_ri(%EmulatorStruct{} = emulator) do
+  def handle_ri(%Emulator{} = emulator) do
     # Move cursor up one line. If at the top margin, scroll down.
     {_col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-    active_buffer = EmulatorStruct.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
     {top_margin, _} =
       case emulator.scroll_region do
@@ -369,7 +369,7 @@ defmodule Raxol.Terminal.ControlCodes do
     end
   end
 
-  @spec handle_decsc(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_decsc(Emulator.t()) :: Emulator.t()
   # ESC 7 - Save Cursor State (DEC specific)
   def handle_decsc(emulator) do
     # Capture necessary parts of the emulator state - NO, save_state expects full state
@@ -377,7 +377,7 @@ defmodule Raxol.Terminal.ControlCodes do
     %{emulator | state_stack: new_stack}
   end
 
-  @spec handle_decrc(EmulatorStruct.t()) :: EmulatorStruct.t()
+  @spec handle_decrc(Emulator.t()) :: Emulator.t()
   # ESC 8 - Restore Cursor State (DEC specific)
   def handle_decrc(emulator) do
     {new_stack, restored_state_data} =
