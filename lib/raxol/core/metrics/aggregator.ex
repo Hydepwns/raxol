@@ -85,6 +85,13 @@ defmodule Raxol.Core.Metrics.Aggregator do
   end
 
   @doc """
+  Clears all aggregations and rules.
+  """
+  def clear do
+    GenServer.call(__MODULE__, :clear)
+  end
+
+  @doc """
   Calculates an aggregation of values using the specified method.
   """
   @spec calculate_aggregation(list(number()), atom()) :: number()
@@ -186,6 +193,17 @@ defmodule Raxol.Core.Metrics.Aggregator do
   @impl GenServer
   def handle_call(:get_rules, _from, state) do
     {:reply, {:ok, state.rules}, state}
+  end
+
+  @impl GenServer
+  def handle_call(:clear, _from, state) do
+    cleared_state = %{
+      state
+      | rules: %{},
+      aggregations: %{},
+      next_rule_id: 1
+    }
+    {:reply, :ok, cleared_state}
   end
 
   @impl GenServer

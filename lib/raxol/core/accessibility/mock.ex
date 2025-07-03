@@ -6,6 +6,16 @@ defmodule Raxol.Core.Accessibility.Mock do
   @behaviour Raxol.Core.Accessibility.Behaviour
 
   @impl Raxol.Core.Accessibility.Behaviour
+  def enable(_options, _user_preferences_pid_or_name) do
+    :ok
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def disable(_user_preferences_pid_or_name) do
+    :ok
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
   def announce(_message, _level) do
     :ok
   end
