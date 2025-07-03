@@ -111,18 +111,127 @@ defmodule Raxol.Terminal.Renderer do
   def render(%__MODULE__{} = renderer, opts, additional_opts) do
     content =
       renderer.screen_buffer
-      |> ScreenBuffer.get_content(include_style: true)
-      |> apply_theme(renderer.theme)
+      |> get_styled_content(renderer.theme)
       |> apply_font_settings(renderer.font_settings)
       |> maybe_apply_cursor(renderer.cursor)
 
-    {:ok, content}
+    content
   end
 
-  defp apply_theme(content, theme), do: content
+  defp get_styled_content(buffer, theme) do
+    buffer.cells
+    |> Enum.map(fn row ->
+      row
+      |> Enum.map_join("", fn cell ->
+        render_cell(cell, theme)
+      end)
+    end)
+    |> Enum.join("\n")
+  end
+
+  defp render_cell(cell, theme) do
+    style_attrs = build_style_attributes(cell.style, theme)
+    "<span style=\"#{style_attrs}\">#{cell.char}</span>"
+  end
+
+    defp build_style_attributes(style, theme) do
+    attrs = []
+
+    style_map =
+      cond do
+        is_nil(style) -> %{}
+        is_map(style) and Map.has_key?(style, :__struct__) -> Map.from_struct(style)
+        is_map(style) -> style
+        true -> %{}
+      end
+
+    # Apply foreground color - use cell style if present, otherwise use default
+    foreground_color =
+      cond do
+        Map.has_key?(style_map, :foreground) and not is_nil(style_map.foreground) ->
+          get_color(style_map.foreground, Map.get(theme, :foreground, %{}))
+        true ->
+          get_color(:default, Map.get(theme, :foreground, %{}))
+      end
+
+    attrs = if foreground_color != "" do
+      [{"color", foreground_color} | attrs]
+    else
+      attrs
+    end
+
+    # Apply background color - use cell style if present, otherwise use default
+    background_color =
+      cond do
+        Map.has_key?(style_map, :background) and not is_nil(style_map.background) ->
+          get_color(style_map.background, Map.get(theme, :background, %{}))
+        true ->
+          get_color(:default, Map.get(theme, :background, %{}))
+      end
+
+    attrs = if background_color != "" do
+      [{"background-color", background_color} | attrs]
+    else
+      attrs
+    end
+
+    # Apply bold if present
+    attrs = if Map.get(style_map, :bold, false) do
+      [{"font-weight", "bold"} | attrs]
+    else
+      attrs
+    end
+
+    # Build the style string
+    attrs
+    |> Enum.reverse()
+    |> Enum.map(fn {k, v} -> "#{k}: #{v}" end)
+    |> Enum.join("; ")
+  end
+
+  defp get_color(color_name, color_map) do
+    case Map.get(color_map, color_name) do
+      nil -> ""
+      color when is_binary(color) -> color
+      color when is_map(color) ->
+        # Check if it's an RGB object
+        if Map.has_key?(color, :r) do
+          # Convert RGB object to hex string
+          r = Map.get(color, :r, 0)
+          g = Map.get(color, :g, 0)
+          b = Map.get(color, :b, 0)
+          "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
+        else
+          ""
+        end
+      color when is_atom(color) ->
+        # Handle color atoms by converting to hex
+        case color do
+          :red -> "#FF0000"
+          :green -> "#00FF00"
+          :blue -> "#0000FF"
+          :yellow -> "#FFFF00"
+          :magenta -> "#FF00FF"
+          :cyan -> "#00FFFF"
+          :white -> "#FFFFFF"
+          :black -> "#000000"
+          :bright_red -> "#FF8080"
+          :bright_green -> "#80FF80"
+          :bright_blue -> "#8080FF"
+          :bright_yellow -> "#FFFF80"
+          :bright_magenta -> "#FF80FF"
+          :bright_cyan -> "#80FFFF"
+          :bright_white -> "#FFFFFF"
+          :bright_black -> "#808080"
+          _ -> ""
+        end
+      _ -> ""
+    end
+  end
+
   defp apply_font_settings(content, font_settings), do: content
   defp maybe_apply_cursor(content, nil), do: content
-  defp maybe_apply_cursor(content, cursor), do: {content, cursor}
+  defp maybe_apply_cursor(content, cursor), do: content
 
   @doc """
   Sets the cursor position.

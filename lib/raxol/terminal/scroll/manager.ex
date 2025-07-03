@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
 
   # Private helper functions
 
-  defp get_cached_scroll(manager, direction, amount) do
+  defp get_cached_scroll(_manager, direction, amount) do
     cache_key = {direction, amount}
 
     case System.get(cache_key, namespace: :scroll) do

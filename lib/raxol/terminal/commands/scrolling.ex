@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     if count > 0 and region_height > 0 do
       actual_scroll_count = min(count, region_height)
       preserved_lines_source_start = effective_top + actual_scroll_count
-      preserved_lines_count = region_height - actual_scroll_count
+      _preserved_lines_count = region_height - actual_scroll_count
 
       new_buffer =
         shift_lines_up(
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
          blank_style
        ) do
     cells = buffer.cells
-    region_end = region_start + region_height - 1
+    _region_end = region_start + region_height - 1
     n = region_start_plus_n - region_start
 
     new_cells =
@@ -152,7 +152,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
           cells,
           line,
           region_start,
-          region_end,
+          region_start + region_height - 1,
           n,
           buffer.width,
           blank_style
@@ -268,7 +268,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   defp fill_blank_lines(buffer, region_start, count, style, :down) do
     region_height = get_region_height(buffer, region_start)
-    region_end = region_start + region_height - 1
+    _region_end = region_start + region_height - 1
     blank_start = region_start
     blank_end = region_start + count - 1
     empty_line = List.duplicate(Cell.new(" ", style), buffer.width)
