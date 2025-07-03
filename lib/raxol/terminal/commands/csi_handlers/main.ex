@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Main do
   Routes commands to the appropriate handler modules.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.{Basic, Cursor, Screen, Device}
 
   @doc """

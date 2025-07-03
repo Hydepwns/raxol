@@ -53,44 +53,119 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   # Cursor movement functions (defined before the map that references them)
   def handle_cursor_up(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?A)
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+      emulator,
+      [amount],
+      ?A
+    )
   end
 
   def handle_cursor_down(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?B)
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+      emulator,
+      [amount],
+      ?B
+    )
   end
 
   def handle_cursor_forward(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?C)
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+      emulator,
+      [amount],
+      ?C
+    )
   end
 
   def handle_cursor_backward(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [amount], ?D)
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+      emulator,
+      [amount],
+      ?D
+    )
   end
 
   def handle_cursor_position(emulator, row, col) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [row, col], ?H)
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+      emulator,
+      [row, col],
+      ?H
+    )
   end
 
   def handle_cursor_position(emulator, params) do
     case params do
-      [] -> Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [1, 1], ?H)
-      [row] -> Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [row, 1], ?H)
-      [row, col] -> Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [row, col], ?H)
+      [] ->
+        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+          emulator,
+          [1, 1],
+          ?H
+        )
+
+      [row] ->
+        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+          emulator,
+          [row, 1],
+          ?H
+        )
+
+      [row, col] ->
+        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+          emulator,
+          [row, col],
+          ?H
+        )
+
+      _ ->
+        # Handle the case where params might be a string or other format
+        # Parse the parameters and call the cursor position handler directly
+        case params do
+          [row, col] ->
+            Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+              emulator,
+              [row, col],
+              ?H
+            )
+
+          [row] ->
+            Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+              emulator,
+              [row, 1],
+              ?H
+            )
+
+          _ ->
+            Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+              emulator,
+              [1, 1],
+              ?H
+            )
+        end
     end
   end
 
   def handle_cursor_column(emulator, column) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(emulator, [column], ?G)
+    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+      emulator,
+      [column],
+      ?G
+    )
   end
 
   # Screen operations (defined before the map that references them)
   def handle_erase_display(emulator, mode) do
-    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [mode], ?J)
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(
+      emulator,
+      [mode],
+      ?J
+    )
   end
 
   def handle_erase_line(emulator, mode) do
-    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [mode], ?K)
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(
+      emulator,
+      [mode],
+      ?K
+    )
   end
 
   def handle_screen_clear(emulator, params) do
@@ -115,29 +190,53 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   # Scrolling operations (defined before the map that references them)
   def handle_scroll_up(emulator, lines) do
-    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [lines], ?S)
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(
+      emulator,
+      [lines],
+      ?S
+    )
   end
 
   def handle_scroll_down(emulator, lines) do
-    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(emulator, [lines], ?T)
+    Raxol.Terminal.Commands.CSIHandlers.Screen.handle_command(
+      emulator,
+      [lines],
+      ?T
+    )
   end
 
   # Device operations (defined before the map that references them)
   def handle_device_status(emulator, params) do
     case params do
-      [?6, ?n] -> Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(emulator, [6], "", ?n)
-      _ -> {:ok, emulator}
+      [?6, ?n] ->
+        Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
+          emulator,
+          [6],
+          "",
+          ?n
+        )
+
+      _ ->
+        {:ok, emulator}
     end
   end
 
   # Text attributes (defined before the map that references them)
   def handle_text_attributes(emulator, params) do
-    Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(emulator, params, ?m)
+    Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(
+      emulator,
+      params,
+      ?m
+    )
   end
 
   # Save/Restore cursor (defined before the map that references them)
   def handle_save_restore_cursor(emulator, params) do
-    Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(emulator, params, ?s)
+    Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(
+      emulator,
+      params,
+      ?s
+    )
   end
 
   @sequence_handlers %{
@@ -255,8 +354,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     end
   end
 
-
-
   def handle_cursor_movement(emulator, sequence) do
     case sequence do
       [?A] -> handle_cursor_up(emulator, 1)
@@ -266,8 +363,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
       _ -> {:ok, emulator}
     end
   end
-
-
 
   # Mode changes
   def handle_mode_change(emulator, mode, enabled) do
@@ -505,7 +600,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   @spec handle_csi_sequence(Emulator.t(), atom(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_csi_sequence(emulator, command, params) do
-    case Map.get(@csi_handlers, command) do
+    handlers = csi_command_handlers()
+
+    case Map.get(handlers, command) do
       nil -> {:ok, emulator}
       handler -> handler.(emulator, params)
     end
