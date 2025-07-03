@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
          cursor_style \\ :blinking_block
        ) do
     emulator = Emulator.new(80, 24)
-    cursor = Raxol.Terminal.Cursor.Manager.new(%{x: x, y: y})
+    cursor = Raxol.Terminal.Cursor.Manager.new(%{row: y, col: x})
 
     emulator = %{
       emulator

@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.Operations.ScrollOperationsTest do
     test "returns full screen region by default" do
       emulator = TestHelper.create_test_emulator()
       region = ScrollOperations.get_scroll_region(emulator)
-      # Assuming 25 lines (0-24)
-      assert region == {0, 24}
+      # Assuming 24 lines (0-23)
+      assert region == {0, 23}
     end
 
     test "returns custom scroll region" do
@@ -30,8 +30,8 @@ defmodule Raxol.Terminal.Operations.ScrollOperationsTest do
       emulator = TestHelper.create_test_emulator()
       emulator = ScrollOperations.set_scroll_region(emulator, -5, 30)
       region = ScrollOperations.get_scroll_region(emulator)
-      # Assuming 25 lines (0-24)
-      assert region == {0, 24}
+      # Assuming 24 lines (0-23)
+      assert region == {0, 23}
     end
 
     test "swaps start and end if start > end" do
@@ -127,8 +127,8 @@ defmodule Raxol.Terminal.Operations.ScrollOperationsTest do
       emulator = ScrollOperations.set_scroll_region(emulator, 5, 15)
       emulator = ScrollOperations.reset_scroll_region(emulator)
       region = ScrollOperations.get_scroll_region(emulator)
-      # Assuming 25 lines (0-24)
-      assert region == {0, 24}
+      # Assuming 24 lines (0-23)
+      assert region == {0, 23}
     end
   end
 end

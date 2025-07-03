@@ -37,7 +37,7 @@ defmodule Raxol.Test.Helpers do
       iex> Raxol.Test.Helpers.assert_process_started(Raxol.Terminal.Sync.System, :some_name)
       :ok
   """
-  def assert_process_started(module, name) do
+  def assert_process_started(_module, name) do
     assert Process.whereis(name)
   end
 

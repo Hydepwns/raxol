@@ -171,7 +171,7 @@ defmodule Raxol.UI.Components.TableTest do
       result = Table.update({:sort, :age}, state)
       assert match?({:ok, _}, result)
       {:ok, updated_state} = result
-      rendered = Table.render(updated_state, %{})
+      rendered = Table.render(updated_state, %{available_width: 80})
 
       # Verify sort order through row content
       [header | rows] = get_in(rendered, [:children, Access.at(0)])
@@ -185,7 +185,7 @@ defmodule Raxol.UI.Components.TableTest do
       result = Table.update({:set_page, 1}, state)
       assert match?({:ok, _}, result)
       {:ok, page1_state} = result
-      rendered = Table.render(page1_state, %{})
+      rendered = Table.render(page1_state, %{available_width: 80})
 
       # Verify first page content
       [header | rows] = get_in(rendered, [:children, Access.at(0)])
@@ -199,7 +199,7 @@ defmodule Raxol.UI.Components.TableTest do
       result = Table.update({:set_page, 2}, state)
       assert match?({:ok, _}, result)
       {:ok, page2_state} = result
-      rendered = Table.render(page2_state, %{})
+      rendered = Table.render(page2_state, %{available_width: 80})
       [header | rows] = get_in(rendered, [:children, Access.at(0)])
       assert length(rows) == 2
       first_row = List.first(rows)
@@ -338,7 +338,7 @@ defmodule Raxol.UI.Components.TableTest do
     end
 
     test "header is rendered with bold style", %{state: state} do
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       [header | _] = get_in(rendered, [:children, Access.at(0)])
       assert header.type == :flex
 
@@ -350,7 +350,7 @@ defmodule Raxol.UI.Components.TableTest do
     test "selected row is rendered with correct background and foreground colors",
          %{state: state} do
       state = %{state | selected_row: 1}
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       [_header | rows] = get_in(rendered, [:children, Access.at(0)])
       selected_row = Enum.at(rows, 1)
       assert selected_row.type == :flex
@@ -377,7 +377,7 @@ defmodule Raxol.UI.Components.TableTest do
       assert match?({:ok, _}, result)
       {:ok, state} = result
 
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       assert Map.get(rendered.style, :border_color) == :red
     end
 
@@ -390,7 +390,7 @@ defmodule Raxol.UI.Components.TableTest do
       assert match?({:ok, _}, result)
       {:ok, state} = result
 
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       assert Map.get(rendered.style, :border_color) == :green
     end
 
@@ -413,7 +413,7 @@ defmodule Raxol.UI.Components.TableTest do
       assert match?({:ok, _}, result)
       {:ok, state} = result
 
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       [header | _] = get_in(rendered, [:children, Access.at(0)])
 
       Enum.each(header.children, fn cell ->
@@ -443,7 +443,7 @@ defmodule Raxol.UI.Components.TableTest do
       {:ok, state} = result
 
       # Unselected row
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       [_header | rows] = get_in(rendered, [:children, Access.at(0)])
       first_row = Enum.at(rows, 0)
 
@@ -454,7 +454,7 @@ defmodule Raxol.UI.Components.TableTest do
 
       # Selected row
       state = %{state | selected_row: 2}
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       [_header | rows] = get_in(rendered, [:children, Access.at(0)])
       selected_row = Enum.at(rows, 2)
 
@@ -488,7 +488,7 @@ defmodule Raxol.UI.Components.TableTest do
       assert match?({:ok, _}, result)
       {:ok, state} = result
 
-      rendered = Table.render(state, %{})
+      rendered = Table.render(state, %{available_width: 80})
       [header | rows] = get_in(rendered, [:children, Access.at(0)])
       # Header cell for :id should have :bg in style
       id_header_cell = Enum.at(header.children, 0)

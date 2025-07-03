@@ -337,6 +337,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
         rescue
           _ -> :ok
         end
+
+        # Additional cleanup: remove any compiled beam files
+        beam_file = Path.join(temp_theme_dir, "InvalidModule.beam")
+        if File.exists?(beam_file), do: File.rm!(beam_file)
       end
     end
   end
