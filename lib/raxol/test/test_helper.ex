@@ -68,15 +68,16 @@ defmodule Raxol.Test.TestHelper do
   end
 
   @doc """
-  Creates a test component with the given module and initial state.
+  Creates a test component with default state.
   """
-  def create_test_component(module, initial_state \\ %{}) do
-    # Ensure the component's init/1 is called to set up required keys
-    state =
-      case function_exported?(module, :init, 1) do
-        true -> module.init(initial_state)
-        false -> initial_state
-      end
+  def create_test_component(module, opts \\ []) do
+    state = module.new(opts)
+
+    # Handle case where component creation returns {:ok, state}
+    state = case state do
+      {:ok, actual_state} -> actual_state
+      actual_state -> actual_state
+    end
 
     state =
       state
