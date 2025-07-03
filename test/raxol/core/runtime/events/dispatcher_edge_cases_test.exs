@@ -110,8 +110,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       _ -> :error
     end)
 
-    Mox.stub(ThemeMock, :get_theme, fn _ -> {:ok, %{}} end)
-
     # Stub all ThemeBehaviour callbacks to prevent missing function errors
     Mox.stub(ThemeMock, :register, fn _ -> :ok end)
     Mox.stub(ThemeMock, :get, fn _ -> nil end)
@@ -123,6 +121,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     Mox.stub(ThemeMock, :get_color, fn _, _, _ -> nil end)
     Mox.stub(ThemeMock, :apply_theme, fn e, _ -> e end)
     Mox.stub(ThemeMock, :init, fn -> :ok end)
+    Mox.stub(ThemeMock, :current_version, fn -> "1.0.0" end)
 
     # Registry for events
     Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
@@ -137,8 +136,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
     # Start Mock Plugin Manager
     {:ok, mock_pm_pid} = MockPluginManager.start_link([])
-
-    Mox.stub(Phoenix.PubSub, :broadcast, fn _, _, _ -> :ok end)
 
     # Define initial state for Dispatcher
     initial_state = %{

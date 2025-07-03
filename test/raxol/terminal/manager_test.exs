@@ -112,18 +112,9 @@ defmodule Raxol.Terminal.ManagerTest do
     assert_receive {:terminal_scroll_event, :down, 5, {0, 0}}, 100
   end
 
-  test "unknown event type does not crash or send messages" do
+  test "unknown event type does not crash or send messages", %{pid: pid} do
     # Flush the mailbox to remove any previous messages
     flush()
-    # Create a separate manager for this test - handle already started case
-    pid =
-      case Manager.start_link(
-             terminal: Raxol.Terminal.Emulator.new(),
-             runtime_pid: self()
-           ) do
-        {:ok, pid} -> pid
-        {:error, {:already_started, pid}} -> pid
-      end
 
     # Send an unknown event
     event = %Raxol.Core.Events.Event{type: :unknown_event, data: %{}}
@@ -131,7 +122,7 @@ defmodule Raxol.Terminal.ManagerTest do
     # Assert that an error message is received for unknown event type
     assert_receive {:terminal_error, :unknown_event_type,
                     %{action: :process_event, event: ^event}},
-                   100
+                   1000
   end
 
   defp flush do

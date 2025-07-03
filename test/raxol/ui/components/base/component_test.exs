@@ -98,6 +98,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     def new(props \\ %{}) do
       Map.merge(
         %{
+          id: :test_component,
           counter: 0,
           mounted: false,
           unmounted: false,
@@ -283,6 +284,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       defmodule MinimalComponent do
         @behaviour Raxol.UI.Components.Base.Component
 
+        def new(props \\ %{}), do: props
         def init(props), do: props
         def render(state, _context), do: %{type: :minimal}
         def handle_event(_event, state), do: {state, []}

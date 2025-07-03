@@ -8,7 +8,7 @@ defmodule Termbox2NifTest do
   # Skip tests if not in a TTY
   setup do
     if not Raxol.Terminal.TerminalUtils.real_tty?() do
-      :skip
+      {:skip, "Not in a TTY environment"}
     else
       :ok
     end

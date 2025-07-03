@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Integration.IOIntegrationTest do
 
   setup do
     # Start the main integration module
-    {:ok, pid} = Main.start_link(%{name: :test_terminal})
+    {:ok, pid} = Main.start_link(%{})
     %{pid: pid}
   end
 

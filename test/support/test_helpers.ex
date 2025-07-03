@@ -148,7 +148,9 @@ defmodule Raxol.Test.Helpers do
          name: Raxol.UI.Rendering.Renderer}
       )
 
-    # Start the Pipeline GenServer with global registration (as expected by tests)
+    # Start the Pipeline GenServer with module name registration
+    # This bypasses the unique name generation in test mode to ensure
+    # the public API functions can find the process
     {:ok, pipeline_pid} =
       start_supervised(
         {Raxol.UI.Rendering.Pipeline, name: Raxol.UI.Rendering.Pipeline}

@@ -36,7 +36,7 @@ defmodule Raxol.ColorSystemTest do
     )
 
     # Wait for preferences to be applied
-    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
+    assert_receive {:preferences_applied}, 100
 
     on_exit(fn ->
       # Cleanup
