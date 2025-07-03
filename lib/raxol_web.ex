@@ -15,8 +15,6 @@ defmodule RaxolWeb do
   on imports, uses and aliases.
   """
 
-  import Raxol.Guards
-
   def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
 
   def router do
