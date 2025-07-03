@@ -74,12 +74,13 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       buffer = %{buffer | cells: cells}
       buffer = ScreenBuffer.set_cursor_position(buffer, 0, 0)
 
+      renderer = %{renderer | screen_buffer: buffer}
+
       # Assert the first cell has the correct style
-      first_cell = hd(hd(buffer.cells))
+      first_cell = Enum.at(Enum.at(buffer.cells, 0), 0)
+      IO.puts("DEBUG: First cell: #{inspect(first_cell)}")
       assert first_cell.style.foreground == :red
       assert first_cell.style.bold == true
-
-      renderer = %{renderer | screen_buffer: buffer}
 
       html = Raxol.Terminal.Renderer.render(renderer)
       assert html =~ ~s(<span style="color: #FF0000; font-weight: bold">S</span>)
