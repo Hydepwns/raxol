@@ -154,27 +154,51 @@ defmodule Raxol.Terminal.Input.Processor do
 
   defp parse_function_key(input) do
     key = String.last(input)
-    {:ok, %KeyEvent{key: key, modifiers: [], timestamp: System.monotonic_time()}}
+
+    {:ok,
+     %KeyEvent{key: key, modifiers: [], timestamp: System.monotonic_time()}}
   end
 
   defp modifier_key?(input) do
-    match?(<<27, ?[, _prefix::binary-size(1), ?;, _mod_code::binary-size(1), _key::binary-size(1)>>, input)
+    match?(
+      <<27, ?[, _prefix::binary-size(1), ?;, _mod_code::binary-size(1),
+        _key::binary-size(1)>>,
+      input
+    )
   end
 
   defp parse_modifier_key(input) do
-    <<27, ?[, prefix::binary-size(1), ?;, mod_code::binary-size(1), key::binary-size(1)>> = input
+    <<27, ?[, prefix::binary-size(1), ?;, mod_code::binary-size(1),
+      key::binary-size(1)>> = input
+
     modifiers = parse_key_modifiers_for_test(prefix, mod_code)
-    {:ok, %KeyEvent{key: key, modifiers: modifiers, timestamp: System.monotonic_time()}}
+
+    {:ok,
+     %KeyEvent{
+       key: key,
+       modifiers: modifiers,
+       timestamp: System.monotonic_time()
+     }}
   end
 
   defp simple_modifier_key?(input) do
-    match?(<<27, ?[, _prefix::binary-size(1), key::binary-size(1)>> when key in ["A", "B", "C", "D"], input)
+    match?(
+      <<27, ?[, _prefix::binary-size(1), key::binary-size(1)>>
+      when key in ["A", "B", "C", "D"],
+      input
+    )
   end
 
   defp parse_simple_modifier_key(input) do
     <<27, ?[, prefix::binary-size(1), key::binary-size(1)>> = input
     modifiers = if prefix == "2", do: [:shift], else: []
-    {:ok, %KeyEvent{key: key, modifiers: modifiers, timestamp: System.monotonic_time()}}
+
+    {:ok,
+     %KeyEvent{
+       key: key,
+       modifiers: modifiers,
+       timestamp: System.monotonic_time()
+     }}
   end
 
   defp single_char?(input) do
@@ -182,7 +206,8 @@ defmodule Raxol.Terminal.Input.Processor do
   end
 
   defp parse_single_char(input) do
-    {:ok, %KeyEvent{key: input, modifiers: [], timestamp: System.monotonic_time()}}
+    {:ok,
+     %KeyEvent{key: input, modifiers: [], timestamp: System.monotonic_time()}}
   end
 
   defp parse_unknown_input(input) do

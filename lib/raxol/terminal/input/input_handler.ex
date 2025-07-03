@@ -277,7 +277,8 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Handles printable character input for the terminal emulator.
   """
-  @spec handle_printable_character(any(), integer(), map(), atom() | nil) :: {any(), any()}
+  @spec handle_printable_character(any(), integer(), map(), atom() | nil) ::
+          {any(), any()}
   def handle_printable_character(emulator, char_codepoint, params, single_shift) do
     # Convert character codepoint to string
     char_string = <<char_codepoint::utf8>>
