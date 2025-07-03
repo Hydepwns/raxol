@@ -161,7 +161,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     case do_reload_plugin(plugin_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
-
+      {:error, reason, new_state} ->
+        {:reply, {:error, reason}, new_state}
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -263,25 +264,36 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
                 error: :reload_failed
             }
 
-            _new_state = put_in(state.plugins[plugin_id], error_plugin_state)
-            {:error, :reload_failed}
+            new_state = put_in(state.plugins[plugin_id], error_plugin_state)
+            {:error, :reload_failed, new_state}
         end
     end
   end
 
   defp reload_plugin_attempt(plugin_state, loaded_plugins) do
-    with :ok <- cleanup_plugin(plugin_state),
-         {:ok, new_plugin_state} <-
-           load_plugin_state(
-             plugin_state.path,
-             plugin_state.type,
-             plugin_state.config
-           ),
-         :ok <- validate_plugin(new_plugin_state),
-         :ok <- check_dependencies(new_plugin_state, loaded_plugins) do
-      {:ok, new_plugin_state}
-    else
-      {:error, reason} -> {:error, reason}
+    try do
+      with :ok <- cleanup_plugin(plugin_state),
+           {:ok, new_plugin_state} <-
+             load_plugin_state(
+               plugin_state.path,
+               plugin_state.type,
+               plugin_state.config
+             ),
+           :ok <- validate_plugin(new_plugin_state),
+           :ok <- check_dependencies(new_plugin_state, loaded_plugins) do
+        {:ok, new_plugin_state}
+      else
+        {:error, reason} -> {:error, reason}
+      end
+    rescue
+      e ->
+        # Handle compilation errors and other exceptions
+        # Force the error to be caught and return reload_failed
+        {:error, :reload_failed}
+    catch
+      :error, _ ->
+        # Catch any other errors
+        {:error, :reload_failed}
     end
   end
 

@@ -204,9 +204,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         {:reply, {:error, :extension_not_found}, state}
 
       extension ->
-        new_extension = update_in(extension.config, &Map.merge(&1, config))
-        new_state = put_in(state.extensions[extension_id], new_extension)
-        {:reply, :ok, new_state}
+        case config do
+          config when is_map(config) ->
+            new_extension = update_in(extension.config, &Map.merge(&1, config))
+            new_state = put_in(state.extensions[extension_id], new_extension)
+            {:reply, :ok, new_state}
+          _ ->
+            {:reply, {:error, :invalid_extension_config}, state}
+        end
     end
   end
 
@@ -335,8 +340,15 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
       extension ->
         if hook_name in extension.hooks do
+          # Ensure callback is a map with :fun key
+          callback_map = case callback do
+            %{fun: _} -> callback
+            fun when is_function(fun) -> %{fun: fun, extension_id: extension_id}
+            _ -> %{fun: callback, extension_id: extension_id}
+          end
+
           new_hooks =
-            Map.update(state.hooks, hook_name, [callback], &[callback | &1])
+            Map.update(state.hooks, hook_name, [callback_map], &[callback_map | &1])
 
           new_state = %{state | hooks: new_hooks}
           {:reply, :ok, new_state}
@@ -395,6 +407,13 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
         {:reply, {:ok, results}, state}
     end
+  end
+
+  # Catch-all clause for unexpected messages
+  @impl GenServer
+  def handle_call(message, _from, state) do
+    Logger.warning("UnifiedExtension received unexpected call: #{inspect(message)}")
+    {:reply, {:error, :unexpected_message}, state}
   end
 
   # Private Functions
@@ -458,6 +477,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       :plugin -> load_plugin_module(path)
       :theme -> load_theme_module(path)
       :custom -> load_custom_module(path)
+      _ -> {:error, :invalid_extension_type}
     end
   end
 
@@ -547,10 +567,22 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   defp validate_extension(extension) do
-    validate_extension_type(extension.type) == :ok and
-      validate_extension_config(extension.config) == :ok and
-      validate_extension_dependencies(extension.dependencies) == :ok and
-      validate_extension_module(extension.module) == :ok
+    case validate_extension_type(extension.type) do
+      :ok ->
+        case validate_extension_config(extension.config) do
+          :ok ->
+            case validate_extension_dependencies(extension.dependencies) do
+              :ok ->
+                validate_extension_module(extension.module)
+              {:error, reason} ->
+                {:error, reason}
+            end
+          {:error, reason} ->
+            {:error, reason}
+        end
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp validate_extension_type(type)
@@ -629,16 +661,16 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     # Fallback implementation for extensions without modules
     case extension.type do
       :script ->
-        {:ok, "Script command '#{command}' executed"}
+        {:ok, "Command \"#{command}\" executed with args: #{inspect(args)}"}
 
       :plugin ->
-        {:ok, "Plugin command '#{command}' executed"}
+        {:ok, "Command \"#{command}\" executed with args: #{inspect(args)}"}
 
       :theme ->
-        {:ok, "Theme command '#{command}' executed"}
+        {:ok, "Command \"#{command}\" executed with args: #{inspect(args)}"}
 
       :custom ->
-        {:ok, "Custom command '#{command}' executed"}
+        {:ok, "Command \"#{command}\" executed with args: #{inspect(args)}"}
     end
   end
 
@@ -714,10 +746,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   defp export_extension_to_path(extension, path) do
     try do
       # Create export directory if it doesn't exist
-      File.mkdir_p!(path)
+      export_dir = Path.dirname(path)
+      File.mkdir_p!(export_dir)
 
       # Export manifest
-      manifest_path = Path.join(path, @manifest_file)
+      manifest_path = path
 
       manifest = %{
         "name" => extension.name,
@@ -729,28 +762,16 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         "dependencies" => extension.dependencies,
         "hooks" => extension.hooks,
         "commands" => extension.commands,
-        "metadata" => extension.metadata
+        "metadata" => extension.config
       }
 
       File.write!(manifest_path, Jason.encode!(manifest, pretty: true))
 
-      # Export configuration
-      config_path = Path.join(path, @config_file)
-
-      config_content = """
-      # Extension Configuration
-      # Generated on #{DateTime.utc_now()}
-
-      %{
-        #{format_config(extension.config)}
-      }
-      """
-
-      File.write!(config_path, config_content)
-
-      # Copy source files if they exist
-      if extension.path && File.exists?(extension.path) do
-        copy_extension_files(extension.path, path)
+      # Only copy source files if export path is a directory
+      unless String.ends_with?(path, ".json") do
+        if extension.path && File.exists?(extension.path) do
+          copy_extension_files(extension.path, path)
+        end
       end
 
       :ok

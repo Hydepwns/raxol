@@ -98,6 +98,10 @@ defmodule Raxol.Terminal.Driver do
     # Send driver_ready event to the test process
     if Mix.env() == :test do
       send(self(), {:driver_ready, self()})
+      # Send initial resize event for test environment
+      if dispatcher_pid do
+        send_initial_resize_event(dispatcher_pid)
+      end
     end
 
     {:ok, state}

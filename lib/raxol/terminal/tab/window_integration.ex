@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
         tab_manager,
         window_manager,
         tab_id,
-        window_config
+        _window_config
       ) do
     case get_tab_config(tab_manager, tab_id) do
       {:ok, tab_config} ->
@@ -108,13 +108,13 @@ defmodule Raxol.Terminal.Tab.WindowIntegration do
         tab_manager,
         window_manager,
         tab_id,
-        window_config
+        _window_config
       ) do
-    case get_tab_config(tab_manager, tab_id) do
-      {:ok, tab_config} ->
-        # For now, just return the managers unchanged
-        # In a real implementation, this would update the window configuration
-        {:ok, tab_manager, window_manager}
+          case get_tab_config(tab_manager, tab_id) do
+        {:ok, _tab_config} ->
+          # For now, just return the managers unchanged
+          # In a real implementation, this would update the window configuration
+          {:ok, tab_manager, window_manager}
 
       {:error, :not_found} ->
         {:error, :tab_not_found}
