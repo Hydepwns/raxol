@@ -163,7 +163,7 @@ defmodule Raxol.Terminal.InputManager do
   Processes mouse events.
   """
   @spec process_mouse(Emulator.t(), map()) :: {Emulator.t(), any()}
-  def process_mouse(emulator, event) do
+  def process_mouse(emulator, _event) do
     # For now, just return the emulator unchanged
     # This can be expanded later to handle mouse events properly
     {emulator, nil}
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.InputManager do
   Updates modifier key state.
   """
   @spec update_modifier(Emulator.t(), String.t(), boolean()) :: Emulator.t()
-  def update_modifier(emulator, modifier, value) do
+  def update_modifier(emulator, _modifier, _value) do
     # For now, just return the emulator unchanged
     # This can be expanded later to handle modifier states properly
     emulator

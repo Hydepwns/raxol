@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.EmulatorFactory do
     }
   end
 
-  def new(opts \\ []) do
-    opts = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+  def new(_opts \\ []) do
+    # This function is a placeholder for future implementation
   end
 end

@@ -313,45 +313,103 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
         {:reply, {:error, "Window not found"}, state}
 
       window ->
-        # Create new window for split (use internal helper)
-        {new_window_id, state1} =
-          do_create_window(
-            %{
-              size: window.size,
-              position: window.position,
-              buffer_id: Map.get(state.config, :default_buffer_id),
-              renderer_id: Map.get(state.config, :default_renderer_id)
-            },
-            state
-          )
+        case direction do
+          :horizontal ->
+            # Calculate new sizes based on split direction
+            {parent_size, child_size} = calculate_split_sizes(window.size, direction)
 
-        # Update parent window
-        updated_window = %{
-          window
-          | split_type: direction,
-            children: [new_window_id | window.children]
-        }
+            # Create new window for split (use internal helper)
+            {new_window_id, state1} =
+              do_create_window(
+                %{
+                  size: child_size,
+                  position: window.position,
+                  buffer_id: Map.get(state.config, :default_buffer_id),
+                  renderer_id: Map.get(state.config, :default_renderer_id)
+                },
+                state
+              )
 
-        # Update new window
-        new_window = Map.get(state1.windows, new_window_id)
-        updated_new_window = %{new_window | parent_id: window_id}
+            # Update parent window
+            updated_window = %{
+              window
+              | size: parent_size,
+                split_type: direction,
+                children: [new_window_id | window.children]
+            }
 
-        new_state = %{
-          state1
-          | windows:
-              state1.windows
-              |> Map.put(window_id, updated_window)
-              |> Map.put(new_window_id, updated_new_window)
-        }
+            # Update new window
+            new_window = Map.get(state1.windows, new_window_id)
+            updated_new_window = %{new_window | parent_id: window_id}
 
-        {:reply, {:ok, new_window_id}, new_state}
+            new_state = %{
+              state1
+              | windows:
+                  state1.windows
+                  |> Map.put(window_id, updated_window)
+                  |> Map.put(new_window_id, updated_new_window)
+            }
+
+            {:reply, {:ok, new_window_id}, new_state}
+
+          :vertical ->
+            # Calculate new sizes based on split direction
+            {parent_size, child_size} = calculate_split_sizes(window.size, direction)
+
+            # Create new window for split (use internal helper)
+            {new_window_id, state1} =
+              do_create_window(
+                %{
+                  size: child_size,
+                  position: window.position,
+                  buffer_id: Map.get(state.config, :default_buffer_id),
+                  renderer_id: Map.get(state.config, :default_renderer_id)
+                },
+                state
+              )
+
+            # Update parent window
+            updated_window = %{
+              window
+              | size: parent_size,
+                split_type: direction,
+                children: [new_window_id | window.children]
+            }
+
+            # Update new window
+            new_window = Map.get(state1.windows, new_window_id)
+            updated_new_window = %{new_window | parent_id: window_id}
+
+            new_state = %{
+              state1
+              | windows:
+                  state1.windows
+                  |> Map.put(window_id, updated_window)
+                  |> Map.put(new_window_id, updated_new_window)
+            }
+
+            {:reply, {:ok, new_window_id}, new_state}
+
+          _ ->
+            {:reply, {:error, :invalid_direction}, state}
+        end
     end
+  end
+
+  defp calculate_split_sizes({width, height}, :horizontal) do
+    half_width = div(width, 2)
+    {{half_width, height}, {half_width, height}}
+  end
+
+  defp calculate_split_sizes({width, height}, :vertical) do
+    half_height = div(height, 2)
+    {{width, half_height}, {width, half_height}}
   end
 
   def handle_call({:close_window, window_id}, _from, state) do
     case do_close_window(window_id, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, _} -> {:reply, {:error, "Window not found"}, state}
+      {:error, _} -> {:reply, {:error, :window_not_found}, state}
     end
   end
 
@@ -480,7 +538,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:set_active_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       _window ->
         new_state = %{state | active_window: window_id}
@@ -491,7 +549,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:get_window_state, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         {:reply, {:ok, window}, state}
@@ -499,7 +557,10 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   end
 
   def handle_call(:get_active_window, _from, state) do
-    {:reply, state.active_window, state}
+    case state.active_window do
+      nil -> {:reply, {:error, :no_active_window}, state}
+      window_id -> {:reply, {:ok, window_id}, state}
+    end
   end
 
   def handle_call({:update_config, config}, _from, state) do

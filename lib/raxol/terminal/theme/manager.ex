@@ -82,7 +82,7 @@ defmodule Raxol.Terminal.Theme.Manager do
   Creates a new theme manager with the given options.
   """
   @spec new(keyword()) :: t()
-  def new(opts \\ []) do
+  def new(_opts \\ []) do
     default_theme = %{
       name: "default",
       description: "Default terminal theme",
