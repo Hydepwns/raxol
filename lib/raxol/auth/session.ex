@@ -139,9 +139,6 @@ defmodule Raxol.Auth.Session do
     end
   end
 
-  @doc """
-  Cleans up a session (no-op for nil or invalid session IDs).
-  """
   @spec cleanup_session(any()) :: :ok
   def cleanup_session(_), do: :ok
 
@@ -162,9 +159,6 @@ defmodule Raxol.Auth.Session do
     Manager.get_session(session_id)
   end
 
-  @doc """
-  Gets a session by ID (returns nil for not found).
-  """
   @spec get_session(String.t()) :: map() | nil
   def get_session(session_id) when is_binary(session_id) do
     case Manager.get_session(session_id) do
