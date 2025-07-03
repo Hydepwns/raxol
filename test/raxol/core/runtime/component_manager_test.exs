@@ -10,6 +10,10 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   setup do
     # Start ComponentManager with clean state
     start_supervised!(ComponentManager)
+
+    # Set runtime_pid to self() so we can receive component_updated messages
+    ComponentManager.set_runtime_pid(self())
+
     :ok
   end
 

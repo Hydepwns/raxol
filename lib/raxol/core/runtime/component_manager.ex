@@ -81,12 +81,60 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   @impl GenServer
   def handle_call({:mount, component_module, props}, _from, state) do
-    # Generate a unique ID
-    component_id = inspect(component_module) <> "-" <> UUID.uuid4()
+    # Validate component module
+    if not is_atom(component_module) or
+         not Code.ensure_loaded?(component_module) do
+      {:reply, {:error, :invalid_component}, state}
+    else
+      try do
+        # Generate a unique ID
+        component_id = inspect(component_module) <> "-" <> UUID.uuid4()
 
-    # Initialize component
-    initial_state = component_module.init(props)
+        # Initialize component
+        case component_module.init(props) do
+          {:ok, initial_state} ->
+            mount_component(
+              component_module,
+              initial_state,
+              props,
+              component_id,
+              state
+            )
 
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
+
+          initial_state when is_map(initial_state) ->
+            mount_component(
+              component_module,
+              initial_state,
+              props,
+              component_id,
+              state
+            )
+
+          _ ->
+            {:reply, {:error, :invalid_init_return}, state}
+        end
+      rescue
+        e ->
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Component init failed: #{inspect(e)}",
+            %{component: component_module}
+          )
+
+          {:reply, {:error, :init_failed}, state}
+      end
+    end
+  end
+
+  defp mount_component(
+         component_module,
+         initial_state,
+         props,
+         component_id,
+         state
+       ) do
     # Mount the component
     {mounted_state, commands} = component_module.mount(initial_state)
 
@@ -101,8 +149,15 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     # Process any commands from mounting
     process_commands(commands, component_id, new_state)
 
-    # Queue initial render
-    new_state = update_in(new_state.render_queue, &[component_id | &1])
+    # Queue initial render (avoid duplicates)
+    new_state =
+      update_in(new_state.render_queue, fn queue ->
+        if component_id in queue do
+          queue
+        else
+          [component_id | queue]
+        end
+      end)
 
     # Emit component_queued_for_render event if runtime_pid is set
     if new_state.runtime_pid,
@@ -128,8 +183,15 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         # Cleanup subscriptions
         state = cleanup_subscriptions(component_id, state)
 
-        # Remove component
+        # Remove component from components map
         state = update_in(state.components, &Map.delete(&1, component_id))
+
+        # Remove component from render queue
+        state =
+          update_in(
+            state.render_queue,
+            &Enum.reject(&1, fn id -> id == component_id end)
+          )
 
         {:reply, {:ok, final_state}, state}
     end
@@ -142,25 +204,74 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         {:reply, {:error, :not_found}, state}
 
       component ->
-        # Call update callback
-        {new_state, commands} =
-          component.module.update(message, component.state)
+        try do
+          # Call update callback
+          case component.module.update(message, component.state) do
+            {new_state, commands} when is_map(new_state) ->
+              # Store updated state
+              state = put_in(state.components[component_id].state, new_state)
 
-        # Store updated state
-        state = put_in(state.components[component_id].state, new_state)
+              # Process any commands from update
+              state = process_commands(commands, component_id, state)
 
-        # Process any commands from update
-        state = process_commands(commands, component_id, state)
+              # Queue re-render if state changed
+              state =
+                if new_state != component.state do
+                  update_in(state.render_queue, fn queue ->
+                    if component_id in queue do
+                      queue
+                    else
+                      [component_id | queue]
+                    end
+                  end)
+                else
+                  state
+                end
 
-        # Queue re-render if state changed
-        state =
-          if new_state != component.state do
-            update_in(state.render_queue, &[component_id | &1])
-          else
-            state
+              # Send component_updated message if runtime_pid is set
+              if state.runtime_pid do
+                send(state.runtime_pid, {:component_updated, component_id})
+              end
+
+              {:reply, {:ok, new_state}, state}
+
+            new_state when is_map(new_state) ->
+              # Handle case where update returns just state (no commands)
+              state = put_in(state.components[component_id].state, new_state)
+
+              # Queue re-render if state changed
+              state =
+                if new_state != component.state do
+                  update_in(state.render_queue, fn queue ->
+                    if component_id in queue do
+                      queue
+                    else
+                      [component_id | queue]
+                    end
+                  end)
+                else
+                  state
+                end
+
+              # Send component_updated message if runtime_pid is set
+              if state.runtime_pid do
+                send(state.runtime_pid, {:component_updated, component_id})
+              end
+
+              {:reply, {:ok, new_state}, state}
+
+            _ ->
+              {:reply, {:error, :invalid_component_return}, state}
           end
+        rescue
+          e ->
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Component update failed: #{inspect(e)}",
+              %{component_id: component_id, message: message}
+            )
 
-        {:reply, {:ok, new_state}, state}
+            {:reply, {:error, :component_error}, state}
+        end
     end
   end
 
@@ -192,18 +303,69 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
       component ->
         # Reuse update logic (similar to handle_call)
-        # Destructure return value, ignore commands from info update
-        {new_state, _commands} =
-          component.module.update(message, component.state)
+        try do
+          case component.module.update(message, component.state) do
+            {new_state, _commands} when is_map(new_state) ->
+              # Store updated state (only the state map)
+              state = put_in(state.components[component_id].state, new_state)
 
-        # Store updated state (only the state map)
-        state = put_in(state.components[component_id].state, new_state)
+              # Queue re-render
+              state =
+                update_in(state.render_queue, fn queue ->
+                  if component_id in queue do
+                    queue
+                  else
+                    [component_id | queue]
+                  end
+                end)
 
-        # Queue re-render
-        state = update_in(state.render_queue, &[component_id | &1])
+              # Send component_updated message if runtime_pid is set
+              if state.runtime_pid do
+                send(state.runtime_pid, {:component_updated, component_id})
+              end
 
-        {:noreply, state}
+              {:noreply, state}
+
+            new_state when is_map(new_state) ->
+              # Handle case where update returns just state (no commands)
+              state = put_in(state.components[component_id].state, new_state)
+
+              # Queue re-render
+              state =
+                update_in(state.render_queue, fn queue ->
+                  if component_id in queue do
+                    queue
+                  else
+                    [component_id | queue]
+                  end
+                end)
+
+              # Send component_updated message if runtime_pid is set
+              if state.runtime_pid do
+                send(state.runtime_pid, {:component_updated, component_id})
+              end
+
+              {:noreply, state}
+
+            _ ->
+              {:noreply, state}
+          end
+        rescue
+          e ->
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Component update failed in handle_info: #{inspect(e)}",
+              %{component_id: component_id, message: message}
+            )
+
+            {:noreply, state}
+        end
     end
+  end
+
+  @impl GenServer
+  def handle_info({:update, component_id, message, _timer_id}, state) do
+    # Handle scheduled updates with timer_id (for compatibility)
+    handle_info({:update, component_id, message}, state)
   end
 
   @impl true
@@ -222,7 +384,21 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
         # Queue re-render if state changed
         if new_state != component.state do
-          update_in(acc.render_queue, &[component_id | &1])
+          acc =
+            update_in(acc.render_queue, fn queue ->
+              if component_id in queue do
+                queue
+              else
+                [component_id | queue]
+              end
+            end)
+
+          # Send component_updated message if runtime_pid is set
+          if acc.runtime_pid do
+            send(acc.runtime_pid, {:component_updated, component_id})
+          end
+
+          acc
         else
           acc
         end
@@ -297,7 +473,21 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         state_with_updated_comp =
           put_in(state.components[id], updated_component)
 
-        update_in(state_with_updated_comp.render_queue, &[id | &1])
+        state_with_queue =
+          update_in(state_with_updated_comp.render_queue, fn queue ->
+            if id in queue do
+              queue
+            else
+              [id | queue]
+            end
+          end)
+
+        # Send component_updated message if runtime_pid is set
+        if state_with_queue.runtime_pid do
+          send(state_with_queue.runtime_pid, {:component_updated, id})
+        end
+
+        state_with_queue
     end
   end
 
