@@ -9,6 +9,7 @@ This directory contains the implementation of the Raxol terminal cursor system, 
 The cursor manager handles cursor styles, state persistence, and animations. It provides a flexible system for managing cursor appearance and behavior.
 
 Key features:
+
 - Multiple cursor styles (block, underline, bar, custom)
 - State persistence
 - Animation system
@@ -139,4 +140,4 @@ Planned enhancements for the cursor system:
 2. **Cursor Effects**: Visual effects for cursor transitions
 3. **Cursor Themes**: Themeable cursor styles
 4. **Cursor Profiles**: Save and load cursor configurations
-5. **Cursor Events**: Event system for cursor state changes 
+5. **Cursor Events**: Event system for cursor state changes

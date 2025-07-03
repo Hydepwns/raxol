@@ -90,22 +90,16 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Creates a new cursor struct with the given options.
+  Creates a new cursor manager.
   """
   def new(opts) when is_map(opts) do
     struct!(__MODULE__, opts)
   end
 
-  @doc """
-  Creates a new cursor struct with the given keyword list options.
-  """
   def new(opts) when is_list(opts) do
     struct!(__MODULE__, Map.new(opts))
   end
 
-  @doc """
-  Creates a new cursor manager with specified row and col coordinates.
-  """
   def new(row, col) when is_integer(row) and is_integer(col) do
     %__MODULE__{
       row: row,
@@ -117,8 +111,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Gets the current cursor position.
   """
-  def get_position(pid \\ __MODULE__) do
+  def get_position(pid \\ __MODULE__)
+
+  def get_position(pid) when is_pid(pid) do
     GenServer.call(pid, :get_position)
+  end
+
+  def get_position(%__MODULE__{} = cursor) do
+    {cursor.row, cursor.col}
   end
 
   @doc """
@@ -183,7 +183,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def move_up(cursor, lines, _width, _height) do
     new_row = max(cursor.top_margin, cursor.row - lines)
-    %{cursor | row: new_row}
+    %{cursor | row: new_row, position: {new_row, cursor.col}}
   end
 
   @doc """
@@ -191,7 +191,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def move_down(cursor, lines, _width, _height) do
     new_row = min(cursor.bottom_margin, cursor.row + lines)
-    %{cursor | row: new_row}
+    %{cursor | row: new_row, position: {new_row, cursor.col}}
   end
 
   @doc """
@@ -199,7 +199,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def move_left(cursor, cols, _width, _height) do
     new_col = max(0, cursor.col - cols)
-    %{cursor | col: new_col}
+    %{cursor | col: new_col, position: {cursor.row, new_col}}
   end
 
   @doc """
@@ -207,35 +207,40 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def move_right(cursor, cols, _width, _height) do
     new_col = cursor.col + cols
-    %{cursor | col: new_col}
+    %{cursor | col: new_col, position: {cursor.row, new_col}}
   end
 
   @doc """
   Moves the cursor to the beginning of the line.
   """
   def move_to_line_start(cursor) do
-    %{cursor | col: 0}
+    %{cursor | col: 0, position: {cursor.row, 0}}
   end
 
   @doc """
   Moves the cursor to the end of the line.
   """
   def move_to_line_end(cursor, line_width) do
-    %{cursor | col: line_width - 1}
+    %{cursor | col: line_width - 1, position: {cursor.row, line_width - 1}}
   end
 
   @doc """
   Moves the cursor to the specified column.
   """
   def move_to_column(cursor, column) do
-    %{cursor | col: column}
+    %{cursor | col: column, position: {cursor.row, column}}
   end
 
   @doc """
   Moves the cursor to the specified column with bounds clamping.
   """
-  @spec move_to_column(t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
-  def move_to_column(cursor, column, width, height) do
+  @spec move_to_column(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: t()
+  def move_to_column(cursor, column, width, _height) do
     clamped_col = max(0, min(column, width - 1))
     %{cursor | col: clamped_col, position: {cursor.row, clamped_col}}
   end
@@ -247,21 +252,27 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def constrain_position(cursor, width, height) do
     clamped_row = max(0, min(cursor.row, height - 1))
     clamped_col = max(0, min(cursor.col, width - 1))
-    %{cursor | row: clamped_row, col: clamped_col, position: {clamped_row, clamped_col}}
+
+    %{
+      cursor
+      | row: clamped_row,
+        col: clamped_col,
+        position: {clamped_row, clamped_col}
+    }
   end
 
   @doc """
   Moves the cursor to the specified line.
   """
   def move_to_line(cursor, line) do
-    %{cursor | row: line}
+    %{cursor | row: line, position: {line, cursor.col}}
   end
 
   @doc """
   Moves the cursor to the home position (0, 0).
   """
   def move_home(cursor, _width, _height) do
-    %{cursor | col: 0, row: 0}
+    %{cursor | col: 0, row: 0, position: {0, 0}}
   end
 
   @doc """
@@ -270,7 +281,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def move_to_next_tab(cursor, tab_size, width, _height) do
     next_tab = div(cursor.col + tab_size, tab_size) * tab_size
     new_col = min(next_tab, width - 1)
-    %{cursor | col: new_col}
+    %{cursor | col: new_col, position: {cursor.row, new_col}}
   end
 
   @doc """
@@ -279,7 +290,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def move_to_prev_tab(cursor, tab_size, _width, _height) do
     prev_tab = div(cursor.col - 1, tab_size) * tab_size
     new_col = max(prev_tab, 0)
-    %{cursor | col: new_col}
+    %{cursor | col: new_col, position: {cursor.row, new_col}}
   end
 
   @doc """
@@ -463,9 +474,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
         ) :: Emulator.t()
   def update_cursor_position(emulator, new_width, new_height) do
     cursor = emulator.cursor
-    x = min(cursor.x, new_width - 1)
-    y = min(cursor.y, new_height - 1)
-    %{emulator | cursor: %{cursor | x: x, y: y}}
+    col = min(cursor.col, new_width - 1)
+    row = min(cursor.row, new_height - 1)
+    %{emulator | cursor: %{cursor | col: col, row: row}}
   end
 
   @doc """
@@ -488,8 +499,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @spec move_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_up(emulator, count \\ 1) do
     cursor = emulator.cursor
-    y = max(0, cursor.y - count)
-    %{emulator | cursor: %{cursor | y: y}}
+    row = max(0, cursor.row - count)
+    %{emulator | cursor: %{cursor | row: row}}
   end
 
   @doc """
@@ -499,8 +510,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @spec move_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_down(emulator, count \\ 1) do
     cursor = emulator.cursor
-    y = min(emulator.height - 1, cursor.y + count)
-    %{emulator | cursor: %{cursor | y: y}}
+    row = min(emulator.height - 1, cursor.row + count)
+    %{emulator | cursor: %{cursor | row: row}}
   end
 
   @doc """
@@ -510,8 +521,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @spec move_left(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_left(emulator, count \\ 1) do
     cursor = emulator.cursor
-    x = max(0, cursor.x - count)
-    %{emulator | cursor: %{cursor | x: x}}
+    col = max(0, cursor.col - count)
+    %{emulator | cursor: %{cursor | col: col}}
   end
 
   @doc """
@@ -521,8 +532,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @spec move_right(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_right(emulator, count \\ 1) do
     cursor = emulator.cursor
-    x = min(emulator.width - 1, cursor.x + count)
-    %{emulator | cursor: %{cursor | x: x}}
+    col = min(emulator.width - 1, cursor.col + count)
+    %{emulator | cursor: %{cursor | col: col}}
   end
 
   @spec get_emulator_position(Emulator.t()) :: {integer(), integer()}
@@ -579,7 +590,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
       state
       | saved_row: state.row,
         saved_col: state.col,
-        saved_position: state.position
+        saved_position: {state.row, state.col}
     }
   end
 
@@ -610,7 +621,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
       visible: state.visible,
       blinking: state.blinking,
       state: state.state,
-      position: state.position
+      position: {state.row, state.col}
     }
 
     %{
@@ -634,7 +645,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
             visible: entry.visible,
             blinking: entry.blinking,
             state: entry.state,
-            position: entry.position,
+            position: {entry.row, entry.col},
             history: rest
         }
 
@@ -656,7 +667,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
       "Getting cursor position: {#{state.row}, #{state.col}}"
     )
 
-    {:reply, state.position, state}
+    {:reply, {state.row, state.col}, state}
   end
 
   @impl GenServer
@@ -793,12 +804,5 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def get_position_tuple(cursor) do
     {cursor.row, cursor.col}
-  end
-
-  @doc """
-  Gets the current cursor position as a tuple.
-  """
-  def get_position(%__MODULE__{} = cursor) do
-    cursor.position
   end
 end
