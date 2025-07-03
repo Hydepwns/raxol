@@ -74,7 +74,9 @@ defmodule Raxol.Core.Metrics.Aggregator do
   def record(name, value, tags \\ []) do
     # This is a simple pass-through to the unified collector
     # The actual aggregation happens based on rules
-    Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value, tags: tags)
+    Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value,
+      tags: tags
+    )
   end
 
   @doc """
@@ -200,9 +202,10 @@ defmodule Raxol.Core.Metrics.Aggregator do
     cleared_state = %{
       state
       | rules: %{},
-      aggregations: %{},
-      next_rule_id: 1
+        aggregations: %{},
+        next_rule_id: 1
     }
+
     {:reply, :ok, cleared_state}
   end
 

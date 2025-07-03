@@ -255,7 +255,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   end
 
   defp filter_and_map_entries(entries, type, tags) do
-    filtered = if tags == %{}, do: entries, else: Enum.filter(entries, &(&1.tags == tags))
+    filtered =
+      if tags == %{},
+        do: entries,
+        else: Enum.filter(entries, &(&1.tags == tags))
+
     Enum.map(filtered, &Map.put(&1, :type, type))
   end
 
