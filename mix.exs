@@ -117,6 +117,7 @@ defmodule Raxol.MixProject do
       # Image processing
       {:mogrify, "~> 0.9.3"},
       {:phoenix, "~> 1.7.21"},
+      {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_view, "~> 1.0.17"},
       {:surface, "~> 0.12.1"},

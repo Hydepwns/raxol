@@ -35,17 +35,22 @@ defmodule RaxolWeb.TerminalChannel do
     :scrollback_limit
   ]
 
-  # Use dependency injection for the emulator module
-  @emulator_module Application.get_env(
-                     :raxol,
-                     :terminal_emulator_module,
-                     Raxol.Terminal.Emulator
-                   )
-  @renderer_module Application.get_env(
-                     :raxol,
-                     :terminal_renderer_module,
-                     Raxol.Terminal.Renderer
-                   )
+  # Get the configured modules at runtime
+  defp emulator_module do
+    Application.get_env(
+      :raxol,
+      :terminal_emulator_module,
+      Raxol.Terminal.Emulator
+    )
+  end
+
+  defp renderer_module do
+    Application.get_env(
+      :raxol,
+      :terminal_renderer_module,
+      Raxol.Terminal.Renderer
+    )
+  end
 
   @impl Phoenix.Channel
   @dialyzer {:nowarn_function, join: 3}
@@ -57,9 +62,9 @@ defmodule RaxolWeb.TerminalChannel do
         Application.get_env(:raxol, :terminal, %{})[:scrollback_lines] || 1000
 
       # Create new emulator instance
-      emulator = @emulator_module.new(80, 24, scrollback: scrollback_limit)
+      emulator = emulator_module().new(80, 24, scrollback: scrollback_limit)
       input = Input.new()
-      renderer = @renderer_module.new(emulator.main_screen_buffer)
+      renderer = renderer_module().new(emulator.main_screen_buffer)
 
       state = %__MODULE__{
         emulator: emulator,
@@ -81,7 +86,7 @@ defmodule RaxolWeb.TerminalChannel do
     state = socket.assigns.terminal_state
 
     # Process input through emulator
-    {emulator, output} = @emulator_module.process_input(state.emulator, data)
+    {emulator, _output} = emulator_module().process_input(state.emulator, data)
 
     renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
 
@@ -89,12 +94,12 @@ defmodule RaxolWeb.TerminalChannel do
     socket = assign(socket, :terminal_state, new_state)
 
     # Get cursor position and visibility
-    {cursor_x, cursor_y} = @emulator_module.get_cursor_position(emulator)
-    cursor_visible = @emulator_module.get_cursor_visible(emulator)
+    {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
+    cursor_visible = emulator_module().get_cursor_visible(emulator)
 
     # Broadcast output to client (send html, not data)
     broadcast!(socket, "output", %{
-      html: @renderer_module.render(renderer),
+      html: renderer_module().render(renderer),
       cursor: %{
         x: cursor_x,
         y: cursor_y,
@@ -110,7 +115,7 @@ defmodule RaxolWeb.TerminalChannel do
     state = socket.assigns.terminal_state
 
     # Resize emulator
-    emulator = @emulator_module.resize(state.emulator, width, height)
+    emulator = emulator_module().resize(state.emulator, width, height)
     renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
 
     new_state = %{state | emulator: emulator, renderer: renderer}
@@ -118,8 +123,8 @@ defmodule RaxolWeb.TerminalChannel do
     socket = assign(socket, :terminal_state, new_state)
 
     # Get cursor position and visibility
-    {cursor_x, cursor_y} = @emulator_module.get_cursor_position(emulator)
-    cursor_visible = @emulator_module.get_cursor_visible(emulator)
+    {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
+    cursor_visible = emulator_module().get_cursor_visible(emulator)
 
     # Broadcast resize event to client
     broadcast!(socket, "resize", %{
@@ -164,7 +169,7 @@ defmodule RaxolWeb.TerminalChannel do
     scrollback_size = length(new_emulator.scrollback_buffer || [])
 
     push(socket, "output", %{
-      html: @renderer_module.render(renderer),
+      html: renderer_module().render(renderer),
       scrollback_size: scrollback_size
     })
 
@@ -174,13 +179,13 @@ defmodule RaxolWeb.TerminalChannel do
   @impl Phoenix.Channel
   def handle_in("theme", %{"theme" => theme}, socket) do
     state = socket.assigns.terminal_state
-    renderer = @renderer_module.set_theme(state.renderer, theme)
+    renderer = renderer_module().set_theme(state.renderer, theme)
 
     new_state = %{state | renderer: renderer}
     socket = assign(socket, :terminal_state, new_state)
 
     push(socket, "output", %{
-      html: @renderer_module.render(renderer)
+      html: renderer_module().render(renderer)
     })
 
     {:reply, :ok, socket}

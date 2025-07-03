@@ -61,8 +61,8 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   defp supports_kitty?(state) do
     # Check for kitty protocol support
-    _term_program = get_in(state, [:terminal, :program])
-    _term_program == "kitty" or String.contains?(_term_program || "", "kitty")
+    term_program = get_in(state, [:terminal, :program])
+    term_program == "kitty" or String.contains?(term_program || "", "kitty")
   end
 
   defp supports_sixel?(state) do
