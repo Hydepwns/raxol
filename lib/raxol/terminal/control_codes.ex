@@ -128,7 +128,9 @@ defmodule Raxol.Terminal.ControlCodes do
   defp handle_pending_wrap(emulator) do
     if emulator.last_col_exceeded do
       {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-      wrapped_cursor = Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
+
+      wrapped_cursor =
+        Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
 
       Emulator.maybe_scroll(%{
         emulator
@@ -188,7 +190,8 @@ defmodule Raxol.Terminal.ControlCodes do
     )
   end
 
-  defp move_cursor_to_position(cursor, x, y), do: Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
+  defp move_cursor_to_position(cursor, x, y),
+    do: Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
 
   defp get_scroll_region_bounds(emulator, active_buffer) do
     buffer_height = ScreenBuffer.get_height(active_buffer)
@@ -215,7 +218,9 @@ defmodule Raxol.Terminal.ControlCodes do
         Raxol.Core.Runtime.Log.debug("[handle_cr] Pending wrap detected")
         # Perform the deferred wrap: move cursor to col 0, next line
         {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-        wrapped_cursor = Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
+
+        wrapped_cursor =
+          Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
 
         Raxol.Core.Runtime.Log.debug(
           "[handle_cr] Cursor after wrap: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(wrapped_cursor))}"
@@ -245,7 +250,11 @@ defmodule Raxol.Terminal.ControlCodes do
     {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     final_cursor =
-      Raxol.Terminal.Cursor.Manager.move_to(emulator_after_pending_wrap.cursor, 0, cy)
+      Raxol.Terminal.Cursor.Manager.move_to(
+        emulator_after_pending_wrap.cursor,
+        0,
+        cy
+      )
 
     Raxol.Core.Runtime.Log.debug(
       "[handle_cr] Final cursor: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(final_cursor))}"
