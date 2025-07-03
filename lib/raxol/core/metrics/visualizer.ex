@@ -50,6 +50,15 @@ defmodule Raxol.Core.Metrics.Visualizer do
   end
 
   @doc """
+  Creates a new chart with the given metrics, data, and options.
+  """
+  def create_chart(metrics, data, options) do
+    # Combine metrics and data for the chart
+    combined_metrics = Map.merge(metrics, %{data: data})
+    create_chart(combined_metrics, options)
+  end
+
+  @doc """
   Updates an existing chart with new metrics.
   """
   def update_chart(chart_id, metrics) do

@@ -465,7 +465,9 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     legend =
       series
       |> Enum.with_index()
-      |> Enum.map(fn {%{name: name, color: color}, idx} ->
+      |> Enum.map(fn {series_data, idx} ->
+        name = Map.get(series_data, :name, "Series #{idx + 1}")
+        color = Map.get(series_data, :color, :white)
         View.text("■ #{name}", position: {idx * 10, 0}, fg: color)
       end)
 

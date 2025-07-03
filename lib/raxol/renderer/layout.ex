@@ -1041,7 +1041,7 @@ defmodule Raxol.Renderer.Layout do
   defp get_child_type(child, for_layout) do
     cond do
       struct?(child) -> :struct
-      Keyword.keyword?(child, for_layout) -> :keyword
+      Keyword.keyword?(child) -> :keyword
       list?(child) -> :list
       map?(child) -> :map
       atom_for_layout?(child, for_layout) -> :atom_for_layout

@@ -288,7 +288,9 @@ defmodule Raxol.Core.UserPreferences do
   """
   def default_preferences do
     %{
-      theme: Raxol.UI.Theming.Theme.default_theme().name,
+      theme: %{
+        active_id: :default
+      },
       terminal: Raxol.Terminal.Config.Defaults.generate_default_config(),
       accessibility: %{
         enabled: true,

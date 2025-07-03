@@ -540,7 +540,10 @@ defmodule Raxol.Core do
   """
   @spec get_version() :: String.t()
   def get_version do
-    :application.spec(:raxol, :vsn) || "unknown"
+    case :application.get_key(:raxol, :vsn) do
+      {:ok, version} -> version
+      _ -> "unknown"
+    end
   end
 
   # ============================================================================

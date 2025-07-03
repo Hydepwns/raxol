@@ -63,6 +63,13 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   end
 
   @doc """
+  Clears all metrics (with optional parameter for compatibility).
+  """
+  def clear_metrics(_collector) do
+    clear_metrics()
+  end
+
+  @doc """
   Gets metrics for a specific metric name and tags.
   """
   @spec get_metrics(String.t(), map()) :: {:ok, list(map())} | {:error, term()}
