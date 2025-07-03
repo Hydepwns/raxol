@@ -221,7 +221,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
   defp get_renderer_pid(renderer) do
     case renderer do
       module when is_atom(module) ->
-        Process.whereis(module) || module
+        # Try to find the process by module name
+        case Process.whereis(module) do
+          nil ->
+            # If not found by module name, try the default renderer name
+            Process.whereis(Raxol.UI.Rendering.Renderer) || module
+          pid ->
+            pid
+        end
 
       pid when is_pid(pid) ->
         pid

@@ -46,6 +46,11 @@ defmodule Raxol.UI.Renderer do
         theme \\ Raxol.UI.Theming.Theme.default_theme()
       )
 
+  # Clause for nil input
+  def render_to_cells(nil, _theme) do
+    []
+  end
+
   # Clause for list of elements
   def render_to_cells(elements, theme) when list?(elements) do
     Enum.flat_map(elements, &render_element(&1, theme))
@@ -124,7 +129,7 @@ defmodule Raxol.UI.Renderer do
     panel_box_cells ++ children_cells
   end
 
-  defp render_element(element, theme) when map?(element) do
+  defp render_element(element, _theme) when map?(element) do
     Raxol.Core.Runtime.Log.warning(
       "[#{__MODULE__}] Unknown or unhandled element type for rendering: #{inspect(Map.get(element, :type))} - Element: #{inspect(element)}"
     )
