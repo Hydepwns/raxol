@@ -196,15 +196,17 @@ defmodule Raxol.UI.Rendering.Renderer do
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], data, data, state)
 
-    if state.test_pid,
-      do:
-        (
-          Logger.debug(
-            "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(state.test_pid)} with ops=#{inspect(ops)}"
-          )
+    if state.test_pid do
+      Logger.debug(
+        "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(state.test_pid)} with ops=#{inspect(ops)}"
+      )
 
-          send(state.test_pid, {:renderer_rendered, ops})
-        )
+      send(state.test_pid, {:renderer_rendered, ops})
+    else
+      Logger.debug(
+        "[Renderer] No test_pid set, not sending {:renderer_rendered, ops} message"
+      )
+    end
 
     require Raxol.Core.Runtime.Log
 

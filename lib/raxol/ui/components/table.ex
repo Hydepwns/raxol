@@ -276,6 +276,72 @@ defmodule Raxol.UI.Components.Table do
     {:ok, %{state | selected_row: length(state.data) - 1}}
   end
 
+  def handle_event({:key, {:arrow_right, _}}, _context, state) do
+    if state.options.paginate do
+      max_page = ceil(length(state.data) / state.page_size)
+      new_page = min(state.current_page + 1, max_page)
+      {:ok, %{state | current_page: new_page}}
+    else
+      {:ok, state}
+    end
+  end
+
+  def handle_event({:key, {:arrow_left, _}}, _context, state) do
+    if state.options.paginate do
+      new_page = max(state.current_page - 1, 1)
+      {:ok, %{state | current_page: new_page}}
+    else
+      {:ok, state}
+    end
+  end
+
+  def handle_event({:button_click, button_id}, _context, state) do
+    cond do
+      is_binary(button_id) and String.ends_with?(button_id, "_next_page") ->
+        if state.options.paginate do
+          max_page = ceil(length(state.data) / state.page_size)
+          new_page = min(state.current_page + 1, max_page)
+          {:ok, %{state | current_page: new_page}}
+        else
+          {:ok, state}
+        end
+
+      is_binary(button_id) and String.ends_with?(button_id, "_prev_page") ->
+        if state.options.paginate do
+          new_page = max(state.current_page - 1, 1)
+          {:ok, %{state | current_page: new_page}}
+        else
+          {:ok, state}
+        end
+
+      is_binary(button_id) and String.ends_with?(button_id, "_sort_") ->
+        column_id = String.replace(button_id, ~r/.*_sort_/, "") |> String.to_atom()
+        if state.options.sortable do
+          new_direction = if state.sort_by == column_id and state.sort_direction == :asc, do: :desc, else: :asc
+          {:ok, %{state | sort_by: column_id, sort_direction: new_direction}}
+        else
+          {:ok, state}
+        end
+
+      true ->
+        {:ok, state}
+    end
+  end
+
+  def handle_event({:text_input, input_id, value}, _context, state) do
+    cond do
+      is_binary(input_id) and String.ends_with?(input_id, "_search") ->
+        if state.options.searchable do
+          {:ok, %{state | filter_term: value, current_page: 1}}
+        else
+          {:ok, state}
+        end
+
+      true ->
+        {:ok, state}
+    end
+  end
+
   def handle_event({:key, {:enter, _}}, _context, state) do
     if state.selected_row do
       {:ok, state}
