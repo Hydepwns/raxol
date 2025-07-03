@@ -190,9 +190,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @doc """
-  Inserts the specified number of blank lines at the cursor position with style.
-  """
   def insert_lines(buffer, y, count, style)
       when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
              is_integer(y) and is_integer(count) and count > 0 and
@@ -201,15 +198,18 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Raxol.Terminal.Buffer.LineOperations.insert_lines(buffer, y, count, style)
   end
 
-  @doc """
-  Inserts the specified number of blank lines at the cursor position with region boundaries.
-  """
   def insert_lines(buffer, lines, y, top, bottom)
       when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
              is_integer(lines) and is_integer(y) and lines > 0 and
              is_integer(top) and is_integer(bottom) do
     # For ScreenBuffer structs, delegate to LineOperations
-    Raxol.Terminal.Buffer.LineOperations.insert_lines(buffer, lines, y, top, bottom)
+    Raxol.Terminal.Buffer.LineOperations.insert_lines(
+      buffer,
+      lines,
+      y,
+      top,
+      bottom
+    )
   end
 
   @doc """
@@ -227,9 +227,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
     {new_buffer, cursor_y, cursor_x}
   end
 
-  @doc """
-  Deletes the specified number of lines at the cursor position with scroll region.
-  """
   def delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
       when list?(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
@@ -247,26 +244,32 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @doc """
-  Deletes the specified number of lines at the cursor position with style and region.
-  """
   def delete_lines(buffer, y, count, style, {top, bottom})
       when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
              is_integer(y) and is_integer(count) and count > 0 and
              is_map(style) and is_tuple({top, bottom}) do
     # For ScreenBuffer structs, delegate to LineOperations
-    Raxol.Terminal.Buffer.LineOperations.delete_lines(buffer, y, count, style, {top, bottom})
+    Raxol.Terminal.Buffer.LineOperations.delete_lines(
+      buffer,
+      y,
+      count,
+      style,
+      {top, bottom}
+    )
   end
 
-  @doc """
-  Deletes the specified number of lines at the cursor position with region boundaries.
-  """
   def delete_lines(buffer, lines, y, top, bottom)
       when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
              is_integer(lines) and is_integer(y) and lines > 0 and
              is_integer(top) and is_integer(bottom) do
     # For ScreenBuffer structs, delegate to LineOperations
-    Raxol.Terminal.Buffer.LineOperations.delete_lines(buffer, lines, y, top, bottom)
+    Raxol.Terminal.Buffer.LineOperations.delete_lines(
+      buffer,
+      lines,
+      y,
+      top,
+      bottom
+    )
   end
 
   @doc """
@@ -303,8 +306,10 @@ defmodule Raxol.Terminal.Buffer.Operations do
       is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
         updated_cells = erase_in_display_cells(buffer.cells, mode, row, col)
         updated_buffer = %{buffer | cells: updated_cells}
+
         # If called from an emulator, ensure the emulator's active buffer is updated
-        if Map.has_key?(buffer, :emulator_owner) and is_map(buffer.emulator_owner) do
+        if Map.has_key?(buffer, :emulator_owner) and
+             is_map(buffer.emulator_owner) do
           Emulator.update_active_buffer(buffer.emulator_owner, updated_buffer)
         else
           updated_buffer
