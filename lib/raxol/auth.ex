@@ -129,7 +129,10 @@ defmodule Raxol.Auth do
         end
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Database error retrieving user #{user_id}: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "Database error retrieving user #{user_id}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -232,7 +235,8 @@ defmodule Raxol.Auth do
       iex> authenticate_user("user@example.com", "wrong_password")
       {:error, :invalid_credentials}
   """
-  def authenticate_user(email, password) when is_binary(email) and is_binary(password) do
+  def authenticate_user(email, password)
+      when is_binary(email) and is_binary(password) do
     case find_user_by_email(email) do
       {:ok, user} ->
         authenticate_user_password(user, password)
@@ -245,7 +249,10 @@ defmodule Raxol.Auth do
         end
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Database error during authentication: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "Database error during authentication: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -287,7 +294,10 @@ defmodule Raxol.Auth do
         {:error, changeset}
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Database error creating user: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "Database error creating user: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -317,7 +327,8 @@ defmodule Raxol.Auth do
       iex> update_password("user123", "wrongpass", "newpass123")
       {:error, :invalid_current_password}
   """
-  def update_password(user_id, current_password, new_password) when is_binary(user_id) do
+  def update_password(user_id, current_password, new_password)
+      when is_binary(user_id) do
     case get_user(user_id) do
       {:ok, user} ->
         if verify_password(current_password, user.password_hash) do
@@ -338,7 +349,8 @@ defmodule Raxol.Auth do
     end
   end
 
-  def update_password(_user_id, _current_password, _new_password), do: {:error, :invalid_user_id}
+  def update_password(_user_id, _current_password, _new_password),
+    do: {:error, :invalid_user_id}
 
   # Private functions
 
@@ -391,7 +403,8 @@ defmodule Raxol.Auth do
       not user.active ->
         {:error, :user_inactive}
 
-      user.locked_until && DateTime.compare(user.locked_until, DateTime.utc_now()) == :gt ->
+      user.locked_until &&
+          DateTime.compare(user.locked_until, DateTime.utc_now()) == :gt ->
         {:error, :user_locked}
 
       verify_password(password, user.password_hash) ->
@@ -420,14 +433,21 @@ defmodule Raxol.Auth do
     }
 
     case Database.update(User, user, attrs) do
-      {:ok, updated_user} -> {:ok, Repo.preload(updated_user, [:role, :permissions])}
-      {:error, reason} -> {:error, reason}
+      {:ok, updated_user} ->
+        {:ok, Repo.preload(updated_user, [:role, :permissions])}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   defp update_user_login_failure(user) do
     failed_attempts = (user.failed_login_attempts || 0) + 1
-    locked_until = if failed_attempts >= 5, do: DateTime.add(DateTime.utc_now(), 900, :second), else: nil
+
+    locked_until =
+      if failed_attempts >= 5,
+        do: DateTime.add(DateTime.utc_now(), 900, :second),
+        else: nil
 
     attrs = %{
       failed_login_attempts: failed_attempts,
@@ -436,7 +456,8 @@ defmodule Raxol.Auth do
 
     case Database.update(User, user, attrs) do
       {:ok, _updated_user} -> :ok
-      {:error, _reason} -> :ok  # Don't fail authentication due to update error
+      # Don't fail authentication due to update error
+      {:error, _reason} -> :ok
     end
   end
 
@@ -444,15 +465,19 @@ defmodule Raxol.Auth do
     attrs = %{password: new_password}
 
     case Database.update(User, user, attrs) do
-      {:ok, updated_user} -> {:ok, Repo.preload(updated_user, [:role, :permissions])}
-      {:error, changeset} -> {:error, changeset}
+      {:ok, updated_user} ->
+        {:ok, Repo.preload(updated_user, [:role, :permissions])}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 
   defp get_default_role_id do
     # Get the default "user" role ID
     case Repo.get_by(Role, name: "user") do
-      nil -> nil  # Will be handled by the changeset
+      # Will be handled by the changeset
+      nil -> nil
       role -> role.id
     end
   end

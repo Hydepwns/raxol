@@ -50,16 +50,25 @@ defmodule Raxol.Auth.Session do
               created_at: updated_session.created_at
             }
 
-            Raxol.Core.Runtime.Log.debug("Session created successfully: #{session_data.session_id}")
+            Raxol.Core.Runtime.Log.debug(
+              "Session created successfully: #{session_data.session_id}"
+            )
+
             {:ok, session_data}
 
           {:error, reason} ->
-            Raxol.Core.Runtime.Log.error("Failed to update session with token: #{inspect(reason)}")
+            Raxol.Core.Runtime.Log.error(
+              "Failed to update session with token: #{inspect(reason)}"
+            )
+
             {:error, reason}
         end
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Failed to create session: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "Failed to create session: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -79,14 +88,19 @@ defmodule Raxol.Auth.Session do
   - `{:error, :not_found}` - Session not found
   - `{:error, reason}` - Other validation error
   """
-  @spec validate_session(String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
-  def validate_session(session_id, token) when is_binary(session_id) and is_binary(token) do
+  @spec validate_session(String.t(), String.t()) ::
+          {:ok, String.t()} | {:error, term()}
+  def validate_session(session_id, token)
+      when is_binary(session_id) and is_binary(token) do
     case Manager.get_session(session_id) do
       {:ok, session} ->
         if session.token == token && session.status == :active do
           {:ok, session.user_id}
         else
-          Raxol.Core.Runtime.Log.warning("Invalid session token or inactive session: #{session_id}")
+          Raxol.Core.Runtime.Log.warning(
+            "Invalid session token or inactive session: #{session_id}"
+          )
+
           {:error, :invalid_token}
         end
 
@@ -95,7 +109,10 @@ defmodule Raxol.Auth.Session do
         {:error, :not_found}
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Session validation error: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "Session validation error: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -105,7 +122,8 @@ defmodule Raxol.Auth.Session do
   Returns nil for invalid sessions (for backward compatibility).
   """
   @spec validate_session_nil(String.t(), String.t()) :: String.t() | nil
-  def validate_session_nil(session_id, token) when is_binary(session_id) and is_binary(token) do
+  def validate_session_nil(session_id, token)
+      when is_binary(session_id) and is_binary(token) do
     case validate_session(session_id, token) do
       {:ok, user_id} -> user_id
       _ -> nil
@@ -130,11 +148,17 @@ defmodule Raxol.Auth.Session do
 
     case Manager.end_session(session_id) do
       :ok ->
-        Raxol.Core.Runtime.Log.debug("Session cleaned up successfully: #{session_id}")
+        Raxol.Core.Runtime.Log.debug(
+          "Session cleaned up successfully: #{session_id}"
+        )
+
         :ok
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Failed to cleanup session: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "Failed to cleanup session: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
