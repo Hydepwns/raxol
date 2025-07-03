@@ -17,6 +17,9 @@ defmodule RaxolWeb.TerminalChannelTest do
   # Define the mock module based on the REAL behaviour
   Mox.defmock(EmulatorMock, for: Raxol.Terminal.EmulatorBehaviour)
 
+  # Add RendererMock for the Renderer behaviour
+  Mox.defmock(RendererMock, for: Raxol.Terminal.RendererBehaviour)
+
   # Import Mox for function mocking
   import Mox
   # import Raxol.TestHelpers
@@ -39,9 +42,6 @@ defmodule RaxolWeb.TerminalChannelTest do
     # Generate a unique topic for each test
     topic = "terminal:" <> Ecto.UUID.generate()
 
-    # Setup mock BEFORE joining the channel
-    Mox.stub_with(EmulatorMock, Emulator)
-
     # Create and join socket
     {:ok, _, socket} =
       UserSocket
@@ -62,6 +62,8 @@ defmodule RaxolWeb.TerminalChannelTest do
         {:ok, %EmulatorStruct{}}
       end)
 
+      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
+
       assert {:ok, _, updated_socket} =
                socket |> subscribe_and_join(TerminalChannel, topic)
 
@@ -78,6 +80,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       expect(EmulatorMock, :new, fn _width, _height, _opts ->
         {:ok, %EmulatorStruct{}}
       end)
+
+      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
 
       socket = socket(UserSocket, "user_socket:fail", %{user_id: 2})
 
@@ -108,6 +112,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {5, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
+      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
+
       flush_mailbox()
 
       {:reply, :ok, _socket_after_input} =
@@ -137,6 +143,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {0, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
+      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
+
       flush_mailbox()
 
       {:reply, :ok, _socket_after_ctrl_c} =
@@ -164,6 +172,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {0, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
+      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
+
       flush_mailbox()
 
       {:reply, :ok, _socket_after_resize} =
@@ -190,6 +200,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {10, 5} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
+      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
+
       flush_mailbox()
 
       {:reply, :ok, _socket_after_theme} =
@@ -212,6 +224,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       EmulatorMock
       |> expect(:get_cursor_position, fn _ -> {0, 23} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
+
+      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
 
       flush_mailbox()
 
@@ -252,5 +266,18 @@ defmodule RaxolWeb.TerminalChannelTest do
       :ok = TerminalChannel.terminate(:shutdown, socket)
       # Add any cleanup assertions here if needed
     end
+  end
+
+  setup_all do
+    Application.put_env(:raxol, :terminal_emulator_module, EmulatorMock)
+    Application.put_env(:raxol, :terminal_renderer_module, RendererMock)
+    Mox.stub(RendererMock, :new, fn _ -> %{} end)
+    Mox.stub(RendererMock, :render, fn _ -> "<html>test output</html>" end)
+    Mox.stub(RendererMock, :set_theme, fn renderer, _theme -> renderer end)
+    on_exit(fn ->
+      Application.delete_env(:raxol, :terminal_emulator_module)
+      Application.delete_env(:raxol, :terminal_renderer_module)
+    end)
+    :ok
   end
 end

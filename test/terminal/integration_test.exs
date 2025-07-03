@@ -216,7 +216,7 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "input history integration" do
     setup do
       # Initialize with a small history size for testing
-      emulator_instance = Emulator.new(80, 24, max_command_history: 3)
+      emulator_instance = Raxol.Terminal.Emulator.new(80, 24, max_command_history: 3)
       %{state: emulator_instance, ansi: %{}}
     end
 

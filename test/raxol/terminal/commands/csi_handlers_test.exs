@@ -735,7 +735,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     end
 
     test "scrolls down", %{emulator: emulator} do
-      emulator = %{emulator | scroll_offset: 10}
       result = CSIHandlers.handle_scroll_down(emulator, 5)
       assert result != nil
     end

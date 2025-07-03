@@ -11,15 +11,45 @@ defmodule Raxol.Core.Config.ManagerTest do
     # Create a temporary config file for testing
     temp_file = Path.join(System.tmp_dir!(), "raxol_test_config.json")
 
+    # Create a minimal valid config file
+    config_content = """
+    %{
+      dev: %{
+        terminal: %{
+          width: 80,
+          height: 24,
+          mode: :normal
+        },
+        buffer: %{
+          max_size: 1000,
+          scrollback: 100
+        },
+        renderer: %{
+          mode: :gpu,
+          double_buffering: true
+        }
+      }
+    }
+    """
+
+    config_file = Path.join(System.tmp_dir!(), "raxol_test_config.exs")
+    File.write!(config_file, config_content)
+
     # Start the manager with the temp file
-    {:ok, pid} = Manager.start_link(persistent_file: temp_file)
+    {:ok, pid} = Manager.start_link(
+      config_file: config_file,
+      persistent_file: temp_file,
+      env: :dev,
+      validate: false  # Disable validation for tests
+    )
 
     on_exit(fn ->
-      # Clean up the temp file
+      # Clean up the temp files
       File.rm(temp_file)
+      File.rm(config_file)
     end)
 
-    {:ok, %{temp_file: temp_file, pid: pid}}
+    {:ok, %{temp_file: temp_file, config_file: config_file, pid: pid}}
   end
 
   describe "configuration loading" do

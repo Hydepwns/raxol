@@ -28,7 +28,7 @@ defmodule Raxol.Test.BufferHelper do
       )
 
     # Create test buffer
-    {:ok, buffer} =
+    buffer =
       Raxol.Terminal.Buffer.Manager.initialize_buffers(
         manager,
         80,

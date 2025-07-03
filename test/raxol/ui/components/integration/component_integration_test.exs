@@ -11,19 +11,37 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   defmodule ParentComponent do
     @behaviour Raxol.UI.Components.Base.Component
 
+    def new(props \\ %{}) do
+      Map.merge(
+        %{
+          id: :parent,
+          type: :parent,
+          children: [],
+          child_states: %{},
+          events: [],
+          mounted: false,
+          unmounted: false,
+          render_count: 0,
+          style: %{},
+          disabled: false,
+          focused: false
+        },
+        props
+      )
+    end
+
     def init(props) do
       {:ok,
        Map.merge(
          %{
-           id: :test_id,
+           id: :parent,
            type: :parent,
            children: [],
-           events: [],
            child_states: %{},
+           events: [],
            mounted: false,
            unmounted: false,
            render_count: 0,
-           position: {0, 0},
            style: %{},
            disabled: false,
            focused: false
@@ -77,6 +95,24 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   # Child component that communicates with parent
   defmodule ChildComponent do
     @behaviour Raxol.UI.Components.Base.Component
+
+    def new(props \\ %{}) do
+      Map.merge(
+        %{
+          id: :child,
+          type: :child,
+          value: 0,
+          parent_id: nil,
+          mounted: false,
+          unmounted: false,
+          render_count: 0,
+          style: %{},
+          disabled: false,
+          focused: false
+        },
+        props
+      )
+    end
 
     def init(props) do
       {:ok,

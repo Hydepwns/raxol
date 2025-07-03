@@ -69,11 +69,19 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert map?(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
-      text_view = view.children
+      text_views = view.children
+      assert text_views != nil
+      assert list?(text_views)
+
+      # Find the text view in the list
+      text_view = Enum.find(text_views, fn v -> map?(v) and Map.get(v, :type) == :text end)
       assert text_view != nil
       assert text_view.type == :text
       assert text_view.content != nil
+      # The sparkline should have exactly 20 characters (5 data points + 15 spaces)
       assert String.length(text_view.content) == 20
+      # Should end with spaces (padded to full width)
+      assert String.ends_with?(text_view.content, "               ")
     end
   end
 
@@ -253,9 +261,12 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert Map.has_key?(view, :type)
       assert view.type == :box
 
-      # The child should be the empty flex container returned by create_vertical_bars
-      # Chart.new likely wraps content in a box
-      content_view = view.children
+      # The children should be a list containing the empty flex container
+      children = view.children
+      assert list?(children)
+      assert length(children) == 1
+
+      content_view = List.first(children)
       assert map?(content_view)
       assert Map.has_key?(content_view, :type)
       assert content_view.type == :flex

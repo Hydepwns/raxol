@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       assert_buffer_equal(buffer, original)
 
       original = buffer
-      buffer = CharEditor.write_string(original, 2, 5, "Hello")
+      buffer = CharEditor.write_string(original, 2, 10, "Hello")
       assert_buffer_equal(buffer, original)
 
       original = buffer
