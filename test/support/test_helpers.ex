@@ -144,8 +144,7 @@ defmodule Raxol.Test.Helpers do
     # Start the Renderer GenServer with module name registration
     {:ok, renderer_pid} =
       start_supervised(
-        {Raxol.UI.Rendering.Renderer,
-         name: Raxol.UI.Rendering.Renderer}
+        {Raxol.UI.Rendering.Renderer, name: Raxol.UI.Rendering.Renderer}
       )
 
     # Start the Pipeline GenServer with module name registration

@@ -74,10 +74,13 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert list?(text_views)
 
       # Find the text view in the list
-      text_view = Enum.find(text_views, fn v -> map?(v) and Map.get(v, :type) == :text end)
+      text_view =
+        Enum.find(text_views, fn v -> map?(v) and Map.get(v, :type) == :text end)
+
       assert text_view != nil
       assert text_view.type == :text
       assert text_view.content != nil
+
       # The sparkline should have exactly 20 characters (5 data points + 15 spaces)
       assert String.length(text_view.content) == 20
       # Should end with spaces (padded to full width)

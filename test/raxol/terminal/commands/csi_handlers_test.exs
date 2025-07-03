@@ -24,6 +24,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     height = 24
     main_screen_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
     alternate_screen_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
+
     cursor = %Raxol.Terminal.Cursor.Manager{
       row: 0,
       col: 0,
@@ -33,6 +34,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       top_margin: 0,
       bottom_margin: height - 1
     }
+
     %Raxol.Terminal.Emulator.Struct{
       width: width,
       height: height,
@@ -491,34 +493,45 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       # Locking Shift G0
       result = CSIHandlers.handle_sequence(emulator, [?N])
       # Handle the {:ok, state} return format
-      state = case result do
-        {:ok, state} -> state
-        state -> state
-      end
+      state =
+        case result do
+          {:ok, state} -> state
+          state -> state
+        end
+
       assert state.charset_state.gl == :g0
 
       # Locking Shift G1
       result = CSIHandlers.handle_sequence(state, [?O])
-      state = case result do
-        {:ok, state} -> state
-        state -> state
-      end
+
+      state =
+        case result do
+          {:ok, state} -> state
+          state -> state
+        end
+
       assert state.charset_state.gl == :g1
 
       # Single Shift G2
       result = CSIHandlers.handle_sequence(state, [?R])
-      state = case result do
-        {:ok, state} -> state
-        state -> state
-      end
+
+      state =
+        case result do
+          {:ok, state} -> state
+          state -> state
+        end
+
       assert state.charset_state.single_shift == state.charset_state.g2
 
       # Single Shift G3
       result = CSIHandlers.handle_sequence(state, [?S])
-      state = case result do
-        {:ok, state} -> state
-        state -> state
-      end
+
+      state =
+        case result do
+          {:ok, state} -> state
+          state -> state
+        end
+
       assert state.charset_state.single_shift == state.charset_state.g3
     end
 
@@ -663,7 +676,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
     test "handles restore cursor position" do
       emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
-      emulator = %{emulator | saved_cursor: %{row: 5, col: 5, style: :block, visible: true}}
+
+      emulator = %{
+        emulator
+        | saved_cursor: %{row: 5, col: 5, style: :block, visible: true}
+      }
+
       result = CSIHandlers.handle_save_restore_cursor(emulator, [?u])
       assert result.cursor != nil
     end
@@ -683,46 +701,116 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     end
 
     test "moves cursor forward", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{
+            emulator.cursor
+            | row: 10,
+              col: 10,
+              top_margin: 0,
+              bottom_margin: 23
+          }
+      }
+
       result = CSIHandlers.handle_cursor_forward(emulator, 5)
       assert result.cursor.col == 15
     end
 
     test "moves cursor backward", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{
+            emulator.cursor
+            | row: 10,
+              col: 10,
+              top_margin: 0,
+              bottom_margin: 23
+          }
+      }
+
       result = CSIHandlers.handle_cursor_backward(emulator, 5)
       assert result.cursor.col == 5
     end
 
     test "moves cursor to column", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{
+            emulator.cursor
+            | row: 10,
+              col: 10,
+              top_margin: 0,
+              bottom_margin: 23
+          }
+      }
+
       result = CSIHandlers.handle_cursor_column(emulator, 5)
       assert result.cursor.col == 5
     end
 
     test "moves cursor to position", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{
+            emulator.cursor
+            | row: 10,
+              col: 10,
+              top_margin: 0,
+              bottom_margin: 23
+          }
+      }
+
       result = CSIHandlers.handle_cursor_position(emulator, 5, 15)
       assert result.cursor.col == 5
       assert result.cursor.row == 15
     end
 
     test "clamps cursor to screen boundaries", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{
+            emulator.cursor
+            | row: 10,
+              col: 10,
+              top_margin: 0,
+              bottom_margin: 23
+          }
+      }
+
       result = CSIHandlers.handle_cursor_position(emulator, 100, 100)
       assert result.cursor.row == 23
       assert result.cursor.col == 79
     end
 
     test "handles negative cursor positions", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{
+            emulator.cursor
+            | row: 10,
+              col: 10,
+              top_margin: 0,
+              bottom_margin: 23
+          }
+      }
+
       result = CSIHandlers.handle_cursor_position(emulator, -5, -5)
       assert result.cursor.row == 0
       assert result.cursor.col == 0
     end
 
     test "handles zero movement", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{
+            emulator.cursor
+            | row: 10,
+              col: 10,
+              top_margin: 0,
+              bottom_margin: 23
+          }
+      }
+
       result = CSIHandlers.handle_cursor_up(emulator, 0)
       assert result.cursor.row == 10
     end
