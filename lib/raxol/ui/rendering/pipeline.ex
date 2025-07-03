@@ -347,23 +347,24 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
       # If data is provided, use it as the new tree
       # If data is nil, use the current tree without changing it
-      {diff_result, updated_state} = if data do
-        # Data provided - treat as full replacement
-        {
-          {:replace, tree_to_render},
-          %{
-            state
-            | previous_tree: state.current_tree,
-              current_tree: tree_to_render
+      {diff_result, updated_state} =
+        if data do
+          # Data provided - treat as full replacement
+          {
+            {:replace, tree_to_render},
+            %{
+              state
+              | previous_tree: state.current_tree,
+                current_tree: tree_to_render
+            }
           }
-        }
-      else
-        # No data provided - use current tree without changing state
-        {
-          {:replace, tree_to_render},
-          state
-        }
-      end
+        else
+          # No data provided - use current tree without changing state
+          {
+            {:replace, tree_to_render},
+            state
+          }
+        end
 
       final_state =
         schedule_or_execute_render(diff_result, tree_to_render, updated_state)
