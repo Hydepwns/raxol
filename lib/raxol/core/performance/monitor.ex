@@ -205,6 +205,12 @@ defmodule Raxol.Core.Performance.Monitor do
     {:noreply, %{state | last_memory_check: System.monotonic_time()}}
   end
 
+  @impl GenServer
+  def handle_info({:memory_check, _memory_usage}, state) do
+    # Handle the memory check message (currently just ignore it)
+    {:noreply, state}
+  end
+
   # Private Helpers
 
   defp detect_jank?(frame_time, threshold) do
@@ -236,8 +242,7 @@ defmodule Raxol.Core.Performance.Monitor do
   end
 
   defp get_memory_usage do
-    {:memory, total} = :erlang.memory(:total)
-    total
+    :erlang.memory(:total)
   end
 
   defp schedule_memory_check(interval) do

@@ -81,8 +81,15 @@ defmodule Raxol.Test.MockApplicationSupervisor do
 
     # Add Phoenix.PubSub child spec for tests, using the conventional name
     pubsub_child_spec = {Phoenix.PubSub, name: Raxol.PubSub}
-    # Add Raxol.Repo child spec for tests
-    repo_child_spec = Raxol.Repo
+
+    # Add Raxol.Repo child spec for tests only if database is enabled
+    repo_child_spec =
+      if Application.get_env(:raxol, :database_enabled, false) do
+        Raxol.Repo
+      else
+        nil
+      end
+
     # Add UserPreferences for tests, ensuring it starts in test mode
     user_preferences_child_spec =
       {Raxol.Core.UserPreferences, [test_mode?: true]}
@@ -101,13 +108,20 @@ defmodule Raxol.Test.MockApplicationSupervisor do
 
     children = [
       pubsub_child_spec,
-      repo_child_spec,
       user_preferences_child_spec,
       accounts_child_spec,
       sync_system_child_spec,
       terminal_supervisor_child_spec,
       web_supervisor_child_spec
     ]
+
+    # Add repo_child_spec only if it's not nil
+    children =
+      if repo_child_spec do
+        [repo_child_spec | children]
+      else
+        children
+      end
 
     Supervisor.init(children, strategy: :one_for_one)
   end

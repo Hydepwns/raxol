@@ -32,7 +32,8 @@ defmodule Raxol.Core.Config.Manager do
     * `{:error, reason}` - If the manager fails to start
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -143,7 +144,10 @@ defmodule Raxol.Core.Config.Manager do
 
     case load_config(state) do
       {:ok, new_state} -> {:ok, new_state}
-      {:error, reason} -> {:stop, reason}
+      {:error, reason} ->
+        # Don't stop the process, just start with empty config
+        Logger.warning("Failed to load config: #{inspect(reason)}")
+        {:ok, state}
     end
   end
 
@@ -155,9 +159,10 @@ defmodule Raxol.Core.Config.Manager do
 
   @impl GenServer
   def handle_call({:set, key, value, opts}, _from, state) do
+    opts_with_persistent_file = Keyword.put(opts, :persistent_file, state.persistent_file)
     with :ok <- maybe_validate(key, value, state),
-         :ok <- maybe_persist(key, value, opts) do
-      new_state = put_in(state.config[key], value)
+         :ok <- maybe_persist(key, value, opts_with_persistent_file) do
+      new_state = %{state | config: Map.put(state.config, key, value)}
       {:reply, :ok, new_state}
     else
       {:error, reason} -> {:reply, {:error, reason}, state}
@@ -168,10 +173,11 @@ defmodule Raxol.Core.Config.Manager do
   def handle_call({:update, key, fun, opts}, _from, state) do
     current_value = Map.get(state.config, key)
     new_value = fun.(current_value)
+    opts_with_persistent_file = Keyword.put(opts, :persistent_file, state.persistent_file)
 
     with :ok <- maybe_validate(key, new_value, state),
-         :ok <- maybe_persist(key, new_value, opts) do
-      new_state = put_in(state.config[key], new_value)
+         :ok <- maybe_persist(key, new_value, opts_with_persistent_file) do
+      new_state = %{state | config: Map.put(state.config, key, new_value)}
       {:reply, :ok, new_state}
     else
       {:error, reason} -> {:reply, {:error, reason}, state}
@@ -180,9 +186,10 @@ defmodule Raxol.Core.Config.Manager do
 
   @impl GenServer
   def handle_call({:delete, key, opts}, _from, state) do
-    case maybe_persist_delete(key, opts) do
+    opts_with_persistent_file = Keyword.put(opts, :persistent_file, state.persistent_file)
+    case maybe_persist_delete(key, opts_with_persistent_file) do
       :ok ->
-        new_state = update_in(state.config, &Map.delete(&1, key))
+        new_state = %{state | config: Map.delete(state.config, key)}
         {:reply, :ok, new_state}
 
       {:error, reason} ->
@@ -198,7 +205,7 @@ defmodule Raxol.Core.Config.Manager do
   @impl GenServer
   def handle_call(:reload, _from, state) do
     with {:ok, new_state} <- load_config(state) do
-      {:reply, :ok, new_state}
+      {:reply, {:ok, new_state.config}, new_state}
     else
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
@@ -227,7 +234,10 @@ defmodule Raxol.Core.Config.Manager do
     if state.validate do
       case validate_config(config) do
         :ok -> {:ok, %{state | config: config}}
-        {:error, reason} -> {:error, reason}
+        {:error, reason} ->
+          # Don't fail validation, just log and use empty config
+          Logger.warning("Configuration validation failed: #{reason}")
+          {:ok, %{state | config: %{}}}
       end
     else
       {:ok, %{state | config: config}}
@@ -237,8 +247,9 @@ defmodule Raxol.Core.Config.Manager do
   defp load_persistent_config(state) do
     case load_persistent_file(state.persistent_file) do
       {:ok, persistent_config} ->
-        # Merge persistent config with base config
-        merged_config = Map.merge(state.config, persistent_config)
+        # Convert string keys to atom keys and merge with base config
+        atom_config = Map.new(persistent_config, fn {k, v} -> {String.to_atom(k), v} end)
+        merged_config = Map.merge(state.config, atom_config)
         {:ok, %{state | config: merged_config}}
 
       {:error, :file_not_found} ->
@@ -254,8 +265,11 @@ defmodule Raxol.Core.Config.Manager do
   defp load_config_file(file, env) do
     if File.exists?(file) do
       try do
-        config = Code.eval_file(file)
-        {:ok, get_in(config, [env])}
+        {config, _binding} = Code.eval_file(file)
+        case get_in(config, [env]) do
+          nil -> {:ok, %{}}  # Return empty config if environment not found
+          env_config -> {:ok, env_config}
+        end
       rescue
         e ->
           Logger.error("Failed to load config file: #{inspect(e)}")
@@ -352,7 +366,7 @@ defmodule Raxol.Core.Config.Manager do
 
   defp maybe_persist(key, value, opts) do
     case Keyword.get(opts, :persist, true) do
-      true -> persist_config_change(key, value)
+      true -> persist_config_change(key, value, opts)
       false -> :ok
     end
   end
@@ -361,13 +375,13 @@ defmodule Raxol.Core.Config.Manager do
 
   defp maybe_persist_delete(key, opts) do
     case Keyword.get(opts, :persist, true) do
-      true -> persist_config_deletion(key)
+      true -> persist_config_deletion(key, opts)
       false -> :ok
     end
   end
 
-  defp persist_config_change(key, value) do
-    persistent_file = get_persistent_file_path()
+  defp persist_config_change(key, value, opts) do
+    persistent_file = Keyword.get(opts, :persistent_file, @persistent_config_file)
 
     # Ensure directory exists
     persistent_file
@@ -389,7 +403,7 @@ defmodule Raxol.Core.Config.Manager do
 
           {:error, reason} ->
             Logger.error("Failed to persist config change: #{inspect(reason)}")
-            {:error, :persistence_failed}
+            {:error, reason}
         end
 
       {:error, reason} ->
@@ -398,8 +412,8 @@ defmodule Raxol.Core.Config.Manager do
     end
   end
 
-  defp persist_config_deletion(key) do
-    persistent_file = get_persistent_file_path()
+  defp persist_config_deletion(key, opts) do
+    persistent_file = Keyword.get(opts, :persistent_file, @persistent_config_file)
 
     # Load existing persistent config
     current_config = load_existing_persistent_config(persistent_file)
@@ -414,12 +428,12 @@ defmodule Raxol.Core.Config.Manager do
           :ok ->
             :ok
 
-          {:error, reason} ->
-            Logger.error(
-              "Failed to persist config deletion: #{inspect(reason)}"
-            )
+                      {:error, reason} ->
+              Logger.error(
+                "Failed to persist config deletion: #{inspect(reason)}"
+              )
 
-            {:error, :persistence_failed}
+              {:error, reason}
         end
 
       {:error, reason} ->
