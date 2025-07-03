@@ -15,6 +15,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       if Process.alive?(pid) do
         GenServer.stop(pid)
       end
+      # Clean up any mocks
+      try do
+        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      catch
+        :error, {:not_mocked, _} -> :ok
+      end
     end)
 
     {:ok, test_name: test_name, pid: pid}

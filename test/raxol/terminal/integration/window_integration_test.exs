@@ -3,7 +3,23 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
   alias Raxol.Terminal.Integration.State
   alias Raxol.Terminal.Window.UnifiedWindow
 
-  setup do
+    setup do
+    # Start the UnifiedWindow process if not already running
+    case Process.whereis(UnifiedWindow) do
+      nil ->
+        {:ok, _pid} = UnifiedWindow.start_link()
+      _pid ->
+        :ok
+    end
+
+    # Start the UnifiedIO process if not already running
+    case Process.whereis(Raxol.Terminal.IO.UnifiedIO) do
+      nil ->
+        {:ok, _pid} = Raxol.Terminal.IO.UnifiedIO.start_link()
+      _pid ->
+        :ok
+    end
+
     state = State.new()
     {:ok, state: state}
   end

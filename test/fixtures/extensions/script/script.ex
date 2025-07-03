@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Extension.Script do
 
   def execute_command("run", args) do
     # Simulate running a script
-    {:ok, "Command 'run' executed with args: #{inspect(args)}"}
+    {:ok, "Command \"run\" executed with args: #{inspect(args)}"}
   end
 
   def execute_command("stop", _args) do

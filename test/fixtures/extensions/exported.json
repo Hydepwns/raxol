@@ -1,1 +1,12 @@
-{"author":"Unknown","commands":[],"config":{},"dependencies":[],"description":"","error":null,"hooks":[],"id":null,"license":"MIT","metadata":{},"name":"Test Theme","status":"idle","type":"theme","version":"1.0.0"}
+{
+  "author": "Unknown",
+  "commands": [],
+  "dependencies": [],
+  "description": "",
+  "hooks": [],
+  "license": "MIT",
+  "metadata": {},
+  "name": "Test Theme",
+  "type": "theme",
+  "version": "1.0.0"
+}

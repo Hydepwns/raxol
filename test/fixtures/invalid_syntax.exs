@@ -1,6 +1,5 @@
-import Config
-
-config :raxol,
+# Invalid config file with syntax error
+%{
   terminal: %{
     width: 80,
     height: 24,
@@ -14,3 +13,4 @@ config :raxol,
     mode: :gpu,
     double_buffering: true
   }
+  # Missing closing brace - this will cause a syntax error

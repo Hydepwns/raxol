@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Rendering.PipelineTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.UI.Rendering.Pipeline
 
@@ -158,7 +158,9 @@ defmodule Raxol.UI.Rendering.PipelineTest do
 
   test "multiple rapid update_tree/1 calls result in one render with last tree",
        _context do
+    # Set test PID before any pipeline operations
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
+
     tree1 = %{type: :view, children: [%{type: :label, attrs: %{text: "A"}}]}
     tree2 = %{type: :view, children: [%{type: :label, attrs: %{text: "B"}}]}
     tree3 = %{type: :view, children: [%{type: :label, attrs: %{text: "C"}}]}

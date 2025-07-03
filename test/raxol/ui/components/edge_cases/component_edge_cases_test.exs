@@ -86,8 +86,6 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     def unmount(state) do
       state
     end
-
-    delegate_handle_event_3_to_2()
   end
 
   # Component that simulates error conditions
@@ -167,8 +165,6 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     def unmount(state) do
       state
     end
-
-    delegate_handle_event_3_to_2()
   end
 
   describe "Performance Edge Cases" do

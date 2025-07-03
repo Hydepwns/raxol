@@ -1,15 +1,12 @@
-import Config
-
-config :raxol,
-  terminal:
-    %{
-      # Missing required fields
-    },
-  buffer:
-    %{
-      # Missing required fields
-    },
-  renderer:
-    %{
-      # Missing required fields
-    }
+# Invalid config file with missing required fields
+%{
+  terminal: %{
+    # Missing required fields: width, height, mode
+  },
+  buffer: %{
+    # Missing required fields: max_size, scrollback
+  },
+  renderer: %{
+    # Missing required fields: mode, double_buffering
+  }
+}

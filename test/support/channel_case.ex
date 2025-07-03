@@ -46,6 +46,12 @@ defmodule RaxolWeb.ChannelCase do
     Application.ensure_all_started(:phoenix)
     Application.ensure_all_started(:plug_cowboy)
 
+    # Ensure Raxol.PubSub is started before the endpoint
+    # This is required because the endpoint is configured to use Raxol.PubSub
+    if !Process.whereis(Raxol.PubSub) do
+      {:ok, _pid} = Phoenix.PubSub.start_link([name: Raxol.PubSub])
+    end
+
     # Start the endpoint itself
     RaxolWeb.Endpoint.start_link()
     :ok
