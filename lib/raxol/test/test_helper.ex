@@ -74,10 +74,11 @@ defmodule Raxol.Test.TestHelper do
     state = module.new(opts)
 
     # Handle case where component creation returns {:ok, state}
-    state = case state do
-      {:ok, actual_state} -> actual_state
-      actual_state -> actual_state
-    end
+    state =
+      case state do
+        {:ok, actual_state} -> actual_state
+        actual_state -> actual_state
+      end
 
     state =
       state
