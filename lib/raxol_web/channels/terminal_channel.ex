@@ -36,8 +36,16 @@ defmodule RaxolWeb.TerminalChannel do
   ]
 
   # Use dependency injection for the emulator module
-  @emulator_module Application.get_env(:raxol, :terminal_emulator_module, Raxol.Terminal.Emulator)
-  @renderer_module Application.get_env(:raxol, :terminal_renderer_module, Raxol.Terminal.Renderer)
+  @emulator_module Application.get_env(
+                     :raxol,
+                     :terminal_emulator_module,
+                     Raxol.Terminal.Emulator
+                   )
+  @renderer_module Application.get_env(
+                     :raxol,
+                     :terminal_renderer_module,
+                     Raxol.Terminal.Renderer
+                   )
 
   @impl Phoenix.Channel
   @dialyzer {:nowarn_function, join: 3}
