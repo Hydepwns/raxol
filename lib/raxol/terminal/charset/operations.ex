@@ -3,8 +3,6 @@ defmodule Raxol.Terminal.Charset.Operations do
   Provides operations for managing character sets and their state.
   """
 
-
-
   @doc """
   Designates a character set for a specific G-set.
   """
