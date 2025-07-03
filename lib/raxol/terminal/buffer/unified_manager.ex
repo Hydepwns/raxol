@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def resize(pid, width, height) when pid?(pid) do
+  def resize(pid, width, height) when is_pid(pid) do
     GenServer.call(pid, {:resize, width, height})
   end
 
@@ -225,7 +225,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def scroll_up(pid, amount) when pid?(pid) do
+  def scroll_up(pid, amount) when is_pid(pid) do
     GenServer.call(pid, {:scroll_up, amount})
   end
 
@@ -240,7 +240,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, history}` - The history of the buffer
   """
-  def get_history(pid, start_line, count) when pid?(pid) do
+  def get_history(pid, start_line, count) when is_pid(pid) do
     GenServer.call(pid, {:get_history, start_line, count})
   end
 

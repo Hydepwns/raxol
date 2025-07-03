@@ -57,8 +57,18 @@ defmodule Raxol.Terminal.Buffer.Writer do
           TextFormatting.text_style()
   def create_cell_style(nil), do: TextFormatting.new()
 
-  def create_cell_style(style) when map?(style),
-    do: Map.merge(TextFormatting.new(), style)
+  def create_cell_style(style) when map?(style) do
+    style =
+      style
+      |> Map.new(fn {k, v} ->
+        case k do
+          :fg -> {:foreground, v}
+          :bg -> {:background, v}
+          _ -> {k, v}
+        end
+      end)
+    Map.merge(TextFormatting.new(), style)
+  end
 
   def create_cell_style(_), do: TextFormatting.new()
 

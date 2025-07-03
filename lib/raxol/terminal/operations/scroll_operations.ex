@@ -3,33 +3,45 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
   Implements scroll-related operations for the terminal emulator.
   """
 
-  alias Raxol.Terminal.{ScreenManager, ScreenBuffer, Operations.TextOperations}
+  alias Raxol.Terminal.{ScreenBuffer, Operations.TextOperations}
 
   def get_scroll_region(emulator) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    ScreenManager.get_scroll_region(buffer)
+    buffer = get_active_buffer(emulator)
+    ScreenBuffer.get_scroll_region_boundaries(buffer)
   end
 
   def set_scroll_region(emulator, region) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    new_buffer = ScreenManager.set_scroll_region(buffer, region)
-    ScreenManager.update_active_buffer(emulator, new_buffer)
+    buffer = get_active_buffer(emulator)
+    new_buffer = ScreenBuffer.set_scroll_region(buffer, region)
+    update_active_buffer(emulator, new_buffer)
   end
 
   def set_scroll_region(emulator, start_line, end_line) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    new_buffer = ScreenManager.set_scroll_region(buffer, {start_line, end_line})
-    ScreenManager.update_active_buffer(emulator, new_buffer)
+    # Handle case where start > end by swapping them
+    {actual_start, actual_end} =
+      if start_line > end_line do
+        {end_line, start_line}
+      else
+        {start_line, end_line}
+      end
+
+    # Clamp to screen bounds
+    {clamped_start, clamped_end} =
+      {max(0, actual_start), min(actual_end, emulator.height - 1)}
+
+    buffer = get_active_buffer(emulator)
+    new_buffer = ScreenBuffer.set_scroll_region(buffer, {clamped_start, clamped_end})
+    update_active_buffer(emulator, new_buffer)
   end
 
   def get_scroll_top(emulator) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    ScreenManager.get_scroll_top(buffer)
+    buffer = get_active_buffer(emulator)
+    ScreenBuffer.get_scroll_top(buffer)
   end
 
   def get_scroll_bottom(emulator) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    ScreenManager.get_scroll_bottom(buffer)
+    buffer = get_active_buffer(emulator)
+    ScreenBuffer.get_scroll_bottom(buffer)
   end
 
   def write_string(emulator, x, y, string, style) do
@@ -37,22 +49,20 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
   end
 
   def scroll_up(emulator, lines) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    {top, bottom} = ScreenManager.get_scroll_region(buffer)
-    new_buffer = ScreenBuffer.scroll_up(buffer, top, bottom, lines)
-    ScreenManager.update_active_buffer(emulator, new_buffer)
+    buffer = get_active_buffer(emulator)
+    new_buffer = Raxol.Terminal.Buffer.ScrollRegion.scroll_up(buffer, lines)
+    update_active_buffer(emulator, new_buffer)
   end
 
   def scroll_down(emulator, lines) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    {top, bottom} = ScreenManager.get_scroll_region(buffer)
-    new_buffer = ScreenBuffer.scroll_down(buffer, top, bottom, lines)
-    ScreenManager.update_active_buffer(emulator, new_buffer)
+    buffer = get_active_buffer(emulator)
+    new_buffer = Raxol.Terminal.Buffer.ScrollRegion.scroll_down(buffer, lines)
+    update_active_buffer(emulator, new_buffer)
   end
 
   def scroll_to(emulator, line) do
-    buffer = ScreenManager.get_active_buffer(emulator)
-    {top, bottom} = ScreenManager.get_scroll_region(buffer)
+    buffer = get_active_buffer(emulator)
+    {top, bottom} = ScreenBuffer.get_scroll_region_boundaries(buffer)
     # Clamp line to scroll region bounds
     target_line = max(top, min(line, bottom))
 
@@ -60,21 +70,36 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
     new_buffer =
       ScreenBuffer.shift_region_to_line(buffer, {top, bottom}, target_line)
 
-    ScreenManager.update_active_buffer(emulator, new_buffer)
+    update_active_buffer(emulator, new_buffer)
   end
 
   def get_scroll_position(emulator) do
-    buffer = ScreenManager.get_active_buffer(emulator)
+    buffer = get_active_buffer(emulator)
     ScreenBuffer.get_scroll_position(buffer)
   end
 
   def reset_scroll_region(emulator) do
-    buffer = ScreenManager.get_active_buffer(emulator)
+    buffer = get_active_buffer(emulator)
     new_buffer = ScreenBuffer.reset_scroll_region(buffer)
-    ScreenManager.update_active_buffer(emulator, new_buffer)
+    update_active_buffer(emulator, new_buffer)
   end
 
   def get_line(emulator, line) do
     TextOperations.get_line(emulator, line)
+  end
+
+  # Helper functions
+  defp get_active_buffer(emulator) do
+    case emulator.active_buffer_type do
+      :main -> emulator.main_screen_buffer
+      :alternate -> emulator.alternate_screen_buffer
+    end
+  end
+
+  defp update_active_buffer(emulator, new_buffer) do
+    case emulator.active_buffer_type do
+      :main -> %{emulator | main_screen_buffer: new_buffer}
+      :alternate -> %{emulator | alternate_screen_buffer: new_buffer}
+    end
   end
 end
