@@ -32,6 +32,7 @@ defmodule Raxol.Terminal.Emulator do
   alias Raxol.Terminal.Operations.ScreenOperations, as: Screen
 
   @behaviour Raxol.Terminal.OperationsBehaviour
+  @behaviour Raxol.Terminal.EmulatorBehaviour
 
   defstruct [
     # Core managers
@@ -265,6 +266,28 @@ defmodule Raxol.Terminal.Emulator do
     case emulator.active_buffer_type do
       :main -> emulator.main_screen_buffer
       :alternate -> emulator.alternate_screen_buffer
+    end
+  end
+
+  @doc """
+  Checks if scrolling is needed and performs it if necessary.
+  """
+  @spec maybe_scroll(t()) :: t()
+  def maybe_scroll(%__MODULE__{} = emulator) do
+    {_x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    if y >= emulator.height do
+      # Need to scroll
+      active_buffer = get_active_buffer(emulator)
+      scrolled_buffer = Raxol.Terminal.ScreenBuffer.scroll_up(active_buffer, 1)
+
+      # Update the appropriate buffer
+      case emulator.active_buffer_type do
+        :main -> %{emulator | main_screen_buffer: scrolled_buffer}
+        :alternate -> %{emulator | alternate_screen_buffer: scrolled_buffer}
+      end
+    else
+      emulator
     end
   end
 
@@ -1414,7 +1437,7 @@ defmodule Raxol.Terminal.Emulator do
         GenServer.call(emulator.cursor, {:update_position, new_x, y})
         emulator
       else
-        new_cursor = %{cursor | x: new_x, position: {new_x, y}}
+        new_cursor = %{cursor | col: new_x, row: y, position: {new_x, y}}
         %{emulator | cursor: new_cursor}
       end
 

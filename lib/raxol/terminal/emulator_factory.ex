@@ -38,4 +38,8 @@ defmodule Raxol.Terminal.EmulatorFactory do
       parser_state: ParserStateManager.reset_parser_state(%Struct{})
     }
   end
+
+  def new(opts \\ []) do
+    opts = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+  end
 end
