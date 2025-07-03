@@ -117,9 +117,6 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     %{scroll | position: new_position, cache: %{}}
   end
 
-  @doc """
-  Scrolls the buffer in the specified direction by the given amount.
-  """
   def scroll(%__MODULE__{} = scroll, direction, amount) do
     case direction do
       :up -> scroll(scroll, -amount)

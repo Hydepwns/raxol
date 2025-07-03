@@ -135,28 +135,28 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
     9 => :strikethrough
   }
 
-  defp handle_basic_attributes(param, style) do
+  def handle_basic_attributes(param, style) do
     case Map.get(@basic_attributes_map, param) do
       nil -> style
       attr -> TextFormatting.apply_attribute(style, attr)
     end
   end
 
-  defp handle_text_style_attributes(param, style) do
+  def handle_text_style_attributes(param, style) do
     case Map.get(@text_style_map, param) do
       nil -> style
       attr -> TextFormatting.apply_attribute(style, attr)
     end
   end
 
-  defp handle_foreground_colors(param, style) do
+  def handle_foreground_colors(param, style) do
     case Map.get(@fg_color_map, param) do
       nil -> style
       attr -> TextFormatting.apply_attribute(style, attr)
     end
   end
 
-  defp handle_background_colors(param, style) do
+  def handle_background_colors(param, style) do
     case Map.get(@bg_color_map, param) do
       nil -> style
       attr -> TextFormatting.apply_attribute(style, attr)
@@ -171,21 +171,21 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
     55 => :not_overlined
   }
 
-  defp handle_decoration_attributes(param, style) do
+  def handle_decoration_attributes(param, style) do
     case Map.get(@decoration_attributes_map, param) do
       nil -> style
       attr -> TextFormatting.apply_attribute(style, attr)
     end
   end
 
-  defp handle_bright_foreground(param, style) do
+  def handle_bright_foreground_colors(param, style) do
     color_attr = index_to_basic_color_attr(param - 90)
 
     TextFormatting.apply_attribute(style, color_attr)
     |> TextFormatting.apply_attribute(:bold)
   end
 
-  defp handle_bright_background(param, style) do
+  def handle_bright_background_colors(param, style) do
     color_attr = index_to_basic_bg_color_attr(param - 100)
     TextFormatting.apply_attribute(style, color_attr)
   end
