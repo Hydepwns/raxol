@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Charset.Manager do
 
   import Raxol.Guards
 
-  alias Raxol.Terminal.Charset.{Types, Maps, Operations}
+  alias Raxol.Terminal.Charset.{Maps, Operations}
 
   defstruct g_sets: %{
               g0: :us_ascii,

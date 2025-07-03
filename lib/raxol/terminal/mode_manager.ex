@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.ModeManager do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Modes.ModeStateManager
+
 
   alias Raxol.Terminal.Modes.Handlers.{
     DECPrivateHandler,
@@ -25,43 +25,7 @@ defmodule Raxol.Terminal.ModeManager do
   alias Raxol.Terminal.ModeManager.{SavedState}
   import Raxol.Guards
 
-  @screen_buffer_module Application.compile_env(
-                          :raxol,
-                          :screen_buffer_impl,
-                          Raxol.Terminal.ScreenBuffer
-                        )
-
   @type mode :: atom()
-
-  @dec_private_modes %{
-    1 => :decckm,
-    3 => :deccolm_132,
-    80 => :deccolm_80,
-    5 => :decscnm,
-    6 => :decom,
-    7 => :decawm,
-    8 => :decarm,
-    9 => :decinlm,
-    12 => :att_blink,
-    25 => :dectcem,
-    47 => :dec_alt_screen,
-    1000 => :mouse_report_x10,
-    1002 => :mouse_report_cell_motion,
-    1004 => :focus_events,
-    1006 => :mouse_report_sgr,
-    1047 => :dec_alt_screen_save,
-    1048 => :decsc_deccara,
-    1049 => :alt_screen_buffer,
-    2004 => :bracketed_paste
-  }
-
-  @standard_modes %{
-    4 => :irm,
-    20 => :lnm,
-    3 => :deccolm_132,
-    132 => :deccolm_132,
-    80 => :deccolm_80
-  }
 
   defstruct cursor_visible: true,
             auto_wrap: true,
