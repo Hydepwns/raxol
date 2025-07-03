@@ -199,6 +199,7 @@ defmodule Raxol.UI.Terminal do
     receive do
       {:io_request, from, reply_as, {:get_chars, _, _, 1}} ->
         handle_char_request(from, reply_as)
+
       {:io_request, from, reply_as, req} ->
         handle_other_io_request(from, reply_as, req)
     after
@@ -274,7 +275,8 @@ defmodule Raxol.UI.Terminal do
       width: dimensions.width,
       title: Keyword.get(opts, :title),
       border_color: Keyword.get(opts, :border_color),
-      title_color: Keyword.get(opts, :title_color, Keyword.get(opts, :border_color)),
+      title_color:
+        Keyword.get(opts, :title_color, Keyword.get(opts, :border_color)),
       centered: Keyword.get(opts, :centered, false)
     }
   end
@@ -298,7 +300,9 @@ defmodule Raxol.UI.Terminal do
   end
 
   defp print_title(config) do
-    title_line = "│ " <> String.pad_trailing(config.title, config.width - 4) <> " │"
+    title_line =
+      "│ " <> String.pad_trailing(config.title, config.width - 4) <> " │"
+
     print_border_line(title_line, config)
 
     separator = "├" <> String.duplicate("─", config.width - 2) <> "┤"
@@ -331,17 +335,27 @@ defmodule Raxol.UI.Terminal do
 
   defp add_color_codes(codes, opts) do
     case Keyword.get(opts, :color) do
-      nil -> codes
-      color when is_atom(color) -> [fg_color_code(ColorSystem.get_color(color)) | codes]
-      hex -> [fg_color_code(hex) | codes]
+      nil ->
+        codes
+
+      color when is_atom(color) ->
+        [fg_color_code(ColorSystem.get_color(color)) | codes]
+
+      hex ->
+        [fg_color_code(hex) | codes]
     end
   end
 
   defp add_background_codes(codes, opts) do
     case Keyword.get(opts, :background) do
-      nil -> codes
-      color when is_atom(color) -> [bg_color_code(ColorSystem.get_color(color)) | codes]
-      hex -> [bg_color_code(hex) | codes]
+      nil ->
+        codes
+
+      color when is_atom(color) ->
+        [bg_color_code(ColorSystem.get_color(color)) | codes]
+
+      hex ->
+        [bg_color_code(hex) | codes]
     end
   end
 
@@ -419,7 +433,9 @@ defmodule Raxol.UI.Terminal do
           <<char::utf8, _rest::binary>> -> {:char, <<char::utf8>>}
           _ -> {:unknown, data}
         end
-      key -> key
+
+      key ->
+        key
     end
   end
 
