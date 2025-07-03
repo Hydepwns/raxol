@@ -197,7 +197,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   @doc """
   Handles debounced file events.
   """
-  def handle_debounced_events(plugin_id, plugin_path, state) do
+  def handle_debounced_events(_plugin_id, plugin_path, state) do
     # This is a simplified implementation
     # In a real implementation, this would process multiple events and trigger reloads
     case String.ends_with?(plugin_path, ".ex") or
