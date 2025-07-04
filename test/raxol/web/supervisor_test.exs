@@ -11,6 +11,7 @@ defmodule Raxol.Web.SupervisorTest do
     assert is_pid(pid)
     assert Process.alive?(pid)
     children = Supervisor.which_children(pid)
+
     assert Enum.any?(children, fn {mod, _, _, _} -> mod == Raxol.Web.Manager end)
   end
 end
