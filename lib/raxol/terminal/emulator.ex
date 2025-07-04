@@ -131,9 +131,39 @@ defmodule Raxol.Terminal.Emulator do
 
   defp sgr_code_mappings do
     %{
+      # Reset all attributes
       0 => fn _style -> Raxol.Terminal.ANSI.TextFormatting.new() end,
+
+      # Intensity
       1 => &Raxol.Terminal.ANSI.TextFormatting.set_bold/1,
+      2 => &Raxol.Terminal.ANSI.TextFormatting.set_faint/1,
+      22 => &Raxol.Terminal.ANSI.TextFormatting.reset_bold/1,
+
+      # Italic
+      3 => &Raxol.Terminal.ANSI.TextFormatting.set_italic/1,
+      23 => &Raxol.Terminal.ANSI.TextFormatting.reset_italic/1,
+
+      # Underline
       4 => &Raxol.Terminal.ANSI.TextFormatting.set_underline/1,
+      24 => &Raxol.Terminal.ANSI.TextFormatting.reset_underline/1,
+
+      # Blink
+      5 => &Raxol.Terminal.ANSI.TextFormatting.set_blink/1,
+      25 => &Raxol.Terminal.ANSI.TextFormatting.reset_blink/1,
+
+      # Reverse
+      7 => &Raxol.Terminal.ANSI.TextFormatting.set_reverse/1,
+      27 => &Raxol.Terminal.ANSI.TextFormatting.reset_reverse/1,
+
+      # Conceal
+      8 => &Raxol.Terminal.ANSI.TextFormatting.set_conceal/1,
+      28 => &Raxol.Terminal.ANSI.TextFormatting.reset_conceal/1,
+
+      # Strikethrough
+      9 => &Raxol.Terminal.ANSI.TextFormatting.set_strikethrough/1,
+      29 => &Raxol.Terminal.ANSI.TextFormatting.reset_strikethrough/1,
+
+      # Foreground colors (30-37)
       30 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :black),
       31 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :red),
       32 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :green),
@@ -142,7 +172,35 @@ defmodule Raxol.Terminal.Emulator do
       35 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :magenta),
       36 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :cyan),
       37 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :white),
-      39 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, nil)
+      39 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, nil),
+
+      # Background colors (40-47)
+      40 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :black),
+      41 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :red),
+      42 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :green),
+      43 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :yellow),
+      44 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :blue),
+      45 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :magenta),
+      46 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :cyan),
+      47 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :white),
+      49 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, nil),
+
+      # Bright foreground colors (90-97)
+      90 =>
+        &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_black),
+      91 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_red),
+      92 =>
+        &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_green),
+      93 =>
+        &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_yellow),
+      94 =>
+        &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_blue),
+      95 =>
+        &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_magenta),
+      96 =>
+        &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_cyan),
+      97 =>
+        &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :bright_white)
     }
   end
 
@@ -908,22 +966,46 @@ defmodule Raxol.Terminal.Emulator do
     # Start with current style
     style = emulator.style || Raxol.Terminal.ANSI.TextFormatting.new()
 
-    # Apply each SGR code
-    updated_style =
-      Enum.reduce(codes, style, fn code, acc ->
-        new_style = apply_sgr_code(code, acc)
-
-        log_sgr_debug(
-          "DEBUG: After applying SGR code #{code}, style: #{inspect(new_style)}"
-        )
-
-        new_style
-      end)
+    # Apply each SGR code, handling complex codes specially
+    updated_style = process_sgr_codes(codes, style)
 
     %{emulator | style: updated_style}
   end
 
-  defp apply_sgr_code(code, style) do
+  defp process_sgr_codes([], style), do: style
+
+  defp process_sgr_codes([38, 5, color_index | rest], style) do
+    # 8-bit foreground color: 38;5;n
+    new_style =
+      Raxol.Terminal.ANSI.TextFormatting.set_foreground(
+        style,
+        {:index, color_index}
+      )
+
+    log_sgr_debug(
+      "DEBUG: After applying 8-bit foreground color #{color_index}, style: #{inspect(new_style)}"
+    )
+
+    process_sgr_codes(rest, new_style)
+  end
+
+  defp process_sgr_codes([48, 5, color_index | rest], style) do
+    # 8-bit background color: 48;5;n
+    new_style =
+      Raxol.Terminal.ANSI.TextFormatting.set_background(
+        style,
+        {:index, color_index}
+      )
+
+    log_sgr_debug(
+      "DEBUG: After applying 8-bit background color #{color_index}, style: #{inspect(new_style)}"
+    )
+
+    process_sgr_codes(rest, new_style)
+  end
+
+  defp process_sgr_codes([code | rest], style) do
+    # Regular single-code processing
     case Map.fetch(sgr_code_mappings(), code) do
       {:ok, update_fn} ->
         result = update_fn.(style)
@@ -932,10 +1014,12 @@ defmodule Raxol.Terminal.Emulator do
           "DEBUG: apply_sgr_code #{code} => style: #{inspect(result)}"
         )
 
-        result
+        process_sgr_codes(rest, result)
 
       :error ->
-        style
+        # Unknown code, skip it
+        log_sgr_debug("DEBUG: Unknown SGR code #{code}, skipping")
+        process_sgr_codes(rest, style)
     end
   end
 
@@ -1992,17 +2076,20 @@ defmodule Raxol.Terminal.Emulator do
     emulator = %{emulator | output_buffer: ""}
 
     # Reset window state
-    emulator = %{emulator | window_state: %{
-      iconified: false,
-      maximized: false,
-      position: {0, 0},
-      size: {emulator.width, emulator.height},
-      size_pixels: {640, 384},
-      stacking_order: :normal,
-      previous_size: {emulator.width, emulator.height},
-      saved_size: {emulator.width, emulator.height},
-      icon_name: ""
-    }}
+    emulator = %{
+      emulator
+      | window_state: %{
+          iconified: false,
+          maximized: false,
+          position: {0, 0},
+          size: {emulator.width, emulator.height},
+          size_pixels: {640, 384},
+          stacking_order: :normal,
+          previous_size: {emulator.width, emulator.height},
+          saved_size: {emulator.width, emulator.height},
+          icon_name: ""
+        }
+    }
 
     # Clear state stack
     emulator = %{emulator | state_stack: []}
@@ -2055,6 +2142,7 @@ defmodule Raxol.Terminal.Emulator do
         catch
           :exit, _ -> :ok
         end
+
         %{emulator | field => nil}
 
       _ ->
@@ -2089,15 +2177,18 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec reset_charset_state(t()) :: t()
   def reset_charset_state(emulator) do
-    %{emulator | charset_state: %{
-      g0: :us_ascii,
-      g1: :us_ascii,
-      g2: :us_ascii,
-      g3: :us_ascii,
-      gl: :g0,
-      gr: :g0,
-      single_shift: nil
-    }}
+    %{
+      emulator
+      | charset_state: %{
+          g0: :us_ascii,
+          g1: :us_ascii,
+          g2: :us_ascii,
+          g3: :us_ascii,
+          gl: :g0,
+          gr: :g0,
+          single_shift: nil
+        }
+    }
   end
 
   @doc """
@@ -2106,10 +2197,16 @@ defmodule Raxol.Terminal.Emulator do
   @spec resolve_load_order(t()) :: t()
   def resolve_load_order(emulator) do
     case emulator.plugin_manager do
-      nil -> emulator
+      nil ->
+        emulator
+
       plugin_manager ->
         resolved_order = resolve_plugin_dependencies(plugin_manager)
-        %{emulator | plugin_manager: %{plugin_manager | load_order: resolved_order}}
+
+        %{
+          emulator
+          | plugin_manager: %{plugin_manager | load_order: resolved_order}
+        }
     end
   end
 
@@ -2120,7 +2217,9 @@ defmodule Raxol.Terminal.Emulator do
 
     # Perform topological sort
     case topological_sort(dependencies) do
-      {:ok, sorted_plugins} -> sorted_plugins
+      {:ok, sorted_plugins} ->
+        sorted_plugins
+
       {:error, _reason} ->
         # If there are circular dependencies, return plugins in original order
         Enum.map(plugins, & &1.name)
@@ -2150,9 +2249,11 @@ defmodule Raxol.Terminal.Emulator do
 
   defp calculate_in_degree(dependencies, nodes) do
     Enum.reduce(nodes, %{}, fn node, acc ->
-      in_degree = Enum.count(dependencies, fn {_name, deps} ->
-        Enum.member?(deps, node)
-      end)
+      in_degree =
+        Enum.count(dependencies, fn {_name, deps} ->
+          Enum.member?(deps, node)
+        end)
+
       Map.put(acc, node, in_degree)
     end)
   end
@@ -2163,16 +2264,21 @@ defmodule Raxol.Terminal.Emulator do
 
   defp topological_sort_helper(dependencies, in_degree, [node | queue], result) do
     # Remove node and its outgoing edges
-    new_in_degree = Enum.reduce(dependencies[node] || [], in_degree, fn dep, acc ->
-      Map.update(acc, dep, 0, &(&1 - 1))
-    end)
+    new_in_degree =
+      Enum.reduce(dependencies[node] || [], in_degree, fn dep, acc ->
+        Map.update(acc, dep, 0, &(&1 - 1))
+      end)
 
     # Add nodes with no incoming edges to queue
-    new_queue = queue ++ Enum.filter(dependencies[node] || [], fn dep ->
-      Map.get(new_in_degree, dep, 0) == 0
-    end)
+    new_queue =
+      queue ++
+        Enum.filter(dependencies[node] || [], fn dep ->
+          Map.get(new_in_degree, dep, 0) == 0
+        end)
 
-    topological_sort_helper(dependencies, new_in_degree, new_queue, [node | result])
+    topological_sort_helper(dependencies, new_in_degree, new_queue, [
+      node | result
+    ])
   end
 
   @doc """
