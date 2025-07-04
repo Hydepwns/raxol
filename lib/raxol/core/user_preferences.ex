@@ -220,7 +220,7 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   # Catch-all for unexpected messages
-  @impl true
+  @impl GenServer
   def handle_info(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 

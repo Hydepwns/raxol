@@ -142,7 +142,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
   # --- GenServer Callbacks ---
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     state = %__MODULE__{
       metrics: %{},
@@ -159,7 +159,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:record_metric, name, type, value, opts}, state) do
     tags = Keyword.get(opts, :tags, [])
     timestamp = DateTime.utc_now()
@@ -188,12 +188,12 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
      %{state | metrics: updated_metrics, last_update: System.monotonic_time()}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:clear_metrics, state) do
     {:noreply, %{state | metrics: %{}, last_update: System.monotonic_time()}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_metric, name, type, opts}, _from, state) do
     tags = Keyword.get(opts, :tags, [])
     type_metrics = Map.get(state.metrics, type, %{})
@@ -210,12 +210,12 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     {:reply, filtered_entries, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_all_metrics, _from, state) do
     {:reply, state.metrics, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_metrics, metric_name, tags}, _from, state) do
     # Return all metrics matching the name and tags across all types
     result =
@@ -227,14 +227,14 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     {:reply, {:ok, result}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get_metrics_by_type, type}, _from, state) do
     # Return all metrics for the specified type
     type_metrics = Map.get(state.metrics, type, %{})
     {:reply, type_metrics, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:collect_system_metrics, state) do
     # Collect system metrics
     collect_system_metrics()

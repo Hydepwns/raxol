@@ -36,7 +36,7 @@ defmodule Raxol.Core.Renderer.Manager do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     {:ok,
      %{
@@ -47,7 +47,7 @@ defmodule Raxol.Core.Renderer.Manager do
      }}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:init, opts}, _from, state) do
     # Get terminal size
     {width, height} = get_terminal_size()
@@ -62,14 +62,14 @@ defmodule Raxol.Core.Renderer.Manager do
     {:reply, :ok, %{state | buffer: buffer, fps: fps, initialized: true}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:cleanup, _from, state) do
     # Clear screen and reset cursor
     IO.write([IO.ANSI.clear(), IO.ANSI.home()])
     {:reply, :ok, %{state | initialized: false}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:render, %{initialized: false} = state) do
     # If not initialized, it's a no-op, so we don't send a signal.
     # Or, if we always expect a signal, we could send one here too.
@@ -77,7 +77,7 @@ defmodule Raxol.Core.Renderer.Manager do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:render, reply_to_pid_for_signal}, state) do
     # Get component IDs that need rendering
     component_ids = ComponentManager.get_render_queue()
@@ -110,13 +110,13 @@ defmodule Raxol.Core.Renderer.Manager do
     {:noreply, %{state | buffer: buffer}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:resize, width, height}, %{buffer: buffer} = state) do
     new_buffer = Buffer.resize(buffer, width, height)
     {:noreply, %{state | buffer: new_buffer}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(
         {:event,
          %Raxol.Core.Events.Event{
@@ -129,7 +129,7 @@ defmodule Raxol.Core.Renderer.Manager do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:event, _event}, state) do
     # Ignore other subscribed events for now
     {:noreply, state}
