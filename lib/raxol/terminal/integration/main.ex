@@ -16,8 +16,8 @@ defmodule Raxol.Terminal.Integration do
   alias Raxol.Terminal.Integration.Buffer
   alias Raxol.Terminal.Integration.Renderer, as: IntegrationRenderer
   alias Raxol.Terminal.Integration.Config
-  alias Raxol.Terminal.Buffer.Manager
-  alias Raxol.Terminal.Cursor.Manager
+  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Command.Manager, as: CommandHistoryManager
   alias Raxol.Terminal.Buffer.Scroll
 
@@ -26,8 +26,8 @@ defmodule Raxol.Terminal.Integration do
   """
   def init(opts \\ %{}) do
     # Initialize components
-    {:ok, buffer_manager} = Manager.new(opts)
-    {:ok, cursor_manager} = Manager.new(opts)
+    {:ok, buffer_manager} = BufferManager.new(opts)
+    {:ok, cursor_manager} = CursorManager.new(opts)
     {:ok, renderer} = IntegrationRenderer.new(opts)
     scroll_buffer = Scroll.new(1000)
     command_history = CommandHistoryManager.new(opts)
