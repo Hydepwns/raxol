@@ -31,18 +31,20 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               debug_mode: false,
               plugin_manager: nil,
               command_registry_table: nil,
-              current_theme_id: :default
+              current_theme_id: :default,
+              command_module: Raxol.Core.Runtime.Command
   end
 
   @impl GenServer
-  def start_link(runtime_pid, initial_state) do
-    GenServer.start_link(__MODULE__, {runtime_pid, initial_state},
+  def start_link(runtime_pid, initial_state, opts \\ []) do
+    command_module = Keyword.get(opts, :command_module, Raxol.Core.Runtime.Command)
+    GenServer.start_link(__MODULE__, {runtime_pid, initial_state, command_module},
       name: __MODULE__
     )
   end
 
   @impl GenServer
-  def init({runtime_pid, initial_state}) do
+  def init({runtime_pid, initial_state, command_module}) do
     state = %State{
       runtime_pid: runtime_pid,
       app_module: initial_state.app_module,
@@ -53,7 +55,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       debug_mode: initial_state.debug_mode,
       plugin_manager: initial_state.plugin_manager,
       command_registry_table: initial_state.command_registry_table,
-      current_theme_id: UserPreferences.get_theme_id()
+      current_theme_id: UserPreferences.get_theme_id(),
+      command_module: command_module
     }
 
     send(runtime_pid, {:runtime_initialized, self()})
@@ -110,7 +113,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp process_successful_update(state, updated_model, commands) do
     context = build_command_context(state)
-    process_commands(commands, context)
+    process_commands(commands, context, state.command_module)
 
     updated_state = handle_theme_update(state, updated_model)
     send(state.runtime_pid, :render_needed)
@@ -338,7 +341,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     context = build_command_context(state)
 
     try do
-      process_commands(commands, context)
+      process_commands(commands, context, state.command_module)
     rescue
       error -> log_command_process_error(error)
     end
@@ -474,7 +477,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Command Processing ---
 
-  defp process_commands(commands, context) when list?(commands) do
+  defp process_commands(commands, context, command_module) when list?(commands) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher.process_commands] Processing commands: #{inspect(commands)} with context: #{inspect(context)}"
     )
@@ -482,7 +485,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     Enum.each(commands, fn command ->
       case command do
         %Command{} = cmd ->
-          Command.execute(cmd, context)
+          command_module.execute(cmd, context)
 
         _ ->
           Raxol.Core.Runtime.Log.warning_with_context(
