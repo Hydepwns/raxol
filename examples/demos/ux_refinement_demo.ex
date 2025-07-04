@@ -279,7 +279,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
   @doc """
   Update the application state based on events.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def update(model, msg) do
     new_model =
       case msg do

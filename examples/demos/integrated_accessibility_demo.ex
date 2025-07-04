@@ -5,12 +5,12 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
 
   defstruct message: "Hello from Simplified Demo"
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def init(_opts) do
     {%__MODULE__{}, []}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def update(_msg, state) do
     {state, []}
   end
@@ -29,22 +29,22 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_message(_msg, state) do
     {state, []}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def handle_tick(_tick) do
     []
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def subscriptions(_state) do
     []
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Application
   def terminate(_reason, _state) do
     :ok
   end
