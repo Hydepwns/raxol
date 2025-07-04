@@ -41,12 +41,12 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
   # --- GenServer Callbacks ---
 
-  @impl true
+  @impl GenServer
   def init({engine_pid, interval_ms}) do
     {:ok, %State{engine_pid: engine_pid, interval_ms: interval_ms}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:enable, %State{enabled: false, engine_pid: _pid} = state) do
     new_state = schedule_render_tick(%{state | enabled: true})
     {:noreply, new_state}
@@ -55,7 +55,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   # Already enabled
   def handle_cast(:enable, state), do: {:noreply, state}
 
-  @impl true
+  @impl GenServer
   def handle_cast(:disable, %State{enabled: true} = state) do
     # We can't cancel the timer, but we can ignore its message
     {:noreply, %{state | enabled: false, timer_id: nil}}
@@ -64,7 +64,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   # Already disabled
   def handle_cast(:disable, state), do: {:noreply, state}
 
-  @impl true
+  @impl GenServer
   def handle_cast({:set_interval, ms}, state) do
     new_state = %{state | interval_ms: ms}
 
@@ -74,7 +74,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
     {:noreply, updated_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:render_tick, %State{enabled: true} = state) do
     GenServer.cast(state.engine_pid, :render_frame)
 
@@ -85,7 +85,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   # Ignore tick if disabled
   def handle_info(:render_tick, state), do: {:noreply, state}
 
-  @impl true
+  @impl GenServer
   def handle_info(
         {:render_tick, timer_id},
         %State{enabled: true, timer_id: timer_id} = state

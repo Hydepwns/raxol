@@ -368,7 +368,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     handle_info({:update, component_id, message}, state)
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:dispatch_event, event}, state) do
     # Dispatch event to all components
     state =
@@ -407,7 +407,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:set_runtime_pid, pid}, state) do
     {:noreply, %{state | runtime_pid: pid}}
   end

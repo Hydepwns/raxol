@@ -54,13 +54,13 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
 
   # GenServer Callbacks
 
-  @impl true
+  @impl GenServer
   def init(state) do
     Raxol.Core.Runtime.Log.debug("[#{__MODULE__}] Registry GenServer started.")
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:register_plugin, plugin_id, metadata}, _from, state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Registering plugin: #{inspect(plugin_id)}"
@@ -69,7 +69,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
     {:reply, :ok, Map.put(state, plugin_id, metadata)}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:unregister_plugin, plugin_id}, _from, state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Unregistering plugin: #{inspect(plugin_id)}"
@@ -78,7 +78,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
     {:reply, :ok, Map.delete(state, plugin_id)}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:list_plugins, _from, state) do
     plugins = Enum.map(state, fn {id, meta} -> {id, meta} end)
     {:reply, plugins, state}

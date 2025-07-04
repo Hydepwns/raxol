@@ -400,7 +400,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
   @doc """
   Validates a list of dependencies.
 
@@ -425,7 +425,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
   @doc """
   Checks for circular dependencies in the plugin graph.
 

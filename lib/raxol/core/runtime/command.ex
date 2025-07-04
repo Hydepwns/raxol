@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Runtime.Command do
   import Raxol.Guards
+  @behaviour Raxol.Core.Runtime.CommandBehaviour
 
   @moduledoc """
   Provides a way to handle side effects in a pure functional way.

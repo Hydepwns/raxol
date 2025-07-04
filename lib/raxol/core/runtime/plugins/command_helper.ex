@@ -11,7 +11,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   alias Raxol.Core.Runtime.Plugins.CommandRegistry
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
   def find_plugin_for_command(command_table, command_name, namespace, _arity) do
     # Normalize command name: trim whitespace and downcase
     processed_command_name =
@@ -53,7 +53,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
   def register_plugin_commands(plugin_module, _plugin_state, command_table) do
     if function_exported?(plugin_module, :get_commands, 0) do
       try do
@@ -144,7 +144,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
   def handle_command(command_table, command_name_str, _namespace, args, state) do
     with {:ok, {plugin_module, handler, _arity}} <-
            lookup_valid_command(command_table, command_name_str, args) do
@@ -232,7 +232,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
   def unregister_plugin_commands(command_table, plugin_module) do
     Raxol.Core.Runtime.Log.debug(
       "Unregistering commands for module: #{inspect(plugin_module)}"

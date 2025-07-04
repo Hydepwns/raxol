@@ -445,7 +445,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:reply, {:error, :unknown_call}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(
         {:handle_command, command_atom, namespace, data, dispatcher_pid},
         state
@@ -465,7 +465,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:reload_plugin_by_id, plugin_id_string}, state) do
     case PluginReloader.reload_plugin_by_id(plugin_id_string, state) do
       {:ok, updated_state} -> {:noreply, updated_state}
@@ -473,7 +473,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:shutdown, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
@@ -498,17 +498,17 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:stop, :normal, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:plugin_error, _plugin_id, _reason}, state) do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:plugin_error, _plugin_id, _reason, current_state}, _state) do
     {:noreply, current_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Unhandled cast message: #{inspect(unhandled_message)}",
@@ -518,13 +518,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:send_clipboard_result, pid, content}, state) do
     CommandHandler.handle_clipboard_result(pid, content)
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(
         {:fs, _pid, {path, _events}},
         %{file_watching_enabled?: true} = state
@@ -535,7 +535,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:debounce_file_events, state) do
     case FileWatcher.handle_debounced_events(
            state.plugin_id,
@@ -547,7 +547,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:lifecycle_event, :shutdown}, state) do
     # Gracefully unload all plugins in reverse order using LifecycleHelper
     final_state =
@@ -575,7 +575,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:noreply, %{final_state | initialized: false}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:__internal_initialize__, state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Starting internal plugin discovery and initialization."
@@ -626,7 +626,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:reload_plugin_file_debounced, plugin_id, path}, state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Debounced file change: Reloading plugin #{plugin_id} from path #{path}"
@@ -650,7 +650,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(
         {:fs_error, _pid, {path, reason}},
         %{file_watching_enabled?: true} = state
@@ -663,12 +663,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:fs, _, _}, state) do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({watcher_pid, true}, state) when pid?(watcher_pid) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Received status :true from PID: #{inspect(watcher_pid)} (likely FileWatcher)."
@@ -677,7 +677,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:file_event, path}, state) do
     operation =
       state.lifecycle_helper_module.reload_plugin_from_disk(
@@ -720,23 +720,23 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:tick, state) do
     # Handle periodic updates
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:plugin_error, _plugin_id, _reason}, state) do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:plugin_error, _plugin_id, _reason, updated_state}, _state) do
     {:noreply, updated_state}
   end
 
-  @impl true
+  @impl GenServer
   def terminate(reason, state) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Terminating (Reason: #{inspect(reason)}).",
