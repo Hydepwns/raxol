@@ -23,6 +23,10 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
               position: {0, 0},
               style: %{}
 
+    def new(props \\ %{}) do
+      init(props)
+    end
+
     def init(props) do
       Map.merge(
         %{
@@ -100,6 +104,10 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
               position: {0, 0},
               style: %{}
 
+    def new(props \\ %{}) do
+      init(props)
+    end
+
     def init(props) do
       Map.merge(
         %{
@@ -164,6 +172,43 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
     def unmount(state) do
       state
+    end
+  end
+
+  # Component that simulates invalid mount
+  defmodule InvalidMountComponent do
+    @behaviour Raxol.UI.Components.Base.Component
+
+    def new(props \\ %{}) do
+      init(props)
+    end
+
+    def init(props), do: props
+
+    def mount(_state) do
+      raise "Simulated mount error"
+    end
+
+    def render(state, _context), do: {state, %{type: :invalid_mount}}
+    def handle_event(_event, state), do: {state, []}
+    def unmount(state), do: state
+  end
+
+  # Component that simulates invalid unmount
+  defmodule InvalidUnmountComponent do
+    @behaviour Raxol.UI.Components.Base.Component
+
+    def new(props \\ %{}) do
+      init(props)
+    end
+
+    def init(props), do: props
+    def mount(state), do: {state, []}
+    def render(state, _context), do: {state, %{type: :invalid_unmount}}
+    def handle_event(_event, state), do: {state, []}
+
+    def unmount(_state) do
+      raise "Simulated unmount error"
     end
   end
 
@@ -321,20 +366,6 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test "handles mount errors" do
-      # Create component with invalid mount
-      defmodule InvalidMountComponent do
-        @behaviour Raxol.UI.Components.Base.Component
-
-        def init(props), do: props
-
-        def mount(_state) do
-          raise "Simulated mount error"
-        end
-
-        def render(state, _context), do: {state, %{type: :invalid_mount}}
-        def handle_event(_event, state), do: {state, []}
-      end
-
       # Verify mount error is handled
       assert_raise RuntimeError, "Simulated mount error", fn ->
         create_test_component(InvalidMountComponent, %{})
@@ -342,20 +373,6 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test ~c"handles unmount errors" do
-      # Create component with invalid unmount
-      defmodule InvalidUnmountComponent do
-        @behaviour Raxol.UI.Components.Base.Component
-
-        def init(props), do: props
-        def mount(state), do: {state, []}
-        def render(state, _context), do: {state, %{type: :invalid_unmount}}
-        def handle_event(_event, state), do: {state, []}
-
-        def unmount(_state) do
-          raise "Simulated unmount error"
-        end
-      end
-
       component = create_test_component(InvalidUnmountComponent, %{})
 
       # Verify unmount error is handled

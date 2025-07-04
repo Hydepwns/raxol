@@ -14,7 +14,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     # Import for cleaner syntax
     import Raxol.View.Elements
 
-    @impl true
+    @impl Raxol.Core.Runtime.Application
     def init(_context), do: %{count: 0, initialized: true}
 
     def update({:add, amount}, model) do
@@ -22,7 +22,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
        [{:command, :operation_complete}]}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Application
     def update(message, state) do
       new_state =
         case message do
@@ -34,7 +34,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       {new_state, []}
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Application
     def view(state) do
       Raxol.Core.Renderer.View.panel(
         title: "Counter",
@@ -50,7 +50,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       )
     end
 
-    @impl true
+    @impl Raxol.Core.Runtime.Application
     def handle_event(
           %Raxol.Core.Events.Event{
             type: :window,
@@ -89,7 +89,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     end
 
     # Override view to ensure correct call to text/1
-    @impl true
+    @impl Raxol.Core.Runtime.Application
     def view(_state) do
       Raxol.Core.Renderer.View.text("Default view")
     end

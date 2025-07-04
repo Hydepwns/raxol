@@ -52,6 +52,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       # Start Mock Plugin Manager for this test
       {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
 
+      # Start Test Command Module for this test
+      {:ok, _test_command_agent} = Raxol.Core.Runtime.TestCommandModule.start_link()
+
       # Define initial state for this test
       initial_state = %{
         # Use ApplicationMock
@@ -65,9 +68,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         debug_mode: false,
         # Use per-test PID
         plugin_manager: mock_pm_pid,
-        command_registry_table: :raxol_command_registry,
-        # Use PubSubMock
-        pubsub_server: PubSubMock,
+        command_registry_table: Raxol.Core.Runtime.TestCommandModule,
+        # Use real PubSub
+        pubsub_server: Phoenix.PubSub,
         # Ensure RenderingEngine is included
         rendering_engine: Raxol.Core.Runtime.Rendering.Engine,
         # Add missing key
@@ -82,79 +85,64 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         data: %{key: :enter, state: :pressed, modifiers: []}
       }
 
-      Mox.expect(ApplicationMock, :handle_event, fn ^event, model ->
-        {:ok, model, [%Command{type: :system, data: {:event_handled, event}}]}
+      # Fix: handle_event only takes one argument (the event)
+      Mox.expect(ApplicationMock, :handle_event, fn ^event ->
+        {:key_press, :enter, []}
       end)
 
-      # MODIFIED: Stub Raxol.Core.Runtime.Command.execute directly
-      execute_stub_fun = fn
-        # Match first expected call from handle_event result
-        %Command{type: :system, data: {:event_handled, ^event}}, _context ->
-          :ok
-
-        # Match second expected call from update result
-        %Command{type: :system, data: {:test_cmd, []}}, _context ->
-          :ok
-
-        # Default case (log unexpected calls)
-        unexpected_cmd, _context ->
-          Raxol.Core.Runtime.Log.warning(
-            # {__ENV__.function}": #{inspect(unexpected_cmd)}"
-            "Unexpected call to Command.execute stub in test "
-          )
-
-          :error
-      end
-
-      Mox.stub(Raxol.Core.Runtime.Command, :execute, execute_stub_fun)
-
-      Mox.expect(ApplicationMock, :update, fn _msg, model ->
-        {:ok, %{model | count: model.count + 1},
+      # Fix: update takes message and model, returns {model, commands}
+      Mox.expect(ApplicationMock, :update, fn {:key_press, :enter, []}, model ->
+        {%{model | count: model.count + 1},
          [%Command{type: :system, data: {:test_cmd, []}}]}
       end)
 
-      # MODIFIED: Stub Phoenix.PubSub.broadcast directly
-      broadcast_stub_fun = fn
-        _pubsub_server, "events", {:event, ^event} ->
-          :ok
+      # Use real PubSub - no mocking needed
 
-        server, topic, msg ->
-          Raxol.Core.Runtime.Log.warning(
-            # {__ENV__.function}": #{inspect({server, topic, msg})}"
-            "Unexpected call to PubSub.broadcast stub in test "
-          )
+      # Use real UserPreferences - no mocking needed
 
-          :error
-      end
-
-      Mox.stub(Phoenix.PubSub, :broadcast, broadcast_stub_fun)
-
-      # MODIFIED: Directly stub the real UserPreferences module
-      Mox.stub(Raxol.Core.UserPreferences, :get, fn "theme.active_id" ->
-        :default
-      end)
-
-      # Start Dispatcher for this test
-      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
+      # Start Dispatcher for this test with test command module
+      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state, command_module: Raxol.Core.Runtime.TestCommandModule)
+      # Allow the dispatcher process to use the ApplicationMock
+      Mox.allow(ApplicationMock, self(), dispatcher)
 
       :ok = GenServer.cast(dispatcher, {:dispatch, event})
 
       # Assertions (e.g., state change, messages sent)
-      assert_receive {:render_needed, _}, 100
+      assert_receive :render_needed, 100
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 1
+
+      # Verify commands were executed
+      executed_commands = Raxol.Core.Runtime.TestCommandModule.get_executed_commands()
+      assert length(executed_commands) == 1
+      [{command, _context}] = executed_commands
+      assert command.type == :system
+      assert command.data == {:test_cmd, []}
 
       # Test-specific teardown
       on_exit(fn ->
         # Verify all Mox expectations
         Mox.verify!()
-        GenServer.stop(mock_pm_pid)
+        # Stop processes gracefully, ignoring if already dead
+        try do
+          GenServer.stop(mock_pm_pid)
+        catch
+          :exit, _ -> :ok
+        end
+        try do
+          Raxol.Core.Runtime.TestCommandModule.stop()
+        catch
+          :exit, _ -> :ok
+        end
       end)
     end
 
     test ~c"handle_cast :dispatch handles application update errors" do
       # Start Mock Plugin Manager for this test
       {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
+
+      # Start Test Command Module for this test
+      {:ok, _test_command_agent} = Raxol.Core.Runtime.TestCommandModule.start_link()
 
       # Define initial state for this test
       initial_state = %{
@@ -166,8 +154,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         focused: true,
         debug_mode: false,
         plugin_manager: mock_pm_pid,
-        command_registry_table: :raxol_command_registry,
-        pubsub_server: PubSubMock,
+        command_registry_table: Raxol.Core.Runtime.TestCommandModule,
+        pubsub_server: Phoenix.PubSub,
         rendering_engine: Raxol.Core.Runtime.Rendering.Engine,
         initial_commands: []
       }
@@ -180,47 +168,50 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         data: %{key: :enter, state: :pressed, modifiers: []}
       }
 
-      # Expect handle_event to be called
-      Mox.expect(ApplicationMock, :handle_event, fn ^event, model ->
-        {:ok, model, []}
+      # Expect handle_event to be called with correct signature
+      Mox.expect(ApplicationMock, :handle_event, fn ^event ->
+        {:key_press, :enter, []}
       end)
 
-      # Stub Command.execute
-      Mox.stub(Raxol.Core.Runtime.Command, :execute, fn _cmd, _context ->
-        :ok
-      end)
-
-      # Expect update to fail
-      Mox.expect(ApplicationMock, :update, fn _any_event_or_msg, _model ->
+      # Expect update to fail with correct signature
+      Mox.expect(ApplicationMock, :update, fn {:key_press, :enter, []}, _model ->
         {:error, :simulated_error}
       end)
 
-      # Stub PubSub.broadcast
-      Mox.stub(Phoenix.PubSub, :broadcast, fn _server,
-                                              "events",
-                                              {:event, ^event} ->
-        :ok
-      end)
+      # Use real PubSub - no mocking needed
 
-      # Stub UserPreferences
-      Mox.stub(Raxol.Core.UserPreferences, :get, fn "theme.active_id" ->
-        :default
-      end)
+      # Use real UserPreferences - no mocking needed
 
-      # Start Dispatcher for this test
-      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
+      # Start Dispatcher for this test with test command module
+      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state, command_module: Raxol.Core.Runtime.TestCommandModule)
+      # Allow the dispatcher process to use the ApplicationMock
+      Mox.allow(ApplicationMock, self(), dispatcher)
 
       :ok = GenServer.cast(dispatcher, {:dispatch, event})
 
       # Assertions: No render needed, state unchanged
-      refute_receive {:render_needed, _}, 100
+      refute_receive :render_needed, 100
       current_state_after_error = :sys.get_state(dispatcher)
       assert current_state_after_error.model.count == 0
+
+      # Verify no commands were executed due to error
+      executed_commands = Raxol.Core.Runtime.TestCommandModule.get_executed_commands()
+      assert executed_commands == []
 
       # Test-specific teardown
       on_exit(fn ->
         Mox.verify!()
-        GenServer.stop(mock_pm_pid)
+        # Stop processes gracefully, ignoring if already dead
+        try do
+          GenServer.stop(mock_pm_pid)
+        catch
+          :exit, _ -> :ok
+        end
+        try do
+          Raxol.Core.Runtime.TestCommandModule.stop()
+        catch
+          :exit, _ -> :ok
+        end
       end)
     end
   end

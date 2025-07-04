@@ -396,6 +396,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
     defmodule LifecycleTestPluginA do
       @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
       @behaviour Raxol.Plugins.Plugin
+      @behaviour Raxol.Plugins.LifecycleBehaviour
 
       @impl true
       def get_metadata do
@@ -424,13 +425,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         {:ok, plugin}
       end
 
-      @impl true
+      @impl Raxol.Plugins.LifecycleBehaviour
       def start(config) do
         Process.put(:lifecycle_plugin_a_start, true)
         {:ok, config}
       end
 
-      @impl true
+      @impl Raxol.Plugins.LifecycleBehaviour
       def stop(config) do
         Process.put(:lifecycle_plugin_a_stop, true)
         {:ok, config}
@@ -452,6 +453,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
     defmodule LifecycleTestPluginB do
       @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
       @behaviour Raxol.Plugins.Plugin
+      @behaviour Raxol.Plugins.LifecycleBehaviour
 
       @impl true
       def get_metadata do
@@ -480,13 +482,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         {:ok, plugin}
       end
 
-      @impl true
+      @impl Raxol.Plugins.LifecycleBehaviour
       def start(config) do
         Process.put(:lifecycle_plugin_b_start, true)
         {:ok, config}
       end
 
-      @impl true
+      @impl Raxol.Plugins.LifecycleBehaviour
       def stop(config) do
         Process.put(:lifecycle_plugin_b_stop, true)
         {:ok, config}
@@ -555,6 +557,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       defmodule ErrorTestPlugin do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
         @behaviour Raxol.Plugins.Plugin
+        @behaviour Raxol.Plugins.LifecycleBehaviour
 
         @impl true
         def get_metadata do
@@ -571,12 +574,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:error, "Init failed"}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           {:error, "Start failed"}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           {:error, "Stop failed"}
         end
@@ -607,6 +610,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       defmodule ErrorTestPlugin do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
         @behaviour Raxol.Plugins.Plugin
+        @behaviour Raxol.Plugins.LifecycleBehaviour
 
         @impl true
         def get_metadata do
@@ -633,12 +637,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, plugin}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           {:error, "Start failed"}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           {:error, "Stop failed"}
         end
@@ -694,12 +698,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, plugin}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           {:ok, Map.put(config, :start_state, "started")}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           Process.put(:final_state, config)
           {:ok, config}
@@ -781,7 +785,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, plugin}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           # Verify all config is present (allowing for custom overrides)
           assert config.setting1 in ["default1", "custom1"]
@@ -791,7 +795,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, Map.put(config, :runtime_setting, "runtime")}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           # Verify all config is maintained (allowing for custom overrides)
           assert config.setting1 in ["default1", "custom1"]
@@ -896,13 +900,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, plugin}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           :ets.insert(:plugin_test_registry, {:concurrent_plugin_a_start, true})
           {:ok, config}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           :ets.insert(:plugin_test_registry, {:concurrent_plugin_a_stop, true})
           {:ok, config}
@@ -957,13 +961,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, plugin}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           :ets.insert(:plugin_test_registry, {:concurrent_plugin_b_start, true})
           {:ok, config}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           :ets.insert(:plugin_test_registry, {:concurrent_plugin_b_stop, true})
           {:ok, config}
@@ -1158,14 +1162,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, plugin}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           # Send message to plugin B during start
           Process.put(:plugin_a_start_message, "A started")
           {:ok, Map.put(config, :start_message, "A started")}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           # Send message to plugin B during stop
           Process.put(:plugin_a_stop_message, "A stopped")
@@ -1218,14 +1222,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
           {:ok, plugin}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def start(config) do
           # Receive message from plugin A during start
           Process.put(:plugin_b_start_message, "B started")
           {:ok, Map.put(config, :start_message, "B started")}
         end
 
-        @impl true
+        @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
           # Receive message from plugin A during stop
           Process.put(:plugin_b_stop_message, "B stopped")

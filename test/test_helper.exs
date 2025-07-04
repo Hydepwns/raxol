@@ -159,6 +159,10 @@ IO.puts("[TestHelper] Starting endpoint globally for tests...")
 Application.ensure_all_started(:phoenix)
 Application.ensure_all_started(:plug_cowboy)
 
+# Start the event registry for tests
+IO.puts("[TestHelper] Starting event registry...")
+{:ok, _registry_pid} = Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
+
 # Only start the endpoint if it's not already running
 if !Process.whereis(RaxolWeb.Endpoint) do
   {:ok, _pid} = RaxolWeb.Endpoint.start_link()

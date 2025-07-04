@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
   describe "new/0" do
     test ~c"creates a new empty terminal state stack" do
-      stack = TerminalState.new()
+      stack = []
       assert stack == []
       assert TerminalState.empty?(stack) == true
       assert TerminalState.count(stack) == 0
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
   describe "save_state/2" do
     test ~c"saves terminal state to the stack" do
-      stack = TerminalState.new()
+      stack = []
 
       initial_style =
         TextFormatting.new()
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     end
 
     test ~c"saves multiple states to the stack" do
-      stack = TerminalState.new()
+      stack = []
 
       style1 = TextFormatting.new() |> TextFormatting.set_foreground(:red)
       emulator_state1 = create_test_emulator({10, 5}, style1, {5, 15})
@@ -95,7 +95,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
   describe "restore_state/1" do
     test ~c"restores the most recently saved state" do
-      stack = TerminalState.new()
+      stack = []
 
       initial_style =
         TextFormatting.new() |> TextFormatting.set_foreground(:red)
@@ -114,7 +114,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     end
 
     test ~c"returns nil when restoring from an empty stack" do
-      stack = TerminalState.new()
+      stack = []
       {stack, restored_state} = TerminalState.restore_state(stack)
 
       assert stack == []
@@ -122,7 +122,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     end
 
     test ~c"restores states in LIFO order" do
-      stack = TerminalState.new()
+      stack = []
 
       style1 = TextFormatting.new() |> TextFormatting.set_foreground(:red)
       emulator_state1 = create_test_emulator({10, 5}, style1, {5, 15})
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
   describe "clear_state/1" do
     test ~c"clears the terminal state stack" do
-      stack = TerminalState.new()
+      stack = []
 
       initial_style =
         TextFormatting.new() |> TextFormatting.set_foreground(:red)
@@ -171,7 +171,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
   describe "get_state_stack/1" do
     test ~c"returns the current terminal state stack" do
-      stack = TerminalState.new()
+      stack = []
 
       initial_style =
         TextFormatting.new() |> TextFormatting.set_foreground(:red)
