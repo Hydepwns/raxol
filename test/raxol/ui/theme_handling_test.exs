@@ -5,6 +5,19 @@ defmodule Raxol.UI.ThemeHandlingTest do
   import Raxol.Test.Visual.Assertions
   alias Raxol.UI.Theming.Theme
 
+  setup do
+    # Ensure UserPreferences is started for tests
+    case Raxol.Core.UserPreferences.start_link([test_mode?: true]) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    # Initialize theme system
+    Theme.init()
+
+    :ok
+  end
+
   test "handles missing themes" do
     element = Helper.create_test_box(0, 0, 5, 5, %{theme: "nonexistent"})
     cells = Renderer.render_to_cells(element)

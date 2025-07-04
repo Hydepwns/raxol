@@ -37,8 +37,23 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
     def handle_call(_msg, _from, state), do: {:reply, :ok, state}
   end
 
+  setup do
+    # Ensure UserPreferences is started for tests
+    case Raxol.Core.UserPreferences.start_link(test_mode?: true) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    # Ensure Registry is started
+    case Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    :ok
+  end
+
   describe "GenServer Callbacks" do
-    # No context injected from setup
     test ~c"handle_cast :dispatch dispatches event and updates state" do
       # Attempt to resize RenderingEngine buffer to minimize log output on failure
       # This is a temporary measure to help diagnose the actual test failure.
@@ -53,7 +68,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
 
       # Start Test Command Module for this test
-      {:ok, _test_command_agent} = Raxol.Core.Runtime.TestCommandModule.start_link()
+      {:ok, _test_command_agent} =
+        Raxol.Core.Runtime.TestCommandModule.start_link()
 
       # Define initial state for this test
       initial_state = %{
@@ -101,7 +117,11 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       # Use real UserPreferences - no mocking needed
 
       # Start Dispatcher for this test with test command module
-      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state, command_module: Raxol.Core.Runtime.TestCommandModule)
+      {:ok, dispatcher} =
+        Dispatcher.start_link(self(), initial_state,
+          command_module: Raxol.Core.Runtime.TestCommandModule
+        )
+
       # Allow the dispatcher process to use the ApplicationMock
       Mox.allow(ApplicationMock, self(), dispatcher)
 
@@ -113,7 +133,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       assert current_state.model.count == 1
 
       # Verify commands were executed
-      executed_commands = Raxol.Core.Runtime.TestCommandModule.get_executed_commands()
+      executed_commands =
+        Raxol.Core.Runtime.TestCommandModule.get_executed_commands()
+
       assert length(executed_commands) == 1
       [{command, _context}] = executed_commands
       assert command.type == :system
@@ -129,6 +151,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         catch
           :exit, _ -> :ok
         end
+
         try do
           Raxol.Core.Runtime.TestCommandModule.stop()
         catch
@@ -142,7 +165,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
 
       # Start Test Command Module for this test
-      {:ok, _test_command_agent} = Raxol.Core.Runtime.TestCommandModule.start_link()
+      {:ok, _test_command_agent} =
+        Raxol.Core.Runtime.TestCommandModule.start_link()
 
       # Define initial state for this test
       initial_state = %{
@@ -174,7 +198,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       end)
 
       # Expect update to fail with correct signature
-      Mox.expect(ApplicationMock, :update, fn {:key_press, :enter, []}, _model ->
+      Mox.expect(ApplicationMock, :update, fn {:key_press, :enter, []},
+                                              _model ->
         {:error, :simulated_error}
       end)
 
@@ -183,7 +208,11 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       # Use real UserPreferences - no mocking needed
 
       # Start Dispatcher for this test with test command module
-      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state, command_module: Raxol.Core.Runtime.TestCommandModule)
+      {:ok, dispatcher} =
+        Dispatcher.start_link(self(), initial_state,
+          command_module: Raxol.Core.Runtime.TestCommandModule
+        )
+
       # Allow the dispatcher process to use the ApplicationMock
       Mox.allow(ApplicationMock, self(), dispatcher)
 
@@ -195,7 +224,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       assert current_state_after_error.model.count == 0
 
       # Verify no commands were executed due to error
-      executed_commands = Raxol.Core.Runtime.TestCommandModule.get_executed_commands()
+      executed_commands =
+        Raxol.Core.Runtime.TestCommandModule.get_executed_commands()
+
       assert executed_commands == []
 
       # Test-specific teardown
@@ -207,6 +238,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
         catch
           :exit, _ -> :ok
         end
+
         try do
           Raxol.Core.Runtime.TestCommandModule.stop()
         catch
