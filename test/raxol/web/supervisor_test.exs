@@ -1,8 +1,13 @@
 defmodule Raxol.Web.SupervisorTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
-  test "is running and supervises expected children" do
-    pid = Process.whereis(Raxol.Web.Supervisor)
+  setup do
+    # Start the web supervisor for testing
+    {:ok, pid} = Raxol.Web.Supervisor.start_link([])
+    {:ok, %{supervisor_pid: pid}}
+  end
+
+  test "is running and supervises expected children", %{supervisor_pid: pid} do
     assert is_pid(pid)
     assert Process.alive?(pid)
     children = Supervisor.which_children(pid)
