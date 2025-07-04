@@ -91,7 +91,10 @@ defmodule Raxol.Terminal.Emulator do
     saved_cursor: nil,
     scroll_region: nil,
     sixel_state: nil,
-    last_col_exceeded: false
+    last_col_exceeded: false,
+    cursor_blink_rate: 0,
+    session_id: nil,
+    client_options: %{}
   ]
 
   @type t :: %__MODULE__{
@@ -119,7 +122,11 @@ defmodule Raxol.Terminal.Emulator do
           plugin_manager: any() | nil,
           saved_cursor: any() | nil,
           scroll_region: any() | nil,
-          sixel_state: any() | nil
+          sixel_state: any() | nil,
+          last_col_exceeded: boolean(),
+          cursor_blink_rate: non_neg_integer(),
+          session_id: any() | nil,
+          client_options: map()
         }
 
   defp sgr_code_mappings do
@@ -1961,4 +1968,334 @@ defmodule Raxol.Terminal.Emulator do
   def move_cursor_to(emulator, x, y) do
     move_cursor_to(emulator, {x, y}, nil, nil)
   end
+
+  # Missing Raxol.Terminal.OperationsBehaviour implementations
+
+  @doc """
+  Cleans up the emulator state.
+  """
+  @spec cleanup(t()) :: t()
+  def cleanup(emulator) do
+    # Stop all GenServer processes gracefully
+    emulator = stop_gen_servers(emulator)
+
+    # Clear scrollback buffers
+    emulator = clear_scrollback(emulator)
+
+    # Reset charset state to defaults
+    emulator = reset_charset_state(emulator)
+
+    # Reset style to default
+    emulator = %{emulator | style: Raxol.Terminal.ANSI.TextFormatting.new()}
+
+    # Clear output buffer
+    emulator = %{emulator | output_buffer: ""}
+
+    # Reset window state
+    emulator = %{emulator | window_state: %{
+      iconified: false,
+      maximized: false,
+      position: {0, 0},
+      size: {emulator.width, emulator.height},
+      size_pixels: {640, 384},
+      stacking_order: :normal,
+      previous_size: {emulator.width, emulator.height},
+      saved_size: {emulator.width, emulator.height},
+      icon_name: ""
+    }}
+
+    # Clear state stack
+    emulator = %{emulator | state_stack: []}
+
+    # Reset scroll region
+    emulator = %{emulator | scroll_region: nil}
+
+    # Clear saved cursor
+    emulator = %{emulator | saved_cursor: nil}
+
+    # Reset sixel state
+    emulator = %{emulator | sixel_state: nil}
+
+    # Reset last column exceeded flag
+    emulator = %{emulator | last_col_exceeded: false}
+
+    emulator
+  end
+
+  defp stop_gen_servers(emulator) do
+    # Stop state manager
+    emulator = stop_process(emulator, :state)
+
+    # Stop event handler
+    emulator = stop_process(emulator, :event)
+
+    # Stop buffer manager
+    emulator = stop_process(emulator, :buffer)
+
+    # Stop config manager
+    emulator = stop_process(emulator, :config)
+
+    # Stop command manager
+    emulator = stop_process(emulator, :command)
+
+    # Stop cursor manager
+    emulator = stop_process(emulator, :cursor)
+
+    # Stop window manager
+    emulator = stop_process(emulator, :window_manager)
+
+    emulator
+  end
+
+  defp stop_process(emulator, field) do
+    case Map.get(emulator, field) do
+      pid when pid?(pid) ->
+        try do
+          GenServer.stop(pid, :normal, 5000)
+        catch
+          :exit, _ -> :ok
+        end
+        %{emulator | field => nil}
+
+      _ ->
+        emulator
+    end
+  end
+
+  @doc """
+  Gets the bottom scroll position.
+  """
+  @spec get_scroll_bottom(t()) :: non_neg_integer()
+  def get_scroll_bottom(emulator) do
+    case emulator.scroll_region do
+      {_top, bottom} -> bottom
+      nil -> emulator.height - 1
+    end
+  end
+
+  @doc """
+  Gets the top scroll position.
+  """
+  @spec get_scroll_top(t()) :: non_neg_integer()
+  def get_scroll_top(emulator) do
+    case emulator.scroll_region do
+      {top, _bottom} -> top
+      nil -> 0
+    end
+  end
+
+  @doc """
+  Resets the charset state.
+  """
+  @spec reset_charset_state(t()) :: t()
+  def reset_charset_state(emulator) do
+    %{emulator | charset_state: %{
+      g0: :us_ascii,
+      g1: :us_ascii,
+      g2: :us_ascii,
+      g3: :us_ascii,
+      gl: :g0,
+      gr: :g0,
+      single_shift: nil
+    }}
+  end
+
+  @doc """
+  Resolves load order for plugins or components.
+  """
+  @spec resolve_load_order(t()) :: t()
+  def resolve_load_order(emulator) do
+    case emulator.plugin_manager do
+      nil -> emulator
+      plugin_manager ->
+        resolved_order = resolve_plugin_dependencies(plugin_manager)
+        %{emulator | plugin_manager: %{plugin_manager | load_order: resolved_order}}
+    end
+  end
+
+  defp resolve_plugin_dependencies(plugin_manager) do
+    # Extract plugin dependencies
+    plugins = Map.get(plugin_manager, :plugins, [])
+    dependencies = extract_plugin_dependencies(plugins)
+
+    # Perform topological sort
+    case topological_sort(dependencies) do
+      {:ok, sorted_plugins} -> sorted_plugins
+      {:error, _reason} ->
+        # If there are circular dependencies, return plugins in original order
+        Enum.map(plugins, & &1.name)
+    end
+  end
+
+  defp extract_plugin_dependencies(plugins) do
+    Enum.map(plugins, fn plugin ->
+      {plugin.name, Map.get(plugin, :dependencies, [])}
+    end)
+    |> Map.new()
+  end
+
+  defp topological_sort(dependencies) do
+    # Kahn's algorithm for topological sorting
+    nodes = Map.keys(dependencies)
+    in_degree = calculate_in_degree(dependencies, nodes)
+
+    # Find nodes with no incoming edges
+    queue = Enum.filter(nodes, fn node -> Map.get(in_degree, node, 0) == 0 end)
+
+    case topological_sort_helper(dependencies, in_degree, queue, []) do
+      sorted when length(sorted) == length(nodes) -> {:ok, sorted}
+      _ -> {:error, :circular_dependency}
+    end
+  end
+
+  defp calculate_in_degree(dependencies, nodes) do
+    Enum.reduce(nodes, %{}, fn node, acc ->
+      in_degree = Enum.count(dependencies, fn {_name, deps} ->
+        Enum.member?(deps, node)
+      end)
+      Map.put(acc, node, in_degree)
+    end)
+  end
+
+  defp topological_sort_helper(_dependencies, _in_degree, [], result) do
+    result
+  end
+
+  defp topological_sort_helper(dependencies, in_degree, [node | queue], result) do
+    # Remove node and its outgoing edges
+    new_in_degree = Enum.reduce(dependencies[node] || [], in_degree, fn dep, acc ->
+      Map.update(acc, dep, 0, &(&1 - 1))
+    end)
+
+    # Add nodes with no incoming edges to queue
+    new_queue = queue ++ Enum.filter(dependencies[node] || [], fn dep ->
+      Map.get(new_in_degree, dep, 0) == 0
+    end)
+
+    topological_sort_helper(dependencies, new_in_degree, new_queue, [node | result])
+  end
+
+  @doc """
+  Sets the blink rate for the cursor.
+  """
+  @spec set_blink_rate(t(), non_neg_integer()) :: t()
+  def set_blink_rate(emulator, rate) do
+    cursor = emulator.cursor
+
+    if pid?(cursor) do
+      # Set blink rate in cursor manager
+      GenServer.call(cursor, {:set_blink_rate, rate})
+
+      # Also set blink state based on rate
+      blinking = rate > 0
+      GenServer.call(cursor, {:set_blink, blinking})
+    end
+
+    # Store blink rate in emulator state for reference
+    %{emulator | cursor_blink_rate: rate}
+  end
+
+  @doc """
+  Toggles cursor blinking.
+  """
+  @spec toggle_blink(t()) :: t()
+  def toggle_blink(emulator) do
+    cursor = emulator.cursor
+
+    if pid?(cursor) do
+      current_blinking = GenServer.call(cursor, :get_blink)
+      GenServer.call(cursor, {:set_blink, !current_blinking})
+    end
+
+    emulator
+  end
+
+  @doc """
+  Toggles cursor visibility.
+  """
+  @spec toggle_visibility(t()) :: t()
+  def toggle_visibility(emulator) do
+    cursor = emulator.cursor
+
+    if pid?(cursor) do
+      current_visible = GenServer.call(cursor, :get_visibility)
+      GenServer.call(cursor, {:set_visibility, !current_visible})
+    end
+
+    emulator
+  end
+
+  @doc """
+  Updates cursor blinking state.
+  """
+  @spec update_blink(t()) :: t()
+  def update_blink(emulator) do
+    cursor = emulator.cursor
+
+    if pid?(cursor) do
+      # Update blink state based on timing
+      GenServer.call(cursor, :update_blink)
+    end
+
+    emulator
+  end
+
+  @doc """
+  Stops the emulator.
+  """
+  @spec stop(t()) :: t()
+  def stop(emulator) do
+    # Perform cleanup first
+    emulator = cleanup(emulator)
+
+    # Mark emulator as stopped
+    %{emulator | state: :stopped}
+  end
+
+  # Missing Raxol.Terminal.EmulatorBehaviour implementations
+
+  @doc """
+  Creates a new emulator with width, height, and optional configuration.
+  """
+  @spec new(non_neg_integer(), non_neg_integer(), map(), map()) :: t()
+  def new(width, height, config \\ %{}, options \\ %{}) do
+    # Merge config and options
+    merged_opts = Map.merge(config, options)
+
+    # Convert to keyword list for existing new/3 function
+    opts_list = Map.to_list(merged_opts)
+
+    # Create emulator using existing constructor
+    emulator = new(width, height, opts_list)
+
+    # Apply any additional configuration
+    emulator = apply_additional_config(emulator, merged_opts)
+
+    emulator
+  end
+
+  defp apply_additional_config(emulator, config) do
+    emulator
+    |> maybe_set_plugin_manager(config)
+    |> maybe_set_session_id(config)
+    |> maybe_set_client_options(config)
+  end
+
+  defp maybe_set_plugin_manager(emulator, %{plugin_manager: plugin_manager}) do
+    %{emulator | plugin_manager: plugin_manager}
+  end
+
+  defp maybe_set_plugin_manager(emulator, _), do: emulator
+
+  defp maybe_set_session_id(emulator, %{session_id: session_id}) do
+    %{emulator | session_id: session_id}
+  end
+
+  defp maybe_set_session_id(emulator, _), do: emulator
+
+  defp maybe_set_client_options(emulator, %{client_options: client_options}) do
+    %{emulator | client_options: client_options}
+  end
+
+  defp maybe_set_client_options(emulator, _), do: emulator
 end

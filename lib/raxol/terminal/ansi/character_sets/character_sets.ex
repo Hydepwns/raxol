@@ -164,11 +164,14 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     Map.get(state, gset, ASCII)
   end
 
-  defp module_to_atom(module) do
-    case module do
+  defp module_to_atom(module_or_atom) do
+    case module_or_atom do
       ASCII -> :us_ascii
       DEC -> :dec_special_graphics
       UK -> :uk
+      :us_ascii -> :us_ascii
+      :dec_special_graphics -> :dec_special_graphics
+      :uk -> :uk
       _ -> :us_ascii
     end
   end

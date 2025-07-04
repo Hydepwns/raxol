@@ -193,8 +193,8 @@ defmodule Raxol.Terminal.Cursor.Style do
       true
   """
   def update_blink(%Manager{} = cursor) do
-    new_blink_state = !cursor.blinking
-    new_cursor = %{cursor | blinking: new_blink_state, blink: new_blink_state}
+    new_blink_state = !cursor.blink
+    new_cursor = %{cursor | blink: new_blink_state}
     {new_cursor, new_blink_state}
   end
 
