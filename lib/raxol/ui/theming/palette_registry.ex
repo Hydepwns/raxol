@@ -105,7 +105,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     # Load palettes from persistent storage if available
     palettes = load_palettes_from_storage()
@@ -119,7 +119,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:register, name, colors}, _from, state) do
     case validate_palette(colors) do
       :ok ->
@@ -135,7 +135,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:unregister, name}, _from, state) do
     case Map.get(state.palettes, name) do
       nil ->
@@ -150,7 +150,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get, name}, _from, state) do
     case Map.get(state.palettes, name) do
       nil ->
@@ -161,19 +161,19 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:list, _from, state) do
     palette_names = Map.keys(state.palettes)
     {:reply, palette_names, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:exists?, name}, _from, state) do
     exists = Map.has_key?(state.palettes, name)
     {:reply, exists, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update, name, colors}, _from, state) do
     case Map.get(state.palettes, name) do
       nil ->

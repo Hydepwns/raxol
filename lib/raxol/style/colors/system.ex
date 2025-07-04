@@ -125,6 +125,7 @@ defmodule Raxol.Style.Colors.System do
   """
   def get_color(color_name, variant \\ :base) do
     current_theme = get_current_theme()
+
     # Always check for the variant tuple key first
     color =
       Map.get(current_theme.variants || %{}, {color_name, variant}) ||
@@ -187,7 +188,8 @@ defmodule Raxol.Style.Colors.System do
       )
 
     theme = Theme.get(theme_name)
-    Process.put(:color_system_current_theme, theme.name)
+    # Always store the theme id (atom) in the process dictionary
+    Process.put(:color_system_current_theme, theme.id)
     Process.put(:color_system_high_contrast, high_contrast)
 
     EventManager.dispatch(
@@ -215,7 +217,21 @@ defmodule Raxol.Style.Colors.System do
 
   defp get_current_theme do
     theme_name = Process.get(:color_system_current_theme, @default_theme)
-    Theme.get(theme_name)
+
+    # Try both atom and string forms
+    candidates =
+      cond do
+        is_binary(theme_name) -> [theme_name, String.to_atom(theme_name)]
+        is_atom(theme_name) -> [theme_name, Atom.to_string(theme_name)]
+        true -> [theme_name]
+      end
+
+    theme = Enum.find_value(candidates, fn name -> Theme.get(name) end)
+
+    case theme do
+      nil -> Theme.get(@default_theme)
+      theme -> theme
+    end
   end
 
   defp get_high_contrast do
