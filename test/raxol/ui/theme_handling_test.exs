@@ -7,7 +7,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
 
   setup do
     # Ensure UserPreferences is started for tests
-    case Raxol.Core.UserPreferences.start_link([test_mode?: true]) do
+    case Raxol.Core.UserPreferences.start_link(test_mode?: true) do
       {:ok, _pid} -> :ok
       {:error, {:already_started, _pid}} -> :ok
     end
