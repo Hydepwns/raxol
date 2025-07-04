@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Runtime.Plugins.State
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
   def update_state_maps(
         plugin_id,
         plugin_module,
@@ -26,7 +26,7 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
     }
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
   def remove_plugin(plugin_id, state_maps) do
     %{
       plugins: Map.delete(state_maps.plugins, plugin_id),
@@ -37,7 +37,7 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
     }
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
   def update_plugin_state(plugin_id, new_state, state_maps) do
     %{
       state_maps
@@ -45,22 +45,22 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
     }
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
   def get_plugin_state(plugin_id, state_maps) do
     Map.get(state_maps.plugin_states, plugin_id)
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
   def get_plugin_module(plugin_id, state_maps) do
     Map.get(state_maps.plugins, plugin_id)
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
   def get_plugin_metadata(plugin_id, state_maps) do
     Map.get(state_maps.metadata, plugin_id)
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
   def get_plugin_config(plugin_id, state_maps) do
     Map.get(state_maps.plugin_config, plugin_id)
   end

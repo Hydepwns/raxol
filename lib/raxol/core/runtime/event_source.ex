@@ -74,12 +74,12 @@ defmodule Raxol.Core.Runtime.EventSource do
     quote do
       @behaviour Raxol.Core.Runtime.EventSource
 
-      @impl true
+      @impl GenServer
       def start_link(args, context) do
         GenServer.start_link(__MODULE__, {args, context})
       end
 
-      @impl true
+      @impl GenServer
       def init({args, context}) do
         case __MODULE__.init(args, context) do
           {:ok, state} -> {:ok, state}
@@ -87,7 +87,7 @@ defmodule Raxol.Core.Runtime.EventSource do
         end
       end
 
-      @impl true
+      @impl GenServer
       def handle_info(msg, state) do
         case __MODULE__.handle_info(msg, state) do
           {:noreply, new_state} -> {:noreply, new_state}
@@ -95,7 +95,7 @@ defmodule Raxol.Core.Runtime.EventSource do
         end
       end
 
-      @impl true
+      @impl GenServer
       def terminate(reason, state) do
         if function_exported?(__MODULE__, :terminate, 2) do
           __MODULE__.terminate(reason, state)

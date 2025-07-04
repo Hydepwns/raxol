@@ -19,12 +19,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         }
   @type command :: {command_name(), command_handler(), command_metadata()}
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def new do
     %{}
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def register_command(
         table_name,
         namespace,
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def unregister_command(table_name, namespace, command_name) do
     case table_name do
       table when map?(table) ->
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def lookup_command(table_name, namespace, command_name) do
     case table_name do
       table when map?(table) ->
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def unregister_commands_by_module(table_name, module) do
     case table_name do
       table when map?(table) ->

@@ -33,7 +33,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Loads a plugin from the given path.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
   def load_plugin(plugin_path) when binary?(plugin_path) do
     GenServer.call(__MODULE__, {:load_plugin, plugin_path})
   end
@@ -41,7 +41,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Unloads a plugin.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
   def unload_plugin(plugin) do
     GenServer.call(__MODULE__, {:unload_plugin, plugin})
   end
@@ -49,7 +49,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Reloads a plugin.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
   def reload_plugin(plugin) do
     GenServer.call(__MODULE__, {:reload_plugin, plugin})
   end
@@ -57,7 +57,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Gets the list of loaded plugins.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
   def get_loaded_plugins do
     GenServer.call(__MODULE__, :get_loaded_plugins)
   end
@@ -65,7 +65,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Checks if a plugin is loaded.
   """
-  @impl true
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
   def plugin_loaded?(plugin) do
     GenServer.call(__MODULE__, {:plugin_loaded?, plugin})
   end
@@ -100,7 +100,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # Server Callbacks
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     state = %__MODULE__{
       loaded_plugins: %{},
@@ -111,7 +111,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     {:ok, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:load_plugin, plugin_path}, _from, state) do
     case do_load_plugin(plugin_path, state) do
       {:ok, new_state} ->
@@ -123,7 +123,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:unload_plugin, plugin}, _from, state) do
     case do_unload_plugin(plugin, state) do
       {:ok, new_state} ->
@@ -134,7 +134,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:reload_plugin, plugin}, _from, state) do
     case do_reload_plugin(plugin, state) do
       {:ok, new_state} ->
@@ -145,12 +145,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_loaded_plugins, _from, state) do
     {:reply, Map.values(state.loaded_plugins), state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:plugin_loaded?, plugin}, _from, state) do
     {:reply, Map.has_key?(state.loaded_plugins, plugin), state}
   end
