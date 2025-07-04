@@ -7,7 +7,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   @behaviour Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
 
-  @impl true
+  @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
   def init(opts) do
     # Use the configured clipboard implementation or default to Raxol.System.Clipboard
     clipboard_impl = Keyword.get(opts, :clipboard_impl, Raxol.System.Clipboard)
@@ -18,7 +18,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     :ok
   end
 
-  @impl true
+  @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
   def get_commands do
     [
       {:clipboard_write, :handle_clipboard_command, 2},
@@ -26,7 +26,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     ]
   end
 
-  @impl true
+  @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
   def handle_command(
         :clipboard_write,
         [content],

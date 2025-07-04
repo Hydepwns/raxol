@@ -389,10 +389,10 @@ defmodule Raxol.UI.Components.Modal do
         handle_enter_key(state)
 
       %{key: "Tab", shift: false} when state.type in [:prompt, :form] ->
-        update(:focus_next_field, state)
+        change_focus(state, 1)
 
       %{key: "Tab", shift: true} when state.type in [:prompt, :form] ->
-        update(:focus_prev_field, state)
+        change_focus(state, -1)
 
       _ ->
         {state, []}
