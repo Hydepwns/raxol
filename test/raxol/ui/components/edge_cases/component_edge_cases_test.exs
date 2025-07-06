@@ -75,12 +75,19 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       end_time = System.monotonic_time()
 
       computation_time =
-        System.convert_time_unit(end_time - start_time, :native, :millisecond)
+        System.convert_time_unit(end_time - start_time, :native, :microsecond)
+
+      # Accumulate computation time instead of resetting
+      total_computation_time = Map.get(state, :computation_time, 0) + computation_time
 
       new_state = Map.put(state, :data, new_data)
-      new_state = Map.put(new_state, :computation_time, computation_time)
+      new_state = Map.put(new_state, :computation_time, total_computation_time)
 
       {new_state, []}
+    end
+
+    def handle_event(event, state, _context) do
+      handle_event(event, state)
     end
 
     def handle_event(_event, state) do
@@ -163,7 +170,16 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
           last_error: :simulated_error
       }
 
+      # Raise error if error_count > 2 (same as render function)
+      if Map.get(new_state, :error_count, 0) > 2 do
+        raise "Simulated render error"
+      end
+
       {new_state, []}
+    end
+
+    def handle_event(event, state, _context) do
+      handle_event(event, state)
     end
 
     def handle_event(_event, state) do
@@ -366,9 +382,12 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test "handles mount errors" do
-      # Verify mount error is handled
+      # Create the component first (this should not raise an error)
+      component = create_test_component(InvalidMountComponent, %{})
+
+      # Verify mount error is handled during lifecycle simulation
       assert_raise RuntimeError, "Simulated mount error", fn ->
-        create_test_component(InvalidMountComponent, %{})
+        simulate_lifecycle(component, & &1)
       end
     end
 

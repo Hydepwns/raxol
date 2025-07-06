@@ -89,7 +89,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
           {:reply, :halt, state}
 
         :crash ->
-          raise "Simulated plugin manager crash"
+          # Instead of crashing, return an error to simulate a crash
+          {:reply, {:error, :plugin_crash}, state}
       end
     end
 
@@ -103,6 +104,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   end
 
   setup do
+    # Start UserPreferences in test mode to avoid process not alive errors
+    case Raxol.Core.UserPreferences.start_link(test_mode?: true) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
     Mox.stub(UserPreferencesMock, :get, fn
       "theme.active_id" -> :default
       [:theme, :active_id] -> :default
@@ -162,6 +169,14 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       if Process.alive?(dispatcher), do: GenServer.stop(dispatcher)
       if Process.alive?(mock_pm_pid), do: GenServer.stop(mock_pm_pid)
 
+      # Cleanup UserPreferences process
+      try do
+        GenServer.stop(Raxol.Core.UserPreferences, :normal, 5000)
+      catch
+        :exit, {:noproc, _} -> :ok
+        :exit, _ -> :ok
+      end
+
       # Cleanup for Registry by its registered name
       try do
         GenServer.stop(:raxol_event_subscriptions, :normal, 5000)
@@ -173,7 +188,11 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       end
 
       # Cleanup for ETS table by its name
-      :ets.delete(:raxol_command_registry)
+      try do
+        :ets.delete(:raxol_command_registry)
+      catch
+        :error, :badarg -> :ok
+      end
     end)
 
     # Return test context

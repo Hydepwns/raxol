@@ -140,6 +140,9 @@ System.at_exit(fn _exit_status ->
   Raxol.Core.UserPreferences.reset_to_defaults_for_test!()
 end)
 
+# Start the Accessibility Announcements Agent for global subscription storage
+{:ok, _} = Raxol.Core.Accessibility.Announcements.start_link([])
+
 # Set up global test configuration
 IO.puts("[TestHelper] Setting up global test configuration...")
 

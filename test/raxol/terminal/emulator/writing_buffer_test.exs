@@ -27,8 +27,8 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       line0_cells = Enum.at(buffer.cells, 0)
       line0_text = Enum.map_join(line0_cells, & &1.char)
       assert String.starts_with?(line0_text, "Hello")
-      # Check cursor position (simple case, no wrap)
-      assert emulator.cursor.position == {5, 0},
+      # Check cursor position (simple case, no wrap) - use proper accessor
+      assert Emulator.get_cursor_position(emulator) == {5, 0},
              "Cursor should be at col 5, row 0"
     end
 
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
         Emulator.process_input(emulator, "Hello\nWorld")
 
       # Corrected assertion: After "Hello\nWorld" with LNM off, cursor should be at {10, 1}
-      assert emulator_after.cursor.position == {10, 1},
+      assert Emulator.get_cursor_position(emulator_after) == {10, 1},
              "Cursor should be at col 10, row 1"
 
       # Verify buffer content
@@ -112,12 +112,12 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
         assert actual.style == expected.style,
                "Line 0 (Newline Test): Style mismatch at index #{index}: Act: #{inspect(actual.style)} Exp: #{inspect(expected.style)}"
 
-        assert actual.is_wide_placeholder == expected.is_wide_placeholder,
+        assert actual.wide_placeholder == expected.wide_placeholder,
                "Line 0 (Newline Test): Wide placeholder mismatch at index #{index}"
       end)
 
       # Check cursor position
-      assert emulator_after.cursor.position == {10, 1},
+      assert Emulator.get_cursor_position(emulator_after) == {10, 1},
              "Cursor should be at col 10, row 1"
     end
 
@@ -129,7 +129,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
         Emulator.process_input(emulator, "Line 1\n Line 2")
 
       # Check cursor position after processing
-      assert emulator_after.cursor.position == {13, 1},
+      assert Emulator.get_cursor_position(emulator_after) == {13, 1},
              "Cursor should be at col 13, row 1"
 
       # Check buffer content after processing
@@ -176,7 +176,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
              "Screen buffer cells mismatch"
 
       # Check cursor position
-      assert emulator_after.cursor.position == {13, 1},
+      assert Emulator.get_cursor_position(emulator_after) == {13, 1},
              "Cursor should be at col 13, row 1"
     end
 
@@ -200,7 +200,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # emulator = Emulator.new(80, 24) # Removed: Use emulator from context
       {emulator_after, _output} = Emulator.process_input(emulator, "H")
 
-      assert emulator_after.cursor.position == {1, 0},
+      assert Emulator.get_cursor_position(emulator_after) == {1, 0},
              "Cursor after 'H' should be {1, 0}"
     end
 
@@ -213,7 +213,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       {emulator, _} = Emulator.process_input(emulator, "1234567890")
 
       # Check state AFTER 10 chars (BEFORE wrap should trigger)
-      assert emulator.cursor.position == {9, 0},
+      assert Emulator.get_cursor_position(emulator) == {9, 0},
              "Cursor should be at col 9, row 0 BEFORE wrap"
 
       assert emulator.last_col_exceeded == true,
@@ -235,7 +235,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
 
       # Check cursor position and flag
       # Note: The cursor should move to the next line (row 1), column 1 (0-based)
-      assert emulator_after_wrap.cursor.position == {1, 1},
+      assert Emulator.get_cursor_position(emulator_after_wrap) == {1, 1},
              "Cursor should be at {1, 1} AFTER wrap"
 
       assert emulator_after_wrap.last_col_exceeded == false,
@@ -254,7 +254,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # Write 9 chars
       {emulator_after_9, _} = Emulator.process_input(emulator, "123456789")
 
-      assert emulator_after_9.cursor.position == {9, 0},
+      assert Emulator.get_cursor_position(emulator_after_9) == {9, 0},
              "Cursor should be at col 9, row 0 after 9 chars"
 
       refute emulator_after_9.last_col_exceeded,
@@ -264,7 +264,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       {emulator, _} = Emulator.process_input(emulator_after_9, "0")
 
       # Check state AFTER 10th char (autowrap off)
-      assert emulator.cursor.position == {9, 0},
+      assert Emulator.get_cursor_position(emulator) == {9, 0},
              "Cursor should be at col 9, row 0 (autowrap off) after 10th char"
 
       assert emulator.last_col_exceeded == true,
@@ -286,7 +286,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
              "Line 0 should contain '123456789X' after overwrite"
 
       # Cursor should be at col 9 (index 9) after writing stopped at the margin
-      assert emulator_after_char11.cursor.position == {9, 0},
+      assert Emulator.get_cursor_position(emulator_after_char11) == {9, 0},
              "Cursor should be at col 9, row 0 (autowrap off)"
     end
   end
