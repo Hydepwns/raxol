@@ -17,6 +17,7 @@ defmodule Raxol.UI.Components.Input.Button do
           on_click: function() | nil,
           disabled: boolean(),
           focused: boolean(),
+          pressed: boolean(),
           theme: map(),
           style: map(),
           width: integer() | nil,
@@ -60,6 +61,7 @@ defmodule Raxol.UI.Components.Input.Button do
       role: role,
       # Ensure focused state is included
       focused: focused,
+      pressed: false,
       shortcut: shortcut,
       tooltip: tooltip
       # removed pressed state
@@ -74,7 +76,12 @@ defmodule Raxol.UI.Components.Input.Button do
   def init(state) do
     # Use Button.new to ensure defaults are applied from props
     initialized_state = new(state)
-    {:ok, initialized_state}
+
+    # Validate the state and store any errors
+    validation_errors = errors(initialized_state)
+    state_with_errors = Map.put(initialized_state, :errors, validation_errors)
+
+    {:ok, state_with_errors}
   end
 
   @doc """
@@ -163,61 +170,70 @@ defmodule Raxol.UI.Components.Input.Button do
   `:passthrough` if the event wasn't handled by the button.
   """
   @impl Component
-  def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
+  def handle_event(button, %Raxol.Core.Events.Event{type: :click, data: _data}, _context) do
     if button.disabled do
-      # Don't execute on_click, but event is handled
       {:handled, button}
     else
-      # Execute the click handler if it exists
       if button.on_click, do: button.on_click.()
-      # Consider adding :pressed state update here if needed
-      # For now, just return handled
-      {:handled, button}
+      updated_button = %{button | pressed: true}
+      {:update, updated_button, [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
     end
   end
 
-  def handle_event(
-        button,
-        %Raxol.Core.Events.Event{type: :focus, data: %{focused: focused}},
-        _context
-      ) do
-    # Update the focused state
-    updated_button = %{button | focused: focused}
-    # Use {:update, state, commands} tuple
+  def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
+    if button.disabled do
+      {:handled, button}
+    else
+      if button.on_click, do: button.on_click.()
+      updated_button = %{button | pressed: true}
+      {:update, updated_button, [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+    end
+  end
+
+  def handle_event(button, %Raxol.Core.Events.Event{type: :focus, data: data}, _context) when is_map(data) do
+    updated_button = %{button | focused: Map.get(data, :focused, true)}
     {:update, updated_button, []}
   end
 
-  def handle_event(
-        button,
-        %Raxol.Core.Events.Event{type: :focus},
-        _context
-      ) do
-    # Handle focus event without data (default to focused: true)
+  def handle_event(button, %Raxol.Core.Events.Event{type: :focus}, _context) do
     updated_button = %{button | focused: true}
     {:update, updated_button, []}
   end
 
-  def handle_event(
-        button,
-        %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
-        _context
-      ) do
+  def handle_event(button, %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}}, _context) do
     if button.disabled or (key != :space and key != :enter) do
       :passthrough
     else
-      # Execute the click handler if it exists
       if button.on_click, do: button.on_click.()
-      # Consider adding :pressed state update here if needed
-      # Return handled instead of :noreply
       {:handled, button}
     end
   end
 
-  # Catch-all for unhandled events - Moved to the end
+  def handle_event(button, %Raxol.Core.Events.Event{type: :mouse, data: %{button: :left, state: :pressed}}, _context) do
+    if button.disabled do
+      {:handled, button}
+    else
+      if button.on_click, do: button.on_click.()
+      updated_button = %{button | pressed: true}
+      {:update, updated_button, [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+    end
+  end
+
   def handle_event(_button, %Raxol.Core.Events.Event{} = _event, _context) do
-    # {:noreply, button}
-    # Indicate event was not handled by this component
     :passthrough
+  end
+
+  # Support both (button, event, context) and (event, button, context) argument orders
+  def handle_event(%Raxol.Core.Events.Event{} = event, button, context) when is_map(button) do
+    handle_event(button, event, context)
+  end
+
+  # Add validation for invalid roles
+  def errors(button) do
+    errors = %{}
+    errors =
+      if button.role in [:default, :primary, :secondary], do: errors, else: Map.put(errors, :role, "Invalid role")
+    errors
   end
 
   # Private helpers
@@ -227,6 +243,7 @@ defmodule Raxol.UI.Components.Input.Button do
     button_theme_from_context = component_styles.button || %{}
     theme = Map.merge(button_theme_from_context, button.theme || %{})
     style = button.style || %{}
+    # Style should override theme, so merge style into theme
     Map.merge(theme, style)
   end
 
@@ -252,18 +269,30 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   defp get_disabled_colors(style, default_fg, default_bg) do
-    {Map.get(style, :disabled_fg, default_fg), Map.get(style, :disabled_bg, default_bg)}
+    # If there's an explicit fg in the style, it should override disabled_fg
+    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :disabled_fg, default_fg)
+    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :disabled_bg, default_bg)
+    {fg, bg}
   end
 
   defp get_focused_colors(style, default_fg, default_bg) do
-    {Map.get(style, :focused_fg, default_fg), Map.get(style, :focused_bg, default_bg)}
+    # If there's an explicit fg in the style, it should override focused_fg
+    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :focused_fg, default_fg)
+    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :focused_bg, default_bg)
+    {fg, bg}
   end
 
   defp get_primary_colors(style, default_fg, default_bg) do
-    {Map.get(style, :primary_fg, default_fg), Map.get(style, :primary_bg, default_bg)}
+    # If there's an explicit fg in the style, it should override primary_fg
+    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :primary_fg, default_fg)
+    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :primary_bg, default_bg)
+    {fg, bg}
   end
 
   defp get_secondary_colors(style, default_fg, default_bg) do
-    {Map.get(style, :secondary_fg, default_fg), Map.get(style, :secondary_bg, default_bg)}
+    # If there's an explicit fg in the style, it should override secondary_fg
+    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :secondary_fg, default_fg)
+    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :secondary_bg, default_bg)
+    {fg, bg}
   end
 end

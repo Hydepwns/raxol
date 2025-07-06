@@ -7,6 +7,12 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   import Raxol.Test.Integration.Assertions
   import Raxol.Test.TestHelper
 
+  setup do
+    # Start ComponentManager for tests
+    {:ok, _pid} = ComponentManager.start_link()
+    :ok
+  end
+
   # Parent component that manages child components
   defmodule ParentComponent do
     @behaviour Raxol.UI.Components.Base.Component
