@@ -29,6 +29,7 @@ defmodule Raxol.Plugins.Lifecycle do
     with {:ok, plugin, merged_config} <-
            initialize_plugin_with_config(manager, plugin_name, module, config),
          :ok <- check_for_circular_dependency(plugin, manager),
+         :ok <- check_dependencies(plugin, manager),
          {:ok, updated_manager} <-
            update_manager_with_plugin(
              manager,
@@ -213,10 +214,16 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp check_dependencies(plugin, manager) do
+    # Convert list of plugins to map for dependency checking
+    loaded_plugins_map =
+      Core.list_plugins(manager)
+      |> Enum.map(fn plugin -> {plugin.name, plugin} end)
+      |> Enum.into(%{})
+
     DependencyManager.check_dependencies(
       plugin.name,
       plugin,
-      Core.list_plugins(manager),
+      loaded_plugins_map,
       []
     )
   end
@@ -339,8 +346,10 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp get_plugin_id_from_metadata(module) do
+    Code.ensure_loaded(module)
     if function_exported?(module, :get_metadata, 0) do
-      case module.get_metadata() do
+      metadata = module.get_metadata()
+      case metadata do
         %{id: id} when is_atom(id) -> Atom.to_string(id)
         _ -> get_plugin_name(module)
       end
