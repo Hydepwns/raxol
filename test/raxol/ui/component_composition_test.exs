@@ -4,6 +4,22 @@ defmodule Raxol.UI.ComponentCompositionTest do
   alias Raxol.UI.RendererTestHelper, as: Helper
   import Raxol.Test.Visual.Assertions
 
+  setup do
+    # Ensure UserPreferences is started for all tests
+    case Raxol.Core.UserPreferences.start_link(test_mode?: true) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
+
+    # Initialize theme system
+    Raxol.UI.Theming.Theme.init()
+
+    # Initialize accessibility system with default settings
+    Raxol.Core.Accessibility.init()
+
+    :ok
+  end
+
   test "handles basic component composition" do
     child1 = Helper.create_test_text(1, 1, "Child 1")
     child2 = Helper.create_test_text(1, 2, "Child 2")
@@ -37,14 +53,21 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
     parent =
       Helper.create_test_panel(0, 0, 10, 10, [child], %{
-        style: %{background: :blue}
+        style: %{background: :primary}
       })
 
     cells = Renderer.render_to_cells(parent)
 
+    # Debug: Print all cells to see what's being rendered
+    IO.puts("DEBUG: All rendered cells:")
+    Enum.each(cells, fn {x, y, char, fg, bg, _attrs} ->
+      IO.puts("  Cell at (#{x}, #{y}): char='#{char}', fg=#{inspect(fg)}, bg=#{inspect(bg)}")
+    end)
+
     # Child should inherit parent's background
     cell = Helper.get_cell_at(cells, 0, 0)
-    Helper.assert_cell_style(cell, :red, :blue)
+    IO.puts("DEBUG: Cell at (0, 0): #{inspect(cell)}")
+    Helper.assert_cell_style(cell, :red, :primary)
   end
 
   test "handles component overrides" do

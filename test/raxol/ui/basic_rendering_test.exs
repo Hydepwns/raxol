@@ -25,7 +25,7 @@ defmodule Raxol.UI.BasicRenderingTest do
   end
 
   test "handles missing required attributes" do
-    element = Helper.create_test_element(:box, 0, 0)
+    element = Helper.create_test_element(:box, 0, 0, %{width: 1, height: 1})
     cells = Renderer.render_to_cells(element)
 
     assert [

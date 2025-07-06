@@ -617,6 +617,7 @@ defmodule Raxol.Core.Renderer.View do
   Creates a button element.
 
   ## Options
+    * `:id` - Unique identifier for the button
     * `:on_click` - Event handler for click events
     * `:aria_label` - Accessibility label
     * `:aria_description` - Accessibility description
@@ -625,12 +626,13 @@ defmodule Raxol.Core.Renderer.View do
   ## Examples
 
       View.button("Click Me", on_click: {:button_clicked})
-      View.button("Submit", aria_label: "Submit form")
+      View.button("Submit", id: "submit_btn", aria_label: "Submit form")
   """
   def button(text, opts \\ []) do
     %{
       type: :button,
       text: text,
+      id: Keyword.get(opts, :id),
       on_click: Keyword.get(opts, :on_click),
       aria_label: Keyword.get(opts, :aria_label),
       aria_description: Keyword.get(opts, :aria_description),
