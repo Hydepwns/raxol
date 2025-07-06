@@ -117,6 +117,13 @@ defmodule Raxol.Animation.Framework do
 
     StateManager.init(settings)
 
+    # Send preferences_applied message for test synchronization
+    if user_preferences_pid do
+      send(self(), {:preferences_applied, user_preferences_pid})
+    else
+      send(self(), {:preferences_applied})
+    end
+
     :ok
   end
 

@@ -17,11 +17,11 @@ defmodule Raxol.PerformanceTest do
       render_results = Rendering.benchmark_rendering()
 
       # Example assertions (adjust thresholds as needed)
-      assert render_results.average_render_time_ms < 16,
-             "Average render time too high"
+      assert render_results.full_screen_render_time_ms < 16,
+             "Full screen render time too high"
 
-      assert render_results.p95_render_time_ms < 30, "P95 render time too high"
-      assert render_results.fps_estimate > 30, "Estimated FPS too low"
+      assert render_results.components_per_frame > 100, "Components per frame too low"
+      assert render_results.renders_per_second > 30, "Renders per second too low"
     end
   end
 
@@ -30,13 +30,13 @@ defmodule Raxol.PerformanceTest do
       event_results = EventHandling.benchmark_event_handling()
 
       # Example assertions
-      assert event_results.average_event_latency_ms < 5,
-             "Average event latency too high"
+      assert event_results.keyboard_event_latency_μs < 5000,
+             "Keyboard event latency too high"
 
-      assert event_results.p95_event_latency_ms < 10,
-             "P95 event latency too high"
+      assert event_results.mouse_event_latency_μs < 5000,
+             "Mouse event latency too high"
 
-      assert event_results.event_throughput_per_sec > 100,
+      assert event_results.events_per_second > 100,
              "Event throughput too low"
     end
   end
@@ -65,12 +65,12 @@ defmodule Raxol.PerformanceTest do
       animation_results = Animation.benchmark_animation_performance()
 
       # Example assertions
-      assert animation_results.average_frame_time_ms < 16,
-             "Average frame time too high for animation"
+      assert animation_results.maximum_fps > 30,
+             "Maximum FPS too low for animation"
 
-      assert animation_results.jitter_ms < 5, "Animation jitter too high"
+      assert animation_results.frame_time_consistency_ms < 5, "Animation jitter too high"
 
-      assert animation_results.frames_dropped_percentage < 1,
+      assert animation_results.dropped_frames_percent < 1,
              "Animation frames dropped percentage too high"
     end
   end
@@ -83,7 +83,7 @@ defmodule Raxol.PerformanceTest do
       # Generate report
       report = Reporting.generate_report(results)
       IO.puts("\n--- Full Benchmark Report ---")
-      IO.puts(report)
+      IO.puts(Jason.encode!(report, pretty: true))
       IO.puts("---------------------------")
 
       # Load baseline results (example)

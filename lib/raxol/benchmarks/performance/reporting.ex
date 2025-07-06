@@ -118,15 +118,18 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
       IO.puts("\n#{category_name}:")
 
       if map_size(category_results) > 0 do
-        Enum.each(category_results, fn {_metric, {status, message}} ->
-          status_icon =
-            case status do
-              :pass -> "✓"
-              :fail -> "✗"
-              :skip -> "?"
-            end
-
-          IO.puts("  #{status_icon} #{message}")
+        Enum.each(category_results, fn
+          {_metric, %{status: status, message: message}} ->
+            status_icon =
+              case status do
+                :pass -> "✓"
+                :fail -> "✗"
+                :skip -> "?"
+                _ -> "-"
+              end
+            IO.puts("  #{status_icon} #{message}")
+          _ ->
+            IO.puts("  ? Unknown validation result format")
         end)
       else
         IO.puts("  No validation results available")
