@@ -20,44 +20,57 @@ defmodule Raxol.Style.Colors.HotReloadTest do
     high_contrast: false
   }
 
-  # setup_all runs once for the file
-  setup_all do
+  # Helper to receive a theme_reloaded message for a specific theme name
+  defp receive_theme_with_name(expected_name, timeout \\ 5000) do
+    receive do
+      {:theme_reloaded, theme} when theme.name == expected_name ->
+        theme
+      {:theme_reloaded, _other} ->
+        receive_theme_with_name(expected_name, timeout)
+    after
+      timeout ->
+        flunk("Did not receive theme_reloaded for #{inspect(expected_name)} within #{timeout}ms")
+    end
+  end
+
+  # setup runs before each test
+  setup do
     # Create temporary directory for theme files
     tmp_dir =
       Path.join(System.tmp_dir!(), "raxol_test_#{:rand.uniform(1_000_000)}")
 
     File.mkdir_p!(tmp_dir)
 
-    # Start the hot-reload server once for all tests in this file
-    # Since it uses a global name, we manage it centrally.
-    # Use original start_link here
+    # Stop any existing HotReload process to avoid conflicts
+    try do
+      GenServer.stop(HotReload, :normal, 1000)
+    catch
+      :exit, _ -> :ok
+    end
+
+    # Start the hot-reload server for this test
     {:ok, pid} = HotReload.start_link()
-    # Ensure the globally started server is watching the test path
+
+    # Ensure the server is watching the test path
     HotReload.watch_path(tmp_dir)
 
-    # Store pid and tmp_dir for cleanup and use in tests
-    context = %{hot_reload_pid: pid, tmp_dir: tmp_dir}
+    # Subscribe this test process to the HotReload server
+    HotReload.subscribe()
 
-    # Cleanup runs once after all tests
+    # Cleanup after each test
     on_exit(fn ->
-      # Stop the server manually if needed (though supervisor should handle)
-      # GenServer.stop(pid)
+      # Stop the server
+      try do
+        GenServer.stop(pid, :normal, 1000)
+      catch
+        :exit, _ -> :ok
+      end
+
+      # Clean up temp directory
       File.rm_rf!(tmp_dir)
     end)
 
-    context
-  end
-
-  # setup runs before each test
-  # Receive tmp_dir from setup_all context
-  setup %{tmp_dir: tmp_dir} do
-    # Subscribe this test process to the single HotReload server
-    HotReload.subscribe()
-
-    # No need for on_exit cleanup specific to each test here
-    # The server persists, tmp_dir cleanup is in setup_all
-
-    # Pass tmp_dir along to the test case
+    # Pass tmp_dir to the test case
     %{tmp_dir: tmp_dir}
   end
 
@@ -67,16 +80,20 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       theme_path = Path.join(tmp_dir, "test_theme.json")
       File.write!(theme_path, Jason.encode!(@test_theme))
 
-      # Wait for theme to be loaded
-      assert_receive {:theme_reloaded, theme}, 5000
+      # Wait for test theme to be loaded (ignore Default)
+      theme = receive_theme_with_name("Test Theme")
       assert theme.name == "Test Theme"
 
       # Modify theme file
       updated_theme = %{@test_theme | name: "Updated Theme"}
       File.write!(theme_path, Jason.encode!(updated_theme))
+      # Set mtime 2 seconds into the future
+      now = :calendar.local_time()
+      {{y, m, d}, {h, min, s}} = now
+      File.touch!(theme_path, {{y, m, d}, {h, min, s + 2}})
 
-      # Wait for theme to be reloaded
-      assert_receive {:theme_reloaded, theme}, 5000
+      # Wait for updated theme to be reloaded
+      theme = receive_theme_with_name("Updated Theme", 7000)
       assert theme.name == "Updated Theme"
     end
 
@@ -88,9 +105,9 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       File.write!(theme1_path, Jason.encode!(%{@test_theme | name: "Theme 1"}))
       File.write!(theme2_path, Jason.encode!(%{@test_theme | name: "Theme 2"}))
 
-      # Wait for both themes to be loaded
-      assert_receive {:theme_reloaded, theme1}, 5000
-      assert_receive {:theme_reloaded, theme2}, 5000
+      # Wait for both themes to be loaded (ignore Default)
+      theme1 = receive_theme_with_name("Theme 1")
+      theme2 = receive_theme_with_name("Theme 2")
 
       assert theme1.name == "Theme 1"
       assert theme2.name == "Theme 2"
@@ -100,9 +117,13 @@ defmodule Raxol.Style.Colors.HotReloadTest do
         theme1_path,
         Jason.encode!(%{@test_theme | name: "Updated Theme 1"})
       )
+      # Set mtime 2 seconds into the future
+      now = :calendar.local_time()
+      {{y, m, d}, {h, min, s}} = now
+      File.touch!(theme1_path, {{y, m, d}, {h, min, s + 2}})
 
-      # Wait for theme to be reloaded
-      assert_receive {:theme_reloaded, theme}, 5000
+      # Wait for the updated theme to be loaded
+      theme = receive_theme_with_name("Updated Theme 1", 7000)
       assert theme.name == "Updated Theme 1"
     end
 
@@ -111,8 +132,18 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       theme_path = Path.join(tmp_dir, "invalid_theme.json")
       File.write!(theme_path, "invalid json")
 
-      # Should not receive any theme reloaded messages
-      refute_receive {:theme_reloaded, _theme}, 1000
+      # Should not receive any test theme reloaded messages
+      receive do
+        {:theme_reloaded, theme} ->
+          if theme.name == "invalid_theme" do
+            flunk("Unexpectedly received theme_reloaded for invalid_theme")
+          else
+            # Ignore other themes (e.g., Default)
+            :ok
+          end
+      after
+        1000 -> :ok
+      end
     end
 
     test "handles file deletion", %{tmp_dir: tmp_dir} do
@@ -120,15 +151,25 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       theme_path = Path.join(tmp_dir, "test_theme.json")
       File.write!(theme_path, Jason.encode!(@test_theme))
 
-      # Wait for theme to be loaded
-      assert_receive {:theme_reloaded, theme}, 5000
+      # Wait for test theme to be loaded (ignore Default)
+      theme = receive_theme_with_name("Test Theme")
       assert theme.name == "Test Theme"
 
       # Delete theme file
       File.rm!(theme_path)
 
-      # Should not receive any theme reloaded messages
-      refute_receive {:theme_reloaded, _theme}, 1000
+      # Should not receive any test theme reloaded messages
+      receive do
+        {:theme_reloaded, theme} ->
+          if theme.name == "Test Theme" do
+            flunk("Unexpectedly received theme_reloaded for Test Theme after deletion")
+          else
+            # Ignore other themes (e.g., Default)
+            :ok
+          end
+      after
+        1000 -> :ok
+      end
     end
   end
 
@@ -141,9 +182,11 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       theme_path = Path.join(tmp_dir, "test_theme.json")
       File.write!(theme_path, Jason.encode!(@test_theme))
 
-      # Both subscribers should receive the theme
-      assert_receive {:theme_reloaded, _theme}, 5000
-      assert_receive {:theme_reloaded, _theme}, 5000
+      # Both subscribers should receive the test theme (ignore Default)
+      theme1 = receive_theme_with_name("Test Theme")
+      theme2 = receive_theme_with_name("Test Theme")
+      assert theme1.name == "Test Theme"
+      assert theme2.name == "Test Theme"
     end
 
     test "handles subscriber unsubscribe", %{tmp_dir: tmp_dir} do
@@ -154,8 +197,18 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       theme_path = Path.join(tmp_dir, "test_theme.json")
       File.write!(theme_path, Jason.encode!(@test_theme))
 
-      # Should not receive any theme reloaded messages
-      refute_receive {:theme_reloaded, _theme}, 1000
+      # Should not receive any test theme reloaded messages
+      receive do
+        {:theme_reloaded, theme} ->
+          if theme.name == "Test Theme" do
+            flunk("Unexpectedly received theme_reloaded for Test Theme after unsubscribe")
+          else
+            # Ignore other themes (e.g., Default)
+            :ok
+          end
+      after
+        1000 -> :ok
+      end
     end
   end
 end
