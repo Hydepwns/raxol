@@ -26,9 +26,9 @@ defmodule Raxol.Terminal.Integration do
   """
   def init(opts \\ %{}) do
     # Initialize components
-    {:ok, buffer_manager} = BufferManager.new(opts)
-    {:ok, cursor_manager} = CursorManager.new(opts)
-    {:ok, renderer} = IntegrationRenderer.new(opts)
+    buffer_manager = BufferManager.new()
+    cursor_manager = CursorManager.new(opts)
+    renderer = IntegrationRenderer.new(opts)
     scroll_buffer = Scroll.new(1000)
     command_history = CommandHistoryManager.new(opts)
 

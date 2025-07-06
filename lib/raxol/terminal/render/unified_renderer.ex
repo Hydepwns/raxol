@@ -78,8 +78,13 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   Cleans up resources.
   """
   @spec cleanup(t()) :: :ok
-  def cleanup(state) do
+  def cleanup(%__MODULE__{} = state) do
     GenServer.call(__MODULE__, {:cleanup, state})
+  end
+
+  def cleanup(_other) do
+    # Handle cases where a plain map or other type is passed
+    :ok
   end
 
   @doc """
@@ -127,7 +132,10 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   """
   @spec shutdown_terminal() :: :ok
   def shutdown_terminal do
-    GenServer.call(__MODULE__, :shutdown_terminal)
+    case Process.whereis(__MODULE__) do
+      nil -> :ok
+      _ -> GenServer.call(__MODULE__, :shutdown_terminal)
+    end
   end
 
   @doc """

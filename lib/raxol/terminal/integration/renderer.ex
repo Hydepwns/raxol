@@ -386,7 +386,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
 
   # Private helper functions
 
-  defp build_initial_config(opts) do
+  defp build_initial_config(opts) when is_list(opts) do
     %{
       width: Keyword.get(opts, :width, 80),
       height: Keyword.get(opts, :height, 24),
@@ -396,6 +396,31 @@ defmodule Raxol.Terminal.Integration.Renderer do
         Keyword.get(opts, :theme, %{foreground: :white, background: :black}),
       fps: Keyword.get(opts, :fps, 60),
       font_settings: Keyword.get(opts, :font_settings, %{size: 12})
+    }
+  end
+
+  defp build_initial_config(opts) when is_map(opts) do
+    %{
+      width: Map.get(opts, :width, 80),
+      height: Map.get(opts, :height, 24),
+      cursor_visible: Map.get(opts, :cursor_visible, true),
+      title: Map.get(opts, :title, "Raxol Terminal"),
+      theme:
+        Map.get(opts, :theme, %{foreground: :white, background: :black}),
+      fps: Map.get(opts, :fps, 60),
+      font_settings: Map.get(opts, :font_settings, %{size: 12})
+    }
+  end
+
+  defp build_initial_config(_) do
+    %{
+      width: 80,
+      height: 24,
+      cursor_visible: true,
+      title: "Raxol Terminal",
+      theme: %{foreground: :white, background: :black},
+      fps: 60,
+      font_settings: %{size: 12}
     }
   end
 

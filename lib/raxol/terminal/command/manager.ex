@@ -45,8 +45,22 @@ defmodule Raxol.Terminal.Command.Manager do
   Creates a new command manager with options.
   """
   @spec new(keyword()) :: Command.t()
-  def new(opts) do
+  def new(opts) when is_list(opts) do
     max_history = Keyword.get(opts, :max_command_history, 100)
+
+    %Command{
+      history: [],
+      current: nil,
+      max_history: max_history,
+      command_buffer: "",
+      history_index: -1,
+      last_key_event: nil,
+      command_state: nil
+    }
+  end
+
+  def new(opts) when is_map(opts) do
+    max_history = Map.get(opts, :max_command_history, 100)
 
     %Command{
       history: [],

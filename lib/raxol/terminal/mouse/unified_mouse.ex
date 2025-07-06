@@ -175,9 +175,10 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
       id: mouse_id,
       config: Map.merge(default_mouse_config(), config),
       position: {0, 0},
-      buttons: [],
+      button_state: %{},
       modifiers: [],
-      created_at: System.system_time(:millisecond)
+      created_at: System.system_time(:millisecond),
+      last_update: System.system_time(:millisecond)
     }
 
     new_state = %{
@@ -276,7 +277,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   def handle_call({:get_mouse_button_state, mouse_id}, _from, state) do
     case Map.get(state.mice, mouse_id) do
       nil -> {:reply, {:error, :mouse_not_found}, state}
-      mouse_state -> {:reply, {:ok, mouse_state.buttons}, state}
+      mouse_state -> {:reply, {:ok, mouse_state.button_state}, state}
     end
   end
 
@@ -323,11 +324,11 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     case event do
       :press ->
         # Only update state if button state actually changes
-        if button not in mouse_state.buttons do
+        if not Map.has_key?(mouse_state.button_state, button) do
           %{
             mouse_state
             | position: position,
-              buttons: [button | mouse_state.buttons],
+              button_state: Map.put(mouse_state.button_state, button, :pressed),
               modifiers: modifiers,
               last_update: System.system_time(:millisecond)
           }
@@ -337,11 +338,11 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
 
       :release ->
         # Only update state if button state actually changes
-        if button in mouse_state.buttons do
+        if Map.has_key?(mouse_state.button_state, button) do
           %{
             mouse_state
             | position: position,
-              buttons: List.delete(mouse_state.buttons, button),
+              button_state: Map.delete(mouse_state.button_state, button),
               modifiers: modifiers,
               last_update: System.system_time(:millisecond)
           }
@@ -398,7 +399,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
 
   defp default_mouse_config do
     %{
-      tracking: true,
+      tracking: :all,
       reporting: true,
       sgr_mode: true,
       urxvt_mode: false,

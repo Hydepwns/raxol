@@ -229,7 +229,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     Enum.reduce(buffer, 0, fn line, acc ->
       line_size =
         Enum.reduce(line, 0, fn cell, cell_acc ->
-          cell_acc + byte_size(cell.content)
+          cell_acc + byte_size(cell.char)
         end)
 
       acc + line_size
@@ -240,7 +240,7 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     # Simple compression: remove empty cells and combine adjacent identical cells
     compressed =
       Enum.map(buffer, fn line ->
-        Enum.chunk_by(line, &(&1.content == ""))
+        Enum.chunk_by(line, &(&1.char == ""))
         |> Enum.map(fn chunk ->
           case chunk do
             [cell | _] -> cell
