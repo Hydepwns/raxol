@@ -53,83 +53,32 @@ defmodule Raxol.UI.Renderer do
 
   # Clause for list of elements
   def render_to_cells(elements, theme) when list?(elements) do
-    Enum.flat_map(elements, &render_element(&1, theme))
+    Enum.flat_map(elements, &render_element(&1, theme, %{}))
   end
 
   # Clause for single element
   def render_to_cells(element, theme) when map?(element) do
-    render_element(element, theme)
+    render_element(element, theme, %{})
   end
 
   # --- Private Element Rendering Functions ---
 
-  defp render_element(nil, _theme) do
+  defp render_element(nil, _theme, _parent_style) do
     # If the element itself is nil, render nothing
     []
   end
 
-  defp render_element(
-         %{type: :text, text: text_content, x: x, y: y} = text_element,
-         theme
-       ) do
-    attrs = Map.get(text_element, :style, %{})
-    render_text(x, y, text_content, attrs, theme)
+  defp render_element(element, theme, parent_style) when map?(element) do
+    # Check visibility first
+    if Map.get(element, :visible, true) do
+      render_visible_element(element, theme, parent_style)
+    else
+      # Element is not visible, render nothing
+      []
+    end
   end
 
-  defp render_element(
-         %{type: :box, x: x, y: y, width: w, height: h} = box_element,
-         theme
-       ) do
-    attrs = Map.get(box_element, :style, %{})
-    render_box(x, y, w, h, attrs, theme)
-  end
-
-  defp render_element(%{type: :table, x: x, y: y} = table_element, theme) do
-    width = Map.get(table_element, :width, 80)
-    height = Map.get(table_element, :height, 24)
-    attrs = Map.get(table_element, :attrs, %{})
-
-    headers =
-      Map.get(table_element, :headers) ||
-        Map.get(attrs, :headers) ||
-        Map.get(attrs, :_headers, [])
-
-    data =
-      Map.get(table_element, :data) ||
-        Map.get(attrs, :data) ||
-        Map.get(attrs, :_data, [])
-
-    col_widths =
-      Map.get(table_element, :col_widths) ||
-        Map.get(attrs, :col_widths) ||
-        Map.get(attrs, :_col_widths, [])
-
-    component_type = Map.get(attrs, :_component_type, :table)
-    style = Map.get(attrs, :style, %{})
-
-    table_attrs = %{
-      _headers: headers,
-      _data: data,
-      _col_widths: col_widths,
-      _component_type: component_type,
-      style: style
-    }
-
-    render_table(x, y, width, height, table_attrs, theme)
-  end
-
-  defp render_element(
-         %{type: :panel, x: x, y: y, width: w, height: h} = panel_element,
-         theme
-       ) do
-    attrs = Map.get(panel_element, :style, %{})
-    panel_box_cells = render_box(x, y, w, h, attrs, theme)
-    children = Map.get(panel_element, :children)
-    children_cells = Enum.flat_map(children || [], &render_element(&1, theme))
-    panel_box_cells ++ children_cells
-  end
-
-  defp render_element(element, _theme) when map?(element) do
+  defp render_visible_element(element, _theme) when map?(element) do
     Raxol.Core.Runtime.Log.warning(
       "[#{__MODULE__}] Unknown or unhandled element type for rendering: #{inspect(Map.get(element, :type))} - Element: #{inspect(element)}"
     )
@@ -145,12 +94,16 @@ defmodule Raxol.UI.Renderer do
     # Resolve styles using component-specific theme styles if available
     {fg, bg, style_attrs} = resolve_styles(attrs, component_type, theme)
 
+    # Check if clipping is enabled
+    clip_bounds = Map.get(attrs, :clip_bounds)
+
     text
     |> String.graphemes()
     |> Enum.with_index()
     |> Enum.map(fn {char, index} ->
       {x + index, y, char, fg, bg, style_attrs}
     end)
+    |> clip_cells_to_bounds(clip_bounds)
   end
 
   defp render_text(_x, _y, text, _attrs, _theme) do
@@ -162,15 +115,48 @@ defmodule Raxol.UI.Renderer do
   end
 
   defp render_box(x, y, w, h, attrs, theme) do
-    {fg, bg, style_attrs} = resolve_box_styles(attrs, theme)
-    border_style = get_border_style(attrs, theme)
+    resolve_color = fn
+      color when is_atom(color) ->
+        Raxol.Core.ColorSystem.get(theme.id, color) || color
 
-    background_cells = render_box_background(x, y, w, h, fg, bg, style_attrs)
+      color ->
+        color
+    end
 
-    border_cells =
-      render_box_border(x, y, w, h, border_style, fg, bg, style_attrs)
+    # Use the merged style's :background or :bg if present, otherwise inherit from attrs
+    bg =
+      cond do
+        Map.has_key?(attrs, :background) and
+            not is_nil(Map.get(attrs, :background)) ->
+          resolve_color.(Map.get(attrs, :background))
 
-    background_cells ++ border_cells
+        Map.has_key?(attrs, :bg) and not is_nil(Map.get(attrs, :bg)) ->
+          resolve_color.(Map.get(attrs, :bg))
+
+        # If merged style has a background (even inherited), use it
+        Map.has_key?(attrs, :background) ->
+          resolve_color.(Map.get(attrs, :background))
+
+        true ->
+          Raxol.Core.ColorSystem.get(theme.id, :background) || @default_bg
+      end
+
+    fg =
+      cond do
+        Map.has_key?(attrs, :foreground) and
+            not is_nil(Map.get(attrs, :foreground)) ->
+          resolve_color.(Map.get(attrs, :foreground))
+
+        Map.has_key?(attrs, :fg) and not is_nil(Map.get(attrs, :fg)) ->
+          resolve_color.(Map.get(attrs, :fg))
+
+        true ->
+          Raxol.Core.ColorSystem.get(theme.id, :foreground) || @default_fg
+      end
+
+    for dx <- 0..(w - 1), dy <- 0..(h - 1) do
+      {x + dx, y + dy, " ", fg, bg, []}
+    end
   end
 
   defp resolve_box_styles(attrs, theme) do
@@ -602,19 +588,38 @@ defmodule Raxol.UI.Renderer do
     end
   end
 
-  defp resolve_fg_color(attrs, component_styles, theme) do
-    cond do
-      Map.has_key?(attrs, :fg) -> Map.get(attrs, :fg)
-      Map.has_key?(component_styles, :fg) -> Map.get(component_styles, :fg)
-      true -> Raxol.Core.ColorSystem.get(theme.id, :foreground) || @default_fg
-    end
+  defp resolve_fg_color(attrs, _component_styles, theme) do
+    result =
+      cond do
+        Map.has_key?(attrs, :fg) and not is_nil(Map.get(attrs, :fg)) ->
+          Map.get(attrs, :fg)
+
+        Map.has_key?(attrs, :foreground) and
+            not is_nil(Map.get(attrs, :foreground)) ->
+          Map.get(attrs, :foreground)
+
+        true ->
+          Raxol.Core.ColorSystem.get(theme.id, :foreground) || @default_fg
+      end
+
+    # Debug logging
+    IO.puts("DEBUG: resolve_fg_color attrs=#{inspect(attrs)}")
+    IO.puts("DEBUG: resolve_fg_color result=#{inspect(result)}")
+
+    result
   end
 
-  defp resolve_bg_color(attrs, component_styles, theme) do
+  defp resolve_bg_color(attrs, _component_styles, theme) do
     cond do
-      Map.has_key?(attrs, :bg) -> Map.get(attrs, :bg)
-      Map.has_key?(component_styles, :bg) -> Map.get(component_styles, :bg)
-      true -> Raxol.Core.ColorSystem.get(theme.id, :background) || @default_bg
+      Map.has_key?(attrs, :bg) and not is_nil(Map.get(attrs, :bg)) ->
+        Map.get(attrs, :bg)
+
+      Map.has_key?(attrs, :background) and
+          not is_nil(Map.get(attrs, :background)) ->
+        Map.get(attrs, :background)
+
+      true ->
+        Raxol.Core.ColorSystem.get(theme.id, :background) || @default_bg
     end
   end
 
@@ -641,5 +646,168 @@ defmodule Raxol.UI.Renderer do
     bg_color = Map.get(attrs, :bg, @default_bg)
     style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
     {fg_color, bg_color, style_attrs}
+  end
+
+  # Helper function to flatten merged styles
+  defp flatten_merged_style(parent_element, child_element) do
+    parent_style_map = Map.get(parent_element, :style, %{})
+    child_style_map = Map.get(child_element, :style, %{})
+    merged_style_map = Map.merge(parent_style_map, child_style_map)
+    child_other_attrs = Map.drop(child_element, [:style])
+
+    # Inherit background/foreground from child style, then parent top-level, then parent style map
+    fg =
+      Map.get(child_style_map, :foreground) ||
+        Map.get(parent_element, :foreground) ||
+        Map.get(parent_style_map, :foreground)
+
+    bg =
+      Map.get(child_style_map, :background) ||
+        Map.get(parent_element, :background) ||
+        Map.get(parent_style_map, :background)
+
+    fg_short =
+      Map.get(child_style_map, :fg) ||
+        Map.get(parent_element, :fg) ||
+        Map.get(parent_style_map, :fg)
+
+    bg_short =
+      Map.get(child_style_map, :bg) ||
+        Map.get(parent_element, :bg) ||
+        Map.get(parent_style_map, :bg)
+
+    promoted_attrs =
+      child_other_attrs
+      |> Map.put_new(:foreground, fg)
+      |> Map.put_new(:background, bg)
+      |> Map.put_new(:fg, fg_short)
+      |> Map.put_new(:bg, bg_short)
+
+    result = Map.merge(promoted_attrs, merged_style_map)
+
+    # Debug logging
+    IO.puts("DEBUG: flatten_merged_style:")
+    IO.puts("  parent_element=#{inspect(parent_element)}")
+    IO.puts("  child_element=#{inspect(child_element)}")
+    IO.puts("  parent_style_map=#{inspect(parent_style_map)}")
+    IO.puts("  child_style_map=#{inspect(child_style_map)}")
+    IO.puts("  merged_style_map=#{inspect(merged_style_map)}")
+    IO.puts("  promoted_attrs=#{inspect(promoted_attrs)}")
+    IO.puts("  result=#{inspect(result)}")
+
+    result
+  end
+
+  # Helper function to put a key-value pair only if the value is not nil
+  defp maybe_put_if_not_nil(map, _key, nil), do: map
+  defp maybe_put_if_not_nil(map, key, value), do: Map.put(map, key, value)
+
+  # Helper function to merge parent and child styles for inheritance
+  defp merge_styles_for_inheritance(parent_style, child_style) do
+    # Extract style maps from both parent and child
+    parent_style_map = Map.get(parent_style, :style, %{})
+    child_style_map = Map.get(child_style, :style, %{})
+
+    # Merge the style maps (child overrides parent)
+    merged_style_map = Map.merge(parent_style_map, child_style_map)
+
+    # Create a complete inherited style that includes both the merged style map
+    # and the promoted keys for proper inheritance
+    inherited_style =
+      %{}
+      |> Map.put(:style, merged_style_map)
+      |> maybe_put_if_not_nil(
+        :foreground,
+        Map.get(merged_style_map, :foreground)
+      )
+      |> maybe_put_if_not_nil(
+        :background,
+        Map.get(merged_style_map, :background)
+      )
+      |> maybe_put_if_not_nil(:fg, Map.get(merged_style_map, :fg))
+      |> maybe_put_if_not_nil(:bg, Map.get(merged_style_map, :bg))
+
+    # Debug logging
+    IO.puts("DEBUG: parent_style=#{inspect(parent_style)}")
+    IO.puts("DEBUG: child_style=#{inspect(child_style)}")
+    IO.puts("DEBUG: merged_style_map=#{inspect(merged_style_map)}")
+    IO.puts("DEBUG: inherited_style=#{inspect(inherited_style)}")
+
+    inherited_style
+  end
+
+  defp render_visible_element(
+         %{type: :panel, x: x, y: y, width: w, height: h} = panel_element,
+         theme,
+         parent_style \\ %{}
+       ) do
+    merged_style = flatten_merged_style(parent_style, panel_element)
+    panel_box_cells = render_box(x, y, w, h, merged_style, theme)
+    children = Map.get(panel_element, :children)
+
+    # Check if clipping is enabled for this panel
+    clip_enabled = Map.get(panel_element, :clip, false)
+    clip_bounds = if clip_enabled, do: {x, y, x + w - 1, y + h - 1}, else: nil
+
+    # Pass the merged style (which includes the panel's style) as parent style to children
+    children_cells =
+      Enum.flat_map(children || [], fn child ->
+        # Pass clip bounds and merged style as parent style to children
+        child_with_clip =
+          if clip_bounds do
+            Map.put(child, :clip_bounds, clip_bounds)
+          else
+            child
+          end
+
+        render_element(child_with_clip, theme, merged_style)
+      end)
+
+    # Merge cells so that children overwrite panel cells at the same coordinates
+    all_cells = merge_cells(panel_box_cells, children_cells)
+    clip_cells_to_bounds(all_cells, clip_bounds)
+  end
+
+  defp render_visible_element(
+         %{type: :box, x: x, y: y, width: w, height: h} = box_element,
+         theme,
+         parent_style
+       ) do
+    merged_style = flatten_merged_style(parent_style, box_element)
+    cells = render_box(x, y, w, h, merged_style, theme)
+    clip_cells_to_bounds(cells, Map.get(box_element, :clip_bounds))
+  end
+
+  defp render_visible_element(
+         %{type: :text, text: text_content, x: x, y: y} = text_element,
+         theme,
+         parent_style
+       ) do
+    merged_style = flatten_merged_style(parent_style, text_element)
+    cells = render_text(x, y, text_content, merged_style, theme)
+    clip_cells_to_bounds(cells, Map.get(text_element, :clip_bounds))
+  end
+
+  defp clip_cells_to_bounds(cells, nil), do: cells
+
+  defp clip_cells_to_bounds(cells, {min_x, min_y, max_x, max_y}) do
+    Enum.filter(cells, fn {x, y, _char, _fg, _bg, _attrs} ->
+      x >= min_x and x <= max_x and y >= min_y and y <= max_y
+    end)
+  end
+
+  # Helper to merge two cell lists, with the second list taking precedence at overlapping coordinates
+  defp merge_cells(base_cells, overlay_cells) do
+    cell_map =
+      Enum.reduce(base_cells, %{}, fn {x, y, c, fg, bg, attrs}, acc ->
+        Map.put(acc, {x, y}, {x, y, c, fg, bg, attrs})
+      end)
+
+    cell_map =
+      Enum.reduce(overlay_cells, cell_map, fn {x, y, c, fg, bg, attrs}, acc ->
+        Map.put(acc, {x, y}, {x, y, c, fg, bg, attrs})
+      end)
+
+    Map.values(cell_map)
   end
 end
