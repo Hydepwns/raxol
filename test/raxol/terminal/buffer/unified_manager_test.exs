@@ -7,8 +7,23 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   alias Raxol.Terminal.Cache.System
 
   setup do
+    # Start the cache system for testing
+    unless Process.whereis(System) do
+      start_supervised!({System, [
+        max_size: 1024 * 1024,
+        default_ttl: 3600,
+        eviction_policy: :lru,
+        namespace_configs: %{
+          buffer: %{max_size: 512 * 1024},
+          animation: %{max_size: 256 * 1024},
+          scroll: %{max_size: 128 * 1024},
+          clipboard: %{max_size: 64 * 1024},
+          general: %{max_size: 20_000}
+        }
+      ]})
+    end
+
     # Start the buffer manager with supervision
-    # Cache.System is already started globally in Terminal.Supervisor
     {:ok, pid} = start_supervised({UnifiedManager, [width: 80, height: 50]})
     # Ensure the buffer is cleared before each test
     {:ok, _} = UnifiedManager.clear(pid)

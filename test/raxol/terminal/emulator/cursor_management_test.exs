@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
   describe "Emulator Cursor Management" do
     test "set_cursor_style delegates to Cursor.Manager", %{emulator: emulator} do
       # Default should be block
-      assert emulator.cursor.style == :block
+      assert Manager.get_style(emulator.cursor) == :block
 
       # Set to line (Assuming set_cursor_style maps :line to a valid atom like :bar or :underline?)
       # Let's assume Emulator.set_cursor_style is not implemented yet or maps :line differently.
@@ -25,30 +25,22 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       # assert emulator.cursor_style == :steady_bar
 
       # Let's test setting Manager style directly if Emulator.set_cursor_style is not the target
-      emulator = %{
-        emulator
-        | cursor: Manager.set_style(emulator.cursor, :underline)
-      }
-
-      assert emulator.cursor.style == :underline
+      emulator = %{emulator | cursor: Manager.set_style(emulator.cursor, :underline)}
+      assert Manager.get_style(emulator.cursor) == :underline
 
       emulator = %{emulator | cursor: Manager.set_style(emulator.cursor, :bar)}
-      assert emulator.cursor.style == :bar
+      assert Manager.get_style(emulator.cursor) == :bar
     end
 
     test ~c"set_cursor_visible delegates to Cursor.Style" do
       emulator = Emulator.new(80, 24)
       # Assuming default is visible
       # Check state directly
-      assert emulator.cursor.state == :visible
-      # Replace with direct update
-      emulator = %{emulator | cursor: %{emulator.cursor | state: :hidden}}
-      # Check state directly
-      assert emulator.cursor.state == :hidden
-      # Replace with direct update
-      emulator = %{emulator | cursor: %{emulator.cursor | state: :visible}}
-      # Check state directly
-      assert emulator.cursor.state == :visible
+      assert Manager.get_state(emulator.cursor) == :visible
+      emulator = %{emulator | cursor: Manager.set_state(emulator.cursor, :hidden)}
+      assert Manager.get_state(emulator.cursor) == :hidden
+      emulator = %{emulator | cursor: Manager.set_state(emulator.cursor, :visible)}
+      assert Manager.get_state(emulator.cursor) == :visible
     end
 
     # DECSC/DECRC tests belong with state stack/ANSI processing, not direct cursor methods.

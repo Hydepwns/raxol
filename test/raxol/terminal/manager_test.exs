@@ -22,10 +22,6 @@ defmodule Raxol.Terminal.ManagerTest do
   end
 
   test "window resize event triggers notify_resized", %{pid: pid} do
-    # Debug: Check the manager's state
-    state = :sys.get_state(pid)
-    IO.inspect(state, label: "Manager State")
-
     event = %Event{
       type: :window,
       data: %{action: :resize, width: 100, height: 40}

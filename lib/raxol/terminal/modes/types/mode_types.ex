@@ -264,7 +264,26 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
   """
   @spec get_all_modes() :: %{integer() => mode()}
   def get_all_modes do
-    Map.merge(@dec_private_modes, @standard_modes)
+    # Create a map that preserves both standard and DEC private modes
+    # even when they share the same code
+    dec_private_with_keys =
+      @dec_private_modes
+      |> Enum.map(fn {code, mode_def} ->
+        # Use a tuple key to distinguish between categories
+        {{code, :dec_private}, mode_def}
+      end)
+      |> Map.new()
+
+    standard_with_keys =
+      @standard_modes
+      |> Enum.map(fn {code, mode_def} ->
+        # Use a tuple key to distinguish between categories
+        {{code, :standard}, mode_def}
+      end)
+      |> Map.new()
+
+    # Merge both maps, preserving all entries
+    Map.merge(dec_private_with_keys, standard_with_keys)
   end
 
   @doc """
