@@ -10,65 +10,89 @@ defmodule Raxol.Plugins.ThemePlugin do
   defstruct [
     :name,
     :version,
+    :description,
     :enabled,
     :config,
-    :current_theme,
+    :dependencies,
     :api_version,
-    :dependencies
+    :current_theme,
+    state: %{}
   ]
 
   alias Raxol.UI.Theming.Theme
 
   @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
-    theme_name = Map.get(config, :theme, :default)
-    current_theme = Theme.get(theme_name) || Theme.default_theme()
+    # Initialize the plugin struct with required fields
+    metadata = get_metadata()
+    current_theme = get_current_theme_from_config(config)
 
-    {:ok,
-     %__MODULE__{
-       name: "theme",
-       version: "0.1.0",
-       enabled: true,
-       config: config,
-       current_theme: current_theme,
-       api_version: get_api_version(),
-       dependencies: get_dependencies()
-     }}
+    plugin_state =
+      struct(
+        __MODULE__,
+        Map.merge(
+          %{
+            name: metadata.name,
+            version: metadata.version,
+            description:
+              "Plugin that manages terminal themes and color schemes.",
+            enabled: true,
+            config: config,
+            dependencies: metadata.dependencies,
+            api_version: get_api_version(),
+            current_theme: current_theme,
+            state: %{}
+          },
+          config
+        )
+      )
+
+    {:ok, plugin_state}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_output(plugin, _output), do: {:ok, plugin}
-
-  @impl Raxol.Plugins.Plugin
-  def handle_mouse(plugin, _event, _emulator_state) do
+  def handle_output(%__MODULE__{} = plugin, _plugin_state, _output) do
+    # This plugin doesn't modify output, just passes it through
     {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(plugin, _width, _height) do
-    {:ok, plugin}
-  end
-
-  @impl Raxol.Plugins.Plugin
-  def handle_input(plugin, input) do
+  def handle_input(%__MODULE__{} = plugin, _plugin_state, input) do
     case input do
       {:command, command} -> handle_theme_command(plugin, command)
-      _ -> plugin
+      _ -> {:ok, plugin}
     end
   end
 
   defp handle_theme_command(plugin, command) do
     case String.slice(command, 0..6//1) do
       "theme: " -> apply_theme(plugin, String.slice(command, 7..-1//1))
-      _ -> plugin
+      _ -> {:ok, plugin}
     end
   end
 
   defp apply_theme(plugin, theme_name) do
     case Theme.get(theme_name) do
-      nil -> plugin
-      theme -> %{plugin | current_theme: theme}
+      nil -> {:ok, plugin}
+      theme -> {:ok, %{plugin | current_theme: theme}}
     end
+  end
+
+  @impl Raxol.Plugins.Plugin
+  def handle_mouse(
+        %__MODULE__{} = plugin,
+        _plugin_state,
+        _event,
+        _emulator_state
+      ) do
+    # This plugin doesn't handle mouse events
+    {:ok, plugin}
+  end
+
+  @impl Raxol.Plugins.Plugin
+  def handle_resize(%__MODULE__{} = plugin, _plugin_state, _width, _height) do
+    # This plugin doesn't need to react to resize
+    {:ok, plugin}
   end
 
   def get_name(plugin), do: plugin.name
@@ -89,7 +113,10 @@ defmodule Raxol.Plugins.ThemePlugin do
   Changes the current theme to the specified theme name.
   """
   def change_theme(plugin, theme_name) do
-    case Theme.get(theme_name) do
+    # Check if the theme actually exists in the application environment
+    current_themes = Application.get_env(:raxol, :themes, %{})
+
+    case Map.get(current_themes, theme_name) do
       nil -> {:error, "Theme \"#{theme_name}\" not found"}
       theme -> {:ok, %{plugin | current_theme: theme}}
     end
@@ -132,6 +159,29 @@ defmodule Raxol.Plugins.ThemePlugin do
       Theme.register(theme_to_register)
     else
       {:error, :invalid_theme_input_for_registration}
+    end
+  end
+
+  @doc """
+  Returns metadata for the plugin.
+  """
+  def get_metadata do
+    %{
+      name: "theme",
+      version: "0.1.0",
+      dependencies: []
+    }
+  end
+
+  defp get_current_theme_from_config(config) do
+    theme_name = Map.get(config, :theme, :default)
+
+    if theme_name == :default do
+      # Always use the default theme for consistency
+      Theme.default_theme()
+    else
+      # For specific themes, try to get them, fallback to default
+      Theme.get(theme_name) || Theme.default_theme()
     end
   end
 end

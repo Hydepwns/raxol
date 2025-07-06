@@ -21,7 +21,7 @@ defmodule Raxol.Plugins.Manager.Core do
           api_version: String.t(),
           loaded_plugins: %{String.t() => Plugin.t()},
           config: map(),
-          load_order: [atom()]
+          load_order: [String.t()]
         }
 
   defstruct [
@@ -30,7 +30,7 @@ defmodule Raxol.Plugins.Manager.Core do
     :plugin_config,
     :metadata,
     :event_handler,
-    api_version: "1.0.0",
+    api_version: "1.0",
     loaded_plugins: %{},
     config: %{},
     load_order: []
@@ -48,7 +48,7 @@ defmodule Raxol.Plugins.Manager.Core do
       plugin_config: plugin_config,
       metadata: %{},
       event_handler: nil,
-      api_version: "1.0.0",
+      api_version: "1.0",
       loaded_plugins: %{},
       config: plugin_config
     }
@@ -67,7 +67,44 @@ defmodule Raxol.Plugins.Manager.Core do
   Gets a plugin by name.
   """
   def get_plugin(%__MODULE__{} = manager, name) when binary?(name) do
-    Map.get(manager.plugins, name)
+    plugin_key = normalize_plugin_key(name)
+    Map.get(manager.plugins, plugin_key)
+  end
+
+  @doc """
+  Gets a plugin's state by name.
+  """
+  def get_plugin_state(%__MODULE__{} = manager, name) when binary?(name) do
+    plugin_key = normalize_plugin_key(name)
+    Map.get(manager.plugin_states, plugin_key)
+  end
+
+  @doc """
+  Sets a plugin's state by name.
+  """
+  def set_plugin_state(%__MODULE__{} = manager, name, state)
+      when binary?(name) do
+    plugin_key = normalize_plugin_key(name)
+
+    %{
+      manager
+      | plugin_states: Map.put(manager.plugin_states, plugin_key, state)
+    }
+  end
+
+  @doc """
+  Updates a plugin's state using a function.
+  """
+  def update_plugin_state(%__MODULE__{} = manager, name, update_fun)
+      when binary?(name) and function?(update_fun, 1) do
+    plugin_key = normalize_plugin_key(name)
+    current_state = Map.get(manager.plugin_states, plugin_key, %{})
+    new_state = update_fun.(current_state)
+
+    %{
+      manager
+      | plugin_states: Map.put(manager.plugin_states, plugin_key, new_state)
+    }
   end
 
   @doc """
@@ -122,4 +159,34 @@ defmodule Raxol.Plugins.Manager.Core do
       when binary?(plugin_name) do
     Raxol.Plugins.Lifecycle.unload_plugin(manager, plugin_name)
   end
+
+  @doc """
+  Enables a plugin by name.
+  Delegates to Raxol.Plugins.Lifecycle.enable_plugin/2.
+  """
+  def enable_plugin(%__MODULE__{} = manager, plugin_name)
+      when binary?(plugin_name) do
+    Raxol.Plugins.Lifecycle.enable_plugin(manager, plugin_name)
+  end
+
+  @doc """
+  Disables a plugin by name.
+  Delegates to Raxol.Plugins.Lifecycle.disable_plugin/2.
+  """
+  def disable_plugin(%__MODULE__{} = manager, plugin_name)
+      when binary?(plugin_name) do
+    Raxol.Plugins.Lifecycle.disable_plugin(manager, plugin_name)
+  end
+
+  @doc """
+  Loads multiple plugins in the correct dependency order.
+  Delegates to Raxol.Plugins.Lifecycle.load_plugins/2.
+  """
+  def load_plugins(%__MODULE__{} = manager, modules) when list?(modules) do
+    Raxol.Plugins.Lifecycle.load_plugins(manager, modules)
+  end
+
+  # Helper to normalize plugin keys to strings
+  defp normalize_plugin_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp normalize_plugin_key(key) when is_binary(key), do: key
 end

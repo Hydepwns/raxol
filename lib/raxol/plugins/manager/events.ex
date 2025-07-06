@@ -203,13 +203,14 @@ defmodule Raxol.Plugins.Manager.Events do
   """
   def get_plugin(%Core{} = manager, plugin_name) when binary?(plugin_name) do
     plugin_key = normalize_plugin_key(plugin_name)
+
     case Map.get(manager.plugins, plugin_key) do
-      nil -> {:error, :not_found}
+      nil -> {:error, "Plugin #{plugin_name} not found"}
       plugin -> {:ok, plugin}
     end
   end
 
-  # Helper to normalize plugin keys to atoms
-  defp normalize_plugin_key(key) when is_atom(key), do: key
-  defp normalize_plugin_key(key) when is_binary(key), do: String.to_atom(key)
+  # Helper to normalize plugin keys to strings
+  defp normalize_plugin_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp normalize_plugin_key(key) when is_binary(key), do: key
 end
