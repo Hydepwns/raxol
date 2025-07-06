@@ -50,7 +50,7 @@ defmodule Raxol.Test.BufferHelper do
 
     %{
       manager: manager,
-      buffer: buffer,
+      buffer: manager,  # Return the manager PID instead of the buffer struct
       metrics: metrics_state
     }
   end
@@ -114,7 +114,10 @@ defmodule Raxol.Test.BufferHelper do
       :ok
   """
   def write_test_data(manager, data, opts \\ []) do
-    Raxol.Terminal.Buffer.Manager.write(manager, data, opts)
+    case Raxol.Terminal.Buffer.Manager.write(manager, data, opts) do
+      {:ok, result} -> {:ok, result}
+      result -> {:ok, result}
+    end
   end
 
   @doc """
@@ -178,6 +181,15 @@ defmodule Raxol.Test.BufferHelper do
   """
   def perform_test_operation(manager, operation, opts \\ []) do
     case operation do
+      :write ->
+        data =
+          case opts do
+            data when is_binary(data) -> data
+            opts when is_list(opts) -> Keyword.get(opts, :data, "")
+            _ -> ""
+          end
+        Raxol.Terminal.Buffer.Manager.write(manager, data, [])
+
       :clear ->
         Raxol.Terminal.Buffer.Manager.clear_damage(manager)
 

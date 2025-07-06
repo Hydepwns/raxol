@@ -14,7 +14,13 @@ defmodule Raxol.ColorSystemTest do
     local_user_prefs_name = __MODULE__.UserPreferences
     user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
-    {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
+    # Check if UserPreferences is already started
+    case start_supervised({UserPreferences, user_prefs_opts}) do
+      {:ok, _pid} ->
+        :ok
+      {:error, {:already_started, _pid}} ->
+        :ok
+    end
 
     # Reset relevant prefs before each test
     UserPreferences.set(
@@ -92,7 +98,7 @@ defmodule Raxol.ColorSystemTest do
       Process.put(:accessibility_announcements, [])
 
       # Set the theme preference
-      UserPreferences.set(:theme, :dark)
+      UserPreferences.set(:theme, :dark, __MODULE__.UserPreferences)
 
       # Manually apply the theme to trigger the event handler -> announce
       ColorSystem.apply_theme(:dark)
@@ -110,10 +116,10 @@ defmodule Raxol.ColorSystemTest do
 
     test "maintains user color preferences" do
       # Set a user preference for accent color
-      UserPreferences.set(:accent_color, "#FF5722")
+      UserPreferences.set(:accent_color, "#FF5722", __MODULE__.UserPreferences)
 
       # Save preferences
-      UserPreferences.save!()
+      UserPreferences.save!(__MODULE__.UserPreferences)
 
       # Reset preferences to defaults
       Process.put(:user_preferences, %{})
@@ -124,7 +130,7 @@ defmodule Raxol.ColorSystemTest do
       # Verify preference was maintained
       # assert UserPreferences.get([:theme, :accent_color]) == "#FF5722"
       # Fixed path
-      assert UserPreferences.get(:accent_color) == "#FF5722"
+      assert UserPreferences.get(:accent_color, __MODULE__.UserPreferences) == "#FF5722"
     end
 
     test "generates accessible color scales" do
@@ -223,10 +229,10 @@ defmodule Raxol.ColorSystemTest do
 
     test "color system respects reduced motion settings" do
       # Set reduced motion through user preferences
-      UserPreferences.set("accessibility.reduced_motion", true)
+      UserPreferences.set("accessibility.reduced_motion", true, __MODULE__.UserPreferences)
 
       # Re-initialize Framework to pick up the preference
-      Framework.init()
+      Framework.init(%{}, __MODULE__.UserPreferences)
 
       # Get the setting directly from the process dictionary
       settings = Process.get(:animation_framework_settings, %{})
@@ -236,8 +242,8 @@ defmodule Raxol.ColorSystemTest do
       assert reduced_motion_enabled == true
 
       # Restore previous state (set pref to false and re-init)
-      UserPreferences.set("accessibility.reduced_motion", false)
-      Framework.init()
+      UserPreferences.set("accessibility.reduced_motion", false, __MODULE__.UserPreferences)
+      Framework.init(%{}, __MODULE__.UserPreferences)
       settings_after = Process.get(:animation_framework_settings, %{})
       refute Map.get(settings_after, :reduced_motion, false)
     end

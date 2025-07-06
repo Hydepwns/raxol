@@ -19,43 +19,59 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def setup_metrics_test(opts \\ []) do
     # Start metrics collector
-    {:ok, collector} =
-      Raxol.Core.Metrics.UnifiedCollector.start_link(
+    collector =
+      case Raxol.Core.Metrics.UnifiedCollector.start_link(
         Keyword.get(opts, :collector_opts,
           retention_period: :timer.minutes(5),
           max_samples: 100,
           flush_interval: :timer.seconds(1),
           cloud_enabled: false
         )
-      )
+      ) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+        {:error, reason} -> raise "Failed to start UnifiedCollector: #{inspect(reason)}"
+      end
 
     # Start metrics aggregator
-    {:ok, aggregator} =
-      Raxol.Core.Metrics.Aggregator.start_link(
+    aggregator =
+      case Raxol.Core.Metrics.Aggregator.start_link(
         Keyword.get(opts, :aggregator_opts,
           update_interval: :timer.seconds(1),
           max_rules: 10
         )
-      )
+      ) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+        {:error, reason} -> raise "Failed to start Aggregator: #{inspect(reason)}"
+      end
 
     # Start metrics visualizer
-    {:ok, visualizer} =
-      Raxol.Core.Metrics.Visualizer.start_link(
+    visualizer =
+      case Raxol.Core.Metrics.Visualizer.start_link(
         Keyword.get(opts, :visualizer_opts,
           max_charts: 10,
           default_time_range: :timer.minutes(5)
         )
-      )
+      ) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+        {:error, reason} -> raise "Failed to start Visualizer: #{inspect(reason)}"
+      end
 
     # Start alert manager
-    {:ok, alert_manager} =
-      Raxol.Core.Metrics.AlertManager.start_link(
+    alert_manager =
+      case Raxol.Core.Metrics.AlertManager.start_link(
         Keyword.get(opts, :alert_manager_opts,
           check_interval: :timer.seconds(1),
           max_rules: 10,
           default_cooldown: :timer.seconds(5)
         )
-      )
+      ) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+        {:error, reason} -> raise "Failed to start AlertManager: #{inspect(reason)}"
+      end
 
     %{
       collector: collector,
@@ -72,10 +88,21 @@ defmodule Raxol.Test.MetricsHelper do
     * `state` - The test state returned by `setup_metrics_test/1`
   """
   def cleanup_metrics_test(state) do
-    Raxol.Core.Metrics.UnifiedCollector.stop(state.collector)
-    Raxol.Core.Metrics.Aggregator.stop(state.aggregator)
-    Raxol.Core.Metrics.Visualizer.stop(state.visualizer)
-    Raxol.Core.Metrics.AlertManager.stop(state.alert_manager)
+    if Process.alive?(state.collector) do
+      Raxol.Core.Metrics.UnifiedCollector.stop(state.collector)
+    end
+
+    if Process.alive?(state.aggregator) do
+      Raxol.Core.Metrics.Aggregator.stop(state.aggregator)
+    end
+
+    if Process.alive?(state.visualizer) do
+      Raxol.Core.Metrics.Visualizer.stop(state.visualizer)
+    end
+
+    if Process.alive?(state.alert_manager) do
+      Raxol.Core.Metrics.AlertManager.stop(state.alert_manager)
+    end
   end
 
   @doc """
@@ -119,6 +146,9 @@ defmodule Raxol.Test.MetricsHelper do
 
       {:ok, %{value: actual_value}} ->
         {:error, {:unexpected_value, actual_value}}
+
+      {:ok, []} ->
+        {:error, :metric_not_found}
 
       {:error, reason} ->
         {:error, reason}
@@ -424,10 +454,18 @@ defmodule Raxol.Test.MetricsHelper do
       ...> ])
       :ok
   """
-  def verify_metrics(_collector, expected_metrics) do
-    Enum.reduce_while(expected_metrics, :ok, fn {name, type, expected_value},
-                                                _acc ->
+  def verify_metrics(_collector, expected_metrics) when is_list(expected_metrics) do
+    Enum.reduce_while(expected_metrics, :ok, fn {name, type, expected_value}, _acc ->
       case verify_metric(name, type, expected_value) do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, {name, reason}}}
+      end
+    end)
+  end
+
+  def verify_metrics(_collector, expected_metrics) when is_map(expected_metrics) do
+    Enum.reduce_while(expected_metrics, :ok, fn {name, expected_value}, _acc ->
+      case verify_metric(name, :custom, expected_value) do
         :ok -> {:cont, :ok}
         {:error, reason} -> {:halt, {:error, {name, reason}}}
       end

@@ -157,7 +157,6 @@ defmodule RaxolWeb.TerminalChannelTest do
           font_settings: %{}
         }
       end)
-      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
 
       assert {:ok, _, updated_socket} =
                socket |> subscribe_and_join(TerminalChannel, topic)
@@ -184,7 +183,6 @@ defmodule RaxolWeb.TerminalChannelTest do
           font_settings: %{}
         }
       end)
-      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
 
       socket = socket(UserSocket, "user_socket:fail", %{user_id: 2})
 
@@ -246,8 +244,6 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {0, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
-      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
-
       flush_mailbox()
 
       {:reply, :ok, _socket_after_ctrl_c} =
@@ -302,8 +298,6 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {10, 5} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
-      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
-
       flush_mailbox()
 
       {:reply, :ok, _socket_after_theme} =
@@ -326,8 +320,6 @@ defmodule RaxolWeb.TerminalChannelTest do
       EmulatorMock
       |> expect(:get_cursor_position, fn _ -> {0, 23} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
-
-      expect(RendererMock, :render, fn _ -> "<html>test output</html>" end)
 
       flush_mailbox()
 

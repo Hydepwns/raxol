@@ -102,7 +102,11 @@ defmodule Raxol.Test.RendererHelper do
       :ok
   """
   def render_test_content(renderer, buffer, opts \\ []) do
-    Raxol.Terminal.Renderer.render(renderer, buffer, opts)
+    if is_nil(buffer) do
+      {:error, :invalid_buffer}
+    else
+      Raxol.Terminal.Renderer.render(renderer, buffer, opts)
+    end
   end
 
   @doc """

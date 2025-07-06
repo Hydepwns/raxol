@@ -84,15 +84,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
                )
 
       # Wait for theme change event
-      assert_receive {:theme_changed, %{high_contrast: true}}, 1000
+      assert_receive {:event, {:theme_changed, %{high_contrast: true}}}, 1000
 
       # Get color scheme
       scheme = ThemeIntegration.get_color_scheme()
       assert scheme != nil
 
       # Verify high contrast colors
-      assert scheme.background == :black
-      assert scheme.foreground == :white
+      assert scheme.bg == :black
+      assert scheme.fg == :white
 
       # Cleanup subscription
       EventManager.unsubscribe(ref)
@@ -109,15 +109,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
                )
 
       # Wait for theme change event
-      assert_receive {:theme_changed, %{high_contrast: false}}, 1000
+      assert_receive {:event, {:theme_changed, %{high_contrast: false}}}, 1000
 
       # Get color scheme
       scheme = ThemeIntegration.get_color_scheme()
       assert scheme != nil
 
       # Verify standard colors
-      assert scheme.background == {:rgb, 30, 30, 30}
-      assert scheme.foreground == {:rgb, 220, 220, 220}
+      assert scheme.bg == {:rgb, 30, 30, 30}
+      assert scheme.fg == {:rgb, 220, 220, 220}
 
       # Cleanup subscription
       EventManager.unsubscribe(ref)
@@ -136,7 +136,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
                )
 
       # Wait for theme change event
-      assert_receive {:theme_changed, %{reduced_motion: true}}, 1000
+      assert_receive {:event, {:theme_changed, %{reduced_motion: true}}}, 1000
 
       # Verify active variant
       assert ThemeIntegration.get_active_variant() == :reduced_motion
@@ -156,7 +156,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
                )
 
       # Wait for theme change event
-      assert_receive {:theme_changed, %{reduced_motion: false}}, 1000
+      assert_receive {:event, {:theme_changed, %{reduced_motion: false}}}, 1000
 
       # Verify active variant
       assert ThemeIntegration.get_active_variant() == :standard
@@ -178,7 +178,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
                )
 
       # Wait for theme change event
-      assert_receive {:theme_changed, %{large_text: true}}, 1000
+      assert_receive {:event, {:theme_changed, %{large_text: true}}}, 1000
 
       # Verify text scale
       assert ThemeIntegration.get_text_scale() == 1.5
@@ -198,7 +198,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
                )
 
       # Wait for theme change event
-      assert_receive {:theme_changed, %{large_text: false}}, 1000
+      assert_receive {:event, {:theme_changed, %{large_text: false}}}, 1000
 
       # Verify text scale
       assert ThemeIntegration.get_text_scale() == 1.0
@@ -222,9 +222,9 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
                )
 
       # Wait for theme change events
-      assert_receive {:theme_changed, %{high_contrast: true}}, 1000
-      assert_receive {:theme_changed, %{reduced_motion: true}}, 1000
-      assert_receive {:theme_changed, %{large_text: true}}, 1000
+      assert_receive {:event, {:theme_changed, %{high_contrast: true}}}, 1000
+      assert_receive {:event, {:theme_changed, %{reduced_motion: true}}}, 1000
+      assert_receive {:event, {:theme_changed, %{large_text: true}}}, 1000
 
       # Verify active variant
       assert ThemeIntegration.get_active_variant() == :high_contrast
@@ -244,15 +244,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
 
       # Enable high contrast
       assert :ok = ThemeIntegration.apply_settings(high_contrast: true)
-      assert_receive {:theme_changed, %{high_contrast: true}}, 1000
+      assert_receive {:event, {:theme_changed, %{high_contrast: true}}}, 1000
 
       # Get color scheme
       scheme = ThemeIntegration.get_color_scheme()
       assert scheme != nil
 
       # Verify high contrast colors
-      assert scheme.background == :black
-      assert scheme.foreground == :white
+      assert scheme.bg == :black
+      assert scheme.fg == :white
 
       # Cleanup subscription
       EventManager.unsubscribe(ref)
@@ -264,15 +264,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
 
       # Disable high contrast
       assert :ok = ThemeIntegration.apply_settings(high_contrast: false)
-      assert_receive {:theme_changed, %{high_contrast: false}}, 1000
+      assert_receive {:event, {:theme_changed, %{high_contrast: false}}}, 1000
 
       # Get color scheme
       scheme = ThemeIntegration.get_color_scheme()
       assert scheme != nil
 
       # Verify standard colors
-      assert scheme.background == {:rgb, 30, 30, 30}
-      assert scheme.foreground == {:rgb, 220, 220, 220}
+      assert scheme.bg == {:rgb, 30, 30, 30}
+      assert scheme.fg == {:rgb, 220, 220, 220}
 
       # Cleanup subscription
       EventManager.unsubscribe(ref)
@@ -284,15 +284,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
 
       # Apply default settings
       assert :ok = ThemeIntegration.apply_settings([])
-      assert_receive {:theme_changed, %{high_contrast: false}}, 1000
+      assert_receive {:event, {:theme_changed, %{high_contrast: false}}}, 1000
 
       # Get color scheme
       scheme = ThemeIntegration.get_color_scheme()
       assert scheme != nil
 
       # Verify standard colors
-      assert scheme.background == {:rgb, 30, 30, 30}
-      assert scheme.foreground == {:rgb, 220, 220, 220}
+      assert scheme.bg == {:rgb, 30, 30, 30}
+      assert scheme.fg == {:rgb, 220, 220, 220}
 
       # Cleanup subscription
       EventManager.unsubscribe(ref)
