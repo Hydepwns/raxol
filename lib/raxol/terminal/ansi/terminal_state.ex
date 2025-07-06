@@ -178,6 +178,40 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     []
   end
 
+  @doc """
+  Applies restored data to the emulator state.
+  """
+  def apply_restored_data(emulator, restored_state, fields_to_restore) do
+    Enum.reduce(fields_to_restore, emulator, fn field, acc ->
+      case field do
+        :cursor when is_map(restored_state.cursor) ->
+          %{acc | cursor: Map.merge(acc.cursor, restored_state.cursor)}
+
+        :style when is_map(restored_state.style) ->
+          %{acc | style: restored_state.style}
+
+        :charset_state when is_map(restored_state.charset_state) ->
+          %{acc | charset_state: restored_state.charset_state}
+
+        :mode_manager when is_map(restored_state.mode_manager) ->
+          %{
+            acc
+            | mode_manager:
+                Map.merge(acc.mode_manager, restored_state.mode_manager)
+          }
+
+        :scroll_region ->
+          %{acc | scroll_region: restored_state.scroll_region}
+
+        :cursor_style ->
+          %{acc | cursor_style: restored_state.cursor_style}
+
+        _ ->
+          acc
+      end
+    end)
+  end
+
   defp default_state do
     %{
       cursor_visible: true,

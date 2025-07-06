@@ -85,11 +85,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_column_width_mode(value, emulator, width_mode) do
     target_width = calculate_target_width(width_mode, value)
-    new_column_width_mode = calculate_column_width_mode(width_mode, value)
-
     emulator = resize_emulator_buffers(emulator, target_width)
-    emulator = update_column_width_mode(emulator, new_column_width_mode)
-
     {:ok, emulator}
   end
 
@@ -109,7 +105,8 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     %{
       emulator
       | main_screen_buffer: main_buffer,
-        alternate_screen_buffer: alt_buffer
+        alternate_screen_buffer: alt_buffer,
+        width: target_width
     }
   end
 
