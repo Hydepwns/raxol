@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.Table do
-  use Surface.Component
+  # use Surface.Component
   require Raxol.Core.Renderer.View
 
   @moduledoc """
