@@ -207,7 +207,8 @@ defmodule Raxol.Plugins.EventHandler do
 
       if function_exported?(module, callback_name, required_arity) do
         acc_manager = extract_manager_from_acc(acc)
-        current_plugin_state = Map.get(acc_manager.plugins, plugin.name)
+        plugin_key = normalize_plugin_key(plugin.name)
+        current_plugin_state = Map.get(acc_manager.plugins, plugin_key)
         callback_args = [current_plugin_state | event_args]
 
         try do
@@ -267,6 +268,10 @@ defmodule Raxol.Plugins.EventHandler do
   defp extract_manager_from_acc({:ok, manager, _, _, _}), do: manager
   # Or raise an error
   defp extract_manager_from_acc(_), do: nil
+
+  # Helper to normalize plugin keys to atoms
+  defp normalize_plugin_key(key) when is_atom(key), do: key
+  defp normalize_plugin_key(key) when is_binary(key), do: String.to_atom(key)
 
   # --- Private Result Handlers ---
 

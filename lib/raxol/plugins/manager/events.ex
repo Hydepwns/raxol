@@ -145,6 +145,7 @@ defmodule Raxol.Plugins.Manager.Events do
   """
   def unload_plugin(%Core{} = manager, plugin_name)
       when binary?(plugin_name) do
+    plugin_key = normalize_plugin_key(plugin_name)
     Core.unload_plugin(manager, plugin_name)
   end
 
@@ -157,11 +158,12 @@ defmodule Raxol.Plugins.Manager.Events do
     case get_plugin(manager, plugin_name) do
       {:ok, plugin} ->
         updated_plugin = %{plugin | enabled: true}
+        plugin_key = normalize_plugin_key(plugin_name)
 
         updated_manager =
           Core.update_plugins(
             manager,
-            Map.put(manager.plugins, plugin_name, updated_plugin)
+            Map.put(manager.plugins, plugin_key, updated_plugin)
           )
 
         {:ok, updated_manager}
@@ -180,11 +182,12 @@ defmodule Raxol.Plugins.Manager.Events do
     case get_plugin(manager, plugin_name) do
       {:ok, plugin} ->
         updated_plugin = %{plugin | enabled: false}
+        plugin_key = normalize_plugin_key(plugin_name)
 
         updated_manager =
           Core.update_plugins(
             manager,
-            Map.put(manager.plugins, plugin_name, updated_plugin)
+            Map.put(manager.plugins, plugin_key, updated_plugin)
           )
 
         {:ok, updated_manager}
@@ -199,9 +202,14 @@ defmodule Raxol.Plugins.Manager.Events do
   Returns `{:ok, plugin}` or `{:error, :not_found}`.
   """
   def get_plugin(%Core{} = manager, plugin_name) when binary?(plugin_name) do
-    case Map.get(manager.plugins, plugin_name) do
+    plugin_key = normalize_plugin_key(plugin_name)
+    case Map.get(manager.plugins, plugin_key) do
       nil -> {:error, :not_found}
       plugin -> {:ok, plugin}
     end
   end
+
+  # Helper to normalize plugin keys to atoms
+  defp normalize_plugin_key(key) when is_atom(key), do: key
+  defp normalize_plugin_key(key) when is_binary(key), do: String.to_atom(key)
 end

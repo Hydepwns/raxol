@@ -56,7 +56,14 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_output(%Raxol.Plugins.HyperlinkPlugin{} = plugin, output) do
+  def handle_output(%Raxol.Plugins.HyperlinkPlugin{} = plugin, event) do
+    # Extract the actual output string from the event map
+    output = case event do
+      %{data: data} when is_binary(data) -> data
+      data when is_binary(data) -> data
+      _ -> ""
+    end
+
     # Find URLs using a simple regex (could be more robust)
     # Basic URL regex (adjust as needed)
     url_regex = ~r{(https?://[\w./?=&\-]+)}
@@ -166,5 +173,16 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
         {:error, :command_failed}
     end
+  end
+
+  @doc """
+  Returns metadata for the plugin.
+  """
+  def get_metadata do
+    %{
+      id: :hyperlink,
+      version: "0.1.0",
+      dependencies: []
+    }
   end
 end

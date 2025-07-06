@@ -14,7 +14,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
-    def init(_opts) do
+    def init(opts) do
       # Initialize with a unique state ID to track instances
       state_id = :rand.uniform(1_000_000)
 
@@ -24,7 +24,7 @@ defmodule Raxol.Test.PluginTestFixtures do
          version: "1.0.0",
          description: "Test plugin for unit testing",
          enabled: true,
-         config: %{},
+         config: opts,
          dependencies: [],
          api_version: "1.0.0",
          module: __MODULE__
@@ -263,13 +263,8 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      # Use a timer to simulate a timeout instead of sleeping forever
-      timer_id = System.unique_integer([:positive])
-      Process.send_after(self(), {:timeout_simulated, timer_id}, 100)
-      # Store timer_id in state if needed
-      receive do
-        :timeout_simulated -> {:error, :timeout_simulated}
-      end
+      # Simulate a timeout error immediately without actually timing out
+      {:error, :timeout_simulated}
     end
 
     def terminate(_reason, state) do
