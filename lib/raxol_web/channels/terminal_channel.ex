@@ -165,11 +165,21 @@ defmodule RaxolWeb.TerminalChannel do
     new_state = %{state | emulator: new_emulator, renderer: renderer}
     socket = assign(socket, :terminal_state, new_state)
 
+    # Get cursor position and visibility
+    {cursor_x, cursor_y} = emulator_module().get_cursor_position(new_emulator)
+    cursor_visible = emulator_module().get_cursor_visible(new_emulator)
+
     # Optionally, include scrollback size for UI
     scrollback_size = length(new_emulator.scrollback_buffer || [])
 
-    push(socket, "output", %{
+    # Broadcast output to client (send html, not data)
+    broadcast!(socket, "output", %{
       html: renderer_module().render(renderer),
+      cursor: %{
+        x: cursor_x,
+        y: cursor_y,
+        visible: cursor_visible
+      },
       scrollback_size: scrollback_size
     })
 
