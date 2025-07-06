@@ -79,6 +79,10 @@ defmodule Raxol.UI.Components.Modal do
       # input_value: Map.get(props, :input_value, nil) # Removed
     }
 
+    Raxol.Core.Runtime.Log.debug(
+      "Modal init with props type: #{inspect(Map.get(props, :type, :alert))}, state type: #{inspect(state.type)}"
+    )
+
     initialize_form_state(state, props)
   end
 
@@ -141,6 +145,10 @@ defmodule Raxol.UI.Components.Modal do
     )
 
     if state.visible do
+      Raxol.Core.Runtime.Log.debug(
+        "Modal is visible, calling handle_visible_update with msg: #{inspect(msg)}"
+      )
+
       handle_visible_update(msg, state)
     else
       handle_hidden_update(msg, state)
@@ -161,10 +169,10 @@ defmodule Raxol.UI.Components.Modal do
       {:field_update, field_id, new_value} ->
         update_field_value(state, field_id, new_value)
 
-      {:focus_next_field} ->
+      :focus_next_field ->
         change_focus(state, 1)
 
-      {:focus_prev_field} ->
+      :focus_prev_field ->
         change_focus(state, -1)
 
       {:input_changed, value} when state.type == :prompt ->
@@ -175,8 +183,17 @@ defmodule Raxol.UI.Components.Modal do
     end
   end
 
-  defp handle_button_click_msg({:submit, original_msg}, state),
-    do: handle_form_submission(state, original_msg)
+  defp handle_button_click_msg({:submit, original_msg}, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_button_click_msg called with submit message: #{inspect(original_msg)} and state.visible=#{inspect(state.visible)}"
+    )
+
+    if state.type == :prompt do
+      handle_prompt_submission(state, original_msg)
+    else
+      handle_form_submission(state, original_msg)
+    end
+  end
 
   defp handle_button_click_msg({:cancel, original_msg}, state),
     do: handle_cancel(state, original_msg)
@@ -184,11 +201,19 @@ defmodule Raxol.UI.Components.Modal do
   defp handle_button_click_msg(btn_msg, state),
     do: handle_button_click(state, btn_msg)
 
-  defp handle_hidden_update(_msg, state), do: {state, []}
+  defp handle_hidden_update(msg, state) do
+    case msg do
+      :show ->
+        handle_show(state)
+
+      _ ->
+        {state, []}
+    end
+  end
 
   defp handle_show(state) do
     cmd = set_focus_command(state)
-    new_state = %{state | visible: true}
+    new_state = %__MODULE__{state | visible: true}
 
     send(
       self(),
@@ -199,7 +224,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   defp handle_hide(state) do
-    new_state = %{state | visible: false}
+    new_state = %__MODULE__{state | visible: false}
 
     send(
       self(),
@@ -210,7 +235,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   defp handle_cancel(state, original_msg) do
-    new_state = %{state | visible: false}
+    new_state = %__MODULE__{state | visible: false}
 
     send(
       self(),
@@ -221,7 +246,7 @@ defmodule Raxol.UI.Components.Modal do
   end
 
   defp handle_button_click(state, btn_msg) do
-    new_state = %{state | visible: false}
+    new_state = %__MODULE__{state | visible: false}
 
     send(
       self(),
@@ -249,23 +274,69 @@ defmodule Raxol.UI.Components.Modal do
 
   # --- Form Specific Update Helpers ---
 
-  # Handle form submission: validate fields, update state, return commands
   defp handle_form_submission(state, original_msg) do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_form_submission called with state.visible=#{inspect(state.visible)} and fields=#{inspect(state.form_state.fields)}"
+    )
+
     validated_fields = Enum.map(state.form_state.fields, &validate_field/1)
     has_errors = Enum.any?(validated_fields, &(&1.error != nil))
 
     if has_errors do
-      # Update state with validation errors, don't submit
+      Raxol.Core.Runtime.Log.debug(
+        "[DEBUG] handle_form_submission found errors: #{inspect(validated_fields)}"
+      )
+
       new_form_state = %{state.form_state | fields: validated_fields}
-      {%{state | form_state: new_form_state}, []}
+
+      result =
+        {%__MODULE__{state | form_state: new_form_state, visible: true}, []}
+
+      Raxol.Core.Runtime.Log.debug(
+        "[DEBUG] handle_form_submission returning (errors): #{inspect(result)}"
+      )
+
+      result
     else
-      # All valid: extract values, clear errors, hide modal, send submit command
       form_values = extract_form_values(validated_fields)
       cleared_fields = Enum.map(validated_fields, &Map.put(&1, :error, nil))
       new_form_state = %{state.form_state | fields: cleared_fields}
 
-      {%{state | visible: false, form_state: new_form_state},
-       [{original_msg, form_values}]}
+      new_state = %__MODULE__{
+        state
+        | visible: false,
+          form_state: new_form_state
+      }
+
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+      )
+
+      result = {new_state, [{original_msg, form_values}]}
+
+      Raxol.Core.Runtime.Log.debug(
+        "[DEBUG] handle_form_submission returning (success): #{inspect(result)}"
+      )
+
+      result
+    end
+  end
+
+  defp handle_prompt_submission(state, original_msg) do
+    # If there are fields, validate as form
+    if length(state.form_state.fields) > 0 do
+      handle_form_submission(state, original_msg)
+    else
+      # No fields: just hide and send command
+      new_state = %__MODULE__{state | visible: false}
+
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+      )
+
+      {new_state, [{original_msg, %{}}]}
     end
   end
 
@@ -311,7 +382,6 @@ defmodule Raxol.UI.Components.Modal do
     end)
   end
 
-  # Helper to update a specific field's value and clear its error
   defp update_field_value(state, field_id, new_value) do
     updated_fields =
       Enum.map(state.form_state.fields, fn field ->
@@ -324,110 +394,338 @@ defmodule Raxol.UI.Components.Modal do
       end)
 
     new_form_state = %{state.form_state | fields: updated_fields}
-    {%{state | form_state: new_form_state}, []}
+    {%__MODULE__{state | form_state: new_form_state}, []}
   end
 
-  # Helper to change focus index
   defp change_focus(state, direction) do
     field_count = length(state.form_state.fields)
+
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] change_focus called with direction=#{inspect(direction)}, field_count=#{inspect(field_count)}, current_index=#{inspect(state.form_state.focus_index)}"
+    )
 
     if field_count > 0 do
       new_index =
         rem(state.form_state.focus_index + direction + field_count, field_count)
 
       new_form_state = %{state.form_state | focus_index: new_index}
-      new_state = %{state | form_state: new_form_state}
+      new_state = %__MODULE__{state | form_state: new_form_state}
+
+      Raxol.Core.Runtime.Log.debug(
+        "[DEBUG] change_focus returning new_index=#{inspect(new_index)}, new_state.form_state.focus_index=#{inspect(new_state.form_state.focus_index)}"
+      )
+
       {new_state, [set_focus_command(new_state)]}
     else
       {state, []}
     end
   end
 
-  # Helper to generate focus command for the focused field
+  # Helper to generate set_focus command
   defp set_focus_command(state) do
-    focused_field =
-      Enum.at(state.form_state.fields, state.form_state.focus_index)
+    field_count = length(state.form_state.fields)
 
-    command =
-      if focused_field do
-        # Construct the full ID path if the modal has an ID
-        field_full_id =
-          case state.id do
-            nil -> focused_field.id
-            id -> "#{id}.#{focused_field.id}"
-          end
+    if field_count > 0 do
+      current_field =
+        Enum.at(state.form_state.fields, state.form_state.focus_index)
 
-        {:set_focus, field_full_id}
-      else
-        # Focus the modal itself if no fields or focus index is invalid
-        {:set_focus, state.id}
-      end
+      field_id = get_field_full_id(current_field, state)
+      {:set_focus, field_id}
+    else
+      {:set_focus, state.id}
+    end
+  end
 
-    command
+  # Helper to get field full ID (with modal prefix if modal has ID)
+  defp get_field_full_id(field, state) do
+    if Map.get(state, :id, nil),
+      do: "#{Map.get(state, :id, nil)}.#{field.id}",
+      else: field.id
+  end
+
+  defp handle_visible_event(:show, state) do
+    new_state = %{state | visible: true}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, true}
+    )
+
+    {new_state, [set_focus_command(new_state)]}
+  end
+
+  defp handle_visible_event(:hide, state) do
+    new_state = %{state | visible: false}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+    )
+
+    {new_state, []}
+  end
+
+  defp handle_escape_key(state) do
+    cancel_msg = find_cancel_message(state.buttons)
+
+    if cancel_msg do
+      new_state = %{state | visible: false}
+
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+      )
+
+      {new_state, [cancel_msg]}
+    else
+      handle_hide(state)
+    end
+  end
+
+  defp handle_enter_key(state) do
+    case find_submit_message(state.buttons) do
+      {_label, submit_msg} ->
+        # Instead of calling handle_form_submission directly, forward as update message
+        update({:button_click, submit_msg}, state)
+
+      nil ->
+        {state, []}
+    end
+  end
+
+  defp find_cancel_message(buttons) do
+    Raxol.Core.Runtime.Log.debug(
+      "find_cancel_message called with buttons: #{inspect(buttons)}"
+    )
+
+    result =
+      Enum.find_value(buttons, nil, fn {_label, msg} ->
+        cond do
+          msg == :cancel ->
+            msg
+
+          msg == :form_canceled ->
+            msg
+
+          match?({:cancel, _}, msg) ->
+            msg
+
+          is_atom(msg) and String.ends_with?(Atom.to_string(msg), "cancel") ->
+            msg
+
+          # Handle the case where cancel is just an atom (not a tuple)
+          is_atom(msg) ->
+            msg
+
+          true ->
+            nil
+        end
+      end)
+
+    Raxol.Core.Runtime.Log.debug(
+      "find_cancel_message result: #{inspect(result)}"
+    )
+
+    result
+  end
+
+  defp find_submit_message(buttons) do
+    Raxol.Core.Runtime.Log.debug(
+      "find_submit_message called with buttons: #{inspect(buttons)}"
+    )
+
+    result =
+      Enum.find(buttons, fn {_, msg} ->
+        case msg do
+          {:submit, _} -> true
+          _ -> false
+        end
+      end)
+
+    Raxol.Core.Runtime.Log.debug(
+      "find_submit_message result: #{inspect(result)}"
+    )
+
+    result
   end
 
   @impl Raxol.UI.Components.Base.Component
   @spec handle_event(term(), map(), map()) :: {map(), list()}
   def handle_event(event, %{} = _props, state) do
     Raxol.Core.Runtime.Log.debug(
-      "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)}"
+      "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)} with state.type: #{inspect(state.type)}"
     )
 
+    IO.inspect(state.visible, label: "Modal visible state in handle_event")
+
     if state.visible do
-      handle_visible_event(event, state)
+      IO.inspect("Modal is visible, calling handle_visible_event")
+
+      IO.inspect(
+        "About to call handle_visible_event with event=#{inspect(event)}, state.id=#{inspect(Map.get(state, :id, nil))}"
+      )
+
+      result = handle_visible_event(event, state)
+      IO.inspect("handle_visible_event returned: #{inspect(result)}")
+      result
     else
+      IO.inspect("Modal is not visible, returning unchanged state")
       {state, []}
     end
   end
 
-  defp handle_visible_event(%{type: :key, data: data}, state) do
-    case data do
-      %{key: "Escape"} ->
-        handle_escape_key(state)
+  defp handle_visible_event(event, state) do
+    type = Map.get(event, :type)
+    data = Map.get(event, :data)
+    key = data && Map.get(data, :key)
+    shift = data && Map.get(data, :shift)
 
-      %{key: "Enter"} when state.type in [:prompt, :form] ->
-        handle_enter_key(state)
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_visible_event: type=#{inspect(type)}, key=#{inspect(key)}, shift=#{inspect(shift)}"
+    )
 
-      %{key: "Tab", shift: false} when state.type in [:prompt, :form] ->
-        change_focus(state, 1)
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_visible_event: state.type=#{inspect(state.type)}"
+    )
 
-      %{key: "Tab", shift: true} when state.type in [:prompt, :form] ->
-        change_focus(state, -1)
+    cond do
+      type == :key and key == "Escape" ->
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_visible_event: Escape pattern matched"
+        )
 
-      _ ->
+        update({:button_click, find_cancel_message(state.buttons)}, state)
+
+      type == :key and key == "Enter" and state.type in [:prompt, :form] ->
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_visible_event: Enter pattern matched"
+        )
+
+        case find_submit_message(state.buttons) do
+          {_label, submit_msg} ->
+            Raxol.Core.Runtime.Log.debug(
+              "[DEBUG] handle_visible_event: found submit message: #{inspect(submit_msg)}"
+            )
+
+            update({:button_click, submit_msg}, state)
+
+          nil ->
+            Raxol.Core.Runtime.Log.debug(
+              "[DEBUG] handle_visible_event: no submit message found"
+            )
+
+            {state, []}
+        end
+
+      type == :key and key == "Tab" and shift == false and
+          state.type in [:prompt, :form] ->
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_visible_event: Tab (next) pattern matched"
+        )
+
+        update(:focus_next_field, state)
+
+      type == :key and key == "Tab" and shift == true and
+          state.type in [:prompt, :form] ->
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_visible_event: Tab (prev) pattern matched"
+        )
+
+        update(:focus_prev_field, state)
+
+      true ->
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_visible_event: no pattern matched, falling through to catch-all"
+        )
+
+        handle_visible_event_dispatch(event, state)
+    end
+  end
+
+  defp handle_visible_event_dispatch(
+         %{type: :key, data: %{key: "Escape"}},
+         state
+       ) do
+    update({:button_click, find_cancel_message(state.buttons)}, state)
+  end
+
+  defp handle_visible_event_dispatch(
+         %Raxol.Core.Events.Event{type: :key, data: %{key: "Escape"}},
+         state
+       ) do
+    update({:button_click, find_cancel_message(state.buttons)}, state)
+  end
+
+  defp handle_visible_event_dispatch(
+         %{type: :key, data: %{key: "Enter"}},
+         state
+       )
+       when state.type in [:prompt, :form] do
+    case find_submit_message(state.buttons) do
+      {_label, submit_msg} ->
+        update({:button_click, submit_msg}, state)
+
+      nil ->
         {state, []}
     end
   end
 
-  defp handle_visible_event(_, state), do: {state, []}
-
-  defp handle_escape_key(state) do
-    cancel_msg = find_cancel_message(state.buttons)
-
-    if cancel_msg,
-      do: {%{state | visible: false}, [cancel_msg]},
-      else: update(:hide, state)
-  end
-
-  defp handle_enter_key(state) do
+  defp handle_visible_event_dispatch(
+         %Raxol.Core.Events.Event{type: :key, data: %{key: "Enter"}},
+         state
+       )
+       when state.type in [:prompt, :form] do
     case find_submit_message(state.buttons) do
-      {_label, submit_msg} -> update({:button_click, submit_msg}, state)
-      nil -> {state, []}
+      {_label, submit_msg} ->
+        update({:button_click, submit_msg}, state)
+
+      nil ->
+        {state, []}
     end
   end
 
-  defp find_cancel_message(buttons) do
-    Enum.find_value(buttons, nil, fn {_label, msg} ->
-      case msg do
-        :cancel -> msg
-        {:cancel, _} -> msg
-        _ -> nil
-      end
-    end)
+  defp handle_visible_event_dispatch(
+         %{type: :key, data: %{key: "Tab", shift: false}},
+         state
+       )
+       when state.type in [:prompt, :form] do
+    update(:focus_next_field, state)
   end
 
-  defp find_submit_message(buttons) do
-    Enum.find(buttons, fn {_, msg_tuple} -> elem(msg_tuple, 0) == :submit end)
+  defp handle_visible_event_dispatch(
+         %Raxol.Core.Events.Event{
+           type: :key,
+           data: %{key: "Tab", shift: false}
+         },
+         state
+       )
+       when state.type in [:prompt, :form] do
+    update(:focus_next_field, state)
+  end
+
+  defp handle_visible_event_dispatch(
+         %{type: :key, data: %{key: "Tab", shift: true}},
+         state
+       )
+       when state.type in [:prompt, :form] do
+    update(:focus_prev_field, state)
+  end
+
+  defp handle_visible_event_dispatch(
+         %Raxol.Core.Events.Event{type: :key, data: %{key: "Tab", shift: true}},
+         state
+       )
+       when state.type in [:prompt, :form] do
+    update(:focus_prev_field, state)
+  end
+
+  defp handle_visible_event_dispatch({:input_changed, value}, state)
+       when state.type == :prompt do
+    handle_prompt_input(state, value)
+  end
+
+  defp handle_visible_event_dispatch(event, state) do
+    {state, []}
   end
 
   # --- Render Logic ---
@@ -644,13 +942,16 @@ defmodule Raxol.UI.Components.Modal do
   @spec alert(any(), any(), any(), Keyword.t()) :: map()
   def alert(id, title, content, opts \\ []) do
     props =
-      Keyword.merge(opts,
-        id: id,
-        title: title,
-        content: content,
-        type: :alert,
-        buttons: [{"OK", :ok}],
-        visible: true
+      Keyword.merge(
+        [
+          id: id,
+          title: title,
+          content: content,
+          type: :alert,
+          buttons: [{"OK", :ok}],
+          visible: true
+        ],
+        opts
       )
 
     # Returns props map, caller uses Component.new(Modal, props)
