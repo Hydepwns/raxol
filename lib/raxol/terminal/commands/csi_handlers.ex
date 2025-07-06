@@ -9,20 +9,20 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   require Raxol.Core.Runtime.Log
 
   @private_modes %{
-    1 => :cursor_keys,
+    1 => :decckm,
     2 => :ansi,
-    3 => :column_132,
+    3 => :deccolm_132,
     4 => :smooth_scroll,
-    5 => :reverse_video,
-    6 => :origin,
-    7 => :auto_wrap,
-    8 => :auto_repeat,
-    9 => :interlacing,
-    12 => :blinking_cursor,
-    25 => :show_cursor,
-    47 => :alternate_screen,
+    5 => :decscnm,
+    6 => :decom,
+    7 => :decawm,
+    8 => :decarm,
+    9 => :decinlm,
+    12 => :att_blink,
+    25 => :dectcem,
+    47 => :dec_alt_screen,
     1047 => :dec_alt_screen_save,
-    1049 => :alternate_screen_buffer
+    1049 => :alt_screen_buffer
   }
 
   @charsets %{
@@ -330,10 +330,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
         {:ok, emulator}
 
       mode_name ->
-        IO.puts(
-          "DEBUG: CSIHandlers.handle_private_mode mode=#{inspect(mode)} mode_name=#{inspect(mode_name)} final_byte=#{inspect(final_byte)}"
-        )
-
         case final_byte do
           ?h -> Emulator.set_mode(emulator, mode_name)
           ?l -> Emulator.reset_mode(emulator, mode_name)

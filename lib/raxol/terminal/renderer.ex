@@ -157,15 +157,13 @@ defmodule Raxol.Terminal.Renderer do
           %{}
       end
 
-    # Apply background color first - use cell style if present, otherwise use default
+    # Apply background color only if explicitly set in cell style
     background_color =
-      cond do
-        Map.has_key?(style_map, :background) and
-            not is_nil(style_map.background) ->
-          get_color(style_map.background, Map.get(theme, :background, %{}))
-
-        true ->
-          get_color(:default, Map.get(theme, :background, %{}))
+      if Map.has_key?(style_map, :background) and
+           not is_nil(style_map.background) do
+        get_color(style_map.background, Map.get(theme, :background, %{}))
+      else
+        ""
       end
 
     attrs =

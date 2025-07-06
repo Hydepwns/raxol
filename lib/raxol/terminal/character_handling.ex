@@ -115,7 +115,16 @@ defmodule Raxol.Terminal.CharacterHandling do
       # Arabic Presentation Forms-A
       {0xFB50, 0xFDFF},
       # Arabic Presentation Forms-B
-      {0xFE70, 0xFEFF}
+      {0xFE70, 0xFEFF},
+      # Unicode control characters for RTL
+      # Right-to-Left Override (RLO)
+      {0x202E, 0x202E},
+      # Left-to-Right Override (LRO)
+      {0x202D, 0x202D},
+      # Right-to-Left Embedding (RLE)
+      {0x202B, 0x202B},
+      # Left-to-Right Embedding (LRE)
+      {0x202A, 0x202A}
     ]
   end
 

@@ -26,7 +26,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
             bottom_margin: 24,
             blink_timer: nil,
             state: :visible,
-            position: {0, 0},  # {col, row} format to match test expectations
+            # {col, row} format to match test expectations
+            position: {0, 0},
             blink: true,
             custom_shape: nil,
             custom_dimensions: nil,
@@ -152,21 +153,19 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Moves the cursor to a specific position.
   """
-  def move_to(cursor, {col, row}) do
+  def move_to(%__MODULE__{} = cursor, col, row) do
     %{cursor | row: row, col: col, position: {col, row}}
   end
 
-  @doc """
-  Moves the cursor to a specific position.
-  """
-  def move_to(cursor, col, row) do
-    %{cursor | row: row, col: col, position: {col, row}}
+  def move_to(pid, col, row) when is_pid(pid) do
+    GenServer.call(pid, {:move_to, col, row})
+    pid
   end
 
   @doc """
   Moves the cursor to a specific position with bounds clamping.
   """
-  def move_to(cursor, col, row, width, height) do
+  def move_to(%__MODULE__{} = cursor, col, row, width, height) do
     clamped_row = max(0, min(row, height - 1))
     clamped_col = max(0, min(col, width - 1))
 
@@ -176,6 +175,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
         col: clamped_col,
         position: {clamped_col, clamped_row}
     }
+  end
+
+  def move_to(pid, col, row, width, height) when is_pid(pid) do
+    GenServer.call(pid, {:move_to_bounded, col, row, width, height})
+    pid
   end
 
   @doc """
@@ -332,7 +336,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Sets the cursor style.
   """
   def set_style(%__MODULE__{} = state, style), do: %{state | style: style}
-  def set_style(pid, style), do: GenServer.call(pid, {:set_style, style})
+
+  def set_style(pid, style) when is_pid(pid) do
+    GenServer.call(pid, {:set_style, style})
+    pid
+  end
+
   def set_style(style), do: set_style(__MODULE__, style)
 
   @doc """
@@ -414,17 +423,22 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Sets the cursor state based on a state atom.
   Supported states: :visible, :hidden, :blinking
   """
-  def set_state(%__MODULE__{} = state, :visible) do
-    %{state | visible: true, state: :visible}
+  def set_state(%__MODULE__{} = state, state_atom),
+    do: do_set_state(state, state_atom)
+
+  def set_state(pid, state_atom) when is_pid(pid) do
+    GenServer.call(pid, {:set_state_atom, state_atom})
+    pid
   end
 
-  def set_state(%__MODULE__{} = state, :hidden) do
-    %{state | visible: false, state: :hidden}
-  end
+  defp do_set_state(state, :visible),
+    do: %{state | visible: true, state: :visible}
 
-  def set_state(%__MODULE__{} = state, :blinking) do
-    %{state | blinking: true, blink: true, state: :blinking}
-  end
+  defp do_set_state(state, :hidden),
+    do: %{state | visible: false, state: :hidden}
+
+  defp do_set_state(state, :blinking),
+    do: %{state | blinking: true, blink: true, state: :blinking}
 
   @doc """
   Sets a custom cursor shape.
@@ -657,6 +671,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
     end
   end
 
+  @doc """
+  Gets the cursor state atom (:visible, :hidden, :blinking).
+  """
+  def get_state(%__MODULE__{state: state}), do: state
+  def get_state(pid) when is_pid(pid), do: GenServer.call(pid, :get_state_atom)
+
   # Server Callbacks
 
   @impl GenServer
@@ -775,6 +795,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
+  def handle_call(:get_state_atom, _from, state) do
+    {:reply, state.state, state}
+  end
+
+  @impl GenServer
   def handle_call({:move_down, count, width, height}, _from, state) do
     # Move the cursor down by count lines, respecting margins
     new_row = min(Map.get(state, :bottom_margin, height - 1), state.row + count)
@@ -840,8 +865,44 @@ defmodule Raxol.Terminal.Cursor.Manager do
     # Move cursor to specific position with bounds clamping
     clamped_row = max(0, min(y, height - 1))
     clamped_col = max(0, min(x, width - 1))
-    new_state = %{state | row: clamped_row, col: clamped_col, position: {clamped_col, clamped_row}}
+
+    new_state = %{
+      state
+      | row: clamped_row,
+        col: clamped_col,
+        position: {clamped_col, clamped_row}
+    }
+
     {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_to_bounded, col, row, width, height}, _from, state) do
+    # Move cursor to specific position with bounds clamping
+    clamped_row = max(0, min(row, height - 1))
+    clamped_col = max(0, min(col, width - 1))
+
+    new_state = %{
+      state
+      | row: clamped_row,
+        col: clamped_col,
+        position: {clamped_col, clamped_row}
+    }
+
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:set_state_atom, state_atom}, _from, state) do
+    new_state =
+      case state_atom do
+        :visible -> %{state | visible: true, state: :visible}
+        :hidden -> %{state | visible: false, state: :hidden}
+        :blinking -> %{state | blinking: true, blink: true, state: :blinking}
+        _ -> state
+      end
+
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
