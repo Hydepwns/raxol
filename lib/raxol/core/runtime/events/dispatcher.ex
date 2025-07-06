@@ -182,16 +182,16 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       %Event{type: :quit} -> {:quit, state}
       %Event{type: :focus, data: data} -> handle_focus_event(data, state)
       %Event{type: :error, data: data} -> handle_error_event(data, state)
-      _ -> {:ok, state}
+      _ -> {:ok, state, []}
     end
   end
 
   defp handle_resize_event(%{width: width, height: height}, state) do
-    {:ok, %{state | width: width, height: height}}
+    {:ok, %{state | width: width, height: height}, []}
   end
 
   defp handle_focus_event(%{focused: focused}, state) do
-    {:ok, %{state | focused: focused}}
+    {:ok, %{state | focused: focused}, []}
   end
 
   defp handle_error_event(%{error: error}, state) do
@@ -247,8 +247,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       "[Dispatcher] handle_cast :dispatch event: #{inspect(event)}"
     )
 
-    # Delegate to the main event handling logic
-    case handle_event(event, state) do
+    # Delegate to the main event handling logic using do_dispatch_event
+    case do_dispatch_event(event, state) do
       {:ok, new_state, _commands} ->
         # Broadcast event globally if successfully handled by app logic
         # Ensure event.type and event.data are appropriate for broadcast
@@ -266,6 +266,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
         {:noreply, new_state}
 
+      {:quit, new_state} ->
+        # Handle quit events by stopping the dispatcher
+        {:stop, :normal, new_state}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "[Dispatcher] Error handling event in handle_cast",
@@ -278,7 +282,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
       other ->
         Raxol.Core.Runtime.Log.warning_with_context(
-          "[Dispatcher] Unexpected return from handle_event in handle_cast",
+          "[Dispatcher] Unexpected return from do_dispatch_event in handle_cast",
           %{module: __MODULE__, event: event, state: state, other: other}
         )
 
@@ -444,11 +448,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp system_event?(_), do: false
 
   defp apply_plugin_filters(event, state) do
-    manager_pid = Raxol.Core.Runtime.Plugins.Manager
+    manager_pid = state.plugin_manager
 
     case GenServer.call(manager_pid, {:filter_event, event}) do
       {:ok, filtered_event} -> filtered_event
       :halt -> nil
+      {:error, _reason} -> nil
       _ -> event
     end
   end
