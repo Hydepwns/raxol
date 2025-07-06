@@ -105,6 +105,15 @@ defmodule Raxol.Terminal.DriverTestHelper do
       {:key, modifier, key} ->
         send(test_pid, {:key, modifier, key})
         driver_loop(test_pid)
+
+      {:resize, width, height} ->
+        send(test_pid, {:resize, width, height})
+        driver_loop(test_pid)
+
+      {:signal, :SIGWINCH} ->
+        # Simulate a resize event when SIGWINCH is received
+        send(test_pid, {:resize, 90, 30})
+        driver_loop(test_pid)
     end
   end
 end
