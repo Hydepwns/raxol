@@ -25,69 +25,80 @@ defmodule Raxol.Plugins.ImagePlugin do
           dependencies: list(map()),
           api_version: String.t(),
           image_escape_sequence: String.t() | nil,
-          sequence_just_generated: boolean()
+          sequence_just_generated: boolean(),
+          state: map()
         }
 
   # Update defstruct to match the Plugin behaviour fields
-  defstruct name: "image",
-            version: "0.1.0",
-            description:
-              "Displays images in the terminal using iTerm2 protocol.",
-            enabled: true,
-            config: %{},
-            dependencies: [],
-            api_version: "1.0.0",
-            image_escape_sequence: nil,
-            sequence_just_generated: false
+  defstruct [
+    :name,
+    :version,
+    :description,
+    :enabled,
+    :config,
+    :dependencies,
+    :api_version,
+    :image_escape_sequence,
+    :sequence_just_generated,
+    state: %{}
+  ]
 
   @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
-    # Initialize the plugin struct, merging provided config
-    plugin_state = struct(__MODULE__, config)
+    # Initialize the plugin struct with required fields
+    metadata = get_metadata()
+
+    plugin_state =
+      struct(
+        __MODULE__,
+        Map.merge(
+          %{
+            name: metadata.name,
+            version: metadata.version,
+            description:
+              "Plugin that displays images in the terminal using iTerm2 protocol.",
+            enabled: true,
+            config: config,
+            dependencies: metadata.dependencies,
+            api_version: get_api_version(),
+            image_escape_sequence: nil,
+            sequence_just_generated: false,
+            state: %{}
+          },
+          config
+        )
+      )
+
     {:ok, plugin_state}
   end
 
-  # @impl Raxol.Plugins.Plugin
-  # def handle_output(%__MODULE__{} = plugin, output) when binary?(output) do
-  #   # Check if the output contains an image marker
-  #   if String.contains?(output, "<<IMAGE:") do
-  #     # Extract image data and parameters
-  #     case extract_image_data(output) do
-  #       {:ok, image_data, params} ->
-  #         # Generate iTerm2 image escape sequence
-  #         escape_sequence = generate_image_escape_sequence(image_data, params)
-  #         # Return updated plugin state and the escape sequence as output
-  #         {:ok, plugin, escape_sequence}
-  #
-  #       {:error, reason} ->
-  #         {:error, "Failed to process image: #{reason}"}
-  #     end
-  #   else
-  #     {:ok, plugin}
-  #   end
-  # end
-
   @impl Raxol.Plugins.Plugin
-  def handle_input(%__MODULE__{} = plugin, _input) do
-    # Input is not handled directly by this plugin for generating images.
-    # Image display is triggered by specific markers in the output stream
-    # processed by handle_output.
+  def handle_output(%__MODULE__{} = plugin, _plugin_state, _output) do
+    # This plugin doesn't modify output, just passes it through
     {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(state, _event, _emulator_state) do
-    {:ok, state}
+  def handle_input(%__MODULE__{} = plugin, _plugin_state, _input) do
+    # This plugin doesn't handle input
+    {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, width, height) do
-    {:ok,
-     %{
-       plugin
-       | config:
-           Map.put(plugin.config, :dimensions, %{width: width, height: height})
-     }}
+  def handle_mouse(
+        %__MODULE__{} = plugin,
+        _plugin_state,
+        _event,
+        _emulator_state
+      ) do
+    # This plugin doesn't handle mouse events
+    {:ok, plugin}
+  end
+
+  @impl Raxol.Plugins.Plugin
+  def handle_resize(%__MODULE__{} = plugin, _plugin_state, _width, _height) do
+    # This plugin doesn't need to react to resize
+    {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
@@ -198,9 +209,20 @@ defmodule Raxol.Plugins.ImagePlugin do
 
   defp get_preserve_aspect_flag(params) do
     case Map.get(params, :preserve_aspect) do
-      nil -> "1"
       true -> "1"
       false -> "0"
+      _ -> "1"
     end
+  end
+
+  @doc """
+  Returns metadata for the plugin.
+  """
+  def get_metadata do
+    %{
+      name: "image",
+      version: "0.1.0",
+      dependencies: []
+    }
   end
 end

@@ -20,29 +20,52 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
           enabled: boolean(),
           config: map(),
           dependencies: list(map()),
-          api_version: String.t()
+          api_version: String.t(),
+          state: map()
           # Add plugin-specific fields here if needed
         }
 
   # Update defstruct to match the Plugin behaviour fields
-  defstruct name: "hyperlink",
-            version: "0.1.0",
-            description:
-              "Detects URLs in terminal output and makes them clickable.",
-            enabled: true,
-            config: %{},
-            dependencies: [],
-            api_version: "1.0.0"
+  defstruct [
+    :name,
+    :version,
+    :description,
+    :enabled,
+    :config,
+    :dependencies,
+    :api_version,
+    state: %{}
+  ]
 
   @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
-    # Initialize the plugin struct, merging provided config
-    plugin_state = struct(__MODULE__, config)
+    # Initialize the plugin struct with required fields
+    metadata = get_metadata()
+
+    plugin_state =
+      struct(
+        __MODULE__,
+        Map.merge(
+          %{
+            name: metadata.name,
+            version: metadata.version,
+            description:
+              "Plugin that detects URLs in terminal output and makes them clickable.",
+            enabled: true,
+            config: config,
+            dependencies: metadata.dependencies,
+            api_version: get_api_version(),
+            state: %{}
+          },
+          config
+        )
+      )
+
     {:ok, plugin_state}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_input(%__MODULE__{} = plugin, input) do
+  def handle_input(%__MODULE__{} = plugin, _plugin_state, input) do
     # Process input for hyperlink-related commands
     case input do
       "link " <> url ->
@@ -57,52 +80,46 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
   @impl Raxol.Plugins.Plugin
   def handle_output(%Raxol.Plugins.HyperlinkPlugin{} = plugin, event) do
-    # Extract the actual output string from the event map
-    output = case event do
-      %{data: data} when is_binary(data) -> data
-      data when is_binary(data) -> data
-      _ -> ""
-    end
+    output =
+      cond do
+        is_binary(event) ->
+          event
+
+        is_map(event) and is_binary(Map.get(event, :data)) ->
+          Map.get(event, :data)
+
+        true ->
+          ""
+      end
 
     # Find URLs using a simple regex (could be more robust)
-    # Basic URL regex (adjust as needed)
     url_regex = ~r{(https?://[\w./?=&\-]+)}
 
-    # Simpler check: Does the output contain a potential URL?
     if String.contains?(output, "http://") or
          String.contains?(output, "https://") do
-      # Attempt replacement if potential URL found
       modified_output =
         String.replace(output, url_regex, fn url ->
           create_hyperlink(url)
         end)
 
-      # Return 3-tuple only if replacement actually happened
-      if modified_output != output do
-        {:ok, plugin, modified_output}
-      else
-        # If replace didn't change anything (e.g., malformed URL), return 2-tuple
-        {:ok, plugin}
-      end
+      {:ok, plugin, modified_output}
     else
-      # No http:// or https:// found, definitely no change
-      # Return 2-tuple
       {:ok, plugin}
     end
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(%__MODULE__{} = plugin_state, event, rendered_cells) do
+  def handle_mouse(%__MODULE__{} = plugin, _plugin_state, event, rendered_cells) do
     case event do
       %{type: :mouse, button: :left, x: click_x, y: click_y, modifiers: []} ->
-        handle_left_click(plugin_state, click_x, click_y, rendered_cells)
+        handle_left_click(plugin, click_x, click_y, rendered_cells)
 
       _ ->
-        {:ok, plugin_state}
+        {:ok, plugin}
     end
   end
 
-  defp handle_left_click(plugin_state, x, y, rendered_cells) do
+  defp handle_left_click(plugin, x, y, rendered_cells) do
     case Map.get(rendered_cells, {x, y}) do
       %{style: %{hyperlink: url}} when binary?(url) and url != "" ->
         Raxol.Core.Runtime.Log.debug(
@@ -110,24 +127,29 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
         )
 
         case open_url(url) do
-          :ok -> {:ok, plugin_state}
-          {:error, _reason} -> {:ok, plugin_state}
+          :ok -> {:ok, plugin}
+          {:error, _reason} -> {:ok, plugin}
         end
 
       _ ->
-        {:ok, plugin_state}
+        {:ok, plugin}
     end
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
+  def handle_resize(%__MODULE__{} = plugin, _plugin_state, _width, _height) do
     # This plugin might not need to react to resize
     {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def cleanup(%__MODULE__{} = _plugin) do
-    # No cleanup needed for this plugin
+  def cleanup(%Raxol.Plugins.HyperlinkPlugin{} = _plugin) do
+    # No cleanup needed for hyperlink plugin
+    :ok
+  end
+
+  def cleanup(_plugin) when is_map(_plugin) do
+    # Handle case where plugin is passed as a map
     :ok
   end
 
@@ -180,7 +202,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   """
   def get_metadata do
     %{
-      id: :hyperlink,
+      name: "hyperlink",
       version: "0.1.0",
       dependencies: []
     }

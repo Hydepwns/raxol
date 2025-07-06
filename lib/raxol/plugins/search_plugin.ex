@@ -15,65 +15,135 @@ defmodule Raxol.Plugins.SearchPlugin do
           api_version: String.t(),
           search_term: String.t() | nil,
           search_results: list(any()),
-          current_result_index: integer()
+          current_result_index: integer(),
+          state: map()
         }
 
-  defstruct name: "search",
-            version: "0.1.0",
-            description:
-              "Provides text search functionality within the terminal.",
-            enabled: true,
-            config: %{},
-            dependencies: [],
-            api_version: "1.0.0",
-            search_term: nil,
-            search_results: [],
-            current_result_index: 0
+  defstruct [
+    :name,
+    :version,
+    :description,
+    :enabled,
+    :config,
+    :dependencies,
+    :api_version,
+    :search_term,
+    :search_results,
+    :current_result_index,
+    state: %{}
+  ]
 
   @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
-    plugin_state = struct(__MODULE__, config)
+    # Initialize the plugin struct with required fields
+    metadata = get_metadata()
+
+    plugin_state =
+      struct(
+        __MODULE__,
+        Map.merge(
+          %{
+            name: metadata.name,
+            version: metadata.version,
+            description:
+              "Plugin that provides search functionality for terminal content.",
+            enabled: true,
+            config: config,
+            dependencies: metadata.dependencies,
+            api_version: get_api_version(),
+            search_term: nil,
+            search_results: [],
+            current_result_index: 0,
+            state: %{}
+          },
+          config
+        )
+      )
+
     {:ok, plugin_state}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_input(%__MODULE__{} = plugin, input) do
+  def handle_input(%__MODULE__{} = plugin, plugin_state, input) do
     case input do
+      "search " <> search_term ->
+        # Update the plugin state with the new search term
+        updated_plugin_state = Map.put(plugin_state, :search_term, search_term)
+        # Update the plugin struct with the new search term
+        updated_plugin = %{plugin | search_term: search_term}
+        {:ok, updated_plugin, updated_plugin_state}
+
       "/search " <> search_term ->
-        start_search(plugin, search_term)
+        # Handle old format search command
+        updated_plugin_state = Map.put(plugin_state, :search_term, search_term)
+        updated_plugin = %{plugin | search_term: search_term}
+        {:ok, updated_plugin, updated_plugin_state}
 
       "/n" when plugin.search_term != nil ->
-        next_result(plugin)
+        # Next result
+        search_results = plugin.search_results || []
+
+        next_index =
+          if length(search_results) > 0 do
+            min(plugin.current_result_index + 1, length(search_results) - 1)
+          else
+            0
+          end
+
+        updated_plugin = %{plugin | current_result_index: next_index}
+        {:ok, updated_plugin, plugin_state}
 
       "/N" when plugin.search_term != nil ->
-        prev_result(plugin)
+        # Previous result
+        search_results = plugin.search_results || []
+
+        prev_index =
+          if length(search_results) > 0 do
+            max(plugin.current_result_index - 1, 0)
+          else
+            0
+          end
+
+        updated_plugin = %{plugin | current_result_index: prev_index}
+        {:ok, updated_plugin, plugin_state}
 
       "/clear" ->
-        clear_search(plugin)
+        # Clear search
+        updated_plugin = %{
+          plugin
+          | search_term: nil,
+            search_results: [],
+            current_result_index: 0
+        }
+
+        updated_plugin_state = Map.put(plugin_state, :search_term, nil)
+        {:ok, updated_plugin, updated_plugin_state}
 
       _ ->
-        {:ok, plugin}
+        {:ok, plugin, plugin_state}
     end
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(%__MODULE__{} = plugin, event, _emulator_state) do
-    case event do
-      %{type: :click, y: y} when plugin.search_term != nil ->
-        # Convert click position to result index
-        result_index = max(0, min(y - 1, length(plugin.search_results) - 1))
-        {:ok, %{plugin | current_result_index: result_index}}
-
-      _ ->
-        {:ok, plugin}
-    end
+  def handle_output(%__MODULE__{} = plugin, _plugin_state, _output) do
+    # This plugin doesn't modify output, just passes it through
+    {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_output(state, _output), do: {:ok, state}
+  def handle_mouse(
+        %__MODULE__{} = plugin,
+        _plugin_state,
+        _event,
+        _emulator_state
+      ) do
+    # This plugin doesn't handle mouse events
+    {:ok, plugin}
+  end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
+  def handle_resize(%__MODULE__{} = plugin, _plugin_state, _width, _height) do
+    # This plugin doesn't need to react to resize
     {:ok, plugin}
   end
 
@@ -201,5 +271,16 @@ defmodule Raxol.Plugins.SearchPlugin do
     else
       nil
     end
+  end
+
+  @doc """
+  Returns metadata for the plugin.
+  """
+  def get_metadata do
+    %{
+      name: "search",
+      version: "0.1.0",
+      dependencies: []
+    }
   end
 end

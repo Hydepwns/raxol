@@ -11,7 +11,9 @@ defmodule Raxol.Plugins.Plugin do
           enabled: boolean(),
           config: map(),
           dependencies: list(map()),
-          api_version: String.t()
+          api_version: String.t(),
+          module: atom(),
+          state: any()
         }
 
   defstruct [
@@ -22,7 +24,8 @@ defmodule Raxol.Plugins.Plugin do
     :config,
     :dependencies,
     :api_version,
-    :module
+    :module,
+    :state
   ]
 
   @callback init(config :: map()) :: {:ok, term()} | {:error, String.t()}
