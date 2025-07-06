@@ -67,8 +67,15 @@ defmodule Raxol.Core.Accessibility.Preferences do
     if Mix.env() == :test do
       # Use direct access for tests
       target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
-      value = UserPreferences.get(pref_key(key), target_pid_or_name)
-      if value == nil, do: default, else: value
+
+      # Prevent self-calls that would cause deadlock
+      if target_pid_or_name == self() do
+        # Return default value to avoid deadlock
+        default
+      else
+        value = UserPreferences.get(pref_key(key), target_pid_or_name)
+        if value == nil, do: default, else: value
+      end
     else
       # Use the regular get_pref for non-test environments
       get_pref(key, default, user_preferences_pid_or_name)

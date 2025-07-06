@@ -111,6 +111,10 @@ defmodule Raxol.Core.UserPreferences do
       )
 
       new_state = %{state | preferences: new_preferences}
+
+      # Send preferences_applied message for test synchronization
+      send(self(), {:preferences_applied})
+
       # Schedule a save after a delay
       {:reply, :ok, schedule_save(new_state)}
     else
@@ -133,6 +137,10 @@ defmodule Raxol.Core.UserPreferences do
     )
 
     new_state = %{state | preferences: new_preferences}
+
+    # Send preferences_applied message for test synchronization
+    send(self(), {:preferences_applied})
+
     # Schedule a save after a delay
     {:reply, :ok, schedule_save(new_state)}
   end
@@ -222,9 +230,16 @@ defmodule Raxol.Core.UserPreferences do
   # Catch-all for unexpected messages
   @impl GenServer
   def handle_info(msg, state) do
-    Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
+    # Handle the preferences_applied message specially
+    case msg do
+      {:preferences_applied} ->
+        # This is expected, don't log it as a warning
+        {:noreply, state}
 
-    {:noreply, state}
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(inspect(msg), %{})
+        {:noreply, state}
+    end
   end
 
   # --- Internal Helpers ---

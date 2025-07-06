@@ -35,6 +35,7 @@ defmodule Raxol.Core.Accessibility do
   """
 
   alias Raxol.Core.Accessibility.Announcements
+  alias Raxol.Core.Accessibility.EventHandlers
   alias Raxol.Core.Accessibility.Legacy
   alias Raxol.Core.Accessibility.Metadata
   alias Raxol.Core.Accessibility.Preferences
@@ -76,6 +77,35 @@ defmodule Raxol.Core.Accessibility do
     updated_options = prepare_options(options)
     apply_preferences(updated_options, user_preferences_pid_or_name)
     initialize_state(updated_options)
+
+    # Store user preferences name for event handlers
+    Process.put(:accessibility_user_preferences, user_preferences_pid_or_name)
+
+    # Register event handlers
+    EventManager.register_handler(
+      :focus_change,
+      __MODULE__,
+      :handle_focus_change_event
+    )
+
+    EventManager.register_handler(
+      :preference_changed,
+      __MODULE__,
+      :handle_preference_changed_event
+    )
+
+    EventManager.register_handler(
+      :locale_changed,
+      __MODULE__,
+      :handle_locale_changed_event
+    )
+
+    EventManager.register_handler(
+      :theme_changed,
+      __MODULE__,
+      :handle_theme_changed_event
+    )
+
     :ok
   end
 
@@ -172,28 +202,28 @@ defmodule Raxol.Core.Accessibility do
     EventManager.unregister_handler(
       :focus_change,
       __MODULE__,
-      :handle_focus_change
+      :handle_focus_change_event
     )
 
     # Unregister event handler for preference changes
     EventManager.unregister_handler(
       :preference_changed,
       __MODULE__,
-      :handle_preference_changed
+      :handle_preference_changed_event
     )
 
     # Unregister event handler for locale changes
     EventManager.unregister_handler(
       :locale_changed,
       __MODULE__,
-      :handle_locale_changed
+      :handle_locale_changed_event
     )
 
     # Unregister event handler for theme changes
     EventManager.unregister_handler(
       :theme_changed,
       __MODULE__,
-      :handle_theme_changed
+      :handle_theme_changed_event
     )
 
     # Clean up theme integration
@@ -202,6 +232,7 @@ defmodule Raxol.Core.Accessibility do
     # Clear process dictionary values
     Process.delete(:accessibility_disabled)
     Process.delete(:accessibility_announcements)
+    Process.delete(:accessibility_user_preferences)
 
     :ok
   end
@@ -285,6 +316,18 @@ defmodule Raxol.Core.Accessibility do
   """
   def clear_announcements do
     Announcements.clear_announcements()
+  end
+
+  @doc """
+  Clear all pending announcements for a specific user.
+
+  ## Examples
+
+      iex> Accessibility.clear_announcements(:user_prefs)
+      :ok
+  """
+  def clear_announcements(user_preferences_pid_or_name) do
+    Announcements.clear_announcements(user_preferences_pid_or_name)
   end
 
   @doc """
@@ -470,6 +513,36 @@ defmodule Raxol.Core.Accessibility do
       event,
       user_preferences_pid_or_name
     )
+  end
+
+  # --- Event Handler Wrappers for Events Manager ---
+
+  @doc false
+  def handle_focus_change_event(event) do
+    user_preferences_pid_or_name = Process.get(:accessibility_user_preferences)
+
+    Raxol.Core.Runtime.Log.debug(
+      "Accessibility.handle_focus_change_event called with: #{inspect(event)}, prefs: #{inspect(user_preferences_pid_or_name)}"
+    )
+
+    handle_focus_change(event, user_preferences_pid_or_name)
+  end
+
+  @doc false
+  def handle_preference_changed_event(event) do
+    user_preferences_pid_or_name = Process.get(:accessibility_user_preferences)
+    handle_preference_changed(event, user_preferences_pid_or_name)
+  end
+
+  @doc false
+  def handle_locale_changed_event(event) do
+    handle_locale_changed(event)
+  end
+
+  @doc false
+  def handle_theme_changed_event(event) do
+    user_preferences_pid_or_name = Process.get(:accessibility_user_preferences)
+    handle_theme_changed(event, user_preferences_pid_or_name)
   end
 
   # --- Legacy Functions ---

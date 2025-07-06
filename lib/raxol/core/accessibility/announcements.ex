@@ -88,15 +88,26 @@ defmodule Raxol.Core.Accessibility.Announcements do
           interrupt: interrupt
         }
 
-        # Add to queue
-        current_queue = Process.get(:accessibility_announcements, [])
+        # Add to queue with user-specific key
+        key = {:accessibility_announcements, user_preferences_pid_or_name}
+        current_queue = Process.get(key, [])
+
+        require Raxol.Core.Runtime.Log
+
+        Raxol.Core.Runtime.Log.debug(
+          "Announcements.announce storing with key: #{inspect(key)}, current_queue: #{inspect(current_queue)}"
+        )
 
         updated_queue =
           if announcement.interrupt,
             do: [announcement],
             else: insert_by_priority(current_queue, announcement, priority)
 
-        Process.put(:accessibility_announcements, updated_queue)
+        Process.put(key, updated_queue)
+
+        Raxol.Core.Runtime.Log.debug(
+          "Announcements.announce stored announcement: #{inspect(announcement)}"
+        )
 
         # Send announcement_added messages to subscribers
         send_announcement_to_subscribers(message)
@@ -128,12 +139,27 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
     queue = Process.get(key) || []
 
+    require Raxol.Core.Runtime.Log
+
+    Raxol.Core.Runtime.Log.debug(
+      "Announcements.get_next_announcement looking for key: #{inspect(key)}, queue: #{inspect(queue)}"
+    )
+
     case queue do
       [] ->
+        Raxol.Core.Runtime.Log.debug(
+          "Announcements.get_next_announcement returning nil (empty queue)"
+        )
+
         nil
 
       [next | rest] ->
         Process.put(key, rest)
+
+        Raxol.Core.Runtime.Log.debug(
+          "Announcements.get_next_announcement returning: #{inspect(next.message)}"
+        )
+
         next.message
     end
   end
@@ -152,6 +178,20 @@ defmodule Raxol.Core.Accessibility.Announcements do
     # Send announcements_cleared messages to subscribers
     send_clear_message_to_subscribers()
 
+    :ok
+  end
+
+  @doc """
+  Clear all pending announcements for a specific user.
+
+  ## Examples
+
+      iex> Announcements.clear_announcements(:user_prefs)
+      :ok
+  """
+  def clear_announcements(user_preferences_pid_or_name) do
+    key = {:accessibility_announcements, user_preferences_pid_or_name}
+    Process.put(key, [])
     :ok
   end
 
@@ -191,6 +231,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
   defp send_announcement_to_subscribers(message) do
     subscriptions = get_subscriptions()
+
     Enum.each(subscriptions, fn {ref, pid} ->
       if Process.alive?(pid) do
         send(pid, {:announcement_added, ref, message})
@@ -200,6 +241,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
   defp send_clear_message_to_subscribers do
     subscriptions = get_subscriptions()
+
     Enum.each(subscriptions, fn {ref, pid} ->
       if Process.alive?(pid) do
         send(pid, {:announcements_cleared, ref})
