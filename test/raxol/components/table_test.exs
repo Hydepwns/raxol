@@ -156,8 +156,9 @@ defmodule Raxol.UI.Components.TableTest do
 
       assert map?(rendered)
       assert Map.has_key?(rendered, :type)
-      assert rendered.type == :border
-      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      assert rendered.type == :box
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [header | rows] = flex.children
       assert length(rows) == 1
       first_row = List.first(rows)
       assert map?(first_row)
@@ -167,14 +168,33 @@ defmodule Raxol.UI.Components.TableTest do
       assert Enum.at(first_row.children, 1).content == "Alice      "
     end
 
-    test "sorting works correctly", %{state: state} do
+    test "sorting works correctly", %{columns: columns, data: data} do
+      # Create a separate state for sorting test with pagination disabled
+      result =
+        Table.init(%{
+          id: :test_table,
+          columns: columns,
+          data: data,
+          options: %{
+            # Disable pagination for sorting test
+            paginate: false,
+            searchable: true,
+            sortable: true,
+            page_size: 10
+          }
+        })
+
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
+
       result = Table.update({:sort, :age}, state)
       assert match?({:ok, _}, result)
       {:ok, updated_state} = result
       rendered = Table.render(updated_state, %{available_width: 80})
 
       # Verify sort order through row content
-      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [header | rows] = flex.children
       first_row = List.first(rows)
       assert Enum.at(first_row.children, 2).content == " 25 "
       last_row = List.last(rows)
@@ -188,7 +208,8 @@ defmodule Raxol.UI.Components.TableTest do
       rendered = Table.render(page1_state, %{available_width: 80})
 
       # Verify first page content
-      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [header | rows] = flex.children
       assert length(rows) == 2
       first_row = List.first(rows)
       assert Enum.at(first_row.children, 1).content == "Alice      "
@@ -200,7 +221,8 @@ defmodule Raxol.UI.Components.TableTest do
       assert match?({:ok, _}, result)
       {:ok, page2_state} = result
       rendered = Table.render(page2_state, %{available_width: 80})
-      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [header | rows] = flex.children
       assert length(rows) == 2
       first_row = List.first(rows)
       assert Enum.at(first_row.children, 1).content == "Charlie    "
@@ -339,7 +361,8 @@ defmodule Raxol.UI.Components.TableTest do
 
     test "header is rendered with bold style", %{state: state} do
       rendered = Table.render(state, %{available_width: 80})
-      [header | _] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [header | _] = flex.children
       assert header.type == :flex
 
       Enum.each(header.children, fn cell ->
@@ -351,7 +374,8 @@ defmodule Raxol.UI.Components.TableTest do
          %{state: state} do
       state = %{state | selected_row: 1}
       rendered = Table.render(state, %{available_width: 80})
-      [_header | rows] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [_header | rows] = flex.children
       selected_row = Enum.at(rows, 1)
       assert selected_row.type == :flex
 
@@ -414,7 +438,8 @@ defmodule Raxol.UI.Components.TableTest do
       {:ok, state} = result
 
       rendered = Table.render(state, %{available_width: 80})
-      [header | _] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [header | _] = flex.children
 
       Enum.each(header.children, fn cell ->
         # Should include :underline and :italic in style keys
@@ -444,7 +469,8 @@ defmodule Raxol.UI.Components.TableTest do
 
       # Unselected row
       rendered = Table.render(state, %{available_width: 80})
-      [_header | rows] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [_header | rows] = flex.children
       first_row = Enum.at(rows, 0)
 
       Enum.each(first_row.children, fn cell ->
@@ -455,7 +481,8 @@ defmodule Raxol.UI.Components.TableTest do
       # Selected row
       state = %{state | selected_row: 2}
       rendered = Table.render(state, %{available_width: 80})
-      [_header | rows] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [_header | rows] = flex.children
       selected_row = Enum.at(rows, 2)
 
       Enum.each(selected_row.children, fn cell ->
@@ -489,7 +516,8 @@ defmodule Raxol.UI.Components.TableTest do
       {:ok, state} = result
 
       rendered = Table.render(state, %{available_width: 80})
-      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      flex = get_in(rendered, [:children, Access.at(0)])
+      [header | rows] = flex.children
       # Header cell for :id should have :bg in style
       id_header_cell = Enum.at(header.children, 0)
       assert :bg in (id_header_cell.style || [])
