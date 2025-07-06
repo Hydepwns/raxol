@@ -147,7 +147,16 @@ defmodule Raxol.Terminal.ControlCodes do
     {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
     cursor = emulator.cursor
 
-    moved_cursor = Raxol.Terminal.Cursor.Manager.move_down(cursor, 1)
+    moved_cursor =
+      cond do
+        is_pid(cursor) ->
+          # Update state inside GenServer, but keep PID as cursor
+          GenServer.call(cursor, {:move_down, 1, buffer_width, buffer_height})
+          cursor
+        is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_down(cursor, 1, buffer_width, buffer_height)
+      end
+
     final_cursor = apply_lnm_mode(emulator.mode_manager, moved_cursor)
     %{emulator | cursor: final_cursor}
   end
@@ -178,7 +187,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
     if y != clamped_y do
       log_cursor_clamp(y, clamped_y, scroll_top, scroll_bottom)
-      move_cursor_to_position(cursor, x, clamped_y)
+      move_cursor_to_position(emulator, x, clamped_y)
     else
       cursor
     end
@@ -190,8 +199,84 @@ defmodule Raxol.Terminal.ControlCodes do
     )
   end
 
-  defp move_cursor_to_position(cursor, x, y),
-    do: Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
+  defp move_cursor_to_position(emulator, x, y) do
+    cursor = emulator.cursor
+
+    moved_cursor =
+      cond do
+        is_pid(cursor) ->
+          GenServer.call(cursor, {:move_to, x, y})
+          cursor
+        is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
+      end
+
+    %{emulator | cursor: moved_cursor}
+  end
+
+  defp move_cursor_to_column(emulator, column) do
+    cursor = emulator.cursor
+
+    moved_cursor =
+      cond do
+        is_pid(cursor) ->
+          GenServer.call(cursor, {:move_to_column, column})
+          cursor
+        is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
+      end
+
+    %{emulator | cursor: moved_cursor}
+  end
+
+  defp move_cursor_to_line_start(emulator) do
+    cursor = emulator.cursor
+
+    moved_cursor =
+      cond do
+        is_pid(cursor) ->
+          GenServer.call(cursor, :move_to_line_start)
+          cursor
+        is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_to_line_start(cursor)
+      end
+
+    %{emulator | cursor: moved_cursor}
+  end
+
+  defp move_cursor_to_column_with_bounds(emulator, column) do
+    cursor = emulator.cursor
+    active_buffer = Emulator.get_active_buffer(emulator)
+    {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
+
+    moved_cursor =
+      cond do
+        is_pid(cursor) ->
+          GenServer.call(cursor, {:move_to_column, column, buffer_width, buffer_height})
+          cursor
+        is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, column, buffer_width, buffer_height)
+      end
+
+    %{emulator | cursor: moved_cursor}
+  end
+
+  defp move_cursor_to_position_with_bounds(emulator, x, y) do
+    cursor = emulator.cursor
+    active_buffer = Emulator.get_active_buffer(emulator)
+    {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
+
+    moved_cursor =
+      cond do
+        is_pid(cursor) ->
+          GenServer.call(cursor, {:move_to, x, y, buffer_width, buffer_height})
+          cursor
+        is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y, buffer_width, buffer_height)
+      end
+
+    %{emulator | cursor: moved_cursor}
+  end
 
   defp get_scroll_region_bounds(emulator, active_buffer) do
     buffer_height = ScreenBuffer.get_height(active_buffer)

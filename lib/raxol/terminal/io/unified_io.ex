@@ -445,6 +445,11 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     process_keyboard_input(state, special_key_sequence)
   end
 
+  defp process_output_data(state, data) when is_nil(data) do
+    # Handle nil data gracefully
+    {:ok, state, []}
+  end
+
   defp process_output_data(state, data) do
     # Add data to output buffer
     new_state = %{state | output_buffer: state.output_buffer <> data}

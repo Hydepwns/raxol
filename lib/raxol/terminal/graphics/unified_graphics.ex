@@ -24,9 +24,9 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
-    name = Keyword.get(opts, :name, __MODULE__)
-    gen_server_opts = Keyword.delete(opts, :name)
+    opts = if is_map(opts), do: opts, else: Enum.into(opts, %{})
+    name = Map.get(opts, :name, __MODULE__)
+    gen_server_opts = Map.delete(opts, :name)
     GenServer.start_link(__MODULE__, gen_server_opts, name: name)
   end
 
@@ -139,6 +139,8 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
       id: graphics_id,
       config: Map.merge(default_graphics_config(), config),
       buffer: <<>>,
+      back_buffer: <<>>,
+      last_render: nil,
       created_at: System.system_time(:millisecond)
     }
 

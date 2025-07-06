@@ -338,6 +338,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     :ok
   end
 
+  def cleanup(_other) do
+    # Handle cases where a plain map or other type is passed
+    :ok
+  end
+
   @doc """
   Gets the visible content for a specific buffer.
   """
@@ -369,6 +374,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       {:error, :not_found} -> {:error, :cache_miss}
       {:error, reason} -> {:error, reason}
     end
+  rescue
+    _ -> {:error, :cache_unavailable}
   end
 
   defp safe_cache_put(key, value, namespace) do
@@ -376,6 +383,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       :ok -> {:ok, value}
       {:error, reason} -> {:error, reason}
     end
+  rescue
+    _ -> {:error, :cache_unavailable}
   end
 
   defp safe_cache_clear(namespace) do
@@ -383,6 +392,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
     end
+  rescue
+    _ -> {:error, :cache_unavailable}
   end
 
   defp safe_cache_invalidate(key, namespace) do
@@ -390,6 +401,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
     end
+  rescue
+    _ -> {:error, :cache_unavailable}
   end
 
   def handle_call({:get_cell, x, y}, _from, state) do
@@ -420,6 +433,21 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
             # Cache the result for future access
             safe_cache_put(cache_key, clean_cell, :buffer)
             state = update_metrics(state, :get_cell_cache_miss, duration)
+            {:reply, {:ok, clean_cell}, state}
+        end
+
+      {:error, :cache_unavailable} ->
+        # Cache unavailable - fallback to direct access
+        result = get_cell_at_coordinates(state, x, y)
+        duration = System.monotonic_time() - start_time
+
+        case result do
+          {:invalid, default_cell} ->
+            state = update_metrics(state, :get_cell_invalid, duration)
+            {:reply, {:ok, default_cell}, state}
+
+          {:valid, clean_cell} ->
+            state = update_metrics(state, :get_cell, duration)
             {:reply, {:ok, clean_cell}, state}
         end
 

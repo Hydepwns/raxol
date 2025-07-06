@@ -194,6 +194,28 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     handle_decvpa(emulator, params)
   end
 
+  @doc """
+  Moves the cursor to a specific position with width and height bounds.
+  """
+  @spec move_cursor_to(Emulator.t(), {integer(), integer()}, integer(), integer()) :: Emulator.t()
+  def move_cursor_to(emulator, position, width, height) do
+    {row, col} = position
+    # Clamp coordinates to screen bounds
+    row_clamped = max(0, min(row, height - 1))
+    col_clamped = max(0, min(col, width - 1))
+
+    updated_cursor = set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor to a specific position.
+  """
+  @spec move_cursor_to(Emulator.t(), integer(), integer()) :: Emulator.t()
+  def move_cursor_to(emulator, x, y) do
+    move_cursor_to(emulator, {x, y}, emulator.width, emulator.height)
+  end
+
   # Private helper functions
   defp get_valid_non_neg_param(params, index, default) do
     case Enum.at(params, index) do

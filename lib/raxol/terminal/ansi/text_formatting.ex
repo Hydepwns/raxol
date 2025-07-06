@@ -234,6 +234,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   """
   @spec set_foreground(text_style(), color()) :: text_style()
   def set_foreground(style, color) do
+    # Ensure we have a proper TextFormatting struct
+    style = ensure_text_formatting_struct(style)
     %{style | foreground: color}
   end
 
@@ -243,6 +245,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   """
   @spec set_background(text_style(), color()) :: text_style()
   def set_background(style, color) do
+    # Ensure we have a proper TextFormatting struct
+    style = ensure_text_formatting_struct(style)
     %{style | background: color}
   end
 
@@ -602,6 +606,15 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   @doc """
+  Resets faint text mode.
+  """
+  @spec reset_faint(text_style()) :: text_style()
+  def reset_faint(style) do
+    %{style | faint: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
   Resets italic text mode.
   """
   @spec reset_italic(text_style()) :: text_style()
@@ -863,4 +876,13 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   def reset_encircled(style) do
     %{style | encircled: false}
   end
+
+  defp ensure_text_formatting_struct(nil), do: new()
+  defp ensure_text_formatting_struct(%__MODULE__{} = style), do: style
+  defp ensure_text_formatting_struct(style) when is_map(style) do
+    # Convert map to struct, using defaults for missing fields
+    new()
+    |> Map.merge(style)
+  end
+  defp ensure_text_formatting_struct(_), do: new()
 end

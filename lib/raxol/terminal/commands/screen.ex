@@ -169,7 +169,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     )
 
     buffer = Emulator.get_active_buffer(emulator)
-    {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
+    {top, bottom} = ScreenBuffer.get_scroll_region_boundaries(buffer)
 
     # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
     new_buffer = ScreenBuffer.scroll_down(buffer, top, bottom, count)
@@ -183,7 +183,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     )
 
     buffer = Emulator.get_active_buffer(emulator)
-    {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
+    {top, bottom} = ScreenBuffer.get_scroll_region_boundaries(buffer)
 
     # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct
     new_buffer = ScreenBuffer.scroll_up(buffer, top, bottom, lines)

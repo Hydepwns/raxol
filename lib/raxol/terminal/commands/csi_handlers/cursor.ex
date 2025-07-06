@@ -123,16 +123,18 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
 
-    IO.puts("DEBUG: handle_cup params=#{inspect(params)}, row=#{row}, col=#{col}")
-
     # Convert 1-indexed ANSI coordinates to 0-indexed internal coordinates
-    # ANSI CUP command expects {row, col} format, emulator now expects {row, col}
+    # ANSI CUP command expects {row, col} format, but cursor stores {col, row}
     row_0 = row - 1
     col_0 = col - 1
 
-    IO.puts("DEBUG: handle_cup calling move_cursor_to with {#{row_0}, #{col_0}}")
+    # Clamp to screen bounds
+    row_clamped = max(0, min(row_0, height - 1))
+    col_clamped = max(0, min(col_0, width - 1))
 
-    Emulator.move_cursor_to(emulator, {row_0, col_0}, width, height)
+    # Update cursor position - cursor stores {col, row} format
+    updated_cursor = set_cursor_position(emulator.cursor, {col_clamped, row_clamped})
+    {:ok, %{emulator | cursor: updated_cursor}}
   end
 
   @doc "Handles Horizontal Position Absolute (HPA - '`')"
@@ -155,7 +157,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
     {current_x, _} = Emulator.get_cursor_position(emulator)
-    Emulator.move_cursor_to(emulator, {current_x, row - 1}, width, height)
+    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, {current_x, row - 1}, width, height)
   end
 
   @doc "Handles Horizontal Position Relative (HPR - 'a')"
@@ -184,5 +186,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
       value when integer?(value) and value > 0 -> value
       _ -> default
     end
+  end
+
+  # Helper functions to handle cursor position
+  defp set_cursor_position(cursor, position) when is_pid(cursor) do
+    Raxol.Terminal.Cursor.Manager.set_position(cursor, position)
+    cursor
+  end
+
+  defp set_cursor_position(cursor, position) when is_map(cursor) do
+    %{cursor | position: position}
   end
 end

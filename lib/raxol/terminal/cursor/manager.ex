@@ -104,7 +104,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %__MODULE__{
       row: row,
       col: col,
-      position: {row, col}
+      position: {col, row}
     }
   end
 
@@ -772,6 +772,76 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @impl GenServer
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_down, count, width, height}, _from, state) do
+    # Move the cursor down by count lines, respecting margins
+    new_row = min(Map.get(state, :bottom_margin, height - 1), state.row + count)
+    new_state = %{state | row: new_row, position: {state.col, new_row}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_up, lines, width, height}, _from, state) do
+    # Move the cursor up by lines, respecting margins
+    new_row = max(Map.get(state, :top_margin, 0), state.row - lines)
+    new_state = %{state | row: new_row, position: {state.col, new_row}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_right, cols, width, height}, _from, state) do
+    # Move the cursor right by cols
+    new_col = state.col + cols
+    new_state = %{state | col: new_col, position: {new_col, state.row}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_left, cols, width, height}, _from, state) do
+    # Move the cursor left by cols
+    new_col = max(0, state.col - cols)
+    new_state = %{state | col: new_col, position: {new_col, state.row}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_to, x, y}, _from, state) do
+    # Move cursor to specific position
+    new_state = %{state | row: y, col: x, position: {x, y}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_to_column, column}, _from, state) do
+    # Move cursor to specific column
+    new_state = %{state | col: column, position: {column, state.row}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call(:move_to_line_start, _from, state) do
+    # Move cursor to beginning of line
+    new_state = %{state | col: 0, position: {0, state.row}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_to_column, column, width, height}, _from, state) do
+    # Move cursor to specific column with bounds clamping
+    clamped_col = max(0, min(column, width - 1))
+    new_state = %{state | col: clamped_col, position: {clamped_col, state.row}}
+    {:reply, new_state, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:move_to, x, y, width, height}, _from, state) do
+    # Move cursor to specific position with bounds clamping
+    clamped_row = max(0, min(y, height - 1))
+    clamped_col = max(0, min(x, width - 1))
+    new_state = %{state | row: clamped_row, col: clamped_col, position: {clamped_col, clamped_row}}
+    {:reply, new_state, new_state}
   end
 
   @impl GenServer
