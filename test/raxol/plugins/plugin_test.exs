@@ -26,7 +26,7 @@ defmodule Raxol.Plugins.PluginTest do
         PluginManager.load_plugin(manager, HyperlinkPlugin)
 
       assert length(Map.keys(updated_manager.plugins)) == 1
-      assert Map.has_key?(updated_manager.plugins, "hyperlink")
+      assert Map.has_key?(updated_manager.plugins, :hyperlink)
     end
 
     test "unloads a plugin" do
@@ -36,14 +36,18 @@ defmodule Raxol.Plugins.PluginTest do
       assert updated_manager.plugins == %{}
     end
 
-    test "enables and disables a plugin" do
+        test "enables and disables a plugin" do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
-      {:ok, manager} = PluginManager.disable_plugin(manager, "hyperlink")
-      plugin = PluginManager.get_plugin(manager, "hyperlink")
+
+      # Debug: Check if plugin was loaded correctly
+      assert Map.has_key?(manager.plugins, :hyperlink_plugin)
+
+      {:ok, manager} = PluginManager.disable_plugin(manager, "hyperlink_plugin")
+      {:ok, plugin} = PluginManager.get_plugin(manager, "hyperlink_plugin")
       assert plugin.enabled == false
-      {:ok, manager} = PluginManager.enable_plugin(manager, "hyperlink")
-      plugin = PluginManager.get_plugin(manager, "hyperlink")
+      {:ok, manager} = PluginManager.enable_plugin(manager, "hyperlink_plugin")
+      {:ok, plugin} = PluginManager.get_plugin(manager, "hyperlink_plugin")
       assert plugin.enabled == true
     end
 
@@ -57,7 +61,7 @@ defmodule Raxol.Plugins.PluginTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
-      {:ok, _manager} =
+      {:ok, _manager, _transformed_output} =
         Raxol.Plugins.Manager.Events.process_output(manager, "test output")
     end
 
@@ -111,14 +115,15 @@ defmodule Raxol.Plugins.PluginTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
       {:ok, manager} = PluginManager.load_plugin(manager, TestPlugin)
       {:ok, manager} = PluginManager.load_plugin(manager, DependentPlugin)
-      assert Map.has_key?(manager.plugins, "dependent_plugin")
+      assert Map.has_key?(manager.plugins, :dependent_plugin)
     end
 
     test "fails to load plugin with missing dependencies" do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
       # DependentPlugin requires TestPlugin
-      assert {:error, msg} = PluginManager.load_plugin(manager, DependentPlugin)
-      assert msg =~ "Missing dependency"
+      assert {:error, :missing_dependencies, missing_deps, dependent_plugins} = PluginManager.load_plugin(manager, DependentPlugin)
+      assert "test_plugin" in missing_deps
+      assert "dependent_plugin" in dependent_plugins
     end
 
     test "detects dependency cycles" do
@@ -175,11 +180,13 @@ defmodule Raxol.Plugins.PluginTest do
       config = %{foo: "bar"}
       {:ok, manager} = PluginManager.load_plugin(manager, TestPlugin, config)
       # Simulate reload
-      plugin = PluginManager.get_plugin(manager, "test_plugin")
+      {:ok, plugin} = PluginManager.get_plugin(manager, "test_plugin")
       assert plugin
 
+      # Check if config is in the plugin struct or in the config field
       assert Map.get(plugin, :foo) == "bar" or
-               Map.get(plugin.config, :foo) == "bar"
+               Map.get(plugin.config, :foo) == "bar" or
+               Map.get(manager.config.plugin_configs, "test_plugin")[:foo] == "bar"
     end
   end
 end

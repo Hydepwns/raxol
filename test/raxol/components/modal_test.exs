@@ -381,9 +381,11 @@ defmodule Raxol.UI.Components.ModalTest do
       Modal.form(:my_form, "Test Form", fields, :form_submitted, :form_canceled)
 
     state = Modal.init(Map.new(props))
+
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
     {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
+    IO.inspect(new_state.visible, label: "new_state.visible")
 
     # Modal should hide on submit
     assert new_state.visible == false

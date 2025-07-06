@@ -97,14 +97,16 @@ defmodule Raxol.Terminal.Operations.TextOperationsTest do
       emulator = TestHelper.create_test_emulator()
       cell = TextOperations.get_cell_at(emulator, 0, 0)
       assert cell.char == " "
-      assert cell.style == %{}
+      # Cell.new() returns a TextFormatting struct, not an empty map
+      assert is_struct(cell.style, Raxol.Terminal.ANSI.TextFormatting)
     end
 
     test "handles out of bounds position" do
       emulator = TestHelper.create_test_emulator()
       cell = TextOperations.get_cell_at(emulator, 100, 100)
       assert cell.char == " "
-      assert cell.style == %{}
+      # Cell.new() returns a TextFormatting struct, not an empty map
+      assert is_struct(cell.style, Raxol.Terminal.ANSI.TextFormatting)
     end
   end
 end

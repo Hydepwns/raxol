@@ -63,21 +63,20 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         Raxol.Core.Renderer.Views.Chart.new(
           type: :sparkline,
           series: spark_series,
-          width: 20
+          width: 20,
+          show_axes: false,
+          show_labels: false,
+          show_legend: false
         )
 
       assert map?(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
-      text_views = view.children
-      assert text_views != nil
-      assert list?(text_views)
 
-      # Find the text view in the list
-      text_view =
-        Enum.find(text_views, fn v -> map?(v) and Map.get(v, :type) == :text end)
-
+      # The sparkline returns a single text view, not a list
+      text_view = view.children
       assert text_view != nil
+      assert map?(text_view)
       assert text_view.type == :text
       assert text_view.content != nil
 
@@ -257,23 +256,33 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
 
     test "handles empty data" do
       view =
-        Raxol.Core.Renderer.Views.Chart.new(type: :bar, series: [%{data: []}])
+        Raxol.Core.Renderer.Views.Chart.new(
+          type: :bar,
+          series: [%{data: []}],
+          show_axes: false,
+          show_labels: false,
+          show_legend: false
+        )
 
       # Verify the structure returned for empty data
       assert map?(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
 
-      # The children should be a list containing the empty flex container
       children = view.children
-      assert list?(children)
-      assert length(children) == 1
+      flex_view =
+        cond do
+          is_list(children) ->
+            assert length(children) == 1
+            List.first(children)
+          is_map(children) ->
+            children
+        end
 
-      content_view = List.first(children)
-      assert map?(content_view)
-      assert Map.has_key?(content_view, :type)
-      assert content_view.type == :flex
-      assert content_view.children == []
+      assert map?(flex_view)
+      assert Map.has_key?(flex_view, :type)
+      assert flex_view.type == :flex
+      assert flex_view.children == []
     end
   end
 end

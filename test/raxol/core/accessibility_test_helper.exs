@@ -33,10 +33,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     # Ensure EventManager is started
     Raxol.Core.Events.Manager.init()
 
-    {:ok, _pid} =
-      GenServer.start_link(UserPreferences, [test_mode?: true],
-        name: prefs_name
-      )
+    pid = start_supervised!({UserPreferences, [test_mode?: true, name: prefs_name]})
 
     Raxol.Core.UserPreferences.set(pref_key(:enabled), true, prefs_name)
     Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, prefs_name)
@@ -52,7 +49,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     )
 
     on_exit(fn ->
-      if pid = Process.whereis(prefs_name), do: GenServer.stop(pid)
+      # Only clean up EventManager
       Raxol.Core.Events.Manager.cleanup()
     end)
 
@@ -63,10 +60,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     # Ensure EventManager is started
     Raxol.Core.Events.Manager.init()
 
-    {:ok, pid_of_prefs} =
-      GenServer.start_link(UserPreferences, [test_mode?: true],
-        name: prefs_name
-      )
+    pid_of_prefs = start_supervised!({UserPreferences, [test_mode?: true, name: prefs_name]})
 
     # Set up preferences
     Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, prefs_name)
@@ -74,8 +68,11 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     Raxol.Core.Accessibility.clear_announcements()
 
     on_exit(fn ->
-      Raxol.Core.Accessibility.disable(prefs_name)
-      if Process.alive?(pid_of_prefs), do: GenServer.stop(pid_of_prefs)
+      # Clean up accessibility first, but only if the process is alive
+      if Process.whereis(prefs_name) && Process.alive?(Process.whereis(prefs_name)) do
+        Raxol.Core.Accessibility.disable(prefs_name)
+      end
+      # Only clean up EventManager
       Raxol.Core.Events.Manager.cleanup()
     end)
 

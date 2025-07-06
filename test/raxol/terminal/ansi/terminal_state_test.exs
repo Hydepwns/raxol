@@ -54,8 +54,8 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert TerminalState.count(stack) == 1
 
       [saved_state | _] = stack
-      assert saved_state.cursor.x == 10
-      assert saved_state.cursor.y == 5
+      assert saved_state.cursor.col == 10
+      assert saved_state.cursor.row == 5
       assert saved_state.style == initial_style
 
       assert saved_state.charset_state ==
@@ -82,12 +82,12 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert TerminalState.count(stack) == 2
 
       [saved_state2, saved_state1 | _] = stack
-      assert saved_state2.cursor.x == 20
-      assert saved_state2.cursor.y == 10
+      assert saved_state2.cursor.col == 20
+      assert saved_state2.cursor.row == 10
       assert saved_state2.style == style2
       assert saved_state2.cursor_style == :steady_block
-      assert saved_state1.cursor.x == 10
-      assert saved_state1.cursor.y == 5
+      assert saved_state1.cursor.col == 10
+      assert saved_state1.cursor.row == 5
       assert saved_state1.style == style1
       assert saved_state1.cursor_style == :blinking_block
     end
@@ -103,11 +103,11 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       emulator_state = create_test_emulator({10, 5}, initial_style, {5, 15})
 
       stack = TerminalState.save_state(stack, emulator_state)
-      {stack, restored_state} = TerminalState.restore_state(stack)
+      {restored_state, stack} = TerminalState.restore_state(stack)
 
       assert TerminalState.empty?(stack) == true
-      assert restored_state.cursor.x == 10
-      assert restored_state.cursor.y == 5
+      assert restored_state.cursor.col == 10
+      assert restored_state.cursor.row == 5
       assert restored_state.style == initial_style
       assert restored_state.scroll_region == {5, 15}
       assert restored_state.cursor_style == :blinking_block
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
     test ~c"returns nil when restoring from an empty stack" do
       stack = []
-      {stack, restored_state} = TerminalState.restore_state(stack)
+      {restored_state, stack} = TerminalState.restore_state(stack)
 
       assert stack == []
       assert restored_state == nil
@@ -135,15 +135,15 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       stack = TerminalState.save_state(stack, emulator_state1)
       stack = TerminalState.save_state(stack, emulator_state2)
 
-      {stack, restored_state2} = TerminalState.restore_state(stack)
-      assert restored_state2.cursor.x == 20
-      assert restored_state2.cursor.y == 10
+      {restored_state2, stack} = TerminalState.restore_state(stack)
+      assert restored_state2.cursor.col == 20
+      assert restored_state2.cursor.row == 10
       assert restored_state2.style == style2
       assert restored_state2.cursor_style == :steady_block
 
-      {stack, restored_state1} = TerminalState.restore_state(stack)
-      assert restored_state1.cursor.x == 10
-      assert restored_state1.cursor.y == 5
+      {restored_state1, stack} = TerminalState.restore_state(stack)
+      assert restored_state1.cursor.col == 10
+      assert restored_state1.cursor.row == 5
       assert restored_state1.style == style1
       assert restored_state1.cursor_style == :blinking_block
 
@@ -171,17 +171,17 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
   describe "get_state_stack/1" do
     test ~c"returns the current terminal state stack" do
-      stack = []
+      state = TerminalState.new()
 
       initial_style =
         TextFormatting.new() |> TextFormatting.set_foreground(:red)
 
       emulator_state = create_test_emulator({10, 5}, initial_style, {5, 15})
 
-      stack = TerminalState.save_state(stack, emulator_state)
-      retrieved_stack = TerminalState.get_state_stack(stack)
+      state = TerminalState.update_state_stack(state, [emulator_state])
+      retrieved_stack = TerminalState.get_state_stack(state)
 
-      assert retrieved_stack == stack
+      assert retrieved_stack == [emulator_state]
       assert length(retrieved_stack) == 1
     end
   end

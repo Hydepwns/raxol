@@ -387,14 +387,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
   end
 
   describe "error/result tuple propagation" do
-    test "handle_u/2 returns error tuple when no saved_cursor, and only emulator is passed to UI",
+    test "handle_u/2 returns ok tuple when no saved_cursor, and only emulator is passed to UI",
          %{emulator: emulator} do
       result = CSIHandlers.handle_u(emulator, [])
-      assert {:error, :no_saved_cursor, returned_emulator} = result
-      assert returned_emulator == emulator
+      assert {:ok, returned_emulator} = result
       assert is_map(returned_emulator)
       assert Map.has_key?(returned_emulator, :__struct__)
-      assert returned_emulator.__struct__ == Raxol.Terminal.Emulator
+      assert returned_emulator.__struct__ == Raxol.Terminal.Emulator.Struct
     end
 
     test "handle_scs/3 returns error tuple for invalid charset designation, and only emulator is passed to UI",

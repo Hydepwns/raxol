@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert String.starts_with?(first_line_text, "Hello")
 
       # Verify cursor position (0-based)
-      assert state.cursor.position == {5, 0}
+      assert Emulator.get_cursor_position(state) == {5, 0}
 
       # Add more text
       {state, _output} = Emulator.process_input(state, " World")
@@ -51,13 +51,13 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert String.starts_with?(first_line_text, "Hello World")
 
       # Verify cursor position after adding more text (0-based)
-      assert state.cursor.position == {11, 0}
+      assert Emulator.get_cursor_position(state) == {11, 0}
 
       # Add a newline
       {state, _output} = Emulator.process_input(state, "\n")
 
       # Verify cursor moved to next line (0-based)
-      assert state.cursor.position == {0, 1}
+      assert Emulator.get_cursor_position(state) == {0, 1}
 
       # Add text on new line
       {state, _output} = Emulator.process_input(state, "New Line")
@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert String.starts_with?(second_line_text, "New Line")
 
       # Verify final cursor position (0-based)
-      assert state.cursor.position == {8, 1}
+      assert Emulator.get_cursor_position(state) == {8, 1}
     end
 
     test "handles cursor movement with arrow keys", %{state: initial_state} do
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state, _output} = Emulator.process_input(state, "\e[D")
 
       # Verify cursor position (0-based)
-      assert state.cursor.position == {2, 0}
+      assert Emulator.get_cursor_position(state) == {2, 0}
     end
 
     test ~c"handles line wrapping" do
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state, _output} = Emulator.process_input(initial_state, "\e[10;5H")
 
       # Convert 1-based ANSI coordinates to 0-based internal coordinates
-      assert state.cursor.position == {4, 9}
+      assert Emulator.get_cursor_position(state) == {4, 9}
     end
 
     test "handles screen clearing", %{state: initial_state} do
