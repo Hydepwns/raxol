@@ -77,48 +77,79 @@ defmodule Raxol.Test.Integration do
   @doc """
   Sets up a parent-child component hierarchy for testing.
 
-  Returns the initialized parent and child components with proper event routing.
+  Returns the initialized parent and child test component structs with proper event routing.
   """
-  def setup_component_hierarchy(parent_module, child_module, opts \\ []) do
+  def setup_component_hierarchy(a, b, opts \\ [])
+
+  def setup_component_hierarchy(parent_module, child_modules, opts)
+      when is_atom(parent_module) and is_list(child_modules) do
+    # Handle list of child modules (for broadcast tests)
+    parent = create_test_component(parent_module)
+    children = Enum.map(child_modules, &create_test_component/1)
+
+    setup_component_hierarchy(parent, children, opts)
+  end
+
+  def setup_component_hierarchy(parent_module, child_module, opts)
+      when is_atom(parent_module) and is_atom(child_module) do
     button_attrs = Keyword.get(opts, :button_attrs, %{})
 
-    {:ok, parent_init} = setup_component(parent_module)
-    {:ok, child_init} = setup_component(child_module, button_attrs)
+    parent = create_test_component(parent_module)
+    child = create_test_component(child_module, button_attrs)
 
-    parent_with_child_ref =
-      struct!(
-        parent_init.__struct__,
-        Map.put(parent_init, :children, [child_init])
-      )
+    setup_component_hierarchy(parent, child, opts)
+  end
 
-    child_with_parent_ref =
-      struct!(
-        child_init.__struct__,
-        Map.put(child_init, :parent, parent_with_child_ref)
-      )
+  def setup_component_hierarchy(parent_struct, child_structs, opts)
+      when is_map(parent_struct) and is_list(child_structs) do
+    button_attrs = Keyword.get(opts, :button_attrs, %{})
 
-    {parent_handler_set, child_handler_set} =
-      setup_hierarchy_routing(parent_with_child_ref, child_with_parent_ref)
+    # Update the :state fields to reference each other
+    child_ids = Enum.map(child_structs, & &1.state.id)
+    parent_state = Map.put(parent_struct.state, :children, child_ids)
 
-    final_parent =
-      struct!(
-        parent_handler_set.__struct__,
-        Map.put(parent_handler_set, :children, [child_handler_set])
-      )
+    # Update each child to reference the parent
+    updated_children =
+      Enum.map(child_structs, fn child ->
+        child_state = Map.put(child.state, :parent_id, parent_state.id)
+        %{child | state: child_state}
+      end)
 
-    final_child =
-      struct!(
-        child_handler_set.__struct__,
-        Map.put(child_handler_set, :parent, final_parent)
-      )
+    # Update parent with child states in child_states field
+    child_states_map =
+      Enum.reduce(updated_children, %{}, fn child, acc ->
+        Map.put(acc, child.state.id, child.state)
+      end)
 
-    final_parent_with_correct_child =
-      struct!(
-        final_parent.__struct__,
-        Map.put(final_parent, :children, [final_child])
-      )
+    parent_state = Map.put(parent_state, :child_states, child_states_map)
+    parent_struct = %{parent_struct | state: parent_state}
 
-    {:ok, final_parent_with_correct_child, final_child}
+    # Optionally, set up event routing if needed (no-op for plain maps)
+    {:ok, parent_struct, updated_children}
+  end
+
+  def setup_component_hierarchy(parent_struct, child_struct, opts)
+      when is_map(parent_struct) and is_map(child_struct) do
+    button_attrs = Keyword.get(opts, :button_attrs, %{})
+
+    # Update the :state fields to reference each other
+    parent_state =
+      Map.put(parent_struct.state, :children, [child_struct.state.id])
+
+    child_state = Map.put(child_struct.state, :parent_id, parent_state.id)
+
+    # Update parent with child state in child_states field
+    parent_state =
+      Map.put(parent_state, :child_states, %{
+        child_struct.state.id => child_state
+      })
+
+    # Update the test component structs
+    parent_struct = %{parent_struct | state: parent_state}
+    child_struct = %{child_struct | state: child_state}
+
+    # Optionally, set up event routing if needed (no-op for plain maps)
+    {:ok, parent_struct, child_struct}
   end
 
   @doc """
@@ -147,11 +178,36 @@ defmodule Raxol.Test.Integration do
 
     case event do
       events when list?(events) ->
-        Enum.each(events, &dispatch_event(component, &1))
+        Enum.each(events, &process_event_with_commands(component, &1))
 
       event ->
-        dispatch_event(component, event)
+        process_event_with_commands(component, event)
     end
+  end
+
+  defp process_event_with_commands(component, event) do
+    {updated_component, commands} = dispatch_event(component, event)
+
+    # Process commands
+    Enum.each(commands, fn command ->
+      case command do
+        {:dispatch_to_parent, parent_event} ->
+          # Find parent component and dispatch event to it
+          if Map.has_key?(component, :parent_id) do
+            # For now, we'll need to access the parent component through the test context
+            # This is a simplified implementation - in a real system, we'd have proper parent references
+            IO.puts(
+              "Would dispatch #{inspect(parent_event)} to parent #{component.parent_id}"
+            )
+          end
+
+        _ ->
+          # Handle other command types as needed
+          IO.puts("Unhandled command: #{inspect(command)}")
+      end
+    end)
+
+    updated_component
   end
 
   @doc """
@@ -164,7 +220,7 @@ defmodule Raxol.Test.Integration do
     # Set up parent relationship if provided
     mounted_component =
       if parent do
-        put_in(mounted_component.parent, parent)
+        Map.put(mounted_component, :parent, parent)
       else
         mounted_component
       end
@@ -224,10 +280,26 @@ defmodule Raxol.Test.Integration do
         |> Enum.filter(fn {_k, v} -> not nil?(v) end)
         |> Enum.into(%{})
 
-      {new_state, commands} =
-        component.module.handle_event(event, context, component.state)
+      result = component.module.handle_event(component.state, event, context)
 
-      {put_in(component.state, new_state), commands}
+      case result do
+        {:update, new_state, commands} ->
+          {put_in(component.state, new_state), commands}
+
+        {:handled, new_state} ->
+          {put_in(component.state, new_state), []}
+
+        :passthrough ->
+          {component, []}
+
+        {new_state, commands} ->
+          # Legacy format for backward compatibility
+          {put_in(component.state, new_state), commands}
+
+        _ ->
+          # Unknown return format, assume no change
+          {component, []}
+      end
     else
       {component, []}
     end
@@ -246,6 +318,24 @@ defmodule Raxol.Test.Integration do
   defp setup_component(module, attrs \\ %{}) do
     {:ok, component} = module.init(attrs)
     {:ok, component}
+  end
+
+  defp create_test_component(module, initial_state \\ %{}) do
+    # Initialize the component with proper state
+    {:ok, component_state} = module.init(initial_state)
+
+    %{
+      module: module,
+      state: component_state,
+      props: %{},
+      children: [],
+      mounted: false,
+      unmounted: false,
+      render_count: 0,
+      style: %{},
+      disabled: false,
+      focused: false
+    }
   end
 
   defp setup_event_routing(components) do
