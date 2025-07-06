@@ -1,4 +1,5 @@
 defmodule Raxol.Core.Accessibility.Announcements do
+  use Agent
   import Raxol.Guards
 
   @moduledoc """
@@ -7,6 +8,23 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
   alias Raxol.Core.Events.Manager, as: EventManager
   require Raxol.Core.Runtime.Log
+
+  # Start the Agent for global subscription storage
+  def start_link(_opts) do
+    Agent.start_link(fn -> %{} end, name: __MODULE__.Subscriptions)
+  end
+
+  def add_subscription(ref, pid) do
+    Agent.update(__MODULE__.Subscriptions, &Map.put(&1, ref, pid))
+  end
+
+  def remove_subscription(ref) do
+    Agent.update(__MODULE__.Subscriptions, &Map.delete(&1, ref))
+  end
+
+  def get_subscriptions do
+    Agent.get(__MODULE__.Subscriptions, & &1)
+  end
 
   @doc """
   Make an announcement for screen readers.
@@ -80,6 +98,9 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
         Process.put(:accessibility_announcements, updated_queue)
 
+        # Send announcement_added messages to subscribers
+        send_announcement_to_subscribers(message)
+
         # Dispatch event to notify screen readers
         EventManager.dispatch({:accessibility_announce, message})
     end
@@ -127,6 +148,10 @@ defmodule Raxol.Core.Accessibility.Announcements do
   """
   def clear_announcements do
     Process.put(:accessibility_announcements, [])
+
+    # Send announcements_cleared messages to subscribers
+    send_clear_message_to_subscribers()
+
     :ok
   end
 
@@ -161,6 +186,24 @@ defmodule Raxol.Core.Accessibility.Announcements do
     Enum.sort_by(queue ++ [announcement], fn item ->
       # Sort descending by priority
       Map.get(priority_order, item.priority, 2) * -1
+    end)
+  end
+
+  defp send_announcement_to_subscribers(message) do
+    subscriptions = get_subscriptions()
+    Enum.each(subscriptions, fn {ref, pid} ->
+      if Process.alive?(pid) do
+        send(pid, {:announcement_added, ref, message})
+      end
+    end)
+  end
+
+  defp send_clear_message_to_subscribers do
+    subscriptions = get_subscriptions()
+    Enum.each(subscriptions, fn {ref, pid} ->
+      if Process.alive?(pid) do
+        send(pid, {:announcements_cleared, ref})
+      end
     end)
   end
 end

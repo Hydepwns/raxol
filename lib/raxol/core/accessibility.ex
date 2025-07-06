@@ -563,25 +563,36 @@ defmodule Raxol.Core.Accessibility do
   """
   @spec get_next_announcement() :: String.t() | nil
   def get_next_announcement() do
-    # For test purposes, just return nil
-    nil
+    # Get announcements from the global queue
+    queue = Process.get(:accessibility_announcements, [])
+
+    case queue do
+      [] ->
+        nil
+
+      [next | rest] ->
+        Process.put(:accessibility_announcements, rest)
+        next.message
+    end
   end
 
   @doc """
   Subscribes to announcements.
   """
-  @spec subscribe_to_announcements(pid()) :: :ok
-  def subscribe_to_announcements(_ref) do
-    # For test purposes, just return ok
+  @spec subscribe_to_announcements(integer()) :: :ok
+  def subscribe_to_announcements(ref) when is_integer(ref) do
+    Raxol.Core.Accessibility.Announcements.add_subscription(ref, self())
+    EventManager.subscribe([:accessibility_announce])
     :ok
   end
 
   @doc """
   Unsubscribes from announcements.
   """
-  @spec unsubscribe_from_announcements(pid()) :: :ok
-  def unsubscribe_from_announcements(_ref) do
-    # For test purposes, just return ok
+  @spec unsubscribe_from_announcements(integer()) :: :ok
+  def unsubscribe_from_announcements(ref) when is_integer(ref) do
+    Raxol.Core.Accessibility.Announcements.remove_subscription(ref)
+    EventManager.unsubscribe(ref)
     :ok
   end
 
