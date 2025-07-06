@@ -114,7 +114,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
         metadata = get_element_metadata(element)
 
         if metadata,
-          do: safe_map_get(metadata, :label) || "Element #{element}",
+          do: safe_map_get(metadata, :label),
           else: nil
 
       map?(element) && Map.has_key?(element, :label) ->
@@ -126,7 +126,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
         metadata = get_element_metadata(element.id)
 
         if metadata,
-          do: safe_map_get(metadata, :label) || "Element #{element.id}",
+          do: safe_map_get(metadata, :label),
           else: nil
 
       true ->

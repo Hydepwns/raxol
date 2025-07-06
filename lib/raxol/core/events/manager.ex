@@ -192,12 +192,26 @@ defmodule Raxol.Core.Events.Manager do
     # Extract event type from event
     event_type = extract_event_type(event)
 
+    require Raxol.Core.Runtime.Log
+
+    Raxol.Core.Runtime.Log.debug(
+      "EventManager.dispatch called with event: #{inspect(event)}, type: #{inspect(event_type)}"
+    )
+
     # Get handlers for this event type
     handlers = Process.get(:event_handlers) || %{}
     event_handlers = Map.get(handlers, event_type, [])
 
+    Raxol.Core.Runtime.Log.debug(
+      "Found #{length(event_handlers)} handlers for event type #{inspect(event_type)}: #{inspect(event_handlers)}"
+    )
+
     # Call each handler
     Enum.each(event_handlers, fn {module, function} ->
+      Raxol.Core.Runtime.Log.debug(
+        "Calling handler: #{inspect(module)}.#{inspect(function)}"
+      )
+
       apply(module, function, [event])
     end)
 
@@ -279,10 +293,12 @@ defmodule Raxol.Core.Events.Manager do
 
   # Private functions
 
-  defp extract_event_type(event) when atom?(event), do: event
+  defp extract_event_type(event)
+       when is_tuple(event) and tuple_size(event) > 0 do
+    elem(event, 0)
+  end
 
-  defp extract_event_type({event_type, _data}) when atom?(event_type),
-    do: event_type
+  defp extract_event_type(event) when atom?(event), do: event
 
   defp extract_event_type(_), do: :unknown
 

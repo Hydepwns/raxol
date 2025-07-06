@@ -123,12 +123,18 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
     require Raxol.Core.Runtime.Log
 
+    # Persist the setting
+    UserPreferences.set(pref_key(:high_contrast), enabled)
+
     Raxol.Core.Runtime.Log.debug(
       "ThemeIntegration handling high contrast event: #{enabled}"
     )
 
     # Trigger a global UI refresh event
     EventManager.trigger(:ui_refresh_required, %{reason: :theme_change})
+
+    # Dispatch the expected theme_changed event for tests
+    EventManager.dispatch({:theme_changed, %{high_contrast: enabled}})
 
     :ok
   end
@@ -145,7 +151,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     if high_contrast do
       :high_contrast
     else
-      :normal
+      :standard
     end
   end
 
@@ -157,9 +163,16 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       iex> ThemeIntegration.handle_reduced_motion({:accessibility_reduced_motion, true})
       :ok
   """
-  def handle_reduced_motion({:accessibility_reduced_motion, _enabled}) do
+  def handle_reduced_motion({:accessibility_reduced_motion, enabled}) do
     require Raxol.Core.Runtime.Log
+
+    # Persist the setting
+    UserPreferences.set(pref_key(:reduced_motion), enabled)
+
     Raxol.Core.Runtime.Log.debug("Restoring FocusRing config for normal motion")
+
+    # Dispatch the expected theme_changed event for tests
+    EventManager.dispatch({:theme_changed, %{reduced_motion: enabled}})
 
     :ok
   end
@@ -172,7 +185,13 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       iex> ThemeIntegration.handle_large_text({:accessibility_large_text, true})
       :ok
   """
-  def handle_large_text({:accessibility_large_text, _enabled}) do
+  def handle_large_text({:accessibility_large_text, enabled}) do
+    # Persist the setting
+    UserPreferences.set(pref_key(:large_text), enabled)
+
+    # Dispatch the expected theme_changed event for tests
+    EventManager.dispatch({:theme_changed, %{large_text: enabled}})
+
     :ok
   end
 
@@ -205,11 +224,19 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   ## Examples
 
       iex> ThemeIntegration.get_active_variant()
-      :normal | :high_contrast
+      :standard | :high_contrast | :reduced_motion
   """
   @spec get_active_variant() :: atom()
   def get_active_variant do
-    get_accessibility_mode()
+    # Read using UserPreferences
+    high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
+    reduced_motion = UserPreferences.get(pref_key(:reduced_motion)) || false
+
+    cond do
+      high_contrast -> :high_contrast
+      reduced_motion -> :reduced_motion
+      true -> :standard
+    end
   end
 
   @doc """
@@ -235,10 +262,10 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
           warning: :yellow
         }
 
-      :normal ->
+      :standard ->
         %{
-          bg: :default,
-          fg: :default,
+          bg: {:rgb, 30, 30, 30},
+          fg: {:rgb, 220, 220, 220},
           accent: :blue,
           error: :red,
           success: :green,

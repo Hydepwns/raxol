@@ -18,15 +18,29 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
         {:focus_change, _old_element, new_element},
         user_preferences_pid_or_name
       ) do
+    Raxol.Core.Runtime.Log.debug(
+      "EventHandlers.handle_focus_change called with: #{inspect(new_element)}, prefs: #{inspect(user_preferences_pid_or_name)}"
+    )
+
     if Preferences.get_option(:screen_reader, user_preferences_pid_or_name) do
       # Get accessible name/label for the element if metadata exists
       announcement = Metadata.get_accessible_name(new_element)
 
+      Raxol.Core.Runtime.Log.debug("Got announcement: #{inspect(announcement)}")
+
       if announcement do
         Announcements.announce(announcement, [], user_preferences_pid_or_name)
+
+        Raxol.Core.Runtime.Log.debug(
+          "Announcement made: #{inspect(announcement)}"
+        )
       end
 
       Raxol.Core.Runtime.Log.debug("Focus changed to: #{inspect(new_element)}")
+    else
+      Raxol.Core.Runtime.Log.debug(
+        "Screen reader disabled for: #{inspect(user_preferences_pid_or_name)}"
+      )
     end
 
     :ok
