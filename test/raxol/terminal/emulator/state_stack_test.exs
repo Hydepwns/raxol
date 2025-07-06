@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       {emulator_restored1, ""} = Emulator.process_input(emulator2, "\e8")
 
       # Check state restored to State 1's values
-      assert emulator_restored1.cursor.position == {1, 1}
+      assert Manager.get_position(emulator_restored1.cursor) == {1, 1}
       # Check style directly
       assert emulator_restored1.style.bold == true
       assert emulator_restored1.style.underline == false
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
 
       # Verify cursor position IS restored
       # Compare position tuple directly
-      assert emulator.cursor.position == cursor_snapshot.position
+      assert Manager.get_position(emulator.cursor) == Manager.get_position(cursor_snapshot)
       # Verify style IS NOT restored (should remain the style set in step 3)
       assert emulator.style == style_after_change
       # Explicitly check it's different from original

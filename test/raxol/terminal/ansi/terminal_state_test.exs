@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     emulator = Emulator.new(80, 24)
     cursor = Raxol.Terminal.Cursor.Manager.new(%{row: y, col: x})
 
-    emulator = %{
+    %Emulator{
       emulator
       | cursor: cursor,
         style: style,
@@ -25,8 +25,6 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
         scroll_region: scroll_region,
         cursor_style: cursor_style
     }
-
-    emulator
   end
 
   describe "new/0" do

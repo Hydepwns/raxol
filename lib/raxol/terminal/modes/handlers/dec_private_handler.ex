@@ -57,14 +57,23 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   defp apply_mode_effects(mode_def, value, emulator) do
+    IO.puts("DEBUG: DECPrivateHandler.apply_mode_effects called with mode_def.name=#{inspect(mode_def.name)}, value=#{inspect(value)}")
     case get_mode_handler(mode_def.name) do
-      {:ok, handler} -> handler.(value, emulator)
-      :error -> {:error, :unsupported_mode}
+      {:ok, handler} ->
+        IO.puts("DEBUG: DECPrivateHandler found handler for #{inspect(mode_def.name)}")
+        handler.(value, emulator)
+      :error ->
+        IO.puts("DEBUG: DECPrivateHandler no handler found for #{inspect(mode_def.name)}")
+        {:error, :unsupported_mode}
     end
   end
 
   defp get_mode_handler(mode_name) do
-    Map.fetch(@mode_handlers, mode_name)
+    IO.puts("DEBUG: DECPrivateHandler.get_mode_handler called with mode_name=#{inspect(mode_name)}")
+    IO.puts("DEBUG: DECPrivateHandler available handlers: #{inspect(Map.keys(@mode_handlers))}")
+    result = Map.fetch(@mode_handlers, mode_name)
+    IO.puts("DEBUG: DECPrivateHandler.get_mode_handler result: #{inspect(result)}")
+    result
   end
 
   def handle_column_width_mode_wide(value, emulator) do
@@ -85,7 +94,11 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_column_width_mode(value, emulator, width_mode) do
     target_width = calculate_target_width(width_mode, value)
+    new_column_mode = calculate_column_width_mode(width_mode, value)
+
     emulator = resize_emulator_buffers(emulator, target_width)
+    emulator = update_column_width_mode(emulator, new_column_mode)
+
     {:ok, emulator}
   end
 

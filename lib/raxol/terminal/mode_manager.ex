@@ -75,11 +75,11 @@ defmodule Raxol.Terminal.ModeManager do
   Sets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
   """
-  @spec set_mode(Emulator.t(), [mode()]) ::
+  @spec set_mode(Emulator.t(), [mode()], atom() | nil) ::
           {:ok, Emulator.t()} | {:error, term()}
-  def set_mode(emulator, modes) when list?(modes) do
+  def set_mode(emulator, modes, category \\ nil) when list?(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
-      case do_set_mode(mode, emu) do
+      case do_set_mode(mode, emu, category) do
         {:ok, new_emu} -> {:cont, {:ok, new_emu}}
         {:error, reason} -> {:halt, {:error, reason}}
       end
@@ -90,11 +90,11 @@ defmodule Raxol.Terminal.ModeManager do
   Resets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
   """
-  @spec reset_mode(Emulator.t(), [mode()]) ::
+  @spec reset_mode(Emulator.t(), [mode()], atom() | nil) ::
           {:ok, Emulator.t()} | {:error, term()}
-  def reset_mode(emulator, modes) when list?(modes) do
+  def reset_mode(emulator, modes, category \\ nil) when list?(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
-      case do_reset_mode(mode, emu) do
+      case do_reset_mode(mode, emu, category) do
         {:ok, new_emu} -> {:cont, {:ok, new_emu}}
         {:error, reason} -> {:halt, {:error, reason}}
       end
@@ -179,8 +179,8 @@ defmodule Raxol.Terminal.ModeManager do
 
   # --- Private Set/Reset Helpers ---
 
-  defp do_set_mode(mode_name, emulator) do
-    with {:ok, mode_def} <- find_mode_definition(mode_name),
+  defp do_set_mode(mode_name, emulator, category) do
+    with {:ok, mode_def} <- find_mode_definition(mode_name, category),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, true) do
       new_mode_manager =
         update_mode_manager_state(new_emu.mode_manager, mode_name, true)
@@ -189,8 +189,8 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  defp do_reset_mode(mode_name, emulator) do
-    with {:ok, mode_def} <- find_mode_definition(mode_name),
+  defp do_reset_mode(mode_name, emulator, category \\ nil) do
+    with {:ok, mode_def} <- find_mode_definition(mode_name, category),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, false) do
       new_mode_manager =
         update_mode_manager_state(new_emu.mode_manager, mode_name, false)
@@ -199,101 +199,50 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  defp find_mode_definition(mode_name) do
+  defp find_mode_definition(mode_name, category) do
+    # For nil category, look for :standard modes
+    search_category = if category == nil, do: :standard, else: category
+
+    # Search all mode definitions for exact name and category match
+    # The new get_all_modes() returns a map with tuple keys like {code, category}
     case ModeTypes.get_all_modes()
          |> Map.values()
-         |> Enum.find(&(&1.name == mode_name)) do
-      nil -> {:error, :invalid_mode}
-      mode_def -> {:ok, mode_def}
+         |> Enum.find(fn mode_def -> mode_def.name == mode_name and mode_def.category == search_category end) do
+      nil ->
+        {:error, :invalid_mode}
+      mode_def ->
+        {:ok, mode_def}
     end
   end
 
   defp apply_mode_effects(mode_def, emulator, value) do
-    result =
-      case mode_def.category do
-        :dec_private ->
-          DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
-
-        :standard ->
-          StandardHandler.handle_mode_change(mode_def.name, value, emulator)
-
-        :mouse ->
-          MouseHandler.handle_mode_change(mode_def.name, value, emulator)
-
-        :screen_buffer ->
-          ScreenBufferHandler.handle_mode_change(mode_def.name, value, emulator)
-      end
-
-    result
+    case mode_def.category do
+      :dec_private ->
+        DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
+      :standard ->
+        StandardHandler.handle_mode_change(mode_def.name, value, emulator)
+      _ ->
+        {:ok, emulator}
+    end
   end
 
   defp update_mode_manager_state(mode_manager, mode_name, value) do
-    new_manager =
-      case mode_name do
-        :irm ->
-          %{mode_manager | insert_mode: value}
-
-        :lnm ->
-          %{mode_manager | line_feed_mode: value}
-
-        :decom ->
-          %{mode_manager | origin_mode: value}
-
-        :decawm ->
-          %{mode_manager | auto_wrap: value}
-
-        :dectcem ->
-          %{mode_manager | cursor_visible: value}
-
-        :decscnm ->
-          %{mode_manager | screen_mode_reverse: value}
-
-        :decarm ->
-          %{mode_manager | auto_repeat_mode: value}
-
-        :decinlm ->
-          %{mode_manager | interlacing_mode: value}
-
-        :bracketed_paste ->
-          %{mode_manager | bracketed_paste_mode: value}
-
-        :decckm ->
-          %{
-            mode_manager
-            | cursor_keys_mode: if(value, do: :application, else: :normal)
-          }
-
-        :deccolm_132 ->
-          %{
-            mode_manager
-            | column_width_mode: if(value, do: :wide, else: :normal)
-          }
-
-        :deccolm_80 ->
-          %{mode_manager | column_width_mode: :normal}
-
-        :dec_alt_screen ->
-          %{mode_manager | alternate_buffer_active: value}
-
-        :dec_alt_screen_save ->
-          IO.puts(
-            "DEBUG: update_mode_manager_state :dec_alt_screen_save set to #{inspect(value)}"
-          )
-
-          %{mode_manager | alternate_buffer_active: value}
-
-        :alt_screen_buffer ->
-          %{mode_manager | alternate_buffer_active: value}
-
-        _ ->
-          mode_manager
-      end
-
-    IO.puts(
-      "DEBUG: update_mode_manager_state called for #{inspect(mode_name)}; result: #{inspect(new_manager)}"
-    )
-
-    new_manager
+    case mode_name do
+      :irm -> %{mode_manager | insert_mode: value}
+      :lnm -> %{mode_manager | line_feed_mode: value}
+      :deccolm_132 -> %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
+      :deccolm_80 -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
+      :decscnm -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
+      :decom -> %{mode_manager | origin_mode: value}
+      :decawm -> %{mode_manager | auto_wrap: value}
+      :decarm -> %{mode_manager | auto_repeat_mode: value}
+      :decinlm -> %{mode_manager | interlacing_mode: value}
+      :att_blink -> %{mode_manager | blink_attribute: value}
+      :dectcem -> %{mode_manager | cursor_visible: value}
+      :focus_events -> %{mode_manager | focus_events_enabled: value}
+      :bracketed_paste -> %{mode_manager | bracketed_paste_mode: value}
+      _ -> mode_manager
+    end
   end
 
   @doc """
@@ -363,9 +312,9 @@ defmodule Raxol.Terminal.ModeManager do
   @doc """
   Sets a mode with a value and private flag.
   """
-  @spec set_mode(Emulator.t(), mode(), boolean(), boolean()) ::
+  @spec set_mode_with_private(Emulator.t(), mode(), boolean(), boolean()) ::
           {:ok, Emulator.t()} | {:error, term()}
-  def set_mode(emulator, mode, value, private) do
+  def set_mode_with_private(emulator, mode, value, private) do
     case private do
       true -> set_private_mode(emulator, mode, value)
       false -> set_standard_mode(emulator, mode, value)
@@ -402,7 +351,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_insert_mode(Emulator.t(), boolean()) :: Emulator.t()
   def update_insert_mode(emulator, value) do
-    case set_mode(emulator, :irm, value, false) do
+    case set_mode_with_private(emulator, :irm, value, false) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -413,7 +362,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_line_feed_mode(Emulator.t(), boolean()) :: Emulator.t()
   def update_line_feed_mode(emulator, value) do
-    case set_mode(emulator, :lnm, value, false) do
+    case set_mode_with_private(emulator, :lnm, value, false) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -424,7 +373,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_origin_mode(Emulator.t(), boolean()) :: Emulator.t()
   def update_origin_mode(emulator, value) do
-    case set_mode(emulator, :decom, value, true) do
+    case set_mode_with_private(emulator, :decom, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -435,7 +384,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_auto_wrap_mode(Emulator.t(), boolean()) :: Emulator.t()
   def update_auto_wrap_mode(emulator, value) do
-    case set_mode(emulator, :decawm, value, true) do
+    case set_mode_with_private(emulator, :decawm, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -446,7 +395,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_cursor_visible(Emulator.t(), boolean()) :: Emulator.t()
   def update_cursor_visible(emulator, value) do
-    case set_mode(emulator, :dectcem, value, true) do
+    case set_mode_with_private(emulator, :dectcem, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -457,7 +406,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_screen_mode_reverse(Emulator.t(), boolean()) :: Emulator.t()
   def update_screen_mode_reverse(emulator, value) do
-    case set_mode(emulator, :decscnm, value, true) do
+    case set_mode_with_private(emulator, :decscnm, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -468,7 +417,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_auto_repeat_mode(Emulator.t(), boolean()) :: Emulator.t()
   def update_auto_repeat_mode(emulator, value) do
-    case set_mode(emulator, :decarm, value, true) do
+    case set_mode_with_private(emulator, :decarm, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -479,7 +428,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_interlacing_mode(Emulator.t(), boolean()) :: Emulator.t()
   def update_interlacing_mode(emulator, value) do
-    case set_mode(emulator, :decinlm, value, true) do
+    case set_mode_with_private(emulator, :decinlm, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -490,7 +439,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_bracketed_paste_mode(Emulator.t(), boolean()) :: Emulator.t()
   def update_bracketed_paste_mode(emulator, value) do
-    case set_mode(emulator, :bracketed_paste, value, true) do
+    case set_mode_with_private(emulator, :bracketed_paste, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end
@@ -501,7 +450,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec update_column_width_132(Emulator.t(), boolean()) :: Emulator.t()
   def update_column_width_132(emulator, value) do
-    case set_mode(emulator, :deccolm_132, value, true) do
+    case set_mode_with_private(emulator, :deccolm_132, value, true) do
       {:ok, new_emu} -> new_emu
       {:error, _} -> emulator
     end

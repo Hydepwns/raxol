@@ -10,19 +10,23 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   def handle_h_or_l(emulator, params, intermediates_buffer, final_byte) do
     action = if final_byte == ?h, do: :set, else: :reset
 
-    apply_mode_func =
-      if action == :set,
-        do: &ModeManager.set_mode/2,
-        else: &ModeManager.reset_mode/2
+    if intermediates_buffer == "?" do
+      apply_mode_func =
+        if action == :set,
+          do: &ModeManager.set_mode/3,
+          else: &ModeManager.reset_mode/3
 
-    result =
-      if intermediates_buffer == "?" do
-        handle_dec_private_mode(emulator, params, apply_mode_func)
-      else
-        handle_standard_mode(emulator, params, apply_mode_func)
-      end
+      result = handle_dec_private_mode(emulator, params, apply_mode_func)
+      {:ok, result}
+    else
+      apply_mode_func =
+        if action == :set,
+          do: &ModeManager.set_mode/2,
+          else: &ModeManager.reset_mode/2
 
-    {:ok, result}
+      result = handle_standard_mode(emulator, params, apply_mode_func)
+      {:ok, result}
+    end
   end
 
   @spec handle_dec_private_mode(
@@ -44,16 +48,14 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
     mode_atom = ModeManager.lookup_private(param_code)
 
     if mode_atom do
-      case apply_mode_func.(emulator, [mode_atom]) do
-        {:ok, updated_emulator} -> updated_emulator
-        {:error, _reason} -> emulator
+      case apply_mode_func.(emulator, [mode_atom], :dec_private) do
+        {:ok, updated_emulator} ->
+          updated_emulator
+
+        {:error, reason} ->
+          emulator
       end
     else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "Unknown DEC private mode code: ?#{param_code}",
-        %{}
-      )
-
       emulator
     end
   end
