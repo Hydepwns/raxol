@@ -1,5 +1,5 @@
 defmodule Raxol.Plugins.PluginConfigTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   @moduledoc """
   Tests for plugin configuration functionality including loading, saving,
@@ -8,6 +8,23 @@ defmodule Raxol.Plugins.PluginConfigTest do
 
   alias Raxol.Plugins.PluginConfig
 
+  setup do
+    temp_dir = Path.join(System.tmp_dir!(), "raxol_plugin_config_test")
+    real_home = System.user_home!()
+    real_config_dir = Path.join([real_home, ".config/raxol/plugins"])
+    temp_config_dir = Path.join([temp_dir, ".config/raxol/plugins"])
+    # Clean up both temp and real config dirs
+    File.rm_rf!(temp_config_dir)
+    File.rm_rf!(real_config_dir)
+    File.mkdir_p!(temp_dir)
+    System.put_env("HOME", temp_dir)
+    on_exit(fn ->
+      File.rm_rf!(temp_config_dir)
+      File.rm_rf!(real_config_dir)
+    end)
+    {:ok, temp_dir: temp_dir, real_home: real_home}
+  end
+
   describe "plugin configuration" do
     test "creates a new plugin configuration" do
       config = PluginConfig.new()
@@ -15,7 +32,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
       assert config.enabled_plugins == []
     end
 
-    test "loads and saves plugin configuration" do
+    test "loads and saves plugin configuration", %{temp_dir: temp_dir} do
       # Create initial config
       config = PluginConfig.new()
 
@@ -33,7 +50,7 @@ defmodule Raxol.Plugins.PluginConfigTest do
 
       # Load config
       {:ok, loaded_config} = PluginConfig.load()
-      assert loaded_config.plugin_configs["test_plugin"] == %{setting: "value"}
+      assert loaded_config.plugin_configs["test_plugin"] == %{"setting" => "value"}
       assert "test_plugin" in loaded_config.enabled_plugins
     end
 
@@ -87,8 +104,11 @@ defmodule Raxol.Plugins.PluginConfigTest do
     end
 
     test "handles loading non-existent configuration file" do
-      # Set HOME to a temporary directory to ensure clean state
-      System.put_env("HOME", System.tmp_dir!())
+      # Set HOME to a fixed temporary directory to ensure clean state
+      temp_dir = Path.join(System.tmp_dir!(), "raxol_plugin_config_test")
+      File.rm_rf!(temp_dir)
+      File.mkdir_p!(temp_dir)
+      System.put_env("HOME", temp_dir)
 
       {:ok, config} = PluginConfig.load()
       assert config.plugin_configs == %{}

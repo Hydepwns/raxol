@@ -33,7 +33,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   end
 
   def schedule_periodic_tick(state, interval \\ 5000) do
-    if state.tick_timer do
+    if Map.get(state, :tick_timer) do
       Process.cancel_timer(state.tick_timer)
     end
 
@@ -43,7 +43,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   end
 
   def cancel_periodic_tick(state) do
-    if state.tick_timer do
+    if Map.get(state, :tick_timer) do
       Process.cancel_timer(state.tick_timer)
     end
 

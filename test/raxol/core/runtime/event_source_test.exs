@@ -24,8 +24,10 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
     end
 
     test "fails to initialize when requested", %{context: context} do
+      Process.flag(:trap_exit, true)
       args = %{fail_init: true}
-      assert {:error, :init_failed} = TestEventSource.start_link(args, context)
+      TestEventSource.start_link(args, context)
+      assert_receive {:EXIT, _pid, :init_failed}
     end
 
     test "sends events to subscriber", %{context: context} do
@@ -55,7 +57,7 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
       {:ok, sup} = DynamicSupervisor.start_link(strategy: :one_for_one)
 
       on_exit(fn ->
-        DynamicSupervisor.stop(sup)
+        if Process.alive?(sup), do: Process.exit(sup, :normal)
       end)
 
       # Start the event source under the supervisor

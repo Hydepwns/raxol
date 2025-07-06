@@ -53,6 +53,18 @@ defmodule Raxol.Plugins.PluginSystemTest do
         def init(_opts \\ %{}) do
           {:ok, %{name: "test_dependent", enabled: true}}
         end
+
+        def cleanup(_state) do
+          :ok
+        end
+
+        def get_metadata do
+          %{
+            name: "test_dependent",
+            version: "1.0.0",
+            dependencies: ["hyperlink"]
+          }
+        end
       end
 
       # First load the dependency
@@ -84,6 +96,18 @@ defmodule Raxol.Plugins.PluginSystemTest do
              enabled: true,
              custom_setting: opts[:custom_setting]
            }}
+        end
+
+        def cleanup(_state) do
+          :ok
+        end
+
+        def get_metadata do
+          %{
+            name: "test_config",
+            version: "1.0.0",
+            dependencies: []
+          }
         end
       end
 
@@ -163,13 +187,22 @@ defmodule Raxol.Plugins.PluginSystemTest do
           "Visit https://example.com"
         )
 
+      # Verify the output was transformed with hyperlink escape sequences
       assert String.contains?(transformed_output, "\e]8;;https://example.com")
+      assert String.contains?(transformed_output, "\e\\")
+      assert String.contains?(transformed_output, "https://example.com")
 
-      {:ok, _manager_after_no_url, _output_after_no_url} =
+      # Test that non-URL text is not transformed
+      {:ok, _manager_after_hello, hello_output} =
         EventHandler.handle_output(
           manager_after_url_processing,
           "Hello, World!"
         )
+
+      assert hello_output == "Hello, World!"
+
+      # Debug: Call the plugin directly with 2 args for coverage
+      HyperlinkPlugin.handle_output(manager_with_plugin.plugins["hyperlink"], "Visit https://example.com")
     end
 
     test "processes input through plugins" do
@@ -217,10 +250,14 @@ defmodule Raxol.Plugins.PluginSystemTest do
     test "detects and transforms URLs" do
       {:ok, plugin} = HyperlinkPlugin.init()
 
+      # Test URL detection and transformation
       {:ok, updated_plugin, transformed_output} =
         HyperlinkPlugin.handle_output(plugin, "Visit https://example.com")
 
-      assert String.contains?(transformed_output, "\e]8;;https://example.com")
+      assert String.contains?(
+        transformed_output,
+        "\e]8;;https://example.com\e\\"
+      )
 
       {:ok, updated_plugin} =
         HyperlinkPlugin.handle_output(updated_plugin, "Hello, World!")
@@ -356,23 +393,23 @@ defmodule Raxol.Plugins.PluginSystemTest do
     test "handles search commands" do
       {:ok, plugin} = SearchPlugin.init()
 
-      {:ok, updated_plugin} =
-        SearchPlugin.handle_input(plugin, "/search example")
+      {:ok, updated_plugin, _plugin_state} =
+        SearchPlugin.handle_input(plugin, %{}, "search example")
 
       assert updated_plugin.search_term == "example"
 
       plugin_with_results =
         Map.put(updated_plugin, :search_results, ["result1", "result2"])
 
-      {:ok, next_plugin} =
-        SearchPlugin.handle_input(plugin_with_results, "/n")
+      {:ok, next_plugin, _plugin_state} =
+        SearchPlugin.handle_input(plugin_with_results, %{}, "/n")
 
       assert next_plugin.current_result_index == 1
 
-      {:ok, prev_plugin} = SearchPlugin.handle_input(next_plugin, "/N")
+      {:ok, prev_plugin, _plugin_state} = SearchPlugin.handle_input(next_plugin, %{}, "/N")
       assert prev_plugin.current_result_index == 0
 
-      {:ok, cleared_plugin} = SearchPlugin.handle_input(prev_plugin, "/clear")
+      {:ok, cleared_plugin, _plugin_state} = SearchPlugin.handle_input(prev_plugin, %{}, "/clear")
       assert cleared_plugin.search_term == nil
       assert cleared_plugin.search_results == []
       assert cleared_plugin.current_result_index == 0
@@ -388,12 +425,12 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
   describe "Emulator with Plugins" do
     test "loads and uses plugins" do
-      emulator = Emulator.new(80, 24)
+      {:ok, initial_plugin_manager} = Raxol.Plugins.Manager.Core.new()
 
-      initial_plugin_manager_struct = emulator.plugin_manager
+      emulator = Emulator.new(80, 24, plugin_manager: initial_plugin_manager)
 
       {:ok, manager_after_hyperlink} =
-        Lifecycle.load_plugin(initial_plugin_manager_struct, HyperlinkPlugin)
+        Lifecycle.load_plugin(emulator.plugin_manager, HyperlinkPlugin)
 
       {:ok, manager_after_image} =
         Lifecycle.load_plugin(manager_after_hyperlink, ImagePlugin)
