@@ -401,7 +401,6 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
     result = process_text_lines(buffer, text)
     result = normalize_cell_dirty_flags(result)
 
-    IO.puts("Final buffer cells: #{inspect(result.cells)}")
     result
   end
 
@@ -420,7 +419,7 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
     new_line =
       create_line_with_padding(line, buffer.width, buffer.default_style)
 
-    IO.puts("New line #{y} (length: #{length(new_line)}): #{inspect(new_line)}")
+    IO.puts("New line #{y} (length: #{length(new_line)})")
 
     cells = List.replace_at(buffer.cells, y, new_line)
     %{buffer | cells: cells}
