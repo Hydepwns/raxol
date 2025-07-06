@@ -223,8 +223,7 @@ defmodule Raxol.Core.Runtime.Command do
   end
 
   defp execute_command_type(:delay, {msg, delay}, context) do
-    timer_id = System.unique_integer([:positive])
-    Process.send_after(context.pid, {:command_result, msg, timer_id}, delay)
+    Process.send_after(context.pid, {:command_result, msg}, delay)
   end
 
   defp execute_command_type(:broadcast, msg, _context) do

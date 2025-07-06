@@ -40,7 +40,15 @@ defmodule Raxol.Plugins.PluginConfig do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, decoded} ->
-            {:ok, struct(__MODULE__, decoded)}
+            # Convert string keys to atom keys to match struct field names
+            decoded_with_atom_keys = for {key, value} <- decoded, into: %{} do
+              {String.to_atom(key), value}
+            end
+            # Merge with defaults to ensure all fields are present
+            defaults = Map.from_struct(new())
+            merged = Map.merge(defaults, decoded_with_atom_keys)
+            config = struct(__MODULE__, merged)
+            {:ok, config}
 
           {:error, reason} ->
             {:error, "Failed to decode plugin configuration: #{reason}"}
