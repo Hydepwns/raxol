@@ -120,8 +120,8 @@ defmodule Raxol.MixProject do
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_view, "~> 1.0.17"},
-      {:surface, "~> 0.12.1"},
-      {:sourceror, "~> 1.0.0"},
+      # {:surface, "~> 0.12.1"},
+      # {:sourceror, "~> 1.0.0"},
       {:phoenix_live_dashboard, "~> 0.8.7"},
       {:jason, "~> 1.4.4"},
 
