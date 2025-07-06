@@ -683,19 +683,7 @@ defmodule Raxol.UI.Renderer do
       |> Map.put_new(:fg, fg_short)
       |> Map.put_new(:bg, bg_short)
 
-    result = Map.merge(promoted_attrs, merged_style_map)
-
-    # Debug logging
-    IO.puts("DEBUG: flatten_merged_style:")
-    IO.puts("  parent_element=#{inspect(parent_element)}")
-    IO.puts("  child_element=#{inspect(child_element)}")
-    IO.puts("  parent_style_map=#{inspect(parent_style_map)}")
-    IO.puts("  child_style_map=#{inspect(child_style_map)}")
-    IO.puts("  merged_style_map=#{inspect(merged_style_map)}")
-    IO.puts("  promoted_attrs=#{inspect(promoted_attrs)}")
-    IO.puts("  result=#{inspect(result)}")
-
-    result
+    Map.merge(promoted_attrs, merged_style_map)
   end
 
   # Helper function to put a key-value pair only if the value is not nil
@@ -713,27 +701,18 @@ defmodule Raxol.UI.Renderer do
 
     # Create a complete inherited style that includes both the merged style map
     # and the promoted keys for proper inheritance
-    inherited_style =
-      %{}
-      |> Map.put(:style, merged_style_map)
-      |> maybe_put_if_not_nil(
-        :foreground,
-        Map.get(merged_style_map, :foreground)
-      )
-      |> maybe_put_if_not_nil(
-        :background,
-        Map.get(merged_style_map, :background)
-      )
-      |> maybe_put_if_not_nil(:fg, Map.get(merged_style_map, :fg))
-      |> maybe_put_if_not_nil(:bg, Map.get(merged_style_map, :bg))
-
-    # Debug logging
-    IO.puts("DEBUG: parent_style=#{inspect(parent_style)}")
-    IO.puts("DEBUG: child_style=#{inspect(child_style)}")
-    IO.puts("DEBUG: merged_style_map=#{inspect(merged_style_map)}")
-    IO.puts("DEBUG: inherited_style=#{inspect(inherited_style)}")
-
-    inherited_style
+    %{}
+    |> Map.put(:style, merged_style_map)
+    |> maybe_put_if_not_nil(
+      :foreground,
+      Map.get(merged_style_map, :foreground)
+    )
+    |> maybe_put_if_not_nil(
+      :background,
+      Map.get(merged_style_map, :background)
+    )
+    |> maybe_put_if_not_nil(:fg, Map.get(merged_style_map, :fg))
+    |> maybe_put_if_not_nil(:bg, Map.get(merged_style_map, :bg))
   end
 
   defp render_visible_element(
