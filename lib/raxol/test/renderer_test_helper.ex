@@ -32,13 +32,28 @@ defmodule Raxol.UI.RendererTestHelper do
       ) do
     assert cell != nil
     {_, _, _, fg, bg, style_attrs} = cell
-    assert fg == expected_fg
-    assert bg == expected_bg
+
+    # Resolve symbolic colors to match renderer output
+    resolved_expected_fg = resolve_color(expected_fg)
+    resolved_expected_bg = resolve_color(expected_bg)
+
+    assert fg == resolved_expected_fg
+    assert bg == resolved_expected_bg
 
     Enum.each(expected_style_attrs, fn attr ->
       assert attr in style_attrs
     end)
   end
+
+  # Helper to resolve symbolic color names to color structs
+  defp resolve_color(color) when is_atom(color) do
+    # Try to get the color from the default theme
+    case Raxol.Core.ColorSystem.get(:default, color) do
+      nil -> color  # Return the atom if not found
+      color_struct -> color_struct
+    end
+  end
+  defp resolve_color(color), do: color
 
   defp ensure_id(%Theme{} = map), do: map
 

@@ -70,7 +70,7 @@ defmodule Raxol.Test.TestHelper do
   @doc """
   Creates a test component with default state.
   """
-  def create_test_component(module, opts \\ []) do
+  def create_test_component(module, opts \\ %{}) do
     state = module.new(opts)
 
     # Handle case where component creation returns {:ok, state}

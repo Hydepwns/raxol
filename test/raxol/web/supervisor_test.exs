@@ -2,6 +2,11 @@ defmodule Raxol.Web.SupervisorTest do
   use ExUnit.Case, async: false
 
   setup do
+    # Ensure Phoenix.PubSub is started for the test
+    if !Process.whereis(Raxol.PubSub) do
+      {:ok, _pid} = Supervisor.start_link([{Phoenix.PubSub, name: Raxol.PubSub}], strategy: :one_for_one)
+    end
+
     # Start the web supervisor for testing
     {:ok, pid} = Raxol.Web.Supervisor.start_link([])
     {:ok, %{supervisor_pid: pid}}
