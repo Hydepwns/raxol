@@ -63,7 +63,11 @@ defmodule Raxol.Benchmarks.Performance.Validation do
   end
 
   defp count_passed_validations(all_validations) do
-    passed = Enum.count(all_validations, fn {status, _} -> status == :pass end)
+    passed = Enum.count(all_validations, fn
+      %{status: status} when status in [:pass, :skip] -> true
+      {_metric, %{status: status}} when status in [:pass, :skip] -> true
+      _ -> false
+    end)
     {passed, length(all_validations)}
   end
 
@@ -148,9 +152,9 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     # Add memory leak validation
     leak_validation =
       if results[:memory_leak_detected] do
-        {:memory_leak_detected, :fail, "Memory leak detected", true}
+        %{status: :fail, message: "Memory leak detected", detected: true}
       else
-        {:memory_leak_detected, :pass, "No memory leak detected", false}
+        %{status: :pass, message: "No memory leak detected", detected: false}
       end
 
     regular_validations = validate_metric_list(results, baseline, metrics)
@@ -178,16 +182,16 @@ defmodule Raxol.Benchmarks.Performance.Validation do
       validation_result =
         cond do
           nil?(result_value) ->
-            {:skip, "Metric not measured"}
+            %{status: :skip, message: "Metric not measured"}
 
           nil?(baseline_value) ->
-            {:skip, "No baseline for comparison"}
+            %{status: :skip, message: "No baseline for comparison"}
 
           comparator.(result_value, baseline_value) ->
-            {:pass, "#{label}: #{result_value} (baseline: #{baseline_value})"}
+            %{status: :pass, message: "#{label}: #{result_value} (baseline: #{baseline_value})"}
 
           true ->
-            {:fail, "#{label}: #{result_value} (baseline: #{baseline_value})"}
+            %{status: :fail, message: "#{label}: #{result_value} (baseline: #{baseline_value})"}
         end
 
       {metric, validation_result}
