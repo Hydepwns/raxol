@@ -242,20 +242,30 @@ defmodule Raxol.Animation.Framework do
       cognitive_accessibility? =
         Map.get(settings, :cognitive_accessibility, false)
 
-      # Adapt animation for accessibility
+      disable_all_animations? =
+        Map.get(settings, :disable_all_animations, false)
+
+      # Adapt animation for accessibility and global disable
       adapted_animation =
-        AnimAccessibility.adapt_animation(
-          animation_def,
-          reduce_motion?,
-          cognitive_accessibility?
-        )
+        if disable_all_animations? do
+          Map.put(Map.put(animation_def, :duration, 10), :disabled, true)
+        else
+          AnimAccessibility.adapt_animation(
+            animation_def,
+            reduce_motion?,
+            cognitive_accessibility?
+          )
+        end
+
+      notify_pid = Map.get(opts, :notify_pid, self())
 
       # Build animation instance
       instance = %{
         animation: adapted_animation,
-        start_time: System.unique_integer([:positive]),
+        start_time: System.system_time(:millisecond),
         on_complete: Map.get(opts, :on_complete),
-        context: Map.get(opts, :context)
+        context: Map.get(opts, :context),
+        notify_pid: notify_pid
       }
 
       # Register animation instance
@@ -265,15 +275,33 @@ defmodule Raxol.Animation.Framework do
         instance
       )
 
-      # Handle screen reader announcement
-      maybe_announce_animation(
-        adapted_animation,
-        reduce_motion?,
-        user_preferences_pid
-      )
-
       # Always send animation_started message for test synchronization
-      send(self(), {:animation_started, element_id, animation_def.name})
+      send(notify_pid, {:animation_started, element_id, animation_def.name})
+
+      # Announce animation start to screen reader if needed
+      if Map.get(adapted_animation, :announce_to_screen_reader, false) do
+        description = Map.get(adapted_animation, :description)
+
+        message =
+          if description,
+            do: "#{description} started",
+            else: "Animation started"
+
+        Accessibility.announce(message, [], user_preferences_pid)
+      end
+
+      # If animation is disabled (e.g., by reduced motion), mark as pending completion
+      if Map.get(adapted_animation, :disabled, false) do
+        # Mark the instance as pending completion
+        pending_instance = Map.put(instance, :pending_completion, true)
+
+        StateManager.put_active_animation(
+          element_id,
+          animation_def.name,
+          pending_instance
+        )
+      end
+
       :ok
     else
       {:error, :animation_not_found}
@@ -358,7 +386,7 @@ defmodule Raxol.Animation.Framework do
   Updated state with animation values applied.
   """
   def apply_animations_to_state(state, user_preferences_pid \\ nil) do
-    now = System.monotonic_time(:millisecond)
+    now = System.system_time(:millisecond)
     active_animations = StateManager.get_active_animations()
 
     {new_state, completed} =
@@ -377,8 +405,14 @@ defmodule Raxol.Animation.Framework do
       end)
 
     Enum.each(completed, fn {element_id, animation_name} ->
+      # Fetch the instance before removing it
+      instance =
+        get_in(StateManager.get_active_animations(), [
+          element_id,
+          animation_name
+        ])
+
       StateManager.remove_active_animation(element_id, animation_name)
-      send(self(), {:animation_completed, element_id, animation_name})
     end)
 
     new_state
@@ -426,11 +460,50 @@ defmodule Raxol.Animation.Framework do
     animation = instance.animation
     start_time = instance.start_time
     duration = animation.duration
-    elapsed = now - start_time
+    elapsed = max(0, now - start_time)
 
     # Check for completion
     if elapsed >= duration or Map.get(animation, :disabled, false) do
       # Animation complete
+      require Logger
+
+      Logger.debug(
+        "[AnimationTestDebug] Completing animation: #{inspect(animation_name)} for element: #{inspect(element_id)}, disabled: #{inspect(Map.get(animation, :disabled, false))}, pending_completion: #{inspect(Map.get(instance, :pending_completion, false))}"
+      )
+
+      # For disabled animations, only send completion if pending_completion is set
+      if Map.get(animation, :disabled, false) do
+        if Map.get(instance, :pending_completion, false) do
+          Logger.debug(
+            "[AnimationTestDebug] Calling handle_animation_completion for DISABLED animation: #{inspect(animation_name)} on #{inspect(element_id)}"
+          )
+
+          handle_animation_completion(
+            animation,
+            element_id,
+            animation_name,
+            instance,
+            user_preferences_pid
+          )
+
+          # Remove the pending_completion flag and remove the instance from the state manager
+          StateManager.remove_active_animation(element_id, animation_name)
+        end
+      else
+        # For normal completion, always send
+        Logger.debug(
+          "[AnimationTestDebug] Calling handle_animation_completion for NORMAL animation: #{inspect(animation_name)} on #{inspect(element_id)}"
+        )
+
+        handle_animation_completion(
+          animation,
+          element_id,
+          animation_name,
+          instance,
+          user_preferences_pid
+        )
+      end
+
       # Apply final value
       final_value = animation.to
 
@@ -442,14 +515,6 @@ defmodule Raxol.Animation.Framework do
           element_id,
           animation_name
         )
-
-      handle_animation_completion(
-        animation,
-        element_id,
-        animation_name,
-        instance,
-        user_preferences_pid
-      )
 
       {:completed, updated_state}
     else
@@ -523,6 +588,10 @@ defmodule Raxol.Animation.Framework do
 
       Accessibility.announce(message, [], user_preferences_pid)
     end
+
+    # Send completion message to notify_pid if present
+    notify_pid = Map.get(instance, :notify_pid, self())
+    send(notify_pid, {:animation_completed, element_id, animation_name})
 
     # Call on_complete callback if provided
     if instance.on_complete do
@@ -625,8 +694,11 @@ defmodule Raxol.Animation.Framework do
   # Helper function to set value in nested state (might move later)
   # Consider using Kernel.put_in/3 with Access syntax if paths are lists of keys
   defp set_in_state(state, path, value) when list?(path) do
+    # Ensure the state has the required structure
+    state_with_structure = ensure_state_structure(state, path)
+
     # Use Kernel.put_in for list paths
-    put_in(state, path, value)
+    put_in(state_with_structure, path, value)
   catch
     # Catch potential errors if path is invalid for the state structure
     :error, reason ->
@@ -655,6 +727,18 @@ defmodule Raxol.Animation.Framework do
     )
 
     state
+  end
+
+  # Helper function to ensure state has the required structure for the path
+  defp ensure_state_structure(state, path) do
+    Enum.reduce(path, state, fn key, current_state ->
+      if is_map(current_state) and Map.has_key?(current_state, key) do
+        current_state
+      else
+        # Create the key if it doesn't exist
+        Map.put_new(current_state, key, %{})
+      end
+    end)
   end
 
   def should_reduce_motion?(user_preferences_pid \\ nil) do
