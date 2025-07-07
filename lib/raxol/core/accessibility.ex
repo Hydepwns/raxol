@@ -572,6 +572,13 @@ defmodule Raxol.Core.Accessibility do
   end
 
   @doc """
+  Gets an accessibility option value with a specific user preferences PID or name.
+  """
+  def get_option(key, user_preferences_pid_or_name, default) do
+    Preferences.get_option(key, user_preferences_pid_or_name, default)
+  end
+
+  @doc """
   Sets an accessibility option value.
   """
   def set_option(key, value) do

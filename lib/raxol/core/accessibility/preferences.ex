@@ -137,6 +137,10 @@ defmodule Raxol.Core.Accessibility.Preferences do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
     set_pref(:high_contrast, enabled, target_pid_or_name)
 
+    # Dispatch the preference_changed event
+    key_path = pref_key(:high_contrast)
+    EventManager.dispatch({:preference_changed, key_path, enabled})
+
     # Dispatch the event that ColorSystem is listening for
     EventManager.dispatch({:accessibility_high_contrast, enabled})
 
@@ -161,8 +165,11 @@ defmodule Raxol.Core.Accessibility.Preferences do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
     set_pref(:reduced_motion, enabled, target_pid_or_name)
 
-    # Trigger potential side effects using the correct format for handle_preference_changed
+    # Dispatch the preference_changed event
     key_path = pref_key(:reduced_motion)
+    EventManager.dispatch({:preference_changed, key_path, enabled})
+
+    # Trigger potential side effects using the correct format for handle_preference_changed
     handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
 
     :ok
@@ -186,8 +193,11 @@ defmodule Raxol.Core.Accessibility.Preferences do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
     set_pref(:large_text, enabled, target_pid_or_name)
 
-    # Trigger potential side effects using the correct format for handle_preference_changed
+    # Dispatch the preference_changed event
     key_path = pref_key(:large_text)
+    EventManager.dispatch({:preference_changed, key_path, enabled})
+
+    # Trigger potential side effects using the correct format for handle_preference_changed
     handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
 
     # Send text scale updated event
@@ -236,7 +246,8 @@ defmodule Raxol.Core.Accessibility.Preferences do
     # When a preference changes, dispatch a general event and specific events
     # This allows different parts of the application to react to specific changes
     # e.g., the color system reacting to high_contrast changes
-    EventManager.dispatch({:preference_changed, key_path, value})
+    # Note: We don't dispatch :preference_changed events here to avoid infinite loops
+    # since this function is also a handler for :preference_changed events
 
     case key_path do
       [:accessibility, :high_contrast] ->

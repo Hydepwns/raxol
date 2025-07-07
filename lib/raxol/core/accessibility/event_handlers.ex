@@ -60,8 +60,8 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       iex> EventHandlers.handle_preference_changed({:preference_changed, [:accessibility, :high_contrast], true})
       :ok
   """
-  def handle_preference_changed(event, user_preferences_pid_or_name \\ nil) do
-    Preferences.handle_preference_changed(event, user_preferences_pid_or_name)
+  def handle_preference_changed({:preference_changed, key_path, value}, user_preferences_pid_or_name \\ nil) do
+    Preferences.handle_preference_changed({key_path, value}, user_preferences_pid_or_name)
   end
 
   @doc """
