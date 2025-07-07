@@ -157,13 +157,28 @@ defmodule Raxol.Terminal.ControlCodes do
           Raxol.Terminal.Cursor.Manager.move_down(cursor, 1, buffer_width, buffer_height)
       end
 
-    final_cursor = apply_lnm_mode(emulator.mode_manager, moved_cursor)
+    # Always reset column to 0 after newline
+    final_cursor =
+      cond do
+        is_pid(moved_cursor) ->
+          GenServer.call(moved_cursor, {:move_to_column, 0})
+          moved_cursor
+        is_map(moved_cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, 0)
+      end
+
     %{emulator | cursor: final_cursor}
   end
 
   defp apply_lnm_mode(mode_manager, cursor) do
     if ModeManager.mode_enabled?(mode_manager, :lnm) do
-      Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
+      cond do
+        is_pid(cursor) ->
+          GenServer.call(cursor, {:move_to_column, 0})
+          cursor
+        is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
+      end
     else
       cursor
     end

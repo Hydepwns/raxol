@@ -67,6 +67,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
           _ -> {k, v}
         end
       end)
+
     Map.merge(TextFormatting.new(), style)
   end
 
@@ -194,16 +195,19 @@ defmodule Raxol.Terminal.Buffer.Writer do
           ScreenBuffer.t(),
           non_neg_integer(),
           non_neg_integer(),
-          String.t()
-        ) ::
-          ScreenBuffer.t()
-  def write_string(%ScreenBuffer{} = buffer, x, y, string)
+          String.t(),
+          TextFormatting.text_style() | nil
+        ) :: ScreenBuffer.t()
+  def write_string(%ScreenBuffer{} = buffer, x, y, string, style \\ nil)
       when x >= 0 and y >= 0 do
     if y < buffer.height and x < buffer.width do
       segments = Raxol.Terminal.CharacterHandling.process_bidi_text(string)
 
-      Enum.reduce(segments, {buffer, x}, fn {_type, segment}, {acc_buffer, acc_x} ->
-        {new_buffer, new_x} = write_segment(acc_buffer, acc_x, y, segment)
+      Enum.reduce(segments, {buffer, x}, fn {_type, segment},
+                                            {acc_buffer, acc_x} ->
+        {new_buffer, new_x} =
+          write_segment(acc_buffer, acc_x, y, segment, style)
+
         {new_buffer, new_x}
       end)
       |> elem(0)
@@ -237,14 +241,15 @@ defmodule Raxol.Terminal.Buffer.Writer do
           ScreenBuffer.t(),
           non_neg_integer(),
           non_neg_integer(),
-          String.t()
+          String.t(),
+          TextFormatting.text_style() | nil
         ) :: {ScreenBuffer.t(), non_neg_integer()}
-  def write_segment(buffer, x, y, segment) do
-    Enum.reduce(String.graphemes(segment), {buffer, x}, fn char, {acc_buffer, acc_x} ->
+  def write_segment(buffer, x, y, segment, style \\ nil) do
+    Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,
+                                                           {acc_buffer, acc_x} ->
       codepoint = hd(String.to_charlist(char))
       width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
-      {write_char(acc_buffer, acc_x, y, char), acc_x + width}
+      {write_char(acc_buffer, acc_x, y, char, style), acc_x + width}
     end)
   end
-
 end
