@@ -8,8 +8,8 @@ config :raxol, Raxol.Repo,
   enabled: true
 
 # Configure database settings
-# Global flag to disable database
-config :raxol, database_enabled: false
+# Global flag to enable database for tests
+config :raxol, database_enabled: true
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
@@ -141,7 +141,7 @@ config :raxol,
 # Configure test environment
 config :raxol,
   test_mode: true,
-  database_enabled: false
+  database_enabled: true
 
 # Configure test helpers
 config :ex_unit,
