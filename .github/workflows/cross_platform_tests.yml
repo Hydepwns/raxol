@@ -92,6 +92,17 @@ jobs:
         run: |
           choco install openssl
 
+      - name: Check Docker Availability
+        id: check_docker
+        run: |
+          if command -v docker &> /dev/null; then
+            echo "Docker is available"
+            echo "DOCKER_AVAILABLE=true" >> $GITHUB_ENV
+          else
+            echo "Docker is not available, skipping Docker-dependent tests"
+            echo "DOCKER_AVAILABLE=false" >> $GITHUB_ENV
+          fi
+
       - name: Install dependencies
         run: |
           mix local.hex --force
@@ -127,6 +138,8 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: raxol_test
           TERM: xterm-256color
+          # Skip termbox2 tests if Docker is not available
+          SKIP_TERMBOX2_TESTS: ${{ env.DOCKER_AVAILABLE == 'false' }}
 
       - name: Run integration tests
         run: mix test test/integration --cover
@@ -137,6 +150,8 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: raxol_test
           TERM: xterm-256color
+          # Skip termbox2 tests if Docker is not available
+          SKIP_TERMBOX2_TESTS: ${{ env.DOCKER_AVAILABLE == 'false' }}
 
       - name: Run cross-platform specific tests
         run: mix test test/platform --cover
@@ -148,6 +163,8 @@ jobs:
           POSTGRES_DB: raxol_test
           PLATFORM: ${{ matrix.platform }}
           TERM: xterm-256color
+          # Skip termbox2 tests if Docker is not available
+          SKIP_TERMBOX2_TESTS: ${{ env.DOCKER_AVAILABLE == 'false' }}
 
       - name: Verify terminal compatibility
         run: mix run test/platform/verify_terminal_compatibility.exs
