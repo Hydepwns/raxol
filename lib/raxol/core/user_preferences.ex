@@ -99,7 +99,7 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   @impl GenServer
-  def handle_call({:set, key_or_path, value}, _from, state) do
+  def handle_call({:set, key_or_path, value}, from, state) do
     path = normalize_path(key_or_path)
     current_value = get_in(state.preferences, path)
 
@@ -112,13 +112,19 @@ defmodule Raxol.Core.UserPreferences do
 
       new_state = %{state | preferences: new_preferences}
 
-      # Send preferences_applied message for test synchronization
-      send(self(), {:preferences_applied})
+      # Send preferences_applied message for test synchronization to the calling process
+      {caller_pid, _} = from
+      send(caller_pid, {:preferences_applied, Process.info(self(), :registered_name) |> elem(1) || self()})
 
       # Schedule a save after a delay
       {:reply, :ok, schedule_save(new_state)}
     else
       # Value didn't change, do nothing, but still reply :ok
+      # In test mode, still send preferences_applied for test synchronization
+      if Mix.env() == :test do
+        {caller_pid, _} = from
+        send(caller_pid, {:preferences_applied, Process.info(self(), :registered_name) |> elem(1) || self()})
+      end
       {:reply, :ok, state}
     end
   end
@@ -129,7 +135,7 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   @impl GenServer
-  def handle_call({:set_preferences, preferences}, _from, state) do
+  def handle_call({:set_preferences, preferences}, from, state) do
     new_preferences = deep_merge(state.preferences, preferences)
 
     Raxol.Core.Runtime.Log.debug(
@@ -138,8 +144,9 @@ defmodule Raxol.Core.UserPreferences do
 
     new_state = %{state | preferences: new_preferences}
 
-    # Send preferences_applied message for test synchronization
-    send(self(), {:preferences_applied})
+    # Send preferences_applied message for test synchronization to the calling process
+    {caller_pid, _} = from
+    send(caller_pid, {:preferences_applied, Process.info(self(), :registered_name) |> elem(1) || self()})
 
     # Schedule a save after a delay
     {:reply, :ok, schedule_save(new_state)}
@@ -232,7 +239,7 @@ defmodule Raxol.Core.UserPreferences do
   def handle_info(msg, state) do
     # Handle the preferences_applied message specially
     case msg do
-      {:preferences_applied} ->
+      {:preferences_applied, _pid} ->
         # This is expected, don't log it as a warning
         {:noreply, state}
 

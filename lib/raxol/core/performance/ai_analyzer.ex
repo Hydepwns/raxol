@@ -119,21 +119,21 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
       risk_assessment: %{
         overall_risk: "medium",
         areas: [
-          {"Rendering Performance", "high"},
-          {"Memory Usage", "medium"},
-          {"State Management", "low"}
+          %{"area" => "Rendering Performance", "level" => "high"},
+          %{"area" => "Memory Usage", "level" => "medium"},
+          %{"area" => "State Management", "level" => "low"}
         ],
         trends: [
-          {"Performance", "declining"},
-          {"Memory", "stable"},
-          {"Complexity", "increasing"}
+          %{"area" => "Performance", "trend" => "declining"},
+          %{"area" => "Memory", "trend" => "stable"},
+          %{"area" => "Complexity", "trend" => "increasing"}
         ]
       },
-      optimization_impact: [
-        {"Performance", "15-25% improvement"},
-        {"Memory Usage", "10-15% reduction"},
-        {"User Experience", "Significant improvement"}
-      ],
+      optimization_impact: %{
+        "Performance" => "15-25% improvement",
+        "Memory Usage" => "10-15% reduction",
+        "User Experience" => "Significant improvement"
+      },
       ai_confidence: 0.85
     }
   end
@@ -246,10 +246,10 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     Overall Risk: #{risk.overall_risk}
 
     Area Risks:
-    #{Enum.map_join(risk.areas, "\n", fn {area, level} -> "  #{area}: #{level}" end)}
+    #{Enum.map_join(risk.areas, "\n", fn area -> "  #{area["area"]}: #{area["level"]}" end)}
 
     Trends:
-    #{Enum.map_join(risk.trends, "\n", fn {area, trend} -> "  #{area}: #{trend}" end)}
+    #{Enum.map_join(risk.trends, "\n", fn trend -> "  #{trend["area"]}: #{trend["trend"]}" end)}
     """
   end
 
@@ -259,12 +259,12 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
     <h3>Area Risks</h3>
     <ul>
-      #{Enum.map_join(risk.areas, "\n", fn {area, level} -> "<li>#{area}: <span class=\"#{level}\">#{level}</span></li>" end)}
+      #{Enum.map_join(risk.areas, "\n", fn area -> "<li>#{area["area"]}: <span class=\"#{area["level"]}\">#{area["level"]}</span></li>" end)}
     </ul>
 
     <h3>Trends</h3>
     <ul>
-      #{Enum.map_join(risk.trends, "\n", fn {area, trend} -> "<li>#{area}: #{trend}</li>" end)}
+      #{Enum.map_join(risk.trends, "\n", fn trend -> "<li>#{trend["area"]}: #{trend["trend"]}</li>" end)}
     </ul>
     """
   end

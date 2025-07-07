@@ -173,7 +173,26 @@ defmodule Raxol.Core.Accessibility.Announcements do
       :ok
   """
   def clear_announcements do
+    # Clear global announcements
     Process.put(:accessibility_announcements, [])
+
+    # Clear all user-specific announcement queues
+    # Get all process dictionary keys that match the pattern {:accessibility_announcements, _}
+    all_keys = Process.get() |> Enum.map(&elem(&1, 0))
+
+    announcement_keys =
+      all_keys
+      |> Enum.filter(fn key ->
+        case key do
+          {:accessibility_announcements, _} -> true
+          _ -> false
+        end
+      end)
+
+    # Clear each user-specific queue
+    Enum.each(announcement_keys, fn key ->
+      Process.put(key, [])
+    end)
 
     # Send announcements_cleared messages to subscribers
     send_clear_message_to_subscribers()
