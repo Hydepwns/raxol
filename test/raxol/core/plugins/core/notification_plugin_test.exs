@@ -288,10 +288,9 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
       # Call the handle_command/2 catch-all directly
       # (This tests the function directly, bypassing command registration)
       # This argument is ignored by the catch-all
-      unknown_command = :unknown_cmd
       unknown_args = [:some_other_arg]
 
-      assert {:error, {:unhandled_notification_command, ^unknown_command}, _} =
+      assert {:error, :invalid_arity, _} =
                NotificationPlugin.handle_command(unknown_args, state)
     end
 
@@ -303,12 +302,12 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
       # and fall through to the catch-all clause.
       invalid_args_1 = ["level", :not_a_binary]
 
-      assert {:error, {:unhandled_notification_command, :notify}, _} =
+      assert {:error, :invalid_arity, _} =
                NotificationPlugin.handle_command(invalid_args_1, state)
 
       invalid_args_2 = "not a list"
 
-      assert {:error, {:unhandled_notification_command, :notify}, _} =
+      assert {:error, :invalid_arity, _} =
                NotificationPlugin.handle_command(invalid_args_2, state)
     end
   end

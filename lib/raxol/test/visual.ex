@@ -83,9 +83,19 @@ defmodule Raxol.Test.Visual do
 
   Returns the terminal output as a string for comparison.
   """
-  @spec capture_render(Raxol.Core.Types.Component.t() | map()) :: String.t()
-  def capture_render(component_or_map_or_view, opts \\ []) do
-    {view_map, width, height, theme} = extract_render_context(component_or_map_or_view, opts)
+  @spec capture_render(Raxol.Core.Types.Component.t() | map(), map() | list()) ::
+          String.t()
+  def capture_render(component_or_map_or_view, opts \\ %{}) do
+    opts =
+      cond do
+        is_list(opts) -> Enum.into(opts, %{})
+        is_map(opts) -> opts
+        true -> %{}
+      end
+
+    {view_map, width, height, theme} =
+      extract_render_context(component_or_map_or_view, opts)
+
     elements_to_layout = ensure_list(view_map)
 
     layout_elements = apply_layout(elements_to_layout, width, height)
@@ -93,7 +103,7 @@ defmodule Raxol.Test.Visual do
     cells_list = ensure_list(raw_cells)
 
     final_buffer = populate_buffer(cells_list, width, height)
-    render_to_string(final_buffer, theme)
+    render_to_string(final_buffer, theme, opts)
   end
 
   defp extract_render_context(component_or_map_or_view, opts) do
@@ -126,6 +136,7 @@ defmodule Raxol.Test.Visual do
 
   defp write_cell_to_buffer({x, y, char, fg, bg, attrs}, buffer) do
     actual_char = if nil?(char), do: ~c" ", else: char
+
     Operations.write_char(buffer, x, y, actual_char, %{
       foreground: fg,
       background: bg,
@@ -135,9 +146,29 @@ defmodule Raxol.Test.Visual do
 
   defp write_cell_to_buffer(_unexpected_cell_data, buffer), do: buffer
 
-  defp render_to_string(buffer, theme) do
-    renderer_instance = Raxol.Terminal.Renderer.new(buffer, theme)
-    Raxol.Terminal.Renderer.render(renderer_instance)
+  defp render_to_string(buffer, theme, opts \\ %{}) do
+    # Check if we need HTML output (for snapshots) or plain text (for responsive tests)
+    output_format = Map.get(opts, :output_format, :html)
+
+    case output_format do
+      :plain_text ->
+        # For terminal-style output, convert buffer directly to plain text
+        buffer.cells
+        |> Enum.map(fn row ->
+          row
+          |> Enum.map(fn cell ->
+            # Use the character from the cell, or space if nil
+            cell.char || " "
+          end)
+          |> Enum.join("")
+        end)
+        |> Enum.join("\n")
+
+      :html ->
+        # For HTML output (snapshots), use the HTML renderer
+        renderer_instance = Raxol.Terminal.Renderer.new(buffer, theme)
+        Raxol.Terminal.Renderer.render(renderer_instance)
+    end
   end
 
   defp extract_render_details_from_view_map(view_map, _opts) do
@@ -148,9 +179,24 @@ defmodule Raxol.Test.Visual do
     default_ctx = default_render_context()
     render_context_from_view_map = Map.get(view_map, :render_context)
 
-    width = extract_dimension(render_context_from_view_map, view_map, :width, default_ctx.max_width)
-    height = extract_dimension(render_context_from_view_map, view_map, :height, default_ctx.max_height)
-    theme = extract_theme(render_context_from_view_map, view_map, default_ctx.theme)
+    width =
+      extract_dimension(
+        render_context_from_view_map,
+        view_map,
+        :width,
+        default_ctx.max_width
+      )
+
+    height =
+      extract_dimension(
+        render_context_from_view_map,
+        view_map,
+        :height,
+        default_ctx.max_height
+      )
+
+    theme =
+      extract_theme(render_context_from_view_map, view_map, default_ctx.theme)
 
     {view_map, width, height, theme}
   end
@@ -179,11 +225,31 @@ defmodule Raxol.Test.Visual do
     render_context_from_component = Map.get(component_or_map, :render_context)
     default_ctx = default_render_context()
 
-    width = extract_dimension(render_context_from_component, :width, default_ctx.max_width)
-    height = extract_dimension(render_context_from_component, :height, default_ctx.max_height)
+    width =
+      extract_dimension(
+        render_context_from_component,
+        :width,
+        default_ctx.max_width
+      )
+
+    height =
+      extract_dimension(
+        render_context_from_component,
+        :height,
+        default_ctx.max_height
+      )
+
     theme = get_in(render_context_from_component, [:theme]) || default_ctx.theme
 
-    current_context_for_render = build_render_context(default_ctx, render_context_from_component, width, height, theme)
+    current_context_for_render =
+      build_render_context(
+        default_ctx,
+        render_context_from_component,
+        width,
+        height,
+        theme
+      )
+
     view_map = render_component(component_or_map, current_context_for_render)
 
     {view_map, width, height, theme}
@@ -198,7 +264,13 @@ defmodule Raxol.Test.Visual do
     |> Enum.find(&(&1 != nil))
   end
 
-  defp build_render_context(default_ctx, render_context_from_component, width, height, theme) do
+  defp build_render_context(
+         default_ctx,
+         render_context_from_component,
+         width,
+         height,
+         theme
+       ) do
     base_context = Map.merge(default_ctx, render_context_from_component || %{})
 
     base_context
@@ -291,8 +363,8 @@ defmodule Raxol.Test.Visual do
       # Create a component instance with this specific render_context for capture_render
       component_for_size = %{component | render_context: updated_render_context}
 
-      # Capture render at this size
-      output = capture_render(component_for_size)
+      # Capture render at this size with plain text output format
+      output = capture_render(component_for_size, %{output_format: :plain_text})
 
       # Return as a map for verification
       %{width: width, height: height, output: output}

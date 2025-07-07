@@ -40,6 +40,10 @@ Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
   for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour
 )
 
+Mox.defmock(SystemInteractionMock,
+  for: Raxol.System.Interaction
+)
+
 Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
   for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
 )

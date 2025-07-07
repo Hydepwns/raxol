@@ -1,0 +1,19 @@
+{
+  "name": "Test Theme",
+  "version": "1.0.0",
+  "description": "A test theme extension for the Raxol terminal emulator",
+  "author": "Test Author",
+  "license": "MIT",
+  "type": "theme",
+  "dependencies": [],
+  "hooks": [],
+  "commands": ["apply_theme", "update_theme"],
+  "metadata": {
+    "colors": {
+      "background": "#000000",
+      "foreground": "#ffffff",
+      "cursor": "#ffffff",
+      "selection": "#444444"
+    }
+  }
+}
