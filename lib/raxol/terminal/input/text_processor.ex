@@ -10,6 +10,18 @@ defmodule Raxol.Terminal.Input.TextProcessor do
   @spec handle_text_input(binary(), any()) :: any()
   def handle_text_input(input, emulator) do
     if printable_text?(input) do
+      # If input ends with \n, treat as command and add to history
+      if String.ends_with?(input, "\n") and String.trim(input) != "" do
+        command = String.trim_trailing(input)
+        # Remove the trailing newline for history
+        command = String.trim_trailing(command, "\n")
+        if command != "" do
+          # Add to command history if possible
+          if Map.has_key?(emulator, :command) and function_exported?(Raxol.Terminal.Command.Manager, :add_to_history, 2) do
+            Raxol.Terminal.Command.Manager.add_to_history(emulator.command, command)
+          end
+        end
+      end
       # Process each codepoint through the character processor for charset translation
       String.to_charlist(input)
       |> Enum.reduce(emulator, fn codepoint, emu ->

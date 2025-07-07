@@ -127,6 +127,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
       buffer_for_write = Emulator.get_active_buffer(emulator)
 
+      IO.write(:stderr, "DEBUG: write_character style: #{inspect(emulator.style)}\n")
       buffer_after_write =
         Operations.write_char(
           buffer_for_write,

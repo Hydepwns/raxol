@@ -21,7 +21,10 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     dectcem: &__MODULE__.handle_cursor_visibility/2,
     focus_events: &__MODULE__.handle_focus_events/2,
     bracketed_paste: &__MODULE__.handle_bracketed_paste/2,
-    dec_alt_screen_save: &__MODULE__.handle_alt_screen_save/2
+    dec_alt_screen_save: &__MODULE__.handle_alt_screen_save/2,
+    mouse_report_x10: &__MODULE__.handle_mouse_report_x10/2,
+    mouse_report_cell_motion: &__MODULE__.handle_mouse_report_cell_motion/2,
+    mouse_report_sgr: &__MODULE__.handle_mouse_report_sgr/2
   }
 
   @doc """
@@ -35,6 +38,9 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
         apply_mode_effects(mode_def, value, emulator)
 
       %{category: :screen_buffer} = mode_def ->
+        apply_mode_effects(mode_def, value, emulator)
+
+      %{category: :mouse} = mode_def ->
         apply_mode_effects(mode_def, value, emulator)
 
       _ ->
@@ -196,6 +202,33 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
            emulator.mode_manager
            | alternate_buffer_active: value
          }
+     }}
+  end
+
+  def handle_mouse_report_x10(value, emulator) do
+    mouse_mode = if value, do: :x10, else: :none
+    {:ok,
+     %{
+       emulator
+       | mode_manager: %{emulator.mode_manager | mouse_report_mode: mouse_mode}
+     }}
+  end
+
+  def handle_mouse_report_cell_motion(value, emulator) do
+    mouse_mode = if value, do: :cell_motion, else: :none
+    {:ok,
+     %{
+       emulator
+       | mode_manager: %{emulator.mode_manager | mouse_report_mode: mouse_mode}
+     }}
+  end
+
+  def handle_mouse_report_sgr(value, emulator) do
+    mouse_mode = if value, do: :sgr, else: :none
+    {:ok,
+     %{
+       emulator
+       | mode_manager: %{emulator.mode_manager | mouse_report_mode: mouse_mode}
      }}
   end
 
