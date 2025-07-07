@@ -767,6 +767,17 @@ defmodule Raxol.UI.Renderer do
     clip_cells_to_bounds(cells, Map.get(text_element, :clip_bounds))
   end
 
+  defp render_visible_element(
+         %{type: :table, x: x, y: y, width: w, height: h} = table_element,
+         theme,
+         parent_style
+       ) do
+    merged_style = flatten_merged_style(parent_style, table_element)
+    attrs = Map.get(table_element, :attrs, %{})
+    cells = render_table(x, y, w, h, attrs, theme)
+    clip_cells_to_bounds(cells, Map.get(table_element, :clip_bounds))
+  end
+
   defp clip_cells_to_bounds(cells, nil), do: cells
 
   defp clip_cells_to_bounds(cells, {min_x, min_y, max_x, max_y}) do

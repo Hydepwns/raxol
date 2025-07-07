@@ -406,12 +406,17 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
           ChildComponent
         )
 
+      # Mount components in ComponentManager
+      {:ok, parent_id} = ComponentManager.mount(ParentComponent, parent.state)
+      {:ok, child_id} = ComponentManager.mount(ChildComponent, child.state)
+
       # Simulate parent error
       {updated_parent, _} = Unit.simulate_event(parent, %{type: :error_event})
 
-      # Verify child remains stable
-      updated_child = ComponentManager.get_component(child.state.id)
-      assert updated_child.state == child.state
+      # Verify child remains stable (accounting for mounted state change)
+      updated_child = ComponentManager.get_component(child_id)
+      expected_child_state = Map.put(child.state, :mounted, true)
+      assert updated_child.state == expected_child_state
     end
   end
 

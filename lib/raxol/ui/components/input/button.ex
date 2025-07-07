@@ -5,6 +5,23 @@ defmodule Raxol.UI.Components.Input.Button do
   This component provides a clickable button with customizable appearance and behavior.
   """
 
+  defstruct [
+    :label,
+    :id,
+    :on_click,
+    :disabled,
+    :focused,
+    :pressed,
+    :role,
+    :shortcut,
+    :tooltip,
+    :theme,
+    :style,
+    :height,
+    :width,
+    :errors
+  ]
+
   alias Raxol.UI.Components.Base.Component
   # alias Raxol.Core.Events.Event # REMOVE ALIAS
   import Raxol.Guards
@@ -32,40 +49,24 @@ defmodule Raxol.UI.Components.Input.Button do
   Creates a new Button state map, applying defaults.
   Expects opts to be a Map.
   """
-  def new(opts) when map?(opts) do
-    # Use Map.get for accessing options from the map
-    id = Map.get(opts, :id, "button-#{System.unique_integer([:positive])}")
-    label = Map.get(opts, :label, "Button")
-    disabled = Map.get(opts, :disabled, false)
-    on_click = Map.get(opts, :on_click)
-    width = Map.get(opts, :width)
-    height = Map.get(opts, :height)
-    theme = Map.get(opts, :theme, %{})
-    style = Map.get(opts, :style, %{})
-    # Added role handling
-    role = Map.get(opts, :role, :default)
-    # Added focused state
-    focused = Map.get(opts, :focused, false)
-    shortcut = Map.get(opts, :shortcut)
-    tooltip = Map.get(opts, :tooltip)
-
-    %{
-      id: id,
-      label: label,
-      disabled: disabled,
-      on_click: on_click,
-      width: width,
-      height: height,
-      theme: theme,
-      style: style,
-      role: role,
-      # Ensure focused state is included
-      focused: focused,
-      pressed: false,
-      shortcut: shortcut,
-      tooltip: tooltip
-      # removed pressed state
+  def new(attrs) do
+    state = %__MODULE__{
+      label: Map.get(attrs, :label, "Button"),
+      id: Map.get(attrs, :id, nil) || Raxol.Core.ID.generate(),
+      on_click: Map.get(attrs, :on_click, nil),
+      disabled: Map.get(attrs, :disabled, false),
+      focused: Map.get(attrs, :focused, false),
+      pressed: Map.get(attrs, :pressed, false),
+      role: Map.get(attrs, :role, :default),
+      shortcut: Map.get(attrs, :shortcut, nil),
+      tooltip: Map.get(attrs, :tooltip, nil),
+      theme: Map.get(attrs, :theme, %{}),
+      style: Map.get(attrs, :style, %{}),
+      height: Map.get(attrs, :height, nil),
+      width: Map.get(attrs, :width, nil)
     }
+
+    %{state | errors: errors(state)}
   end
 
   @doc """
@@ -127,7 +128,9 @@ defmodule Raxol.UI.Components.Input.Button do
 
     button_width = calculate_width(button, context)
     button_height = button.height || 3
-    display_label = build_display_label(button)
+    # Use the truncated label if present
+    display_label =
+      Map.get(button, :_truncated_label) || build_display_label(button)
 
     %{
       type: :button,
@@ -170,13 +173,20 @@ defmodule Raxol.UI.Components.Input.Button do
   `:passthrough` if the event wasn't handled by the button.
   """
   @impl Component
-  def handle_event(button, %Raxol.Core.Events.Event{type: :click, data: _data}, _context) do
+  def handle_event(
+        button,
+        %Raxol.Core.Events.Event{type: :click, data: _data},
+        _context
+      ) do
     if button.disabled do
       {:handled, button}
     else
       if button.on_click, do: button.on_click.()
       updated_button = %{button | pressed: true}
-      {:update, updated_button, [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+      updated_button = %{updated_button | errors: errors(updated_button)}
+
+      {:update, updated_button,
+       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
     end
   end
 
@@ -186,21 +196,35 @@ defmodule Raxol.UI.Components.Input.Button do
     else
       if button.on_click, do: button.on_click.()
       updated_button = %{button | pressed: true}
-      {:update, updated_button, [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+      updated_button = %{updated_button | errors: errors(updated_button)}
+
+      {:update, updated_button,
+       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
     end
   end
 
-  def handle_event(button, %Raxol.Core.Events.Event{type: :focus, data: data}, _context) when is_map(data) do
+  def handle_event(
+        button,
+        %Raxol.Core.Events.Event{type: :focus, data: data},
+        _context
+      )
+      when is_map(data) do
     updated_button = %{button | focused: Map.get(data, :focused, true)}
+    updated_button = %{updated_button | errors: errors(updated_button)}
     {:update, updated_button, []}
   end
 
   def handle_event(button, %Raxol.Core.Events.Event{type: :focus}, _context) do
     updated_button = %{button | focused: true}
+    updated_button = %{updated_button | errors: errors(updated_button)}
     {:update, updated_button, []}
   end
 
-  def handle_event(button, %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}}, _context) do
+  def handle_event(
+        button,
+        %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
+        _context
+      ) do
     if button.disabled or (key != :space and key != :enter) do
       :passthrough
     else
@@ -209,13 +233,22 @@ defmodule Raxol.UI.Components.Input.Button do
     end
   end
 
-  def handle_event(button, %Raxol.Core.Events.Event{type: :mouse, data: %{button: :left, state: :pressed}}, _context) do
+  def handle_event(
+        button,
+        %Raxol.Core.Events.Event{
+          type: :mouse,
+          data: %{button: :left, state: :pressed}
+        },
+        _context
+      ) do
     if button.disabled do
       {:handled, button}
     else
       if button.on_click, do: button.on_click.()
       updated_button = %{button | pressed: true}
-      {:update, updated_button, [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+
+      {:update, updated_button,
+       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
     end
   end
 
@@ -224,15 +257,20 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   # Support both (button, event, context) and (event, button, context) argument orders
-  def handle_event(%Raxol.Core.Events.Event{} = event, button, context) when is_map(button) do
+  def handle_event(%Raxol.Core.Events.Event{} = event, button, context)
+      when is_map(button) do
     handle_event(button, event, context)
   end
 
   # Add validation for invalid roles
   def errors(button) do
     errors = %{}
+
     errors =
-      if button.role in [:default, :primary, :secondary], do: errors, else: Map.put(errors, :role, "Invalid role")
+      if button.role in [:default, :primary, :secondary],
+        do: errors,
+        else: Map.put(errors, :role, "Invalid role")
+
     errors
   end
 
@@ -248,7 +286,39 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   defp calculate_width(button, context) do
-    button.width || min(String.length(button.label) + 4, context.max_width)
+    # Use base label for width calculation, not decorated label
+    base_label = button.label
+
+    # Padding accounts for borders, spacing, and maximum focus decorations ("> " and " <" = 4 chars)
+    # 8 for borders/spacing + 4 for focus decorations
+    padding = 12
+    max_width = context.max_width || 80
+    # Calculate available space for the base label
+    available_label_width = max(max_width - padding, 1)
+
+    truncated_label =
+      if String.length(base_label) > available_label_width do
+        String.slice(base_label, 0, available_label_width)
+      else
+        base_label
+      end
+
+    # Store the truncated base label for rendering
+    button = Map.put(button, :_truncated_label, truncated_label)
+
+    button.width ||
+      (String.length(truncated_label) + padding)
+      |> min(max_width)
+  end
+
+  # Update build_display_label to use the truncated label if present
+  defp build_display_label(%{
+         _truncated_label: truncated_label,
+         focused: focused
+       })
+       when is_binary(truncated_label) do
+    # Apply focus decorations to the truncated base label
+    if focused, do: "> #{truncated_label} <", else: truncated_label
   end
 
   defp build_display_label(button) do
@@ -260,39 +330,80 @@ defmodule Raxol.UI.Components.Input.Button do
     default_bg = Map.get(style, :bg, :default)
 
     cond do
-      button.disabled -> get_disabled_colors(style, default_fg, default_bg)
-      button.focused -> get_focused_colors(style, default_fg, default_bg)
-      button.role == :primary -> get_primary_colors(style, default_fg, default_bg)
-      button.role == :secondary -> get_secondary_colors(style, default_fg, default_bg)
-      true -> {default_fg, default_bg}
+      button.disabled ->
+        get_disabled_colors(style, default_fg, default_bg)
+
+      button.focused ->
+        get_focused_colors(style, default_fg, default_bg)
+
+      button.role == :primary ->
+        get_primary_colors(style, default_fg, default_bg)
+
+      button.role == :secondary ->
+        get_secondary_colors(style, default_fg, default_bg)
+
+      true ->
+        {default_fg, default_bg}
     end
   end
 
   defp get_disabled_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override disabled_fg
-    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :disabled_fg, default_fg)
-    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :disabled_bg, default_bg)
+    fg =
+      if Map.has_key?(style, :fg),
+        do: Map.get(style, :fg),
+        else: Map.get(style, :disabled_fg, default_fg)
+
+    bg =
+      if Map.has_key?(style, :bg),
+        do: Map.get(style, :bg),
+        else: Map.get(style, :disabled_bg, default_bg)
+
     {fg, bg}
   end
 
   defp get_focused_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override focused_fg
-    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :focused_fg, default_fg)
-    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :focused_bg, default_bg)
+    fg =
+      if Map.has_key?(style, :fg),
+        do: Map.get(style, :fg),
+        else: Map.get(style, :focused_fg, default_fg)
+
+    bg =
+      if Map.has_key?(style, :bg),
+        do: Map.get(style, :bg),
+        else: Map.get(style, :focused_bg, default_bg)
+
     {fg, bg}
   end
 
   defp get_primary_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override primary_fg
-    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :primary_fg, default_fg)
-    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :primary_bg, default_bg)
+    fg =
+      if Map.has_key?(style, :fg),
+        do: Map.get(style, :fg),
+        else: Map.get(style, :primary_fg, default_fg)
+
+    bg =
+      if Map.has_key?(style, :bg),
+        do: Map.get(style, :bg),
+        else: Map.get(style, :primary_bg, default_bg)
+
     {fg, bg}
   end
 
   defp get_secondary_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override secondary_fg
-    fg = if Map.has_key?(style, :fg), do: Map.get(style, :fg), else: Map.get(style, :secondary_fg, default_fg)
-    bg = if Map.has_key?(style, :bg), do: Map.get(style, :bg), else: Map.get(style, :secondary_bg, default_bg)
+    fg =
+      if Map.has_key?(style, :fg),
+        do: Map.get(style, :fg),
+        else: Map.get(style, :secondary_fg, default_fg)
+
+    bg =
+      if Map.has_key?(style, :bg),
+        do: Map.get(style, :bg),
+        else: Map.get(style, :secondary_bg, default_bg)
+
     {fg, bg}
   end
 end
