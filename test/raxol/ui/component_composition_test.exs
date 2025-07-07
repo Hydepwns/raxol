@@ -5,11 +5,9 @@ defmodule Raxol.UI.ComponentCompositionTest do
   import Raxol.Test.Visual.Assertions
 
   setup do
-    # Ensure UserPreferences is started for all tests
-    case Raxol.Core.UserPreferences.start_link(test_mode?: true) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-    end
+    # UserPreferences is already started by the supervision tree in test_helper.exs
+    # Just ensure it's available and reset to defaults
+    Raxol.Core.UserPreferences.reset_to_defaults_for_test!()
 
     # Initialize theme system
     Raxol.UI.Theming.Theme.init()
