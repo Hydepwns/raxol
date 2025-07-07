@@ -1,67 +1,134 @@
-# Raxol Terminal Emulator Configuration Guide
+# Raxol Configuration Guide
 
 ## Overview
 
-The Raxol Terminal Emulator uses a centralized configuration system that manages all aspects of the terminal's operation.
+Raxol uses a centralized configuration system that manages all aspects of the application's operation, including terminal settings, runtime options, and environment-specific configurations.
 
 ```mermaid
 graph TB
-    subgraph Config["Configuration System"]
-        File[Config File]
-        Manager[Config Manager]
-        Validator[Validator]
-        Storage[Storage]
-    end
+    Config[Configuration System]
+    Manager[Config Manager]
+    Runtime[Runtime Config]
+    Terminal[Terminal Config]
+    Web[Web Config]
 
-    File --> Manager
-    Manager --> Validator
-    Manager --> Storage
+    Config --> Manager
+    Manager --> Runtime
+    Manager --> Terminal
+    Manager --> Web
 
     classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class File,Manager,Validator,Storage component;
+    class Config,Manager,Runtime,Terminal,Web component;
 ```
 
 ## Configuration Structure
 
-```mermaid
-graph TB
-    subgraph Config["Configuration"]
-        Terminal[Terminal]
-        Buffer[Buffer]
-        Renderer[Renderer]
-    end
+Raxol's configuration is organized into several key sections:
 
-    Terminal --> Settings1[Width/Height/Mode]
-    Buffer --> Settings2[Size/Scrollback]
-    Renderer --> Settings3[Mode/Buffering]
+- **Runtime Configuration**: Application lifecycle and core settings
+- **Terminal Configuration**: Terminal emulator settings
+- **Web Configuration**: Web interface settings
+- **Database Configuration**: Database connection and settings
 
-    classDef section fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    classDef setting fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:12px,padding:4px;
-    class Terminal,Buffer,Renderer section
-    class Settings1,Settings2,Settings3 setting;
-```
+## Configuration Files
 
-## Configuration File
+### Main Configuration
 
-Located at `config/raxol.exs`:
+Located at `config/config.exs`:
 
 ```elixir
 import Config
 
+# General application configuration
 config :raxol,
-  terminal: %{
-    width: 80,
-    height: 24,
-    mode: :normal
-  },
-  buffer: %{
-    max_size: 10000,
-    scrollback: 1000
-  },
-  renderer: %{
-    mode: :gpu,
-    double_buffering: true
-  }
+  ecto_repos: [Raxol.Repo],
+  generators: [binary_id: true]
+
+# Configure the endpoint
+config :raxol, RaxolWeb.Endpoint,
+  url: [host: "localhost"],
+  render_errors: [
+    formats: [html: RaxolWeb.ErrorHTML, json: RaxolWeb.ErrorJSON],
+    layout: false
+  ],
+  pubsub_server: Raxol.PubSub,
+  live_view: [signing_salt: "your-signing-salt"]
+```
+
+### Environment-Specific Configuration
+
+#### Development (`config/dev.exs`)
+
+```elixir
+import Config
+
+# Terminal settings for development
+config :raxol, :terminal,
+  default_width: 80,
+  default_height: 24,
+  scrollback_lines: 1000,
+  enable_ansi: true,
+  enable_mouse: true,
+  debug_mode: false,
+  log_level: :info
+
+# Web interface settings for development
+config :raxol, :web,
+  default_theme: "light",
+  enable_websockets: true,
+  session_timeout: 3600,
+  debug_mode: false,
+  enable_hot_reload: true
+```
+
+#### Production (`config/prod.exs`)
+
+```elixir
+import Config
+
+# Terminal settings for production
+config :raxol, :terminal,
+  default_width: 80,
+  default_height: 24,
+  scrollback_lines: 1000,
+  enable_ansi: true,
+  enable_mouse: true,
+  debug_mode: false,
+  log_level: :info
+
+# Web interface settings for production
+config :raxol, :web,
+  default_theme: "light",
+  enable_websockets: true,
+  session_timeout: 3600,
+  debug_mode: false,
+  enable_hot_reload: false
+```
+
+### Runtime Configuration
+
+Located at `config/runtime.exs`:
+
+```elixir
+import Config
+
+# Configure terminal settings from environment
+config :raxol, :terminal,
+  default_width: String.to_integer(System.get_env("TERMINAL_WIDTH") || "80"),
+  default_height: String.to_integer(System.get_env("TERMINAL_HEIGHT") || "24"),
+  scrollback_lines: String.to_integer(System.get_env("TERMINAL_SCROLLBACK") || "1000"),
+  enable_ansi: System.get_env("TERMINAL_ANSI", "true") == "true",
+  enable_mouse: System.get_env("TERMINAL_MOUSE", "true") == "true",
+  debug_mode: System.get_env("TERMINAL_DEBUG", "false") == "true",
+  log_level: String.to_atom(System.get_env("TERMINAL_LOG_LEVEL") || "info")
+
+# Configure web interface settings from environment
+config :raxol, :web,
+  default_theme: System.get_env("WEB_THEME", "light"),
+  enable_websockets: System.get_env("WEB_WEBSOCKETS", "true") == "true",
+  session_timeout: String.to_integer(System.get_env("WEB_SESSION_TIMEOUT") || "3600"),
+  debug_mode: System.get_env("WEB_DEBUG", "false") == "true",
+  enable_hot_reload: System.get_env("WEB_HOT_RELOAD", "false") == "true"
 ```
 
 ## Configuration Sections
@@ -70,169 +137,168 @@ config :raxol,
 
 ```elixir
 terminal: %{
-  width: 80,        # Terminal width in characters
-  height: 24,       # Terminal height in characters
-  mode: :normal     # Terminal mode (:normal or :raw)
+  default_width: 80,        # Terminal width in characters
+  default_height: 24,       # Terminal height in characters
+  scrollback_lines: 1000,   # Number of lines to keep in scrollback
+  enable_ansi: true,        # Enable ANSI escape sequences
+  enable_mouse: true,       # Enable mouse tracking
+  debug_mode: false,        # Enable debug mode
+  log_level: :info          # Log level (:debug, :info, :warn, :error)
 }
 ```
 
-### Buffer Configuration
+### Web Configuration
 
 ```elixir
-buffer: %{
-  max_size: 10_000,  # Maximum buffer size in characters
-  scrollback: 1000   # Number of lines to keep in scrollback
+web: %{
+  default_theme: "light",           # Default theme
+  enable_websockets: true,          # Enable WebSocket support
+  session_timeout: 3600,            # Session timeout in seconds
+  debug_mode: false,                # Enable debug mode
+  enable_hot_reload: false,         # Enable hot reloading
+  reduced_motion: false,            # Reduce animations
+  high_contrast: false,             # Enable high contrast mode
+  font_family: "JetBrains Mono, SF Mono, monospace",
+  font_size: 14,
+  line_height: 1.2
 }
 ```
 
-### Renderer Configuration
+### Database Configuration
 
 ```elixir
-renderer: %{
-  mode: :gpu,           # Rendering mode (:gpu or :cpu)
-  double_buffering: true # Whether to use double buffering
-}
+config :raxol, Raxol.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "raxol_dev",
+  pool_size: 10,
+  timeout: 15_000,
+  idle_timeout: 30_000
 ```
 
-## Runtime Configuration
+## Runtime Configuration API
 
-```mermaid
-sequenceDiagram
-    participant App as Application
-    participant Manager as Config Manager
-    participant Validator as Validator
-    participant Storage as Storage
+### Configuration Manager
 
-    App->>Manager: Get/Set Config
-    Manager->>Validator: Validate
-    Validator-->>Manager: Valid/Invalid
-    Manager->>Storage: Persist (if needed)
-    Storage-->>Manager: Success/Failure
-    Manager-->>App: Result
-```
-
-### Configuration Manager API
+Raxol provides a configuration manager for runtime configuration updates:
 
 ```elixir
-# Get configuration
-width = Raxol.Core.Config.Manager.get(:terminal_width)
+# Get configuration value
+width = Raxol.Core.Config.Manager.get(:terminal_width, 80)
 
-# Set configuration
+# Set configuration value
 :ok = Raxol.Core.Config.Manager.set(:terminal_width, 100)
 
-# Update configuration
+# Update configuration value
 :ok = Raxol.Core.Config.Manager.update(:terminal_width, &(&1 + 50))
-
-# Delete configuration
-:ok = Raxol.Core.Config.Manager.delete(:custom_key)
 
 # Get all configuration
 config = Raxol.Core.Config.Manager.get_all()
-
-# Reload configuration
-:ok = Raxol.Core.Config.Manager.reload()
 ```
 
-## Environment-Specific Configuration
+### Core Configuration
 
-```mermaid
-graph TB
-    subgraph Env["Environment Config"]
-        Dev[Development]
-        Test[Testing]
-        Prod[Production]
-    end
+```elixir
+# Get user preference
+theme = Raxol.Core.get_preference(:theme, :default)
 
-    Dev --> DevConfig[config/dev.exs]
-    Test --> TestConfig[config/test.exs]
-    Prod --> ProdConfig[config/prod.exs]
+# Set user preference
+:ok = Raxol.Core.set_preference(:theme, :dark)
 
-    classDef env fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    classDef config fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:12px,padding:4px;
-    class Dev,Test,Prod env
-    class DevConfig,TestConfig,ProdConfig config;
+# Get system information
+{:ok, info} = Raxol.Core.get_system_info()
 ```
 
-## Validation Rules
+## Environment Variables
 
-```mermaid
-graph TB
-    subgraph Rules["Validation Rules"]
-        Terminal[Terminal Rules]
-        Buffer[Buffer Rules]
-        Renderer[Renderer Rules]
-    end
+Raxol respects these environment variables for configuration:
 
-    Terminal --> T1[Width > 0]
-    Terminal --> T2[Height > 0]
-    Terminal --> T3[Mode in [:normal, :raw]]
+### Terminal Settings
 
-    Buffer --> B1[Max Size > 0]
-    Buffer --> B2[Scrollback >= 0]
+- `TERMINAL_WIDTH`: Terminal width (default: 80)
+- `TERMINAL_HEIGHT`: Terminal height (default: 24)
+- `TERMINAL_SCROLLBACK`: Scrollback lines (default: 1000)
+- `TERMINAL_ANSI`: Enable ANSI (default: true)
+- `TERMINAL_MOUSE`: Enable mouse (default: true)
+- `TERMINAL_DEBUG`: Debug mode (default: false)
+- `TERMINAL_LOG_LEVEL`: Log level (default: info)
 
-    Renderer --> R1[Mode in [:gpu, :cpu]]
-    Renderer --> R2[Double Buffering is boolean]
+### Web Settings
 
-    classDef rule fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    classDef check fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:12px,padding:4px;
-    class Terminal,Buffer,Renderer rule
-    class T1,T2,T3,B1,B2,R1,R2 check;
-```
+- `WEB_THEME`: Default theme (default: light)
+- `WEB_WEBSOCKETS`: Enable WebSockets (default: true)
+- `WEB_SESSION_TIMEOUT`: Session timeout (default: 3600)
+- `WEB_DEBUG`: Debug mode (default: false)
+- `WEB_HOT_RELOAD`: Hot reload (default: false)
+
+### Application Settings
+
+- `RAXOL_THEME`: Set the default theme
+- `RAXOL_NO_COLOR`: Disable colors if set to `1` or `true`
+- `RAXOL_DEBUG`: Enable debug mode if set to `1` or `true`
+- `RAXOL_LOG_LEVEL`: Set the log level
 
 ## Best Practices
 
-1. **Organization**
+1. **Environment Separation**
 
-   - Group related settings
-   - Use descriptive names
-   - Document options
+   - Use environment-specific config files
+   - Override with environment variables in production
+   - Keep sensitive data out of version control
 
 2. **Validation**
 
-   - Validate all values
-   - Provide clear errors
-   - Handle invalid configs
+   - Validate configuration values at startup
+   - Provide clear error messages for invalid configs
+   - Use sensible defaults
 
 3. **Security**
-   - No sensitive data
-   - Use env variables
-   - Validate inputs
+   - Use environment variables for sensitive data
+   - Validate all configuration inputs
+   - Avoid hardcoding secrets
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Invalid Configuration**
+1. **Configuration Not Loading**
 
-   - Check required fields
-   - Verify value types
-   - Check syntax
+   - Check file paths and permissions
+   - Verify syntax in config files
+   - Check environment variable names
 
-2. **Loading Issues**
+2. **Invalid Configuration**
 
-   - Verify file path
-   - Check permissions
-   - Validate syntax
+   - Review validation error messages
+   - Check data types and ranges
+   - Verify required fields are present
 
-3. **Persistence Issues**
-   - Check persist option
-   - Verify permissions
-   - Check write errors
+3. **Runtime Configuration Issues**
+   - Ensure configuration manager is started
+   - Check GenServer call timeouts
+   - Verify configuration keys exist
 
 ## API Reference
 
 ### Raxol.Core.Config.Manager
 
-| Function       | Description    |
-| -------------- | -------------- |
-| `start_link/1` | Start manager  |
-| `get/2`        | Get value      |
-| `set/3`        | Set value      |
-| `update/3`     | Update value   |
-| `delete/2`     | Delete value   |
-| `get_all/0`    | Get all values |
-| `reload/0`     | Reload config  |
+| Function       | Description                 |
+| -------------- | --------------------------- |
+| `start_link/1` | Start configuration manager |
+| `get/2`        | Get configuration value     |
+| `set/3`        | Set configuration value     |
+| `update/3`     | Update configuration value  |
+| `get_all/0`    | Get all configuration       |
+
+### Raxol.Core
+
+| Function            | Description            |
+| ------------------- | ---------------------- |
+| `get_preference/2`  | Get user preference    |
+| `set_preference/2`  | Set user preference    |
+| `get_system_info/0` | Get system information |
 
 ## Support
 
-For issues and feature requests, please use the [issue tracker](https://github.com/raxol/raxol/issues).
+For configuration issues and questions, please use the [issue tracker](https://github.com/Hydepwns/raxol/issues).
