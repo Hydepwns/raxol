@@ -270,7 +270,9 @@ defmodule Raxol.Terminal.Integration.Main do
       renderer: %{},
       scroll_buffer: %{},
       command_history: %{},
-      config: %{}
+      config: %{},
+      width: 80,
+      height: 24
     }
   end
 

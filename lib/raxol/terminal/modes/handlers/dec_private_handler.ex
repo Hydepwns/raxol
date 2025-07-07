@@ -34,6 +34,9 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
       %{category: :dec_private} = mode_def ->
         apply_mode_effects(mode_def, value, emulator)
 
+      %{category: :screen_buffer} = mode_def ->
+        apply_mode_effects(mode_def, value, emulator)
+
       _ ->
         {:error, :invalid_mode}
     end
@@ -57,23 +60,16 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   defp apply_mode_effects(mode_def, value, emulator) do
-    IO.puts("DEBUG: DECPrivateHandler.apply_mode_effects called with mode_def.name=#{inspect(mode_def.name)}, value=#{inspect(value)}")
     case get_mode_handler(mode_def.name) do
       {:ok, handler} ->
-        IO.puts("DEBUG: DECPrivateHandler found handler for #{inspect(mode_def.name)}")
         handler.(value, emulator)
       :error ->
-        IO.puts("DEBUG: DECPrivateHandler no handler found for #{inspect(mode_def.name)}")
         {:error, :unsupported_mode}
     end
   end
 
   defp get_mode_handler(mode_name) do
-    IO.puts("DEBUG: DECPrivateHandler.get_mode_handler called with mode_name=#{inspect(mode_name)}")
-    IO.puts("DEBUG: DECPrivateHandler available handlers: #{inspect(Map.keys(@mode_handlers))}")
-    result = Map.fetch(@mode_handlers, mode_name)
-    IO.puts("DEBUG: DECPrivateHandler.get_mode_handler result: #{inspect(result)}")
-    result
+    Map.fetch(@mode_handlers, mode_name)
   end
 
   def handle_column_width_mode_wide(value, emulator) do
@@ -85,10 +81,11 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   def handle_cursor_keys_mode(value, emulator) do
+    cursor_mode = if value, do: :application, else: :normal
     {:ok,
      %{
        emulator
-       | mode_manager: %{emulator.mode_manager | cursor_keys_mode: value}
+       | mode_manager: %{emulator.mode_manager | cursor_keys_mode: cursor_mode}
      }}
   end
 
@@ -192,25 +189,14 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   def handle_alt_screen_save(value, emulator) do
-    IO.puts(
-      "DEBUG: DECPrivateHandler.handle_alt_screen_save called with value=#{inspect(value)}"
-    )
-
-    result =
-      {:ok,
-       %{
-         emulator
-         | mode_manager: %{
-             emulator.mode_manager
-             | alternate_buffer_active: value
-           }
-       }}
-
-    IO.puts(
-      "DEBUG: DECPrivateHandler.handle_alt_screen_save result: #{inspect(result)}"
-    )
-
-    result
+    {:ok,
+     %{
+       emulator
+       | mode_manager: %{
+           emulator.mode_manager
+           | alternate_buffer_active: value
+         }
+     }}
   end
 
   defp resize_buffer(buffer, new_width) do
