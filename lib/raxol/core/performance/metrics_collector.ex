@@ -170,7 +170,8 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       collector
       | memory_usage: memory_usage,
         gc_stats: gc_stats,
-        last_gc_time: System.monotonic_time(:millisecond)
+        last_gc_time: System.system_time(:millisecond),
+        last_memory_usage: collector.memory_usage
     }
   end
 
@@ -199,10 +200,10 @@ defmodule Raxol.Core.Performance.MetricsCollector do
         0.0
 
       last_time ->
-        current_time = System.monotonic_time(:millisecond)
+        current_time = System.system_time(:millisecond)
         time_diff = current_time - last_time
 
-        if time_diff > 0 do
+        if time_diff > 0 and collector.last_memory_usage do
           # Calculate memory growth rate
           memory_growth = collector.memory_usage - collector.last_memory_usage
           # Convert to bytes per second
@@ -236,5 +237,23 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       iex> Map.has_key?(gc_stats, :number_of_gcs)
       true
   """
-  def get_gc_stats(collector), do: collector.gc_stats
+  def get_gc_stats(collector) do
+    case collector.gc_stats do
+      {number_of_gcs, words_reclaimed, heap_size, heap_limit} ->
+        %{
+          number_of_gcs: number_of_gcs,
+          words_reclaimed: words_reclaimed,
+          heap_size: heap_size,
+          heap_limit: heap_limit
+        }
+
+      _ ->
+        %{
+          number_of_gcs: 0,
+          words_reclaimed: 0,
+          heap_size: 0,
+          heap_limit: 0
+        }
+    end
+  end
 end

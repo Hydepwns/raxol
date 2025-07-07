@@ -122,12 +122,15 @@ defmodule Raxol.Core.Runtime.Subscription do
   behaviour.
   """
   def custom(source_module, init_args) do
-    data = %{
-      module: source_module,
-      args: init_args
-    }
-
-    new(:custom, data)
+    cond do
+      not is_atom(source_module) ->
+        {:error, :invalid_module}
+      not is_map(init_args) ->
+        {:error, :invalid_args}
+      true ->
+        data = %{module: source_module, args: init_args}
+        new(:custom, data)
+    end
   end
 
   @doc """
