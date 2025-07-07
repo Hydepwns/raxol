@@ -8,8 +8,14 @@ defmodule Raxol.Core.Metrics.ConfigTest do
   alias Raxol.Core.Metrics.Config
 
   setup do
-    {:ok, _pid} = Config.start_link()
-    on_exit(fn -> :ok = Config.reset() end)
+    # Start the Config GenServer
+    {:ok, pid} = Config.start_link()
+    on_exit(fn ->
+      # Safely stop the process if it's still alive
+      if Process.alive?(pid) do
+        GenServer.stop(pid, :normal, 1000)
+      end
+    end)
     :ok
   end
 

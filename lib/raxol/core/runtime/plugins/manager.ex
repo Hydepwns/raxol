@@ -41,7 +41,61 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def init(arg) do
-    {:ok, arg}
+    # Convert list of options to a proper state map
+    state = case arg do
+      opts when is_list(opts) ->
+        # Convert keyword list to map
+        opts_map = Enum.into(opts, %{})
+
+        # Initialize with default values
+        %{
+          plugins: %{},
+          metadata: %{},
+          plugin_states: %{},
+          plugin_config: Map.get(opts_map, :plugin_config, %{}),
+          load_order: [],
+          command_registry_table: Map.get(opts_map, :command_registry_table, :command_registry),
+          runtime_pid: Map.get(opts_map, :runtime_pid),
+          file_watching_enabled?: Map.get(opts_map, :enable_plugin_reloading, false),
+          initialized: false,
+          lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
+        }
+
+      state when is_map(state) ->
+        # Already a map, just ensure it has required fields
+        Map.merge(%{
+          plugins: %{},
+          metadata: %{},
+          plugin_states: %{},
+          plugin_config: %{},
+          load_order: [],
+          command_registry_table: :command_registry,
+          runtime_pid: nil,
+          file_watching_enabled?: false,
+          initialized: false,
+          lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
+        }, state)
+
+      _ ->
+        # Fallback to default state
+        %{
+          plugins: %{},
+          metadata: %{},
+          plugin_states: %{},
+          plugin_config: %{},
+          load_order: [],
+          command_registry_table: :command_registry,
+          runtime_pid: nil,
+          file_watching_enabled?: false,
+          initialized: false,
+          lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
+        }
+    end
+
+    # Start internal initialization
+    send(self(), :__internal_initialize__)
+
+    {:ok, state}
   end
 
   @doc """

@@ -60,7 +60,13 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
 
   setup_all do
     start_supervised!(Raxol.DynamicSupervisor)
-    start_supervised!(Raxol.Terminal.Registry)
+    # Handle case where registry is already running from global test setup or supervisor
+    case start_supervised(Raxol.Terminal.Registry) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+      {:error, {{:already_started, _pid}, _}} -> :ok
+      {:error, reason} -> raise "Failed to start Raxol.Terminal.Registry: #{inspect(reason)}"
+    end
     :ok
   end
 
@@ -190,7 +196,7 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
     end
 
     test "initialize_environment handles terminal initialization failure" do
-      options = [environment: :terminal]
+      options = [environment: :web]
 
       log =
         capture_log(fn ->

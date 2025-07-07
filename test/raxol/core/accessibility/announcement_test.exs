@@ -46,9 +46,9 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       assert_receive {:announcement_added, ^ref, "First"}, 1000
       assert_receive {:announcement_added, ^ref, "Second"}, 1000
 
-      assert Accessibility.get_next_announcement() == "First"
-      assert Accessibility.get_next_announcement() == "Second"
-      assert Accessibility.get_next_announcement() == nil
+      assert Accessibility.get_next_announcement(prefs_name) == "First"
+      assert Accessibility.get_next_announcement(prefs_name) == "Second"
+      assert Accessibility.get_next_announcement(prefs_name) == nil
 
       :ok = Accessibility.unsubscribe_from_announcements(ref)
     end
@@ -63,7 +63,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       Accessibility.clear_announcements()
       assert_receive {:announcements_cleared, ^ref}, 1000
 
-      assert Accessibility.get_next_announcement() == nil
+      assert Accessibility.get_next_announcement(prefs_name) == nil
 
       :ok = Accessibility.unsubscribe_from_announcements(ref)
     end
@@ -83,7 +83,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       Accessibility.announce("Should not be announced", [], prefs_name)
 
       refute_receive {:announcement_added, ^ref, _}, 1000
-      assert Accessibility.get_next_announcement() == nil
+      assert Accessibility.get_next_announcement(prefs_name) == nil
 
       :ok = Accessibility.unsubscribe_from_announcements(ref)
     end
@@ -94,10 +94,10 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       Accessibility.announce("Normal", [], prefs_name)
       Accessibility.announce("High", [priority: :high], prefs_name)
       Accessibility.announce("Low", [priority: :low], prefs_name)
-      assert Accessibility.get_next_announcement() == "High"
+      assert Accessibility.get_next_announcement(prefs_name) == "High"
       Accessibility.announce("Interrupting", [interrupt: true], prefs_name)
-      assert Accessibility.get_next_announcement() == "Interrupting"
-      assert Accessibility.get_next_announcement() == nil
+      assert Accessibility.get_next_announcement(prefs_name) == "Interrupting"
+      assert Accessibility.get_next_announcement(prefs_name) == nil
     end
 
     test "announce/2 respects :silence_announcements setting", %{
@@ -110,7 +110,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       )
 
       Accessibility.announce("Should not be announced", [], prefs_name)
-      assert Accessibility.get_next_announcement() == nil
+      assert Accessibility.get_next_announcement(prefs_name) == nil
     end
   end
 end

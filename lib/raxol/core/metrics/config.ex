@@ -15,7 +15,8 @@ defmodule Raxol.Core.Metrics.Config do
 
   @type metric_type :: :performance | :resource | :operation | :system | :custom
   @type config_key ::
-          :retention_period | :max_samples | :flush_interval | :enabled_metrics
+          :retention_period | :max_samples | :flush_interval | :enabled_metrics |
+          :aggregation_window | :storage_backend | :retention_policies
 
   @default_config %{
     # 1 hour in seconds
@@ -25,6 +26,12 @@ defmodule Raxol.Core.Metrics.Config do
     # 1 second in milliseconds
     flush_interval: 1000,
     enabled_metrics: [:performance, :resource, :operation, :system],
+    # Aggregation window for metrics
+    aggregation_window: :hour,
+    # Storage backend for metrics
+    storage_backend: :memory,
+    # Retention policies for different metrics
+    retention_policies: [],
     environment: :prod
   }
 
@@ -43,7 +50,10 @@ defmodule Raxol.Core.Metrics.Config do
              :retention_period,
              :max_samples,
              :flush_interval,
-             :enabled_metrics
+             :enabled_metrics,
+             :aggregation_window,
+             :storage_backend,
+             :retention_policies
            ] do
     GenServer.call(__MODULE__, {:get, key, default})
   end
@@ -65,14 +75,41 @@ defmodule Raxol.Core.Metrics.Config do
   @doc """
   Sets a specific configuration value.
   """
-  def set(key, value)
-      when key in [
-             :retention_period,
-             :max_samples,
-             :flush_interval,
-             :enabled_metrics
-           ] do
-    GenServer.call(__MODULE__, {:set, key, value})
+  def set(key, value) when key in [:retention_period, :max_samples, :flush_interval, :enabled_metrics] do
+    case validate_setting(key, value) do
+      :ok -> GenServer.call(__MODULE__, {:set, key, value})
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def set(:aggregation_window, value) do
+    case validate_aggregation_window(value) do
+      :ok -> GenServer.call(__MODULE__, {:set, :aggregation_window, value})
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def set(:storage_backend, value) do
+    case validate_storage_backend(value) do
+      :ok -> GenServer.call(__MODULE__, {:set, :storage_backend, value})
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def set(:retention_policies, value) do
+    case validate_retention_policies(value) do
+      :ok -> GenServer.call(__MODULE__, {:set, :retention_policies, value})
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def set(key, _value) when key in [:aggregation_window, :storage_backend, :retention_policies] do
+    # This clause should never be reached due to the specific clauses above
+    {:error, :invalid_key}
+  end
+
+  def set(_key, _value) do
+    {:error, :invalid_key}
   end
 
   @doc """
@@ -156,12 +193,21 @@ defmodule Raxol.Core.Metrics.Config do
     with :ok <- validate_retention_period(config.retention_period),
          :ok <- validate_max_samples(config.max_samples),
          :ok <- validate_flush_interval(config.flush_interval),
-         :ok <- validate_enabled_metrics(config.enabled_metrics) do
+         :ok <- validate_enabled_metrics(config.enabled_metrics),
+         :ok <- validate_aggregation_window(config.aggregation_window),
+         :ok <- validate_storage_backend(config.storage_backend),
+         :ok <- validate_retention_policies(config.retention_policies) do
       :ok
     else
       {:error, reason} -> {:error, reason}
     end
   end
+
+  # Validation functions for existing keys
+  defp validate_setting(:retention_period, value), do: validate_retention_period(value)
+  defp validate_setting(:max_samples, value), do: validate_max_samples(value)
+  defp validate_setting(:flush_interval, value), do: validate_flush_interval(value)
+  defp validate_setting(:enabled_metrics, value), do: validate_enabled_metrics(value)
 
   defp validate_retention_period(period) when integer?(period) and period > 0,
     do: :ok
@@ -191,4 +237,33 @@ defmodule Raxol.Core.Metrics.Config do
   end
 
   defp validate_enabled_metrics(_), do: {:error, :invalid_enabled_metrics}
+
+  # Validation functions for new keys
+  defp validate_aggregation_window(window) when window in [:hour, :day, :week, :month],
+    do: :ok
+
+  defp validate_aggregation_window(_), do: {:error, :invalid_aggregation_window}
+
+  defp validate_storage_backend(backend) when backend in [:memory, :disk],
+    do: :ok
+
+  defp validate_storage_backend(_), do: {:error, :invalid_storage_backend}
+
+  defp validate_retention_policies(policies) when list?(policies) do
+    if Enum.all?(policies, &valid_retention_policy?/1) do
+      :ok
+    else
+      {:error, :invalid_retention_policies}
+    end
+  end
+
+  defp validate_retention_policies(_), do: {:error, :invalid_retention_policies}
+
+  defp valid_retention_policy?(%{metric: metric, duration: duration})
+       when binary?(metric) and binary?(duration) do
+    # Basic validation - duration should be in format like "7d", "24h", etc.
+    String.match?(duration, ~r/^\d+[dhms]$/)
+  end
+
+  defp valid_retention_policy?(_), do: false
 end

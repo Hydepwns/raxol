@@ -26,7 +26,8 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
             Integer.to_string(System.unique_integer([:positive]))
         )
 
-      Helper.setup_test_preferences(prefs_name)
+      {:ok, context} = Helper.setup_test_preferences(prefs_name)
+      context
     end
 
     test "enable/1 applies default preferences if none are set", %{
@@ -150,7 +151,7 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
 
       assert Accessibility.get_option(:enabled, prefs_name) == true
       Accessibility.announce("Test before disable", [], prefs_name)
-      assert Accessibility.get_next_announcement() == "Test before disable"
+      assert Accessibility.get_next_announcement(prefs_name) == "Test before disable"
 
       Accessibility.disable(prefs_name)
 
@@ -159,7 +160,7 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       end)
 
       Accessibility.announce("Test after disable", [], prefs_name)
-      assert Accessibility.get_next_announcement() == nil
+      assert Accessibility.get_next_announcement(prefs_name) == nil
     end
   end
 end
