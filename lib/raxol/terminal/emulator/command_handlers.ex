@@ -123,11 +123,17 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   def handle_set_mode(params, emulator) do
     case parse_mode_params(params) do
       [mode_code] ->
-        case lookup_mode(mode_code) do
+        # Try standard mode first, then private mode
+        case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, true)
-          _ ->
-            emulator
+          :error ->
+            case lookup_mode(mode_code) do
+              {:ok, mode_name} ->
+                set_mode_in_manager(emulator, mode_name, true)
+              :error ->
+                emulator
+            end
         end
       _ ->
         emulator
@@ -138,11 +144,17 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   def handle_reset_mode(params, emulator) do
     case parse_mode_params(params) do
       [mode_code] ->
-        case lookup_mode(mode_code) do
+        # Try standard mode first, then private mode
+        case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, false)
-          _ ->
-            emulator
+          :error ->
+            case lookup_mode(mode_code) do
+              {:ok, mode_name} ->
+                set_mode_in_manager(emulator, mode_name, false)
+              :error ->
+                emulator
+            end
         end
       _ ->
         emulator
@@ -195,8 +207,8 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
     %{emulator | style: updated_style}
   end
 
-  # handle_csi_general/3
-  def handle_csi_general(params, final_byte, emulator) do
+  # handle_csi_general/4
+  def handle_csi_general(params, final_byte, emulator, intermediates \\ "") do
     case final_byte do
       "J" -> handle_ed_command(params, emulator)
       "K" -> handle_el_command(params, emulator)
@@ -205,9 +217,83 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
       "B" -> handle_cursor_down(params, emulator)
       "C" -> handle_cursor_forward(params, emulator)
       "D" -> handle_cursor_back(params, emulator)
+      "c" -> handle_device_attributes(params, emulator, intermediates)
+      "n" -> handle_device_status_report(params, emulator)
       _ -> emulator
     end
   end
+
+  # handle_device_attributes/3
+  def handle_device_attributes(params, emulator, intermediates) do
+    param_list = parse_params(params)
+    case {intermediates, param_list} do
+      {">", []} ->
+        # CSI > c or CSI > 0 c (Secondary DA)
+        response = "\e[>0;0;0c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+      {">", [0]} ->
+        # CSI > 0 c (Secondary DA)
+        response = "\e[>0;0;0c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+      {"", []} ->
+        # CSI c (Primary DA)
+        response = "\e[?6c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+      {"", [0]} ->
+        # CSI 0 c (Primary DA)
+        response = "\e[?6c"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+      _ ->
+        # Ignore all other params (including [1], [1, ...], etc)
+        emulator
+    end
+  end
+
+  # handle_device_status_report/2
+  def handle_device_status_report(params, emulator) do
+    # Parse parameters
+    param_list = parse_params(params)
+
+    case param_list do
+      [5] ->
+        # DSR 5n - Report device status (OK)
+        # ESC [ 0 n (ready, no malfunctions)
+        response = "\e[0n"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      [] ->
+        # DSR with no parameters - Report device status (OK)
+        # ESC [ 0 n (ready, no malfunctions)
+        response = "\e[0n"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      [6] ->
+        # DSR 6n - Report cursor position
+        # ESC [ row ; col R
+        {col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+        response = "\e[#{row + 1};#{col + 1}R"
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      _ ->
+        # Unknown parameter, ignore
+        emulator
+    end
+  end
+
+  # parse_params/1 - Helper to parse parameter string into list of integers
+  defp parse_params(params) when is_binary(params) do
+    params
+    |> String.split(";")
+    |> Enum.map(&String.trim/1)
+    |> Enum.filter(&(&1 != ""))
+    |> Enum.map(fn param ->
+      case Integer.parse(param) do
+        {val, _} -> val
+        :error -> 0
+      end
+    end)
+  end
+  defp parse_params(_), do: []
 
   # Private helper functions
   defp parse_mode_params(params) do
@@ -233,10 +319,17 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   end
 
   defp set_mode_in_manager(emulator, mode_name, value) do
-    mode_manager = emulator.mode_manager
-    new_mode_manager = update_mode_manager_state(mode_manager, mode_name, value)
-    emulator = %{emulator | mode_manager: new_mode_manager}
-    handle_screen_buffer_switch(emulator, mode_name, value)
+    if value do
+      case Raxol.Terminal.ModeManager.set_mode(emulator, [mode_name]) do
+        {:ok, new_emulator} -> handle_screen_buffer_switch(new_emulator, mode_name, value)
+        {:error, _} -> emulator
+      end
+    else
+      case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode_name]) do
+        {:ok, new_emulator} -> handle_screen_buffer_switch(new_emulator, mode_name, value)
+        {:error, _} -> emulator
+      end
+    end
   end
 
   defp update_mode_manager_state(mode_manager, mode_name, value) do

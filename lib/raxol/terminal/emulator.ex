@@ -308,6 +308,7 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate handle_esc_greater(emulator), to: CommandHandlers
   defdelegate handle_sgr(params, emulator), to: CommandHandlers
   defdelegate handle_csi_general(params, final_byte, emulator), to: CommandHandlers
+  defdelegate handle_csi_general(params, final_byte, emulator, intermediates), to: CommandHandlers
 
   # Get scrollback buffer
   def get_scrollback(emulator) do
@@ -394,9 +395,6 @@ defmodule Raxol.Terminal.Emulator do
 
 
 
-  @doc """
-  Processes input data and updates the terminal state accordingly.
-  """
   @spec process_input(t(), binary()) :: {t(), binary()}
   def process_input(emulator, input) do
     # Handle character set commands first
@@ -425,7 +423,10 @@ defmodule Raxol.Terminal.Emulator do
             "DEBUG: No remaining text, returning emulator with scroll_region: #{inspect(updated_emulator.scroll_region)}"
           )
 
-          {updated_emulator, ""}
+          # Return the output buffer content instead of empty string
+          output = updated_emulator.output_buffer
+          emulator_without_output = %{updated_emulator | output_buffer: ""}
+          {emulator_without_output, output}
         else
           updated_emulator = handle_text_input(remaining_text, updated_emulator)
 
@@ -433,7 +434,10 @@ defmodule Raxol.Terminal.Emulator do
             "DEBUG: After handle_text_input, scroll_region: #{inspect(updated_emulator.scroll_region)}"
           )
 
-          {updated_emulator, ""}
+          # Return the output buffer content instead of empty string
+          output = updated_emulator.output_buffer
+          emulator_without_output = %{updated_emulator | output_buffer: ""}
+          {emulator_without_output, output}
         end
     end
   end
@@ -617,11 +621,11 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp handle_parsed_sequence(
-         {:csi_general, params, final_byte, remaining},
+         {:csi_general, params, intermediates, final_byte, remaining},
          _rest,
          emulator
        ) do
-    {handle_csi_general(params, final_byte, emulator), remaining}
+    {handle_csi_general(params, final_byte, emulator, intermediates), remaining}
   end
 
   defp set_cursor_visible(visible, emulator) do
@@ -932,8 +936,10 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec set_mode(t(), atom()) :: t()
   def set_mode(%__MODULE__{} = emulator, mode) do
-    Raxol.Terminal.ModeManager.set_mode(emulator, [mode])
-    emulator
+    case Raxol.Terminal.ModeManager.set_mode(emulator, [mode]) do
+      {:ok, new_emulator} -> new_emulator
+      {:error, _} -> emulator
+    end
   end
 
   # Add helper functions for tests that expect struct access

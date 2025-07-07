@@ -158,13 +158,17 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     extension_id = generate_extension_id()
     extension_state = load_extension_state(path, type, opts)
 
-    case validate_extension(extension_state) do
-      :ok ->
-        new_state = put_in(state.extensions[extension_id], extension_state)
-        {:reply, {:ok, extension_id}, new_state}
-
+    case extension_state.module do
       {:error, reason} ->
-        {:reply, {:error, reason}, state}
+        {:reply, {:error, {:module_load_failed, reason}}, state}
+      _ ->
+        case validate_extension(extension_state) do
+          :ok ->
+            new_state = put_in(state.extensions[extension_id], extension_state)
+            {:reply, {:ok, extension_id}, new_state}
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
+        end
     end
   end
 
@@ -319,10 +323,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   def handle_call({:import_extension, path, opts}, _from, state) do
     case import_extension_from_path(path, opts) do
       {:ok, extension} ->
-        extension_id = generate_extension_id()
-        new_state = put_in(state.extensions[extension_id], extension)
-        {:reply, {:ok, extension_id}, new_state}
-
+        case extension.module do
+          {:error, reason} ->
+            {:reply, {:error, {:module_load_failed, reason}}, state}
+          _ ->
+            extension_id = generate_extension_id()
+            new_state = put_in(state.extensions[extension_id], extension)
+            {:reply, {:ok, extension_id}, new_state}
+        end
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end

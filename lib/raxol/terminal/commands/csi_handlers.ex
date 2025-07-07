@@ -40,9 +40,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   @public_modes %{
     2 => :keyboard_action,
-    4 => :insert_mode,
+    4 => :irm,
     12 => :send_receive,
-    20 => :new_line,
+    20 => :lnm,
     34 => :cursor_style,
     36 => :keyboard_type,
     40 => :allow_80_to_132,

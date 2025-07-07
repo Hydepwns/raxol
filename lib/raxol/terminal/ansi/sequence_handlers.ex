@@ -270,12 +270,24 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
   Parses CSI general sequences.
   """
   @spec parse_csi_general(binary()) ::
-          {:csi_general, binary(), binary(), binary()} | nil
+          {:csi_general, binary(), binary(), binary(), binary()} | nil
   def parse_csi_general(<<0x1B, 0x5B, remaining::binary>>) do
-    # Match any CSI sequence ending with a valid final byte (A-Z, a-z)
-    case Regex.run(~r/^([0-9;:]*)([A-Za-z])(.*)/, remaining) do
-      [_, params, final_byte, rest] ->
-        {:csi_general, params, final_byte, rest}
+    # Match all before final byte, then final byte, then rest
+    case Regex.run(~r|^([^A-Za-z]*)([A-Za-z])(.*)|, remaining) do
+      [_, before_final, final_byte, rest] ->
+        # Reverse, take all digits/;/: from the end as params, rest as intermediates, then reverse both
+        rev = String.reverse(before_final)
+
+        {rev_params, rev_intermediates} =
+          Regex.run(~r/^([\d;:]*)(.*)/, rev, capture: :all_but_first)
+          |> case do
+            [ps, ints] -> {ps, ints}
+            _ -> {rev, ""}
+          end
+
+        params = String.reverse(rev_params)
+        intermediates = String.reverse(rev_intermediates)
+        {:csi_general, params, intermediates, final_byte, rest}
 
       _ ->
         nil

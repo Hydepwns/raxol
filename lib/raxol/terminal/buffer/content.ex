@@ -41,16 +41,8 @@ defmodule Raxol.Terminal.Buffer.Content do
         ) :: ScreenBuffer.t()
   def write_string(buffer, x, y, string, style \\ nil) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
-      string
-      |> String.graphemes()
-      |> Enum.reduce({buffer, x}, fn char, {buffer, x} ->
-        if x < buffer.width do
-          {write_char(buffer, x, y, char, style), x + 1}
-        else
-          {buffer, x}
-        end
-      end)
-      |> elem(0)
+      # Use the Writer module which properly handles wide characters
+      Raxol.Terminal.Buffer.Writer.write_string(buffer, x, y, string)
     else
       buffer
     end

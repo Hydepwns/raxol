@@ -83,12 +83,12 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       assert first_cell.style.bold == true
 
       html = Raxol.Terminal.Renderer.render(renderer)
-      assert html =~ ~s(<span style="color: #FF0000; font-weight: bold">S</span>)
-      assert html =~ ~s(<span style="color: #FF0000; font-weight: bold">t</span>)
-      assert html =~ ~s(<span style="color: #FF0000; font-weight: bold">y</span>)
-      assert html =~ ~s(<span style="color: #FF0000; font-weight: bold">l</span>)
-      assert html =~ ~s(<span style="color: #FF0000; font-weight: bold">e</span>)
-      assert html =~ ~s(<span style="color: #FF0000; font-weight: bold">d</span>)
+      assert html =~ ~s(<span style="background-color: #000000; color: #FF0000; font-weight: bold">S</span>)
+      assert html =~ ~s(<span style="background-color: #000000; color: #FF0000; font-weight: bold">t</span>)
+      assert html =~ ~s(<span style="background-color: #000000; color: #FF0000; font-weight: bold">y</span>)
+      assert html =~ ~s(<span style="background-color: #000000; color: #FF0000; font-weight: bold">l</span>)
+      assert html =~ ~s(<span style="background-color: #000000; color: #FF0000; font-weight: bold">e</span>)
+      assert html =~ ~s(<span style="background-color: #000000; color: #FF0000; font-weight: bold">d</span>)
     end
   end
 

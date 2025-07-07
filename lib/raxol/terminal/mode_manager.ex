@@ -147,10 +147,6 @@ defmodule Raxol.Terminal.ModeManager do
         state.alternate_buffer_active
 
       :dec_alt_screen_save ->
-        IO.puts(
-          "DEBUG: mode_enabled? :dec_alt_screen_save = #{inspect(state.alternate_buffer_active)}"
-        )
-
         state.alternate_buffer_active
 
       :alt_screen_buffer ->
@@ -182,25 +178,19 @@ defmodule Raxol.Terminal.ModeManager do
   defp do_set_mode(mode_name, emulator, category) do
     with {:ok, mode_def} <- find_mode_definition(mode_name, category),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, true) do
-      new_mode_manager =
-        update_mode_manager_state(new_emu.mode_manager, mode_name, true)
-
-      {:ok, %{new_emu | mode_manager: new_mode_manager}}
+      {:ok, new_emu}
     end
   end
 
   defp do_reset_mode(mode_name, emulator, category \\ nil) do
     with {:ok, mode_def} <- find_mode_definition(mode_name, category),
          {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, false) do
-      new_mode_manager =
-        update_mode_manager_state(new_emu.mode_manager, mode_name, false)
-
-      {:ok, %{new_emu | mode_manager: new_mode_manager}}
+      {:ok, new_emu}
     end
   end
 
   defp find_mode_definition(mode_name, category) do
-    # For nil category, look for :standard modes
+    # For nil category, look for :standard modes first
     search_category = if category == nil, do: :standard, else: category
 
     # Search all mode definitions for exact name and category match
@@ -209,7 +199,27 @@ defmodule Raxol.Terminal.ModeManager do
          |> Map.values()
          |> Enum.find(fn mode_def -> mode_def.name == mode_name and mode_def.category == search_category end) do
       nil ->
-        {:error, :invalid_mode}
+        # If not found in the initial category, try other categories
+        case search_category do
+          :standard ->
+            # Try :dec_private and :screen_buffer
+            case ModeTypes.get_all_modes()
+                 |> Map.values()
+                 |> Enum.find(fn mode_def -> mode_def.name == mode_name and mode_def.category in [:dec_private, :screen_buffer] end) do
+              nil -> {:error, :invalid_mode}
+              mode_def -> {:ok, mode_def}
+            end
+          :dec_private ->
+            # Try :screen_buffer
+            case ModeTypes.get_all_modes()
+                 |> Map.values()
+                 |> Enum.find(fn mode_def -> mode_def.name == mode_name and mode_def.category == :screen_buffer end) do
+              nil -> {:error, :invalid_mode}
+              mode_def -> {:ok, mode_def}
+            end
+          _ ->
+            {:error, :invalid_mode}
+        end
       mode_def ->
         {:ok, mode_def}
     end
@@ -218,6 +228,8 @@ defmodule Raxol.Terminal.ModeManager do
   defp apply_mode_effects(mode_def, emulator, value) do
     case mode_def.category do
       :dec_private ->
+        DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
+      :screen_buffer ->
         DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
       :standard ->
         StandardHandler.handle_mode_change(mode_def.name, value, emulator)
@@ -232,7 +244,7 @@ defmodule Raxol.Terminal.ModeManager do
       :lnm -> %{mode_manager | line_feed_mode: value}
       :deccolm_132 -> %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
       :deccolm_80 -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
-      :decscnm -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
+      :decscnm -> %{mode_manager | screen_mode_reverse: value}
       :decom -> %{mode_manager | origin_mode: value}
       :decawm -> %{mode_manager | auto_wrap: value}
       :decarm -> %{mode_manager | auto_repeat_mode: value}
@@ -241,6 +253,8 @@ defmodule Raxol.Terminal.ModeManager do
       :dectcem -> %{mode_manager | cursor_visible: value}
       :focus_events -> %{mode_manager | focus_events_enabled: value}
       :bracketed_paste -> %{mode_manager | bracketed_paste_mode: value}
+      :dec_alt_screen_save -> %{mode_manager | alternate_buffer_active: value}
+      :alt_screen_buffer -> %{mode_manager | alternate_buffer_active: value}
       _ -> mode_manager
     end
   end

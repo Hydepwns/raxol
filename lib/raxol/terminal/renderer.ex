@@ -135,18 +135,16 @@ defmodule Raxol.Terminal.Renderer do
       IO.puts("DEBUG: Cell char: '#{cell.char}', style: #{inspect(cell.style)}")
     end
 
-    style_attrs = build_style_attributes(cell.style, theme)
+    style_attrs = build_style_string(cell.style, theme)
     "<span style=\"#{style_attrs}\">#{cell.char}</span>"
   end
 
-  defp build_style_attributes(style, theme) do
+  defp build_style_string(style, theme) do
     attrs = []
 
+    # Normalize style to a map
     style_map =
       cond do
-        is_nil(style) ->
-          %{}
-
         is_map(style) and Map.has_key?(style, :__struct__) ->
           Map.from_struct(style)
 
@@ -157,13 +155,15 @@ defmodule Raxol.Terminal.Renderer do
           %{}
       end
 
-    # Apply background color only if explicitly set in cell style
+    # Apply background color - use cell style if present, otherwise use default from theme
     background_color =
-      if Map.has_key?(style_map, :background) and
-           not is_nil(style_map.background) do
-        get_color(style_map.background, Map.get(theme, :background, %{}))
-      else
-        ""
+      cond do
+        Map.has_key?(style_map, :background) and
+            not is_nil(style_map.background) ->
+          get_color(style_map.background, Map.get(theme, :background, %{}))
+
+        true ->
+          get_color(:default, Map.get(theme, :background, %{}))
       end
 
     attrs =
