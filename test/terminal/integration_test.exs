@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       first_cell =
         state.main_screen_buffer.cells |> List.first() |> List.first()
 
-      assert Map.get(first_cell.style, :foreground) == :red
+      assert first_cell.style.foreground == :red
     end
 
     test "handles multiple ANSI attributes", %{state: initial_state} do
@@ -132,9 +132,9 @@ defmodule Raxol.Terminal.IntegrationTest do
       first_cell =
         state.main_screen_buffer.cells |> List.first() |> List.first()
 
-      assert Map.get(first_cell.style, :bold) == true
-      assert Map.get(first_cell.style, :underline) == true
-      assert Map.get(first_cell.style, :foreground) == :red
+      assert first_cell.style.bold == true
+      assert first_cell.style.underline == true
+      assert first_cell.style.foreground == :red
     end
 
     test "handles cursor positioning", %{state: initial_state} do

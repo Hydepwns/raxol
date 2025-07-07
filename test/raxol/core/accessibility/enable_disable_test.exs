@@ -56,14 +56,14 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       Accessibility.disable(prefs_name)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name) == false
+        Accessibility.get_option(:enabled, prefs_name, false) == false
       end)
 
       # Enable reads preferences
       Accessibility.enable([], prefs_name)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name) == true
+        Accessibility.get_option(:enabled, prefs_name, false) == true
       end)
 
       # Assert default values
@@ -119,7 +119,7 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       Accessibility.disable(prefs_name)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name) == false
+        Accessibility.get_option(:enabled, prefs_name, false) == false
       end)
 
       custom_opts = [
@@ -131,12 +131,12 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       Accessibility.enable(custom_opts, prefs_name)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name) == true
+        Accessibility.get_option(:enabled, prefs_name, false) == true
       end)
 
-      assert Accessibility.get_option(:high_contrast, prefs_name) == true
-      assert Accessibility.get_option(:reduced_motion, prefs_name) == true
-      assert Accessibility.get_option(:screen_reader, prefs_name) == false
+      assert Accessibility.get_option(:high_contrast, prefs_name, false) == true
+      assert Accessibility.get_option(:reduced_motion, prefs_name, false) == true
+      assert Accessibility.get_option(:screen_reader, prefs_name, true) == false
       assert Accessibility.get_text_scale(prefs_name) == 1.0
     end
 
@@ -146,17 +146,17 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       Accessibility.enable([], prefs_name)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name) == true
+        Accessibility.get_option(:enabled, prefs_name, false) == true
       end)
 
-      assert Accessibility.get_option(:enabled, prefs_name) == true
+      assert Accessibility.get_option(:enabled, prefs_name, false) == true
       Accessibility.announce("Test before disable", [], prefs_name)
       assert Accessibility.get_next_announcement(prefs_name) == "Test before disable"
 
       Accessibility.disable(prefs_name)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name) == false
+        Accessibility.get_option(:enabled, prefs_name, false) == false
       end)
 
       Accessibility.announce("Test after disable", [], prefs_name)
