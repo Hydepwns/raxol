@@ -91,22 +91,21 @@ defmodule Raxol.AnimationTest do
 
   setup context do
     Process.flag(:trap_exit, true)
-    {:ok, pid} = UserPreferences.start_link()
+
+    # Use the global UserPreferences process that's already started
+    pid = Process.whereis(Raxol.Core.UserPreferences)
+
     Animation.init(%{}, pid)
     Accessibility.enable([], pid)
     UserPreferences.set("accessibility.reduced_motion", false, pid)
     UserPreferences.set("accessibility.screen_reader", true, pid)
     UserPreferences.set("accessibility.silence_announcements", false, pid)
     Accessibility.clear_announcements()
-    assert_receive {:preferences_applied}, 100
+    assert_receive {:preferences_applied, _pid}, 100
 
     on_exit(fn ->
       Animation.stop()
-
-      if Process.alive?(pid) do
-        Accessibility.disable(pid)
-        Process.exit(pid, :shutdown)
-      end
+      Accessibility.disable(pid)
     end)
 
     {:ok, user_preferences_pid: pid}
@@ -209,7 +208,7 @@ defmodule Raxol.AnimationTest do
         Framework.start_animation(
           animation.name,
           "test_element",
-          %{},
+          %{notify_pid: self()},
           user_preferences_pid
         )
 
@@ -261,7 +260,7 @@ defmodule Raxol.AnimationTest do
         Framework.start_animation(
           animation.name,
           "test_element",
-          %{},
+          %{notify_pid: self()},
           user_preferences_pid
         )
 
@@ -316,6 +315,9 @@ defmodule Raxol.AnimationTest do
           %{},
           user_preferences_pid
         )
+
+      # Apply animations to state to trigger completion for disabled animations
+      Framework.apply_animations_to_state(%{}, user_preferences_pid)
 
       wait_for_animation_start("test_element", animation.name)
       wait_for_animation_completion("test_element", animation.name)
@@ -585,9 +587,9 @@ defmodule Raxol.AnimationTest do
         }
 
         fade_animation =
-          Animation.create_animation(:fade_in, %{
+          Framework.create_animation(:fade_in, %{
             type: :fade,
-            duration: 100,
+            duration: 200,
             from: 0,
             to: 1,
             announce_to_screen_reader: true,
@@ -596,9 +598,9 @@ defmodule Raxol.AnimationTest do
           })
 
         slide_animation =
-          Animation.create_animation(:slide_in, %{
+          Framework.create_animation(:slide_in, %{
             type: :slide,
-            duration: 100,
+            duration: 200,
             from: 0,
             to: 100,
             announce_to_screen_reader: true,
@@ -610,7 +612,7 @@ defmodule Raxol.AnimationTest do
           Framework.start_animation(
             fade_animation.name,
             "test_element",
-            %{},
+            %{notify_pid: self()},
             user_preferences_pid
           )
 
@@ -618,7 +620,7 @@ defmodule Raxol.AnimationTest do
           Framework.start_animation(
             slide_animation.name,
             "test_element",
-            %{},
+            %{notify_pid: self()},
             user_preferences_pid
           )
 
@@ -708,7 +710,7 @@ defmodule Raxol.AnimationTest do
           Framework.start_animation(
             animation.name,
             "test_element",
-            %{},
+            %{notify_pid: self()},
             user_preferences_pid
           )
 
@@ -749,16 +751,8 @@ defmodule Raxol.AnimationTest do
   # --- Private Test Helpers ---
 
   defp setup_accessibility() do
-    # Ensure UserPreferences is started (might be redundant due to test_helper.exs)
-    case Process.whereis(UserPreferences) do
-      nil ->
-        {:ok, pid} = UserPreferences.start_link([])
-        pid
-
-      pid when is_pid(pid) ->
-        # Already started, return existing pid
-        pid
-    end
+    # Use the global UserPreferences process that's already started
+    Process.whereis(Raxol.Core.UserPreferences)
   end
 
   defp cleanup_accessibility(pid) when is_pid(pid) do
