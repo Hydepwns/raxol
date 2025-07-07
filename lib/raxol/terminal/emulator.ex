@@ -397,9 +397,12 @@ defmodule Raxol.Terminal.Emulator do
 
   @spec process_input(t(), binary()) :: {t(), binary()}
   def process_input(emulator, input) do
+    IO.puts("DEBUG: process_input called with input: #{inspect(input)}")
+
     # Handle character set commands first
     case get_charset_command(input) do
       {field, value} ->
+        IO.puts("DEBUG: process_input matched charset command: #{field} = #{value}")
         # If it's a charset command, handle it completely and return
         updated_emulator = %{
           emulator
@@ -409,10 +412,13 @@ defmodule Raxol.Terminal.Emulator do
         {updated_emulator, ""}
 
       :no_match ->
+        IO.puts("DEBUG: process_input no charset match, calling handle_ansi_sequences")
         # Not a charset command, proceed with normal processing
         # Handle ANSI sequences and get remaining text
         {updated_emulator, remaining_text} =
           handle_ansi_sequences(input, emulator)
+
+        IO.puts("DEBUG: After handle_ansi_sequences, style: #{inspect(updated_emulator.style)}, remaining_text: #{inspect(remaining_text)}")
 
         IO.puts(
           "DEBUG: After handle_ansi_sequences, scroll_region: #{inspect(updated_emulator.scroll_region)}"
@@ -462,20 +468,25 @@ defmodule Raxol.Terminal.Emulator do
   defp handle_ansi_sequences(<<>>, emulator), do: {emulator, <<>>}
 
   defp handle_ansi_sequences(rest, emulator) do
+    IO.puts("DEBUG: handle_ansi_sequences input: #{inspect(rest)}")
     case parse_ansi_sequence(rest) do
       {:osc, remaining, _} ->
+        IO.puts("DEBUG: handle_ansi_sequences parsed: {:osc, ...}")
         handle_ansi_sequences(remaining, emulator)
 
       {:dcs, remaining, _} ->
+        IO.puts("DEBUG: handle_ansi_sequences parsed: {:dcs, ...}")
         handle_ansi_sequences(remaining, emulator)
 
       {:incomplete, _} ->
+        IO.puts("DEBUG: handle_ansi_sequences parsed: {:incomplete, ...}")
         {emulator, rest}
 
       parsed_sequence ->
+        IO.puts("DEBUG: handle_ansi_sequences parsed: #{inspect(parsed_sequence)}")
         {new_emulator, remaining} =
           handle_parsed_sequence(parsed_sequence, rest, emulator)
-
+        IO.puts("DEBUG: handle_ansi_sequences updated emulator: #{inspect(new_emulator.style)}")
         handle_ansi_sequences(remaining, new_emulator)
     end
   end
@@ -605,7 +616,11 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp handle_parsed_sequence({:sgr, params, remaining, _}, _rest, emulator) do
-    {handle_sgr(params, emulator), remaining}
+    IO.puts("DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}")
+    IO.puts("DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}")
+    result = {handle_sgr(params, emulator), remaining}
+    IO.puts("DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}")
+    result
   end
 
   defp handle_parsed_sequence({:unknown, remaining, _}, _rest, emulator) do

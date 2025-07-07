@@ -21,13 +21,16 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
       end)
       |> Enum.filter(& &1)
 
-    log_sgr_debug("DEBUG: SGR codes parsed: #{inspect(codes)}")
+    log_sgr_debug("DEBUG: SGR params: #{inspect(params)}, codes: #{inspect(codes)}")
+    log_sgr_debug("DEBUG: Initial style: #{inspect(style)}")
 
     # Start with current style
     style = style || Raxol.Terminal.ANSI.TextFormatting.new()
 
     # Apply each SGR code, handling complex codes specially
-    process_sgr_codes(codes, style)
+    result = process_sgr_codes(codes, style)
+    log_sgr_debug("DEBUG: Final style: #{inspect(result)}")
+    result
   end
 
   @doc """

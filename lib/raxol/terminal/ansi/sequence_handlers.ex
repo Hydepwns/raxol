@@ -301,22 +301,48 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
   """
   @spec parse_sgr(binary()) :: {:sgr, binary(), binary(), nil} | nil
   def parse_sgr(<<0x1B, 0x5B, remaining::binary>>) do
-    # Only match if the remaining part contains 'm' and has valid SGR parameters
+    # Only match if the remaining part contains 'm'
     case String.split(remaining, "m", parts: 2) do
-      [params, rest] when is_binary(params) and byte_size(params) > 0 ->
-        # Validate that params contains only digits, semicolons, and colons
-        if String.match?(params, ~r/^[\d;:]*$/) do
+      [params, rest] when is_binary(params) ->
+        # Validate that params contains only digits, semicolons, and colons, or is empty (reset)
+        if params == "" or String.match?(params, ~r/^[\d;:]*$/) do
+          File.write!(
+            "tmp/parse_sgr.log",
+            "parse_sgr MATCH: params=#{inspect(params)}, rest=#{inspect(rest)}\n",
+            [:append]
+          )
+
           {:sgr, params, rest, nil}
         else
+          File.write!(
+            "tmp/parse_sgr.log",
+            "parse_sgr NO_MATCH: params=#{inspect(params)} (invalid format)\n",
+            [:append]
+          )
+
           nil
         end
 
       _ ->
+        File.write!(
+          "tmp/parse_sgr.log",
+          "parse_sgr NO_MATCH: no 'm' found in #{inspect(remaining)}\n",
+          [:append]
+        )
+
         nil
     end
   end
 
-  def parse_sgr(_), do: nil
+  def parse_sgr(input) do
+    File.write!(
+      "tmp/parse_sgr.log",
+      "parse_sgr NO_MATCH: input=#{inspect(input)} (no ESC[)\n",
+      [:append]
+    )
+
+    nil
+  end
 
   @doc """
   Parses unknown escape sequences.

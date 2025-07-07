@@ -204,7 +204,11 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   # handle_sgr/2
   def handle_sgr(params, emulator) do
     updated_style = Raxol.Terminal.ANSI.SGRProcessor.handle_sgr(params, emulator.style)
-    %{emulator | style: updated_style}
+    log_sgr_debug("DEBUG: handle_sgr - emulator.style before: #{inspect(emulator.style)}")
+    log_sgr_debug("DEBUG: handle_sgr - updated_style: #{inspect(updated_style)}")
+    result = %{emulator | style: updated_style}
+    log_sgr_debug("DEBUG: handle_sgr - emulator.style after: #{inspect(result.style)}")
+    result
   end
 
   # handle_csi_general/4
@@ -370,4 +374,8 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   end
 
   defp handle_screen_buffer_switch(emulator, _mode, _value), do: emulator
+
+  defp log_sgr_debug(msg) do
+    File.write!("tmp/sgr_debug.log", msg <> "\n", [:append])
+  end
 end
