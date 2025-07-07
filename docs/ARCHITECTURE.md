@@ -11,210 +11,90 @@ tags: [architecture, documentation, design]
 
 ## System Overview
 
-Raxol is a sophisticated terminal user interface toolkit that provides a comprehensive set of features for building interactive terminal applications. The system uses a layered architecture with clear separation of concerns and has been recently enhanced with improved terminal subsystems, core metrics, and UI components.
+Raxol is a terminal user interface toolkit built on The Elm Architecture (TEA) that provides a comprehensive set of features for building interactive terminal applications. The system uses a layered architecture with clear separation of concerns.
 
 ```mermaid
 graph TB
-    subgraph Layers["System Layers"]
-        App[Application Layer]
-        View[View Layer]
-        Runtime[Runtime Layer]
-        Terminal[Terminal Layer]
-        UI[UI Components Layer]
-    end
+    App[Application Layer]
+    View[View Layer]
+    Runtime[Runtime Layer]
+    Terminal[Terminal Layer]
 
     App --> View
     View --> Runtime
     Runtime --> Terminal
-    Runtime --> UI
-    UI --> Terminal
 
     classDef layer fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:16px,padding:8px;
-    class App,View,Runtime,Terminal,UI layer;
+    class App,View,Runtime,Terminal layer;
 ```
 
 ### Layer Responsibilities
 
-```mermaid
-graph LR
-    subgraph App["Application Layer"]
-        direction TB
-        Logic[Application Logic]
-        State[State Management]
-        Logic --> State
-    end
-
-    subgraph View["View Layer"]
-        direction TB
-        UIComp[UI Composition]
-        Style[Styling & Theming System]
-        UIComp --> Style
-    end
-
-    subgraph Runtime["Runtime Layer"]
-        direction TB
-        Events[Event System]
-        Render[Renderer]
-        Plugins[Plugin System]
-        Lifecycle[Lifecycle Manager]
-        Config[Configuration Manager]
-        Metrics[Metrics System]
-        UX[UX Refinement]
-        Events --> Plugins
-        Events --> Lifecycle
-        Lifecycle --> Render
-        Render --> Config
-        Render --> Metrics
-        Metrics --> UX
-    end
-
-    subgraph Terminal["Terminal Layer"]
-        direction TB
-        IO[I/O Management]
-        Buffer[Unified Buffer System]
-        Cursor[Cursor Manager]
-        ANSI[ANSI State Machine]
-        Commands[Command Handlers]
-        Graphics[Sixel Graphics]
-        IO --> Buffer
-        Buffer --> Cursor
-        Buffer --> ANSI
-        ANSI --> Commands
-        Commands --> Graphics
-    end
-
-    subgraph UI["UI Components Layer"]
-        direction TB
-        Basic["Enhanced Components (Button, MultiLineInput, PasswordField, SelectList, Progress)"]
-        Layout[Layout Engine]
-        Focus[Focus Management]
-        Accessibility[Accessibility]
-        Theming[Theming]
-        Animation[Animation System]
-        Basic --> Layout
-        Layout --> Focus
-        Focus --> Accessibility
-        Accessibility --> Theming
-        Theming --> Animation
-    end
-
-    classDef layer fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class App,View,Runtime,Terminal,UI layer;
-```
+- **Application Layer**: User-defined application logic following TEA pattern
+- **View Layer**: UI composition and rendering with components
+- **Runtime Layer**: Event handling, lifecycle management, and coordination
+- **Terminal Layer**: Low-level terminal interaction and buffer management
 
 ## Core Subsystems
 
-### Enhanced Terminal Layer
+### Application Runtime
 
-The terminal layer has been significantly refactored with improved organization and specialized modules:
+The application runtime manages the lifecycle of Raxol applications:
+
+```mermaid
+graph LR
+    Lifecycle[Lifecycle Manager]
+    Dispatcher[Event Dispatcher]
+    Plugins[Plugin Manager]
+    Renderer[Rendering Engine]
+
+    Lifecycle --> Dispatcher
+    Dispatcher --> Plugins
+    Dispatcher --> Renderer
+
+    classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
+    class Lifecycle,Dispatcher,Plugins,Renderer component;
+```
+
+### View System
+
+The view system provides component-based UI composition:
 
 ```mermaid
 graph TB
-    subgraph Terminal["Enhanced Terminal Layer"]
-        Buffer[Unified Buffer Manager]
-        Cursor[Cursor Manager]
-        IO[I/O Manager]
-        ANSI[ANSI State Machine]
-        Commands[Command Handlers]
-        Graphics[Sixel Graphics]
-        Mouse[Mouse Tracking]
-        Window[Window Management]
-    end
+    View[View Module]
+    Components[UI Components]
+    Layout[Layout Engine]
+    Renderer[Renderer]
 
-    Buffer --> Cursor
-    Buffer --> ANSI
-    ANSI --> Commands
-    Commands --> Graphics
-    Commands --> Mouse
-    Commands --> Window
-    IO --> Buffer
+    View --> Components
+    Components --> Layout
+    Layout --> Renderer
 
     classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Buffer,Cursor,IO,ANSI,Commands,Graphics,Mouse,Window component;
+    class View,Components,Layout,Renderer component;
 ```
 
-### Enhanced Runtime Layer
+### Terminal System
 
-The runtime layer now includes improved metrics, performance monitoring, and UX refinement:
+The terminal system handles low-level terminal operations:
 
 ```mermaid
 graph TB
-    subgraph Runtime["Enhanced Runtime Layer"]
-        Events[Event System]
-        Plugins[Plugin System]
-        Render[Renderer]
-        Lifecycle[Lifecycle Manager]
-        Config[Configuration Manager]
-        Metrics[Metrics System]
-        Performance[Performance Monitor]
-        UX[UX Refinement]
-    end
+    Emulator[Terminal Emulator]
+    Buffer[Buffer Manager]
+    Parser[ANSI Parser]
+    IO[I/O Manager]
 
-    Events --> Plugins
-    Events --> Lifecycle
-    Lifecycle --> Render
-    Render --> Config
-    Render --> Metrics
-    Metrics --> Performance
-    Performance --> UX
+    Emulator --> Buffer
+    Emulator --> Parser
+    Emulator --> IO
 
     classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Events,Plugins,Render,Lifecycle,Config,Metrics,Performance,UX component;
+    class Emulator,Buffer,Parser,IO component;
 ```
 
-### Enhanced UI Components Layer
-
-The UI components layer has been updated with improved input components and layout engine:
-
-```mermaid
-graph TB
-    subgraph UI["Enhanced UI Components Layer"]
-        Basic["Enhanced Components (Button, MultiLineInput, PasswordField, SelectList, Progress)"]
-        Layout[Layout Engine]
-        Focus[Focus Management]
-        Accessibility[Accessibility]
-        Theming[Theming]
-        Animation[Animation System]
-        Clipboard[Clipboard Integration]
-    end
-
-    Basic --> Layout
-    Layout --> Focus
-    Focus --> Accessibility
-    Accessibility --> Theming
-    Theming --> Animation
-    Basic --> Clipboard
-
-    classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Basic,Layout,Focus,Accessibility,Theming,Animation,Clipboard component;
-```
-
-### Enhanced Plugin System
-
-The plugin system maintains its robust architecture with improved dependency management:
-
-```mermaid
-graph TB
-    subgraph PluginSystem["Enhanced Plugin System"]
-        Registry[Plugin Registry]
-        Loader[Plugin Loader]
-        Lifecycle[Lifecycle Manager]
-        Events[Plugin Events]
-        Dependencies[Dependency Manager]
-    end
-
-    Registry --> Loader
-    Loader --> Lifecycle
-    Lifecycle --> Events
-    Events --> Dependencies
-
-    classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Registry,Loader,Lifecycle,Events,Dependencies component;
-```
-
-### Component Lifecycle
-
-The component lifecycle remains consistent with improved error handling:
+## Application Lifecycle
 
 ```mermaid
 stateDiagram-v2
@@ -228,109 +108,63 @@ stateDiagram-v2
     unmount --> [*]
 ```
 
-## Enhanced Event & Rendering Pipeline
+## Event Flow
 
 ```mermaid
 sequenceDiagram
-    participant TI as Terminal Input
-    participant ANSI as ANSI State Machine
-    participant ED as Event Dispatcher
-    participant App as Application
-    participant View as View
-    participant UI as UI Components
-    participant TB as Unified Buffer
-    participant Metrics as Metrics System
+    participant Terminal
+    participant Runtime
+    participant App
+    participant View
+    participant Renderer
 
-    TI->>ANSI: Raw Input
-    ANSI->>ED: Parsed Events
-    ED->>App: handle_event
+    Terminal->>Runtime: Raw Input
+    Runtime->>App: handle_event
     App->>View: Update
-    View->>UI: Compose
-    UI->>TB: Render
-    TB->>Metrics: Performance Data
+    View->>Renderer: Render
+    Renderer->>Terminal: Output
 ```
 
-## Performance Requirements
+## Key Modules
 
-- **Event Processing:** < 1ms average, < 2ms 95th percentile
-- **Screen Updates:** < 2ms average, < 5ms 95th percentile
-- **Concurrent Operations:** < 5ms average, < 10ms 95th percentile
-- **Terminal Operations:** < 0.5ms average, < 1ms 95th percentile
+### Application Layer
 
-## Enhanced Testing Infrastructure
+- `Raxol.Core.Runtime.Application` - Main application behaviour
+- `Raxol.Core.Runtime.Lifecycle` - Application lifecycle management
+- `Raxol.Core.Runtime.Events.Dispatcher` - Event dispatching
 
-The testing infrastructure has been significantly improved with better organization and coverage:
+### View Layer
 
-```mermaid
-graph TB
-    subgraph Testing["Enhanced Testing Infrastructure"]
-        Unit[Unit Tests]
-        Integration[Integration Tests]
-        Performance[Performance Tests]
-        Terminal[Terminal Tests]
-    end
+- `Raxol.Core.Renderer.View` - View composition and layout
+- `Raxol.Core.Renderer.Layout` - Layout calculations
+- `Raxol.UI.Components.*` - UI component library
 
-    subgraph Coverage["Enhanced Test Coverage"]
-        Components[Component Tests]
-        Plugins[Plugin Tests]
-        Buffer[Buffer Tests]
-        ANSI[ANSI Tests]
-        Commands[Command Tests]
-        UI[UI Tests]
-    end
+### Runtime Layer
 
-    subgraph Support["Test Support"]
-        Fixtures[Test Fixtures]
-        Mocks[Mock Implementations]
-        Helpers[Test Helpers]
-    end
+- `Raxol.Core.Runtime.Supervisor` - Runtime supervision
+- `Raxol.Core.Runtime.Plugins.Manager` - Plugin management
+- `Raxol.Core.Runtime.Rendering.Engine` - Rendering coordination
 
-    Unit --> Components
-    Integration --> Plugins
-    Integration --> Terminal
-    Performance --> Testing
-    Terminal --> Buffer
-    Terminal --> ANSI
-    Terminal --> Commands
-    UI --> Components
-    Support --> Testing
+### Terminal Layer
 
-    classDef test fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Unit,Integration,Performance,Terminal,Components,Plugins,Buffer,ANSI,Commands,UI,Fixtures,Mocks,Helpers test;
-```
-
-## Recent Architectural Improvements
-
-### Terminal Subsystem Enhancements
-
-- **Unified Buffer Management:** Improved buffer operations with specialized modules for different concerns
-- **Enhanced ANSI Processing:** Better state machine for escape sequence handling
-- **Improved Command Handlers:** Standardized error handling and result propagation
-- **Sixel Graphics Support:** Enhanced graphics rendering capabilities
-- **Window Management:** Better window state handling and manipulation
-
-### Core System Improvements
-
-- **Metrics System:** Enhanced aggregation and visualization capabilities
-- **Performance Monitoring:** Improved system performance tracking
-- **UX Refinement:** Better accessibility and user experience features
-- **Color System:** Enhanced theme management and color handling
-
-### UI Component Enhancements
-
-- **Input Components:** Improved multi-line input, password fields, and select lists
-- **Layout Engine:** Enhanced layout processing and container management
-- **Rendering Pipeline:** Better rendering performance and reliability
-- **Clipboard Integration:** Improved clipboard handling across components
+- `Raxol.Terminal.Emulator` - Terminal emulation
+- `Raxol.Terminal.Buffer.Manager` - Buffer management
+- `Raxol.Terminal.ANSI.*` - ANSI sequence handling
 
 ## Design Principles
 
-- **Elm-style update/view separation**: e.g. `Raxol.UI.Components.Base.Component`
-- **NIF terminal I/O** (hosted in `priv/static/@static/termbox2_nif`): we maintain a [fork of this ourselves](https://github.com/Hydepwns/termbox2_nif)
-- **Reusable, stateful components**: e.g. `Raxol.UI.Components.Base.Component`
-- **Unified error handling**: Consistent error/result tuples across all subsystems
-- **Performance-first design**: Optimized for low-latency terminal operations
-- **Comprehensive testing**: Extensive test coverage with improved reliability
+- **Elm Architecture**: Model-Update-View pattern with unidirectional data flow
+- **Component-based**: Reusable UI components with consistent interfaces
+- **Performance-first**: Optimized for low-latency terminal operations
+- **Extensible**: Plugin system for custom functionality
+- **Accessible**: Built-in accessibility features and screen reader support
+
+## Performance Requirements
+
+- **Event Processing**: < 1ms average
+- **Screen Updates**: < 2ms average
+- **Concurrent Operations**: < 5ms average
+- **Terminal Operations**: < 0.5ms average
 
 ## References
 

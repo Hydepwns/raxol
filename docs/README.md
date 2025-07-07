@@ -1,62 +1,90 @@
 ---
 title: Raxol Library Documentation
 description: Documentation for using the Raxol TUI library in Elixir projects
-date: 2025-05-10
-author: DROO AMOR
+date: 2025-01-27
+author: Raxol Team
 section: overview
 tags: [documentation, overview, library, tui, elixir]
 ---
 
 # 📚 Raxol Documentation
 
-Welcome! This is your starting point for all things Raxol—a modern, feature-rich toolkit for building sophisticated terminal user interfaces (TUIs) in Elixir. Raxol provides a comprehensive set of components, styling options, and event handling for creating interactive terminal applications with rich text formatting, keyboard input handling, and dynamic UI updates.
-
-## 📈 Project Status (2025-06-29)
-
-- **Test suite:** Enhanced with improved coverage and reliability
-- **Recent improvements:** Major terminal system refactoring, core enhancements, and UI updates
-- **Code quality:** Consistent formatting and improved maintainability
-- **Documentation:** Updated with comprehensive guides and API references
+Welcome! This is your starting point for all things Raxol—a modern toolkit for building terminal user interfaces (TUIs) in Elixir. Raxol provides a comprehensive set of components, styling options, and event handling for creating interactive terminal applications.
 
 ## 🗂️ Key Sections
 
-- [Architecture](ARCHITECTURE.md): System overview and design principles.
-- [UI Components & Layout Guide](../examples/guides/03_components_and_layout/components/README.md): Built-in components and layout system.
-- [Examples](../examples/): Runnable demos and code snippets.
-- [CHANGELOG](../CHANGELOG.md): Version history and updates.
+- [Architecture](ARCHITECTURE.md): System overview and design principles
+- [Configuration](CONFIGURATION.md): Configuration management and settings
+- [UI Components & Layout Guide](../examples/guides/03_components_and_layout/components/README.md): Built-in components and layout system
+- [Examples](../examples/): Runnable demos and code snippets
+- [CHANGELOG](../CHANGELOG.md): Version history and updates
 
-## Subsystems
+## Core Subsystems
 
-- [Terminal](../lib/raxol/terminal/README.md): Low-level terminal I/O and buffer management
-- [Core](../lib/raxol/core/README.md): Application lifecycle and state management
-- [Plugins](../lib/raxol/plugins/README.md): Extensible plugin architecture
-- [Style](../lib/raxol/style/README.md): Rich text formatting and styling system
-- [UI](../lib/raxol/ui/README.md): Component system and layout management
-- [AI](../lib/raxol/ai/README.md): AI-powered features and enhancements
-- [Animation](../lib/raxol/animation/README.md): Dynamic UI animations and transitions
+- **Core**: Application lifecycle and state management
+- **Terminal**: Low-level terminal I/O and buffer management
+- **UI**: Component system and layout management
+- **Renderer**: View composition and rendering
+- **Plugins**: Extensible plugin architecture
+- **Style**: Rich text formatting and styling system
 
-## 📦 Static Assets
+## Quick Start
 
-All static assets (JavaScript, CSS, images, etc.) located in the `priv/static/@static` directory.
+```elixir
+defmodule MyApp do
+  use Raxol.Core.Runtime.Application
 
-- If you need to add or update frontend assets, use the `@static` folder.
-- The asset pipeline (npm, bundlers, etc.) should be run from `priv/static/@static`.
-- References to static files in templates and code should use the `/@static/` path prefix.
+  def init(_opts), do: %{count: 0}
 
-> **Note:** This replaces the previous `assets` folder. Update any custom scripts or documentation accordingly.
+  def update(:increment, model), do: {%{model | count: model.count + 1}, []}
+  def update(:decrement, model), do: {%{model | count: model.count - 1}, []}
 
-## 🧭 How to Navigate
+  def view(model) do
+    ~H"""
+    <box border="single" padding="1">
+      <text color="cyan" bold="true">Count: <%= model.count %></text>
+      <row gap="1">
+        <button label="-" on_click=":decrement" />
+        <button label="+" on_click=":increment" />
+      </row>
+    </box>
+    """
+  end
+end
 
-- New to Raxol? Start with the Installation and Getting Started guides.
-- For a high-level overview, see [Architecture](ARCHITECTURE.md).
-- Explore the links above for in-depth guides and references.
+# Start the application
+{:ok, _pid} = Raxol.Core.start_application(MyApp)
+```
 
 ## 🚦 Performance Requirements
 
-Raxol is built for speed and reliability. Automated tests enforce strict performance standards:
+Raxol is built for speed and reliability with strict performance standards:
 
-- **Event processing:** < 1ms average, < 2ms (95th percentile)
-- **Screen updates:** < 2ms average, < 5ms (95th percentile)
-- **Concurrent operations:** < 5ms average, < 10ms (95th percentile)
+- **Event processing**: < 1ms average
+- **Screen updates**: < 2ms average
+- **Concurrent operations**: < 5ms average
 
-Happy hacking!
+## 📦 Static Assets
+
+Static assets (JavaScript, CSS, images) are located in `priv/static/@static/`.
+
+- Add or update frontend assets in the `@static` folder
+- Run asset pipeline from `priv/static/@static/`
+- Reference static files with `/@static/` path prefix
+
+## 🧭 How to Navigate
+
+- **New to Raxol?** Start with the [Quick Start Guide](../examples/guides/01_getting_started/quick_start.md)
+- **Architecture overview**: See [Architecture](ARCHITECTURE.md)
+- **Configuration**: See [Configuration Guide](CONFIGURATION.md)
+- **Components**: Explore [UI Components Guide](../examples/guides/03_components_and_layout/components/README.md)
+- **Examples**: Check out [Examples](../examples/) for working code
+
+## 📖 Additional Resources
+
+- [API Reference](../examples/guides/02_core_concepts/api/README.md)
+- [Plugin Development](../examples/guides/04_extending_raxol/plugin_development.md)
+- [Testing Guide](../examples/guides/05_development_and_testing/testing.md)
+- [Snippets](../examples/snippets/README.md)
+
+Happy building!
