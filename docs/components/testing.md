@@ -1,21 +1,14 @@
-# Raxol Component Testing Guide
+# Component Testing Guide
 
-> See also: [Component Architecture](./component_architecture.md) for component lifecycle and patterns.
+Essential testing patterns and best practices for Raxol components.
 
-## Table of Contents
+## Quick Reference
 
-1. [Overview](#overview)
-2. [Test Structure](#test-structure)
-3. [Testing Patterns](#testing-patterns)
-4. [Integration Testing](#integration-testing)
-5. [Performance Testing](#performance-testing)
-6. [Test Helpers](#test-helpers)
-7. [Best Practices](#best-practices)
-8. [Common Pitfalls](#common-pitfalls)
-
-## Overview
-
-This document outlines testing patterns and best practices for Raxol components, including unit testing, integration testing, and performance testing. The testing framework provides utilities for testing component lifecycle, state management, event handling, and rendering.
+- [Test Structure](#test-structure) - Test organization and setup
+- [Lifecycle Testing](#lifecycle-testing) - Testing component lifecycle
+- [Event Testing](#event-testing) - Testing event handling
+- [State Testing](#state-testing) - Testing state management
+- [Integration Testing](#integration-testing) - Testing component interactions
 
 ## Test Structure
 
@@ -26,470 +19,482 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
   use ExUnit.Case, async: true
   import Raxol.ComponentTestHelpers
 
-  # Test component that implements all lifecycle hooks
-  defmodule TestComponent do
-    @behaviour Raxol.UI.Components.Base.Component
-
-    def init(props) do
-      Map.merge(%{
-        counter: 0,
-        mounted: false,
-        unmounted: false,
-        events: [],
-        value: props[:value] || "",
-        error: nil
-      }, props)
-    end
-
-    def mount(state) do
-      new_state = %{state | mounted: true}
-      {new_state, [{:command, :mounted}]}
-    end
-
-    def update({:set_value, value}, state) do
-      {put_in(state, [:value], value), []}
-    end
-
-    def render(state) do
-      %{
-        type: :text_input,
-        value: state.value,
-        error: state.error,
-        counter: state.counter
-      }
-    end
-
-    def handle_event(%{type: :change, value: value}, state) do
-      new_state = %{state |
-        value: value,
-        events: [{:change, value} | state.events]
-      }
-      {new_state, [{:command, :value_changed}]}
-    end
-
-    def unmount(state) do
-      %{state | unmounted: true}
-    end
-  end
+  alias Raxol.UI.Components.Input.TextInput
 
   describe "Component Lifecycle" do
-    test "complete lifecycle flow" do
-      component = create_test_component(TestComponent, %{value: "initial"})
+    test "initializes with props" do
+      props = %{value: "test", placeholder: "Enter text"}
+      component = create_component(TextInput, props)
+      
+      assert component.state.value == "test"
+      assert component.state.placeholder == "Enter text"
+    end
 
-      {final_component, events} = simulate_lifecycle(component, fn mounted ->
-        # Verify mounted state
-        assert mounted.state.mounted
-        assert_receive {:commands, [{:command, :mounted}]}
+    test "mounts correctly" do
+      component = create_component(TextInput, %{})
+      {mounted, commands} = simulate_mount(component)
+      
+      assert mounted.state.mounted == true
+      assert commands == []
+    end
 
-        # Update state
-        updated = simulate_event_sequence(mounted, [
-          %{type: :change, value: "updated"},
-          %{type: :change, value: "final"}
-        ])
+    test "unmounts correctly" do
+      component = create_component(TextInput, %{})
+      mounted = simulate_mount(component)
+      unmounted = simulate_unmount(mounted)
+      
+      assert unmounted.state.mounted == false
+    end
+  end
 
-        # Verify updates
-        assert updated.state.value == "final"
-        assert length(updated.state.events) == 2
+  describe "Event Handling" do
+    test "handles text change events" do
+      component = create_component(TextInput, %{})
+      event = %{type: :change, value: "new value"}
+      {updated, commands} = simulate_event(component, event)
+      
+      assert updated.state.value == "new value"
+      assert commands == [{:command, :value_changed}]
+    end
 
-        updated
-      end)
+    test "handles focus events" do
+      component = create_component(TextInput, %{})
+      event = %{type: :focus}
+      {updated, commands} = simulate_event(component, event)
+      
+      assert updated.state.focused == true
+      assert commands == [{:command, :focus_gained}]
+    end
 
-      # Verify final state
-      assert final_component.state.unmounted
-      assert length(events) > 0
+    test "handles invalid events gracefully" do
+      component = create_component(TextInput, %{})
+      event = %{type: :invalid_event}
+      {updated, commands} = simulate_event(component, event)
+      
+      assert updated.state == component.state
+      assert commands == []
+    end
+  end
+
+  describe "State Management" do
+    test "updates state immutably" do
+      component = create_component(TextInput, %{})
+      message = {:set_value, "new value"}
+      {updated, commands} = simulate_update(component, message)
+      
+      assert updated.state.value == "new value"
+      assert updated.state != component.state
+    end
+
+    test "validates state changes" do
+      component = create_component(TextInput, %{})
+      message = {:set_value, nil}
+      {updated, commands} = simulate_update(component, message)
+      
+      assert updated.state.error != nil
+      assert commands == [{:command, :validation_failed}]
+    end
+  end
+
+  describe "Rendering" do
+    test "renders correctly" do
+      component = create_component(TextInput, %{value: "test"})
+      element = simulate_render(component)
+      
+      assert element.type == :text_input
+      assert element.content == "test"
+      assert element.attributes.focused == false
+    end
+
+    test "renders with error state" do
+      component = create_component(TextInput, %{})
+      component = %{component | state: Map.put(component.state, :error, "Invalid input")}
+      element = simulate_render(component)
+      
+      assert element.attributes.error == "Invalid input"
+      assert element.attributes.color == :red
     end
   end
 end
 ```
 
-## Testing Patterns
+## Lifecycle Testing
 
-### Lifecycle Testing
+### Initialization Testing
 
 ```elixir
-describe "Component Lifecycle" do
-  test "initializes with props" do
-    component = create_test_component(TestComponent, %{
+describe "Initialization" do
+  test "sets default values" do
+    component = create_component(TextInput, %{})
+    
+    assert component.state.value == ""
+    assert component.state.focused == false
+    assert component.state.error == nil
+  end
+
+  test "validates required props" do
+    assert_raise ArgumentError, fn ->
+      create_component(TextInput, %{})
+    end
+  end
+
+  test "handles optional props" do
+    component = create_component(TextInput, %{
       value: "test",
-      counter: 5
+      placeholder: "Enter text",
+      disabled: true
     })
+    
     assert component.state.value == "test"
-    assert component.state.counter == 5
-  end
-
-  test "mounts correctly" do
-    component = create_test_component(TestComponent)
-    {mounted, _} = simulate_lifecycle(component, &(&1))
-    assert mounted.state.mounted
-    assert_receive {:commands, [{:command, :mounted}]}
-  end
-
-  test "unmounts correctly" do
-    component = create_test_component(TestComponent)
-    {unmounted, _} = simulate_lifecycle(component, &(&1))
-    assert unmounted.state.unmounted
-  end
-
-  test "handles mount errors gracefully" do
-    component = create_test_component(ErrorProneComponent)
-    {mounted, _} = simulate_lifecycle(component, &(&1))
-    assert mounted.state.error != nil
+    assert component.state.placeholder == "Enter text"
+    assert component.state.disabled == true
   end
 end
 ```
 
-### State Management Testing
+### Mount/Unmount Testing
 
 ```elixir
-describe "State Management" do
-  test "updates state through events" do
-    component = create_test_component(TestComponent, %{value: "initial"})
-
-    updated = simulate_event_sequence(component, [
-      %{type: :change, value: "updated"},
-      %{type: :change, value: "final"}
-    ])
-
-    assert updated.state.value == "final"
-    assert length(updated.state.events) == 2
+describe "Mount/Unmount" do
+  test "sets up resources on mount" do
+    component = create_component(TextInput, %{})
+    {mounted, commands} = simulate_mount(component)
+    
+    assert mounted.state.mounted == true
+    assert commands == [{:command, :resources_setup}]
   end
 
-  test "handles state updates through commands" do
-    component = create_test_component(TestComponent)
-
-    {updated, commands} = Unit.simulate_event(component, %{
-      type: :change,
-      value: "new value"
-    })
-
-    assert updated.state.value == "new value"
-    assert commands == [{:command, :value_changed}]
-  end
-
-  test "preserves unrelated state during updates" do
-    component = create_test_component(TestComponent, %{
-      value: "initial",
-      counter: 5
-    })
-
-    {updated, _} = Unit.simulate_event(component, %{
-      type: :change,
-      value: "updated"
-    })
-
-    assert updated.state.value == "updated"
-    assert updated.state.counter == 5
+  test "cleans up resources on unmount" do
+    component = create_component(TextInput, %{})
+    mounted = simulate_mount(component)
+    unmounted = simulate_unmount(mounted)
+    
+    assert unmounted.state.mounted == false
+    assert unmounted.state.resources_cleaned == true
   end
 end
 ```
 
-### Event Handling Testing
+## Event Testing
+
+### Input Event Testing
 
 ```elixir
-describe "Event Handling" do
-  test "handles known events" do
-    component = create_test_component(TestComponent)
-
-    {updated, commands} = Unit.simulate_event(component, %{
-      type: :change,
-      value: "test"
-    })
-
-    assert updated.state.value == "test"
-    assert commands == [{:command, :value_changed}]
-  end
-
-  test "ignores unknown events" do
-    component = create_test_component(TestComponent)
-
-    {updated, commands} = Unit.simulate_event(component, %{
-      type: :unknown_event
-    })
-
-    assert updated.state == component.state
-    assert commands == []
-  end
-
-  test "handles event errors gracefully" do
-    component = create_test_component(ErrorProneComponent)
-
-    {updated, _} = Unit.simulate_event(component, %{
-      type: :error_event
-    })
-
-    assert updated.state.error != nil
-  end
-end
-```
-
-### Rendering Testing
-
-```elixir
-describe "Rendering" do
-  test "renders with different contexts" do
-    component = create_test_component(TestComponent, %{value: "test"})
-
-    contexts = [
-      %{theme: %{mode: :light}},
-      %{theme: %{mode: :dark}},
-      %{theme: %{mode: :high_contrast}}
+describe "Input Events" do
+  test "handles text input changes" do
+    component = create_component(TextInput, %{})
+    
+    events = [
+      %{type: :change, value: "h"},
+      %{type: :change, value: "he"},
+      %{type: :change, value: "hel"},
+      %{type: :change, value: "hell"},
+      %{type: :change, value: "hello"}
     ]
-
-    rendered = validate_rendering(component, contexts)
-
-    assert length(rendered) == 3
-    assert Enum.all?(rendered, &(&1.type == :text_input))
-    assert Enum.all?(rendered, &(&1.value == "test"))
+    
+    final_component = Enum.reduce(events, component, fn event, acc ->
+      {updated, _} = simulate_event(acc, event)
+      updated
+    end)
+    
+    assert final_component.state.value == "hello"
   end
 
-  test "renders with error state" do
-    component = create_test_component(TestComponent, %{
-      value: "test",
-      error: "Invalid input"
-    })
+  test "handles keyboard events" do
+    component = create_component(TextInput, %{})
+    
+    # Test enter key
+    {updated, commands} = simulate_event(component, %{type: :key_press, key: :enter})
+    assert commands == [{:command, :submitted}]
+    
+    # Test escape key
+    {updated, commands} = simulate_event(updated, %{type: :key_press, key: :escape})
+    assert commands == [{:command, :cancelled}]
+  end
 
-    rendered = validate_rendering(component, [%{theme: %{mode: :light}}])
+  test "handles focus events" do
+    component = create_component(TextInput, %{})
+    
+    # Focus
+    {focused, commands} = simulate_event(component, %{type: :focus})
+    assert focused.state.focused == true
+    assert commands == [{:command, :focus_gained}]
+    
+    # Blur
+    {blurred, commands} = simulate_event(focused, %{type: :blur})
+    assert blurred.state.focused == false
+    assert commands == [{:command, :focus_lost}]
+  end
+end
+```
 
-    assert rendered.type == :text_input
-    assert rendered.value == "test"
-    assert rendered.error == "Invalid input"
+### Error Event Testing
+
+```elixir
+describe "Error Handling" do
+  test "handles validation errors" do
+    component = create_component(TextInput, %{})
+    event = %{type: :change, value: "invalid_value"}
+    {updated, commands} = simulate_event(component, event)
+    
+    assert updated.state.error != nil
+    assert commands == [{:command, :validation_failed}]
+  end
+
+  test "recovers from errors" do
+    component = create_component(TextInput, %{})
+    component = %{component | state: Map.put(component.state, :error, "Invalid")}
+    
+    event = %{type: :change, value: "valid_value"}
+    {updated, commands} = simulate_event(component, event)
+    
+    assert updated.state.error == nil
+    assert commands == [{:command, :value_changed}]
+  end
+end
+```
+
+## State Testing
+
+### State Update Testing
+
+```elixir
+describe "State Updates" do
+  test "updates state immutably" do
+    component = create_component(TextInput, %{})
+    original_state = component.state
+    
+    message = {:set_value, "new value"}
+    {updated, _} = simulate_update(component, message)
+    
+    assert updated.state.value == "new value"
+    assert updated.state != original_state
+  end
+
+  test "batches multiple updates" do
+    component = create_component(TextInput, %{})
+    
+    updates = [
+      {:set_value, "first"},
+      {:set_focused, true},
+      {:set_error, "test error"}
+    ]
+    
+    final_component = Enum.reduce(updates, component, fn update, acc ->
+      {updated, _} = simulate_update(acc, update)
+      updated
+    end)
+    
+    assert final_component.state.value == "first"
+    assert final_component.state.focused == true
+    assert final_component.state.error == "test error"
+  end
+end
+```
+
+### State Validation Testing
+
+```elixir
+describe "State Validation" do
+  test "validates state constraints" do
+    component = create_component(TextInput, %{})
+    
+    # Test invalid state
+    invalid_state = Map.put(component.state, :value, nil)
+    component = %{component | state: invalid_state}
+    
+    assert_raise ArgumentError, fn ->
+      simulate_render(component)
+    end
+  end
+
+  test "maintains state invariants" do
+    component = create_component(TextInput, %{})
+    
+    # Test that focused and error can't both be true
+    component = %{component | state: %{
+      component.state | 
+      focused: true,
+      error: "test error"
+    }}
+    
+    {updated, _} = simulate_event(component, %{type: :focus})
+    assert updated.state.focused == true
+    assert updated.state.error == nil
   end
 end
 ```
 
 ## Integration Testing
 
-### Component Hierarchy Testing
+### Component Interaction Testing
 
 ```elixir
-describe "Component Hierarchy" do
-  test "parent-child relationship" do
-    # Set up components
-    parent = create_test_component(ParentComponent)
-    child = create_test_component(ChildComponent, %{
-      parent_id: parent.state.id,
-      value: "child value"
-    })
-
-    # Set up hierarchy
-    {parent, child} = setup_component_hierarchy(ParentComponent, ChildComponent)
-
-    # Verify hierarchy
-    assert_hierarchy_valid(parent, [child])
-    assert child.state.parent_id == parent.state.id
-  end
-
-  test "event propagation" do
-    # Set up components
-    parent = create_test_component(ParentComponent)
-    child = create_test_component(ChildComponent, %{
-      parent_id: parent.state.id,
-      value: "initial"
-    })
-
+describe "Component Interactions" do
+  test "communicates with parent component" do
+    parent = create_component(ParentComponent, %{})
+    child = create_component(TextInput, %{})
+    
     # Simulate child event
-    {updated_child, child_commands} = Unit.simulate_event(child, %{
-      type: :change,
-      value: "updated"
-    })
+    event = %{type: :change, value: "new value"}
+    {updated_child, commands} = simulate_event(child, event)
+    
+    # Simulate parent receiving command
+    parent_event = {:child_command, commands}
+    {updated_parent, _} = simulate_event(parent, parent_event)
+    
+    assert updated_parent.state.child_value == "new value"
+  end
 
-    # Verify parent received event
-    assert_receive {:component_updated, ^parent.state.id}
-    updated_parent = ComponentManager.get_component(parent.state.id)
-    assert updated_parent.state.child_states[child.state.id].value == "updated"
+  test "handles multiple child components" do
+    parent = create_component(FormComponent, %{})
+    
+    # Create multiple text inputs
+    inputs = [
+      create_component(TextInput, %{id: "name"}),
+      create_component(TextInput, %{id: "email"}),
+      create_component(TextInput, %{id: "phone"})
+    ]
+    
+    # Simulate events on each input
+    events = [
+      %{id: "name", type: :change, value: "John"},
+      %{id: "email", type: :change, value: "john@example.com"},
+      %{id: "phone", type: :change, value: "123-456-7890"}
+    ]
+    
+    final_parent = Enum.reduce(events, parent, fn event, acc ->
+      {updated, _} = simulate_event(acc, event)
+      updated
+    end)
+    
+    assert final_parent.state.form_data.name == "John"
+    assert final_parent.state.form_data.email == "john@example.com"
+    assert final_parent.state.form_data.phone == "123-456-7890"
   end
 end
 ```
 
-### Component Communication Testing
-
-```elixir
-describe "Component Communication" do
-  test "broadcast events" do
-    # Set up multiple components
-    parent = create_test_component(ParentComponent)
-    child1 = create_test_component(ChildComponent, %{
-      parent_id: parent.state.id,
-      value: "child1"
-    })
-    child2 = create_test_component(ChildComponent, %{
-      parent_id: parent.state.id,
-      value: "child2"
-    })
-
-    # Set up hierarchy
-    {parent, [child1, child2]} = setup_component_hierarchy(
-      ParentComponent,
-      [ChildComponent, ChildComponent]
-    )
-
-    # Simulate broadcast event
-    {updated_parent, _} = Unit.simulate_event(parent, %{
-      type: :broadcast,
-      value: "broadcast value"
-    })
-
-    # Verify all children received the event
-    updated_child1 = ComponentManager.get_component(child1.state.id)
-    updated_child2 = ComponentManager.get_component(child2.state.id)
-    assert updated_child1.state.value == "broadcast value"
-    assert updated_child2.state.value == "broadcast value"
-  end
-end
-```
-
-## Performance Testing
-
-### Load Testing
+### Performance Testing
 
 ```elixir
 describe "Performance" do
-  test "handles rapid event sequences" do
-    component = create_test_component(TestComponent)
-
-    # Create a workload of 100 events
-    workload = fn comp ->
-      events = Enum.map(1..100, &%{
-        type: :change,
-        value: "test#{&1}"
-      })
-      simulate_event_sequence(comp, events)
-    end
-
-    metrics = measure_performance(component, workload)
-
-    assert metrics.iterations == 100
-    assert metrics.average_time < 100 # Less than 100ms per iteration
+  test "renders within time limit" do
+    component = create_component(TextInput, %{})
+    
+    start_time = System.monotonic_time(:microsecond)
+    element = simulate_render(component)
+    end_time = System.monotonic_time(:microsecond)
+    
+    render_time = end_time - start_time
+    assert render_time < 2000  # 2ms limit
+    assert element != nil
   end
 
-  test "handles large data sets" do
-    component = create_test_component(HeavyComponent)
-
-    # Measure performance with large data set
-    metrics = measure_performance(component, fn comp ->
-      {updated, _} = Unit.simulate_event(comp, %{
-        type: :add_data,
-        data: generate_large_dataset(1000)
-      })
-      assert length(updated.state.data) == 1000
+  test "handles rapid events efficiently" do
+    component = create_component(TextInput, %{})
+    
+    # Generate 100 rapid events
+    events = for i <- 1..100 do
+      %{type: :change, value: "value_#{i}"}
+    end
+    
+    start_time = System.monotonic_time(:microsecond)
+    
+    final_component = Enum.reduce(events, component, fn event, acc ->
+      {updated, _} = simulate_event(acc, event)
+      updated
     end)
-
-    assert metrics.average_time < 1000 # Less than 1 second per iteration
+    
+    end_time = System.monotonic_time(:microsecond)
+    total_time = end_time - start_time
+    
+    assert total_time < 100_000  # 100ms limit
+    assert final_component.state.value == "value_100"
   end
 end
 ```
 
 ## Test Helpers
 
-### Component Creation
+### Common Test Utilities
 
 ```elixir
-defmodule ComponentTestHelpers do
-  def create_test_component(module, initial_state \\ %{}, opts \\ []) do
-    props = Map.merge(%{
-      id: "test-#{:erlang.unique_integer([:positive])}",
-      debug_mode: true
-    }, initial_state)
+defmodule Raxol.ComponentTestHelpers do
+  import ExUnit.Assertions
 
-    {:ok, component} = Unit.setup_isolated_component(module, props)
-    component
+  def create_component(module, props) do
+    state = module.init(props)
+    %{
+      module: module,
+      state: state,
+      props: props
+    }
   end
-end
-```
 
-### Lifecycle Simulation
+  def simulate_mount(component) do
+    {state, commands} = component.module.mount(component.state)
+    {%{component | state: state}, commands}
+  end
 
-```elixir
-def simulate_lifecycle(component, lifecycle_fn) do
-  # Mount
-  mounted = mount_component(component)
+  def simulate_unmount(component) do
+    state = component.module.unmount(component.state)
+    %{component | state: state}
+  end
 
-  # Execute lifecycle function
-  result = lifecycle_fn.(mounted)
+  def simulate_update(component, message) do
+    {state, commands} = component.module.update(message, component.state)
+    {%{component | state: state}, commands}
+  end
 
-  # Unmount
-  unmounted = unmount_component(result)
+  def simulate_render(component) do
+    component.module.render(component.state)
+  end
 
-  # Return final state and lifecycle events
-  {unmounted, get_lifecycle_events(unmounted)}
-end
-```
+  def simulate_event(component, event) do
+    {state, commands} = component.module.handle_event(event, component.state)
+    {%{component | state: state}, commands}
+  end
 
-### Event Simulation
+  def assert_state_unchanged(component, updated) do
+    assert updated.state == component.state
+  end
 
-```elixir
-def simulate_event_sequence(component, events) do
-  Enum.reduce(events, component, fn event, acc ->
-    {updated, _commands} = Unit.simulate_event(acc, event)
-    updated
-  end)
+  def assert_commands_contain(commands, expected_command) do
+    assert Enum.any?(commands, fn cmd -> cmd == expected_command end)
+  end
+
+  def assert_element_has_attribute(element, attribute, value) do
+    assert get_in(element, [:attributes, attribute]) == value
+  end
 end
 ```
 
 ## Best Practices
 
-1. **Test Organization**
+### Test Organization
 
-   - Group related tests in describe blocks
-   - Use clear, descriptive test names
-   - Follow a consistent test structure
-   - Document test purpose
+1. **Group Related Tests**: Use `describe` blocks to group related tests
+2. **Clear Test Names**: Use descriptive test names that explain the scenario
+3. **Arrange-Act-Assert**: Structure tests with clear setup, action, and verification
+4. **Test One Thing**: Each test should verify one specific behavior
 
-2. **Test Coverage**
+### Test Data
 
-   - Test all lifecycle methods
-   - Test state management
-   - Test event handling
-   - Test edge cases
-   - Test performance
+1. **Use Fixtures**: Create reusable test data
+2. **Edge Cases**: Test boundary conditions and error cases
+3. **Realistic Data**: Use realistic test data that matches production scenarios
+4. **Randomization**: Use randomized data for stress testing
 
-3. **Test Isolation**
+### Test Maintenance
 
-   - Use unique component IDs
-   - Clean up after tests
-   - Avoid test interdependence
-   - Use test helpers
+1. **Keep Tests Simple**: Avoid complex test logic
+2. **Update Tests**: Keep tests in sync with component changes
+3. **Remove Dead Tests**: Delete tests for removed functionality
+4. **Document Complex Tests**: Add comments for complex test scenarios
 
-4. **Test Readability**
+## Additional Resources
 
-   - Use descriptive test names
-   - Document test setup
-   - Use helper functions
-   - Follow consistent patterns
-
-5. **Test Maintenance**
-   - Keep tests focused
-   - Update tests with code changes
-   - Remove obsolete tests
-   - Document test dependencies
-
-## Common Pitfalls
-
-1. **State Management**
-
-   - Forgetting to test state immutability
-   - Not testing state updates in isolation
-   - Missing edge cases in state transitions
-
-2. **Event Handling**
-
-   - Not testing error cases
-   - Missing event validation
-   - Incomplete event coverage
-
-3. **Lifecycle**
-
-   - Not testing cleanup
-   - Missing mount/unmount edge cases
-   - Incomplete resource management
-
-4. **Performance**
-   - Not testing with realistic data
-   - Missing memory leak tests
-   - Incomplete load testing
-
-## Related Documentation
-
-- [Component Architecture](./component_architecture.md)
-- [Component Style Guide](./style_guide.md)
-- [Component Composition Patterns](./composition.md)
+- [Component Guide](README.md) - Component development patterns
+- [API Reference](api/README.md) - Component APIs
+- [Style Guide](style_guide.md) - Styling and design patterns
