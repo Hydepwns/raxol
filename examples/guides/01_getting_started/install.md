@@ -15,13 +15,52 @@ This guide will help you install Raxol and its dependencies on your system. Raxo
 
 Before installing Raxol, ensure you have the following installed:
 
-- **Elixir** (1.14 or later)
-- **Erlang/OTP** (24 or later)
+### For Development (Recommended)
+
+- **[Nix](https://nixos.org/download.html)** - For reproducible development environment
+- **[direnv](https://direnv.net/)** (optional) - For automatic environment loading
+
+### For Manual Installation
+
+- **Elixir** (1.17.1 or later)
+- **Erlang/OTP** (25.3.2.7 or later)
 - **Mix** (comes with Elixir)
+- **PostgreSQL** (15 or later)
+- **Build tools** (gcc, make, cmake, pkg-config)
+- **ImageMagick** (for image processing)
+- **Node.js** (20 or later, for asset compilation)
 
 ## Installation Methods
 
-### 1. Using Mix (Recommended)
+### 1. Using Nix (Recommended for Development)
+
+For the best development experience, we recommend using Nix:
+
+```bash
+# Clone the repository
+git clone https://github.com/Hydepwns/raxol.git
+cd raxol
+
+# Enter the development environment
+nix-shell
+
+# Or if you have direnv installed, just cd into the project
+# direnv will automatically load the environment
+
+# Install dependencies and setup
+mix deps.get
+git submodule update --init --recursive
+mix setup
+```
+
+The Nix environment provides:
+- Erlang 25.3.2.7 and Elixir 1.17.1 (matching `.tool-versions`)
+- PostgreSQL 15 with automatic setup and management
+- All necessary build tools and system libraries
+- ImageMagick for image processing
+- Node.js 20 for asset compilation
+
+### 2. Using Mix (For Production Use)
 
 Add Raxol to your dependencies in `mix.exs`:
 
@@ -39,7 +78,7 @@ Then fetch the dependencies:
 mix deps.get
 ```
 
-### 2. Platform-Specific Installation
+### 3. Platform-Specific Installation
 
 #### macOS
 
@@ -112,7 +151,32 @@ Raxol works best with modern terminal emulators that support True Color and Unic
 
 ## Troubleshooting
 
-### Common Issues
+### Nix Environment Issues
+
+If you're using the Nix environment and encounter issues:
+
+1. **Shell not loading properly**:
+   ```bash
+   # Rebuild the shell
+   nix-shell --run "echo 'Shell rebuilt'"
+   ```
+
+2. **PostgreSQL issues**:
+   ```bash
+   # Remove and reinitialize the database
+   rm -rf .postgres
+   nix-shell  # This will reinitialize the database
+   ```
+
+3. **Compilation issues**:
+   ```bash
+   # Clean and rebuild
+   mix deps.clean --all
+   mix deps.get
+   mix deps.compile
+   ```
+
+### Manual Installation Issues
 
 1. **Missing Dependencies**
 
@@ -169,5 +233,6 @@ Raxol works best with modern terminal emulators that support True Color and Unic
 
 After installation, check out:
 
+- [Development Guide](../../../docs/DEVELOPMENT.md) for detailed development setup instructions
 - [Quick Start Guide](quick_start.md) to create your first Raxol application
 - [Examples](../) for sample applications and use cases

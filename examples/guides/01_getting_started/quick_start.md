@@ -15,8 +15,11 @@ This guide walks you through creating a simple stateful counter application usin
 
 Before you start, ensure you have:
 
-1. **Elixir installed:** Raxol requires Elixir 1.14 or later. You can find installation instructions on the [official Elixir website](https://elixir-lang.org/install.html).
-2. **A new Mix project (optional):** If you don't have a project, create one:
+1. **Development environment set up:** We recommend using the [Nix development environment](../../../docs/DEVELOPMENT.md) for the best experience. This provides all necessary dependencies automatically.
+
+2. **Elixir installed (if not using Nix):** Raxol requires Elixir 1.17.1 or later. You can find installation instructions on the [official Elixir website](https://elixir-lang.org/install.html).
+
+3. **A new Mix project (optional):** If you don't have a project, create one:
 
    ```bash
    mix new my_raxol_app

@@ -166,6 +166,23 @@ web: %{
 
 ### Database Configuration
 
+#### Nix Environment (Recommended)
+
+When using the Nix development environment, PostgreSQL is automatically configured:
+
+```elixir
+config :raxol, Raxol.Repo,
+  username: "postgres",
+  password: nil,  # Trust authentication in Nix environment
+  hostname: "localhost",
+  database: "raxol_dev",
+  pool_size: 10,
+  timeout: 15_000,
+  idle_timeout: 30_000
+```
+
+#### Manual Installation
+
 ```elixir
 config :raxol, Raxol.Repo,
   username: "postgres",
@@ -175,6 +192,33 @@ config :raxol, Raxol.Repo,
   pool_size: 10,
   timeout: 15_000,
   idle_timeout: 30_000
+```
+
+## Environment Variables
+
+### Nix Environment Variables
+
+When using the Nix development environment, the following environment variables are automatically set:
+
+- `ERLANG_PATH`: Path to Erlang installation
+- `ELIXIR_PATH`: Path to Elixir installation
+- `ERL_EI_INCLUDE_DIR`: Erlang include directory (for native compilation)
+- `ERL_EI_LIBDIR`: Erlang library directory (for native compilation)
+- `PGDATA`: PostgreSQL data directory (`$PWD/.postgres`)
+- `PGHOST`: PostgreSQL host (`$PWD/.postgres`)
+- `PGPORT`: PostgreSQL port (5432)
+- `MIX_ENV`: Mix environment (dev)
+- `MAGICK_HOME`: ImageMagick installation path
+- `NODE_PATH`: Node.js modules path
+
+### Custom Environment Variables
+
+You can override these settings by setting environment variables before entering the Nix shell:
+
+```bash
+export PGPORT=5433
+export MIX_ENV=test
+nix-shell
 ```
 
 ## Runtime Configuration API
