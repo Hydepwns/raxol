@@ -25,7 +25,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     test "initializes with props" do
       props = %{value: "test", placeholder: "Enter text"}
       component = create_component(TextInput, props)
-      
+
       assert component.state.value == "test"
       assert component.state.placeholder == "Enter text"
     end
@@ -33,7 +33,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     test "mounts correctly" do
       component = create_component(TextInput, %{})
       {mounted, commands} = simulate_mount(component)
-      
+
       assert mounted.state.mounted == true
       assert commands == []
     end
@@ -42,7 +42,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       component = create_component(TextInput, %{})
       mounted = simulate_mount(component)
       unmounted = simulate_unmount(mounted)
-      
+
       assert unmounted.state.mounted == false
     end
   end
@@ -52,7 +52,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       component = create_component(TextInput, %{})
       event = %{type: :change, value: "new value"}
       {updated, commands} = simulate_event(component, event)
-      
+
       assert updated.state.value == "new value"
       assert commands == [{:command, :value_changed}]
     end
@@ -61,7 +61,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       component = create_component(TextInput, %{})
       event = %{type: :focus}
       {updated, commands} = simulate_event(component, event)
-      
+
       assert updated.state.focused == true
       assert commands == [{:command, :focus_gained}]
     end
@@ -70,7 +70,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       component = create_component(TextInput, %{})
       event = %{type: :invalid_event}
       {updated, commands} = simulate_event(component, event)
-      
+
       assert updated.state == component.state
       assert commands == []
     end
@@ -81,7 +81,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       component = create_component(TextInput, %{})
       message = {:set_value, "new value"}
       {updated, commands} = simulate_update(component, message)
-      
+
       assert updated.state.value == "new value"
       assert updated.state != component.state
     end
@@ -90,7 +90,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       component = create_component(TextInput, %{})
       message = {:set_value, nil}
       {updated, commands} = simulate_update(component, message)
-      
+
       assert updated.state.error != nil
       assert commands == [{:command, :validation_failed}]
     end
@@ -100,7 +100,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     test "renders correctly" do
       component = create_component(TextInput, %{value: "test"})
       element = simulate_render(component)
-      
+
       assert element.type == :text_input
       assert element.content == "test"
       assert element.attributes.focused == false
@@ -110,7 +110,7 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       component = create_component(TextInput, %{})
       component = %{component | state: Map.put(component.state, :error, "Invalid input")}
       element = simulate_render(component)
-      
+
       assert element.attributes.error == "Invalid input"
       assert element.attributes.color == :red
     end
@@ -126,7 +126,7 @@ end
 describe "Initialization" do
   test "sets default values" do
     component = create_component(TextInput, %{})
-    
+
     assert component.state.value == ""
     assert component.state.focused == false
     assert component.state.error == nil
@@ -144,7 +144,7 @@ describe "Initialization" do
       placeholder: "Enter text",
       disabled: true
     })
-    
+
     assert component.state.value == "test"
     assert component.state.placeholder == "Enter text"
     assert component.state.disabled == true
@@ -159,7 +159,7 @@ describe "Mount/Unmount" do
   test "sets up resources on mount" do
     component = create_component(TextInput, %{})
     {mounted, commands} = simulate_mount(component)
-    
+
     assert mounted.state.mounted == true
     assert commands == [{:command, :resources_setup}]
   end
@@ -168,7 +168,7 @@ describe "Mount/Unmount" do
     component = create_component(TextInput, %{})
     mounted = simulate_mount(component)
     unmounted = simulate_unmount(mounted)
-    
+
     assert unmounted.state.mounted == false
     assert unmounted.state.resources_cleaned == true
   end
@@ -183,7 +183,7 @@ end
 describe "Input Events" do
   test "handles text input changes" do
     component = create_component(TextInput, %{})
-    
+
     events = [
       %{type: :change, value: "h"},
       %{type: :change, value: "he"},
@@ -191,22 +191,22 @@ describe "Input Events" do
       %{type: :change, value: "hell"},
       %{type: :change, value: "hello"}
     ]
-    
+
     final_component = Enum.reduce(events, component, fn event, acc ->
       {updated, _} = simulate_event(acc, event)
       updated
     end)
-    
+
     assert final_component.state.value == "hello"
   end
 
   test "handles keyboard events" do
     component = create_component(TextInput, %{})
-    
+
     # Test enter key
     {updated, commands} = simulate_event(component, %{type: :key_press, key: :enter})
     assert commands == [{:command, :submitted}]
-    
+
     # Test escape key
     {updated, commands} = simulate_event(updated, %{type: :key_press, key: :escape})
     assert commands == [{:command, :cancelled}]
@@ -214,12 +214,12 @@ describe "Input Events" do
 
   test "handles focus events" do
     component = create_component(TextInput, %{})
-    
+
     # Focus
     {focused, commands} = simulate_event(component, %{type: :focus})
     assert focused.state.focused == true
     assert commands == [{:command, :focus_gained}]
-    
+
     # Blur
     {blurred, commands} = simulate_event(focused, %{type: :blur})
     assert blurred.state.focused == false
@@ -236,7 +236,7 @@ describe "Error Handling" do
     component = create_component(TextInput, %{})
     event = %{type: :change, value: "invalid_value"}
     {updated, commands} = simulate_event(component, event)
-    
+
     assert updated.state.error != nil
     assert commands == [{:command, :validation_failed}]
   end
@@ -244,10 +244,10 @@ describe "Error Handling" do
   test "recovers from errors" do
     component = create_component(TextInput, %{})
     component = %{component | state: Map.put(component.state, :error, "Invalid")}
-    
+
     event = %{type: :change, value: "valid_value"}
     {updated, commands} = simulate_event(component, event)
-    
+
     assert updated.state.error == nil
     assert commands == [{:command, :value_changed}]
   end
@@ -263,28 +263,28 @@ describe "State Updates" do
   test "updates state immutably" do
     component = create_component(TextInput, %{})
     original_state = component.state
-    
+
     message = {:set_value, "new value"}
     {updated, _} = simulate_update(component, message)
-    
+
     assert updated.state.value == "new value"
     assert updated.state != original_state
   end
 
   test "batches multiple updates" do
     component = create_component(TextInput, %{})
-    
+
     updates = [
       {:set_value, "first"},
       {:set_focused, true},
       {:set_error, "test error"}
     ]
-    
+
     final_component = Enum.reduce(updates, component, fn update, acc ->
       {updated, _} = simulate_update(acc, update)
       updated
     end)
-    
+
     assert final_component.state.value == "first"
     assert final_component.state.focused == true
     assert final_component.state.error == "test error"
@@ -298,11 +298,11 @@ end
 describe "State Validation" do
   test "validates state constraints" do
     component = create_component(TextInput, %{})
-    
+
     # Test invalid state
     invalid_state = Map.put(component.state, :value, nil)
     component = %{component | state: invalid_state}
-    
+
     assert_raise ArgumentError, fn ->
       simulate_render(component)
     end
@@ -310,14 +310,14 @@ describe "State Validation" do
 
   test "maintains state invariants" do
     component = create_component(TextInput, %{})
-    
+
     # Test that focused and error can't both be true
     component = %{component | state: %{
-      component.state | 
+      component.state |
       focused: true,
       error: "test error"
     }}
-    
+
     {updated, _} = simulate_event(component, %{type: :focus})
     assert updated.state.focused == true
     assert updated.state.error == nil
@@ -334,40 +334,40 @@ describe "Component Interactions" do
   test "communicates with parent component" do
     parent = create_component(ParentComponent, %{})
     child = create_component(TextInput, %{})
-    
+
     # Simulate child event
     event = %{type: :change, value: "new value"}
     {updated_child, commands} = simulate_event(child, event)
-    
+
     # Simulate parent receiving command
     parent_event = {:child_command, commands}
     {updated_parent, _} = simulate_event(parent, parent_event)
-    
+
     assert updated_parent.state.child_value == "new value"
   end
 
   test "handles multiple child components" do
     parent = create_component(FormComponent, %{})
-    
+
     # Create multiple text inputs
     inputs = [
       create_component(TextInput, %{id: "name"}),
       create_component(TextInput, %{id: "email"}),
       create_component(TextInput, %{id: "phone"})
     ]
-    
+
     # Simulate events on each input
     events = [
       %{id: "name", type: :change, value: "John"},
       %{id: "email", type: :change, value: "john@example.com"},
       %{id: "phone", type: :change, value: "123-456-7890"}
     ]
-    
+
     final_parent = Enum.reduce(events, parent, fn event, acc ->
       {updated, _} = simulate_event(acc, event)
       updated
     end)
-    
+
     assert final_parent.state.form_data.name == "John"
     assert final_parent.state.form_data.email == "john@example.com"
     assert final_parent.state.form_data.phone == "123-456-7890"
@@ -381,11 +381,11 @@ end
 describe "Performance" do
   test "renders within time limit" do
     component = create_component(TextInput, %{})
-    
+
     start_time = System.monotonic_time(:microsecond)
     element = simulate_render(component)
     end_time = System.monotonic_time(:microsecond)
-    
+
     render_time = end_time - start_time
     assert render_time < 2000  # 2ms limit
     assert element != nil
@@ -393,22 +393,22 @@ describe "Performance" do
 
   test "handles rapid events efficiently" do
     component = create_component(TextInput, %{})
-    
+
     # Generate 100 rapid events
     events = for i <- 1..100 do
       %{type: :change, value: "value_#{i}"}
     end
-    
+
     start_time = System.monotonic_time(:microsecond)
-    
+
     final_component = Enum.reduce(events, component, fn event, acc ->
       {updated, _} = simulate_event(acc, event)
       updated
     end)
-    
+
     end_time = System.monotonic_time(:microsecond)
     total_time = end_time - start_time
-    
+
     assert total_time < 100_000  # 100ms limit
     assert final_component.state.value == "value_100"
   end
@@ -496,5 +496,4 @@ end
 ## Additional Resources
 
 - [Component Guide](README.md) - Component development patterns
-- [API Reference](api/README.md) - Component APIs
 - [Style Guide](style_guide.md) - Styling and design patterns

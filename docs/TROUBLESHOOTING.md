@@ -345,12 +345,12 @@ def track_performance(operation, fn ->
   result = fn.()
   end_time = System.monotonic_time(:microsecond)
   duration = end_time - start_time
-  
+
   :telemetry.execute([:raxol, :performance, operation], %{
     duration: duration,
     timestamp: System.system_time()
   })
-  
+
   result
 end)
 ```
@@ -385,5 +385,4 @@ Include:
 
 - [Development Guide](DEVELOPMENT.md) - Setup and workflow
 - [Nix Troubleshooting](NIX_TROUBLESHOOTING.md) - Nix-specific issues
-- [Testing Guide](testing/README.md) - Testing problems
 - [GitHub Issues](https://github.com/Hydepwns/raxol/issues)
