@@ -15,6 +15,26 @@ A modern toolkit for building terminal user interfaces (TUIs) in Elixir with com
 
 ## Installation
 
+### Using Nix (Recommended)
+
+For the best development experience, we recommend using Nix:
+
+```bash
+# Enter the development environment
+nix-shell
+
+# Or if you have direnv installed, just cd into the project
+cd raxol
+# direnv will automatically load the environment
+
+# Install dependencies and setup
+mix deps.get
+git submodule update --init --recursive
+mix setup
+```
+
+### Manual Installation
+
 ```elixir
 # mix.exs
 def deps do
@@ -28,6 +48,8 @@ end
 mix deps.get
 git submodule update --init --recursive
 ```
+
+**Note**: You'll need to install Erlang 25.3.2.7, Elixir 1.17.1, PostgreSQL, and other dependencies manually.
 
 ## Quick Start
 
