@@ -88,21 +88,25 @@ end
 ## Naming Conventions
 
 ### Module Names
+
 - Use PascalCase: `Raxol.UI.Components.Input.TextInput`
 - Group related components in namespaces
 - Use descriptive, specific names
 
 ### Function Names
+
 - Use snake_case: `handle_text_change`, `validate_input`
 - Use descriptive, action-oriented names
 - Prefix private functions with `p_` if needed
 
 ### Variable Names
+
 - Use snake_case: `current_value`, `is_valid`
 - Use descriptive names that indicate purpose
 - Avoid abbreviations unless very common
 
 ### Type Names
+
 - Use snake_case: `text_input_props`, `text_input_state`
 - Prefix with component name for clarity
 
@@ -155,7 +159,7 @@ def init(props) do
         focused: false,
         error: nil
       }
-    
+
     {:error, error} ->
       %{
         value: "",
@@ -243,7 +247,7 @@ end
 ```elixir
 def render(state) do
   width = calculate_width(state.container_size)
-  
+
   %{
     type: :box,
     attributes: %{
@@ -265,15 +269,15 @@ def handle_event(%{type: :key_press, key: key}, state) do
     :tab ->
       # Handle tab navigation
       {state, [{:command, :focus_next}]}
-    
+
     :enter ->
       # Handle enter key
       {state, [{:command, :submit}]}
-    
+
     :escape ->
       # Handle escape key
       {state, [{:command, :cancel}]}
-    
+
     _ ->
       {state, []}
   end
@@ -318,7 +322,7 @@ end
 def render(state) do
   # Cache expensive computations
   cached_value = get_cached_value(state.value, state.cache_key)
-  
+
   %{
     type: :text,
     content: cached_value,
@@ -348,7 +352,7 @@ def handle_event(%{type: :rapid_changes, changes: changes}, state) do
   new_state = Enum.reduce(changes, state, fn change, acc ->
     apply_change(change, acc)
   end)
-  
+
   {new_state, [{:command, :changes_batched}]}
 end
 ```
@@ -399,12 +403,12 @@ defmodule FormField do
   end
 
   def handle_event(%{type: :change, value: value}, state) do
-    new_state = %{state | 
+    new_state = %{state |
       value: value,
       touched: true,
       valid: validate_value(value)
     }
-    
+
     {new_state, [{:command, {:field_changed, value}}]}
   end
 end
@@ -449,5 +453,4 @@ end
 ## Additional Resources
 
 - [Component Guide](README.md) - Component development patterns
-- [API Reference](api/README.md) - Component APIs
 - [Testing Guide](testing.md) - Component testing patterns

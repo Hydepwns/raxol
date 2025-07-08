@@ -7,7 +7,6 @@ Complete guide to Raxol's component system, including architecture, patterns, an
 - [Architecture](#architecture) - Component system design
 - [Writing Components](#writing-components) - Creating new components
 - [Testing](#testing) - Component testing patterns
-- [API Reference](api/README.md) - Component APIs
 - [Style Guide](style_guide.md) - Component styling
 
 ## Architecture
@@ -87,7 +86,7 @@ defmodule Counter do
   end
 
   def update(:increment, state) do
-    new_state = %{state | 
+    new_state = %{state |
       count: state.count + 1,
       clicks: state.clicks + 1
     }
@@ -165,7 +164,6 @@ end
 defmodule MyComponentTest do
   use ExUnit.Case, async: true
   import Raxol.ComponentTestHelpers
-
   describe "Component Lifecycle" do
     test "initializes with props" do
       component = create_test_component(MyComponent, %{value: "test"})
@@ -186,7 +184,7 @@ end
 ```elixir
 test "handles events" do
   component = create_test_component(MyComponent)
-  
+
   {updated, commands} = Unit.simulate_event(component, %{
     type: :change,
     value: "new value"
@@ -290,7 +288,7 @@ defmodule Form do
   def handle_event(%{type: :field_change, field: field, value: value}, state) do
     new_values = Map.put(state.values, field, value)
     new_errors = Map.delete(state.errors, field)
-    
+
     {Map.merge(state, %{values: new_values, errors: new_errors}), []}
   end
 
@@ -330,6 +328,5 @@ end
 
 ## Additional Resources
 
-- [API Reference](api/README.md) - Complete component APIs
 - [Style Guide](style_guide.md) - Component styling patterns
-- [Testing Guide](testing.md) - Component testing patterns 
+- [Testing Guide](testing.md) - Component testing patterns

@@ -25,16 +25,6 @@ Welcome to Raxol—a modern toolkit for building terminal user interfaces (TUIs)
 - [Architecture](ARCHITECTURE.md) - System design and principles
 - [Configuration](CONFIGURATION.md) - Settings and environment
 
-### Testing
-
-- [Testing Guide](testing/README.md) - Complete testing reference
-- [Component Testing](components/testing.md) - UI component testing
-
-### Components
-
-- [Component Guide](components/README.md) - UI components and patterns
-- [API Reference](components/api/README.md) - Component APIs
-
 ## 🎯 Key Features
 
 - **Terminal Emulator**: ANSI support, buffer management, cursor handling

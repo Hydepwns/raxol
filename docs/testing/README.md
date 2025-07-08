@@ -6,8 +6,6 @@ Complete guide to testing in Raxol, covering unit tests, integration tests, comp
 
 - [Writing Tests](#writing-tests) - Basic test structure and patterns
 - [Component Testing](#component-testing) - Testing UI components
-- [Performance Testing](#performance-testing) - Measuring performance
-- [Quality Standards](#quality-standards) - Test quality and best practices
 - [Troubleshooting](#troubleshooting) - Common issues and solutions
 
 ## Writing Tests
@@ -164,6 +162,7 @@ end
 **Problem**: Mocked function called without expectation.
 
 **Solution**:
+
 ```elixir
 # Add expectation before the call
 expect(FeatureMock, :function_name, fn arg1, arg2 ->
@@ -176,6 +175,7 @@ end)
 **Problem**: Function called with wrong arguments.
 
 **Solution**:
+
 - Check argument types and patterns
 - Verify function definition matches call site
 - Use pattern matching appropriately
@@ -185,6 +185,7 @@ end)
 **Problem**: Accessing non-existent map key.
 
 **Solution**:
+
 ```elixir
 # Use Map.get with default
 value = Map.get(my_map, :key, default_value)
@@ -200,6 +201,7 @@ end
 **Problem**: Cleanup operations failing.
 
 **Solution**:
+
 ```elixir
 on_exit(fn ->
   try do
@@ -278,6 +280,3 @@ mix perf.report
 ## Additional Resources
 
 - [Component Testing Guide](../components/testing.md) - Detailed component testing
-- [Performance Testing Guide](performance_testing.md) - Advanced performance testing
-- [Quality Guide](quality.md) - Test quality metrics and improvement
-- [Tools Guide](tools.md) - Testing tools and utilities 
