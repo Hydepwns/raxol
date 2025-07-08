@@ -127,7 +127,9 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
                 :skip -> "?"
                 _ -> "-"
               end
+
             IO.puts("  #{status_icon} #{message}")
+
           _ ->
             IO.puts("  ? Unknown validation result format")
         end)
