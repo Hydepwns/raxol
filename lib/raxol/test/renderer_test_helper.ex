@@ -49,10 +49,12 @@ defmodule Raxol.UI.RendererTestHelper do
   defp resolve_color(color) when is_atom(color) do
     # Try to get the color from the default theme
     case Raxol.Core.ColorSystem.get(:default, color) do
-      nil -> color  # Return the atom if not found
+      # Return the atom if not found
+      nil -> color
       color_struct -> color_struct
     end
   end
+
   defp resolve_color(color), do: color
 
   defp ensure_id(%Theme{} = map), do: map
