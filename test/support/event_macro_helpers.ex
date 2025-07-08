@@ -45,7 +45,8 @@ defmodule EventMacroHelpers do
   """
   defmacro assert_event_type(event_type, timeout \\ 1000) do
     quote do
-      assert_receive %Raxol.Core.Events.Event{type: unquote(event_type)}, unquote(timeout)
+      assert_receive %Raxol.Core.Events.Event{type: unquote(event_type)},
+                     unquote(timeout)
     end
   end
 
@@ -63,8 +64,14 @@ defmodule EventMacroHelpers do
   """
   defmacro assert_event_with_data(event_type, expected_data, timeout \\ 1000) do
     quote do
-      assert_receive %Raxol.Core.Events.Event{type: unquote(event_type), data: data}, unquote(timeout)
-      assert data == unquote(expected_data), "Expected event data #{inspect(unquote(expected_data))}, got #{inspect(data)}"
+      assert_receive %Raxol.Core.Events.Event{
+                       type: unquote(event_type),
+                       data: data
+                     },
+                     unquote(timeout)
+
+      assert data == unquote(expected_data),
+             "Expected event data #{inspect(unquote(expected_data))}, got #{inspect(data)}"
     end
   end
 
@@ -81,7 +88,8 @@ defmodule EventMacroHelpers do
   """
   defmacro refute_event_type(event_type, timeout \\ 1000) do
     quote do
-      refute_receive %Raxol.Core.Events.Event{type: unquote(event_type)}, unquote(timeout)
+      refute_receive %Raxol.Core.Events.Event{type: unquote(event_type)},
+                     unquote(timeout)
     end
   end
 
@@ -99,7 +107,8 @@ defmodule EventMacroHelpers do
   defmacro assert_event_sequence(event_sequence, timeout \\ 1000) do
     quote do
       Enum.each(unquote(event_sequence), fn event_type ->
-        assert_receive %Raxol.Core.Events.Event{type: ^event_type}, unquote(timeout)
+        assert_receive %Raxol.Core.Events.Event{type: ^event_type},
+                       unquote(timeout)
       end)
     end
   end
@@ -122,7 +131,9 @@ defmodule EventMacroHelpers do
   """
   defmacro simulate_component_event(component, event_type, event_data \\ %{}) do
     quote do
-      event = Raxol.Core.Events.Event.new(unquote(event_type), unquote(event_data))
+      event =
+        Raxol.Core.Events.Event.new(unquote(event_type), unquote(event_data))
+
       Raxol.Test.Unit.simulate_event(unquote(component), event)
     end
   end
@@ -142,7 +153,8 @@ defmodule EventMacroHelpers do
   defmacro assert_component_emits_event(component, event_type, timeout \\ 1000) do
     quote do
       # Simulate the component event
-      {_updated_component, _effects} = simulate_component_event(unquote(component), unquote(event_type))
+      {_updated_component, _effects} =
+        simulate_component_event(unquote(component), unquote(event_type))
 
       # Assert that the event was emitted
       assert_event_type(unquote(event_type), unquote(timeout))
@@ -163,12 +175,24 @@ defmodule EventMacroHelpers do
       iex> EventMacroHelpers.assert_component_state_after_event(component, :increment, %{}, %{count: 1})
       :ok
   """
-  defmacro assert_component_state_after_event(component, event_type, event_data \\ %{}, expected_state, timeout \\ 1000) do
+  defmacro assert_component_state_after_event(
+             component,
+             event_type,
+             event_data \\ %{},
+             expected_state,
+             timeout \\ 1000
+           ) do
     quote do
-      {updated_component, _effects} = simulate_component_event(unquote(component), unquote(event_type), unquote(event_data))
+      {updated_component, _effects} =
+        simulate_component_event(
+          unquote(component),
+          unquote(event_type),
+          unquote(event_data)
+        )
 
       Enum.each(unquote(expected_state), fn {key, expected_value} ->
         actual_value = Map.get(updated_component.state, key)
+
         assert actual_value == expected_value,
                "Expected state.#{key} to be #{inspect(expected_value)}, got #{inspect(actual_value)}"
       end)
@@ -189,14 +213,27 @@ defmodule EventMacroHelpers do
       iex> EventMacroHelpers.assert_component_render_after_event(component, :update, %{text: "Hello"}, %{content: "Hello"})
       :ok
   """
-  defmacro assert_component_render_after_event(component, event_type, event_data \\ %{}, expected_render, timeout \\ 1000) do
+  defmacro assert_component_render_after_event(
+             component,
+             event_type,
+             event_data \\ %{},
+             expected_render,
+             timeout \\ 1000
+           ) do
     quote do
-      {updated_component, _effects} = simulate_component_event(unquote(component), unquote(event_type), unquote(event_data))
+      {updated_component, _effects} =
+        simulate_component_event(
+          unquote(component),
+          unquote(event_type),
+          unquote(event_data)
+        )
 
-      {_state, actual_render} = updated_component.render(updated_component.state, %{})
+      {_state, actual_render} =
+        updated_component.render(updated_component.state, %{})
 
       Enum.each(unquote(expected_render), fn {key, expected_value} ->
         actual_value = Map.get(actual_render, key)
+
         assert actual_value == expected_value,
                "Expected render.#{key} to be #{inspect(expected_value)}, got #{inspect(actual_value)}"
       end)
@@ -235,6 +272,7 @@ defmodule EventMacroHelpers do
     quote do
       events = collect_events(unquote(event_type), unquote(timeout))
       actual_count = length(events)
+
       assert actual_count == unquote(expected_count),
              "Expected #{unquote(expected_count)} events of type #{unquote(event_type)}, got #{actual_count}"
     end
@@ -286,7 +324,12 @@ defmodule EventMacroHelpers do
   """
   defmacro assert_event_source(event_type, expected_source, timeout \\ 1000) do
     quote do
-      assert_receive %Raxol.Core.Events.Event{type: unquote(event_type), source: source}, unquote(timeout)
+      assert_receive %Raxol.Core.Events.Event{
+                       type: unquote(event_type),
+                       source: source
+                     },
+                     unquote(timeout)
+
       assert source == unquote(expected_source),
              "Expected event source #{inspect(unquote(expected_source))}, got #{inspect(source)}"
     end
@@ -305,10 +348,21 @@ defmodule EventMacroHelpers do
       iex> EventMacroHelpers.assert_event_timestamp(:click, System.system_time(:millisecond), 50)
       :ok
   """
-  defmacro assert_event_timestamp(event_type, expected_timestamp, tolerance_ms \\ 100, timeout \\ 1000) do
+  defmacro assert_event_timestamp(
+             event_type,
+             expected_timestamp,
+             tolerance_ms \\ 100,
+             timeout \\ 1000
+           ) do
     quote do
-      assert_receive %Raxol.Core.Events.Event{type: unquote(event_type), timestamp: timestamp}, unquote(timeout)
+      assert_receive %Raxol.Core.Events.Event{
+                       type: unquote(event_type),
+                       timestamp: timestamp
+                     },
+                     unquote(timeout)
+
       diff = abs(timestamp - unquote(expected_timestamp))
+
       assert diff <= unquote(tolerance_ms),
              "Event timestamp #{timestamp} differs from expected #{unquote(expected_timestamp)} by #{diff}ms (tolerance: #{unquote(tolerance_ms)}ms)"
     end
@@ -326,14 +380,26 @@ defmodule EventMacroHelpers do
       iex> EventMacroHelpers.assert_component_handles_event_safely(component, :error_event)
       :ok
   """
-  defmacro assert_component_handles_event_safely(component, event_type, event_data \\ %{}) do
+  defmacro assert_component_handles_event_safely(
+             component,
+             event_type,
+             event_data \\ %{}
+           ) do
     quote do
       try do
-        {_updated_component, _effects} = simulate_component_event(unquote(component), unquote(event_type), unquote(event_data))
+        {_updated_component, _effects} =
+          simulate_component_event(
+            unquote(component),
+            unquote(event_type),
+            unquote(event_data)
+          )
+
         :ok
       rescue
         e ->
-          flunk("Component failed to handle event #{unquote(event_type)} safely: #{inspect(e)}")
+          flunk(
+            "Component failed to handle event #{unquote(event_type)} safely: #{inspect(e)}"
+          )
       end
     end
   end
@@ -354,6 +420,7 @@ defmodule EventMacroHelpers do
       # This would need to be implemented with a mock or spy mechanism
       # For now, this is a placeholder that could be extended
       lifecycle_events = get_component_lifecycle_events(unquote(component))
+
       assert lifecycle_events == unquote(expected_lifecycle),
              "Expected lifecycle #{inspect(unquote(expected_lifecycle))}, got #{inspect(lifecycle_events)}"
     end

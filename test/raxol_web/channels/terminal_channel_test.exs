@@ -37,7 +37,8 @@ defmodule RaxolWeb.TerminalChannelTest do
   # Helper to create emulator structs for testing
   defp create_emulator_struct(width \\ 80, height \\ 24) do
     screen_buffer = %Raxol.Terminal.ScreenBuffer{
-      cells: List.duplicate(List.duplicate(%{char: " ", style: %{}}, width), height),
+      cells:
+        List.duplicate(List.duplicate(%{char: " ", style: %{}}, width), height),
       width: width,
       height: height,
       cursor_position: {0, 0},
@@ -122,6 +123,7 @@ defmodule RaxolWeb.TerminalChannelTest do
     Mox.stub(EmulatorMock, :new, fn _width, _height, _opts ->
       emulator_struct
     end)
+
     Mox.stub(RendererMock, :new, fn _buffer -> renderer_struct end)
     Mox.stub(RendererMock, :render, fn _ -> "<html>test output</html>" end)
     Mox.stub(RendererMock, :set_theme, fn renderer, _theme -> renderer end)

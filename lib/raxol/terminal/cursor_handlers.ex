@@ -70,9 +70,16 @@ defmodule Raxol.Terminal.CursorHandlers do
   @doc """
   Moves the cursor to a specific column on the current line.
   """
-  @spec move_cursor_to_column(any(), non_neg_integer(), non_neg_integer() | nil, non_neg_integer() | nil) :: any()
+  @spec move_cursor_to_column(
+          any(),
+          non_neg_integer(),
+          non_neg_integer() | nil,
+          non_neg_integer() | nil
+        ) :: any()
   def move_cursor_to_column(emulator, column, _width, _height) do
-    {_current_x, current_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    {_current_x, current_y} =
+      Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
     Raxol.Terminal.Emulator.move_cursor_to(emulator, current_y, column)
   end
 
@@ -81,14 +88,21 @@ defmodule Raxol.Terminal.CursorHandlers do
   """
   @spec move_cursor_to_line_start(any()) :: any()
   def move_cursor_to_line_start(emulator) do
-    {_current_x, current_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    {_current_x, current_y} =
+      Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
     Raxol.Terminal.Emulator.move_cursor_to(emulator, current_y, 0)
   end
 
   @doc """
   Moves the cursor up by the specified number of lines with width and height constraints.
   """
-  @spec move_cursor_up(any(), non_neg_integer(), non_neg_integer() | nil, non_neg_integer() | nil) :: any()
+  @spec move_cursor_up(
+          any(),
+          non_neg_integer(),
+          non_neg_integer() | nil,
+          non_neg_integer() | nil
+        ) :: any()
   def move_cursor_up(emulator, count, _width, _height) do
     move_cursor_up(emulator, count)
   end
@@ -96,7 +110,12 @@ defmodule Raxol.Terminal.CursorHandlers do
   @doc """
   Moves the cursor down by the specified number of lines with width and height constraints.
   """
-  @spec move_cursor_down(any(), non_neg_integer(), non_neg_integer() | nil, non_neg_integer() | nil) :: any()
+  @spec move_cursor_down(
+          any(),
+          non_neg_integer(),
+          non_neg_integer() | nil,
+          non_neg_integer() | nil
+        ) :: any()
   def move_cursor_down(emulator, count, _width, _height) do
     move_cursor_down(emulator, count)
   end
@@ -104,7 +123,12 @@ defmodule Raxol.Terminal.CursorHandlers do
   @doc """
   Moves the cursor left by the specified number of columns with width and height constraints.
   """
-  @spec move_cursor_left(any(), non_neg_integer(), non_neg_integer() | nil, non_neg_integer() | nil) :: any()
+  @spec move_cursor_left(
+          any(),
+          non_neg_integer(),
+          non_neg_integer() | nil,
+          non_neg_integer() | nil
+        ) :: any()
   def move_cursor_left(emulator, count, _width, _height) do
     move_cursor_back(emulator, count)
   end
@@ -112,7 +136,12 @@ defmodule Raxol.Terminal.CursorHandlers do
   @doc """
   Moves the cursor right by the specified number of columns with width and height constraints.
   """
-  @spec move_cursor_right(any(), non_neg_integer(), non_neg_integer() | nil, non_neg_integer() | nil) :: any()
+  @spec move_cursor_right(
+          any(),
+          non_neg_integer(),
+          non_neg_integer() | nil,
+          non_neg_integer() | nil
+        ) :: any()
   def move_cursor_right(emulator, count, _width, _height) do
     move_cursor_forward(emulator, count)
   end

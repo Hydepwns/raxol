@@ -100,6 +100,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(emulator_insert)
       IO.inspect(mode_manager, label: "ModeManager after set IRM")
+
       assert ModeManager.mode_enabled?(mode_manager, :irm) ==
                true
 
@@ -108,6 +109,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(emulator_reset)
       IO.inspect(mode_manager, label: "ModeManager after reset IRM")
+
       assert ModeManager.mode_enabled?(mode_manager, :irm) ==
                false
     end
@@ -120,6 +122,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(emulator_origin)
       IO.inspect(mode_manager, label: "ModeManager after set DECOM")
+
       assert ModeManager.mode_enabled?(mode_manager, :decom) ==
                true
 
@@ -128,6 +131,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(emulator_reset)
       IO.inspect(mode_manager, label: "ModeManager after reset DECOM")
+
       assert ModeManager.mode_enabled?(mode_manager, :decom) ==
                false
     end
@@ -166,6 +170,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(emulator_app)
       IO.inspect(mode_manager, label: "ModeManager after set DECKPAM")
+
       assert ModeManager.mode_enabled?(mode_manager, :decckm) ==
                true
 
@@ -176,6 +181,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(emulator_norm)
       IO.inspect(mode_manager, label: "ModeManager after reset DECKPAM")
+
       assert ModeManager.mode_enabled?(mode_manager, :decckm) ==
                false
     end
@@ -187,6 +193,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(state_after_set)
       IO.inspect(mode_manager, label: "ModeManager after set IRM (standard)")
+
       assert ModeManager.mode_enabled?(mode_manager, :irm) ==
                true
 
@@ -195,6 +202,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       mode_manager = Emulator.get_mode_manager_struct(state_after_reset)
       IO.inspect(mode_manager, label: "ModeManager after reset IRM (standard)")
+
       assert ModeManager.mode_enabled?(mode_manager, :irm) ==
                false
     end

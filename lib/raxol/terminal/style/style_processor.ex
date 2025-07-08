@@ -49,7 +49,10 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
   @doc """
   Applies a single style attribute to the current style.
   """
-  @spec apply_style_attribute({atom(), any()}, Raxol.Terminal.ANSI.TextFormatting.t()) :: Raxol.Terminal.ANSI.TextFormatting.t()
+  @spec apply_style_attribute(
+          {atom(), any()},
+          Raxol.Terminal.ANSI.TextFormatting.t()
+        ) :: Raxol.Terminal.ANSI.TextFormatting.t()
   def apply_style_attribute({attr, value}, style) do
     case get_style_update_function(attr, value) do
       {:ok, update_fn} -> update_fn.(style)

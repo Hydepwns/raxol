@@ -60,13 +60,34 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
 
   setup_all do
     start_supervised!(Raxol.DynamicSupervisor)
+
     # Handle case where registry is already running from global test setup or supervisor
     case start_supervised(Raxol.Terminal.Registry) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, {{:already_started, _pid}, _}} -> :ok
-      {:error, reason} -> raise "Failed to start Raxol.Terminal.Registry: #{inspect(reason)}"
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, {{:already_started, _pid}, _}} ->
+        :ok
+
+      {:error, reason} ->
+        raise "Failed to start Raxol.Terminal.Registry: #{inspect(reason)}"
     end
+
+    # Start UserPreferences which is required by the application lifecycle
+    case start_supervised(Raxol.Core.UserPreferences) do
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, reason} ->
+        raise "Failed to start Raxol.Core.UserPreferences: #{inspect(reason)}"
+    end
+
     :ok
   end
 

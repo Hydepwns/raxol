@@ -9,8 +9,8 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
   }
 
   setup do
-    # Start the renderer with a test name
-    {:ok, pid} = UnifiedRenderer.start_link(name: :test_renderer)
+    # Start the renderer with the default name (module name)
+    {:ok, pid} = UnifiedRenderer.start_link()
     %{pid: pid}
   end
 
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
         font_settings: %{size: 12}
       ]
 
-      {:ok, pid} = UnifiedRenderer.start_link(opts ++ [name: :custom_renderer])
+      {:ok, pid} = UnifiedRenderer.start_link(opts)
       state = :sys.get_state(pid)
 
       assert state.fps == 30
@@ -103,12 +103,14 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
       # Initialize terminal for rendering tests
       UnifiedRenderer.init_terminal()
 
-      # Create a test state
-      buffer_manager = UnifiedManager.new(80, 24)
+      # Create a test state with PID-based buffer manager
+      {:ok, buffer_manager_pid} =
+        UnifiedManager.start_link(width: 80, height: 24)
+
       cursor_manager = Manager.new(0, 0)
 
       state = %State{
-        buffer_manager: buffer_manager,
+        buffer_manager: buffer_manager_pid,
         cursor_manager: cursor_manager
       }
 
@@ -154,8 +156,8 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
     test "resizes terminal", %{pid: pid} do
       assert UnifiedRenderer.resize(100, 50) == :ok
       state = :sys.get_state(pid)
-      assert state.screen_buffer.width == 100
-      assert state.screen_buffer.height == 50
+      assert state.screen.width == 100
+      assert state.screen.height == 50
     end
   end
 end

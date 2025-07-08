@@ -30,7 +30,10 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
       {max(0, actual_start), min(actual_end, emulator.height - 1)}
 
     buffer = get_active_buffer(emulator)
-    new_buffer = ScreenBuffer.set_scroll_region(buffer, {clamped_start, clamped_end})
+
+    new_buffer =
+      ScreenBuffer.set_scroll_region(buffer, {clamped_start, clamped_end})
+
     update_active_buffer(emulator, new_buffer)
   end
 

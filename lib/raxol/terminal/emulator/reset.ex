@@ -87,7 +87,8 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Clears the scrollback buffer.
   """
-  @spec clear_scrollback(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec clear_scrollback(Raxol.Terminal.Emulator.t()) ::
+          Raxol.Terminal.Emulator.t()
   def clear_scrollback(emulator) do
     %{emulator | scrollback_buffer: []}
   end
@@ -95,7 +96,8 @@ defmodule Raxol.Terminal.Emulator.Reset do
   @doc """
   Resets the charset state.
   """
-  @spec reset_charset_state(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @spec reset_charset_state(Raxol.Terminal.Emulator.t()) ::
+          Raxol.Terminal.Emulator.t()
   def reset_charset_state(emulator) do
     %{
       emulator

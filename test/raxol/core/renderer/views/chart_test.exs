@@ -270,11 +270,13 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       assert view.type == :box
 
       children = view.children
+
       flex_view =
         cond do
           is_list(children) ->
             assert length(children) == 1
             List.first(children)
+
           is_map(children) ->
             children
         end

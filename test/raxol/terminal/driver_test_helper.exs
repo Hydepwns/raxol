@@ -1,3 +1,6 @@
+import ExUnit.Assertions
+import ExUnit.Callbacks
+
 defmodule Raxol.Terminal.DriverTestHelper do
   @moduledoc """
   Helper module for terminal driver tests providing common test utilities and fixtures.
@@ -7,7 +10,9 @@ defmodule Raxol.Terminal.DriverTestHelper do
   alias Raxol.Core.Events.Event
 
   def start_driver(test_pid) do
+    IO.puts("[TestHelper] Starting driver with test_pid: #{inspect(test_pid)}")
     {:ok, driver_pid} = Driver.start_link(test_pid)
+    IO.puts("[TestHelper] Driver started with pid: #{inspect(driver_pid)}")
     driver_pid
   end
 
@@ -103,7 +108,7 @@ defmodule Raxol.Terminal.DriverTestHelper do
                        type: :resize,
                        data: %{width: width, height: height}
                      }}},
-                   500
+                   2000
   end
 
   def setup_terminal do

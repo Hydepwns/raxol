@@ -11,9 +11,11 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     Renderer.set_test_pid(self())
 
     on_exit(fn ->
-      # Stop the globally named GenServer after the test.
-      # This prevents :already_started errors in subsequent async tests.
-      _ = GenServer.stop(Raxol.UI.Rendering.Renderer, :normal, :infinity)
+      # Stop the globally named GenServer after the test, but only if it's alive.
+      case Process.whereis(Raxol.UI.Rendering.Renderer) do
+        nil -> :ok
+        pid -> GenServer.stop(pid, :normal, :infinity)
+      end
     end)
 
     :ok
@@ -24,7 +26,8 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Hello"}}]}
     Renderer.render(tree)
     # Wait for the render to complete
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+    assert ops == [{:draw_text, 0, "Hello"}]
 
     # Apply a partial diff: update label text to "World"
     diff = {:update, [0], :replace, %{type: :label, attrs: %{text: "World"}}}
@@ -68,7 +71,12 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     }
 
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops == [
+             {:draw_text, 0, "First"},
+             {:draw_text, 1, "Second"}
+           ]
 
     # Update the second label
     diff =
@@ -119,7 +127,11 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     }
 
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops == [
+             {:draw_text, 0, "Deep"}
+           ]
 
     # Update the nested label
     diff =
@@ -178,7 +190,13 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     }
 
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops == [
+             {:draw_text, 0, "A"},
+             {:draw_text, 1, "B"},
+             {:draw_text, 2, "C"}
+           ]
 
     # Update the first and third label
     diff =
@@ -238,7 +256,11 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     }
 
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops == [
+             {:draw_text, 0, "Deepest"}
+           ]
 
     # Update the deepest label
     diff =
@@ -307,7 +329,14 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     }
 
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops == [
+             {:draw_text, 0, "A1"},
+             {:draw_text, 1, "A2"},
+             {:draw_text, 2, "B1"},
+             {:draw_text, 3, "B2"}
+           ]
 
     # Update B2
     diff =
@@ -369,7 +398,12 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     }
 
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops == [
+             {:draw_text, 0, "Visible"},
+             {:draw_text, 1, "Also visible"}
+           ]
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
@@ -382,10 +416,18 @@ defmodule Raxol.UI.RendererPartialRenderTest do
   end
 
   test "partial render updates buffer for wide tree with many labels" do
-    labels = for i <- 1..12, do: %{type: :label, attrs: %{text: "L#{i}"}}
+    labels =
+      Enum.map(1..12, fn i -> %{type: :label, attrs: %{text: "L#{i}"}} end)
+
     tree = %{type: :view, children: labels}
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops ==
+             Enum.with_index(labels)
+             |> Enum.map(fn {label, idx} ->
+               {:draw_text, idx, label.attrs.text}
+             end)
 
     # Update several labels at once
     diff =
@@ -432,7 +474,14 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     }
 
     Renderer.render(tree)
-    assert_receive {:renderer_rendered, ^tree}, 1000
+    assert_receive {:renderer_rendered, ops}, 1000
+
+    assert ops == [
+             {:draw_text, 0, "A"},
+             {:draw_text, 1, "B"},
+             {:draw_text, 2, "C"},
+             {:draw_text, 3, "D"}
+           ]
 
     # Update B and D
     diff =

@@ -25,7 +25,11 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       # assert emulator.cursor_style == :steady_bar
 
       # Let's test setting Manager style directly if Emulator.set_cursor_style is not the target
-      emulator = %{emulator | cursor: Manager.set_style(emulator.cursor, :underline)}
+      emulator = %{
+        emulator
+        | cursor: Manager.set_style(emulator.cursor, :underline)
+      }
+
       assert Manager.get_style(emulator.cursor) == :underline
 
       emulator = %{emulator | cursor: Manager.set_style(emulator.cursor, :bar)}
@@ -37,9 +41,19 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       # Assuming default is visible
       # Check state directly
       assert Manager.get_state(emulator.cursor) == :visible
-      emulator = %{emulator | cursor: Manager.set_state(emulator.cursor, :hidden)}
+
+      emulator = %{
+        emulator
+        | cursor: Manager.set_state(emulator.cursor, :hidden)
+      }
+
       assert Manager.get_state(emulator.cursor) == :hidden
-      emulator = %{emulator | cursor: Manager.set_state(emulator.cursor, :visible)}
+
+      emulator = %{
+        emulator
+        | cursor: Manager.set_state(emulator.cursor, :visible)
+      }
+
       assert Manager.get_state(emulator.cursor) == :visible
     end
 

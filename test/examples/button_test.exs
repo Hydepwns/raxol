@@ -15,9 +15,9 @@ defmodule Raxol.Examples.ButtonTest do
     {:ok, context} = TestHelper.setup_test_env()
     context = Map.put(context, :snapshots_dir, "test/snapshots")
 
-      on_exit(fn ->
-    TestHelper.cleanup_test_env()
-  end)
+    on_exit(fn ->
+      TestHelper.cleanup_test_env()
+    end)
 
     context
   end
@@ -166,17 +166,21 @@ defmodule Raxol.Examples.ButtonTest do
         )
 
       # Simulate a click on the button
-      updated_button = Raxol.Test.Integration.simulate_user_action(button, {:click, {0, 0}})
+      updated_button =
+        Raxol.Test.Integration.simulate_user_action(button, {:click, {0, 0}})
 
       # Check that the button received the mouse event by verifying its state was updated
-      assert updated_button.state.pressed == true, "Expected button to be pressed after mouse event"
+      assert updated_button.state.pressed == true,
+             "Expected button to be pressed after mouse event"
 
       # Check that the form was updated (this would need proper parent-child event routing)
       # For now, we'll just check that the button state is correct
       assert updated_button.state.pressed == true
 
       # Check that both components have the expected state
-      assert form.state.submitted == false, "Form should not be submitted yet (no parent-child routing)"
+      assert form.state.submitted == false,
+             "Form should not be submitted yet (no parent-child routing)"
+
       assert updated_button.state.pressed == true, "Button should be pressed"
     end
 

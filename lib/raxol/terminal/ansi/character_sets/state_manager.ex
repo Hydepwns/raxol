@@ -218,11 +218,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     active_charset = get_active(state)
     single_shift = get_single_shift(state)
 
-    result = Raxol.Terminal.ANSI.CharacterSets.Translator.translate_char(
-      codepoint,
-      active_charset,
-      single_shift
-    )
+    result =
+      Raxol.Terminal.ANSI.CharacterSets.Translator.translate_char(
+        codepoint,
+        active_charset,
+        single_shift
+      )
 
     new_state = clear_single_shift(state)
     {result, new_state}
@@ -241,15 +242,17 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
       single_shift
     )
   end
+
   """
   def update_charset_state(emulator, charset_state) do
     %{emulator | charset_state: charset_state}
   end
 
-  @doc """
+  @doc \"""
   Validates a character set state.
   Returns :ok if valid, or {:error, reason} if invalid.
   """
+
   def validate_state(state) when map?(state) do
     required_keys = [:active, :single_shift, :g0, :g1, :g2, :g3, :gl, :gr]
 

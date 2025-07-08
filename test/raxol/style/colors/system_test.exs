@@ -97,7 +97,9 @@ defmodule Raxol.Style.Colors.SystemTest do
       assert :ok == System.apply_theme(:dark)
       # Accept either atom or string for theme name
       theme_name = System.get_current_theme_name()
-      assert to_string(theme_name) == to_string(:dark) or theme_name == "Dark Theme"
+
+      assert to_string(theme_name) == to_string(:dark) or
+               theme_name == "Dark Theme"
     end
 
     test "gets UI color", _context do

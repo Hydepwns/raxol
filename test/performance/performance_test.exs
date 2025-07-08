@@ -20,8 +20,11 @@ defmodule Raxol.PerformanceTest do
       assert render_results.full_screen_render_time_ms < 16,
              "Full screen render time too high"
 
-      assert render_results.components_per_frame > 100, "Components per frame too low"
-      assert render_results.renders_per_second > 30, "Renders per second too low"
+      assert render_results.components_per_frame > 100,
+             "Components per frame too low"
+
+      assert render_results.renders_per_second > 30,
+             "Renders per second too low"
     end
   end
 
@@ -68,7 +71,8 @@ defmodule Raxol.PerformanceTest do
       assert animation_results.maximum_fps > 30,
              "Maximum FPS too low for animation"
 
-      assert animation_results.frame_time_consistency_ms < 5, "Animation jitter too high"
+      assert animation_results.frame_time_consistency_ms < 5,
+             "Animation jitter too high"
 
       assert animation_results.dropped_frames_percent < 1,
              "Animation frames dropped percentage too high"

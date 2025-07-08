@@ -273,16 +273,28 @@ defmodule Raxol.Style.Colors.Utilities do
     # Normalize to lowercase atoms for robust matching
     norm_level =
       case level do
-        l when is_atom(l) -> String.downcase(Atom.to_string(l)) |> String.to_atom()
-        l when is_binary(l) -> String.downcase(l) |> String.to_atom()
-        _ -> :aa
+        l when is_atom(l) ->
+          String.downcase(Atom.to_string(l)) |> String.to_atom()
+
+        l when is_binary(l) ->
+          String.downcase(l) |> String.to_atom()
+
+        _ ->
+          :aa
       end
+
     norm_size =
       case size do
-        s when is_atom(s) -> String.downcase(Atom.to_string(s)) |> String.to_atom()
-        s when is_binary(s) -> String.downcase(s) |> String.to_atom()
-        _ -> :normal
+        s when is_atom(s) ->
+          String.downcase(Atom.to_string(s)) |> String.to_atom()
+
+        s when is_binary(s) ->
+          String.downcase(s) |> String.to_atom()
+
+        _ ->
+          :normal
       end
+
     case {norm_level, norm_size} do
       {:a, :normal} -> 3.0
       {:a, :large} -> 3.0

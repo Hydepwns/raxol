@@ -87,6 +87,20 @@ defmodule Raxol.Terminal.ModeManager do
   end
 
   @doc """
+  Sets a mode with a value and options.
+  """
+  @spec set_mode(Emulator.t(), atom(), any(), keyword()) ::
+          {:ok, Emulator.t()} | {:error, term()}
+  def set_mode(emulator, mode_name, _value, options) do
+    category = Keyword.get(options, :category, nil)
+
+    case do_set_mode(mode_name, emulator, category) do
+      {:ok, new_emu} -> {:ok, new_emu}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
   Resets one or more modes. Dispatches to specific handlers.
   Returns potentially updated Emulator state if side effects occurred.
   """
@@ -197,7 +211,9 @@ defmodule Raxol.Terminal.ModeManager do
     # The new get_all_modes() returns a map with tuple keys like {code, category}
     case ModeTypes.get_all_modes()
          |> Map.values()
-         |> Enum.find(fn mode_def -> mode_def.name == mode_name and mode_def.category == search_category end) do
+         |> Enum.find(fn mode_def ->
+           mode_def.name == mode_name and mode_def.category == search_category
+         end) do
       nil ->
         # If not found in the initial category, try other categories
         case search_category do
@@ -205,21 +221,30 @@ defmodule Raxol.Terminal.ModeManager do
             # Try :dec_private and :screen_buffer
             case ModeTypes.get_all_modes()
                  |> Map.values()
-                 |> Enum.find(fn mode_def -> mode_def.name == mode_name and mode_def.category in [:dec_private, :screen_buffer] end) do
+                 |> Enum.find(fn mode_def ->
+                   mode_def.name == mode_name and
+                     mode_def.category in [:dec_private, :screen_buffer]
+                 end) do
               nil -> {:error, :invalid_mode}
               mode_def -> {:ok, mode_def}
             end
+
           :dec_private ->
             # Try :screen_buffer
             case ModeTypes.get_all_modes()
                  |> Map.values()
-                 |> Enum.find(fn mode_def -> mode_def.name == mode_name and mode_def.category == :screen_buffer end) do
+                 |> Enum.find(fn mode_def ->
+                   mode_def.name == mode_name and
+                     mode_def.category == :screen_buffer
+                 end) do
               nil -> {:error, :invalid_mode}
               mode_def -> {:ok, mode_def}
             end
+
           _ ->
             {:error, :invalid_mode}
         end
+
       mode_def ->
         {:ok, mode_def}
     end
@@ -229,10 +254,13 @@ defmodule Raxol.Terminal.ModeManager do
     case mode_def.category do
       :dec_private ->
         DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
+
       :screen_buffer ->
         DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
+
       :standard ->
         StandardHandler.handle_mode_change(mode_def.name, value, emulator)
+
       _ ->
         {:ok, emulator}
     end
@@ -240,22 +268,53 @@ defmodule Raxol.Terminal.ModeManager do
 
   defp update_mode_manager_state(mode_manager, mode_name, value) do
     case mode_name do
-      :irm -> %{mode_manager | insert_mode: value}
-      :lnm -> %{mode_manager | line_feed_mode: value}
-      :deccolm_132 -> %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
-      :deccolm_80 -> %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
-      :decscnm -> %{mode_manager | screen_mode_reverse: value}
-      :decom -> %{mode_manager | origin_mode: value}
-      :decawm -> %{mode_manager | auto_wrap: value}
-      :decarm -> %{mode_manager | auto_repeat_mode: value}
-      :decinlm -> %{mode_manager | interlacing_mode: value}
-      :att_blink -> %{mode_manager | blink_attribute: value}
-      :dectcem -> %{mode_manager | cursor_visible: value}
-      :focus_events -> %{mode_manager | focus_events_enabled: value}
-      :bracketed_paste -> %{mode_manager | bracketed_paste_mode: value}
-      :dec_alt_screen_save -> %{mode_manager | alternate_buffer_active: value}
-      :alt_screen_buffer -> %{mode_manager | alternate_buffer_active: value}
-      _ -> mode_manager
+      :irm ->
+        %{mode_manager | insert_mode: value}
+
+      :lnm ->
+        %{mode_manager | line_feed_mode: value}
+
+      :deccolm_132 ->
+        %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
+
+      :deccolm_80 ->
+        %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
+
+      :decscnm ->
+        %{mode_manager | screen_mode_reverse: value}
+
+      :decom ->
+        %{mode_manager | origin_mode: value}
+
+      :decawm ->
+        %{mode_manager | auto_wrap: value}
+
+      :decarm ->
+        %{mode_manager | auto_repeat_mode: value}
+
+      :decinlm ->
+        %{mode_manager | interlacing_mode: value}
+
+      :att_blink ->
+        %{mode_manager | blink_attribute: value}
+
+      :dectcem ->
+        %{mode_manager | cursor_visible: value}
+
+      :focus_events ->
+        %{mode_manager | focus_events_enabled: value}
+
+      :bracketed_paste ->
+        %{mode_manager | bracketed_paste_mode: value}
+
+      :dec_alt_screen_save ->
+        %{mode_manager | alternate_buffer_active: value}
+
+      :alt_screen_buffer ->
+        %{mode_manager | alternate_buffer_active: value}
+
+      _ ->
+        mode_manager
     end
   end
 

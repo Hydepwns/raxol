@@ -1,3 +1,3 @@
 defmodule InvalidModule do
-  invalid syntax
+  invalid(syntax)
 end

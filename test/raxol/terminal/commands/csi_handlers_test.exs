@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
   alias Raxol.Terminal.{Window}
+  alias Raxol.Terminal.TestHelper
 
   setup do
     emulator = new_emulator()
@@ -20,41 +21,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
   defp unwrap_ok(value) when is_map(value), do: value
 
   defp new_emulator() do
-    width = 80
-    height = 24
-    main_screen_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
-    alternate_screen_buffer = Raxol.Terminal.ScreenBuffer.new(width, height)
-
-    cursor = %Raxol.Terminal.Cursor.Manager{
-      row: 0,
-      col: 0,
-      visible: true,
-      style: :block,
-      position: {0, 0},
-      top_margin: 0,
-      bottom_margin: height - 1
-    }
-
-    %Raxol.Terminal.Emulator.Struct{
-      width: width,
-      height: height,
-      main_screen_buffer: main_screen_buffer,
-      alternate_screen_buffer: alternate_screen_buffer,
-      active_buffer_type: :main,
-      cursor: cursor,
-      charset_state: %{
-        g0: :us_ascii,
-        g1: :us_ascii,
-        g2: :us_ascii,
-        g3: :us_ascii,
-        gl: :g0,
-        gr: :g2,
-        single_shift: nil
-      },
-      style: %{},
-      output_buffer: "",
-      state: :normal
-    }
+    TestHelper.create_test_emulator_with_struct_cursor()
   end
 
   describe "handle_s/2 (Save Cursor Position - SCP)" do
@@ -393,7 +360,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       assert {:ok, returned_emulator} = result
       assert is_map(returned_emulator)
       assert Map.has_key?(returned_emulator, :__struct__)
-      assert returned_emulator.__struct__ == Raxol.Terminal.Emulator.Struct
+      assert returned_emulator.__struct__ == Raxol.Terminal.Emulator
     end
 
     test "handle_scs/3 returns error tuple for invalid charset designation, and only emulator is passed to UI",
@@ -599,14 +566,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
   describe "handle_cursor_position/2" do
     test "handles cursor position without parameters" do
       emulator = new_emulator()
-      state = CSIHandlers.handle_cursor_position(emulator, [])
+      state = unwrap_ok(CSIHandlers.handle_cursor_position(emulator, []))
       assert state.cursor.row == 0
       assert state.cursor.col == 0
     end
 
     test "handles cursor position with parameters" do
       emulator = new_emulator()
-      state = CSIHandlers.handle_cursor_position(emulator, [?2, ?;, ?3])
+
+      state =
+        unwrap_ok(CSIHandlers.handle_cursor_position(emulator, [?2, ?;, ?3]))
+
       assert state.cursor.row == 1
       assert state.cursor.col == 2
     end
@@ -620,13 +590,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     end
 
     test "handles clear from cursor to beginning of screen" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_screen_clear(emulator, [?1])
       assert result.main_screen_buffer != nil
     end
 
     test "handles clear entire screen" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_screen_clear(emulator, [?2])
       assert result.main_screen_buffer != nil
     end
@@ -634,19 +604,19 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "handle_line_clear/2" do
     test "handles clear from cursor to end of line" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [])
       assert result.main_screen_buffer != nil
     end
 
     test "handles clear from cursor to beginning of line" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [?1])
       assert result.main_screen_buffer != nil
     end
 
     test "handles clear entire line" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [?2])
       assert result.main_screen_buffer != nil
     end
@@ -654,13 +624,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "handle_device_status/2" do
     test "handles device status report" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_device_status(emulator, [?6, ?n])
       assert result != nil
     end
 
     test "handles cursor position report" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_device_status(emulator, [?6, ?R])
       assert result != nil
     end
@@ -668,20 +638,20 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "handle_save_restore_cursor/2" do
     test "handles save cursor position" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
-      result = CSIHandlers.handle_save_restore_cursor(emulator, [?s])
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
+      result = unwrap_ok(CSIHandlers.handle_save_restore_cursor(emulator, [?s]))
       assert result.saved_cursor != nil
     end
 
     test "handles restore cursor position" do
-      emulator = Raxol.Terminal.Emulator.Struct.new(80, 24)
+      emulator = Raxol.Terminal.Emulator.new(80, 24)
 
       emulator = %{
         emulator
         | saved_cursor: %{row: 5, col: 5, style: :block, visible: true}
       }
 
-      result = CSIHandlers.handle_save_restore_cursor(emulator, [?u])
+      result = unwrap_ok(CSIHandlers.handle_save_restore_cursor(emulator, [?u]))
       assert result.cursor != nil
     end
   end

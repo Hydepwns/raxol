@@ -136,7 +136,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     # For \e[10;5H: row=10, col=5 -> row_0=9, col_0=4 -> {4, 9}
     # The test expects {4, 9} which means {col, row} format
     # set_position expects {row, col} format, so we need to swap
-    updated_cursor = set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+    updated_cursor =
+      set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
@@ -160,7 +162,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
     {current_x, _} = Emulator.get_cursor_position(emulator)
-    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, {current_x, row - 1}, width, height)
+
+    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
+      emulator,
+      {current_x, row - 1},
+      width,
+      height
+    )
   end
 
   @doc "Handles Horizontal Position Relative (HPR - 'a')"

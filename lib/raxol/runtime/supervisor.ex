@@ -20,7 +20,10 @@ defmodule Raxol.Runtime.Supervisor do
     case validate_required_params(init_args) do
       {:ok, validated_params} ->
         build_children_specs(validated_params)
-        |> Supervisor.init(strategy: :one_for_one, name: Raxol.Runtime.Supervisor)
+        |> Supervisor.init(
+          strategy: :one_for_one,
+          name: Raxol.Runtime.Supervisor
+        )
 
       {:error, reason} ->
         {:stop, reason}
@@ -28,11 +31,18 @@ defmodule Raxol.Runtime.Supervisor do
   end
 
   defp validate_required_params(init_args) do
-    required_keys = [:app_module, :initial_model, :initial_commands, :initial_term_size, :runtime_pid]
+    required_keys = [
+      :app_module,
+      :initial_model,
+      :initial_commands,
+      :initial_term_size,
+      :runtime_pid
+    ]
 
     case validate_keys(init_args, required_keys) do
       {:ok, validated} ->
-        {:ok, Map.put(validated, :debug_mode, Map.get(init_args, :debug_mode, false))}
+        {:ok,
+         Map.put(validated, :debug_mode, Map.get(init_args, :debug_mode, false))}
 
       {:error, reason} ->
         {:error, reason}
@@ -45,6 +55,7 @@ defmodule Raxol.Runtime.Supervisor do
         Raxol.Core.Runtime.Log.error(
           "[Raxol.Runtime.Supervisor] Missing required :#{key} in init_args: #{inspect(map)}"
         )
+
         {:error, {:missing_required_key, key}}
 
       value ->
@@ -57,9 +68,14 @@ defmodule Raxol.Runtime.Supervisor do
 
   defp validate_keys(_map, []), do: {:ok, %{}}
 
-  defp build_children_specs(%{app_module: app_module, initial_model: initial_model,
-                             initial_commands: initial_commands, initial_term_size: initial_term_size,
-                             runtime_pid: runtime_pid, debug_mode: debug_mode}) do
+  defp build_children_specs(%{
+         app_module: app_module,
+         initial_model: initial_model,
+         initial_commands: initial_commands,
+         initial_term_size: initial_term_size,
+         runtime_pid: runtime_pid,
+         debug_mode: debug_mode
+       }) do
     [
       # 0. User Preferences (needs to start early)
       {Raxol.Core.UserPreferences,

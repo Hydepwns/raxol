@@ -147,7 +147,8 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
       assert {:ok, {:interval, timer_ref}} = Subscription.start(sub, context)
 
       on_exit(fn ->
-        if Process.read_timer(timer_ref), do: Process.cancel_timer(timer_ref)
+        ref = elem(timer_ref, 1)
+        if Process.read_timer(ref), do: Process.cancel_timer(ref)
       end)
 
       assert_receive {:subscription, :tick}, 100

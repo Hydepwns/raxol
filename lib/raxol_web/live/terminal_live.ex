@@ -22,16 +22,28 @@ defmodule RaxolWeb.TerminalLive do
     # In test environment, always use connected mode to ensure assigns are available
     if Mix.env() == :test do
       require Logger
-      Logger.debug("RaxolWeb.TerminalLive: Using mount_connected for test environment")
+
+      Logger.debug(
+        "RaxolWeb.TerminalLive: Using mount_connected for test environment"
+      )
+
       mount_connected(session, socket)
     else
       if connected?(socket) do
         require Logger
-        Logger.debug("RaxolWeb.TerminalLive: Using mount_connected for connected socket")
+
+        Logger.debug(
+          "RaxolWeb.TerminalLive: Using mount_connected for connected socket"
+        )
+
         mount_connected(session, socket)
       else
         require Logger
-        Logger.debug("RaxolWeb.TerminalLive: Using mount_disconnected for disconnected socket")
+
+        Logger.debug(
+          "RaxolWeb.TerminalLive: Using mount_disconnected for disconnected socket"
+        )
+
         mount_disconnected(socket)
       end
     end
@@ -43,7 +55,10 @@ defmodule RaxolWeb.TerminalLive do
 
   defp mount_connected(session, socket) do
     require Logger
-    Logger.debug("RaxolWeb.TerminalLive: mount_connected called with session: #{inspect(session)}")
+
+    Logger.debug(
+      "RaxolWeb.TerminalLive: mount_connected called with session: #{inspect(session)}"
+    )
 
     session_id = generate_session_id()
     user_id = session["user_id"] || session_id
@@ -60,6 +75,7 @@ defmodule RaxolWeb.TerminalLive do
     cursors = %{user_id => %{x: 0, y: 0, visible: true}}
 
     Logger.debug("RaxolWeb.TerminalLive: Initializing socket...")
+
     socket =
       initialize_socket(
         socket,
@@ -72,7 +88,10 @@ defmodule RaxolWeb.TerminalLive do
         cursors
       )
 
-    Logger.debug("RaxolWeb.TerminalLive: mount_connected returning socket with assigns: #{inspect(socket.assigns)}")
+    Logger.debug(
+      "RaxolWeb.TerminalLive: mount_connected returning socket with assigns: #{inspect(socket.assigns)}"
+    )
+
     {:ok, socket, temporary_assigns: [terminal_html: ""]}
   end
 
@@ -90,7 +109,10 @@ defmodule RaxolWeb.TerminalLive do
       |> assign(:cursor, %{x: 0, y: 0, visible: true})
       |> assign(:dimensions, %{width: 80, height: 24})
       |> assign(:scroll_offset, 0)
-      |> assign(:theme, Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.current()))
+      |> assign(
+        :theme,
+        Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.current())
+      )
       |> assign(:connected, false)
       |> assign(:emulator, emulator)
       |> assign(:renderer, renderer)
@@ -329,7 +351,11 @@ defmodule RaxolWeb.TerminalLive do
   def handle_info(message, socket) do
     # Catch-all clause for unexpected messages
     require Logger
-    Logger.debug("RaxolWeb.TerminalLive received unexpected message: #{inspect(message)}")
+
+    Logger.debug(
+      "RaxolWeb.TerminalLive received unexpected message: #{inspect(message)}"
+    )
+
     {:noreply, socket}
   end
 
@@ -338,10 +364,17 @@ defmodule RaxolWeb.TerminalLive do
     # Clean up Presence tracking and PubSub subscriptions
     if socket.assigns.presence_topic && socket.assigns.user_id do
       require Logger
-      Logger.debug("RaxolWeb.TerminalLive: Cleaning up presence and pubsub for topic: #{socket.assigns.presence_topic}")
+
+      Logger.debug(
+        "RaxolWeb.TerminalLive: Cleaning up presence and pubsub for topic: #{socket.assigns.presence_topic}"
+      )
 
       # Untrack from Presence
-      Presence.untrack(self(), socket.assigns.presence_topic, socket.assigns.user_id)
+      Presence.untrack(
+        self(),
+        socket.assigns.presence_topic,
+        socket.assigns.user_id
+      )
 
       # Unsubscribe from PubSub
       PubSub.unsubscribe(Raxol.PubSub, socket.assigns.presence_topic)

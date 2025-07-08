@@ -98,12 +98,8 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
     case get_window_by_id(id) do
       {:ok, window} ->
         case Registry.update_window(id, %{property => value}) do
-          :ok ->
-            # Get the updated window
-            case Registry.get_window(id) do
-              {:ok, updated_window} -> {:ok, updated_window}
-              {:error, _} -> {:error, :not_found}
-            end
+          {:ok, updated_window} ->
+            {:ok, updated_window}
 
           {:error, _} ->
             {:error, :not_found}
@@ -175,17 +171,18 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
           {:ok, Window.t()}
   defp setup_parent_child_relationship(parent_window, child_window) do
     # Update child with parent reference
-    Registry.update_window(child_window.id, %{parent: parent_window.id})
+    case Registry.update_window(child_window.id, %{parent: parent_window.id}) do
+      {:ok, updated_child} ->
+        # Update parent with child reference
+        case Registry.update_window(parent_window.id, %{
+               children: [child_window.id | parent_window.children || []]
+             }) do
+          {:ok, _updated_parent} -> {:ok, updated_child}
+          {:error, _} -> {:error, :update_failed}
+        end
 
-    # Update parent with child reference
-    Registry.update_window(parent_window.id, %{
-      children: [child_window.id | parent_window.children || []]
-    })
-
-    # Get the updated child window
-    case Registry.get_window(child_window.id) do
-      {:ok, updated_child} -> {:ok, updated_child}
-      {:error, _} -> {:error, :update_failed}
+      {:error, _} ->
+        {:error, :update_failed}
     end
   end
 

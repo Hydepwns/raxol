@@ -17,7 +17,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the alternate buffer active state in the mode manager.
   """
-  @spec update_alternate_buffer_active_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_alternate_buffer_active_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_alternate_buffer_active_direct(mode_manager, value) do
     %{mode_manager | alternate_buffer_active: value}
   end
@@ -25,7 +26,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the cursor keys mode in the mode manager.
   """
-  @spec update_cursor_keys_mode_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_cursor_keys_mode_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_cursor_keys_mode_direct(mode_manager, value) do
     %{
       mode_manager
@@ -44,7 +46,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the line feed mode in the mode manager.
   """
-  @spec update_line_feed_mode_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_line_feed_mode_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_line_feed_mode_direct(mode_manager, value) do
     %{mode_manager | line_feed_mode: value}
   end
@@ -60,7 +63,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the cursor visible mode in the mode manager.
   """
-  @spec update_cursor_visible_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_cursor_visible_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_cursor_visible_direct(mode_manager, value) do
     %{mode_manager | cursor_visible: value}
   end
@@ -68,7 +72,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the screen mode reverse in the mode manager.
   """
-  @spec update_screen_mode_reverse_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_screen_mode_reverse_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_screen_mode_reverse_direct(mode_manager, value) do
     %{mode_manager | screen_mode_reverse: value}
   end
@@ -76,7 +81,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the auto repeat mode in the mode manager.
   """
-  @spec update_auto_repeat_mode_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_auto_repeat_mode_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_auto_repeat_mode_direct(mode_manager, value) do
     %{mode_manager | auto_repeat_mode: value}
   end
@@ -84,7 +90,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the interlacing mode in the mode manager.
   """
-  @spec update_interlacing_mode_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_interlacing_mode_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_interlacing_mode_direct(mode_manager, value) do
     %{mode_manager | interlacing_mode: value}
   end
@@ -92,7 +99,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the bracketed paste mode in the mode manager.
   """
-  @spec update_bracketed_paste_mode_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_bracketed_paste_mode_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_bracketed_paste_mode_direct(mode_manager, value) do
     %{mode_manager | bracketed_paste_mode: value}
   end
@@ -100,7 +108,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the column width 132 mode in the mode manager.
   """
-  @spec update_column_width_132_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_column_width_132_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_column_width_132_direct(mode_manager, value) do
     %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
   end
@@ -108,7 +117,8 @@ defmodule Raxol.Terminal.ModeHandlers do
   @doc """
   Updates the column width 80 mode in the mode manager.
   """
-  @spec update_column_width_80_direct(ModeManager.t(), boolean()) :: ModeManager.t()
+  @spec update_column_width_80_direct(ModeManager.t(), boolean()) ::
+          ModeManager.t()
   def update_column_width_80_direct(mode_manager, value) do
     %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
   end

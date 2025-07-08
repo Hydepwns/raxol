@@ -151,7 +151,14 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
   end
 
   def handle_call(:get_tabs, _from, state) do
-    {:reply, Map.keys(state.tabs), state}
+    # Return tabs in position order, not creation order
+    tab_order =
+      state.tabs
+      |> Enum.map(fn {id, tab} -> {id, tab.config.position} end)
+      |> Enum.sort_by(fn {_id, position} -> position end)
+      |> Enum.map(fn {id, _position} -> id end)
+
+    {:reply, tab_order, state}
   end
 
   def handle_call(:get_active_tab, _from, state) do

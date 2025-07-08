@@ -41,7 +41,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       table when map?(table) ->
         # If table is a map, store commands by namespace
         namespace_commands = Map.get(table, namespace, [])
-        updated_commands = [{command_name, handler, metadata} | namespace_commands]
+
+        updated_commands = [
+          {command_name, handler, metadata} | namespace_commands
+        ]
+
         updated_table = Map.put(table, namespace, updated_commands)
         {:ok, updated_table}
 
@@ -56,7 +60,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     case table_name do
       table when map?(table) ->
         namespace_commands = Map.get(table, namespace, [])
-        updated_commands = Enum.reject(namespace_commands, fn {name, _, _} -> name == command_name end)
+
+        updated_commands =
+          Enum.reject(namespace_commands, fn {name, _, _} ->
+            name == command_name
+          end)
 
         if updated_commands == namespace_commands do
           {:error, :not_found}
@@ -76,13 +84,18 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       table when map?(table) ->
         namespace_commands = Map.get(table, namespace, [])
 
-        case Enum.find(namespace_commands, fn {name, _, _} -> name == command_name end) do
-          nil -> {:error, :not_found}
+        case Enum.find(namespace_commands, fn {name, _, _} ->
+               name == command_name
+             end) do
+          nil ->
+            {:error, :not_found}
+
           {_name, {module, function, arity}, _metadata} ->
             # Create a function that calls the module function
             handler = fn args, state ->
               apply(module, function, [args, state])
             end
+
             {:ok, {module, handler, arity}}
         end
 

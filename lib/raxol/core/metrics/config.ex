@@ -15,8 +15,13 @@ defmodule Raxol.Core.Metrics.Config do
 
   @type metric_type :: :performance | :resource | :operation | :system | :custom
   @type config_key ::
-          :retention_period | :max_samples | :flush_interval | :enabled_metrics |
-          :aggregation_window | :storage_backend | :retention_policies
+          :retention_period
+          | :max_samples
+          | :flush_interval
+          | :enabled_metrics
+          | :aggregation_window
+          | :storage_backend
+          | :retention_policies
 
   @default_config %{
     # 1 hour in seconds
@@ -75,7 +80,13 @@ defmodule Raxol.Core.Metrics.Config do
   @doc """
   Sets a specific configuration value.
   """
-  def set(key, value) when key in [:retention_period, :max_samples, :flush_interval, :enabled_metrics] do
+  def set(key, value)
+      when key in [
+             :retention_period,
+             :max_samples,
+             :flush_interval,
+             :enabled_metrics
+           ] do
     case validate_setting(key, value) do
       :ok -> GenServer.call(__MODULE__, {:set, key, value})
       {:error, reason} -> {:error, reason}
@@ -103,7 +114,8 @@ defmodule Raxol.Core.Metrics.Config do
     end
   end
 
-  def set(key, _value) when key in [:aggregation_window, :storage_backend, :retention_policies] do
+  def set(key, _value)
+      when key in [:aggregation_window, :storage_backend, :retention_policies] do
     # This clause should never be reached due to the specific clauses above
     {:error, :invalid_key}
   end
@@ -204,10 +216,16 @@ defmodule Raxol.Core.Metrics.Config do
   end
 
   # Validation functions for existing keys
-  defp validate_setting(:retention_period, value), do: validate_retention_period(value)
+  defp validate_setting(:retention_period, value),
+    do: validate_retention_period(value)
+
   defp validate_setting(:max_samples, value), do: validate_max_samples(value)
-  defp validate_setting(:flush_interval, value), do: validate_flush_interval(value)
-  defp validate_setting(:enabled_metrics, value), do: validate_enabled_metrics(value)
+
+  defp validate_setting(:flush_interval, value),
+    do: validate_flush_interval(value)
+
+  defp validate_setting(:enabled_metrics, value),
+    do: validate_enabled_metrics(value)
 
   defp validate_retention_period(period) when integer?(period) and period > 0,
     do: :ok
@@ -239,8 +257,9 @@ defmodule Raxol.Core.Metrics.Config do
   defp validate_enabled_metrics(_), do: {:error, :invalid_enabled_metrics}
 
   # Validation functions for new keys
-  defp validate_aggregation_window(window) when window in [:hour, :day, :week, :month],
-    do: :ok
+  defp validate_aggregation_window(window)
+       when window in [:hour, :day, :week, :month],
+       do: :ok
 
   defp validate_aggregation_window(_), do: {:error, :invalid_aggregation_window}
 

@@ -50,7 +50,8 @@ defmodule Raxol.Test.BufferHelper do
 
     %{
       manager: manager,
-      buffer: manager,  # Return the manager PID instead of the buffer struct
+      # Return the manager PID instead of the buffer struct
+      buffer: manager,
       metrics: metrics_state
     }
   end
@@ -188,6 +189,7 @@ defmodule Raxol.Test.BufferHelper do
             opts when is_list(opts) -> Keyword.get(opts, :data, "")
             _ -> ""
           end
+
         Raxol.Terminal.Buffer.Manager.write(manager, data, [])
 
       :clear ->

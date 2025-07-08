@@ -25,14 +25,33 @@ defmodule Raxol.Terminal.Buffer.Cell do
   Creates a new cell with default settings.
   """
   def new(opts \\ []) do
-    %__MODULE__{
-      char: Keyword.get(opts, :char, " "),
-      foreground: Keyword.get(opts, :foreground, 7),
-      background: Keyword.get(opts, :background, 0),
-      attributes: Keyword.get(opts, :attributes, %{}),
-      hyperlink: Keyword.get(opts, :hyperlink, nil),
-      width: Keyword.get(opts, :width, 1)
-    }
+    cond do
+      is_binary(opts) ->
+        %__MODULE__{char: opts}
+
+      is_map(opts) ->
+        %__MODULE__{
+          char: Map.get(opts, :char, " "),
+          foreground: Map.get(opts, :foreground, 7),
+          background: Map.get(opts, :background, 0),
+          attributes: Map.get(opts, :attributes, %{}),
+          hyperlink: Map.get(opts, :hyperlink, nil),
+          width: Map.get(opts, :width, 1)
+        }
+
+      is_list(opts) ->
+        %__MODULE__{
+          char: Keyword.get(opts, :char, " "),
+          foreground: Keyword.get(opts, :foreground, 7),
+          background: Keyword.get(opts, :background, 0),
+          attributes: Keyword.get(opts, :attributes, %{}),
+          hyperlink: Keyword.get(opts, :hyperlink, nil),
+          width: Keyword.get(opts, :width, 1)
+        }
+
+      true ->
+        %__MODULE__{}
+    end
   end
 
   @doc """
@@ -47,6 +66,10 @@ defmodule Raxol.Terminal.Buffer.Cell do
       hyperlink: extract_hyperlink(style),
       width: extract_width(style)
     }
+  end
+
+  def new(arg) when is_binary(arg) do
+    %__MODULE__{char: arg}
   end
 
   @doc """

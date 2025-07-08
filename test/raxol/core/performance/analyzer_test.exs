@@ -75,7 +75,9 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
 
       assert "Review object lifecycle management" in analysis.suggestions
       assert "Review memory usage patterns" in analysis.suggestions
+
       assert "Implement object pooling where appropriate" in analysis.suggestions
+
       assert "Consider using WeakMap/WeakSet for caches" in analysis.suggestions
     end
 

@@ -150,17 +150,32 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
            lookup_valid_command(command_table, command_name_str, args) do
       case get_plugin_state(state, plugin_module) do
         {:ok, plugin_id, plugin_state} ->
-          case execute_and_update_state(handler, args, plugin_state, plugin_id, state) do
+          case execute_and_update_state(
+                 handler,
+                 args,
+                 plugin_state,
+                 plugin_id,
+                 state
+               ) do
             {:ok, new_state, result, plugin_id} ->
-              updated_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
+              updated_plugin_states =
+                Map.put(state.plugin_states, plugin_id, new_state)
+
               {:ok, updated_plugin_states}
+
             {:error, :exception, new_state} ->
-              updated_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
+              updated_plugin_states =
+                Map.put(state.plugin_states, plugin_id, new_state)
+
               {:error, :exception, updated_plugin_states}
+
             {:error, reason, new_state} ->
-              updated_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
+              updated_plugin_states =
+                Map.put(state.plugin_states, plugin_id, new_state)
+
               {:error, reason, updated_plugin_states}
           end
+
         {:error, :missing_plugin_state} ->
           {:error, :missing_plugin_state, state.plugin_states}
       end
@@ -182,14 +197,18 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   defp find_command_in_table(command_table, command_name_str) do
     # Search through all namespaces in the command table
-    Enum.find_value(command_table, {:error, :not_found}, fn {namespace, commands} ->
+    Enum.find_value(command_table, {:error, :not_found}, fn {namespace,
+                                                             commands} ->
       case Enum.find(commands, fn {name, _, _} -> name == command_name_str end) do
-        nil -> nil
+        nil ->
+          nil
+
         {_name, {module, function, arity}, _metadata} ->
           # Create a function that calls the module function
           handler = fn args, state ->
             apply(module, function, [args, state])
           end
+
           {:ok, {module, handler, arity}}
       end
     end)
@@ -212,8 +231,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     case execute_command(handler, args, plugin_state) do
       {:ok, new_state, result} ->
         {:ok, new_state, result, plugin_id}
+
       {:error, :exception, new_state} ->
         {:error, :exception, new_state}
+
       {:error, reason, new_state} ->
         {:error, reason, new_state}
     end
@@ -223,10 +244,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     case with_timeout(fn -> handler.(args, plugin_state) end, 5000) do
       {:ok, new_state, result} when map?(new_state) ->
         {:ok, new_state, result}
+
       {:error, reason, new_state} when map?(new_state) ->
         {:error, reason, new_state}
+
       {:error, {:exception, _error}} ->
         {:error, :exception, plugin_state}
+
       invalid ->
         {:error, {:unexpected_plugin_return, invalid}, plugin_state}
     end
@@ -239,7 +263,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
 
     # Use correct function name and handle return value
-    case CommandRegistry.unregister_commands_by_module(command_table, plugin_module) do
+    case CommandRegistry.unregister_commands_by_module(
+           command_table,
+           plugin_module
+         ) do
       {:ok, updated_table} -> updated_table
       {:error, _reason} -> command_table
       _ -> command_table

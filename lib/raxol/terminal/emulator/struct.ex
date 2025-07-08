@@ -173,6 +173,9 @@ defmodule Raxol.Terminal.Emulator.Struct do
       :insert_mode ->
         %{emulator | state: :insert}
 
+      :irm ->
+        %{emulator | state: :insert}
+
       _ ->
         # For other modes, just return the emulator unchanged
         emulator
@@ -189,6 +192,9 @@ defmodule Raxol.Terminal.Emulator.Struct do
         %{emulator | cursor: %{emulator.cursor | visible: false}}
 
       :insert_mode ->
+        %{emulator | state: :normal}
+
+      :irm ->
         %{emulator | state: :normal}
 
       _ ->
@@ -237,10 +243,21 @@ defmodule Raxol.Terminal.Emulator.Struct do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_to, col, row, emulator.width, emulator.height})
+          GenServer.call(
+            cursor,
+            {:move_to, col, row, emulator.width, emulator.height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to(cursor, row, col, emulator.width, emulator.height)
+          Raxol.Terminal.Cursor.Manager.move_to(
+            cursor,
+            row,
+            col,
+            emulator.width,
+            emulator.height
+          )
       end
 
     %{emulator | cursor: moved_cursor}
@@ -256,10 +273,20 @@ defmodule Raxol.Terminal.Emulator.Struct do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_up, lines, emulator.width, emulator.height})
+          GenServer.call(
+            cursor,
+            {:move_up, lines, emulator.width, emulator.height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_up(cursor, lines, emulator.width, emulator.height)
+          Raxol.Terminal.Cursor.Manager.move_up(
+            cursor,
+            lines,
+            emulator.width,
+            emulator.height
+          )
       end
 
     %{emulator | cursor: moved_cursor}
@@ -275,10 +302,20 @@ defmodule Raxol.Terminal.Emulator.Struct do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_down, lines, emulator.width, emulator.height})
+          GenServer.call(
+            cursor,
+            {:move_down, lines, emulator.width, emulator.height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_down(cursor, lines, emulator.width, emulator.height)
+          Raxol.Terminal.Cursor.Manager.move_down(
+            cursor,
+            lines,
+            emulator.width,
+            emulator.height
+          )
       end
 
     %{emulator | cursor: moved_cursor}
@@ -294,10 +331,20 @@ defmodule Raxol.Terminal.Emulator.Struct do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_right, cols, emulator.width, emulator.height})
+          GenServer.call(
+            cursor,
+            {:move_right, cols, emulator.width, emulator.height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_right(cursor, cols, emulator.width, emulator.height)
+          Raxol.Terminal.Cursor.Manager.move_right(
+            cursor,
+            cols,
+            emulator.width,
+            emulator.height
+          )
       end
 
     %{emulator | cursor: moved_cursor}
@@ -313,10 +360,20 @@ defmodule Raxol.Terminal.Emulator.Struct do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_left, cols, emulator.width, emulator.height})
+          GenServer.call(
+            cursor,
+            {:move_left, cols, emulator.width, emulator.height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_left(cursor, cols, emulator.width, emulator.height)
+          Raxol.Terminal.Cursor.Manager.move_left(
+            cursor,
+            cols,
+            emulator.width,
+            emulator.height
+          )
       end
 
     %{emulator | cursor: moved_cursor}
@@ -334,6 +391,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
         is_pid(cursor) ->
           GenServer.call(cursor, :move_to_line_start)
           cursor
+
         is_map(cursor) ->
           Raxol.Terminal.Cursor.Manager.move_to_line_start(cursor)
       end
@@ -351,10 +409,20 @@ defmodule Raxol.Terminal.Emulator.Struct do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_to_column, column, emulator.width, emulator.height})
+          GenServer.call(
+            cursor,
+            {:move_to_column, column, emulator.width, emulator.height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, column, emulator.width, emulator.height)
+          Raxol.Terminal.Cursor.Manager.move_to_column(
+            cursor,
+            column,
+            emulator.width,
+            emulator.height
+          )
       end
 
     %{emulator | cursor: moved_cursor}
@@ -370,10 +438,21 @@ defmodule Raxol.Terminal.Emulator.Struct do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_to, col, row, emulator.width, emulator.height})
+          GenServer.call(
+            cursor,
+            {:move_to, col, row, emulator.width, emulator.height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to(cursor, row, col, emulator.width, emulator.height)
+          Raxol.Terminal.Cursor.Manager.move_to(
+            cursor,
+            row,
+            col,
+            emulator.width,
+            emulator.height
+          )
       end
 
     %{emulator | cursor: moved_cursor}

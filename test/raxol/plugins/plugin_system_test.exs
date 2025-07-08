@@ -202,7 +202,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
       assert hello_output == "Hello, World!"
 
       # Debug: Call the plugin directly with 2 args for coverage
-      HyperlinkPlugin.handle_output(manager_with_plugin.plugins["hyperlink"], "Visit https://example.com")
+      HyperlinkPlugin.handle_output(
+        manager_with_plugin.plugins["hyperlink"],
+        "Visit https://example.com"
+      )
     end
 
     test "processes input through plugins" do
@@ -222,7 +225,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
     test "processes mouse events through plugins" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
-      emulator = Emulator.new(100, 24)
+      emulator = Raxol.Terminal.Emulator.new(100, 24)
 
       {:ok, manager_with_plugin} =
         Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
@@ -255,9 +258,9 @@ defmodule Raxol.Plugins.PluginSystemTest do
         HyperlinkPlugin.handle_output(plugin, "Visit https://example.com")
 
       assert String.contains?(
-        transformed_output,
-        "\e]8;;https://example.com\e\\"
-      )
+               transformed_output,
+               "\e]8;;https://example.com\e\\"
+             )
 
       {:ok, updated_plugin} =
         HyperlinkPlugin.handle_output(updated_plugin, "Hello, World!")
@@ -406,10 +409,14 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
       assert next_plugin.current_result_index == 1
 
-      {:ok, prev_plugin, _plugin_state} = SearchPlugin.handle_input(next_plugin, %{}, "/N")
+      {:ok, prev_plugin, _plugin_state} =
+        SearchPlugin.handle_input(next_plugin, %{}, "/N")
+
       assert prev_plugin.current_result_index == 0
 
-      {:ok, cleared_plugin, _plugin_state} = SearchPlugin.handle_input(prev_plugin, %{}, "/clear")
+      {:ok, cleared_plugin, _plugin_state} =
+        SearchPlugin.handle_input(prev_plugin, %{}, "/clear")
+
       assert cleared_plugin.search_term == nil
       assert cleared_plugin.search_results == []
       assert cleared_plugin.current_result_index == 0
@@ -427,7 +434,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
     test "loads and uses plugins" do
       {:ok, initial_plugin_manager} = Raxol.Plugins.Manager.Core.new()
 
-      emulator = Emulator.new(80, 24, plugin_manager: initial_plugin_manager)
+      emulator =
+        Raxol.Terminal.Emulator.new(80, 24,
+          plugin_manager: initial_plugin_manager
+        )
 
       {:ok, manager_after_hyperlink} =
         Lifecycle.load_plugin(emulator.plugin_manager, HyperlinkPlugin)
@@ -467,9 +477,9 @@ defmodule Raxol.Plugins.PluginSystemTest do
         )
 
       emulator =
-        Emulator.new(80, 24, plugin_manager: loaded_manager)
+        Raxol.Terminal.Emulator.new(80, 24, plugin_manager: loaded_manager)
 
-      assert %Emulator{plugin_manager: pm} = emulator
+      assert %Raxol.Terminal.Emulator{plugin_manager: pm} = emulator
       assert pm == loaded_manager
 
       assert Map.has_key?(
@@ -491,7 +501,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         Lifecycle.enable_plugin(loaded_manager, "hyperlink")
 
       emulator =
-        Emulator.new(80, 24, plugin_manager: enabled_manager)
+        Raxol.Terminal.Emulator.new(80, 24, plugin_manager: enabled_manager)
 
       output_text = "Visit https://example.com"
 
@@ -516,7 +526,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         Lifecycle.disable_plugin(loaded_manager, "hyperlink")
 
       emulator =
-        Emulator.new(80, 24, plugin_manager: disabled_manager)
+        Raxol.Terminal.Emulator.new(80, 24, plugin_manager: disabled_manager)
 
       output_text = "Visit https://example.com"
 
@@ -536,7 +546,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
       {:ok, enabled_manager} = Lifecycle.enable_plugin(loaded_manager, "search")
 
       emulator =
-        Emulator.new(80, 24, plugin_manager: enabled_manager)
+        Raxol.Terminal.Emulator.new(80, 24, plugin_manager: enabled_manager)
 
       input_text = "/search test query"
 

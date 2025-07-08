@@ -36,15 +36,98 @@ defmodule Raxol.Terminal.Window.Manager do
     }
   end
 
+  # Store window state in process dictionary for simplicity
+  # In a real implementation, this would be a proper GenServer
+
   @doc """
   Starts the window manager (compatibility function for Emulator.new/2).
-  This is a no-op since the module now works with the Registry instead of being a GenServer.
   """
   @spec start_link() :: {:ok, pid()}
   def start_link, do: start_link([])
 
   @spec start_link(list()) :: {:ok, pid()}
-  def start_link(_opts), do: {:ok, self()}
+  def start_link(_opts) do
+    # Initialize default state in process dictionary
+    Process.put(:window_state, :normal)
+    Process.put(:window_size, {80, 24})
+    Process.put(:window_title, "")
+    Process.put(:icon_name, "")
+    {:ok, self()}
+  end
+
+  @doc """
+  Gets the window manager state as a map.
+  """
+  @spec get_state(pid()) :: map()
+  def get_state(_pid) do
+    %{
+      title: Process.get(:window_title, ""),
+      icon_name: Process.get(:icon_name, ""),
+      icon_title: Process.get(:icon_name, ""),
+      windows: %{},
+      active_window: nil,
+      state: Process.get(:window_state, :normal),
+      size: Process.get(:window_size, {80, 24})
+    }
+  end
+
+  @doc """
+  Gets the window state.
+  """
+  @spec get_window_state(pid()) :: atom()
+  def get_window_state(_pid) do
+    Process.get(:window_state, :normal)
+  end
+
+  @doc """
+  Gets the window size.
+  """
+  @spec get_window_size(pid()) :: {integer(), integer()}
+  def get_window_size(_pid) do
+    Process.get(:window_size, {80, 24})
+  end
+
+  @doc """
+  Sets the window state.
+  """
+  @spec set_window_state(pid(), atom()) :: :ok
+  def set_window_state(pid, state) when is_pid(pid) do
+    Process.put(:window_state, state)
+    :ok
+  end
+
+  @doc """
+  Sets the window size.
+  """
+  @spec set_window_size(pid(), integer(), integer()) :: :ok
+  def set_window_size(pid, width, height)
+      when is_pid(pid) and width > 0 and height > 0 do
+    Process.put(:window_size, {width, height})
+    :ok
+  end
+
+  def set_window_size(pid, _width, _height) when is_pid(pid) do
+    # Ignore invalid sizes (negative or zero)
+    :ok
+  end
+
+  @doc """
+  Sets the window title.
+  """
+  @spec set_window_title(pid(), String.t()) :: :ok
+  def set_window_title(pid, title) when is_pid(pid) do
+    Process.put(:window_title, title)
+    :ok
+  end
+
+  @doc """
+  Sets the icon name.
+  """
+  @spec set_icon_name(pid(), String.t()) :: :ok
+  def set_icon_name(pid, icon_name) when is_pid(pid) do
+    Process.put(:icon_name, icon_name)
+    :ok
+  end
 
   @doc """
   Creates a new window with the given configuration.

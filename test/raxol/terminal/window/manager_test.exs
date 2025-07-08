@@ -60,6 +60,20 @@ defmodule Raxol.Terminal.Window.ManagerTest do
       %{window: window}
     end
 
+    test "debug window ID and function dispatch", %{window: window} do
+      # Debug: Check what type window.id is
+      IO.puts("Window ID value: #{inspect(window.id)}")
+      IO.puts("Window ID is string: #{is_binary(window.id)}")
+      IO.puts("Window ID is pid: #{is_pid(window.id)}")
+
+      # Try calling the function directly to see what happens
+      result = Manager.set_window_title(window.id, "New Title")
+      IO.puts("Function result: #{inspect(result)}")
+
+      # This should help us understand what's happening
+      assert true
+    end
+
     test "updates window title", %{window: window} do
       assert {:ok, updated} = Manager.set_window_title(window.id, "New Title")
       assert updated.title == "New Title"

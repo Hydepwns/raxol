@@ -12,58 +12,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
     do: raise("unwrap_ok/1: Unexpected return value: #{inspect(other)}")
 
   setup do
-    emulator = %Raxol.Terminal.Emulator.Struct{
-      window_manager: Raxol.Terminal.Window.Manager.new_for_test(),
-      active_buffer: %{width: 80, height: 24},
-      style: %{foreground: :default, background: :default},
-      color_palette: %{},
-      cursor: %{
-        position: {0, 0},
-        style: :block,
-        visible: true,
-        blink_state: true
-      },
-      cursor_style: :block,
-      width: 80,
-      height: 24,
-      output_buffer: "",
-      state: :normal,
-      active_buffer_type: :main,
-      main_screen_buffer: Raxol.Terminal.ScreenBuffer.new(80, 24),
-      alternate_screen_buffer: Raxol.Terminal.ScreenBuffer.new(80, 24),
-      scrollback_buffer: [],
-      scrollback_limit: 1000,
-      memory_limit: 100_000,
-      max_command_history: 100,
-      plugin_manager: nil,
-      session_id: "test-session",
-      client_options: %{},
-      state_stack: [],
-      last_col_exceeded: false,
-      icon_name: nil,
-      current_hyperlink_url: nil,
-      current_hyperlink: nil,
-      scroll_region: nil,
-      last_key_event: nil,
-      parser_state: %{state: :ground},
-      command_history: [],
-      current_command_buffer: "",
-      tab_stops: [],
-      charset_state: %{
-        g0: :us_ascii,
-        g1: :us_ascii,
-        g2: :us_ascii,
-        g3: :us_ascii,
-        gl: :g0,
-        gr: :g1,
-        single_shift: nil
-      },
-      saved_cursor: nil,
-      cursor_manager: nil,
-      mode_manager: Raxol.Terminal.ModeManager.new(),
-      command: nil,
-      window_title: nil
-    }
+    emulator = Raxol.Terminal.Emulator.new(80, 24)
 
     {:ok, emulator: emulator}
   end

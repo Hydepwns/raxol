@@ -879,10 +879,12 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   defp ensure_text_formatting_struct(nil), do: new()
   defp ensure_text_formatting_struct(%__MODULE__{} = style), do: style
+
   defp ensure_text_formatting_struct(style) when is_map(style) do
     # Convert map to struct, using defaults for missing fields
     new()
     |> Map.merge(style)
   end
+
   defp ensure_text_formatting_struct(_), do: new()
 end

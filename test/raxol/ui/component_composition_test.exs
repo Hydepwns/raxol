@@ -58,8 +58,11 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
     # Debug: Print all cells to see what's being rendered
     IO.puts("DEBUG: All rendered cells:")
+
     Enum.each(cells, fn {x, y, char, fg, bg, _attrs} ->
-      IO.puts("  Cell at (#{x}, #{y}): char='#{char}', fg=#{inspect(fg)}, bg=#{inspect(bg)}")
+      IO.puts(
+        "  Cell at (#{x}, #{y}): char='#{char}', fg=#{inspect(fg)}, bg=#{inspect(bg)}"
+      )
     end)
 
     # Child should inherit parent's background

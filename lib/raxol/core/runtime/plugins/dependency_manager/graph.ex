@@ -38,9 +38,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
 
       dep_info =
         Enum.map(deps, fn
-          {dep_id, version_req, opts} -> {to_atom(dep_id), version_req, opts}
-          {dep_id, version_req} -> {to_atom(dep_id), version_req, %{optional: false}}
-          dep_id -> {to_atom(dep_id), nil, %{optional: false}}
+          {dep_id, version_req, opts} ->
+            {to_atom(dep_id), version_req, opts}
+
+          {dep_id, version_req} ->
+            {to_atom(dep_id), version_req, %{optional: false}}
+
+          dep_id ->
+            {to_atom(dep_id), nil, %{optional: false}}
         end)
 
       Map.put(acc, to_atom(id), dep_info)

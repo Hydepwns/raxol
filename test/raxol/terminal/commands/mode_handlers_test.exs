@@ -129,7 +129,11 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
     } do
       # Set to 132
       {:ok, res_set_132} = ModeHandlers.handle_h_or_l(emulator, [3], "?", ?h)
-      IO.puts("DEBUG: res_set_132.mode_manager.column_width_mode = #{inspect(res_set_132.mode_manager.column_width_mode)}")
+
+      IO.puts(
+        "DEBUG: res_set_132.mode_manager.column_width_mode = #{inspect(res_set_132.mode_manager.column_width_mode)}"
+      )
+
       assert res_set_132.mode_manager.column_width_mode == :wide
       assert ScreenBuffer.get_width(res_set_132.main_screen_buffer) == 132
 

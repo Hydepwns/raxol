@@ -15,13 +15,23 @@ defmodule Raxol.Terminal.Input.TextProcessor do
         command = String.trim_trailing(input)
         # Remove the trailing newline for history
         command = String.trim_trailing(command, "\n")
+
         if command != "" do
           # Add to command history if possible
-          if Map.has_key?(emulator, :command) and function_exported?(Raxol.Terminal.Command.Manager, :add_to_history, 2) do
-            Raxol.Terminal.Command.Manager.add_to_history(emulator.command, command)
+          if Map.has_key?(emulator, :command) and
+               function_exported?(
+                 Raxol.Terminal.Command.Manager,
+                 :add_to_history,
+                 2
+               ) do
+            Raxol.Terminal.Command.Manager.add_to_history(
+              emulator.command,
+              command
+            )
           end
         end
       end
+
       # Process each codepoint through the character processor for charset translation
       String.to_charlist(input)
       |> Enum.reduce(emulator, fn codepoint, emu ->

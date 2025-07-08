@@ -21,6 +21,7 @@ defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
         events: [],
         subscribers: MapSet.new()
       }
+
       {:ok, state}
     end
   end

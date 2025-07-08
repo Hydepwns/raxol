@@ -161,11 +161,13 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     case extension_state.module do
       {:error, reason} ->
         {:reply, {:error, {:module_load_failed, reason}}, state}
+
       _ ->
         case validate_extension(extension_state) do
           :ok ->
             new_state = put_in(state.extensions[extension_id], extension_state)
             {:reply, {:ok, extension_id}, new_state}
+
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
@@ -213,6 +215,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
             new_extension = update_in(extension.config, &Map.merge(&1, config))
             new_state = put_in(state.extensions[extension_id], new_extension)
             {:reply, :ok, new_state}
+
           _ ->
             {:reply, {:error, :invalid_extension_config}, state}
         end
@@ -326,11 +329,13 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         case extension.module do
           {:error, reason} ->
             {:reply, {:error, {:module_load_failed, reason}}, state}
+
           _ ->
             extension_id = generate_extension_id()
             new_state = put_in(state.extensions[extension_id], extension)
             {:reply, {:ok, extension_id}, new_state}
         end
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -349,14 +354,25 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       extension ->
         if hook_name in extension.hooks do
           # Ensure callback is a map with :fun key
-          callback_map = case callback do
-            %{fun: _} -> callback
-            fun when is_function(fun) -> %{fun: fun, extension_id: extension_id}
-            _ -> %{fun: callback, extension_id: extension_id}
-          end
+          callback_map =
+            case callback do
+              %{fun: _} ->
+                callback
+
+              fun when is_function(fun) ->
+                %{fun: fun, extension_id: extension_id}
+
+              _ ->
+                %{fun: callback, extension_id: extension_id}
+            end
 
           new_hooks =
-            Map.update(state.hooks, hook_name, [callback_map], &[callback_map | &1])
+            Map.update(
+              state.hooks,
+              hook_name,
+              [callback_map],
+              &[callback_map | &1]
+            )
 
           new_state = %{state | hooks: new_hooks}
           {:reply, :ok, new_state}
@@ -420,7 +436,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   # Catch-all clause for unexpected messages
   @impl GenServer
   def handle_call(message, _from, state) do
-    Logger.warning("UnifiedExtension received unexpected call: #{inspect(message)}")
+    Logger.warning(
+      "UnifiedExtension received unexpected call: #{inspect(message)}"
+    )
+
     {:reply, {:error, :unexpected_message}, state}
   end
 
@@ -582,12 +601,15 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
             case validate_extension_dependencies(extension.dependencies) do
               :ok ->
                 validate_extension_module(extension.module)
+
               {:error, reason} ->
                 {:error, reason}
             end
+
           {:error, reason} ->
             {:error, reason}
         end
+
       {:error, reason} ->
         {:error, reason}
     end

@@ -41,9 +41,11 @@ defmodule Raxol.Plugins.PluginConfig do
         case Jason.decode(content) do
           {:ok, decoded} ->
             # Convert string keys to atom keys to match struct field names
-            decoded_with_atom_keys = for {key, value} <- decoded, into: %{} do
-              {String.to_atom(key), value}
-            end
+            decoded_with_atom_keys =
+              for {key, value} <- decoded, into: %{} do
+                {String.to_atom(key), value}
+              end
+
             # Merge with defaults to ensure all fields are present
             defaults = Map.from_struct(new())
             merged = Map.merge(defaults, decoded_with_atom_keys)

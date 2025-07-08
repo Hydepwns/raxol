@@ -71,7 +71,9 @@ defmodule Raxol.Terminal.Plugin.DependencyResolver do
   @doc """
   Helper function for topological sorting using Kahn's algorithm.
   """
-  @spec topological_sort_helper(map(), map(), [String.t()], [String.t()]) :: [String.t()]
+  @spec topological_sort_helper(map(), map(), [String.t()], [String.t()]) :: [
+          String.t()
+        ]
   def topological_sort_helper(_dependencies, _in_degree, [], result) do
     result
   end

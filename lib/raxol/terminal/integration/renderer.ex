@@ -405,8 +405,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
       height: Map.get(opts, :height, 24),
       cursor_visible: Map.get(opts, :cursor_visible, true),
       title: Map.get(opts, :title, "Raxol Terminal"),
-      theme:
-        Map.get(opts, :theme, %{foreground: :white, background: :black}),
+      theme: Map.get(opts, :theme, %{foreground: :white, background: :black}),
       fps: Map.get(opts, :fps, 60),
       font_settings: Map.get(opts, :font_settings, %{size: 12})
     }

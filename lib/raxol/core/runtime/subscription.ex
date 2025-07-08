@@ -125,8 +125,10 @@ defmodule Raxol.Core.Runtime.Subscription do
     cond do
       not is_atom(source_module) ->
         {:error, :invalid_module}
+
       not is_map(init_args) ->
         {:error, :invalid_args}
+
       true ->
         data = %{module: source_module, args: init_args}
         new(:custom, data)
@@ -140,18 +142,26 @@ defmodule Raxol.Core.Runtime.Subscription do
   Returns `{:ok, subscription_id}` or `{:error, reason}`.
   """
   def start(%__MODULE__{} = subscription, context) do
-    case subscription do
-      %{type: :interval, data: data} ->
-        start_interval(data, context)
+    # Validate context has required pid
+    unless Map.has_key?(context, :pid) do
+      {:error, :invalid_context}
+    else
+      case subscription do
+        %{type: :interval, data: data} ->
+          start_interval(data, context)
 
-      %{type: :events, data: event_types} ->
-        start_event_subscription(event_types, context)
+        %{type: :events, data: event_types} ->
+          start_event_subscription(event_types, context)
 
-      %{type: :file_watch, data: data} ->
-        start_file_watch(data, context)
+        %{type: :file_watch, data: data} ->
+          start_file_watch(data, context)
 
-      %{type: :custom, data: data} ->
-        start_custom_subscription(data, context)
+        %{type: :custom, data: data} ->
+          start_custom_subscription(data, context)
+
+        %{type: invalid_type, data: _data} ->
+          {:error, :invalid_subscription_type}
+      end
     end
   end
 
@@ -180,15 +190,22 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  defp stop_events(actual_id) do
+  defp stop_events(actual_id) when is_integer(actual_id) do
     Raxol.Core.Events.Manager.unsubscribe(actual_id)
     :ok
   end
 
+  defp stop_events(_actual_id) do
+    {:error, :invalid_subscription_id}
+  end
+
   defp stop_file_watch(watcher_pid) do
-    if Process.alive?(watcher_pid),
-      do: Process.exit(watcher_pid, :normal),
-      else: {:error, :process_not_alive}
+    if Process.alive?(watcher_pid) do
+      Process.exit(watcher_pid, :normal)
+      :ok
+    else
+      {:error, :process_not_alive}
+    end
   end
 
   defp stop_custom(source_pid) do
@@ -229,21 +246,29 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   defp start_event_subscription(event_types, context) do
-    subscription_id =
-      Raxol.Core.Events.Manager.subscribe(event_types, context.pid)
+    case Raxol.Core.Events.Manager.subscribe(event_types, []) do
+      {:ok, subscription_id} ->
+        {:ok, {:events, subscription_id}}
 
-    {:ok, {:events, subscription_id}}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp start_file_watch(data, context) do
     %{path: path, events: events} = data
 
-    {:ok, pid} =
-      Task.start(fn ->
-        watch_file(path, events, context.pid)
-      end)
+    # Check if file exists before starting watch
+    unless File.exists?(path) do
+      {:error, :invalid_file_path}
+    else
+      {:ok, pid} =
+        Task.start(fn ->
+          watch_file(path, events, context.pid)
+        end)
 
-    {:ok, {:file_watch, pid}}
+      {:ok, {:file_watch, pid}}
+    end
   end
 
   defp start_custom_subscription(data, context) do

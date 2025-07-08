@@ -57,6 +57,7 @@ defmodule Raxol.Web.Session.Storage do
     case :ets.lookup(@table_name, session_id) do
       [{^session_id, session}] ->
         {:ok, session}
+
       [] ->
         if function_exported?(Mix, :env, 0) and Mix.env() == :test do
           {:error, :not_found}

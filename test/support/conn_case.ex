@@ -34,7 +34,7 @@ defmodule RaxolWeb.ConnCase do
     end
   end
 
-    setup tags do
+  setup tags do
     :ok = Raxol.DataCase.setup(tags)
 
     conn =
@@ -101,9 +101,9 @@ defmodule RaxolWeb.ConnCase do
 
   defp create_test_user do
     case Raxol.Accounts.register_user(%{
-      email: "test@example.com",
-      password: "password123"
-    }) do
+           email: "test@example.com",
+           password: "password123"
+         }) do
       {:ok, _reg_user} -> update_user_id()
       {:error, %{email: "has already been taken"}} -> :ok
       error -> error
@@ -116,7 +116,9 @@ defmodule RaxolWeb.ConnCase do
     end)
   end
 
-  defp update_user_id_mapper({"test@example.com", user}), do: {"test@example.com", Map.put(user, :id, "user")}
+  defp update_user_id_mapper({"test@example.com", user}),
+    do: {"test@example.com", Map.put(user, :id, "user")}
+
   defp update_user_id_mapper({email, user}), do: {email, user}
 
   defp setup_user_session(conn, user) do
@@ -127,6 +129,7 @@ defmodule RaxolWeb.ConnCase do
     case :ets.info(:session_storage) do
       :undefined ->
         :ets.new(:session_storage, [:named_table, :set, :public])
+
       _ ->
         :ok
     end
@@ -150,6 +153,7 @@ defmodule RaxolWeb.ConnCase do
     case :ets.lookup(:session_storage, session_id) do
       [{^session_id, stored_session}] ->
         IO.puts("Session stored successfully: #{inspect(stored_session.id)}")
+
       [] ->
         IO.puts("Failed to store session in ETS")
     end
