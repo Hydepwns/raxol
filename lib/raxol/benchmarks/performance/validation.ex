@@ -63,11 +63,13 @@ defmodule Raxol.Benchmarks.Performance.Validation do
   end
 
   defp count_passed_validations(all_validations) do
-    passed = Enum.count(all_validations, fn
-      %{status: status} when status in [:pass, :skip] -> true
-      {_metric, %{status: status}} when status in [:pass, :skip] -> true
-      _ -> false
-    end)
+    passed =
+      Enum.count(all_validations, fn
+        %{status: status} when status in [:pass, :skip] -> true
+        {_metric, %{status: status}} when status in [:pass, :skip] -> true
+        _ -> false
+      end)
+
     {passed, length(all_validations)}
   end
 
@@ -188,10 +190,16 @@ defmodule Raxol.Benchmarks.Performance.Validation do
             %{status: :skip, message: "No baseline for comparison"}
 
           comparator.(result_value, baseline_value) ->
-            %{status: :pass, message: "#{label}: #{result_value} (baseline: #{baseline_value})"}
+            %{
+              status: :pass,
+              message: "#{label}: #{result_value} (baseline: #{baseline_value})"
+            }
 
           true ->
-            %{status: :fail, message: "#{label}: #{result_value} (baseline: #{baseline_value})"}
+            %{
+              status: :fail,
+              message: "#{label}: #{result_value} (baseline: #{baseline_value})"
+            }
         end
 
       {metric, validation_result}
