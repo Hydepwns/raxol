@@ -12,11 +12,12 @@ defmodule Raxol.Test.Support.TestHelper do
     Application.put_env(:raxol, :database_enabled, false)
 
     # Return a context map for tests
-    {:ok, %{
-      test_mode: true,
-      database_enabled: false,
-      mock_modules: []
-    }}
+    {:ok,
+     %{
+       test_mode: true,
+       database_enabled: false,
+       mock_modules: []
+     }}
   end
 
   @doc """
@@ -31,11 +32,11 @@ defmodule Raxol.Test.Support.TestHelper do
   @doc """
   Creates a test plugin for testing purposes.
   """
-  def create_test_plugin(name) do
+  def create_test_plugin(name, config \\ %{}) do
     %{
       name: name,
       module: String.to_atom("TestPlugin.#{name}"),
-      config: %{},
+      config: config,
       enabled: true
     }
   end
@@ -45,6 +46,24 @@ defmodule Raxol.Test.Support.TestHelper do
   """
   def create_test_emulator do
     Raxol.Terminal.Emulator.new(80, 24)
+  end
+
+  @doc """
+  Creates a test emulator instance with a struct cursor instead of a PID.
+  This is useful for tests that need direct access to cursor fields.
+  """
+  def create_test_emulator_with_struct_cursor do
+    emulator = Raxol.Terminal.Emulator.new(80, 24)
+
+    # Create a struct cursor instead of using the PID cursor
+    struct_cursor = %Raxol.Terminal.Cursor.Manager{
+      row: 0,
+      col: 0,
+      style: :blink_block,
+      visible: true
+    }
+
+    %{emulator | cursor: struct_cursor}
   end
 
   @doc """
@@ -96,51 +115,66 @@ defmodule Raxol.Test.Support.TestHelper do
   end
 
   @doc """
-  Creates a test plugin with custom configuration.
-  """
-  def create_test_plugin(name, config \\ %{}) do
-    %{
-      name: name,
-      module: String.to_atom("TestPlugin.#{name}"),
-      config: config,
-      enabled: true
-    }
-  end
-
-  @doc """
   Creates a test plugin module for testing.
   """
   def create_test_plugin_module(name, callbacks \\ %{}) do
     module_name = String.to_atom("TestPlugin.#{name}")
 
     # Create a module with the given callbacks
-    Module.create(module_name, """
-    defmodule #{module_name} do
-      @behaviour Raxol.Plugins.Plugin
+    Module.create(
+      module_name,
+      """
+      defmodule #{module_name} do
+        @behaviour Raxol.Plugins.Plugin
 
-      #{Enum.map_join(callbacks, "\n\n", fn {callback, arity} ->
-        """
+        #{Enum.map_join(callbacks, "\n\n", fn {callback, arity} -> """
         @impl Raxol.Plugins.Plugin
         def #{callback}(#{List.duplicate("_", arity) |> Enum.join(", ")}) do
           :ok
         end
-        """
-      end)}
-    end
-    """, Macro.Env.location(__ENV__))
+        """ end)}
+      end
+      """,
+      Macro.Env.location(__ENV__)
+    )
 
     module_name
   end
 
   @doc """
-  Cleans up test environment.
+  Cleans up test environment for a specific environment.
   """
-  def cleanup_test_env do
+  def cleanup_test_env(env \\ :default) do
     # Clean up any test-specific configuration
     Application.delete_env(:raxol, :test_mode)
     Application.delete_env(:raxol, :database_enabled)
     Application.delete_env(:raxol, :terminal_test_mode)
+
+    # Clean up environment-specific configuration
+    case env do
+      :test ->
+        Application.delete_env(:raxol, :test_mode)
+
+      :development ->
+        Application.delete_env(:raxol, :dev_mode)
+
+      :production ->
+        Application.delete_env(:raxol, :prod_mode)
+
+      _ ->
+        :ok
+    end
+
     :ok
+  end
+
+  @doc """
+  Cleans up test environment with context parameter.
+  """
+  def cleanup_test_env(context) when is_map(context) do
+    # Extract environment from context or use default
+    env = Map.get(context, :env, :default)
+    cleanup_test_env(env)
   end
 
   # Private helper functions
