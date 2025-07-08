@@ -8,13 +8,14 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
   setup do
     # Use a unique name for each test to avoid conflicts
-    test_name = String.to_atom("alert_manager_test_#{:rand.uniform(1000000)}")
+    test_name = String.to_atom("alert_manager_test_#{:rand.uniform(1_000_000)}")
     {:ok, pid} = AlertManager.start_link(name: test_name)
 
     on_exit(fn ->
       if Process.alive?(pid) do
         GenServer.stop(pid)
       end
+
       # Clean up any mocks
       try do
         :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
@@ -81,7 +82,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       %{rule_id: rule_id}
     end
 
-    test "triggers alert when condition is met", %{rule_id: rule_id, test_name: test_name} do
+    test "triggers alert when condition is met", %{
+      rule_id: rule_id,
+      test_name: test_name
+    } do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -118,7 +122,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
     end
 
-    test "does not trigger alert when condition is not met", %{rule_id: rule_id, test_name: test_name} do
+    test "does not trigger alert when condition is not met", %{
+      rule_id: rule_id,
+      test_name: test_name
+    } do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -216,7 +223,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       %{rule_id: rule_id}
     end
 
-    test "acknowledges an active alert", %{rule_id: rule_id, test_name: test_name} do
+    test "acknowledges an active alert", %{
+      rule_id: rule_id,
+      test_name: test_name
+    } do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),

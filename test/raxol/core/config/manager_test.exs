@@ -61,7 +61,8 @@ defmodule Raxol.Core.Config.ManagerTest do
     File.write!(config_file, config_content)
 
     # Generate a unique name for this test
-    unique_name = :"Raxol.Core.Config.Manager.#{System.unique_integer([:positive])}"
+    unique_name =
+      :"Raxol.Core.Config.Manager.#{System.unique_integer([:positive])}"
 
     # Start the manager with the temp file and unique name
     {:ok, pid} =
@@ -80,7 +81,13 @@ defmodule Raxol.Core.Config.ManagerTest do
       File.rm(config_file)
     end)
 
-    {:ok, %{temp_file: temp_file, config_file: config_file, pid: pid, name: unique_name}}
+    {:ok,
+     %{
+       temp_file: temp_file,
+       config_file: config_file,
+       pid: pid,
+       name: unique_name
+     }}
   end
 
   describe "configuration loading" do
@@ -211,7 +218,9 @@ defmodule Raxol.Core.Config.ManagerTest do
         )
 
       assert {:error, _} = manager_set(pid, :renderer_mode, :invalid)
-      assert {:error, _} = manager_set(pid, :renderer_double_buffering, "not_boolean")
+
+      assert {:error, _} =
+               manager_set(pid, :renderer_double_buffering, "not_boolean")
     end
   end
 
@@ -239,10 +248,11 @@ defmodule Raxol.Core.Config.ManagerTest do
       File.write!(temp_file, json_content)
 
       # Start a new manager instance
-      {:ok, pid} = Manager.start_link(
-        persistent_file: temp_file,
-        name: :"Manager.#{System.unique_integer([:positive])}"
-      )
+      {:ok, pid} =
+        Manager.start_link(
+          persistent_file: temp_file,
+          name: :"Manager.#{System.unique_integer([:positive])}"
+        )
 
       # Verify the persisted value is loaded
       assert "persisted_value" = manager_get(pid, :persisted_key)
@@ -253,15 +263,18 @@ defmodule Raxol.Core.Config.ManagerTest do
       assert :ok =
                manager_set(pid, :delete_test_key, "delete_test_value",
                  persist: true,
-                 persistent_file: temp_file)
+                 persistent_file: temp_file
+               )
 
       # Verify the value is set
       assert "delete_test_value" = manager_get(pid, :delete_test_key)
 
       # Delete the configuration value
-      assert :ok = manager_delete(pid, :delete_test_key,
-        persist: true,
-        persistent_file: temp_file)
+      assert :ok =
+               manager_delete(pid, :delete_test_key,
+                 persist: true,
+                 persistent_file: temp_file
+               )
 
       # Verify the value is deleted
       assert manager_get(pid, :delete_test_key) == nil
@@ -275,9 +288,12 @@ defmodule Raxol.Core.Config.ManagerTest do
     test "handles persistence failures gracefully", %{pid: pid} do
       # Try to persist to a path that should fail on most systems
       error_file = "/root/test_config.json"
-      result = manager_set(pid, :test_key, "test_value",
-                 persist: true,
-                 persistent_file: error_file)
+
+      result =
+        manager_set(pid, :test_key, "test_value",
+          persist: true,
+          persistent_file: error_file
+        )
 
       # The result might be :ok on some systems, but we're testing the error handling path
       # In a real scenario, this would typically fail due to permissions
@@ -288,10 +304,15 @@ defmodule Raxol.Core.Config.ManagerTest do
       end
     end
 
-    test "skips persistence when persist: false", %{temp_file: temp_file, pid: pid} do
+    test "skips persistence when persist: false", %{
+      temp_file: temp_file,
+      pid: pid
+    } do
       # Set a configuration value without persistence
       assert :ok =
-               manager_set(pid, :no_persist_key, "no_persist_value", persist: false)
+               manager_set(pid, :no_persist_key, "no_persist_value",
+                 persist: false
+               )
 
       # Verify the value is set in memory
       assert "no_persist_value" = manager_get(pid, :no_persist_key)
@@ -317,7 +338,9 @@ defmodule Raxol.Core.Config.ManagerTest do
       assert {:error, _} = manager_reload(pid)
     end
 
-    test "validates configuration values when validation is enabled", %{pid: pid} do
+    test "validates configuration values when validation is enabled", %{
+      pid: pid
+    } do
       # Create a new manager with validation enabled
       {:ok, pid_with_validation} =
         Manager.start_link(
@@ -326,8 +349,11 @@ defmodule Raxol.Core.Config.ManagerTest do
           name: :"Manager.#{System.unique_integer([:positive])}"
         )
 
-      assert {:error, _} = manager_set(pid_with_validation, :terminal_width, "invalid")
-      assert {:error, _} = manager_set(pid_with_validation, :terminal_mode, :invalid_mode)
+      assert {:error, _} =
+               manager_set(pid_with_validation, :terminal_width, "invalid")
+
+      assert {:error, _} =
+               manager_set(pid_with_validation, :terminal_mode, :invalid_mode)
     end
 
     test "skips validation when validation is disabled", %{pid: pid} do
@@ -343,10 +369,15 @@ defmodule Raxol.Core.Config.ManagerTest do
           name: :"Manager.#{System.unique_integer([:positive])}"
         )
 
-      assert {:error, _} = manager_update(pid_with_validation, :terminal_width, fn _ -> "invalid" end)
+      assert {:error, _} =
+               manager_update(pid_with_validation, :terminal_width, fn _ ->
+                 "invalid"
+               end)
     end
 
-    test "skips update function validation when validation is disabled", %{pid: pid} do
+    test "skips update function validation when validation is disabled", %{
+      pid: pid
+    } do
       assert :ok = manager_update(pid, :terminal_width, fn _ -> "invalid" end)
     end
   end

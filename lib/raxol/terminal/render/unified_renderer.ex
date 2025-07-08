@@ -17,7 +17,10 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     :cursor_visible,
     :title,
     :termbox_initialized,
-    :config
+    :fps,
+    :theme,
+    :font_settings,
+    :cache
   ]
 
   @type t :: %__MODULE__{
@@ -27,7 +30,10 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
           cursor_visible: boolean(),
           title: String.t(),
           termbox_initialized: boolean(),
-          config: map()
+          fps: integer(),
+          theme: map(),
+          font_settings: map(),
+          cache: map()
         }
 
   # Client API
@@ -168,7 +174,10 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
       cursor_visible: opts[:cursor_visible] || true,
       title: opts[:title] || "",
       termbox_initialized: false,
-      config: opts[:config] || %{}
+      fps: opts[:fps] || 60,
+      theme: opts[:theme] || %{},
+      font_settings: opts[:font_settings] || %{},
+      cache: opts[:cache] || %{}
     }
 
     {:ok, initial_state}
@@ -203,14 +212,14 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   end
 
   def handle_call({:update_config, _state, config}, _from, renderer) do
-    # Handle config structure where rendering settings are under :rendering key
-    rendering_config = config[:rendering] || config
-
     new_state = %{
       renderer
-      | style: Map.merge(renderer.style, rendering_config[:style] || %{}),
+      | fps: Map.get(config, :fps, renderer.fps),
+        theme: Map.get(config, :theme, renderer.theme),
+        font_settings: Map.get(config, :font_settings, renderer.font_settings),
+        style: Map.merge(renderer.style, Map.get(config, :style, %{})),
         cursor_visible:
-          Map.get(rendering_config, :cursor_visible, renderer.cursor_visible)
+          Map.get(config, :cursor_visible, renderer.cursor_visible)
     }
 
     {:reply, :ok, new_state}
@@ -227,7 +236,11 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
     :termbox2_nif.tb_set_cell(width - 1, height - 1, 0, 0, 0)
 
-    {:reply, :ok, renderer}
+    # Update screen buffer with new dimensions
+    new_screen = Map.put(renderer.screen || %{}, :width, width)
+    new_screen = Map.put(new_screen, :height, height)
+
+    {:reply, :ok, %{renderer | screen: new_screen}}
   end
 
   def handle_call({:set_cursor_visibility, visible}, _from, renderer) do
@@ -265,18 +278,26 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   end
 
   def handle_call({:set_config_value, key, value}, _from, renderer) do
-    new_config = Map.put(renderer.config || %{}, key, value)
-    {:reply, :ok, %{renderer | config: new_config}}
+    new_state =
+      case key do
+        :fps -> %{renderer | fps: value}
+        :theme -> %{renderer | theme: value}
+        :font_settings -> %{renderer | font_settings: value}
+        _ -> renderer
+      end
+
+    {:reply, :ok, new_state}
   end
 
   def handle_call(:reset_config, _from, renderer) do
-    default_config = %{
-      fps: 60,
-      theme: %{foreground: :white, background: :black},
-      font_settings: %{size: 12}
+    new_state = %{
+      renderer
+      | fps: 60,
+        theme: %{},
+        font_settings: %{}
     }
 
-    {:reply, :ok, %{renderer | config: default_config}}
+    {:reply, :ok, new_state}
   end
 
   # Private functions

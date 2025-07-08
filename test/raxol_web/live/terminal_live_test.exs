@@ -33,7 +33,8 @@ defmodule RaxolWeb.TerminalLiveTest do
       {:ok, view, html} = live(conn, "/terminal/test-session")
       assert view.module == TerminalLive
       # Test through rendered HTML instead of assigns
-      assert html =~ "80x24"  # Default dimensions are 80x24, not 40x12
+      # Default dimensions are 80x24, not 40x12
+      assert html =~ "80x24"
       assert html =~ "status-disconnected"
     end
   end
@@ -52,7 +53,11 @@ defmodule RaxolWeb.TerminalLiveTest do
     test "handles terminal output", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/terminal/test-session")
 
-      payload = %{"html" => "<div>test</div>", "cursor" => %{"x" => 1, "y" => 1, "visible" => true}}
+      payload = %{
+        "html" => "<div>test</div>",
+        "cursor" => %{"x" => 1, "y" => 1, "visible" => true}
+      }
+
       html = render_hook(view, "terminal_output", payload)
       assert html =~ "<div>test</div>"
     end
@@ -120,7 +125,8 @@ defmodule RaxolWeb.TerminalLiveTest do
 
     test "renders terminal dimensions", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/terminal/test-session")
-      assert html =~ "80x24"  # Default dimensions are 80x24
+      # Default dimensions are 80x24
+      assert html =~ "80x24"
     end
   end
 end

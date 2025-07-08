@@ -141,7 +141,9 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
 
       # Verify cursor position IS restored
       # Compare position tuple directly
-      assert Manager.get_position(emulator.cursor) == Manager.get_position(cursor_snapshot)
+      assert Manager.get_position(emulator.cursor) ==
+               Manager.get_position(cursor_snapshot)
+
       # Verify style IS NOT restored (should remain the style set in step 3)
       assert emulator.style == style_after_change
       # Explicitly check it's different from original

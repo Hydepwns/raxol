@@ -25,11 +25,14 @@ defmodule Raxol.Style.Colors.HotReloadTest do
     receive do
       {:theme_reloaded, theme} when theme.name == expected_name ->
         theme
+
       {:theme_reloaded, _other} ->
         receive_theme_with_name(expected_name, timeout)
     after
       timeout ->
-        flunk("Did not receive theme_reloaded for #{inspect(expected_name)} within #{timeout}ms")
+        flunk(
+          "Did not receive theme_reloaded for #{inspect(expected_name)} within #{timeout}ms"
+        )
     end
   end
 
@@ -117,6 +120,7 @@ defmodule Raxol.Style.Colors.HotReloadTest do
         theme1_path,
         Jason.encode!(%{@test_theme | name: "Updated Theme 1"})
       )
+
       # Set mtime 2 seconds into the future
       now = :calendar.local_time()
       {{y, m, d}, {h, min, s}} = now
@@ -162,7 +166,9 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       receive do
         {:theme_reloaded, theme} ->
           if theme.name == "Test Theme" do
-            flunk("Unexpectedly received theme_reloaded for Test Theme after deletion")
+            flunk(
+              "Unexpectedly received theme_reloaded for Test Theme after deletion"
+            )
           else
             # Ignore other themes (e.g., Default)
             :ok
@@ -201,7 +207,9 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       receive do
         {:theme_reloaded, theme} ->
           if theme.name == "Test Theme" do
-            flunk("Unexpectedly received theme_reloaded for Test Theme after unsubscribe")
+            flunk(
+              "Unexpectedly received theme_reloaded for Test Theme after unsubscribe"
+            )
           else
             # Ignore other themes (e.g., Default)
             :ok

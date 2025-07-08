@@ -161,8 +161,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     case do_reload_plugin(plugin_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       {:error, reason, new_state} ->
         {:reply, {:error, reason}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end

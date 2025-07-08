@@ -69,6 +69,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     case get_mode_handler(mode_def.name) do
       {:ok, handler} ->
         handler.(value, emulator)
+
       :error ->
         {:error, :unsupported_mode}
     end
@@ -88,6 +89,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_cursor_keys_mode(value, emulator) do
     cursor_mode = if value, do: :application, else: :normal
+
     {:ok,
      %{
        emulator
@@ -207,6 +209,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_mouse_report_x10(value, emulator) do
     mouse_mode = if value, do: :x10, else: :none
+
     {:ok,
      %{
        emulator
@@ -216,6 +219,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_mouse_report_cell_motion(value, emulator) do
     mouse_mode = if value, do: :cell_motion, else: :none
+
     {:ok,
      %{
        emulator
@@ -225,6 +229,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_mouse_report_sgr(value, emulator) do
     mouse_mode = if value, do: :sgr, else: :none
+
     {:ok,
      %{
        emulator

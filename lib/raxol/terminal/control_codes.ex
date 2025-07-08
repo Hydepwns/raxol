@@ -153,8 +153,14 @@ defmodule Raxol.Terminal.ControlCodes do
           # Update state inside GenServer, but keep PID as cursor
           GenServer.call(cursor, {:move_down, 1, buffer_width, buffer_height})
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_down(cursor, 1, buffer_width, buffer_height)
+          Raxol.Terminal.Cursor.Manager.move_down(
+            cursor,
+            1,
+            buffer_width,
+            buffer_height
+          )
       end
 
     # Always reset column to 0 after newline
@@ -163,6 +169,7 @@ defmodule Raxol.Terminal.ControlCodes do
         is_pid(moved_cursor) ->
           GenServer.call(moved_cursor, {:move_to_column, 0})
           moved_cursor
+
         is_map(moved_cursor) ->
           Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, 0)
       end
@@ -176,6 +183,7 @@ defmodule Raxol.Terminal.ControlCodes do
         is_pid(cursor) ->
           GenServer.call(cursor, {:move_to_column, 0})
           cursor
+
         is_map(cursor) ->
           Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
       end
@@ -222,6 +230,7 @@ defmodule Raxol.Terminal.ControlCodes do
         is_pid(cursor) ->
           GenServer.call(cursor, {:move_to, x, y})
           cursor
+
         is_map(cursor) ->
           Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
       end
@@ -237,6 +246,7 @@ defmodule Raxol.Terminal.ControlCodes do
         is_pid(cursor) ->
           GenServer.call(cursor, {:move_to_column, column})
           cursor
+
         is_map(cursor) ->
           Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
       end
@@ -252,6 +262,7 @@ defmodule Raxol.Terminal.ControlCodes do
         is_pid(cursor) ->
           GenServer.call(cursor, :move_to_line_start)
           cursor
+
         is_map(cursor) ->
           Raxol.Terminal.Cursor.Manager.move_to_line_start(cursor)
       end
@@ -267,10 +278,20 @@ defmodule Raxol.Terminal.ControlCodes do
     moved_cursor =
       cond do
         is_pid(cursor) ->
-          GenServer.call(cursor, {:move_to_column, column, buffer_width, buffer_height})
+          GenServer.call(
+            cursor,
+            {:move_to_column, column, buffer_width, buffer_height}
+          )
+
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, column, buffer_width, buffer_height)
+          Raxol.Terminal.Cursor.Manager.move_to_column(
+            cursor,
+            column,
+            buffer_width,
+            buffer_height
+          )
       end
 
     %{emulator | cursor: moved_cursor}
@@ -286,8 +307,15 @@ defmodule Raxol.Terminal.ControlCodes do
         is_pid(cursor) ->
           GenServer.call(cursor, {:move_to, x, y, buffer_width, buffer_height})
           cursor
+
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y, buffer_width, buffer_height)
+          Raxol.Terminal.Cursor.Manager.move_to(
+            cursor,
+            x,
+            y,
+            buffer_width,
+            buffer_height
+          )
       end
 
     %{emulator | cursor: moved_cursor}

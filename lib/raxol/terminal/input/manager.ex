@@ -236,8 +236,6 @@ defmodule Raxol.Terminal.Input.Manager do
     {emulator, <<char>>}
   end
 
-
-
   @doc """
   Processes a key event.
   """
@@ -358,12 +356,20 @@ defmodule Raxol.Terminal.Input.Manager do
       # Always append the escape sequence to the buffer
       escape_sequence = "\e[1;97"
       char_codes = String.to_charlist(escape_sequence)
-      events = manager.buffer.events ++ Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
+      events =
+        manager.buffer.events ++
+          Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
       %{manager | buffer: %{manager.buffer | events: events}}
     else
       # Process as regular key
       char_code = List.first(String.to_charlist(key))
-      events = manager.buffer.events ++ [%{char: char_code, timestamp: System.system_time()}]
+
+      events =
+        manager.buffer.events ++
+          [%{char: char_code, timestamp: System.system_time()}]
+
       %{manager | buffer: %{manager.buffer | events: events}}
     end
   end
@@ -382,23 +388,31 @@ defmodule Raxol.Terminal.Input.Manager do
   @spec process_keyboard(t(), String.t()) :: t()
   def process_keyboard(manager, key) do
     case key do
-      "\r" -> handle_enter_key(manager)
-      "\b" -> handle_backspace_key(manager)
-      "\t" -> handle_tab_key(manager)
-      _ when is_binary(key) and byte_size(key) > 1 -> handle_multi_char_key(manager, key)
-      _ -> handle_single_char_key(manager, key)
+      "\r" ->
+        handle_enter_key(manager)
+
+      "\b" ->
+        handle_backspace_key(manager)
+
+      "\t" ->
+        handle_tab_key(manager)
+
+      _ when is_binary(key) and byte_size(key) > 1 ->
+        handle_multi_char_key(manager, key)
+
+      _ ->
+        handle_single_char_key(manager, key)
     end
   end
 
   # Private helper functions for keyboard processing
   defp handle_enter_key(manager) do
-    line = manager.buffer.events
-    |> Enum.map_join("", fn %{char: char} -> <<char>> end)
+    line =
+      manager.buffer.events
+      |> Enum.map_join("", fn %{char: char} -> <<char>> end)
+
     history = manager.input_history ++ [line]
-    %{manager |
-      buffer: %{manager.buffer | events: []},
-      input_history: history
-    }
+    %{manager | buffer: %{manager.buffer | events: []}, input_history: history}
   end
 
   defp handle_backspace_key(manager) do
@@ -416,9 +430,15 @@ defmodule Raxol.Terminal.Input.Manager do
 
   defp handle_tab_with_completion(manager) do
     completions = manager.completion_callback.(manager.buffer.events)
+
     if length(completions) > 0 do
       completion = List.first(completions)
-      events = Enum.map(String.to_charlist(completion), fn c -> %{char: c, timestamp: System.system_time()} end)
+
+      events =
+        Enum.map(String.to_charlist(completion), fn c ->
+          %{char: c, timestamp: System.system_time()}
+        end)
+
       %{manager | buffer: %{manager.buffer | events: events}}
     else
       handle_default_tab(manager)
@@ -427,18 +447,30 @@ defmodule Raxol.Terminal.Input.Manager do
 
   defp handle_default_tab(manager) do
     spaces = List.duplicate(%{char: 32}, 4)
-    %{manager | buffer: %{manager.buffer | events: manager.buffer.events ++ spaces}}
+
+    %{
+      manager
+      | buffer: %{manager.buffer | events: manager.buffer.events ++ spaces}
+    }
   end
 
   defp handle_multi_char_key(manager, key) do
     chars = String.to_charlist(key)
-    events = manager.buffer.events ++ Enum.map(chars, fn c -> %{char: c, timestamp: System.system_time()} end)
+
+    events =
+      manager.buffer.events ++
+        Enum.map(chars, fn c -> %{char: c, timestamp: System.system_time()} end)
+
     %{manager | buffer: %{manager.buffer | events: events}}
   end
 
   defp handle_single_char_key(manager, key) do
     char_code = List.first(String.to_charlist(key))
-    events = manager.buffer.events ++ [%{char: char_code, timestamp: System.system_time()}]
+
+    events =
+      manager.buffer.events ++
+        [%{char: char_code, timestamp: System.system_time()}]
+
     %{manager | buffer: %{manager.buffer | events: events}}
   end
 
@@ -464,12 +496,15 @@ defmodule Raxol.Terminal.Input.Manager do
 
     escape_sequence = Map.get(key_map, key, "")
     char_codes = String.to_charlist(escape_sequence)
-    events = manager.buffer.events ++ Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
+    events =
+      manager.buffer.events ++
+        Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
 
     %{manager | buffer: %{manager.buffer | events: events}}
   end
 
-    @doc """
+  @doc """
   Processes mouse events.
   """
   @spec process_mouse(t(), {atom(), integer(), integer(), integer()}) :: t()
@@ -479,32 +514,58 @@ defmodule Raxol.Terminal.Input.Manager do
         :press ->
           escape_sequence = "\e[<#{button};#{x + 1};#{y + 1}M"
           char_codes = String.to_charlist(escape_sequence)
-          events = manager.buffer.events ++ Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
+          events =
+            manager.buffer.events ++
+              Enum.map(
+                char_codes,
+                &%{char: &1, timestamp: System.system_time()}
+              )
+
           buttons = MapSet.put(manager.mouse_buttons, button)
-          %{manager |
-            buffer: %{manager.buffer | events: events},
-            mouse_position: {x, y},
-            mouse_buttons: buttons
+
+          %{
+            manager
+            | buffer: %{manager.buffer | events: events},
+              mouse_position: {x, y},
+              mouse_buttons: buttons
           }
 
         :release ->
           escape_sequence = "\e[<3;#{x + 1};#{y + 1}m"
           char_codes = String.to_charlist(escape_sequence)
-          events = manager.buffer.events ++ Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
+          events =
+            manager.buffer.events ++
+              Enum.map(
+                char_codes,
+                &%{char: &1, timestamp: System.system_time()}
+              )
+
           buttons = MapSet.delete(manager.mouse_buttons, button)
-          %{manager |
-            buffer: %{manager.buffer | events: events},
-            mouse_position: {x, y},
-            mouse_buttons: buttons
+
+          %{
+            manager
+            | buffer: %{manager.buffer | events: events},
+              mouse_position: {x, y},
+              mouse_buttons: buttons
           }
 
         :scroll ->
           escape_sequence = "\e[<64;#{x + 1};#{y + 1}M"
           char_codes = String.to_charlist(escape_sequence)
-          events = manager.buffer.events ++ Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
-          %{manager |
-            buffer: %{manager.buffer | events: events},
-            mouse_position: {x, y}
+
+          events =
+            manager.buffer.events ++
+              Enum.map(
+                char_codes,
+                &%{char: &1, timestamp: System.system_time()}
+              )
+
+          %{
+            manager
+            | buffer: %{manager.buffer | events: events},
+              mouse_position: {x, y}
           }
       end
     else
@@ -525,16 +586,20 @@ defmodule Raxol.Terminal.Input.Manager do
   """
   @spec update_modifier(t(), String.t(), boolean()) :: t()
   def update_modifier(manager, modifier, value) do
-    modifier_key = case modifier do
-      "Control" -> :ctrl
-      "Shift" -> :shift
-      "Alt" -> :alt
-      "Meta" -> :meta
-      _ -> :unknown
-    end
+    modifier_key =
+      case modifier do
+        "Control" -> :ctrl
+        "Shift" -> :shift
+        "Alt" -> :alt
+        "Meta" -> :meta
+        _ -> :unknown
+      end
 
     if modifier_key != :unknown do
-      %{manager | modifier_state: Map.put(manager.modifier_state, modifier_key, value)}
+      %{
+        manager
+        | modifier_state: Map.put(manager.modifier_state, modifier_key, value)
+      }
     else
       manager
     end
@@ -549,12 +614,20 @@ defmodule Raxol.Terminal.Input.Manager do
       # For test purposes, append a specific escape sequence as char events
       escape_sequence = "\e[1;97"
       char_codes = String.to_charlist(escape_sequence)
-      events = manager.buffer.events ++ Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
+      events =
+        manager.buffer.events ++
+          Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
       %{manager | buffer: %{manager.buffer | events: events}}
     else
       # Process as regular key
       char_code = List.first(String.to_charlist(key))
-      events = manager.buffer.events ++ [%{char: char_code, timestamp: System.system_time()}]
+
+      events =
+        manager.buffer.events ++
+          [%{char: char_code, timestamp: System.system_time()}]
+
       %{manager | buffer: %{manager.buffer | events: events}}
     end
   end

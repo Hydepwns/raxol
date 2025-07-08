@@ -7,7 +7,8 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   @doc """
   Processes SGR parameters and applies them to the current style.
   """
-  @spec handle_sgr(binary(), Raxol.Terminal.ANSI.TextFormatting.t()) :: Raxol.Terminal.ANSI.TextFormatting.t()
+  @spec handle_sgr(binary(), Raxol.Terminal.ANSI.TextFormatting.t()) ::
+          Raxol.Terminal.ANSI.TextFormatting.t()
   def handle_sgr(params, style) do
     # Parse SGR parameters (e.g., "31;1;4")
     codes =
@@ -21,7 +22,10 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
       end)
       |> Enum.filter(& &1)
 
-    log_sgr_debug("DEBUG: SGR params: #{inspect(params)}, codes: #{inspect(codes)}")
+    log_sgr_debug(
+      "DEBUG: SGR params: #{inspect(params)}, codes: #{inspect(codes)}"
+    )
+
     log_sgr_debug("DEBUG: Initial style: #{inspect(style)}")
 
     # Start with current style
@@ -36,42 +40,61 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   @doc """
   Processes a list of SGR codes and applies them to the style.
   """
-  @spec process_sgr_codes([integer()], Raxol.Terminal.ANSI.TextFormatting.t()) :: Raxol.Terminal.ANSI.TextFormatting.t()
+  @spec process_sgr_codes([integer()], Raxol.Terminal.ANSI.TextFormatting.t()) ::
+          Raxol.Terminal.ANSI.TextFormatting.t()
   def process_sgr_codes([], style), do: style
 
   def process_sgr_codes([38, 5, color_index | rest], style) do
     # 8-bit foreground color: 38;5;n
-    new_style = Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, {:index, color_index})
+    new_style =
+      Raxol.Terminal.ANSI.TextFormatting.set_foreground(
+        style,
+        {:index, color_index}
+      )
+
     log_sgr_debug(
       "DEBUG: After applying 8-bit foreground color #{color_index}, style: #{inspect(new_style)}"
     )
+
     process_sgr_codes(rest, new_style)
   end
 
   def process_sgr_codes([48, 5, color_index | rest], style) do
     # 8-bit background color: 48;5;n
-    new_style = Raxol.Terminal.ANSI.TextFormatting.set_background(style, {:index, color_index})
+    new_style =
+      Raxol.Terminal.ANSI.TextFormatting.set_background(
+        style,
+        {:index, color_index}
+      )
+
     log_sgr_debug(
       "DEBUG: After applying 8-bit background color #{color_index}, style: #{inspect(new_style)}"
     )
+
     process_sgr_codes(rest, new_style)
   end
 
   def process_sgr_codes([38, 2, r, g, b | rest], style) do
     # 24-bit foreground color: 38;2;r;g;b
-    new_style = Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, {:rgb, r, g, b})
+    new_style =
+      Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, {:rgb, r, g, b})
+
     log_sgr_debug(
       "DEBUG: After applying 24-bit foreground color #{r},#{g},#{b}, style: #{inspect(new_style)}"
     )
+
     process_sgr_codes(rest, new_style)
   end
 
   def process_sgr_codes([48, 2, r, g, b | rest], style) do
     # 24-bit background color: 48;2;r;g;b
-    new_style = Raxol.Terminal.ANSI.TextFormatting.set_background(style, {:rgb, r, g, b})
+    new_style =
+      Raxol.Terminal.ANSI.TextFormatting.set_background(style, {:rgb, r, g, b})
+
     log_sgr_debug(
       "DEBUG: After applying 24-bit background color #{r},#{g},#{b}, style: #{inspect(new_style)}"
     )
+
     process_sgr_codes(rest, new_style)
   end
 
@@ -80,9 +103,11 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
     case Map.fetch(sgr_code_mappings(), code) do
       {:ok, update_fn} ->
         result = update_fn.(style)
+
         log_sgr_debug(
           "DEBUG: apply_sgr_code #{code} => style: #{inspect(result)}"
         )
+
         process_sgr_codes(rest, result)
 
       :error ->
@@ -175,42 +200,58 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
       90 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :black) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :black)
+            end).()
       end,
       91 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :red) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :red)
+            end).()
       end,
       92 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :green) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :green)
+            end).()
       end,
       93 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :yellow) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :yellow)
+            end).()
       end,
       94 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :blue) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :blue)
+            end).()
       end,
       95 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :magenta) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :magenta)
+            end).()
       end,
       96 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :cyan) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :cyan)
+            end).()
       end,
       97 => fn style ->
         style
         |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :white) end).()
+        |> (fn s ->
+              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :white)
+            end).()
       end,
 
       # Bright background colors (100-107)

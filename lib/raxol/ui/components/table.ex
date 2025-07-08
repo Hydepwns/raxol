@@ -681,7 +681,6 @@ defmodule Raxol.UI.Components.Table do
     end
   end
 
-  @impl true
   def render(state) do
     render(state, %{})
   end

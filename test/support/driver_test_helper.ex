@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.DriverTestHelper do
+defmodule Raxol.Test.Support.DriverTestHelper do
   @moduledoc """
   Test helper functions for terminal driver tests.
   """
@@ -57,7 +57,13 @@ defmodule Raxol.Terminal.DriverTestHelper do
 
   def assert_resize_event(_expected_width, _expected_height) do
     # Assert resize event
-    assert_receive {:resize, _expected_width, _expected_height}
+    assert_receive {:"$gen_cast",
+                    {:dispatch,
+                     %Raxol.Core.Events.Event{
+                       type: :resize,
+                       data: %{width: _expected_width, height: _expected_height}
+                     }}},
+                   500
   end
 
   def simulate_resize_event(driver_pid, width, height) do

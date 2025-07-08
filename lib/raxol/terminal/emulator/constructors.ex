@@ -25,6 +25,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
     cursor_result = Manager.start_link([])
     cursor_pid = get_pid(cursor_result)
+    window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link([]))
 
     %Raxol.Terminal.Emulator{
       width: width,
@@ -33,6 +34,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       alternate_screen_buffer: alternate_buffer,
       mode_manager: mode_manager,
       cursor: cursor_pid,
+      window_manager: window_manager_pid,
       style: Raxol.Terminal.ANSI.TextFormatting.new(),
       scrollback_buffer: [],
       cursor_style: :block,
@@ -51,7 +53,8 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new terminal emulator instance with given width, height, and options.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: Raxol.Terminal.Emulator.t()
+  @spec new(non_neg_integer(), non_neg_integer(), keyword()) ::
+          Raxol.Terminal.Emulator.t()
   def new(width, height, opts) do
     state_pid = get_pid(Raxol.Terminal.State.Manager.start_link(opts))
     event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link(opts))
@@ -119,7 +122,8 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new emulator with width, height, and optional configuration.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), map(), map()) :: Raxol.Terminal.Emulator.t()
+  @spec new(non_neg_integer(), non_neg_integer(), map(), map()) ::
+          Raxol.Terminal.Emulator.t()
   def new(width, height, config \\ %{}, options \\ %{}) do
     # Merge config and options
     merged_opts = Map.merge(config, options)

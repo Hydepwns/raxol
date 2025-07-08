@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_E(emulator, params) do
     amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
-    {row, col} = get_cursor_position(cursor)
+    {row, _col} = get_cursor_position(cursor)
 
     # Move down by amount, clamp to screen height
     new_row = min(emulator.height - 1, row + amount)
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_f(emulator, params) do
     amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
-    {row, col} = get_cursor_position(cursor)
+    {row, _col} = get_cursor_position(cursor)
 
     # Move up by amount, clamp to screen top
     new_row = max(0, row - amount)
@@ -197,14 +197,21 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @doc """
   Moves the cursor to a specific position with width and height bounds.
   """
-  @spec move_cursor_to(Emulator.t(), {integer(), integer()}, integer(), integer()) :: Emulator.t()
+  @spec move_cursor_to(
+          Emulator.t(),
+          {integer(), integer()},
+          integer(),
+          integer()
+        ) :: Emulator.t()
   def move_cursor_to(emulator, position, width, height) do
     {row, col} = position
     # Clamp coordinates to screen bounds
     row_clamped = max(0, min(row, height - 1))
     col_clamped = max(0, min(col, width - 1))
 
-    updated_cursor = set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+    updated_cursor =
+      set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+
     %{emulator | cursor: updated_cursor}
   end
 
@@ -214,6 +221,142 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec move_cursor_to(Emulator.t(), integer(), integer()) :: Emulator.t()
   def move_cursor_to(emulator, x, y) do
     move_cursor_to(emulator, {x, y}, emulator.width, emulator.height)
+  end
+
+  @doc """
+  Moves the cursor up by the specified number of lines.
+  """
+  @spec move_cursor_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_cursor_up(emulator, count \\ 1) do
+    cursor = emulator.cursor
+    {row, col} = get_cursor_position(cursor)
+    new_row = max(0, row - count)
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor up by the specified number of lines with width and height bounds.
+  """
+  @spec move_cursor_up(
+          Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Emulator.t()
+  def move_cursor_up(emulator, count, _width, _height) do
+    cursor = emulator.cursor
+    {row, col} = get_cursor_position(cursor)
+    new_row = max(0, row - count)
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor down by the specified number of lines.
+  """
+  @spec move_cursor_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_cursor_down(emulator, count \\ 1) do
+    cursor = emulator.cursor
+    {row, col} = get_cursor_position(cursor)
+    new_row = min(emulator.height - 1, row + count)
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor down by the specified number of lines with width and height bounds.
+  """
+  @spec move_cursor_down(
+          Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Emulator.t()
+  def move_cursor_down(emulator, count, _width, height) do
+    cursor = emulator.cursor
+    {row, col} = get_cursor_position(cursor)
+    new_row = min(height - 1, row + count)
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor left by the specified number of columns.
+  """
+  @spec move_cursor_left(
+          Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Emulator.t()
+  def move_cursor_left(emulator, count, _width, _height) do
+    cursor = emulator.cursor
+    {row, col} = get_cursor_position(cursor)
+    new_col = max(0, col - count)
+    updated_cursor = set_cursor_position(cursor, {row, new_col})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor right by the specified number of columns.
+  """
+  @spec move_cursor_right(
+          Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Emulator.t()
+  def move_cursor_right(emulator, count, width, _height) do
+    cursor = emulator.cursor
+    {row, col} = get_cursor_position(cursor)
+    new_col = min(width - 1, col + count)
+    updated_cursor = set_cursor_position(cursor, {row, new_col})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor forward by the specified number of columns.
+  """
+  @spec move_cursor_forward(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_cursor_forward(emulator, count) do
+    move_cursor_right(emulator, count, emulator.width, emulator.height)
+  end
+
+  @doc """
+  Moves the cursor back by the specified number of columns.
+  """
+  @spec move_cursor_back(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def move_cursor_back(emulator, count) do
+    move_cursor_left(emulator, count, emulator.width, emulator.height)
+  end
+
+  @doc """
+  Moves the cursor to the start of the current line.
+  """
+  @spec move_cursor_to_line_start(Emulator.t()) :: Emulator.t()
+  def move_cursor_to_line_start(emulator) do
+    cursor = emulator.cursor
+    {row, _col} = get_cursor_position(cursor)
+    updated_cursor = set_cursor_position(cursor, {row, 0})
+    %{emulator | cursor: updated_cursor}
+  end
+
+  @doc """
+  Moves the cursor to a specific column.
+  """
+  @spec move_cursor_to_column(
+          Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Emulator.t()
+  def move_cursor_to_column(emulator, column, width, _height) do
+    cursor = emulator.cursor
+    {row, _col} = get_cursor_position(cursor)
+    new_col = max(0, min(width - 1, column))
+    updated_cursor = set_cursor_position(cursor, {row, new_col})
+    %{emulator | cursor: updated_cursor}
   end
 
   # Private helper functions

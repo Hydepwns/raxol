@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
     case Process.whereis(Raxol.Terminal.IO.UnifiedIO) do
       nil ->
         {:ok, _pid} = Raxol.Terminal.IO.UnifiedIO.start_link()
+
       _pid ->
         :ok
     end

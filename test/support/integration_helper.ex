@@ -107,11 +107,13 @@ defmodule Raxol.Test.IntegrationHelper do
              state.renderer.renderer,
              state.buffer.buffer
            ),
-         (:ok <- case render_result do
-           :ok -> :ok
-           html when is_binary(html) -> :ok  # Handle HTML output
-           {:error, reason} -> {:error, reason}
-         end),
+         :ok <-
+           (case render_result do
+              :ok -> :ok
+              # Handle HTML output
+              html when is_binary(html) -> :ok
+              {:error, reason} -> {:error, reason}
+            end),
          :ok <-
            Raxol.Test.RendererHelper.verify_rendered_content(
              state.renderer.renderer,
@@ -162,11 +164,13 @@ defmodule Raxol.Test.IntegrationHelper do
              state.renderer.renderer,
              state.buffer.buffer
            ),
-         (:ok <- case render_result do
-           :ok -> :ok
-           html when is_binary(html) -> :ok  # Handle HTML output
-           {:error, reason} -> {:error, reason}
-         end),
+         :ok <-
+           (case render_result do
+              :ok -> :ok
+              # Handle HTML output
+              html when is_binary(html) -> :ok
+              {:error, reason} -> {:error, reason}
+            end),
          {:ok, renderer_metrics} <-
            Raxol.Test.RendererHelper.test_render_performance(
              state.renderer.renderer,
@@ -174,7 +178,10 @@ defmodule Raxol.Test.IntegrationHelper do
              Keyword.get(opts, :iterations, 1)
            ) do
       {:ok,
-       %{buffer_metrics: buffer_metrics || %{write_time: 5}, renderer_metrics: renderer_metrics}}
+       %{
+         buffer_metrics: buffer_metrics || %{write_time: 5},
+         renderer_metrics: renderer_metrics
+       }}
     end
   end
 
@@ -302,23 +309,26 @@ defmodule Raxol.Test.IntegrationHelper do
 
   defp perform_operation(state, :buffer_write, opts) do
     case Raxol.Test.BufferHelper.perform_test_operation(
-      state.buffer.buffer,
-      :write,
-      data: Keyword.get(opts, :data, "test data")
-    ) do
-      {:ok, _} -> {:ok, %{write_time: 5}}  # Mock metrics for now
+           state.buffer.buffer,
+           :write,
+           data: Keyword.get(opts, :data, "test data")
+         ) do
+      # Mock metrics for now
+      {:ok, _} -> {:ok, %{write_time: 5}}
       {:error, reason} -> {:error, reason}
     end
   end
 
   defp perform_operation(state, :render, opts) do
     case Raxol.Test.RendererHelper.perform_test_render(
-      state.renderer.renderer,
-      state.buffer.buffer,
-      opts
-    ) do
-      :ok -> {:ok, %{render_time: 16}}  # Mock metrics for now
-      html when is_binary(html) -> {:ok, %{render_time: 16}}  # Handle HTML output
+           state.renderer.renderer,
+           state.buffer.buffer,
+           opts
+         ) do
+      # Mock metrics for now
+      :ok -> {:ok, %{render_time: 16}}
+      # Handle HTML output
+      html when is_binary(html) -> {:ok, %{render_time: 16}}
       {:error, reason} -> {:error, reason}
     end
   end

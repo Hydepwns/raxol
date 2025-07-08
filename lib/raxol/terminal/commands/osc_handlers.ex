@@ -101,18 +101,34 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   def handle_mouse_background_color(emulator, _data), do: {:ok, emulator}
 
   def handle_window_fullscreen(emulator) do
-    updated_window_manager = %{emulator.window_manager | state: :fullscreen}
-    {:ok, %{emulator | window_manager: updated_window_manager}}
+    # Update window state to fullscreen
+    Raxol.Terminal.Window.Manager.set_window_state(
+      emulator.window_manager,
+      :fullscreen
+    )
+
+    {:ok, emulator}
   end
 
   def handle_window_maximize(emulator) do
-    updated_window_manager = %{emulator.window_manager | state: :maximized}
-    {:ok, %{emulator | window_manager: updated_window_manager}}
+    # Update window state to maximized
+    Raxol.Terminal.Window.Manager.set_window_state(
+      emulator.window_manager,
+      :maximized
+    )
+
+    {:ok, emulator}
   end
 
   def handle_window_size(emulator, width, height) do
-    updated_window_manager = %{emulator.window_manager | size: {width, height}}
-    {:ok, %{emulator | window_manager: updated_window_manager}}
+    # Update window size
+    Raxol.Terminal.Window.Manager.set_window_size(
+      emulator.window_manager,
+      width,
+      height
+    )
+
+    {:ok, emulator}
   end
 
   @doc """

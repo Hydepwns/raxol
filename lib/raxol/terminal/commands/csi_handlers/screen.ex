@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
 
   import Raxol.Guards
-  alias Raxol.Terminal.Emulator.Struct, as: Emulator
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.SGRHandler
   alias Raxol.Terminal.ScreenBuffer
 
@@ -468,6 +468,40 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
       _ ->
         {:ok, emulator}
+    end
+  end
+
+  @doc """
+  Handle Set Top and Bottom Margins (DECSTBM) command.
+  Sets the scrolling region between top and bottom margins.
+  """
+  def handle_decstbm(emulator, params) do
+    case params do
+      [] ->
+        # Reset to full screen
+        {:ok, %{emulator | scroll_region: nil}}
+
+      [top] ->
+        # Set top margin only, bottom defaults to screen height
+        top_0 = max(0, top - 1)
+        bottom_0 = emulator.height - 1
+        {:ok, %{emulator | scroll_region: {top_0, bottom_0}}}
+
+      [top, bottom] ->
+        # Set both top and bottom margins
+        if top >= bottom do
+          # Invalid region, reset to full screen
+          {:ok, %{emulator | scroll_region: nil}}
+        else
+          # Convert 1-indexed to 0-indexed and clamp to screen bounds
+          top_0 = max(0, min(top - 1, emulator.height - 1))
+          bottom_0 = max(0, min(bottom - 1, emulator.height - 1))
+          {:ok, %{emulator | scroll_region: {top_0, bottom_0}}}
+        end
+
+      _ ->
+        # Invalid parameters, reset to full screen
+        {:ok, %{emulator | scroll_region: nil}}
     end
   end
 

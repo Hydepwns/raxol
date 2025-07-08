@@ -88,7 +88,16 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
         {:halt, {new_event, new_state}}
 
       {:error, reason} ->
-        log_handler_error(reason, current_event, current_state, [])
+        Raxol.Core.Runtime.Log.error(
+          "Handler error",
+          %{
+            module: __MODULE__,
+            event: current_event,
+            state: current_state,
+            reason: reason
+          }
+        )
+
         {:halt, {:error, reason, current_state}}
     end
   end
@@ -96,7 +105,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   defp log_handler_error(error, event, state, stacktrace) do
     try do
       Raxol.Core.Runtime.Log.error_with_stacktrace(
-        "Handler error",
+        "Error executing handlers",
         error,
         stacktrace,
         %{module: __MODULE__, event: event, state: state}

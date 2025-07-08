@@ -1,8 +1,12 @@
+Code.require_file("test/raxol/terminal/driver_test_helper.exs")
+
 defmodule Raxol.Terminal.Driver.InitializationTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   import Mox
 
   alias Raxol.Terminal.Driver
+
+  # Use the correct test helper from the terminal directory, not the support directory
   alias Raxol.Terminal.DriverTestHelper, as: Helper
 
   setup :verify_on_exit!

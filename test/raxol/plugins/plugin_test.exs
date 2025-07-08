@@ -123,7 +123,9 @@ defmodule Raxol.Plugins.PluginTest do
     test "fails to load plugin with missing dependencies" do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
       # DependentPlugin requires TestPlugin
-      assert {:error, error_msg} = PluginManager.load_plugin(manager, DependentPlugin)
+      assert {:error, error_msg} =
+               PluginManager.load_plugin(manager, DependentPlugin)
+
       assert error_msg =~ "missing dependencies"
       assert error_msg =~ "test_plugin"
       assert error_msg =~ "dependent_plugin"
@@ -191,7 +193,8 @@ defmodule Raxol.Plugins.PluginTest do
       # Check various places where the config might be stored
       assert Map.get(plugin, :foo) == "bar" or
                Map.get(plugin.config, :foo) == "bar" or
-               Map.get(manager.config.plugin_configs, "test_plugin")[:foo] == "bar"
+               Map.get(manager.config.plugin_configs, "test_plugin")[:foo] ==
+                 "bar"
     end
   end
 end

@@ -49,7 +49,10 @@ defmodule Raxol.Terminal.Commands.Scrolling do
       %{
         new_buffer
         | scroll_position:
-            min((buffer.scroll_position || 0) + actual_scroll_count, effective_bottom)
+            min(
+              (buffer.scroll_position || 0) + actual_scroll_count,
+              effective_bottom
+            )
       }
     else
       buffer
@@ -102,7 +105,10 @@ defmodule Raxol.Terminal.Commands.Scrolling do
       %{
         new_buffer
         | scroll_position:
-            max((buffer.scroll_position || 0) - actual_scroll_count, effective_top)
+            max(
+              (buffer.scroll_position || 0) - actual_scroll_count,
+              effective_top
+            )
       }
     else
       buffer

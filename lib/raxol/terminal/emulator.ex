@@ -226,7 +226,8 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate update_style(emulator, style_attrs), to: StyleProcessor
 
   # Plugin dependency resolution
-  defdelegate resolve_plugin_dependencies(plugin_manager), to: DependencyResolver
+  defdelegate resolve_plugin_dependencies(plugin_manager),
+    to: DependencyResolver
 
   # Text input processing
   defdelegate handle_text_input(input, emulator), to: TextProcessor
@@ -234,33 +235,79 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate printable_char?(char), to: TextProcessor
 
   # Cursor movement operations
-  defdelegate move_cursor_up(emulator, count), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_down(emulator, count), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_forward(emulator, count), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_back(emulator, count), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_to_column(emulator, column, width, height), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_to_line_start(emulator), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_up(emulator, count, width, height), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_down(emulator, count, width, height), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_left(emulator, count, width, height), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_right(emulator, count, width, height), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_to(emulator, x, y), to: Raxol.Terminal.Commands.CursorHandlers
-  defdelegate move_cursor_to(emulator, position, width, height), to: Raxol.Terminal.Commands.CursorHandlers
+  defdelegate move_cursor_up(emulator, count),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_down(emulator, count),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_forward(emulator, count),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_back(emulator, count),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_to_column(emulator, column, width, height),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_to_line_start(emulator),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_up(emulator, count, width, height),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_down(emulator, count, width, height),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_left(emulator, count, width, height),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_right(emulator, count, width, height),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_to(emulator, x, y),
+    to: Raxol.Terminal.Commands.CursorHandlers
+
+  defdelegate move_cursor_to(emulator, position, width, height),
+    to: Raxol.Terminal.Commands.CursorHandlers
 
   # Mode management functions
   defdelegate update_insert_mode_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_alternate_buffer_active_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_cursor_keys_mode_direct(mode_manager, value), to: ModeHandlers
+
+  defdelegate update_alternate_buffer_active_direct(mode_manager, value),
+    to: ModeHandlers
+
+  defdelegate update_cursor_keys_mode_direct(mode_manager, value),
+    to: ModeHandlers
+
   defdelegate update_origin_mode_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_line_feed_mode_direct(mode_manager, value), to: ModeHandlers
+
+  defdelegate update_line_feed_mode_direct(mode_manager, value),
+    to: ModeHandlers
+
   defdelegate update_auto_wrap_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_cursor_visible_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_screen_mode_reverse_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_auto_repeat_mode_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_interlacing_mode_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_bracketed_paste_mode_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_column_width_132_direct(mode_manager, value), to: ModeHandlers
-  defdelegate update_column_width_80_direct(mode_manager, value), to: ModeHandlers
+
+  defdelegate update_cursor_visible_direct(mode_manager, value),
+    to: ModeHandlers
+
+  defdelegate update_screen_mode_reverse_direct(mode_manager, value),
+    to: ModeHandlers
+
+  defdelegate update_auto_repeat_mode_direct(mode_manager, value),
+    to: ModeHandlers
+
+  defdelegate update_interlacing_mode_direct(mode_manager, value),
+    to: ModeHandlers
+
+  defdelegate update_bracketed_paste_mode_direct(mode_manager, value),
+    to: ModeHandlers
+
+  defdelegate update_column_width_132_direct(mode_manager, value),
+    to: ModeHandlers
+
+  defdelegate update_column_width_80_direct(mode_manager, value),
+    to: ModeHandlers
+
   defdelegate mode_updates(), to: ModeHandlers
 
   # ANSI sequence parsing
@@ -307,8 +354,12 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate handle_esc_equals(emulator), to: CommandHandlers
   defdelegate handle_esc_greater(emulator), to: CommandHandlers
   defdelegate handle_sgr(params, emulator), to: CommandHandlers
-  defdelegate handle_csi_general(params, final_byte, emulator), to: CommandHandlers
-  defdelegate handle_csi_general(params, final_byte, emulator, intermediates), to: CommandHandlers
+
+  defdelegate handle_csi_general(params, final_byte, emulator),
+    to: CommandHandlers
+
+  defdelegate handle_csi_general(params, final_byte, emulator, intermediates),
+    to: CommandHandlers
 
   # Get scrollback buffer
   def get_scrollback(emulator) do
@@ -393,8 +444,6 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-
-
   @spec process_input(t(), binary()) :: {t(), binary()}
   def process_input(emulator, input) do
     IO.puts("DEBUG: process_input called with input: #{inspect(input)}")
@@ -402,7 +451,10 @@ defmodule Raxol.Terminal.Emulator do
     # Handle character set commands first
     case get_charset_command(input) do
       {field, value} ->
-        IO.puts("DEBUG: process_input matched charset command: #{field} = #{value}")
+        IO.puts(
+          "DEBUG: process_input matched charset command: #{field} = #{value}"
+        )
+
         # If it's a charset command, handle it completely and return
         updated_emulator = %{
           emulator
@@ -412,13 +464,18 @@ defmodule Raxol.Terminal.Emulator do
         {updated_emulator, ""}
 
       :no_match ->
-        IO.puts("DEBUG: process_input no charset match, calling handle_ansi_sequences")
+        IO.puts(
+          "DEBUG: process_input no charset match, calling handle_ansi_sequences"
+        )
+
         # Not a charset command, proceed with normal processing
         # Handle ANSI sequences and get remaining text
         {updated_emulator, remaining_text} =
           handle_ansi_sequences(input, emulator)
 
-        IO.puts("DEBUG: After handle_ansi_sequences, style: #{inspect(updated_emulator.style)}, remaining_text: #{inspect(remaining_text)}")
+        IO.puts(
+          "DEBUG: After handle_ansi_sequences, style: #{inspect(updated_emulator.style)}, remaining_text: #{inspect(remaining_text)}"
+        )
 
         IO.puts(
           "DEBUG: After handle_ansi_sequences, scroll_region: #{inspect(updated_emulator.scroll_region)}"
@@ -469,6 +526,7 @@ defmodule Raxol.Terminal.Emulator do
 
   defp handle_ansi_sequences(rest, emulator) do
     IO.puts("DEBUG: handle_ansi_sequences input: #{inspect(rest)}")
+
     case parse_ansi_sequence(rest) do
       {:osc, remaining, _} ->
         IO.puts("DEBUG: handle_ansi_sequences parsed: {:osc, ...}")
@@ -483,10 +541,17 @@ defmodule Raxol.Terminal.Emulator do
         {emulator, rest}
 
       parsed_sequence ->
-        IO.puts("DEBUG: handle_ansi_sequences parsed: #{inspect(parsed_sequence)}")
+        IO.puts(
+          "DEBUG: handle_ansi_sequences parsed: #{inspect(parsed_sequence)}"
+        )
+
         {new_emulator, remaining} =
           handle_parsed_sequence(parsed_sequence, rest, emulator)
-        IO.puts("DEBUG: handle_ansi_sequences updated emulator: #{inspect(new_emulator.style)}")
+
+        IO.puts(
+          "DEBUG: handle_ansi_sequences updated emulator: #{inspect(new_emulator.style)}"
+        )
+
         handle_ansi_sequences(remaining, new_emulator)
     end
   end
@@ -616,10 +681,20 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp handle_parsed_sequence({:sgr, params, remaining, _}, _rest, emulator) do
-    IO.puts("DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}")
-    IO.puts("DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}")
+    IO.puts(
+      "DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}"
+    )
+
+    IO.puts(
+      "DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}"
+    )
+
     result = {handle_sgr(params, emulator), remaining}
-    IO.puts("DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}")
+
+    IO.puts(
+      "DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}"
+    )
+
     result
   end
 
@@ -743,12 +818,6 @@ defmodule Raxol.Terminal.Emulator do
   defp handle_screen_buffer_switch(emulator, _mode, _value) do
     emulator
   end
-
-
-
-
-
-
 
   def write_to_output(emulator, data) do
     OutputManager.write(emulator, data)
@@ -1004,12 +1073,22 @@ defmodule Raxol.Terminal.Emulator do
 
   def move_cursor_to_column(emulator, column, _width, _height) do
     {_current_x, current_y} = get_cursor_position(emulator)
-    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, current_y, column)
+
+    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
+      emulator,
+      current_y,
+      column
+    )
   end
 
   def move_cursor_to_line_start(emulator) do
     {_current_x, current_y} = get_cursor_position(emulator)
-    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, current_y, 0)
+
+    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
+      emulator,
+      current_y,
+      0
+    )
   end
 
   def move_cursor_up(emulator, count, _width, _height) do
@@ -1036,8 +1115,6 @@ defmodule Raxol.Terminal.Emulator do
 
     emulator
   end
-
-
 
   defp find_matching_parser(rest) do
     Enum.find_value(ansi_parsers(), & &1.(rest))
@@ -1087,8 +1164,6 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-
-
   # Implement get_scroll_region directly to return the emulator's scroll_region field
   def get_scroll_region(%__MODULE__{} = emulator) do
     emulator.scroll_region
@@ -1102,9 +1177,15 @@ defmodule Raxol.Terminal.Emulator do
     Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, x, y)
   end
 
+  @doc """
+  Moves the cursor to the specified position.
+  """
+  @spec move_cursor(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def move_cursor(emulator, x, y) do
+    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, x, y)
+  end
+
   # Missing Raxol.Terminal.OperationsBehaviour implementations
-
-
 
   @doc """
   Gets the bottom scroll position.
@@ -1127,10 +1208,6 @@ defmodule Raxol.Terminal.Emulator do
       nil -> 0
     end
   end
-
-
-
-
 
   @doc """
   Sets the blink rate for the cursor.
@@ -1208,6 +1285,4 @@ defmodule Raxol.Terminal.Emulator do
     # Mark emulator as stopped
     %{emulator | state: :stopped}
   end
-
-
 end

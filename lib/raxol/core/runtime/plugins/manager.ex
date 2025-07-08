@@ -42,55 +42,62 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @impl GenServer
   def init(arg) do
     # Convert list of options to a proper state map
-    state = case arg do
-      opts when is_list(opts) ->
-        # Convert keyword list to map
-        opts_map = Enum.into(opts, %{})
+    state =
+      case arg do
+        opts when is_list(opts) ->
+          # Convert keyword list to map
+          opts_map = Enum.into(opts, %{})
 
-        # Initialize with default values
-        %{
-          plugins: %{},
-          metadata: %{},
-          plugin_states: %{},
-          plugin_config: Map.get(opts_map, :plugin_config, %{}),
-          load_order: [],
-          command_registry_table: Map.get(opts_map, :command_registry_table, :command_registry),
-          runtime_pid: Map.get(opts_map, :runtime_pid),
-          file_watching_enabled?: Map.get(opts_map, :enable_plugin_reloading, false),
-          initialized: false,
-          lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
-        }
+          # Initialize with default values
+          %{
+            plugins: %{},
+            metadata: %{},
+            plugin_states: %{},
+            plugin_config: Map.get(opts_map, :plugin_config, %{}),
+            load_order: [],
+            command_registry_table:
+              Map.get(opts_map, :command_registry_table, :command_registry),
+            runtime_pid: Map.get(opts_map, :runtime_pid),
+            file_watching_enabled?:
+              Map.get(opts_map, :enable_plugin_reloading, false),
+            initialized: false,
+            lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
+          }
 
-      state when is_map(state) ->
-        # Already a map, just ensure it has required fields
-        Map.merge(%{
-          plugins: %{},
-          metadata: %{},
-          plugin_states: %{},
-          plugin_config: %{},
-          load_order: [],
-          command_registry_table: :command_registry,
-          runtime_pid: nil,
-          file_watching_enabled?: false,
-          initialized: false,
-          lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
-        }, state)
+        state when is_map(state) ->
+          # Already a map, just ensure it has required fields
+          Map.merge(
+            %{
+              plugins: %{},
+              metadata: %{},
+              plugin_states: %{},
+              plugin_config: %{},
+              load_order: [],
+              command_registry_table: :command_registry,
+              runtime_pid: nil,
+              file_watching_enabled?: false,
+              initialized: false,
+              lifecycle_helper_module:
+                Raxol.Core.Runtime.Plugins.LifecycleManager
+            },
+            state
+          )
 
-      _ ->
-        # Fallback to default state
-        %{
-          plugins: %{},
-          metadata: %{},
-          plugin_states: %{},
-          plugin_config: %{},
-          load_order: [],
-          command_registry_table: :command_registry,
-          runtime_pid: nil,
-          file_watching_enabled?: false,
-          initialized: false,
-          lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
-        }
-    end
+        _ ->
+          # Fallback to default state
+          %{
+            plugins: %{},
+            metadata: %{},
+            plugin_states: %{},
+            plugin_config: %{},
+            load_order: [],
+            command_registry_table: :command_registry,
+            runtime_pid: nil,
+            file_watching_enabled?: false,
+            initialized: false,
+            lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleManager
+          }
+      end
 
     # Start internal initialization
     send(self(), :__internal_initialize__)
@@ -103,6 +110,17 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   """
   def initialize do
     GenServer.call(__MODULE__, :initialize)
+  end
+
+  @doc """
+  Initialize the plugin system with the given configuration.
+  This is a synchronous version for testing.
+  """
+  def init(config) do
+    case GenServer.call(__MODULE__, {:init, config}) do
+      {:ok, state} -> {:ok, state}
+      error -> error
+    end
   end
 
   @doc """
@@ -397,6 +415,17 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
         {:reply, {:error, reason}, state}
     end
+  end
+
+  @impl GenServer
+  def handle_call({:init, config}, _from, state) do
+    # Initialize the state with the given config
+    initialized_state = %{state | initialized: true, file_watcher_pid: self()}
+
+    # Merge the config into the state
+    final_state = Map.merge(initialized_state, config)
+
+    {:reply, {:ok, final_state}, final_state}
   end
 
   @impl GenServer

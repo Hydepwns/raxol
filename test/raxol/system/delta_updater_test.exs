@@ -17,7 +17,12 @@ defmodule Raxol.System.DeltaUpdaterTest do
 
     setup do
       # Configure the application to use our mock adapter
-      Application.put_env(:raxol, :system_adapter, DeltaUpdaterSystemAdapterMock)
+      Application.put_env(
+        :raxol,
+        :system_adapter,
+        DeltaUpdaterSystemAdapterMock
+      )
+
       :ok
     end
 

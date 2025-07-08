@@ -135,7 +135,10 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       end)
 
       assert Accessibility.get_option(:high_contrast, prefs_name, false) == true
-      assert Accessibility.get_option(:reduced_motion, prefs_name, false) == true
+
+      assert Accessibility.get_option(:reduced_motion, prefs_name, false) ==
+               true
+
       assert Accessibility.get_option(:screen_reader, prefs_name, true) == false
       assert Accessibility.get_text_scale(prefs_name) == 1.0
     end
@@ -151,7 +154,9 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
 
       assert Accessibility.get_option(:enabled, prefs_name, false) == true
       Accessibility.announce("Test before disable", [], prefs_name)
-      assert Accessibility.get_next_announcement(prefs_name) == "Test before disable"
+
+      assert Accessibility.get_next_announcement(prefs_name) ==
+               "Test before disable"
 
       Accessibility.disable(prefs_name)
 

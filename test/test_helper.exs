@@ -168,7 +168,9 @@ Application.ensure_all_started(:plug_cowboy)
 
 # Start the event registry for tests
 IO.puts("[TestHelper] Starting event registry...")
-{:ok, _registry_pid} = Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
+
+{:ok, _registry_pid} =
+  Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
 
 # Only start the endpoint if it's not already running
 if !Process.whereis(RaxolWeb.Endpoint) do

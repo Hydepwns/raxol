@@ -18,10 +18,12 @@ defmodule Raxol.Plugins.PluginConfigTest do
     File.rm_rf!(real_config_dir)
     File.mkdir_p!(temp_dir)
     System.put_env("HOME", temp_dir)
+
     on_exit(fn ->
       File.rm_rf!(temp_config_dir)
       File.rm_rf!(real_config_dir)
     end)
+
     {:ok, temp_dir: temp_dir, real_home: real_home}
   end
 
@@ -50,7 +52,11 @@ defmodule Raxol.Plugins.PluginConfigTest do
 
       # Load config
       {:ok, loaded_config} = PluginConfig.load()
-      assert loaded_config.plugin_configs["test_plugin"] == %{"setting" => "value"}
+
+      assert loaded_config.plugin_configs["test_plugin"] == %{
+               "setting" => "value"
+             }
+
       assert "test_plugin" in loaded_config.enabled_plugins
     end
 

@@ -128,7 +128,10 @@ defmodule RaxolWeb.UserAuth do
         |> configure_session(renew: true)
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Failed to create session for user #{user.id}: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error(
+          "Failed to create session for user #{user.id}: #{inspect(reason)}"
+        )
+
         conn
         |> put_flash(:error, "Login failed. Please try again.")
     end
@@ -341,7 +344,8 @@ defmodule RaxolWeb.UserAuth do
   defp cleanup_user_session(_), do: :ok
 
   @doc false
-  defp disconnect_liveview_session(live_socket_id) when is_binary(live_socket_id) do
+  defp disconnect_liveview_session(live_socket_id)
+       when is_binary(live_socket_id) do
     RaxolWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
   end
 
@@ -349,7 +353,8 @@ defmodule RaxolWeb.UserAuth do
   defp disconnect_liveview_session(_), do: :ok
 
   @doc false
-  defp authenticate_user_from_tokens(session_id, user_token) when is_binary(session_id) and is_binary(user_token) do
+  defp authenticate_user_from_tokens(session_id, user_token)
+       when is_binary(session_id) and is_binary(user_token) do
     case Auth.validate_token(session_id, user_token) do
       {:ok, user_id} -> Auth.get_user(user_id)
       _ -> nil

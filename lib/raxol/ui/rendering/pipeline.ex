@@ -226,6 +226,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
           nil ->
             # If not found by module name, try the default renderer name
             Process.whereis(Raxol.UI.Rendering.Renderer) || module
+
           pid ->
             pid
         end

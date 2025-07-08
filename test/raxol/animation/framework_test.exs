@@ -76,17 +76,21 @@ defmodule Raxol.Animation.FrameworkTest do
       case Raxol.Core.UserPreferences.start_link([]) do
         {:ok, user_preferences_pid} ->
           %{user_preferences_pid: user_preferences_pid}
+
         {:error, {:already_started, user_preferences_pid}} ->
           %{user_preferences_pid: user_preferences_pid}
       end
     end
 
-    test ~c"initializes with default settings", %{user_preferences_pid: user_preferences_pid} do
+    test ~c"initializes with default settings", %{
+      user_preferences_pid: user_preferences_pid
+    } do
       assert :ok == Framework.init(%{}, user_preferences_pid)
       # Verify default settings
       settings = Process.get(:animation_framework_settings, %{})
       assert settings.reduced_motion == false
       assert settings.default_duration == 300
+
       # Note: default_easing is not stored in settings, it's used at creation time
     end
 
@@ -161,7 +165,12 @@ defmodule Raxol.Animation.FrameworkTest do
       user_preferences_pid: user_preferences_pid
     } do
       # Enable reduced motion *before* creating/starting
-      UserPreferences.set("accessibility.reduced_motion", true, user_preferences_pid)
+      UserPreferences.set(
+        "accessibility.reduced_motion",
+        true,
+        user_preferences_pid
+      )
+
       Framework.init(%{reduced_motion: true}, user_preferences_pid)
 
       # Create initial state

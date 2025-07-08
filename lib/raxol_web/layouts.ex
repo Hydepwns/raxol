@@ -1,7 +1,7 @@
 defmodule RaxolWeb.Layouts do
   use RaxolWeb, :html
 
-  embed_templates "layouts/*"
+  embed_templates("layouts/*")
 
   # Manual fallback for root template if embed_templates fails
   def root(assigns) do

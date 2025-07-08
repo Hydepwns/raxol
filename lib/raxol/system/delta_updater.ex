@@ -30,13 +30,14 @@ defmodule Raxol.System.DeltaUpdater do
     if delta_size < full_size * 0.5 do
       savings_percent = round((1 - delta_size / full_size) * 100)
 
-      {:ok, %{
-        delta_size: delta_size,
-        full_size: full_size,
-        savings_percent: savings_percent,
-        delta_url: delta_asset["browser_download_url"],
-        full_url: full_asset["browser_download_url"]
-      }}
+      {:ok,
+       %{
+         delta_size: delta_size,
+         full_size: full_size,
+         savings_percent: savings_percent,
+         delta_url: delta_asset["browser_download_url"],
+         full_url: full_asset["browser_download_url"]
+       }}
     else
       {:error, :delta_too_large}
     end
@@ -81,14 +82,16 @@ defmodule Raxol.System.DeltaUpdater do
     end
   end
 
-  defp extract_assets(%{"assets" => assets}, target_version) when is_list(assets),
-    do: {:ok, assets}
+  defp extract_assets(%{"assets" => assets}, target_version)
+       when is_list(assets),
+       do: {:ok, assets}
 
   defp extract_assets(_, _), do: {:error, "No assets found in release data"}
 
   defp find_delta_asset(assets, target_version) do
     # Match assets like raxol-delta-*-<from>-<to>-*.bin
     regex = ~r/raxol-delta-[^-]+-#{Regex.escape(target_version)}-[^.]+\.bin/
+
     case Enum.find(assets, &(&1["name"] =~ regex)) do
       nil -> {:error, :delta_not_found}
       asset -> {:ok, asset}

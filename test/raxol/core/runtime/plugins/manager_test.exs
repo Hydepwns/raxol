@@ -43,7 +43,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     test "initializes with default state", %{plugin: plugin} do
       assert {:ok, state} =
                Raxol.Core.Runtime.Plugins.Manager.init(%{
-                 plugin: plugin,
+                 plugin: plugin
                  # file_watcher_module: FileWatcherMock,
                  # loader_module: LoaderMock
                })
@@ -75,7 +75,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
       {:ok, state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
-          plugin: plugin,
+          plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
@@ -96,7 +96,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
       {:ok, state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
-          plugin: plugin,
+          plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
@@ -117,7 +117,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
       {:ok, state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
-          plugin: plugin,
+          plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
@@ -139,7 +139,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
       {:ok, state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
-          plugin: plugin,
+          plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
@@ -161,7 +161,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
       {:ok, state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
-          plugin: plugin,
+          plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
@@ -185,7 +185,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
       {:ok, state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
-          plugin: plugin,
+          plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })

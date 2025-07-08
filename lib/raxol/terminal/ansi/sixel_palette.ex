@@ -180,8 +180,6 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     {:ok, {max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))}}
   end
 
-
-
   defp get_hue_segments do
     %{
       0 => fn c, x -> {c, x, 0.0} end,

@@ -194,8 +194,17 @@ defmodule RaxolWeb.TerminalChannel do
     new_state = %{state | renderer: renderer}
     socket = assign(socket, :terminal_state, new_state)
 
+    # Get cursor position and visibility
+    {cursor_x, cursor_y} = emulator_module().get_cursor_position(state.emulator)
+    cursor_visible = emulator_module().get_cursor_visible(state.emulator)
+
     push(socket, "output", %{
-      html: renderer_module().render(renderer)
+      html: renderer_module().render(renderer),
+      cursor: %{
+        x: cursor_x,
+        y: cursor_y,
+        visible: cursor_visible
+      }
     })
 
     {:reply, :ok, socket}

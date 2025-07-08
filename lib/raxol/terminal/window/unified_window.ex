@@ -316,7 +316,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
         case direction do
           :horizontal ->
             # Calculate new sizes based on split direction
-            {parent_size, child_size} = calculate_split_sizes(window.size, direction)
+            {parent_size, child_size} =
+              calculate_split_sizes(window.size, direction)
 
             # Create new window for split (use internal helper)
             {new_window_id, state1} =
@@ -354,7 +355,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
           :vertical ->
             # Calculate new sizes based on split direction
-            {parent_size, child_size} = calculate_split_sizes(window.size, direction)
+            {parent_size, child_size} =
+              calculate_split_sizes(window.size, direction)
 
             # Create new window for split (use internal helper)
             {new_window_id, state1} =

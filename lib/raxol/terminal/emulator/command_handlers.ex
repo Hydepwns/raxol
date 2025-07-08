@@ -13,15 +13,24 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
       [row_str, col_str] ->
         row = String.to_integer(row_str)
         col = String.to_integer(col_str)
+
         Emulator.move_cursor_to(
           emulator,
           {row - 1, col - 1},
           emulator.width,
           emulator.height
         )
+
       [pos_str] ->
         pos = String.to_integer(pos_str)
-        Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, {0, pos - 1}, emulator.width, emulator.height)
+
+        Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
+          emulator,
+          {0, pos - 1},
+          emulator.width,
+          emulator.height
+        )
+
       _ ->
         emulator
     end
@@ -34,6 +43,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         "" -> 1
         count_str -> String.to_integer(count_str)
       end
+
     Emulator.move_cursor_up(emulator, count)
   end
 
@@ -44,6 +54,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         "" -> 1
         count_str -> String.to_integer(count_str)
       end
+
     Emulator.move_cursor_down(emulator, count)
   end
 
@@ -54,6 +65,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         "" -> 1
         count_str -> String.to_integer(count_str)
       end
+
     Emulator.move_cursor_forward(emulator, count)
   end
 
@@ -64,6 +76,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         "" -> 1
         count_str -> String.to_integer(count_str)
       end
+
     Emulator.move_cursor_back(emulator, count)
   end
 
@@ -71,18 +84,28 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   def handle_ed_command(params, emulator) do
     mode =
       case params do
-        "" -> 0
+        "" ->
+          0
+
         mode_str ->
           case Integer.parse(mode_str) do
             {val, _} -> val
             :error -> 0
           end
       end
+
     case mode do
-      0 -> Raxol.Terminal.Operations.ScreenOperations.erase_in_display(emulator, 0)
-      1 -> Raxol.Terminal.Operations.ScreenOperations.erase_in_display(emulator, 1)
-      2 -> Raxol.Terminal.Operations.ScreenOperations.erase_in_display(emulator, 2)
-      _ -> emulator
+      0 ->
+        Raxol.Terminal.Operations.ScreenOperations.erase_in_display(emulator, 0)
+
+      1 ->
+        Raxol.Terminal.Operations.ScreenOperations.erase_in_display(emulator, 1)
+
+      2 ->
+        Raxol.Terminal.Operations.ScreenOperations.erase_in_display(emulator, 2)
+
+      _ ->
+        emulator
     end
   end
 
@@ -90,13 +113,16 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   def handle_el_command(params, emulator) do
     mode =
       case params do
-        "" -> 0
+        "" ->
+          0
+
         mode_str ->
           case Integer.parse(mode_str) do
             {val, _} -> val
             :error -> 0
           end
       end
+
     case mode do
       0 -> Raxol.Terminal.Operations.ScreenOperations.erase_in_line(emulator, 0)
       1 -> Raxol.Terminal.Operations.ScreenOperations.erase_in_line(emulator, 1)
@@ -112,8 +138,10 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         top = String.to_integer(top_str)
         bottom = String.to_integer(bottom_str)
         %{emulator | scroll_region: {top - 1, bottom - 1}}
+
       [""] ->
         %{emulator | scroll_region: nil}
+
       _ ->
         emulator
     end
@@ -127,14 +155,17 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, true)
+
           :error ->
             case lookup_mode(mode_code) do
               {:ok, mode_name} ->
                 set_mode_in_manager(emulator, mode_name, true)
+
               :error ->
                 emulator
             end
         end
+
       _ ->
         emulator
     end
@@ -148,14 +179,17 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, false)
+
           :error ->
             case lookup_mode(mode_code) do
               {:ok, mode_name} ->
                 set_mode_in_manager(emulator, mode_name, false)
+
               :error ->
                 emulator
             end
         end
+
       _ ->
         emulator
     end
@@ -168,9 +202,11 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, true)
+
           _ ->
             emulator
         end
+
       _ ->
         emulator
     end
@@ -183,9 +219,11 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         case lookup_standard_mode(mode_code) do
           {:ok, mode_name} ->
             set_mode_in_manager(emulator, mode_name, false)
+
           _ ->
             emulator
         end
+
       _ ->
         emulator
     end
@@ -203,11 +241,23 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
 
   # handle_sgr/2
   def handle_sgr(params, emulator) do
-    updated_style = Raxol.Terminal.ANSI.SGRProcessor.handle_sgr(params, emulator.style)
-    log_sgr_debug("DEBUG: handle_sgr - emulator.style before: #{inspect(emulator.style)}")
-    log_sgr_debug("DEBUG: handle_sgr - updated_style: #{inspect(updated_style)}")
+    updated_style =
+      Raxol.Terminal.ANSI.SGRProcessor.handle_sgr(params, emulator.style)
+
+    log_sgr_debug(
+      "DEBUG: handle_sgr - emulator.style before: #{inspect(emulator.style)}"
+    )
+
+    log_sgr_debug(
+      "DEBUG: handle_sgr - updated_style: #{inspect(updated_style)}"
+    )
+
     result = %{emulator | style: updated_style}
-    log_sgr_debug("DEBUG: handle_sgr - emulator.style after: #{inspect(result.style)}")
+
+    log_sgr_debug(
+      "DEBUG: handle_sgr - emulator.style after: #{inspect(result.style)}"
+    )
+
     result
   end
 
@@ -230,23 +280,28 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   # handle_device_attributes/3
   def handle_device_attributes(params, emulator, intermediates) do
     param_list = parse_params(params)
+
     case {intermediates, param_list} do
       {">", []} ->
         # CSI > c or CSI > 0 c (Secondary DA)
         response = "\e[>0;0;0c"
         %{emulator | output_buffer: emulator.output_buffer <> response}
+
       {">", [0]} ->
         # CSI > 0 c (Secondary DA)
         response = "\e[>0;0;0c"
         %{emulator | output_buffer: emulator.output_buffer <> response}
+
       {"", []} ->
         # CSI c (Primary DA)
         response = "\e[?6c"
         %{emulator | output_buffer: emulator.output_buffer <> response}
+
       {"", [0]} ->
         # CSI 0 c (Primary DA)
         response = "\e[?6c"
         %{emulator | output_buffer: emulator.output_buffer <> response}
+
       _ ->
         # Ignore all other params (including [1], [1, ...], etc)
         emulator
@@ -297,6 +352,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
       end
     end)
   end
+
   defp parse_params(_), do: []
 
   # Private helper functions
@@ -325,13 +381,19 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   defp set_mode_in_manager(emulator, mode_name, value) do
     if value do
       case Raxol.Terminal.ModeManager.set_mode(emulator, [mode_name]) do
-        {:ok, new_emulator} -> handle_screen_buffer_switch(new_emulator, mode_name, value)
-        {:error, _} -> emulator
+        {:ok, new_emulator} ->
+          handle_screen_buffer_switch(new_emulator, mode_name, value)
+
+        {:error, _} ->
+          emulator
       end
     else
       case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode_name]) do
-        {:ok, new_emulator} -> handle_screen_buffer_switch(new_emulator, mode_name, value)
-        {:error, _} -> emulator
+        {:ok, new_emulator} ->
+          handle_screen_buffer_switch(new_emulator, mode_name, value)
+
+        {:error, _} ->
+          emulator
       end
     end
   end
@@ -347,6 +409,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
     case Map.fetch(Raxol.Terminal.ModeHandlers.mode_updates(), mode_name) do
       {:ok, update_fn} ->
         {:ok, fn mode_manager -> update_fn.(mode_manager, value) end}
+
       :error ->
         :error
     end

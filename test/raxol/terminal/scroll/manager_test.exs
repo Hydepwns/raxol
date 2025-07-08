@@ -1,5 +1,6 @@
 defmodule Raxol.Terminal.Scroll.ManagerTest do
-  use ExUnit.Case, async: false  # Change to async: false to avoid race conditions
+  # Change to async: false to avoid race conditions
+  use ExUnit.Case, async: false
 
   alias Raxol.Terminal.Scroll.Manager
   alias Raxol.Terminal.Cache.System

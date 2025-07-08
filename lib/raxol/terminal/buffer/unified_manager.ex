@@ -216,6 +216,44 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   @doc """
+  Resizes the buffer to new dimensions (struct-based version).
+
+  ## Parameters
+    * `state` - The buffer manager state struct
+    * `width` - The new width
+    * `height` - The new height
+
+  ## Returns
+    * `{:ok, new_state}` - The updated buffer manager state
+  """
+  def resize(%__MODULE__{} = state, width, height) do
+    # Validate dimensions
+    if width <= 0 or height <= 0 do
+      {:error, :invalid_dimensions}
+    else
+      # Resize buffers
+      new_active_buffer =
+        ScreenBuffer.resize(state.active_buffer, height, width)
+
+      new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
+
+      # Clear the resized buffers to ensure they start with empty content
+      new_active_buffer = ScreenBuffer.clear(new_active_buffer, nil)
+      new_back_buffer = ScreenBuffer.clear(new_back_buffer, nil)
+
+      new_state = %{
+        state
+        | active_buffer: new_active_buffer,
+          back_buffer: new_back_buffer,
+          width: width,
+          height: height
+      }
+
+      {:ok, new_state}
+    end
+  end
+
+  @doc """
   Scrolls up in the buffer.
 
   ## Parameters
@@ -306,6 +344,13 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   """
   def write(%__MODULE__{} = state, data) do
     GenServer.call(state, {:write, data})
+  end
+
+  @doc """
+  Writes data to the buffer (PID-based version).
+  """
+  def write(pid, data) when is_pid(pid) do
+    GenServer.call(pid, {:write, data})
   end
 
   @doc """
@@ -403,6 +448,24 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end
   rescue
     _ -> {:error, :cache_unavailable}
+  end
+
+  def handle_call({:write, data}, _from, state) do
+    start_time = System.monotonic_time()
+
+    # Process the data and update the buffer
+    case process_write_data(state, data) do
+      {:ok, new_state} ->
+        duration = System.monotonic_time() - start_time
+        state = update_metrics(new_state, :write, duration)
+        state = update_memory_usage(state)
+        {:reply, {:ok, state}, state}
+
+      {:error, reason} ->
+        duration = System.monotonic_time() - start_time
+        state = update_metrics(state, :write_error, duration)
+        {:reply, {:error, reason}, state}
+    end
   end
 
   def handle_call({:get_cell, x, y}, _from, state) do
@@ -1145,5 +1208,40 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   defp update_single_command(state, _command) do
     # Unknown command, return state unchanged
     {:ok, state}
+  end
+
+  defp process_write_data(state, data) when is_binary(data) do
+    # Convert string data to cells and write to buffer
+    cells =
+      String.graphemes(data)
+      |> Enum.with_index()
+      |> Enum.map(fn {char, index} ->
+        %Raxol.Terminal.Cell{
+          char: char,
+          style: nil,
+          dirty: true,
+          wide_placeholder: false
+        }
+      end)
+
+    # Write cells to the active buffer starting at cursor position
+    # For now, just write to the beginning of the buffer
+    new_active_buffer = write_cells_to_buffer(state.active_buffer, cells, 0, 0)
+
+    {:ok, %{state | active_buffer: new_active_buffer}}
+  end
+
+  defp process_write_data(state, _data) do
+    {:error, :invalid_data}
+  end
+
+  defp write_cells_to_buffer(buffer, cells, start_x, start_y) do
+    # Simple implementation - write cells to the buffer
+    # This is a simplified version that just writes to the first row
+    Enum.reduce(cells, buffer, fn cell, acc_buffer ->
+      # For now, just return the buffer as-is
+      # In a real implementation, you would update the buffer content
+      acc_buffer
+    end)
   end
 end

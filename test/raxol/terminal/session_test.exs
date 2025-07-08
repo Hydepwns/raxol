@@ -44,59 +44,8 @@ defmodule Raxol.Terminal.SessionTest do
       cursor_position: {0, 0}
     }
 
-    # Create minimal emulator
-    minimal_emulator = %EmulatorStruct{
-      main_screen_buffer: minimal_screen_buffer,
-      alternate_screen_buffer: minimal_screen_buffer,
-      active_buffer: minimal_screen_buffer,
-      active_buffer_type: :main,
-      scrollback_buffer: [],
-      scrollback_limit: 1000,
-      width: 1,
-      height: 1,
-      cursor: %{
-        position: {0, 0},
-        style: :block,
-        visible: true,
-        blink_state: true
-      },
-      cursor_style: :block,
-      saved_cursor: nil,
-      charset_state: %{
-        g0: :us_ascii,
-        g1: :us_ascii,
-        g2: :us_ascii,
-        g3: :us_ascii,
-        gl: :g0,
-        gr: :g1,
-        single_shift: nil
-      },
-      style: %{},
-      color_palette: %{},
-      tab_stops: [],
-      command_history: [],
-      current_command_buffer: "",
-      max_command_history: 100,
-      memory_limit: 100_000,
-      plugin_manager: nil,
-      session_id: id,
-      client_options: %{},
-      state: :normal,
-      window_manager: nil,
-      window_title: title,
-      icon_name: nil,
-      current_hyperlink_url: nil,
-      current_hyperlink: nil,
-      scroll_region: nil,
-      last_col_exceeded: false,
-      last_key_event: nil,
-      output_buffer: "",
-      parser_state: %{state: :ground},
-      state_stack: [],
-      command: nil,
-      cursor_manager: nil,
-      mode_manager: Raxol.Terminal.ModeManager.new()
-    }
+    # Create minimal emulator using the constructor
+    minimal_emulator = Raxol.Terminal.Emulator.new(1, 1)
 
     # Create minimal renderer
     minimal_renderer = %Renderer{

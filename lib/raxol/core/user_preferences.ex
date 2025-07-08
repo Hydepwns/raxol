@@ -114,7 +114,12 @@ defmodule Raxol.Core.UserPreferences do
 
       # Send preferences_applied message for test synchronization to the calling process
       {caller_pid, _} = from
-      send(caller_pid, {:preferences_applied, Process.info(self(), :registered_name) |> elem(1) || self()})
+
+      send(
+        caller_pid,
+        {:preferences_applied,
+         Process.info(self(), :registered_name) |> elem(1) || self()}
+      )
 
       # Schedule a save after a delay
       {:reply, :ok, schedule_save(new_state)}
@@ -123,8 +128,14 @@ defmodule Raxol.Core.UserPreferences do
       # In test mode, still send preferences_applied for test synchronization
       if Mix.env() == :test do
         {caller_pid, _} = from
-        send(caller_pid, {:preferences_applied, Process.info(self(), :registered_name) |> elem(1) || self()})
+
+        send(
+          caller_pid,
+          {:preferences_applied,
+           Process.info(self(), :registered_name) |> elem(1) || self()}
+        )
       end
+
       {:reply, :ok, state}
     end
   end
@@ -146,7 +157,12 @@ defmodule Raxol.Core.UserPreferences do
 
     # Send preferences_applied message for test synchronization to the calling process
     {caller_pid, _} = from
-    send(caller_pid, {:preferences_applied, Process.info(self(), :registered_name) |> elem(1) || self()})
+
+    send(
+      caller_pid,
+      {:preferences_applied,
+       Process.info(self(), :registered_name) |> elem(1) || self()}
+    )
 
     # Schedule a save after a delay
     {:reply, :ok, schedule_save(new_state)}

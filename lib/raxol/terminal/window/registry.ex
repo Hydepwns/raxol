@@ -196,7 +196,7 @@ defmodule Raxol.Terminal.Window.Registry do
       window ->
         updated_window = Map.merge(window, properties)
         new_state = put_in(state.windows[window_id], updated_window)
-        {:reply, :ok, new_state}
+        {:reply, {:ok, updated_window}, new_state}
     end
   end
 end

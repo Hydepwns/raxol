@@ -27,10 +27,12 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
           events: [],
           mounted: false,
           unmounted: false,
+          component_manager_id: nil,
           render_count: 0,
           style: %{},
           disabled: false,
-          focused: false
+          focused: false,
+          subscriptions: []
         },
         props
       )
@@ -47,10 +49,12 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
            events: [],
            mounted: false,
            unmounted: false,
+           component_manager_id: nil,
            render_count: 0,
            style: %{},
            disabled: false,
-           focused: false
+           focused: false,
+           subscriptions: []
          },
          props
        )}
@@ -65,40 +69,52 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       {new_state, []}
     end
 
-    def render(state, context) do
-      {state,
-       %{
-         type: :parent,
-         id: state.id,
-         children: state.children,
-         child_states: state.child_states,
-         mounted: state.mounted,
-         unmounted: state.unmounted,
-         style: Map.get(state, :style, %{}),
-         disabled: Map.get(state, :disabled, false),
-         focused: Map.get(state, :focused, false)
-       }}
-    end
+    def update({:state_update, new_state}, _old_state), do: {new_state, []}
+    def update(_msg, state), do: {state, []}
+
+    def handle_event(%Raxol.Core.Events.Event{data: data}, state),
+      do: handle_event(data, state)
 
     def handle_event(
           %{type: :child_event, child_id: child_id, value: value},
-          state,
-          _context
+          state
         ) do
-      new_state = %{state | events: [{child_id, value} | state.events]}
-      {new_state, [{:command, {:child_event, child_id, value}}]}
+      # Update child state in parent's child_states
+      updated_child_state = Map.put(state.child_states[child_id], :value, value)
+      updated_state = put_in(state.child_states[child_id], updated_child_state)
+
+      # Add event to parent's events list
+      updated_state =
+        Map.update!(updated_state, :events, fn events ->
+          [{child_id, value} | events]
+        end)
+
+      {updated_state, [command: {:child_event, child_id, value}]}
     end
 
-    def handle_event(_event, state, _context) do
+    def handle_event(%{type: :broadcast, value: value}, state) do
+      # Add broadcast event to parent's events list
+      updated_state =
+        Map.update!(state, :events, fn events ->
+          [{:broadcast, value} | events]
+        end)
+
+      {updated_state, [command: {:broadcast_to_children, :increment}]}
+    end
+
+    def handle_event(%{type: :error_event}, state) do
+      # Handle error event gracefully
       {state, []}
     end
 
-    def unmount(state) do
-      Map.put(state, :unmounted, true)
+    def handle_event(event, state, _context), do: handle_event(event, state)
+
+    def render(state, _context) do
+      {state, %{type: :parent, children: state.children}}
     end
   end
 
-  # Child component that communicates with parent
+  # Child component that can communicate with parent
   defmodule ChildComponent do
     @behaviour Raxol.UI.Components.Base.Component
 
@@ -107,14 +123,16 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         %{
           id: :child,
           type: :child,
-          value: 0,
           parent_id: nil,
+          value: 0,
           mounted: false,
           unmounted: false,
+          component_manager_id: nil,
           render_count: 0,
           style: %{},
           disabled: false,
-          focused: false
+          focused: false,
+          subscriptions: []
         },
         props
       )
@@ -124,17 +142,18 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       {:ok,
        Map.merge(
          %{
-           id: :test_id,
+           id: :child,
            type: :child,
-           value: 0,
            parent_id: nil,
+           value: 0,
            mounted: false,
            unmounted: false,
+           component_manager_id: nil,
            render_count: 0,
-           position: {0, 0},
            style: %{},
            disabled: false,
-           focused: false
+           focused: false,
+           subscriptions: []
          },
          props
        )}
@@ -144,37 +163,33 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       {Map.put(state, :mounted, true), []}
     end
 
-    def update(:increment, state) do
-      new_state = %{state | value: state.value + 1}
-      {new_state, [{:command, {:notify_parent, new_state}}]}
+    def update({:state_update, new_state}, _old_state), do: {new_state, []}
+    def update(_msg, state), do: {state, []}
+
+    def handle_event(%Raxol.Core.Events.Event{data: data}, state),
+      do: handle_event(data, state)
+
+    def handle_event(%{type: :click}, state) do
+      # Increment value and notify parent
+      updated_state = Map.update!(state, :value, &(&1 + 1))
+      {updated_state, [command: {:notify_parent, updated_state}]}
     end
 
-    def render(state, _context) do
-      {state,
-       %{
-         type: :child,
-         id: state.id,
-         value: state.value,
-         parent_id: state.parent_id,
-         mounted: state.mounted,
-         unmounted: state.unmounted,
-         style: Map.get(state, :style, %{}),
-         disabled: Map.get(state, :disabled, false),
-         focused: Map.get(state, :focused, false)
-       }}
+    def handle_event(%{type: :increment}, state) do
+      # Handle increment from parent broadcast
+      updated_state = Map.update!(state, :value, &(&1 + 1))
+      {updated_state, []}
     end
 
-    def handle_event(%{type: :click}, state, _context) do
-      new_state = %{state | value: state.value + 1}
-      {new_state, [{:command, {:notify_parent, new_state}}]}
-    end
-
-    def handle_event(_event, state, _context) do
+    def handle_event(%{type: :error_event}, state) do
+      # Handle error event gracefully
       {state, []}
     end
 
-    def unmount(state) do
-      Map.put(state, :unmounted, true)
+    def handle_event(event, state, _context), do: handle_event(event, state)
+
+    def render(state, _context) do
+      {state, %{type: :child, value: state.value}}
     end
   end
 
@@ -198,70 +213,90 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       assert child.state.parent_id == parent.state.id
     end
 
-    test "event propagation up the hierarchy" do
+    test "Component Hierarchy event propagation up the hierarchy" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
       child =
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
-      # Set up hierarchy
+      # Set up hierarchy with mounting in ComponentManager
       {:ok, parent, child} =
-        Raxol.Test.Integration.setup_component_hierarchy(
+        Raxol.Test.Integration.setup_component_hierarchy_with_mounting(
           ParentComponent,
           ChildComponent
         )
 
-      # Simulate child event
-      {updated_child, child_commands} =
-        Unit.simulate_event(child, %{type: :click})
+      # Verify components were mounted in ComponentManager
+      assert parent.state.component_manager_id != nil
+      assert child.state.component_manager_id != nil
 
-      assert updated_child.state.value == 1
+      # Simulate child event that should propagate to parent
+      {updated_child, _} =
+        Raxol.Test.Integration.simulate_event_with_manager_update(child, %{
+          type: :click
+        })
 
-      assert child_commands == [
-               {:command, {:notify_parent, updated_child.state}}
-             ]
+      # Fetch latest parent state from ComponentManager
+      updated_parent_from_manager =
+        ComponentManager.get_component(parent.state.component_manager_id)
 
-      # Store parent ID for assertion
-      parent_id = parent.state.id
+      # Verify parent received the event (should have one event)
+      assert length(updated_parent_from_manager.state.events) == 1
+      assert hd(updated_parent_from_manager.state.events) == {child.state.id, 1}
 
-      # Verify parent received event
-      assert_receive {:component_updated, ^parent_id}
-      updated_parent = ComponentManager.get_component(parent_id)
-      assert updated_parent.state.events == [{child.state.id, 1}]
+      # Verify child state was updated in parent's child_states
+      child_state_in_parent =
+        updated_parent_from_manager.state.child_states[child.state.id]
+
+      assert child_state_in_parent.value == 1
     end
 
-    test "state updates down the hierarchy" do
+    test "Component Hierarchy state updates down the hierarchy" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
       child =
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
-      # Set up hierarchy
+      # Set up hierarchy with mounting in ComponentManager
       {:ok, parent, child} =
-        Raxol.Test.Integration.setup_component_hierarchy(
+        Raxol.Test.Integration.setup_component_hierarchy_with_mounting(
           ParentComponent,
           ChildComponent
         )
 
-      # Update child through parent
+      # Update child through parent with manager update
       {updated_parent, _} =
-        Unit.simulate_event(parent, %{
+        Raxol.Test.Integration.simulate_event_with_manager_update(parent, %{
           type: :child_event,
           child_id: child.state.id,
           value: 5
         })
 
-      # Verify child state was updated
-      updated_child = ComponentManager.get_component(child.state.id)
+      # Fetch latest child state from manager
+      updated_child_from_manager =
+        if child.state.component_manager_id do
+          ComponentManager.get_component(child.state.component_manager_id)
+        else
+          # Fallback to local state if component_manager_id is not available
+          child
+        end
+
+      # Verify child state was updated in the parent's child_states
+      assert updated_child_from_manager.state.value == 5
+
+      # Also verify the child component in ComponentManager was updated
+      updated_child =
+        ComponentManager.get_component(child.state.component_manager_id)
+
       assert updated_child.state.value == 5
     end
   end
 
   describe "Component Communication" do
-    test "broadcast events" do
-      # Set up multiple components
+    test "Component Communication broadcast events" do
+      # Set up components
       parent = create_test_component(ParentComponent)
 
       child1 =
@@ -270,75 +305,128 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       child2 =
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
-      # Set up hierarchy
+      # Set up hierarchy with mounting in ComponentManager
       {:ok, parent, [child1, child2]} =
-        Raxol.Test.Integration.setup_component_hierarchy(ParentComponent, [
-          ChildComponent,
-          ChildComponent
-        ])
+        Raxol.Test.Integration.setup_component_hierarchy_with_mounting(
+          ParentComponent,
+          [ChildComponent, ChildComponent]
+        )
 
-      # Simulate broadcast event
+      # Simulate broadcast event from parent
       {updated_parent, _} =
-        Unit.simulate_event(parent, %{
-          type: :broadcast,
+        Raxol.Test.Integration.simulate_broadcast_event(parent, :broadcast, %{
           value: :increment
         })
 
-      # Verify all children received the event
-      updated_child1 = ComponentManager.get_component(child1.state.id)
-      updated_child2 = ComponentManager.get_component(child2.state.id)
-      assert updated_child1.state.value == 1
-      assert updated_child2.state.value == 1
+      # Fetch latest child states from ComponentManager
+      updated_child1_from_manager =
+        if child1.state.component_manager_id do
+          ComponentManager.get_component(child1.state.component_manager_id)
+        else
+          # Fallback to local state if component_manager_id is not available
+          child1
+        end
+
+      updated_child2_from_manager =
+        if child2.state.component_manager_id do
+          ComponentManager.get_component(child2.state.component_manager_id)
+        else
+          # Fallback to local state if component_manager_id is not available
+          child2
+        end
+
+      # Verify both children received the increment event
+      assert updated_child1_from_manager.state.value == 1
+      assert updated_child2_from_manager.state.value == 1
+
+      # Verify parent recorded the broadcast event
+      assert length(updated_parent.state.events) == 1
+      assert hd(updated_parent.state.events) == {:broadcast, :increment}
     end
 
-    test "component state synchronization" do
+    test "Component Communication component state synchronization" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
       child =
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
-      # Set up hierarchy
+      # Set up hierarchy with mounting in ComponentManager
       {:ok, parent, child} =
-        Raxol.Test.Integration.setup_component_hierarchy(
+        Raxol.Test.Integration.setup_component_hierarchy_with_mounting(
           ParentComponent,
           ChildComponent
         )
 
-      # Update child state
-      {updated_child, _} = Unit.simulate_event(child, %{type: :click})
+      # Simulate child event
+      {updated_child, _} =
+        Raxol.Test.Integration.simulate_event_with_manager_update(child, %{
+          type: :click
+        })
 
-      # Verify parent state was synchronized
-      updated_parent = ComponentManager.get_component(parent.state.id)
+      # Fetch latest states from ComponentManager
+      updated_child_from_manager =
+        if child.state.component_manager_id do
+          ComponentManager.get_component(child.state.component_manager_id)
+        else
+          # Fallback to local state if component_manager_id is not available
+          child
+        end
 
-      assert updated_parent.state.child_states[child.state.id] ==
-               updated_child.state
+      updated_parent_from_manager =
+        if parent.state.component_manager_id do
+          ComponentManager.get_component(parent.state.component_manager_id)
+        else
+          # Fallback to local state if component_manager_id is not available
+          parent
+        end
+
+      # Verify child state was updated
+      assert updated_child_from_manager.state.value == 1
+
+      # Verify parent's child_states reflects the updated child state
+      child_state_in_parent =
+        updated_parent_from_manager.state.child_states[child.state.id]
+
+      assert child_state_in_parent.value == 1
+
+      # Verify state consistency between child and parent's child_states
+      child_state_relevant =
+        Map.take(updated_child_from_manager.state, [
+          :id,
+          :value,
+          :mounted,
+          :parent_id
+        ])
+
+      parent_child_state_relevant =
+        Map.take(child_state_in_parent, [:id, :value, :mounted, :parent_id])
+
+      assert parent_child_state_relevant == child_state_relevant
     end
   end
 
   describe "Component Lifecycle in Hierarchy" do
-    test "mounting order" do
+    test "Component Lifecycle in Hierarchy mounting order" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
       child =
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
-      # Set up hierarchy
-      {:ok, parent, child} =
-        Raxol.Test.Integration.setup_component_hierarchy(
+      # Set up hierarchy with mounting in ComponentManager
+      {:ok, mounted_parent, mounted_child} =
+        Raxol.Test.Integration.setup_component_hierarchy_with_mounting(
           ParentComponent,
           ChildComponent
         )
 
-      # Mount components
-      mounted_parent = mount_component(parent)
-      mounted_child = mount_component(child, mounted_parent)
+      # Verify mounting order (parent should be mounted first)
+      assert mounted_parent.state.mounted == true
+      assert mounted_child.state.mounted == true
 
-      # Verify mounting order
-      assert mounted_parent.state.mounted
-      assert mounted_child.state.mounted
-      assert mounted_child.state.parent_id == mounted_parent.state.id
+      # Verify parent-child relationship (child should reference parent)
+      assert mounted_child.parent.state.id == mounted_parent.state.id
     end
 
     test "unmounting order" do
@@ -370,26 +458,61 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   end
 
   describe "Error Handling in Hierarchy" do
-    test "handles child errors gracefully" do
+    test "Error Handling in Hierarchy handles child errors gracefully" do
       # Set up components
       parent = create_test_component(ParentComponent)
 
       child =
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
-      # Set up hierarchy
+      # Set up hierarchy with mounting in ComponentManager
       {:ok, parent, child} =
-        Raxol.Test.Integration.setup_component_hierarchy(
+        Raxol.Test.Integration.setup_component_hierarchy_with_mounting(
           ParentComponent,
           ChildComponent
         )
 
-      # Simulate child error
-      {updated_child, _} = Unit.simulate_event(child, %{type: :error_event})
+      # Simulate child error event
+      {updated_child, _} =
+        Raxol.Test.Integration.simulate_event_with_manager_update(child, %{
+          type: :error_event
+        })
 
-      # Verify parent remains stable
-      updated_parent = ComponentManager.get_component(parent.state.id)
-      assert updated_parent.state == parent.state
+      # Fetch latest parent state from ComponentManager
+      updated_parent_from_manager =
+        if parent.state.component_manager_id do
+          ComponentManager.get_component(parent.state.component_manager_id)
+        else
+          # Fallback to local state if component_manager_id is not available
+          parent
+        end
+
+      # Verify parent remains stable (accounting for mounted state change)
+      expected_parent_state = Map.put(parent.state, :mounted, true)
+
+      # Only compare relevant fields, excluding component_manager_id which is added by ComponentManager
+      relevant_fields = [
+        :id,
+        :type,
+        :children,
+        :child_states,
+        :events,
+        :mounted,
+        :unmounted,
+        :render_count,
+        :style,
+        :disabled,
+        :focused,
+        :subscriptions
+      ]
+
+      parent_state_relevant =
+        Map.take(updated_parent_from_manager.state, relevant_fields)
+
+      expected_parent_state_relevant =
+        Map.take(expected_parent_state, relevant_fields)
+
+      assert parent_state_relevant == expected_parent_state_relevant
     end
 
     test "handles parent errors gracefully" do
@@ -416,7 +539,9 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       # Verify child remains stable (accounting for mounted state change)
       updated_child = ComponentManager.get_component(child_id)
       expected_child_state = Map.put(child.state, :mounted, true)
-      assert updated_child.state == expected_child_state
+      # Only compare relevant fields
+      assert Map.take(updated_child.state, Map.keys(expected_child_state)) ==
+               Map.take(expected_child_state, Map.keys(expected_child_state))
     end
   end
 

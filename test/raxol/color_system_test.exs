@@ -18,6 +18,7 @@ defmodule Raxol.ColorSystemTest do
     case start_supervised({UserPreferences, user_prefs_opts}) do
       {:ok, _pid} ->
         :ok
+
       {:error, {:already_started, _pid}} ->
         :ok
     end
@@ -130,7 +131,8 @@ defmodule Raxol.ColorSystemTest do
       # Verify preference was maintained
       # assert UserPreferences.get([:theme, :accent_color]) == "#FF5722"
       # Fixed path
-      assert UserPreferences.get(:accent_color, __MODULE__.UserPreferences) == "#FF5722"
+      assert UserPreferences.get(:accent_color, __MODULE__.UserPreferences) ==
+               "#FF5722"
     end
 
     test "generates accessible color scales" do
@@ -229,7 +231,11 @@ defmodule Raxol.ColorSystemTest do
 
     test "color system respects reduced motion settings" do
       # Set reduced motion through user preferences
-      UserPreferences.set("accessibility.reduced_motion", true, __MODULE__.UserPreferences)
+      UserPreferences.set(
+        "accessibility.reduced_motion",
+        true,
+        __MODULE__.UserPreferences
+      )
 
       # Re-initialize Framework to pick up the preference
       Framework.init(%{}, __MODULE__.UserPreferences)
@@ -242,7 +248,12 @@ defmodule Raxol.ColorSystemTest do
       assert reduced_motion_enabled == true
 
       # Restore previous state (set pref to false and re-init)
-      UserPreferences.set("accessibility.reduced_motion", false, __MODULE__.UserPreferences)
+      UserPreferences.set(
+        "accessibility.reduced_motion",
+        false,
+        __MODULE__.UserPreferences
+      )
+
       Framework.init(%{}, __MODULE__.UserPreferences)
       settings_after = Process.get(:animation_framework_settings, %{})
       refute Map.get(settings_after, :reduced_motion, false)

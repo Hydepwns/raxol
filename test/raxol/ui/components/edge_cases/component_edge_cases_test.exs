@@ -78,7 +78,8 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
         System.convert_time_unit(end_time - start_time, :native, :microsecond)
 
       # Accumulate computation time instead of resetting
-      total_computation_time = Map.get(state, :computation_time, 0) + computation_time
+      total_computation_time =
+        Map.get(state, :computation_time, 0) + computation_time
 
       new_state = Map.put(state, :data, new_data)
       new_state = Map.put(new_state, :computation_time, total_computation_time)

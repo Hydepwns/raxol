@@ -97,10 +97,23 @@ defmodule Raxol.Terminal.Driver do
 
     # Send driver_ready event to the test process
     if Mix.env() == :test do
+      Raxol.Core.Runtime.Log.info(
+        "[Driver] Test environment detected, sending driver_ready event"
+      )
+
       send(self(), {:driver_ready, self()})
       # Send initial resize event for test environment
       if dispatcher_pid do
+        Raxol.Core.Runtime.Log.info(
+          "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(dispatcher_pid)}"
+        )
+
         send_initial_resize_event(dispatcher_pid)
+      else
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[Driver] No dispatcher_pid provided, skipping initial resize event",
+          %{}
+        )
       end
     end
 
@@ -350,7 +363,17 @@ defmodule Raxol.Terminal.Driver do
       {:ok, width, height} ->
         Raxol.Core.Runtime.Log.info("Initial terminal size: #{width}x#{height}")
         event = %Event{type: :resize, data: %{width: width, height: height}}
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
+
+        # In test mode, send directly to the test process
+        if Mix.env() == :test do
+          Raxol.Core.Runtime.Log.info(
+            "[Driver] Sending resize event in test mode: #{inspect(event)}"
+          )
+
+          send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+        else
+          GenServer.cast(dispatcher_pid, {:dispatch, event})
+        end
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(
@@ -366,7 +389,16 @@ defmodule Raxol.Terminal.Driver do
           data: %{width: default_width, height: default_height}
         }
 
-        GenServer.cast(dispatcher_pid, {:dispatch, event})
+        # In test mode, send directly to the test process
+        if Mix.env() == :test do
+          Raxol.Core.Runtime.Log.info(
+            "[Driver] Sending default resize event in test mode: #{inspect(event)}"
+          )
+
+          send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+        else
+          GenServer.cast(dispatcher_pid, {:dispatch, event})
+        end
     end
   end
 

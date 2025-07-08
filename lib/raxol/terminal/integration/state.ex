@@ -60,6 +60,7 @@ defmodule Raxol.Terminal.Integration.State do
           input: nil,
           output: nil
         }
+
       _pid ->
         {:ok, window_id} =
           UnifiedWindow.create_window(%{
@@ -121,17 +122,23 @@ defmodule Raxol.Terminal.Integration.State do
       {:ok, commands} ->
         # Only update if buffer_manager is a PID
         case state.buffer_manager do
-          nil -> %{state | buffer: content}
+          nil ->
+            %{state | buffer: content}
+
           buffer_manager when is_pid(buffer_manager) ->
             updated_buffer = UnifiedManager.update(buffer_manager, commands)
             %{state | buffer_manager: updated_buffer}
-          _ -> %{state | buffer: content}
+
+          _ ->
+            %{state | buffer: content}
         end
-      {:error, _} -> state
+
+      {:error, _} ->
+        state
     end
   end
 
-      @doc """
+  @doc """
   Gets the visible content from the current window.
   """
   @spec get_visible_content(t()) :: list()
@@ -148,11 +155,13 @@ defmodule Raxol.Terminal.Integration.State do
               %{id: _} ->
                 # Return mock content for testing
                 [["Hello, World!"]]
+
               buffer_manager when is_map(buffer_manager) ->
                 UnifiedManager.get_visible_content(
                   buffer_manager,
                   window.buffer_id
                 )
+
               _ ->
                 []
             end
@@ -160,6 +169,7 @@ defmodule Raxol.Terminal.Integration.State do
           _ ->
             []
         end
+
       _ ->
         []
     end
@@ -195,11 +205,17 @@ defmodule Raxol.Terminal.Integration.State do
               renderer when is_pid(renderer) ->
                 UnifiedRenderer.render(renderer, window.renderer_id)
                 state
-              _ -> state
+
+              _ ->
+                state
             end
-          _ -> state
+
+          _ ->
+            state
         end
-      _ -> state
+
+      _ ->
+        state
     end
   end
 
@@ -224,6 +240,7 @@ defmodule Raxol.Terminal.Integration.State do
           :ok -> state
           {:error, _} -> state
         end
+
       {:error, _} ->
         state
     end
@@ -234,11 +251,12 @@ defmodule Raxol.Terminal.Integration.State do
   """
   @spec cleanup(t()) :: :ok
   def cleanup(%__MODULE__{} = state) do
-    UnifiedManager.cleanup(state.buffer_manager)
-    UnifiedScroll.cleanup(state.scroll_buffer)
-    UnifiedRenderer.cleanup(state.renderer)
-    UnifiedIO.cleanup(state.io)
-    UnifiedWindow.cleanup(state.window_manager)
+    # Clean up components only if they exist
+    if state.buffer_manager, do: UnifiedManager.cleanup(state.buffer_manager)
+    if state.scroll_buffer, do: UnifiedScroll.cleanup(state.scroll_buffer)
+    if state.renderer, do: UnifiedRenderer.cleanup(state.renderer)
+    if state.io, do: UnifiedIO.cleanup(state.io)
+    if state.window_manager, do: UnifiedWindow.cleanup(state.window_manager)
     :ok
   end
 end

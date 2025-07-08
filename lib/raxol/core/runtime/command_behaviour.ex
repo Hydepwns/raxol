@@ -6,5 +6,6 @@ defmodule Raxol.Core.Runtime.CommandBehaviour do
   enabling better testing through dependency injection.
   """
 
-  @callback execute(Raxol.Core.Runtime.Command.t(), map()) :: :ok | {:error, term()}
+  @callback execute(Raxol.Core.Runtime.Command.t(), map()) ::
+              :ok | {:error, term()}
 end
