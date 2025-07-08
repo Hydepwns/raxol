@@ -27,14 +27,14 @@ end
 
 ### Lifecycle Hooks
 
-| Hook | Purpose | Required | Returns |
-|------|---------|----------|---------|
-| `init/1` | Initialize state from props | Yes | `state` |
-| `mount/1` | Setup resources after mounting | No | `{state, commands}` |
-| `update/2` | Update state in response to messages | Yes | `{state, commands}` |
-| `render/1` | Produce component view | Yes | `element` |
-| `handle_event/2` | Handle user/system events | Yes | `{state, commands}` |
-| `unmount/1` | Clean up resources | No | `state` |
+| Hook             | Purpose                              | Required | Returns             |
+| ---------------- | ------------------------------------ | -------- | ------------------- |
+| `init/1`         | Initialize state from props          | Yes      | `state`             |
+| `mount/1`        | Setup resources after mounting       | No       | `{state, commands}` |
+| `update/2`       | Update state in response to messages | Yes      | `{state, commands}` |
+| `render/1`       | Produce component view               | Yes      | `element`           |
+| `handle_event/2` | Handle user/system events            | Yes      | `{state, commands}` |
+| `unmount/1`      | Clean up resources                   | No       | `state`             |
 
 ## Component Types
 
@@ -328,7 +328,7 @@ def init(props) do
     valid: true,
     dirty: false
   }
-  
+
   case validate_props(props) do
     {:ok, _} -> state
     {:error, error} -> Map.put(state, :error, error)
@@ -348,16 +348,16 @@ end
 def update({:validate_and_set, value}, state) do
   case validate_value(value) do
     {:ok, _} ->
-      new_state = %{state | 
+      new_state = %{state |
         value: value,
         error: nil,
         valid: true,
         dirty: true
       }
       {new_state, [{:command, :value_changed}]}
-    
+
     {:error, error} ->
-      new_state = %{state | 
+      new_state = %{state |
         value: value,
         error: error,
         valid: false,
@@ -445,4 +445,4 @@ end
 
 - [Component Guide](../README.md) - Component development patterns
 - [Style Guide](../style_guide.md) - Styling and design patterns
-- [Testing Guide](../testing.md) - Component testing patterns 
+- [Testing Guide](../testing.md) - Component testing patterns
