@@ -105,6 +105,10 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
         Process.put(key, updated_queue)
 
+        # Also store in the legacy key format for test compatibility
+        legacy_queue = Process.get(:accessibility_announcements, [])
+        Process.put(:accessibility_announcements, [announcement | legacy_queue])
+
         Raxol.Core.Runtime.Log.debug(
           "Announcements.announce stored announcement: #{inspect(announcement)}"
         )
