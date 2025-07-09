@@ -88,7 +88,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
             handle_cache_error(error)
         end
 
-      {:error, _reason} ->
+      {:error, reason} ->
         handle_file_error(reason)
     end
   end

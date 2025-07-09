@@ -42,8 +42,8 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
       nil ->
         GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
-      _pid ->
-        {:error, {:already_started, _pid}}
+      pid ->
+        {:error, {:already_started, pid}}
     end
   end
 

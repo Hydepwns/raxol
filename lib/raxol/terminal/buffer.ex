@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Buffer do
   Delegates to ScreenBuffer.resize/3.
   """
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
-  def resize(buffer, width, height) when width <= 0 or height <= 0 do
+  def resize(_buffer, width, height) when width <= 0 or height <= 0 do
     raise ArgumentError,
           "Buffer dimensions must be positive integers, got: #{width}x#{height}"
   end

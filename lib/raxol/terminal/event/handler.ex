@@ -48,11 +48,11 @@ defmodule Raxol.Terminal.Event.Handler do
   end
 
   def process_events(emulator) do
-    _queue = Map.get(emulator.event_handlers, :queue, [])
+    queue = Map.get(emulator.event_handlers, :queue, [])
     handlers = Map.get(emulator.event_handlers, :handlers, %{})
 
     {_processed_events, emulator} =
-      Enum.reduce(_queue, {[], emulator}, fn {event_type, event_data},
+      Enum.reduce(queue, {[], emulator}, fn {event_type, event_data},
                                              {processed, emu} ->
         case Map.get(handlers, event_type) do
           nil ->

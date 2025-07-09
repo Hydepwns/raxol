@@ -115,9 +115,6 @@ defmodule Raxol.Terminal.Emulator.Reset do
 
   # Private functions
 
-  defp pid?(pid) when is_pid(pid), do: true
-  defp pid?(_), do: false
-
   defp reset_state(emulator) do
     %{emulator | state: nil}
   end

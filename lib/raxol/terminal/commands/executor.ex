@@ -174,7 +174,7 @@ defmodule Raxol.Terminal.Commands.Executor do
     emulator
   end
 
-  defp log_and_return_result({:ok, emulator, output}) do
+  defp log_and_return_result({:ok, emulator, _output}) do
     emulator
   end
 

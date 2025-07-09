@@ -141,10 +141,8 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
     Raxol.Terminal.Emulator.get_cursor_position(emulator)
   end
 
-  defp mode_to_type(0), do: :to_end
-  defp mode_to_type(1), do: :to_beginning
-  defp mode_to_type(2), do: :all
-  defp mode_to_type(_), do: :to_end
+  # Remove unused function completely
+  # defp mode_to_type(_), do: :to_end
 
   # Functions expected by tests
   @doc """

@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
     scrollback = Emulator.get_scrollback(emulator) || []
     buffer = emulator.main_screen_buffer
-    {to_restore, remaining_scrollback} = Enum.split(scrollback, count)
+    {to_restore, _remaining_scrollback} = Enum.split(scrollback, count)
 
     # Move lines from scrollback to the top of the screen buffer
     new_buffer = ScreenBuffer.prepend_lines(buffer, Enum.reverse(to_restore))
