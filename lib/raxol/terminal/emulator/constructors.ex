@@ -19,25 +19,37 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   """
   @spec new(non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.Emulator.t()
   def new(width, height) do
-    main_buffer = ScreenBuffer.new(width, height)
-    alternate_buffer = ScreenBuffer.new(width, height)
+    # Initialize all required managers and processes
+    state_pid = get_pid(Raxol.Terminal.State.Manager.start_link([]))
+    event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link([]))
+    buffer_pid = get_pid(Raxol.Terminal.Buffer.Manager.start_link([width: width, height: height]))
+    config_pid = get_pid(Raxol.Terminal.Config.Manager.start_link([width: width, height: height]))
+    command_pid = get_pid(Raxol.Terminal.Command.Manager.start_link([]))
+    cursor_pid = get_pid(Manager.start_link([]))
+    window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link([]))
     mode_manager = ModeManager.new()
 
-    cursor_result = Manager.start_link([])
-    cursor_pid = get_pid(cursor_result)
-    window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link([]))
+    # Initialize screen buffers
+    main_buffer = ScreenBuffer.new(width, height)
+    alternate_buffer = ScreenBuffer.new(width, height)
 
     %Raxol.Terminal.Emulator{
-      width: width,
-      height: height,
-      main_screen_buffer: main_buffer,
-      alternate_screen_buffer: alternate_buffer,
-      mode_manager: mode_manager,
+      # Core managers
+      state: state_pid,
+      event: event_pid,
+      buffer: buffer_pid,
+      config: config_pid,
+      command: command_pid,
       cursor: cursor_pid,
       window_manager: window_manager_pid,
-      style: Raxol.Terminal.ANSI.TextFormatting.new(),
-      scrollback_buffer: [],
-      cursor_style: :block,
+      mode_manager: mode_manager,
+
+      # Screen buffers
+      active_buffer_type: :main,
+      main_screen_buffer: main_buffer,
+      alternate_screen_buffer: alternate_buffer,
+
+      # Character set state
       charset_state: %{
         g0: :us_ascii,
         g1: :us_ascii,
@@ -46,7 +58,48 @@ defmodule Raxol.Terminal.Emulator.Constructors do
         gl: :g0,
         gr: :g0,
         single_shift: nil
-      }
+      },
+
+      # Dimensions
+      width: width,
+      height: height,
+
+      # Window state
+      window_state: %{
+        iconified: false,
+        maximized: false,
+        position: {0, 0},
+        size: {width, height},
+        size_pixels: {width * 8, height * 16},
+        stacking_order: :normal,
+        previous_size: {width, height},
+        saved_size: {width, height},
+        icon_name: ""
+      },
+
+      # State stack for terminal state management
+      state_stack: [],
+
+      # Command history
+      command_history: [],
+      current_command_buffer: "",
+      max_command_history: 100,
+
+      # Other fields
+      output_buffer: "",
+      style: Raxol.Terminal.ANSI.TextFormatting.new(),
+      scrollback_limit: 1000,
+      scrollback_buffer: [],
+      window_title: nil,
+      plugin_manager: nil,
+      saved_cursor: nil,
+      scroll_region: nil,
+      sixel_state: nil,
+      last_col_exceeded: false,
+      cursor_blink_rate: 0,
+      cursor_style: :block,
+      session_id: nil,
+      client_options: %{}
     }
   end
 
@@ -82,7 +135,11 @@ defmodule Raxol.Terminal.Emulator.Constructors do
     main_buffer = ScreenBuffer.new(width, height)
     alternate_buffer = ScreenBuffer.new(width, height)
 
+    # Get plugin manager from options
+    plugin_manager = Keyword.get(opts, :plugin_manager)
+
     %Raxol.Terminal.Emulator{
+      # Core managers
       state: state_pid,
       event: event_pid,
       buffer: buffer_pid,
@@ -91,16 +148,63 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       cursor: cursor_pid,
       window_manager: window_manager_pid,
       mode_manager: mode_manager,
+
+      # Screen buffers
       active_buffer_type: :main,
       main_screen_buffer: main_buffer,
       alternate_screen_buffer: alternate_buffer,
+
+      # Character set state
+      charset_state: %{
+        g0: :us_ascii,
+        g1: :us_ascii,
+        g2: :us_ascii,
+        g3: :us_ascii,
+        gl: :g0,
+        gr: :g0,
+        single_shift: nil
+      },
+
+      # Dimensions
       width: width,
       height: height,
+
+      # Window state
+      window_state: %{
+        iconified: false,
+        maximized: false,
+        position: {0, 0},
+        size: {width, height},
+        size_pixels: {width * 8, height * 16},
+        stacking_order: :normal,
+        previous_size: {width, height},
+        saved_size: {width, height},
+        icon_name: ""
+      },
+
+      # State stack for terminal state management
+      state_stack: [],
+
+      # Command history
+      command_history: [],
+      current_command_buffer: "",
+      max_command_history: Keyword.get(opts, :max_command_history, 100),
+
+      # Other fields
       output_buffer: "",
       style: Raxol.Terminal.ANSI.TextFormatting.new(),
       scrollback_limit: Keyword.get(opts, :scrollback_limit, 1000),
       scrollback_buffer: [],
-      cursor_style: :block
+      window_title: nil,
+      plugin_manager: plugin_manager,
+      saved_cursor: nil,
+      scroll_region: nil,
+      sixel_state: nil,
+      last_col_exceeded: false,
+      cursor_blink_rate: 0,
+      cursor_style: :block,
+      session_id: nil,
+      client_options: %{}
     }
   end
 

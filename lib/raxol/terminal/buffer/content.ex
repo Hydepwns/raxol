@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Buffer.Content do
   def write_string(buffer, x, y, string, style \\ nil) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
       # Use the Writer module which properly handles wide characters
-      Raxol.Terminal.Buffer.Writer.write_string(buffer, x, y, string)
+      Raxol.Terminal.Buffer.Writer.write_string(buffer, x, y, string, style)
     else
       buffer
     end

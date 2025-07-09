@@ -131,9 +131,8 @@ defmodule Raxol.Terminal.BufferManager do
   @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_up(emulator, lines) do
     buffer = get_active_buffer(emulator)
-    {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
-    case ScreenBuffer.scroll_up(buffer, lines, top, bottom) do
+    case Raxol.Terminal.Buffer.Scroller.scroll_up(buffer, lines) do
       {:ok, new_buffer} ->
         update_active_buffer(emulator, new_buffer)
 
@@ -153,9 +152,8 @@ defmodule Raxol.Terminal.BufferManager do
   @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_down(emulator, lines) do
     buffer = get_active_buffer(emulator)
-    {top, bottom} = ScreenBuffer.get_scroll_region(buffer)
 
-    case ScreenBuffer.scroll_down(buffer, lines, top, bottom) do
+    case Raxol.Terminal.Buffer.Scroller.scroll_down(buffer, lines) do
       {:ok, new_buffer} ->
         update_active_buffer(emulator, new_buffer)
 

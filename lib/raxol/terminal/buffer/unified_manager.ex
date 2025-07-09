@@ -1236,12 +1236,17 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp write_cells_to_buffer(buffer, cells, start_x, start_y) do
-    # Simple implementation - write cells to the buffer
-    # This is a simplified version that just writes to the first row
-    Enum.reduce(cells, buffer, fn cell, acc_buffer ->
-      # For now, just return the buffer as-is
-      # In a real implementation, you would update the buffer content
-      acc_buffer
+    # Write cells to the buffer starting at the specified position
+    Enum.reduce(Enum.with_index(cells), buffer, fn {cell, index}, acc_buffer ->
+      x = start_x + index
+      y = start_y
+
+      # Only write if within buffer bounds
+      if x < buffer.width and y < buffer.height do
+        ScreenBuffer.write_char(acc_buffer, x, y, cell.char, cell.style)
+      else
+        acc_buffer
+      end
     end)
   end
 end

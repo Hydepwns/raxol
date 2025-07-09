@@ -325,7 +325,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   Moves the cursor right by the specified number of columns.
   """
   @spec move_cursor_right(t(), integer(), integer(), integer()) :: t()
-  def move_cursor_right(emulator, cols, width, _height) do
+  def move_cursor_right(emulator, cols, _width, _height) do
     cursor = emulator.cursor
 
     moved_cursor =
@@ -403,7 +403,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   Moves the cursor to the specified column.
   """
   @spec move_cursor_to_column(t(), integer(), integer(), integer()) :: t()
-  def move_cursor_to_column(emulator, column, width, _height) do
+  def move_cursor_to_column(emulator, column, _width, _height) do
     cursor = emulator.cursor
 
     moved_cursor =
@@ -432,7 +432,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   Moves the cursor to the specified position.
   """
   @spec move_cursor_to(t(), {integer(), integer()}, integer(), integer()) :: t()
-  def move_cursor_to(emulator, {row, col}, width, height) do
+  def move_cursor_to(emulator, {row, col}, _width, _height) do
     cursor = emulator.cursor
 
     moved_cursor =

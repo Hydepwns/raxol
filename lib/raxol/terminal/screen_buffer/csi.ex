@@ -6,13 +6,13 @@ defmodule Raxol.Terminal.ScreenBuffer.CSI do
   defstruct [
     :params,
     :intermediate,
-    :final
+    :final_byte
   ]
 
   @type t :: %__MODULE__{
           params: list(String.t()),
           intermediate: String.t(),
-          final: String.t()
+          final_byte: String.t()
         }
 
   @doc """
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.ScreenBuffer.CSI do
     %__MODULE__{
       params: [],
       intermediate: "",
-      final: ""
+      final_byte: ""
     }
   end
 
@@ -30,6 +30,6 @@ defmodule Raxol.Terminal.ScreenBuffer.CSI do
   Handles a CSI sequence.
   """
   def handle_sequence(%__MODULE__{} = state, sequence, params) do
-    %{state | params: params, intermediate: sequence, final: sequence}
+    %{state | params: params, intermediate: sequence, final_byte: sequence}
   end
 end

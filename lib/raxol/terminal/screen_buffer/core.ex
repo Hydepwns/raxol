@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def new(width, height, _scrollback \\ 1000) do
     %__MODULE__{
-      cells: List.duplicate(List.duplicate(%{}, width), height),
+      cells: List.duplicate(List.duplicate(Raxol.Terminal.Cell.new(), width), height),
       width: width,
       height: height,
       charset_state: Charset.init(),
@@ -166,12 +166,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   # --- Clear Operations ---
   def clear(buffer, _style) do
-    default_cell = %Raxol.Terminal.Cell{
-      char: " ",
-      style: nil,
-      dirty: nil,
-      wide_placeholder: false
-    }
+    default_cell = Raxol.Terminal.Cell.new()
 
     %{
       buffer

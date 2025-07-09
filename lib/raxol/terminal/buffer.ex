@@ -258,7 +258,10 @@ defmodule Raxol.Terminal.Buffer do
   @spec scroll(t(), integer()) :: t()
   def scroll(buffer, lines) do
     screen_buffer = to_screen_buffer(buffer)
-    updated_screen_buffer = ScreenBuffer.scroll_up(screen_buffer, abs(lines))
+
+    {updated_screen_buffer, _scrolled_lines} =
+      ScreenBuffer.scroll_up(screen_buffer, abs(lines))
+
     from_screen_buffer(updated_screen_buffer, buffer)
   end
 
