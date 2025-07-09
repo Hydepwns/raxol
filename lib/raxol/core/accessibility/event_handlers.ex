@@ -91,20 +91,31 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       iex> EventHandlers.handle_theme_changed({:theme_changed, %{theme: "dark"}})
       :ok
   """
-  def handle_theme_changed(
-        {:theme_changed, %{theme: theme_name}},
-        user_preferences_pid_or_name
-      ) do
-    Raxol.Core.Runtime.Log.info(
-      "[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme_name)}"
-    )
+  def handle_theme_changed(event, user_preferences_pid_or_name \\ Raxol.Core.UserPreferences) do
+    # Ensure we always have a valid user preferences argument
+    user_prefs = if user_preferences_pid_or_name, do: user_preferences_pid_or_name, else: Raxol.Core.UserPreferences
 
-    announce_message = "Theme changed to #{theme_name}"
-    Announcements.announce(announce_message, [], user_preferences_pid_or_name)
-    :ok
+    case event do
+      {:theme_changed, %{theme: theme}} when is_map(theme) ->
+        Raxol.Core.Runtime.Log.info(
+          "[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme)}"
+        )
+
+        announce_message = "Theme changed to #{String.downcase(theme.name)}"
+        Announcements.announce(announce_message, [], user_prefs)
+        :ok
+      {:theme_changed, %{theme: theme_name}} when is_binary(theme_name) or is_atom(theme_name) ->
+        Raxol.Core.Runtime.Log.info(
+          "[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme_name)}"
+        )
+
+        announce_message = "Theme changed to #{String.downcase(to_string(theme_name))}"
+        Announcements.announce(announce_message, [], user_prefs)
+        :ok
+      _ ->
+        :ok
+    end
   end
-
-  def handle_theme_changed(_, _), do: :ok
 
   # Add String.Chars protocol implementation for Theme
   if Code.ensure_loaded?(Raxol.UI.Theming.Theme) do

@@ -541,8 +541,16 @@ defmodule Raxol.Core.Accessibility do
 
   @doc false
   def handle_theme_changed_event(event) do
-    user_preferences_pid_or_name = Process.get(:accessibility_user_preferences)
-    handle_theme_changed(event, user_preferences_pid_or_name)
+    user_preferences_pid_or_name =
+      Process.get(:accessibility_user_preferences) || Raxol.Core.UserPreferences
+
+    # Ensure we always have a valid user preferences argument
+    user_prefs =
+      if user_preferences_pid_or_name,
+        do: user_preferences_pid_or_name,
+        else: Raxol.Core.UserPreferences
+
+    handle_theme_changed(event, user_prefs)
   end
 
   # --- Legacy Functions ---

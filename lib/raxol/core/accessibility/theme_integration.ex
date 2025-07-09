@@ -47,7 +47,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     EventManager.register_handler(
       :theme_changed,
       Raxol.Core.Accessibility,
-      :handle_theme_changed
+      :handle_theme_changed_event
     )
 
     :ok
@@ -86,7 +86,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     EventManager.unregister_handler(
       :theme_changed,
       Raxol.Core.Accessibility,
-      :handle_theme_changed
+      :handle_theme_changed_event
     )
 
     :ok
