@@ -303,6 +303,19 @@ defmodule Raxol.Style.Colors.Color do
   end
 
   @doc """
+  Returns the inverted color (same as complement).
+
+  ## Examples
+
+      iex> Color.from_hex("#FF0000") |> Color.invert()
+      %Color{r: 0, g: 255, b: 255, hex: "#00FFFF"}
+  """
+  @spec invert(t()) :: t()
+  def invert(%__MODULE__{} = color) do
+    complement(color)
+  end
+
+  @doc """
   Mixes two colors with the specified weight (0.0 to 1.0).
 
   ## Examples

@@ -144,42 +144,8 @@ defmodule Raxol.Style.Colors.PaletteManager do
   end
 
   defp has_sufficient_contrast(color, background, min_ratio) do
-    ratio = calculate_contrast_ratio(color, background)
+    ratio = Raxol.Style.Colors.Utilities.contrast_ratio(color, background)
     ratio >= min_ratio
-  end
-
-  defp calculate_contrast_ratio(color, background) do
-    l1 = relative_luminance(color)
-    l2 = relative_luminance(background)
-
-    if l1 > l2 do
-      (l1 + 0.05) / (l2 + 0.05)
-    else
-      (l2 + 0.05) / (l1 + 0.05)
-    end
-  end
-
-  defp relative_luminance(hex) do
-    {r, g, b} = parse_hex_rgb(hex)
-    r_lum = calculate_channel_luminance(r)
-    g_lum = calculate_channel_luminance(g)
-    b_lum = calculate_channel_luminance(b)
-
-    0.2126 * r_lum + 0.7152 * g_lum + 0.0722 * b_lum
-  end
-
-  defp parse_hex_rgb(hex) do
-    hex = String.replace(hex, "#", "")
-    r = String.slice(hex, 0..1) |> String.to_integer(16) |> then(&(&1 / 255))
-    g = String.slice(hex, 2..3) |> String.to_integer(16) |> then(&(&1 / 255))
-    b = String.slice(hex, 4..5) |> String.to_integer(16) |> then(&(&1 / 255))
-    {r, g, b}
-  end
-
-  defp calculate_channel_luminance(channel) do
-    if channel <= 0.03928,
-      do: channel / 12.92,
-      else: :math.pow((channel + 0.055) / 1.055, 2.4)
   end
 
   defp adjust_for_contrast(color, background, min_ratio) do

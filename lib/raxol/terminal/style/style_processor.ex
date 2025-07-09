@@ -54,9 +54,14 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
           Raxol.Terminal.ANSI.TextFormatting.t()
         ) :: Raxol.Terminal.ANSI.TextFormatting.t()
   def apply_style_attribute({attr, value}, style) do
-    case get_style_update_function(attr, value) do
-      {:ok, update_fn} -> update_fn.(style)
-      :error -> style
+    case attr do
+      :foreground -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, value)
+      :background -> Raxol.Terminal.ANSI.TextFormatting.set_background(style, value)
+      _ ->
+        case get_style_update_function(attr, value) do
+          {:ok, update_fn} -> update_fn.(style)
+          :error -> style
+        end
     end
   end
 
@@ -76,6 +81,6 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
   """
   @spec get_style_updates() :: map()
   def get_style_updates do
-    @style_updates |> Map.new()
+    @style_updates |> Enum.into(%{})
   end
 end

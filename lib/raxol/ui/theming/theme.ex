@@ -288,7 +288,8 @@ defmodule Raxol.UI.Theming.Theme do
         success: Color.from_hex("#009900"),
         warning: Color.from_hex("#FF9900"),
         info: Color.from_hex("#0099CC"),
-        text: Color.from_hex("#333333")
+        text: Color.from_hex("#000000"),
+        foreground: Color.from_hex("#000000")
       },
       component_styles: %{
         panel: %{

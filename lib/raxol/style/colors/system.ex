@@ -126,18 +126,17 @@ defmodule Raxol.Style.Colors.System do
   def get_color(color_name, variant \\ :base) do
     current_theme = get_current_theme()
 
-    # Always check for the variant tuple key first
+    # Check for high contrast mode first
     color =
-      Map.get(current_theme.variants || %{}, {color_name, variant}) ||
-        if get_high_contrast() do
-          get_high_contrast_color(current_theme, color_name, variant)
-        else
-          get_standard_color(current_theme, color_name, variant)
-        end
+      if get_high_contrast() do
+        get_high_contrast_color(current_theme, color_name, variant)
+      else
+        get_standard_color(current_theme, color_name, variant)
+      end
 
     case color do
-      %Color{} = c -> c
-      hex when is_binary(hex) -> Color.from_hex(hex)
+      %Color{} = c -> c.hex
+      hex when is_binary(hex) -> hex
       _ -> nil
     end
   end
@@ -251,27 +250,66 @@ defmodule Raxol.Style.Colors.System do
         Map.get(theme.colors, to_string(color_name))
 
     case val do
-      %Color{} = c -> c
-      hex when is_binary(hex) -> Color.from_hex(hex)
+      %Color{} = c -> c.hex
+      hex when is_binary(hex) -> hex
       _ -> nil
     end
   end
 
   defp get_high_contrast_color(theme, color_name, variant) do
+    # First try to get a specific high contrast variant
     val =
-      Map.get(theme.variants, {color_name, variant, :high_contrast}) ||
-        Map.get(theme.colors, color_name) ||
-        get_standard_color(theme, color_name, variant) ||
+      Map.get(theme.variants || %{}, {color_name, variant, :high_contrast}) ||
         Map.get(
-          theme.variants,
+          theme.variants || %{},
           {to_string(color_name), to_string(variant), "high_contrast"}
-        ) ||
-        Map.get(theme.colors, to_string(color_name))
+        )
 
     case val do
-      %Color{} = c -> c
-      hex when is_binary(hex) -> Color.from_hex(hex)
-      _ -> nil
+      %Color{} = c -> c.hex
+      hex when is_binary(hex) -> hex
+      _ ->
+        # If no specific high contrast variant, generate one from the standard color
+        standard_color = get_standard_color(theme, color_name, variant)
+        case standard_color do
+          nil -> nil
+          hex when is_binary(hex) ->
+            color = Color.from_hex(hex)
+            background = get_standard_color(theme, :background, :base)
+            background_color = if background, do: Color.from_hex(background), else: Color.from_hex("#000000")
+
+            # For high contrast mode, always generate a more contrasting color
+            # Use a higher contrast requirement to ensure the color is noticeably different
+            high_contrast_color = generate_high_contrast_color(color, background_color)
+            high_contrast_color.hex
+          _ -> standard_color
+        end
+    end
+  end
+
+  defp generate_high_contrast_color(color, background_color) do
+    # Calculate current contrast ratio
+    current_ratio = Utilities.contrast_ratio(color, background_color)
+
+    # For high contrast mode, we want a ratio of at least 7.0 (AAA level)
+    target_ratio = 7.0
+
+    if current_ratio >= target_ratio do
+      # If already high contrast, make it even more extreme
+      # Use the increase_contrast function to make it more extreme
+      Utilities.increase_contrast(color)
+    else
+      # If not high contrast, adjust it to meet the target ratio
+      # Use a more aggressive adjustment to ensure the color is noticeably different
+      adjusted_color = Utilities.adjust_for_contrast(color, background_color, :aaa, :normal)
+
+      # If the adjustment didn't change the color (because it already met requirements),
+      # force it to be more extreme
+      if adjusted_color.hex == color.hex do
+        Utilities.increase_contrast(color)
+      else
+        adjusted_color
+      end
     end
   end
 
@@ -403,3 +441,4 @@ defmodule Raxol.Style.Colors.System do
     }
   end
 end
+
