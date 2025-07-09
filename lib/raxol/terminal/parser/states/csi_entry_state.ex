@@ -14,20 +14,20 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
   Handles input in CSI Entry state.
   Returns the next state and any accumulated data.
   """
-  @spec handle(byte(), map()) :: {module(), map()}
+  @spec handle(byte(), map()) :: {atom(), map()}
   def handle(byte, data) do
     case byte do
-      # Parameter bytes (0x30-0x3F)
-      b when b in 0x30..0x3F ->
-        {CSIState, Map.put(data, :params, [b])}
+      # Parameter bytes (0x30-0x3E)
+      b when b in 0x30..0x3E ->
+        {:csi_param, Map.update(data, :params_buffer, <<b>>, &(&1 <> <<b>>))}
 
-      # Intermediate bytes (0x20-0x2F)
-      b when b in 0x20..0x2F ->
-        {CSIIntermediateState, Map.put(data, :intermediates, [b])}
+      # Intermediate bytes (0x20-0x2F) and '?' (0x3F)
+      b when (b in 0x20..0x2F) or b == 0x3F ->
+        {:csi_intermediate, Map.update(data, :intermediates_buffer, <<b>>, &(&1 <> <<b>>))}
 
       # Final bytes (0x40-0x7E)
       b when b in 0x40..0x7E ->
-        {GroundState, Map.put(data, :final, b)}
+        {:ground, Map.put(data, :final_byte, b)}
 
       # Invalid bytes
       b ->
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           "Invalid byte in CSI Entry state: #{inspect(b)}"
         )
 
-        {GroundState, data}
+        {:ground, data}
     end
   end
 
@@ -58,19 +58,26 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
     case input do
       # Process each byte in the input
       <<byte, rest::binary>> ->
-        {next_state_module, updated_data} = handle(byte, parser_state)
+        # Convert parser_state to map for handle/2
+        state_map = %{
+          params_buffer: parser_state.params_buffer,
+          intermediates_buffer: parser_state.intermediates_buffer,
+          final_byte: parser_state.final_byte
+        }
+
+        {next_state_module, updated_data} = handle(byte, state_map)
 
         # Update parser state with the new state and data
         next_parser_state = %{
           parser_state
           | state: next_state_module,
-            params: updated_data[:params] || [],
-            intermediates: updated_data[:intermediates] || [],
-            final: updated_data[:final]
+            params_buffer: Map.get(updated_data, :params_buffer, ""),
+            intermediates_buffer: Map.get(updated_data, :intermediates_buffer, ""),
+            final_byte: Map.get(updated_data, :final_byte)
         }
 
         case next_state_module do
-          GroundState ->
+          :ground ->
             # Transition back to ground state
             {:continue, emulator, next_parser_state, rest}
 

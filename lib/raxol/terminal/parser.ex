@@ -41,13 +41,21 @@ defmodule Raxol.Terminal.Parser do
     )
 
     result = parse_loop(emulator, state, data)
-    {emu, state, rest} = result
 
-    Raxol.Core.Runtime.Log.debug(
-      "[Parser.parse_chunk] AFTER: emu.scroll_region=#{inspect(emu.scroll_region)}"
-    )
+    case result do
+      {emu, state, rest} when is_map(emu) ->
+        Raxol.Core.Runtime.Log.debug(
+          "[Parser.parse_chunk] AFTER: emu.scroll_region=#{inspect(emu.scroll_region)}"
+        )
+        {emu, state, rest}
 
-    {emu, state, rest}
+      unexpected_result ->
+        Raxol.Core.Runtime.Log.error(
+          "[Parser.parse_chunk] Unexpected result from parse_loop: #{inspect(unexpected_result)}"
+        )
+        # Return a safe fallback
+        {emulator, state, data}
+    end
   end
 
   def parse(emulator, input) do
@@ -114,8 +122,7 @@ defmodule Raxol.Terminal.Parser do
   # Delegates to CSIEntryState handler
   defp parse_loop(
          emulator,
-         %Raxol.Terminal.Parser.State{state: :csi_entry, params: []} =
-           parser_state,
+         %Raxol.Terminal.Parser.State{state: :csi_entry} = parser_state,
          input
        ) do
     case CSIEntryState.handle(emulator, parser_state, input) do

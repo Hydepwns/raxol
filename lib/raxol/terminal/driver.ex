@@ -101,9 +101,9 @@ defmodule Raxol.Terminal.Driver do
         "[Driver] Test environment detected, sending driver_ready event"
       )
 
-      send(self(), {:driver_ready, self()})
-      # Send initial resize event for test environment
       if dispatcher_pid do
+        send(dispatcher_pid, {:driver_ready, self()})
+        # Send initial resize event for test environment
         Raxol.Core.Runtime.Log.info(
           "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(dispatcher_pid)}"
         )
@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.Driver do
         send_initial_resize_event(dispatcher_pid)
       else
         Raxol.Core.Runtime.Log.warning_with_context(
-          "[Driver] No dispatcher_pid provided, skipping initial resize event",
+          "[Driver] No dispatcher_pid provided, skipping driver_ready and initial resize event",
           %{}
         )
       end

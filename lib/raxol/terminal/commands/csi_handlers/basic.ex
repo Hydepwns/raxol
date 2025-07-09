@@ -2,6 +2,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   @moduledoc false
 
   alias Raxol.Terminal.Emulator
+  require Logger
 
   def handle_command(emulator, params, byte) do
     case byte do
@@ -24,70 +25,46 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   end
 
   def handle_sgr(emulator, params) do
-    case params do
-      [] ->
-        {:ok,
-         Emulator.update_style(
-           emulator,
-           %{}
-           |> Map.put(:bold, false)
-           |> Map.put(:faint, false)
-           |> Map.put(:italic, false)
-           |> Map.put(:underline, false)
-           |> Map.put(:blink, false)
-           |> Map.put(:reverse, false)
-           |> Map.put(:conceal, false)
-           |> Map.put(:crossed_out, false)
-         )}
+    require Logger
+    Logger.debug("handle_sgr called with params=#{inspect(params)}")
 
-      [0] ->
-        {:ok,
-         Emulator.update_style(
-           emulator,
-           %{}
-           |> Map.put(:bold, false)
-           |> Map.put(:faint, false)
-           |> Map.put(:italic, false)
-           |> Map.put(:underline, false)
-           |> Map.put(:blink, false)
-           |> Map.put(:reverse, false)
-           |> Map.put(:conceal, false)
-           |> Map.put(:crossed_out, false)
-         )}
+    # Convert params to string format for the SGR processor
+    params_string = Enum.join(params, ";")
 
-      [n] when n in 1..9 ->
-        current_style = emulator.style || %{}
-        new_style = Map.put(current_style, get_attribute_key(n), true)
-        {:ok, Emulator.update_style(emulator, new_style)}
+    # Use the correct SGR processor
+    updated_style = Raxol.Terminal.ANSI.SGRProcessor.handle_sgr(params_string, emulator.style)
 
-      [n] when n in 30..37 ->
-        current_style = emulator.style || %{}
-        new_style = Map.put(current_style, :foreground, get_color(n - 30))
-        {:ok, Emulator.update_style(emulator, new_style)}
+    Logger.debug("handle_sgr: updated_style -> #{inspect(updated_style)}")
 
-      [n] when n in 40..47 ->
-        current_style = emulator.style || %{}
-        new_style = Map.put(current_style, :background, get_color(n - 40))
-        {:ok, Emulator.update_style(emulator, new_style)}
+    {:ok, %{emulator | style: updated_style}}
+  end
 
-      [n] when n in 90..97 ->
-        current_style = emulator.style || %{}
+  defp process_sgr_parameter(param) do
+    case param do
+      0 ->
+        {:ok, %{
+          bold: false, faint: false, italic: false, underline: false,
+          blink: false, reverse: false, conceal: false, crossed_out: false,
+          foreground: nil, background: nil
+        }}
 
-        new_style =
-          Map.put(current_style, :foreground, get_bright_color(n - 90))
+      n when n in 1..9 ->
+        {:ok, %{get_attribute_key(n) => true}}
 
-        {:ok, Emulator.update_style(emulator, new_style)}
+      n when n in 30..37 ->
+        {:ok, %{foreground: get_color(n - 30)}}
 
-      [n] when n in 100..107 ->
-        current_style = emulator.style || %{}
+      n when n in 40..47 ->
+        {:ok, %{background: get_color(n - 40)}}
 
-        new_style =
-          Map.put(current_style, :background, get_bright_color(n - 100))
+      n when n in 90..97 ->
+        {:ok, %{foreground: get_bright_color(n - 90)}}
 
-        {:ok, Emulator.update_style(emulator, new_style)}
+      n when n in 100..107 ->
+        {:ok, %{background: get_bright_color(n - 100)}}
 
       _ ->
-        {:ok, emulator}
+        :error
     end
   end
 
@@ -98,20 +75,38 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     {:ok,
      Emulator.move_cursor_to(
        emulator,
-       {col - 1, row - 1},
-       emulator.width,
-       emulator.height
+       {row - 1, col - 1}
      )}
   end
 
   def handle_decstbm(emulator, params) do
-    top = Enum.at(params, 0, 1)
-    bottom = Enum.at(params, 1, emulator.height)
-
-    if top >= 1 and bottom <= emulator.height and top < bottom do
-      {:ok, Emulator.update_scroll_region(emulator, {top - 1, bottom - 1})}
-    else
-      {:ok, emulator}
+    require Logger
+    Logger.debug("handle_decstbm called with params=#{inspect(params)}, emulator.height=#{emulator.height}")
+    case params do
+      [] ->
+        # \e[r - Reset scroll region to full viewport
+        {:ok, %{emulator | scroll_region: nil}}
+      [top, bottom] when top == 1 and bottom == emulator.height ->
+        # \e[r - Reset scroll region to full viewport (default params)
+        {:ok, %{emulator | scroll_region: nil}}
+      [top, bottom] ->
+        # \e[top;bottomr - Set scroll region
+        if top >= 1 and bottom <= emulator.height and top < bottom do
+          {:ok, %{emulator | scroll_region: {top - 1, bottom - 1}}}
+        else
+          {:ok, emulator}
+        end
+      [top] ->
+        # \e[topr - Set top of scroll region, bottom defaults to screen height
+        bottom = emulator.height
+        if top >= 1 and bottom <= emulator.height and top < bottom do
+          {:ok, %{emulator | scroll_region: {top - 1, bottom - 1}}}
+        else
+          {:ok, emulator}
+        end
+      _ ->
+        # Invalid parameters, don't change scroll region
+        {:ok, emulator}
     end
   end
 
@@ -171,10 +166,26 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   end
 
   def handle_decsc(emulator, _params) do
-    saved_cursor = %{
-      position: Emulator.get_cursor_position(emulator),
-      style: emulator.style
-    }
+    # Save cursor position and style
+    cursor = emulator.cursor
+
+    saved_cursor = case cursor do
+      %{row: row, col: col, style: style, visible: visible} ->
+        %{
+          position: {col, row},
+          style: style,
+          visible: visible,
+          attributes: %{}
+        }
+      _ ->
+        # Fallback for other cursor formats
+        %{
+          position: {0, 0},
+          style: :block,
+          visible: true,
+          attributes: %{}
+        }
+    end
 
     {:ok, %{emulator | saved_cursor: saved_cursor}}
   end
@@ -185,31 +196,45 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
         {:ok, emulator}
 
       saved ->
+        # Restore cursor position and style
+        {col, row} = saved.position
+
         emulator =
           Emulator.move_cursor_to(
             emulator,
-            saved.position,
+            {row, col},
             emulator.width,
             emulator.height
           )
 
-        {:ok,
-         %{
-           emulator
-           | style: saved.style,
-             cursor: Map.put(emulator.cursor, :attributes, saved.attributes)
-         }}
+        # Update cursor style and visibility
+        cursor = emulator.cursor
+        updated_cursor = case cursor do
+          %{row: _, col: _, style: _, visible: _} ->
+            %{cursor |
+              style: saved.style,
+              visible: saved.visible
+            }
+          _ ->
+            cursor
+        end
+
+        {:ok, %{emulator | cursor: updated_cursor}}
     end
   end
 
   def handle_dsr(emulator, params) do
     case params do
       [5] ->
-        {:ok, Emulator.write_to_output(emulator, "\e[0n")}
+        # Report device status - ready, no malfunctions
+        output = "\e[0n"
+        {:ok, %{emulator | output_buffer: emulator.output_buffer <> output}}
 
       [6] ->
+        # Report cursor position
         {x, y} = Emulator.get_cursor_position(emulator)
-        {:ok, Emulator.write_to_output(emulator, "\e[#{y + 1};#{x + 1}R")}
+        output = "\e[#{y + 1};#{x + 1}R"
+        {:ok, %{emulator | output_buffer: emulator.output_buffer <> output}}
 
       _ ->
         {:ok, emulator}
@@ -219,10 +244,14 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   def handle_da(emulator, params) do
     case params do
       [0] ->
-        {:ok, Emulator.write_to_output(emulator, "\e[?1;2c")}
+        # Report device attributes
+        output = "\e[?1;2c"
+        {:ok, %{emulator | output_buffer: emulator.output_buffer <> output}}
 
       [1] ->
-        {:ok, Emulator.write_to_output(emulator, "\e[?62;1;6;9;15;22;29c")}
+        # Report device attributes with more details
+        output = "\e[?62;1;6;9;15;22;29c"
+        {:ok, %{emulator | output_buffer: emulator.output_buffer <> output}}
 
       _ ->
         {:ok, emulator}
@@ -342,8 +371,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   defp clear_from_start_to_cursor(emulator, x, y) do
     buffer = Emulator.get_active_buffer(emulator)
-    new_buffer = Raxol.Terminal.ScreenBuffer.clear_region(buffer, 0, 0, x, y)
-    Emulator.update_active_buffer(emulator, new_buffer)
+    # Clear all lines before the cursor's line
+    buffer = Enum.reduce(0..(y-1), buffer, fn row, buf ->
+      Raxol.Terminal.ScreenBuffer.clear_region(buf, 0, row, emulator.width, 1)
+    end)
+    # Clear from start to cursor on the cursor's line
+    buffer = Raxol.Terminal.ScreenBuffer.clear_region(buffer, 0, y, x + 1, 1)
+    Emulator.update_active_buffer(emulator, buffer)
   end
 
   defp clear_entire_screen(emulator) do
@@ -354,8 +388,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
         buffer,
         0,
         0,
-        emulator.width - 1,
-        emulator.height - 1
+        emulator.width,
+        emulator.height
       )
 
     Emulator.update_active_buffer(emulator, new_buffer)

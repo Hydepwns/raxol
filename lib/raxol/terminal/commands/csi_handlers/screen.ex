@@ -167,7 +167,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     x = Enum.at(params, 0, 1)
     {_x, y} = Emulator.get_cursor_position(emulator)
 
-    {:ok, Emulator.move_cursor(emulator, x, y)}
+    # Convert from 1-indexed to 0-indexed
+    x_0 = max(0, x - 1)
+
+    {:ok, Emulator.move_cursor(emulator, x_0, y)}
   end
 
   @doc """
@@ -178,7 +181,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     x = Enum.at(params, 0, 1)
     y = Enum.at(params, 1, 1)
 
-    {:ok, Emulator.move_cursor(emulator, x, y)}
+    # Convert from 1-indexed to 0-indexed
+    x_0 = max(0, x - 1)
+    y_0 = max(0, y - 1)
+
+    {:ok, Emulator.move_cursor(emulator, x_0, y_0)}
   end
 
   @doc """
@@ -476,33 +483,44 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Sets the scrolling region between top and bottom margins.
   """
   def handle_decstbm(emulator, params) do
+    scroll_region = parse_decstbm_params(params, emulator.height)
+    {:ok, %{emulator | scroll_region: scroll_region}}
+  end
+
+  # Private helper to parse DECSTBM parameters
+  defp parse_decstbm_params(params, height) do
     case params do
-      [] ->
-        # Reset to full screen
-        {:ok, %{emulator | scroll_region: nil}}
-
-      [top] ->
-        # Set top margin only, bottom defaults to screen height
-        top_0 = max(0, top - 1)
-        bottom_0 = emulator.height - 1
-        {:ok, %{emulator | scroll_region: {top_0, bottom_0}}}
-
-      [top, bottom] ->
-        # Set both top and bottom margins
-        if top >= bottom do
-          # Invalid region, reset to full screen
-          {:ok, %{emulator | scroll_region: nil}}
-        else
-          # Convert 1-indexed to 0-indexed and clamp to screen bounds
-          top_0 = max(0, min(top - 1, emulator.height - 1))
-          bottom_0 = max(0, min(bottom - 1, emulator.height - 1))
-          {:ok, %{emulator | scroll_region: {top_0, bottom_0}}}
-        end
-
-      _ ->
-        # Invalid parameters, reset to full screen
-        {:ok, %{emulator | scroll_region: nil}}
+      [] -> nil
+      [top] when is_integer(top) -> parse_single_param(top, height)
+      [top, bottom] when is_integer(top) and is_integer(bottom) -> parse_two_params(top, bottom, height)
+      [nil, bottom] when is_integer(bottom) -> parse_nil_top_param(bottom, height)
+      [top, nil] when is_integer(top) -> parse_nil_bottom_param(top, height)
+      _ -> nil
     end
+  end
+
+  defp parse_single_param(top, height) do
+    {max(0, top - 1), height - 1}
+  end
+
+  defp parse_two_params(top, bottom, height) do
+    if top >= bottom do
+      nil
+    else
+      {clamp_param(top - 1, height), clamp_param(bottom - 1, height)}
+    end
+  end
+
+  defp parse_nil_top_param(bottom, height) do
+    {0, clamp_param(bottom - 1, height)}
+  end
+
+  defp parse_nil_bottom_param(top, height) do
+    {clamp_param(top - 1, height), height - 1}
+  end
+
+  defp clamp_param(value, height) do
+    max(0, min(value, height - 1))
   end
 
   # Private helper function to get scroll region
@@ -572,7 +590,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
     if cursor.y <= 0 do
       # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct
-      new_buffer = ScreenBuffer.scroll_up(buffer, 1)
+      {new_buffer, _scrolled_lines} = ScreenBuffer.scroll_up(buffer, 1)
       %{emulator | main_screen_buffer: new_buffer}
     else
       new_cursor = %{cursor | y: cursor.y - 1}

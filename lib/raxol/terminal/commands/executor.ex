@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Commands.Executor do
         params_buffer
       )
 
-    log_and_return_result(result, final_byte)
+    log_and_return_result(result)
   end
 
   defp dispatch_csi_command(
@@ -170,28 +170,28 @@ defmodule Raxol.Terminal.Commands.Executor do
        ),
        do: @command_map.screen.(emulator, params, final_byte)
 
-  defp log_and_return_result(result, final_byte) do
-    case result do
-      {:ok, new_emulator} ->
-        log_after_execution(new_emulator, final_byte)
-        new_emulator
+  defp log_and_return_result({:ok, emulator}) do
+    emulator
+  end
 
-      {:error, _reason, new_emulator} ->
-        log_after_execution(new_emulator, final_byte)
-        new_emulator
-    end
+  defp log_and_return_result({:ok, emulator, output}) do
+    emulator
+  end
+
+  defp log_and_return_result({:error, reason}) do
+    require Logger
+    Logger.error("Executor error: #{inspect(reason)}")
+    {:error, reason}
+  end
+
+  defp log_and_return_result(%Raxol.Terminal.Emulator{} = emulator) do
+    emulator
   end
 
   defp log_unknown_csi(final_byte) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Unknown CSI command: #{inspect(final_byte)}",
       %{}
-    )
-  end
-
-  defp log_after_execution(emulator, final_byte) do
-    Raxol.Core.Runtime.Log.debug(
-      "[Executor.execute_csi_command] AFTER: scroll_region=#{inspect(emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
     )
   end
 
