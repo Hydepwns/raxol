@@ -44,17 +44,27 @@ defmodule Raxol.Terminal.Config.Manager do
     {:reply, state, state}
   end
 
+  @impl GenServer
+  def handle_call({:update_config, new_config}, _from, _state) do
+    {:reply, :ok, new_config}
+  end
+
   # Private functions
 
   @doc """
   Creates a new config manager.
   """
-  @spec new() :: map()
+  @spec new() :: Config.t()
   def new do
-    %{
-      settings: %{},
-      preferences: %{},
-      environment: %{}
+    %Config{
+      version: 1,
+      width: 80,
+      height: 24,
+      colors: %{},
+      styles: %{},
+      input: %{},
+      performance: %{},
+      mode: %{}
     }
   end
 
@@ -91,7 +101,7 @@ defmodule Raxol.Terminal.Config.Manager do
       :input -> config.input
       :performance -> config.performance
       :mode -> config.mode
-      _ -> nil
+      _ -> Map.get(config.mode, setting)
     end
   end
 
@@ -103,7 +113,14 @@ defmodule Raxol.Terminal.Config.Manager do
   def set_setting(emulator, setting, value) when atom?(setting) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     updated_config = update_config_setting(config, setting, value)
-    %{emulator | config: updated_config}
+
+    # Update the config through the GenServer if it's a PID
+    if is_pid(emulator.config) do
+      GenServer.call(emulator.config, {:update_config, updated_config})
+      emulator
+    else
+      %{emulator | config: updated_config}
+    end
   end
 
   defp update_config_setting(config, :width, value)
@@ -136,6 +153,12 @@ defmodule Raxol.Terminal.Config.Manager do
     %{config | mode: Map.merge(config.mode, value)}
   end
 
+  defp update_config_setting(config, setting, value) when atom?(setting) do
+    # Store custom settings in the mode field
+    mode = Map.put(config.mode, setting, value)
+    %{config | mode: mode}
+  end
+
   defp update_config_setting(config, _setting, _value) do
     config
   end
@@ -158,7 +181,15 @@ defmodule Raxol.Terminal.Config.Manager do
   def set_preference(emulator, preference, value) when atom?(preference) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     mode = Map.put(config.mode, preference, value)
-    %{emulator | config: %{config | mode: mode}}
+    updated_config = %{config | mode: mode}
+
+    # Update the config through the GenServer if it's a PID
+    if is_pid(emulator.config) do
+      GenServer.call(emulator.config, {:update_config, updated_config})
+      emulator
+    else
+      %{emulator | config: updated_config}
+    end
   end
 
   @doc """
@@ -180,7 +211,15 @@ defmodule Raxol.Terminal.Config.Manager do
       when binary?(key) and binary?(value) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     input = Map.put(config.input, key, value)
-    %{emulator | config: %{config | input: input}}
+    updated_config = %{config | input: input}
+
+    # Update the config through the GenServer if it's a PID
+    if is_pid(emulator.config) do
+      GenServer.call(emulator.config, {:update_config, updated_config})
+      emulator
+    else
+      %{emulator | config: updated_config}
+    end
   end
 
   @doc """
@@ -202,7 +241,15 @@ defmodule Raxol.Terminal.Config.Manager do
   def set_environment_variables(emulator, variables) when map?(variables) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
     input = Map.merge(config.input, variables)
-    %{emulator | config: %{config | input: input}}
+    updated_config = %{config | input: input}
+
+    # Update the config through the GenServer if it's a PID
+    if is_pid(emulator.config) do
+      GenServer.call(emulator.config, {:update_config, updated_config})
+      emulator
+    else
+      %{emulator | config: updated_config}
+    end
   end
 
   @doc """
@@ -212,7 +259,15 @@ defmodule Raxol.Terminal.Config.Manager do
   @spec clear_environment(Emulator.t()) :: Emulator.t()
   def clear_environment(emulator) do
     config = Raxol.Terminal.Emulator.get_config_struct(emulator)
-    %{emulator | config: %{config | input: %{}}}
+    updated_config = %{config | input: %{}}
+
+    # Update the config through the GenServer if it's a PID
+    if is_pid(emulator.config) do
+      GenServer.call(emulator.config, {:update_config, updated_config})
+      emulator
+    else
+      %{emulator | config: updated_config}
+    end
   end
 
   @doc """
@@ -221,6 +276,14 @@ defmodule Raxol.Terminal.Config.Manager do
   """
   @spec reset_config_manager(Emulator.t()) :: Emulator.t()
   def reset_config_manager(emulator) do
-    %{emulator | config: new()}
+    new_config = new()
+
+    # Update the config through the GenServer if it's a PID
+    if is_pid(emulator.config) do
+      GenServer.call(emulator.config, {:update_config, new_config})
+      emulator
+    else
+      %{emulator | config: new_config}
+    end
   end
 end

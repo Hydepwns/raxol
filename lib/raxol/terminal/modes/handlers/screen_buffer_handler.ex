@@ -50,6 +50,9 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
       :alt_screen_buffer ->
         handle_alt_screen_with_clear(value, emulator)
 
+      :decsc_deccara ->
+        handle_cursor_save_restore(value, emulator)
+
       _ ->
         {:error, :unsupported_mode}
     end
@@ -76,11 +79,14 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     # Mode 1047: Alt screen with save/restore
     with {:ok, alt_buffer} <- create_or_get_alt_buffer(emulator),
          {:ok, emulator_with_saved_state} <- save_terminal_state(emulator) do
+      # Set alternate_buffer_active to true in mode_manager
+      new_mode_manager = Map.put(emulator_with_saved_state.mode_manager, :alternate_buffer_active, true)
       {:ok,
        %{
          emulator_with_saved_state
          | alternate_screen_buffer: alt_buffer,
-           active_buffer_type: :alternate
+           active_buffer_type: :alternate,
+           mode_manager: new_mode_manager
        }}
     end
   end
@@ -88,7 +94,9 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
   defp handle_alt_screen_with_save(false, emulator) do
     # Switch back to main buffer and restore state
     with {:ok, emulator_with_restored_state} <- restore_terminal_state(emulator) do
-      {:ok, %{emulator_with_restored_state | active_buffer_type: :main}}
+      # Set alternate_buffer_active to false in mode_manager
+      new_mode_manager = Map.put(emulator_with_restored_state.mode_manager, :alternate_buffer_active, false)
+      {:ok, %{emulator_with_restored_state | active_buffer_type: :main, mode_manager: new_mode_manager}}
     end
   end
 
@@ -192,6 +200,20 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
       {:ok, %{emulator_with_restored_state | state_stack: new_stack}}
     else
       {:ok, emulator}
+    end
+  end
+
+  defp handle_cursor_save_restore(true, emulator) do
+    # Mode 1048: Save cursor position and attributes
+    with {:ok, emulator_with_saved_state} <- save_terminal_state(emulator) do
+      {:ok, emulator_with_saved_state}
+    end
+  end
+
+  defp handle_cursor_save_restore(false, emulator) do
+    # Mode 1048: Restore cursor position and attributes
+    with {:ok, emulator_with_restored_state} <- restore_terminal_state(emulator) do
+      {:ok, emulator_with_restored_state}
     end
   end
 end

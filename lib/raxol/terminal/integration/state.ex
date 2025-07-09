@@ -144,9 +144,6 @@ defmodule Raxol.Terminal.Integration.State do
   @spec get_visible_content(t()) :: list()
   def get_visible_content(%__MODULE__{} = state) do
     case UnifiedWindow.get_active_window() do
-      nil ->
-        []
-
       {:ok, window_id} ->
         case UnifiedWindow.get_window_state(window_id) do
           {:ok, window} ->
@@ -241,7 +238,7 @@ defmodule Raxol.Terminal.Integration.State do
           {:error, _} -> state
         end
 
-      {:error, _} ->
+      _ ->
         state
     end
   end

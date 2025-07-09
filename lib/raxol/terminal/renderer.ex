@@ -199,6 +199,22 @@ defmodule Raxol.Terminal.Renderer do
         attrs
       end
 
+    # Apply underline if present
+    attrs =
+      if Map.get(style_map, :underline, false) do
+        [{"text-decoration", "underline"} | attrs]
+      else
+        attrs
+      end
+
+    # Apply italic if present
+    attrs =
+      if Map.get(style_map, :italic, false) do
+        [{"font-style", "italic"} | attrs]
+      else
+        attrs
+      end
+
     # Build the style string
     attrs
     |> Enum.reverse()
@@ -358,7 +374,9 @@ defmodule Raxol.Terminal.Renderer do
       iex> get_content(renderer)
       {:ok, "Hello, World!"}
   """
-  def get_content(%__MODULE__{} = renderer, opts \\ []) do
+  def get_content(renderer, opts \\ [])
+
+  def get_content(%__MODULE__{} = renderer, opts) do
     include_style = Keyword.get(opts, :include_style, false)
     include_cursor = Keyword.get(opts, :include_cursor, false)
 
@@ -368,6 +386,38 @@ defmodule Raxol.Terminal.Renderer do
       |> maybe_add_cursor(renderer.cursor, include_cursor)
 
     {:ok, content}
+  end
+
+  # Handle ScreenBuffer structs
+  def get_content(%Raxol.Terminal.ScreenBuffer{} = buffer, opts) do
+    include_style = Keyword.get(opts, :include_style, false)
+    content = ScreenBuffer.get_content(buffer, include_style: include_style)
+    {:ok, content}
+  end
+
+  # Handle BufferImpl structs (used by tests)
+  def get_content(%Raxol.Terminal.Buffer.Manager.BufferImpl{} = buffer, opts) do
+    include_style = Keyword.get(opts, :include_style, false)
+    include_cursor = Keyword.get(opts, :include_cursor, false)
+
+    content =
+      buffer
+      |> Raxol.Terminal.Buffer.Manager.BufferImpl.get_content()
+      |> maybe_add_cursor(buffer.cursor_position, include_cursor)
+
+    {:ok, content}
+  end
+
+  # Handle buffer manager PIDs (used by tests)
+  def get_content(manager_pid, opts) when is_pid(manager_pid) do
+    case Raxol.Terminal.Buffer.Manager.read(manager_pid, opts) do
+      {content, _new_buffer} when is_binary(content) -> {:ok, content}
+      {content, _new_buffer} when is_list(content) -> {:ok, content}
+      content when is_binary(content) -> {:ok, content}
+      content when is_list(content) -> {:ok, content}
+      {:error, reason} -> {:error, reason}
+      other -> {:ok, other}
+    end
   end
 
   defp maybe_add_cursor(content, nil, _include_cursor), do: content

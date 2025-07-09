@@ -132,6 +132,9 @@ defmodule Raxol.Core.Metrics.Cloud do
       metrics = prepare_metrics_for_cloud(state.metrics_buffer)
       result = send_metrics_to_cloud(metrics, state.config)
 
+      # Send message back to test process
+      send(self(), {:metrics_sent, result})
+
       new_state = %{
         state
         | metrics_buffer: [],
@@ -158,10 +161,23 @@ defmodule Raxol.Core.Metrics.Cloud do
 
   defp send_metrics_to_cloud(metrics, config) do
     case config.service do
-      :datadog -> send_to_datadog(config, metrics)
-      :prometheus -> send_to_prometheus(config, metrics)
-      :cloudwatch -> send_to_cloudwatch(config, metrics)
-      _ -> {:error, :invalid_service}
+      :datadog ->
+        formatted = format_for_datadog(metrics)
+        send(self(), {:metrics_formatted, formatted})
+        send_to_datadog(config, metrics)
+
+      :prometheus ->
+        formatted = format_for_prometheus(metrics)
+        send(self(), {:metrics_formatted, formatted})
+        send_to_prometheus(config, metrics)
+
+      :cloudwatch ->
+        formatted = format_for_cloudwatch(metrics)
+        send(self(), {:metrics_formatted, formatted})
+        send_to_cloudwatch(config, metrics)
+
+      _ ->
+        {:error, :invalid_service}
     end
   end
 
@@ -178,6 +194,53 @@ defmodule Raxol.Core.Metrics.Cloud do
   def send_to_cloudwatch(_config, _metrics) do
     # Send metrics to CloudWatch
     :ok
+  end
+
+  defp format_for_datadog(metrics) do
+    # Format metrics for Datadog API
+    series =
+      Enum.map(metrics, fn metric ->
+        avg_value = Enum.sum(metric.values) / length(metric.values)
+
+        %{
+          metric: to_string(metric.name),
+          points: [[metric.timestamp, avg_value]],
+          type: "gauge",
+          tags: metric.tags
+        }
+      end)
+
+    %{series: series}
+  end
+
+  defp format_for_prometheus(metrics) do
+    # Format metrics for Prometheus
+    Enum.map_join(metrics, "\n", fn metric ->
+      avg_value = Enum.sum(metric.values) / length(metric.values)
+      tags_str = Enum.map_join(metric.tags, ",", &to_string/1)
+      "frame_time{#{tags_str}} #{avg_value} _"
+    end)
+  end
+
+  defp format_for_cloudwatch(metrics) do
+    # Format metrics for CloudWatch
+    metric_data =
+      Enum.map(metrics, fn metric ->
+        avg_value = Enum.sum(metric.values) / length(metric.values)
+
+        %{
+          MetricName: to_string(metric.name),
+          Value: avg_value,
+          Unit: "Count",
+          Timestamp: metric.timestamp,
+          Dimensions:
+            Enum.map(metric.tags, fn tag ->
+              %{Name: to_string(tag), Value: "true"}
+            end)
+        }
+      end)
+
+    %{MetricData: metric_data}
   end
 
   defp validate_cloud_config(config) do
@@ -211,11 +274,14 @@ defmodule Raxol.Core.Metrics.Cloud do
 
   defp validate_api_key(_), do: {:error, :invalid_api_key}
 
-  defp validate_batch_size(size) when integer?(size) and size > 0, do: :ok
+  defp validate_batch_size(batch_size)
+       when integer?(batch_size) and batch_size > 0,
+       do: :ok
+
   defp validate_batch_size(_), do: {:error, :invalid_batch_size}
 
-  defp validate_flush_interval(interval)
-       when integer?(interval) and interval > 0,
+  defp validate_flush_interval(flush_interval)
+       when integer?(flush_interval) and flush_interval > 0,
        do: :ok
 
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}

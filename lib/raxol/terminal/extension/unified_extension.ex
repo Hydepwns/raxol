@@ -812,14 +812,6 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  defp format_config(config) do
-    config
-    |> Enum.map(fn {key, value} ->
-      "  #{key}: #{inspect(value)}"
-    end)
-    |> Enum.join(",\n")
-  end
-
   defp copy_extension_files(source_path, dest_path) do
     case File.stat(source_path) do
       {:ok, %{type: :directory}} ->
@@ -900,8 +892,16 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
               {:ok, manifest} ->
                 type = String.to_existing_atom(manifest["type"])
 
+                # For JSON imports, use the directory containing the JSON file as the base path
+                # and look for the actual extension files in a subdirectory with the same name as the type
+                base_path = Path.dirname(path)
+                extension_path = Path.join(base_path, Atom.to_string(type))
+
+                # If the extension directory doesn't exist, use the base path
+                final_path = if File.exists?(extension_path), do: extension_path, else: base_path
+
                 load_extension_state(
-                  Path.dirname(path),
+                  final_path,
                   type,
                   Keyword.merge(opts, manifest_to_opts(manifest))
                 )
