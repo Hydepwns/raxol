@@ -203,7 +203,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
           {:error, cycle} -> {:error, :circular_dependency, cycle, cycle}
         end
 
-      {:error, plugin_id, cycle} ->
+      {:error, _plugin_id, cycle} ->
         # Convert self-dependency error to circular dependency format
         {:error, :circular_dependency, cycle, cycle}
 

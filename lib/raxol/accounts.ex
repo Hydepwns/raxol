@@ -18,7 +18,7 @@ defmodule Raxol.Accounts do
 
   use Agent
 
-  alias Raxol.Auth.{User, Role, Permission}
+  alias Raxol.Auth.{User, Role}
   alias Raxol.Database
   alias Raxol.Repo
 

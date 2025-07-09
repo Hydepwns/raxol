@@ -157,7 +157,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                  plugin_id,
                  state
                ) do
-            {:ok, new_state, result, plugin_id} ->
+            {:ok, new_state, _result, plugin_id} ->
               updated_plugin_states =
                 Map.put(state.plugin_states, plugin_id, new_state)
 
@@ -197,7 +197,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   defp find_command_in_table(command_table, command_name_str) do
     # Search through all namespaces in the command table
-    Enum.find_value(command_table, {:error, :not_found}, fn {namespace,
+    Enum.find_value(command_table, {:error, :not_found}, fn {_namespace,
                                                              commands} ->
       case Enum.find(commands, fn {name, _, _} -> name == command_name_str end) do
         nil ->
@@ -227,7 +227,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  defp execute_and_update_state(handler, args, plugin_state, plugin_id, state) do
+  defp execute_and_update_state(handler, args, plugin_state, plugin_id, _state) do
     case execute_command(handler, args, plugin_state) do
       {:ok, new_state, result} ->
         {:ok, new_state, result, plugin_id}
