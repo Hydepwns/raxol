@@ -4,6 +4,7 @@ defmodule Raxol.Application do
 
   @impl Application
   def start(_type, _args) do
+    IO.puts("[Raxol.Application] === APPLICATION STARTING ===")
     Raxol.Core.Runtime.Log.info_with_context(
       "No preferences file found, using defaults.",
       %{}
@@ -64,6 +65,7 @@ defmodule Raxol.Test.MockApplicationSupervisor do
   require Raxol.Core.Runtime.Log
 
   def start_link(_args) do
+    IO.puts("[MockApplicationSupervisor] === MOCK SUPERVISOR STARTING ===")
     Raxol.Core.Runtime.Log.info_with_context(
       "Starting MockApplicationSupervisor for testing",
       %{}
@@ -74,6 +76,7 @@ defmodule Raxol.Test.MockApplicationSupervisor do
 
   @impl Supervisor
   def init(_args) do
+    IO.puts("[MockApplicationSupervisor] === INIT STARTING ===")
     Raxol.Core.Runtime.Log.info_with_context(
       "Initializing MockApplicationSupervisor with Phoenix PubSub and Repo",
       %{}
@@ -83,19 +86,19 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     pubsub_child_spec = {Phoenix.PubSub, name: Raxol.PubSub}
 
     # Add Raxol.Repo child spec for tests only if database is enabled
-    repo_child_spec =
-      if Application.get_env(:raxol, :database_enabled, false) do
-        Raxol.Repo
-      else
-        nil
-      end
+    # repo_child_spec =
+    #   if Application.get_env(:raxol, :database_enabled, false) do
+    #     Raxol.Repo
+    #   else
+    #     nil
+    #   end
 
     # Add UserPreferences for tests, ensuring it starts in test mode
     user_preferences_child_spec =
       {Raxol.Core.UserPreferences, [test_mode?: true]}
 
     # Add Accounts for tests
-    accounts_child_spec = Raxol.Accounts
+    # accounts_child_spec = Raxol.Accounts  # Temporarily commented out to debug Repo startup
 
     # Add Terminal Sync System for tests
     sync_system_child_spec = {Raxol.Terminal.Sync.System, []}
@@ -109,19 +112,19 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     children = [
       pubsub_child_spec,
       user_preferences_child_spec,
-      accounts_child_spec,
+      # accounts_child_spec,  # Temporarily commented out to debug Repo startup
       sync_system_child_spec,
       terminal_supervisor_child_spec,
       web_supervisor_child_spec
     ]
 
-    # Add repo_child_spec only if it's not nil
-    children =
-      if repo_child_spec do
-        [repo_child_spec | children]
-      else
-        children
-      end
+    # # Add repo_child_spec only if it's not nil
+    # children =
+    #   if repo_child_spec do
+    #     [repo_child_spec | children]
+    #   else
+    #     children
+    #   end
 
     Supervisor.init(children, strategy: :one_for_one)
   end

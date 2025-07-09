@@ -67,8 +67,8 @@ defmodule Raxol.MixProject do
           :phoenix_html,
           :phoenix_live_view,
           :phoenix_pubsub,
-          :ecto_sql,
-          :postgrex,
+          # :ecto_sql,  # Removed to prevent auto-starting Repo
+          # :postgrex,  # Removed to prevent auto-starting Repo
           :runtime_tools,
           :swoosh,
           :termbox2_nif,
@@ -90,7 +90,7 @@ defmodule Raxol.MixProject do
 
   defp test_applications do
     if Mix.env() == :test do
-      [:mox, :ecto_sql]
+      [:mox]  # Removed :ecto_sql to prevent auto-starting Repo
     else
       []
     end
@@ -195,8 +195,8 @@ defmodule Raxol.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: [
-        "ecto.create -r Raxol.Repo --quiet",
-        "ecto.migrate -r Raxol.Repo",
+        # "ecto.create -r Raxol.Repo --quiet",  # Removed to prevent Ecto.Repo requirement
+        # "ecto.migrate -r Raxol.Repo",  # Removed to prevent Ecto.Repo requirement
         "test"
       ],
       "assets.setup": [
