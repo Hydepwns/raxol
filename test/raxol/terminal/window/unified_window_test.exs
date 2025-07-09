@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
     test "sets active window", %{pid: pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert :ok = UnifiedWindow.set_active_window(window_id)
-      assert UnifiedWindow.get_active_window() == window_id
+      assert {:ok, ^window_id} = UnifiedWindow.get_active_window()
     end
 
     test "fails to set active window for non-existent window", %{pid: pid} do

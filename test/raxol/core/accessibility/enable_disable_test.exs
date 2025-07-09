@@ -31,95 +31,97 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
     end
 
     test "enable/1 applies default preferences if none are set", %{
-      prefs_name: prefs_name
+      prefs_name: prefs_name,
+      pref_pid: pref_pid
     } do
       # Set prefs to nil initially
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:high_contrast),
         nil,
-        prefs_name
+        pref_pid
       )
 
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:reduced_motion),
         nil,
-        prefs_name
+        pref_pid
       )
 
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:large_text),
         nil,
-        prefs_name
+        pref_pid
       )
 
       # Disable first to clear handlers etc.
-      Accessibility.disable(prefs_name)
+      Accessibility.disable(pref_pid)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name, false) == false
+        Accessibility.get_option(:enabled, pref_pid, false) == false
       end)
 
       # Enable reads preferences
-      Accessibility.enable([], prefs_name)
+      Accessibility.enable([], pref_pid)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name, false) == true
+        Accessibility.get_option(:enabled, pref_pid, false) == true
       end)
 
       # Assert default values
       assert Raxol.Core.UserPreferences.get(
                Helper.pref_key(:high_contrast),
-               prefs_name
+               pref_pid
              ) ==
                false
 
       assert Raxol.Core.UserPreferences.get(
                Helper.pref_key(:reduced_motion),
-               prefs_name
+               pref_pid
              ) ==
                false
 
       assert Raxol.Core.UserPreferences.get(
                Helper.pref_key(:large_text),
-               prefs_name
+               pref_pid
              ) ==
                false
 
       assert Raxol.Core.UserPreferences.get(
                Helper.pref_key(:screen_reader),
-               prefs_name
+               pref_pid
              ) ==
                true
 
-      assert Accessibility.get_text_scale(prefs_name) == 1.0
+      assert Accessibility.get_text_scale(pref_pid) == 1.0
     end
 
     test "enable/1 applies custom options over defaults", %{
-      prefs_name: prefs_name
+      prefs_name: prefs_name,
+      pref_pid: pref_pid
     } do
       # Set prefs to nil initially
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:high_contrast),
         nil,
-        prefs_name
+        pref_pid
       )
 
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:reduced_motion),
         nil,
-        prefs_name
+        pref_pid
       )
 
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:screen_reader),
         nil,
-        prefs_name
+        pref_pid
       )
 
-      Accessibility.disable(prefs_name)
+      Accessibility.disable(pref_pid)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name, false) == false
+        Accessibility.get_option(:enabled, pref_pid, false) == false
       end)
 
       custom_opts = [
@@ -128,44 +130,45 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
         screen_reader: false
       ]
 
-      Accessibility.enable(custom_opts, prefs_name)
+      Accessibility.enable(custom_opts, pref_pid)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name, false) == true
+        Accessibility.get_option(:enabled, pref_pid, false) == true
       end)
 
-      assert Accessibility.get_option(:high_contrast, prefs_name, false) == true
+      assert Accessibility.get_option(:high_contrast, pref_pid, false) == true
 
-      assert Accessibility.get_option(:reduced_motion, prefs_name, false) ==
+      assert Accessibility.get_option(:reduced_motion, pref_pid, false) ==
                true
 
-      assert Accessibility.get_option(:screen_reader, prefs_name, true) == false
-      assert Accessibility.get_text_scale(prefs_name) == 1.0
+      assert Accessibility.get_option(:screen_reader, pref_pid, true) == false
+      assert Accessibility.get_text_scale(pref_pid) == 1.0
     end
 
     test "disable/0 stops functionality", %{
-      prefs_name: prefs_name
+      prefs_name: prefs_name,
+      pref_pid: pref_pid
     } do
-      Accessibility.enable([], prefs_name)
+      Accessibility.enable([], pref_pid)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name, false) == true
+        Accessibility.get_option(:enabled, pref_pid, false) == true
       end)
 
-      assert Accessibility.get_option(:enabled, prefs_name, false) == true
-      Accessibility.announce("Test before disable", [], prefs_name)
+      assert Accessibility.get_option(:enabled, pref_pid, false) == true
+      Accessibility.announce("Test before disable", [], pref_pid)
 
-      assert Accessibility.get_next_announcement(prefs_name) ==
+      assert Accessibility.get_next_announcement(pref_pid) ==
                "Test before disable"
 
-      Accessibility.disable(prefs_name)
+      Accessibility.disable(pref_pid)
 
       Helper.wait_for_state(fn ->
-        Accessibility.get_option(:enabled, prefs_name, false) == false
+        Accessibility.get_option(:enabled, pref_pid, false) == false
       end)
 
-      Accessibility.announce("Test after disable", [], prefs_name)
-      assert Accessibility.get_next_announcement(prefs_name) == nil
+      Accessibility.announce("Test after disable", [], pref_pid)
+      assert Accessibility.get_next_announcement(pref_pid) == nil
     end
   end
 end

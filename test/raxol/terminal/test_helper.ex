@@ -50,7 +50,14 @@ defmodule Raxol.Terminal.TestHelper do
       history: [],
       history_index: 0,
       history_limit: 100,
-      shape: {1, 1}
+      shape: {1, 1},
+      # Add additional fields that tests might expect
+      attributes: %{},
+      saved_attributes: %{},
+      saved_blink_rate: 530,
+      saved_custom_shape: nil,
+      saved_custom_dimensions: nil,
+      saved_shape: {1, 1}
     }
 
     main_buffer = ScreenBuffer.new(width, height)
@@ -90,7 +97,24 @@ defmodule Raxol.Terminal.TestHelper do
       cursor_blink_rate: 0,
       session_id: nil,
       client_options: %{},
-      state_stack: []
+      state_stack: [],
+      # Add missing fields that tests expect
+      state: :normal,
+      event: nil,
+      buffer: nil,
+      config: nil,
+      command: nil,
+      window_state: %{
+        iconified: false,
+        maximized: false,
+        position: {0, 0},
+        size: {width, height},
+        size_pixels: {width * 8, height * 16},
+        stacking_order: :normal,
+        previous_size: {width, height},
+        saved_size: {width, height},
+        icon_name: ""
+      }
     }
   end
 

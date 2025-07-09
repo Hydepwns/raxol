@@ -2,6 +2,23 @@ defmodule Raxol.Terminal.Operations.ScrollOperationsTest do
   use ExUnit.Case
   alias Raxol.Terminal.{Operations.ScrollOperations, TestHelper}
 
+  # Add a simple test to verify the test infrastructure
+  test "test infrastructure is working" do
+    emulator = TestHelper.create_test_emulator()
+
+    # Verify emulator has required fields
+    assert emulator.height == 24
+    assert emulator.width == 80
+
+    # Verify main screen buffer has required fields
+    assert emulator.main_screen_buffer.height == 24
+    assert emulator.main_screen_buffer.width == 80
+
+    # Verify alternate screen buffer has required fields
+    assert emulator.alternate_screen_buffer.height == 24
+    assert emulator.alternate_screen_buffer.width == 80
+  end
+
   describe "get_scroll_region/1" do
     test "returns full screen region by default" do
       emulator = TestHelper.create_test_emulator()

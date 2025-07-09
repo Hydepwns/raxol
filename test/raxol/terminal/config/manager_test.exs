@@ -5,9 +5,13 @@ defmodule Raxol.Terminal.Config.ManagerTest do
   describe "new/0" do
     test "creates a new config manager with default values" do
       config = Manager.new()
-      assert config.settings == %{}
-      assert config.preferences == %{}
-      assert config.environment == %{}
+      assert config.width == 80
+      assert config.height == 24
+      assert config.colors == %{}
+      assert config.styles == %{}
+      assert config.input == %{}
+      assert config.performance == %{}
+      assert config.mode == %{}
     end
   end
 

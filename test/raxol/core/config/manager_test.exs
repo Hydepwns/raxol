@@ -331,7 +331,7 @@ defmodule Raxol.Core.Config.ManagerTest do
       {:ok, pid} =
         Manager.start_link(
           config_file: "test/fixtures/invalid_syntax.exs",
-          validate: false,
+          validate: true,
           name: :"Manager.#{System.unique_integer([:positive])}"
         )
 

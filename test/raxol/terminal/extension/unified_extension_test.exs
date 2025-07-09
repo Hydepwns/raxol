@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
   describe "error handling" do
     test "handles invalid extension types" do
-      assert {:error, :invalid_extension_type} =
+      assert {:error, {:module_load_failed, :invalid_extension_type}} =
                UnifiedExtension.load_extension(
                  "test/fixtures/extensions/invalid",
                  :invalid_type,

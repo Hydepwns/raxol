@@ -36,17 +36,17 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     pid =
       start_supervised!({UserPreferences, [test_mode?: true, name: prefs_name]})
 
-    Raxol.Core.UserPreferences.set(pref_key(:enabled), true, prefs_name)
-    Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, prefs_name)
-    Raxol.Core.UserPreferences.set(pref_key(:high_contrast), false, prefs_name)
-    Raxol.Core.UserPreferences.set(pref_key(:reduced_motion), false, prefs_name)
-    Raxol.Core.UserPreferences.set(pref_key(:keyboard_focus), true, prefs_name)
-    Raxol.Core.UserPreferences.set(pref_key(:large_text), false, prefs_name)
+    Raxol.Core.UserPreferences.set(pref_key(:enabled), true, pid)
+    Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, pid)
+    Raxol.Core.UserPreferences.set(pref_key(:high_contrast), false, pid)
+    Raxol.Core.UserPreferences.set(pref_key(:reduced_motion), false, pid)
+    Raxol.Core.UserPreferences.set(pref_key(:keyboard_focus), true, pid)
+    Raxol.Core.UserPreferences.set(pref_key(:large_text), false, pid)
 
     Raxol.Core.UserPreferences.set(
       pref_key(:silence_announcements),
       false,
-      prefs_name
+      pid
     )
 
     on_exit(fn ->
@@ -54,7 +54,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
       Raxol.Core.Events.Manager.cleanup()
     end)
 
-    {:ok, prefs_name: prefs_name}
+    {:ok, prefs_name: prefs_name, pref_pid: pid}
   end
 
   def setup_test_preferences_with_events(prefs_name) do
@@ -65,8 +65,8 @@ defmodule Raxol.Core.AccessibilityTestHelper do
       start_supervised!({UserPreferences, [test_mode?: true, name: prefs_name]})
 
     # Set up preferences
-    Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, prefs_name)
-    Raxol.Core.Accessibility.enable([], prefs_name)
+    Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, pid_of_prefs)
+    Raxol.Core.Accessibility.enable([], pid_of_prefs)
     Raxol.Core.Accessibility.clear_announcements()
 
     on_exit(fn ->
