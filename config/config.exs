@@ -7,8 +7,9 @@
 import Config
 
 # General application configuration
+# config :raxol,
+#   ecto_repos: [Raxol.Repo],
 config :raxol,
-  ecto_repos: [Raxol.Repo],
   generators: [binary_id: true]
 
 # Configures the endpoint

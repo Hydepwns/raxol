@@ -1,11 +1,14 @@
 import Config
 
+# Prevent Ecto from automatically starting the Repo in tests
+config :raxol, ecto_repos: []
+
 # Configure your database for tests - use MockDB adapter
 config :raxol, Raxol.Repo,
   adapter: Raxol.Test.MockDB,
   # Remove SQL Sandbox pool as it's incompatible with MockDB
   # pool: Ecto.Adapters.SQL.Sandbox,
-  enabled: true
+  enabled: false
 
 # Configure database settings
 # Global flag to enable database for tests
@@ -148,3 +151,6 @@ config :ex_unit,
   capture_log: true,
   assert_receive_timeout: 1000,
   refute_receive_timeout: 1000
+
+# Show debug logs during tests
+config :logger, level: :debug
