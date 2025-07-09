@@ -21,7 +21,8 @@ defmodule Raxol.Web.Supervisor do
       # Session Manager for managing user sessions
       Raxol.Web.Session.Manager,
       # Add Phoenix Presence for user tracking
-      {RaxolWeb.Presence, []}
+      # Temporarily commented out to debug shutdown issue
+      # {RaxolWeb.Presence, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
