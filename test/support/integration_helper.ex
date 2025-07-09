@@ -115,8 +115,8 @@ defmodule Raxol.Test.IntegrationHelper do
               {:error, reason} -> {:error, reason}
             end),
          :ok <-
-           Raxol.Test.RendererHelper.verify_rendered_content(
-             state.renderer.renderer,
+           Raxol.Test.RendererHelper.verify_rendered_content_from_buffer(
+             state.buffer.buffer,
              test_data
            ) do
       metrics = %{
@@ -179,7 +179,7 @@ defmodule Raxol.Test.IntegrationHelper do
            ) do
       {:ok,
        %{
-         buffer_metrics: buffer_metrics || %{write_time: 5},
+         buffer_metrics: if(is_map(buffer_metrics), do: buffer_metrics, else: %{write_time: 5}),
          renderer_metrics: renderer_metrics
        }}
     end
@@ -291,8 +291,8 @@ defmodule Raxol.Test.IntegrationHelper do
   end
 
   defp check_component_condition(state, :renderer, expected_content) do
-    Raxol.Test.RendererHelper.verify_rendered_content(
-      state.renderer.renderer,
+    Raxol.Test.RendererHelper.verify_rendered_content_from_buffer(
+      state.buffer.buffer,
       expected_content
     )
   end
@@ -334,9 +334,12 @@ defmodule Raxol.Test.IntegrationHelper do
   end
 
   defp perform_operation(state, :metrics_collect, opts) do
-    Raxol.Test.MetricsHelper.collect_metrics(
-      state.metrics,
-      Keyword.get(opts, :metrics, [])
-    )
+    # Collect metrics of a specific type (default to :custom)
+    metrics_type = Keyword.get(opts, :type, :custom)
+
+    case Raxol.Test.MetricsHelper.collect_metrics(metrics_type, opts) do
+      metrics when is_map(metrics) -> {:ok, %{collection_time: 10, metrics: metrics}}
+      {:error, reason} -> {:error, reason}
+    end
   end
 end

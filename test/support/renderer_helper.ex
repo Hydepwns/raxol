@@ -126,7 +126,33 @@ defmodule Raxol.Test.RendererHelper do
       :ok
   """
   def verify_rendered_content(renderer, expected_content, opts \\ []) do
-    case Raxol.Terminal.Renderer.get_content(renderer, opts) do
+    # Get content from the renderer's screen buffer
+    case Raxol.Terminal.Renderer.get_content(renderer.screen_buffer, opts) do
+      {:ok, ^expected_content} -> :ok
+      {:ok, actual_content} -> {:error, {:unexpected_content, actual_content}}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Verifies rendered content from a buffer manager.
+
+  ## Parameters
+    * `buffer_manager` - The buffer manager to check
+    * `expected_content` - The expected rendered content
+    * `opts` - Verification options
+
+  ## Returns
+    * `:ok` - If the content matches
+    * `{:error, reason}` - If the content doesn't match
+
+  ## Examples
+      iex> verify_rendered_content_from_buffer(buffer_manager, "Hello, World!")
+      :ok
+  """
+  def verify_rendered_content_from_buffer(buffer_manager, expected_content, opts \\ []) do
+    # Get content directly from the buffer manager
+    case Raxol.Terminal.Renderer.get_content(buffer_manager, opts) do
       {:ok, ^expected_content} -> :ok
       {:ok, actual_content} -> {:error, {:unexpected_content, actual_content}}
       {:error, reason} -> {:error, reason}
@@ -154,18 +180,35 @@ defmodule Raxol.Test.RendererHelper do
 
     result = render_test_content(renderer, buffer, opts)
 
-    if result == :ok do
-      duration = System.monotonic_time(:millisecond) - start_time
+    # Handle both :ok and HTML content as successful results
+    case result do
+      :ok ->
+        duration = System.monotonic_time(:millisecond) - start_time
 
-      Raxol.Test.MetricsHelper.record_test_metric(
-        "render_operation",
-        :performance,
-        duration,
-        tags: %{mode: Keyword.get(opts, :mode, :gpu)}
-      )
+        Raxol.Test.MetricsHelper.record_test_metric(
+          "render_operation",
+          :performance,
+          duration,
+          tags: %{mode: Keyword.get(opts, :mode, :gpu)}
+        )
+
+        :ok
+
+      html when is_binary(html) ->
+        duration = System.monotonic_time(:millisecond) - start_time
+
+        Raxol.Test.MetricsHelper.record_test_metric(
+          "render_operation",
+          :performance,
+          duration,
+          tags: %{mode: Keyword.get(opts, :mode, :gpu)}
+        )
+
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
     end
-
-    result
   end
 
   @doc """
@@ -189,7 +232,11 @@ defmodule Raxol.Test.RendererHelper do
     times =
       for _ <- 1..iterations do
         start_time = System.monotonic_time(:millisecond)
-        :ok = render_test_content(renderer, buffer, opts)
+        case render_test_content(renderer, buffer, opts) do
+          :ok -> :ok
+          html when is_binary(html) -> :ok
+          {:error, reason} -> {:error, reason}
+        end
         System.monotonic_time(:millisecond) - start_time
       end
 

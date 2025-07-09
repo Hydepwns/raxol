@@ -16,7 +16,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
+      _state_id = :rand.uniform(1_000_000)
 
       {:ok,
        %Raxol.Plugins.Plugin{
@@ -80,7 +80,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
+      _state_id = :rand.uniform(1_000_000)
 
       {:ok,
        %Raxol.Plugins.Plugin{
@@ -139,7 +139,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      state_id = System.unique_integer([:positive])
+      _state_id = System.unique_integer([:positive])
 
       {:ok,
        %Raxol.Plugins.Plugin{
@@ -209,7 +209,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      state_id = System.unique_integer([:positive])
+      _state_id = System.unique_integer([:positive])
 
       {:ok,
        %Raxol.Plugins.Plugin{
@@ -305,9 +305,9 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      state_id = System.unique_integer([:positive])
+      _state_id = System.unique_integer([:positive])
 
-      raise "Plugin initialization failed: Intentional crash for testing error handling (State ID: #{state_id})"
+      raise "Plugin initialization failed: Intentional crash for testing error handling (State ID: #{_state_id})"
     end
 
     def terminate(_reason, state) do
@@ -367,7 +367,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      state_id = System.unique_integer([:positive])
+      _state_id = System.unique_integer([:positive])
 
       {:ok,
        %Raxol.Plugins.Plugin{
@@ -451,10 +451,10 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
+      _state_id = :rand.uniform(1_000_000)
 
       {:ok,
-       %{state_id: state_id, dependencies: dependencies(), module: __MODULE__}}
+       %{state_id: _state_id, dependencies: dependencies(), module: __MODULE__}}
     end
 
     def terminate(_reason, state) do
@@ -498,7 +498,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
+      _state_id = :rand.uniform(1_000_000)
 
       {:ok,
        %Raxol.Plugins.Plugin{

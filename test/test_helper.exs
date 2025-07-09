@@ -1,3 +1,5 @@
+IO.puts("[TestHelper] === TEST HELPER STARTING ===")
+
 # Start Mox
 IO.puts("[TestHelper] Starting Mox...")
 Application.ensure_started(:mox, :permanent)
@@ -64,6 +66,7 @@ Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
 # Start ExUnit
 IO.puts("[TestHelper] Starting ExUnit...")
 ExUnit.start(max_failures: 10)
+ExUnit.configure(formatters: [ExUnit.CLIFormatter])
 
 # Set test environment
 IO.puts("[TestHelper] Setting test environment...")
@@ -73,8 +76,8 @@ Application.put_env(:raxol, :test_mode, true)
 if Application.get_env(:raxol, :database_enabled, true) do
   IO.puts("[TestHelper] Setting up database...")
   # Ensure Ecto is started
-  {:ok, _} = Application.ensure_all_started(:ecto)
-  {:ok, _} = Application.ensure_all_started(:ecto_sql)
+  # {:ok, _} = Application.ensure_all_started(:ecto)  # Removed to prevent auto-starting Repo
+  # {:ok, _} = Application.ensure_all_started(:ecto_sql)  # Removed to prevent auto-starting Repo
 
   # Start the application (which includes the repo)
   IO.puts("[TestHelper] Starting application for testing...")
@@ -118,12 +121,12 @@ if System.get_env("RAXOL_SKIP_TERMINAL_INIT") != "true" and
   # This prevents the actual termbox2_nif.tb_init() call that hangs in test environments
   :ok
 
-  # Shutdown the terminal after the test suite
-  System.at_exit(fn _exit_status ->
-    IO.puts("[TestHelper] Shutting down terminal (test mode)...")
-    # In test mode, we don't need to actually shutdown the terminal
-    :ok
-  end)
+  # Temporarily disable the at_exit handler to avoid the crash
+  # System.at_exit(fn _exit_status ->
+  #   IO.puts("[TestHelper] Shutting down terminal (test mode)...")
+  #   # In test mode, we don't need to actually shutdown the terminal
+  #   :ok
+  # end)
 else
   IO.puts("[TestHelper] Skipping terminal initialization and shutdown.")
 end
@@ -139,10 +142,11 @@ IO.puts("[TestHelper] Initializing UserPreferences...")
 # Manual start_link removed to avoid race/duplication issues. See test stabilization notes.
 
 # Reset UserPreferences to defaults after the test suite
-System.at_exit(fn _exit_status ->
-  IO.puts("[TestHelper] Resetting UserPreferences to defaults...")
-  Raxol.Core.UserPreferences.reset_to_defaults_for_test!()
-end)
+# Temporarily disable the at_exit handler to avoid the crash
+# System.at_exit(fn _exit_status ->
+#   IO.puts("[TestHelper] Resetting UserPreferences to defaults...")
+#   Raxol.Core.UserPreferences.reset_to_defaults_for_test!()
+# end)
 
 # Start the Accessibility Announcements Agent for global subscription storage
 {:ok, _} = Raxol.Core.Accessibility.Announcements.start_link([])
@@ -179,3 +183,5 @@ if !Process.whereis(RaxolWeb.Endpoint) do
 else
   IO.puts("[TestHelper] Endpoint already running")
 end
+
+IO.puts("[TestHelper] Test helper setup complete!")

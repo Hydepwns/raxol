@@ -161,17 +161,17 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def verify_metric(name, type, expected_value, opts \\ []) do
     case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, opts) do
-      {:ok, %{value: ^expected_value}} ->
-        :ok
-
-      {:ok, %{value: actual_value}} ->
-        {:error, {:unexpected_value, actual_value}}
-
-      {:ok, []} ->
+      [] ->
         {:error, :metric_not_found}
 
-      {:error, reason} ->
-        {:error, reason}
+      [%{value: ^expected_value} | _] ->
+        :ok
+
+      [%{value: actual_value} | _] ->
+        {:error, {:unexpected_value, actual_value}}
+
+      _ ->
+        {:error, :invalid_metric_format}
     end
   end
 
