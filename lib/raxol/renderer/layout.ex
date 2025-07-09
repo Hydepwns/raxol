@@ -286,7 +286,7 @@ defmodule Raxol.Renderer.Layout do
       )
       when list?(children) do
     offset = Map.get(opts, :offset, {1, 1})
-    {offset_x, offset_y} = offset
+    {_offset_x, _offset_y} = offset
 
     # Process children without shadow offset (content should be at original position)
     shadow_children = process_children(children, space, [])
@@ -303,7 +303,7 @@ defmodule Raxol.Renderer.Layout do
         acc
       ) do
     offset = Map.get(opts, :offset, {1, 1})
-    {offset_x, offset_y} = offset
+    {_offset_x, _offset_y} = offset
 
     # Process single child without shadow offset (content should be at original position)
     shadow_child = process_element(children, space, [])
@@ -761,7 +761,7 @@ defmodule Raxol.Renderer.Layout do
   defp process_wrapped_row_wrap(
          child,
          {cw, ch},
-         {acc, x, y, line_h},
+         {acc, _x, y, line_h},
          space,
          gap
        ) do
@@ -774,7 +774,7 @@ defmodule Raxol.Renderer.Layout do
   defp process_wrapped_row_no_wrap(
          child,
          {cw, ch},
-         {acc, x, y, line_h},
+         {acc, _x, y, line_h},
          space,
          x_start
        ) do
@@ -831,7 +831,7 @@ defmodule Raxol.Renderer.Layout do
   defp process_wrapped_column_wrap(
          child,
          {cw, ch},
-         {acc, x, y, col_h},
+         {acc, x, _y, col_h},
          space,
          gap
        ) do
@@ -844,7 +844,7 @@ defmodule Raxol.Renderer.Layout do
   defp process_wrapped_column_no_wrap(
          child,
          {cw, ch},
-         {acc, x, y, col_h},
+         {acc, x, _y, col_h},
          space,
          y_start
        ) do
@@ -995,7 +995,7 @@ defmodule Raxol.Renderer.Layout do
 
   # --- RECURSIVE NORMALIZATION FOR ALL CHILDREN ---
   # Helper to deeply normalize a child (struct, map, keyword, atom, etc)
-  defp deep_normalize_child(child, space, default_type, for_layout \\ false) do
+  defp deep_normalize_child(child, space, default_type, _for_layout \\ false) do
     if is_tuple(child) do
       raise "deep_normalize_child received a tuple: #{inspect(child)}"
     end
@@ -1095,7 +1095,7 @@ defmodule Raxol.Renderer.Layout do
     |> ensure_required_keys(space)
   end
 
-  defp normalize_list(child, space, default_type) do
+  defp normalize_list(child, space, _default_type) do
     child
     |> List.flatten()
     |> Enum.flat_map(&deep_normalize_child(&1, space, :box, true))
@@ -1154,7 +1154,7 @@ defmodule Raxol.Renderer.Layout do
     end
   end
 
-  defp add_children_if_container(map, type, space) do
+  defp add_children_if_container(map, type, _space) do
     if type in @container_types do
       Map.put_new(map, :children, [])
     else
@@ -1463,7 +1463,7 @@ defmodule Raxol.Renderer.Layout do
   end
 
   def process_grid_element(
-        %{children: children, columns: columns, rows: rows, gap: gap} =
+        %{children: _children, columns: columns, rows: rows, gap: gap} =
           element_map,
         space,
         acc

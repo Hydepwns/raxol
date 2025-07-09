@@ -18,7 +18,6 @@ defmodule Raxol.UI.Terminal do
 
   alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Core.I18n
-  alias Raxol.Terminal.Emulator.Struct, as: Emulator
 
   @spec clear() :: :ok
   @doc """

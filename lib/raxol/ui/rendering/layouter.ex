@@ -181,7 +181,7 @@ defmodule Raxol.UI.Rendering.Layouter do
                   do_layout_node_and_children(new_child, {:replace, new_child})
                 )
 
-              {:update, child_path, child_changes} ->
+              {:update, _child_path, child_changes} ->
                 # Update child at index with partial changes
                 current_child = Enum.at(acc, index)
 
