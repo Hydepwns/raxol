@@ -119,19 +119,7 @@ defmodule Raxol.Plugins.Plugin do
 
   defmacro __using__(_opts) do
     quote do
-      import Raxol.Plugins.Plugin,
-        only: [
-          init: 1,
-          handle_input: 2,
-          handle_output: 2,
-          handle_mouse: 3,
-          handle_resize: 3,
-          cleanup: 1,
-          get_dependencies: 0,
-          get_api_version: 0,
-          handle_render: 1,
-          handle_cells: 3
-        ]
+      @behaviour Raxol.Plugins.Plugin
     end
   end
 end

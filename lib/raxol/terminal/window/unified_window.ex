@@ -172,7 +172,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   @doc """
   Gets the active window ID.
   """
-  @spec get_active_window() :: window_id() | nil
+  @spec get_active_window() :: {:ok, window_id()} | {:error, :no_active_window}
   def get_active_window do
     GenServer.call(__MODULE__, :get_active_window)
   end
@@ -310,7 +310,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:split_window, window_id, direction}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         case direction do
@@ -411,14 +411,14 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:close_window, window_id}, _from, state) do
     case do_close_window(window_id, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, _} -> {:reply, {:error, "Window not found"}, state}
+      {:error, _} -> {:reply, {:error, :window_not_found}, state}
     end
   end
 
   def handle_call({:set_title, window_id, title}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         updated_window = %{window | title: title}
@@ -435,7 +435,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:set_icon_name, window_id, name}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         updated_window = %{window | icon_name: name}
@@ -452,7 +452,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:resize, window_id, width, height}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         # Store current size if maximizing
@@ -477,7 +477,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:move, window_id, x, y}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         updated_window = %{window | position: {x, y}}
@@ -494,7 +494,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:set_stacking_order, window_id, order}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         updated_window = %{window | stacking_order: order}
@@ -511,7 +511,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:set_maximized, window_id, maximized}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         {size, previous_size} =
@@ -540,7 +540,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:set_active_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       _window ->
         new_state = %{state | active_window: window_id}
@@ -551,7 +551,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   def handle_call({:get_window_state, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
-        {:reply, {:error, "Window not found"}, state}
+        {:reply, {:error, :window_not_found}, state}
 
       window ->
         {:reply, {:ok, window}, state}
@@ -560,8 +560,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   def handle_call(:get_active_window, _from, state) do
     case state.active_window do
-      nil -> {:reply, nil, state}
-      window_id -> {:reply, window_id, state}
+      nil -> {:reply, {:error, :no_active_window}, state}
+      window_id -> {:reply, {:ok, window_id}, state}
     end
   end
 

@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.Cache.System do
         {:reply, {:error, :namespace_not_found}, state}
 
       namespace_state ->
-        handle_cache_entry(namespace_state, key, state)
+        handle_cache_entry(namespace_state, key, state, namespace)
     end
   end
 
@@ -281,11 +281,11 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  defp handle_cache_entry(namespace_state, key, state) do
+  defp handle_cache_entry(namespace_state, key, state, namespace) do
     case Map.get(namespace_state.cache, key) do
       nil ->
         updated_state =
-          update_namespace(state, namespace_state.namespace, %{
+          update_namespace(state, namespace, %{
             namespace_state
             | miss_count: namespace_state.miss_count + 1
           })
@@ -294,19 +294,19 @@ defmodule Raxol.Terminal.Cache.System do
 
       entry ->
         if expired?(entry) do
-          handle_expired_entry(entry, key, namespace_state, state)
+          handle_expired_entry(entry, key, namespace_state, state, namespace)
         else
-          handle_valid_entry(entry, key, namespace_state, state)
+          handle_valid_entry(entry, key, namespace_state, state, namespace)
         end
     end
   end
 
-  defp handle_expired_entry(entry, key, namespace_state, state) do
+  defp handle_expired_entry(entry, key, namespace_state, state, namespace) do
     updated_cache = Map.delete(namespace_state.cache, key)
     updated_size = namespace_state.size - entry.size
 
     updated_state =
-      update_namespace(state, namespace_state.namespace, %{
+      update_namespace(state, namespace, %{
         namespace_state
         | cache: updated_cache,
           size: updated_size,
@@ -316,7 +316,7 @@ defmodule Raxol.Terminal.Cache.System do
     {:reply, {:error, :expired}, updated_state}
   end
 
-  defp handle_valid_entry(entry, key, namespace_state, state) do
+  defp handle_valid_entry(entry, key, namespace_state, state, namespace) do
     updated_entry = %{
       entry
       | last_access: System.system_time(:second),
@@ -326,7 +326,7 @@ defmodule Raxol.Terminal.Cache.System do
     updated_cache = Map.put(namespace_state.cache, key, updated_entry)
 
     updated_state =
-      update_namespace(state, namespace_state.namespace, %{
+      update_namespace(state, namespace, %{
         namespace_state
         | cache: updated_cache,
           hit_count: namespace_state.hit_count + 1

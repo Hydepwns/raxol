@@ -184,29 +184,31 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   end
 
   def handle_call({:render, state}, _from, renderer) do
-    # Initialize termbox if not already initialized
-    :termbox2_nif.tb_init()
+    # Initialize termbox if not already initialized and not in test mode
+    if Mix.env() != :test do
+      :termbox2_nif.tb_init()
 
-    # Clear the screen
-    :termbox2_nif.tb_clear()
+      # Clear the screen
+      :termbox2_nif.tb_clear()
 
-    # Render each cell
-    Enum.each(state.buffer.cells, fn {row, cells} ->
-      Enum.each(cells, fn {col, cell} ->
-        render_cell(col, row, cell)
+      # Render each cell
+      Enum.each(state.buffer.cells, fn {row, cells} ->
+        Enum.each(cells, fn {col, cell} ->
+          render_cell(col, row, cell)
+        end)
       end)
-    end)
 
-    # Set cursor position if visible
-    if state.cursor_visible do
-      {x, y} = Buffer.get_cursor_position(state.buffer)
-      :termbox2_nif.tb_set_cursor(x, y)
-    else
-      :termbox2_nif.tb_set_cursor(-1, -1)
+      # Set cursor position if visible
+      if state.cursor_visible do
+        {x, y} = Buffer.get_cursor_position(state.buffer)
+        :termbox2_nif.tb_set_cursor(x, y)
+      else
+        :termbox2_nif.tb_set_cursor(-1, -1)
+      end
+
+      # Present the changes
+      :termbox2_nif.tb_present()
     end
-
-    # Present the changes
-    :termbox2_nif.tb_present()
 
     {:reply, :ok, renderer}
   end
@@ -226,15 +228,19 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   end
 
   def handle_call({:cleanup, _state}, _from, renderer) do
-    # Cleanup termbox
-    :termbox2_nif.tb_shutdown()
+    # Cleanup termbox only if not in test mode
+    if Mix.env() != :test do
+      :termbox2_nif.tb_shutdown()
+    end
     {:reply, :ok, renderer}
   end
 
   def handle_call({:resize, width, height}, _from, renderer) do
-    # Resize termbox
-    :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
-    :termbox2_nif.tb_set_cell(width - 1, height - 1, 0, 0, 0)
+    # Resize termbox only if not in test mode
+    if Mix.env() != :test do
+      :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+      :termbox2_nif.tb_set_cell(width - 1, height - 1, 0, 0, 0)
+    end
 
     # Update screen buffer with new dimensions
     new_screen = Map.put(renderer.screen || %{}, :width, width)
@@ -244,19 +250,23 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   end
 
   def handle_call({:set_cursor_visibility, visible}, _from, renderer) do
-    if visible do
-      {x, y} = Buffer.get_cursor_position(renderer.buffer)
-      :termbox2_nif.tb_set_cursor(x, y)
-    else
-      :termbox2_nif.tb_set_cursor(-1, -1)
+    if Mix.env() != :test do
+      if visible do
+        {x, y} = Buffer.get_cursor_position(renderer.buffer)
+        :termbox2_nif.tb_set_cursor(x, y)
+      else
+        :termbox2_nif.tb_set_cursor(-1, -1)
+      end
     end
 
     {:reply, :ok, %{renderer | cursor_visible: visible}}
   end
 
   def handle_call({:set_title, title}, _from, renderer) do
-    # Set window title
-    :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+    # Set window title only if not in test mode
+    if Mix.env() != :test do
+      :termbox2_nif.tb_set_cell(0, 0, 0, 0, 0)
+    end
 
     {:reply, :ok, %{renderer | title: title}}
   end
@@ -266,14 +276,18 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   end
 
   def handle_call(:init_terminal, _from, renderer) do
-    # Initialize termbox
-    :termbox2_nif.tb_init()
+    # Initialize termbox only if not in test mode
+    if Mix.env() != :test do
+      :termbox2_nif.tb_init()
+    end
     {:reply, :ok, %{renderer | termbox_initialized: true}}
   end
 
   def handle_call(:shutdown_terminal, _from, renderer) do
-    # Shutdown termbox
-    :termbox2_nif.tb_shutdown()
+    # Shutdown termbox only if not in test mode
+    if Mix.env() != :test do
+      :termbox2_nif.tb_shutdown()
+    end
     {:reply, :ok, %{renderer | termbox_initialized: false}}
   end
 
@@ -303,6 +317,8 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   # Private functions
 
   defp render_cell(col, row, cell) do
-    :termbox2_nif.tb_set_cell(col, row, cell.char, cell.style.fg, cell.style.bg)
+    if Mix.env() != :test do
+      :termbox2_nif.tb_set_cell(col, row, cell.char, cell.style.fg, cell.style.bg)
+    end
   end
 end

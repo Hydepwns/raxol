@@ -40,8 +40,11 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   """
   @spec process_input(term(), emulator_state()) :: {emulator_state(), term()}
   def process_input(input, %{state: current_state} = state) do
+    # Wrap input in the expected event format
+    event = %{type: :key, key: input}
+
     # Process input through UnifiedIO
-    {:ok, commands} = UnifiedIO.process_input(input)
+    {:ok, commands} = UnifiedIO.process_input(event)
 
     # Update the component's state
     updated_state = %{state | state: current_state}

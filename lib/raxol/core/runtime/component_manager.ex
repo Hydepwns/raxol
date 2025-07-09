@@ -40,6 +40,14 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     GenServer.call(__MODULE__, {:update, component_id, message})
   end
 
+  @doc """
+  Directly sets the state for a component (for testing purposes).
+  """
+  @spec set_component_state(String.t(), map()) :: :ok | {:error, :not_found}
+  def set_component_state(component_id, new_state) do
+    GenServer.call(__MODULE__, {:set_component_state, component_id, new_state})
+  end
+
   def dispatch_event(event) do
     GenServer.cast(__MODULE__, {:dispatch_event, event})
   end
@@ -58,6 +66,14 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   @spec get_component(String.t()) :: map() | nil
   def get_component(component_id) do
     GenServer.call(__MODULE__, {:get_component, component_id})
+  end
+
+  @doc """
+  Retrieves all components' data.
+  """
+  @spec get_all_components() :: map()
+  def get_all_components() do
+    GenServer.call(__MODULE__, :get_all_components)
   end
 
   # Server Callbacks
@@ -276,6 +292,35 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   end
 
   @impl GenServer
+  def handle_call({:set_component_state, component_id, new_state}, _from, state) do
+    case Map.get(state.components, component_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+      component ->
+        # Update the state directly in the components map
+        state = put_in(state.components[component_id].state, new_state)
+        # Queue re-render if state changed
+        state =
+          if new_state != component.state do
+            update_in(state.render_queue, fn queue ->
+              if component_id in queue do
+                queue
+              else
+                [component_id | queue]
+              end
+            end)
+          else
+            state
+          end
+        # Send component_updated message if runtime_pid is set
+        if state.runtime_pid do
+          send(state.runtime_pid, {:component_updated, component_id})
+        end
+        {:reply, :ok, state}
+    end
+  end
+
+  @impl GenServer
   def handle_call(:get_and_clear_render_queue, _from, state) do
     # Get current queue and clear it
     queue = state.render_queue
@@ -287,6 +332,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   def handle_call({:get_component, component_id}, _from, state) do
     component = Map.get(state.components, component_id)
     {:reply, component, state}
+  end
+
+  @impl GenServer
+  def handle_call(:get_all_components, _from, state) do
+    {:reply, state.components, state}
   end
 
   @impl GenServer
