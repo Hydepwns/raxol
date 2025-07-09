@@ -30,34 +30,61 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       # Save for later comparison, access field directly -> use main_screen_buffer
       main_buffer_content = Emulator.get_active_buffer(emulator)
 
-      # Switch to alternate buffer (DECSET ?1047h)
-      {emulator_alt, _} = Emulator.process_input(emulator, "\e[?1047h")
+      IO.puts("DEBUG: Before switching to alternate buffer:")
+      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
+      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
+      IO.puts("  active_buffer_type: #{emulator.active_buffer_type}")
 
-      # Write content to alternate buffer
-      {emulator_alt, _} = Emulator.process_input(emulator_alt, "xy")
+      # Switch to alternate screen buffer
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
 
-      # Get the mode manager to check if the mode is set
-      mode_manager = Emulator.get_mode_manager_struct(emulator_alt)
+      IO.puts("DEBUG: After switching to alternate buffer:")
+      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
+      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
+      IO.puts("  active_buffer_type: #{emulator.active_buffer_type}")
 
-      assert ModeManager.mode_enabled?(mode_manager, :dec_alt_screen_save) ==
-               true
+      # Write some content to alternate buffer
+      {emulator, _} = Emulator.process_input(emulator, "xy")
 
-      # Switch back to main buffer (DECRST ?1047l)
-      {emulator_after, _} = Emulator.process_input(emulator_alt, "\e[?1047l")
+      IO.puts("DEBUG: After writing 'xy' to alternate buffer:")
+      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
+      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
+      IO.puts("  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}")
 
-      # Verify that main buffer content is preserved
-      buffer_after = Emulator.get_active_buffer(emulator_after)
-      cell_a_after = ScreenBuffer.get_cell_at(buffer_after, 0, 0)
-      cell_b_after = ScreenBuffer.get_cell_at(buffer_after, 1, 0)
+      # Check that alternate buffer has the new content
+      alternate_buffer = Emulator.get_active_buffer(emulator)
+      cell_x = ScreenBuffer.get_cell_at(alternate_buffer, 0, 0)
+      cell_y = ScreenBuffer.get_cell_at(alternate_buffer, 1, 0)
+      # Access :char field
+      assert cell_x.char == "x"
+      # Access :char field
+      assert cell_y.char == "y"
+
+      # Switch back to main screen buffer
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1047l")
+
+      IO.puts("DEBUG: After switching back to main buffer:")
+      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
+      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
+      IO.puts("  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}")
+
+      # Check that main buffer still has original content
+      main_buffer = Emulator.get_active_buffer(emulator)
+      cell_a_after = ScreenBuffer.get_cell_at(main_buffer, 0, 0)
+      cell_b_after = ScreenBuffer.get_cell_at(main_buffer, 1, 0)
+      # Access :char field
       assert cell_a_after.char == "a"
+      # Access :char field
       assert cell_b_after.char == "b"
 
-      # Verify that alternate buffer content is preserved
-      alt_buffer_after = emulator_after.alternate_screen_buffer
-      cell_x = ScreenBuffer.get_cell_at(alt_buffer_after, 0, 0)
-      cell_y = ScreenBuffer.get_cell_at(alt_buffer_after, 1, 0)
-      assert cell_x.char == "x"
-      assert cell_y.char == "y"
+      # Check that alternate buffer still has its content
+      alternate_buffer_after = emulator.alternate_screen_buffer
+      cell_x_after = ScreenBuffer.get_cell_at(alternate_buffer_after, 0, 0)
+      cell_y_after = ScreenBuffer.get_cell_at(alternate_buffer_after, 1, 0)
+      # Access :char field
+      assert cell_x_after.char == "x"
+      # Access :char field
+      assert cell_y_after.char == "y"
     end
 
     test ~c"switches between normal and alternate screen buffer (DEC mode 1047 - no clear)" do

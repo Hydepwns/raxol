@@ -172,20 +172,7 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "rejects invalid session topics" do
-      # Expect new/3 to be called even for invalid topics
-      expect(EmulatorMock, :new, fn _width, _height, _opts ->
-        create_emulator_struct()
-      end)
-
-      expect(RendererMock, :new, fn _buffer ->
-        %Raxol.Terminal.Renderer{
-          screen_buffer: _buffer,
-          cursor: {0, 0},
-          theme: %{},
-          font_settings: %{}
-        }
-      end)
-
+      # Don't expect mocks to be called for invalid topics
       socket = socket(UserSocket, "user_socket:fail", %{user_id: 2})
 
       assert {:error, %{reason: "unauthorized"}} =

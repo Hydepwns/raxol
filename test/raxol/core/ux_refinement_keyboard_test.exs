@@ -6,6 +6,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
   # Aliases for mocks will be used directly, e.g., Raxol.Mocks.AccessibilityMock
   # alias Raxol.Core.Accessibility # Removed
+  alias Raxol.Core.Accessibility.Mock, as: Raxol.Mocks.AccessibilityMock
   alias Raxol.Core.Events.Manager, as: EventManager
   # alias Raxol.Core.FocusManager # Removed
   # alias Raxol.Core.KeyboardShortcuts # Removed

@@ -3,7 +3,8 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   import Raxol.Guards
 
   setup_all do
-    start_supervised!({Raxol.Terminal.Window.UnifiedWindow, []})
+    start_supervised!({Raxol.Terminal.Window.UnifiedWindow, %{}})
+    start_supervised!({Raxol.Terminal.IO.UnifiedIO, %{}})
     :ok
   end
 

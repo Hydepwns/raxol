@@ -23,6 +23,15 @@ defmodule Raxol.Animation.FrameworkTest do
     assert_receive {:animation_started, ^element_id, ^animation_name}, timeout
   end
 
+  # Helper to flush the mailbox
+  defp flush_mailbox do
+    receive do
+      _ -> flush_mailbox()
+    after
+      0 -> :ok
+    end
+  end
+
   # Start UserPreferences for these tests
   setup do
     Logger.debug("Starting setup block")
@@ -85,7 +94,17 @@ defmodule Raxol.Animation.FrameworkTest do
     test ~c"initializes with default settings", %{
       user_preferences_pid: user_preferences_pid
     } do
+      # Ensure reduced motion is set to false before testing defaults
+      UserPreferences.set(
+        "accessibility.reduced_motion",
+        false,
+        user_preferences_pid
+      )
+
+      # Reset the framework to ensure clean state
+      Framework.stop()
       assert :ok == Framework.init(%{}, user_preferences_pid)
+
       # Verify default settings
       settings = Process.get(:animation_framework_settings, %{})
       assert settings.reduced_motion == false
@@ -241,9 +260,8 @@ defmodule Raxol.Animation.FrameworkTest do
 
         wait_for_animation_start("test_element", animation.name)
 
-        # Verify announcement was made
-        assert_receive {:accessibility_announcement, "Test animation started"},
-                       100
+        # Verify announcement was made using the spy helper
+        assert_announced("Test animation started")
       end)
     end
 
@@ -377,6 +395,16 @@ defmodule Raxol.Animation.FrameworkTest do
         )
 
       wait_for_animation_start("test_element", animation.name)
+
+      # Apply animations to trigger completion logic
+      Framework.apply_animations_to_state(%{}, user_preferences_pid)
+
+      # Wait a bit for the animation to complete
+      Process.sleep(150)
+
+      # Apply again to ensure completion is processed
+      Framework.apply_animations_to_state(%{}, user_preferences_pid)
+
       wait_for_animation_completion("test_element", animation.name)
 
       end_time = System.unique_integer([:positive])

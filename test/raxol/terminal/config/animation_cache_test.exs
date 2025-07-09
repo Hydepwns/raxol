@@ -4,9 +4,32 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
   alias Raxol.Terminal.Cache.System
 
   setup do
-    # The cache system should be started by the supervisor
+    # Ensure the cache system is started and ready
+    case Process.whereis(System) do
+      nil ->
+        # Start the cache system if it's not running
+        {:ok, _pid} = System.start_link(
+          max_size: 1024 * 1024,
+          default_ttl: 3600,
+          eviction_policy: :lru,
+          compression_enabled: true,
+          namespace_configs: %{
+            buffer: %{max_size: 512 * 1024},
+            animation: %{max_size: 256 * 1024},
+            scroll: %{max_size: 128 * 1024},
+            clipboard: %{max_size: 64 * 1024},
+            general: %{max_size: 20_000}
+          }
+        )
+      _pid ->
+        :ok
+    end
+
     # Wait a moment for it to be ready
     Process.sleep(100)
+
+    # Clear the animation cache before each test to ensure clean state
+    AnimationCache.clear_animation_cache()
 
     # Create test animation data
     animation_data = %{

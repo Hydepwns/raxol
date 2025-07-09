@@ -17,20 +17,35 @@ defmodule Raxol.Terminal.DriverTestHelper do
   end
 
   def wait_for_driver_ready(driver_pid, timeout \\ 500) do
-    receive do
-      {:driver_ready, ^driver_pid} ->
-        :ok
+    wait_for_driver_ready_recursive(driver_pid, timeout, System.monotonic_time(:millisecond))
+  end
 
-      {:driver_ready, other_pid} ->
-        assert other_pid == driver_pid
+  defp wait_for_driver_ready_recursive(driver_pid, timeout, start_time) do
+    current_time = System.monotonic_time(:millisecond)
+    remaining_timeout = timeout - (current_time - start_time)
 
-      other ->
-        flunk(
-          "Expected {:driver_ready, \\#{inspect(driver_pid)}}, got: \\#{inspect(other)}"
-        )
-    after
-      timeout ->
-        flunk("Timeout waiting for {:driver_ready, \\#{inspect(driver_pid)}}")
+    if remaining_timeout <= 0 do
+      flunk("Timeout waiting for {:driver_ready, \\#{inspect(driver_pid)}}")
+    else
+      receive do
+        {:driver_ready, ^driver_pid} ->
+          :ok
+
+        {:driver_ready, other_pid} ->
+          assert other_pid == driver_pid
+
+        {:EXIT, _port, :normal} ->
+          # Ignore normal port exits (from stty calls)
+          wait_for_driver_ready_recursive(driver_pid, timeout, start_time)
+
+        other ->
+          flunk(
+            "Expected {:driver_ready, \\#{inspect(driver_pid)}}, got: \\#{inspect(other)}"
+          )
+      after
+        remaining_timeout ->
+          flunk("Timeout waiting for {:driver_ready, \\#{inspect(driver_pid)}}")
+      end
     end
   end
 

@@ -24,52 +24,52 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       Helper.setup_test_preferences_with_events(prefs_name)
     end
 
-    test "announce/2 adds announcement to queue", %{prefs_name: prefs_name} do
+    test "announce/2 adds announcement to queue", %{prefs_name: prefs_name, pref_pid: pref_pid} do
       ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
 
-      Accessibility.announce("Test announcement", [], prefs_name)
+      Accessibility.announce("Test announcement", [], pref_pid)
       assert_receive {:announcement_added, ^ref, "Test announcement"}, 1000
 
       :ok = Accessibility.unsubscribe_from_announcements(ref)
     end
 
     test "get_next_announcement/0 retrieves and removes announcement", %{
-      prefs_name: prefs_name
+      prefs_name: prefs_name, pref_pid: pref_pid
     } do
       ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
 
-      Accessibility.announce("First", [], prefs_name)
-      Accessibility.announce("Second", [], prefs_name)
+      Accessibility.announce("First", [], pref_pid)
+      Accessibility.announce("Second", [], pref_pid)
 
       assert_receive {:announcement_added, ^ref, "First"}, 1000
       assert_receive {:announcement_added, ^ref, "Second"}, 1000
 
-      assert Accessibility.get_next_announcement(prefs_name) == "First"
-      assert Accessibility.get_next_announcement(prefs_name) == "Second"
-      assert Accessibility.get_next_announcement(prefs_name) == nil
+      assert Accessibility.get_next_announcement(pref_pid) == "First"
+      assert Accessibility.get_next_announcement(pref_pid) == "Second"
+      assert Accessibility.get_next_announcement(pref_pid) == nil
 
       :ok = Accessibility.unsubscribe_from_announcements(ref)
     end
 
-    test "clear_announcements/0 clears the queue", %{prefs_name: prefs_name} do
+    test "clear_announcements/0 clears the queue", %{prefs_name: prefs_name, pref_pid: pref_pid} do
       ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
 
-      Accessibility.announce("Test", [], prefs_name)
+      Accessibility.announce("Test", [], pref_pid)
       assert_receive {:announcement_added, ^ref, "Test"}, 1000
 
       Accessibility.clear_announcements()
       assert_receive {:announcements_cleared, ^ref}, 1000
 
-      assert Accessibility.get_next_announcement(prefs_name) == nil
+      assert Accessibility.get_next_announcement(pref_pid) == nil
 
       :ok = Accessibility.unsubscribe_from_announcements(ref)
     end
 
     test "announce/2 does nothing when screen reader is disabled", %{
-      prefs_name: prefs_name
+      prefs_name: prefs_name, pref_pid: pref_pid
     } do
       ref = System.unique_integer([:positive])
       :ok = Accessibility.subscribe_to_announcements(ref)
@@ -77,40 +77,40 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:screen_reader),
         false,
-        prefs_name
+        pref_pid
       )
 
-      Accessibility.announce("Should not be announced", [], prefs_name)
+      Accessibility.announce("Should not be announced", [], pref_pid)
 
       refute_receive {:announcement_added, ^ref, _}, 1000
-      assert Accessibility.get_next_announcement(prefs_name) == nil
+      assert Accessibility.get_next_announcement(pref_pid) == nil
 
       :ok = Accessibility.unsubscribe_from_announcements(ref)
     end
 
     test "announce/2 handles priority and interrupt options", %{
-      prefs_name: prefs_name
+      prefs_name: prefs_name, pref_pid: pref_pid
     } do
-      Accessibility.announce("Normal", [], prefs_name)
-      Accessibility.announce("High", [priority: :high], prefs_name)
-      Accessibility.announce("Low", [priority: :low], prefs_name)
-      assert Accessibility.get_next_announcement(prefs_name) == "High"
-      Accessibility.announce("Interrupting", [interrupt: true], prefs_name)
-      assert Accessibility.get_next_announcement(prefs_name) == "Interrupting"
-      assert Accessibility.get_next_announcement(prefs_name) == nil
+      Accessibility.announce("Normal", [], pref_pid)
+      Accessibility.announce("High", [priority: :high], pref_pid)
+      Accessibility.announce("Low", [priority: :low], pref_pid)
+      assert Accessibility.get_next_announcement(pref_pid) == "High"
+      Accessibility.announce("Interrupting", [interrupt: true], pref_pid)
+      assert Accessibility.get_next_announcement(pref_pid) == "Interrupting"
+      assert Accessibility.get_next_announcement(pref_pid) == nil
     end
 
     test "announce/2 respects :silence_announcements setting", %{
-      prefs_name: prefs_name
+      prefs_name: prefs_name, pref_pid: pref_pid
     } do
       Raxol.Core.UserPreferences.set(
         Helper.pref_key(:silence_announcements),
         true,
-        prefs_name
+        pref_pid
       )
 
-      Accessibility.announce("Should not be announced", [], prefs_name)
-      assert Accessibility.get_next_announcement(prefs_name) == nil
+      Accessibility.announce("Should not be announced", [], pref_pid)
+      assert Accessibility.get_next_announcement(pref_pid) == nil
     end
   end
 end

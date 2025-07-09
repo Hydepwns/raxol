@@ -234,9 +234,9 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       output = Renderer.render(renderer)
 
       # Style batching is not currently implemented in the renderer
-      # Each character gets its own span
+      # Each character gets its own span with background color
       assert output =~
-               "<span style=\"color: #FF0000\">R</span><span style=\"color: #FF0000\">e</span><span style=\"color: #FF0000\">d</span><span style=\"color: #FF0000\"> </span><span style=\"color: #FF0000\">t</span><span style=\"color: #FF0000\">e</span><span style=\"color: #FF0000\">x</span><span style=\"color: #FF0000\">t</span>"
+               "<span style=\"background-color: #000000; color: #FF0000\">R</span><span style=\"background-color: #000000; color: #FF0000\">e</span><span style=\"background-color: #000000; color: #FF0000\">d</span><span style=\"background-color: #000000; color: #FF0000\"> </span><span style=\"background-color: #000000; color: #FF0000\">t</span><span style=\"background-color: #000000; color: #FF0000\">e</span><span style=\"background-color: #000000; color: #FF0000\">x</span><span style=\"background-color: #000000; color: #FF0000\">t</span>"
     end
   end
 

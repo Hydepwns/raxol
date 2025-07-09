@@ -16,42 +16,7 @@ defmodule Raxol.AnimationTest do
     assert_receive {:animation_started, ^element_id, ^animation_name}, timeout
   end
 
-  setup do
-    # Start UserPreferences with a test-specific name
-    local_user_prefs_name = __MODULE__.UserPreferences
-    user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
-    {:ok, _pid} = start_supervised({UserPreferences, user_prefs_opts})
-    Framework.init(%{}, local_user_prefs_name)
-
-    # Reset relevant prefs before each test
-    UserPreferences.set(
-      "accessibility.reduced_motion",
-      false,
-      local_user_prefs_name
-    )
-
-    UserPreferences.set(
-      "accessibility.screen_reader",
-      true,
-      local_user_prefs_name
-    )
-
-    UserPreferences.set(
-      "accessibility.silence_announcements",
-      false,
-      local_user_prefs_name
-    )
-
-    # Wait for preferences to be applied
-    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
-
-    on_exit(fn ->
-      Framework.stop()
-    end)
-
-    :ok
-  end
 
   setup_all do
     Process.flag(:trap_exit, true)
@@ -92,20 +57,25 @@ defmodule Raxol.AnimationTest do
   setup context do
     Process.flag(:trap_exit, true)
 
-    # Use the global UserPreferences process that's already started
-    pid = Process.whereis(Raxol.Core.UserPreferences)
+    # Start UserPreferences with a test-specific name
+    local_user_prefs_name = __MODULE__.UserPreferences
+    user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
 
-    Animation.init(%{}, pid)
-    Accessibility.enable([], pid)
-    UserPreferences.set("accessibility.reduced_motion", false, pid)
-    UserPreferences.set("accessibility.screen_reader", true, pid)
-    UserPreferences.set("accessibility.silence_announcements", false, pid)
+    {:ok, pid} = start_supervised({UserPreferences, user_prefs_opts})
+
+    Framework.init(%{}, local_user_prefs_name)
+    Animation.init(%{}, local_user_prefs_name)
+    Accessibility.enable([], local_user_prefs_name)
+    UserPreferences.set("accessibility.reduced_motion", false, local_user_prefs_name)
+    UserPreferences.set("accessibility.screen_reader", true, local_user_prefs_name)
+    UserPreferences.set("accessibility.silence_announcements", false, local_user_prefs_name)
     Accessibility.clear_announcements()
-    assert_receive {:preferences_applied, _pid}, 100
+    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
 
     on_exit(fn ->
+      Framework.stop()
       Animation.stop()
-      Accessibility.disable(pid)
+      Accessibility.disable(local_user_prefs_name)
     end)
 
     {:ok, user_preferences_pid: pid}

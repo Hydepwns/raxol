@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
       buffer = ScrollRegion.set_region(buffer, 1, 3)
 
       # Scroll up by 1
-      buffer = ScrollRegion.scroll_up(buffer, 1)
+      {buffer, _scrolled_lines} = ScrollRegion.scroll_up(buffer, 1)
       assert get_content(buffer) == "ABCDE\nKLMNO\nPQRST\n          \nUVWXY"
     end
 
@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegionTest do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
 
       # Scroll up by 1
-      buffer = ScrollRegion.scroll_up(buffer, 1)
+      {buffer, _scrolled_lines} = ScrollRegion.scroll_up(buffer, 1)
       assert get_content(buffer) == "FGHIJ\nKLMNO\nPQRST\nUVWXY\n          "
     end
 

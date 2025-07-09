@@ -299,17 +299,12 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       # Set up components
       parent = create_test_component(ParentComponent)
 
-      child1 =
-        create_test_component(ChildComponent, %{parent_id: parent.state.id})
-
-      child2 =
-        create_test_component(ChildComponent, %{parent_id: parent.state.id})
-
       # Set up hierarchy with mounting in ComponentManager
       {:ok, parent, [child1, child2]} =
         Raxol.Test.Integration.setup_component_hierarchy_with_mounting(
           ParentComponent,
-          [ChildComponent, ChildComponent]
+          [ChildComponent, ChildComponent],
+          child_ids: [:child1, :child2]
         )
 
       # Simulate broadcast event from parent
@@ -317,6 +312,12 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         Raxol.Test.Integration.simulate_broadcast_event(parent, :broadcast, %{
           value: :increment
         })
+
+      # Debug: Print all components in ComponentManager
+      all_components = ComponentManager.get_all_components()
+      IO.puts("All components in ComponentManager: #{inspect(Map.keys(all_components))}")
+      IO.puts("Child1 component_manager_id: #{inspect(child1.state.component_manager_id)}")
+      IO.puts("Child2 component_manager_id: #{inspect(child2.state.component_manager_id)}")
 
       # Fetch latest child states from ComponentManager
       updated_child1_from_manager =

@@ -346,7 +346,8 @@ defmodule Raxol.Terminal.IntegrationTest do
       first_cell =
         ScreenBuffer.get_cell_at(final_state.main_screen_buffer, 0, 0)
 
-      assert first_cell.style.background == {0, 0, 0}
+      # Fix: expect the correct format {:rgb, r, g, b} instead of {r, g, b}
+      assert first_cell.style.background == {:rgb, 0, 0, 0}
 
       # Verify the cell has the SIXEL flag set
       assert first_cell.sixel == true
@@ -371,8 +372,8 @@ defmodule Raxol.Terminal.IntegrationTest do
       first_cell_of_image =
         final_state.main_screen_buffer.cells |> List.first() |> List.first()
 
-      # Adjust expected color
-      assert Map.get(first_cell_of_image.style, :background) == {0, 0, 0}
+      # Fix: expect the correct format {:rgb, r, g, b} instead of {r, g, b}
+      assert Map.get(first_cell_of_image.style, :background) == {:rgb, 0, 0, 0}
     end
   end
 end

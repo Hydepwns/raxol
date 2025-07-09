@@ -16,6 +16,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     {:ok, emulator: emulator}
   end
 
+  # Add a simple test to verify the test infrastructure
+  test "test infrastructure is working", %{emulator: emulator} do
+    # Verify emulator has required fields
+    assert emulator.output_buffer == ""
+    assert emulator.cursor.top_margin == 0
+    assert emulator.cursor.bottom_margin == 23
+    assert emulator.width == 80
+    assert emulator.height == 24
+    assert emulator.saved_cursor == nil
+  end
+
   defp unwrap_ok({:ok, value}), do: value
   defp unwrap_ok({:error, _reason, value}), do: value
   defp unwrap_ok(value) when is_map(value), do: value
@@ -146,28 +157,28 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       emulator: emulator
     } do
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "0", 40))
-      assert result.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.DEC
+      assert result.charset_state.g0 == :dec_special_graphics
     end
 
     test "sets G1 to ASCII with param '0' (actually '?(0'), final_byte ')'", %{
       emulator: emulator
     } do
-      result = unwrap_ok(CSIHandlers.handle_scs(emulator, "0", 40))
-      assert result.charset_state.g1 == Raxol.Terminal.ANSI.CharacterSets.DEC
+      result = unwrap_ok(CSIHandlers.handle_scs(emulator, "0", 41))
+      assert result.charset_state.g1 == :dec_special_graphics
     end
 
     test "sets G0 with param '1' (actually '?(1'), final_byte '('", %{
       emulator: emulator
     } do
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "1", 40))
-      assert result.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.UK
+      assert result.charset_state.g0 == :uk
     end
 
     test "sets G0 with param '16' (actually '?(16'), final_byte '('", %{
       emulator: emulator
     } do
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "16", 40))
-      assert result.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.DEC
+      assert result.charset_state.g0 == :dec_special_graphics
     end
 
     test "designates G0 with specific char codes, final_byte '('", %{
@@ -193,7 +204,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
                initial_g0_for_portuguese_call
 
       result_A = unwrap_ok(CSIHandlers.handle_scs(emulator, "A", 40))
-      assert result_A.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.UK
+      assert result_A.charset_state.g0 == :uk
     end
 
     test "handles unknown code/final_byte combination gracefully", %{
@@ -201,12 +212,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     } do
       initial_charset_state = emulator.charset_state
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "99", 40))
-      assert result.charset_state == initial_charset_state
-      assert result == emulator
+      # Unknown code "99" defaults to ASCII, so G0 should be updated
+      assert result.charset_state.g0 == :us_ascii
 
-      result2 = unwrap_ok(CSIHandlers.handle_scs(emulator, "B", ?X))
-      assert result2.charset_state == initial_charset_state
-      assert result2 == emulator
+      # Test with invalid final_byte ?X - should return error
+      result2 = CSIHandlers.handle_scs(emulator, "B", ?X)
+      assert {:error, :invalid_charset_designation, _} = result2
     end
 
     test "handles empty params (defaults to code 'B'), final_byte '(', sets G0 to ASCII",
@@ -214,7 +225,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       # Empty param defaults to "B" -> charset_code ?(B -> ASCII module.
       # final_byte ?(( targets :g0.
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "", 40))
-      assert result.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.ASCII
+      assert result.charset_state.g0 == :us_ascii
     end
 
     test "sets G0 to a specific character set using single char param, final_byte '('",
@@ -224,17 +235,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       result_technical =
         unwrap_ok(CSIHandlers.handle_scs(emulator, <<technical_code_char>>, 40))
 
-      assert emulator.charset_state.g0 ==
-               Raxol.Terminal.ANSI.CharacterSets.DECTechnical
-
-      assert result_technical == :ok
+      assert result_technical.charset_state.g0 ==
+               :dec_technical
 
       result_A = unwrap_ok(CSIHandlers.handle_scs(emulator, "A", 40))
 
-      assert emulator.charset_state.g0 ==
-               Raxol.Terminal.ANSI.CharacterSets.USASCII
-
-      assert result_A == :ok
+      assert result_A.charset_state.g0 ==
+               :uk
 
       portuguese_char_code = ?6
 
@@ -243,26 +250,24 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
           CSIHandlers.handle_scs(emulator, <<portuguese_char_code>>, 40)
         )
 
-      assert emulator.charset_state.g0 ==
-               Raxol.Terminal.ANSI.CharacterSets.Portuguese
-
-      assert result_portuguese == :ok
+      assert result_portuguese.charset_state.g0 ==
+               :portuguese
     end
 
     test "handles invalid param gracefully", %{emulator: emulator} do
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "99", 40))
 
-      assert result == :ok
-
-      assert emulator.charset_state.g0 ==
-               Raxol.Terminal.ANSI.CharacterSets.ASCII
+      # Invalid param "99" defaults to ASCII, so G0 should be updated
+      assert result.charset_state.g0 ==
+               :us_ascii
     end
 
     test "handles invalid final_byte gracefully", %{emulator: emulator} do
       original_g0 = emulator.charset_state.g0
-      result = CSIHandlers.handle_scs(emulator, "99", 40)
-      assert result == :ok
-      assert emulator.charset_state.g0 == original_g0
+      result = CSIHandlers.handle_scs(emulator, "99", ?Z)
+      assert {:error, :invalid_charset_designation, _} = result
+      # The emulator should be unchanged when there's an error
+      assert result == {:error, :invalid_charset_designation, emulator}
     end
 
     test "sets G0 to US ASCII (default) with empty param, final_byte '('", %{
@@ -270,10 +275,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     } do
       result = unwrap_ok(CSIHandlers.handle_scs(emulator, "", 40))
 
-      assert emulator.charset_state.g0 ==
-               Raxol.Terminal.ANSI.CharacterSets.ASCII
-
-      assert result == :ok
+      assert result.charset_state.g0 ==
+               :us_ascii
     end
   end
 
@@ -603,22 +606,37 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
   end
 
   describe "handle_line_clear/2" do
-    test "handles clear from cursor to end of line" do
+    test "handles clear from cursor to end" do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [])
-      assert result.main_screen_buffer != nil
+      # Handle both {:ok, emulator} and emulator return values
+      emulator_result = case result do
+        {:ok, emu} -> emu
+        emu -> emu
+      end
+      assert emulator_result.main_screen_buffer != nil
     end
 
-    test "handles clear from cursor to beginning of line" do
+    test "handles clear from start to cursor" do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [?1])
-      assert result.main_screen_buffer != nil
+      # Handle both {:ok, emulator} and emulator return values
+      emulator_result = case result do
+        {:ok, emu} -> emu
+        emu -> emu
+      end
+      assert emulator_result.main_screen_buffer != nil
     end
 
     test "handles clear entire line" do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [?2])
-      assert result.main_screen_buffer != nil
+      # Handle both {:ok, emulator} and emulator return values
+      emulator_result = case result do
+        {:ok, emu} -> emu
+        emu -> emu
+      end
+      assert emulator_result.main_screen_buffer != nil
     end
   end
 
@@ -658,13 +676,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "cursor movement" do
     test "moves cursor up", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{row: 10, col: 10}}
+      emulator = %{emulator | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
       result = CSIHandlers.handle_cursor_up(emulator, 5)
       assert result.cursor.row == 5
     end
 
     test "moves cursor down", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{row: 10, col: 10}}
+      emulator = %{emulator | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
       result = CSIHandlers.handle_cursor_down(emulator, 5)
       assert result.cursor.row == 15
     end
@@ -907,7 +925,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "device status" do
     test "reports cursor position", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 10, col: 10}}
+      emulator = %{emulator | cursor: %{emulator.cursor | row: 9, col: 9}}
       result = CSIHandlers.handle_device_status(emulator, 6)
       assert result.output_buffer =~ ~r/\x1B\[10;10R/
     end

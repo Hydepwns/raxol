@@ -1,6 +1,6 @@
-@skip_termbox2_tests !Raxol.Terminal.TerminalUtils.real_tty?()
+skip_termbox2_tests = !Raxol.Terminal.TerminalUtils.real_tty?()
 
-if @skip_termbox2_tests do
+if skip_termbox2_tests do
   defmodule Termbox2NifTest do
     use ExUnit.Case
     @tag :skip
