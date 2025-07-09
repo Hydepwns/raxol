@@ -476,11 +476,36 @@ defmodule Raxol.Terminal.ScreenBuffer do
     }
   end
 
-  defdelegate clear_region(buffer, x, y, width, height),
-    to: Raxol.Terminal.ScreenBuffer.Core
+  def clear_region(buffer, x, y, width, height) do
+    # Clear the specified region by filling it with empty cells
+    empty_cell = Raxol.Terminal.Cell.new()
 
-  defdelegate mark_damaged(buffer, x, y, width, height, reason),
-    to: Raxol.Terminal.ScreenBuffer.Core
+    new_cells =
+      Enum.reduce(y..(y + height - 1), buffer.cells, fn row_y, acc_cells ->
+        if row_y < buffer.height do
+          List.update_at(acc_cells, row_y, fn row ->
+            Enum.reduce(x..(x + width - 1), row, fn col_x, acc_row ->
+              if col_x < buffer.width do
+                List.replace_at(acc_row, col_x, empty_cell)
+              else
+                acc_row
+              end
+            end)
+          end)
+        else
+          acc_cells
+        end
+      end)
+
+    %{buffer | cells: new_cells}
+  end
+
+  def mark_damaged(buffer, x, y, width, height, reason) do
+    # Add the new damage region to the existing list
+    new_region = {x, y, width, height}
+    updated_damage_regions = [new_region | (buffer.damage_regions || [])]
+    %{buffer | damage_regions: updated_damage_regions}
+  end
 
   defdelegate pop_bottom_lines(buffer, count),
     to: Raxol.Terminal.ScreenBuffer.Core
@@ -564,14 +589,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   def mark_damaged(buffer, x, y, width, height, reason) do
-    Raxol.Terminal.ScreenBuffer.Core.mark_damaged(
-      buffer,
-      x,
-      y,
-      width,
-      height,
-      reason
-    )
+    # Add the new damage region to the existing list
+    new_region = {x, y, width, height}
+    updated_damage_regions = [new_region | (buffer.damage_regions || [])]
+    %{buffer | damage_regions: updated_damage_regions}
   end
 
   def get_scroll_region(buffer) do
@@ -936,22 +957,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets all damaged regions in the buffer.
   """
   def get_damaged_regions(buffer) do
-    case buffer.screen_state do
-      %{damage_regions: regions} -> regions
-      _ -> []
-    end
+    buffer.damage_regions || []
   end
 
   @doc """
   Clears all damaged regions in the buffer.
   """
   def clear_damaged_regions(buffer) do
-    case buffer.screen_state do
-      %{damage_regions: _} = screen_state ->
-        %{buffer | screen_state: %{screen_state | damage_regions: []}}
-
-      _ ->
-        buffer
-    end
+    %{buffer | damage_regions: []}
   end
 end

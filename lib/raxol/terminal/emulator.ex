@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Emulator do
   """
 
   import Raxol.Guards
+  import Logger
 
   alias Raxol.Terminal.{
     Event.Handler,
@@ -92,6 +93,14 @@ defmodule Raxol.Terminal.Emulator do
     # State stack for terminal state management
     state_stack: [],
 
+    # Parser state
+    parser_state: %Raxol.Terminal.Parser.State{state: :ground},
+
+    # Command history
+    command_history: [],
+    current_command_buffer: "",
+    max_command_history: 100,
+
     # Other fields
     output_buffer: "",
     style: Raxol.Terminal.ANSI.TextFormatting.new(),
@@ -126,6 +135,10 @@ defmodule Raxol.Terminal.Emulator do
           height: non_neg_integer(),
           window_state: map(),
           state_stack: list(),
+          parser_state: Raxol.Terminal.Parser.State.t(),
+          command_history: list(),
+          current_command_buffer: String.t(),
+          max_command_history: non_neg_integer(),
           output_buffer: String.t(),
           style: Raxol.Terminal.ANSI.TextFormatting.t(),
           scrollback_limit: non_neg_integer(),
@@ -366,6 +379,25 @@ defmodule Raxol.Terminal.Emulator do
     emulator.scrollback_buffer
   end
 
+  # Dimension getters
+  def get_width(emulator) do
+    emulator.width
+  end
+
+  def get_height(emulator) do
+    emulator.height
+  end
+
+  # Scroll region getter
+  def get_scroll_region(emulator) do
+    emulator.scroll_region
+  end
+
+  # Cursor visibility getter (alias for cursor_visible?)
+  def get_cursor_visible(emulator) do
+    cursor_visible?(emulator)
+  end
+
   # Mode update functions
   defdelegate update_insert_mode(emulator, value),
     to: Raxol.Terminal.ModeManager
@@ -432,7 +464,7 @@ defmodule Raxol.Terminal.Emulator do
     if y >= emulator.height do
       # Need to scroll
       active_buffer = get_active_buffer(emulator)
-      scrolled_buffer = Raxol.Terminal.ScreenBuffer.scroll_up(active_buffer, 1)
+      {scrolled_buffer, _scrolled_lines} = Raxol.Terminal.ScreenBuffer.scroll_up(active_buffer, 1)
 
       # Update the appropriate buffer
       case emulator.active_buffer_type do
@@ -465,43 +497,21 @@ defmodule Raxol.Terminal.Emulator do
 
       :no_match ->
         IO.puts(
-          "DEBUG: process_input no charset match, calling handle_ansi_sequences"
+          "DEBUG: process_input no charset match, using parser-based processing"
         )
 
-        # Not a charset command, proceed with normal processing
-        # Handle ANSI sequences and get remaining text
-        {updated_emulator, remaining_text} =
-          handle_ansi_sequences(input, emulator)
+        # Use parser-based input processing for all other input
+        {updated_emulator, output} = Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input)
 
         IO.puts(
-          "DEBUG: After handle_ansi_sequences, style: #{inspect(updated_emulator.style)}, remaining_text: #{inspect(remaining_text)}"
+          "DEBUG: After parser processing, style: #{inspect(updated_emulator.style)}"
         )
 
         IO.puts(
-          "DEBUG: After handle_ansi_sequences, scroll_region: #{inspect(updated_emulator.scroll_region)}"
+          "DEBUG: After parser processing, scroll_region: #{inspect(updated_emulator.scroll_region)}"
         )
 
-        if remaining_text == "" do
-          IO.puts(
-            "DEBUG: No remaining text, returning emulator with scroll_region: #{inspect(updated_emulator.scroll_region)}"
-          )
-
-          # Return the output buffer content instead of empty string
-          output = updated_emulator.output_buffer
-          emulator_without_output = %{updated_emulator | output_buffer: ""}
-          {emulator_without_output, output}
-        else
-          updated_emulator = handle_text_input(remaining_text, updated_emulator)
-
-          IO.puts(
-            "DEBUG: After handle_text_input, scroll_region: #{inspect(updated_emulator.scroll_region)}"
-          )
-
-          # Return the output buffer content instead of empty string
-          output = updated_emulator.output_buffer
-          emulator_without_output = %{updated_emulator | output_buffer: ""}
-          {emulator_without_output, output}
-        end
+        {updated_emulator, output}
     end
   end
 
@@ -895,13 +905,15 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-  def cursor_visible?(%__MODULE__{cursor: pid} = emulator) when pid?(pid) do
-    cursor = get_cursor_struct(emulator)
-    cursor.visible
-  end
-
   def cursor_visible?(%__MODULE__{} = emulator) do
-    CursorOperations.cursor_visible?(emulator)
+    # Check cursor manager first (authoritative source)
+    if pid?(emulator.cursor) do
+      CursorManager.get_visibility(emulator.cursor)
+    else
+      # Fallback to mode manager if cursor is not a PID
+      mode_manager = get_mode_manager_struct(emulator)
+      mode_manager.cursor_visible
+    end
   end
 
   @doc """
@@ -1019,8 +1031,30 @@ defmodule Raxol.Terminal.Emulator do
   Sets a terminal mode using the mode manager.
   """
   @spec set_mode(t(), atom()) :: t()
-  def set_mode(%__MODULE__{} = emulator, mode) do
-    case Raxol.Terminal.ModeManager.set_mode(emulator, [mode]) do
+  def set_mode(emulator, mode) do
+    require Logger
+    Logger.debug("Emulator.set_mode/2 called with mode=#{inspect(mode)}")
+    Logger.debug("Emulator.set_mode/2: about to call ModeManager.set_mode")
+    result = Raxol.Terminal.ModeManager.set_mode(emulator, [mode])
+    Logger.debug("Emulator.set_mode/2: ModeManager.set_mode returned #{inspect(result)}")
+    case result do
+      {:ok, new_emulator} ->
+        Logger.debug("Emulator.set_mode/2: returning new_emulator")
+        new_emulator
+      {:error, reason} ->
+        Logger.debug("Emulator.set_mode/2: ModeManager.set_mode returned {:error, #{inspect(reason)}}")
+        emulator
+    end
+  end
+
+  @doc """
+  Resets a terminal mode using the mode manager.
+  """
+  @spec reset_mode(t(), atom()) :: t()
+  def reset_mode(emulator, mode) do
+    require Logger
+    Logger.debug("Emulator.reset_mode/2 called with mode=#{inspect(mode)}")
+    case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode]) do
       {:ok, new_emulator} -> new_emulator
       {:error, _} -> emulator
     end
@@ -1175,6 +1209,14 @@ defmodule Raxol.Terminal.Emulator do
   @spec move_cursor_to(t(), non_neg_integer(), non_neg_integer()) :: t()
   def move_cursor_to(emulator, x, y) do
     Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, x, y)
+  end
+
+  @doc """
+  Moves the cursor to the specified position (2-arity version).
+  """
+  @spec move_cursor_to(t(), {non_neg_integer(), non_neg_integer()}) :: t()
+  def move_cursor_to(emulator, {x, y}) do
+    move_cursor_to(emulator, x, y)
   end
 
   @doc """

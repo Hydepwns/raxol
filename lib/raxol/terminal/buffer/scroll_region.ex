@@ -197,15 +197,16 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
           ScreenBuffer.t(),
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()} | nil
-        ) :: ScreenBuffer.t()
+        ) :: {ScreenBuffer.t(), list(list(Cell.t()))}
   def scroll_up(buffer, lines, scroll_region_arg \\ nil) when lines > 0 do
     {scroll_start, scroll_end} = get_effective_region(buffer, scroll_region_arg)
     visible_lines = scroll_end - scroll_start + 1
 
     if lines >= visible_lines do
-      clear_region(buffer, scroll_start, scroll_end)
+      scrolled_lines = extract_lines_from_region(buffer, scroll_start, scroll_end)
+      {clear_region(buffer, scroll_start, scroll_end), scrolled_lines}
     else
-      scroll_region_up(buffer, scroll_start, scroll_end, lines)
+      scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
     end
   end
 
@@ -223,6 +224,44 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       replace_region_content(buffer.cells, start, ending, empty_region_cells)
 
     %{buffer | cells: updated_cells}
+  end
+
+  defp scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines) do
+    # Extract the lines that will be scrolled out
+    scrolled_lines = extract_lines_from_region(buffer, scroll_start, scroll_start + lines - 1)
+
+    # Pre-create a single empty line to reuse
+    empty_line = List.duplicate(Cell.new(), buffer.width)
+
+    # Calculate the number of lines that will be affected
+    region_height = scroll_end - scroll_start + 1
+
+    # Only process the lines that actually need to change
+    new_cells =
+      buffer.cells
+      |> Enum.with_index()
+      |> Enum.map(fn {line, idx} ->
+        cond do
+          # Lines before the scroll region - unchanged
+          idx < scroll_start ->
+            line
+
+          # Lines within the scroll region that should move up
+          idx >= scroll_start and idx <= scroll_end - lines ->
+            # Move content from idx + lines to idx
+            Enum.at(buffer.cells, idx + lines, empty_line)
+
+          # Lines within the scroll region that should be empty
+          idx > scroll_end - lines and idx <= scroll_end ->
+            empty_line
+
+          # Lines after the scroll region - unchanged
+          true ->
+            line
+        end
+      end)
+
+    {%{buffer | cells: new_cells}, scrolled_lines}
   end
 
   defp scroll_region_up(buffer, scroll_start, scroll_end, lines) do
@@ -364,6 +403,17 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     {before, after_part} = Enum.split(cells, start_line)
     {_, after_part} = Enum.split(after_part, end_line - start_line + 1)
     before ++ new_content ++ after_part
+  end
+
+  defp extract_lines_from_region(buffer, start_line, end_line) do
+    Enum.map(start_line..end_line, fn i ->
+      if i < length(buffer.cells) do
+        Enum.at(buffer.cells, i, [])
+      else
+        []
+      end
+    end)
+    |> Enum.filter(fn line -> line != [] end)
   end
 
   defp get_effective_region(buffer, scroll_region_arg) do

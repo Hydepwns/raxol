@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Scrolls the buffer up by the specified number of lines.
   """
   def scroll_up_emulator(emulator, lines) do
-    updated_emulator = ScreenBuffer.scroll_up(emulator, lines)
+    {updated_emulator, _scrolled_lines} = ScreenBuffer.scroll_up(emulator, lines)
     %{updated_emulator | active_buffer: updated_emulator.active_buffer}
   end
 

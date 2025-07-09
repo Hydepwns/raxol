@@ -441,10 +441,36 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-  @doc """
+    @doc """
   Writes data to the buffer.
   """
-  def write(buffer, data, opts \\ []) do
+  def write(buffer, data, opts \\ [])
+
+  def write(%Raxol.Terminal.Buffer.Manager.BufferImpl{} = buffer, data, opts) do
+    # Handle BufferImpl structs
+    case classify_data(data) do
+      {:char, x, y, char} ->
+        cell = Raxol.Terminal.Cell.new(char, Keyword.get(opts, :style))
+        Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(buffer, x, y, cell)
+
+      {:string, x, y, string} ->
+        # For strings, write character by character starting at x, y
+        Enum.reduce(Enum.with_index(String.graphemes(string)), buffer, fn {char, index}, acc_buffer ->
+          cell = Raxol.Terminal.Cell.new(char, Keyword.get(opts, :style))
+          Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(acc_buffer, x + index, y, cell)
+        end)
+
+      :unknown ->
+        # If data is just a string, treat it as content to add at cursor position
+        if is_binary(data) do
+          Raxol.Terminal.Buffer.Manager.BufferImpl.add(buffer, data)
+        else
+          buffer
+        end
+    end
+  end
+
+  def write(buffer, data, opts) do
     case classify_data(data) do
       {:char, x, y, char} -> write_char_data(buffer, x, y, char, opts)
       {:string, x, y, string} -> write_string_data(buffer, x, y, string)
@@ -483,8 +509,21 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Reads data from the buffer.
   """
-  def read(buffer, opts \\ []) do
-    # Example: read a line or region, depending on opts
+  def read(buffer, opts \\ [])
+
+  def read(%Raxol.Terminal.Buffer.Manager.BufferImpl{} = buffer, opts) do
+    # Handle BufferImpl structs
+    case Keyword.get(opts, :line) do
+      nil ->
+        {Raxol.Terminal.Buffer.Manager.BufferImpl.get_content(buffer), buffer}
+
+      line when is_integer(line) ->
+        {Raxol.Terminal.Buffer.Manager.BufferImpl.get_line(buffer, line), buffer}
+    end
+  end
+
+  def read(buffer, opts) do
+    # Handle ScreenBuffer and other buffer types
     case Keyword.get(opts, :line) do
       nil ->
         {Raxol.Terminal.Buffer.Content.get_content(buffer), buffer}

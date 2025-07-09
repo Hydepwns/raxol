@@ -166,6 +166,25 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
   end
 
   @doc """
+  Gets the content of the buffer as a string.
+  """
+  def get_content(buffer) do
+    for y <- 0..(buffer.height - 1) do
+      line =
+        for x <- 0..(buffer.width - 1) do
+          cell = get_cell(buffer, x, y)
+          cell.char || " "
+        end
+        |> Enum.join("")
+        |> String.trim_trailing()
+
+      line
+    end
+    |> Enum.filter(&(&1 != ""))
+    |> Enum.join("\n")
+  end
+
+  @doc """
   Sets a line in the buffer.
   """
   def set_line(buffer, y, cells) do
