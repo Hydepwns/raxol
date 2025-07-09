@@ -26,7 +26,7 @@ defmodule Raxol.Style.Colors.Utilities do
     relative_luminance({color.r, color.g, color.b})
   end
 
-  def relative_luminance({r, g, b}) do
+  def relative_luminance({r, g, b}) when is_number(r) and is_number(g) and is_number(b) do
     # Convert RGB to relative luminance
     r = convert_to_linear(r / 255)
     g = convert_to_linear(g / 255)
@@ -35,6 +35,17 @@ defmodule Raxol.Style.Colors.Utilities do
     # Calculate relative luminance
     0.2126 * r + 0.7152 * g + 0.0722 * b
   end
+
+  def relative_luminance(hex) when is_binary(hex) do
+    # Convert hex string to Color struct and calculate luminance
+    case Color.from_hex(hex) do
+      %Color{} = color -> relative_luminance(color)
+      _ -> 0.0
+    end
+  end
+
+  def relative_luminance(nil), do: 0.0
+  def relative_luminance(_), do: 0.0
 
   @doc """
   Calculates the contrast ratio between two colors according to WCAG 2.0.
@@ -125,7 +136,7 @@ defmodule Raxol.Style.Colors.Utilities do
   """
   def increase_contrast(%Color{} = color) do
     {r, g, b} = increase_contrast({color.r, color.g, color.b})
-    %{color | r: r, g: g, b: b}
+    %{color | r: r, g: g, b: b, hex: Color.from_rgb(r, g, b).hex}
   end
 
   def increase_contrast({r, g, b}) do
