@@ -406,7 +406,7 @@ defmodule Raxol.Plugins.Lifecycle do
   defp format_error({:error, reason}, module),
     do: "Failed to initialize plugin #{module}: #{inspect(reason)}"
 
-  defp format_error({:circular_dependency, name}, module),
+  defp format_error({:circular_dependency, name}, _module),
     do: "Dependency cycle detected for plugin #{name}"
 
   defp format_missing_dependencies_error(missing, chain, module) do
@@ -602,7 +602,7 @@ defmodule Raxol.Plugins.Lifecycle do
     end
   end
 
-  defp call_plugin_stop_with_config(plugin, module, plugin_config) do
+  defp call_plugin_stop_with_config(_plugin, module, plugin_config) do
     # Check if the plugin module implements the Lifecycle behaviour by checking for stop/1 function
     if function_exported?(module, :stop, 1) do
       case module.stop(plugin_config) do
@@ -614,7 +614,7 @@ defmodule Raxol.Plugins.Lifecycle do
     end
   end
 
-  defp update_config_and_remove_plugin(manager, plugin, name) do
+  defp update_config_and_remove_plugin(manager, _plugin, name) do
     plugin_key = normalize_plugin_key(name)
     updated_config = PluginConfig.disable_plugin(manager.config, name)
 
@@ -931,7 +931,7 @@ defmodule Raxol.Plugins.Lifecycle do
       |> Enum.into(%{})
       |> Map.put(plugin_key, plugin)
 
-    plugins_atom_keys =
+    _plugins_atom_keys =
       plugins
       |> Enum.map(fn {k, v} -> {normalize_plugin_key(k), v} end)
       |> Enum.into(%{})

@@ -15,7 +15,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
         plugin_states,
         load_order,
         command_table,
-        plugin_config
+        _plugin_config
       ) do
     # Process event through enabled plugins in load order
     Enum.reduce_while(
@@ -31,7 +31,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
                    current_metadata,
                    current_states,
                    current_table,
-                   plugin_config
+                   _plugin_config
                  ) do
               {:ok, {updated_metadata, updated_states, updated_table}} ->
                 {:cont,
@@ -58,7 +58,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
         metadata,
         plugin_states,
         command_table,
-        plugin_config
+        _plugin_config
       ) do
     case Map.get(plugins, plugin_id) do
       nil ->

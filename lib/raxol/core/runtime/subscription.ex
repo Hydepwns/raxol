@@ -159,7 +159,7 @@ defmodule Raxol.Core.Runtime.Subscription do
         %{type: :custom, data: data} ->
           start_custom_subscription(data, context)
 
-        %{type: invalid_type, data: _data} ->
+        %{type: _invalid_type, data: _data} ->
           {:error, :invalid_subscription_type}
       end
     end
@@ -245,7 +245,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  defp start_event_subscription(event_types, context) do
+  defp start_event_subscription(event_types, _context) do
     case Raxol.Core.Events.Manager.subscribe(event_types, []) do
       {:ok, subscription_id} ->
         {:ok, {:events, subscription_id}}
