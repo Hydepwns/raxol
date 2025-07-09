@@ -267,7 +267,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     }
   end
 
-  defp create_data_row(row, context, index, style) do
+  defp create_data_row(row, context, _index, style) do
     %{
       type: :row,
       align: :start,

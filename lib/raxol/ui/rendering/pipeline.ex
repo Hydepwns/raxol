@@ -40,8 +40,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
   alias Raxol.UI.Rendering.Composer
   alias Raxol.UI.Rendering.Painter
 
-  import Raxol.Guards
-
   require Raxol.Core.Runtime.Log
   require Logger
 
