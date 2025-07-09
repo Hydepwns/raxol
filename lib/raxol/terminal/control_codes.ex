@@ -509,46 +509,90 @@ defmodule Raxol.Terminal.ControlCodes do
   @spec handle_decsc(Emulator.t()) :: Emulator.t()
   # ESC 7 - Save Cursor State (DEC specific)
   def handle_decsc(emulator) do
-    # Capture necessary parts of the emulator state - NO, save_state expects full state
-    new_stack = TerminalState.save_state(emulator.state_stack, emulator)
+    # Get cursor state from the PID using CursorManager
+    cursor_position = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    cursor_visible = Raxol.Terminal.Cursor.Manager.get_visibility(emulator.cursor)
+    cursor_style = Raxol.Terminal.Cursor.Manager.get_style(emulator.cursor)
+    cursor_blinking = Raxol.Terminal.Cursor.Manager.get_blink(emulator.cursor)
+
+    saved_state = %{
+      cursor: %{
+        position: cursor_position,
+        visible: cursor_visible,
+        style: cursor_style,
+        blink_state: cursor_blinking
+      },
+      style: emulator.style,
+      charset_state: emulator.charset_state,
+      mode_manager: emulator.mode_manager,
+      scroll_region: emulator.scroll_region,
+      cursor_style: emulator.cursor_style
+    }
+
+    # Save the state to the stack
+    new_stack = [saved_state | emulator.state_stack]
     %{emulator | state_stack: new_stack}
   end
 
   @spec handle_decrc(Emulator.t()) :: Emulator.t()
   # ESC 8 - Restore Cursor State (DEC specific)
   def handle_decrc(emulator) do
-    {new_stack, restored_state_data} =
-      TerminalState.restore_state(emulator.state_stack)
+    case emulator.state_stack do
+      [restored_state_data | new_stack] ->
+        # Apply the restored state components
+        emulator = %{
+          emulator
+          | state_stack: new_stack,
+            style: restored_state_data.style,
+            charset_state: restored_state_data.charset_state,
+            mode_manager: restored_state_data.mode_manager,
+            scroll_region: restored_state_data.scroll_region,
+            cursor_style: Map.get(restored_state_data, :cursor_style, emulator.cursor_style)
+        }
 
-    if restored_state_data do
-      # Apply the restored state components
-      # Directly use the restored cursor, style, charset_state, mode_manager, scroll_region
-      new_cursor = restored_state_data.cursor
-      new_style = restored_state_data.style
-      new_charset_state = restored_state_data.charset_state
-      # Corrected key
-      new_mode_manager_state = restored_state_data.mode_manager
-      new_scroll_region = restored_state_data.scroll_region
+        # Restore cursor position and attributes using CursorManager
+        if restored_state_data.cursor do
+          cursor_data = restored_state_data.cursor
 
-      # Assuming cursor_style was also saved by TerminalState.save_state if it's part of full DECRC
-      new_cursor_style =
-        Map.get(restored_state_data, :cursor_style, emulator.cursor_style)
+          # Restore cursor position
+          Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, cursor_data.position)
 
-      %{
+          # Restore cursor visibility
+          Raxol.Terminal.Cursor.Manager.set_visibility(emulator.cursor, cursor_data.visible)
+
+          # Restore cursor style
+          Raxol.Terminal.Cursor.Manager.set_style(emulator.cursor, cursor_data.style)
+
+          # Restore cursor blinking state
+          Raxol.Terminal.Cursor.Manager.set_blink(emulator.cursor, cursor_data.blink_state)
+        end
+
         emulator
-        | state_stack: new_stack,
-          cursor: new_cursor,
-          style: new_style,
-          charset_state: new_charset_state,
-          # Corrected field
-          mode_manager: new_mode_manager_state,
-          scroll_region: new_scroll_region,
-          # Ensure cursor_style is restored
-          cursor_style: new_cursor_style
-      }
-    else
-      # Stack was empty, no state to restore
-      emulator
+
+      [] ->
+        # No saved state to restore
+        emulator
+    end
+  end
+
+  @doc """
+  Handles simple escape sequences (ESC followed by a single byte).
+  """
+  @spec handle_escape(Emulator.t(), integer()) :: Emulator.t()
+  def handle_escape(emulator, byte) do
+    case byte do
+      ?7 -> handle_decsc(emulator)
+      ?8 -> handle_decrc(emulator)
+      ?c -> handle_ris(emulator)
+      ?D -> handle_ind(emulator)
+      ?E -> handle_nel(emulator)
+      ?H -> handle_hts(emulator)
+      ?M -> handle_ri(emulator)
+      ?= -> Raxol.Terminal.Emulator.handle_esc_equals(emulator)
+      ?> -> Raxol.Terminal.Emulator.handle_esc_greater(emulator)
+      _ ->
+        Raxol.Core.Runtime.Log.debug("Unhandled escape sequence byte: #{inspect(byte)}")
+        emulator
     end
   end
 end

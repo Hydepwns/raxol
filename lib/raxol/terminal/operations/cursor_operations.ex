@@ -10,7 +10,15 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   end
 
   def set_cursor_position(emulator, x, y) do
-    CursorManager.set_position(emulator.cursor, {x, y})
+    # Get emulator dimensions for bounds checking
+    width = Raxol.Terminal.Emulator.get_width(emulator)
+    height = Raxol.Terminal.Emulator.get_height(emulator)
+
+    # Clamp position to screen bounds
+    clamped_x = max(0, min(x, width - 1))
+    clamped_y = max(0, min(y, height - 1))
+
+    CursorManager.set_position(emulator.cursor, {clamped_x, clamped_y})
     emulator
   end
 
@@ -19,7 +27,14 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   end
 
   def set_cursor_style(emulator, style) do
-    CursorManager.set_style(emulator.cursor, style)
+    # Validate the style - only allow valid cursor styles
+    valid_styles = [:block, :underline, :bar]
+
+    if style in valid_styles do
+      CursorManager.set_style(emulator.cursor, style)
+    end
+    # If style is invalid, do nothing (maintain current style)
+
     emulator
   end
 

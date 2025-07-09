@@ -232,7 +232,8 @@ defmodule Raxol.Terminal.Screen do
   @spec scroll_up_screen(ScreenBuffer.t(), non_neg_integer()) ::
           ScreenBuffer.t()
   def scroll_up_screen(buffer, lines) do
-    ScreenBuffer.scroll_up(buffer, lines)
+    {new_buffer, _scrolled_lines} = ScreenBuffer.scroll_up(buffer, lines)
+    new_buffer
   end
 
   @doc """

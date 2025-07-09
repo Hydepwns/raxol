@@ -34,6 +34,13 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
     # Apply each SGR code, handling complex codes specially
     result = process_sgr_codes(codes, style)
     log_sgr_debug("DEBUG: Final style: #{inspect(result)}")
+
+    if Enum.member?(codes, 0) do
+      IO.puts(
+        "SGR RESET: style before=#{inspect(style)}, after=#{inspect(result)}"
+      )
+    end
+
     result
   end
 
@@ -96,6 +103,11 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
     )
 
     process_sgr_codes(rest, new_style)
+  end
+
+  def process_sgr_codes([0 | rest], _style) do
+    # Reset all attributes to default, then process any remaining codes
+    process_sgr_codes(rest, Raxol.Terminal.ANSI.TextFormatting.new())
   end
 
   def process_sgr_codes([code | rest], style) do

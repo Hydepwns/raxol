@@ -3,10 +3,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   Handlers for CSI (Control Sequence Introducer) commands.
   """
 
-  alias Raxol.Terminal.Emulator.Struct, as: Emulator
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.{Basic, Cursor, Screen, Device}
   alias Raxol.Terminal.Commands.WindowHandlers
   require Raxol.Core.Runtime.Log
+  require Logger
 
   @private_modes %{
     1 => :decckm,
@@ -22,6 +23,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     25 => :dectcem,
     47 => :dec_alt_screen,
     1047 => :dec_alt_screen_save,
+    1048 => :decsc_deccara,
     1049 => :alt_screen_buffer
   }
 
@@ -206,7 +208,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   end
 
   # Device operations (defined before the map that references them)
-  def handle_device_status(emulator, params) do
+  def handle_device_status(emulator, params) when is_list(params) do
     case params do
       [?6, ?n] ->
         Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
@@ -218,6 +220,36 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
       _ ->
         {:ok, emulator}
+    end
+  end
+
+  def handle_device_status(emulator, param) when is_integer(param) do
+    # Handle single integer parameter (for direct test calls)
+    case param do
+      5 ->
+        # Report device status
+        case Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
+          emulator,
+          [5],
+          "",
+          ?n
+        ) do
+          {:ok, updated_emulator} -> updated_emulator
+          result -> result
+        end
+      6 ->
+        # Report cursor position
+        case Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
+          emulator,
+          [6],
+          "",
+          ?n
+        ) do
+          {:ok, updated_emulator} -> updated_emulator
+          result -> result
+        end
+      _ ->
+        emulator
     end
   end
 
@@ -292,6 +324,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   end
 
   def handle_h_or_l(emulator, params, intermediates_buffer, final_byte) do
+    require Logger
+    Logger.debug("CSIHandlers.handle_h_or_l called with params=#{inspect(params)}, intermediates_buffer=#{inspect(intermediates_buffer)}, final_byte=#{inspect(final_byte)}")
     case intermediates_buffer do
       "?" -> handle_private_mode(emulator, params, final_byte)
       _ -> handle_public_mode(emulator, params, final_byte)
@@ -314,38 +348,94 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   Handles SCS (Select Character Set) command.
   The final_byte parameter determines which character set to select.
   """
-  @spec handle_scs(Emulator.t(), list(integer()), integer()) ::
+  @spec handle_scs(Emulator.t(), String.t(), integer()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_scs(emulator, _params, final_byte) do
-    case Map.get(@charsets, final_byte) do
-      nil -> {:error, :invalid_charset, emulator}
-      charset -> Emulator.set_charset(emulator, charset)
+  def handle_scs(emulator, params, final_byte) do
+    # Parse the charset parameter
+    charset_code = case params do
+      "" -> ?B  # Default to ASCII
+      <<code>> when code in ?0..?9 -> code
+      <<code>> when code in ?A..?Z -> code
+      <<code>> when code in ?a..?z -> code
+      _ -> ?B  # Default to ASCII
+    end
+
+    # Map charset codes to character set atoms
+    charset = case charset_code do
+      ?0 -> :dec_special_graphics
+      ?1 -> :uk
+      ?2 -> :us_ascii
+      ?3 -> :dec_technical
+      ?4 -> :dec_special_graphics
+      ?5 -> :dec_special_graphics
+      ?6 -> :portuguese
+      ?7 -> :dec_special_graphics
+      ?8 -> :dec_special_graphics
+      ?9 -> :dec_special_graphics
+      ?A -> :uk
+      ?B -> :us_ascii
+      ?F -> :german
+      ?D -> :french
+      ?R -> :dec_technical
+      ?' -> :portuguese
+      _ -> :us_ascii
+    end
+
+    # Determine which character set to update based on final_byte
+    case final_byte do
+      ?( -> # G0
+        {:ok, %{emulator | charset_state: %{emulator.charset_state | g0: charset}}}
+      ?) -> # G1
+        {:ok, %{emulator | charset_state: %{emulator.charset_state | g1: charset}}}
+      ?* -> # G2
+        {:ok, %{emulator | charset_state: %{emulator.charset_state | g2: charset}}}
+      ?+ -> # G3
+        {:ok, %{emulator | charset_state: %{emulator.charset_state | g3: charset}}}
+      _ ->
+        {:error, :invalid_charset_designation, emulator}
     end
   end
 
   # Private mode handlers
   defp handle_private_mode(emulator, [mode], final_byte) do
+    require Logger
+    Logger.debug("handle_private_mode: mode=#{inspect(mode)}, final_byte=#{inspect(final_byte)}")
     case Map.get(@private_modes, mode) do
       nil ->
+        Logger.debug("handle_private_mode: mode #{inspect(mode)} not found in @private_modes")
         {:ok, emulator}
 
       mode_name ->
+        Logger.debug("handle_private_mode: found mode_name=#{inspect(mode_name)}")
         case final_byte do
-          ?h -> Emulator.set_mode(emulator, mode_name)
-          ?l -> Emulator.reset_mode(emulator, mode_name)
+          ?h ->
+            Logger.debug("handle_private_mode: calling Emulator.set_mode(emulator, #{inspect(mode_name)})")
+            result = Emulator.set_mode(emulator, mode_name)
+            Logger.debug("handle_private_mode: Emulator.set_mode returned #{inspect(result)}")
+            {:ok, result}
+          ?l ->
+            Logger.debug("handle_private_mode: calling Emulator.reset_mode(emulator, #{inspect(mode_name)})")
+            result = Emulator.reset_mode(emulator, mode_name)
+            Logger.debug("handle_private_mode: Emulator.reset_mode returned #{inspect(result)}")
+            {:ok, result}
         end
     end
   end
 
   defp handle_public_mode(emulator, [mode], final_byte) do
-    case Map.get(@public_modes, mode) do
+    require Logger
+    mode_name = Map.get(@public_modes, mode)
+    Logger.debug("handle_public_mode: mode=#{inspect(mode)}, mode_name=#{inspect(mode_name)}, final_byte=#{inspect(final_byte)}, type=#{inspect(is_integer(final_byte))}")
+    case mode_name do
       nil ->
         {:ok, emulator}
-
-      mode_name ->
+      _ ->
         case final_byte do
-          ?h -> Emulator.set_mode(emulator, mode_name)
-          ?l -> Emulator.reset_mode(emulator, mode_name)
+          ?h -> Raxol.Terminal.Emulator.set_mode(emulator, mode_name)
+          ?l -> Raxol.Terminal.Emulator.reset_mode(emulator, mode_name)
+          _ ->
+            Logger.debug("handle_public_mode: Unhandled final_byte #{inspect(final_byte)}")
+            {:ok, emulator}
         end
     end
   end
