@@ -102,9 +102,9 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
         {:continue, emulator, parser_state, rest_after_ignored}
 
       # Unhandled byte (including 0x30-0x3F which VTTest ignores here) - go to ground
-      <<_unhandled_byte, rest_after_unhandled::binary>> ->
+      <<unhandled_byte, rest_after_unhandled::binary>> ->
         Raxol.Core.Runtime.Log.warning_with_context(
-          "Unhandled byte #{_unhandled_byte} in CSI Intermediate state, returning to ground.",
+          "Unhandled byte #{unhandled_byte} in CSI Intermediate state, returning to ground.",
           %{}
         )
 

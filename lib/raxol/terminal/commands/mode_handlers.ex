@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
         {:ok, updated_emulator} ->
           updated_emulator
 
-        {:error, reason} ->
+        {:error, _reason} ->
           emulator
       end
     else

@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Emulator.Helpers do
   Extracted from the main emulator module for clarity and reuse.
   """
 
-  alias Raxol.Terminal.{ScreenBuffer, Cursor, ModeManager}
+  alias Raxol.Terminal.{ScreenBuffer, Cursor}
 
   @spec get_config_struct(Raxol.Terminal.Emulator.t()) :: any()
   def get_config_struct(%Raxol.Terminal.Emulator{config: pid})

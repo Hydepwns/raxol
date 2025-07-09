@@ -105,7 +105,7 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   end
 
   defp process_state_machine_iteration(inputs) do
-    Enum.each(inputs, fn input -> :ok end)
+    Enum.each(inputs, fn _input -> :ok end)
   end
 
   defp generate_test_sequences do

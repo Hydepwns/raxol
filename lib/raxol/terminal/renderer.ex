@@ -108,7 +108,7 @@ defmodule Raxol.Terminal.Renderer do
   @doc """
   Renders the terminal content with additional options.
   """
-  def render(%__MODULE__{} = renderer, opts, additional_opts) do
+  def render(%__MODULE__{} = renderer, _opts, _additional_opts) do
     content =
       renderer.screen_buffer
       |> get_styled_content(renderer.theme)
@@ -270,9 +270,9 @@ defmodule Raxol.Terminal.Renderer do
     end
   end
 
-  defp apply_font_settings(content, font_settings), do: content
+  defp apply_font_settings(content, _font_settings), do: content
   defp maybe_apply_cursor(content, nil), do: content
-  defp maybe_apply_cursor(content, cursor), do: content
+  defp maybe_apply_cursor(content, _cursor), do: content
 
   @doc """
   Sets the cursor position.
@@ -352,7 +352,7 @@ defmodule Raxol.Terminal.Renderer do
   @doc """
   Stops the renderer process.
   """
-  def stop(renderer) do
+  def stop(_renderer) do
     # Cleanup any resources if needed
     :ok
   end
@@ -377,12 +377,12 @@ defmodule Raxol.Terminal.Renderer do
   def get_content(renderer, opts \\ [])
 
   def get_content(%__MODULE__{} = renderer, opts) do
-    include_style = Keyword.get(opts, :include_style, false)
+    _include_style = Keyword.get(opts, :include_style, false)
     include_cursor = Keyword.get(opts, :include_cursor, false)
 
     content =
       renderer.screen_buffer
-      |> ScreenBuffer.get_content(include_style: include_style)
+      |> ScreenBuffer.get_content(include_style: _include_style)
       |> maybe_add_cursor(renderer.cursor, include_cursor)
 
     {:ok, content}
@@ -390,20 +390,20 @@ defmodule Raxol.Terminal.Renderer do
 
   # Handle ScreenBuffer structs
   def get_content(%Raxol.Terminal.ScreenBuffer{} = buffer, opts) do
-    include_style = Keyword.get(opts, :include_style, false)
-    content = ScreenBuffer.get_content(buffer, include_style: include_style)
+    _include_style = Keyword.get(opts, :include_style, false)
+    content = ScreenBuffer.get_content(buffer, include_style: _include_style)
     {:ok, content}
   end
 
   # Handle BufferImpl structs (used by tests)
   def get_content(%Raxol.Terminal.Buffer.Manager.BufferImpl{} = buffer, opts) do
-    include_style = Keyword.get(opts, :include_style, false)
-    include_cursor = Keyword.get(opts, :include_cursor, false)
+    _include_style = Keyword.get(opts, :include_style, false)
+    _include_cursor = Keyword.get(opts, :include_cursor, false)
 
     content =
       buffer
       |> Raxol.Terminal.Buffer.Manager.BufferImpl.get_content()
-      |> maybe_add_cursor(buffer.cursor_position, include_cursor)
+      |> maybe_add_cursor(buffer.cursor_position, _include_cursor)
 
     {:ok, content}
   end

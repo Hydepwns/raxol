@@ -234,7 +234,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
     # Calculate the number of lines that will be affected
-    region_height = scroll_end - scroll_start + 1
+    _region_height = scroll_end - scroll_start + 1
 
     # Only process the lines that actually need to change
     new_cells =
@@ -269,7 +269,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
     # Calculate the number of lines that will be affected
-    region_height = scroll_end - scroll_start + 1
+    _region_height = scroll_end - scroll_start + 1
 
     # Only process the lines that actually need to change
     new_cells =

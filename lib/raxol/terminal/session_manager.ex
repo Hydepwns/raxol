@@ -44,14 +44,6 @@ defmodule Raxol.Terminal.SessionManager do
     GenServer.call(__MODULE__, {:cleanup, session_id})
   end
 
-  def cleanup_session(_session_id) do
-    :ok
-  end
-
-  def destroy_session(session_id, sessions, runtime_pid) do
-    {:ok, sessions}
-  end
-
   def destroy_session(_session_id, sessions, _runtime_pid) do
     {:ok, sessions}
   end
@@ -64,16 +56,8 @@ defmodule Raxol.Terminal.SessionManager do
     map_size(sessions)
   end
 
-  def monitor_session(session_id, sessions) do
-    {:ok, session_id}
-  end
-
   def monitor_session(_session_id, _sessions) do
     :ok
-  end
-
-  def unmonitor_session(session_id, sessions) do
-    {:ok, session_id}
   end
 
   def unmonitor_session(_session_id, _sessions) do
@@ -94,7 +78,7 @@ defmodule Raxol.Terminal.SessionManager do
     session_id = generate_session_id()
     token = generate_token()
 
-    scrollback_limit =
+    _scrollback_limit =
       Application.get_env(:raxol, :terminal, [])
       |> Keyword.get(:scrollback_lines, 1000)
 

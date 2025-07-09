@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   - Performance monitoring and optimization
   """
 
-  alias Raxol.Terminal.{Buffer, ScreenBuffer}
+  alias Raxol.Terminal.ScreenBuffer
 
   @type t :: %__MODULE__{
           buffer: ScreenBuffer.t(),
@@ -283,15 +283,13 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     process_update(:queue.out(queue), updated_buffer, queue)
   end
 
-  defp apply_compression(buffer, state, opts) do
-    # Apply compression to the buffer based on state and options
-    # Implementation details...
-    buffer
+  defp apply_compression(_buffer, _state, _opts) do
+    # TODO: Implement compression logic
+    :ok
   end
 
-  defp update_compression_state(state, buffer) do
-    # Update compression state based on buffer characteristics
-    # Implementation details...
+  defp update_compression_state(state, _buffer) do
+    # TODO: Implement compression state update
     state
   end
 
@@ -367,9 +365,9 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     end
   end
 
-  defp should_evict_buffer?(pool, new_buffers) do
-    total_buffers = count_total_buffers(pool) + 1
-    total_buffers > pool.max_size
+  defp should_evict_buffer?(_pool, _new_buffers) do
+    # TODO: Implement buffer eviction logic
+    false
   end
 
   defp count_total_buffers(pool) do
