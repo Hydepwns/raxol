@@ -79,7 +79,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       start_time = System.monotonic_time()
 
       # Fill buffer with data
-      buffer =
+      _buffer =
         Enum.reduce(0..99, buffer, fn y, acc ->
           Enum.reduce(0..199, acc, fn x, acc ->
             cell = Cell.new("X", TextFormatting.new(fg: :red))
@@ -104,7 +104,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       start_time = System.monotonic_time()
 
       # Perform 1000 rapid updates
-      buffer =
+      _buffer =
         Enum.reduce(1..1000, buffer, fn i, acc ->
           x = rem(i, 80)
           y = div(i, 80)
@@ -156,7 +156,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       # Create reader and writer processes
       reader =
         Task.async(fn ->
-          Enum.reduce(1..1000, buffer, fn _, acc ->
+          Enum.reduce(1..1000, buffer, fn _i, acc ->
             x = :rand.uniform(80) - 1
             y = :rand.uniform(24) - 1
             Buffer.get_cell(acc, x, y)

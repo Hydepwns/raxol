@@ -3,7 +3,6 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Unit
   use Raxol.Test.Integration
   use Raxol.Test.Visual
-  import ExUnit.Callbacks
   import Raxol.Guards
 
   alias Raxol.UI.Components.Input.Button
