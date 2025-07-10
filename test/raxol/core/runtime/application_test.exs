@@ -84,6 +84,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     use Raxol.Core.Runtime.Application
 
     # Only override init
+    @impl Raxol.Core.Runtime.Application
     def init(_) do
       %{minimal: true}
     end
@@ -93,6 +94,18 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     def view(_state) do
       Raxol.Core.Renderer.View.text("Default view")
     end
+
+    # Implement required optional callbacks
+    @impl Raxol.Core.Runtime.Application
+    def handle_event(_), do: nil
+    @impl Raxol.Core.Runtime.Application
+    def handle_message(_, model), do: {model, []}
+    @impl Raxol.Core.Runtime.Application
+    def handle_tick(model), do: {model, []}
+    @impl Raxol.Core.Runtime.Application
+    def subscriptions(_), do: []
+    @impl Raxol.Core.Runtime.Application
+    def terminate(_, _), do: :ok
   end
 
   setup do

@@ -20,10 +20,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   defmodule MockApp do
     @behaviour Raxol.Core.Runtime.Application
 
-    def init(_app_module, _context) do
-      {:ok, %{count: 0, last_event: nil}, []}
+    @impl Raxol.Core.Runtime.Application
+    def init(_context) do
+      %{count: 0, last_event: nil}
     end
 
+    @impl Raxol.Core.Runtime.Application
     def update(msg, state) do
       case msg do
         {:key_press, :crash, _} ->
@@ -48,16 +50,22 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       end
     end
 
+    @impl Raxol.Core.Runtime.Application
     def view(model) do
       # Simple view
       [%{type: :text, content: "Count: #{model.count}", x: 0, y: 0}]
     end
 
     # Required behaviour callbacks
+    @impl Raxol.Core.Runtime.Application
     def handle_event(_), do: :ok
+    @impl Raxol.Core.Runtime.Application
     def handle_message(_, _), do: :ok
+    @impl Raxol.Core.Runtime.Application
     def handle_tick(_), do: :ok
+    @impl Raxol.Core.Runtime.Application
     def subscriptions(_), do: []
+    @impl Raxol.Core.Runtime.Application
     def terminate(_, _), do: :ok
   end
 
@@ -69,10 +77,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       GenServer.start_link(__MODULE__, %{}, [])
     end
 
+    @impl GenServer
     def init(_) do
       {:ok, %{filter_mode: :passthrough, events: []}}
     end
 
+    @impl GenServer
     def handle_call({:filter_event, event}, _from, state) do
       state = %{state | events: [event | state.events]}
 
@@ -93,10 +103,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       end
     end
 
+    @impl GenServer
     def handle_call(:get_events, _from, state) do
       {:reply, state.events, state}
     end
 
+    @impl GenServer
     def handle_cast({:set_filter_mode, mode}, state) do
       {:noreply, %{state | filter_mode: mode}}
     end
