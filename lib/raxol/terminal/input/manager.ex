@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Input.Manager do
 
   alias Raxol.Terminal.{Emulator, ParserStateManager}
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.InputManager
 
   @type t :: %__MODULE__{
           buffer: map(),
@@ -256,7 +255,7 @@ defmodule Raxol.Terminal.Input.Manager do
         {:ok, updated_manager}
 
       :error ->
-        updated_manager = %{
+        _updated_manager = %{
           manager
           | metrics: %{
               manager.metrics
@@ -605,30 +604,4 @@ defmodule Raxol.Terminal.Input.Manager do
     end
   end
 
-  @doc """
-  Processes a key with modifiers.
-  """
-  @spec process_key_with_modifiers(t(), String.t()) :: t()
-  def process_key_with_modifiers(manager, key) do
-    if manager.modifier_state.ctrl do
-      # For test purposes, append a specific escape sequence as char events
-      escape_sequence = "\e[1;97"
-      char_codes = String.to_charlist(escape_sequence)
-
-      events =
-        manager.buffer.events ++
-          Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
-
-      %{manager | buffer: %{manager.buffer | events: events}}
-    else
-      # Process as regular key
-      char_code = List.first(String.to_charlist(key))
-
-      events =
-        manager.buffer.events ++
-          [%{char: char_code, timestamp: System.system_time()}]
-
-      %{manager | buffer: %{manager.buffer | events: events}}
-    end
-  end
 end

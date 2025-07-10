@@ -40,8 +40,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   alias Raxol.Terminal.Buffer.{
     Selection,
     Scrollback,
-    Operations,
-    LineEditor,
     CharEditor,
     Eraser,
     LineOperations,
@@ -414,7 +412,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
     do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_from_cursor_to_end(buffer, x, y, top, bottom) do
+  def erase_from_cursor_to_end(buffer, x, y, _top, bottom) do
     # Clear from cursor to end of line
     line = Enum.at(buffer.cells, y, [])
     empty_cell = Raxol.Terminal.Cell.new()
@@ -500,7 +498,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
     %{buffer | cells: new_cells}
   end
 
-  def mark_damaged(buffer, x, y, width, height, reason) do
+  def mark_damaged(buffer, x, y, width, height, _reason) do
     # Add the new damage region to the existing list
     new_region = {x, y, width, height}
     updated_damage_regions = [new_region | (buffer.damage_regions || [])]
@@ -588,13 +586,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Raxol.Terminal.ScreenBuffer.Core.clear_damaged_regions(buffer)
   end
 
-  def mark_damaged(buffer, x, y, width, height, reason) do
-    # Add the new damage region to the existing list
-    new_region = {x, y, width, height}
-    updated_damage_regions = [new_region | (buffer.damage_regions || [])]
-    %{buffer | damage_regions: updated_damage_regions}
-  end
-
   def get_scroll_region(buffer) do
     Raxol.Terminal.Buffer.ScrollRegion.get_region(buffer)
   end
@@ -662,7 +653,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   defp erase_line_to_end(buffer, x, y) do
-    line = Enum.at(buffer.cells, y, [])
+    _line = Enum.at(buffer.cells, y, [])
     empty_cell = Raxol.Terminal.Cell.new()
 
     cleared_line =
@@ -772,7 +763,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def clear_screen(buffer), do: Eraser.clear(buffer)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def collect_metrics(buffer, _type), do: %{}
+  def collect_metrics(_buffer, _type), do: %{}
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def create_chart(buffer, _type, _options), do: buffer
@@ -811,13 +802,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def get_current_state(buffer), do: buffer.current_state || %{}
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_metric(buffer, _type, _name), do: 0
+  def get_metric(_buffer, _type, _name), do: 0
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_metric_value(buffer, _name), do: 0
+  def get_metric_value(_buffer, _name), do: 0
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_metrics_by_type(buffer, _type), do: []
+  def get_metrics_by_type(_buffer, _type), do: []
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_output_buffer(buffer), do: buffer.output_buffer || ""
@@ -892,7 +883,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def update_state_stack(buffer, _stack), do: buffer
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def verify_metrics(buffer, _type), do: true
+  def verify_metrics(_buffer, _type), do: true
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def write(buffer, _data), do: buffer
@@ -953,17 +944,4 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Raxol.Terminal.Buffer.Content.get_content(buffer)
   end
 
-  @doc """
-  Gets all damaged regions in the buffer.
-  """
-  def get_damaged_regions(buffer) do
-    buffer.damage_regions || []
-  end
-
-  @doc """
-  Clears all damaged regions in the buffer.
-  """
-  def clear_damaged_regions(buffer) do
-    %{buffer | damage_regions: []}
-  end
 end
