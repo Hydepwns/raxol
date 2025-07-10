@@ -42,15 +42,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
     GenServer.call(__MODULE__, :list_plugins)
   end
 
-  # Backward compatibility for list_plugins/1 (deprecated)
-  @doc false
-  def list_plugins(_registry_state) do
-    Raxol.Core.Runtime.Log.debug(
-      "[#{__MODULE__}] list_plugins/1 called (deprecated, using GenServer state)."
-    )
 
-    list_plugins()
-  end
 
   # GenServer Callbacks
 

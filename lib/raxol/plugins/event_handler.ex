@@ -34,7 +34,7 @@ defmodule Raxol.Plugins.EventHandler do
           [acc.input],
           3,
           acc,
-          fn acc, plugin, callback_name, result ->
+          fn acc, plugin, _callback_name, result ->
             case result do
               {:ok, updated_plugin, updated_plugin_state} ->
                 # Plugin returned both updated plugin and plugin state
@@ -143,7 +143,7 @@ defmodule Raxol.Plugins.EventHandler do
           [acc.output],
           2,
           acc,
-          fn acc, plugin, callback_name, result ->
+          fn acc, plugin, _callback_name, result ->
             case result do
               {:ok, updated_plugin, transformed_output}
               when is_binary(transformed_output) ->
@@ -304,9 +304,9 @@ defmodule Raxol.Plugins.EventHandler do
         current_plugin_state =
           Map.get(acc_manager.plugin_states, plugin_key, %{})
 
-        # Special case for handle_output: only pass plugin and event (output)
+        # Special case for handle_output and handle_input: only pass plugin and event
         callback_args =
-          if callback_name == :handle_output and required_arity == 2 do
+          if (callback_name == :handle_output or callback_name == :handle_input) and required_arity == 2 do
             [plugin | event_args]
           else
             [plugin, current_plugin_state | event_args]
@@ -654,48 +654,5 @@ defmodule Raxol.Plugins.EventHandler do
     end
   end
 
-  defp handle_plugin_result(acc, plugin, callback_name, result) do
-    case result do
-      {:ok, updated_plugin, updated_plugin_state} ->
-        # Plugin returned both updated plugin and plugin state
-        acc_manager = extract_manager_from_acc(acc)
 
-        updated_manager =
-          update_plugin_state(
-            acc_manager,
-            plugin,
-            updated_plugin,
-            updated_plugin_state
-          )
-
-        {:cont, update_acc_with_manager(acc, updated_manager)}
-
-      {:ok, updated_plugin} ->
-        # Plugin returned only updated plugin
-        acc_manager = extract_manager_from_acc(acc)
-
-        updated_manager =
-          update_plugin_state(acc_manager, plugin, updated_plugin)
-
-        {:cont, update_acc_with_manager(acc, updated_manager)}
-
-      {:ok, updated_plugin, output} when is_binary(output) ->
-        # Plugin returned updated plugin and output to replace
-        acc_manager = extract_manager_from_acc(acc)
-
-        updated_manager =
-          update_plugin_state(acc_manager, plugin, updated_plugin)
-
-        updated_acc = %{acc | manager: updated_manager, output: output}
-        IO.inspect(output, label: "ACCUMULATOR OUTPUT AFTER PLUGIN (FIXED)")
-        {:cont, updated_acc}
-
-      {:error, reason} ->
-        {:halt, {:error, reason}}
-
-      _ ->
-        # Unknown result format, continue with current state
-        {:cont, acc}
-    end
-  end
 end
