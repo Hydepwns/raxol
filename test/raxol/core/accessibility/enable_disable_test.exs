@@ -8,7 +8,6 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
 
   alias Raxol.Core.Accessibility
   alias Raxol.Core.AccessibilityTestHelper, as: Helper
-  alias Raxol.Core.UserPreferences
 
   setup :verify_on_exit!
   setup :set_mox_global
@@ -31,7 +30,6 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
     end
 
     test "enable/1 applies default preferences if none are set", %{
-      prefs_name: prefs_name,
       pref_pid: pref_pid
     } do
       # Set prefs to nil initially
@@ -96,7 +94,6 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
     end
 
     test "enable/1 applies custom options over defaults", %{
-      prefs_name: prefs_name,
       pref_pid: pref_pid
     } do
       # Set prefs to nil initially
@@ -146,7 +143,6 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
     end
 
     test "disable/0 stops functionality", %{
-      prefs_name: prefs_name,
       pref_pid: pref_pid
     } do
       Accessibility.enable([], pref_pid)

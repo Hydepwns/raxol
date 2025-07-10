@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Cursor.Manager
 
   defp create_test_emulator(
          {x, y},

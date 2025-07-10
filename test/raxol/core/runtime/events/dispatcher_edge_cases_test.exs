@@ -6,7 +6,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Command
   alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Raxol.Core.Runtime.Plugins.Manager
   alias Phoenix.PubSub
   alias Raxol.Core.UserPreferences
   alias Raxol.UI.Theming.Theme

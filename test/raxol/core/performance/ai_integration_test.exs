@@ -7,8 +7,6 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
 
   # Only compile Mox and related tests if the flag is enabled
   if Application.compile_env(:raxol, :compile_ai_tests, false) do
-    import Mox
-
     alias Raxol.Core.Performance.AIIntegration
 
     # Make sure mocks are verified when the test exits

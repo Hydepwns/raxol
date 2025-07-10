@@ -4,7 +4,7 @@ defmodule Raxol.Animation.FrameworkTest do
 
   require Logger
 
-  alias Raxol.Animation.{Animation, Framework}
+  alias Raxol.Animation.Framework
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Test.EventAssertions
@@ -234,10 +234,103 @@ defmodule Raxol.Animation.FrameworkTest do
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
     end
 
+    @tag :event_manager
+    test "event manager is working", %{
+      user_preferences_pid: user_preferences_pid
+    } do
+      # Test that EventManager is working by dispatching an event
+      # and checking if the accessibility spy handler receives it
+
+      # First, set up the spy handler
+      Process.put(:accessibility_test_announcements, [])
+
+      Raxol.Core.Events.Manager.register_handler(
+        :accessibility_announce,
+        Raxol.AccessibilityTestHelpers,
+        :handle_announcement_spy
+      )
+
+      # Dispatch an accessibility event
+      Raxol.Core.Events.Manager.dispatch(
+        {:accessibility_announce, "test message"}
+      )
+
+      # Check if the spy handler received it
+      announcements = Process.get(:accessibility_test_announcements, [])
+      assert "test message" in announcements
+
+      # Clean up
+      Raxol.Core.Events.Manager.unregister_handler(
+        :accessibility_announce,
+        Raxol.AccessibilityTestHelpers,
+        :handle_announcement_spy
+      )
+    end
+
+    test "accessibility system is working", %{
+      user_preferences_pid: user_preferences_pid
+    } do
+      with_screen_reader_spy(user_preferences_pid, fn ->
+        # Debug: Check if accessibility is enabled
+        enabled = Accessibility.enabled?(user_preferences_pid)
+        Logger.debug("Accessibility enabled: #{enabled}")
+
+        # Debug: Check screen reader setting
+        screen_reader =
+          UserPreferences.get(
+            "accessibility.screen_reader",
+            user_preferences_pid
+          )
+
+        Logger.debug("Screen reader enabled: #{screen_reader}")
+
+        # Debug: Check silence announcements setting
+        silence =
+          UserPreferences.get(
+            "accessibility.silence_announcements",
+            user_preferences_pid
+          )
+
+        Logger.debug("Silence announcements: #{silence}")
+
+        # Try to make a direct announcement
+        Accessibility.announce("Test announcement", [], user_preferences_pid)
+
+        # Debug: Check what announcements were made
+        announcements = Process.get(:accessibility_test_announcements, [])
+        Logger.debug("Current announcements: #{inspect(announcements)}")
+
+        # Verify announcement was made
+        assert_announced("Test announcement")
+      end)
+    end
+
     test "announces animations to screen readers when configured", %{
       user_preferences_pid: user_preferences_pid
     } do
       with_screen_reader_spy(user_preferences_pid, fn ->
+        # Debug: Check if accessibility is enabled
+        enabled = Accessibility.enabled?(user_preferences_pid)
+        Logger.debug("Accessibility enabled: #{enabled}")
+
+        # Debug: Check screen reader setting
+        screen_reader =
+          UserPreferences.get(
+            "accessibility.screen_reader",
+            user_preferences_pid
+          )
+
+        Logger.debug("Screen reader enabled: #{screen_reader}")
+
+        # Debug: Check silence announcements setting
+        silence =
+          UserPreferences.get(
+            "accessibility.silence_announcements",
+            user_preferences_pid
+          )
+
+        Logger.debug("Silence announcements: #{silence}")
+
         # Create an animation with screen reader announcement
         animation =
           Framework.create_animation(:test_animation, %{
@@ -259,6 +352,10 @@ defmodule Raxol.Animation.FrameworkTest do
           )
 
         wait_for_animation_start("test_element", animation.name)
+
+        # Debug: Check what announcements were made
+        announcements = Process.get(:accessibility_test_announcements, [])
+        Logger.debug("Current announcements: #{inspect(announcements)}")
 
         # Verify announcement was made using the spy helper
         assert_announced("Test animation started")
