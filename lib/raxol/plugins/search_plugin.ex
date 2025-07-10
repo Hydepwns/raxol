@@ -64,85 +64,61 @@ defmodule Raxol.Plugins.SearchPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_input(%__MODULE__{} = plugin, plugin_state, input) do
+  def handle_input(%__MODULE__{} = plugin, input) do
     case input do
       "search " <> search_term ->
-        # Update the plugin state with the new search term
-        updated_plugin_state = Map.put(plugin_state, :search_term, search_term)
-        # Update the plugin struct with the new search term
         updated_plugin = %{plugin | search_term: search_term}
-        {:ok, updated_plugin, updated_plugin_state}
-
+        {:ok, updated_plugin}
       "/search " <> search_term ->
-        # Handle old format search command
-        updated_plugin_state = Map.put(plugin_state, :search_term, search_term)
         updated_plugin = %{plugin | search_term: search_term}
-        {:ok, updated_plugin, updated_plugin_state}
-
+        {:ok, updated_plugin}
       "/n" when plugin.search_term != nil ->
-        # Next result
         search_results = plugin.search_results || []
-
         next_index =
           if length(search_results) > 0 do
             min(plugin.current_result_index + 1, length(search_results) - 1)
           else
             0
           end
-
         updated_plugin = %{plugin | current_result_index: next_index}
-        {:ok, updated_plugin, plugin_state}
-
+        {:ok, updated_plugin}
       "/N" when plugin.search_term != nil ->
-        # Previous result
         search_results = plugin.search_results || []
-
         prev_index =
           if length(search_results) > 0 do
             max(plugin.current_result_index - 1, 0)
           else
             0
           end
-
         updated_plugin = %{plugin | current_result_index: prev_index}
-        {:ok, updated_plugin, plugin_state}
-
+        {:ok, updated_plugin}
       "/clear" ->
-        # Clear search
         updated_plugin = %{
           plugin
           | search_term: nil,
             search_results: [],
             current_result_index: 0
         }
-
-        updated_plugin_state = Map.put(plugin_state, :search_term, nil)
-        {:ok, updated_plugin, updated_plugin_state}
-
+        {:ok, updated_plugin}
       _ ->
-        {:ok, plugin, plugin_state}
+        {:ok, plugin}
     end
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_output(%__MODULE__{} = plugin, _plugin_state, _output) do
+  def handle_output(%__MODULE__{} = plugin, _output) do
     # This plugin doesn't modify output, just passes it through
     {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(
-        %__MODULE__{} = plugin,
-        _plugin_state,
-        _event,
-        _emulator_state
-      ) do
+  def handle_mouse(%__MODULE__{} = plugin, _event, _emulator_state) do
     # This plugin doesn't handle mouse events
     {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, _plugin_state, _width, _height) do
+  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
     # This plugin doesn't need to react to resize
     {:ok, plugin}
   end

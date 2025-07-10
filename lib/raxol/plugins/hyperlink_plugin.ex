@@ -65,7 +65,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_input(%__MODULE__{} = plugin, _plugin_state, input) do
+  def handle_input(%__MODULE__{} = plugin, input) do
     # Process input for hyperlink-related commands
     case input do
       "link " <> url ->
@@ -109,17 +109,20 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(%__MODULE__{} = plugin, _plugin_state, event, rendered_cells) do
+  def handle_mouse(%__MODULE__{} = plugin, event, emulator_state) do
     case event do
       %{type: :mouse, button: :left, x: click_x, y: click_y, modifiers: []} ->
-        handle_left_click(plugin, click_x, click_y, rendered_cells)
+        handle_left_click(plugin, click_x, click_y, emulator_state)
 
       _ ->
         {:ok, plugin}
     end
   end
 
-  defp handle_left_click(plugin, x, y, rendered_cells) do
+  defp handle_left_click(plugin, x, y, emulator_state) do
+    # Extract rendered cells from emulator state or use a default approach
+    rendered_cells = Map.get(emulator_state, :rendered_cells, %{})
+
     case Map.get(rendered_cells, {x, y}) do
       %{style: %{hyperlink: url}} when binary?(url) and url != "" ->
         Raxol.Core.Runtime.Log.debug(
@@ -137,7 +140,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, _plugin_state, _width, _height) do
+  def handle_resize(%__MODULE__{} = plugin, width, height) do
     # This plugin might not need to react to resize
     {:ok, plugin}
   end
@@ -148,7 +151,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     :ok
   end
 
-  def cleanup(_plugin) when is_map(_plugin) do
+  def cleanup(plugin) when is_map(plugin) do
     # Handle case where plugin is passed as a map
     :ok
   end

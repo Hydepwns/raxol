@@ -51,17 +51,17 @@ defmodule Raxol.Plugins.ThemePlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_output(%__MODULE__{} = plugin, _plugin_state, _output) do
-    # This plugin doesn't modify output, just passes it through
-    {:ok, plugin}
-  end
-
-  @impl Raxol.Plugins.Plugin
-  def handle_input(%__MODULE__{} = plugin, _plugin_state, input) do
+  def handle_input(%__MODULE__{} = plugin, input) do
     case input do
       {:command, command} -> handle_theme_command(plugin, command)
       _ -> {:ok, plugin}
     end
+  end
+
+  @impl Raxol.Plugins.Plugin
+  def handle_output(%__MODULE__{} = plugin, _output) do
+    # This plugin doesn't modify output, just passes it through
+    {:ok, plugin}
   end
 
   defp handle_theme_command(plugin, command) do
@@ -79,18 +79,13 @@ defmodule Raxol.Plugins.ThemePlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(
-        %__MODULE__{} = plugin,
-        _plugin_state,
-        _event,
-        _emulator_state
-      ) do
+  def handle_mouse(%__MODULE__{} = plugin, _event, _emulator_state) do
     # This plugin doesn't handle mouse events
     {:ok, plugin}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, _plugin_state, _width, _height) do
+  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
     # This plugin doesn't need to react to resize
     {:ok, plugin}
   end
