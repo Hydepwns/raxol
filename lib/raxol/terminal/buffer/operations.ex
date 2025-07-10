@@ -149,6 +149,36 @@ defmodule Raxol.Terminal.Buffer.Operations do
     {new_buffer, new_cursor_y, cursor_x}
   end
 
+  def scroll_down(buffer, lines)
+      when list?(buffer) and is_integer(lines) and lines > 0 do
+    {new_buffer, _cursor_y, _cursor_x} = scroll_down(buffer, lines, 0, 0)
+    new_buffer
+  end
+
+  # Handle ScreenBuffer structs by extracting cells and calling the list version
+  def scroll_down(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
+      when is_integer(lines) and lines > 0 do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, _cursor_y, _cursor_x} = scroll_down(buffer.cells, lines, 0, 0)
+    %{buffer | cells: new_cells}
+  end
+
+  # Handle ScreenBuffer structs with cursor position
+  def scroll_down(
+        %Raxol.Terminal.ScreenBuffer{} = buffer,
+        lines,
+        cursor_y,
+        cursor_x
+      )
+      when is_integer(lines) and lines > 0 and
+             is_integer(cursor_y) and is_integer(cursor_x) do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, new_cursor_y, new_cursor_x} =
+      scroll_down(buffer.cells, lines, cursor_y, cursor_x)
+
+    {%{buffer | cells: new_cells}, new_cursor_y, new_cursor_x}
+  end
+
   @doc """
   Inserts the specified number of blank lines at the cursor position.
   """
@@ -558,35 +588,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Raxol.Terminal.Buffer.Content.get_content(buffer)
   end
 
-  def scroll_down(buffer, lines)
-      when list?(buffer) and is_integer(lines) and lines > 0 do
-    {new_buffer, _cursor_y, _cursor_x} = scroll_down(buffer, lines, 0, 0)
-    new_buffer
-  end
 
-  # Handle ScreenBuffer structs by extracting cells and calling the list version
-  def scroll_down(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
-      when is_integer(lines) and lines > 0 do
-    # Extract cells from ScreenBuffer and call the list version
-    {new_cells, _cursor_y, _cursor_x} = scroll_down(buffer.cells, lines, 0, 0)
-    %{buffer | cells: new_cells}
-  end
-
-  # Handle ScreenBuffer structs with cursor position
-  def scroll_down(
-        %Raxol.Terminal.ScreenBuffer{} = buffer,
-        lines,
-        cursor_y,
-        cursor_x
-      )
-      when is_integer(lines) and lines > 0 and
-             is_integer(cursor_y) and is_integer(cursor_x) do
-    # Extract cells from ScreenBuffer and call the list version
-    {new_cells, new_cursor_y, new_cursor_x} =
-      scroll_down(buffer.cells, lines, cursor_y, cursor_x)
-
-    {%{buffer | cells: new_cells}, new_cursor_y, new_cursor_x}
-  end
 
   # Private helper functions
 

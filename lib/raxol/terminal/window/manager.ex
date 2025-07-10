@@ -121,6 +121,15 @@ defmodule Raxol.Terminal.Window.Manager do
   end
 
   @doc """
+  Sets the window title.
+  """
+  @spec set_window_title(window_id(), String.t()) ::
+          {:ok, Window.t()} | {:error, :not_found}
+  def set_window_title(id, title) do
+    Operations.update_window_property(id, :title, title)
+  end
+
+  @doc """
   Sets the icon name.
   """
   @spec set_icon_name(pid(), String.t()) :: :ok
@@ -188,15 +197,6 @@ defmodule Raxol.Terminal.Window.Manager do
   @spec get_active_window() :: {:ok, Window.t()} | {:error, :not_found}
   def get_active_window do
     Operations.get_active_window()
-  end
-
-  @doc """
-  Sets the window title.
-  """
-  @spec set_window_title(window_id(), String.t()) ::
-          {:ok, Window.t()} | {:error, :not_found}
-  def set_window_title(id, title) do
-    Operations.update_window_property(id, :title, title)
   end
 
   @doc """

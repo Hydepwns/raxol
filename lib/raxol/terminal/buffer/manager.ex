@@ -234,8 +234,30 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(pid, {:mark_damaged, x, y, width, height})
   end
 
+  @doc """
+  Marks a region as damaged for rendering optimization.
+  """
+  def mark_damaged(%__MODULE__{} = manager, x, y, width, height) do
+    # Convert width/height to end coordinates (inclusive)
+    # DamageTracker expects {x1, y1, x2, y2} where x2 and y2 are end coordinates
+    x2 = x + width - 1
+    y2 = y + height - 1
+
+    damage_tracker =
+      DamageTracker.mark_damaged(manager.damage_tracker, x, y, x2, y2)
+
+    %{manager | damage_tracker: damage_tracker}
+  end
+
   def get_damage_regions(pid) when is_pid(pid) or is_atom(pid) do
     GenServer.call(pid, :get_damage_regions)
+  end
+
+  @doc """
+  Gets all damage regions for rendering optimization.
+  """
+  def get_damage_regions(%__MODULE__{} = manager) do
+    DamageTracker.get_damage_regions(manager.damage_tracker)
   end
 
   def clear_damage(pid) when is_pid(pid) or is_atom(pid) do
@@ -248,8 +270,51 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(pid, :update_memory_usage)
   end
 
+  @doc """
+  Updates memory usage tracking.
+  """
+  def update_memory_usage(%__MODULE__{} = manager) do
+    IO.puts("DEBUG: update_memory_usage called with %__MODULE__{} struct")
+    # Calculate memory usage for both buffers
+    active_memory = calculate_buffer_memory(manager.active_buffer)
+    back_memory = calculate_buffer_memory(manager.back_buffer)
+    total_memory = active_memory + back_memory
+
+    IO.puts(
+      "DEBUG: update_memory_usage - active: #{active_memory}, back: #{back_memory}, total: #{total_memory}"
+    )
+
+    IO.puts("DEBUG: Before update - metrics: #{inspect(manager.metrics)}")
+
+    metrics = Map.put(manager.metrics, :memory_usage, total_memory)
+    updated_manager = %{manager | metrics: metrics}
+
+    IO.puts(
+      "DEBUG: After update - metrics: #{inspect(updated_manager.metrics)}"
+    )
+
+    updated_manager
+  end
+
+  def update_memory_usage(manager) do
+    IO.puts(
+      "DEBUG: update_memory_usage called with other type: #{inspect(manager)}"
+    )
+
+    manager
+  end
+
   def within_memory_limits?(pid) when is_pid(pid) or is_atom(pid) do
     GenServer.call(pid, :within_memory_limits)
+  end
+
+  @doc """
+  Checks if the buffer is within memory limits.
+  """
+  def within_memory_limits?(%__MODULE__{} = manager) do
+    current_usage = manager.metrics.memory_usage
+    limit = manager.memory_limit
+    current_usage <= limit
   end
 
   # Buffer access functions for tests
@@ -260,20 +325,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   def get_back_buffer(pid) when is_pid(pid) or is_atom(pid) do
     GenServer.call(pid, :get_back_buffer)
-  end
-
-  # Struct-based versions
-  # Already present below, but ensure they are not shadowed
-  def get_active_buffer(%__MODULE__{} = state) do
-    {:ok, state.active_buffer}
-  end
-
-  def get_back_buffer(%__MODULE__{} = state) do
-    {:ok, state.back_buffer}
-  end
-
-  def get_active_buffer(emulator) when is_map(emulator) do
-    Map.get(emulator, :active, nil)
   end
 
   def get_cursor do
@@ -351,82 +402,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(pid, :get_metrics)
   end
 
-  @impl Raxol.Terminal.Buffer.Manager.Behaviour
-  def clear_damage(pid) when is_pid(pid) or is_atom(pid) do
-    GenServer.call(pid, :clear_damage)
-  end
-
-  def get_active_buffer(%__MODULE__{} = state) do
-    {:ok, state.active_buffer}
-  end
-
   def default_tab_stops(%__MODULE__{}) do
     {:ok, [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]}
-  end
-
-  @doc """
-  Marks a region as damaged for rendering optimization.
-  """
-  def mark_damaged(%__MODULE__{} = manager, x, y, width, height) do
-    # Convert width/height to end coordinates (inclusive)
-    # DamageTracker expects {x1, y1, x2, y2} where x2 and y2 are end coordinates
-    x2 = x + width - 1
-    y2 = y + height - 1
-
-    damage_tracker =
-      DamageTracker.mark_damaged(manager.damage_tracker, x, y, x2, y2)
-
-    %{manager | damage_tracker: damage_tracker}
-  end
-
-  @doc """
-  Gets all damage regions for rendering optimization.
-  """
-  def get_damage_regions(%__MODULE__{} = manager) do
-    DamageTracker.get_damage_regions(manager.damage_tracker)
-  end
-
-  @doc """
-  Updates memory usage tracking.
-  """
-  def update_memory_usage(%__MODULE__{} = manager) do
-    IO.puts("DEBUG: update_memory_usage called with %__MODULE__{} struct")
-    # Calculate memory usage for both buffers
-    active_memory = calculate_buffer_memory(manager.active_buffer)
-    back_memory = calculate_buffer_memory(manager.back_buffer)
-    total_memory = active_memory + back_memory
-
-    IO.puts(
-      "DEBUG: update_memory_usage - active: #{active_memory}, back: #{back_memory}, total: #{total_memory}"
-    )
-
-    IO.puts("DEBUG: Before update - metrics: #{inspect(manager.metrics)}")
-
-    metrics = Map.put(manager.metrics, :memory_usage, total_memory)
-    updated_manager = %{manager | metrics: metrics}
-
-    IO.puts(
-      "DEBUG: After update - metrics: #{inspect(updated_manager.metrics)}"
-    )
-
-    updated_manager
-  end
-
-  def update_memory_usage(manager) do
-    IO.puts(
-      "DEBUG: update_memory_usage called with other type: #{inspect(manager)}"
-    )
-
-    manager
-  end
-
-  @doc """
-  Checks if the buffer is within memory limits.
-  """
-  def within_memory_limits?(%__MODULE__{} = manager) do
-    current_usage = manager.metrics.memory_usage
-    limit = manager.memory_limit
-    current_usage <= limit
   end
 
   # Server callbacks
@@ -988,11 +965,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
     end
   end
 
-  # new/0 for test struct
-  def new() do
-    %TestBufferManager{}
-  end
-
   # Struct-based API for test struct
   def get_active_buffer(%TestBufferManager{active: active}), do: active
 
@@ -1032,17 +1004,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
       alternate: nil,
       scrollback: []
     }
-
-  # Struct-based damage tracking functions
-
-  def get_damage_regions(%__MODULE__{} = manager) do
-    DamageTracker.get_regions(manager.damage_tracker)
-  end
-
-  def clear_damage(%__MODULE__{} = manager) do
-    damage_tracker = DamageTracker.clear_regions(manager.damage_tracker)
-    %{manager | damage_tracker: damage_tracker}
-  end
 
   defp calculate_buffer_memory(buffer) do
     # Simple memory calculation based on buffer size
@@ -1099,24 +1060,5 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
         memory
     end
-  end
-
-  # Fix reset_buffer_manager to properly reset active and alternate buffers
-  def reset_buffer_manager(%TestBufferManager{} = mgr),
-    do: %TestBufferManager{
-      scrollback_size: mgr.scrollback_size,
-      active: nil,
-      alternate: nil,
-      scrollback: []
-    }
-
-  def reset_buffer_manager(emulator) when is_map(emulator) do
-    %{
-      emulator
-      | active: nil,
-        alternate: nil,
-        scrollback: [],
-        scrollback_size: 1000
-    }
   end
 end

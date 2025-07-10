@@ -580,6 +580,22 @@ defmodule Raxol.UI.Renderer do
     {fg_color, bg_color, style_attrs}
   end
 
+  # Clause to handle nil theme (fallback to defaults)
+  defp resolve_styles(attrs, _component_type, nil) when map?(attrs) do
+    fg_color = Map.get(attrs, :fg, @default_fg)
+    bg_color = Map.get(attrs, :bg, @default_bg)
+    style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
+    {fg_color, bg_color, style_attrs}
+  end
+
+  # Catch-all clause for other cases
+  defp resolve_styles(attrs, _component_type, _theme) when map?(attrs) do
+    fg_color = Map.get(attrs, :fg, @default_fg)
+    bg_color = Map.get(attrs, :bg, @default_bg)
+    style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
+    {fg_color, bg_color, style_attrs}
+  end
+
   defp get_component_styles(component_type, theme) do
     if component_type do
       Map.get(theme.component_styles, component_type, %{})
@@ -631,22 +647,6 @@ defmodule Raxol.UI.Renderer do
 
   defp ensure_list(value) when is_list(value), do: value
   defp ensure_list(_), do: []
-
-  # Clause to handle nil theme (fallback to defaults)
-  defp resolve_styles(attrs, _component_type, nil) when map?(attrs) do
-    fg_color = Map.get(attrs, :fg, @default_fg)
-    bg_color = Map.get(attrs, :bg, @default_bg)
-    style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
-    {fg_color, bg_color, style_attrs}
-  end
-
-  # Catch-all clause for other cases
-  defp resolve_styles(attrs, _component_type, _theme) when map?(attrs) do
-    fg_color = Map.get(attrs, :fg, @default_fg)
-    bg_color = Map.get(attrs, :bg, @default_bg)
-    style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
-    {fg_color, bg_color, style_attrs}
-  end
 
   # Helper function to flatten merged styles
   defp flatten_merged_style(parent_element, child_element) do
