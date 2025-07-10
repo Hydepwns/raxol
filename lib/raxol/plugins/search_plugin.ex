@@ -69,29 +69,37 @@ defmodule Raxol.Plugins.SearchPlugin do
       "search " <> search_term ->
         updated_plugin = %{plugin | search_term: search_term}
         {:ok, updated_plugin}
+
       "/search " <> search_term ->
         updated_plugin = %{plugin | search_term: search_term}
         {:ok, updated_plugin}
+
       "/n" when plugin.search_term != nil ->
         search_results = plugin.search_results || []
+
         next_index =
           if length(search_results) > 0 do
             min(plugin.current_result_index + 1, length(search_results) - 1)
           else
             0
           end
+
         updated_plugin = %{plugin | current_result_index: next_index}
         {:ok, updated_plugin}
+
       "/N" when plugin.search_term != nil ->
         search_results = plugin.search_results || []
+
         prev_index =
           if length(search_results) > 0 do
             max(plugin.current_result_index - 1, 0)
           else
             0
           end
+
         updated_plugin = %{plugin | current_result_index: prev_index}
         {:ok, updated_plugin}
+
       "/clear" ->
         updated_plugin = %{
           plugin
@@ -99,7 +107,9 @@ defmodule Raxol.Plugins.SearchPlugin do
             search_results: [],
             current_result_index: 0
         }
+
         {:ok, updated_plugin}
+
       _ ->
         {:ok, plugin}
     end

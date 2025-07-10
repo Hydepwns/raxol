@@ -150,7 +150,11 @@ defmodule Raxol.Test.RendererHelper do
       iex> verify_rendered_content_from_buffer(buffer_manager, "Hello, World!")
       :ok
   """
-  def verify_rendered_content_from_buffer(buffer_manager, expected_content, opts \\ []) do
+  def verify_rendered_content_from_buffer(
+        buffer_manager,
+        expected_content,
+        opts \\ []
+      ) do
     # Get content directly from the buffer manager
     case Raxol.Terminal.Renderer.get_content(buffer_manager, opts) do
       {:ok, ^expected_content} -> :ok
@@ -232,11 +236,13 @@ defmodule Raxol.Test.RendererHelper do
     times =
       for _ <- 1..iterations do
         start_time = System.monotonic_time(:millisecond)
+
         case render_test_content(renderer, buffer, opts) do
           :ok -> :ok
           html when is_binary(html) -> :ok
           {:error, reason} -> {:error, reason}
         end
+
         System.monotonic_time(:millisecond) - start_time
       end
 

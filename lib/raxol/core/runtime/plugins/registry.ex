@@ -42,8 +42,6 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
     GenServer.call(__MODULE__, :list_plugins)
   end
 
-
-
   # GenServer Callbacks
 
   @impl GenServer

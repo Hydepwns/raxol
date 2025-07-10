@@ -471,7 +471,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     end
   end
 
-    @doc """
+  @doc """
   Writes data to the buffer.
   """
   def write(buffer, data, opts \\ [])
@@ -485,9 +485,17 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
       {:string, x, y, string} ->
         # For strings, write character by character starting at x, y
-        Enum.reduce(Enum.with_index(String.graphemes(string)), buffer, fn {char, index}, acc_buffer ->
+        Enum.reduce(Enum.with_index(String.graphemes(string)), buffer, fn {char,
+                                                                           index},
+                                                                          acc_buffer ->
           cell = Raxol.Terminal.Cell.new(char, Keyword.get(opts, :style))
-          Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(acc_buffer, x + index, y, cell)
+
+          Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(
+            acc_buffer,
+            x + index,
+            y,
+            cell
+          )
         end)
 
       :unknown ->
@@ -548,7 +556,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
         {Raxol.Terminal.Buffer.Manager.BufferImpl.get_content(buffer), buffer}
 
       line when is_integer(line) ->
-        {Raxol.Terminal.Buffer.Manager.BufferImpl.get_line(buffer, line), buffer}
+        {Raxol.Terminal.Buffer.Manager.BufferImpl.get_line(buffer, line),
+         buffer}
     end
   end
 
@@ -587,8 +596,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
   def get_content(buffer) do
     Raxol.Terminal.Buffer.Content.get_content(buffer)
   end
-
-
 
   # Private helper functions
 

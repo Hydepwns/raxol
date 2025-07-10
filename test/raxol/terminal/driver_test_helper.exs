@@ -17,7 +17,11 @@ defmodule Raxol.Terminal.DriverTestHelper do
   end
 
   def wait_for_driver_ready(driver_pid, timeout \\ 500) do
-    wait_for_driver_ready_recursive(driver_pid, timeout, System.monotonic_time(:millisecond))
+    wait_for_driver_ready_recursive(
+      driver_pid,
+      timeout,
+      System.monotonic_time(:millisecond)
+    )
   end
 
   defp wait_for_driver_ready_recursive(driver_pid, timeout, start_time) do

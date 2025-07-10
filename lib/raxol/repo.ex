@@ -6,7 +6,11 @@ if !function_exported?(Mix, :env, 0) or Mix.env() != :test do
 
     use Ecto.Repo,
       otp_app: :raxol,
-      adapter: if(Mix.env() == :test, do: Raxol.Test.MockDB, else: Ecto.Adapters.Postgres)
+      adapter:
+        if(Mix.env() == :test,
+          do: Raxol.Test.MockDB,
+          else: Ecto.Adapters.Postgres
+        )
 
     @doc """
     Initialize the repository with custom configuration.

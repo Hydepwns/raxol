@@ -5,8 +5,6 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.ChartWidget do
   and providing a data structure for rendering, rather than rendering directly.
   """
 
-
-
   # --- State ---
 
   defstruct [:id, :config, :data, :component_opts]

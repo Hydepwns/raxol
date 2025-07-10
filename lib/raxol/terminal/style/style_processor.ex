@@ -55,8 +55,12 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
         ) :: Raxol.Terminal.ANSI.TextFormatting.t()
   def apply_style_attribute({attr, value}, style) do
     case attr do
-      :foreground -> Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, value)
-      :background -> Raxol.Terminal.ANSI.TextFormatting.set_background(style, value)
+      :foreground ->
+        Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, value)
+
+      :background ->
+        Raxol.Terminal.ANSI.TextFormatting.set_background(style, value)
+
       _ ->
         case get_style_update_function(attr, value) do
           {:ok, update_fn} -> update_fn.(style)

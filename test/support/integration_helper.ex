@@ -179,7 +179,11 @@ defmodule Raxol.Test.IntegrationHelper do
            ) do
       {:ok,
        %{
-         buffer_metrics: if(is_map(buffer_metrics), do: buffer_metrics, else: %{write_time: 5}),
+         buffer_metrics:
+           if(is_map(buffer_metrics),
+             do: buffer_metrics,
+             else: %{write_time: 5}
+           ),
          renderer_metrics: renderer_metrics
        }}
     end
@@ -338,8 +342,11 @@ defmodule Raxol.Test.IntegrationHelper do
     metrics_type = Keyword.get(opts, :type, :custom)
 
     case Raxol.Test.MetricsHelper.collect_metrics(metrics_type, opts) do
-      metrics when is_map(metrics) -> {:ok, %{collection_time: 10, metrics: metrics}}
-      {:error, reason} -> {:error, reason}
+      metrics when is_map(metrics) ->
+        {:ok, %{collection_time: 10, metrics: metrics}}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end

@@ -610,10 +610,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [])
       # Handle both {:ok, emulator} and emulator return values
-      emulator_result = case result do
-        {:ok, emu} -> emu
-        emu -> emu
-      end
+      emulator_result =
+        case result do
+          {:ok, emu} -> emu
+          emu -> emu
+        end
+
       assert emulator_result.main_screen_buffer != nil
     end
 
@@ -621,10 +623,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [?1])
       # Handle both {:ok, emulator} and emulator return values
-      emulator_result = case result do
-        {:ok, emu} -> emu
-        emu -> emu
-      end
+      emulator_result =
+        case result do
+          {:ok, emu} -> emu
+          emu -> emu
+        end
+
       assert emulator_result.main_screen_buffer != nil
     end
 
@@ -632,10 +636,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       emulator = Raxol.Terminal.Emulator.new(80, 24)
       result = CSIHandlers.handle_line_clear(emulator, [?2])
       # Handle both {:ok, emulator} and emulator return values
-      emulator_result = case result do
-        {:ok, emu} -> emu
-        emu -> emu
-      end
+      emulator_result =
+        case result do
+          {:ok, emu} -> emu
+          emu -> emu
+        end
+
       assert emulator_result.main_screen_buffer != nil
     end
   end
@@ -676,13 +682,21 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "cursor movement" do
     test "moves cursor up", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}
+      }
+
       result = CSIHandlers.handle_cursor_up(emulator, 5)
       assert result.cursor.row == 5
     end
 
     test "moves cursor down", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}}
+      emulator = %{
+        emulator
+        | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}
+      }
+
       result = CSIHandlers.handle_cursor_down(emulator, 5)
       assert result.cursor.row == 15
     end

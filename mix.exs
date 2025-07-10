@@ -90,7 +90,8 @@ defmodule Raxol.MixProject do
 
   defp test_applications do
     if Mix.env() == :test do
-      [:mox]  # Removed :ecto_sql to prevent auto-starting Repo
+      # Removed :ecto_sql to prevent auto-starting Repo
+      [:mox]
     else
       []
     end

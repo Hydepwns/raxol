@@ -146,11 +146,15 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslationsTest do
 
     @tag :skip
     test ~c"handles strings with invalid characters" do
-      result1 = CharacterTranslations.translate_string("Hello\x80World", :us_ascii)
+      result1 =
+        CharacterTranslations.translate_string("Hello\x80World", :us_ascii)
+
       assert result1 == "Hello\x80World"
       assert byte_size(result1) == byte_size("Hello\x80World")
 
-      result2 = CharacterTranslations.translate_string("Hello\xFFWorld", :latin1)
+      result2 =
+        CharacterTranslations.translate_string("Hello\xFFWorld", :latin1)
+
       assert result2 == "Hello\xFFWorld"
       assert byte_size(result2) == byte_size("Hello\xFFWorld")
     end

@@ -29,8 +29,6 @@ defmodule Raxol.Plugins.Manager.Events do
     EventHandler.handle_output(manager, output)
   end
 
-
-
   @doc """
   Notifies all enabled plugins of a terminal resize event.
   Delegates to `Raxol.Plugins.EventHandler.handle_resize/3`.

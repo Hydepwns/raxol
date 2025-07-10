@@ -490,12 +490,23 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   # Private helper to parse DECSTBM parameters
   defp parse_decstbm_params(params, height) do
     case params do
-      [] -> nil
-      [top] when is_integer(top) -> parse_single_param(top, height)
-      [top, bottom] when is_integer(top) and is_integer(bottom) -> parse_two_params(top, bottom, height)
-      [nil, bottom] when is_integer(bottom) -> parse_nil_top_param(bottom, height)
-      [top, nil] when is_integer(top) -> parse_nil_bottom_param(top, height)
-      _ -> nil
+      [] ->
+        nil
+
+      [top] when is_integer(top) ->
+        parse_single_param(top, height)
+
+      [top, bottom] when is_integer(top) and is_integer(bottom) ->
+        parse_two_params(top, bottom, height)
+
+      [nil, bottom] when is_integer(bottom) ->
+        parse_nil_top_param(bottom, height)
+
+      [top, nil] when is_integer(top) ->
+        parse_nil_bottom_param(top, height)
+
+      _ ->
+        nil
     end
   end
 

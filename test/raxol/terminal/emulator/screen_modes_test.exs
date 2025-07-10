@@ -31,25 +31,48 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       main_buffer_content = Emulator.get_active_buffer(emulator)
 
       IO.puts("DEBUG: Before switching to alternate buffer:")
-      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
-      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
+
+      IO.puts(
+        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
+      )
+
+      IO.puts(
+        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
+      )
+
       IO.puts("  active_buffer_type: #{emulator.active_buffer_type}")
 
       # Switch to alternate screen buffer
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
 
       IO.puts("DEBUG: After switching to alternate buffer:")
-      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
-      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
+
+      IO.puts(
+        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
+      )
+
+      IO.puts(
+        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
+      )
+
       IO.puts("  active_buffer_type: #{emulator.active_buffer_type}")
 
       # Write some content to alternate buffer
       {emulator, _} = Emulator.process_input(emulator, "xy")
 
       IO.puts("DEBUG: After writing 'xy' to alternate buffer:")
-      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
-      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
-      IO.puts("  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}")
+
+      IO.puts(
+        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
+      )
+
+      IO.puts(
+        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
+      )
+
+      IO.puts(
+        "  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}"
+      )
 
       # Check that alternate buffer has the new content
       alternate_buffer = Emulator.get_active_buffer(emulator)
@@ -64,9 +87,18 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047l")
 
       IO.puts("DEBUG: After switching back to main buffer:")
-      IO.puts("  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}")
-      IO.puts("  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}")
-      IO.puts("  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}")
+
+      IO.puts(
+        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
+      )
+
+      IO.puts(
+        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
+      )
+
+      IO.puts(
+        "  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}"
+      )
 
       # Check that main buffer still has original content
       main_buffer = Emulator.get_active_buffer(emulator)

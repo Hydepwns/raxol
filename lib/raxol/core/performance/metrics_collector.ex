@@ -199,7 +199,8 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       {0, _} ->
         0.0
 
-      {last_time, last_memory} when is_integer(last_memory) and last_memory > 0 ->
+      {last_time, last_memory}
+      when is_integer(last_memory) and last_memory > 0 ->
         current_time = System.system_time(:millisecond)
         time_diff = current_time - last_time
 

@@ -1,5 +1,3 @@
-
-
 defmodule Raxol.Test.PerformanceViewGenerators do
   @moduledoc """
   Provides helper functions for generating complex view structures for performance tests.

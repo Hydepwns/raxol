@@ -266,23 +266,38 @@ defmodule Raxol.Style.Colors.System do
         )
 
     case val do
-      %Color{} = c -> c.hex
-      hex when is_binary(hex) -> hex
+      %Color{} = c ->
+        c.hex
+
+      hex when is_binary(hex) ->
+        hex
+
       _ ->
         # If no specific high contrast variant, generate one from the standard color
         standard_color = get_standard_color(theme, color_name, variant)
+
         case standard_color do
-          nil -> nil
+          nil ->
+            nil
+
           hex when is_binary(hex) ->
             color = Color.from_hex(hex)
             background = get_standard_color(theme, :background, :base)
-            background_color = if background, do: Color.from_hex(background), else: Color.from_hex("#000000")
+
+            background_color =
+              if background,
+                do: Color.from_hex(background),
+                else: Color.from_hex("#000000")
 
             # For high contrast mode, always generate a more contrasting color
             # Use a higher contrast requirement to ensure the color is noticeably different
-            high_contrast_color = generate_high_contrast_color(color, background_color)
+            high_contrast_color =
+              generate_high_contrast_color(color, background_color)
+
             high_contrast_color.hex
-          _ -> standard_color
+
+          _ ->
+            standard_color
         end
     end
   end
@@ -301,7 +316,8 @@ defmodule Raxol.Style.Colors.System do
     else
       # If not high contrast, adjust it to meet the target ratio
       # Use a more aggressive adjustment to ensure the color is noticeably different
-      adjusted_color = Utilities.adjust_for_contrast(color, background_color, :aaa, :normal)
+      adjusted_color =
+        Utilities.adjust_for_contrast(color, background_color, :aaa, :normal)
 
       # If the adjustment didn't change the color (because it already met requirements),
       # force it to be more extreme
@@ -441,4 +457,3 @@ defmodule Raxol.Style.Colors.System do
     }
   end
 end
-

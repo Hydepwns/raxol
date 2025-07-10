@@ -898,7 +898,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
                 extension_path = Path.join(base_path, Atom.to_string(type))
 
                 # If the extension directory doesn't exist, use the base path
-                final_path = if File.exists?(extension_path), do: extension_path, else: base_path
+                final_path =
+                  if File.exists?(extension_path),
+                    do: extension_path,
+                    else: base_path
 
                 load_extension_state(
                   final_path,

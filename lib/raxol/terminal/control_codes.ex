@@ -510,8 +510,12 @@ defmodule Raxol.Terminal.ControlCodes do
   # ESC 7 - Save Cursor State (DEC specific)
   def handle_decsc(emulator) do
     # Get cursor state from the PID using CursorManager
-    cursor_position = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-    cursor_visible = Raxol.Terminal.Cursor.Manager.get_visibility(emulator.cursor)
+    cursor_position =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    cursor_visible =
+      Raxol.Terminal.Cursor.Manager.get_visibility(emulator.cursor)
+
     cursor_style = Raxol.Terminal.Cursor.Manager.get_style(emulator.cursor)
     cursor_blinking = Raxol.Terminal.Cursor.Manager.get_blink(emulator.cursor)
 
@@ -547,7 +551,8 @@ defmodule Raxol.Terminal.ControlCodes do
             charset_state: restored_state_data.charset_state,
             mode_manager: restored_state_data.mode_manager,
             scroll_region: restored_state_data.scroll_region,
-            cursor_style: Map.get(restored_state_data, :cursor_style, emulator.cursor_style)
+            cursor_style:
+              Map.get(restored_state_data, :cursor_style, emulator.cursor_style)
         }
 
         # Restore cursor position and attributes using CursorManager
@@ -555,16 +560,28 @@ defmodule Raxol.Terminal.ControlCodes do
           cursor_data = restored_state_data.cursor
 
           # Restore cursor position
-          Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, cursor_data.position)
+          Raxol.Terminal.Cursor.Manager.set_position(
+            emulator.cursor,
+            cursor_data.position
+          )
 
           # Restore cursor visibility
-          Raxol.Terminal.Cursor.Manager.set_visibility(emulator.cursor, cursor_data.visible)
+          Raxol.Terminal.Cursor.Manager.set_visibility(
+            emulator.cursor,
+            cursor_data.visible
+          )
 
           # Restore cursor style
-          Raxol.Terminal.Cursor.Manager.set_style(emulator.cursor, cursor_data.style)
+          Raxol.Terminal.Cursor.Manager.set_style(
+            emulator.cursor,
+            cursor_data.style
+          )
 
           # Restore cursor blinking state
-          Raxol.Terminal.Cursor.Manager.set_blink(emulator.cursor, cursor_data.blink_state)
+          Raxol.Terminal.Cursor.Manager.set_blink(
+            emulator.cursor,
+            cursor_data.blink_state
+          )
         end
 
         emulator
@@ -581,17 +598,38 @@ defmodule Raxol.Terminal.ControlCodes do
   @spec handle_escape(Emulator.t(), integer()) :: Emulator.t()
   def handle_escape(emulator, byte) do
     case byte do
-      ?7 -> handle_decsc(emulator)
-      ?8 -> handle_decrc(emulator)
-      ?c -> handle_ris(emulator)
-      ?D -> handle_ind(emulator)
-      ?E -> handle_nel(emulator)
-      ?H -> handle_hts(emulator)
-      ?M -> handle_ri(emulator)
-      ?= -> Raxol.Terminal.Emulator.handle_esc_equals(emulator)
-      ?> -> Raxol.Terminal.Emulator.handle_esc_greater(emulator)
+      ?7 ->
+        handle_decsc(emulator)
+
+      ?8 ->
+        handle_decrc(emulator)
+
+      ?c ->
+        handle_ris(emulator)
+
+      ?D ->
+        handle_ind(emulator)
+
+      ?E ->
+        handle_nel(emulator)
+
+      ?H ->
+        handle_hts(emulator)
+
+      ?M ->
+        handle_ri(emulator)
+
+      ?= ->
+        Raxol.Terminal.Emulator.handle_esc_equals(emulator)
+
+      ?> ->
+        Raxol.Terminal.Emulator.handle_esc_greater(emulator)
+
       _ ->
-        Raxol.Core.Runtime.Log.debug("Unhandled escape sequence byte: #{inspect(byte)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Unhandled escape sequence byte: #{inspect(byte)}"
+        )
+
         emulator
     end
   end

@@ -296,6 +296,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       component ->
         # Update the state directly in the components map
         state = put_in(state.components[component_id].state, new_state)
@@ -312,10 +313,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           else
             state
           end
+
         # Send component_updated message if runtime_pid is set
         if state.runtime_pid do
           send(state.runtime_pid, {:component_updated, component_id})
         end
+
         {:reply, :ok, state}
     end
   end

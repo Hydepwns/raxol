@@ -79,18 +79,34 @@ defmodule Raxol.Terminal.ModeManager do
           {:ok, Emulator.t()} | {:error, term()}
   def set_mode(emulator, modes, category \\ nil) when list?(modes) do
     require Logger
-    Logger.debug("ModeManager.set_mode/2 called with modes=#{inspect(modes)}, category=#{inspect(category)}")
-    Logger.debug("ModeManager.set_mode/2: initial emulator mode_manager=#{inspect(emulator.mode_manager)}")
-    result = Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
-      case do_set_mode(mode, emu, category) do
-        {:ok, new_emu} ->
-          Logger.debug("ModeManager.set_mode/2: mode #{inspect(mode)} set successfully, new_emu.mode_manager=#{inspect(new_emu.mode_manager)}")
-          {:cont, {:ok, new_emu}}
-        {:error, reason} ->
-          Logger.debug("ModeManager.set_mode/2: mode #{inspect(mode)} failed with reason=#{inspect(reason)}")
-          {:halt, {:error, reason}}
-      end
-    end)
+
+    Logger.debug(
+      "ModeManager.set_mode/2 called with modes=#{inspect(modes)}, category=#{inspect(category)}"
+    )
+
+    Logger.debug(
+      "ModeManager.set_mode/2: initial emulator mode_manager=#{inspect(emulator.mode_manager)}"
+    )
+
+    result =
+      Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
+        case do_set_mode(mode, emu, category) do
+          {:ok, new_emu} ->
+            Logger.debug(
+              "ModeManager.set_mode/2: mode #{inspect(mode)} set successfully, new_emu.mode_manager=#{inspect(new_emu.mode_manager)}"
+            )
+
+            {:cont, {:ok, new_emu}}
+
+          {:error, reason} ->
+            Logger.debug(
+              "ModeManager.set_mode/2: mode #{inspect(mode)} failed with reason=#{inspect(reason)}"
+            )
+
+            {:halt, {:error, reason}}
+        end
+      end)
+
     Logger.debug("ModeManager.set_mode/2: final result=#{inspect(result)}")
     result
   end
@@ -214,7 +230,11 @@ defmodule Raxol.Terminal.ModeManager do
 
   defp find_mode_definition(mode_name, category) do
     require Logger
-    Logger.debug("ModeManager.find_mode_definition/2 called with mode_name=#{inspect(mode_name)}, category=#{inspect(category)}")
+
+    Logger.debug(
+      "ModeManager.find_mode_definition/2 called with mode_name=#{inspect(mode_name)}, category=#{inspect(category)}"
+    )
+
     # For nil category, look for :standard modes first
     search_category = if category == nil, do: :standard, else: category
 
@@ -226,7 +246,10 @@ defmodule Raxol.Terminal.ModeManager do
            mode_def.name == mode_name and mode_def.category == search_category
          end) do
       nil ->
-        Logger.debug("ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)}, category=#{inspect(search_category)}")
+        Logger.debug(
+          "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)}, category=#{inspect(search_category)}"
+        )
+
         # If not found in the initial category, try other categories
         case search_category do
           :standard ->
@@ -238,10 +261,17 @@ defmodule Raxol.Terminal.ModeManager do
                      mode_def.category in [:dec_private, :screen_buffer]
                  end) do
               nil ->
-                Logger.debug("ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in fallback categories")
+                Logger.debug(
+                  "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in fallback categories"
+                )
+
                 {:error, :invalid_mode}
+
               mode_def ->
-                Logger.debug("ModeManager.find_mode_definition/2 found fallback mode_def: #{inspect(mode_def)}")
+                Logger.debug(
+                  "ModeManager.find_mode_definition/2 found fallback mode_def: #{inspect(mode_def)}"
+                )
+
                 {:ok, mode_def}
             end
 
@@ -254,42 +284,71 @@ defmodule Raxol.Terminal.ModeManager do
                      mode_def.category == :screen_buffer
                  end) do
               nil ->
-                Logger.debug("ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in :screen_buffer fallback")
+                Logger.debug(
+                  "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in :screen_buffer fallback"
+                )
+
                 {:error, :invalid_mode}
+
               mode_def ->
-                Logger.debug("ModeManager.find_mode_definition/2 found fallback mode_def: #{inspect(mode_def)}")
+                Logger.debug(
+                  "ModeManager.find_mode_definition/2 found fallback mode_def: #{inspect(mode_def)}"
+                )
+
                 {:ok, mode_def}
             end
 
           _ ->
-            Logger.debug("ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in any category")
+            Logger.debug(
+              "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in any category"
+            )
+
             {:error, :invalid_mode}
         end
 
       mode_def ->
-        Logger.debug("ModeManager.find_mode_definition/2 found mode_def: #{inspect(mode_def)}")
+        Logger.debug(
+          "ModeManager.find_mode_definition/2 found mode_def: #{inspect(mode_def)}"
+        )
+
         {:ok, mode_def}
     end
   end
 
   defp apply_mode_effects(mode_def, emulator, value) do
     require Logger
-    Logger.debug("ModeManager.apply_mode_effects called with mode_def=#{inspect(mode_def)}, value=#{inspect(value)}")
+
+    Logger.debug(
+      "ModeManager.apply_mode_effects called with mode_def=#{inspect(mode_def)}, value=#{inspect(value)}"
+    )
+
     case mode_def.category do
       :dec_private ->
-        Logger.debug("ModeManager.apply_mode_effects: routing to DECPrivateHandler")
+        Logger.debug(
+          "ModeManager.apply_mode_effects: routing to DECPrivateHandler"
+        )
+
         DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
 
       :screen_buffer ->
-        Logger.debug("ModeManager.apply_mode_effects: routing to DECPrivateHandler (screen_buffer)")
+        Logger.debug(
+          "ModeManager.apply_mode_effects: routing to DECPrivateHandler (screen_buffer)"
+        )
+
         DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
 
       :standard ->
-        Logger.debug("ModeManager.apply_mode_effects: routing to StandardHandler")
+        Logger.debug(
+          "ModeManager.apply_mode_effects: routing to StandardHandler"
+        )
+
         StandardHandler.handle_mode_change(mode_def.name, value, emulator)
 
       _ ->
-        Logger.debug("ModeManager.apply_mode_effects: unknown category #{inspect(mode_def.category)}")
+        Logger.debug(
+          "ModeManager.apply_mode_effects: unknown category #{inspect(mode_def.category)}"
+        )
+
         {:ok, emulator}
     end
   end

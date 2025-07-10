@@ -62,8 +62,15 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     Raxol.Core.Events.Manager.init()
 
     # Use a unique name for each test
-    unique_name = String.to_atom("user_prefs_" <> Integer.to_string(System.unique_integer([:positive])))
-    pid_of_prefs = start_supervised!({UserPreferences, [test_mode?: true, name: unique_name]})
+    unique_name =
+      String.to_atom(
+        "user_prefs_" <> Integer.to_string(System.unique_integer([:positive]))
+      )
+
+    pid_of_prefs =
+      start_supervised!(
+        {UserPreferences, [test_mode?: true, name: unique_name]}
+      )
 
     # Set up preferences
     Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, pid_of_prefs)
@@ -71,7 +78,8 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     Raxol.Core.Accessibility.clear_announcements()
 
     # Ensure process is alive before returning
-    unless Process.alive?(pid_of_prefs), do: flunk("UserPreferences process not alive after setup")
+    unless Process.alive?(pid_of_prefs),
+      do: flunk("UserPreferences process not alive after setup")
 
     on_exit(fn ->
       # Clean up accessibility and stop the process if alive
@@ -79,6 +87,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
         Raxol.Core.Accessibility.disable(pid_of_prefs)
         Process.exit(pid_of_prefs, :normal)
       end
+
       # Only clean up EventManager
       Raxol.Core.Events.Manager.cleanup()
     end)

@@ -41,6 +41,4 @@ defmodule Raxol.Test.EmulatorHelpers do
     text = Enum.map_join(line_cells, &(&1.char || " "))
     text
   end
-
-
 end

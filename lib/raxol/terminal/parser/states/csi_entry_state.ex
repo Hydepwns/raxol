@@ -22,8 +22,9 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
         {:csi_param, Map.update(data, :params_buffer, <<b>>, &(&1 <> <<b>>))}
 
       # Intermediate bytes (0x20-0x2F) and '?' (0x3F)
-      b when (b in 0x20..0x2F) or b == 0x3F ->
-        {:csi_intermediate, Map.update(data, :intermediates_buffer, <<b>>, &(&1 <> <<b>>))}
+      b when b in 0x20..0x2F or b == 0x3F ->
+        {:csi_intermediate,
+         Map.update(data, :intermediates_buffer, <<b>>, &(&1 <> <<b>>))}
 
       # Final bytes (0x40-0x7E)
       b when b in 0x40..0x7E ->
@@ -72,7 +73,8 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           parser_state
           | state: next_state_module,
             params_buffer: Map.get(updated_data, :params_buffer, ""),
-            intermediates_buffer: Map.get(updated_data, :intermediates_buffer, ""),
+            intermediates_buffer:
+              Map.get(updated_data, :intermediates_buffer, ""),
             final_byte: Map.get(updated_data, :final_byte)
         }
 

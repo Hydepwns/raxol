@@ -282,7 +282,12 @@ defmodule Raxol.Terminal.Input.InputHandler do
   def handle_printable_character(emulator, char_codepoint, params, single_shift) do
     # Use the CharacterProcessor to handle the printable character
     # This will write the character to the buffer and update cursor position
-    updated_emulator = Raxol.Terminal.Input.CharacterProcessor.process_printable_character(emulator, char_codepoint)
+    updated_emulator =
+      Raxol.Terminal.Input.CharacterProcessor.process_printable_character(
+        emulator,
+        char_codepoint
+      )
+
     {updated_emulator, nil}
   end
 end

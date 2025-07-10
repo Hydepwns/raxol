@@ -501,7 +501,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def mark_damaged(buffer, x, y, width, height, _reason) do
     # Add the new damage region to the existing list
     new_region = {x, y, width, height}
-    updated_damage_regions = [new_region | (buffer.damage_regions || [])]
+    updated_damage_regions = [new_region | buffer.damage_regions || []]
     %{buffer | damage_regions: updated_damage_regions}
   end
 
@@ -943,5 +943,4 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def get_content(buffer, _opts \\ []) do
     Raxol.Terminal.Buffer.Content.get_content(buffer)
   end
-
 end

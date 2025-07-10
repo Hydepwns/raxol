@@ -103,7 +103,8 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       alias Raxol.Renderer.Layout
 
       # Debug: Check what the table produces before layout
-      _table_children = Raxol.Core.Renderer.Views.Table.build_table_content(view)
+      _table_children =
+        Raxol.Core.Renderer.Views.Table.build_table_content(view)
 
       # Get the rendered layout as a map, not a list
       rendered_layout = Layout.apply_layout(view, context)

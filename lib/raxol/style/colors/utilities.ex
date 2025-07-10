@@ -26,7 +26,8 @@ defmodule Raxol.Style.Colors.Utilities do
     relative_luminance({color.r, color.g, color.b})
   end
 
-  def relative_luminance({r, g, b}) when is_number(r) and is_number(g) and is_number(b) do
+  def relative_luminance({r, g, b})
+      when is_number(r) and is_number(g) and is_number(b) do
     # Convert RGB to relative luminance
     r = convert_to_linear(r / 255)
     g = convert_to_linear(g / 255)
