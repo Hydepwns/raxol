@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   use ExUnit.Case, async: false
-  import ExUnit.CaptureLog
   # Use Mox instead
   import Mox
   # Added for stub logging
@@ -12,12 +11,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Command
-  alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
-  # Add Alias for PubSub
-  # Assuming this is the correct PubSub module
-  alias Phoenix.PubSub
-  # Needed for Mox types
-  alias Raxol.Core.UserPreferences
 
   # Simple Mock GenServer for PluginManager
   defmodule Mock.PluginManager do

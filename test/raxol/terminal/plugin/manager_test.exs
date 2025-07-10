@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Plugin.ManagerTest do
       assert manager.metrics.config_updates == 0
     end
 
-    test "creates a new plugin manager with custom config", %{manager: manager} do
+    test "creates a new plugin manager with custom config", %{manager: _manager} do
       manager = Manager.new(custom_option: "value")
       assert manager.config.custom_option == "value"
     end

@@ -31,7 +31,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
     end
 
     test "handle_focus_change/2 announces element when it receives focus", %{
-      prefs_name: prefs_name,
       pref_pid: pref_pid
     } do
       Accessibility.register_element_metadata("search_button", %{
@@ -45,7 +44,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
     test "handle_focus_change/2 does nothing when element has no announcement",
          %{
-           prefs_name: prefs_name,
            pref_pid: pref_pid
          } do
       Accessibility.clear_announcements()
@@ -58,7 +56,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
     end
 
     test "handle_focus_change/2 announces multiple elements correctly", %{
-      prefs_name: prefs_name,
       pref_pid: pref_pid
     } do
       Helper.register_test_elements()
@@ -82,7 +79,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
     test "handle_focus_change/2 announces correctly after multiple focus changes",
          %{
-           prefs_name: prefs_name,
            pref_pid: pref_pid
          } do
       Accessibility.register_element_metadata("el1", %{label: "Element One"})
@@ -99,7 +95,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
     end
 
     test "handle_focus_change/2 announces element labels correctly", %{
-      prefs_name: prefs_name,
       pref_pid: pref_pid
     } do
       Accessibility.register_element_metadata("button1", %{label: "OK"})
@@ -115,7 +110,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
     end
 
     test "get_element_label/1 retrieves correct label", %{
-      prefs_name: prefs_name,
       pref_pid: pref_pid
     } do
       Accessibility.register_element_metadata("my_element", %{
@@ -133,7 +127,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
     test "get_element_label/1 handles missing labels and metadata gracefully",
          %{
-           prefs_name: prefs_name,
            pref_pid: pref_pid
          } do
       Accessibility.register_element_metadata("no_label_element", %{})
@@ -156,7 +149,6 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
     test "handle_focus_change/2 does not announce if screen reader is disabled",
          %{
-           prefs_name: prefs_name,
            pref_pid: pref_pid
          } do
       UserPreferences.set(Helper.pref_key(:screen_reader), false, pref_pid)

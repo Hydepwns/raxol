@@ -11,12 +11,6 @@ defmodule Raxol.UI.RendererTest do
     Enum.find(cells, fn {cx, cy, _, _, _, _} -> cx == x and cy == y end)
   end
 
-  # Helper to get all cells for a specific row
-  defp get_row_cells(cells, y) do
-    Enum.filter(cells, fn {_, cy, _, _, _, _} -> cy == y end)
-    |> Enum.sort_by(fn {cx, _, _, _, _, _} -> cx end)
-  end
-
   # Add setup block
   setup do
     # Initialize the theme system

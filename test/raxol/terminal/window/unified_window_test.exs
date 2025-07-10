@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
   end
 
   describe "window creation" do
-    test "creates a window with default options", %{pid: pid} do
+    test "creates a window with default options", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.title == ""
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
       assert window.children == []
     end
 
-    test "creates a window with custom options", %{pid: pid} do
+    test "creates a window with custom options", %{pid: _pid} do
       opts = %{
         title: "Test Window",
         size: {100, 30},
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
   end
 
   describe "window splitting" do
-    test "splits window horizontally", %{pid: pid} do
+    test "splits window horizontally", %{pid: _pid} do
       {:ok, parent_id} = UnifiedWindow.create_window()
       {:ok, child_id} = UnifiedWindow.split_window(parent_id, :horizontal)
 
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
       assert child.parent_id == parent_id
     end
 
-    test "splits window vertically", %{pid: pid} do
+    test "splits window vertically", %{pid: _pid} do
       {:ok, parent_id} = UnifiedWindow.create_window()
       {:ok, child_id} = UnifiedWindow.split_window(parent_id, :vertical)
 
@@ -66,49 +66,49 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
       assert child.parent_id == parent_id
     end
 
-    test "fails to split non-existent window", %{pid: pid} do
+    test "fails to split non-existent window", %{pid: _pid} do
       assert {:error, "Window not found"} =
                UnifiedWindow.split_window("nonexistent", :horizontal)
     end
   end
 
   describe "window operations" do
-    test "sets window title", %{pid: pid} do
+    test "sets window title", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert :ok = UnifiedWindow.set_title(window_id, "New Title")
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.title == "New Title"
     end
 
-    test "sets window icon name", %{pid: pid} do
+    test "sets window icon name", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert :ok = UnifiedWindow.set_icon_name(window_id, "New Icon")
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.icon_name == "New Icon"
     end
 
-    test "resizes window", %{pid: pid} do
+    test "resizes window", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert :ok = UnifiedWindow.resize(window_id, 100, 30)
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.size == {100, 30}
     end
 
-    test "moves window", %{pid: pid} do
+    test "moves window", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert :ok = UnifiedWindow.move(window_id, 10, 20)
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.position == {10, 20}
     end
 
-    test "sets window stacking order", %{pid: pid} do
+    test "sets window stacking order", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert :ok = UnifiedWindow.set_stacking_order(window_id, :above)
       assert {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.stacking_order == :above
     end
 
-    test "maximizes and restores window", %{pid: pid} do
+    test "maximizes and restores window", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       original_size = {80, 24}
 
@@ -130,20 +130,20 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
   end
 
   describe "window focus" do
-    test "sets active window", %{pid: pid} do
+    test "sets active window", %{pid: _pid} do
       {:ok, window_id} = UnifiedWindow.create_window()
       assert :ok = UnifiedWindow.set_active_window(window_id)
       assert {:ok, ^window_id} = UnifiedWindow.get_active_window()
     end
 
-    test "fails to set active window for non-existent window", %{pid: pid} do
+    test "fails to set active window for non-existent window", %{pid: _pid} do
       assert {:error, "Window not found"} =
                UnifiedWindow.set_active_window("nonexistent")
     end
   end
 
   describe "window cleanup" do
-    test "closes window and its children", %{pid: pid} do
+    test "closes window and its children", %{pid: _pid} do
       # Create parent window
       {:ok, parent_id} = UnifiedWindow.create_window()
 
@@ -165,14 +165,14 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
                UnifiedWindow.get_window_state(child2_id)
     end
 
-    test "fails to close non-existent window", %{pid: pid} do
+    test "fails to close non-existent window", %{pid: _pid} do
       assert {:error, "Window not found"} =
                UnifiedWindow.close_window("nonexistent")
     end
   end
 
   describe "configuration" do
-    test "updates window manager configuration", %{pid: pid} do
+    test "updates window manager configuration", %{pid: _pid} do
       new_config = %{
         default_size: {100, 30},
         min_size: {20, 5},

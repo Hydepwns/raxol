@@ -185,26 +185,26 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
   end
 
   describe "validate_range/3" do
-    test "returns valid values within range", %{emulator: emulator} do
+    test "returns valid values within range", %{emulator: _emulator} do
       # Test values within range
       assert ParameterValidation.validate_range([5], 0, 10) == 5
       assert ParameterValidation.validate_range([0], 0, 10) == 0
       assert ParameterValidation.validate_range([10], 0, 10) == 10
     end
 
-    test "clamps values to range", %{emulator: emulator} do
+    test "clamps values to range", %{emulator: _emulator} do
       # Test values outside range
       assert ParameterValidation.validate_range([-1], 0, 10) == 0
       assert ParameterValidation.validate_range([11], 0, 10) == 10
     end
 
-    test "handles missing parameters", %{emulator: emulator} do
+    test "handles missing parameters", %{emulator: _emulator} do
       # Test with missing parameters (should default to min)
       assert ParameterValidation.validate_range([], 0, 10) == 0
       assert ParameterValidation.validate_range([nil], 0, 10) == 0
     end
 
-    test "handles invalid parameters", %{emulator: emulator} do
+    test "handles invalid parameters", %{emulator: _emulator} do
       # Test with invalid parameters (should default to min)
       assert ParameterValidation.validate_range(["invalid"], 0, 10) == 0
       assert ParameterValidation.validate_range([:invalid], 0, 10) == 0
