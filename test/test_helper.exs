@@ -176,6 +176,10 @@ IO.puts("[TestHelper] Starting event registry...")
 {:ok, _registry_pid} =
   Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
 
+# Initialize the EventManager for tests
+IO.puts("[TestHelper] Initializing EventManager...")
+Raxol.Core.Events.Manager.init()
+
 # Only start the endpoint if it's not already running
 if !Process.whereis(RaxolWeb.Endpoint) do
   {:ok, _pid} = RaxolWeb.Endpoint.start_link()

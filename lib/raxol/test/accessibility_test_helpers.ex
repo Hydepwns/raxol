@@ -90,54 +90,47 @@ defmodule Raxol.AccessibilityTestHelpers do
 
   @doc """
   Assert that a specific announcement was made to the screen reader.
-
-  ## Parameters
-
-  * `expected` - The expected announcement text or pattern
-  * `opts` - Additional options
-
-  ## Options
-
-  * `:exact` - Require exact match (default: `false`)
-  * `:context` - Additional context for the error message
-
-  ## Examples
-
-      assert_announced("File saved")
-
-      assert_announced(~r/File .* saved/, exact: false)
   """
-  def assert_announced(expected, opts \\ []) do
-    announcements = Process.get(:accessibility_test_announcements, [])
+  defmacro assert_announced(expected, opts \\ []) do
     exact = Keyword.get(opts, :exact, false)
     context = Keyword.get(opts, :context, "")
 
-    if exact do
-      if not Enum.member?(announcements, expected) do
-        flunk(
-          "Expected screen reader announcement \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-        )
-      end
-    else
-      cond do
-        binary?(expected) ->
-          if not Enum.any?(announcements, &String.contains?(&1, expected)) do
-            flunk(
-              "Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-            )
-          end
+    quote do
+      announcements = Process.get(:accessibility_test_announcements, [])
 
-        match?(%Regex{}, expected) ->
-          if not Enum.any?(announcements, &Regex.match?(expected, &1)) do
-            flunk(
-              "Expected screen reader announcement matching #{inspect(expected)} was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-            )
-          end
-
-        true ->
+      if unquote(exact) do
+        if not Enum.member?(announcements, unquote(expected)) do
           flunk(
-            "Invalid expected value for assert_announced: #{inspect(expected)}"
+            "Expected screen reader announcement \"#{unquote(expected)}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
           )
+        end
+      else
+        cond do
+          binary?(unquote(expected)) ->
+            if not Enum.any?(
+                 announcements,
+                 &String.contains?(&1, unquote(expected))
+               ) do
+              flunk(
+                "Expected screen reader announcement containing \"#{unquote(expected)}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
+              )
+            end
+
+          match?(%Regex{}, unquote(expected)) ->
+            if not Enum.any?(
+                 announcements,
+                 &Regex.match?(unquote(expected), &1)
+               ) do
+              flunk(
+                "Expected screen reader announcement matching #{inspect(unquote(expected))} was not made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
+              )
+            end
+
+          true ->
+            flunk(
+              "Invalid expected value for assert_announced: #{inspect(unquote(expected))}"
+            )
+        end
       end
     end
   end
@@ -165,6 +158,50 @@ defmodule Raxol.AccessibilityTestHelpers do
       flunk(
         "Expected no screen reader announcements, but got: #{inspect(announcements)}\n#{context}"
       )
+    end
+  end
+
+  @doc """
+  Refute that a specific announcement was made to the screen reader.
+  """
+  defmacro refute_announced(expected, opts \\ []) do
+    exact = Keyword.get(opts, :exact, false)
+    context = Keyword.get(opts, :context, "")
+
+    quote do
+      announcements = Process.get(:accessibility_test_announcements, [])
+
+      if unquote(exact) do
+        if Enum.member?(announcements, unquote(expected)) do
+          flunk(
+            "Unexpected screen reader announcement \"#{unquote(expected)}\" was made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
+          )
+        end
+      else
+        cond do
+          binary?(unquote(expected)) ->
+            if Enum.any?(
+                 announcements,
+                 &String.contains?(&1, unquote(expected))
+               ) do
+              flunk(
+                "Unexpected screen reader announcement containing \"#{unquote(expected)}\" was made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
+              )
+            end
+
+          match?(%Regex{}, unquote(expected)) ->
+            if Enum.any?(announcements, &Regex.match?(unquote(expected), &1)) do
+              flunk(
+                "Unexpected screen reader announcement matching #{inspect(unquote(expected))} was made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
+              )
+            end
+
+          true ->
+            flunk(
+              "Invalid expected value for refute_announced: #{inspect(unquote(expected))}"
+            )
+        end
+      end
     end
   end
 
