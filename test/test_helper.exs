@@ -100,6 +100,7 @@ IO.puts("[TestHelper] Loading support files...")
 Code.require_file("support/test_helpers.ex", __DIR__)
 Code.require_file("support/event_macro_helpers.ex", __DIR__)
 Code.require_file("support/test_helper.ex", __DIR__)
+Code.require_file("support/clipboard_assertions.ex", __DIR__)
 
 # Set up mocks
 IO.puts("[TestHelper] Setting up mocks...")
