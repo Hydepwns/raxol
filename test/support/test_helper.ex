@@ -144,7 +144,8 @@ defmodule Raxol.Test.Support.TestHelper do
   @doc """
   Cleans up test environment for a specific environment.
   """
-  def cleanup_test_env(env \\ :default) do
+  def cleanup_test_env(env \\ :default)
+  def cleanup_test_env(env) when is_atom(env) do
     # Clean up any test-specific configuration
     Application.delete_env(:raxol, :test_mode)
     Application.delete_env(:raxol, :database_enabled)
