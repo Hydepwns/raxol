@@ -80,7 +80,6 @@ defmodule Raxol.Docs.ComponentCatalog do
   @catalog_key :raxol_component_catalog
 
   # Import the DSL elements
-  # import Raxol.View.Elements # Removed unused import
 
   @doc """
   Initializes the component catalog.

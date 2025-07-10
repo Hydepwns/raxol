@@ -438,7 +438,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       @impl true
-      def cleanup(config) do
+      def cleanup(_config) do
         Process.put(:lifecycle_plugin_a_cleanup, true)
         :ok
       end
@@ -495,7 +495,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       @impl true
-      def cleanup(config) do
+      def cleanup(_config) do
         Process.put(:lifecycle_plugin_b_cleanup, true)
         :ok
       end
