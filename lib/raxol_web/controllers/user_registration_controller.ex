@@ -4,10 +4,7 @@ defmodule RaxolWeb.UserRegistrationController do
   """
   use RaxolWeb, :controller
 
-  # alias Raxol.Auth # Removed unused alias
-  # alias Raxol.Auth.User # Removed unused alias
   alias RaxolWeb.UserAuth
-  # alias RaxolWeb.Router.Helpers, as: Routes # Removed unused alias
 
   def new(conn, _params) do
     changeset = Raxol.Auth.User.registration_changeset(%Raxol.Auth.User{}, %{})

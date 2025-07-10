@@ -195,22 +195,25 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       0.0
   """
   def get_memory_trend(collector) do
-    case collector.last_gc_time do
-      0 ->
+    case {collector.last_gc_time, collector.last_memory_usage} do
+      {0, _} ->
         0.0
 
-      last_time ->
+      {last_time, last_memory} when is_integer(last_memory) and last_memory > 0 ->
         current_time = System.system_time(:millisecond)
         time_diff = current_time - last_time
 
-        if time_diff > 0 and collector.last_memory_usage do
+        if time_diff > 0 do
           # Calculate memory growth rate
-          memory_growth = collector.memory_usage - collector.last_memory_usage
+          memory_growth = collector.memory_usage - last_memory
           # Convert to bytes per second
           memory_growth / time_diff * 1000
         else
           0.0
         end
+
+      _ ->
+        0.0
     end
   end
 

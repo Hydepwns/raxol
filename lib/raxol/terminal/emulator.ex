@@ -1198,11 +1198,6 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-  # Implement get_scroll_region directly to return the emulator's scroll_region field
-  def get_scroll_region(%__MODULE__{} = emulator) do
-    emulator.scroll_region
-  end
-
   @doc """
   Moves the cursor to the specified position.
   """

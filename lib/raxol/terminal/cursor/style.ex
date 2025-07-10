@@ -188,7 +188,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       iex> alias Raxol.Terminal.Cursor.{Manager, Style}
       iex> cursor = Manager.new()
       iex> cursor = Style.blink(cursor)
-      iex> {cursor, visible} = Style.update_blink(cursor)
+      iex> {_cursor, visible} = Style.update_blink(cursor)
       iex> boolean?(visible)
       true
   """

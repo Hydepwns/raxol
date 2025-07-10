@@ -27,7 +27,7 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
     end
   end
 
-  defp validate_length(state, char_str) do
+  defp validate_length(state, _char_str) do
     current_value = state.value || ""
     max_length = state.max_length
     !max_length || String.length(current_value) < max_length
