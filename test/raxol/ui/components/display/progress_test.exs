@@ -15,11 +15,6 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
     Map.put_new(state, :type, :progress)
   end
 
-  defp init_component!(props) do
-    {:ok, state} = Progress.init(props)
-    state
-  end
-
   describe "init/1" do
     test "initializes with default props" do
       state = init_component()

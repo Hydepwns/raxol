@@ -167,8 +167,8 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouseTest do
 
   describe "cleanup" do
     test ~c"cleans up all mouse contexts" do
-      assert {:ok, mouse1} = UnifiedMouse.create_mouse()
-      assert {:ok, mouse2} = UnifiedMouse.create_mouse()
+      assert {:ok, _mouse1} = UnifiedMouse.create_mouse()
+      assert {:ok, _mouse2} = UnifiedMouse.create_mouse()
 
       assert :ok = UnifiedMouse.cleanup()
       assert UnifiedMouse.get_mice() == []

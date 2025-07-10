@@ -103,7 +103,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       alias Raxol.Renderer.Layout
 
       # Debug: Check what the table produces before layout
-      table_children = Raxol.Core.Renderer.Views.Table.build_table_content(view)
+      _table_children = Raxol.Core.Renderer.Views.Table.build_table_content(view)
 
       # Get the rendered layout as a map, not a list
       rendered_layout = Layout.apply_layout(view, context)
@@ -344,7 +344,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       assert chart.type == :box
       assert chart.size == {60, :auto}
       assert length(chart.children) == 1
-      [chart_component_wrapper] = chart.children
+      [_chart_component_wrapper] = chart.children
     end
   end
 
@@ -506,7 +506,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           border: :single
         })
 
-      chart_view =
+      _chart_view =
         Chart.new(
           type: :bar,
           series: [
@@ -535,7 +535,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       assert view.type == :box
       assert length(view.children) == 2
 
-      [headers, content] = view.children
+      [headers, _content] = view.children
       assert headers.type == :flex
       assert length(headers.children) == 2
 

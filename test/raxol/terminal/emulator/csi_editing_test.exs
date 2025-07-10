@@ -6,9 +6,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.Manager
-  # Needed for style check
-  alias Raxol.Terminal.Cell
+
 
   describe "CSI editing functions" do
     # Tests focus on buffer manipulation via CSI sequences processed by Emulator

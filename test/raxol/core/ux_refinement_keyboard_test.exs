@@ -6,7 +6,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
   # Aliases for mocks will be used directly, e.g., Raxol.Mocks.AccessibilityMock
   # alias Raxol.Core.Accessibility # Removed
-  alias Raxol.Core.Accessibility.Mock, as: Raxol.Mocks.AccessibilityMock
+  alias Raxol.Core.Accessibility.Mock
   alias Raxol.Core.Events.Manager, as: EventManager
   # alias Raxol.Core.FocusManager # Removed
   # alias Raxol.Core.KeyboardShortcuts # Removed
@@ -131,7 +131,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
   describe "component shortcuts integration" do
     test "UXRefinement.register_accessibility_metadata/2 calls Accessibility.register_element_metadata" do
-      expect(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
+      expect(Mock, :enable, fn _, _ -> :ok end)
 
       stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
         :ok
@@ -143,7 +143,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       component_id = "search_button"
 
       expect(
-        Raxol.Mocks.AccessibilityMock,
+        Mock,
         :register_element_metadata,
         fn id, meta ->
           assert id == component_id

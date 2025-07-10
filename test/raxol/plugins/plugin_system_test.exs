@@ -396,26 +396,26 @@ defmodule Raxol.Plugins.PluginSystemTest do
     test "handles search commands" do
       {:ok, plugin} = SearchPlugin.init()
 
-      {:ok, updated_plugin, _plugin_state} =
-        SearchPlugin.handle_input(plugin, %{}, "search example")
+      {:ok, updated_plugin} =
+        SearchPlugin.handle_input(plugin, "search example")
 
       assert updated_plugin.search_term == "example"
 
       plugin_with_results =
         Map.put(updated_plugin, :search_results, ["result1", "result2"])
 
-      {:ok, next_plugin, _plugin_state} =
-        SearchPlugin.handle_input(plugin_with_results, %{}, "/n")
+      {:ok, next_plugin} =
+        SearchPlugin.handle_input(plugin_with_results, "/n")
 
       assert next_plugin.current_result_index == 1
 
-      {:ok, prev_plugin, _plugin_state} =
-        SearchPlugin.handle_input(next_plugin, %{}, "/N")
+      {:ok, prev_plugin} =
+        SearchPlugin.handle_input(next_plugin, "/N")
 
       assert prev_plugin.current_result_index == 0
 
-      {:ok, cleared_plugin, _plugin_state} =
-        SearchPlugin.handle_input(prev_plugin, %{}, "/clear")
+      {:ok, cleared_plugin} =
+        SearchPlugin.handle_input(prev_plugin, "/clear")
 
       assert cleared_plugin.search_term == nil
       assert cleared_plugin.search_results == []

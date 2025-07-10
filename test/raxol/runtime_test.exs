@@ -417,15 +417,6 @@ defmodule Raxol.RuntimeTest do
   end
 
   # Helper to wait for a process to terminate
-  defp wait_for_death(pid) do
-    ref = Process.monitor(pid)
-
-    receive do
-      {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
-    after
-      500 -> flunk("Process #{inspect(pid)} did not terminate")
-    end
-  end
 
   test "supervisor restarts child processes (example: Dispatcher)", %{
     supervisor_pid: supervisor_pid

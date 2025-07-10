@@ -88,7 +88,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
           Cell.new("o")
         ] ++ List.duplicate(Cell.new(" "), 75)
 
-      expected_cells_line1 =
+      _expected_cells_line1 =
         [
           Cell.new("W"),
           Cell.new("o"),

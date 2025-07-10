@@ -36,33 +36,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     }
   end
 
-  defp mock_theme do
-    %Raxol.UI.Theming.Theme{
-      component_styles: %{
-        multi_line_input: %{
-          text_color: :cyan,
-          selection_color: :magenta,
-          line_number_color: :yellow
-        }
-      },
-      colors: %{foreground: :white, background: :black}
-    }
-  end
-
   defp extract_style(attrs) do
     cond do
       list?(attrs) -> Keyword.get(attrs, :style)
       map?(attrs) -> Map.get(attrs, :style)
       true -> nil
     end
-  end
-
-  defp assert_rendered_segments(result, expected) do
-    Enum.zip(result, expected)
-    |> Enum.each(fn {seg, {content, style}} ->
-      assert seg.content == content
-      assert extract_style(seg.attrs) == style
-    end)
   end
 
   describe "Render Helper Functions" do

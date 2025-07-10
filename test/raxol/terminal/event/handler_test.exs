@@ -55,7 +55,7 @@ defmodule Raxol.Terminal.Event.HandlerTest do
       end
 
       emulator = Handler.register_handler(emulator, :test_event, handler)
-      emulator = Handler.dispatch_event(emulator, :test_event, "test_data")
+      _emulator = Handler.dispatch_event(emulator, :test_event, "test_data")
       assert_receive {:event_handled, "test_data"}
     end
 
