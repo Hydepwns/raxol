@@ -6,11 +6,8 @@ defmodule Raxol.Web.Session.Storage do
   and optional database storage for long-term persistence.
   """
 
-  # Only alias Repo and Session in non-test environments to prevent auto-starting Repo
-  if !function_exported?(Mix, :env, 0) or Mix.env() != :test do
-    alias Raxol.Repo
-    alias Raxol.Web.Session.Session
-  end
+  alias Raxol.Repo
+  alias Raxol.Web.Session.Session
 
   # ETS table name for session storage
   @table_name :session_storage
@@ -36,18 +33,18 @@ defmodule Raxol.Web.Session.Storage do
       {:ok, session}
     else
       # Store in database for persistence
-      case Raxol.Repo.get(Raxol.Web.Session.Session, session.id) do
+      case Repo.get(Session, session.id) do
         nil ->
           # Create new session
-          %Raxol.Web.Session.Session{}
-          |> Raxol.Web.Session.Session.changeset(Map.from_struct(session))
-          |> Raxol.Repo.insert()
+          %Session{}
+          |> Session.changeset(Map.from_struct(session))
+          |> Repo.insert()
 
         existing ->
           # Update existing session
           existing
-          |> Raxol.Web.Session.Session.changeset(Map.from_struct(session))
-          |> Raxol.Repo.update()
+          |> Session.changeset(Map.from_struct(session))
+          |> Repo.update()
       end
     end
   end
@@ -66,7 +63,7 @@ defmodule Raxol.Web.Session.Storage do
           {:error, :not_found}
         else
           # Try database
-          case Raxol.Repo.get(Raxol.Web.Session.Session, session_id) do
+          case Repo.get(Session, session_id) do
             nil -> {:error, :not_found}
             session -> {:ok, session}
           end
@@ -103,9 +100,9 @@ defmodule Raxol.Web.Session.Storage do
     # Skip database operations in test environment
     unless function_exported?(Mix, :env, 0) and Mix.env() == :test do
       # Delete from database
-      case Raxol.Repo.get(Raxol.Web.Session.Session, session_id) do
+      case Repo.get(Session, session_id) do
         nil -> :ok
-        session -> Raxol.Repo.delete(session)
+        session -> Repo.delete(session)
       end
     end
 

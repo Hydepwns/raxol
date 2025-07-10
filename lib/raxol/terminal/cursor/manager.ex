@@ -800,7 +800,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
-  def handle_call({:move_down, count, width, height}, _from, state) do
+  def handle_call({:move_down, count, _width, height}, _from, state) do
     # Move the cursor down by count lines, respecting margins
     new_row = min(Map.get(state, :bottom_margin, height - 1), state.row + count)
     new_state = %{state | row: new_row, position: {state.col, new_row}}
@@ -808,7 +808,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
-  def handle_call({:move_up, lines, width, height}, _from, state) do
+  def handle_call({:move_up, lines, _width, height}, _from, state) do
     # Move the cursor up by lines, respecting margins
     new_row = max(Map.get(state, :top_margin, 0), state.row - lines)
     new_state = %{state | row: new_row, position: {state.col, new_row}}
@@ -816,7 +816,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
-  def handle_call({:move_right, cols, width, height}, _from, state) do
+  def handle_call({:move_right, cols, _width, _height}, _from, state) do
     # Move the cursor right by cols
     new_col = state.col + cols
     new_state = %{state | col: new_col, position: {new_col, state.row}}
@@ -824,7 +824,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
-  def handle_call({:move_left, cols, width, height}, _from, state) do
+  def handle_call({:move_left, cols, _width, _height}, _from, state) do
     # Move the cursor left by cols
     new_col = max(0, state.col - cols)
     new_state = %{state | col: new_col, position: {new_col, state.row}}
@@ -853,7 +853,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
-  def handle_call({:move_to_column, column, width, height}, _from, state) do
+  def handle_call({:move_to_column, column, width, _height}, _from, state) do
     # Move cursor to specific column with bounds clamping
     clamped_col = max(0, min(column, width - 1))
     new_state = %{state | col: clamped_col, position: {clamped_col, state.row}}

@@ -1,4 +1,4 @@
-# Remove unused import Raxol.Core.Renderer.View
+
 
 defmodule Raxol.Test.PerformanceViewGenerators do
   @moduledoc """

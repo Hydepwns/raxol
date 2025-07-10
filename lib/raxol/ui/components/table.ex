@@ -543,7 +543,7 @@ defmodule Raxol.UI.Components.Table do
          selected_row,
          row_style,
          selected_row_style,
-         context
+         _context
        ) do
     Enum.map(columns, fn column ->
       value = row[column.id]
@@ -623,7 +623,7 @@ defmodule Raxol.UI.Components.Table do
       {:italic, true} -> [:italic]
       {:underline, true} -> [:underline]
       {:color, color} -> [color, {:color, color}]
-      {key, value} when is_atom(key) -> [key]
+      {key, _value} when is_atom(key) -> [key]
       _ -> []
     end)
     |> Enum.filter(&(&1 != nil))

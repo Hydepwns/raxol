@@ -10,7 +10,6 @@ defmodule Raxol.Test.PerformanceHelper do
   """
 
   use ExUnit.CaseTemplate
-  import ExUnit.Callbacks
   require Raxol.Core.Runtime.Log
 
   @doc """

@@ -10,7 +10,7 @@ defmodule Raxol.Core.Events.Event do
   """
 
   # Import any needed modules
-  # Remove unused aliases
+
 
   @type event_type :: atom()
   @type event_data :: any()

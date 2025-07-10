@@ -5,8 +5,7 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.ChartWidget do
   and providing a data structure for rendering, rather than rendering directly.
   """
 
-  # alias Raxol.View # <-- Remove unused alias
-  # alias Raxol.UI.Components.Visualization.Chart # <-- Remove unused alias
+
 
   # --- State ---
 

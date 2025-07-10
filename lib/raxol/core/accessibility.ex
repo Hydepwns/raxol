@@ -36,7 +36,7 @@ defmodule Raxol.Core.Accessibility do
 
   alias Raxol.Core.Accessibility.Announcements
   alias Raxol.Core.Accessibility.EventHandlers
-  alias Raxol.Core.Accessibility.Legacy
+
   alias Raxol.Core.Accessibility.Metadata
   alias Raxol.Core.Accessibility.Preferences
   alias Raxol.Core.Accessibility.ThemeIntegration
@@ -564,12 +564,12 @@ defmodule Raxol.Core.Accessibility do
 
   @doc false
   def reduced_motion_enabled?(user_preferences_pid_or_name) do
-    Legacy.reduced_motion_enabled?(user_preferences_pid_or_name)
+    Preferences.get_option(:reduced_motion, user_preferences_pid_or_name, false)
   end
 
   @doc false
   def large_text_enabled?(user_preferences_pid_or_name) do
-    Legacy.large_text_enabled?(user_preferences_pid_or_name)
+    Preferences.get_option(:large_text, user_preferences_pid_or_name, false)
   end
 
   @doc """

@@ -48,7 +48,7 @@ defmodule RaxolWeb.Gettext do
   Gets a translated string for the given key with locale.
   """
   def t(key, bindings, opts) do
-    locale = Keyword.get(opts, :locale, get_locale())
+    _locale = Keyword.get(opts, :locale, get_locale())
     default = Keyword.get(opts, :default, key)
 
     case Gettext.dgettext(__MODULE__, "default", key, bindings) do

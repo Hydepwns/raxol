@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.CursorHandlers do
   """
 
   # Import/alias as needed for dependencies
-  alias Raxol.Terminal.Emulator
 
   # Add missing functions
   defp pid?(pid) when is_pid(pid), do: true

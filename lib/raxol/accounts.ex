@@ -366,13 +366,6 @@ defmodule Raxol.Accounts do
 
       {:error, changeset} ->
         {:error, changeset}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "Database error creating user: #{inspect(reason)}"
-        )
-
-        {:error, reason}
     end
   end
 
@@ -624,9 +617,6 @@ defmodule Raxol.Accounts do
 
       {:error, changeset} ->
         {:error, changeset}
-
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 

@@ -315,27 +315,27 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   # Add missing functions with different signatures
-  def erase_display(buffer, mode, cursor, min_row, max_row) do
+  def erase_display(buffer, mode, _cursor, _min_row, _max_row) do
     # For now, delegate to the simpler version
     erase_display(buffer, mode)
   end
 
-  def erase_line(buffer, mode, cursor, min_col, max_col) do
+  def erase_line(buffer, _mode, _cursor, _min_col, _max_col) do
     # For now, delegate to the simpler version
     erase_line(buffer)
   end
 
-  def delete_chars(buffer, count, cursor, max_col) do
+  def delete_chars(buffer, count, _cursor, _max_col) do
     # For now, delegate to the simpler version
     delete_chars(buffer, count)
   end
 
-  def insert_chars(buffer, count, cursor, max_col) do
+  def insert_chars(buffer, count, _cursor, _max_col) do
     # For now, delegate to the simpler version
     insert_chars(buffer, count)
   end
 
-  def mark_damaged(buffer, x, y, width, height, reason) do
+  def mark_damaged(buffer, x, y, width, height, _reason) do
     # For now, delegate to the simpler version
     mark_damaged(buffer, x, y, width, height)
   end

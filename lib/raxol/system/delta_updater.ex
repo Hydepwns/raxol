@@ -82,7 +82,7 @@ defmodule Raxol.System.DeltaUpdater do
     end
   end
 
-  defp extract_assets(%{"assets" => assets}, target_version)
+  defp extract_assets(%{"assets" => assets}, _target_version)
        when is_list(assets),
        do: {:ok, assets}
 

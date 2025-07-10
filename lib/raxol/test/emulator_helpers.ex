@@ -42,20 +42,5 @@ defmodule Raxol.Test.EmulatorHelpers do
     text
   end
 
-  @doc """
-  Unwraps {:ok, value}, {:error, _, value}, or returns value if already a struct.
-  Useful for safely extracting emulator or buffer structs from handler results.
-  """
-  def unwrap_ok({:ok, value}), do: value
-  def unwrap_ok({:error, _, value}), do: value
 
-  def unwrap_ok(value) when map?(value) and not struct?(value) do
-    # If it's a plain map (and not a struct, since structs are maps), return as is.
-    # This case might be hit if some code legitimately returns a map that needs unwrapping.
-    # However, if it was intended to be an emulator and became a map, that's an issue elsewhere.
-    value
-  end
-
-  # If it's a struct (including Emulator struct), or any other type, return as is.
-  def unwrap_ok(value), do: value
 end
