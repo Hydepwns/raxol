@@ -1,6 +1,5 @@
 defmodule Raxol.Plugins.ClipboardPluginTest do
   use ExUnit.Case, async: true
-  import Raxol.Test.Support.ClipboardHelpers
   import Mox
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin

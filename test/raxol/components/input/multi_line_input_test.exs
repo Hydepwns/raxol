@@ -3,7 +3,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
   import Raxol.Guards
 
   alias Raxol.UI.Components.Input.MultiLineInput
-  alias Raxol.Core.Events.Event
   alias Raxol.UI.Components.Input.TextWrapping
 
   describe "init/1" do

@@ -5,7 +5,6 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   """
   use ExUnit.Case, async: true
   import Mox
-  import Raxol.Test.Support.ClipboardHelpers
   import Raxol.Test.ClipboardAssertions
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin

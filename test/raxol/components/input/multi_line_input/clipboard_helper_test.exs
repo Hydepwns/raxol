@@ -5,7 +5,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
   alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   alias Raxol.Core.Runtime.Command
-  import Raxol.Test.Support.ClipboardHelpers
 
   describe "copy_selection/1" do
     test ~c"returns state and :clipboard_write command with selected text" do

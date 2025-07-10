@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.CharacterSetsTest do
   alias Raxol.Terminal.CharacterSets
   # Add alias for translation functions
   alias Raxol.Terminal.ANSI.CharacterTranslations
-  alias Raxol.Terminal.ANSI.CharacterSets
 
   setup do
     # Attempt to resize RenderingEngine buffer to minimize log output on failure.
