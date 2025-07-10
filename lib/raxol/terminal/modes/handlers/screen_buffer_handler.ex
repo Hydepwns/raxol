@@ -80,7 +80,13 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     with {:ok, alt_buffer} <- create_or_get_alt_buffer(emulator),
          {:ok, emulator_with_saved_state} <- save_terminal_state(emulator) do
       # Set alternate_buffer_active to true in mode_manager
-      new_mode_manager = Map.put(emulator_with_saved_state.mode_manager, :alternate_buffer_active, true)
+      new_mode_manager =
+        Map.put(
+          emulator_with_saved_state.mode_manager,
+          :alternate_buffer_active,
+          true
+        )
+
       {:ok,
        %{
          emulator_with_saved_state
@@ -95,8 +101,19 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     # Switch back to main buffer and restore state
     with {:ok, emulator_with_restored_state} <- restore_terminal_state(emulator) do
       # Set alternate_buffer_active to false in mode_manager
-      new_mode_manager = Map.put(emulator_with_restored_state.mode_manager, :alternate_buffer_active, false)
-      {:ok, %{emulator_with_restored_state | active_buffer_type: :main, mode_manager: new_mode_manager}}
+      new_mode_manager =
+        Map.put(
+          emulator_with_restored_state.mode_manager,
+          :alternate_buffer_active,
+          false
+        )
+
+      {:ok,
+       %{
+         emulator_with_restored_state
+         | active_buffer_type: :main,
+           mode_manager: new_mode_manager
+       }}
     end
   end
 

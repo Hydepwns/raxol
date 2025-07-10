@@ -32,7 +32,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     params_string = Enum.join(params, ";")
 
     # Use the correct SGR processor
-    updated_style = Raxol.Terminal.ANSI.SGRProcessor.handle_sgr(params_string, emulator.style)
+    updated_style =
+      Raxol.Terminal.ANSI.SGRProcessor.handle_sgr(params_string, emulator.style)
 
     Logger.debug("handle_sgr: updated_style -> #{inspect(updated_style)}")
 
@@ -42,11 +43,19 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   defp process_sgr_parameter(param) do
     case param do
       0 ->
-        {:ok, %{
-          bold: false, faint: false, italic: false, underline: false,
-          blink: false, reverse: false, conceal: false, crossed_out: false,
-          foreground: nil, background: nil
-        }}
+        {:ok,
+         %{
+           bold: false,
+           faint: false,
+           italic: false,
+           underline: false,
+           blink: false,
+           reverse: false,
+           conceal: false,
+           crossed_out: false,
+           foreground: nil,
+           background: nil
+         }}
 
       n when n in 1..9 ->
         {:ok, %{get_attribute_key(n) => true}}
@@ -81,14 +90,20 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   def handle_decstbm(emulator, params) do
     require Logger
-    Logger.debug("handle_decstbm called with params=#{inspect(params)}, emulator.height=#{emulator.height}")
+
+    Logger.debug(
+      "handle_decstbm called with params=#{inspect(params)}, emulator.height=#{emulator.height}"
+    )
+
     case params do
       [] ->
         # \e[r - Reset scroll region to full viewport
         {:ok, %{emulator | scroll_region: nil}}
+
       [top, bottom] when top == 1 and bottom == emulator.height ->
         # \e[r - Reset scroll region to full viewport (default params)
         {:ok, %{emulator | scroll_region: nil}}
+
       [top, bottom] ->
         # \e[top;bottomr - Set scroll region
         if top >= 1 and bottom <= emulator.height and top < bottom do
@@ -96,14 +111,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
         else
           {:ok, emulator}
         end
+
       [top] ->
         # \e[topr - Set top of scroll region, bottom defaults to screen height
         bottom = emulator.height
+
         if top >= 1 and bottom <= emulator.height and top < bottom do
           {:ok, %{emulator | scroll_region: {top - 1, bottom - 1}}}
         else
           {:ok, emulator}
         end
+
       _ ->
         # Invalid parameters, don't change scroll region
         {:ok, emulator}
@@ -169,23 +187,25 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     # Save cursor position and style
     cursor = emulator.cursor
 
-    saved_cursor = case cursor do
-      %{row: row, col: col, style: style, visible: visible} ->
-        %{
-          position: {col, row},
-          style: style,
-          visible: visible,
-          attributes: %{}
-        }
-      _ ->
-        # Fallback for other cursor formats
-        %{
-          position: {0, 0},
-          style: :block,
-          visible: true,
-          attributes: %{}
-        }
-    end
+    saved_cursor =
+      case cursor do
+        %{row: row, col: col, style: style, visible: visible} ->
+          %{
+            position: {col, row},
+            style: style,
+            visible: visible,
+            attributes: %{}
+          }
+
+        _ ->
+          # Fallback for other cursor formats
+          %{
+            position: {0, 0},
+            style: :block,
+            visible: true,
+            attributes: %{}
+          }
+      end
 
     {:ok, %{emulator | saved_cursor: saved_cursor}}
   end
@@ -209,15 +229,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
         # Update cursor style and visibility
         cursor = emulator.cursor
-        updated_cursor = case cursor do
-          %{row: _, col: _, style: _, visible: _} ->
-            %{cursor |
-              style: saved.style,
-              visible: saved.visible
-            }
-          _ ->
-            cursor
-        end
+
+        updated_cursor =
+          case cursor do
+            %{row: _, col: _, style: _, visible: _} ->
+              %{cursor | style: saved.style, visible: saved.visible}
+
+            _ ->
+              cursor
+          end
 
         {:ok, %{emulator | cursor: updated_cursor}}
     end
@@ -372,9 +392,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   defp clear_from_start_to_cursor(emulator, x, y) do
     buffer = Emulator.get_active_buffer(emulator)
     # Clear all lines before the cursor's line
-    buffer = Enum.reduce(0..(y-1), buffer, fn row, buf ->
-      Raxol.Terminal.ScreenBuffer.clear_region(buf, 0, row, emulator.width, 1)
-    end)
+    buffer =
+      Enum.reduce(0..(y - 1), buffer, fn row, buf ->
+        Raxol.Terminal.ScreenBuffer.clear_region(buf, 0, row, emulator.width, 1)
+      end)
+
     # Clear from start to cursor on the cursor's line
     buffer = Raxol.Terminal.ScreenBuffer.clear_region(buffer, 0, y, x + 1, 1)
     Emulator.update_active_buffer(emulator, buffer)

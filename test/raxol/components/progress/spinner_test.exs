@@ -126,7 +126,11 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
   describe "handle_event/2" do
     test ~c"handles frame events" do
       state = Spinner.init(%{speed: 0})
-      event = %Raxol.Core.Events.Event{type: :timer, data: %{id: :spinner_timer}}
+
+      event = %Raxol.Core.Events.Event{
+        type: :timer,
+        data: %{id: :spinner_timer}
+      }
 
       # Advance frame index immediately due to speed: 0
       {new_state, _} = Spinner.handle_event(event, %{}, state)

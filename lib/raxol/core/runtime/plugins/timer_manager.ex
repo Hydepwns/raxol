@@ -45,23 +45,35 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
 
   def cancel_periodic_tick(state) when is_map(state) do
     require Logger
-    Logger.debug("[TimerManager] cancel_periodic_tick called with state type: #{inspect(typeof(state))}")
+
+    Logger.debug(
+      "[TimerManager] cancel_periodic_tick called with state type: #{inspect(typeof(state))}"
+    )
 
     case Map.fetch(state, :tick_timer) do
       {:ok, tick_timer} when not is_nil(tick_timer) ->
         Process.cancel_timer(tick_timer)
         Map.put(state, :tick_timer, nil)
+
       {:ok, _} ->
         Map.put(state, :tick_timer, nil)
+
       :error ->
-        Logger.warn("[TimerManager] :tick_timer key missing in state: #{inspect(state)}")
+        Logger.warn(
+          "[TimerManager] :tick_timer key missing in state: #{inspect(state)}"
+        )
+
         Map.put(state, :tick_timer, nil)
     end
   end
 
   def cancel_periodic_tick(state) do
     require Logger
-    Logger.warn("[TimerManager] cancel_periodic_tick called with non-map state: #{inspect(state)}")
+
+    Logger.warn(
+      "[TimerManager] cancel_periodic_tick called with non-map state: #{inspect(state)}"
+    )
+
     # Return a default state or the original state if it's not a map
     if is_map(state) do
       Map.put(state, :tick_timer, nil)

@@ -60,26 +60,37 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
     Logger.debug("StandardHandler.handle_insert_mode/2 called with value: true")
     # Insert Mode (IRM)
     # When enabled, new text is inserted at the cursor position
-    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | insert_mode: true}}}
+    {:ok,
+     %{emulator | mode_manager: %{emulator.mode_manager | insert_mode: true}}}
   end
 
   defp handle_insert_mode(false, emulator) do
     require Logger
-    Logger.debug("StandardHandler.handle_insert_mode/2 called with value: false")
+
+    Logger.debug(
+      "StandardHandler.handle_insert_mode/2 called with value: false"
+    )
+
     # Replace Mode (default)
     # When disabled, new text overwrites existing text
-    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | insert_mode: false}}}
+    {:ok,
+     %{emulator | mode_manager: %{emulator.mode_manager | insert_mode: false}}}
   end
 
   defp handle_line_feed_mode(true, emulator) do
     # Line Feed Mode (LNM)
     # When enabled, line feed also performs carriage return
-    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | line_feed_mode: true}}}
+    {:ok,
+     %{emulator | mode_manager: %{emulator.mode_manager | line_feed_mode: true}}}
   end
 
   defp handle_line_feed_mode(false, emulator) do
     # New Line Mode (default)
     # When disabled, line feed only moves down one line
-    {:ok, %{emulator | mode_manager: %{emulator.mode_manager | line_feed_mode: false}}}
+    {:ok,
+     %{
+       emulator
+       | mode_manager: %{emulator.mode_manager | line_feed_mode: false}
+     }}
   end
 end

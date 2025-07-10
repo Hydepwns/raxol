@@ -41,9 +41,12 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
       result = CharacterHandling.process_bidi_text(text)
       # Verify the structure: list of tuples with direction and text
       assert is_list(result)
+
       assert Enum.all?(result, fn {direction, text} ->
-        direction in [:LTR, :RTL, :NEUTRAL, :COMBINING] and is_binary(text)
-      end)
+               direction in [:LTR, :RTL, :NEUTRAL, :COMBINING] and
+                 is_binary(text)
+             end)
+
       # Verify we have at least some segments
       assert length(result) > 0
     end

@@ -164,25 +164,42 @@ defmodule Raxol.Terminal.IntegrationTestV2 do
       Process.flag(:trap_exit, true)
 
       # Verify components are stopped
-      task1 = Task.async(fn -> BufferHelper.write_test_data(state.buffer.buffer, "test") end)
+      task1 =
+        Task.async(fn ->
+          BufferHelper.write_test_data(state.buffer.buffer, "test")
+        end)
+
       pid1 = task1.pid
+
       reason1 =
         receive do
           {:EXIT, ^pid1, reason} -> reason
         after
           1000 -> flunk("No EXIT message received for buffer task")
         end
-      assert reason1 == :normal or match?({:noproc, {GenServer, :call, _}}, reason1)
 
-      task2 = Task.async(fn -> RendererHelper.render_test_content(state.renderer.renderer, state.buffer.buffer) end)
+      assert reason1 == :normal or
+               match?({:noproc, {GenServer, :call, _}}, reason1)
+
+      task2 =
+        Task.async(fn ->
+          RendererHelper.render_test_content(
+            state.renderer.renderer,
+            state.buffer.buffer
+          )
+        end)
+
       pid2 = task2.pid
+
       reason2 =
         receive do
           {:EXIT, ^pid2, reason} -> reason
         after
           1000 -> flunk("No EXIT message received for renderer task")
         end
-      assert reason2 == :normal or match?({:noproc, {GenServer, :call, _}}, reason2)
+
+      assert reason2 == :normal or
+               match?({:noproc, {GenServer, :call, _}}, reason2)
     end
   end
 end

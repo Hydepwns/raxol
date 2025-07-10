@@ -232,6 +232,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     if Mix.env() != :test do
       :termbox2_nif.tb_shutdown()
     end
+
     {:reply, :ok, renderer}
   end
 
@@ -280,6 +281,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     if Mix.env() != :test do
       :termbox2_nif.tb_init()
     end
+
     {:reply, :ok, %{renderer | termbox_initialized: true}}
   end
 
@@ -288,6 +290,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     if Mix.env() != :test do
       :termbox2_nif.tb_shutdown()
     end
+
     {:reply, :ok, %{renderer | termbox_initialized: false}}
   end
 
@@ -318,7 +321,13 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   defp render_cell(col, row, cell) do
     if Mix.env() != :test do
-      :termbox2_nif.tb_set_cell(col, row, cell.char, cell.style.fg, cell.style.bg)
+      :termbox2_nif.tb_set_cell(
+        col,
+        row,
+        cell.char,
+        cell.style.fg,
+        cell.style.bg
+      )
     end
   end
 end

@@ -104,8 +104,6 @@ defmodule MockApp do
   def subscriptions(_model) do
     []
   end
-
-
 end
 
 # --- All test code below ---

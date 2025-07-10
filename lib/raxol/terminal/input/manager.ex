@@ -603,5 +603,4 @@ defmodule Raxol.Terminal.Input.Manager do
       manager
     end
   end
-
 end

@@ -36,7 +36,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
 
       _ ->
         # Public DA - respond with standard capabilities
-        updated_emulator = Emulator.write_to_output(emulator, ~c"\e[?62;1;6;9;15;22;29c")
+        updated_emulator =
+          Emulator.write_to_output(emulator, ~c"\e[?62;1;6;9;15;22;29c")
+
         {:ok, updated_emulator}
     end
   end
@@ -57,7 +59,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
         # Report cursor position
         # ESC [ row ; col R
         {x, y} = Emulator.get_cursor_position(emulator)
-        updated_emulator = Emulator.write_to_output(emulator, "\e[#{y + 1};#{x + 1}R")
+
+        updated_emulator =
+          Emulator.write_to_output(emulator, "\e[#{y + 1};#{x + 1}R")
+
         {:ok, updated_emulator}
 
       _ ->
@@ -115,10 +120,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
       [3, _x, _y] ->
         # Report window size
         # ESC [ 3 ; height ; width t
-        updated_emulator = Emulator.write_to_output(
-          emulator,
-          "\e[3;#{emulator.window.x};#{emulator.window.y}t"
-        )
+        updated_emulator =
+          Emulator.write_to_output(
+            emulator,
+            "\e[3;#{emulator.window.x};#{emulator.window.y}t"
+          )
 
         {:ok, updated_emulator}
 
@@ -158,13 +164,23 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
         # Maximize window
         state = if emulator.window.maximized, do: 1, else: 0
         updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
-        {:ok, %{updated_emulator | window: %{updated_emulator.window | maximized: true}}}
+
+        {:ok,
+         %{
+           updated_emulator
+           | window: %{updated_emulator.window | maximized: true}
+         }}
 
       [10] ->
         # Unmaximize window
         state = if emulator.window.maximized, do: 1, else: 0
         updated_emulator = Emulator.write_to_output(emulator, "\e[10;#{state}t")
-        {:ok, %{updated_emulator | window: %{updated_emulator.window | maximized: false}}}
+
+        {:ok,
+         %{
+           updated_emulator
+           | window: %{updated_emulator.window | maximized: false}
+         }}
 
       [11] ->
         # Report window state
@@ -174,60 +190,76 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
 
       [13] ->
         # Report window position
-        updated_emulator = Emulator.write_to_output(
-          emulator,
-          "\e[13;#{emulator.window.x};#{emulator.window.y}t"
-        )
+        updated_emulator =
+          Emulator.write_to_output(
+            emulator,
+            "\e[13;#{emulator.window.x};#{emulator.window.y}t"
+          )
+
         {:ok, updated_emulator}
 
       [14] ->
         # Report window size in pixels
-        updated_emulator = Emulator.write_to_output(
-          emulator,
-          "\e[14;#{emulator.window.height};#{emulator.window.width}t"
-        )
+        updated_emulator =
+          Emulator.write_to_output(
+            emulator,
+            "\e[14;#{emulator.window.height};#{emulator.window.width}t"
+          )
+
         {:ok, updated_emulator}
 
       [15] ->
         # Report screen size in pixels
-        updated_emulator = Emulator.write_to_output(
-          emulator,
-          "\e[15;#{emulator.window.height};#{emulator.window.width}t"
-        )
+        updated_emulator =
+          Emulator.write_to_output(
+            emulator,
+            "\e[15;#{emulator.window.height};#{emulator.window.width}t"
+          )
+
         {:ok, updated_emulator}
 
       [16] ->
         # Report character cell size in pixels
-        updated_emulator = Emulator.write_to_output(
-          emulator,
-          "\e[16;#{emulator.window.cell_height};#{emulator.window.cell_width}t"
-        )
+        updated_emulator =
+          Emulator.write_to_output(
+            emulator,
+            "\e[16;#{emulator.window.cell_height};#{emulator.window.cell_width}t"
+          )
+
         {:ok, updated_emulator}
 
       [18] ->
         # Report screen size in characters
-        updated_emulator = Emulator.write_to_output(
-          emulator,
-          "\e[18;#{emulator.height};#{emulator.width}t"
-        )
+        updated_emulator =
+          Emulator.write_to_output(
+            emulator,
+            "\e[18;#{emulator.height};#{emulator.width}t"
+          )
+
         {:ok, updated_emulator}
 
       [19] ->
         # Report screen size in characters
-        updated_emulator = Emulator.write_to_output(
-          emulator,
-          "\e[19;#{emulator.height};#{emulator.width}t"
-        )
+        updated_emulator =
+          Emulator.write_to_output(
+            emulator,
+            "\e[19;#{emulator.height};#{emulator.width}t"
+          )
+
         {:ok, updated_emulator}
 
       [20] ->
         # Report icon label
-        updated_emulator = Emulator.write_to_output(emulator, "\e[20;#{emulator.window.title}t")
+        updated_emulator =
+          Emulator.write_to_output(emulator, "\e[20;#{emulator.window.title}t")
+
         {:ok, updated_emulator}
 
       [21] ->
         # Report window title
-        updated_emulator = Emulator.write_to_output(emulator, "\e[21;#{emulator.window.title}t")
+        updated_emulator =
+          Emulator.write_to_output(emulator, "\e[21;#{emulator.window.title}t")
+
         {:ok, updated_emulator}
 
       _ ->

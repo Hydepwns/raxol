@@ -19,7 +19,7 @@ defmodule Raxol.Web.Supervisor do
       # Authentication Manager for handling user authentication
       Raxol.Web.Auth.Manager,
       # Session Manager for managing user sessions
-      Raxol.Web.Session.Manager,
+      Raxol.Web.Session.Manager
       # Add Phoenix Presence for user tracking
       # Temporarily commented out to debug shutdown issue
       # {RaxolWeb.Presence, []}

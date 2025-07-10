@@ -335,9 +335,18 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
 
       # Debug: Print all components in ComponentManager
       all_components = ComponentManager.get_all_components()
-      IO.puts("All components in ComponentManager: #{inspect(Map.keys(all_components))}")
-      IO.puts("Child1 component_manager_id: #{inspect(child1.state.component_manager_id)}")
-      IO.puts("Child2 component_manager_id: #{inspect(child2.state.component_manager_id)}")
+
+      IO.puts(
+        "All components in ComponentManager: #{inspect(Map.keys(all_components))}"
+      )
+
+      IO.puts(
+        "Child1 component_manager_id: #{inspect(child1.state.component_manager_id)}"
+      )
+
+      IO.puts(
+        "Child2 component_manager_id: #{inspect(child2.state.component_manager_id)}"
+      )
 
       # Fetch latest child states from ComponentManager
       updated_child1_from_manager =

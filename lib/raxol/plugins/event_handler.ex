@@ -306,7 +306,8 @@ defmodule Raxol.Plugins.EventHandler do
 
         # Special case for handle_output and handle_input: only pass plugin and event
         callback_args =
-          if (callback_name == :handle_output or callback_name == :handle_input) and required_arity == 2 do
+          if (callback_name == :handle_output or callback_name == :handle_input) and
+               required_arity == 2 do
             [plugin | event_args]
           else
             [plugin, current_plugin_state | event_args]
@@ -653,6 +654,4 @@ defmodule Raxol.Plugins.EventHandler do
         {:cont, {:error, "Unexpected result"}}
     end
   end
-
-
 end

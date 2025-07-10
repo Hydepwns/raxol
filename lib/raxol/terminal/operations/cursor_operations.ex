@@ -33,6 +33,7 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
     if style in valid_styles do
       CursorManager.set_style(emulator.cursor, style)
     end
+
     # If style is invalid, do nothing (maintain current style)
 
     emulator

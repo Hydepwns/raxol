@@ -18,7 +18,9 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
           | {:finished, Emulator.t(), State.t()}
           | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :csi_param} = parser_state, input) do
-    Logger.debug("CSIParamState.handle: input=#{inspect(input)}, params_buffer=#{inspect(parser_state.params_buffer)}")
+    Logger.debug(
+      "CSIParamState.handle: input=#{inspect(input)}, params_buffer=#{inspect(parser_state.params_buffer)}"
+    )
 
     case input do
       <<>> ->
@@ -45,7 +47,8 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
 
       # Intermediate byte (including ? for private modes)
       <<intermediate_byte, rest_after_intermediate::binary>>
-      when (intermediate_byte >= 0x20 and intermediate_byte <= 0x2F) or intermediate_byte == ?? ->
+      when (intermediate_byte >= 0x20 and intermediate_byte <= 0x2F) or
+             intermediate_byte == ?? ->
         # Collect intermediate directly
         next_parser_state = %{
           parser_state

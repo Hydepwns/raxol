@@ -14,6 +14,7 @@ defmodule Raxol.Web.SupervisorTest do
     case Raxol.Web.Supervisor.start_link([]) do
       {:ok, pid} ->
         {:ok, %{supervisor_pid: pid}}
+
       {:error, reason} ->
         flunk("Failed to start Web.Supervisor: #{inspect(reason)}")
     end

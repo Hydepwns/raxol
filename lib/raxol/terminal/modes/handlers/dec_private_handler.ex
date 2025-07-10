@@ -70,16 +70,30 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   defp apply_mode_effects(mode_def, value, emulator) do
     require Logger
-    Logger.debug("DECPrivateHandler.apply_mode_effects called with mode_def.name=#{inspect(mode_def.name)}, value=#{inspect(value)}")
+
+    Logger.debug(
+      "DECPrivateHandler.apply_mode_effects called with mode_def.name=#{inspect(mode_def.name)}, value=#{inspect(value)}"
+    )
+
     case get_mode_handler(mode_def.name) do
       {:ok, handler} ->
-        Logger.debug("DECPrivateHandler.apply_mode_effects: calling handler for #{inspect(mode_def.name)}")
+        Logger.debug(
+          "DECPrivateHandler.apply_mode_effects: calling handler for #{inspect(mode_def.name)}"
+        )
+
         result = handler.(value, emulator)
-        Logger.debug("DECPrivateHandler.apply_mode_effects: handler returned #{inspect(result)}")
+
+        Logger.debug(
+          "DECPrivateHandler.apply_mode_effects: handler returned #{inspect(result)}"
+        )
+
         result
 
       :error ->
-        Logger.debug("DECPrivateHandler.apply_mode_effects: no handler found for #{inspect(mode_def.name)}")
+        Logger.debug(
+          "DECPrivateHandler.apply_mode_effects: no handler found for #{inspect(mode_def.name)}"
+        )
+
         {:error, :unsupported_mode}
     end
   end
@@ -213,36 +227,54 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
      }}
   end
 
-    def handle_alt_screen_save(value, emulator) do
+  def handle_alt_screen_save(value, emulator) do
     require Logger
-    Logger.debug("DECPrivateHandler.handle_alt_screen_save called with value=#{inspect(value)}")
-    Logger.debug("DECPrivateHandler.handle_alt_screen_save: initial mode_manager=#{inspect(emulator.mode_manager)}")
 
-    new_mode_manager = %{emulator.mode_manager |
-      alternate_buffer_active: value,
-      active_buffer_type: if(value, do: :alternate, else: :main)
+    Logger.debug(
+      "DECPrivateHandler.handle_alt_screen_save called with value=#{inspect(value)}"
+    )
+
+    Logger.debug(
+      "DECPrivateHandler.handle_alt_screen_save: initial mode_manager=#{inspect(emulator.mode_manager)}"
+    )
+
+    new_mode_manager = %{
+      emulator.mode_manager
+      | alternate_buffer_active: value,
+        active_buffer_type: if(value, do: :alternate, else: :main)
     }
-    Logger.debug("DECPrivateHandler.handle_alt_screen_save: new_mode_manager=#{inspect(new_mode_manager)}")
+
+    Logger.debug(
+      "DECPrivateHandler.handle_alt_screen_save: new_mode_manager=#{inspect(new_mode_manager)}"
+    )
 
     # Update the active buffer type based on the mode
     new_active_buffer_type = if value, do: :alternate, else: :main
-    Logger.debug("DECPrivateHandler.handle_alt_screen_save: setting active_buffer_type to #{inspect(new_active_buffer_type)}")
+
+    Logger.debug(
+      "DECPrivateHandler.handle_alt_screen_save: setting active_buffer_type to #{inspect(new_active_buffer_type)}"
+    )
 
     # Reset cursor position to top-left when switching buffers
-    new_emulator = %{emulator |
-      mode_manager: new_mode_manager,
-      active_buffer_type: new_active_buffer_type
+    new_emulator = %{
+      emulator
+      | mode_manager: new_mode_manager,
+        active_buffer_type: new_active_buffer_type
     }
 
     # Reset cursor position to (0, 0) when switching to alternate buffer
-    new_emulator = if value do
-      # Reset cursor to top-left when enabling alternate buffer
-      Raxol.Terminal.Cursor.Manager.set_position(new_emulator.cursor, {0, 0})
-      new_emulator
-    else
-      new_emulator
-    end
-    Logger.debug("DECPrivateHandler.handle_alt_screen_save: returning new_emulator with mode_manager=#{inspect(new_emulator.mode_manager)}, active_buffer_type=#{inspect(new_emulator.active_buffer_type)}")
+    new_emulator =
+      if value do
+        # Reset cursor to top-left when enabling alternate buffer
+        Raxol.Terminal.Cursor.Manager.set_position(new_emulator.cursor, {0, 0})
+        new_emulator
+      else
+        new_emulator
+      end
+
+    Logger.debug(
+      "DECPrivateHandler.handle_alt_screen_save: returning new_emulator with mode_manager=#{inspect(new_emulator.mode_manager)}, active_buffer_type=#{inspect(new_emulator.active_buffer_type)}"
+    )
 
     {:ok, new_emulator}
   end
@@ -279,12 +311,20 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_cursor_save_restore(value, emulator) do
     # Route to ScreenBufferHandler for cursor save/restore functionality
-    Raxol.Terminal.Modes.Handlers.ScreenBufferHandler.handle_mode_change(:decsc_deccara, value, emulator)
+    Raxol.Terminal.Modes.Handlers.ScreenBufferHandler.handle_mode_change(
+      :decsc_deccara,
+      value,
+      emulator
+    )
   end
 
   def handle_alt_screen_buffer(value, emulator) do
     # Route to ScreenBufferHandler for alt screen buffer functionality
-    Raxol.Terminal.Modes.Handlers.ScreenBufferHandler.handle_mode_change(:alt_screen_buffer, value, emulator)
+    Raxol.Terminal.Modes.Handlers.ScreenBufferHandler.handle_mode_change(
+      :alt_screen_buffer,
+      value,
+      emulator
+    )
   end
 
   defp resize_buffer(buffer, new_width) do

@@ -203,7 +203,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     visible_lines = scroll_end - scroll_start + 1
 
     if lines >= visible_lines do
-      scrolled_lines = extract_lines_from_region(buffer, scroll_start, scroll_end)
+      scrolled_lines =
+        extract_lines_from_region(buffer, scroll_start, scroll_end)
+
       {clear_region(buffer, scroll_start, scroll_end), scrolled_lines}
     else
       scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
@@ -228,7 +230,8 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
   defp scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines) do
     # Extract the lines that will be scrolled out
-    scrolled_lines = extract_lines_from_region(buffer, scroll_start, scroll_start + lines - 1)
+    scrolled_lines =
+      extract_lines_from_region(buffer, scroll_start, scroll_start + lines - 1)
 
     # Pre-create a single empty line to reuse
     empty_line = List.duplicate(Cell.new(), buffer.width)

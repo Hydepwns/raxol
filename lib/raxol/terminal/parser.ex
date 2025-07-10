@@ -47,12 +47,14 @@ defmodule Raxol.Terminal.Parser do
         Raxol.Core.Runtime.Log.debug(
           "[Parser.parse_chunk] AFTER: emu.scroll_region=#{inspect(emu.scroll_region)}"
         )
+
         {emu, state, rest}
 
       unexpected_result ->
         Raxol.Core.Runtime.Log.error(
           "[Parser.parse_chunk] Unexpected result from parse_loop: #{inspect(unexpected_result)}"
         )
+
         # Return a safe fallback
         {emulator, state, data}
     end

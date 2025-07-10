@@ -464,7 +464,9 @@ defmodule Raxol.Terminal.Emulator do
     if y >= emulator.height do
       # Need to scroll
       active_buffer = get_active_buffer(emulator)
-      {scrolled_buffer, _scrolled_lines} = Raxol.Terminal.ScreenBuffer.scroll_up(active_buffer, 1)
+
+      {scrolled_buffer, _scrolled_lines} =
+        Raxol.Terminal.ScreenBuffer.scroll_up(active_buffer, 1)
 
       # Update the appropriate buffer
       case emulator.active_buffer_type do
@@ -501,7 +503,11 @@ defmodule Raxol.Terminal.Emulator do
         )
 
         # Use parser-based input processing for all other input
-        {updated_emulator, output} = Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input)
+        {updated_emulator, output} =
+          Raxol.Terminal.Input.CoreHandler.process_terminal_input(
+            emulator,
+            input
+          )
 
         IO.puts(
           "DEBUG: After parser processing, style: #{inspect(updated_emulator.style)}"
@@ -1036,13 +1042,21 @@ defmodule Raxol.Terminal.Emulator do
     Logger.debug("Emulator.set_mode/2 called with mode=#{inspect(mode)}")
     Logger.debug("Emulator.set_mode/2: about to call ModeManager.set_mode")
     result = Raxol.Terminal.ModeManager.set_mode(emulator, [mode])
-    Logger.debug("Emulator.set_mode/2: ModeManager.set_mode returned #{inspect(result)}")
+
+    Logger.debug(
+      "Emulator.set_mode/2: ModeManager.set_mode returned #{inspect(result)}"
+    )
+
     case result do
       {:ok, new_emulator} ->
         Logger.debug("Emulator.set_mode/2: returning new_emulator")
         new_emulator
+
       {:error, reason} ->
-        Logger.debug("Emulator.set_mode/2: ModeManager.set_mode returned {:error, #{inspect(reason)}}")
+        Logger.debug(
+          "Emulator.set_mode/2: ModeManager.set_mode returned {:error, #{inspect(reason)}}"
+        )
+
         emulator
     end
   end
@@ -1054,6 +1068,7 @@ defmodule Raxol.Terminal.Emulator do
   def reset_mode(emulator, mode) do
     require Logger
     Logger.debug("Emulator.reset_mode/2 called with mode=#{inspect(mode)}")
+
     case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode]) do
       {:ok, new_emulator} -> new_emulator
       {:error, _} -> emulator

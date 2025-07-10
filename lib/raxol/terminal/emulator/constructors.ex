@@ -22,8 +22,17 @@ defmodule Raxol.Terminal.Emulator.Constructors do
     # Initialize all required managers and processes
     state_pid = get_pid(Raxol.Terminal.State.Manager.start_link([]))
     event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link([]))
-    buffer_pid = get_pid(Raxol.Terminal.Buffer.Manager.start_link([width: width, height: height]))
-    config_pid = get_pid(Raxol.Terminal.Config.Manager.start_link([width: width, height: height]))
+
+    buffer_pid =
+      get_pid(
+        Raxol.Terminal.Buffer.Manager.start_link(width: width, height: height)
+      )
+
+    config_pid =
+      get_pid(
+        Raxol.Terminal.Config.Manager.start_link(width: width, height: height)
+      )
+
     command_pid = get_pid(Raxol.Terminal.Command.Manager.start_link([]))
     cursor_pid = get_pid(Manager.start_link([]))
     window_manager_pid = get_pid(Raxol.Terminal.Window.Manager.start_link([]))
