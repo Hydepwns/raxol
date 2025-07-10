@@ -131,11 +131,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
             end
 
           _ ->
+            # Plugin is disabled or metadata doesn't have enabled: true
             {:ok, {metadata, plugin_states, command_table}}
         end
-
-      _ ->
-        {:ok, {metadata, plugin_states, command_table}}
     end
   end
 end

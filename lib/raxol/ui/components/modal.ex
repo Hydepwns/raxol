@@ -724,7 +724,7 @@ defmodule Raxol.UI.Components.Modal do
     handle_prompt_input(state, value)
   end
 
-  defp handle_visible_event_dispatch(event, state) do
+  defp handle_visible_event_dispatch(_event, state) do
     {state, []}
   end
 
@@ -836,12 +836,6 @@ defmodule Raxol.UI.Components.Modal do
 
     input_element = render_input_element(field, common_props)
     render_field_container(field, input_element)
-  end
-
-  defp get_field_full_id(field, state) do
-    if Map.get(state, :id, nil),
-      do: "#{Map.get(state, :id, nil)}.#{field.id}",
-      else: field.id
   end
 
   defp get_common_props(field, field_full_id, focused?) do
