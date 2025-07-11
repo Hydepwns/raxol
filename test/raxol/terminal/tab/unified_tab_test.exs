@@ -130,8 +130,8 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
 
   describe "cleanup" do
     test "cleans up all tabs" do
-      assert {:ok, tab1} = UnifiedTab.create_tab()
-      assert {:ok, tab2} = UnifiedTab.create_tab()
+      assert {:ok, _tab1} = UnifiedTab.create_tab()
+      assert {:ok, _tab2} = UnifiedTab.create_tab()
 
       assert :ok = UnifiedTab.cleanup()
       assert UnifiedTab.get_tabs() == []

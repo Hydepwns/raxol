@@ -194,7 +194,7 @@ defmodule Raxol.UI.Components.TableTest do
 
       # Verify sort order through row content
       flex = get_in(rendered, [:children, Access.at(0)])
-      [header | rows] = flex.children
+      [_header | rows] = flex.children
       first_row = List.first(rows)
       assert Enum.at(first_row.children, 2).content == " 25 "
       last_row = List.last(rows)
@@ -209,7 +209,7 @@ defmodule Raxol.UI.Components.TableTest do
 
       # Verify first page content
       flex = get_in(rendered, [:children, Access.at(0)])
-      [header | rows] = flex.children
+      [_header | rows] = flex.children
       assert length(rows) == 2
       first_row = List.first(rows)
       assert Enum.at(first_row.children, 1).content == "Alice      "
@@ -222,7 +222,7 @@ defmodule Raxol.UI.Components.TableTest do
       {:ok, page2_state} = result
       rendered = Table.render(page2_state, %{available_width: 80})
       flex = get_in(rendered, [:children, Access.at(0)])
-      [header | rows] = flex.children
+      [_header | rows] = flex.children
       assert length(rows) == 2
       first_row = List.first(rows)
       assert Enum.at(first_row.children, 1).content == "Charlie    "

@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   use ExUnit.Case, async: false
   alias Raxol.Terminal.Buffer.UnifiedManager
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cache.System
 
   setup do
@@ -28,9 +27,19 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     # Start the buffer manager with supervision
     {:ok, pid} = start_supervised({UnifiedManager, [width: 80, height: 50]})
-    # Ensure the buffer is cleared before each test
-    {:ok, _} = UnifiedManager.clear(pid)
     %{pid: pid}
+  end
+
+  describe "basic functionality" do
+    test "GenServer starts and responds to basic calls", %{pid: pid} do
+      # Test that the GenServer is alive
+      assert Process.alive?(pid)
+
+      # Test a simple get_cell call
+      {:ok, cell} = UnifiedManager.get_cell(pid, 0, 0)
+      assert cell.char == " "
+      assert cell.style == nil
+    end
   end
 
   describe "new/4" do

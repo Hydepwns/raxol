@@ -2,7 +2,6 @@ defmodule Raxol.Terminal.ModeManagerTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Terminal.ModeManager
-  alias Raxol.Terminal.Emulator
 
   describe "new/0" do
     test "creates a new mode manager with default values" do

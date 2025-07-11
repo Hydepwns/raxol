@@ -1,7 +1,6 @@
 ExUnit.configure(max_printable_chars: 1000)
 
 alias Raxol.Terminal.Buffer.Manager
-alias Raxol.Terminal.ScreenBuffer
 
 defmodule Raxol.Terminal.Buffer.ManagerTest do
   use ExUnit.Case, async: false

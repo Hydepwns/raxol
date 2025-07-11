@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
   end
 
   describe "window splitting" do
-    test "splits window horizontally", %{state: state} do
+    test "splits window horizontally", %{state: _state} do
       {:ok, parent_id} = UnifiedWindow.get_active_window()
       {:ok, child_id} = UnifiedWindow.split_window(parent_id, :horizontal)
 
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
       assert child.parent_id == parent_id
     end
 
-    test "splits window vertically", %{state: state} do
+    test "splits window vertically", %{state: _state} do
       {:ok, parent_id} = UnifiedWindow.get_active_window()
       {:ok, child_id} = UnifiedWindow.split_window(parent_id, :vertical)
 
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
       assert child.parent_id == parent_id
     end
 
-    test "handles invalid split direction", %{state: state} do
+    test "handles invalid split direction", %{state: _state} do
       {:ok, parent_id} = UnifiedWindow.get_active_window()
 
       assert {:error, :invalid_direction} =
@@ -82,42 +82,42 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
   end
 
   describe "window operations" do
-    test "sets window title", %{state: state} do
+    test "sets window title", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
       :ok = UnifiedWindow.set_title(window_id, "Test Window")
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.title == "Test Window"
     end
 
-    test "sets window icon name", %{state: state} do
+    test "sets window icon name", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
       :ok = UnifiedWindow.set_icon_name(window_id, "Test Icon")
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.icon_name == "Test Icon"
     end
 
-    test "resizes window", %{state: state} do
+    test "resizes window", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
       :ok = UnifiedWindow.resize(window_id, 100, 50)
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.size == {100, 50}
     end
 
-    test "moves window", %{state: state} do
+    test "moves window", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
       :ok = UnifiedWindow.move(window_id, 10, 20)
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.position == {10, 20}
     end
 
-    test "sets window stacking order", %{state: state} do
+    test "sets window stacking order", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
       :ok = UnifiedWindow.set_stacking_order(window_id, :top)
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.stacking_order == :top
     end
 
-    test "maximizes and restores window", %{state: state} do
+    test "maximizes and restores window", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
       :ok = UnifiedWindow.maximize(window_id)
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
@@ -130,21 +130,21 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
   end
 
   describe "window focus" do
-    test "sets active window", %{state: state} do
+    test "sets active window", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
       :ok = UnifiedWindow.set_active_window(window_id)
       {:ok, active_id} = UnifiedWindow.get_active_window()
       assert active_id == window_id
     end
 
-    test "handles non-existent window", %{state: state} do
+    test "handles non-existent window", %{state: _state} do
       assert {:error, :window_not_found} =
                UnifiedWindow.set_active_window(:invalid_id)
     end
   end
 
   describe "window cleanup" do
-    test "closes window and its children", %{state: state} do
+    test "closes window and its children", %{state: _state} do
       {:ok, parent_id} = UnifiedWindow.get_active_window()
       {:ok, child_id} = UnifiedWindow.split_window(parent_id, :horizontal)
 
@@ -157,14 +157,14 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
                UnifiedWindow.get_window_state(child_id)
     end
 
-    test "handles closing non-existent window", %{state: state} do
+    test "handles closing non-existent window", %{state: _state} do
       assert {:error, :window_not_found} =
                UnifiedWindow.close_window(:invalid_id)
     end
   end
 
   describe "window manager configuration" do
-    test "updates window manager configuration", %{state: state} do
+    test "updates window manager configuration", %{state: _state} do
       config = %{
         min_window_size: {20, 10},
         max_window_size: {200, 100},

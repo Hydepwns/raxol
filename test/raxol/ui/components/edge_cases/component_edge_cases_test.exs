@@ -90,13 +90,13 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       {new_state, []}
     end
 
+    def handle_event(_event, state) do
+      {state, []}
+    end
+
     @impl Raxol.UI.Components.Base.Component
     def handle_event(event, state, _context) do
       handle_event(event, state)
-    end
-
-    def handle_event(_event, state) do
-      {state, []}
     end
 
     @impl Raxol.UI.Components.Base.Component
@@ -187,13 +187,13 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       {new_state, []}
     end
 
+    def handle_event(_event, state) do
+      {state, []}
+    end
+
     @impl Raxol.UI.Components.Base.Component
     def handle_event(event, state, _context) do
       handle_event(event, state)
-    end
-
-    def handle_event(_event, state) do
-      {state, []}
     end
 
     @impl Raxol.UI.Components.Base.Component
