@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.ANSI.AutoRepeatTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{ANSI, Emulator}
+  alias Raxol.Terminal.Emulator
 
   setup do
     # Create a terminal emulator with default dimensions (80x24)

@@ -5,7 +5,6 @@ defmodule Raxol.Core.AccessibilityTestHelper do
 
   alias Raxol.Core.UserPreferences
   import ExUnit.Assertions
-  import ExUnit.Callbacks
 
   def wait_for_state(condition, timeout \\ 100) do
     start_time = System.monotonic_time(:millisecond)
@@ -61,15 +60,10 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     # Ensure EventManager is started
     Raxol.Core.Events.Manager.init()
 
-    # Use a unique name for each test
-    unique_name =
-      String.to_atom(
-        "user_prefs_" <> Integer.to_string(System.unique_integer([:positive]))
-      )
-
+    # Start UserPreferences with the global name for tests that need it
     pid_of_prefs =
       start_supervised!(
-        {UserPreferences, [test_mode?: true, name: unique_name]}
+        {UserPreferences, [test_mode?: true, name: Raxol.Core.UserPreferences]}
       )
 
     # Set up preferences
@@ -92,7 +86,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
       Raxol.Core.Events.Manager.cleanup()
     end)
 
-    {:ok, prefs_name: unique_name, pref_pid: pid_of_prefs}
+    {:ok, prefs_name: prefs_name, pref_pid: pid_of_prefs}
   end
 
   def register_test_elements do
