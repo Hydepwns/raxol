@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   providing improved memory management, caching, and performance metrics.
   """
 
+  @behaviour GenServer
   use GenServer
   require Logger
   require Raxol.Core.Runtime.Log
@@ -303,6 +304,80 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end
   end
 
+  def handle_call({:get_cell, x, y}, _from, state) do
+    case get_cell_at_coordinates(state, x, y) do
+      {:valid, cell} -> {:reply, {:ok, cell}, state}
+      {:invalid, cell} -> {:reply, {:ok, cell}, state}
+    end
+  end
+
+  def handle_call({:set_cell, x, y, cell}, _from, state) do
+    case validate_and_set_cell(state, x, y, cell) do
+      {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
+      {:invalid, state} -> {:reply, {:error, :invalid_coordinates}, state}
+    end
+  end
+
+  def handle_call({:fill_region, x, y, width, height, cell}, _from, state) do
+    if coordinates_valid_for_set?(state, x, y) and
+         x + width <= state.active_buffer.width and
+         y + height <= state.active_buffer.height do
+      new_active_buffer = fill_region_with_cell(state.active_buffer, x, y, width, height, cell)
+      new_state = %{state | active_buffer: new_active_buffer}
+      new_state = update_memory_usage(new_state)
+      {:reply, {:ok, new_state}, new_state}
+    else
+      {:reply, {:error, :invalid_region}, state}
+    end
+  end
+
+  def handle_call({:scroll_region, x, y, width, height, amount}, _from, state) do
+    {new_active_buffer, new_scrollback_buffer} = process_scroll_region(state, x, y, width, height, amount)
+    new_state = %{state | active_buffer: new_active_buffer, scrollback_buffer: new_scrollback_buffer}
+    new_state = update_memory_usage(new_state)
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  def handle_call(:clear, _from, state) do
+    # Clear the active buffer by creating a new one with the same dimensions
+    new_active_buffer = ScreenBuffer.new(state.width, state.height)
+    new_state = %{state | active_buffer: new_active_buffer}
+    new_state = update_memory_usage(new_state)
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  def handle_call({:resize, width, height}, _from, state) do
+    case resize(state, width, height) do
+      {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
+  end
+
+  def handle_call({:scroll_up, amount}, _from, state) do
+    # Scroll the entire buffer up by the specified amount
+    {new_active_buffer, new_scrollback_buffer} = process_scroll_region(state, 0, 0, state.width, state.height, amount)
+    new_state = %{state | active_buffer: new_active_buffer, scrollback_buffer: new_scrollback_buffer}
+    new_state = update_memory_usage(new_state)
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  def handle_call({:get_history, start_line, count}, _from, state) do
+    history = Scroll.get_content(state.scrollback_buffer, start_line, count)
+    {:reply, {:ok, history}, state}
+  end
+
+  def handle_call({:update_visible_region, region}, _from, state) do
+    # Update the visible region (placeholder implementation)
+    {:reply, {:ok, state}, state}
+  end
+
+  def handle_call({:write, data}, _from, state) do
+    case process_write_data(state, data) do
+      {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
+  end
+
   @doc """
   Updates the buffer manager configuration.
   Delegates to update/2 for compatibility.
@@ -403,12 +478,31 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   # Server Callbacks
 
   def init(opts) do
+    IO.puts("[UnifiedManager] init/1 called with opts: #{inspect(opts)}")
+    Logger.debug("[UnifiedManager] init/1 called with opts: #{inspect(opts)}")
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
     scrollback_limit = Keyword.get(opts, :scrollback_limit, 1000)
     memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
 
-    {:ok, state} = new(width, height, scrollback_limit, memory_limit)
+    # Create a minimal state for testing
+    state = %__MODULE__{
+      active_buffer: ScreenBuffer.new(width, height),
+      back_buffer: ScreenBuffer.new(width, height),
+      scrollback_buffer: Scroll.new(scrollback_limit),
+      damage_tracker: DamageTracker.new(),
+      width: width,
+      height: height,
+      scrollback_limit: scrollback_limit,
+      memory_limit: memory_limit,
+      memory_usage: 0,
+      metrics: %{
+        operations: %{},
+        memory: %{},
+        performance: %{}
+      }
+    }
+    Logger.debug("[UnifiedManager] init/1 completed, state initialized")
     {:ok, state}
   end
 
@@ -953,5 +1047,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
         acc_buffer
       end
     end)
+  end
+
+  def handle_info(msg, state) do
+    Logger.debug("[UnifiedManager] Ignored unexpected message: #{inspect(msg)}")
+    {:noreply, state}
   end
 end
