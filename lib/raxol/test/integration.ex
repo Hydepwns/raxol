@@ -552,6 +552,9 @@ defmodule Raxol.Test.Integration do
         component.state
       end
 
+    # Set unmounted flag
+    new_state = Map.put(new_state, :unmounted, true)
+
     # Clean up subscriptions
     Enum.each(component.subscriptions, &Subscription.unsubscribe(&1))
 
