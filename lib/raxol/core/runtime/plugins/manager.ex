@@ -195,12 +195,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @impl GenServer
   def handle_call({:load_plugin, plugin_id}, _from, state) do
     case state.lifecycle_helper_module.load_plugin(plugin_id) do
-      {:ok, plugin_state} ->
-        new_state = Map.put(state, plugin_id, plugin_state)
-        {:reply, {:ok, plugin_state}, new_state}
-
-      error ->
-        {:reply, error, state}
+      :ok ->
+        {:reply, :ok, state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -1105,10 +1103,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @doc """
   Loads a plugin with the given name and configuration.
   """
-  @spec load_plugin(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  @spec load_plugin(String.t(), map()) :: :ok | {:error, String.t()}
   def load_plugin(name, config) do
-    # Implement plugin loading logic here
-    {:ok, %{name: name, config: config}}
+    # Delegate to the GenServer with the plugin name
+    case GenServer.call(__MODULE__, {:load_plugin, name}) do
+      {:ok, _plugin_state} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """

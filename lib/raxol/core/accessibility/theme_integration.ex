@@ -64,6 +64,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def cleanup do
+    # Reset UserPreferences to defaults for tests
+    if Mix.env() == :test do
+      UserPreferences.reset_to_defaults_for_test!()
+    end
+
     # Unregister event handlers
     EventManager.unregister_handler(
       :accessibility_high_contrast,
