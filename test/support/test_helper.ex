@@ -170,9 +170,6 @@ defmodule Raxol.Test.Support.TestHelper do
     :ok
   end
 
-  @doc """
-  Cleans up test environment with context parameter.
-  """
   def cleanup_test_env(context) when is_map(context) do
     # Extract environment from context or use default
     env = Map.get(context, :env, :default)

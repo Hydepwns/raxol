@@ -10,7 +10,6 @@ defmodule EventMacroHelpers do
   """
 
   import ExUnit.Assertions
-  import ExUnit.Callbacks
 
   @doc """
   Creates a test event with the given type and optional data.
@@ -180,7 +179,7 @@ defmodule EventMacroHelpers do
              event_type,
              event_data \\ %{},
              expected_state,
-             timeout \\ 1000
+             _timeout \\ 1000
            ) do
     quote do
       {updated_component, _effects} =
@@ -218,7 +217,7 @@ defmodule EventMacroHelpers do
              event_type,
              event_data \\ %{},
              expected_render,
-             timeout \\ 1000
+             _timeout \\ 1000
            ) do
     quote do
       {updated_component, _effects} =
@@ -426,10 +425,4 @@ defmodule EventMacroHelpers do
     end
   end
 
-  # Placeholder function for getting component lifecycle events
-  # This would need to be implemented with proper mocking/spying
-  defp get_component_lifecycle_events(_component) do
-    # This is a placeholder - in a real implementation, you'd track lifecycle calls
-    [:init, :mount, :render]
-  end
 end

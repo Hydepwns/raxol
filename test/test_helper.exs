@@ -59,6 +59,10 @@ Mox.defmock(AccessibilityMock,
   for: Raxol.Core.Accessibility.Behaviour
 )
 
+Mox.defmock(Raxol.Mocks.FocusManagerMock,
+  for: Raxol.Core.FocusManager.Behaviour
+)
+
 Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
   for: Raxol.Core.KeyboardShortcutsBehaviour
 )
