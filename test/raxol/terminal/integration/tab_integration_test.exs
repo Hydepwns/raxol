@@ -111,8 +111,8 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
       assert {:ok, state1} = UnifiedTab.get_tab_state(tab1)
       assert {:ok, state2} = UnifiedTab.get_tab_state(tab2)
 
-      updated_state1 = State.update(state1.window_state, "Tab 1 content")
-      updated_state2 = State.update(state2.window_state, "Tab 2 content")
+      _updated_state1 = State.update(state1.window_state, "Tab 1 content")
+      _updated_state2 = State.update(state2.window_state, "Tab 2 content")
 
       # Clean up all tabs
       assert :ok = UnifiedTab.cleanup()

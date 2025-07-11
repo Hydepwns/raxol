@@ -42,7 +42,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   describe "dashboard layout" do
     test ~c"combines table with sparklines" do
       # Create table columns with embedded sparklines
-      columns = [
+      _columns = [
         %{
           header: "ID",
           key: :id,
@@ -230,7 +230,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
     test ~c"creates complex dashboard layout" do
       # Create header
-      header =
+      _header =
         View.box(
           style: [:bold],
           border: :single,

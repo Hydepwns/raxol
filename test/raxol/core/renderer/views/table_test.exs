@@ -7,7 +7,6 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
   Verifies table initialization, styling, column handling, and rendering behavior.
   """
   use ExUnit.Case, async: true
-  alias Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.Views.Table
   alias Raxol.UI.Components.ComponentManager
 

@@ -167,7 +167,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
                  version: "1.0.0"
                )
 
-      assert {:ok, script_id} =
+      assert {:ok, _script_id} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/script",
                  :script,

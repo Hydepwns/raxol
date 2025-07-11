@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_J(emulator, [0]))
+      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [0]))
 
       # Check that content from cursor to end is erased
       # Cursor position should be erased
@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_J(emulator, [1]))
+      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [1]))
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_J(emulator, [2]))
+      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [2]))
 
       # Check that entire screen is erased
       assert_cell_at(emulator, 0, 0, " ")
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_J(emulator, []))
+      _result = unwrap_ok(EraseHandlers.handle_J(emulator, []))
 
       # Should default to mode 0 (erase from cursor to end)
       # Before cursor should remain
@@ -82,7 +82,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       emulator = fill_screen_with_content(emulator, "X")
       emulator = scroll_up(emulator, 5)
 
-      result = unwrap_ok(EraseHandlers.handle_J(emulator, [3]))
+      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [3]))
 
       # Scrollback should be cleared
       assert scrollback_is_empty(emulator)
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_K(emulator, [0]))
+      _result = unwrap_ok(EraseHandlers.handle_K(emulator, [0]))
 
       # Check that content from cursor to end of line is erased
       # Before cursor should remain
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_K(emulator, [1]))
+      _result = unwrap_ok(EraseHandlers.handle_K(emulator, [1]))
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_K(emulator, [2]))
+      _result = unwrap_ok(EraseHandlers.handle_K(emulator, [2]))
 
       # Check that entire line is erased
       assert_cell_at(emulator, 0, 0, " ")
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      result = unwrap_ok(EraseHandlers.handle_K(emulator, []))
+      _result = unwrap_ok(EraseHandlers.handle_K(emulator, []))
 
       # Should default to mode 0 (erase from cursor to end of line)
       # Beginning should remain

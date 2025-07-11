@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
 
   # remove charactersets terminal ansi
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.CharacterSets
 
   # Define initial state if used consistently

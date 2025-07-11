@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.OSCHandlersTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.{Emulator, Window}
+  alias Raxol.Terminal.Window
   alias Raxol.Terminal.Commands.OSCHandlers
 
   defp unwrap_ok({:ok, value}), do: value

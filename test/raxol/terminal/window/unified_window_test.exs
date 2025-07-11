@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
     end
 
     test "fails to split non-existent window", %{pid: _pid} do
-      assert {:error, "Window not found"} =
+      assert {:error, :window_not_found} =
                UnifiedWindow.split_window("nonexistent", :horizontal)
     end
   end
@@ -137,7 +137,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
     end
 
     test "fails to set active window for non-existent window", %{pid: _pid} do
-      assert {:error, "Window not found"} =
+      assert {:error, :window_not_found} =
                UnifiedWindow.set_active_window("nonexistent")
     end
   end
@@ -155,18 +155,18 @@ defmodule Raxol.Terminal.Window.UnifiedWindowTest do
       assert :ok = UnifiedWindow.close_window(parent_id)
 
       # Verify all windows are closed
-      assert {:error, "Window not found"} =
+      assert {:error, :window_not_found} =
                UnifiedWindow.get_window_state(parent_id)
 
-      assert {:error, "Window not found"} =
+      assert {:error, :window_not_found} =
                UnifiedWindow.get_window_state(child1_id)
 
-      assert {:error, "Window not found"} =
+      assert {:error, :window_not_found} =
                UnifiedWindow.get_window_state(child2_id)
     end
 
     test "fails to close non-existent window", %{pid: _pid} do
-      assert {:error, "Window not found"} =
+      assert {:error, :window_not_found} =
                UnifiedWindow.close_window("nonexistent")
     end
   end

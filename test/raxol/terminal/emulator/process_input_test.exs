@@ -130,7 +130,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
 
       # Send the rest of the sequence (e.g., Cursor Up 'A')
       rest_of_input = "A"
-      {_emulator, remaining2} = Emulator.process_input(emulator, rest_of_input)
+      {_emulator, remaining2} = Emulator.process_input(emulator_after, rest_of_input)
 
       # Expect the sequence to be completed and consumed
       assert remaining2 == ""

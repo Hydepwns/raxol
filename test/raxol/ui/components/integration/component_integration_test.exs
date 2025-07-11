@@ -96,6 +96,14 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
           [{child_id, value} | events]
         end)
 
+      # Also update the child component in ComponentManager if it has a component_manager_id
+      if updated_child_state.component_manager_id do
+        Raxol.Core.Runtime.ComponentManager.set_component_state(
+          updated_child_state.component_manager_id,
+          updated_child_state
+        )
+      end
+
       {updated_state, [command: {:child_event, child_id, value}]}
     end
 

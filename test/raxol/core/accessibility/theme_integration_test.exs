@@ -129,6 +129,9 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       # Subscribe to theme change events
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
+      # Reset to standard state first
+      ThemeIntegration.apply_settings(high_contrast: false, reduced_motion: false, large_text: false)
+
       # Handle reduced motion event
       assert :ok =
                ThemeIntegration.handle_reduced_motion(

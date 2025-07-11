@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Buffer.EnhancedManagerTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.{Buffer.EnhancedManager, ScreenBuffer}
+  alias Raxol.Terminal.Buffer.EnhancedManager
 
   setup do
     manager = EnhancedManager.new(80, 24)
