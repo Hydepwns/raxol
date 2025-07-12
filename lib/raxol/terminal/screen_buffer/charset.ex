@@ -31,9 +31,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Charset do
     Map.get(state, slot)
   end
 
-  @doc """
-  Resets the charset state to its initial values.
-  """
   @spec reset(CharsetState.t()) :: CharsetState.t()
   def reset(_state) do
     init()

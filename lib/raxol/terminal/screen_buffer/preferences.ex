@@ -61,16 +61,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
     }
   end
 
-  @doc """
-  Gets the current preferences.
-  """
   def get do
     GenServer.call(__MODULE__, :get)
   end
 
-  @doc """
-  Sets new preferences.
-  """
   def set(preferences) do
     GenServer.call(__MODULE__, {:set, preferences})
   end
