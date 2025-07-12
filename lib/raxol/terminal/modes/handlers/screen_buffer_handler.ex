@@ -222,15 +222,11 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
 
   defp handle_cursor_save_restore(true, emulator) do
     # Mode 1048: Save cursor position and attributes
-    with {:ok, emulator_with_saved_state} <- save_terminal_state(emulator) do
-      {:ok, emulator_with_saved_state}
-    end
+    save_terminal_state(emulator)
   end
 
   defp handle_cursor_save_restore(false, emulator) do
     # Mode 1048: Restore cursor position and attributes
-    with {:ok, emulator_with_restored_state} <- restore_terminal_state(emulator) do
-      {:ok, emulator_with_restored_state}
-    end
+    restore_terminal_state(emulator)
   end
 end
