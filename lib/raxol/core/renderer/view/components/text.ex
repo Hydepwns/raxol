@@ -58,20 +58,23 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
   defp wrap_by_word(text, width) do
     text
     |> String.split(" ")
-    |> Enum.reduce({[], ""}, fn word, {lines, current_line} ->
-      if String.length(current_line) + String.length(word) + 1 <= width do
-        new_line =
-          if current_line == "", do: word, else: current_line <> " " <> word
-
-        {lines, new_line}
-      else
-        {lines ++ [current_line], word}
-      end
-    end)
+    |> Enum.reduce({[], ""}, &process_word(&1, &2, width))
     |> (fn {lines, last_line} ->
           if last_line == "", do: lines, else: lines ++ [last_line]
         end).()
   end
+
+  defp process_word(word, {lines, current_line}, width) do
+    if String.length(current_line) + String.length(word) + 1 <= width do
+      new_line = build_line(current_line, word)
+      {lines, new_line}
+    else
+      {lines ++ [current_line], word}
+    end
+  end
+
+  defp build_line("", word), do: word
+  defp build_line(current_line, word), do: current_line <> " " <> word
 
   defp align_text(lines, _width, :left), do: lines
 

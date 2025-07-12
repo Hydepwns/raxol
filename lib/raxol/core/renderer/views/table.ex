@@ -87,11 +87,8 @@ defmodule Raxol.Core.Renderer.Views.Table do
   """
   @impl Raxol.UI.Components.Base.Component
   def render(%__MODULE__{} = state, _props_or_context) do
-    IO.inspect("Table render called", label: "[DEBUG] Table render called")
     content = build_table_content(state)
-    IO.inspect(content, label: "[DEBUG] Table render content")
     result = wrap_table_content(content, state.border)
-    IO.inspect(result, label: "[DEBUG] Table render result")
     result
   end
 
@@ -364,43 +361,41 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   # Helper to pad cell content to the column width
   defp pad_cell_content(value, col) do
-    # If the value is a chart or other component, return it as-is
-    if is_map(value) and Map.has_key?(value, :type) and
-         value.type in [:box, :chart, :sparkline] do
+    if component?(value) do
       value
     else
-      value_str =
-        cond do
-          is_binary(value) -> value
-          is_nil(value) -> ""
-          true -> to_string(value)
-        end
-
-      case Map.get(col, :align, :left) do
-        :right ->
-          String.pad_leading(value_str, col.width)
-
-        :center ->
-          padding = col.width - String.length(value_str)
-          left_pad = div(padding, 2)
-          right_pad = padding - left_pad
-          # For center alignment, ensure we don't exceed the column width
-          if left_pad + String.length(value_str) + right_pad <= col.width do
-            String.duplicate(" ", left_pad) <>
-              value_str <> String.duplicate(" ", right_pad)
-          else
-            # If the calculated padding would exceed width, adjust
-            adjusted_padding = col.width - String.length(value_str)
-            left_pad = div(adjusted_padding, 2)
-            right_pad = adjusted_padding - left_pad
-
-            String.duplicate(" ", left_pad) <>
-              value_str <> String.duplicate(" ", right_pad)
-          end
-
-        _ ->
-          String.pad_trailing(value_str, col.width)
-      end
+      value_str = to_string_value(value)
+      align_text(value_str, col)
     end
+  end
+
+  defp component?(value) do
+    is_map(value) and Map.has_key?(value, :type) and
+      value.type in [:box, :chart, :sparkline]
+  end
+
+  defp to_string_value(value) do
+    cond do
+      is_binary(value) -> value
+      is_nil(value) -> ""
+      true -> to_string(value)
+    end
+  end
+
+  defp align_text(value_str, col) do
+    case Map.get(col, :align, :left) do
+      :right -> String.pad_leading(value_str, col.width)
+      :center -> center_align_text(value_str, col.width)
+      _ -> String.pad_trailing(value_str, col.width)
+    end
+  end
+
+  defp center_align_text(value_str, width) do
+    padding = width - String.length(value_str)
+    left_pad = div(padding, 2)
+    right_pad = padding - left_pad
+
+    String.duplicate(" ", left_pad) <>
+      value_str <> String.duplicate(" ", right_pad)
   end
 end

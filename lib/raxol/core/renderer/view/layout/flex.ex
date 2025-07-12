@@ -167,6 +167,20 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
   # New: Implements wrapping for flex layout
   defp wrap_flex_layout(children, :row, {width, _height}, gap) do
+    children
+    |> group_children_into_lines(width, gap)
+    |> process_lines()
+    |> position_children_in_lines(gap)
+  end
+
+  defp wrap_flex_layout(children, :column, {_width, height}, gap) do
+    children
+    |> group_children_into_columns(height, gap)
+    |> process_columns()
+    |> position_children_in_columns(gap)
+  end
+
+  defp group_children_into_lines(children, width, gap) do
     {lines, current_line, _} =
       Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_width} ->
         {child_w, _child_h} = Map.get(child, :measured_size)
@@ -175,91 +189,97 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
           if line_width == 0, do: child_w, else: line_width + gap + child_w
 
         if new_width > width and line_width > 0 do
-          # Start new line with current child
           {[line | lines], [child], child_w}
         else
-          # Add to current line
           {lines, [child | line], new_width}
         end
       end)
 
-    # Add the last line and filter out empty lines
-    all_lines =
-      [current_line | lines]
-      |> Enum.reverse()
-      |> Enum.map(&Enum.reverse/1)
-      |> Enum.reject(&(&1 == []))
+    [current_line | lines]
+  end
 
-    # Position children in lines
-    all_lines
+  defp group_children_into_columns(children, height, gap) do
+    {columns, current_column, _} =
+      Enum.reduce(children, {[], [], 0}, fn child,
+                                            {columns, column, column_height} ->
+        {_child_w, child_h} = Map.get(child, :measured_size)
+
+        new_height =
+          if column_height == 0,
+            do: child_h,
+            else: column_height + gap + child_h
+
+        if new_height > height and column_height > 0 do
+          {[column | columns], [child], child_h}
+        else
+          {columns, [child | column], new_height}
+        end
+      end)
+
+    [current_column | columns]
+  end
+
+  defp process_lines(lines) do
+    lines
+    |> Enum.reverse()
+    |> Enum.map(&Enum.reverse/1)
+    |> Enum.reject(&(&1 == []))
+  end
+
+  defp process_columns(columns), do: process_lines(columns)
+
+  defp position_children_in_lines(lines, gap) do
+    lines
     |> Enum.with_index()
     |> Enum.flat_map(fn {line, line_idx} ->
-      # Skip empty lines
       if line == [] do
         []
       else
-        Enum.reduce(line, {0, []}, fn child, {x, acc} ->
-          {child_w, child_h} = Map.get(child, :measured_size)
-
-          pos_child =
-            child
-            |> Map.put(:position, {x, line_idx})
-            |> Map.put(:size, {child_w, child_h})
-
-          {x + child_w + gap, [pos_child | acc]}
-        end)
-        |> elem(1)
-        |> Enum.reverse()
+        position_children_in_line(line, line_idx, gap)
       end
     end)
   end
 
-  defp wrap_flex_layout(children, :column, {_width, height}, gap) do
-    {lines, current_line, _} =
-      Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_height} ->
-        {_child_w, child_h} = Map.get(child, :measured_size)
-
-        new_height =
-          if line_height == 0, do: child_h, else: line_height + gap + child_h
-
-        if new_height > height and line_height > 0 do
-          # Start new column with current child
-          {[line | lines], [child], child_h}
-        else
-          # Add to current column
-          {lines, [child | line], new_height}
-        end
-      end)
-
-    # Add the last column and filter out empty columns
-    all_lines =
-      [current_line | lines]
-      |> Enum.reverse()
-      |> Enum.map(&Enum.reverse/1)
-      |> Enum.reject(&(&1 == []))
-
-    # Position children in columns
-    all_lines
+  defp position_children_in_columns(columns, gap) do
+    columns
     |> Enum.with_index()
-    |> Enum.flat_map(fn {line, col_idx} ->
-      # Skip empty lines
-      if line == [] do
+    |> Enum.flat_map(fn {column, col_idx} ->
+      if column == [] do
         []
       else
-        Enum.reduce(line, {0, []}, fn child, {y, acc} ->
-          {child_w, child_h} = Map.get(child, :measured_size)
-
-          pos_child =
-            child
-            |> Map.put(:position, {col_idx, y})
-            |> Map.put(:size, {child_w, child_h})
-
-          {y + child_h + gap, [pos_child | acc]}
-        end)
-        |> elem(1)
-        |> Enum.reverse()
+        position_children_in_column(column, col_idx, gap)
       end
     end)
+  end
+
+  defp position_children_in_line(line, line_idx, gap) do
+    Enum.reduce(line, {0, []}, fn child, {x, acc} ->
+      {child_w, child_h} = Map.get(child, :measured_size)
+
+      pos_child =
+        child
+        |> Map.put(:position, {x, line_idx})
+        |> Map.put(:size, {child_w, child_h})
+
+      {x + child_w + gap, [pos_child | acc]}
+    end)
+    |> elem(1)
+    |> Enum.reverse()
+  end
+
+  defp position_children_in_column(column, col_idx, gap) do
+    Enum.reduce(column, {0, []}, fn child, {y, acc} ->
+      {child_w, child_h} = Map.get(child, :measured_size)
+
+      pos_child =
+        child
+        |> Map.put(:position, {col_idx, y})
+        |> Map.put(:size, {child_w, child_h})
+
+      {y + child_h + gap, [pos_child | acc]}
+    end)
+    |> elem(1)
+    |> Enum.reverse()
   end
 
   defp measure_children(children, {width, height}) do

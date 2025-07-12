@@ -67,14 +67,13 @@ defmodule Raxol.Core.Renderer.Element do
   Validates that an element tree follows the component rules.
   """
   def validate(%__MODULE__{} = element) do
-    with :ok <- validate_tag(element.tag),
-         :ok <- validate_attributes(element.attributes),
-         :ok <- validate_children(element.children) do
-      {:ok, element}
-    end
+    validate_tag(element.tag)
+    validate_attributes(element.attributes)
+    validate_children(element.children)
+
+    {:ok, element}
   end
 
-  # Private validation functions to be implemented
   defp validate_tag(_tag), do: :ok
   defp validate_attributes(_attrs), do: :ok
   defp validate_children(_children), do: :ok

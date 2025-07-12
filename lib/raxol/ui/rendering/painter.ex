@@ -63,102 +63,76 @@ defmodule Raxol.UI.Rendering.Painter do
   end
 
   defp do_paint_node(composed_node, parent_x_offset, parent_y_offset) do
-    paint_ops_for_current_node =
-      case composed_node[:composed_type] do
-        :composed_element ->
-          # Fallback for safety
-          attrs =
-            composed_node[:attributes] || %{x: 0, y: 0, width: 0, height: 0}
-
-          original_type = composed_node[:original_type]
-          properties = composed_node[:properties] || %{}
-
-          # For dummy layout, attributes.x and .y are absolute. If they were relative, we'd add parent_x_offset.
-          # current_node_x = attrs.x + parent_x_offset
-          # current_node_y = attrs.y + parent_y_offset
-          current_node_x = attrs.x
-          current_node_y = attrs.y
-
-          paint_op = %{
-            op: :draw_element,
-            element_type: original_type,
-            x: current_node_x,
-            y: current_node_y,
-            width: attrs.width,
-            height: attrs.height,
-            properties: properties,
-            # Example: if properties contain text, make it explicit for renderer
-            text_content:
-              properties[:text] || properties[:label] || properties[:value]
-          }
-
-          Raxol.Core.Runtime.Log.debug(
-            "Paint Stage: Generated draw_element op for #{original_type}: #{inspect(paint_op)}"
-          )
-
-          [paint_op]
-
-        :primitive ->
-          value = composed_node[:value]
-
-          paint_op = %{
-            op: :draw_primitive,
-            value: value,
-            # Primitives are typically positioned by their parent container at the parent's current drawing cursor/offset
-            x: parent_x_offset,
-            y: parent_y_offset,
-            primitive_type:
-              if(binary?(value),
-                do: :text,
-                else: if(number?(value), do: :number, else: :unknown)
-              )
-          }
-
-          Raxol.Core.Runtime.Log.debug(
-            "Paint Stage: Generated draw_primitive op: #{inspect(paint_op)}"
-          )
-
-          [paint_op]
-
-        :unprocessed_map_wrapper ->
-          Raxol.Core.Runtime.Log.warning(
-            "Paint Stage: Encountered :unprocessed_map_wrapper for node: #{inspect(if map?(composed_node[:original_node]), do: Map.get(composed_node[:original_node], :type, nil), else: nil)}. Painting children only."
-          )
-
-          # Don't paint the wrapper itself, only its children (handled below)
-          []
-
-        unknown_type ->
-          Raxol.Core.Runtime.Log.warning(
-            "Paint Stage: Unknown composed_type: #{inspect(unknown_type)} for node: #{inspect(composed_node)}"
-          )
-
-          []
-      end
-
-    children_paint_ops =
-      (composed_node[:children] || [])
-      |> Enum.flat_map(fn child_node ->
-        # If current node was :composed_element, children are positioned relative to ITS x,y
-        # For now, assuming dummy layout gives absolute x,y for all elements, so child_parent_offset is just parent's.
-        # A more sophisticated layout would require passing the current element's absolute x,y as parent offset for children.
-        # With current absolute dummy layout from `layout_tree`, children will use their own absolute attrs.x/y.
-        # So, the parent_x_offset/parent_y_offset passed to children effectively becomes the container's origin for them IF their layout was relative.
-        # Since layout is absolute in the dummy version, we can pass 0,0 or the current parent_x_offset, it won't change the child's absolute position.
-        # Let's stick to passing parent_x_offset, parent_y_offset for consistency if layout became relative.
-        child_parent_x =
-          if composed_node[:composed_type] == :composed_element,
-            do: (composed_node[:attributes] || %{})[:x] || 0,
-            else: parent_x_offset
-
-        child_parent_y =
-          if composed_node[:composed_type] == :composed_element,
-            do: (composed_node[:attributes] || %{})[:y] || 0,
-            else: parent_y_offset
-
-        do_paint_node(child_node, child_parent_x, child_parent_y)
-      end)
+    paint_ops_for_current_node = paint_current_node(composed_node, parent_x_offset, parent_y_offset)
+    children_paint_ops = paint_children(composed_node, parent_x_offset, parent_y_offset)
 
     paint_ops_for_current_node ++ children_paint_ops
+  end
+
+  defp paint_current_node(composed_node, parent_x_offset, parent_y_offset) do
+    case composed_node[:composed_type] do
+      :composed_element -> paint_composed_element(composed_node)
+      :primitive -> paint_primitive(composed_node, parent_x_offset, parent_y_offset)
+      :unprocessed_map_wrapper -> []
+      unknown_type ->
+        Raxol.Core.Runtime.Log.warning("Paint Stage: Unknown composed_type: #{inspect(unknown_type)}")
+        []
+    end
+  end
+
+  defp paint_composed_element(composed_node) do
+    attrs = composed_node[:attributes] || %{x: 0, y: 0, width: 0, height: 0}
+    original_type = composed_node[:original_type]
+    properties = composed_node[:properties] || %{}
+
+    paint_op = %{
+      op: :draw_element,
+      element_type: original_type,
+      x: attrs.x,
+      y: attrs.y,
+      width: attrs.width,
+      height: attrs.height,
+      properties: properties,
+      text_content: properties[:text] || properties[:label] || properties[:value]
+    }
+
+    Raxol.Core.Runtime.Log.debug("Paint Stage: Generated draw_element op for #{original_type}: #{inspect(paint_op)}")
+    [paint_op]
+  end
+
+  defp paint_primitive(composed_node, parent_x_offset, parent_y_offset) do
+    value = composed_node[:value]
+
+    paint_op = %{
+      op: :draw_primitive,
+      value: value,
+      x: parent_x_offset,
+      y: parent_y_offset,
+      primitive_type: get_primitive_type(value)
+    }
+
+    Raxol.Core.Runtime.Log.debug("Paint Stage: Generated draw_primitive op: #{inspect(paint_op)}")
+    [paint_op]
+  end
+
+  defp get_primitive_type(value) do
+    if binary?(value), do: :text, else: if(number?(value), do: :number, else: :unknown)
+  end
+
+  defp paint_children(composed_node, parent_x_offset, parent_y_offset) do
+    (composed_node[:children] || [])
+    |> Enum.flat_map(fn child_node ->
+      {child_parent_x, child_parent_y} = get_child_parent_offsets(composed_node, parent_x_offset, parent_y_offset)
+      do_paint_node(child_node, child_parent_x, child_parent_y)
+    end)
+  end
+
+  defp get_child_parent_offsets(composed_node, parent_x_offset, parent_y_offset) do
+    if composed_node[:composed_type] == :composed_element do
+      attrs = composed_node[:attributes] || %{}
+      {attrs[:x] || 0, attrs[:y] || 0}
+    else
+      {parent_x_offset, parent_y_offset}
+    end
   end
 end
