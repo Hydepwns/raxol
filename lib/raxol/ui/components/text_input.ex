@@ -20,7 +20,6 @@ defmodule Raxol.UI.Components.TextInput do
 
   import Raxol.Guards
   alias Raxol.Style
-  alias Raxol.UI.Theming.Theme
 
   @type t :: map()
 

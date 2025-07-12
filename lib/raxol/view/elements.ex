@@ -7,7 +7,6 @@ defmodule Raxol.View.Elements do
   """
 
   import Raxol.Guards
-  alias Raxol.UI.Theming.Theme
 
   @doc """
   Creates a panel with a title and content.

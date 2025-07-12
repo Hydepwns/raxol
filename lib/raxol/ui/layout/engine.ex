@@ -12,7 +12,6 @@ defmodule Raxol.UI.Layout.Engine do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Layout.{Grid, Panels, Containers, Table, Elements, Inputs}
-  alias Raxol.UI.Theming.Theme
 
   @doc """
   Applies layout to a view, calculating absolute positions for all elements.

@@ -232,7 +232,7 @@ defmodule Raxol.UI.Rendering.Layouter do
     end
   end
 
-  defp process_keyed_child_op({:key_add, key, new_child}, acc) do
+  defp process_keyed_child_op({:key_add, _key, new_child}, acc) do
     # Add new child at the end (will be reordered by key_reorder op)
     acc ++ [do_layout_node_and_children(new_child, {:replace, new_child})]
   end
