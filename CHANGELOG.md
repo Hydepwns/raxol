@@ -172,6 +172,77 @@
   - Developers must run `git submodule update --init --recursive` before building
   - Updated build and documentation to reflect this change
 
+## [0.6.0] - 2025-01-27
+
+### Added
+
+- **Comprehensive Documentation Renderer:**
+
+  - Markdown to HTML conversion with Earmark integration
+  - Table of contents generation with anchor links
+  - Search index creation with metadata extraction
+  - Code block extraction and processing
+  - Full documentation rendering with metadata and navigation
+  - Graceful fallbacks when dependencies aren't available
+
+- **Window Event Handling:**
+
+  - Complete window event processing in terminal driver
+  - Resize event handling with dimension updates
+  - Title and icon name change processing
+  - Proper logging and error handling for window events
+
+- **Shared Helper Modules:**
+  - `Raxol.Core.Runtime.ShutdownHelper` for graceful shutdown logic
+  - `Raxol.Core.Runtime.GenServerStartupHelper` for startup patterns
+  - `Raxol.Core.Runtime.ComponentStateHelper` for state management
+  - `Raxol.Benchmarks.DataGenerator` for benchmark data generation
+  - `Raxol.Core.StateManager` for shared state patterns
+  - `Raxol.Terminal.Scroll.PatternAnalyzer` for scroll analysis
+  - `Raxol.EmulatorPluginTestHelper` for test setup
+
+### Changed
+
+- **Major Code Quality Improvements:**
+
+  - Eliminated all duplicate code across the codebase
+  - Reduced software design suggestions from 44 to 0
+  - Improved modularity and maintainability
+  - Enhanced code organization and structure
+
+- **Refactored Components:**
+
+  - Removed duplicate character operations in favor of char_editor
+  - Extracted shared event handling in button component
+  - Unified scroll region logic into single helper
+  - Delegated duplicate auth functions to public auth.ex
+  - Removed embedded CharacterHandler in text_input
+  - Created shared color parsing delegation
+  - Unified component state update patterns
+
+- **Test Suite Improvements:**
+  - Created shared test helper for emulator plugin tests
+  - Removed duplicate cursor manager tests
+  - Eliminated duplicate notification plugin test file
+  - Improved test organization and maintainability
+
+### Removed
+
+- **Legacy and Duplicate Modules:**
+  - `lib/raxol/terminal/input_manager.ex` (legacy version)
+  - `lib/raxol/core/cache/unified_cache.ex` (duplicate of system cache)
+  - `lib/raxol/terminal/buffer/char_operations.ex` (duplicate functionality)
+  - `test/raxol/plugins/notification_plugin_test.exs` (duplicate of core version)
+  - `test/raxol/terminal/cache/unified_cache_test.exs` (duplicate tests)
+
+### Fixed
+
+- **All TODO Items:**
+  - Implemented window resize processing
+  - Implemented window event handling
+  - Implemented comprehensive documentation renderer functionality
+  - No more TODO comments in the codebase
+
 ## [0.5.2] - 2025-01-27
 
 ### Added
