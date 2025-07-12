@@ -356,8 +356,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     shortcuts_help =
       shortcuts
       |> Enum.sort_by(fn s -> s.key_combo end)
-      |> Enum.map(fn s -> "#{s.key_combo}: #{s.description}" end)
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", fn s -> "#{s.key_combo}: #{s.description}" end)
 
     full_message = help_message <> shortcuts_help
 

@@ -205,16 +205,7 @@ defmodule Raxol.Core.FocusManager do
       components = Map.get(focusables, group, [])
       current_index = Enum.find_index(components, &(&1.id == current_focus))
 
-      next_index =
-        if current_index == nil do
-          0
-        else
-          if current_index + 1 < length(components) do
-            current_index + 1
-          else
-            if wrap, do: 0, else: current_index
-          end
-        end
+      next_index = calculate_next_index(current_index, components, wrap)
 
       next_component = Enum.at(components, next_index)
       if next_component, do: set_focus(next_component.id), else: :ok
@@ -256,18 +247,8 @@ defmodule Raxol.Core.FocusManager do
       focusables = get_focusables()
       group_components = Map.get(focusables, group, [])
 
-      # Find the current component in the group
-      current_component =
-        Enum.find(group_components, fn c -> c.id == current_focus end)
+      current_index = calculate_current_index(group_components, current_focus)
 
-      current_index =
-        if current_component do
-          Enum.find_index(group_components, fn c -> c.id == current_focus end)
-        else
-          -1
-        end
-
-      # Find the previous enabled component
       prev_component =
         find_prev_enabled_component(group_components, current_index, wrap)
 
@@ -558,11 +539,7 @@ defmodule Raxol.Core.FocusManager do
     else
       # Start searching from the previous index
       start_index =
-        if current_index <= 0 do
-          if wrap, do: component_count - 1, else: -1
-        else
-          current_index - 1
-        end
+        calculate_prev_start_index(current_index, component_count, wrap)
 
       # Search for the previous enabled component
       find_enabled_component_from_index(
@@ -586,26 +563,29 @@ defmodule Raxol.Core.FocusManager do
     if start_index < 0 || start_index >= count do
       nil
     else
-      # Check up to count elements
-      Enum.reduce_while(0..(count - 1), nil, fn i, _acc ->
-        index = rem(start_index + i * step + count, count)
-        component = Enum.at(components, index)
-
-        cond do
-          # Found an enabled component
-          component && !component.disabled ->
-            {:halt, component}
-
-          # Reached the boundary and no wrapping
-          (i == count - 1 && !wrap) || i == count - 1 ->
-            {:halt, nil}
-
-          # Continue searching
-          true ->
-            {:cont, nil}
-        end
-      end)
+      search_enabled_component(components, start_index, step, count, wrap)
     end
+  end
+
+  defp search_enabled_component(components, start_index, step, count, wrap) do
+    Enum.reduce_while(0..(count - 1), nil, fn i, _acc ->
+      index = rem(start_index + i * step + count, count)
+      component = Enum.at(components, index)
+
+      cond do
+        # Found an enabled component
+        component && !component.disabled ->
+          {:halt, component}
+
+        # Reached the boundary and no wrapping
+        (i == count - 1 && !wrap) || i == count - 1 ->
+          {:halt, nil}
+
+        # Continue searching
+        true ->
+          {:cont, nil}
+      end
+    end)
   end
 
   defp update_component_state(component_id, field, value) do
@@ -639,5 +619,33 @@ defmodule Raxol.Core.FocusManager do
     # This is a placeholder for the actual implementation
     EventManager.dispatch({:accessibility_announce, message})
     :ok
+  end
+
+  defp calculate_next_index(current_index, components, wrap) do
+    cond do
+      current_index == nil -> 0
+      current_index + 1 < length(components) -> current_index + 1
+      wrap -> 0
+      true -> current_index
+    end
+  end
+
+  defp calculate_current_index(group_components, current_focus) do
+    current_component =
+      Enum.find(group_components, fn c -> c.id == current_focus end)
+
+    if current_component do
+      Enum.find_index(group_components, fn c -> c.id == current_focus end)
+    else
+      -1
+    end
+  end
+
+  defp calculate_prev_start_index(current_index, component_count, wrap) do
+    cond do
+      current_index <= 0 && wrap -> component_count - 1
+      current_index <= 0 -> -1
+      true -> current_index - 1
+    end
   end
 end

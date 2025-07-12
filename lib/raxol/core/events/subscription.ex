@@ -11,7 +11,7 @@ defmodule Raxol.Core.Events.Subscription do
   * Manage multiple subscriptions
   """
 
-  alias Raxol.Core.Events.{Manager}
+  alias Raxol.Core.Events.Manager
 
   @type subscription_ref :: reference()
   @type subscription_opts :: keyword()

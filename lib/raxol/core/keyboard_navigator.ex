@@ -158,81 +158,82 @@ defmodule Raxol.Core.KeyboardNavigator do
   * `:unhandled` - If the event was not handled
   """
   def handle_keyboard_event(event) do
+    case event do
+      {:key, key, modifiers} -> handle_key_event(key, modifiers)
+      _ -> :unhandled
+    end
+  end
+
+  defp handle_key_event(key, modifiers) do
     config = get_config()
 
-    case event do
-      {:key, key, modifiers} ->
-        next_key = Keyword.get(config, :next_key)
-        prev_key = Keyword.get(config, :previous_key)
-        activate_keys = Keyword.get(config, :activate_keys)
-        dismiss_key = Keyword.get(config, :dismiss_key)
-
-        cond do
-          key == next_key and modifiers == [] ->
-            navigate_in_group(:right)
-            :handled
-
-          key == prev_key and modifiers == [:shift] ->
-            navigate_in_group(:left)
-            :handled
-
-          key in activate_keys and modifiers == [] ->
-            handle_activation()
-            :handled
-
-          key == dismiss_key and modifiers == [] ->
-            handle_dismiss()
-            :handled
-
-          key == :escape and modifiers == [] ->
-            handle_dismiss()
-            :handled
-
-          key in [:left, :right, :up, :down] and modifiers == [] ->
-            if config[:group_navigation] do
-              navigate_in_group(key)
-              :handled
-            else
-              :unhandled
-            end
-
-          key in [:h, :j, :k, :l] and modifiers == [] ->
-            if config[:vim_keys] do
-              handle_vim_navigation(key)
-              :handled
-            else
-              :unhandled
-            end
-
-          key in [:f1, :f2, :f3, :f4, :f5, :f6, :f7, :f8, :f9, :f10, :f11, :f12] and
-              modifiers == [] ->
-            handle_function_key(key)
-            :handled
-
-          key == :tab and modifiers == [] ->
-            if config[:tab_navigation] do
-              navigate_in_group(:right)
-              :handled
-            else
-              :unhandled
-            end
-
-          key == :tab and modifiers == [:shift] ->
-            if config[:tab_navigation] do
-              navigate_in_group(:left)
-              :handled
-            else
-              :unhandled
-            end
-
-          true ->
-            :unhandled
-        end
-
-      # Unhandled keyboard event
-      _ ->
-        :unhandled
+    cond do
+      navigation_key?(key, modifiers, config) -> handle_navigation(key, config)
+      activation_key?(key, modifiers, config) -> handle_activation()
+      dismiss_key?(key, modifiers, config) -> handle_dismiss()
+      vim_key?(key, modifiers, config) -> handle_vim_navigation(key)
+      function_key?(key, modifiers) -> handle_function_key(key)
+      tab_key?(key, modifiers, config) -> handle_tab_navigation(key, config)
+      true -> :unhandled
     end
+  end
+
+  defp navigation_key?(key, modifiers, config) do
+    next_key = Keyword.get(config, :next_key)
+    prev_key = Keyword.get(config, :previous_key)
+
+    (key == next_key and modifiers == []) or
+      (key == prev_key and modifiers == [:shift]) or
+      (key in [:left, :right, :up, :down] and modifiers == [] and
+         config[:group_navigation])
+  end
+
+  defp activation_key?(key, modifiers, config) do
+    activate_keys = Keyword.get(config, :activate_keys)
+    key in activate_keys and modifiers == []
+  end
+
+  defp dismiss_key?(key, modifiers, config) do
+    dismiss_key = Keyword.get(config, :dismiss_key)
+
+    (key == dismiss_key and modifiers == []) or
+      (key == :escape and modifiers == [])
+  end
+
+  defp vim_key?(key, modifiers, config) do
+    key in [:h, :j, :k, :l] and modifiers == [] and config[:vim_keys]
+  end
+
+  defp function_key?(key, modifiers) do
+    key in [:f1, :f2, :f3, :f4, :f5, :f6, :f7, :f8, :f9, :f10, :f11, :f12] and
+      modifiers == []
+  end
+
+  defp tab_key?(key, _modifiers, config) do
+    key == :tab and config[:tab_navigation]
+  end
+
+  defp handle_navigation(key, config) do
+    case key do
+      k when k in [:left, :right, :up, :down] ->
+        handle_arrow_navigation(k)
+
+      :tab ->
+        navigate_in_group(
+          if config[:previous_key] == :tab, do: :left, else: :right
+        )
+
+      _ ->
+        navigate_in_group(:right)
+    end
+
+    :handled
+  end
+
+  defp handle_tab_navigation(key, _config) do
+    direction = if key == :tab, do: :right, else: :left
+    navigate_in_group(direction)
+    :handled
   end
 
   @doc """
@@ -323,36 +324,29 @@ defmodule Raxol.Core.KeyboardNavigator do
     config = get_config()
 
     cond do
-      # Explicit navigation paths have highest priority
-      try_explicit_navigation(key) ->
-        :ok
-
-      # Spatial navigation has second priority if enabled
-      config[:spatial_navigation] && try_spatial_navigation(key) ->
-        :ok
-
-      # Group navigation has third priority if enabled
-      config[:group_navigation] ->
-        # Handle arrow keys for group-based navigation
-        case key do
-          :down -> navigate_in_group(:down)
-          :up -> navigate_in_group(:up)
-          :right -> navigate_in_group(:right)
-          :left -> navigate_in_group(:left)
-        end
-
-      # Simple navigation as fallback
-      true ->
-        # Simple arrow key handling when other navigation modes are disabled
-        case key do
-          :down -> FocusManager.focus_next()
-          :up -> FocusManager.focus_previous()
-          :right -> FocusManager.focus_next()
-          :left -> FocusManager.focus_previous()
-        end
+      try_explicit_navigation(key) -> :ok
+      config[:spatial_navigation] && try_spatial_navigation(key) -> :ok
+      config[:group_navigation] -> handle_group_navigation(key)
+      true -> handle_simple_navigation(key)
     end
+  end
 
-    :ok
+  defp handle_group_navigation(key) do
+    case key do
+      :down -> navigate_in_group(:down)
+      :up -> navigate_in_group(:up)
+      :right -> navigate_in_group(:right)
+      :left -> navigate_in_group(:left)
+    end
+  end
+
+  defp handle_simple_navigation(key) do
+    case key do
+      :down -> FocusManager.focus_next()
+      :up -> FocusManager.focus_previous()
+      :right -> FocusManager.focus_next()
+      :left -> FocusManager.focus_previous()
+    end
   end
 
   defp try_explicit_navigation(direction) do

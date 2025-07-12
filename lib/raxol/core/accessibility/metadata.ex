@@ -63,7 +63,6 @@ defmodule Raxol.Core.Accessibility.Metadata do
   """
   def register_component_style(component_type, style)
       when atom?(component_type) and map?(style) do
-    # Store the component styles in process dictionary for simplicity
     component_styles = Process.get(:accessibility_component_styles) || %{}
     updated_styles = Map.put(component_styles, component_type, style)
     Process.put(:accessibility_component_styles, updated_styles)

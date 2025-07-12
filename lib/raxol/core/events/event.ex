@@ -9,8 +9,6 @@ defmodule Raxol.Core.Events.Event do
   (e.g., :key, :mouse, :resize) and :data contains the event-specific details.
   """
 
-  # Import any needed modules
-
   @type event_type :: atom()
   @type event_data :: any()
 
@@ -22,8 +20,6 @@ defmodule Raxol.Core.Events.Event do
 
   defstruct [:type, :data, :timestamp, mounted: false, render_count: 0]
 
-  # Event constructors for common events
-
   @doc """
   Creates a new event with the given type and data. Optionally accepts a timestamp (defaults to now).
   """
@@ -34,8 +30,6 @@ defmodule Raxol.Core.Events.Event do
       timestamp: timestamp
     }
   end
-
-  # Keyboard Events
 
   @type key :: atom() | String.t()
   @type key_state :: :pressed | :released | :repeat
@@ -76,8 +70,6 @@ defmodule Raxol.Core.Events.Event do
   def key(key) do
     key_event(key, :pressed, [])
   end
-
-  # Mouse Events
 
   @type mouse_button :: :left | :right | :middle
   @type mouse_state :: :pressed | :released | :double_click
@@ -139,8 +131,6 @@ defmodule Raxol.Core.Events.Event do
     })
   end
 
-  # Window Events
-
   @type window_event :: %{
           width: non_neg_integer(),
           height: non_neg_integer(),
@@ -176,8 +166,6 @@ defmodule Raxol.Core.Events.Event do
     window_event(width, height, action)
   end
 
-  # Timer Events
-
   @doc """
   Creates a timer event.
 
@@ -195,8 +183,6 @@ defmodule Raxol.Core.Events.Event do
     timer_event(data)
   end
 
-  # Custom Events
-
   @doc """
   Creates a custom event.
 
@@ -213,8 +199,6 @@ defmodule Raxol.Core.Events.Event do
   def custom(data) do
     custom_event(data)
   end
-
-  # Terminal UI Events
 
   @type focus_target :: :component | :window | :application
   @type focus_event :: %{
@@ -330,5 +314,5 @@ defmodule Raxol.Core.Events.Event do
     })
   end
 
-  # Event Conversion removed - moved to Raxol.Core.Events.TermboxConverter
+  defp event_conversion(_event), do: {:error, :not_implemented}
 end

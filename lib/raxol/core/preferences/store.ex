@@ -5,8 +5,6 @@ defmodule Raxol.Core.Preferences.Store do
   Handles storage and retrieval of user preferences.
   """
 
-  # TODO: Implement preference storage logic (move from Configuration)
-
   # --- Function Moved from Raxol.Terminal.Configuration ---
 
   # Assuming 't' is the old Configuration struct or a map
