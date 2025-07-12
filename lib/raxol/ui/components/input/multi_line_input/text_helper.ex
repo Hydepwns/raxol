@@ -280,16 +280,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       state
     else
       prev_position =
-        cond do
-          # If we're at the start of a line (not the first), move to the end of previous line
-          col == 0 and row > 0 ->
-            prev_line = Enum.at(lines, row - 1)
-            prev_col = String.length(prev_line)
-            {row - 1, prev_col}
-
-          # If we're in the middle of a line, just move back one
-          true ->
-            {row, col - 1}
+        if col == 0 and row > 0 do
+          prev_line = Enum.at(lines, row - 1)
+          prev_col = String.length(prev_line)
+          {row - 1, prev_col}
+        else
+          {row, col - 1}
         end
 
       {new_full_text, _deleted_text} =
@@ -337,14 +333,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         state
       else
         next_position =
-          cond do
-            # If we're at the end of a line (not the last), include the newline
-            col == current_line_length and row < num_lines - 1 ->
-              {row + 1, 0}
-
-            # If we're in the middle of a line, just delete one character
-            true ->
-              {row, col + 1}
+          if col == current_line_length and row < num_lines - 1 do
+            {row + 1, 0}
+          else
+            {row, col + 1}
           end
 
         {new_full_text, _deleted_text} =
