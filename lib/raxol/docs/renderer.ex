@@ -83,7 +83,7 @@ defmodule Raxol.Docs.Renderer do
       # Remove link URLs
       |> String.replace(~r/\[([^\]]+)\]\([^)]+\)/, "\\1")
       # Remove markdown syntax
-      |> String.replace(~r/[#*_`]/g, "")
+      |> String.replace(~r/[#*_`]/, "")
       |> String.downcase()
 
     %{
