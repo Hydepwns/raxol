@@ -121,11 +121,15 @@ defmodule Raxol.UI.Layout.Table do
 
   defp calculate_column_widths_with_fallback(
          columns_config,
-         _headers,
-         _original_data
+         headers,
+         original_data
        ) do
     Enum.map(columns_config, fn col_conf ->
-      Map.get(col_conf, :width, 10)
+      case Map.get(col_conf, :width) do
+        width when is_integer(width) -> width
+        :auto -> calculate_auto_width(col_conf, original_data)
+        _ -> calculate_auto_width(col_conf, original_data)
+      end
     end)
   end
 
