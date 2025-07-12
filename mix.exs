@@ -210,7 +210,8 @@ defmodule Raxol.MixProject do
         "sass default",
         "tailwind default"
       ],
-      "explain.credo": ["run scripts/explain_credo_warning.exs"]
+      "explain.credo": ["run scripts/explain_credo_warning.exs"],
+      lint: ["credo"]
     ]
   end
 
