@@ -1,6 +1,6 @@
 defmodule Termbox2NifTest do
-  @moduletag :docker
   use ExUnit.Case
+  @moduletag :docker
 
   test "termbox2_nif loads and initializes" do
     # Check if we're in a real TTY

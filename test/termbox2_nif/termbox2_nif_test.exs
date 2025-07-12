@@ -2,8 +2,8 @@ skip_termbox2_tests = !Raxol.Terminal.TerminalUtils.real_tty?()
 
 if skip_termbox2_tests do
   defmodule Termbox2NifTest do
-    @moduletag :docker
     use ExUnit.Case
+    @moduletag :docker
     @tag :skip
     test "termbox2_nif tests are skipped (not in a TTY environment)" do
       assert true
