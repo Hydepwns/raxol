@@ -23,42 +23,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
         %State{state: :dcs_passthrough} = parser_state,
         input
       ) do
-    case input do
-      <<>> ->
-        # Incomplete DCS string - return current state
-        Raxol.Core.Runtime.Log.debug(
-          "[Parser] Incomplete DCS string, input ended."
-        )
-
-        {:incomplete, emulator, parser_state}
-
-      # String Terminator (ST - ESC \) -- Use escape_char check first
-      <<27, rest_after_esc::binary>> ->
-        {:continue, emulator,
-         %{parser_state | state: :dcs_passthrough_maybe_st}, rest_after_esc}
-
-      # Collect payload bytes (>= 0x20), excluding DEL (0x7F)
-      <<byte, rest_after_byte::binary>> when byte >= 0x20 and byte != 0x7F ->
-        next_parser_state = %{
-          parser_state
-          | payload_buffer: parser_state.payload_buffer <> <<byte>>
-        }
-
-        {:continue, emulator, next_parser_state, rest_after_byte}
-
-      # CAN/SUB abort DCS passthrough
-      <<abort_byte, rest_after_abort::binary>>
-      when abort_byte == 0x18 or abort_byte == 0x1A ->
-        Raxol.Core.Runtime.Log.debug("Aborting DCS Passthrough due to CAN/SUB")
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_abort}
-
-      # Ignore C0 bytes (0x00-0x1F) and DEL (0x7F) during DCS passthrough
-      # (ESC, CAN, SUB handled explicitly)
-      <<_ignored_byte, rest_after_ignored::binary>> ->
-        Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte in DCS Passthrough")
-        {:continue, emulator, parser_state, rest_after_ignored}
-    end
+    process_input(emulator, parser_state, input)
   end
 
   @impl Raxol.Terminal.Parser.StateBehaviour
@@ -104,5 +69,45 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
   @impl Raxol.Terminal.Parser.StateBehaviour
   def handle_unknown(emulator, state) do
     {:ok, emulator, state}
+  end
+
+  defp process_input(_emulator, parser_state, <<>>) do
+    Raxol.Core.Runtime.Log.debug("[Parser] Incomplete DCS string, input ended.")
+    {:incomplete, emulator, parser_state}
+  end
+
+  defp process_input(emulator, parser_state, <<27, rest_after_esc::binary>>) do
+    {:continue, emulator, %{parser_state | state: :dcs_passthrough_maybe_st},
+     rest_after_esc}
+  end
+
+  defp process_input(emulator, parser_state, <<byte, rest_after_byte::binary>>)
+       when byte >= 0x20 and byte != 0x7F do
+    next_parser_state = %{
+      parser_state
+      | payload_buffer: parser_state.payload_buffer <> <<byte>>
+    }
+
+    {:continue, emulator, next_parser_state, rest_after_byte}
+  end
+
+  defp process_input(
+         emulator,
+         parser_state,
+         <<abort_byte, rest_after_abort::binary>>
+       )
+       when abort_byte == 0x18 or abort_byte == 0x1A do
+    Raxol.Core.Runtime.Log.debug("Aborting DCS Passthrough due to CAN/SUB")
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_parser_state, rest_after_abort}
+  end
+
+  defp process_input(
+         emulator,
+         parser_state,
+         <<_ignored_byte, rest_after_ignored::binary>>
+       ) do
+    Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte in DCS Passthrough")
+    {:continue, emulator, parser_state, rest_after_ignored}
   end
 end

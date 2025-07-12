@@ -372,7 +372,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  defp execute_elixir_script(script, args, timeout) do
+  defp execute_elixir_script(script, args, _timeout) do
     module_name = "ScriptModule_#{generate_script_id()}"
 
     wrapped_code = """

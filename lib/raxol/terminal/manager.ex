@@ -31,15 +31,15 @@ defmodule Raxol.Terminal.Manager do
 
   You can pass a `:callback_module` option to `start_link/1` to receive notifications for terminal events. The callback module must implement the `Raxol.Terminal.Manager.Callback` behaviour:
 
-      defmodule MyTerminalCallback do
-        @behaviour Raxol.Terminal.Manager.Callback
+  ```elixir
+  defmodule MyTerminalCallback do
+    @behaviour Raxol.Terminal.Manager.Callback
 
-        def focus_changed(focused, _state), do: Logger.info("Focus changed: #{focused}")
-        def resized(w, h, _state), do: Logger.info("Terminal resized: #{w}x#{h}")
-        # ...implement other callbacks as needed
-      end
+    # ...implement other callbacks as needed
+  end
 
-      {:ok, pid} = Raxol.Terminal.Manager.start_link(callback_module: MyTerminalCallback)
+  {:ok, pid} = Raxol.Terminal.Manager.start_link(callback_module: MyTerminalCallback)
+  ```
 
   ## Telemetry Events
 

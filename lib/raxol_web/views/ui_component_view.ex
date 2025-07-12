@@ -1,7 +1,6 @@
 defmodule RaxolWeb.UIComponentView do
   use RaxolWeb, :view
   import Phoenix.HTML
-  import Phoenix.HTML.Tag
 
   @moduledoc """
   A view for rendering UI components in the web interface.
@@ -177,7 +176,7 @@ defmodule RaxolWeb.UIComponentView do
 
     # Create canvas element for the chart
     canvas_html =
-      content_tag(:canvas, "",
+      Phoenix.HTML.Tag.content_tag(:canvas, "",
         id: chart_id,
         width: chart_opts[:width],
         height: chart_opts[:height],
@@ -185,11 +184,13 @@ defmodule RaxolWeb.UIComponentView do
       )
 
     # Create container with title
-    content_tag(
+    Phoenix.HTML.Tag.content_tag(
       :div,
       [
-        content_tag(:h3, title, class: "chart-title"),
-        content_tag(:div, canvas_html, class: "chart-container")
+        Phoenix.HTML.Tag.content_tag(:h3, title, class: "chart-title"),
+        Phoenix.HTML.Tag.content_tag(:div, canvas_html,
+          class: "chart-container"
+        )
       ],
       class: "chart-card",
       data: [
@@ -204,7 +205,7 @@ defmodule RaxolWeb.UIComponentView do
 
     # Create canvas for metrics chart
     canvas_html =
-      content_tag(:canvas, "",
+      Phoenix.HTML.Tag.content_tag(:canvas, "",
         id: chart_id,
         width: chart_options.width,
         height: chart_options.height,
@@ -212,11 +213,15 @@ defmodule RaxolWeb.UIComponentView do
       )
 
     # Create container
-    content_tag(
+    Phoenix.HTML.Tag.content_tag(
       :div,
       [
-        content_tag(:h3, chart_options.title, class: "metrics-chart-title"),
-        content_tag(:div, canvas_html, class: "metrics-chart-container")
+        Phoenix.HTML.Tag.content_tag(:h3, chart_options.title,
+          class: "metrics-chart-title"
+        ),
+        Phoenix.HTML.Tag.content_tag(:div, canvas_html,
+          class: "metrics-chart-container"
+        )
       ],
       class: "metrics-chart-card",
       data: [
@@ -228,11 +233,13 @@ defmodule RaxolWeb.UIComponentView do
   defp convert_terminal_chart_to_html(rendered_chart, title, opts) do
     chart_rows = build_chart_rows(rendered_chart, opts[:width] || 80)
 
-    content_tag(
+    Phoenix.HTML.Tag.content_tag(
       :div,
       [
-        content_tag(:h3, title, class: "terminal-chart-title"),
-        content_tag(:div, chart_rows, class: "terminal-chart-content")
+        Phoenix.HTML.Tag.content_tag(:h3, title, class: "terminal-chart-title"),
+        Phoenix.HTML.Tag.content_tag(:div, chart_rows,
+          class: "terminal-chart-content"
+        )
       ],
       class: "terminal-chart-card"
     )
@@ -247,11 +254,11 @@ defmodule RaxolWeb.UIComponentView do
 
   defp build_chart_cell(cell) do
     style = build_cell_style(cell)
-    content_tag(:span, cell.char, style: style)
+    Phoenix.HTML.Tag.content_tag(:span, cell.char, style: style)
   end
 
   defp build_chart_row(row_cells) do
-    content_tag(:div, row_cells, class: "chart-row")
+    Phoenix.HTML.Tag.content_tag(:div, row_cells, class: "chart-row")
   end
 
   defp build_cell_style(cell) do
@@ -316,22 +323,26 @@ defmodule RaxolWeb.UIComponentView do
     title = Map.get(widget_data, :title, "TreeMap")
     _data = Map.get(widget_data, :data, [])
 
-    content_tag(
+    Phoenix.HTML.Tag.content_tag(
       :div,
       [
-        content_tag(:h3, title, class: "treemap-title"),
-        content_tag(:div, "TreeMap visualization", class: "treemap-placeholder")
+        Phoenix.HTML.Tag.content_tag(:h3, title, class: "treemap-title"),
+        Phoenix.HTML.Tag.content_tag(:div, "TreeMap visualization",
+          class: "treemap-placeholder"
+        )
       ],
       class: "treemap-widget"
     )
   end
 
   defp render_info_widget(title, content, _opts) do
-    content_tag(
+    Phoenix.HTML.Tag.content_tag(
       :div,
       [
-        content_tag(:h3, title, class: "info-widget-title"),
-        content_tag(:div, content, class: "info-widget-content")
+        Phoenix.HTML.Tag.content_tag(:h3, title, class: "info-widget-title"),
+        Phoenix.HTML.Tag.content_tag(:div, content,
+          class: "info-widget-content"
+        )
       ],
       class: "info-widget"
     )
@@ -341,22 +352,24 @@ defmodule RaxolWeb.UIComponentView do
     title = Map.get(widget_data, :title, "Widget")
     content = Map.get(widget_data, :content, "Generic widget content")
 
-    content_tag(
+    Phoenix.HTML.Tag.content_tag(
       :div,
       [
-        content_tag(:h3, title, class: "generic-widget-title"),
-        content_tag(:div, content, class: "generic-widget-content")
+        Phoenix.HTML.Tag.content_tag(:h3, title, class: "generic-widget-title"),
+        Phoenix.HTML.Tag.content_tag(:div, content,
+          class: "generic-widget-content"
+        )
       ],
       class: "generic-widget"
     )
   end
 
   defp generate_error_html(message) do
-    content_tag(
+    Phoenix.HTML.Tag.content_tag(
       :div,
       [
-        content_tag(:h3, "Error", class: "error-title"),
-        content_tag(:div, message, class: "error-message")
+        Phoenix.HTML.Tag.content_tag(:h3, "Error", class: "error-title"),
+        Phoenix.HTML.Tag.content_tag(:div, message, class: "error-message")
       ],
       class: "error-widget"
     )

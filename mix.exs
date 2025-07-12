@@ -141,7 +141,7 @@ defmodule Raxol.MixProject do
 
       # Web interface
       {:plug_cowboy, "~> 2.7"},
-      {:phoenix_html, "~> 4.0.0"},
+      {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
 
       # Core Plugins Dependencies

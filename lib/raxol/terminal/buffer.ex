@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Buffer do
   import Raxol.Guards
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.{Cell, TextFormatting, Operations}
+  alias Raxol.Terminal.Buffer.{Cell, Operations}
 
   @type t :: %__MODULE__{
           width: non_neg_integer(),
@@ -408,49 +408,6 @@ defmodule Raxol.Terminal.Buffer do
         scroll_region_top: scroll_region_top,
         scroll_region_bottom: scroll_region_bottom,
         damage_regions: screen_buffer.damage_regions
-    }
-  end
-
-  defp to_screen_buffer_core(buffer) do
-    %Raxol.Terminal.ScreenBuffer.Core{
-      width: buffer.width,
-      height: buffer.height,
-      cells: buffer.cells,
-      charset_state: Raxol.Terminal.ScreenBuffer.Charset.init(),
-      formatting_state: Raxol.Terminal.ScreenBuffer.Formatting.init(),
-      terminal_state: Raxol.Terminal.ScreenBuffer.State.init(),
-      output_buffer: "",
-      metrics_state: Raxol.Terminal.ScreenBuffer.Metrics.init(),
-      file_watcher_state: Raxol.Terminal.ScreenBuffer.FileWatcher.init(),
-      scroll_state: Raxol.Terminal.ScreenBuffer.Scroll.init(),
-      screen_state: Raxol.Terminal.ScreenBuffer.Screen.init(),
-      mode_state: Raxol.Terminal.ScreenBuffer.Mode.init(),
-      visualizer_state: Raxol.Terminal.ScreenBuffer.Visualizer.init(),
-      preferences: Raxol.Terminal.ScreenBuffer.Preferences.init(),
-      system_state: Raxol.Terminal.ScreenBuffer.System.init(),
-      cloud_state: Raxol.Terminal.ScreenBuffer.Cloud.init(),
-      theme_state: Raxol.Terminal.ScreenBuffer.Theme.init(),
-      csi_state: Raxol.Terminal.ScreenBuffer.CSI.init(),
-      default_style: %{
-        foreground: nil,
-        background: nil,
-        bold: false,
-        italic: false,
-        underline: false,
-        blink: false,
-        reverse: false,
-        hidden: false,
-        strikethrough: false
-      }
-    }
-  end
-
-  defp from_screen_buffer_core(screen_buffer, original_buffer) do
-    # Core ScreenBuffer doesn't have cursor_position and scroll_region fields
-    # Just return the original buffer with updated cells
-    %{
-      original_buffer
-      | cells: screen_buffer.cells
     }
   end
 end
