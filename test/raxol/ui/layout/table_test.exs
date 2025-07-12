@@ -81,8 +81,263 @@ defmodule Raxol.UI.Layout.TableTest do
       assert final_height == 3
     end
 
-    # TODO: Add tests for fallback width calculation (when :columns is missing).
-    # TODO: Clarify/test handling of :auto column widths.
-    # TODO: Add test for height clamping.
+    test "calculates fallback widths when columns are missing" do
+      # Table with no columns defined - should use fallback calculation
+      table_element = %{
+        type: :table,
+        attrs: %{
+          id: :fallback_table,
+          # No columns defined
+          data: [
+            ["Name", "Age", "City"],
+            ["Alice", "25", "New York"],
+            ["Bob", "30", "Los Angeles"]
+          ],
+          style: %{}
+        }
+      }
+
+      space = %{x: 0, y: 0, width: 80, height: 24}
+
+      result = Table.measure_and_position(table_element, space, [])
+
+      assert [%{attrs: %{_col_widths: calculated_widths}}] = result
+
+      # Should have 3 columns based on data structure
+      assert length(calculated_widths) == 3
+
+      # Widths should be calculated based on content + padding
+      # "Los Angeles" is the longest content (11 chars) + 2 padding = 13
+      # "New York" is 8 chars + 2 padding = 10
+      # "Name", "Age", "City" are 4, 3, 4 chars respectively + 2 padding = 6, 5, 6
+      # So max widths should be: 6, 5, 13
+      assert calculated_widths == [6, 5, 13]
+
+      # Total width should be sum of column widths + separators
+      # 6 + 5 + 13 + (2 * 3) = 30
+      assert [%{width: final_width}] = result
+      assert final_width == 30
+    end
+
+    test "handles auto column widths correctly" do
+      table_element = %{
+        type: :table,
+        attrs: %{
+          id: :auto_width_table,
+          columns: [
+            %{header: "Name", key: :name, width: :auto},
+            %{header: "Age", key: :age, width: :auto},
+            %{header: "Location", key: :location, width: :auto}
+          ],
+          data: [
+            %{name: "Alice Johnson", age: "25", location: "New York"},
+            %{name: "Bob Smith", age: "30", location: "Los Angeles"},
+            %{name: "Charlie Brown", age: "35", location: "Chicago"}
+          ],
+          style: %{}
+        }
+      }
+
+      space = %{x: 0, y: 0, width: 80, height: 24}
+
+      result = Table.measure_and_position(table_element, space, [])
+
+      assert [%{attrs: %{_col_widths: calculated_widths}}] = result
+
+      # Should have 3 columns
+      assert length(calculated_widths) == 3
+
+      # Widths should be calculated based on content:
+      # "Name" header (4) vs "Alice Johnson" (13) vs "Charlie Brown" (13) -> max 13 + 2 = 15
+      # "Age" header (3) vs "25", "30", "35" (2 chars each) -> max 3 + 2 = 5
+      # "Location" header (8) vs "New York" (8) vs "Los Angeles" (11) vs "Chicago" (7) -> max 11 + 2 = 13
+      assert calculated_widths == [15, 5, 13]
+
+      # Total width should be sum of column widths + separators
+      # 15 + 5 + 13 + (2 * 3) = 39
+      assert [%{width: final_width}] = result
+      assert final_width == 39
+    end
+
+    test "handles mixed fixed and auto column widths" do
+      table_element = %{
+        type: :table,
+        attrs: %{
+          id: :mixed_width_table,
+          columns: [
+            %{header: "Name", key: :name, width: :auto},
+            %{header: "Age", key: :age, width: 8},
+            %{header: "Location", key: :location, width: :auto}
+          ],
+          data: [
+            %{name: "Alice", age: "25", location: "New York"},
+            %{name: "Bob", age: "30", location: "Los Angeles"}
+          ],
+          style: %{}
+        }
+      }
+
+      space = %{x: 0, y: 0, width: 80, height: 24}
+
+      result = Table.measure_and_position(table_element, space, [])
+
+      assert [%{attrs: %{_col_widths: calculated_widths}}] = result
+
+      # Should have 3 columns
+      assert length(calculated_widths) == 3
+
+      # Widths should be:
+      # Name: "Name" (4) vs "Alice" (5) vs "Bob" (3) -> max 5 + 2 = 7
+      # Age: fixed at 8
+      # Location: "Location" (8) vs "New York" (8) vs "Los Angeles" (11) -> max 11 + 2 = 13
+      assert calculated_widths == [7, 8, 13]
+
+      # Total width should be sum of column widths + separators
+      # 7 + 8 + 13 + (2 * 3) = 34
+      assert [%{width: final_width}] = result
+      assert final_width == 34
+    end
+
+    test "clamps height when content exceeds available space" do
+      table_element = %{
+        type: :table,
+        attrs: %{
+          id: :height_clamp_table,
+          columns: [
+            %{header: "Name", key: :name, width: 10},
+            %{header: "Value", key: :value, width: 10}
+          ],
+          data: [
+            %{name: "Row 1", value: "A"},
+            %{name: "Row 2", value: "B"},
+            %{name: "Row 3", value: "C"},
+            %{name: "Row 4", value: "D"},
+            %{name: "Row 5", value: "E"}
+          ],
+          style: %{}
+        }
+      }
+
+      # Provide limited height space
+      space = %{x: 0, y: 0, width: 80, height: 4}
+
+      result = Table.measure_and_position(table_element, space, [])
+
+      assert [
+               %{
+                 width: final_width,
+                 height: final_height,
+                 attrs: %{_col_widths: calculated_widths}
+               }
+             ] = result
+
+      # Column widths should be preserved
+      assert calculated_widths == [10, 10]
+
+      # Width should be calculated normally (10 + 10 + 3 = 23)
+      assert final_width == 23
+
+      # Height should be clamped to available space (4)
+      # Content height would be: header(1) + separator(1) + data(5) = 7
+      # But should be clamped to space.height = 4
+      assert final_height == 4
+    end
+
+    test "handles empty data with columns" do
+      table_element = %{
+        type: :table,
+        attrs: %{
+          id: :empty_data_table,
+          columns: [
+            %{header: "Name", key: :name, width: 10},
+            %{header: "Age", key: :age, width: 8}
+          ],
+          # Empty data
+          data: [],
+          style: %{}
+        }
+      }
+
+      space = %{x: 0, y: 0, width: 80, height: 24}
+
+      result = Table.measure_and_position(table_element, space, [])
+
+      assert [%{attrs: %{_col_widths: calculated_widths}}] = result
+
+      # Should have 2 columns with fixed widths
+      assert calculated_widths == [10, 8]
+
+      # Height should be header(1) + separator(1) + data(0) = 2
+      assert [%{height: final_height}] = result
+      assert final_height == 2
+
+      # Width should be sum of column widths + separator
+      # 10 + 8 + 3 = 21
+      assert [%{width: final_width}] = result
+      assert final_width == 21
+    end
+
+    test "handles empty data without columns" do
+      table_element = %{
+        type: :table,
+        attrs: %{
+          id: :empty_fallback_table,
+          # Empty data, no columns
+          data: [],
+          style: %{}
+        }
+      }
+
+      space = %{x: 0, y: 0, width: 80, height: 24}
+
+      result = Table.measure_and_position(table_element, space, [])
+
+      assert [%{attrs: %{_col_widths: calculated_widths}}] = result
+
+      # Should have 0 columns when no data and no columns
+      assert calculated_widths == []
+
+      # Height should be 0 (no header, no separator, no data)
+      assert [%{height: final_height}] = result
+      assert final_height == 0
+
+      # Width should be 0 (no columns, no separators)
+      assert [%{width: final_width}] = result
+      assert final_width == 0
+    end
+
+    test "handles single column table" do
+      table_element = %{
+        type: :table,
+        attrs: %{
+          id: :single_column_table,
+          columns: [
+            %{header: "Name", key: :name, width: 15}
+          ],
+          data: [
+            %{name: "Alice"},
+            %{name: "Bob"}
+          ],
+          style: %{}
+        }
+      }
+
+      space = %{x: 0, y: 0, width: 80, height: 24}
+
+      result = Table.measure_and_position(table_element, space, [])
+
+      assert [%{attrs: %{_col_widths: calculated_widths}}] = result
+
+      # Should have 1 column
+      assert calculated_widths == [15]
+
+      # Width should be just the column width (no separators for single column)
+      assert [%{width: final_width}] = result
+      assert final_width == 15
+
+      # Height should be header(1) + separator(1) + data(2) = 4
+      assert [%{height: final_height}] = result
+      assert final_height == 4
+    end
   end
 end

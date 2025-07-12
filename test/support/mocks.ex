@@ -8,7 +8,6 @@ defmodule Raxol.Test.Support.Mocks do
   """
   @spec setup_mocks() :: :ok
   def setup_mocks do
-    # TODO: Implement mock setup
     :ok
   end
 
@@ -17,7 +16,6 @@ defmodule Raxol.Test.Support.Mocks do
   """
   @spec cleanup_mocks() :: :ok
   def cleanup_mocks do
-    # TODO: Implement mock cleanup
     :ok
   end
 end

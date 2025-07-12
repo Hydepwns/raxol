@@ -123,8 +123,9 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequencesTest do
 
     test ~c"handles unknown state" do
       buffer = ScreenBuffer.new(80, 24)
-      buffer = ExtendedSequences.process_terminal_state("?999h", buffer)
-      assert buffer == buffer
+      result = ExtendedSequences.process_terminal_state("?999h", buffer)
+      # Should return the buffer unchanged for unknown states
+      assert result == buffer
     end
   end
 end

@@ -62,16 +62,15 @@ defmodule Raxol.Terminal.ANSI.StateMachineTest do
     test ~c"handles invalid sequences" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e[invalid")
-      IO.inspect(sequences, label: "Sequences for invalid input")
       assert new_state.state in [:ground, :ignore]
-      assert length(sequences) == 0
+      assert Enum.empty?(sequences)
     end
 
     test ~c"handles CAN/SUB in CSI sequences" do
       state = StateMachine.new()
       {new_state, sequences} = StateMachine.process(state, "\e[1\x18")
       assert new_state.state == :ground
-      assert length(sequences) == 0
+      assert Enum.empty?(sequences)
     end
 
     test ~c"handles OSC with ST terminator" do

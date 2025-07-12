@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Commands.TrivialTest do
   test "check process_input return value" do
     emulator = Raxol.Terminal.Emulator.new(80, 24)
     result = Raxol.Terminal.Emulator.process_input(emulator, "\e[4h")
-    IO.inspect(result, label: "process_input result")
     assert is_tuple(result)
     {emulator_result, output} = result
     assert is_struct(emulator_result)
