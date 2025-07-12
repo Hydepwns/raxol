@@ -636,8 +636,11 @@ defmodule Raxol.UI.Renderer do
   end
 
   defp render_table_row(x, y, row, col_widths, style) do
-    Enum.reduce(Enum.with_index(row), {[], x + 1}, fn {cell, index}, {acc, cur_x} ->
-      cell_cells = render_table_cell(cell, cur_x, y, Enum.at(col_widths, index, 5), style)
+    Enum.reduce(Enum.with_index(row), {[], x + 1}, fn {cell, index},
+                                                      {acc, cur_x} ->
+      cell_cells =
+        render_table_cell(cell, cur_x, y, Enum.at(col_widths, index, 5), style)
+
       {acc ++ cell_cells, cur_x + Enum.at(col_widths, index, 5)}
     end)
     |> elem(0)
