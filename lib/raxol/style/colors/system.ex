@@ -258,12 +258,7 @@ defmodule Raxol.Style.Colors.System do
 
   defp get_high_contrast_color(theme, color_name, variant) do
     # First try to get a specific high contrast variant
-    val =
-      Map.get(theme.variants || %{}, {color_name, variant, :high_contrast}) ||
-        Map.get(
-          theme.variants || %{},
-          {to_string(color_name), to_string(variant), "high_contrast"}
-        )
+    val = get_high_contrast_variant(theme, color_name, variant)
 
     case val do
       %Color{} = c ->
@@ -282,12 +277,7 @@ defmodule Raxol.Style.Colors.System do
 
           hex when is_binary(hex) ->
             color = Color.from_hex(hex)
-            background = get_standard_color(theme, :background, :base)
-
-            background_color =
-              if background,
-                do: Color.from_hex(background),
-                else: Color.from_hex("#000000")
+            background_color = get_background_color(theme)
 
             # For high contrast mode, always generate a more contrasting color
             # Use a higher contrast requirement to ensure the color is noticeably different
@@ -299,6 +289,24 @@ defmodule Raxol.Style.Colors.System do
           _ ->
             standard_color
         end
+    end
+  end
+
+  defp get_high_contrast_variant(theme, color_name, variant) do
+    Map.get(theme.variants || %{}, {color_name, variant, :high_contrast}) ||
+      Map.get(
+        theme.variants || %{},
+        {to_string(color_name), to_string(variant), "high_contrast"}
+      )
+  end
+
+  defp get_background_color(theme) do
+    background = get_standard_color(theme, :background, :base)
+
+    if background do
+      Color.from_hex(background)
+    else
+      Color.from_hex("#000000")
     end
   end
 
