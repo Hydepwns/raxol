@@ -15,7 +15,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @type metric_value :: number()
   @type metric_tags :: map()
 
-  # --- Core Operations ---
   @callback new(width :: non_neg_integer(), height :: non_neg_integer()) :: t()
   @callback get_char(
               buffer :: t(),
@@ -45,7 +44,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @callback get_width(buffer :: t()) :: non_neg_integer()
   @callback get_height(buffer :: t()) :: non_neg_integer()
 
-  # --- Charset Operations ---
   @callback designate_charset(
               buffer :: t(),
               slot :: atom(),
@@ -58,7 +56,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @callback apply_single_shift(buffer :: t(), slot :: atom()) :: t()
   @callback get_single_shift(buffer :: t()) :: atom()
 
-  # --- Formatting Operations ---
   @callback get_style(buffer :: t()) :: style()
   @callback update_style(buffer :: t(), style :: style()) :: t()
   @callback set_attribute(buffer :: t(), attribute :: atom()) :: t()
@@ -71,7 +68,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @callback attribute_set?(buffer :: t(), attribute :: atom()) :: boolean()
   @callback get_set_attributes(buffer :: t()) :: [atom()]
 
-  # --- Terminal State Operations ---
   @callback get_state_stack(buffer :: t()) :: [map()]
   @callback update_state_stack(buffer :: t(), stack :: [map()]) :: t()
   @callback save_state(buffer :: t()) :: t()
@@ -82,7 +78,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @callback get_current_state(buffer :: t()) :: map()
   @callback update_current_state(buffer :: t(), state :: map()) :: t()
 
-  # --- Output Operations ---
   @callback write(buffer :: t(), data :: String.t()) :: t()
   @callback flush_output(buffer :: t()) :: t()
   @callback clear_output_buffer(buffer :: t()) :: t()
@@ -90,10 +85,8 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @callback enqueue_control_sequence(buffer :: t(), sequence :: String.t()) ::
               t()
 
-  # --- Cell Operations ---
   @callback empty?(cell :: map()) :: boolean()
 
-  # --- Metrics Operations ---
   @callback get_metric_value(buffer :: t(), metric :: metric()) ::
               metric_value()
   @callback verify_metrics(buffer :: t(), metrics :: [metric()]) :: boolean()
@@ -123,7 +116,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @callback get_metric(buffer :: t(), metric :: metric(), tags :: metric_tags()) ::
               metric_value()
 
-  # --- File Watcher Operations ---
   @callback handle_file_event(buffer :: t(), event :: map()) :: t()
   @callback handle_debounced_events(
               buffer :: t(),
@@ -132,7 +124,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
             ) :: t()
   @callback cleanup_file_watching(buffer :: t()) :: t()
 
-  # --- Scroll Operations ---
   @callback get_size(buffer :: t()) :: dimensions()
   @callback scroll_up(buffer :: t(), lines :: non_neg_integer()) :: t()
   @callback scroll_down(buffer :: t(), lines :: non_neg_integer()) :: t()
@@ -146,7 +137,6 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
               {non_neg_integer(), non_neg_integer()}
   @callback get_scroll_position(buffer :: t()) :: non_neg_integer()
 
-  # --- Screen Operations ---
   @callback clear_screen(buffer :: t()) :: t()
   @callback clear_line(buffer :: t(), line :: non_neg_integer()) :: t()
   @callback mark_damaged(
@@ -164,13 +154,10 @@ defmodule Raxol.Terminal.ScreenBufferBehaviour do
   @callback erase_from_start_of_line_to_cursor(buffer :: t()) :: t()
   @callback erase_line(buffer :: t()) :: t()
 
-  # --- Mode Handler Operations ---
   @callback handle_mode(buffer :: t(), mode :: atom(), value :: any()) :: t()
 
-  # --- Visualizer Operations ---
   @callback create_chart(buffer :: t(), data :: map(), options :: map()) :: t()
 
-  # --- User Preferences Operations ---
   @callback get_preferences() :: map()
   @callback set_preferences(preferences :: map()) :: :ok
 

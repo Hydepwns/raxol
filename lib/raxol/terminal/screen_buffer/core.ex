@@ -68,7 +68,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
           default_style: map()
         }
 
-  # --- Core Operations ---
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def new(width, height, _scrollback \\ 1000) do
     %__MODULE__{
@@ -165,7 +164,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     buffer.height
   end
 
-  # --- Clear Operations ---
   def clear(buffer, _style) do
     default_cell = Raxol.Terminal.Cell.new()
 
@@ -188,7 +186,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     %{buffer | cells: new_content}
   end
 
-  # --- Line Operations ---
   def insert_lines(buffer, count) do
     empty_line = List.duplicate(%{}, buffer.width)
     new_lines = List.duplicate(empty_line, count)
@@ -203,7 +200,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     %{buffer | cells: Enum.take(new_content, buffer.height)}
   end
 
-  # --- Character Operations ---
   def insert_chars(buffer, count) do
     %{
       buffer
@@ -259,7 +255,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     end
   end
 
-  # --- Erase Operations ---
   def erase_from_cursor_to_end(buffer) do
     %{
       buffer
@@ -361,7 +356,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     %{buffer | screen_state: Screen.clear_damaged_regions(buffer.screen_state)}
   end
 
-  # --- Cursor Operations ---
   def get_cursor_position(buffer) do
     {buffer.terminal_state.cursor_x, buffer.terminal_state.cursor_y}
   end
@@ -371,7 +365,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     |> put_in([:terminal_state, :cursor_y], y)
   end
 
-  # --- Region Operations ---
   def erase_region(buffer, x, y, width, height) do
     new_content =
       Enum.reduce(y..(y + height - 1), buffer.cells, fn row, acc ->
@@ -401,7 +394,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     |> mark_damaged(x, y, width, height)
   end
 
-  # --- Scroll Operations ---
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_size(buffer) do
     {buffer.width, buffer.height}
@@ -435,7 +427,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     Scroll.get_position(buffer.scroll_state)
   end
 
-  # --- Buffer Operations ---
   def pop_bottom_lines(buffer, count) do
     {lines, new_content} = Enum.split(buffer.cells, -count)
     {lines, %{buffer | cells: new_content}}
@@ -446,7 +437,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     %{buffer | cells: new_content}
   end
 
-  # --- Charset Operations ---
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def designate_charset(buffer, slot, charset) do
     %{
@@ -488,7 +478,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     Charset.get_single_shift(buffer.charset_state)
   end
 
-  # --- Formatting Operations ---
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_style(buffer) do
     Formatting.get_style(buffer.formatting_state)

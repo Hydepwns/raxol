@@ -15,9 +15,6 @@ defmodule Raxol.Terminal.ScreenBuffer.CSI do
           final_byte: String.t()
         }
 
-  @doc """
-  Initializes a new CSI state.
-  """
   def init do
     %__MODULE__{
       params: [],
@@ -26,9 +23,6 @@ defmodule Raxol.Terminal.ScreenBuffer.CSI do
     }
   end
 
-  @doc """
-  Handles a CSI sequence.
-  """
   def handle_sequence(%__MODULE__{} = state, sequence, params) do
     %{state | params: params, intermediate: sequence, final_byte: sequence}
   end
