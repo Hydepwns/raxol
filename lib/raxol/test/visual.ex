@@ -107,15 +107,15 @@ defmodule Raxol.Test.Visual do
   end
 
   defp extract_render_context(component_or_map_or_view, opts) do
-    if is_view_map?(component_or_map_or_view) do
+    if view_map?(component_or_map_or_view) do
       extract_render_details_from_view_map(component_or_map_or_view, opts)
     else
       extract_render_details(component_or_map_or_view)
     end
   end
 
-  defp is_view_map?(map) when map?(map), do: Map.has_key?(map, :type)
-  defp is_view_map?(_), do: false
+  defp view_map?(map) when map?(map), do: Map.has_key?(map, :type)
+  defp view_map?(_), do: false
 
   defp ensure_list(item) when list?(item), do: item
   defp ensure_list(item), do: [item]
@@ -152,23 +152,20 @@ defmodule Raxol.Test.Visual do
 
     case output_format do
       :plain_text ->
-        # For terminal-style output, convert buffer directly to plain text
         buffer.cells
-        |> Enum.map(fn row ->
-          row
-          |> Enum.map(fn cell ->
-            # Use the character from the cell, or space if nil
-            cell.char || " "
-          end)
-          |> Enum.join("")
-        end)
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", &format_row/1)
 
       :html ->
-        # For HTML output (snapshots), use the HTML renderer
         renderer_instance = Raxol.Terminal.Renderer.new(buffer, theme)
         Raxol.Terminal.Renderer.render(renderer_instance)
     end
+  end
+
+  defp format_row(row) do
+    row
+    |> Enum.map_join("", fn cell ->
+      cell.char || " "
+    end)
   end
 
   defp extract_render_details_from_view_map(view_map, _opts) do

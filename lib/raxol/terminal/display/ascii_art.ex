@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Display.AsciiArt do
     """
        ██████╗  █████╗ ██╗  ██╗ ██████╗ ██╗
        ██╔══██╗██╔══██╗██║ ██╔╝██╔═══██╗██║
-       ██████╔╝███████║█████╔╝ ██║   ██║██║
+       ██████╔╝███████║██╔██╗ ██║   ██║██║
        ██╔══██╗██╔══██║██╔═██╗ ██║   ██║██║
        ██║  ██║██║  ██║██║  ██╗╚██████╔╝███████╗
        ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
@@ -152,45 +152,38 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   Returns an ASCII art table with the given headers and rows.
   """
   def table(headers, rows) do
-    # Calculate column widths
+    col_widths = calculate_column_widths(headers, rows)
+    header_row = format_row(headers, col_widths)
+    separator = create_separator(col_widths)
+    data_rows = Enum.map(rows, &format_row(&1, col_widths))
+
+    [header_row, separator | data_rows]
+    |> Enum.join("\n")
+  end
+
+  defp calculate_column_widths(headers, rows) do
     all_rows = [headers | rows]
 
-    col_widths =
-      headers
-      |> Enum.with_index()
-      |> Enum.map(fn {_, i} ->
-        all_rows
-        |> Enum.map(fn row -> String.length(Enum.at(row, i)) end)
-        |> Enum.max()
-      end)
+    headers
+    |> Enum.with_index()
+    |> Enum.map(fn {_, i} ->
+      all_rows
+      |> Enum.map(fn row -> String.length(Enum.at(row, i)) end)
+      |> Enum.max()
+    end)
+  end
 
-    # Create header row
-    header_row =
-      headers
-      |> Enum.with_index()
-      |> Enum.map_join(" │ ", fn {header, i} ->
-        String.pad_trailing(header, Enum.at(col_widths, i))
-      end)
+  defp format_row(row, col_widths) do
+    row
+    |> Enum.with_index()
+    |> Enum.map_join(" │ ", fn {cell, i} ->
+      String.pad_trailing(cell, Enum.at(col_widths, i))
+    end)
+  end
 
-    # Create separator
-    separator =
-      col_widths
-      |> Enum.map_join("─┼─", fn width -> String.duplicate("─", width) end)
-
-    # Create data rows
-    data_rows =
-      rows
-      |> Enum.map(fn row ->
-        row
-        |> Enum.with_index()
-        |> Enum.map_join(" │ ", fn {cell, i} ->
-          String.pad_trailing(cell, Enum.at(col_widths, i))
-        end)
-      end)
-
-    # Combine all parts
-    ([header_row, separator] ++ data_rows)
-    |> Enum.join("\n")
+  defp create_separator(col_widths) do
+    col_widths
+    |> Enum.map_join("─┼─", fn width -> String.duplicate("─", width) end)
   end
 
   @doc """

@@ -14,40 +14,48 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
       words = String.split(line, " ")
 
       Enum.reduce(words, {[], ""}, fn word, {lines, current_line} ->
-        word_len = String.length(word)
-
-        cond do
-          # Case 1: Word fits perfectly on the current line (or is the first word)
-          current_line == "" && word_len <= width ->
-            {lines, word}
-
-          # Case 2: Word fits on the current line with a preceding space
-          current_line != "" &&
-              String.length(current_line) + 1 + word_len <= width ->
-            {lines, current_line <> " " <> word}
-
-          # Case 3: Word is too long for *any* line (longer than width)
-          word_len > width ->
-            # Break the long word
-            {new_lines, remaining_part} = break_long_word(word, width)
-            # Add the completed current line (if any) and the broken parts
-            updated_lines =
-              if current_line != "", do: lines ++ [current_line], else: lines
-
-            # Start new line with remaining part
-            {updated_lines ++ new_lines, remaining_part}
-
-          # Case 4: Word doesn't fit on current line, start a new line
-          true ->
-            # Add completed line, start new one with word
-            {lines ++ [current_line], word}
-        end
+        process_word(word, width, {lines, current_line})
       end)
       |> (fn {lines, last_line} ->
             # Add the final line being built (if not empty)
             if last_line != "", do: lines ++ [last_line], else: lines
           end).()
     end
+  end
+
+  defp process_word(word, width, {lines, current_line}) do
+    word_len = String.length(word)
+
+    cond do
+      # Case 1: Word fits perfectly on the current line (or is the first word)
+      current_line == "" && word_len <= width ->
+        {lines, word}
+
+      # Case 2: Word fits on the current line with a preceding space
+      current_line != "" &&
+          String.length(current_line) + 1 + word_len <= width ->
+        {lines, current_line <> " " <> word}
+
+      # Case 3: Word is too long for *any* line (longer than width)
+      word_len > width ->
+        handle_long_word(word, width, lines, current_line)
+
+      # Case 4: Word doesn't fit on current line, start a new line
+      true ->
+        # Add completed line, start new one with word
+        {lines ++ [current_line], word}
+    end
+  end
+
+  defp handle_long_word(word, width, lines, current_line) do
+    # Break the long word
+    {new_lines, remaining_part} = break_long_word(word, width)
+    # Add the completed current line (if any) and the broken parts
+    updated_lines =
+      if current_line != "", do: lines ++ [current_line], else: lines
+
+    # Start new line with remaining part
+    {updated_lines ++ new_lines, remaining_part}
   end
 
   # Private helper for wrap_line
@@ -113,24 +121,12 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
 
       # Iterate through ONLY the target wrapped lines originating from the original logical line
       # to find the character offset *within* this sequence of lines.
-      pos_within_target_sequence = 0
-
       final_cursor_offset_within_logical_line =
-        Enum.reduce_while(target_wrapped_line_indices, 0, fn wrapped_idx,
-                                                             _current_offset_in_sequence ->
-          line = Enum.at(wrapped_lines_new, wrapped_idx)
-          line_len = String.length(line)
-
-          if original_pos_in_line <= pos_within_target_sequence + line_len do
-            # Cursor position falls within this wrapped line.
-            # The offset is the original position minus the length of preceding lines *within this sequence*.
-            {:halt, original_pos_in_line - pos_within_target_sequence}
-          else
-            # Cursor is beyond this wrapped line, continue checking the next one from the same logical origin.
-            pos_within_target_sequence = pos_within_target_sequence + line_len
-            {:cont, pos_within_target_sequence}
-          end
-        end)
+        find_cursor_offset_in_target_sequence(
+          target_wrapped_line_indices,
+          wrapped_lines_new,
+          original_pos_in_line
+        )
 
       # If reduce_while finished without halting (e.g., original_pos_in_line was > total length of sequence)
       # default to the end of the last relevant wrapped line.
@@ -138,13 +134,10 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
         if is_integer(final_cursor_offset_within_logical_line) do
           final_cursor_offset_within_logical_line
         else
-          # Calculate end position relative to the start of the first target wrapped line
-          total_len_of_target_sequence =
-            Enum.reduce(target_wrapped_line_indices, 0, fn idx, acc ->
-              acc + String.length(Enum.at(wrapped_lines_new, idx))
-            end)
-
-          total_len_of_target_sequence
+          calculate_total_length_of_target_sequence(
+            target_wrapped_line_indices,
+            wrapped_lines_new
+          )
         end
 
       final_pos = start_char_offset + final_cursor_offset_within_logical_line
@@ -152,5 +145,35 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
       # Clamp to total length as a safety measure
       min(final_pos, String.length(new_contents))
     end
+  end
+
+  defp calculate_total_length_of_target_sequence(
+         target_wrapped_line_indices,
+         wrapped_lines_new
+       ) do
+    Enum.reduce(target_wrapped_line_indices, 0, fn idx, acc ->
+      acc + String.length(Enum.at(wrapped_lines_new, idx))
+    end)
+  end
+
+  defp find_cursor_offset_in_target_sequence(
+         target_wrapped_line_indices,
+         wrapped_lines_new,
+         original_pos_in_line
+       ) do
+    Enum.reduce_while(target_wrapped_line_indices, 0, fn wrapped_idx,
+                                                         pos_within_target_sequence ->
+      line = Enum.at(wrapped_lines_new, wrapped_idx)
+      line_len = String.length(line)
+
+      if original_pos_in_line <= pos_within_target_sequence + line_len do
+        # Cursor position falls within this wrapped line.
+        # The offset is the original position minus the length of preceding lines *within this sequence*.
+        {:halt, original_pos_in_line - pos_within_target_sequence}
+      else
+        # Cursor is beyond this wrapped line, continue checking the next one from the same logical origin.
+        {:cont, pos_within_target_sequence + line_len}
+      end
+    end)
   end
 end

@@ -414,16 +414,16 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   # === Additional Eraser Functions ===
 
   @doc """
-  Erases characters from the cursor position.
+  Erases characters from the cursor position by shifting remaining text left.
   """
   @spec erase_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_chars(buffer, count) do
     {x, y} = buffer.cursor_position
-    clear_region(buffer, x, y, count, 1)
+    erase_chars(buffer, x, y, count)
   end
 
   @doc """
-  Erases characters at a specific position.
+  Erases characters at a specific position by shifting remaining text left.
   """
   @spec erase_chars(
           ScreenBuffer.t(),
@@ -432,7 +432,31 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           non_neg_integer()
         ) :: ScreenBuffer.t()
   def erase_chars(buffer, x, y, count) do
-    clear_region(buffer, x, y, count, 1)
+    if y < buffer.height do
+      line = Enum.at(buffer.cells, y, [])
+      new_line = erase_chars_in_line(line, x, count, buffer.default_style)
+      new_cells = List.replace_at(buffer.cells, y, new_line)
+      %{buffer | cells: new_cells}
+    else
+      buffer
+    end
+  end
+
+  defp erase_chars_in_line(line, x, count, _default_style) do
+    line_length = length(line)
+
+    if x >= line_length do
+      line
+    else
+      # Get the part before the cursor
+      before_cursor = Enum.take(line, x)
+
+      # Get the part after the erased characters
+      after_erased = Enum.drop(line, x + count)
+
+      # Combine: before cursor + remaining text (shifted left)
+      before_cursor ++ after_erased
+    end
   end
 
   @doc """
@@ -447,24 +471,6 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       1 -> erase_from_start_to_cursor(buffer)
       # Entire screen
       2 -> erase_all(buffer)
-      _ -> buffer
-    end
-  end
-
-  @doc """
-  Erases the line with the specified mode.
-  """
-  @spec erase_line(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
-  def erase_line(buffer, mode) do
-    {x, y} = buffer.cursor_position
-
-    case mode do
-      # From cursor to end of line
-      0 -> clear_line_from(buffer, y, x)
-      # From start of line to cursor
-      1 -> clear_line_to(buffer, y, x)
-      # Entire line
-      2 -> clear_line(buffer, y)
       _ -> buffer
     end
   end

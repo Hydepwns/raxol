@@ -150,48 +150,16 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   # handle_set_mode/2
   def handle_set_mode(params, emulator) do
     case parse_mode_params(params) do
-      [mode_code] ->
-        # Try standard mode first, then private mode
-        case lookup_standard_mode(mode_code) do
-          {:ok, mode_name} ->
-            set_mode_in_manager(emulator, mode_name, true)
-
-          :error ->
-            case lookup_mode(mode_code) do
-              {:ok, mode_name} ->
-                set_mode_in_manager(emulator, mode_name, true)
-
-              :error ->
-                emulator
-            end
-        end
-
-      _ ->
-        emulator
+      [mode_code] -> try_set_mode(emulator, mode_code, true)
+      _ -> emulator
     end
   end
 
   # handle_reset_mode/2
   def handle_reset_mode(params, emulator) do
     case parse_mode_params(params) do
-      [mode_code] ->
-        # Try standard mode first, then private mode
-        case lookup_standard_mode(mode_code) do
-          {:ok, mode_name} ->
-            set_mode_in_manager(emulator, mode_name, false)
-
-          :error ->
-            case lookup_mode(mode_code) do
-              {:ok, mode_name} ->
-                set_mode_in_manager(emulator, mode_name, false)
-
-              :error ->
-                emulator
-            end
-        end
-
-      _ ->
-        emulator
+      [mode_code] -> try_set_mode(emulator, mode_code, false)
+      _ -> emulator
     end
   end
 
@@ -263,18 +231,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
 
   # handle_csi_general/4
   def handle_csi_general(params, final_byte, emulator, intermediates \\ "") do
-    case final_byte do
-      "J" -> handle_ed_command(params, emulator)
-      "K" -> handle_el_command(params, emulator)
-      "H" -> handle_cursor_position(params, emulator)
-      "A" -> handle_cursor_up(params, emulator)
-      "B" -> handle_cursor_down(params, emulator)
-      "C" -> handle_cursor_forward(params, emulator)
-      "D" -> handle_cursor_back(params, emulator)
-      "c" -> handle_device_attributes(params, emulator, intermediates)
-      "n" -> handle_device_status_report(params, emulator)
-      _ -> emulator
-    end
+    handle_csi_command(final_byte, params, emulator, intermediates)
   end
 
   # handle_device_attributes/3
@@ -398,23 +355,6 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
     end
   end
 
-  defp update_mode_manager_state(mode_manager, mode_name, value) do
-    case get_mode_update_function(mode_name, value) do
-      {:ok, update_fn} -> update_fn.(mode_manager)
-      :error -> mode_manager
-    end
-  end
-
-  defp get_mode_update_function(mode_name, value) do
-    case Map.fetch(Raxol.Terminal.ModeHandlers.mode_updates(), mode_name) do
-      {:ok, update_fn} ->
-        {:ok, fn mode_manager -> update_fn.(mode_manager, value) end}
-
-      :error ->
-        :error
-    end
-  end
-
   defp handle_screen_buffer_switch(emulator, mode, true)
        when mode in [:alt_screen_buffer, :dec_alt_screen_save] do
     alt_buf =
@@ -440,5 +380,34 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
 
   defp log_sgr_debug(msg) do
     File.write!("tmp/sgr_debug.log", msg <> "\n", [:append])
+  end
+
+  defp handle_csi_command(final_byte, params, emulator, intermediates) do
+    case final_byte do
+      "J" -> handle_ed_command(params, emulator)
+      "K" -> handle_el_command(params, emulator)
+      "H" -> handle_cursor_position(params, emulator)
+      "A" -> handle_cursor_up(params, emulator)
+      "B" -> handle_cursor_down(params, emulator)
+      "C" -> handle_cursor_forward(params, emulator)
+      "D" -> handle_cursor_back(params, emulator)
+      "c" -> handle_device_attributes(params, emulator, intermediates)
+      "n" -> handle_device_status_report(params, emulator)
+      _ -> emulator
+    end
+  end
+
+  defp try_set_mode(emulator, mode_code, value) do
+    case lookup_standard_mode(mode_code) do
+      {:ok, mode_name} -> set_mode_in_manager(emulator, mode_name, value)
+      :error -> try_private_mode(emulator, mode_code, value)
+    end
+  end
+
+  defp try_private_mode(emulator, mode_code, value) do
+    case lookup_mode(mode_code) do
+      {:ok, mode_name} -> set_mode_in_manager(emulator, mode_name, value)
+      :error -> emulator
+    end
   end
 end

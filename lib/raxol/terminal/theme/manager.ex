@@ -195,18 +195,20 @@ defmodule Raxol.Terminal.Theme.Manager do
   @spec add_custom_style(t(), String.t(), style()) ::
           {:ok, t()} | {:error, term()}
   def add_custom_style(manager, name, style) do
-    with :ok <- validate_style(style) do
-      new_styles = Map.put(manager.custom_styles, name, style)
+    case validate_style(style) do
+      :ok ->
+        new_styles = Map.put(manager.custom_styles, name, style)
 
-      updated_manager = %{
-        manager
-        | custom_styles: new_styles,
-          metrics: update_metrics(manager.metrics, :customizations)
-      }
+        updated_manager = %{
+          manager
+          | custom_styles: new_styles,
+            metrics: update_metrics(manager.metrics, :customizations)
+        }
 
-      {:ok, updated_manager}
-    else
-      {:error, reason} -> {:error, reason}
+        {:ok, updated_manager}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

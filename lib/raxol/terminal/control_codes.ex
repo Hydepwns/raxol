@@ -248,7 +248,7 @@ defmodule Raxol.Terminal.ControlCodes do
           cursor
 
         is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
+          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, column)
       end
 
     %{emulator | cursor: moved_cursor}
@@ -592,45 +592,33 @@ defmodule Raxol.Terminal.ControlCodes do
     end
   end
 
+  @escape_handlers %{
+    ?7 => &Raxol.Terminal.ControlCodes.handle_decsc/1,
+    ?8 => &Raxol.Terminal.ControlCodes.handle_decrc/1,
+    ?c => &Raxol.Terminal.ControlCodes.handle_ris/1,
+    ?D => &Raxol.Terminal.ControlCodes.handle_ind/1,
+    ?E => &Raxol.Terminal.ControlCodes.handle_nel/1,
+    ?H => &Raxol.Terminal.ControlCodes.handle_hts/1,
+    ?M => &Raxol.Terminal.ControlCodes.handle_ri/1,
+    ?= => &Raxol.Terminal.Emulator.handle_esc_equals/1,
+    ?> => &Raxol.Terminal.Emulator.handle_esc_greater/1
+  }
+
   @doc """
   Handles simple escape sequences (ESC followed by a single byte).
   """
   @spec handle_escape(Emulator.t(), integer()) :: Emulator.t()
   def handle_escape(emulator, byte) do
-    case byte do
-      ?7 ->
-        handle_decsc(emulator)
-
-      ?8 ->
-        handle_decrc(emulator)
-
-      ?c ->
-        handle_ris(emulator)
-
-      ?D ->
-        handle_ind(emulator)
-
-      ?E ->
-        handle_nel(emulator)
-
-      ?H ->
-        handle_hts(emulator)
-
-      ?M ->
-        handle_ri(emulator)
-
-      ?= ->
-        Raxol.Terminal.Emulator.handle_esc_equals(emulator)
-
-      ?> ->
-        Raxol.Terminal.Emulator.handle_esc_greater(emulator)
-
-      _ ->
+    case Map.get(@escape_handlers, byte) do
+      nil ->
         Raxol.Core.Runtime.Log.debug(
           "Unhandled escape sequence byte: #{inspect(byte)}"
         )
 
         emulator
+
+      handler ->
+        handler.(emulator)
     end
   end
 end

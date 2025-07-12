@@ -322,7 +322,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     if coordinates_valid_for_set?(state, x, y) and
          x + width <= state.active_buffer.width and
          y + height <= state.active_buffer.height do
-      new_active_buffer = fill_region_with_cell(state.active_buffer, x, y, width, height, cell)
+      new_active_buffer =
+        fill_region_with_cell(state.active_buffer, x, y, width, height, cell)
+
       new_state = %{state | active_buffer: new_active_buffer}
       new_state = update_memory_usage(new_state)
       {:reply, {:ok, new_state}, new_state}
@@ -332,8 +334,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   def handle_call({:scroll_region, x, y, width, height, amount}, _from, state) do
-    {new_active_buffer, new_scrollback_buffer} = process_scroll_region(state, x, y, width, height, amount)
-    new_state = %{state | active_buffer: new_active_buffer, scrollback_buffer: new_scrollback_buffer}
+    {new_active_buffer, new_scrollback_buffer} =
+      process_scroll_region(state, x, y, width, height, amount)
+
+    new_state = %{
+      state
+      | active_buffer: new_active_buffer,
+        scrollback_buffer: new_scrollback_buffer
+    }
+
     new_state = update_memory_usage(new_state)
     {:reply, {:ok, new_state}, new_state}
   end
@@ -355,14 +364,21 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   def handle_call({:scroll_up, amount}, _from, state) do
     # Scroll the entire buffer up by the specified amount
-    {new_active_buffer, new_scrollback_buffer} = process_scroll_region(state, 0, 0, state.width, state.height, amount)
-    new_state = %{state | active_buffer: new_active_buffer, scrollback_buffer: new_scrollback_buffer}
+    {new_active_buffer, new_scrollback_buffer} =
+      process_scroll_region(state, 0, 0, state.width, state.height, amount)
+
+    new_state = %{
+      state
+      | active_buffer: new_active_buffer,
+        scrollback_buffer: new_scrollback_buffer
+    }
+
     new_state = update_memory_usage(new_state)
     {:reply, {:ok, new_state}, new_state}
   end
 
   def handle_call({:get_history, start_line, count}, _from, state) do
-    history = Scroll.get_content(state.scrollback_buffer, start_line, count)
+    history = Scroll.get_view(state.scrollback_buffer, count)
     {:reply, {:ok, history}, state}
   end
 
@@ -502,6 +518,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
         performance: %{}
       }
     }
+
     Logger.debug("[UnifiedManager] init/1 completed, state initialized")
     {:ok, state}
   end
