@@ -1,4 +1,11 @@
 defmodule Raxol.Terminal.Integration.CellRenderer do
+  @moduledoc """
+  Renders a list of cells to the terminal.
+  """
+
+  @doc """
+  Renders a list of cells to the terminal.
+  """
   def render(cells) do
     cells
     |> Enum.reduce_while(:ok, fn {row_of_cells, y_offset}, _acc ->

@@ -16,30 +16,30 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
   """
   @spec handle(byte(), map()) :: {atom(), map()}
   def handle(byte, data) do
-    case byte do
-      # Parameter bytes (0x30-0x3E)
-      b when b in 0x30..0x3E ->
-        {:csi_param, Map.update(data, :params_buffer, <<b>>, &(&1 <> <<b>>))}
+    dispatch_byte(byte, data)
+  end
 
-      # Intermediate bytes (0x20-0x2F) and '?' (0x3F)
-      b when b in 0x20..0x2F or b == 0x3F ->
-        {:csi_intermediate,
-         Map.update(data, :intermediates_buffer, <<b>>, &(&1 <> <<b>>))}
+  defp dispatch_byte(byte, data) when byte in 0x30..0x3E do
+    {:csi_param, Map.update(data, :params_buffer, <<byte>>, &(&1 <> <<byte>>))}
+  end
 
-      # Final bytes (0x40-0x7E)
-      b when b in 0x40..0x7E ->
-        {:ground, Map.put(data, :final_byte, b)}
+  defp dispatch_byte(byte, data) when byte in 0x20..0x2F or byte == 0x3F do
+    {:csi_intermediate,
+     Map.update(data, :intermediates_buffer, <<byte>>, &(&1 <> <<byte>>))}
+  end
 
-      # Invalid bytes
-      b ->
-        require Raxol.Core.Runtime.Log
+  defp dispatch_byte(byte, data) when byte in 0x40..0x7E do
+    {:ground, Map.put(data, :final_byte, byte)}
+  end
 
-        Raxol.Core.Runtime.Log.warning(
-          "Invalid byte in CSI Entry state: #{inspect(b)}"
-        )
+  defp dispatch_byte(byte, data) do
+    require Raxol.Core.Runtime.Log
 
-        {:ground, data}
-    end
+    Raxol.Core.Runtime.Log.warning(
+      "Invalid byte in CSI Entry state: #{inspect(byte)}"
+    )
+
+    {:ground, data}
   end
 
   @doc """
@@ -57,40 +57,54 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
              Raxol.Terminal.Parser.State.t()}
   def handle(emulator, parser_state, input) do
     case input do
-      # Process each byte in the input
-      <<byte, rest::binary>> ->
-        # Convert parser_state to map for handle/2
-        state_map = %{
-          params_buffer: parser_state.params_buffer,
-          intermediates_buffer: parser_state.intermediates_buffer,
-          final_byte: parser_state.final_byte
-        }
-
-        {next_state_module, updated_data} = handle(byte, state_map)
-
-        # Update parser state with the new state and data
-        next_parser_state = %{
-          parser_state
-          | state: next_state_module,
-            params_buffer: Map.get(updated_data, :params_buffer, ""),
-            intermediates_buffer:
-              Map.get(updated_data, :intermediates_buffer, ""),
-            final_byte: Map.get(updated_data, :final_byte)
-        }
-
-        case next_state_module do
-          :ground ->
-            # Transition back to ground state
-            {:continue, emulator, next_parser_state, rest}
-
-          _ ->
-            # Continue with the next state
-            {:continue, emulator, next_parser_state, rest}
-        end
-
-      # Empty input - incomplete sequence
-      <<>> ->
-        {:incomplete, emulator, parser_state}
+      <<byte, rest::binary>> -> process_byte(emulator, parser_state, byte, rest)
+      <<>> -> {:incomplete, emulator, parser_state}
     end
+  end
+
+  defp process_byte(emulator, parser_state, byte, rest) do
+    state_map = create_state_map(parser_state)
+    {next_state_module, updated_data} = handle(byte, state_map)
+
+    next_parser_state =
+      update_parser_state(parser_state, next_state_module, updated_data)
+
+    handle_state_transition(
+      emulator,
+      next_parser_state,
+      next_state_module,
+      rest
+    )
+  end
+
+  defp create_state_map(parser_state) do
+    %{
+      params_buffer: parser_state.params_buffer,
+      intermediates_buffer: parser_state.intermediates_buffer,
+      final_byte: parser_state.final_byte
+    }
+  end
+
+  defp update_parser_state(parser_state, next_state_module, updated_data) do
+    %{
+      parser_state
+      | state: next_state_module,
+        params_buffer: Map.get(updated_data, :params_buffer, ""),
+        intermediates_buffer: Map.get(updated_data, :intermediates_buffer, ""),
+        final_byte: Map.get(updated_data, :final_byte)
+    }
+  end
+
+  defp handle_state_transition(emulator, next_parser_state, :ground, rest) do
+    {:continue, emulator, next_parser_state, rest}
+  end
+
+  defp handle_state_transition(
+         emulator,
+         next_parser_state,
+         _next_state_module,
+         rest
+       ) do
+    {:continue, emulator, next_parser_state, rest}
   end
 end

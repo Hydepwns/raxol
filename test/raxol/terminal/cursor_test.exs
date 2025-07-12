@@ -9,8 +9,6 @@ defmodule Raxol.Terminal.CursorTest do
   alias Raxol.Terminal.Modes
   alias Raxol.Terminal.EscapeSequence
 
-
-
   describe "Cursor Movement" do
     test "move_up moves cursor up" do
       cursor = Manager.new()

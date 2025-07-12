@@ -146,7 +146,6 @@ defmodule Raxol.Terminal.Integration.Config do
     with :ok <- validate_behavior(config.behavior),
          :ok <- validate_memory_limit(config.memory_limit),
          :ok <- validate_rendering(config.rendering) do
-      :ok
     end
   end
 

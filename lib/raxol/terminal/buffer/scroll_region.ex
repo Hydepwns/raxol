@@ -361,7 +361,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   end
 
   # Unified helper for scrolling in both directions
-  defp scroll_region_direction(buffer, scroll_start, scroll_end, lines, direction) do
+  defp scroll_region_direction(
+         buffer,
+         scroll_start,
+         scroll_end,
+         lines,
+         direction
+       ) do
     # Pre-create a single empty line to reuse
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
