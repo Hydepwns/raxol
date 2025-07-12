@@ -227,7 +227,15 @@ defmodule Raxol.Metrics do
     end
   end
 
-  def handle_exit(_exit_code) do
-    # TODO: Handle exit code
+  def handle_exit(exit_code) do
+    # Log exit code for metrics tracking
+    Raxol.Core.Runtime.Log.debug(
+      "Process exit detected with code: #{inspect(exit_code)}"
+    )
+
+    # Record exit code as a gauge metric
+    gauge("raxol.process_exit_code", exit_code)
+
+    :ok
   end
 end

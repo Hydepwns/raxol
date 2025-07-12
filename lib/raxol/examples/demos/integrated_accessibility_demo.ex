@@ -1,6 +1,3 @@
-# TODO: Implement this demo
-# This demo will show how to use the accessibility features of Raxol.
-
 defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   @moduledoc """
   A demo showcasing integrated accessibility features.
@@ -100,14 +97,50 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   Gets the accessibility settings.
 
   ## Parameters
-    - _user_preferences_pid_or_name: The user preferences process ID or name
+    - user_preferences_pid_or_name: The user preferences process ID or name
 
   ## Returns
     - A map containing the accessibility settings
   """
-  def get_settings(_user_preferences_pid_or_name) do
-    # TODO: Implement get_settings
-    %{}
+  def get_settings(user_preferences_pid_or_name) do
+    alias Raxol.Core.Accessibility.Preferences
+
+    %{
+      enabled:
+        Preferences.get_option(:enabled, user_preferences_pid_or_name, true),
+      screen_reader:
+        Preferences.get_option(
+          :screen_reader,
+          user_preferences_pid_or_name,
+          true
+        ),
+      high_contrast:
+        Preferences.get_option(
+          :high_contrast,
+          user_preferences_pid_or_name,
+          false
+        ),
+      reduced_motion:
+        Preferences.get_option(
+          :reduced_motion,
+          user_preferences_pid_or_name,
+          false
+        ),
+      keyboard_focus:
+        Preferences.get_option(
+          :keyboard_focus,
+          user_preferences_pid_or_name,
+          true
+        ),
+      large_text:
+        Preferences.get_option(:large_text, user_preferences_pid_or_name, false),
+      silence_announcements:
+        Preferences.get_option(
+          :silence_announcements,
+          user_preferences_pid_or_name,
+          false
+        )
+    }
   end
 
   # Optional: If this demo needs to be run directly
