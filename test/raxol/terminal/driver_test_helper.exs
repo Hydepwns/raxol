@@ -1,4 +1,5 @@
 import ExUnit.Assertions
+import ExUnit.Callbacks
 
 defmodule Raxol.Terminal.DriverTestHelper do
   @moduledoc """

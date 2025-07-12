@@ -42,7 +42,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   describe "dashboard layout" do
     test ~c"combines table with sparklines" do
       # Create table columns with embedded sparklines
-      _columns = [
+      columns = [
         %{
           header: "ID",
           key: :id,
@@ -230,7 +230,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
     test ~c"creates complex dashboard layout" do
       # Create header
-      _header =
+      header =
         View.box(
           style: [:bold],
           border: :single,
@@ -455,7 +455,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert selected_data_row_map.type == :row
       # table is the original Table.new struct
-      assert Enum.count(selected_data_row_map.children) == length(table.columns)
+      assert Enum.count(selected_data_row_map.children) == length(@columns)
 
       # Verify selected row has expected structure
       assert selected_data_row_map.type == :row

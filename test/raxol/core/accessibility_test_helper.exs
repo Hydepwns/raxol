@@ -5,6 +5,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
 
   alias Raxol.Core.UserPreferences
   import ExUnit.Assertions
+  import ExUnit.Callbacks
 
   def wait_for_state(condition, timeout \\ 100) do
     start_time = System.monotonic_time(:millisecond)
