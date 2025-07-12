@@ -16,100 +16,120 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
           {:continue, Emulator.t(), State.t(), binary()}
           | {:finished, Emulator.t(), State.t()}
           | {:incomplete, Emulator.t(), State.t()}
-  def handle(
+  def handle(emulator, %State{state: :csi_intermediate} = parser_state, input) do
+    dispatch_input(input, emulator, parser_state)
+  end
+
+  defp dispatch_input(<<>>, emulator, parser_state),
+    do: handle_empty_input(emulator, parser_state)
+
+  defp dispatch_input(
+         <<intermediate_byte, rest::binary>>,
+         emulator,
+         parser_state
+       )
+       when intermediate_byte >= 0x20 and intermediate_byte <= 0x2F,
+       do:
+         handle_intermediate_byte(
+           emulator,
+           parser_state,
+           intermediate_byte,
+           rest
+         )
+
+  defp dispatch_input(<<param_byte, rest::binary>>, emulator, parser_state)
+       when param_byte >= ?0 and param_byte <= ?;,
+       do: handle_param_byte(emulator, parser_state, param_byte, rest)
+
+  defp dispatch_input(<<final_byte, rest::binary>>, emulator, parser_state)
+       when final_byte >= ?@ and final_byte <= ?~,
+       do: handle_final_byte(emulator, parser_state, final_byte, rest)
+
+  defp dispatch_input(<<ignored_byte, rest::binary>>, emulator, parser_state)
+       when ignored_byte == 0x18 or ignored_byte == 0x1A,
+       do: handle_can_sub(emulator, parser_state, rest)
+
+  defp dispatch_input(<<ignored_byte, rest::binary>>, emulator, parser_state)
+       when ignored_byte?(ignored_byte),
+       do: handle_ignored_byte(emulator, parser_state, ignored_byte, rest)
+
+  defp dispatch_input(<<unhandled_byte, rest::binary>>, emulator, parser_state),
+    do: handle_unhandled_byte(emulator, parser_state, unhandled_byte, rest)
+
+  # Private helper functions
+  defp handle_empty_input(emulator, parser_state),
+    do: {:incomplete, emulator, parser_state}
+
+  defp handle_intermediate_byte(emulator, parser_state, intermediate_byte, rest) do
+    next_parser_state = %{
+      parser_state
+      | intermediates_buffer:
+          parser_state.intermediates_buffer <> <<intermediate_byte>>
+    }
+
+    {:continue, emulator, next_parser_state, rest}
+  end
+
+  defp handle_param_byte(emulator, parser_state, param_byte, rest) do
+    next_parser_state = %{
+      parser_state
+      | params_buffer: parser_state.params_buffer <> <<param_byte>>
+    }
+
+    {:continue, emulator, %{next_parser_state | state: :csi_param}, rest}
+  end
+
+  defp handle_final_byte(emulator, parser_state, final_byte, rest) do
+    final_emulator =
+      Executor.execute_csi_command(
         emulator,
-        %State{state: :csi_intermediate} = parser_state,
-        input
-      ) do
-    case input do
-      <<>> ->
-        # Incomplete CSI sequence - return current state
-        {:incomplete, emulator, parser_state}
+        parser_state.params_buffer,
+        parser_state.intermediates_buffer,
+        final_byte
+      )
 
-      # Collect more intermediate bytes
-      <<intermediate_byte, rest_after_intermediate::binary>>
-      when intermediate_byte >= 0x20 and intermediate_byte <= 0x2F ->
-        # Collect intermediate directly
-        next_parser_state = %{
-          parser_state
-          | intermediates_buffer:
-              parser_state.intermediates_buffer <> <<intermediate_byte>>
-        }
+    Raxol.Core.Runtime.Log.debug(
+      "CSIIntermediate: After execute, emulator.scroll_region=#{inspect(final_emulator.scroll_region)}"
+    )
 
-        {:continue, emulator, next_parser_state, rest_after_intermediate}
+    next_parser_state = %{
+      parser_state
+      | state: :ground,
+        params_buffer: "",
+        intermediates_buffer: "",
+        final_byte: nil
+    }
 
-      # Parameter byte or separator
-      <<param_byte, rest_after_param::binary>>
-      when param_byte >= ?0 and param_byte <= ?; ->
-        # Accumulate parameter directly
-        next_parser_state = %{
-          parser_state
-          | params_buffer: parser_state.params_buffer <> <<param_byte>>
-        }
+    {:continue, final_emulator, next_parser_state, rest}
+  end
 
-        # Transition back to csi_param state to continue collecting params
-        {:continue, emulator, %{next_parser_state | state: :csi_param},
-         rest_after_param}
+  defp handle_can_sub(emulator, parser_state, rest) do
+    Raxol.Core.Runtime.Log.debug("Ignoring CAN/SUB byte in CSI Intermediate")
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Final byte (0x40 - 0x7E)
-      <<final_byte, rest_after_final::binary>>
-      when final_byte >= ?@ and final_byte <= ?~ ->
-        final_emulator =
-          Executor.execute_csi_command(
-            emulator,
-            parser_state.params_buffer,
-            parser_state.intermediates_buffer,
-            final_byte
-          )
+  defp handle_ignored_byte(emulator, parser_state, ignored_byte, rest) do
+    Raxol.Core.Runtime.Log.debug(
+      "Ignoring C0/DEL byte #{ignored_byte} in CSI Intermediate"
+    )
 
-        Raxol.Core.Runtime.Log.debug(
-          "CSIIntermediate: After execute, emulator.scroll_region=#{inspect(final_emulator.scroll_region)}"
-        )
+    {:continue, emulator, parser_state, rest}
+  end
 
-        # Transition back to Ground state
-        next_parser_state = %{
-          parser_state
-          | state: :ground,
-            params_buffer: "",
-            intermediates_buffer: "",
-            final_byte: nil
-        }
+  defp handle_unhandled_byte(emulator, parser_state, unhandled_byte, rest) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Unhandled byte #{unhandled_byte} in CSI Intermediate state, returning to ground.",
+      %{}
+    )
 
-        # Continue processing the rest of the input with the new state
-        {:continue, final_emulator, next_parser_state, rest_after_final}
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Ignored byte in CSI Intermediate (e.g., CAN, SUB)
-      <<ignored_byte, rest_after_ignored::binary>>
-      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
-        Raxol.Core.Runtime.Log.debug(
-          "Ignoring CAN/SUB byte in CSI Intermediate"
-        )
-
-        # Abort sequence, go to ground
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_ignored}
-
-      # Other ignored bytes (0-1F excluding CAN/SUB, 7F)
-      <<ignored_byte, rest_after_ignored::binary>>
-      when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and
-              ignored_byte != 0x1A) or
-             (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
-        Raxol.Core.Runtime.Log.debug(
-          "Ignoring C0/DEL byte #{ignored_byte} in CSI Intermediate"
-        )
-
-        # Stay in state, ignore byte
-        {:continue, emulator, parser_state, rest_after_ignored}
-
-      # Unhandled byte (including 0x30-0x3F which VTTest ignores here) - go to ground
-      <<unhandled_byte, rest_after_unhandled::binary>> ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Unhandled byte #{unhandled_byte} in CSI Intermediate state, returning to ground.",
-          %{}
-        )
-
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_unhandled}
-    end
+  # Guard functions
+  defp ignored_byte?(byte) do
+    (byte >= 0 and byte <= 23 and byte != 0x18 and byte != 0x1A) or
+      (byte >= 27 and byte <= 31) or byte == 127
   end
 end

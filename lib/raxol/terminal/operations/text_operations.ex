@@ -27,16 +27,17 @@ defmodule Raxol.Terminal.Operations.TextOperations do
     if line >= 0 and line < buffer.height do
       buffer.cells
       |> Enum.at(line, [])
-      |> Enum.map(fn cell ->
-        case cell do
-          %{char: char} when is_binary(char) -> char
-          _ -> " "
-        end
-      end)
-      |> Enum.join()
+      |> Enum.map_join("", &extract_char/1)
       |> String.trim_trailing()
     else
       ""
+    end
+  end
+
+  defp extract_char(cell) do
+    case cell do
+      %{char: char} when is_binary(char) -> char
+      _ -> " "
     end
   end
 

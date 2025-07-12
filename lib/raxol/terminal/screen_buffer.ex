@@ -480,22 +480,30 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
     new_cells =
       Enum.reduce(y..(y + height - 1), buffer.cells, fn row_y, acc_cells ->
-        if row_y < buffer.height do
-          List.update_at(acc_cells, row_y, fn row ->
-            Enum.reduce(x..(x + width - 1), row, fn col_x, acc_row ->
-              if col_x < buffer.width do
-                List.replace_at(acc_row, col_x, empty_cell)
-              else
-                acc_row
-              end
-            end)
-          end)
-        else
-          acc_cells
-        end
+        clear_row_if_valid(acc_cells, row_y, x, width, buffer, empty_cell)
       end)
 
     %{buffer | cells: new_cells}
+  end
+
+  defp clear_row_if_valid(cells, row_y, x, width, buffer, empty_cell) do
+    if row_y < buffer.height do
+      List.update_at(cells, row_y, fn row ->
+        clear_row_columns(row, x, width, buffer.width, empty_cell)
+      end)
+    else
+      cells
+    end
+  end
+
+  defp clear_row_columns(row, x, width, buffer_width, empty_cell) do
+    Enum.reduce(x..(x + width - 1), row, fn col_x, acc_row ->
+      if col_x < buffer_width do
+        List.replace_at(acc_row, col_x, empty_cell)
+      else
+        acc_row
+      end
+    end)
   end
 
   def mark_damaged(buffer, x, y, width, height, _reason) do

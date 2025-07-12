@@ -143,29 +143,36 @@ defmodule Raxol.Terminal.Integration.State do
   """
   @spec get_visible_content(t()) :: list()
   def get_visible_content(%__MODULE__{} = state) do
+    case get_window_buffer_id() do
+      {:ok, buffer_id} ->
+        get_buffer_content(state, buffer_id)
+
+      _ ->
+        []
+    end
+  end
+
+  defp get_window_buffer_id() do
     case UnifiedWindow.get_active_window() do
       {:ok, window_id} ->
         case UnifiedWindow.get_window_state(window_id) do
-          {:ok, window} ->
-            # Handle mock buffer manager for testing
-            case state.buffer_manager do
-              %{id: _} ->
-                # Return mock content for testing
-                [["Hello, World!"]]
-
-              buffer_manager when is_map(buffer_manager) ->
-                UnifiedManager.get_visible_content(
-                  buffer_manager,
-                  window.buffer_id
-                )
-
-              _ ->
-                []
-            end
-
-          _ ->
-            []
+          {:ok, window} -> {:ok, window.buffer_id}
+          _ -> :error
         end
+
+      _ ->
+        :error
+    end
+  end
+
+  defp get_buffer_content(%__MODULE__{} = state, buffer_id) do
+    case state.buffer_manager do
+      %{id: _} ->
+        # Return mock content for testing
+        [["Hello, World!"]]
+
+      buffer_manager when is_map(buffer_manager) ->
+        UnifiedManager.get_visible_content(buffer_manager, buffer_id)
 
       _ ->
         []
@@ -193,23 +200,33 @@ defmodule Raxol.Terminal.Integration.State do
   """
   @spec render(t()) :: t()
   def render(%__MODULE__{} = state) do
+    case get_active_window_renderer_id() do
+      {:ok, renderer_id} ->
+        render_with_renderer(state, renderer_id)
+
+      _ ->
+        state
+    end
+  end
+
+  defp get_active_window_renderer_id() do
     case UnifiedWindow.get_active_window() do
       {:ok, window_id} ->
         case UnifiedWindow.get_window_state(window_id) do
-          {:ok, window} ->
-            # Only render if renderer is a PID
-            case state.renderer do
-              renderer when is_pid(renderer) ->
-                UnifiedRenderer.render(renderer, window.renderer_id)
-                state
-
-              _ ->
-                state
-            end
-
-          _ ->
-            state
+          {:ok, window} -> {:ok, window.renderer_id}
+          _ -> :error
         end
+
+      _ ->
+        :error
+    end
+  end
+
+  defp render_with_renderer(%__MODULE__{} = state, renderer_id) do
+    case state.renderer do
+      renderer when is_pid(renderer) ->
+        UnifiedRenderer.render(renderer, renderer_id)
+        state
 
       _ ->
         state
