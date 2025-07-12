@@ -122,12 +122,20 @@ defmodule Raxol.Terminal.Cursor.Manager do
     {cursor.col, cursor.row}
   end
 
+  def get_position(_), do: {0, 0}
+
   @doc """
   Sets the cursor position.
   """
-  def set_position(pid \\ __MODULE__, {row, col}) do
+  def set_position(pid, {row, col}) when is_pid(pid) do
     GenServer.call(pid, {:set_position, row, col})
   end
+
+  def set_position(%__MODULE__{} = cursor, {row, col}) do
+    %{cursor | row: row, col: col, position: {col, row}}
+  end
+
+  def set_position(other, _pos), do: other
 
   @doc """
   Moves the cursor relative to its current position.
@@ -193,10 +201,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Moves the cursor down by the specified number of lines.
   """
-  def move_down(cursor, lines, _width, _height) do
+  def move_down(%__MODULE__{} = cursor, lines, _width, _height) do
     new_row = min(cursor.bottom_margin, cursor.row + lines)
     %{cursor | row: new_row, position: {cursor.col, new_row}}
   end
+
+  def move_down(other, _lines, _width, _height), do: other
 
   @doc """
   Moves the cursor left by the specified number of columns.
@@ -233,6 +243,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def move_to_column(cursor, column) do
     %{cursor | col: column, position: {column, cursor.row}}
+  end
+
+  def move_to_column(other, _col) do
+    IO.puts(
+      "[DEBUG] move_to_column/2 called with non-cursor: #{inspect(other)} (type: #{inspect(other.__struct__)}"
+    )
+
+    other
   end
 
   @doc """
@@ -842,13 +860,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def handle_call({:move_to_column, column}, _from, state) do
     # Move cursor to specific column
     new_state = %{state | col: column, position: {column, state.row}}
-    {:reply, new_state, new_state}
-  end
-
-  @impl GenServer
-  def handle_call(:move_to_line_start, _from, state) do
-    # Move cursor to beginning of line
-    new_state = %{state | col: 0, position: {0, state.row}}
     {:reply, new_state, new_state}
   end
 

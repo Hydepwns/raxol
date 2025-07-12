@@ -87,7 +87,16 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     # Get current cursor position
     {current_cursor_x, current_cursor_y} =
       try do
-        Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+        case emulator.cursor do
+          cursor when is_pid(cursor) ->
+            Raxol.Terminal.Cursor.Manager.get_position(cursor)
+
+          cursor when is_map(cursor) ->
+            Raxol.Terminal.Cursor.Manager.get_position(cursor)
+
+          _ ->
+            {0, 0}
+        end
       rescue
         e ->
           IO.puts("ERROR: Failed to get cursor position: #{inspect(e)}")
@@ -160,13 +169,31 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
          new_charset_state
        ) do
     # Update cursor position by calling the cursor manager
-    Raxol.Terminal.Cursor.Manager.set_position(
-      emulator.cursor,
-      {next_cursor_x, next_cursor_y}
-    )
+    updated_emulator =
+      case emulator.cursor do
+        cursor when is_pid(cursor) ->
+          Raxol.Terminal.Cursor.Manager.set_position(
+            cursor,
+            {next_cursor_x, next_cursor_y}
+          )
+
+          emulator
+
+        cursor when is_map(cursor) ->
+          updated_cursor =
+            Raxol.Terminal.Cursor.Manager.set_position(
+              cursor,
+              {next_cursor_x, next_cursor_y}
+            )
+
+          %{emulator | cursor: updated_cursor}
+
+        _ ->
+          emulator
+      end
 
     %{
-      emulator
+      updated_emulator
       | last_col_exceeded: next_last_col_exceeded,
         charset_state: new_charset_state
     }

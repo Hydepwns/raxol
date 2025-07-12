@@ -3,18 +3,8 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Provides buffer management functionality for the terminal emulator.
   """
 
-  require Raxol.Core.Runtime.Log
-
   alias Raxol.Terminal.{
     ScreenBuffer
-    # Buffer,
-    # CharacterSets,
-    # Cursor,
-    # Initializer,
-    # Manager,
-    # Operations,
-    # Scroller,
-    # TextFormatting
   }
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
