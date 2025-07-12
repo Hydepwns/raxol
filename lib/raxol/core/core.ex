@@ -41,7 +41,6 @@ defmodule Raxol.Core do
   """
 
   alias Raxol.Core.Runtime.{
-    Application,
     Lifecycle,
     Supervisor,
     Plugins.Manager
@@ -135,13 +134,11 @@ defmodule Raxol.Core do
       "[#{__MODULE__}] Starting application: #{inspect(app_module)}"
     )
 
-    # Validate the application module
     case validate_application_module(app_module) do
       :ok ->
-        # Initialize core systems
-        with :ok <- initialize_core_systems(options),
-             {:ok, runtime_pid} <- start_runtime(app_module, options) do
-          {:ok, runtime_pid}
+        case initialize_core_systems(options) do
+          :ok -> start_runtime(app_module, options)
+          {:error, reason} -> {:error, reason}
         end
 
       {:error, reason} ->
@@ -561,7 +558,6 @@ defmodule Raxol.Core do
   end
 
   defp initialize_core_systems(options) do
-    # Initialize core subsystems
     Performance.init(Keyword.get(options, :performance, []))
     Metrics.init(Keyword.get(options, :metrics, []))
     Accessibility.init(Keyword.get(options, :accessibility, []))
@@ -571,7 +567,6 @@ defmodule Raxol.Core do
   end
 
   defp start_runtime(app_module, options) do
-    # Start the runtime supervisor
     case Supervisor.start_link(%{
            app_module: app_module,
            options: options
@@ -589,7 +584,6 @@ defmodule Raxol.Core do
   end
 
   defp get_terminal_info do
-    # Get terminal information
     case System.get_env("TERM") do
       nil -> "unknown"
       term -> term
@@ -597,7 +591,6 @@ defmodule Raxol.Core do
   end
 
   defp get_color_support do
-    # Get color support information
     case IO.ANSI.enabled?() do
       true -> 256
       false -> 0
@@ -605,7 +598,6 @@ defmodule Raxol.Core do
   end
 
   defp get_performance_info do
-    # Get basic performance information
     case Performance.get_stats() do
       {:ok, stats} -> stats
       {:error, _} -> %{status: :unknown}

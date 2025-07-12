@@ -13,10 +13,7 @@ defmodule Raxol.Core.Config.Manager do
   @type config_opts :: keyword()
   @type validation_result :: :ok | {:error, String.t()}
 
-  # Default persistent config file location
   @persistent_config_file "~/.config/raxol/user_config.json"
-
-  # Client API
 
   @doc """
   Starts the configuration manager.
@@ -123,8 +120,6 @@ defmodule Raxol.Core.Config.Manager do
     GenServer.call(__MODULE__, :reload)
   end
 
-  # Server Callbacks
-
   @impl GenServer
   def init(opts) do
     config_file = Keyword.get(opts, :config_file, "config/raxol.exs")
@@ -147,7 +142,6 @@ defmodule Raxol.Core.Config.Manager do
         {:ok, new_state}
 
       {:error, reason} ->
-        # Don't stop the process, just start with empty config
         Logger.warning("Failed to load config: #{inspect(reason)}")
         {:ok, state}
     end
@@ -212,25 +206,24 @@ defmodule Raxol.Core.Config.Manager do
 
   @impl GenServer
   def handle_call(:reload, _from, state) do
-    with {:ok, new_state} <- load_config(state) do
-      {:reply, {:ok, new_state.config}, new_state}
-    else
-      {:error, reason} -> {:reply, {:error, reason}, state}
+    case load_config(state) do
+      {:ok, new_state} ->
+        {:reply, {:ok, new_state.config}, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
-
-  # Private Functions
 
   defp load_config(state) do
     case load_config_file(state.config_file, state.env) do
       {:ok, config} ->
         case maybe_validate_and_set_config(state, config) do
           {:ok, new_state} ->
-            # Load and merge persistent config
             load_persistent_config(new_state)
 
-          error ->
-            error
+          {:error, reason} ->
+            {:error, reason}
         end
 
       {:error, reason} ->
@@ -245,7 +238,6 @@ defmodule Raxol.Core.Config.Manager do
           {:ok, %{state | config: config}}
 
         {:error, reason} ->
-          # Don't fail validation, just log and use empty config
           Logger.warning("Configuration validation failed: #{reason}")
           {:ok, %{state | config: %{}}}
       end
@@ -257,7 +249,6 @@ defmodule Raxol.Core.Config.Manager do
   defp load_persistent_config(state) do
     case load_persistent_file(state.persistent_file) do
       {:ok, persistent_config} ->
-        # Convert string keys to atom keys and merge with base config
         atom_config =
           Map.new(persistent_config, fn {k, v} -> {String.to_atom(k), v} end)
 
@@ -265,7 +256,6 @@ defmodule Raxol.Core.Config.Manager do
         {:ok, %{state | config: merged_config}}
 
       {:error, :file_not_found} ->
-        # No persistent config file exists, use base config
         {:ok, state}
 
       {:error, reason} ->
@@ -280,7 +270,6 @@ defmodule Raxol.Core.Config.Manager do
         {config, _binding} = Code.eval_file(file)
 
         case get_in(config, [env]) do
-          # Return empty config if environment not found
           nil -> {:ok, %{}}
           env_config -> {:ok, env_config}
         end
@@ -296,19 +285,15 @@ defmodule Raxol.Core.Config.Manager do
   end
 
   defp validate_config(config) do
-    # Validate required fields
     required_fields = [:terminal, :buffer, :renderer]
 
     missing_fields =
       Enum.filter(required_fields, &(not Map.has_key?(config, &1)))
 
     if Enum.empty?(missing_fields) do
-      # Validate each section
-      with :ok <- validate_terminal_config(config.terminal),
-           :ok <- validate_buffer_config(config.buffer),
-           :ok <- validate_renderer_config(config.renderer) do
-        :ok
-      end
+      validate_terminal_config(config.terminal)
+      validate_buffer_config(config.buffer)
+      validate_renderer_config(config.renderer)
     else
       {:error,
        "Missing required configuration fields: #{Enum.join(missing_fields, ", ")}"}
@@ -398,18 +383,14 @@ defmodule Raxol.Core.Config.Manager do
     persistent_file =
       Keyword.get(opts, :persistent_file, @persistent_config_file)
 
-    # Ensure directory exists
     persistent_file
     |> Path.dirname()
     |> File.mkdir_p()
 
-    # Load existing persistent config
     current_config = load_existing_persistent_config(persistent_file)
 
-    # Update with new value
     updated_config = Map.put(current_config, Atom.to_string(key), value)
 
-    # Save back to file
     case Jason.encode(updated_config, pretty: true) do
       {:ok, json_content} ->
         case File.write(persistent_file, json_content) do
@@ -431,13 +412,10 @@ defmodule Raxol.Core.Config.Manager do
     persistent_file =
       Keyword.get(opts, :persistent_file, @persistent_config_file)
 
-    # Load existing persistent config
     current_config = load_existing_persistent_config(persistent_file)
 
-    # Remove the key
     updated_config = Map.delete(current_config, Atom.to_string(key))
 
-    # Save back to file
     case Jason.encode(updated_config, pretty: true) do
       {:ok, json_content} ->
         case File.write(persistent_file, json_content) do
@@ -466,9 +444,6 @@ defmodule Raxol.Core.Config.Manager do
   end
 
   defp get_persistent_file_path do
-    # Get the persistent file path from the current state
-    # This is a simplified approach - in a real implementation,
-    # you might want to pass this through the function calls
     Path.expand(@persistent_config_file)
   end
 
@@ -477,23 +452,19 @@ defmodule Raxol.Core.Config.Manager do
 
     if File.exists?(expanded_path) do
       case File.read(expanded_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, config} when is_map(config) ->
-              {:ok, config}
-
-            {:ok, _} ->
-              {:error, :invalid_config_format}
-
-            {:error, reason} ->
-              {:error, reason}
-          end
-
-        {:error, reason} ->
-          {:error, reason}
+        {:ok, content} -> decode_json_content(content)
+        {:error, reason} -> {:error, reason}
       end
     else
       {:error, :file_not_found}
+    end
+  end
+
+  defp decode_json_content(content) do
+    case Jason.decode(content) do
+      {:ok, config} when is_map(config) -> {:ok, config}
+      {:ok, _} -> {:error, :invalid_config_format}
+      {:error, reason} -> {:error, reason}
     end
   end
 end

@@ -10,21 +10,15 @@ defmodule Raxol.Core.UserPreferences do
   use GenServer
   require Raxol.Core.Runtime.Log
 
-  # Use the new Persistence module
   alias Raxol.Core.Preferences.Persistence
 
-  # Delay in ms before saving after a change
   @save_delay_ms 1000
 
-  # --- Data Structure ---
   defmodule State do
     @moduledoc "Internal state for the UserPreferences GenServer."
     defstruct preferences: %{},
-              # Stores ref for the save timer
               save_timer: nil
   end
-
-  # --- Client API ---
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts,
@@ -45,7 +39,6 @@ defmodule Raxol.Core.UserPreferences do
         case Persistence.load() do
           {:ok, loaded_prefs} ->
             Raxol.Core.Runtime.Log.info("User preferences loaded successfully.")
-            # Deep merge with defaults to ensure all keys exist
             deep_merge(default_preferences(), loaded_prefs)
 
           {:error, :file_not_found} ->
@@ -112,7 +105,6 @@ defmodule Raxol.Core.UserPreferences do
 
       new_state = %{state | preferences: new_preferences}
 
-      # Send preferences_applied message for test synchronization to the calling process
       {caller_pid, _} = from
 
       send(
@@ -121,11 +113,8 @@ defmodule Raxol.Core.UserPreferences do
          Process.info(self(), :registered_name) |> elem(1) || self()}
       )
 
-      # Schedule a save after a delay
       {:reply, :ok, schedule_save(new_state)}
     else
-      # Value didn't change, do nothing, but still reply :ok
-      # In test mode, still send preferences_applied for test synchronization
       if Mix.env() == :test do
         {caller_pid, _} = from
 
@@ -155,7 +144,6 @@ defmodule Raxol.Core.UserPreferences do
 
     new_state = %{state | preferences: new_preferences}
 
-    # Send preferences_applied message for test synchronization to the calling process
     {caller_pid, _} = from
 
     send(
@@ -164,13 +152,11 @@ defmodule Raxol.Core.UserPreferences do
        Process.info(self(), :registered_name) |> elem(1) || self()}
     )
 
-    # Schedule a save after a delay
     {:reply, :ok, schedule_save(new_state)}
   end
 
   @impl GenServer
   def handle_call(:save_now, _from, state) do
-    # Cancel any pending delayed save
     cancel_save_timer(state.save_timer)
 
     case Persistence.save(state.preferences) do
@@ -194,7 +180,7 @@ defmodule Raxol.Core.UserPreferences do
     )
 
     new_preferences = default_preferences()
-    # Cancel any pending save timer as we are resetting
+
     new_state = %{
       state
       | preferences: new_preferences,
@@ -204,7 +190,6 @@ defmodule Raxol.Core.UserPreferences do
     {:reply, :ok, new_state}
   end
 
-  # Schedules a save operation, cancelling any existing timer
   defp schedule_save(state = %State{save_timer: existing_timer}) do
     cancel_save_timer(existing_timer)
 
@@ -219,16 +204,12 @@ defmodule Raxol.Core.UserPreferences do
     %{state | save_timer: timer_id}
   end
 
-  # Cancels a Process.send_after timer if it exists
   defp cancel_save_timer(timer_id) when integer?(timer_id) do
-    # We can't actually cancel the timer, but we can ignore its message
-    # when it arrives by checking the timer_id
     :ok
   end
 
   defp cancel_save_timer(_), do: :ok
 
-  # Handle the delayed save message
   @impl GenServer
   def handle_info({:perform_delayed_save, timer_id}, state) do
     if timer_id == state.save_timer do
@@ -242,21 +223,16 @@ defmodule Raxol.Core.UserPreferences do
           )
       end
 
-      # Reset the timer id in state
       {:noreply, %{state | save_timer: nil}}
     else
-      # Ignore stale timer messages
       {:noreply, state}
     end
   end
 
-  # Catch-all for unexpected messages
   @impl GenServer
   def handle_info(msg, state) do
-    # Handle the preferences_applied message specially
     case msg do
       {:preferences_applied, _pid} ->
-        # This is expected, don't log it as a warning
         {:noreply, state}
 
       _ ->
@@ -265,27 +241,21 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  # --- Internal Helpers ---
-
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
       if map?(val1) and map?(val2) do
         deep_merge(val1, val2)
       else
-        # Value from map2 overrides map1
         val2
       end
     end)
   end
 
-  # Helper to normalize key paths to a list of atoms
   defp normalize_path(path) when atom?(path), do: [path]
-  # Assume list is already correct
   defp normalize_path(path) when list?(path), do: path
 
   defp normalize_path(path) when binary?(path) do
     String.split(path, ".")
-    # Use existing_atom for safety
     |> Enum.map(&String.to_existing_atom/1)
   catch
     ArgumentError ->
@@ -293,7 +263,6 @@ defmodule Raxol.Core.UserPreferences do
         "Invalid preference path string: #{inspect(path)} - cannot convert segments to atoms."
       )
 
-      # Return empty path on error to avoid crash, get_in/put_in will likely fail gracefully
       []
   end
 

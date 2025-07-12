@@ -54,73 +54,60 @@ defmodule Raxol.Core.Accessibility.Announcements do
       raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
     end
 
-    disabled = Process.get(:accessibility_disabled) == true
-
-    # Check if announcements are silenced
-    silenced = get_silence_setting(user_preferences_pid_or_name)
-
-    # Check if screen reader is enabled
-    screen_reader_enabled =
-      get_screen_reader_setting(user_preferences_pid_or_name)
-
-    cond do
-      # Do nothing if accessibility is disabled
-      disabled ->
-        :ok
-
-      # Do nothing if announcements are silenced
-      silenced ->
-        :ok
-
-      # Do nothing if screen reader is disabled
-      screen_reader_enabled == false ->
-        :ok
-
-      true ->
-        # Settings allow announcements, proceed
-        priority = Keyword.get(opts, :priority, :normal)
-        interrupt = Keyword.get(opts, :interrupt, false)
-
-        announcement = %{
-          message: message,
-          priority: priority,
-          timestamp: System.monotonic_time(:millisecond),
-          interrupt: interrupt
-        }
-
-        # Add to queue with user-specific key
-        key = {:accessibility_announcements, user_preferences_pid_or_name}
-        current_queue = Process.get(key, [])
-
-        require Raxol.Core.Runtime.Log
-
-        Raxol.Core.Runtime.Log.debug(
-          "Announcements.announce storing with key: #{inspect(key)}, current_queue: #{inspect(current_queue)}"
-        )
-
-        updated_queue =
-          if announcement.interrupt,
-            do: [announcement],
-            else: insert_by_priority(current_queue, announcement, priority)
-
-        Process.put(key, updated_queue)
-
-        # Also store in the legacy key format for test compatibility
-        legacy_queue = Process.get(:accessibility_announcements, [])
-        Process.put(:accessibility_announcements, [announcement | legacy_queue])
-
-        Raxol.Core.Runtime.Log.debug(
-          "Announcements.announce stored announcement: #{inspect(announcement)}"
-        )
-
-        # Send announcement_added messages to subscribers
-        send_announcement_to_subscribers(message)
-
-        # Dispatch event to notify screen readers
-        EventManager.dispatch({:accessibility_announce, message})
+    if should_announce?(user_preferences_pid_or_name) do
+      process_announcement(message, opts, user_preferences_pid_or_name)
     end
 
     :ok
+  end
+
+  defp should_announce?(user_preferences_pid_or_name) do
+    disabled = Process.get(:accessibility_disabled) == true
+    silenced = get_silence_setting(user_preferences_pid_or_name)
+
+    screen_reader_enabled =
+      get_screen_reader_setting(user_preferences_pid_or_name)
+
+    not disabled and not silenced and screen_reader_enabled != false
+  end
+
+  defp process_announcement(message, opts, user_preferences_pid_or_name) do
+    priority = Keyword.get(opts, :priority, :normal)
+    interrupt = Keyword.get(opts, :interrupt, false)
+
+    announcement = %{
+      message: message,
+      priority: priority,
+      timestamp: System.monotonic_time(:millisecond),
+      interrupt: interrupt
+    }
+
+    key = {:accessibility_announcements, user_preferences_pid_or_name}
+    current_queue = Process.get(key, [])
+
+    require Raxol.Core.Runtime.Log
+
+    Raxol.Core.Runtime.Log.debug(
+      "Announcements.announce storing with key: #{inspect(key)}, current_queue: #{inspect(current_queue)}"
+    )
+
+    updated_queue =
+      if announcement.interrupt,
+        do: [announcement],
+        else: insert_by_priority(current_queue, announcement, priority)
+
+    Process.put(key, updated_queue)
+
+    legacy_queue = Process.get(:accessibility_announcements, [])
+    Process.put(:accessibility_announcements, [announcement | legacy_queue])
+
+    Raxol.Core.Runtime.Log.debug(
+      "Announcements.announce stored announcement: #{inspect(announcement)}"
+    )
+
+    send_announcement_to_subscribers(message)
+
+    EventManager.dispatch({:accessibility_announce, message})
   end
 
   @doc """

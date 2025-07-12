@@ -25,7 +25,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def init do
-    # Register event handlers for accessibility settings
     EventManager.register_handler(
       :accessibility_high_contrast,
       __MODULE__,
@@ -64,12 +63,10 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def cleanup do
-    # Reset UserPreferences to defaults for tests
     if Mix.env() == :test do
       UserPreferences.reset_to_defaults_for_test!()
     end
 
-    # Unregister event handlers
     EventManager.unregister_handler(
       :accessibility_high_contrast,
       __MODULE__,
@@ -104,18 +101,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   Accepts a keyword list of options (e.g., `[high_contrast: true, ...]`).
   """
   def apply_settings(options) when list?(options) do
-    # Get settings directly from the passed options
     high_contrast = Keyword.get(options, :high_contrast, false)
     reduced_motion = Keyword.get(options, :reduced_motion, false)
     large_text = Keyword.get(options, :large_text, false)
 
-    # Apply high contrast setting
     handle_high_contrast({:accessibility_high_contrast, high_contrast})
 
-    # Apply reduced motion setting
     handle_reduced_motion({:accessibility_reduced_motion, reduced_motion})
 
-    # Apply large text setting
     handle_large_text({:accessibility_large_text, large_text})
 
     :ok
@@ -128,17 +121,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
     require Raxol.Core.Runtime.Log
 
-    # Persist the setting
     UserPreferences.set(pref_key(:high_contrast), enabled)
 
     Raxol.Core.Runtime.Log.debug(
       "ThemeIntegration handling high contrast event: #{enabled}"
     )
 
-    # Trigger a global UI refresh event
     EventManager.trigger(:ui_refresh_required, %{reason: :theme_change})
 
-    # Dispatch the expected theme_changed event for tests
     EventManager.dispatch({:theme_changed, %{high_contrast: enabled}})
 
     :ok
@@ -150,7 +140,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   @spec get_accessibility_mode() :: atom()
   def get_accessibility_mode() do
-    # Read using UserPreferences
     high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
 
     if high_contrast do
@@ -171,12 +160,10 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def handle_reduced_motion({:accessibility_reduced_motion, enabled}) do
     require Raxol.Core.Runtime.Log
 
-    # Persist the setting
     UserPreferences.set(pref_key(:reduced_motion), enabled)
 
     Raxol.Core.Runtime.Log.debug("Restoring FocusRing config for normal motion")
 
-    # Dispatch the expected theme_changed event for tests
     EventManager.dispatch({:theme_changed, %{reduced_motion: enabled}})
 
     :ok
@@ -191,16 +178,13 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def handle_large_text({:accessibility_large_text, enabled}) do
-    # Persist the setting
     UserPreferences.set(pref_key(:large_text), enabled)
 
-    # Dispatch the expected theme_changed event for tests
     EventManager.dispatch({:theme_changed, %{large_text: enabled}})
 
     :ok
   end
 
-  # Helper to mimic internal pref_key logic
   defp pref_key(key), do: "accessibility.#{key}"
 
   @doc """
@@ -233,7 +217,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   @spec get_active_variant() :: atom()
   def get_active_variant do
-    # Read using UserPreferences
     high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
     reduced_motion = UserPreferences.get(pref_key(:reduced_motion)) || false
 
@@ -289,7 +272,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   @spec get_text_scale() :: float()
   def get_text_scale do
-    # Read using UserPreferences
     large_text = UserPreferences.get(pref_key(:large_text)) || false
 
     if large_text do
