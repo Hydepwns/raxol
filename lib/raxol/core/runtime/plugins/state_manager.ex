@@ -21,7 +21,7 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
       plugins: Map.put(state_maps.plugins, plugin_id, plugin_module),
       metadata: Map.put(state_maps.metadata, plugin_id, plugin_metadata),
       plugin_states: Map.put(state_maps.plugin_states, plugin_id, plugin_state),
-      load_order: state_maps.load_order ++ [plugin_id],
+      load_order: [plugin_id | state_maps.load_order],
       plugin_config: Map.put(state_maps.plugin_config, plugin_id, config)
     }
   end

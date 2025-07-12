@@ -70,9 +70,10 @@ defmodule Raxol.Plugins.EventHandler do
         )
       end)
 
-    case result do
-      {:error, reason} -> {:error, reason}
-      acc -> {:ok, acc.manager}
+    if is_map(result) do
+      {:ok, result.manager}
+    else
+      result
     end
   end
 
@@ -191,12 +192,10 @@ defmodule Raxol.Plugins.EventHandler do
         )
       end)
 
-    case result do
-      {:error, reason} ->
-        {:error, reason}
-
-      acc ->
-        {:ok, acc.manager, acc.output}
+    if is_map(result) do
+      {:ok, result.manager, result.output}
+    else
+      result
     end
   end
 

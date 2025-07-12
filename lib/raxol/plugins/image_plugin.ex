@@ -111,6 +111,16 @@ defmodule Raxol.Plugins.ImagePlugin do
     "1.0.0"
   end
 
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def start(config) do
+    {:ok, config}
+  end
+
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def stop(config) do
+    {:ok, config}
+  end
+
   @impl Plugin
   def handle_cells(placeholder_cell, _emulator_state, %__MODULE__{} = plugin) do
     Raxol.Core.Runtime.Log.debug(
