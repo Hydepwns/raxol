@@ -4,12 +4,12 @@ description: How to develop plugins for Raxol
 date: 2025-04-27
 author: Raxol Team
 section: guides
-tags: [plugins, development, guides, api]
+tags: [plugin, development, guide, extension]
 ---
 
-# Raxol Plugin Development Guide
+# Plugin Development Guide
 
-Create, manage, and integrate plugins within Raxol.
+_Raxol 0.6.0 introduces an improved plugin system with enhanced reliability and extensibility. Make sure you are using the latest version for plugin development!_
 
 ## Table of Contents
 
@@ -21,7 +21,6 @@ Create, manage, and integrate plugins within Raxol.
 - [Plugin Reloading](#plugin-reloading)
 - [Core Plugins](#core-plugins)
 - [Best Practices](#best-practices)
-- [Example Plugin](#example-plugin)
 
 ## Introduction
 
@@ -349,58 +348,4 @@ _(More may be added.)_
 ### Other
 
 - Use clear command namespaces.
-- Make plugins configurable via `init/1` config.
-- Consider command idempotency.
-
-## Example Plugin
-
-A simple counter plugin.
-
-### `CounterPlugin`
-
-```elixir
-# priv/plugins/counter_plugin.ex
-defmodule CounterPlugin do
-  @moduledoc "Simple counter plugin."
-  use Raxol.Core.Runtime.Plugins.Plugin
-  require Raxol.Core.Runtime.Log
-
-  @impl true
-  def init(_config), do: {:ok, %{count: 0}}
-
-  @impl true
-  def terminate(reason, state) do
-    Raxol.Core.Runtime.Log.info("Counter terminating. Reason: #{inspect(reason)}, Count: #{state.count}")
-    :ok
-  end
-
-  @impl true
-  def get_commands() do
-    [
-      %{namespace: :counter, name: :increment, arity: 0, description: "Increments counter."},
-      %{namespace: :counter, name: :get, arity: 0, description: "Gets counter value."}
-    ]
-  end
-
-  @impl true
-  def handle_command({:counter, :increment}, _args, state) do
-    new_state = Map.update!(state, :count, &(&1 + 1))
-    {:noreply, new_state}
-  end
-  def handle_command({:counter, :get}, _args, state) do
-    {:reply, {:ok, state.count}, state}
-  end
-  def handle_command(_command, _args, state), do: {:error, :unknown_command, state}
-end
-
-# priv/plugins/counter_plugin/metadata.ex
-# (Optional metadata)
-defmodule CounterPlugin.Metadata do
-  @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
-  @impl true; def id(), do: :counter
-  @impl true; def version(), do: "1.0.0"
-  @impl true; def dependencies(), do: []
-end
-```
-
-This example shows state (`%{count: 0}`), initialized in `init/1` and updated/passed through `handle_command/3`.
+- Make plugins configurable via `init/1`
