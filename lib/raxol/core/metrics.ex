@@ -20,15 +20,10 @@ defmodule Raxol.Core.Metrics do
   """
   @spec init(keyword()) :: :ok | {:error, term()}
   def init(options \\ []) do
-    # Initialize metrics subsystems
     try do
-      # Start unified collector
       Raxol.Core.Metrics.UnifiedCollector.start_link(options)
-
-      # Initialize aggregator
       Raxol.Core.Metrics.Aggregator.init(options)
 
-      # Initialize alert manager
       Raxol.Core.Metrics.AlertManager.init(options)
 
       :ok
@@ -62,12 +57,10 @@ defmodule Raxol.Core.Metrics do
   @spec record(String.t(), any(), keyword()) :: :ok | {:error, term()}
   def record(name, value, tags \\ []) do
     try do
-      # Record in unified collector
       Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value,
         tags: tags
       )
 
-      # Record in aggregator for statistics
       Raxol.Core.Metrics.Aggregator.record(name, value, tags)
 
       :ok

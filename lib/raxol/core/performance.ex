@@ -20,16 +20,12 @@ defmodule Raxol.Core.Performance do
   """
   @spec init(keyword()) :: :ok | {:error, term()}
   def init(options \\ []) do
-    # Initialize performance subsystems
     try do
-      # Start monitor
       {:ok, _monitor} = Raxol.Core.Performance.Monitor.start_link(options)
 
-      # Create metrics collector
       collector = Raxol.Core.Performance.MetricsCollector.new()
       Process.put(:performance_collector, collector)
 
-      # Create jank detector
       jank_threshold = Keyword.get(options, :jank_threshold, 16)
       window_size = Keyword.get(options, :window_size, 60)
 
@@ -63,14 +59,12 @@ defmodule Raxol.Core.Performance do
   @spec get_stats() :: {:ok, map()} | {:error, term()}
   def get_stats do
     try do
-      # Get monitor metrics if available
       monitor_metrics =
         case Process.whereis(Raxol.Core.Performance.Monitor) do
           nil -> %{}
           monitor -> Raxol.Core.Performance.Monitor.get_metrics(monitor)
         end
 
-      # Get collector metrics if available
       collector = Process.get(:performance_collector)
 
       collector_metrics =
@@ -86,10 +80,8 @@ defmodule Raxol.Core.Performance do
           %{}
         end
 
-      # Combine metrics
       stats = Map.merge(monitor_metrics, collector_metrics)
 
-      # Add basic system stats if not available
       stats =
         Map.merge(
           stats,
@@ -128,7 +120,6 @@ defmodule Raxol.Core.Performance do
           :ok | {:error, term()}
   def record_measurement(name, value, _tags \\ []) do
     try do
-      # Record in metrics collector if it's a frame time
       if name == "render_time" or name == "frame_time" do
         collector = Process.get(:performance_collector)
 
@@ -137,7 +128,6 @@ defmodule Raxol.Core.Performance do
         end
       end
 
-      # Record in monitor if available
       monitor = Process.whereis(Raxol.Core.Performance.Monitor)
 
       if monitor and (name == "render_time" or name == "frame_time") do
@@ -162,10 +152,8 @@ defmodule Raxol.Core.Performance do
   @spec get_analysis() :: {:ok, map()} | {:error, term()}
   def get_analysis do
     try do
-      # Get current metrics for analysis
       {:ok, metrics} = get_stats()
 
-      # Analyze the metrics
       analysis = Raxol.Core.Performance.Analyzer.analyze(metrics)
       {:ok, analysis}
     rescue
@@ -174,17 +162,11 @@ defmodule Raxol.Core.Performance do
     end
   end
 
-  # Private helper functions
-
   defp get_cpu_usage do
-    # Simple CPU usage estimation
-    # In a real implementation, this would use :os.cmd or similar
     :rand.uniform() * 100
   end
 
   defp get_memory_usage do
-    # Simple memory usage estimation
-    # In a real implementation, this would use :erlang.memory()
     :rand.uniform() * 100
   end
 end
