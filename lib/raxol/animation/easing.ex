@@ -138,7 +138,7 @@ defmodule Raxol.Animation.Easing do
 
   def calculate_value(:ease_in_out_back, t) do
     # Use tuned constants to match test expectations
-    c1 = 1.70158
+    _c1 = 1.70158
     # slightly increased for test match
     c2 = 1.7016
 
