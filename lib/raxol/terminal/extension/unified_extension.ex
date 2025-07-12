@@ -740,7 +740,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  defp execute_by_type(module, :theme, command, args) do
+  defp execute_by_type(module, :theme, _command, args) do
     if function_exported?(module, :apply_theme, 1) do
       module.apply_theme(args)
     else

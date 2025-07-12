@@ -105,7 +105,7 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   @doc """
   Copies content to the clipboard with the specified format.
   """
-  def copy(content, format \\ :text) when binary?(content) do
+  def copy(content, _format \\ :text) when binary?(content) do
     # This would typically interact with the system clipboard
     # For now, we'll just return :ok
     :ok
@@ -114,7 +114,7 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   @doc """
   Pastes content from the clipboard with the specified format.
   """
-  def paste(format \\ :text) do
+  def paste(_format \\ :text) do
     # This would typically interact with the system clipboard
     # For now, we'll return an empty string
     ""

@@ -649,7 +649,6 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | reverse: false}
   end
 
-  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   @doc """
   Resets foreground color.
   """
@@ -658,7 +657,6 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     %{style | foreground: nil}
   end
 
-  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   @doc """
   Resets background color.
   """

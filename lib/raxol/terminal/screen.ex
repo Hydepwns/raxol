@@ -256,7 +256,7 @@ defmodule Raxol.Terminal.Screen do
   @spec erase_display(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_display(buffer, mode) do
     {x, y} = ScreenBuffer.get_cursor_position(buffer)
-    {width, height} = ScreenBuffer.get_dimensions(buffer)
+    {_width, height} = ScreenBuffer.get_dimensions(buffer)
 
     case mode do
       0 -> ScreenBuffer.erase_from_cursor_to_end(buffer, x, y, 0, height)

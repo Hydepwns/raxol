@@ -15,9 +15,7 @@ defmodule Raxol.Terminal.ModeManager do
 
   alias Raxol.Terminal.Modes.Handlers.{
     DECPrivateHandler,
-    StandardHandler,
-    MouseHandler,
-    ScreenBufferHandler
+    StandardHandler
   }
 
   alias Raxol.Terminal.Modes.Types.ModeTypes

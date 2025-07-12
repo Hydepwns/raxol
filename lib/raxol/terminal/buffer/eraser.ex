@@ -12,23 +12,19 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   alias Raxol.Terminal.Buffer.LineOperations
   require Raxol.Core.Runtime.Log
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def clear_line(buffer, line_index, style \\ nil) do
     LineOperations.clear_line(buffer, line_index, style)
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_all(buffer) do
     clear(buffer)
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_cursor_to_end(buffer) do
     {x, y} = buffer.cursor_position
     clear_region(buffer, x, y, buffer.width - x, buffer.height - y)
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_to_cursor(buffer) do
     {x, y} = buffer.cursor_position || {0, 0}
     empty_cell = Cell.new(" ", buffer.default_style)
@@ -54,19 +50,16 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     %{buffer | cells: new_cells}
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_cursor_to_end_of_line(buffer) do
     {x, y} = buffer.cursor_position
     clear_line_from(buffer, y, x)
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_of_line_to_cursor(buffer) do
     {x, y} = buffer.cursor_position
     clear_line_to(buffer, y, x)
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_line(buffer, mode) do
     {x, y} = buffer.cursor_position
 

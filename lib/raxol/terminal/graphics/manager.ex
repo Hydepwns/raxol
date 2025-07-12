@@ -177,7 +177,7 @@ defmodule Raxol.Terminal.Graphics.Manager do
     |> Base.encode16()
   end
 
-  defp process_image(image, opts, pipeline) do
+  defp process_image(image, _opts, pipeline) do
     # Apply pipeline transformations to the image
     processed_image =
       Enum.reduce(pipeline, image, fn transform, acc ->

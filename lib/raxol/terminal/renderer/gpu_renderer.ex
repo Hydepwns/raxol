@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   - Resource pooling
   """
 
-  alias Raxol.Terminal.{ScreenBuffer, Renderer}
+  alias Raxol.Terminal.Renderer
 
   @type t :: %__MODULE__{
           renderer: Renderer.t(),
@@ -283,7 +283,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
         buffer_id = generate_buffer_id()
         new_buffer = %{id: buffer_id, data: [], size: 1024}
 
-        updated_pool = %{
+        _updated_pool = %{
           pool
           | vertex_buffers: Map.put(pool.vertex_buffers, buffer_id, new_buffer)
         }
@@ -318,7 +318,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   defp update_vertex_buffer(_gpu_renderer, buffer) do
     # Update vertex buffer with new data
     case buffer do
-      %{id: id, data: data} when is_list(data) ->
+      %{id: _id, data: data} when is_list(data) ->
         # Validate and update buffer data
         updated_buffer = %{buffer | data: validate_vertex_data(data)}
         {:ok, updated_buffer}
@@ -335,10 +335,10 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     |> Enum.filter(fn vertex -> is_list(vertex) and length(vertex) >= 2 end)
   end
 
-  defp update_index_buffer(gpu_renderer, buffer) do
+  defp update_index_buffer(_gpu_renderer, buffer) do
     # Update index buffer with new data
     case buffer do
-      %{id: id, data: data} when is_list(data) ->
+      %{id: _id, data: data} when is_list(data) ->
         # Validate and update buffer data
         updated_buffer = %{buffer | data: validate_index_data(data)}
         {:ok, updated_buffer}
@@ -379,7 +379,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     end
   end
 
-  defp convert_to_display_format(output_data) do
+  defp convert_to_display_format(_output_data) do
     # Convert GPU output data to terminal display format
     # For now, return a placeholder string
     "GPU_RENDERED_OUTPUT"
@@ -567,19 +567,19 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     end)
   end
 
-  defp apply_blending(fragment, blend_state) do
+  defp apply_blending(fragment, _blend_state) do
     # Apply blending operations
     # Placeholder implementation
     fragment
   end
 
-  defp apply_depth_stencil_testing(fragment, depth_stencil_state) do
+  defp apply_depth_stencil_testing(fragment, _depth_stencil_state) do
     # Apply depth and stencil testing
     # Placeholder implementation
     fragment
   end
 
-  defp apply_rasterization(fragment, rasterizer_state) do
+  defp apply_rasterization(fragment, _rasterizer_state) do
     # Apply rasterization operations
     # Placeholder implementation
     fragment

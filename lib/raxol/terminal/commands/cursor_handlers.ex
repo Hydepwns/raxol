@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   import Raxol.Guards
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Terminal.ScreenBuffer
+
   require Raxol.Core.Runtime.Log
 
   @spec handle_cursor_movement(

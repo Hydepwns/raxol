@@ -397,7 +397,7 @@ defmodule Raxol.Terminal.Renderer do
 
   # Handle BufferImpl structs (used by tests)
   def get_content(%Raxol.Terminal.Buffer.Manager.BufferImpl{} = buffer, opts) do
-    include_style = Keyword.get(opts, :include_style, false)
+    _include_style = Keyword.get(opts, :include_style, false)
     include_cursor = Keyword.get(opts, :include_cursor, false)
 
     content =
