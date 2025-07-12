@@ -27,8 +27,9 @@ Welcome to Raxol—a modern toolkit for building terminal user interfaces (TUIs)
 
 ## 🎯 Key Features
 
-- **Terminal Emulator**: ANSI support, buffer management, cursor handling
+- **Terminal Emulator**: ANSI support, buffer management, cursor handling, improved reliability
 - **Component Architecture**: Reusable UI components with state management
+- **Plugin System**: Extensible plugin architecture for custom features and integrations
 - **Event System**: Keyboard, mouse, window resize, and custom events
 - **Theme Support**: Customizable styling with color system integration
 - **Performance**: < 1ms event processing, < 2ms screen updates
@@ -45,7 +46,7 @@ mix setup
 
 # Or add to your project
 def deps do
-  [{:raxol, "~> 0.5.0"}]
+  [{:raxol, "~> 0.6.0"}]
 end
 ```
 
@@ -54,3 +55,4 @@ end
 - [GitHub](https://github.com/Hydepwns/raxol)
 - [Issues](https://github.com/Hydepwns/raxol/issues)
 - [CHANGELOG](../CHANGELOG.md)
+- [HexDocs for 0.6.0](https://hexdocs.pm/raxol/0.6.0)
