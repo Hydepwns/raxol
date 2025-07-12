@@ -86,7 +86,7 @@ defmodule Raxol.Benchmarks.DataGenerator do
   def count_nodes(%{children: nil}), do: 1
   def count_nodes(%{children: []}), do: 1
 
-  def count_nodes(%{children: children}) when list?(children) do
+  def count_nodes(%{children: children}) when is_list(children) do
     1 + Enum.sum(Enum.map(children, &count_nodes/1))
   end
 
