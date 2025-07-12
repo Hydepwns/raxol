@@ -140,60 +140,27 @@ defmodule Raxol.Terminal.ModeManager do
     end)
   end
 
-  @doc """
-  Checks if a mode is enabled.
-  """
   @spec mode_enabled?(t(), mode()) :: boolean()
   def mode_enabled?(state, mode) do
-    case mode do
-      :irm ->
-        state.insert_mode
+    mode_mapping = %{
+      irm: state.insert_mode,
+      lnm: state.line_feed_mode,
+      decom: state.origin_mode,
+      decawm: state.auto_wrap,
+      dectcem: state.cursor_visible,
+      decscnm: state.screen_mode_reverse,
+      decarm: state.auto_repeat_mode,
+      decinlm: state.interlacing_mode,
+      bracketed_paste: state.bracketed_paste_mode,
+      decckm: state.cursor_keys_mode == :application,
+      deccolm_132: state.column_width_mode == :wide,
+      deccolm_80: state.column_width_mode == :normal,
+      dec_alt_screen: state.alternate_buffer_active,
+      dec_alt_screen_save: state.alternate_buffer_active,
+      alt_screen_buffer: state.alternate_buffer_active
+    }
 
-      :lnm ->
-        state.line_feed_mode
-
-      :decom ->
-        state.origin_mode
-
-      :decawm ->
-        state.auto_wrap
-
-      :dectcem ->
-        state.cursor_visible
-
-      :decscnm ->
-        state.screen_mode_reverse
-
-      :decarm ->
-        state.auto_repeat_mode
-
-      :decinlm ->
-        state.interlacing_mode
-
-      :bracketed_paste ->
-        state.bracketed_paste_mode
-
-      :decckm ->
-        state.cursor_keys_mode == :application
-
-      :deccolm_132 ->
-        state.column_width_mode == :wide
-
-      :deccolm_80 ->
-        state.column_width_mode == :normal
-
-      :dec_alt_screen ->
-        state.alternate_buffer_active
-
-      :dec_alt_screen_save ->
-        state.alternate_buffer_active
-
-      :alt_screen_buffer ->
-        state.alternate_buffer_active
-
-      _ ->
-        false
-    end
+    Map.get(mode_mapping, mode, false)
   end
 
   @doc """
@@ -215,16 +182,14 @@ defmodule Raxol.Terminal.ModeManager do
   # --- Private Set/Reset Helpers ---
 
   defp do_set_mode(mode_name, emulator, category) do
-    with {:ok, mode_def} <- find_mode_definition(mode_name, category),
-         {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, true) do
-      {:ok, new_emu}
+    with {:ok, mode_def} <- find_mode_definition(mode_name, category) do
+      apply_mode_effects(mode_def, emulator, true)
     end
   end
 
   defp do_reset_mode(mode_name, emulator, category \\ nil) do
-    with {:ok, mode_def} <- find_mode_definition(mode_name, category),
-         {:ok, new_emu} <- apply_mode_effects(mode_def, emulator, false) do
-      {:ok, new_emu}
+    with {:ok, mode_def} <- find_mode_definition(mode_name, category) do
+      apply_mode_effects(mode_def, emulator, false)
     end
   end
 
@@ -235,83 +200,48 @@ defmodule Raxol.Terminal.ModeManager do
       "ModeManager.find_mode_definition/2 called with mode_name=#{inspect(mode_name)}, category=#{inspect(category)}"
     )
 
-    # For nil category, look for :standard modes first
     search_category = if category == nil, do: :standard, else: category
 
-    # Search all mode definitions for exact name and category match
-    # The new get_all_modes() returns a map with tuple keys like {code, category}
+    case find_mode_in_category(mode_name, search_category) do
+      {:ok, mode_def} ->
+        {:ok, mode_def}
+
+      {:error, :invalid_mode} ->
+        find_mode_in_fallback_categories(mode_name, search_category)
+    end
+  end
+
+  defp find_mode_in_category(mode_name, category) do
     case ModeTypes.get_all_modes()
          |> Map.values()
          |> Enum.find(fn mode_def ->
-           mode_def.name == mode_name and mode_def.category == search_category
+           mode_def.name == mode_name and mode_def.category == category
          end) do
-      nil ->
-        Logger.debug(
-          "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)}, category=#{inspect(search_category)}"
-        )
+      nil -> {:error, :invalid_mode}
+      mode_def -> {:ok, mode_def}
+    end
+  end
 
-        # If not found in the initial category, try other categories
-        case search_category do
-          :standard ->
-            # Try :dec_private and :screen_buffer
-            case ModeTypes.get_all_modes()
-                 |> Map.values()
-                 |> Enum.find(fn mode_def ->
-                   mode_def.name == mode_name and
-                     mode_def.category in [:dec_private, :screen_buffer]
-                 end) do
-              nil ->
-                Logger.debug(
-                  "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in fallback categories"
-                )
+  defp find_mode_in_fallback_categories(mode_name, :standard) do
+    find_mode_in_categories(mode_name, [:dec_private, :screen_buffer])
+  end
 
-                {:error, :invalid_mode}
+  defp find_mode_in_fallback_categories(mode_name, :dec_private) do
+    find_mode_in_categories(mode_name, [:screen_buffer])
+  end
 
-              mode_def ->
-                Logger.debug(
-                  "ModeManager.find_mode_definition/2 found fallback mode_def: #{inspect(mode_def)}"
-                )
+  defp find_mode_in_fallback_categories(_mode_name, _category) do
+    {:error, :invalid_mode}
+  end
 
-                {:ok, mode_def}
-            end
-
-          :dec_private ->
-            # Try :screen_buffer
-            case ModeTypes.get_all_modes()
-                 |> Map.values()
-                 |> Enum.find(fn mode_def ->
-                   mode_def.name == mode_name and
-                     mode_def.category == :screen_buffer
-                 end) do
-              nil ->
-                Logger.debug(
-                  "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in :screen_buffer fallback"
-                )
-
-                {:error, :invalid_mode}
-
-              mode_def ->
-                Logger.debug(
-                  "ModeManager.find_mode_definition/2 found fallback mode_def: #{inspect(mode_def)}"
-                )
-
-                {:ok, mode_def}
-            end
-
-          _ ->
-            Logger.debug(
-              "ModeManager.find_mode_definition/2 did not find mode_def for mode_name=#{inspect(mode_name)} in any category"
-            )
-
-            {:error, :invalid_mode}
-        end
-
-      mode_def ->
-        Logger.debug(
-          "ModeManager.find_mode_definition/2 found mode_def: #{inspect(mode_def)}"
-        )
-
-        {:ok, mode_def}
+  defp find_mode_in_categories(mode_name, categories) do
+    case ModeTypes.get_all_modes()
+         |> Map.values()
+         |> Enum.find(fn mode_def ->
+           mode_def.name == mode_name and mode_def.category in categories
+         end) do
+      nil -> {:error, :invalid_mode}
+      mode_def -> {:ok, mode_def}
     end
   end
 
@@ -354,55 +284,31 @@ defmodule Raxol.Terminal.ModeManager do
   end
 
   defp update_mode_manager_state(mode_manager, mode_name, value) do
-    case mode_name do
-      :irm ->
-        %{mode_manager | insert_mode: value}
-
-      :lnm ->
-        %{mode_manager | line_feed_mode: value}
-
-      :deccolm_132 ->
-        %{mode_manager | column_width_mode: if(value, do: :wide, else: :normal)}
-
-      :deccolm_80 ->
-        %{mode_manager | column_width_mode: if(value, do: :normal, else: :wide)}
-
-      :decscnm ->
-        %{mode_manager | screen_mode_reverse: value}
-
-      :decom ->
-        %{mode_manager | origin_mode: value}
-
-      :decawm ->
-        %{mode_manager | auto_wrap: value}
-
-      :decarm ->
-        %{mode_manager | auto_repeat_mode: value}
-
-      :decinlm ->
-        %{mode_manager | interlacing_mode: value}
-
-      :att_blink ->
-        %{mode_manager | blink_attribute: value}
-
-      :dectcem ->
-        %{mode_manager | cursor_visible: value}
-
-      :focus_events ->
-        %{mode_manager | focus_events_enabled: value}
-
-      :bracketed_paste ->
-        %{mode_manager | bracketed_paste_mode: value}
-
-      :dec_alt_screen_save ->
-        %{mode_manager | alternate_buffer_active: value}
-
-      :alt_screen_buffer ->
-        %{mode_manager | alternate_buffer_active: value}
-
-      _ ->
+    mode_updates = %{
+      irm: %{mode_manager | insert_mode: value},
+      lnm: %{mode_manager | line_feed_mode: value},
+      deccolm_132: %{
         mode_manager
-    end
+        | column_width_mode: if(value, do: :wide, else: :normal)
+      },
+      deccolm_80: %{
+        mode_manager
+        | column_width_mode: if(value, do: :normal, else: :wide)
+      },
+      decscnm: %{mode_manager | screen_mode_reverse: value},
+      decom: %{mode_manager | origin_mode: value},
+      decawm: %{mode_manager | auto_wrap: value},
+      decarm: %{mode_manager | auto_repeat_mode: value},
+      decinlm: %{mode_manager | interlacing_mode: value},
+      att_blink: %{mode_manager | blink_attribute: value},
+      dectcem: %{mode_manager | cursor_visible: value},
+      focus_events: %{mode_manager | focus_events_enabled: value},
+      bracketed_paste: %{mode_manager | bracketed_paste_mode: value},
+      dec_alt_screen_save: %{mode_manager | alternate_buffer_active: value},
+      alt_screen_buffer: %{mode_manager | alternate_buffer_active: value}
+    }
+
+    Map.get(mode_updates, mode_name, mode_manager)
   end
 
   @doc """
