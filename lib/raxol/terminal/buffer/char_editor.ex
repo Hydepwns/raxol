@@ -186,24 +186,17 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: Raxol.Terminal.ScreenBuffer.t()
 
   def insert_chars(buffer, row, col, count) do
-    if valid_insert_params?(buffer, row, col, count) do
-      # Check if the insertion would fit within the buffer bounds
-      if col + count > buffer.width do
-        buffer
-      else
-        # Check if insertion position is beyond content length
-        line = Enum.at(buffer.cells, row)
-        content_len = content_length(line)
-
-        if col > content_len do
-          buffer
-        else
-          insert_characters(buffer, row, col, count, buffer.default_style)
-        end
-      end
+    if valid_insert_params?(buffer, row, col, count) and
+         can_insert_at_position?(buffer, row, col, count) do
+      insert_characters(buffer, row, col, count, buffer.default_style)
     else
       buffer
     end
+  end
+
+  defp can_insert_at_position?(buffer, row, col, count) do
+    col + count <= buffer.width and
+      col <= content_length(Enum.at(buffer.cells, row))
   end
 
   defp valid_insert_params?(buffer, row, col, count) do
@@ -306,11 +299,11 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: list(Cell.t())
   def insert_into_line(line, col, count, default_style) do
     {left_part, right_part} = Enum.split(line, col)
-    # Inserted blanks are dirty, but padding is not
+    # Inserted blanks are not dirty (for consistency with delete_from_line)
     blank_cell = %Cell{
       char: " ",
       style: default_style,
-      dirty: true,
+      dirty: false,
       wide_placeholder: false
     }
 
@@ -432,10 +425,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: list(Cell.t())
   def delete_from_line(line, col, count, default_style) do
     line_length = length(line)
-    {left_part, right_part} = Enum.split(line, col)
-    # Remove the characters to be deleted from the right part
-    remaining_right = Enum.drop(right_part, count)
-    # Pad the end with blanks to maintain line length
+    left_part = Enum.take(line, col)
+    right_part = Enum.drop(line, col + count)
+
     blank_cell = %Cell{
       char: " ",
       style: default_style,
@@ -443,9 +435,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       wide_placeholder: false
     }
 
-    blanks_needed = line_length - length(left_part) - length(remaining_right)
+    blanks_needed = line_length - length(left_part) - length(right_part)
     blank_cells = List.duplicate(blank_cell, blanks_needed)
-    result = left_part ++ remaining_right ++ blank_cells
+    result = left_part ++ right_part ++ blank_cells
     Enum.take(result, line_length)
   end
 
@@ -491,37 +483,33 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   defp update_line_with_chars_wide_aware(line, col, chars, width) do
     Enum.reduce(Enum.with_index(chars), {line, col}, fn {char, _index},
                                                         {acc_line, current_col} ->
-      if current_col < width do
-        char_width = char_width(char)
-        # Check if we have enough space for this character
-        if current_col + char_width <= width do
-          # Update the current cell with the character
-          updated_line =
-            List.replace_at(acc_line, current_col, %{
-              Enum.at(acc_line, current_col)
-              | char: char,
-                dirty: true
-            })
-
-          # If it's a wide character, mark the next cell as a placeholder
-          if char_width > 1 do
-            updated_line =
-              List.replace_at(updated_line, current_col + 1, %{
-                Enum.at(updated_line, current_col + 1)
-                | wide_placeholder: true,
-                  dirty: true
-              })
-          end
-
-          {updated_line, current_col + char_width}
-        else
-          {acc_line, current_col}
-        end
-      else
-        {acc_line, current_col}
-      end
+      process_char_in_line(acc_line, current_col, char, width)
     end)
     |> elem(0)
+  end
+
+  defp process_char_in_line(line, col, char, width) do
+    if col < width and col + char_width(char) <= width do
+      updated_line =
+        List.replace_at(line, col, %{
+          Enum.at(line, col)
+          | char: char,
+            dirty: true
+        })
+
+      if char_width(char) > 1 do
+        List.replace_at(updated_line, col + 1, %{
+          Enum.at(updated_line, col + 1)
+          | wide_placeholder: true,
+            dirty: true
+        })
+      else
+        updated_line
+      end
+      |> then(fn final_line -> {final_line, col + char_width(char)} end)
+    else
+      {line, col}
+    end
   end
 
   def update_line_with_string(line, col, string, width) do
@@ -630,26 +618,27 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
   defp erase_chars_in_buffer(buffer, row, col, count) do
     line = Enum.at(buffer.cells, row)
-    updated_line = erase_chars_in_line(line, col, count, buffer.width)
+
+    updated_line =
+      erase_chars_in_line(line, col, count, buffer.width, buffer.default_style)
+
     cells = List.replace_at(buffer.cells, row, updated_line)
     %{buffer | cells: cells}
   end
 
-  defp erase_chars_in_line(line, col, count, width) do
+  defp erase_chars_in_line(line, col, count, width, default_style) do
     {left, _} = Enum.split(line, col)
     right = Enum.slice(line, col + count, width - (col + count))
 
     new_line = left ++ right
     padding_needed = max(0, width - length(new_line))
 
-    (new_line ++ List.duplicate(Cell.new(" "), padding_needed))
+    (new_line ++ List.duplicate(Cell.new(" ", default_style), padding_needed))
     |> Enum.take(width)
   end
 
   def replace_chars(buffer, row, col, string, style \\ nil) do
-    if not valid_replace_params?(buffer, row, col, string) do
-      buffer
-    else
+    if valid_replace_params?(buffer, row, col, string) do
       chars = String.graphemes(string)
       max_replace = max(0, buffer.width - col)
       truncated_chars = Enum.take(chars, max_replace)
@@ -665,6 +654,8 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           style || buffer.default_style
         )
       end
+    else
+      buffer
     end
   end
 

@@ -84,14 +84,14 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   def handle_j(emulator, params) do
     mode = get_valid_non_neg_param(params, 0, 0)
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor = emulator.cursor
 
-    new_buffer =
-      Raxol.Terminal.Buffer.Operations.erase_in_display(
-        active_buffer,
-        mode,
-        cursor
-      )
+    # Get cursor position from emulator
+    cursor_pos = get_cursor_position(emulator.cursor)
+
+    # Update buffer with cursor position
+    buffer_with_cursor = %{active_buffer | cursor_position: cursor_pos}
+
+    new_buffer = Eraser.erase_in_display(buffer_with_cursor, mode)
 
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
@@ -101,14 +101,14 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   def handle_k(emulator, params) do
     mode = get_valid_non_neg_param(params, 0, 0)
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor = emulator.cursor
 
-    new_buffer =
-      Raxol.Terminal.Buffer.Operations.erase_in_line(
-        active_buffer,
-        mode,
-        cursor
-      )
+    # Get cursor position from emulator
+    cursor_pos = get_cursor_position(emulator.cursor)
+
+    # Update buffer with cursor position
+    buffer_with_cursor = %{active_buffer | cursor_position: cursor_pos}
+
+    new_buffer = Eraser.erase_in_line(buffer_with_cursor, mode)
 
     {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end

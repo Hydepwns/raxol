@@ -484,15 +484,26 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
           non_neg_integer(),
           non_neg_integer()
         ) :: ScreenBuffer.t()
-  def erase_chars(buffer, row, col, _count) do
+  def erase_chars(buffer, row, col, count) do
     line = get_line(buffer, row)
 
     if line do
-      new_line = List.update_at(line, col, fn _ -> Cell.new(" ") end)
+      new_line = erase_chars_in_line(line, col, count)
       update_line(buffer, row, new_line)
     else
       buffer
     end
+  end
+
+  defp erase_chars_in_line(line, col, count) do
+    Enum.with_index(line)
+    |> Enum.map(fn {cell, index} ->
+      if index >= col and index < col + count do
+        Cell.new(" ")
+      else
+        cell
+      end
+    end)
   end
 
   # Functions expected by tests
@@ -582,14 +593,86 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
           ScreenBuffer.t()
   def delete_lines(buffer, y, count, style, {top, bottom}) do
     if y >= top and y <= bottom and count > 0 do
-      {before, after_cursor} = Enum.split(buffer.cells, y)
-      remaining_lines = Enum.drop(after_cursor, count)
-      blank_lines = create_empty_lines(buffer.width, count, style)
-      new_cells = before ++ remaining_lines ++ blank_lines
-      %{buffer | cells: new_cells}
+      do_delete_lines_in_region(buffer, y, count, style, top, bottom)
     else
       buffer
     end
+  end
+
+  defp do_delete_lines_in_region(buffer, y, count, style, top, bottom) do
+    # Split buffer into parts: before region, region, after region
+    {before_region, rest} = Enum.split(buffer.cells, top)
+    {region, after_region} = Enum.split(rest, bottom - top + 1)
+
+    # Calculate relative position within the region
+    rel_y = y - top
+
+    # Split region at cursor position
+    {region_before_cursor, region_at_and_after_cursor} =
+      Enum.split(region, rel_y)
+
+    # Remove the lines to be deleted
+    region_after_deleted = Enum.drop(region_at_and_after_cursor, count)
+
+    # Create blank lines to add at the bottom of the region
+    blank_lines = create_empty_lines(buffer.width, count, style)
+
+    # Reassemble the region: before cursor + after deleted + blank lines at bottom
+    new_region = region_before_cursor ++ region_after_deleted ++ blank_lines
+
+    # Reassemble the entire buffer
+    new_cells = before_region ++ new_region ++ after_region
+
+    # Ensure buffer maintains its height
+    final_cells = Enum.take(new_cells, buffer.height)
+    %{buffer | cells: final_cells}
+  end
+
+  def delete_lines(buffer, _y, _count, _style, region)
+      when not is_tuple(region),
+      do: buffer
+
+  @doc """
+  Deletes lines at the specified position within the scroll region.
+  """
+  def delete_lines_in_region(buffer, lines, y, top, bottom) do
+    # Ensure we're within the scroll region
+    y = max(top, min(y, bottom - 1))
+
+    # Calculate how many lines we can actually delete
+    available_lines = bottom - y
+    lines_to_delete = min(lines, available_lines)
+
+    if lines_to_delete > 0 do
+      # Delete lines from y to y + lines_to_delete - 1
+      # This shifts content up from below the deleted region
+      buffer
+      |> delete_lines_from_position(y, lines_to_delete, bottom)
+    else
+      buffer
+    end
+  end
+
+  defp delete_lines_from_position(buffer, start_y, count, bottom) do
+    # Shift lines from below the deletion region up
+    Enum.reduce(start_y..(bottom - count - 1), buffer, fn y, acc ->
+      # Get the line that should move up
+      source_line = get_line(acc, y + count)
+      # Set it at the current position
+      set_line(acc, y, source_line)
+    end)
+    |> then(fn acc ->
+      # Fill the bottom lines with empty content
+      Enum.reduce((bottom - count)..(bottom - 1), acc, fn y, acc ->
+        set_line(acc, y, create_empty_line())
+      end)
+    end)
+  end
+
+  defp create_empty_line do
+    # Create an empty line with default attributes
+    # Use the existing function with default width
+    create_empty_line(80)
   end
 
   @doc """
@@ -630,7 +713,16 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     if row >= 0 and row < length(buffer.cells) and col >= 0 and
          col < buffer.width do
       line = get_line(buffer, row)
-      new_line = delete_chars_from_line(line, col, count, buffer.width)
+
+      new_line =
+        delete_chars_from_line(
+          line,
+          col,
+          count,
+          buffer.width,
+          buffer.default_style
+        )
+
       update_line(buffer, row, new_line)
     else
       buffer
@@ -661,7 +753,16 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
     if row >= 0 and row < length(buffer.cells) and col >= 0 and
          col < buffer.width do
       line = get_line(buffer, row)
-      new_line = insert_chars_into_line(line, col, count, buffer.width)
+
+      new_line =
+        insert_chars_into_line(
+          line,
+          col,
+          count,
+          buffer.width,
+          buffer.default_style
+        )
+
       update_line(buffer, row, new_line)
     else
       buffer
@@ -669,17 +770,32 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   # Helper functions for character operations
-  defp delete_chars_from_line(line, col, count, width) do
+  defp delete_chars_from_line(line, col, count, width, default_style) do
     {before, after_part} = Enum.split(line, col)
     {_, remaining} = Enum.split(after_part, count)
 
-    before ++
-      remaining ++ create_empty_line(width - length(before) - length(remaining))
+    # Create a new line with the correct content
+    new_line = before ++ remaining
+
+    # Ensure the line has the correct width by padding with empty cells
+    if length(new_line) < width do
+      new_line ++ create_empty_line(width - length(new_line), default_style)
+    else
+      Enum.take(new_line, width)
+    end
   end
 
-  defp insert_chars_into_line(line, col, count, width) do
+  defp insert_chars_into_line(line, col, count, width, default_style) do
     {before, after_part} = Enum.split(line, col)
-    empty_chars = create_empty_line(count)
+    # Use a valid blank Cell struct for inserted chars with default style
+    blank_cell = %Cell{
+      char: " ",
+      style: default_style,
+      dirty: false,
+      wide_placeholder: false
+    }
+
+    empty_chars = List.duplicate(blank_cell, count)
     new_line = before ++ empty_chars ++ after_part
     Enum.take(new_line, width)
   end

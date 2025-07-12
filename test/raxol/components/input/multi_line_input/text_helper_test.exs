@@ -244,7 +244,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
       {new_text, replaced_text} =
         TextHelper.replace_text_range(lines, start_pos, end_pos, replacement)
 
-      assert new_text == "hexyzrld\ntest"
+      assert new_text == "hexyzld\ntest"
       assert replaced_text == "llo\nwo"
     end
 
@@ -285,7 +285,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
       {new_text, replaced_text} =
         TextHelper.replace_text_range(lines, start_pos, end_pos, replacement)
 
-      assert new_text == "hxyzlo\nworld"
+      assert new_text == "hxyzo\nworld"
       assert replaced_text == "ell"
     end
   end

@@ -181,6 +181,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   defdelegate insert_lines(buffer, count), to: LineOperations
   defdelegate delete_lines(buffer, count), to: LineOperations
+
+  defdelegate delete_lines_in_region(buffer, lines, y, top, bottom),
+    to: LineOperations
+
   defdelegate insert_chars(buffer, count), to: LineOperations
   defdelegate delete_chars(buffer, count), to: LineOperations
   defdelegate prepend_lines(buffer, lines), to: LineOperations

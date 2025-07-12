@@ -102,6 +102,22 @@ defmodule Raxol.UI.Components.Input.TextInput do
   """
   @impl true
   @spec update(term(), map()) :: map()
+  def update({:update_props, new_props}, state) do
+    # Update state with new props while preserving internal state
+    updated_state = Map.merge(state, Map.new(new_props))
+
+    # Handle cursor position when value changes
+    if Map.has_key?(new_props, :value) do
+      new_value = new_props.value
+      value_length = String.length(new_value)
+
+      # Move cursor to end of new value
+      %{updated_state | cursor_pos: value_length}
+    else
+      updated_state
+    end
+  end
+
   def update(message, state) do
     Raxol.Core.Runtime.Log.debug(
       "[TextInput] Received unhandled message: #{inspect(message)}"
@@ -163,20 +179,31 @@ defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
     EditingHandler
   }
 
-  def handle_key(state, key, modifiers) do
-    case {key, modifiers} do
-      {:enter, _} -> handle_enter(state)
-      {:escape, _} -> handle_escape(state)
-      {:backspace, _} -> EditingHandler.handle_backspace(state)
-      {:delete, _} -> EditingHandler.handle_delete(state)
-      {:left, _} -> NavigationHandler.handle_left(state)
-      {:right, _} -> NavigationHandler.handle_right(state)
-      {:home, _} -> NavigationHandler.handle_home(state)
-      {:end, _} -> NavigationHandler.handle_end(state)
-      {char_key, []} -> CharacterHandler.handle_character(state, char_key)
-      _ -> {state, []}
-    end
-  end
+  def handle_key(state, :enter, _modifiers), do: handle_enter(state)
+  def handle_key(state, :escape, _modifiers), do: handle_escape(state)
+
+  def handle_key(state, :backspace, _modifiers),
+    do: EditingHandler.handle_backspace(state)
+
+  def handle_key(state, :delete, _modifiers),
+    do: EditingHandler.handle_delete(state)
+
+  def handle_key(state, :left, _modifiers),
+    do: NavigationHandler.handle_left(state)
+
+  def handle_key(state, :right, _modifiers),
+    do: NavigationHandler.handle_right(state)
+
+  def handle_key(state, :home, _modifiers),
+    do: NavigationHandler.handle_home(state)
+
+  def handle_key(state, :end, _modifiers),
+    do: NavigationHandler.handle_end(state)
+
+  def handle_key(state, char_key, []),
+    do: CharacterHandler.handle_character(state, char_key)
+
+  def handle_key(state, _key, _modifiers), do: {state, []}
 
   defp handle_enter(state) do
     if is_function(state.on_submit, 1) do

@@ -30,29 +30,35 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     empty_cell = Cell.new(" ", buffer.default_style)
 
     new_cells =
-      Enum.with_index(buffer.cells)
-      |> Enum.map(fn {line, row} ->
-        cond do
-          row < y ->
-            List.duplicate(empty_cell, buffer.width)
-
-          row == y ->
-            Enum.with_index(line)
-            |> Enum.map(fn {cell, col} ->
-              if col <= x, do: empty_cell, else: cell
-            end)
-
-          true ->
-            line
-        end
-      end)
+      process_lines_for_erase_from_start(
+        buffer.cells,
+        x,
+        y,
+        empty_cell,
+        buffer.width
+      )
 
     %{buffer | cells: new_cells}
   end
 
-  def erase_from_cursor_to_end_of_line(buffer) do
-    {x, y} = buffer.cursor_position
-    clear_line_from(buffer, y, x)
+  defp process_lines_for_erase_from_start(cells, x, y, empty_cell, width) do
+    Enum.with_index(cells)
+    |> Enum.map(fn {line, row} ->
+      process_line_for_erase_from_start(line, row, x, y, empty_cell, width)
+    end)
+  end
+
+  defp process_line_for_erase_from_start(line, row, x, y, empty_cell, width) do
+    cond do
+      row < y -> List.duplicate(empty_cell, width)
+      row == y -> clear_line_to_position(line, x, empty_cell)
+      true -> line
+    end
+  end
+
+  defp clear_line_to_position(line, x, empty_cell) do
+    Enum.with_index(line)
+    |> Enum.map(fn {cell, col} -> if col <= x, do: empty_cell, else: cell end)
   end
 
   def erase_from_start_of_line_to_cursor(buffer) do

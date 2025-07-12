@@ -4,7 +4,7 @@ defmodule Termbox2Nif.MixProject do
   def project do
     [
       app: :termbox2_nif,
-      version: "0.3.0",
+      version: "0.3.1",
       elixir: "~> 1.0",
       compilers: [:elixir_make] ++ Mix.compilers(),
       make_clean: ["clean"],
@@ -33,7 +33,7 @@ defmodule Termbox2Nif.MixProject do
   defp package do
     [
       name: :termbox2_nif,
-      files: ["lib", "c_src", "mix.exs", "Makefile*", "README.md", "LICENSE"],
+      files: ["lib", "c_src", "mix.exs", "c_src/Makefile*", "README.md", "LICENSE"],
       maintainers: ["hydepwns"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/hydepwns/termbox2_nif"}

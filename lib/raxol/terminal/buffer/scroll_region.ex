@@ -236,35 +236,63 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     # Pre-create a single empty line to reuse
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
-    # Calculate the number of lines that will be affected
-    _region_height = scroll_end - scroll_start + 1
-
-    # Only process the lines that actually need to change
+    # Transform cells using helper function
     new_cells =
-      buffer.cells
-      |> Enum.with_index()
-      |> Enum.map(fn {line, idx} ->
-        cond do
-          # Lines before the scroll region - unchanged
-          idx < scroll_start ->
-            line
-
-          # Lines within the scroll region that should move up
-          idx >= scroll_start and idx <= scroll_end - lines ->
-            # Move content from idx + lines to idx
-            Enum.at(buffer.cells, idx + lines, empty_line)
-
-          # Lines within the scroll region that should be empty
-          idx > scroll_end - lines and idx <= scroll_end ->
-            empty_line
-
-          # Lines after the scroll region - unchanged
-          true ->
-            line
-        end
-      end)
+      transform_cells_for_scroll_up(
+        buffer.cells,
+        scroll_start,
+        scroll_end,
+        lines,
+        empty_line
+      )
 
     {%{buffer | cells: new_cells}, scrolled_lines}
+  end
+
+  defp transform_cells_for_scroll_up(
+         cells,
+         scroll_start,
+         scroll_end,
+         lines,
+         empty_line
+       ) do
+    cells
+    |> Enum.with_index()
+    |> Enum.map(fn {line, idx} ->
+      transform_line_for_scroll_up(
+        line,
+        idx,
+        cells,
+        scroll_start,
+        scroll_end,
+        lines,
+        empty_line
+      )
+    end)
+  end
+
+  defp transform_line_for_scroll_up(
+         line,
+         idx,
+         cells,
+         scroll_start,
+         scroll_end,
+         lines,
+         empty_line
+       ) do
+    cond do
+      idx < scroll_start ->
+        line
+
+      idx >= scroll_start and idx <= scroll_end - lines ->
+        Enum.at(cells, idx + lines, empty_line)
+
+      idx > scroll_end - lines and idx <= scroll_end ->
+        empty_line
+
+      true ->
+        line
+    end
   end
 
   defp scroll_region_up(buffer, scroll_start, scroll_end, lines) do
@@ -371,34 +399,141 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     # Pre-create a single empty line to reuse
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
-    # Build the new cells list in a single pass
+    # Transform cells using helper function
     new_cells =
-      buffer.cells
-      |> Enum.with_index()
-      |> Enum.map(fn {line, idx} ->
-        cond do
-          # Lines before the scroll region - unchanged
-          idx < scroll_start ->
-            line
-
-          # Lines within the scroll region that should move
-          idx >= scroll_start and idx <= scroll_end - lines ->
-            case direction do
-              :up -> Enum.at(buffer.cells, idx + lines, empty_line)
-              :down -> Enum.at(buffer.cells, idx - lines, empty_line)
-            end
-
-          # Lines within the scroll region that should be empty
-          idx > scroll_end - lines and idx <= scroll_end ->
-            empty_line
-
-          # Lines after the scroll region - unchanged
-          true ->
-            line
-        end
-      end)
+      transform_cells_for_direction(
+        buffer.cells,
+        scroll_start,
+        scroll_end,
+        lines,
+        direction,
+        empty_line
+      )
 
     %{buffer | cells: new_cells}
+  end
+
+  defp transform_cells_for_direction(
+         cells,
+         scroll_start,
+         scroll_end,
+         lines,
+         direction,
+         empty_line
+       ) do
+    cells
+    |> Enum.with_index()
+    |> Enum.map(fn {line, idx} ->
+      transform_line_for_direction(
+        line,
+        idx,
+        cells,
+        scroll_start,
+        scroll_end,
+        lines,
+        direction,
+        empty_line
+      )
+    end)
+  end
+
+  defp transform_line_for_direction(
+         line,
+         idx,
+         cells,
+         scroll_start,
+         scroll_end,
+         lines,
+         direction,
+         empty_line
+       ) do
+    if idx < scroll_start do
+      line
+    else
+      transform_line_in_region(
+        idx,
+        cells,
+        scroll_start,
+        scroll_end,
+        lines,
+        direction,
+        empty_line
+      )
+    end
+  end
+
+  defp transform_line_in_region(
+         idx,
+         cells,
+         scroll_start,
+         scroll_end,
+         lines,
+         direction,
+         empty_line
+       ) do
+    case direction do
+      :up ->
+        transform_line_for_up_scroll(
+          idx,
+          cells,
+          scroll_start,
+          scroll_end,
+          lines,
+          empty_line
+        )
+
+      :down ->
+        transform_line_for_down_scroll(
+          idx,
+          cells,
+          scroll_start,
+          scroll_end,
+          lines,
+          empty_line
+        )
+    end
+  end
+
+  defp transform_line_for_up_scroll(
+         idx,
+         cells,
+         scroll_start,
+         scroll_end,
+         lines,
+         empty_line
+       ) do
+    cond do
+      idx <= scroll_end - lines ->
+        get_moved_line(cells, idx, lines, :up, empty_line)
+
+      idx <= scroll_end ->
+        empty_line
+
+      true ->
+        Enum.at(cells, idx, empty_line)
+    end
+  end
+
+  defp transform_line_for_down_scroll(
+         idx,
+         cells,
+         scroll_start,
+         scroll_end,
+         lines,
+         empty_line
+       ) do
+    cond do
+      idx < scroll_start + lines -> empty_line
+      idx <= scroll_end -> get_moved_line(cells, idx, lines, :down, empty_line)
+      true -> Enum.at(cells, idx, empty_line)
+    end
+  end
+
+  defp get_moved_line(cells, idx, lines, direction, empty_line) do
+    case direction do
+      :up -> Enum.at(cells, idx + lines, empty_line)
+      :down -> Enum.at(cells, idx - lines, empty_line)
+    end
   end
 
   defp get_effective_region(buffer, scroll_region_arg) do

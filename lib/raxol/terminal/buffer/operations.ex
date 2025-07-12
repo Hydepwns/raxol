@@ -331,31 +331,36 @@ defmodule Raxol.Terminal.Buffer.Operations do
   """
   def erase_in_display(buffer, mode, cursor) do
     {row, col} = get_cursor_position(cursor)
+    handle_erase_in_display(buffer, mode, row, col)
+  end
 
-    cond do
-      is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
-        updated_cells = erase_in_display_cells(buffer.cells, mode, row, col)
-        updated_buffer = %{buffer | cells: updated_cells}
+  defp handle_erase_in_display(
+         %Raxol.Terminal.ScreenBuffer{} = buffer,
+         mode,
+         row,
+         col
+       ) do
+    updated_cells = erase_in_display_cells(buffer.cells, mode, row, col)
+    %{buffer | cells: updated_cells}
+  end
 
-        # If called from an emulator, ensure the emulator's active buffer is updated
-        if Map.has_key?(buffer, :emulator_owner) and
-             is_map(buffer.emulator_owner) do
-          Emulator.update_active_buffer(buffer.emulator_owner, updated_buffer)
-        else
-          updated_buffer
-        end
+  defp handle_erase_in_display(buffer, mode, row, col) when is_list(buffer) do
+    case mode do
+      0 -> erase_from_cursor_to_end(buffer, row, col)
+      1 -> erase_from_start_to_cursor(buffer, row, col)
+      2 -> erase_all(buffer)
+      3 -> erase_all_with_scrollback(buffer)
+      _ -> buffer
+    end
+  end
 
-      is_list(buffer) ->
-        case mode do
-          0 -> erase_from_cursor_to_end(buffer, row, col)
-          1 -> erase_from_start_to_cursor(buffer, row, col)
-          2 -> erase_all(buffer)
-          3 -> erase_all_with_scrollback(buffer)
-          _ -> buffer
-        end
+  defp handle_erase_in_display(buffer, _mode, _row, _col), do: buffer
 
-      true ->
-        buffer
+  defp update_emulator_if_needed(buffer, updated_buffer) do
+    if Map.has_key?(buffer, :emulator_owner) and is_map(buffer.emulator_owner) do
+      Emulator.update_active_buffer(buffer.emulator_owner, updated_buffer)
+    else
+      updated_buffer
     end
   end
 
@@ -480,31 +485,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
     # Handle BufferImpl structs
     case classify_data(data) do
       {:char, x, y, char} ->
-        cell = Raxol.Terminal.Cell.new(char, Keyword.get(opts, :style))
-        Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(buffer, x, y, cell)
+        write_char_to_buffer_impl(buffer, x, y, char, opts)
 
       {:string, x, y, string} ->
-        # For strings, write character by character starting at x, y
-        Enum.reduce(Enum.with_index(String.graphemes(string)), buffer, fn {char,
-                                                                           index},
-                                                                          acc_buffer ->
-          cell = Raxol.Terminal.Cell.new(char, Keyword.get(opts, :style))
-
-          Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(
-            acc_buffer,
-            x + index,
-            y,
-            cell
-          )
-        end)
+        write_string_to_buffer_impl(buffer, x, y, string, opts)
 
       :unknown ->
-        # If data is just a string, treat it as content to add at cursor position
-        if is_binary(data) do
-          Raxol.Terminal.Buffer.Manager.BufferImpl.add(buffer, data)
-        else
-          buffer
-        end
+        handle_unknown_data(buffer, data)
     end
   end
 
@@ -663,7 +650,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   defp map_cells_from_column(line, col) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if cell_col >= col, do: Cell.new(), else: cell
+      if cell_col >= col, do: Cell.new(" "), else: cell
     end)
   end
 
@@ -691,6 +678,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           non_neg_integer()
         ) :: ScreenBuffer.t()
+  def erase_from_line_start_to_cursor(buffer, row, col)
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) do
+    LineOperations.erase_chars(buffer, row, 0, col + 1)
+  end
+
   def erase_from_line_start_to_cursor(buffer, row, col) when is_list(buffer) do
     Enum.with_index(buffer)
     |> Enum.map(fn {line, idx} ->
@@ -705,7 +697,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   defp map_cells_up_to_column(line, col) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if cell_col < col, do: Cell.new(), else: cell
+      if cell_col < col, do: Cell.new(" "), else: cell
     end)
   end
 
@@ -737,12 +729,16 @@ defmodule Raxol.Terminal.Buffer.Operations do
   def erase_entire_line(buffer, row) when is_list(buffer) do
     Enum.with_index(buffer)
     |> Enum.map(fn {line, idx} ->
-      if idx == row do
-        Enum.map(line, fn _ -> Cell.new() end)
-      else
-        line
-      end
+      process_line_for_erase(line, idx, row)
     end)
+  end
+
+  defp process_line_for_erase(line, idx, row) do
+    if idx == row do
+      Enum.map(line, fn _ -> Cell.new(" ") end)
+    else
+      line
+    end
   end
 
   @doc """
@@ -856,7 +852,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     cond do
       line_row < target_row -> line
       line_row == target_row -> map_cells_from_column(line, col)
-      true -> List.duplicate(Cell.new(), length(line))
+      true -> List.duplicate(Cell.new(" "), length(line))
     end
   end
 
@@ -870,7 +866,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
       cond do
         line_row > row -> line
         line_row == row -> map_cells_up_to_column(line, col)
-        true -> List.duplicate(Cell.new(), length(line))
+        true -> List.duplicate(Cell.new(" "), length(line))
       end
     end)
   end
@@ -880,7 +876,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   """
   defp erase_all(buffer) when is_list(buffer) do
     width = length(hd(buffer))
-    List.duplicate(List.duplicate(Cell.new(), width), length(buffer))
+    List.duplicate(List.duplicate(Cell.new(" "), width), length(buffer))
   end
 
   @doc """
@@ -894,7 +890,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   defp erase_all_with_scrollback(buffer) when is_list(buffer) do
     width = length(hd(buffer))
-    List.duplicate(List.duplicate(Cell.new(), width), length(buffer))
+    List.duplicate(List.duplicate(Cell.new(" "), width), length(buffer))
   end
 
   @doc """
@@ -979,5 +975,37 @@ defmodule Raxol.Terminal.Buffer.Operations do
         col_cell
       end
     end)
+  end
+
+  defp write_char_to_buffer_impl(buffer, x, y, char, opts) do
+    cell = Raxol.Terminal.Cell.new(char, Keyword.get(opts, :style))
+    Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(buffer, x, y, cell)
+  end
+
+  defp write_string_to_buffer_impl(buffer, x, y, string, opts) do
+    Enum.reduce(
+      Enum.with_index(String.graphemes(string)),
+      buffer,
+      &write_char_at_position(&1, &2, x, y, opts)
+    )
+  end
+
+  defp write_char_at_position({char, index}, acc_buffer, x, y, opts) do
+    cell = Raxol.Terminal.Cell.new(char, Keyword.get(opts, :style))
+
+    Raxol.Terminal.Buffer.Manager.BufferImpl.set_cell(
+      acc_buffer,
+      x + index,
+      y,
+      cell
+    )
+  end
+
+  defp handle_unknown_data(buffer, data) do
+    if is_binary(data) do
+      Raxol.Terminal.Buffer.Manager.BufferImpl.add(buffer, data)
+    else
+      buffer
+    end
   end
 end

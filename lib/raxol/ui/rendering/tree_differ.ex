@@ -252,7 +252,13 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
          %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
 
       true ->
-        all_ops = [{:key_reorder, new_keys_ordered} | ops]
+        # Partition ops so that :key_reorder is always last
+        {reorder_ops, other_ops} =
+          Enum.split_with(ops, fn
+            {:key_reorder, _} -> true
+            _ -> false
+          end)
+        all_ops = other_ops ++ [{:key_reorder, new_keys_ordered}]
         {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
     end
   end

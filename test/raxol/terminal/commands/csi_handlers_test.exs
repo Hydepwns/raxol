@@ -443,16 +443,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     test "handles character set sequences" do
       emulator = new_emulator()
       # Designate G0 Character Set
-      state = CSIHandlers.handle_sequence(emulator, [?/, ?B])
+      state = unwrap_ok(CSIHandlers.handle_scs(emulator, "B", ?())
       assert state.charset_state.g0 == :us_ascii
       # Designate G1 Character Set
-      state = CSIHandlers.handle_sequence(state, [?), ?A])
+      state = unwrap_ok(CSIHandlers.handle_scs(state, "A", ?)))
       assert state.charset_state.g1 == :uk
       # Designate G2 Character Set
-      state = CSIHandlers.handle_sequence(state, [?*, ?F])
+      state = unwrap_ok(CSIHandlers.handle_scs(state, "F", ?*))
       assert state.charset_state.g2 == :german
       # Designate G3 Character Set
-      state = CSIHandlers.handle_sequence(state, [?+, ?D])
+      state = unwrap_ok(CSIHandlers.handle_scs(state, "D", ?+))
       assert state.charset_state.g3 == :french
     end
 

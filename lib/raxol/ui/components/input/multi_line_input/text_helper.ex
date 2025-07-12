@@ -52,7 +52,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         0
       end
 
-    safe_col = clamp(col, 0, line_length)
+    # If row is out of bounds, clamp to end of last line
+    safe_col =
+      if row >= num_lines do
+        # End of the last line
+        line_length
+      else
+        clamp(col, 0, line_length)
+      end
 
     # Calculate index by summing lengths of previous lines plus newlines
     prefix_sum =
@@ -78,95 +85,179 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   @doc """
   Replaces text within a range (from start_pos_tuple to end_pos_tuple) with the given replacement string. Returns {new_full_text, replaced_text}.
   """
-  def replace_text_range(
-        lines_list,
-        start_pos_tuple,
-        end_pos_tuple,
-        replacement
-      ) do
+  def replace_text_range(lines_list, start_pos_tuple, end_pos_tuple, replacement) do
     Raxol.Core.Runtime.Log.debug(
       "replace_text_range: lines=#{inspect(lines_list)}, start=#{inspect(start_pos_tuple)}, end=#{inspect(end_pos_tuple)}, repl=#{inspect(replacement)}"
     )
 
-    {clamped_start, clamped_end, joined_text} =
-      calculate_text_range(lines_list, start_pos_tuple, end_pos_tuple)
+    {start_row, start_col, end_row, end_col} = normalize_positions(start_pos_tuple, end_pos_tuple)
+    {new_full_text, replaced_text} = perform_replacement(lines_list, start_row, start_col, end_row, end_col, replacement)
+    {format_result(new_full_text), replaced_text}
+  end
 
-    {text_before, text_after, replaced_text} =
-      slice_text_parts(joined_text, clamped_start, clamped_end)
+  defp normalize_positions({start_row, start_col}, {end_row, end_col}) do
+    if start_row < end_row or (start_row == end_row and start_col <= end_col) do
+      {start_row, start_col, end_row, end_col}
+    else
+      {end_row, end_col, start_row, start_col}
+    end
+  end
 
-    new_full_text = text_before <> replacement <> text_after
+  defp perform_replacement(lines_list, start_row, start_col, end_row, end_col, replacement) do
+    if start_row == end_row do
+      handle_single_line_replacement(lines_list, start_row, start_col, end_col, replacement)
+    else
+      handle_multi_line_replacement(lines_list, start_row, start_col, end_row, end_col, replacement)
+    end
+  end
 
-    Raxol.Core.Runtime.Log.debug(
-      "replace_text_range: new_full_text=#{inspect(new_full_text)}"
-    )
+  defp format_result(new_full_text) do
+    if is_list(new_full_text), do: Enum.join(new_full_text, "\n"), else: new_full_text
+  end
 
-    {new_full_text, replaced_text}
+  defp handle_single_line_replacement(lines_list, row, start_col, end_col, replacement) do
+    line = Enum.at(lines_list, row, "")
+    line_length = String.length(line)
+    start_col = clamp(start_col, 0, line_length)
+    end_col = clamp(end_col, 0, line_length)
+
+    # If out of bounds or reversed (and not insertion), treat as no-op
+    if start_col > end_col do
+      {Enum.join(lines_list, "\n"), ""}
+    else
+      before = String.slice(line, 0, start_col)
+      after_part = String.slice(line, end_col, line_length - end_col)
+      new_line = before <> replacement <> after_part
+      new_lines = List.replace_at(lines_list, row, new_line)
+      new_full_text = Enum.join(new_lines, "\n")
+      replaced_text = String.slice(line, start_col, end_col - start_col)
+      {new_full_text, replaced_text}
+    end
+  end
+
+  defp handle_multi_line_replacement(lines_list, start_row, start_col, end_row, end_col, replacement) do
+    {clamped_start_row, clamped_start_col, clamped_end_row, clamped_end_col} =
+      clamp_positions(lines_list, start_row, start_col, end_row, end_col)
+
+    if invalid_range?(clamped_start_row, clamped_start_col, clamped_end_row, clamped_end_col) do
+      {Enum.join(lines_list, "\n"), ""}
+    else
+      build_replacement_result(lines_list, clamped_start_row, clamped_start_col, clamped_end_row, clamped_end_col, replacement)
+    end
+  end
+
+  defp clamp_positions(lines_list, start_row, start_col, end_row, end_col) do
+    num_lines = length(lines_list)
+    clamped_start_row = clamp(start_row, 0, num_lines - 1)
+    clamped_end_row = clamp(end_row, 0, num_lines - 1)
+
+    start_line = Enum.at(lines_list, clamped_start_row, "")
+    end_line = Enum.at(lines_list, clamped_end_row, "")
+    clamped_start_col = clamp(start_col, 0, String.length(start_line))
+    clamped_end_col = clamp(end_col, 0, String.length(end_line))
+
+    {clamped_start_row, clamped_start_col, clamped_end_row, clamped_end_col}
+  end
+
+  defp invalid_range?(start_row, start_col, end_row, end_col) do
+    start_row > end_row or (start_row == end_row and start_col > end_col)
+  end
+
+  defp build_replacement_result(lines_list, start_row, start_col, end_row, end_col, replacement) do
+    {first_line_part, last_line_part} = extract_line_parts(lines_list, start_row, start_col, end_row, end_col)
+    {lines_before, lines_after} = split_lines_around_range(lines_list, start_row, end_row)
+    new_lines = build_new_lines(lines_before, lines_after, first_line_part, last_line_part, replacement)
+    replaced_text = extract_replaced_text(lines_list, start_row, start_col, end_row, end_col)
+    {new_lines, replaced_text}
+  end
+
+  defp extract_line_parts(lines_list, start_row, start_col, end_row, end_col) do
+    start_line = Enum.at(lines_list, start_row, "")
+    end_line = Enum.at(lines_list, end_row, "")
+    first_line_part = String.slice(start_line, 0, start_col)
+
+    # For multi-line replacement, we want to include everything from end_col onwards
+    # This is the part that should remain after the replacement
+    last_line_part = String.slice(end_line, end_col, String.length(end_line) - end_col)
+
+    {first_line_part, last_line_part}
+  end
+
+  defp split_lines_around_range(lines_list, start_row, end_row) do
+    lines_before = Enum.slice(lines_list, 0, start_row)
+    lines_after = Enum.slice(lines_list, end_row + 1, length(lines_list) - (end_row + 1))
+    {lines_before, lines_after}
+  end
+
+  defp build_new_lines(lines_before, lines_after, first_line_part, last_line_part, replacement) do
+    if replacement == "" do
+      # For deletion, join the first and last line parts
+      joined_line = first_line_part <> last_line_part
+      # Only add the joined line if it's not empty or if there are no other lines
+      if joined_line != "" or (lines_before == [] and lines_after == []) do
+        lines_before ++ [joined_line] ++ lines_after
+      else
+        lines_before ++ lines_after
+      end
+    else
+      # For replacement, create a new line with the replacement
+      new_line = first_line_part <> replacement <> last_line_part
+      lines_before ++ [new_line] ++ lines_after
+    end
+  end
+
+  defp extract_replaced_text(lines_list, start_row, start_col, end_row, end_col) do
+    if start_row == end_row do
+      extract_single_line_text(lines_list, start_row, start_col, end_col)
+    else
+      extract_multi_line_text(lines_list, start_row, start_col, end_row, end_col)
+    end
+  end
+
+  defp extract_single_line_text(lines_list, row, start_col, end_col) do
+    line = Enum.at(lines_list, row, "")
+    line_length = String.length(line)
+    start_col = clamp(start_col, 0, line_length)
+    end_col = clamp(end_col, 0, line_length)
+
+    if start_col >= end_col do
+      ""
+    else
+      String.slice(line, start_col, end_col - start_col)
+    end
+  end
+
+  defp extract_multi_line_text(lines_list, start_row, start_col, end_row, end_col) do
+    {start_part, middle_lines, end_part} = extract_text_parts(lines_list, start_row, start_col, end_row, end_col)
+    parts = [start_part] ++ middle_lines ++ [end_part]
+    parts = if end_col == 0, do: Enum.slice(parts, 0, length(parts) - 1), else: parts
+    Enum.join(parts, "\n")
+  end
+
+  defp extract_text_parts(lines_list, start_row, start_col, end_row, end_col) do
+    start_line = Enum.at(lines_list, start_row, "")
+    end_line = Enum.at(lines_list, end_row, "")
+    start_length = String.length(start_line)
+    end_length = String.length(end_line)
+    start_col = clamp(start_col, 0, start_length)
+    end_col = clamp(end_col, 0, end_length)
+
+    start_part = String.slice(start_line, start_col, start_length - start_col)
+    middle_lines = extract_middle_lines(lines_list, start_row, end_row)
+    end_part = String.slice(end_line, 0, end_col)
+
+    {start_part, middle_lines, end_part}
+  end
+
+  defp extract_middle_lines(lines_list, start_row, end_row) do
+    if end_row > start_row + 1 do
+      Enum.slice(lines_list, start_row + 1, end_row - start_row - 1)
+    else
+      []
+    end
   end
 
   # --- Private helper functions ---
-
-  defp calculate_text_range(lines_list, start_pos_tuple, end_pos_tuple) do
-    start_index = pos_to_index(lines_list, start_pos_tuple)
-    end_index = pos_to_index(lines_list, end_pos_tuple)
-
-    Raxol.Core.Runtime.Log.debug(
-      "replace_text_range: start_idx=#{start_index}, end_idx=#{end_index}"
-    )
-
-    {norm_start_index, norm_end_index} =
-      {min(start_index, end_index), max(start_index, end_index)}
-
-    joined_text = Enum.join(lines_list, "\n")
-    joined_text_len = String.length(joined_text)
-
-    clamped_start = clamp(norm_start_index, 0, joined_text_len)
-    clamped_end = clamp(norm_end_index, 0, joined_text_len)
-
-    Raxol.Core.Runtime.Log.debug(
-      "replace_text_range: clamped_start=#{clamped_start}, clamped_end=#{clamped_end}"
-    )
-
-    {clamped_start, clamped_end, joined_text}
-  end
-
-  defp slice_text_parts(joined_text, clamped_start, clamped_end) do
-    text_before = String.slice(joined_text, 0, clamped_start)
-
-    Raxol.Core.Runtime.Log.debug(
-      "replace_text_range: text_before=#{inspect(text_before)}"
-    )
-
-    slice_after_start_index = clamped_end
-
-    Raxol.Core.Runtime.Log.debug(
-      "replace_text_range: slice_after_start_index=#{slice_after_start_index}"
-    )
-
-    text_after =
-      String.slice(
-        joined_text,
-        slice_after_start_index,
-        max(0, String.length(joined_text) - slice_after_start_index)
-      )
-
-    Raxol.Core.Runtime.Log.debug(
-      "replace_text_range: text_after=#{inspect(text_after)}"
-    )
-
-    replaced_length =
-      if clamped_start <= clamped_end do
-        max(0, clamped_end - clamped_start)
-      else
-        0
-      end
-
-    replaced_length =
-      min(replaced_length, max(0, String.length(joined_text) - clamped_start))
-
-    replaced_text = String.slice(joined_text, clamped_start, replaced_length)
-
-    {text_before, text_after, replaced_text}
-  end
 
   def insert_char(state, char_or_codepoint) do
     %{lines: lines, cursor_pos: {row, col}} = state
@@ -229,42 +320,32 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   def delete_selection(state) do
     %{lines: lines} = state
 
-    # Get normalized {row, col} tuples
     {start_pos, end_pos} =
       NavigationHelper.normalize_selection(state)
 
-    # Check if selection is valid before proceeding
     if start_pos == nil or end_pos == nil do
-      # Or handle differently, maybe return {state, ""}? Logging is good too.
       Raxol.Core.Runtime.Log.warning(
         "Attempted to delete invalid selection: #{inspect(state.selection_start)} to #{inspect(state.selection_end)}"
       )
-
-      # Fix: Remove 'return'
       {state, ""}
     else
-      # Use range helper, pass lines list
       {new_full_text, deleted_text} =
         replace_text_range(lines, start_pos, end_pos, "")
 
-      # Split back into lines
-      new_lines = String.split(new_full_text, "\n")
+      # Always join to string before splitting
+      new_full_text_str = if is_list(new_full_text), do: Enum.join(new_full_text, "\n"), else: new_full_text
+      new_lines = String.split(new_full_text_str, "\n")
 
-      # Move cursor to the start of the deleted selection
       new_state = %MultiLineInput{
         state
-        | # Update lines
-          lines: new_lines,
-          # Fix: Use calculated start_pos
+        | lines: new_lines,
           cursor_pos: start_pos,
           selection_start: nil,
           selection_end: nil,
-          # Update the value field
-          value: new_full_text
+          value: new_full_text_str
       }
 
-      if state.on_change, do: state.on_change.(new_full_text)
-      # Return the state and the deleted text (useful for cut)
+      if state.on_change, do: state.on_change.(new_full_text_str)
       {new_state, deleted_text}
     end
   end
@@ -273,45 +354,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     %{lines: lines, cursor_pos: {row, col}} = state
 
     # Handle backspace at the beginning of the document
-    if row == 0 and col == 0 do
+    if at_document_start?(row, col) do
       state
     else
-      prev_position =
-        if col == 0 and row > 0 do
-          prev_line = Enum.at(lines, row - 1)
-          prev_col = String.length(prev_line)
-          {row - 1, prev_col}
-        else
-          {row, col - 1}
-        end
-
-      {new_full_text, _deleted_text} =
-        replace_text_range(lines, prev_position, {row, col}, "")
-
-      # Split back to lines
-      new_lines = String.split(new_full_text, "\n")
-
-      # Use struct syntax for new_state
-      new_state = %MultiLineInput{
-        state
-        | # Update lines
-          lines: new_lines,
-          # Set cursor to the previous position
-          cursor_pos: prev_position,
-          selection_start: nil,
-          selection_end: nil,
-          # Update the value field
-          value: new_full_text
-      }
-
-      # Handle on_change function with properly returned value
-      if state.on_change do
-        # Call on_change but don't ignore the result
-        _ = state.on_change.(new_full_text)
-      end
-
-      # Return the new state
-      new_state
+      prev_position = calculate_previous_position(lines, row, col)
+      update_state_after_deletion(state, lines, prev_position, {row, col})
     end
   end
 
@@ -327,17 +374,19 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       {new_full_text, _deleted_text} =
         replace_text_range(lines, {row, col}, next_position, "")
 
-      new_lines = String.split(new_full_text, "\n")
+      # Always join to string before splitting
+      new_full_text_str = if is_list(new_full_text), do: Enum.join(new_full_text, "\n"), else: new_full_text
+      new_lines = String.split(new_full_text_str, "\n")
 
       new_state = %MultiLineInput{
         state
         | lines: new_lines,
           selection_start: nil,
           selection_end: nil,
-          value: new_full_text
+          value: new_full_text_str
       }
 
-      if state.on_change, do: state.on_change.(new_full_text)
+      if state.on_change, do: state.on_change.(new_full_text_str)
       new_state
     end
   end
@@ -361,6 +410,40 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     else
       {row, col + 1}
     end
+  end
+
+  defp at_document_start?(row, col), do: row == 0 and col == 0
+
+  defp calculate_previous_position(lines, row, col) do
+    if col == 0 and row > 0 do
+      prev_line = Enum.at(lines, row - 1)
+      prev_col = String.length(prev_line)
+      {row - 1, prev_col}
+    else
+      {row, col - 1}
+    end
+  end
+
+  defp update_state_after_deletion(state, lines, start_pos, end_pos) do
+    {new_full_text, _deleted_text} = replace_text_range(lines, start_pos, end_pos, "")
+    new_full_text_str = normalize_full_text(new_full_text)
+    new_lines = String.split(new_full_text_str, "\n")
+
+    new_state = %MultiLineInput{
+      state
+      | lines: new_lines,
+        cursor_pos: start_pos,
+        selection_start: nil,
+        selection_end: nil,
+        value: new_full_text_str
+    }
+
+    if state.on_change, do: state.on_change.(new_full_text_str)
+    new_state
+  end
+
+  defp normalize_full_text(full_text) do
+    if is_list(full_text), do: Enum.join(full_text, "\n"), else: full_text
   end
 
   # --- Internal Helpers (used by functions above) ---

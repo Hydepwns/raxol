@@ -243,7 +243,9 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     %{
       algorithm: Keyword.get(opts, :compression_algorithm, :lz4),
       level: Keyword.get(opts, :compression_level, 6),
-      threshold: Keyword.get(opts, :compression_threshold, 1024)
+      threshold: Keyword.get(opts, :compression_threshold, 1024),
+      last_compression_ratio: 1.0,
+      last_compression_time: nil
     }
   end
 
@@ -304,7 +306,8 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   defp update_compression_state(state, buffer) do
     # Update compression statistics
     compressed_size = calculate_buffer_size(buffer)
-    compression_ratio = compressed_size / max(state.threshold, 1)
+    threshold = Map.get(state, :threshold, 1024)  # Default threshold if not present
+    compression_ratio = compressed_size / max(threshold, 1)
 
     %{
       state

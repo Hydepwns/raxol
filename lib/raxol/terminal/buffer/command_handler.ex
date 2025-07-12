@@ -5,11 +5,13 @@ defmodule Raxol.Terminal.Buffer.CommandHandler do
 
   alias Raxol.Terminal.Buffer.UnifiedManager
 
-  def handle_command(state, {:set_cell, x, y, cell}),
-    do: UnifiedManager.set_cell(state, x, y, cell)
+  def handle_command(state, {:set_cell, x, y, cell}) do
+    UnifiedManager.set_cell(state, x, y, cell)
+  end
 
-  def handle_command(state, {:fill_region, x, y, width, height, cell}),
-    do: UnifiedManager.fill_region(state, x, y, width, height, cell)
+  def handle_command(state, {:fill_region, x, y, width, height, cell}) do
+    UnifiedManager.fill_region(state, x, y, width, height, cell)
+  end
 
   def handle_command(state, {:scroll_region, x, y, width, height, amount}),
     do: UnifiedManager.scroll_region(state, x, y, width, height, amount)

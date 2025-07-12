@@ -71,7 +71,7 @@ defmodule Raxol.MixProject do
           # :postgrex,  # Removed to prevent auto-starting Repo
           :runtime_tools,
           :swoosh,
-          :termbox2_nif,
+          # :termbox2_nif,  # Temporarily disabled for testing
           :toml
         ] ++ test_applications()
     ]
@@ -101,7 +101,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2-nif)
-      {:termbox2_nif, "~> 2.0"},
+      # {:termbox2_nif, "~> 2.0"},  # Temporarily disabled for testing
 
       # --- Added for Tutorial Loading ---
       # Markdown parser

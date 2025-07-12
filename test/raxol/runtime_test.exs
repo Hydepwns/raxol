@@ -5,9 +5,8 @@ defmodule MockApp do
   alias Raxol.Core.Runtime.Command
 
   @impl Raxol.Core.Runtime.Application
-  def init(_initial_state_map, initial_model) do
-    # No initial commands
-    {:ok, initial_model, []}
+  def init(_context) do
+    %{count: 0, last_clipboard: nil}
   end
 
   @impl Raxol.Core.Runtime.Application
@@ -18,7 +17,6 @@ defmodule MockApp do
   end
 
   @impl Raxol.Core.Runtime.Application
-  # Ctrl+Q
   def update({:event, %Event{type: :key, data: %{char: <<17>>}}}, model) do
     Raxol.Core.Runtime.Log.debug(
       "[MockApp.update] Matched Ctrl+Q (char <<17>>)"
@@ -28,21 +26,18 @@ defmodule MockApp do
   end
 
   @impl Raxol.Core.Runtime.Application
-  # Ctrl+V
   def update({:event, %Event{type: :key, data: %{char: <<22>>}}}, model) do
     Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+V")
     {model, [%Command{type: :clipboard_read}]}
   end
 
   @impl Raxol.Core.Runtime.Application
-  # Ctrl+X
   def update({:event, %Event{type: :key, data: %{char: <<24>>}}}, model) do
     Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+X")
     {model, [%Command{type: :clipboard_write, data: "copied from mock"}]}
   end
 
   @impl Raxol.Core.Runtime.Application
-  # Ctrl+N
   def update({:event, %Event{type: :key, data: %{char: <<14>>}}}, model) do
     Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+N")
     {model, [%Command{type: :notify, data: {"MockApp notification", ""}}]}
@@ -76,20 +71,16 @@ defmodule MockApp do
   end
 
   @impl Raxol.Core.Runtime.Application
-  def handle_tick(model) do
-    # Raxol.Core.Runtime.Log.debug("[MockApp.handle_tick] Tick, model: #{inspect(model)}")
-    # No commands on tick for mock
-    {model, []}
-  end
+  def handle_event(_), do: :ok
 
   @impl Raxol.Core.Runtime.Application
-  def terminate(reason, model) do
-    Raxol.Core.Runtime.Log.debug(
-      "[MockApp.terminate] Terminating. Reason: #{inspect(reason)}, Model: #{inspect(model)}"
-    )
+  def handle_message(_, _), do: :ok
 
-    :ok
-  end
+  @impl Raxol.Core.Runtime.Application
+  def handle_tick(_), do: {nil, []}
+
+  @impl Raxol.Core.Runtime.Application
+  def terminate(_, _), do: :ok
 
   @impl Raxol.Core.Runtime.Application
   def view(model) do
@@ -101,9 +92,7 @@ defmodule MockApp do
   end
 
   @impl Raxol.Core.Runtime.Application
-  def subscriptions(_model) do
-    []
-  end
+  def subscriptions(_model), do: []
 end
 
 # --- All test code below ---

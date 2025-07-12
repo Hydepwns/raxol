@@ -86,39 +86,103 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
 
   # --- CSI Command Dispatch ---
 
+  defp dispatch_csi_cursor_position(params, remaining) do
+    row = BaseParser.param_at(params, 0, 1)
+    col = BaseParser.param_at(params, 1, 1)
+    {:ok, {:cursor_position, {max(0, col - 1), max(0, row - 1)}}, remaining}
+  end
+
+  defp csi_dispatch_map do
+    cursor_commands()
+    |> Map.merge(movement_commands())
+    |> Map.merge(display_commands())
+    |> Map.merge(mode_commands())
+    |> Map.merge(misc_commands())
+  end
+
+  defp cursor_commands do
+    %{
+      "H" => {:cursor_position, &dispatch_csi_cursor_position/2},
+      "f" => {:cursor_position, &dispatch_csi_cursor_position/2},
+      "G" => {:simple, &dispatch_csi_cursor_horizontal_absolute/2},
+      "s" => {:simple, &dispatch_csi_save_cursor/2},
+      "u" => {:simple, &dispatch_csi_restore_cursor/2}
+    }
+  end
+
+  defp movement_commands do
+    %{
+      "A" => {:cursor_move, &dispatch_csi_cursor_move/3, :up},
+      "B" => {:cursor_move, &dispatch_csi_cursor_move/3, :down},
+      "C" => {:cursor_move, &dispatch_csi_cursor_move/3, :right},
+      "D" => {:cursor_move, &dispatch_csi_cursor_move/3, :left},
+      "E" => {:simple, &dispatch_csi_cursor_next_line/2},
+      "F" => {:simple, &dispatch_csi_cursor_prev_line/2}
+    }
+  end
+
+  defp display_commands do
+    %{
+      "J" => {:simple, &dispatch_csi_erase_display/2},
+      "K" => {:simple, &dispatch_csi_erase_line/2},
+      "L" => {:simple, &dispatch_csi_insert_line/2},
+      "M" => {:simple, &dispatch_csi_delete_line/2},
+      "S" => {:scroll, &dispatch_csi_scroll/3, :up},
+      "T" => {:scroll, &dispatch_csi_scroll/3, :down},
+      "m" => {:simple, &dispatch_csi_set_graphic_rendition/2},
+      "n" => {:simple, &dispatch_csi_device_status_report/2},
+      "r" => {:simple, &dispatch_csi_set_scroll_region/2}
+    }
+  end
+
+  defp mode_commands do
+    %{
+      "h" => {:mode, &dispatch_csi_set_mode/4, true},
+      "l" => {:mode, &dispatch_csi_set_mode/4, false}
+    }
+  end
+
+  defp misc_commands do
+    %{}
+  end
+
+  @cursor_move_map %{
+    "A" => :up,
+    "B" => :down,
+    "C" => :right,
+    "D" => :left
+  }
+
+  @scroll_map %{
+    "S" => :up,
+    "T" => :down
+  }
+
+  @mode_map %{
+    "h" => true,
+    "l" => false
+  }
+
   defp dispatch_csi(params, final_byte, remaining) do
-    case final_byte do
-      "H" -> dispatch_csi_cursor_position(params, remaining)
-      "f" -> dispatch_csi_cursor_position(params, remaining)
-      "A" -> dispatch_csi_cursor_move(params, :up, remaining)
-      "B" -> dispatch_csi_cursor_move(params, :down, remaining)
-      "C" -> dispatch_csi_cursor_move(params, :right, remaining)
-      "D" -> dispatch_csi_cursor_move(params, :left, remaining)
-      "E" -> dispatch_csi_cursor_next_line(params, remaining)
-      "F" -> dispatch_csi_cursor_prev_line(params, remaining)
-      "G" -> dispatch_csi_cursor_horizontal_absolute(params, remaining)
-      "J" -> dispatch_csi_erase_display(params, remaining)
-      "K" -> dispatch_csi_erase_line(params, remaining)
-      "S" -> dispatch_csi_scroll(params, :up, remaining)
-      "T" -> dispatch_csi_scroll(params, :down, remaining)
-      "m" -> dispatch_csi_set_graphic_rendition(params, remaining)
-      "n" -> dispatch_csi_device_status_report(params, remaining)
-      "r" -> dispatch_csi_set_scroll_region(params, remaining)
-      "h" -> dispatch_csi_set_mode(params, :standard, true, remaining)
-      "l" -> dispatch_csi_set_mode(params, :standard, false, remaining)
-      "s" -> dispatch_csi_save_cursor(params, remaining)
-      "u" -> dispatch_csi_restore_cursor(params, remaining)
-      _ -> dispatch_csi_unknown(params, final_byte, remaining)
+    case csi_dispatch_map()[final_byte] do
+      nil ->
+        dispatch_csi_unknown(params, final_byte, remaining)
+
+      {:simple, handler} ->
+        handler.(params, remaining)
+
+      {:cursor_move, handler, direction} ->
+        handler.(params, direction, remaining)
+
+      {:scroll, handler, direction} ->
+        handler.(params, direction, remaining)
+
+      {:mode, handler, set?} ->
+        handler.(params, :standard, set?, remaining)
     end
   end
 
   # --- CSI Command Handlers ---
-
-  defp dispatch_csi_cursor_position(params, remaining) do
-    row = BaseParser.param_at(params, 0, 1)
-    col = BaseParser.param_at(params, 1, 1)
-    {:ok, {:cursor_position, {max(0, row - 1), max(0, col - 1)}}, remaining}
-  end
 
   defp dispatch_csi_cursor_move(params, direction, remaining) do
     count = BaseParser.param_at(params, 0, 1)
@@ -148,6 +212,16 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
   defp dispatch_csi_erase_line(params, remaining) do
     mode = BaseParser.param_at(params, 0, 0)
     {:ok, {:erase_line, mode}, remaining}
+  end
+
+  defp dispatch_csi_insert_line(params, remaining) do
+    lines = BaseParser.param_at(params, 0, 1)
+    {:ok, {:insert_line, lines}, remaining}
+  end
+
+  defp dispatch_csi_delete_line(params, remaining) do
+    lines = BaseParser.param_at(params, 0, 1)
+    {:ok, {:delete_line, lines}, remaining}
   end
 
   defp dispatch_csi_scroll(params, direction, remaining) do

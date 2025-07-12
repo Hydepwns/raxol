@@ -69,7 +69,11 @@ Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
 
 # --- Global Docker Test Skip Logic ---
 if System.get_env("SKIP_TERMBOX2_TESTS") == "true" do
-  IO.puts(:stderr, "[CI] Skipping Docker-dependent tests (SKIP_TERMBOX2_TESTS=true)")
+  IO.puts(
+    :stderr,
+    "[CI] Skipping Docker-dependent tests (SKIP_TERMBOX2_TESTS=true)"
+  )
+
   ExUnit.configure(exclude: [docker: true])
 end
 

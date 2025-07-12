@@ -900,10 +900,9 @@ defmodule Raxol.Terminal.Emulator do
   # Override the delegate functions to handle PIDs properly
   def get_cursor_position(%__MODULE__{cursor: cursor} = emulator) do
     if is_pid(cursor) do
-      cursor_struct = get_cursor_struct(emulator)
-      cursor_struct.position
+      CursorManager.get_position(cursor)
     else
-      cursor.position
+      CursorManager.get_position(cursor)
     end
   end
 

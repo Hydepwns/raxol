@@ -4,25 +4,25 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   alias Raxol.Terminal.Emulator
   require Logger
 
-  def handle_command(emulator, params, byte) do
-    case byte do
-      ?m -> handle_sgr(emulator, params)
-      ?H -> handle_cup(emulator, params)
-      ?r -> handle_decstbm(emulator, params)
-      ?J -> handle_ed(emulator, params)
-      ?K -> handle_el(emulator, params)
-      ?l -> handle_rm(emulator, params)
-      ?h -> handle_sm(emulator, params)
-      ?s -> handle_decsc(emulator, params)
-      ?u -> handle_decrc(emulator, params)
-      ?n -> handle_dsr(emulator, params)
-      ?c -> handle_da(emulator, params)
-      ?q -> handle_decscusr(emulator, params)
-      ?p -> handle_decstr(emulator, params)
-      ?t -> handle_decslrm(emulator, params)
-      _ -> {:ok, emulator}
-    end
-  end
+  # Replace the single handle_command function with multiple pattern-matched functions
+  def handle_command(emulator, params, ?m), do: handle_sgr(emulator, params)
+  def handle_command(emulator, params, ?H), do: handle_cup(emulator, params)
+  def handle_command(emulator, params, ?r), do: handle_decstbm(emulator, params)
+  def handle_command(emulator, params, ?J), do: handle_ed(emulator, params)
+  def handle_command(emulator, params, ?K), do: handle_el(emulator, params)
+  def handle_command(emulator, params, ?l), do: handle_rm(emulator, params)
+  def handle_command(emulator, params, ?h), do: handle_sm(emulator, params)
+  def handle_command(emulator, params, ?s), do: handle_decsc(emulator, params)
+  def handle_command(emulator, params, ?u), do: handle_decrc(emulator, params)
+  def handle_command(emulator, params, ?n), do: handle_dsr(emulator, params)
+  def handle_command(emulator, params, ?c), do: handle_da(emulator, params)
+
+  def handle_command(emulator, params, ?q),
+    do: handle_decscusr(emulator, params)
+
+  def handle_command(emulator, params, ?p), do: handle_decstr(emulator, params)
+  def handle_command(emulator, params, ?t), do: handle_decslrm(emulator, params)
+  def handle_command(emulator, _params, _byte), do: {:ok, emulator}
 
   def handle_sgr(emulator, params) do
     require Logger
@@ -40,42 +40,92 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     {:ok, %{emulator | style: updated_style}}
   end
 
-  defp process_sgr_parameter(param) do
-    case param do
-      0 ->
-        {:ok,
-         %{
-           bold: false,
-           faint: false,
-           italic: false,
-           underline: false,
-           blink: false,
-           reverse: false,
-           conceal: false,
-           crossed_out: false,
-           foreground: nil,
-           background: nil
-         }}
+  # Replace the process_sgr_parameter function with a map-based approach
+  @sgr_attributes %{
+    1 => :bold,
+    2 => :faint,
+    3 => :italic,
+    4 => :underline,
+    5 => :blink,
+    7 => :reverse,
+    8 => :conceal,
+    9 => :crossed_out
+  }
 
-      n when n in 1..9 ->
-        {:ok, %{get_attribute_key(n) => true}}
+  @sgr_colors %{
+    0 => :black,
+    1 => :red,
+    2 => :green,
+    3 => :yellow,
+    4 => :blue,
+    5 => :magenta,
+    6 => :cyan,
+    7 => :white
+  }
 
-      n when n in 30..37 ->
-        {:ok, %{foreground: get_color(n - 30)}}
+  @sgr_bright_colors %{
+    0 => :bright_black,
+    1 => :bright_red,
+    2 => :bright_green,
+    3 => :bright_yellow,
+    4 => :bright_blue,
+    5 => :bright_magenta,
+    6 => :bright_cyan,
+    7 => :bright_white
+  }
 
-      n when n in 40..47 ->
-        {:ok, %{background: get_color(n - 40)}}
+  defp process_sgr_parameter(0) do
+    {:ok,
+     %{
+       bold: false,
+       faint: false,
+       italic: false,
+       underline: false,
+       blink: false,
+       reverse: false,
+       conceal: false,
+       crossed_out: false,
+       foreground: nil,
+       background: nil
+     }}
+  end
 
-      n when n in 90..97 ->
-        {:ok, %{foreground: get_bright_color(n - 90)}}
-
-      n when n in 100..107 ->
-        {:ok, %{background: get_bright_color(n - 100)}}
-
-      _ ->
-        :error
+  defp process_sgr_parameter(n) when n in 1..9 do
+    case Map.get(@sgr_attributes, n) do
+      nil -> :error
+      attr -> {:ok, %{attr => true}}
     end
   end
+
+  defp process_sgr_parameter(n) when n in 30..37 do
+    case Map.get(@sgr_colors, n - 30) do
+      nil -> :error
+      color -> {:ok, %{foreground: color}}
+    end
+  end
+
+  defp process_sgr_parameter(n) when n in 40..47 do
+    case Map.get(@sgr_colors, n - 40) do
+      nil -> :error
+      color -> {:ok, %{background: color}}
+    end
+  end
+
+  defp process_sgr_parameter(n) when n in 90..97 do
+    case Map.get(@sgr_bright_colors, n - 90) do
+      nil -> :error
+      color -> {:ok, %{foreground: color}}
+    end
+  end
+
+  defp process_sgr_parameter(n) when n in 100..107 do
+    case Map.get(@sgr_bright_colors, n - 100) do
+      nil -> :error
+      color -> {:ok, %{background: color}}
+    end
+  end
+
+  defp process_sgr_parameter(_), do: :error
 
   def handle_cup(emulator, params) do
     row = Enum.at(params, 0, 1)
@@ -95,60 +145,47 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
       "handle_decstbm called with params=#{inspect(params)}, emulator.height=#{emulator.height}"
     )
 
-    case params do
-      [] ->
-        # \e[r - Reset scroll region to full viewport
-        {:ok, %{emulator | scroll_region: nil}}
-
-      [top, bottom] when top == 1 and bottom == emulator.height ->
-        # \e[r - Reset scroll region to full viewport (default params)
-        {:ok, %{emulator | scroll_region: nil}}
-
-      [top, bottom] ->
-        # \e[top;bottomr - Set scroll region
-        if top >= 1 and bottom <= emulator.height and top < bottom do
-          {:ok, %{emulator | scroll_region: {top - 1, bottom - 1}}}
-        else
-          {:ok, emulator}
-        end
-
-      [top] ->
-        # \e[topr - Set top of scroll region, bottom defaults to screen height
-        bottom = emulator.height
-
-        if top >= 1 and bottom <= emulator.height and top < bottom do
-          {:ok, %{emulator | scroll_region: {top - 1, bottom - 1}}}
-        else
-          {:ok, emulator}
-        end
-
-      _ ->
-        # Invalid parameters, don't change scroll region
-        {:ok, emulator}
+    case parse_scroll_region(params, emulator.height) do
+      {:ok, region} -> {:ok, %{emulator | scroll_region: region}}
+      :error -> {:ok, emulator}
     end
   end
+
+  defp parse_scroll_region([], _height), do: {:ok, nil}
+
+  defp parse_scroll_region([1, bottom], height) when bottom == height,
+    do: {:ok, nil}
+
+  defp parse_scroll_region([top, bottom], height)
+       when top >= 1 and bottom <= height and top < bottom do
+    {:ok, {top - 1, bottom - 1}}
+  end
+
+  defp parse_scroll_region([top], height) when top >= 1 and top < height do
+    {:ok, {top - 1, height - 1}}
+  end
+
+  defp parse_scroll_region(_, _), do: :error
 
   def handle_ed(emulator, params) do
     mode = Enum.at(params, 0, 0)
     {x, y} = Emulator.get_cursor_position(emulator)
-
-    case mode do
-      0 ->
-        {:ok, clear_from_cursor_to_end(emulator, x, y)}
-
-      1 ->
-        {:ok, clear_from_start_to_cursor(emulator, x, y)}
-
-      2 ->
-        {:ok, clear_entire_screen(emulator)}
-
-      3 ->
-        {:ok, clear_entire_screen_and_scrollback(emulator)}
-
-      _ ->
-        {:ok, emulator}
-    end
+    {:ok, clear_screen_by_mode(emulator, mode, x, y)}
   end
+
+  defp clear_screen_by_mode(emulator, 0, x, y),
+    do: clear_from_cursor_to_end(emulator, x, y)
+
+  defp clear_screen_by_mode(emulator, 1, x, y),
+    do: clear_from_start_to_cursor(emulator, x, y)
+
+  defp clear_screen_by_mode(emulator, 2, _x, _y),
+    do: clear_entire_screen(emulator)
+
+  defp clear_screen_by_mode(emulator, 3, _x, _y),
+    do: clear_entire_screen_and_scrollback(emulator)
+
+  defp clear_screen_by_mode(emulator, _mode, _x, _y), do: emulator
 
   def handle_el(emulator, params) do
     mode = Enum.at(params, 0, 0)
@@ -333,45 +370,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   end
 
   defp get_attribute_key(n) do
-    case n do
-      1 -> :bold
-      2 -> :faint
-      3 -> :italic
-      4 -> :underline
-      5 -> :blink
-      7 -> :reverse
-      8 -> :conceal
-      9 -> :crossed_out
-      _ -> :unknown
-    end
+    Map.get(@sgr_attributes, n, :unknown)
   end
 
   defp get_color(n) do
-    case n do
-      0 -> :black
-      1 -> :red
-      2 -> :green
-      3 -> :yellow
-      4 -> :blue
-      5 -> :magenta
-      6 -> :cyan
-      7 -> :white
-      _ -> :default
-    end
+    Map.get(@sgr_colors, n, :default)
   end
 
   defp get_bright_color(n) do
-    case n do
-      0 -> :bright_black
-      1 -> :bright_red
-      2 -> :bright_green
-      3 -> :bright_yellow
-      4 -> :bright_blue
-      5 -> :bright_magenta
-      6 -> :bright_cyan
-      7 -> :bright_white
-      _ -> :default
-    end
+    Map.get(@sgr_bright_colors, n, :default)
   end
 
   defp clear_from_cursor_to_end(emulator, x, y) do
@@ -458,39 +465,59 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     Emulator.update_active_buffer(emulator, new_buffer)
   end
 
+  @private_rm_mappings %{
+    1 => {:cursor_keys, :normal},
+    2 => {:ansi_mode, false},
+    3 => {:column_mode, false},
+    4 => {:smooth_scroll, false},
+    5 => {:reverse_video, false},
+    6 => {:origin_mode, false},
+    7 => {:wrap_mode, false},
+    8 => {:auto_repeat, false},
+    9 => {:interlacing, false},
+    12 => {:cursor_blink, false},
+    25 => {:cursor_visible, false},
+    47 => {:alternate_screen, false}
+  }
+
+  @private_sm_mappings %{
+    1 => {:cursor_keys, :application},
+    2 => {:ansi_mode, true},
+    3 => {:column_mode, true},
+    4 => {:smooth_scroll, true},
+    5 => {:reverse_video, true},
+    6 => {:origin_mode, true},
+    7 => {:wrap_mode, true},
+    8 => {:auto_repeat, true},
+    9 => {:interlacing, true},
+    12 => {:cursor_blink, true},
+    25 => {:cursor_visible, true},
+    47 => {:alternate_screen, true}
+  }
+
   defp handle_private_rm(emulator, params) do
     case params do
-      [1] -> {:ok, %{emulator | cursor_keys: :normal}}
-      [2] -> {:ok, %{emulator | ansi_mode: false}}
-      [3] -> {:ok, %{emulator | column_mode: false}}
-      [4] -> {:ok, %{emulator | smooth_scroll: false}}
-      [5] -> {:ok, %{emulator | reverse_video: false}}
-      [6] -> {:ok, %{emulator | origin_mode: false}}
-      [7] -> {:ok, %{emulator | wrap_mode: false}}
-      [8] -> {:ok, %{emulator | auto_repeat: false}}
-      [9] -> {:ok, %{emulator | interlacing: false}}
-      [12] -> {:ok, %{emulator | cursor_blink: false}}
-      [25] -> {:ok, %{emulator | cursor_visible: false}}
-      [47] -> {:ok, %{emulator | alternate_screen: false}}
-      _ -> {:ok, emulator}
+      [param] when is_integer(param) ->
+        case Map.get(@private_rm_mappings, param) do
+          {field, value} -> {:ok, %{emulator | field => value}}
+          nil -> {:ok, emulator}
+        end
+
+      _ ->
+        {:ok, emulator}
     end
   end
 
   defp handle_private_sm(emulator, params) do
     case params do
-      [1] -> {:ok, %{emulator | cursor_keys: :application}}
-      [2] -> {:ok, %{emulator | ansi_mode: true}}
-      [3] -> {:ok, %{emulator | column_mode: true}}
-      [4] -> {:ok, %{emulator | smooth_scroll: true}}
-      [5] -> {:ok, %{emulator | reverse_video: true}}
-      [6] -> {:ok, %{emulator | origin_mode: true}}
-      [7] -> {:ok, %{emulator | wrap_mode: true}}
-      [8] -> {:ok, %{emulator | auto_repeat: true}}
-      [9] -> {:ok, %{emulator | interlacing: true}}
-      [12] -> {:ok, %{emulator | cursor_blink: true}}
-      [25] -> {:ok, %{emulator | cursor_visible: true}}
-      [47] -> {:ok, %{emulator | alternate_screen: true}}
-      _ -> {:ok, emulator}
+      [param] when is_integer(param) ->
+        case Map.get(@private_sm_mappings, param) do
+          {field, value} -> {:ok, %{emulator | field => value}}
+          nil -> {:ok, emulator}
+        end
+
+      _ ->
+        {:ok, emulator}
     end
   end
 end

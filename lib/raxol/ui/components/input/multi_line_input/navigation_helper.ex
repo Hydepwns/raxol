@@ -92,30 +92,30 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     {row, col} = state.cursor_pos
     new_row = max(0, row - 1)
 
+    # Use state.lines if present, otherwise split lines
+    lines = Map.get(state, :lines) || TextHelper.split_into_lines(state.value, state.width, state.wrap)
     # Use desired_col if available, otherwise use current column
-    desired_col = Map.get(state, :desired_col, col)
+    desired_col = state.desired_col || col
 
     # Get the target line to check its length
-    lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     target_line = Enum.at(lines, new_row, "")
     target_line_length = String.length(target_line)
 
     # Use desired_col if it fits on the target line, otherwise use the line length
     new_col = min(desired_col, target_line_length)
 
-    # Update desired_col to remember the column position for future movements
-    new_state = %{state | desired_col: desired_col}
-    move_cursor(new_state, {new_row, new_col})
+    %{state | cursor_pos: {new_row, new_col}, desired_col: desired_col}
   end
 
   def move_cursor(state, :down) do
     {row, col} = state.cursor_pos
-    lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    # Use state.lines if present, otherwise split lines
+    lines = Map.get(state, :lines) || TextHelper.split_into_lines(state.value, state.width, state.wrap)
     num_lines = length(lines)
     new_row = min(num_lines - 1, row + 1)
 
     # Use desired_col if available, otherwise use current column
-    desired_col = Map.get(state, :desired_col, col)
+    desired_col = state.desired_col || col
 
     # Get the target line to check its length
     target_line = Enum.at(lines, new_row, "")
@@ -124,9 +124,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     # Use desired_col if it fits on the target line, otherwise use the line length
     new_col = min(desired_col, target_line_length)
 
-    # Update desired_col to remember the column position for future movements
-    new_state = %{state | desired_col: desired_col}
-    move_cursor(new_state, {new_row, new_col})
+    %{state | cursor_pos: {new_row, new_col}, desired_col: desired_col}
   end
 
   def move_cursor(state, :word_left) do

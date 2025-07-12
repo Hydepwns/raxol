@@ -17,6 +17,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     @impl Raxol.Core.Runtime.Application
     def init(_context), do: %{count: 0, initialized: true}
 
+    @impl Raxol.Core.Runtime.Application
     def update({:add, amount}, model) do
       {%{model | count: model.count + amount},
        [{:command, :operation_complete}]}
@@ -51,17 +52,6 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     end
 
     @impl Raxol.Core.Runtime.Application
-    def handle_event(
-          %Raxol.Core.Events.Event{
-            type: :window,
-            data: %{action: :resize, width: _w, height: _h}
-          },
-          state
-        ) do
-      # For testing purposes, just return the state unchanged
-      {state, []}
-    end
-
     def subscribe(model) do
       interval = if model.count > 10, do: 100, else: 1000
 
@@ -71,12 +61,20 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       ]
     end
 
+    @impl Raxol.Core.Runtime.Application
     def handle_event(_), do: :ok
+
+    @impl Raxol.Core.Runtime.Application
     def handle_message(_, _), do: :ok
+
+    @impl Raxol.Core.Runtime.Application
     def handle_tick(_), do: :ok
-    def init(_), do: {:ok, %{}}
-    def subscriptions(_), do: []
+
+    @impl Raxol.Core.Runtime.Application
     def terminate(_, _), do: :ok
+
+    @impl Raxol.Core.Runtime.Application
+    def subscriptions(_), do: []
   end
 
   # Test implementation with minimal overrides
