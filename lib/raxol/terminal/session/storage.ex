@@ -71,8 +71,6 @@ defmodule Raxol.Terminal.Session.Storage do
     end
   end
 
-  # Private functions
-
   defp get_storage_dir do
     base_dir = Application.get_env(:raxol, :session_storage_dir, "tmp/sessions")
     File.mkdir_p!(base_dir)

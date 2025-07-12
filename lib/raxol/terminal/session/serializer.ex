@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Session.Serializer do
           "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
         )
 
-        raise e
+        reraise e, __STACKTRACE__
     end
   end
 
@@ -74,8 +74,6 @@ defmodule Raxol.Terminal.Session.Serializer do
 
     {:error, :invalid_session_data}
   end
-
-  # Private functions for serializing/deserializing components
 
   defp serialize_emulator(%Emulator{} = emulator) do
     %{
@@ -132,17 +130,15 @@ defmodule Raxol.Terminal.Session.Serializer do
           "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
         )
 
-        raise e
+        reraise e, __STACKTRACE__
     end
   end
 
   defp serialize_screen_buffer([]) do
-    # Handle empty scrollback buffer
     []
   end
 
   defp serialize_screen_buffer(buffers) when is_list(buffers) do
-    # Handle list of screen buffers
     Enum.map(buffers, &serialize_screen_buffer/1)
   end
 
@@ -161,7 +157,7 @@ defmodule Raxol.Terminal.Session.Serializer do
           "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
         )
 
-        raise e
+        reraise e, __STACKTRACE__
     end
   end
 
@@ -182,7 +178,7 @@ defmodule Raxol.Terminal.Session.Serializer do
           "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
         )
 
-        raise e
+        reraise e, __STACKTRACE__
     end
   end
 
@@ -220,67 +216,42 @@ defmodule Raxol.Terminal.Session.Serializer do
           "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
         )
 
-        raise e
+        reraise e, __STACKTRACE__
     end
   end
 
-  defp deserialize_emulator(%{
-         main_screen_buffer: main_screen_buffer_data,
-         alternate_screen_buffer: alternate_screen_buffer_data,
-         active_buffer_type: active_buffer_type,
-         scrollback_buffer: scrollback_buffer_data,
-         cursor: cursor,
-         mode_manager: mode_manager,
-         style: style,
-         charset_state: charset_state,
-         width: width,
-         height: height,
-         window_state: window_state,
-         state_stack: state_stack,
-         output_buffer: output_buffer,
-         scrollback_limit: scrollback_limit,
-         window_title: window_title,
-         plugin_manager: plugin_manager,
-         saved_cursor: saved_cursor,
-         scroll_region: scroll_region,
-         sixel_state: sixel_state,
-         last_col_exceeded: last_col_exceeded,
-         cursor_blink_rate: cursor_blink_rate,
-         cursor_style: cursor_style,
-         session_id: session_id,
-         client_options: client_options
-       }) do
+  defp deserialize_emulator(emulator_data) do
     with {:ok, main_screen_buffer} <-
-           deserialize_screen_buffer(main_screen_buffer_data),
+           deserialize_screen_buffer(emulator_data.main_screen_buffer),
          {:ok, alternate_screen_buffer} <-
-           deserialize_screen_buffer(alternate_screen_buffer_data),
+           deserialize_screen_buffer(emulator_data.alternate_screen_buffer),
          {:ok, scrollback_buffer} <-
-           deserialize_screen_buffer(scrollback_buffer_data) do
+           deserialize_screen_buffer(emulator_data.scrollback_buffer) do
       emulator = %Emulator{
         main_screen_buffer: main_screen_buffer,
         alternate_screen_buffer: alternate_screen_buffer,
-        active_buffer_type: active_buffer_type,
+        active_buffer_type: emulator_data.active_buffer_type,
         scrollback_buffer: scrollback_buffer,
-        cursor: cursor,
-        mode_manager: mode_manager,
-        style: style,
-        charset_state: charset_state,
-        width: width,
-        height: height,
-        window_state: window_state,
-        state_stack: state_stack,
-        output_buffer: output_buffer,
-        scrollback_limit: scrollback_limit,
-        window_title: window_title,
-        plugin_manager: plugin_manager,
-        saved_cursor: saved_cursor,
-        scroll_region: scroll_region,
-        sixel_state: sixel_state,
-        last_col_exceeded: last_col_exceeded,
-        cursor_blink_rate: cursor_blink_rate,
-        cursor_style: cursor_style,
-        session_id: session_id,
-        client_options: client_options
+        cursor: emulator_data.cursor,
+        mode_manager: emulator_data.mode_manager,
+        style: emulator_data.style,
+        charset_state: emulator_data.charset_state,
+        width: emulator_data.width,
+        height: emulator_data.height,
+        window_state: emulator_data.window_state,
+        state_stack: emulator_data.state_stack,
+        output_buffer: emulator_data.output_buffer,
+        scrollback_limit: emulator_data.scrollback_limit,
+        window_title: emulator_data.window_title,
+        plugin_manager: emulator_data.plugin_manager,
+        saved_cursor: emulator_data.saved_cursor,
+        scroll_region: emulator_data.scroll_region,
+        sixel_state: emulator_data.sixel_state,
+        last_col_exceeded: emulator_data.last_col_exceeded,
+        cursor_blink_rate: emulator_data.cursor_blink_rate,
+        cursor_style: emulator_data.cursor_style,
+        session_id: emulator_data.session_id,
+        client_options: emulator_data.client_options
       }
 
       {:ok, emulator}
@@ -304,7 +275,6 @@ defmodule Raxol.Terminal.Session.Serializer do
          cells: cells,
          cursor_position: cursor_position
        }) do
-    # Deserialize the cells back to Cell structs
     deserialized_cells = deserialize_cells(cells)
 
     screen_buffer = %ScreenBuffer{
@@ -325,8 +295,6 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp deserialize_screen_buffer([]) do
-    # Handle empty scrollback buffer
-    Raxol.Core.Runtime.Log.info("Deserializing empty scrollback buffer")
     {:ok, []}
   end
 
