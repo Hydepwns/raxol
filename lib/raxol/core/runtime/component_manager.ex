@@ -144,48 +144,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  defp mount_component(
-         component_module,
-         initial_state,
-         props,
-         component_id,
-         state
-       ) do
-    # Mount the component
-    {mounted_state, commands} = component_module.mount(initial_state)
-
-    # Store component state
-    new_state =
-      put_in(state.components[component_id], %{
-        module: component_module,
-        state: mounted_state,
-        props: props
-      })
-
-    # Process any commands from mounting
-    process_commands(commands, component_id, new_state)
-
-    # Queue initial render (avoid duplicates)
-    new_state =
-      update_in(new_state.render_queue, fn queue ->
-        if component_id in queue do
-          queue
-        else
-          [component_id | queue]
-        end
-      end)
-
-    # Emit component_queued_for_render event if runtime_pid is set
-    if new_state.runtime_pid,
-      do:
-        send(
-          new_state.runtime_pid,
-          {:component_queued_for_render, component_id}
-        )
-
-    {:reply, {:ok, component_id}, new_state}
-  end
-
   @impl GenServer
   def handle_call({:unmount, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
@@ -589,5 +547,47 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
     # Update state
     %{state | subscriptions: Map.new(remaining)}
+  end
+
+  defp mount_component(
+         component_module,
+         initial_state,
+         props,
+         component_id,
+         state
+       ) do
+    # Mount the component
+    {mounted_state, commands} = component_module.mount(initial_state)
+
+    # Store component state
+    new_state =
+      put_in(state.components[component_id], %{
+        module: component_module,
+        state: mounted_state,
+        props: props
+      })
+
+    # Process any commands from mounting
+    process_commands(commands, component_id, new_state)
+
+    # Queue initial render (avoid duplicates)
+    new_state =
+      update_in(new_state.render_queue, fn queue ->
+        if component_id in queue do
+          queue
+        else
+          [component_id | queue]
+        end
+      end)
+
+    # Emit component_queued_for_render event if runtime_pid is set
+    if new_state.runtime_pid,
+      do:
+        send(
+          new_state.runtime_pid,
+          {:component_queued_for_render, component_id}
+        )
+
+    {:reply, {:ok, component_id}, new_state}
   end
 end
