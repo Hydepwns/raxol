@@ -71,6 +71,6 @@ Applications running within Raxol typically don't interact with cursor state dir
 
 Modern input components such as `MultiLineInput` now use a harmonized API for managing their internal cursor position, selection, and focus. This ensures consistent cursor behavior, keyboard navigation, and accessibility support across all major input components.
 
-<!-- TODO: Link to ../../03_component_reference/Elements.md#multilineinput removed due to missing file. -->
+For detailed information about MultiLineInput and other input components, see [Input Components Reference](../../03_component_reference/inputs/README.md#text-inputs).
 
 > **Note:** Legacy input components may not fully support the harmonized cursor conventions. Prefer the modern components for new development.
