@@ -8,6 +8,8 @@
     const appElement = document.getElementById("app");
     const statusElement = document.getElementById("status"); // Use ID selector
     const terminalOutputElement = document.getElementById("terminal-output");
+    const terminalInputElement = document.getElementById("terminal-input");
+    const inputContainerElement = document.getElementById("input-container");
 
     // --- Message Handling ---
 
@@ -34,13 +36,14 @@
               message.payload &&
               message.payload.viewState &&
               Array.isArray(message.payload.viewState.cells)
-              // TODO: Check for cursor position later message.payload.viewState.cursor
             ) {
               // Clear previous content
               terminalOutputElement.innerHTML = "";
 
               const cells = message.payload.viewState.cells;
               const cursor = message.payload.viewState.cursor || { x: 0, y: 0 }; // Default cursor if not provided
+              const cursorVisible =
+                message.payload.viewState.cursorVisible !== false; // Default to visible
 
               // Create grid using divs
               cells.forEach((row, y) => {
@@ -58,20 +61,88 @@
                   // Set character content (handle null/undefined cell or char)
                   cellElement.textContent = cell?.char ?? " ";
 
-                  // --- Apply Styling (Basic Example) ---
-                  // TODO: Expand this based on actual cell attributes from backend
+                  // --- Apply Styling (Comprehensive Implementation) ---
                   let fgColorClass = "term-fg-default";
                   let bgColorClass = "term-bg-default";
-                  // Example: if (cell?.fgColor) fgColorClass = `term-fg-${cell.fgColor}`;
-                  // Example: if (cell?.bgColor) bgColorClass = `term-bg-${cell.bgColor}`;
+
+                  // Handle foreground color
+                  if (cell?.fgColor) {
+                    if (typeof cell.fgColor === "string") {
+                      fgColorClass = `term-fg-${cell.fgColor}`;
+                    } else if (typeof cell.fgColor === "number") {
+                      // Handle ANSI color codes (0-255)
+                      fgColorClass = `term-fg-${cell.fgColor}`;
+                    }
+                  }
+
+                  // Handle background color
+                  if (cell?.bgColor) {
+                    if (typeof cell.bgColor === "string") {
+                      bgColorClass = `term-bg-${cell.bgColor}`;
+                    } else if (typeof cell.bgColor === "number") {
+                      // Handle ANSI color codes (0-255)
+                      bgColorClass = `term-bg-${cell.bgColor}`;
+                    }
+                  }
 
                   cellElement.classList.add(fgColorClass, bgColorClass);
 
-                  // Apply text attributes (bold, underline etc.) if present
-                  // Example: if (cell?.attributes?.bold) cellElement.style.fontWeight = 'bold';
+                  // Apply text attributes (bold, underline, etc.) if present
+                  if (cell?.attributes) {
+                    const attrs = cell.attributes;
+
+                    // Bold
+                    if (attrs.bold) {
+                      cellElement.style.fontWeight = "bold";
+                    }
+
+                    // Italic
+                    if (attrs.italic) {
+                      cellElement.style.fontStyle = "italic";
+                    }
+
+                    // Underline
+                    if (attrs.underline) {
+                      cellElement.style.textDecoration = "underline";
+                    }
+
+                    // Strikethrough
+                    if (attrs.strikethrough) {
+                      cellElement.style.textDecoration = "line-through";
+                    }
+
+                    // Blink (CSS animation)
+                    if (attrs.blink) {
+                      cellElement.classList.add("term-blink");
+                    }
+
+                    // Reverse video (swap fg/bg)
+                    if (attrs.reverse) {
+                      cellElement.classList.add("term-reverse");
+                    }
+
+                    // Dim (reduced intensity)
+                    if (attrs.dim) {
+                      cellElement.style.opacity = "0.5";
+                    }
+                  }
+
+                  // Handle custom RGB colors if provided
+                  if (cell?.fgRgb) {
+                    cellElement.style.color = `rgb(${cell.fgRgb.r}, ${cell.fgRgb.g}, ${cell.fgRgb.b})`;
+                  }
+
+                  if (cell?.bgRgb) {
+                    cellElement.style.backgroundColor = `rgb(${cell.bgRgb.r}, ${cell.bgRgb.g}, ${cell.bgRgb.b})`;
+                  }
 
                   // --- Handle Cursor ---
-                  if (cursor && x === cursor.x && y === cursor.y) {
+                  if (
+                    cursor &&
+                    cursorVisible &&
+                    x === cursor.x &&
+                    y === cursor.y
+                  ) {
                     cellElement.classList.add("cursor");
                     // Ensure cursor character is visible if it's a space
                     if (cellElement.textContent === " ") {
@@ -128,6 +199,18 @@
           }
           break;
 
+        case "input_control":
+          if (inputContainerElement && message.payload) {
+            const shouldShow = message.payload.show !== false; // Default to showing
+            inputContainerElement.style.display = shouldShow ? "flex" : "none";
+
+            // Focus the input field when it becomes visible
+            if (shouldShow && terminalInputElement) {
+              setTimeout(() => terminalInputElement.focus(), 100);
+            }
+          }
+          break;
+
         default:
           console.warn(
             "Webview received unhandled message type:",
@@ -138,133 +221,219 @@
 
     // --- Input Handling ---
 
+    // Handle input from the terminal input field
+    if (terminalInputElement) {
+      terminalInputElement.addEventListener("input", (event) => {
+        const text = event.target.value;
+        if (text) {
+          // Send each character as a separate key input
+          for (let char of text) {
+            const message = {
+              command: "userInput",
+              payload: {
+                inputType: "key",
+                key: char,
+                modifiers: [],
+              },
+            };
+            vscode.postMessage(message);
+          }
+          // Clear the input field after sending
+          event.target.value = "";
+        }
+      });
+
+      // Handle Enter key in the input field
+      terminalInputElement.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const message = {
+            command: "userInput",
+            payload: {
+              inputType: "key",
+              key: "Enter",
+              modifiers: [],
+            },
+          };
+          vscode.postMessage(message);
+        }
+      });
+
+      // Focus the input field when clicking anywhere in the terminal
+      terminalOutputElement?.addEventListener("click", () => {
+        terminalInputElement.focus();
+      });
+
+      // Focus the input field on page load
+      terminalInputElement.focus();
+    }
+
     // Listen for keyboard events on the whole window
     window.addEventListener(
       "keydown",
       (event) => {
-        // Build modifiers list
-        const modifiers = [];
-        if (event.ctrlKey) modifiers.push("ctrl");
-        if (event.altKey) modifiers.push("alt");
-        if (event.shiftKey) modifiers.push("shift");
-        if (event.metaKey) modifiers.push("meta"); // Command key on Mac
+        // Handle special keys and modifier combinations that should bypass the input field
+        const isSpecialKey = [
+          "ArrowUp",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+          "F1",
+          "F2",
+          "F3",
+          "F4",
+          "F5",
+          "F6",
+          "F7",
+          "F8",
+          "F9",
+          "F10",
+          "F11",
+          "F12",
+          "Home",
+          "End",
+          "PageUp",
+          "PageDown",
+          "Insert",
+          "Delete",
+        ].includes(event.key);
 
-        // Handle key mapping from browser keys to backend format
-        let key = event.key;
+        const hasModifiers = event.ctrlKey || event.altKey || event.metaKey;
 
-        // More comprehensive special key mapping
-        switch (key) {
-          // Arrow keys
-          case "ArrowUp":
-            key = "up";
-            break;
-          case "ArrowDown":
-            key = "down";
-            break;
-          case "ArrowLeft":
-            key = "left";
-            break;
-          case "ArrowRight":
-            key = "right";
-            break;
+        // If it's a special key or has modifiers, handle it at window level
+        if (isSpecialKey || hasModifiers) {
+          // Build modifiers list
+          const modifiers = [];
+          if (event.ctrlKey) modifiers.push("ctrl");
+          if (event.altKey) modifiers.push("alt");
+          if (event.shiftKey) modifiers.push("shift");
+          if (event.metaKey) modifiers.push("meta"); // Command key on Mac
 
-          // Control keys
-          case "Enter":
-            key = "Enter";
-            break;
-          case "Tab":
-            key = "Tab";
-            break;
-          case "Escape":
-            key = "Escape";
-            break;
-          case " ":
-            key = " ";
-            break; // Space
-          case "Backspace":
-            key = "Backspace";
-            break;
-          case "Delete":
-            key = "Delete";
-            break;
-          case "Home":
-            key = "Home";
-            break;
-          case "End":
-            key = "End";
-            break;
-          case "PageUp":
-            key = "PageUp";
-            break;
-          case "PageDown":
-            key = "PageDown";
-            break;
+          // Handle key mapping from browser keys to backend format
+          let key = event.key;
 
-          // Function keys
-          case "F1":
-          case "F2":
-          case "F3":
-          case "F4":
-          case "F5":
-          case "F6":
-          case "F7":
-          case "F8":
-          case "F9":
-          case "F10":
-          case "F11":
-          case "F12":
-            // Keep function keys as-is
-            break;
+          // More comprehensive special key mapping
+          switch (key) {
+            // Arrow keys
+            case "ArrowUp":
+              key = "up";
+              break;
+            case "ArrowDown":
+              key = "down";
+              break;
+            case "ArrowLeft":
+              key = "left";
+              break;
+            case "ArrowRight":
+              key = "right";
+              break;
 
-          // Default case - use key as-is if it's a single character
-          default:
-            // For single character keys, we leave them as-is
-            break;
+            // Control keys
+            case "Enter":
+              key = "Enter";
+              break;
+            case "Tab":
+              key = "Tab";
+              break;
+            case "Escape":
+              key = "Escape";
+              break;
+            case " ":
+              key = " ";
+              break; // Space
+            case "Backspace":
+              key = "Backspace";
+              break;
+            case "Delete":
+              key = "Delete";
+              break;
+            case "Home":
+              key = "Home";
+              break;
+            case "End":
+              key = "End";
+              break;
+            case "PageUp":
+              key = "PageUp";
+              break;
+            case "PageDown":
+              key = "PageDown";
+              break;
+
+            // Function keys
+            case "F1":
+            case "F2":
+            case "F3":
+            case "F4":
+            case "F5":
+            case "F6":
+            case "F7":
+            case "F8":
+            case "F9":
+            case "F10":
+            case "F11":
+            case "F12":
+              // Keep function keys as-is
+              break;
+
+            // Default case - use key as-is if it's a single character
+            default:
+              // For single character keys, we leave them as-is
+              break;
+          }
+
+          // Prevent default browser actions for terminal control keys
+          if (
+            (event.ctrlKey &&
+              ["c", "x", "v", "a", "z"].includes(key.toLowerCase())) || // Ctrl+C, Ctrl+X, etc.
+            [
+              "Tab",
+              "ArrowUp",
+              "ArrowDown",
+              "ArrowLeft",
+              "ArrowRight",
+              "F1",
+              "F2",
+              "F3",
+              "F4",
+              "F5",
+              "F6",
+              "F7",
+              "F8",
+              "F9",
+              "F10",
+              "F11",
+              "F12",
+            ].includes(key)
+          ) {
+            event.preventDefault();
+          }
+
+          // Format message according to protocol
+          const message = {
+            command: "userInput", // This matches RaxolPanelManager handleWebviewMessage
+            payload: {
+              inputType: "key",
+              key: key,
+              modifiers: modifiers,
+            },
+          };
+
+          console.log(
+            `[Webview] Sending key input: ${key}${
+              modifiers.length ? " with modifiers: " + modifiers.join("+") : ""
+            }`
+          );
+          vscode.postMessage(message);
+        } else {
+          // For normal typing, focus the input field and let it handle the input
+          if (
+            terminalInputElement &&
+            document.activeElement !== terminalInputElement
+          ) {
+            terminalInputElement.focus();
+          }
         }
-
-        // Prevent default browser actions for terminal control keys
-        if (
-          (event.ctrlKey &&
-            ["c", "x", "v", "a", "z"].includes(key.toLowerCase())) || // Ctrl+C, Ctrl+X, etc.
-          [
-            "Tab",
-            "ArrowUp",
-            "ArrowDown",
-            "ArrowLeft",
-            "ArrowRight",
-            "F1",
-            "F2",
-            "F3",
-            "F4",
-            "F5",
-            "F6",
-            "F7",
-            "F8",
-            "F9",
-            "F10",
-            "F11",
-            "F12",
-          ].includes(key)
-        ) {
-          event.preventDefault();
-        }
-
-        // Format message according to protocol
-        const message = {
-          command: "userInput", // This matches RaxolPanelManager handleWebviewMessage
-          payload: {
-            inputType: "key",
-            key: key,
-            modifiers: modifiers,
-          },
-        };
-
-        console.log(
-          `[Webview] Sending key input: ${key}${
-            modifiers.length ? " with modifiers: " + modifiers.join("+") : ""
-          }`
-        );
-        vscode.postMessage(message);
       },
       true
     ); // Use capture phase to intercept keys earlier
@@ -333,6 +502,11 @@
     }
 
     // --- Initial State ---
+
+    // Initialize input container state
+    if (inputContainerElement) {
+      inputContainerElement.style.display = "flex"; // Show by default
+    }
 
     // Optional: Send a message to the extension when the webview is ready
     // vscode.postMessage({ command: 'webviewReady' });
