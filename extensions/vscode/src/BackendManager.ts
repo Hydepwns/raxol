@@ -8,9 +8,29 @@ interface BackendMessage {
   payload: any;
 }
 
+// Output classification types
+enum OutputType {
+  JSON_MESSAGE = "json_message",
+  LOG_OUTPUT = "log_output",
+  MAKE_OUTPUT = "make_output",
+  ERROR_OUTPUT = "error_output",
+  UNKNOWN = "unknown",
+}
+
+// Output classification result
+interface OutputClassification {
+  type: OutputType;
+  content: string;
+  shouldProcess: boolean;
+}
+
 export class BackendManager extends EventEmitter {
   private process: cp.ChildProcess | null = null;
   private outputChannel: vscode.OutputChannel;
+  private stdoutBuffer = "";
+  private readonly JSON_START_MARKER = "RAXOL-JSON-BEGIN";
+  private readonly JSON_END_MARKER = "RAXOL-JSON-END";
+  private readonly MAX_BUFFER_SIZE = 1024 * 1024; // 1MB max buffer size
 
   constructor(context: vscode.ExtensionContext) {
     super();
@@ -49,6 +69,224 @@ export class BackendManager extends EventEmitter {
       `[DEBUG] ${new Date().toISOString()}: ${message}`
     );
     console.log(`[Raxol BackendManager DEBUG] ${message}`);
+  }
+
+  /**
+   * Classifies output content to determine how it should be handled
+   */
+  private classifyOutput(content: string): OutputClassification {
+    const trimmedContent = content.trim();
+
+    // Check for make output patterns
+    if (this.isMakeOutput(trimmedContent)) {
+      return {
+        type: OutputType.MAKE_OUTPUT,
+        content: trimmedContent,
+        shouldProcess: false, // Don't process make output as JSON
+      };
+    }
+
+    // Check for JSON markers
+    if (
+      trimmedContent.includes(this.JSON_START_MARKER) &&
+      trimmedContent.includes(this.JSON_END_MARKER)
+    ) {
+      return {
+        type: OutputType.JSON_MESSAGE,
+        content: trimmedContent,
+        shouldProcess: true,
+      };
+    }
+
+    // Check for error patterns
+    if (this.isErrorOutput(trimmedContent)) {
+      return {
+        type: OutputType.ERROR_OUTPUT,
+        content: trimmedContent,
+        shouldProcess: false,
+      };
+    }
+
+    // Default to log output
+    return {
+      type: OutputType.LOG_OUTPUT,
+      content: trimmedContent,
+      shouldProcess: false,
+    };
+  }
+
+  /**
+   * Detects make output patterns that should be filtered or handled specially
+   */
+  private isMakeOutput(content: string): boolean {
+    const makePatterns = [
+      /^make: Nothing to be done for ['"]all['"]\.\s*$/,
+      /^make\[1\]: Entering directory/,
+      /^make\[1\]: Leaving directory/,
+      /^make: .* is up to date\./,
+      /^make: .* has no work to do\./,
+      /^make: .* is already up to date\./,
+    ];
+
+    return makePatterns.some((pattern) => pattern.test(content));
+  }
+
+  /**
+   * Detects error output patterns
+   */
+  private isErrorOutput(content: string): boolean {
+    const errorPatterns = [
+      /^error:/i,
+      /^fatal:/i,
+      /^exception:/i,
+      /^failed:/i,
+      /^Error on parsing output/i,
+    ];
+
+    return errorPatterns.some((pattern) => pattern.test(content));
+  }
+
+  /**
+   * Validates if content is valid JSON
+   */
+  private isValidJson(content: string): boolean {
+    try {
+      JSON.parse(content);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Processes JSON content between markers
+   */
+  private processJsonContent(jsonStr: string): void {
+    try {
+      // Validate JSON before parsing
+      if (!this.isValidJson(jsonStr)) {
+        this.logError(`Invalid JSON content: ${jsonStr.substring(0, 100)}...`);
+        return;
+      }
+
+      const message: BackendMessage = JSON.parse(jsonStr);
+      this.logInfo(
+        `Received message: ${message.type}, Payload: ${JSON.stringify(
+          message.payload
+        )}`
+      );
+
+      // Handle log messages differently
+      if (message.type === "log") {
+        const level = message.payload.level || "info";
+        const logMessage = message.payload.message || "";
+        this.outputChannel.appendLine(
+          `[BACKEND ${level.toUpperCase()}] ${logMessage}`
+        );
+      } else {
+        // Forward other parsed messages
+        this.emit("message", message);
+      }
+    } catch (e) {
+      this.logError(
+        `Failed to parse JSON from backend stdout: ${jsonStr.substring(
+          0,
+          100
+        )}...`,
+        e
+      );
+    }
+  }
+
+  /**
+   * Processes plain text output
+   */
+  private processPlainTextOutput(content: string, type: OutputType): void {
+    switch (type) {
+      case OutputType.MAKE_OUTPUT:
+        // Filter out or handle make output specially
+        this.logDebug(`[MAKE] ${content}`);
+        break;
+
+      case OutputType.ERROR_OUTPUT:
+        this.logError(`[BACKEND ERROR] ${content}`);
+        break;
+
+      case OutputType.LOG_OUTPUT:
+      default:
+        this.outputChannel.appendLine(`[BACKEND LOG] ${content}`);
+        break;
+    }
+  }
+
+  /**
+   * Manages buffer size to prevent memory issues
+   */
+  private manageBufferSize(): void {
+    if (this.stdoutBuffer.length > this.MAX_BUFFER_SIZE) {
+      this.logError(
+        `Buffer size exceeded ${this.MAX_BUFFER_SIZE} bytes, truncating...`
+      );
+      // Keep only the last portion of the buffer
+      this.stdoutBuffer = this.stdoutBuffer.substring(
+        this.stdoutBuffer.length - this.MAX_BUFFER_SIZE / 2
+      );
+    }
+  }
+
+  /**
+   * Enhanced stdout processing with improved error handling
+   */
+  private processStdout(rawData: string): void {
+    this.logDebug(`Received raw stdout data: ${rawData.trim()}`);
+    this.emit("stdout_data", rawData);
+
+    this.stdoutBuffer += rawData;
+    this.manageBufferSize();
+
+    // Process marked JSON content
+    let startIdx = this.stdoutBuffer.indexOf(this.JSON_START_MARKER);
+    let endIdx = this.stdoutBuffer.indexOf(this.JSON_END_MARKER);
+
+    // Process all complete JSON messages in the buffer
+    while (startIdx !== -1 && endIdx !== -1 && startIdx < endIdx) {
+      // Extract JSON between markers
+      const jsonStr = this.stdoutBuffer.substring(
+        startIdx + this.JSON_START_MARKER.length,
+        endIdx
+      );
+
+      // Remove processed content from buffer (including end marker)
+      this.stdoutBuffer = this.stdoutBuffer.substring(
+        endIdx + this.JSON_END_MARKER.length
+      );
+
+      // Process the JSON content
+      this.processJsonContent(jsonStr);
+
+      // Look for next set of markers
+      startIdx = this.stdoutBuffer.indexOf(this.JSON_START_MARKER);
+      endIdx = this.stdoutBuffer.indexOf(this.JSON_END_MARKER);
+    }
+
+    // Process any plain text output before the first JSON marker
+    if (startIdx !== -1) {
+      const logContent = this.stdoutBuffer.substring(0, startIdx);
+      if (logContent.trim()) {
+        const classification = this.classifyOutput(logContent);
+        this.processPlainTextOutput(
+          classification.content,
+          classification.type
+        );
+        // Update buffer to remove processed log content
+        this.stdoutBuffer = this.stdoutBuffer.substring(startIdx);
+      }
+    } else if (this.stdoutBuffer.trim()) {
+      // If no JSON marker found but buffer has content, classify and process it
+      const classification = this.classifyOutput(this.stdoutBuffer);
+      this.processPlainTextOutput(classification.content, classification.type);
+      this.stdoutBuffer = "";
+    }
   }
 
   public start(): void {
@@ -96,80 +334,9 @@ export class BackendManager extends EventEmitter {
         this.emit("status", "connecting");
       });
 
-      // Handle stdout - Expected JSON messages wrapped in markers or plain logs
-      let stdoutBuffer = "";
-      const JSON_START_MARKER = "RAXOL-JSON-BEGIN";
-      const JSON_END_MARKER = "RAXOL-JSON-END";
-
+      // Handle stdout with improved processing
       this.process.stdout?.on("data", (data) => {
-        const rawData = data.toString();
-        this.logDebug(`Received raw stdout data: ${rawData.trim()}`); // Log raw data before parsing
-        this.emit("stdout_data", rawData);
-
-        stdoutBuffer += rawData;
-
-        // Process marked JSON content
-        let startIdx = stdoutBuffer.indexOf(JSON_START_MARKER);
-        let endIdx = stdoutBuffer.indexOf(JSON_END_MARKER);
-
-        // Process all complete JSON messages in the buffer
-        while (startIdx !== -1 && endIdx !== -1 && startIdx < endIdx) {
-          // Extract JSON between markers
-          const jsonStr = stdoutBuffer.substring(
-            startIdx + JSON_START_MARKER.length,
-            endIdx
-          );
-
-          // Remove processed content from buffer (including end marker)
-          stdoutBuffer = stdoutBuffer.substring(
-            endIdx + JSON_END_MARKER.length
-          );
-
-          try {
-            const message: BackendMessage = JSON.parse(jsonStr);
-            this.logInfo(
-              `Received message: ${message.type}, Payload: ${JSON.stringify(
-                message.payload
-              )}`
-            );
-
-            // Handle log messages differently
-            if (message.type === "log") {
-              const level = message.payload.level || "info";
-              const logMessage = message.payload.message || "";
-              this.outputChannel.appendLine(
-                `[BACKEND ${level.toUpperCase()}] ${logMessage}`
-              );
-            } else {
-              // Forward other parsed messages
-              this.emit("message", message);
-            }
-          } catch (e) {
-            this.logError(
-              `Failed to parse JSON from backend stdout: ${jsonStr}`,
-              e
-            );
-          }
-
-          // Look for next set of markers
-          startIdx = stdoutBuffer.indexOf(JSON_START_MARKER);
-          endIdx = stdoutBuffer.indexOf(JSON_END_MARKER);
-        }
-
-        // Process any plain log output before the first JSON marker
-        if (startIdx !== -1) {
-          const logContent = stdoutBuffer.substring(0, startIdx);
-          if (logContent.trim()) {
-            // Treat as regular log output
-            this.outputChannel.appendLine(`[BACKEND LOG] ${logContent.trim()}`);
-            // Update buffer to remove processed log content
-            stdoutBuffer = stdoutBuffer.substring(startIdx);
-          }
-        } else if (stdoutBuffer.trim()) {
-          // If no JSON marker found but buffer has content, treat it all as log
-          this.outputChannel.appendLine(`[BACKEND LOG] ${stdoutBuffer.trim()}`);
-          stdoutBuffer = "";
-        }
+        this.processStdout(data.toString());
       });
 
       // Handle stderr - Log errors/debug info
