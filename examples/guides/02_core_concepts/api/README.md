@@ -1,5 +1,7 @@
 # Raxol API Documentation
 
+_Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability. Make sure you are using the latest version for the best experience!_
+
 ## Overview
 
 This document provides detailed API reference for the Raxol Terminal Emulator. Raxol provides a comprehensive set of APIs for building terminal-based applications with a focus on performance, accessibility, and developer experience.
