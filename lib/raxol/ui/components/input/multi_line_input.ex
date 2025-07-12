@@ -36,7 +36,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           on_submit: (-> any()) | nil,
           aria_label: String.t() | nil,
           tooltip: String.t() | nil,
-          lines: [String.t()]
+          lines: [String.t()],
+          desired_col: integer() | nil
         }
 
   defstruct id: nil,
@@ -57,7 +58,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
             on_submit: nil,
             aria_label: nil,
             tooltip: nil,
-            lines: [""]
+            lines: [""],
+            desired_col: nil
 
   @spec init(map()) :: __MODULE__.t()
   @impl true

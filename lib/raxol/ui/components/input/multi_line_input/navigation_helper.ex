@@ -36,6 +36,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     %{
       state
       | cursor_pos: {clamped_row, clamped_col},
+        desired_col: clamped_col,
         selection_start: nil,
         selection_end: nil
     }
@@ -47,14 +48,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
     if col > 0 do
       # Simple case: move cursor left within the current line
-      move_cursor(state, {row, col - 1})
+      new_state = %{state | desired_col: col - 1}
+      move_cursor(new_state, {row, col - 1})
     else
       # At beginning of line, try to move to end of previous line
       if row > 0 do
         prev_row = row - 1
         lines = state.lines
         prev_line_length = String.length(Enum.at(lines, prev_row, ""))
-        move_cursor(state, {prev_row, prev_line_length})
+        new_state = %{state | desired_col: prev_line_length}
+        move_cursor(new_state, {prev_row, prev_line_length})
       else
         # Already at document start, no change
         state
@@ -70,12 +73,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
     if col < current_line_length do
       # Simple case: move cursor right within the current line
-      move_cursor(state, {row, col + 1})
+      new_state = %{state | desired_col: col + 1}
+      move_cursor(new_state, {row, col + 1})
     else
       # At end of line, try to move to beginning of next line
       if row < length(lines) - 1 do
         next_row = row + 1
-        move_cursor(state, {next_row, 0})
+        new_state = %{state | desired_col: 0}
+        move_cursor(new_state, {next_row, 0})
       else
         # Already at document end, no change
         state
@@ -86,9 +91,21 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   def move_cursor(state, :up) do
     {row, col} = state.cursor_pos
     new_row = max(0, row - 1)
-    # Keep same column if possible (TODO: handle desired_col?)
-    new_col = col
-    move_cursor(state, {new_row, new_col})
+
+    # Use desired_col if available, otherwise use current column
+    desired_col = Map.get(state, :desired_col, col)
+
+    # Get the target line to check its length
+    lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    target_line = Enum.at(lines, new_row, "")
+    target_line_length = String.length(target_line)
+
+    # Use desired_col if it fits on the target line, otherwise use the line length
+    new_col = min(desired_col, target_line_length)
+
+    # Update desired_col to remember the column position for future movements
+    new_state = %{state | desired_col: desired_col}
+    move_cursor(new_state, {new_row, new_col})
   end
 
   def move_cursor(state, :down) do
@@ -96,9 +113,20 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     num_lines = length(lines)
     new_row = min(num_lines - 1, row + 1)
-    # Keep same column if possible (TODO: handle desired_col?)
-    new_col = col
-    move_cursor(state, {new_row, new_col})
+
+    # Use desired_col if available, otherwise use current column
+    desired_col = Map.get(state, :desired_col, col)
+
+    # Get the target line to check its length
+    target_line = Enum.at(lines, new_row, "")
+    target_line_length = String.length(target_line)
+
+    # Use desired_col if it fits on the target line, otherwise use the line length
+    new_col = min(desired_col, target_line_length)
+
+    # Update desired_col to remember the column position for future movements
+    new_state = %{state | desired_col: desired_col}
+    move_cursor(new_state, {new_row, new_col})
   end
 
   def move_cursor(state, :word_left) do
@@ -194,38 +222,27 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   end
 
   # --- Helper needed for word movement ---
-  # Inefficient: Converts flat index back to {row, col}.
-  # TODO: Optimize this if performance becomes an issue.
+  # Converts flat index back to {row, col}.
   defp index_to_pos(text_lines, target_index) do
-    Enum.reduce_while(Enum.with_index(text_lines), {0, 0, 0}, fn {line, row_idx},
-                                                                 {current_index,
-                                                                  _found_row,
-                                                                  _found_col} ->
-      line_len = String.length(line)
-      # Index at the end of this line (including newline char if not last line)
-      end_of_line_index =
-        current_index + line_len +
-          if row_idx < length(text_lines) - 1, do: 1, else: 0
+    find_position(text_lines, target_index, 0, 0)
+  end
 
-      if target_index <= current_index + line_len do
-        # Target is within this line
-        col = target_index - current_index
-        # Use 0 in first element to signal found
-        {:halt, {0, row_idx, col}}
-      else
-        # Target is after this line
-        {:cont, {end_of_line_index, 0, 0}}
-      end
-    end)
-    |> case do
-      {0, found_row, found_col} ->
-        {found_row, found_col}
+  defp find_position([], _target_index, row, _col) do
+    {row, 0}
+  end
 
-      # Fallback if not found (e.g., index out of bounds), return end of doc
-      _ ->
-        last_row = max(0, length(text_lines) - 1)
-        last_col = String.length(Enum.at(text_lines, last_row, ""))
-        {last_row, last_col}
+  defp find_position([line | rest], target_index, row, current_index) do
+    line_length = String.length(line)
+    end_of_line_index = current_index + line_length
+
+    if target_index <= end_of_line_index do
+      # Target is within this line
+      col = target_index - current_index
+      {row, col}
+    else
+      # Target is after this line, continue to next
+      next_index = end_of_line_index + if rest == [], do: 0, else: 1
+      find_position(rest, target_index, row + 1, next_index)
     end
   end
 
