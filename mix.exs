@@ -175,6 +175,7 @@ defmodule Raxol.MixProject do
       {:bandit, "~> 1.7"},
       {:excoveralls, "~> 0.18", only: :test},
       {:hackney, "~> 1.24"},
+      {:httpoison, "~> 2.2"},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:toml, "~> 0.7"},
       {:mimerl, "~> 1.4"},
