@@ -85,6 +85,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       {updated, []}
     end
 
+    @impl true
     def init(_), do: {:ok, %{}}
   end
 

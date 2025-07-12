@@ -149,7 +149,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       # Simulate moving cursor down multiple times to trigger scroll
       state_many_lines =
         MultiLineInput.init(%{
-          value: Enum.join(Enum.map(1..20, &"Line #{&1}"), "\n"),
+          value: Enum.map_join(1..20, "\n", &"Line #{&1}"),
           height: 5
         })
 
@@ -251,14 +251,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert length(lines) == 10
       assert Enum.at(lines, 0) == "Lopadotemachoselacho"
       assert Enum.at(lines, 1) == "galeokranioleipsanod"
-      assert Enum.at(lines, 2) == "rimhypotrimmatosilphi"
-      assert Enum.at(lines, 3) == "oparaomelitokatakec"
-      assert Enum.at(lines, 4) == "hymenokichlepikossy"
-      assert Enum.at(lines, 5) == "phophattoperisterale"
-      assert Enum.at(lines, 6) == "ktryonoptekephallio"
-      assert Enum.at(lines, 7) == "kigklopeleiolagoios"
-      assert Enum.at(lines, 8) == "iraiobaphetraganopt"
-      assert Enum.at(lines, 9) == "erygon"
+      assert Enum.at(lines, 2) == "rimhypotrimmatosilph"
+      assert Enum.at(lines, 3) == "ioparaomelitokatakec"
+      assert Enum.at(lines, 4) == "hymenokichlepikossyp"
+      assert Enum.at(lines, 5) == "hophattoperisteralek"
+      assert Enum.at(lines, 6) == "tryonoptekephallioki"
+      assert Enum.at(lines, 7) == "gklopeleiolagoiosira"
+      assert Enum.at(lines, 8) == "iobaphetraganopteryg"
+      assert Enum.at(lines, 9) == "on"
     end
 
     test ~c"wraps text by character" do
@@ -294,14 +294,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert length(lines) == 10
       assert Enum.at(lines, 0) == "Lopadotemachoselacho"
       assert Enum.at(lines, 1) == "galeokranioleipsanod"
-      assert Enum.at(lines, 2) == "rimhypotrimmatosilphi"
-      assert Enum.at(lines, 3) == "oparaomelitokatakec"
-      assert Enum.at(lines, 4) == "hymenokichlepikossy"
-      assert Enum.at(lines, 5) == "phophattoperisterale"
-      assert Enum.at(lines, 6) == "ktryonoptekephallio"
-      assert Enum.at(lines, 7) == "kigklopeleiolagoios"
-      assert Enum.at(lines, 8) == "iraiobaphetraganopt"
-      assert Enum.at(lines, 9) == "erygon"
+      assert Enum.at(lines, 2) == "rimhypotrimmatosilph"
+      assert Enum.at(lines, 3) == "ioparaomelitokatakec"
+      assert Enum.at(lines, 4) == "hymenokichlepikossyp"
+      assert Enum.at(lines, 5) == "hophattoperisteralek"
+      assert Enum.at(lines, 6) == "tryonoptekephallioki"
+      assert Enum.at(lines, 7) == "gklopeleiolagoiosira"
+      assert Enum.at(lines, 8) == "iobaphetraganopteryg"
+      assert Enum.at(lines, 9) == "on"
     end
 
     test ~c"wraps text by word basic" do

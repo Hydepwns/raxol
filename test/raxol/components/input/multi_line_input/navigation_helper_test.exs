@@ -23,7 +23,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
     dims = normalize_dimensions(dimensions)
 
     %State{
-      value: Enum.join(lines, "\n"),
+      value: Enum.map_join(lines, "\n", & &1),
       placeholder: "",
       width: dims.width,
       height: dims.height,

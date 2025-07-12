@@ -276,13 +276,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_il(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {_x, y} = Emulator.get_cursor_position(emulator)
+    {col, row} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
 
     new_buffer =
-      Raxol.Terminal.ScreenBuffer.insert_lines(buffer, lines, y, top, bottom)
+      Raxol.Terminal.ScreenBuffer.insert_lines(buffer, lines, row, top, bottom)
 
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
@@ -293,13 +293,19 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_dl(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {_x, y} = Emulator.get_cursor_position(emulator)
+    {col, row} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
 
     new_buffer =
-      Raxol.Terminal.ScreenBuffer.delete_lines(buffer, lines, y, top, bottom)
+      Raxol.Terminal.ScreenBuffer.delete_lines_in_region(
+        buffer,
+        lines,
+        row,
+        top,
+        bottom
+      )
 
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
@@ -310,10 +316,18 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_dch(emulator, params) do
     chars = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {col, row} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
-    new_buffer = Raxol.Terminal.ScreenBuffer.delete_chars(buffer, x, y, chars)
+
+    new_buffer =
+      Raxol.Terminal.Buffer.LineOperations.delete_chars_at(
+        buffer,
+        row,
+        col,
+        chars
+      )
+
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
@@ -323,10 +337,18 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_ich(emulator, params) do
     chars = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {col, row} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
-    new_buffer = Raxol.Terminal.ScreenBuffer.insert_chars(buffer, x, y, chars)
+
+    new_buffer =
+      Raxol.Terminal.Buffer.LineOperations.insert_chars_at(
+        buffer,
+        row,
+        col,
+        chars
+      )
+
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
@@ -371,7 +393,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {x, y} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
-    new_buffer = Raxol.Terminal.ScreenBuffer.erase_chars(buffer, x, y, chars)
+    new_buffer = Raxol.Terminal.ScreenBuffer.erase_chars(buffer, y, x, chars)
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
@@ -489,46 +511,28 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
   # Private helper to parse DECSTBM parameters
   defp parse_decstbm_params(params, height) do
-    case params do
-      [] ->
+    case normalize_params(params) do
+      {nil, nil} ->
         nil
 
-      [top] when is_integer(top) ->
-        parse_single_param(top, height)
+      {top, nil} ->
+        {clamp_param(top - 1, height), height - 1}
 
-      [top, bottom] when is_integer(top) and is_integer(bottom) ->
-        parse_two_params(top, bottom, height)
+      {nil, bottom} ->
+        {0, clamp_param(bottom - 1, height)}
 
-      [nil, bottom] when is_integer(bottom) ->
-        parse_nil_top_param(bottom, height)
-
-      [top, nil] when is_integer(top) ->
-        parse_nil_bottom_param(top, height)
-
-      _ ->
+      {top, bottom} when top >= bottom ->
         nil
+
+      {top, bottom} ->
+        {clamp_param(top - 1, height), clamp_param(bottom - 1, height)}
     end
   end
 
-  defp parse_single_param(top, height) do
-    {max(0, top - 1), height - 1}
-  end
-
-  defp parse_two_params(top, bottom, height) do
-    if top >= bottom do
-      nil
-    else
-      {clamp_param(top - 1, height), clamp_param(bottom - 1, height)}
-    end
-  end
-
-  defp parse_nil_top_param(bottom, height) do
-    {0, clamp_param(bottom - 1, height)}
-  end
-
-  defp parse_nil_bottom_param(top, height) do
-    {clamp_param(top - 1, height), height - 1}
-  end
+  defp normalize_params([]), do: {nil, nil}
+  defp normalize_params([top]), do: {top, nil}
+  defp normalize_params([top, bottom]), do: {top, bottom}
+  defp normalize_params(_), do: {nil, nil}
 
   defp clamp_param(value, height) do
     max(0, min(value, height - 1))

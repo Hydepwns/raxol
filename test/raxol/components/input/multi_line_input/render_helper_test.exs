@@ -22,7 +22,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     dims = normalize_dimensions(dimensions)
 
     %MultiLineInput{
-      value: Enum.join(lines, "\n"),
+      value: Enum.map_join(lines, "\n", & &1),
       width: dims.width,
       height: dims.height,
       cursor_pos: cursor_pos,

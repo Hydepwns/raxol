@@ -15,40 +15,28 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
     @behaviour Application
 
     @impl Application
-    def init(_) do
-      {:ok, %{initialized: true}}
-    end
+    def init(_), do: %{initialized: true}
 
     @impl Application
-    def update(model, _msg) do
-      {:ok, model, []}
-    end
+    def update(_msg, model), do: {model, []}
 
     @impl Application
-    def view(_model) do
-      "Test App View"
-    end
+    def view(_model), do: %{type: :text, content: "Test App View"}
 
     @impl Application
-    def app_name do
-      :test_app
-    end
+    def subscriptions(_model), do: []
 
     @impl Application
-    def terminate(_reason, model) do
-      send(Process.group_leader(), {:test_app_terminated, model})
-      :ok
-    end
+    def handle_event(_), do: :ok
 
     @impl Application
-    def handle_tick(model) do
-      {:ok, model, []}
-    end
+    def handle_message(_, _), do: :ok
 
     @impl Application
-    def subscriptions(_model) do
-      []
-    end
+    def handle_tick(_), do: :ok
+
+    @impl Application
+    def terminate(_, _), do: :ok
   end
 
   @moduledoc false
@@ -123,11 +111,12 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
       defmodule ModuleWithoutAppName do
         @behaviour Application
         @impl Application
-        def init(_), do: {:ok, %{}}
-        def update(model, _), do: {:ok, model, []}
-        def view(_), do: "View"
-        def terminate(_, _), do: :ok
-        def handle_tick(model), do: {:ok, model, []}
+        def init(_), do: %{}
+        @impl Application
+        def update(_msg, model), do: {model, []}
+        @impl Application
+        def view(_), do: %{type: :text, content: "View"}
+        @impl Application
         def subscriptions(_), do: []
       end
 

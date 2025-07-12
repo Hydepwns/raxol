@@ -952,13 +952,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   defp find_buffer_manager_by_initial_call do
-    case Process.list() |> Enum.find(&is_buffer_manager_process?/1) do
+    case Process.list() |> Enum.find(&buffer_manager_process?/1) do
       nil -> raise "No buffer manager process found in test environment"
       pid -> pid
     end
   end
 
-  defp is_buffer_manager_process?(pid) do
+  defp buffer_manager_process?(pid) do
     case Process.info(pid, :initial_call) do
       {:initial_call, {__MODULE__, :init, 1}} -> true
       _ -> false
@@ -1006,59 +1006,56 @@ defmodule Raxol.Terminal.Buffer.Manager do
     }
 
   defp calculate_buffer_memory(buffer) do
-    # Simple memory calculation based on buffer size
-    # For BufferImpl, calculate based on cells map size or list size
     case buffer do
       %Raxol.Terminal.Buffer.Manager.BufferImpl{} ->
-        # Calculate memory based on cells storage type
-        case buffer.cells do
-          cells when is_map(cells) ->
-            # Map-based storage
-            # Estimate 64 bytes per cell
-            memory = map_size(cells) * 64
-
-            IO.puts(
-              "DEBUG: Map-based cells, size: #{map_size(cells)}, memory: #{memory}"
-            )
-
-            memory
-
-          cells when is_list(cells) ->
-            # List-based storage (2D array)
-            total_cells =
-              Enum.reduce(cells, 0, fn row, acc -> acc + length(row) end)
-
-            # Estimate 64 bytes per cell
-            memory = total_cells * 64
-
-            IO.puts(
-              "DEBUG: List-based cells, total_cells: #{total_cells}, memory: #{memory}"
-            )
-
-            memory
-
-          _ ->
-            # Fallback to width * height
-            # 8 bytes per cell estimate
-            memory = buffer.width * buffer.height * 8
-
-            IO.puts(
-              "DEBUG: Fallback calculation, width: #{buffer.width}, height: #{buffer.height}, memory: #{memory}"
-            )
-
-            memory
-        end
+        calculate_buffer_impl_memory(buffer)
 
       _ ->
-        # Fallback for other buffer types
-        # 8 bytes per cell estimate
-        memory = buffer.width * buffer.height * 8
-
-        IO.puts(
-          "DEBUG: Other buffer type, width: #{buffer.width}, height: #{buffer.height}, memory: #{memory}"
-        )
-
-        memory
+        calculate_fallback_memory(buffer)
     end
+  end
+
+  defp calculate_buffer_impl_memory(buffer) do
+    case buffer.cells do
+      cells when is_map(cells) ->
+        calculate_map_memory(cells)
+
+      cells when is_list(cells) ->
+        calculate_list_memory(cells)
+
+      _ ->
+        calculate_fallback_memory(buffer)
+    end
+  end
+
+  defp calculate_map_memory(cells) do
+    memory = map_size(cells) * 64
+
+    IO.puts(
+      "DEBUG: Map-based cells, size: #{map_size(cells)}, memory: #{memory}"
+    )
+
+    memory
+  end
+
+  defp calculate_list_memory(cells) do
+    total_cells = Enum.reduce(cells, 0, fn row, acc -> acc + length(row) end)
+    memory = total_cells * 64
+
+    IO.puts(
+      "DEBUG: List-based cells, total_cells: #{total_cells}, memory: #{memory}"
+    )
+
+    memory
+  end
+
+  defp calculate_fallback_memory(buffer) do
+    memory = buffer.width * buffer.height * 8
+
+    IO.puts(
+      "DEBUG: Fallback calculation, width: #{buffer.width}, height: #{buffer.height}, memory: #{memory}"
+    )
+
+    memory
   end
 end

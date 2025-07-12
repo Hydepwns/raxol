@@ -117,153 +117,155 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   """
   def handle_xtwinops(emulator, params) do
     case params do
-      [3, _x, _y] ->
-        # Report window size
-        # ESC [ 3 ; height ; width t
-        updated_emulator =
-          Emulator.write_to_output(
-            emulator,
-            "\e[3;#{emulator.window.x};#{emulator.window.y}t"
-          )
-
-        {:ok, updated_emulator}
-
-      [4, height, width] ->
-        # Resize window
-        Emulator.resize(emulator, width, height)
-        {:ok, emulator}
-
-      [5, 0] ->
-        # Report window state
-        # ESC [ 5 ; 0 t (normal)
-        state = if emulator.window.maximized, do: 1, else: 0
-        updated_emulator = Emulator.write_to_output(emulator, "\e[5;#{state}t")
-        {:ok, updated_emulator}
-
-      [5, 1] ->
-        # Report window state
-        # ESC [ 5 ; 1 t (iconified)
-        state = if emulator.window.maximized, do: 1, else: 0
-        updated_emulator = Emulator.write_to_output(emulator, "\e[5;#{state}t")
-        {:ok, updated_emulator}
-
-      [5, 2] ->
-        # Report window state
-        # ESC [ 5 ; 2 t (maximized)
-        state = if emulator.window.maximized, do: 1, else: 0
-        updated_emulator = Emulator.write_to_output(emulator, "\e[5;#{state}t")
-        {:ok, updated_emulator}
-
-      [9, 0] ->
-        # Restore window
-        state = if emulator.window.maximized, do: 1, else: 0
-        updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
-        {:ok, updated_emulator}
-
-      [9, 1] ->
-        # Maximize window
-        state = if emulator.window.maximized, do: 1, else: 0
-        updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
-
-        {:ok,
-         %{
-           updated_emulator
-           | window: %{updated_emulator.window | maximized: true}
-         }}
-
-      [10] ->
-        # Unmaximize window
-        state = if emulator.window.maximized, do: 1, else: 0
-        updated_emulator = Emulator.write_to_output(emulator, "\e[10;#{state}t")
-
-        {:ok,
-         %{
-           updated_emulator
-           | window: %{updated_emulator.window | maximized: false}
-         }}
-
-      [11] ->
-        # Report window state
-        state = if emulator.window.maximized, do: 1, else: 0
-        updated_emulator = Emulator.write_to_output(emulator, "\e[11;#{state}t")
-        {:ok, updated_emulator}
-
-      [13] ->
-        # Report window position
-        updated_emulator =
-          Emulator.write_to_output(
-            emulator,
-            "\e[13;#{emulator.window.x};#{emulator.window.y}t"
-          )
-
-        {:ok, updated_emulator}
-
-      [14] ->
-        # Report window size in pixels
-        updated_emulator =
-          Emulator.write_to_output(
-            emulator,
-            "\e[14;#{emulator.window.height};#{emulator.window.width}t"
-          )
-
-        {:ok, updated_emulator}
-
-      [15] ->
-        # Report screen size in pixels
-        updated_emulator =
-          Emulator.write_to_output(
-            emulator,
-            "\e[15;#{emulator.window.height};#{emulator.window.width}t"
-          )
-
-        {:ok, updated_emulator}
-
-      [16] ->
-        # Report character cell size in pixels
-        updated_emulator =
-          Emulator.write_to_output(
-            emulator,
-            "\e[16;#{emulator.window.cell_height};#{emulator.window.cell_width}t"
-          )
-
-        {:ok, updated_emulator}
-
-      [18] ->
-        # Report screen size in characters
-        updated_emulator =
-          Emulator.write_to_output(
-            emulator,
-            "\e[18;#{emulator.height};#{emulator.width}t"
-          )
-
-        {:ok, updated_emulator}
-
-      [19] ->
-        # Report screen size in characters
-        updated_emulator =
-          Emulator.write_to_output(
-            emulator,
-            "\e[19;#{emulator.height};#{emulator.width}t"
-          )
-
-        {:ok, updated_emulator}
-
-      [20] ->
-        # Report icon label
-        updated_emulator =
-          Emulator.write_to_output(emulator, "\e[20;#{emulator.window.title}t")
-
-        {:ok, updated_emulator}
-
-      [21] ->
-        # Report window title
-        updated_emulator =
-          Emulator.write_to_output(emulator, "\e[21;#{emulator.window.title}t")
-
-        {:ok, updated_emulator}
-
-      _ ->
-        {:ok, emulator}
+      [op | rest] -> dispatch_window_operation(emulator, op, rest)
+      _ -> {:ok, emulator}
     end
   end
+
+  @window_operations %{
+    3 => {:handle_report_window_size, 0},
+    4 => {:handle_resize_window, 2},
+    5 => {:handle_report_window_state, 1},
+    9 => {:handle_window_action, 1},
+    10 => {:handle_unmaximize_window, 0},
+    11 => {:handle_report_window_state_0, 0},
+    13 => {:handle_report_window_position, 0},
+    14 => {:handle_report_window_size_pixels, 0},
+    15 => {:handle_report_screen_size_pixels, 0},
+    16 => {:handle_report_cell_size, 0},
+    18 => {:handle_report_screen_size_chars, 0},
+    19 => {:handle_report_screen_size_chars, 0},
+    20 => {:handle_report_icon_label, 0},
+    21 => {:handle_report_window_title, 0}
+  }
+
+  defp dispatch_window_operation(emulator, op, rest) do
+    case Map.get(@window_operations, op) do
+      nil ->
+        {:ok, emulator}
+
+      {function, 0} ->
+        apply(__MODULE__, function, [emulator])
+
+      {function, 1} ->
+        apply(__MODULE__, function, [emulator, List.first(rest)])
+
+      {function, 2} ->
+        apply(__MODULE__, function, [
+          emulator,
+          List.first(rest),
+          List.last(rest)
+        ])
+    end
+  end
+
+  defp handle_report_window_size(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(
+        emulator,
+        "\e[3;#{emulator.window.x};#{emulator.window.y}t"
+      )
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_resize_window(emulator, width, height) do
+    Emulator.resize(emulator, width, height)
+    {:ok, emulator}
+  end
+
+  defp handle_report_window_state(emulator, _state) do
+    state = if emulator.window.maximized, do: 1, else: 0
+    updated_emulator = Emulator.write_to_output(emulator, "\e[5;#{state}t")
+    {:ok, updated_emulator}
+  end
+
+  defp handle_window_action(emulator, 0) do
+    state = if emulator.window.maximized, do: 1, else: 0
+    updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
+    {:ok, updated_emulator}
+  end
+
+  defp handle_window_action(emulator, 1) do
+    state = if emulator.window.maximized, do: 1, else: 0
+    updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
+
+    {:ok,
+     %{updated_emulator | window: %{updated_emulator.window | maximized: true}}}
+  end
+
+  defp handle_unmaximize_window(emulator) do
+    state = if emulator.window.maximized, do: 1, else: 0
+    updated_emulator = Emulator.write_to_output(emulator, "\e[10;#{state}t")
+
+    {:ok,
+     %{updated_emulator | window: %{updated_emulator.window | maximized: false}}}
+  end
+
+  defp handle_report_window_position(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(
+        emulator,
+        "\e[13;#{emulator.window.x};#{emulator.window.y}t"
+      )
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_report_window_size_pixels(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(
+        emulator,
+        "\e[14;#{emulator.window.height};#{emulator.window.width}t"
+      )
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_report_screen_size_pixels(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(
+        emulator,
+        "\e[15;#{emulator.window.height};#{emulator.window.width}t"
+      )
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_report_cell_size(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(
+        emulator,
+        "\e[16;#{emulator.window.cell_height};#{emulator.window.cell_width}t"
+      )
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_report_screen_size_chars(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(
+        emulator,
+        "\e[18;#{emulator.height};#{emulator.width}t"
+      )
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_report_icon_label(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(emulator, "\e[20;#{emulator.window.title}t")
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_report_window_title(emulator) do
+    updated_emulator =
+      Emulator.write_to_output(emulator, "\e[21;#{emulator.window.title}t")
+
+    {:ok, updated_emulator}
+  end
+
+  defp handle_report_window_state_0(emulator),
+    do: handle_report_window_state(emulator, 0)
 end

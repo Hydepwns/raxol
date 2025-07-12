@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
             bottom_margin: 24,
             blink_timer: nil,
             state: :visible,
-            # {col, row} format to match test expectations
+            # {col, row} format to match get_position return value
             position: {0, 0},
             blink: true,
             custom_shape: nil,
@@ -127,11 +127,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Sets the cursor position.
   """
-  def set_position(pid, {row, col}) when is_pid(pid) do
-    GenServer.call(pid, {:set_position, row, col})
+  def set_position(pid, {col, row}) when is_pid(pid) do
+    GenServer.call(pid, {:set_position, col, row})
   end
 
-  def set_position(%__MODULE__{} = cursor, {row, col}) do
+  def set_position(%__MODULE__{} = cursor, {col, row}) do
     %{cursor | row: row, col: col, position: {col, row}}
   end
 
@@ -476,8 +476,21 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def set_custom_shape(shape, params),
     do: set_custom_shape(__MODULE__, shape, params)
 
-  def update_position(pid \\ __MODULE__, {row, col}) do
-    GenServer.call(pid, {:update_position, row, col})
+  def update_position(pid \\ __MODULE__, {col, row}) do
+    GenServer.call(pid, {:update_position, col, row})
+  end
+
+  @doc """
+  Updates cursor position based on text input.
+  """
+  def update_position(%__MODULE__{} = cursor, text) when is_binary(text) do
+    # Calculate new position based on text length
+    new_col = cursor.col + String.length(text)
+    %{cursor | col: new_col, position: {cursor.row, new_col}}
+  end
+
+  def update_position(pid, text) when is_pid(pid) and is_binary(text) do
+    GenServer.call(pid, {:update_position_from_text, text})
   end
 
   def reset_position(pid \\ __MODULE__) do
@@ -801,6 +814,13 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
+  def handle_call({:update_position_from_text, text}, _from, state) do
+    new_col = state.col + String.length(text)
+    new_state = %{state | col: new_col, position: {new_col, state.row}}
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
   def handle_call(:update_blink, _from, state) do
     new_blink_state = !state.blink
     new_state = %{state | blink: new_blink_state}
@@ -852,7 +872,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @impl GenServer
   def handle_call({:move_to, x, y}, _from, state) do
     # Move cursor to specific position
-    new_state = %{state | row: y, col: x, position: {x, y}}
+    new_state = %{state | row: y, col: x, position: {y, x}}
     {:reply, new_state, new_state}
   end
 

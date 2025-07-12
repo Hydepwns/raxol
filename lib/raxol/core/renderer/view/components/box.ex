@@ -52,7 +52,14 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     children_layout = layout_children(box.children, content_size)
 
     # Apply padding and border
-    apply_box_model(box, children_layout, available_size)
+    layout = apply_box_model(box, children_layout, available_size)
+
+    if layout == [] do
+      # If no children, return the box itself as a layout element with position and size
+      [Map.merge(box, %{position: {0, 0}, size: available_size})]
+    else
+      layout
+    end
   end
 
   defp calculate_content_size(box, {width, height}) do

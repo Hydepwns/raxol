@@ -25,32 +25,11 @@ defmodule Raxol.Terminal.Buffer.Cell do
   Creates a new cell with default settings.
   """
   def new(opts \\ []) do
-    cond do
-      is_binary(opts) ->
-        %__MODULE__{char: opts}
-
-      is_map(opts) ->
-        %__MODULE__{
-          char: Map.get(opts, :char, " "),
-          foreground: Map.get(opts, :foreground, 7),
-          background: Map.get(opts, :background, 0),
-          attributes: Map.get(opts, :attributes, %{}),
-          hyperlink: Map.get(opts, :hyperlink, nil),
-          width: Map.get(opts, :width, 1)
-        }
-
-      is_list(opts) ->
-        %__MODULE__{
-          char: Keyword.get(opts, :char, " "),
-          foreground: Keyword.get(opts, :foreground, 7),
-          background: Keyword.get(opts, :background, 0),
-          attributes: Keyword.get(opts, :attributes, %{}),
-          hyperlink: Keyword.get(opts, :hyperlink, nil),
-          width: Keyword.get(opts, :width, 1)
-        }
-
-      true ->
-        %__MODULE__{}
+    case opts do
+      opts when is_binary(opts) -> new_from_string(opts)
+      opts when is_map(opts) -> new_from_map(opts)
+      opts when is_list(opts) -> new_from_keyword(opts)
+      _ -> %__MODULE__{}
     end
   end
 
@@ -330,5 +309,31 @@ defmodule Raxol.Terminal.Buffer.Cell do
       w ->
         w
     end
+  end
+
+  defp new_from_string(char) do
+    %__MODULE__{char: char}
+  end
+
+  defp new_from_map(opts) do
+    %__MODULE__{
+      char: Map.get(opts, :char, " "),
+      foreground: Map.get(opts, :foreground, 7),
+      background: Map.get(opts, :background, 0),
+      attributes: Map.get(opts, :attributes, %{}),
+      hyperlink: Map.get(opts, :hyperlink, nil),
+      width: Map.get(opts, :width, 1)
+    }
+  end
+
+  defp new_from_keyword(opts) do
+    %__MODULE__{
+      char: Keyword.get(opts, :char, " "),
+      foreground: Keyword.get(opts, :foreground, 7),
+      background: Keyword.get(opts, :background, 0),
+      attributes: Keyword.get(opts, :attributes, %{}),
+      hyperlink: Keyword.get(opts, :hyperlink, nil),
+      width: Keyword.get(opts, :width, 1)
+    }
   end
 end

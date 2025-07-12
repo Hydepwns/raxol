@@ -21,60 +21,58 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [0]))
+      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [0])
 
       # Check that content from cursor to end is erased
-      # Cursor position should be erased
-      assert_cell_at(emulator, 5, 5, " ")
-      # End of screen should be erased
-      assert_cell_at(emulator, 79, 23, " ")
       # Before cursor should remain
-      assert_cell_at(emulator, 4, 4, "X")
+      assert_cell_at(updated_emulator, 4, 5, "X")
+      # Cursor position should be erased
+      assert_cell_at(updated_emulator, 5, 5, " ")
+      # End should be erased
+      assert_cell_at(updated_emulator, 79, 23, " ")
     end
 
-    test "erases from beginning of screen to cursor (mode 1)", %{
-      emulator: emulator
-    } do
+    test "erases from beginning of screen to cursor (mode 1)", %{emulator: emulator} do
       # Set cursor to middle of screen
       Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 5})
 
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [1]))
+      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [1])
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
-      assert_cell_at(emulator, 0, 0, " ")
+      assert_cell_at(updated_emulator, 0, 0, " ")
       # Cursor position should be erased
-      assert_cell_at(emulator, 5, 5, " ")
+      assert_cell_at(updated_emulator, 5, 5, " ")
       # After cursor should remain
-      assert_cell_at(emulator, 6, 6, "X")
+      assert_cell_at(updated_emulator, 6, 6, "X")
     end
 
     test "erases entire screen (mode 2)", %{emulator: emulator} do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [2]))
+      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [2])
 
       # Check that entire screen is erased
-      assert_cell_at(emulator, 0, 0, " ")
-      assert_cell_at(emulator, 39, 11, " ")
-      assert_cell_at(emulator, 79, 23, " ")
+      assert_cell_at(updated_emulator, 0, 0, " ")
+      assert_cell_at(updated_emulator, 39, 11, " ")
+      assert_cell_at(updated_emulator, 79, 23, " ")
     end
 
     test "handles missing parameter", %{emulator: emulator} do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_J(emulator, []))
+      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [])
 
       # Should default to mode 0 (erase from cursor to end)
-      # Before cursor should remain
-      assert_cell_at(emulator, 0, 0, "X")
+      # Since cursor is at {0,0}, cursor position should be erased
+      assert_cell_at(updated_emulator, 0, 0, " ")
       # End should be erased
-      assert_cell_at(emulator, 79, 23, " ")
+      assert_cell_at(updated_emulator, 79, 23, " ")
     end
 
     test "erases scrollback buffer (mode 3)", %{emulator: emulator} do
@@ -82,10 +80,10 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       emulator = fill_screen_with_content(emulator, "X")
       emulator = scroll_up(emulator, 5)
 
-      _result = unwrap_ok(EraseHandlers.handle_J(emulator, [3]))
+      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [3])
 
       # Scrollback should be cleared
-      assert scrollback_is_empty(emulator)
+      assert scrollback_is_empty(updated_emulator)
     end
   end
 
@@ -97,15 +95,15 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_K(emulator, [0]))
+      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [0])
 
       # Check that content from cursor to end of line is erased
       # Before cursor should remain
-      assert_cell_at(emulator, 4, 0, "X")
+      assert_cell_at(updated_emulator, 4, 0, "X")
       # Cursor position should be erased
-      assert_cell_at(emulator, 5, 0, " ")
+      assert_cell_at(updated_emulator, 5, 0, " ")
       # End of line should be erased
-      assert_cell_at(emulator, 79, 0, " ")
+      assert_cell_at(updated_emulator, 79, 0, " ")
     end
 
     test "erases from beginning of line to cursor (mode 1)", %{
@@ -117,40 +115,40 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_K(emulator, [1]))
+      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [1])
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
-      assert_cell_at(emulator, 0, 0, " ")
+      assert_cell_at(updated_emulator, 0, 0, " ")
       # Cursor position should be erased
-      assert_cell_at(emulator, 5, 0, " ")
+      assert_cell_at(updated_emulator, 5, 0, " ")
       # After cursor should remain
-      assert_cell_at(emulator, 6, 0, "X")
+      assert_cell_at(updated_emulator, 6, 0, "X")
     end
 
     test "erases entire line (mode 2)", %{emulator: emulator} do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_K(emulator, [2]))
+      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [2])
 
       # Check that entire line is erased
-      assert_cell_at(emulator, 0, 0, " ")
-      assert_cell_at(emulator, 39, 0, " ")
-      assert_cell_at(emulator, 79, 0, " ")
+      assert_cell_at(updated_emulator, 0, 0, " ")
+      assert_cell_at(updated_emulator, 39, 0, " ")
+      assert_cell_at(updated_emulator, 79, 0, " ")
     end
 
     test "handles missing parameter", %{emulator: emulator} do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      _result = unwrap_ok(EraseHandlers.handle_K(emulator, []))
+      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [])
 
       # Should default to mode 0 (erase from cursor to end of line)
-      # Beginning should remain
-      assert_cell_at(emulator, 0, 0, "X")
+      # Since cursor is at {0,0}, cursor position should be erased
+      assert_cell_at(updated_emulator, 0, 0, " ")
       # End should be erased
-      assert_cell_at(emulator, 79, 0, " ")
+      assert_cell_at(updated_emulator, 79, 0, " ")
     end
   end
 

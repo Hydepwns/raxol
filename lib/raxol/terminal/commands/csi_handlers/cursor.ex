@@ -135,9 +135,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     # Update cursor position - cursor stores {col, row} format
     # For \e[10;5H: row=10, col=5 -> row_0=9, col_0=4 -> {4, 9}
     # The test expects {4, 9} which means {col, row} format
-    # set_position expects {row, col} format, so we need to swap
+    # set_position expects {col, row} format
     updated_cursor =
-      set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
+      set_cursor_position(emulator.cursor, {col_clamped, row_clamped})
 
     {:ok, %{emulator | cursor: updated_cursor}}
   end

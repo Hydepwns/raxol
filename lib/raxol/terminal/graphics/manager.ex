@@ -177,10 +177,18 @@ defmodule Raxol.Terminal.Graphics.Manager do
     |> Base.encode16()
   end
 
-  defp process_image(image, _opts, pipeline) do
-    # Apply pipeline transformations to the image
+  defp process_image(image, opts, pipeline) do
+    # Extract scale from opts, default to 1.0
+    scale = Map.get(opts, :scale, 1.0)
+    # Apply pipeline transformations to the image (excluding convert_to_sixel)
+    image_pipeline = [
+      &optimize_colors/1,
+      &apply_dithering/1,
+      fn img -> scale_image(img, scale) end
+    ]
+
     processed_image =
-      Enum.reduce(pipeline, image, fn transform, acc ->
+      Enum.reduce(image_pipeline, image, fn transform, acc ->
         transform.(acc)
       end)
 
@@ -197,7 +205,10 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   defp extract_colors(pixels) do
     # Extract unique colors from pixels and create color palette
-    pixels
+    # Flatten 2D pixel array to 1D list first
+    flattened_pixels = List.flatten(pixels)
+
+    flattened_pixels
     |> Enum.uniq_by(fn pixel -> {pixel.r, pixel.g, pixel.b} end)
     # Limit to 256 colors for sixel
     |> Enum.take(256)
@@ -209,7 +220,10 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   defp encode_sixel_data(pixels) do
     # Encode pixels to sixel format
-    pixels
+    # Flatten 2D pixel array to 1D list first
+    flattened_pixels = List.flatten(pixels)
+
+    flattened_pixels
     |> Enum.map(fn pixel ->
       # Convert RGB to color index (simplified mapping)
       color_index = trunc((pixel.r + pixel.g + pixel.b) / 3 / 255 * 255)
@@ -220,8 +234,11 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   defp optimize_colors(image) do
     # Optimize colors for terminal display by reducing color depth
+    # Flatten 2D pixel array to 1D list first
+    flattened_pixels = List.flatten(image.pixels)
+
     optimized_pixels =
-      Enum.map(image.pixels, fn pixel ->
+      Enum.map(flattened_pixels, fn pixel ->
         %{
           # Reduce to 6 levels (0, 51, 102, 153, 204, 255)
           r: trunc(pixel.r / 51) * 51,
@@ -231,23 +248,30 @@ defmodule Raxol.Terminal.Graphics.Manager do
         }
       end)
 
-    %{image | pixels: optimized_pixels}
+    # Convert back to 2D format
+    optimized_2d_pixels =
+      optimized_pixels
+      |> Enum.chunk_every(image.width)
+
+    %{image | pixels: optimized_2d_pixels}
   end
 
   defp apply_dithering(image) do
+    # Flatten 2D pixel array to 1D list first
+    flattened_pixels = List.flatten(image.pixels)
     dithered_pixels =
-      process_dithering_pixels(image.pixels, image.width, image.height)
-
-    %{image | pixels: dithered_pixels}
+      process_dithering_pixels(flattened_pixels, image.width, image.height)
+    # Convert back to 2D format
+    dithered_2d_pixels =
+      dithered_pixels
+      |> Enum.chunk_every(image.width)
+    %{image | pixels: dithered_2d_pixels}
   end
 
   defp process_dithering_pixels(pixels, width, height) do
-    for y <- 0..(height - 1) do
-      for x <- 0..(width - 1) do
-        process_pixel_dithering(pixels, x, y, width, height)
-      end
+    for y <- 0..(height - 1), x <- 0..(width - 1) do
+      process_pixel_dithering(pixels, x, y, width, height)
     end
-    |> List.flatten()
   end
 
   defp process_pixel_dithering(pixels, x, y, width, height) do
@@ -255,7 +279,6 @@ defmodule Raxol.Terminal.Graphics.Manager do
     pixel = Enum.at(pixels, index) || %{r: 0, g: 0, b: 0, a: 1.0}
     quantized = quantize_color(pixel)
     error = calculate_error(pixel, quantized)
-
     distribute_error(pixels, x, y, width, height, error)
     quantized
   end
@@ -310,24 +333,16 @@ defmodule Raxol.Terminal.Graphics.Manager do
     end
   end
 
-  defp scale_image(image) do
-    # Scale image based on terminal constraints
-    max_width = 80
-    max_height = 24
-
-    scale_x = min(1.0, max_width / image.width)
-    scale_y = min(1.0, max_height / image.height)
-    scale = min(scale_x, scale_y)
-
-    if scale < 1.0 do
+  defp scale_image(image, scale \\ 1.0) do
+    if scale == 1.0 do
+      image
+    else
       %{
         image
         | width: trunc(image.width * scale),
           height: trunc(image.height * scale),
           pixels: scale_pixels(image.pixels, image.width, image.height, scale)
       }
-    else
-      image
     end
   end
 

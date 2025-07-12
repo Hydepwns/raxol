@@ -107,16 +107,16 @@ defmodule Raxol.UI.Layout.TableTest do
       assert length(calculated_widths) == 3
 
       # Widths should be calculated based on content + padding
-      # "Los Angeles" is the longest content (11 chars) + 2 padding = 13
-      # "New York" is 8 chars + 2 padding = 10
-      # "Name", "Age", "City" are 4, 3, 4 chars respectively + 2 padding = 6, 5, 6
-      # So max widths should be: 6, 5, 13
-      assert calculated_widths == [6, 5, 13]
+      # Column 1: "Alice" (5 chars) + 2 padding = 7
+      # Column 2: "Age" (3 chars) + 2 padding = 5
+      # Column 3: "Los Angeles" (11 chars) + 2 padding = 13
+      # So max widths should be: 7, 5, 13
+      assert calculated_widths == [7, 5, 13]
 
       # Total width should be sum of column widths + separators
-      # 6 + 5 + 13 + (2 * 3) = 30
+      # 7 + 5 + 13 + (2 * 3) = 31
       assert [%{width: final_width}] = result
-      assert final_width == 30
+      assert final_width == 31
     end
 
     test "handles auto column widths correctly" do

@@ -112,8 +112,6 @@ defmodule Raxol.UI.Layout.Table do
     end
   end
 
-  defp calculate_column_widths_with_fallback([], [], _original_data), do: []
-
   defp calculate_column_widths_with_fallback([], _headers, original_data) do
     fallback_num_cols = get_fallback_column_count(original_data)
     calculate_fallback_widths(fallback_num_cols, original_data)
@@ -134,15 +132,16 @@ defmodule Raxol.UI.Layout.Table do
   end
 
   defp get_fallback_column_count(original_data) do
-    case hd(original_data) do
-      nil -> 0
-      first_row -> length(first_row)
+    case original_data do
+      [] -> 0
+      [first_row | _] -> length(first_row)
     end
   end
 
   defp calculate_fallback_widths(0, _original_data), do: []
 
   defp calculate_fallback_widths(fallback_num_cols, original_data) do
+    # Calculate max width across all rows for each column
     Enum.map(0..(fallback_num_cols - 1), fn col_index ->
       max_data_width =
         Enum.reduce(original_data, 0, fn data_item, max_w ->
@@ -159,15 +158,16 @@ defmodule Raxol.UI.Layout.Table do
     columns_config = Map.get(attrs, :columns, [])
     headers = Enum.map(columns_config, fn col -> Map.get(col, :header, "") end)
 
-    num_cols = length(columns_config)
-    num_rows = length(original_data)
-
     col_widths =
       calculate_column_widths_with_fallback(
         columns_config,
         headers,
         original_data
       )
+
+    # Use actual number of columns from col_widths for calculations
+    num_cols = length(col_widths)
+    num_rows = length(original_data)
 
     # Calculate width
     separator_width = if num_cols > 1, do: (num_cols - 1) * 3, else: 0

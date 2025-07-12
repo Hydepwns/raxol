@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_l(emulator, count) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    {y, _x} = Emulator.get_cursor_position(emulator)
+    {_x, y} = Emulator.get_cursor_position(emulator)
 
     style =
       active_buffer.default_style ||
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_m(emulator, count) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    {y, _x} = Emulator.get_cursor_position(emulator)
+    {_x, y} = Emulator.get_cursor_position(emulator)
 
     style =
       active_buffer.default_style ||
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_x(emulator, count) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    {y, x} = Emulator.get_cursor_position(emulator)
+    {x, y} = Emulator.get_cursor_position(emulator)
 
     style =
       active_buffer.default_style ||
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_L(emulator, count) do
     buffer = emulator.main_screen_buffer
-    {y, _x} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {_x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     n =
       case count do
@@ -82,7 +82,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_M(emulator, count) do
     buffer = emulator.main_screen_buffer
-    {y, _x} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {_x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     n =
       case count do
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_P(emulator, count) do
     buffer = emulator.main_screen_buffer
-    {y, x} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     n =
       case count do
@@ -124,7 +124,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_X(emulator, count) do
     buffer = emulator.main_screen_buffer
-    {y, x} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     n =
       case count do
@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   def handle_at(emulator, count) do
     buffer = emulator.main_screen_buffer
-    {y, x} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     n =
       case count do

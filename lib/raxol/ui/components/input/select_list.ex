@@ -25,6 +25,29 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   @behaviour Raxol.UI.Components.Base.Component
 
+  @key_mapping %{
+    "Down" => :navigation_down,
+    :down => :navigation_down,
+    "Up" => :navigation_up,
+    :up => :navigation_up,
+    "PageDown" => :navigation_page_down,
+    :pagedown => :navigation_page_down,
+    :page_down => :navigation_page_down,
+    "PageUp" => :navigation_page_up,
+    :pageup => :navigation_page_up,
+    :page_up => :navigation_page_up,
+    "Home" => :navigation_home,
+    :home => :navigation_home,
+    "End" => :navigation_end,
+    :end => :navigation_end,
+    "Enter" => :enter,
+    :enter => :enter,
+    "Tab" => :tab,
+    :tab => :tab,
+    "Backspace" => :backspace,
+    :backspace => :backspace
+  }
+
   # Example: {"Option Label", :option_value}
   @type option :: {String.t(), any()}
   @type options :: [option()]
@@ -292,73 +315,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def handle_event(%{type: :key, data: %{key: key}}, _context, state) do
     state = ensure_state(state)
-
-    cond do
-      key in ["Down", :down] ->
-        Navigation.handle_arrow_down(state) |> then(&{&1, nil})
-
-      key in ["Up", :up] ->
-        Navigation.handle_arrow_up(state) |> then(&{&1, nil})
-
-      key in ["PageDown", :pagedown, :page_down] ->
-        Navigation.handle_page_down(state) |> then(&{&1, nil})
-
-      key in ["PageUp", :pageup, :page_up] ->
-        Navigation.handle_page_up(state) |> then(&{&1, nil})
-
-      key in ["Home", :home] ->
-        Navigation.handle_home(state) |> then(&{&1, nil})
-
-      key in ["End", :end] ->
-        Navigation.handle_end(state) |> then(&{&1, nil})
-
-      key in ["Enter", :enter] ->
-        {new_state, commands} =
-          Selection.update_selection_state(state, state.focused_index)
-
-        {new_state, commands}
-
-      key in ["Tab", :tab] ->
-        if state.enable_search do
-          new_state = %{state | is_search_focused: !state.is_search_focused}
-
-          cleared_state = %{
-            new_state
-            | search_text: "",
-              search_buffer: "",
-              filtered_options: nil,
-              is_filtering: false
-          }
-
-          {cleared_state, nil}
-        else
-          {state, nil}
-        end
-
-      key in ["Backspace", :backspace] ->
-        if state.is_search_focused and state.search_buffer != "" do
-          new_buffer =
-            String.slice(
-              state.search_buffer,
-              0,
-              String.length(state.search_buffer) - 1
-            )
-
-          {new_state, _} = update({:search, new_buffer}, state)
-          {new_state, nil}
-        else
-          {state, nil}
-        end
-
-      binary?(key) and String.length(key) == 1 and state.enable_search and
-          state.is_search_focused ->
-        # Always update search_buffer immediately for character keys
-        {new_state, _} = update({:search, state.search_buffer <> key}, state)
-        {new_state, nil}
-
-      true ->
-        {state, nil}
-    end
+    handle_key_event(key, state)
   end
 
   def handle_event(%{type: :focus}, _context, state) do
@@ -385,41 +342,41 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def handle_event(%{type: :mouse, data: %{x: _x, y: y}}, _context, state) do
     state = ensure_state(state)
+    handle_mouse_click(y, state)
+  end
 
-    cond do
-      state.enable_search and y == 0 ->
-        # Click on search input (y=0)
-        {new_state, _} = update({:set_search_focus, true}, state)
-        {new_state, nil}
+  defp handle_mouse_click(y, state) when y == 0 and state.enable_search do
+    # Click on search input (y=0)
+    {new_state, _} = update({:set_search_focus, true}, state)
+    {new_state, nil}
+  end
 
-      y >= 1 ->
-        # Option click: y gives us the 0-based index directly
-        # y=1 should select index 1 (second option)
-        # y=2 should select index 2 (third option)
-        # etc.
-        index = y
-        effective_options = Pagination.get_effective_options(state)
+  defp handle_mouse_click(y, state) when y >= 1 do
+    # Option click: y gives us the 0-based index directly
+    index = y
+    effective_options = Pagination.get_effective_options(state)
 
-        if index >= 0 and index < length(effective_options) do
-          {maybe_new_state, commands} =
-            Selection.update_selection_state(state, index)
-
-          # Always set focused_index to the clicked index, even if selection didn't change
-          new_state = Map.put(maybe_new_state, :focused_index, index)
-
-          Enum.each(commands, fn
-            {:callback, fun, args} -> apply(fun, args)
-            _ -> :ok
-          end)
-
-          {new_state, nil}
-        else
-          {state, nil}
-        end
-
-      true ->
-        {state, nil}
+    if index >= 0 and index < length(effective_options) do
+      handle_option_click(state, index)
+    else
+      {state, nil}
     end
+  end
+
+  defp handle_mouse_click(_y, state), do: {state, nil}
+
+  defp handle_option_click(state, index) do
+    {maybe_new_state, commands} = Selection.update_selection_state(state, index)
+    new_state = Map.put(maybe_new_state, :focused_index, index)
+    execute_commands(commands)
+    {new_state, nil}
+  end
+
+  defp execute_commands(commands) do
+    Enum.each(commands, fn
+      {:callback, fun, args} -> apply(fun, args)
+      _ -> :ok
+    end)
   end
 
   @doc """
@@ -455,32 +412,37 @@ defmodule Raxol.UI.Components.Input.SelectList do
     end
 
     # Validate each option
-    Enum.each(props.options, fn option ->
-      cond do
-        tuple?(option) and tuple_size(option) == 2 ->
-          {label, _value} = option
+    Enum.each(props.options, &validate_option!/1)
+  end
 
-          if not binary?(label) do
-            raise ArgumentError, "SelectList option labels must be strings"
-          end
+  defp validate_option!(option) do
+    cond do
+      tuple?(option) and tuple_size(option) == 2 ->
+        {label, _value} = option
+        validate_label!(label)
 
-        tuple?(option) and tuple_size(option) == 3 ->
-          {label, _value, style} = option
+      tuple?(option) and tuple_size(option) == 3 ->
+        {label, _value, style} = option
+        validate_label!(label)
+        validate_style!(style)
 
-          if not binary?(label) do
-            raise ArgumentError, "SelectList option labels must be strings"
-          end
+      true ->
+        raise ArgumentError,
+              "SelectList options must be {label, value} or {label, value, style} tuples"
+    end
+  end
 
-          if not map?(style) do
-            raise ArgumentError,
-                  "SelectList option style (third element) must be a map"
-          end
+  defp validate_label!(label) do
+    if not binary?(label) do
+      raise ArgumentError, "SelectList option labels must be strings"
+    end
+  end
 
-        true ->
-          raise ArgumentError,
-                "SelectList options must be {label, value} or {label, value, style} tuples"
-      end
-    end)
+  defp validate_style!(style) do
+    if not map?(style) do
+      raise ArgumentError,
+            "SelectList option style (third element) must be a map"
+    end
   end
 
   defp ensure_state(state) do
@@ -490,6 +452,136 @@ defmodule Raxol.UI.Components.Input.SelectList do
       not map?(state) -> init(%{options: []})
       not Map.has_key?(state, :options) -> init(%{options: []})
       true -> state
+    end
+  end
+
+  defp handle_key_event(key, state) do
+    action = classify_key_action(key, state)
+    execute_key_action(action, state)
+  end
+
+  @key_action_mapping %{
+    :navigation_down => {:navigation, :down},
+    :navigation_up => {:navigation, :up},
+    :navigation_page_down => {:navigation, :page_down},
+    :navigation_page_up => {:navigation, :page_up},
+    :navigation_home => {:navigation, :home},
+    :navigation_end => {:navigation, :end},
+    :enter => {:selection, :enter},
+    :tab => {:search, :toggle_focus},
+    :backspace => {:search, :backspace}
+  }
+
+  defp classify_key_action(key, state) do
+    key_type = classify_key(key, state)
+
+    case key_type do
+      :character -> {:search, {:character, key}}
+      :unknown -> {:noop, nil}
+      _ -> Map.get(@key_action_mapping, key_type, {:noop, nil})
+    end
+  end
+
+  defp execute_key_action({:navigation, direction}, state) do
+    navigation_handler(direction, state)
+  end
+
+  defp execute_key_action({:selection, :enter}, state) do
+    Selection.update_selection_state(state, state.focused_index)
+  end
+
+  defp execute_key_action({:search, action}, state) do
+    search_handler(action, state)
+  end
+
+  defp execute_key_action({:noop, _}, state), do: {state, nil}
+
+  defp navigation_handler(:down, state),
+    do: Navigation.handle_arrow_down(state) |> then(&{&1, nil})
+
+  defp navigation_handler(:up, state),
+    do: Navigation.handle_arrow_up(state) |> then(&{&1, nil})
+
+  defp navigation_handler(:page_down, state),
+    do: Navigation.handle_page_down(state) |> then(&{&1, nil})
+
+  defp navigation_handler(:page_up, state),
+    do: Navigation.handle_page_up(state) |> then(&{&1, nil})
+
+  defp navigation_handler(:home, state),
+    do: Navigation.handle_home(state) |> then(&{&1, nil})
+
+  defp navigation_handler(:end, state),
+    do: Navigation.handle_end(state) |> then(&{&1, nil})
+
+  defp search_handler(:toggle_focus, state), do: handle_tab_key(state)
+  defp search_handler(:backspace, state), do: handle_backspace_key(state)
+
+  defp search_handler({:character, key}, state),
+    do: handle_character_key(key, state)
+
+  defp classify_key(key, state) do
+    key_type = get_key_type(key)
+
+    if key_type == :unknown and character_key?(key, state) do
+      :character
+    else
+      key_type
+    end
+  end
+
+  defp get_key_type(key) do
+    @key_mapping[key] || :unknown
+  end
+
+  defp character_key?(key, state) do
+    single_character?(key) and search_enabled_and_focused?(state)
+  end
+
+  defp single_character?(key) do
+    binary?(key) and byte_size(key) == 1
+  end
+
+  defp search_enabled_and_focused?(state) do
+    state.enable_search and state.is_search_focused
+  end
+
+  defp handle_character_key(key, state) do
+    {new_state, _} = update({:search, state.search_buffer <> key}, state)
+    {new_state, nil}
+  end
+
+  defp handle_tab_key(state) do
+    if state.enable_search do
+      new_state = %{state | is_search_focused: !state.is_search_focused}
+
+      cleared_state = %{
+        new_state
+        | search_text: "",
+          search_buffer: "",
+          filtered_options: nil,
+          is_filtering: false
+      }
+
+      {cleared_state, nil}
+    else
+      {state, nil}
+    end
+  end
+
+  defp handle_backspace_key(state) do
+    if state.is_search_focused and state.search_buffer != "" do
+      new_buffer =
+        String.slice(
+          state.search_buffer,
+          0,
+          String.length(state.search_buffer) - 1
+        )
+
+      {new_state, _} = update({:search, new_buffer}, state)
+      {new_state, nil}
+    else
+      {state, nil}
     end
   end
 end

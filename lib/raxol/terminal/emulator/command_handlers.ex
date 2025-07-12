@@ -383,17 +383,9 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   end
 
   defp handle_csi_command(final_byte, params, emulator, intermediates) do
-    case final_byte do
-      "J" -> handle_ed_command(params, emulator)
-      "K" -> handle_el_command(params, emulator)
-      "H" -> handle_cursor_position(params, emulator)
-      "A" -> handle_cursor_up(params, emulator)
-      "B" -> handle_cursor_down(params, emulator)
-      "C" -> handle_cursor_forward(params, emulator)
-      "D" -> handle_cursor_back(params, emulator)
-      "c" -> handle_device_attributes(params, emulator, intermediates)
-      "n" -> handle_device_status_report(params, emulator)
-      _ -> emulator
+    case csi_handlers()[final_byte] do
+      {handler, arity} -> apply(handler, [params, emulator, intermediates])
+      nil -> emulator
     end
   end
 
@@ -409,5 +401,19 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
       {:ok, mode_name} -> set_mode_in_manager(emulator, mode_name, value)
       :error -> emulator
     end
+  end
+
+  defp csi_handlers do
+    %{
+      "J" => {&handle_ed_command/2, 2},
+      "K" => {&handle_el_command/2, 2},
+      "H" => {&handle_cursor_position/2, 2},
+      "A" => {&handle_cursor_up/2, 2},
+      "B" => {&handle_cursor_down/2, 2},
+      "C" => {&handle_cursor_forward/2, 2},
+      "D" => {&handle_cursor_back/2, 2},
+      "c" => {&handle_device_attributes/3, 3},
+      "n" => {&handle_device_status_report/2, 2}
+    }
   end
 end

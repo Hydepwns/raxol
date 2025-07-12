@@ -113,10 +113,16 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
       row ->
         case Enum.at(row, x) do
           nil -> " "
-          cell -> Raxol.Terminal.Cell.get_char(cell)
+          cell -> get_cell_char(cell)
         end
     end
   end
+
+  # Handle both Raxol.Terminal.Cell and Raxol.Terminal.Buffer.Cell structs
+  defp get_cell_char(%Raxol.Terminal.Cell{char: char}), do: char
+  defp get_cell_char(%Raxol.Terminal.Buffer.Cell{char: char}), do: char
+  defp get_cell_char(%{char: char}) when is_binary(char), do: char
+  defp get_cell_char(_), do: " "
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_cell(buffer, x, y) do
