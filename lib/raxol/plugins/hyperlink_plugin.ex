@@ -140,7 +140,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, width, height) do
+  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
     # This plugin might not need to react to resize
     {:ok, plugin}
   end
@@ -166,6 +166,12 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   def get_api_version do
     "1.0.0"
   end
+
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def start(config), do: {:ok, config}
+
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def stop(config), do: {:ok, config}
 
   # Private functions
 

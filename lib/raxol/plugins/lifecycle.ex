@@ -955,7 +955,7 @@ defmodule Raxol.Plugins.Lifecycle do
       {:error, :circular_dependency, _cycle, _chain} ->
         {:error, {:circular_dependency, plugin.name}}
 
-      other ->
+      _other ->
         # fallback, should not happen
         :ok
     end

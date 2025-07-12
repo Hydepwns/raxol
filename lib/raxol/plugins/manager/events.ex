@@ -114,7 +114,7 @@ defmodule Raxol.Plugins.Manager.Events do
   """
   def unload_plugin(%Core{} = manager, plugin_name)
       when binary?(plugin_name) do
-    plugin_key = normalize_plugin_key(plugin_name)
+    _plugin_key = normalize_plugin_key(plugin_name)
     Core.unload_plugin(manager, plugin_name)
   end
 

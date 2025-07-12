@@ -34,7 +34,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @impl GenServer
+  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
   def start_link(_app, opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -1028,7 +1028,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   defp cleanup_state(_context), do: :ok
 
   # Helper function to call a plugin hook
-  defp call_plugin_hook(plugin_name, hook_name, args, plugin_state) do
+  defp call_plugin_hook(_plugin_name, hook_name, args, plugin_state) do
     # This is a placeholder implementation
     # In a real implementation, this would call the actual plugin hook
     case hook_name do
@@ -1047,7 +1047,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   # Helper function to validate plugin configuration
-  defp validate_plugin_config_static(plugin_name, config) when is_map(config) do
+  defp validate_plugin_config_static(_plugin_name, config)
+       when is_map(config) do
     # Basic validation - ensure config is a map and has required fields
     case config do
       %{enabled: enabled} when is_boolean(enabled) ->
@@ -1085,7 +1086,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   Loads a plugin with the given name and configuration.
   """
   @spec load_plugin(String.t(), map()) :: :ok | {:error, String.t()}
-  def load_plugin(name, config) do
+  def load_plugin(name, _config) do
     # Delegate to the GenServer with the plugin name
     case GenServer.call(__MODULE__, {:load_plugin, name}) do
       {:ok, _plugin_state} -> :ok
