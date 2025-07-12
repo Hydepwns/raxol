@@ -79,30 +79,28 @@ defmodule Raxol.Terminal.Selection.Manager do
       {end_x, end_y} = state.end_pos
       {x, y} = pos
 
-      cond do
+      if start_y == end_y do
         # Single line selection
-        start_y == end_y ->
-          y == start_y and x >= min(start_x, end_x) and x <= max(start_x, end_x)
-
+        y == start_y and x >= min(start_x, end_x) and x <= max(start_x, end_x)
+      else
         # Multi-line selection
-        true ->
-          cond do
-            # First line
-            y == start_y ->
-              x >= start_x
+        cond do
+          # First line
+          y == start_y ->
+            x >= start_x
 
-            # Last line
-            y == end_y ->
-              x <= end_x
+          # Last line
+          y == end_y ->
+            x <= end_x
 
-            # Middle lines
-            y > start_y and y < end_y ->
-              true
+          # Middle lines
+          y > start_y and y < end_y ->
+            true
 
-            # Outside selection
-            true ->
-              false
-          end
+          # Outside selection
+          true ->
+            false
+        end
       end
     else
       false
@@ -117,14 +115,10 @@ defmodule Raxol.Terminal.Selection.Manager do
       {start_x, start_y} = state.start_pos
       {end_x, end_y} = state.end_pos
 
-      cond do
-        # Single line selection
-        start_y == end_y ->
-          get_line_selection(buffer, start_y, start_x, end_x)
-
-        # Multi-line selection
-        true ->
-          get_multiline_selection(buffer, start_y, end_y, start_x, end_x)
+      if start_y == end_y do
+        get_line_selection(buffer, start_y, start_x, end_x)
+      else
+        get_multiline_selection(buffer, start_y, end_y, start_x, end_x)
       end
     else
       ""
@@ -163,7 +157,7 @@ defmodule Raxol.Terminal.Selection.Manager do
     buffer
     |> Enum.slice(start_y..end_y)
     |> Enum.with_index()
-    |> Enum.map(fn {line, idx} ->
+    |> Enum.map_join("\n", fn {line, idx} ->
       cond do
         # First line
         idx == 0 ->
@@ -178,6 +172,5 @@ defmodule Raxol.Terminal.Selection.Manager do
           line
       end
     end)
-    |> Enum.join("\n")
   end
 end
