@@ -157,13 +157,11 @@ defmodule Raxol.Terminal.Renderer do
 
     # Apply background color - use cell style if present, otherwise use default from theme
     background_color =
-      cond do
-        Map.has_key?(style_map, :background) and
-            not is_nil(style_map.background) ->
-          get_color(style_map.background, Map.get(theme, :background, %{}))
-
-        true ->
-          get_color(:default, Map.get(theme, :background, %{}))
+      if Map.has_key?(style_map, :background) and
+           not is_nil(style_map.background) do
+        get_color(style_map.background, Map.get(theme, :background, %{}))
+      else
+        get_color(:default, Map.get(theme, :background, %{}))
       end
 
     attrs =
@@ -175,13 +173,11 @@ defmodule Raxol.Terminal.Renderer do
 
     # Apply foreground color - use cell style if present, otherwise use default
     foreground_color =
-      cond do
-        Map.has_key?(style_map, :foreground) and
-            not is_nil(style_map.foreground) ->
-          get_color(style_map.foreground, Map.get(theme, :foreground, %{}))
-
-        true ->
-          get_color(:default, Map.get(theme, :foreground, %{}))
+      if Map.has_key?(style_map, :foreground) and
+           not is_nil(style_map.foreground) do
+        get_color(style_map.foreground, Map.get(theme, :foreground, %{}))
+      else
+        get_color(:default, Map.get(theme, :foreground, %{}))
       end
 
     attrs =

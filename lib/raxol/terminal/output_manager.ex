@@ -208,8 +208,17 @@ defmodule Raxol.Terminal.OutputManager do
   end
 
   defp ansi_patterns do
+    cursor_patterns() ++
+      text_attribute_patterns() ++
+      screen_manipulation_patterns() ++
+      mode_patterns() ++
+      device_status_patterns() ++
+      charset_patterns() ++
+      osc_patterns()
+  end
+
+  defp cursor_patterns do
     [
-      # Cursor movement sequences - handle missing parameters
       {~r/\e\[(\d+)A/, "CURSOR_UP(\\1)"},
       {~r/\e\[A/, "CURSOR_UP(1)"},
       {~r/\e\[(\d+)B/, "CURSOR_DOWN(\\1)"},
@@ -218,7 +227,6 @@ defmodule Raxol.Terminal.OutputManager do
       {~r/\e\[C/, "CURSOR_FORWARD(1)"},
       {~r/\e\[(\d+)D/, "CURSOR_BACKWARD(\\1)"},
       {~r/\e\[D/, "CURSOR_BACKWARD(1)"},
-      # Multi-parameter cursor position
       {~r/\e\[((?:\d+;)+\d+)H/,
        fn params ->
          "CURSOR_POSITION(" <> String.replace(params, ";", ";") <> ")"
@@ -227,12 +235,20 @@ defmodule Raxol.Terminal.OutputManager do
       {~r/\e\[;H/, "CURSOR_POSITION(1;1)"},
       {~r/\e\[H/, "CURSOR_HOME"},
       {~r/\e\[s/, "CURSOR_SAVE"},
-      {~r/\e\[u/, "CURSOR_RESTORE"},
-      # Text attribute sequences (SGR) - handle reset specifically
+      {~r/\e\[u/, "CURSOR_RESTORE"}
+    ]
+  end
+
+  defp text_attribute_patterns do
+    [
       {~r/\e\[0m/, "RESET_ATTRIBUTES"},
       {~r/\e\[m/, "RESET_ATTRIBUTES"},
-      {~r/\e\[(\d+(?:;\d+)*)m/, "SGR(\\1)"},
-      # Screen manipulation sequences - handle missing parameters
+      {~r/\e\[(\d+(?:;\d+)*)m/, "SGR(\\1)"}
+    ]
+  end
+
+  defp screen_manipulation_patterns do
+    [
       {~r/\e\[(\d+)J/, "CLEAR_SCREEN(\\1)"},
       {~r/\e\[J/, "CLEAR_SCREEN(0)"},
       {~r/\e\[(\d+)K/, "CLEAR_LINE(\\1)"},
@@ -240,16 +256,32 @@ defmodule Raxol.Terminal.OutputManager do
       {~r/\e\[(\d+)L/, "INSERT_LINE(\\1)"},
       {~r/\e\[L/, "INSERT_LINE(1)"},
       {~r/\e\[(\d+)M/, "DELETE_LINE(\\1)"},
-      {~r/\e\[M/, "DELETE_LINE(1)"},
-      # Mode setting sequences
+      {~r/\e\[M/, "DELETE_LINE(1)"}
+    ]
+  end
+
+  defp mode_patterns do
+    [
       {~r/\e\[\?(\d+)h/, "SET_MODE(\\1)"},
-      {~r/\e\[\?(\d+)l/, "RESET_MODE(\\1)"},
-      # Device status sequences
-      {~r/\e\[(\d+)n/, "DEVICE_STATUS(\\1)"},
-      # Character set sequences
+      {~r/\e\[\?(\d+)l/, "RESET_MODE(\\1)"}
+    ]
+  end
+
+  defp device_status_patterns do
+    [
+      {~r/\e\[(\d+)n/, "DEVICE_STATUS(\\1)"}
+    ]
+  end
+
+  defp charset_patterns do
+    [
       {~r/\e\(([A-Z0-9])/, "DESIGNATE_CHARSET(G0,\\1)"},
-      {~r/\e\)([A-Z0-9])/, "DESIGNATE_CHARSET(G1,\\1)"},
-      # OSC sequences - use comma for title codes (0,1,2), semicolon for others
+      {~r/\e\)([A-Z0-9])/, "DESIGNATE_CHARSET(G1,\\1)"}
+    ]
+  end
+
+  defp osc_patterns do
+    [
       {~r/\e\](\d+);([^\a]*)\a/,
        fn code, rest ->
          case code do
