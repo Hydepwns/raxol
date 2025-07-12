@@ -167,50 +167,64 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   """
   @impl GenServer
   def init(opts) do
-    initial_state = %__MODULE__{
-      buffer: opts[:buffer] || Buffer.new(),
-      screen: opts[:screen] || %{},
-      style: opts[:style] || %{},
-      cursor_visible: opts[:cursor_visible] || true,
-      title: opts[:title] || "",
-      termbox_initialized: false,
-      fps: opts[:fps] || 60,
-      theme: opts[:theme] || %{},
-      font_settings: opts[:font_settings] || %{},
-      cache: opts[:cache] || %{}
-    }
-
+    initial_state = build_initial_state(opts)
     {:ok, initial_state}
   end
 
+  defp build_initial_state(opts) do
+    %__MODULE__{
+      buffer: get_opt(opts, :buffer, &Buffer.new/0),
+      screen: get_opt(opts, :screen, %{}),
+      style: get_opt(opts, :style, %{}),
+      cursor_visible: get_opt(opts, :cursor_visible, true),
+      title: get_opt(opts, :title, ""),
+      termbox_initialized: false,
+      fps: get_opt(opts, :fps, 60),
+      theme: get_opt(opts, :theme, %{}),
+      font_settings: get_opt(opts, :font_settings, %{}),
+      cache: get_opt(opts, :cache, %{})
+    }
+  end
+
+  defp get_opt(opts, key, default) when is_function(default, 0) do
+    opts[key] || default.()
+  end
+
+  defp get_opt(opts, key, default) do
+    opts[key] || default
+  end
+
   def handle_call({:render, state}, _from, renderer) do
-    # Initialize termbox if not already initialized and not in test mode
     if Mix.env() != :test do
-      :termbox2_nif.tb_init()
-
-      # Clear the screen
-      :termbox2_nif.tb_clear()
-
-      # Render each cell
-      Enum.each(state.buffer.cells, fn {row, cells} ->
-        Enum.each(cells, fn {col, cell} ->
-          render_cell(col, row, cell)
-        end)
-      end)
-
-      # Set cursor position if visible
-      if state.cursor_visible do
-        {x, y} = Buffer.get_cursor_position(state.buffer)
-        :termbox2_nif.tb_set_cursor(x, y)
-      else
-        :termbox2_nif.tb_set_cursor(-1, -1)
-      end
-
-      # Present the changes
-      :termbox2_nif.tb_present()
+      render_to_terminal(state)
     end
 
     {:reply, :ok, renderer}
+  end
+
+  defp render_to_terminal(state) do
+    :termbox2_nif.tb_init()
+    :termbox2_nif.tb_clear()
+    render_cells(state.buffer.cells)
+    render_cursor(state)
+    :termbox2_nif.tb_present()
+  end
+
+  defp render_cells(cells) do
+    Enum.each(cells, fn {row, cells} ->
+      Enum.each(cells, fn {col, cell} ->
+        render_cell(col, row, cell)
+      end)
+    end)
+  end
+
+  defp render_cursor(state) do
+    if state.cursor_visible do
+      {x, y} = Buffer.get_cursor_position(state.buffer)
+      :termbox2_nif.tb_set_cursor(x, y)
+    else
+      :termbox2_nif.tb_set_cursor(-1, -1)
+    end
   end
 
   def handle_call({:update_config, _state, config}, _from, renderer) do
