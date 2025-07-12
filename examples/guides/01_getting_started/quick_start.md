@@ -11,6 +11,8 @@ tags: [quick start, guide, tutorial, application, components]
 
 This guide walks you through creating a simple stateful counter application using Raxol, a modern, feature-rich toolkit for building sophisticated terminal user interfaces (TUIs) in Elixir. You'll learn how to use Raxol's comprehensive set of components, styling options, and event handling to create an interactive terminal application with rich text formatting and dynamic UI updates.
 
+_Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability. Make sure you are using the latest version for the best experience!_
+
 ## Prerequisites
 
 Before you start, ensure you have:
@@ -33,7 +35,7 @@ First, add `raxol` to your project's dependencies. Open your `mix.exs` file and 
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.5.0"}
+    {:raxol, "~> 0.6.0"}
   ]
 end
 ```

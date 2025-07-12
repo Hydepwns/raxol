@@ -54,6 +54,7 @@ mix setup
 ```
 
 The Nix environment provides:
+
 - Erlang 25.3.2.7 and Elixir 1.17.1 (matching `.tool-versions`)
 - PostgreSQL 15 with automatic setup and management
 - All necessary build tools and system libraries
@@ -67,7 +68,7 @@ Add Raxol to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.5.0"}
+    {:raxol, "~> 0.6.0"}
   ]
 end
 ```
@@ -148,6 +149,10 @@ Raxol works best with modern terminal emulators that support True Color and Unic
 | Keyboard shortcuts    | ✅    | ✅    | ✅      |
 | Clipboard integration | ✅    | ✅    | ✅      |
 | HiDPI support         | ✅    | ✅    | ✅      |
+| Plugin system         | ✅    | ✅    | ✅      |
+| Improved reliability  | ✅    | ✅    | ✅      |
+
+_Note: Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability across all platforms._
 
 ## Troubleshooting
 
@@ -156,12 +161,14 @@ Raxol works best with modern terminal emulators that support True Color and Unic
 If you're using the Nix environment and encounter issues:
 
 1. **Shell not loading properly**:
+
    ```bash
    # Rebuild the shell
    nix-shell --run "echo 'Shell rebuilt'"
    ```
 
 2. **PostgreSQL issues**:
+
    ```bash
    # Remove and reinitialize the database
    rm -rf .postgres
@@ -169,6 +176,7 @@ If you're using the Nix environment and encounter issues:
    ```
 
 3. **Compilation issues**:
+
    ```bash
    # Clean and rebuild
    mix deps.clean --all
@@ -233,6 +241,6 @@ If you're using the Nix environment and encounter issues:
 
 After installation, check out:
 
-- [Development Guide](../../../docs/DEVELOPMENT.md) for detailed development setup instructions
 - [Quick Start Guide](quick_start.md) to create your first Raxol application
 - [Examples](../) for sample applications and use cases
+- [Development Guide](../../../docs/DEVELOPMENT.md) for detailed development setup instructions
