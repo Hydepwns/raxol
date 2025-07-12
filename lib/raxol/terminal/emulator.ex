@@ -5,12 +5,9 @@ defmodule Raxol.Terminal.Emulator do
   """
 
   import Raxol.Guards
-  import Logger
 
   alias Raxol.Terminal.{
-    Event.Handler,
     Buffer.Manager,
-    Config.Manager,
     Command.Manager,
     Operations.CursorOperations,
     Operations.ScreenOperations,
@@ -26,7 +23,6 @@ defmodule Raxol.Terminal.Emulator do
     ANSI.SequenceHandlers,
     ANSI.SGRProcessor,
     ModeHandlers,
-    CursorHandlers,
     Input.TextProcessor,
     Style.StyleProcessor,
     Plugin.DependencyResolver,
@@ -37,7 +33,7 @@ defmodule Raxol.Terminal.Emulator do
   }
 
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Terminal.FormattingManager, as: FormattingManager
+
   alias Raxol.Terminal.OutputManager, as: OutputManager
   alias Raxol.Terminal.Operations.ScrollOperations, as: ScrollOperations
   alias Raxol.Terminal.Operations.StateOperations, as: StateOperations
@@ -395,7 +391,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Cursor visibility getter (alias for cursor_visible?)
   def get_cursor_visible(emulator) do
-    cursor_visible?(emulator)
+    CursorOperations.cursor_visible?(emulator)
   end
 
   # Mode update functions

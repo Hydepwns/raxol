@@ -226,7 +226,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   def generate_report(%{mode: :sgr_pixels} = state),
     do: generate_sgr_pixels_report(state)
 
-  def generate_report(_state), do: generate_basic_report(_state)
+  def generate_report(state), do: generate_basic_report(state)
 
   @doc """
   Processes a mouse event and returns the updated state and event data.

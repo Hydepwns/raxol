@@ -8,8 +8,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour}
-  alias Raxol.Terminal.Buffer.{Operations, DamageTracker, ScrollbackManager}
-  alias Raxol.Terminal.{ScreenBuffer, Emulator, Buffer}
+  alias Raxol.Terminal.Buffer.{Operations, DamageTracker}
+  alias Raxol.Terminal.{Emulator, Buffer}
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
 
@@ -98,6 +98,14 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   @doc """
+  Creates a new buffer manager with specified width, height, scrollback height.
+  """
+  def new(width, height, scrollback_height)
+      when is_integer(scrollback_height) do
+    new(width, height, scrollback_height: scrollback_height)
+  end
+
+  @doc """
   Creates a new buffer manager with specified width, height, scrollback height, and memory limit.
   """
   def new(width, height, scrollback_height, memory_limit) do
@@ -111,14 +119,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
     state = GenServer.call(pid, :get_state)
     {:ok, state}
-  end
-
-  @doc """
-  Creates a new buffer manager with specified width, height, scrollback height.
-  """
-  def new(width, height, scrollback_height)
-      when is_integer(scrollback_height) do
-    new(width, height, scrollback_height: scrollback_height)
   end
 
   @impl GenServer

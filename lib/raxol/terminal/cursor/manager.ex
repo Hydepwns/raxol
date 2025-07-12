@@ -826,7 +826,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @impl GenServer
-  def handle_call({:move_up, lines, _width, height}, _from, state) do
+  def handle_call({:move_up, lines, _width, _height}, _from, state) do
     # Move the cursor up by lines, respecting margins
     new_row = max(Map.get(state, :top_margin, 0), state.row - lines)
     new_state = %{state | row: new_row, position: {state.col, new_row}}

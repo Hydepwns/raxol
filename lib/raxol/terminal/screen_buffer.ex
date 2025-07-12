@@ -39,7 +39,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   alias Raxol.Terminal.Buffer.{
     Selection,
-    Scrollback,
     CharEditor,
     Eraser,
     LineOperations,
@@ -145,7 +144,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Content Operations ===
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def write_char(buffer, x, y, char) do
     write_char(buffer, x, y, char, buffer.default_style)
   end
@@ -153,7 +151,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate write_char(buffer, x, y, char, style), to: Content
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def write_string(buffer, x, y, string),
     do: write_string(buffer, x, y, string, nil)
 
@@ -223,13 +220,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Raxol.Terminal.Buffer.ScrollRegion.clear(buffer)
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate get_scroll_top(buffer), to: ScrollRegion
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate get_scroll_bottom(buffer), to: ScrollRegion
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_scroll_region(buffer, {top, bottom}) do
     Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
   end
@@ -411,7 +405,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def clear(buffer, style),
     do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_cursor_to_end(buffer, x, y, _top, bottom) do
     # Clear from cursor to end of line
     line = Enum.at(buffer.cells, y, [])
@@ -433,7 +426,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
     %{buffer | cells: new_cells}
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
     IO.puts(
       "DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}"
@@ -552,26 +544,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
       cursor,
       max_col
     )
-  end
-
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def write_char(buffer, x, y, char, style \\ nil) do
-    Raxol.Terminal.ScreenBuffer.Core.write_char(buffer, x, y, char, style)
-  end
-
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def insert_lines(buffer, count) do
-    Raxol.Terminal.ScreenBuffer.Core.insert_lines(buffer, count)
-  end
-
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def delete_lines(buffer, count) do
-    Raxol.Terminal.ScreenBuffer.Core.delete_lines(buffer, count)
-  end
-
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def get_dimensions(buffer) do
-    Raxol.Terminal.ScreenBuffer.Core.get_dimensions(buffer)
   end
 
   def set_dimensions(buffer, width, height) do
@@ -936,19 +908,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  defdelegate write_string(buffer, x, y, string, style), to: Content
-
-  @doc """
-  Updates the buffer with a list of changes.
-  """
   def update(buffer, changes) do
     Raxol.Terminal.Buffer.Content.update(buffer, changes)
-  end
-
-  @doc """
-  Gets the content of the buffer.
-  """
-  def get_content(buffer, _opts \\ []) do
-    Raxol.Terminal.Buffer.Content.get_content(buffer)
   end
 end

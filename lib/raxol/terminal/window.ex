@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Window do
   """
 
   alias Raxol.Terminal.{Emulator, Config}
-  import File, only: [cwd!: 0]
+
   import Raxol.Guards
 
   @type window_state :: :active | :inactive | :minimized | :maximized

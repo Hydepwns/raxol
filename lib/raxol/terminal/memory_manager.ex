@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.MemoryManager do
     end
   end
 
-  defp calculate_other_usage(state) do
+  defp calculate_other_usage(_state) do
     # Fixed overhead for other terminal components (style, charset_state, mode_manager, cursor)
     # This matches the test expectations of 24 bytes for empty maps
     24

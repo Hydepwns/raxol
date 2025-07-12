@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
   def put(%__MODULE__{} = cache, key, value) do
     if cache.current_size >= cache.max_size do
       # Evict least recently used entry
-      cache = evict_lru(cache)
+      _cache = evict_lru(cache)
     end
 
     entry = %{

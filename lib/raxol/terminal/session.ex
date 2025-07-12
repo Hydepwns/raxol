@@ -336,8 +336,8 @@ defmodule Raxol.Terminal.Session do
     end
 
     # Schedule next auto-save
-    _timer_id = System.unique_integer([:positive])
-    Process.send_after(self(), {:auto_save, _timer_id}, :timer.minutes(5))
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:auto_save, timer_id}, :timer.minutes(5))
     # Store timer_id in state if needed
     {:noreply, state}
   end

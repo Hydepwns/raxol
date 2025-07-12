@@ -41,8 +41,6 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   @type window_event :: {:window_event, window_event_type(), map()}
 
-  @current_event nil
-
   @doc """
   Processes a window event sequence and returns the corresponding event.
   """

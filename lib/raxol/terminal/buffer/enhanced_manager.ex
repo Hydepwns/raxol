@@ -323,7 +323,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     total_cells * estimated_cell_size
   end
 
-  defp apply_simple_compression(buffer, state, _opts) do
+  defp apply_simple_compression(buffer, _state, _opts) do
     # Simple compression: optimize empty cells and reduce style redundancy
     compressed_cells =
       buffer.cells
@@ -338,7 +338,7 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     apply_simple_compression(buffer, state, opts)
   end
 
-  defp apply_run_length_compression(buffer, state, _opts) do
+  defp apply_run_length_compression(buffer, _state, _opts) do
     # Run-length encoding for repeated characters
     compressed_cells =
       buffer.cells

@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
     end
   end
 
-  def handle_dcs(emulator, params, intermediates, final_byte, data_string) do
+  def handle_dcs(emulator, _params, intermediates, final_byte, data_string) do
     case {intermediates, final_byte} do
       # Sixel Graphics - DCS q ... ST
       {"\"", ?q} ->
