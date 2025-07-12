@@ -80,23 +80,25 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @dcs 0x90
 
   # State handlers map
-  @state_handlers %{
-    ground: &process_ground_state/2,
-    escape: &process_escape_state/2,
-    csi_entry: &process_csi_entry_state/2,
-    csi_param: &process_csi_param_state/2,
-    csi_intermediate: &process_csi_intermediate_state/2,
-    csi_ignore: &process_csi_ignore_state/2,
-    osc_string: &process_osc_string_state/2,
-    dcs_entry: &process_dcs_entry_state/2,
-    dcs_param: &process_dcs_param_state/2,
-    dcs_intermediate: &process_dcs_intermediate_state/2,
-    dcs_passthrough: &process_dcs_passthrough_state/2,
-    apc_string: &process_apc_string_state/2,
-    pm_string: &process_pm_string_state/2,
-    sos_string: &process_sos_string_state/2,
-    string: &process_string_state/2
-  }
+  defp state_handlers do
+    %{
+      ground: &process_ground_state/2,
+      escape: &process_escape_state/2,
+      csi_entry: &process_csi_entry_state/2,
+      csi_param: &process_csi_param_state/2,
+      csi_intermediate: &process_csi_intermediate_state/2,
+      csi_ignore: &process_csi_ignore_state/2,
+      osc_string: &process_osc_string_state/2,
+      dcs_entry: &process_dcs_entry_state/2,
+      dcs_param: &process_dcs_param_state/2,
+      dcs_intermediate: &process_dcs_intermediate_state/2,
+      dcs_passthrough: &process_dcs_passthrough_state/2,
+      apc_string: &process_apc_string_state/2,
+      pm_string: &process_pm_string_state/2,
+      sos_string: &process_sos_string_state/2,
+      string: &process_string_state/2
+    }
+  end
 
   @doc """
   Creates a new parser state manager instance.
@@ -129,7 +131,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   Processes a single character and updates the parser state accordingly.
   """
   def process_char(%__MODULE__{} = manager, char) when is_integer(char) do
-    handler = Map.get(@state_handlers, manager.state, &process_ground_state/2)
+    handler = Map.get(state_handlers(), manager.state, &process_ground_state/2)
     handler.(manager, char)
   end
 
