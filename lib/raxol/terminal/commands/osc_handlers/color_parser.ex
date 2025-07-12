@@ -18,7 +18,10 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
     end
   end
 
-  defp parse_rgb_hex("rgb:" <> rest) do
+  @doc """
+  Parses an RGB hex color specification.
+  """
+  def parse_rgb_hex("rgb:" <> rest) do
     case String.split(rest, "/") do
       [r, g, b] ->
         with {:ok, r_val} <- parse_hex_component(r),

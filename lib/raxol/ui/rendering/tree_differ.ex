@@ -35,20 +35,16 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   defp do_diff_trees(nil, nil, _path), do: :no_change
   defp do_diff_trees(nil, new, _path), do: {:replace, new}
   defp do_diff_trees(old, nil, _path), do: {:replace, nil}
-  # Path incorporated in update return
   defp do_diff_trees(old, new, _path) when old == new, do: :no_change
 
   defp do_diff_trees(%{type: t1} = _old, %{type: t2} = new, _path)
        when t1 != t2 do
-    # Path is not used here because it's a full replacement from the root of this comparison.
-    # If this diff_trees call was for a child, the caller (e.g., another do_diff_trees for parent)
-    # would associate this {:replace, new} with the child's path/key.
     {:replace, new}
   end
 
   defp do_diff_trees(
-         %{type: _type, children: old_children} = old,
-         %{type: _type, children: new_children} = new,
+         %{type: type, children: old_children} = _old,
+         %{type: type, children: new_children} = _new,
          path
        ) do
     attempt_keyed_diff =

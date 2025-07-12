@@ -359,44 +359,14 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         try do
           case component.module.update(message, component.state) do
             {new_state, _commands} when is_map(new_state) ->
-              # Store updated state (only the state map)
-              state = put_in(state.components[component_id].state, new_state)
-
-              # Queue re-render
-              state =
-                update_in(state.render_queue, fn queue ->
-                  if component_id in queue do
-                    queue
-                  else
-                    [component_id | queue]
-                  end
-                end)
-
-              # Send component_updated message if runtime_pid is set
-              if state.runtime_pid do
-                send(state.runtime_pid, {:component_updated, component_id})
-              end
+              # Update component state and queue re-render
+              state = update_component_state_and_queue_render(state, component_id, new_state)
 
               {:noreply, state}
 
             new_state when is_map(new_state) ->
               # Handle case where update returns just state (no commands)
-              state = put_in(state.components[component_id].state, new_state)
-
-              # Queue re-render
-              state =
-                update_in(state.render_queue, fn queue ->
-                  if component_id in queue do
-                    queue
-                  else
-                    [component_id | queue]
-                  end
-                end)
-
-              # Send component_updated message if runtime_pid is set
-              if state.runtime_pid do
-                send(state.runtime_pid, {:component_updated, component_id})
-              end
+              state = update_component_state_and_queue_render(state, component_id, new_state)
 
               {:noreply, state}
 
@@ -437,21 +407,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
         # Queue re-render if state changed
         if new_state != component.state do
-          acc =
-            update_in(acc.render_queue, fn queue ->
-              if component_id in queue do
-                queue
-              else
-                [component_id | queue]
-              end
-            end)
-
-          # Send component_updated message if runtime_pid is set
-          if acc.runtime_pid do
-            send(acc.runtime_pid, {:component_updated, component_id})
-          end
-
-          acc
+          update_component_state_and_queue_render(acc, component_id, new_state)
         else
           acc
         end
@@ -526,21 +482,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         state_with_updated_comp =
           put_in(state.components[id], updated_component)
 
-        state_with_queue =
-          update_in(state_with_updated_comp.render_queue, fn queue ->
-            if id in queue do
-              queue
-            else
-              [id | queue]
-            end
-          end)
-
-        # Send component_updated message if runtime_pid is set
-        if state_with_queue.runtime_pid do
-          send(state_with_queue.runtime_pid, {:component_updated, id})
-        end
-
-        state_with_queue
+        update_component_state_and_queue_render(state_with_updated_comp, id, updated_comp_state)
     end
   end
 
@@ -555,6 +497,29 @@ defmodule Raxol.Core.Runtime.ComponentManager do
       _ ->
         state
     end
+  end
+
+  # Helper function to update component state and queue re-render
+  defp update_component_state_and_queue_render(state, component_id, new_state) do
+    # Update component state
+    state = put_in(state.components[component_id].state, new_state)
+
+    # Queue re-render
+    state =
+      update_in(state.render_queue, fn queue ->
+        if component_id in queue do
+          queue
+        else
+          [component_id | queue]
+        end
+      end)
+
+    # Send component_updated message if runtime_pid is set
+    if state.runtime_pid do
+      send(state.runtime_pid, {:component_updated, component_id})
+    end
+
+    state
   end
 
   defp handle_subscription_command(events, component_id, state) do
