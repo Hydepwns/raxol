@@ -214,44 +214,158 @@ defmodule Raxol.Terminal.Events.Handlers do
   Handles selection events.
   """
   @spec handle_selection_event(any(), any()) :: {:ok, any()} | {:error, any()}
-  def handle_selection_event(emulator_state, _event) do
-    # TODO: Implement selection event handling
-    {:ok, emulator_state}
+  def handle_selection_event(emulator_state, event) do
+    case event do
+      %{start_pos: start_pos, end_pos: end_pos, text: text} ->
+        # Update selection in the emulator state
+        updated_state =
+          update_selection_in_state(emulator_state, start_pos, end_pos, text)
+
+        {:ok, updated_state}
+
+      _ ->
+        {:error, "Invalid selection event: #{inspect(event)}"}
+    end
+  end
+
+  defp update_selection_in_state(emulator_state, start_pos, end_pos, text) do
+    # Update the screen buffer with the new selection
+    updated_buffer =
+      Raxol.Terminal.Buffer.Selection.start(
+        emulator_state.screen_buffer,
+        elem(start_pos, 0),
+        elem(start_pos, 1)
+      )
+
+    updated_buffer =
+      Raxol.Terminal.Buffer.Selection.update(
+        updated_buffer,
+        elem(end_pos, 0),
+        elem(end_pos, 1)
+      )
+
+    %{emulator_state | screen_buffer: updated_buffer}
   end
 
   @doc """
   Handles scroll events.
   """
   @spec handle_scroll_event(any(), any()) :: {:ok, any()} | {:error, any()}
-  def handle_scroll_event(emulator_state, _event) do
-    # TODO: Implement scroll event handling
-    {:ok, emulator_state}
+  def handle_scroll_event(emulator_state, event) do
+    case event do
+      %{direction: direction, delta: delta, position: position} ->
+        # Update scroll position in the emulator state
+        updated_state =
+          update_scroll_in_state(emulator_state, direction, delta, position)
+
+        {:ok, updated_state}
+
+      _ ->
+        {:error, "Invalid scroll event: #{inspect(event)}"}
+    end
+  end
+
+  defp update_scroll_in_state(emulator_state, direction, delta, _position) do
+    # Apply scroll operation based on direction and delta
+    case direction do
+      :vertical ->
+        if delta > 0 do
+          # Scroll down
+          Raxol.Terminal.Commands.Screen.scroll_down(emulator_state, delta)
+        else
+          # Scroll up
+          Raxol.Terminal.Commands.Screen.scroll_up(emulator_state, abs(delta))
+        end
+
+      :horizontal ->
+        # Horizontal scrolling not yet implemented, return unchanged state
+        emulator_state
+
+      _ ->
+        emulator_state
+    end
   end
 
   @doc """
   Handles paste events.
   """
   @spec handle_paste_event(any(), any()) :: {:ok, any()} | {:error, any()}
-  def handle_paste_event(emulator_state, _event) do
-    # TODO: Implement paste event handling
-    {:ok, emulator_state}
+  def handle_paste_event(emulator_state, event) do
+    case event do
+      %{text: text} ->
+        # Update the screen buffer with the pasted text
+        updated_buffer =
+          Raxol.Terminal.Buffer.Paste.paste(emulator_state.screen_buffer, text)
+
+        {:ok, %{emulator_state | screen_buffer: updated_buffer}}
+
+      _ ->
+        {:error, "Invalid paste event: #{inspect(event)}"}
+    end
   end
 
   @doc """
   Handles cursor events.
   """
   @spec handle_cursor_event(any(), any()) :: {:ok, any()} | {:error, any()}
-  def handle_cursor_event(emulator_state, _event) do
-    # TODO: Implement cursor event handling
-    {:ok, emulator_state}
+  def handle_cursor_event(emulator_state, event) do
+    case event do
+      %{visible: visible, style: style, blink: blink, position: position} ->
+        # Update cursor properties in the emulator state
+        updated_state =
+          update_cursor_in_state(
+            emulator_state,
+            visible,
+            style,
+            blink,
+            position
+          )
+
+        {:ok, updated_state}
+
+      _ ->
+        {:error, "Invalid cursor event: #{inspect(event)}"}
+    end
+  end
+
+  defp update_cursor_in_state(emulator_state, visible, style, blink, position) do
+    cursor = emulator_state.cursor
+    cursor = Raxol.Terminal.Cursor.Manager.set_visibility(cursor, visible)
+    cursor = Raxol.Terminal.Cursor.Manager.set_style(cursor, style)
+    cursor = Raxol.Terminal.Cursor.Manager.set_blink(cursor, blink)
+    cursor = Raxol.Terminal.Cursor.Manager.set_position(cursor, position)
+
+    %{emulator_state | cursor: cursor}
   end
 
   @doc """
   Handles clipboard events.
   """
   @spec handle_clipboard_event(any(), any()) :: {:ok, any()} | {:error, any()}
-  def handle_clipboard_event(emulator_state, _event) do
-    # TODO: Implement clipboard event handling
-    {:ok, emulator_state}
+  def handle_clipboard_event(emulator_state, event) do
+    case event do
+      %{op: op, content: content} ->
+        # Handle clipboard operations (copy, cut, etc.)
+        updated_state = handle_clipboard_operation(emulator_state, op, content)
+        {:ok, updated_state}
+
+      _ ->
+        {:error, "Invalid clipboard event: #{inspect(event)}"}
+    end
+  end
+
+  defp handle_clipboard_operation(emulator_state, :copy, _content) do
+    # Copy selected text to clipboard (implementation depends on system clipboard)
+    emulator_state
+  end
+
+  defp handle_clipboard_operation(emulator_state, :cut, _content) do
+    # Cut selected text to clipboard and remove from buffer
+    emulator_state
+  end
+
+  defp handle_clipboard_operation(emulator_state, _op, _content) do
+    # Unknown operation, return unchanged state
+    emulator_state
   end
 end
