@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   """
 
   defstruct scrollback_buffer: [],
-            # Default limit of 1000 lines
             scrollback_limit: 1000,
             current_position: 0
 
@@ -39,7 +38,6 @@ defmodule Raxol.Terminal.Scrollback.Manager do
   def add_to_scrollback(%__MODULE__{} = state, line) when is_binary(line) do
     new_buffer = [line | state.scrollback_buffer]
 
-    # Trim buffer if it exceeds the limit
     trimmed_buffer =
       if length(new_buffer) > state.scrollback_limit do
         Enum.take(new_buffer, state.scrollback_limit)
@@ -71,7 +69,6 @@ defmodule Raxol.Terminal.Scrollback.Manager do
       when is_integer(limit) and limit > 0 do
     new_state = %{state | scrollback_limit: limit}
 
-    # Trim buffer if it exceeds the new limit
     if length(new_state.scrollback_buffer) > limit do
       %{
         new_state

@@ -12,7 +12,6 @@ defmodule Raxol.Terminal.Scroll.Manager do
   alias Raxol.Terminal.Scroll.Predictor
   alias Raxol.Terminal.Scroll.Optimizer
   alias Raxol.Terminal.Scroll.Sync
-  alias Raxol.Terminal.Cache.System
 
   @type t :: %__MODULE__{
           predictor: Predictor.t(),
@@ -129,7 +128,6 @@ defmodule Raxol.Terminal.Scroll.Manager do
   """
   @spec optimize(t()) :: t()
   def optimize(manager) do
-    # Clear old cache entries if cache is too large
     case System.stats(namespace: :scroll) do
       {:ok, stats} ->
         if stats.size > stats.max_size * 0.8 do
@@ -140,11 +138,8 @@ defmodule Raxol.Terminal.Scroll.Manager do
         :ok
     end
 
-    # Return the manager unchanged since we don't have prediction_window
     manager
   end
-
-  # Private helper functions
 
   defp get_cached_scroll(_manager, direction, amount) do
     cache_key = {direction, amount}
@@ -160,10 +155,8 @@ defmodule Raxol.Terminal.Scroll.Manager do
     optimize = Keyword.get(opts, :optimize, true)
     sync = Keyword.get(opts, :sync, true)
 
-    # Update scroll metrics
     manager = update_metrics(manager, :scroll)
 
-    # Use prediction if enabled and available
     manager =
       if predict and manager.predictor do
         %{
@@ -175,7 +168,6 @@ defmodule Raxol.Terminal.Scroll.Manager do
         manager
       end
 
-    # Use optimization if enabled and available
     manager =
       if optimize and manager.optimizer do
         %{
@@ -187,7 +179,6 @@ defmodule Raxol.Terminal.Scroll.Manager do
         manager
       end
 
-    # Use sync if enabled and available
     manager =
       if sync and manager.sync do
         %{manager | sync: Sync.sync(manager.sync, direction, amount)}
@@ -195,7 +186,6 @@ defmodule Raxol.Terminal.Scroll.Manager do
         manager
       end
 
-    # Store scroll operation in history
     scroll_entry = %{
       direction: direction,
       amount: amount,
