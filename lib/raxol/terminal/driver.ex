@@ -417,7 +417,7 @@ defmodule Raxol.Terminal.Driver do
         {:ok, event}
 
       %{type: :mouse, x: x, y: y, button: btn_code} ->
-        # Translate rrex_termbox mouse button codes and potentially event types (press, release, move)
+        # Translate rrex_termbox mouse button codes and potentially event types
         translated_button = translate_mouse_button(btn_code)
         # Add button info to the data
         event = %Event{

@@ -133,8 +133,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
 
       {:error, reason} ->
         IO.warn(
-          # {preload_path}": #{inspect(reason)}"
-          "Could not create preload directory "
+          "Could not create preload directory #{preload_path}: #{inspect(reason)}"
         )
 
         :ok
