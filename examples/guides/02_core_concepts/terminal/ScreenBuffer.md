@@ -20,6 +20,9 @@ The screen buffer component is responsible for managing the terminal's screen bu
 - Viewport management
 - Selection handling
 - Buffer state persistence
+- Enhanced compression algorithms
+- Asynchronous buffer updates
+- Performance monitoring and optimization
 
 ## Usage
 
@@ -35,6 +38,15 @@ buffer = Raxol.Terminal.ScreenBuffer.scroll(buffer, 1)
 
 # Get buffer content
 content = Raxol.Terminal.ScreenBuffer.get_content(buffer)
+
+# Use enhanced buffer manager for advanced features
+manager = Raxol.Terminal.Buffer.EnhancedManager.new(80, 24, [
+  compression_algorithm: :simple,
+  compression_threshold: 1024
+])
+
+# Compress buffer to reduce memory usage
+manager = Raxol.Terminal.Buffer.EnhancedManager.compress_buffer(manager)
 ```
 
 ## Configuration
@@ -51,6 +63,16 @@ config = %{
 }
 
 buffer = Raxol.Terminal.ScreenBuffer.new(config)
+
+# Enhanced manager configuration
+enhanced_config = [
+  compression_algorithm: :simple,  # :simple, :run_length, :lz4
+  compression_level: 6,
+  compression_threshold: 1024,
+  pool_size: 100
+]
+
+manager = Raxol.Terminal.Buffer.EnhancedManager.new(80, 24, enhanced_config)
 ```
 
 ## Implementation Details
@@ -74,6 +96,12 @@ The buffer implements several memory optimization techniques:
    - Historical content is compressed
    - Repeated characters are stored efficiently
    - Empty lines are optimized
+   - Multiple compression algorithms supported:
+     - Simple compression for empty cell optimization
+     - Run-length encoding for repeated characters
+     - LZ4 compression (framework ready)
+   - Style attribute minimization
+   - Threshold-based compression activation
 
 2. **Damage Tracking**
 
@@ -81,10 +109,33 @@ The buffer implements several memory optimization techniques:
    - Changes are batched for efficiency
    - Minimal memory allocation during updates
 
-3. **Virtual Scrolling**
-   - Content is loaded on demand
-   - Historical content is paged to disk
-   - Memory usage is bounded
+3. **Enhanced Features**
+
+   - Asynchronous buffer updates
+   - Buffer pooling for efficient memory management
+   - Performance monitoring and optimization
+   - Automatic compression state updates
+
+### Compression Algorithms
+
+The enhanced buffer manager supports multiple compression strategies:
+
+- **Simple Compression**: Optimizes empty cells and reduces style redundancy
+- **Run-length Encoding**: Groups identical consecutive cells for better compression
+- **LZ4 Compression**: High-performance compression algorithm (framework ready)
+- **Style Minimization**: Removes default style attributes to save memory
+
+### Performance Monitoring
+
+The enhanced buffer manager tracks various performance metrics:
+
+- Update operation timing
+- Compression operation timing
+- Memory usage statistics
+- Operation counts
+- Compression ratios
+
+These metrics enable automatic optimization and performance tuning.
 
 ## API Reference
 

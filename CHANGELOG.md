@@ -172,6 +172,53 @@
   - Developers must run `git submodule update --init --recursive` before building
   - Updated build and documentation to reflect this change
 
+## [0.5.2] - 2025-01-27
+
+### Added
+
+- **Enhanced Demo Runner:**
+
+  - **Command Line Interface**: Added comprehensive command line argument support to `scripts/bin/demo.exs`
+    - `--list`: List all available demos with descriptions
+    - `--help`: Show detailed usage information and examples
+    - `--version`: Display version information
+    - `--info DEMO`: Show detailed information about a specific demo
+    - `--search TERM`: Search demos by name or description
+    - Direct demo execution: `mix run bin/demo.exs form`
+  - **Interactive Menu Improvements**:
+    - Categorized demo display (Basic Examples, Advanced Features, Showcases, WIP)
+    - Enhanced navigation with keyboard shortcuts
+    - Better error handling and user feedback
+    - Similar demo suggestions for typos
+  - **Auto-discovery**: Automatic detection of available demo modules in `Raxol.Examples` namespace
+  - **Error Handling**: Robust validation and error reporting for demo modules
+  - **Performance Monitoring**: Demo execution timing and monitoring capabilities
+  - **Configuration Support**: Optional configuration file support for customizing demo behavior
+
+- **Documentation Updates**:
+  - Updated README with comprehensive demo usage instructions
+  - Added demo examples to Quick Start guide
+  - Enhanced documentation with interactive demo capabilities
+
+### Changed
+
+- **Demo Script Architecture**:
+  - Refactored `scripts/bin/demo.exs` for better maintainability
+  - Improved code organization with dedicated modules
+  - Enhanced user experience with better feedback and error handling
+
+### Fixed
+
+- **Demo Discovery**: Resolved issues with demo module loading and validation
+- **User Experience**: Improved error messages and help text clarity
+
+### Next Focus
+
+1. Continue enhancing demo system with additional features
+2. Add more comprehensive demo examples
+3. Implement demo recording and playback capabilities
+4. Enhance configuration and customization options
+
 ## [0.5.1] - 2025-01-27
 
 ### Added
@@ -254,3 +301,51 @@
 - Obsolete UI component files
 - Redundant test fixtures
 - Unused configuration options
+
+## [0.5.2] - 2025-01-27
+
+### Added
+
+- **Enhanced Buffer Manager Compression:**
+
+  - Implemented comprehensive buffer compression in `Raxol.Terminal.Buffer.EnhancedManager`
+  - Added multiple compression algorithms:
+    - Simple compression for empty cell optimization
+    - Run-length encoding for repeated characters
+    - LZ4 compression support (framework ready)
+  - Threshold-based compression activation
+  - Style attribute minimization to reduce memory usage
+  - Performance metrics tracking for compression operations
+  - Automatic compression state updates and optimization
+
+- **Buffer Compression Features:**
+
+  - Cell-level compression with empty cell detection
+  - Style attribute optimization (removes default attributes)
+  - Run-length encoding for identical consecutive cells
+  - Configurable compression thresholds and algorithms
+  - Memory usage estimation and monitoring
+  - Compression ratio tracking and statistics
+
+### Changed
+
+- **Buffer Management:**
+  - Enhanced memory efficiency through intelligent compression
+  - Improved performance monitoring for buffer operations
+  - Better memory usage optimization strategies
+
+### Fixed
+
+- **Code Quality:**
+  - Resolved TODO items in buffer compression implementation
+  - Improved code maintainability and documentation
+
+## [0.5.3] - 2025-01-27
+
+### Fixed
+
+- **Enhanced Buffer Manager:**
+  - Implemented buffer eviction logic in `Raxol.Terminal.Buffer.EnhancedManager`
+  - Added automatic pool size management to prevent memory overflow
+  - Resolved TODO item for buffer eviction implementation
+  - Improved memory management efficiency
