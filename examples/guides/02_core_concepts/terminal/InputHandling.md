@@ -235,6 +235,6 @@ Modern Raxol input components, such as `MultiLineInput`, now follow a harmonized
 - **Accessibility:** Props like `aria_label` and `tooltip` are supported for improved accessibility and user guidance.
 - **Extensibility:** The harmonized API makes it easier to extend or compose input components in custom UIs.
 
-<!-- TODO: Link to ../../03_component_reference/Elements.md#multilineinput removed due to missing file. -->
+For detailed information about MultiLineInput and other input components, see [Input Components Reference](../../03_component_reference/inputs/README.md#text-inputs).
 
 > **Note:** Legacy input components may not support all harmonized props or conventions. It is recommended to use the modern, harmonized components for new development.
