@@ -27,8 +27,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   def handle_t(emulator, params) do
     op = Enum.at(params, 0, 0)
     handler = get_handler(op)
+    call_handler(handler, emulator, params)
+  end
 
-    # Call handler with correct arity
+  defp call_handler(handler, emulator, params) do
     case :erlang.fun_info(handler, :arity) do
       {:arity, 1} -> handler.(emulator)
       {:arity, 2} -> handler.(emulator, params)
@@ -37,8 +39,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   end
 
   defp get_handler(op) do
-    Map.get(window_handlers(), op, fn emulator, _params -> {:ok, emulator} end)
+    Map.get(window_handlers(), op, &default_handler/2)
   end
+
+  defp default_handler(emulator, _params), do: {:ok, emulator}
 
   defp window_handlers do
     %{
@@ -125,17 +129,47 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   def handle_resize(emulator, params) do
     {width_px, height_px} = parse_resize_params(emulator, params)
 
-    safe_width_px =
+    {safe_width_px, safe_height_px} =
+      validate_dimensions(emulator, width_px, height_px)
+
+    {char_width, char_height} =
+      calculate_char_dimensions(safe_width_px, safe_height_px)
+
+    updated_emulator =
+      update_emulator_size(
+        emulator,
+        char_width,
+        char_height,
+        safe_width_px,
+        safe_height_px
+      )
+
+    {:ok, updated_emulator}
+  end
+
+  defp validate_dimensions(emulator, width_px, height_px) do
+    safe_width =
       validate_dimension(width_px, elem(emulator.window_state.size_pixels, 0))
 
-    safe_height_px =
+    safe_height =
       validate_dimension(height_px, elem(emulator.window_state.size_pixels, 1))
 
-    char_width = calculate_width_chars(safe_width_px)
-    char_height = calculate_height_chars(safe_height_px)
+    {safe_width, safe_height}
+  end
 
+  defp calculate_char_dimensions(width_px, height_px) do
+    {calculate_width_chars(width_px), calculate_height_chars(height_px)}
+  end
+
+  defp update_emulator_size(
+         emulator,
+         char_width,
+         char_height,
+         width_px,
+         height_px
+       ) do
     size = {char_width, char_height}
-    size_pixels = {safe_width_px, safe_height_px}
+    size_pixels = {width_px, height_px}
 
     updated_window_state = %{
       emulator.window_state
@@ -146,53 +180,42 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
     updated_main_buffer =
       resize_screen_buffer(emulator.main_screen_buffer, char_width, char_height)
 
-    updated_emulator = %{
+    %{
       emulator
       | window_state: updated_window_state,
         main_screen_buffer: updated_main_buffer,
         width: char_width,
         height: char_height
     }
-
-    {:ok, updated_emulator}
   end
 
   defp parse_resize_params(emulator, params) do
     case params do
       [op, h, w] when is_integer(op) and op == 4 ->
-        parse_op_with_dimensions(w, h)
+        {w, h}
 
       [op, h] when is_integer(op) and op == 4 ->
-        parse_op_with_height(h)
+        {default_width_px(), h}
 
       [op] when is_integer(op) and op == 4 ->
-        parse_op_only()
+        {default_width_px(), default_height_px()}
 
       [w] when is_integer(w) ->
-        parse_width_only(emulator, w)
+        {w, get_current_height(emulator)}
 
       [w, h] when is_integer(w) and is_integer(h) ->
-        parse_dimensions(w, h)
+        {w, h}
 
       _ ->
-        parse_current_size(emulator)
+        emulator.window_state.size_pixels
     end
   end
 
-  defp parse_op_with_dimensions(w, h), do: {w, h}
-  defp parse_op_with_height(h), do: {80 * default_char_width_px(), h}
+  defp default_width_px, do: 80 * default_char_width_px()
+  defp default_height_px, do: 24 * default_char_height_px()
 
-  defp parse_op_only(),
-    do: {80 * default_char_width_px(), 24 * default_char_height_px()}
-
-  defp parse_width_only(emulator, w),
-    do: {w, elem(emulator.window_state.size_pixels, 1)}
-
-  defp parse_dimensions(w, h), do: {w, h}
-  defp parse_current_size(emulator), do: emulator.window_state.size_pixels
-
-  defp parse_default(),
-    do: {80 * default_char_width_px(), 24 * default_char_height_px()}
+  defp get_current_height(emulator),
+    do: elem(emulator.window_state.size_pixels, 1)
 
   defp validate_dimension(value, fallback) do
     if is_integer(value) and value > 0, do: value, else: fallback
