@@ -28,10 +28,6 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
   end
 
   describe "bidirectional text" do
-    # TODO: Skipping this test as the current process_bidi_text implementation
-    #       is a placeholder and does not fully implement the Unicode Bidirectional Algorithm.
-    #       A proper fix requires a more sophisticated approach.
-    # @tag :skip # Unskipping the test
     test ~c"processes bidirectional text correctly" do
       # Using a proper RTL character sequence
       # \u202E is RTL mark

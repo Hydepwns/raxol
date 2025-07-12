@@ -8,11 +8,9 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     :ok
   end
 
-  # TODO: This is a hack to get the initial state of the emulator.
-  # We should find a better way to do this.
   setup do
-    # Initialize the component state in setup so UnifiedWindow is available
-    initial_state = Raxol.UI.Components.Terminal.Emulator.init()
+    # Create initial state with proper configuration
+    initial_state = create_test_initial_state()
     %{initial_state: initial_state}
   end
 
@@ -20,6 +18,30 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   alias Raxol.Terminal.{ScreenBuffer, Cursor, Cell}
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Emulator, as: CoreEmulator
+
+  # Helper function to create a proper test initial state
+  defp create_test_initial_state do
+    # Create initial state with test-specific configuration
+    EmulatorComponent.init(%{
+      width: 80,
+      height: 24,
+      config: %{
+        scrollback_limit: 1000,
+        memory_limit: 50 * 1024 * 1024,
+        command_history_limit: 1000,
+        rendering: %{
+          fps: 60,
+          theme: %{
+            foreground: :white,
+            background: :black
+          },
+          font_settings: %{
+            size: 12
+          }
+        }
+      }
+    })
+  end
 
   # Helper for debug test
   defp return_a_two_tuple() do
@@ -90,8 +112,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   end
 
   test ~c"handles cursor movement", %{initial_state: initial_state} do
-    initial_state = EmulatorComponent.init(%{rows: 24, cols: 80})
-
+    # Use the shared initial state instead of creating a new one
     result = EmulatorComponent.process_input("\e[5;10H", initial_state)
     {new_state, output} = result
 
@@ -118,8 +139,8 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   test ~c"handles line wrapping", %{initial_state: initial_state} do
     # Create a line longer than terminal width
     long_line = String.duplicate("a", 85)
-    width = 80
-    initial_state = EmulatorComponent.init(%{width: width, height: 24})
+
+    # Use the shared initial state instead of creating a new one
     # Process the long line
     {state, _output} = EmulatorComponent.process_input(long_line, initial_state)
 

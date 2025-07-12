@@ -389,13 +389,6 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       {emulator, _output} = Emulator.process_input(emulator, input_str)
       buffer = Emulator.get_active_buffer(emulator)
 
-      # Print buffer contents for lines 0-4
-      for y <- 0..4 do
-        IO.inspect(Enum.map(ScreenBuffer.get_line(buffer, y), & &1.char),
-          label: "Line \\#{y}"
-        )
-      end
-
       # Lines 0, 1, 2 should be all spaces
       for y <- 0..2 do
         assert Enum.map(ScreenBuffer.get_line(buffer, y), & &1.char) ==
@@ -406,9 +399,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # First char (index 0) cleared, second char (index 1, cursor pos) cleared.
       # Expected: "  DDDDDDDD"
       line3_content = Enum.map(ScreenBuffer.get_line(buffer, 3), & &1.char)
-      IO.inspect(line3_content, label: "Line 3 actual content")
       expected_line3 = List.duplicate(" ", 2) ++ String.graphemes("DDDDDDDD")
-      IO.inspect(expected_line3, label: "Line 3 expected content")
       assert line3_content == expected_line3
 
       # Line 4 should be untouched "AAAAAAAAAA"

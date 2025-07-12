@@ -156,28 +156,81 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
 
   # Helper functions
   defp fill_screen_with_content(emulator, char) do
-    # TODO: This would need to be implemented based on the actual buffer API
-    emulator
+    # Get the active buffer from the emulator
+    buffer = get_active_buffer(emulator)
+
+    # Fill the entire screen with the specified character
+    filled_buffer =
+      Enum.reduce(0..(buffer.height - 1), buffer, fn y, acc_buffer ->
+        Enum.reduce(0..(buffer.width - 1), acc_buffer, fn x, acc ->
+          Raxol.Terminal.ScreenBuffer.write_char(acc, x, y, char)
+        end)
+      end)
+
+    # Update the emulator with the filled buffer
+    update_active_buffer(emulator, filled_buffer)
   end
 
   defp fill_line_with_content(emulator, line, char) do
-    # TODO: This would need to be implemented based on the actual buffer API
-    emulator
+    # Get the active buffer from the emulator
+    buffer = get_active_buffer(emulator)
+
+    # Fill the specified line with the character
+    filled_buffer =
+      Enum.reduce(0..(buffer.width - 1), buffer, fn x, acc ->
+        Raxol.Terminal.ScreenBuffer.write_char(acc, x, line, char)
+      end)
+
+    # Update the emulator with the filled buffer
+    update_active_buffer(emulator, filled_buffer)
   end
 
   defp scroll_up(emulator, lines) do
-    # TODO: This would need to be implemented based on the actual buffer API
-    emulator
+    # Get the active buffer from the emulator
+    buffer = get_active_buffer(emulator)
+
+    # Scroll the buffer up by the specified number of lines
+    {scrolled_buffer, _scrolled_lines} =
+      Raxol.Terminal.ScreenBuffer.scroll_up(buffer, lines)
+
+    # Update the emulator with the scrolled buffer
+    update_active_buffer(emulator, scrolled_buffer)
   end
 
   defp scrollback_is_empty(emulator) do
-    # TODO: This would need to be implemented based on the actual buffer API
-    true
+    # Get the active buffer from the emulator
+    buffer = get_active_buffer(emulator)
+
+    # Check if the scrollback buffer is empty
+    buffer.scrollback == []
   end
 
   defp assert_cell_at(emulator, x, y, expected_char) do
-    # TODO: This would need to be implemented based on the actual buffer API
-    # For now, just assert true to avoid compilation errors
-    assert true
+    # Get the active buffer from the emulator
+    buffer = get_active_buffer(emulator)
+
+    # Get the character at the specified position
+    actual_char = Raxol.Terminal.ScreenBuffer.get_char(buffer, x, y)
+
+    # Assert that the character matches the expected value
+    assert actual_char == expected_char,
+           "Expected character '#{expected_char}' at position (#{x}, #{y}), but got '#{actual_char}'"
+  end
+
+  # Helper functions to get and update the active buffer
+  defp get_active_buffer(emulator) do
+    case emulator.active_buffer_type do
+      :main -> emulator.main_screen_buffer
+      :alternate -> emulator.alternate_screen_buffer
+      _ -> emulator.main_screen_buffer
+    end
+  end
+
+  defp update_active_buffer(emulator, new_buffer) do
+    case emulator.active_buffer_type do
+      :main -> %{emulator | main_screen_buffer: new_buffer}
+      :alternate -> %{emulator | alternate_screen_buffer: new_buffer}
+      _ -> %{emulator | main_screen_buffer: new_buffer}
+    end
   end
 end
