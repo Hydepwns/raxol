@@ -283,14 +283,159 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     process_update(:queue.out(queue), updated_buffer, queue)
   end
 
-  defp apply_compression(_buffer, _state, _opts) do
-    # TODO: Implement compression logic
-    :ok
+  defp apply_compression(buffer, state, opts) do
+    # Check if compression is needed based on threshold
+    buffer_size = calculate_buffer_size(buffer)
+
+    if buffer_size > state.threshold do
+      # Apply compression based on algorithm
+      case state.algorithm do
+        :lz4 -> apply_lz4_compression(buffer, state, opts)
+        :simple -> apply_simple_compression(buffer, state, opts)
+        :run_length -> apply_run_length_compression(buffer, state, opts)
+        _ -> apply_simple_compression(buffer, state, opts)
+      end
+    else
+      # Buffer is small enough, no compression needed
+      buffer
+    end
   end
 
-  defp update_compression_state(state, _buffer) do
-    # TODO: Implement compression state update
-    state
+  defp update_compression_state(state, buffer) do
+    # Update compression statistics
+    compressed_size = calculate_buffer_size(buffer)
+    compression_ratio = compressed_size / max(state.threshold, 1)
+
+    %{
+      state
+      | last_compression_ratio: compression_ratio,
+        last_compression_time: System.monotonic_time()
+    }
+  end
+
+  # Private compression helper functions
+
+  defp calculate_buffer_size(buffer) do
+    # Estimate memory usage of the buffer
+    total_cells = buffer.width * buffer.height
+    # Rough estimate per cell
+    estimated_cell_size = 64
+    total_cells * estimated_cell_size
+  end
+
+  defp apply_simple_compression(buffer, state, _opts) do
+    # Simple compression: optimize empty cells and reduce style redundancy
+    compressed_cells =
+      buffer.cells
+      |> Enum.map(&compress_row/1)
+
+    %{buffer | cells: compressed_cells}
+  end
+
+  defp apply_lz4_compression(buffer, state, opts) do
+    # For LZ4 compression, we'd need an external library
+    # For now, fall back to simple compression
+    apply_simple_compression(buffer, state, opts)
+  end
+
+  defp apply_run_length_compression(buffer, state, _opts) do
+    # Run-length encoding for repeated characters
+    compressed_cells =
+      buffer.cells
+      |> Enum.map(&compress_row_run_length/1)
+
+    %{buffer | cells: compressed_cells}
+  end
+
+  defp compress_row(row) do
+    row
+    |> Enum.chunk_by(&empty_cell?/1)
+    |> Enum.map(&optimize_cell_chunk/1)
+    |> List.flatten()
+  end
+
+  defp compress_row_run_length(row) do
+    row
+    |> Enum.chunk_by(&get_cell_signature/1)
+    |> Enum.map(&encode_run_length_chunk/1)
+    |> List.flatten()
+  end
+
+  defp empty_cell?(cell) do
+    cell.char == " " or cell.char == "" or is_nil(cell.char)
+  end
+
+  defp get_cell_signature(cell) do
+    # Create a signature for run-length encoding
+    {cell.char, cell.style}
+  end
+
+  defp optimize_cell_chunk([cell]) do
+    # Single cell, no optimization needed
+    [cell]
+  end
+
+  defp optimize_cell_chunk(cells) do
+    if Enum.all?(cells, &empty_cell?/1) do
+      # All cells are empty, keep only one
+      [List.first(cells)]
+    else
+      # Some cells have content, minimize style attributes
+      Enum.map(cells, &minimize_cell_attributes/1)
+    end
+  end
+
+  defp encode_run_length_chunk([cell]) do
+    # Single cell, no encoding needed
+    [cell]
+  end
+
+  defp encode_run_length_chunk(cells) do
+    # For run-length encoding, we could store count with first cell
+    # For now, just return the cells as-is
+    cells
+  end
+
+  defp minimize_cell_attributes(cell) do
+    # Remove default style attributes to save memory
+    if empty_cell?(cell) do
+      # For empty cells, use minimal representation
+      %{cell | char: " ", style: nil, dirty: false, wide_placeholder: false}
+    else
+      # For non-empty cells, keep essential attributes only
+      minimal_style = extract_minimal_style(cell.style)
+      %{cell | style: minimal_style}
+    end
+  end
+
+  defp extract_minimal_style(style) do
+    # Extract only non-default style attributes
+    if is_nil(style) do
+      nil
+    else
+      style_map = Map.from_struct(style)
+      default_style = Map.from_struct(Raxol.Terminal.ANSI.TextFormatting.new())
+
+      # Keep only attributes that differ from defaults
+      Enum.reduce(
+        style_map,
+        %{},
+        &filter_non_default_attributes(&1, &2, default_style)
+      )
+      |> case do
+        # No non-default attributes
+        %{} -> nil
+        minimal -> minimal
+      end
+    end
+  end
+
+  defp filter_non_default_attributes({key, value}, acc, default_style) do
+    if Map.get(default_style, key) != value do
+      Map.put(acc, key, value)
+    else
+      acc
+    end
   end
 
   defp get_from_pool(pool, width, height) do
@@ -365,9 +510,11 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     end
   end
 
-  defp should_evict_buffer?(_pool, _new_buffers) do
-    # TODO: Implement buffer eviction logic
-    false
+  defp should_evict_buffer?(pool, new_buffers) do
+    # Check if adding the new buffer would exceed the pool size limit
+    current_total = count_total_buffers(pool)
+    new_total = current_total + length(new_buffers)
+    new_total > pool.max_size
   end
 
   defp count_total_buffers(pool) do
