@@ -42,7 +42,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   Converts a {row, col} tuple to a flat string index based on the provided lines.
   """
   def pos_to_index(text_lines, {row, col}) do
-    # Original Implementation
     num_lines = length(text_lines)
     safe_row = clamp(row, 0, max(0, num_lines - 1))
 
@@ -55,13 +54,16 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
     safe_col = clamp(col, 0, line_length)
 
-    # Get lines before the target row
-    prefix_lines = Enum.slice(text_lines, 0, safe_row)
-    prefix_sum = Enum.sum(Enum.map(prefix_lines, &String.length(&1)))
+    # Calculate index by summing lengths of previous lines plus newlines
+    prefix_sum =
+      text_lines
+      |> Enum.slice(0, safe_row)
+      |> Enum.map(&String.length(&1))
+      |> Enum.sum()
 
-    # Add count for newline characters (\n) - one newline per line except the last
+    # Add newline characters (one per line except the last)
     newline_count = safe_row
-    # Add the clamped column index on the target row
+    # Add the column position on the current line
     total_index = prefix_sum + newline_count + safe_col
 
     Raxol.Core.Runtime.Log.debug(
@@ -86,6 +88,24 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       "replace_text_range: lines=#{inspect(lines_list)}, start=#{inspect(start_pos_tuple)}, end=#{inspect(end_pos_tuple)}, repl=#{inspect(replacement)}"
     )
 
+    {clamped_start, clamped_end, joined_text} =
+      calculate_text_range(lines_list, start_pos_tuple, end_pos_tuple)
+
+    {text_before, text_after, replaced_text} =
+      slice_text_parts(joined_text, clamped_start, clamped_end)
+
+    new_full_text = text_before <> replacement <> text_after
+
+    Raxol.Core.Runtime.Log.debug(
+      "replace_text_range: new_full_text=#{inspect(new_full_text)}"
+    )
+
+    {new_full_text, replaced_text}
+  end
+
+  # --- Private helper functions ---
+
+  defp calculate_text_range(lines_list, start_pos_tuple, end_pos_tuple) do
     start_index = pos_to_index(lines_list, start_pos_tuple)
     end_index = pos_to_index(lines_list, end_pos_tuple)
 
@@ -93,11 +113,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       "replace_text_range: start_idx=#{start_index}, end_idx=#{end_index}"
     )
 
-    # Normalize & Clamp original indices
     {norm_start_index, norm_end_index} =
       {min(start_index, end_index), max(start_index, end_index)}
 
-    # Join lines here for slicing
     joined_text = Enum.join(lines_list, "\n")
     joined_text_len = String.length(joined_text)
 
@@ -108,24 +126,17 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       "replace_text_range: clamped_start=#{clamped_start}, clamped_end=#{clamped_end}"
     )
 
-    # Text Before: Slice up to the start index
+    {clamped_start, clamped_end, joined_text}
+  end
+
+  defp slice_text_parts(joined_text, clamped_start, clamped_end) do
     text_before = String.slice(joined_text, 0, clamped_start)
 
     Raxol.Core.Runtime.Log.debug(
       "replace_text_range: text_before=#{inspect(text_before)}"
     )
 
-    # Text After: Needs to start AT the index for insertion, AFTER for deletion/replace
-    insertion_mode? = start_pos_tuple == end_pos_tuple and replacement != ""
-
-    slice_after_start_index =
-      if insertion_mode? do
-        # Slice from the insertion point
-        clamped_start
-      else
-        # Slice from the end of the replaced range
-        clamped_end
-      end
+    slice_after_start_index = clamped_end
 
     Raxol.Core.Runtime.Log.debug(
       "replace_text_range: slice_after_start_index=#{slice_after_start_index}"
@@ -135,95 +146,81 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
       String.slice(
         joined_text,
         slice_after_start_index,
-        max(0, joined_text_len - slice_after_start_index)
+        max(0, String.length(joined_text) - slice_after_start_index)
       )
 
     Raxol.Core.Runtime.Log.debug(
       "replace_text_range: text_after=#{inspect(text_after)}"
     )
 
-    # Replaced Text Calculation - uses exclusive end index logic
     replaced_length =
-      if insertion_mode? do
-        0
+      if clamped_start <= clamped_end do
+        max(0, clamped_end - clamped_start)
       else
-        if clamped_start <= clamped_end do
-          # Exclusive length
-          max(0, clamped_end - clamped_start)
-        else
-          0
-        end
+        0
       end
 
     replaced_length =
-      min(replaced_length, max(0, joined_text_len - clamped_start))
+      min(replaced_length, max(0, String.length(joined_text) - clamped_start))
 
     replaced_text = String.slice(joined_text, clamped_start, replaced_length)
 
-    # Construct new text
-    new_full_text = text_before <> replacement <> text_after
-
-    Raxol.Core.Runtime.Log.debug(
-      "replace_text_range: new_full_text=#{inspect(new_full_text)}"
-    )
-
-    {new_full_text, replaced_text}
+    {text_before, text_after, replaced_text}
   end
 
-  @doc """
-  Inserts a character or codepoint at the current cursor position in the state, updating lines and value.
-  """
   def insert_char(state, char_or_codepoint) do
     %{lines: lines, cursor_pos: {row, col}} = state
 
-    # Convert input char/codepoint to binary string
-    char_binary =
-      case char_or_codepoint do
-        cp when integer?(cp) -> <<cp::utf8>>
-        bin when binary?(bin) -> bin
-        # Ignore invalid input for now
-        _ -> ""
-      end
-
-    # Use range helper to insert the character, passing tuples
-    start_pos = {row, col}
+    char_binary = convert_to_binary(char_or_codepoint)
 
     {new_full_text, _} =
-      replace_text_range(lines, start_pos, start_pos, char_binary)
+      replace_text_range(lines, {row, col}, {row, col}, char_binary)
 
-    # Calculate new cursor position based on inserted char
     {new_row, new_col} =
-      case char_or_codepoint do
-        # Newline character
-        10 ->
-          # Move to start of next line
-          {row + 1, 0}
+      calculate_new_cursor_position({row, col}, char_or_codepoint, char_binary)
 
-        _ ->
-          # For other characters, move cursor one position right
-          {row, col + 1}
-      end
-
-    # Split the new full text back into lines
     new_lines = String.split(new_full_text, "\n")
 
-    # Use struct syntax
     new_state = %MultiLineInput{
       state
-      | # Use state | pattern for brevity
-        # Update lines
-        lines: new_lines,
+      | lines: new_lines,
         cursor_pos: {new_row, new_col},
-        # Clear selection after insertion
         selection_start: nil,
         selection_end: nil,
-        # Update the value field too
         value: new_full_text
     }
 
-    # Use new_full_text for on_change callback if needed
     if state.on_change, do: state.on_change.(new_full_text)
     new_state
+  end
+
+  # --- Private helper functions ---
+
+  defp convert_to_binary(char_or_codepoint) do
+    case char_or_codepoint do
+      cp when integer?(cp) -> <<cp::utf8>>
+      bin when binary?(bin) -> bin
+      _ -> ""
+    end
+  end
+
+  defp calculate_new_cursor_position({row, col}, char_or_codepoint, char_binary) do
+    case char_or_codepoint do
+      10 -> {row + 1, 0}
+      _ -> calculate_position_for_text({row, col}, char_binary)
+    end
+  end
+
+  defp calculate_position_for_text({row, col}, char_binary) do
+    lines_in_inserted = String.split(char_binary, "\n")
+    num_lines = length(lines_in_inserted)
+
+    if num_lines == 1 do
+      {row, col + String.length(char_binary)}
+    else
+      last_line_length = String.length(List.last(lines_in_inserted))
+      {row + num_lines - 1, last_line_length}
+    end
   end
 
   @doc """
@@ -322,45 +319,47 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     %{lines: lines, cursor_pos: {row, col}} = state
     num_lines = length(lines)
 
-    if row >= num_lines do
+    if row >= num_lines or at_end_of_document?(lines, row, col) do
       state
     else
-      current_line = Enum.at(lines, row) || ""
-      current_line_length = String.length(current_line)
+      next_position = calculate_next_position(lines, row, col)
 
-      # At the very end of document, nothing to delete
-      if col == current_line_length and row == num_lines - 1 do
+      {new_full_text, _deleted_text} =
+        replace_text_range(lines, {row, col}, next_position, "")
+
+      new_lines = String.split(new_full_text, "\n")
+
+      new_state = %MultiLineInput{
         state
-      else
-        next_position =
-          if col == current_line_length and row < num_lines - 1 do
-            {row + 1, 0}
-          else
-            {row, col + 1}
-          end
+        | lines: new_lines,
+          selection_start: nil,
+          selection_end: nil,
+          value: new_full_text
+      }
 
-        {new_full_text, _deleted_text} =
-          replace_text_range(lines, {row, col}, next_position, "")
+      if state.on_change, do: state.on_change.(new_full_text)
+      new_state
+    end
+  end
 
-        # Split back to lines
-        new_lines = String.split(new_full_text, "\n")
+  # --- Additional private helper functions ---
 
-        # Use the value directly from replace_text_range
-        new_state = %MultiLineInput{
-          state
-          | # Use result from helper
-            # Update lines
-            lines: new_lines,
-            selection_start: nil,
-            selection_end: nil,
-            # Update the value field
-            value: new_full_text
-            # Cursor position should remain the same after delete
-        }
+  defp at_end_of_document?(lines, row, col) do
+    num_lines = length(lines)
+    current_line = Enum.at(lines, row) || ""
+    current_line_length = String.length(current_line)
+    col == current_line_length and row == num_lines - 1
+  end
 
-        if state.on_change, do: state.on_change.(new_full_text)
-        new_state
-      end
+  defp calculate_next_position(lines, row, col) do
+    current_line = Enum.at(lines, row) || ""
+    current_line_length = String.length(current_line)
+    num_lines = length(lines)
+
+    if col == current_line_length and row < num_lines - 1 do
+      {row + 1, 0}
+    else
+      {row, col + 1}
     end
   end
 
