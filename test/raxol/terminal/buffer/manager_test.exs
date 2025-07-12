@@ -150,7 +150,6 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   describe "reset_buffer_manager/1" do
     test "resets buffer manager to initial state" do
       emulator = TestHelper.create_test_emulator()
-      IO.inspect(emulator, label: "DEBUG: emulator type and structure")
 
       # Test that the emulator has the expected structure
       assert Map.has_key?(emulator, :buffer)

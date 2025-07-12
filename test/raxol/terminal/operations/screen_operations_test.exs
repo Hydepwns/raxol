@@ -59,19 +59,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
 
       emulator = ScreenOperations.set_cursor_position(emulator, 5, 0)
 
-      IO.inspect(ScreenOperations.get_line(emulator, 0),
-        label: "Line before erase"
-      )
-
-      IO.inspect(ScreenOperations.get_cursor_position(emulator),
-        label: "Cursor position before erase"
-      )
-
       emulator = ScreenOperations.erase_in_line(emulator)
-
-      IO.inspect(ScreenOperations.get_line(emulator, 0),
-        label: "Line after erase"
-      )
 
       assert String.trim(ScreenOperations.get_line(emulator, 0)) == "test1"
     end
@@ -165,13 +153,6 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
       emulator = ScreenOperations.set_cursor_position(emulator, 0, 0)
       emulator = ScreenOperations.insert_lines(emulator, 2)
 
-      IO.inspect(
-        Enum.map(0..3, fn i ->
-          String.trim(ScreenOperations.get_line(emulator, i))
-        end),
-        label: "Buffer after insert_lines"
-      )
-
       assert String.trim(ScreenOperations.get_line(emulator, 0)) == ""
       assert String.trim(ScreenOperations.get_line(emulator, 1)) == ""
       assert String.trim(ScreenOperations.get_line(emulator, 2)) == "line1"
@@ -186,13 +167,6 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
       emulator = ScreenOperations.write_string(emulator, 0, 1, "line2", %{})
       emulator = ScreenOperations.set_cursor_position(emulator, 0, 0)
       emulator = ScreenOperations.prepend_lines(emulator, 2)
-
-      IO.inspect(
-        Enum.map(0..3, fn i ->
-          String.trim(ScreenOperations.get_line(emulator, i))
-        end),
-        label: "Buffer after prepend_lines"
-      )
 
       assert String.trim(ScreenOperations.get_line(emulator, 0)) == ""
       assert String.trim(ScreenOperations.get_line(emulator, 1)) == ""

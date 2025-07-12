@@ -217,7 +217,6 @@ defmodule Raxol.Core.Renderer.ViewTest do
         end
 
       result_list = View.layout(view, width: 4, height: 2)
-      IO.inspect(result_list, label: "GRID LAYOUT RESULT", charlists: :as_lists)
 
       # Find children by content
       one = Enum.find(result_list, &(&1.content == "1"))
