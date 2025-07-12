@@ -361,16 +361,11 @@ defmodule Raxol.UI.Components.Table do
   end
 
   def handle_event({:text_input, input_id, value}, _context, state) do
-    cond do
-      is_binary(input_id) and String.ends_with?(input_id, "_search") ->
-        if state.options.searchable do
-          {:ok, %{state | filter_term: value, current_page: 1}}
-        else
-          {:ok, state}
-        end
-
-      true ->
-        {:ok, state}
+    if is_binary(input_id) and String.ends_with?(input_id, "_search") and
+         state.options.searchable do
+      {:ok, %{state | filter_term: value, current_page: 1}}
+    else
+      {:ok, state}
     end
   end
 
