@@ -9,6 +9,8 @@ tags: [components, layout, ui, guides, documentation]
 
 # Raxol UI Components & Layout
 
+_Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability. Make sure you are using the latest version for the best experience!_
+
 This document overviews the Raxol UI component system (`Base.Component` behaviour, `View.Elements` DSL, HEEx-like syntax) and the flexbox-inspired layout engine.
 
 ## Core Concepts
