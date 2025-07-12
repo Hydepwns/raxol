@@ -108,22 +108,10 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
 
   defp calculate_modifiers(state) do
     modifier_value =
-      cond do
-        state.ctrl -> 1
-        true -> 0
-      end +
-        cond do
-          state.alt -> 2
-          true -> 0
-        end +
-        cond do
-          state.shift -> 4
-          true -> 0
-        end +
-        cond do
-          state.meta -> 8
-          true -> 0
-        end
+      if(state.ctrl, do: 1, else: 0) +
+        if(state.alt, do: 2, else: 0) +
+        if(state.shift, do: 4, else: 0) +
+        if state.meta, do: 8, else: 0
 
     if modifier_value > 0, do: "#{modifier_value};", else: ""
   end
