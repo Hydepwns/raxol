@@ -63,7 +63,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
           {index, ""} when index >= 0 and index <= 255 ->
             if spec == "?", do: {:query, index}, else: {:set, index, spec}
 
-          {index, ""} ->
+          {_index, ""} ->
             {:error, {:invalid_index, index_str}}
 
           _ ->
