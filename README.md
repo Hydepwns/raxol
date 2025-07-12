@@ -1,11 +1,15 @@
 # Raxol
 
+[![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
+[![Codecov](https://codecov.io/gh/Hydepwns/raxol/branch/master/graph/badge.svg)](https://codecov.io/gh/Hydepwns/raxol)
+
 A modern toolkit for building terminal user interfaces (TUIs) in Elixir with components, styling, and event handling.
 
 ## Features
 
-- **Terminal Emulator**: ANSI support, buffer management, cursor handling
+- **Terminal Emulator**: ANSI support, buffer management, cursor handling, improved reliability
 - **Component Architecture**: Reusable UI components with state management
+- **Plugin System**: Extensible plugin architecture for custom features and integrations
 - **Event System**: Keyboard, mouse, window resize, and custom events
 - **Buffer Management**: Scrollback, selection, and history support
 - **Theme Support**: Customizable styling with color system integration
@@ -97,6 +101,25 @@ defmodule MyApp.Application do
 end
 ```
 
+## Plugin System
+
+Raxol supports a powerful plugin system for extending terminal and UI functionality. Plugins can be registered and managed at runtime, and can handle input, output, events, and more.
+
+**Example:**
+
+```elixir
+# Register a plugin
+Raxol.Core.Runtime.Plugins.register(MyPlugin)
+
+# Start a plugin
+Raxol.Core.Runtime.Plugins.start(MyPlugin)
+
+# List enabled plugins
+Raxol.Core.Runtime.Plugins.list()
+```
+
+See [Plugin Development Guide](examples/guides/04_extending_raxol/plugin_development.md) for details.
+
 ## Available Demos
 
 Raxol comes with a comprehensive set of examples demonstrating various features:
@@ -130,6 +153,7 @@ Raxol comes with a comprehensive set of examples demonstrating various features:
 - [API Reference](examples/guides/02_core_concepts/api/README.md)
 - [Components](examples/guides/03_components_and_layout/components/README.md)
 - [Snippets](examples/snippets/README.md)
+- [HexDocs for 0.6.0](https://hexdocs.pm/raxol/0.6.0)
 
 ## Performance
 
