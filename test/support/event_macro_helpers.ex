@@ -424,5 +424,4 @@ defmodule EventMacroHelpers do
              "Expected lifecycle #{inspect(unquote(expected_lifecycle))}, got #{inspect(lifecycle_events)}"
     end
   end
-
 end

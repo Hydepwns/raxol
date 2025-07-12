@@ -7,14 +7,22 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
 
   alias Raxol.Core.Accessibility.ThemeIntegration
   alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.UserPreferences
 
   setup do
+    # Start UserPreferences in test mode
+    {:ok, _user_prefs_pid} = UserPreferences.start_link(test_mode?: true)
+
     # Initialize dependencies
     EventManager.init()
 
     # Clean up after tests
     on_exit(fn ->
       ThemeIntegration.cleanup()
+      # Stop UserPreferences
+      if Process.whereis(UserPreferences) do
+        GenServer.stop(UserPreferences)
+      end
     end)
 
     :ok
@@ -130,7 +138,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Reset to standard state first
-      ThemeIntegration.apply_settings(high_contrast: false, reduced_motion: false, large_text: false)
+      ThemeIntegration.apply_settings(
+        high_contrast: false,
+        reduced_motion: false,
+        large_text: false
+      )
 
       # Handle reduced motion event
       assert :ok =

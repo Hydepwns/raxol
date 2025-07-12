@@ -353,7 +353,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
   describe "extension types" do
     test "handles different extension types" do
       # Theme extension
-      assert {:ok, _theme_id} =
+      assert {:ok, theme_id} =
                UnifiedExtension.load_extension(
                  "test/fixtures/extensions/theme",
                  :theme,
