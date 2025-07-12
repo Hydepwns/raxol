@@ -40,12 +40,10 @@ defmodule Raxol.UI.Components.CodeBlock do
         lexer = Makeup.Lexers.PlainTextLexer
 
         style =
-          cond do
-            # Assuming Makeup.Style.style_for/1 doesn't exist or changed, use default
-            # atom?(style_opt) -> ...
-            atom?(style_opt) && Code.ensure_loaded?(style_opt) -> style_opt
-            # Default style
-            true -> Makeup.Styles.GithubLight
+          if atom?(style_opt) && Code.ensure_loaded?(style_opt) do
+            style_opt
+          else
+            Makeup.Styles.GithubLight
           end
 
         # Use Makeup.highlight/2 instead of highlight!/2

@@ -199,23 +199,23 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
         handle_basic_input(key, modifiers)
 
       # Navigation without modifiers
-      is_basic_navigation?(key, modifiers) ->
+      basic_navigation?(key, modifiers) ->
         handle_basic_navigation(key, modifiers)
 
       # Ctrl navigation
-      is_ctrl_navigation?(key, modifiers) ->
+      ctrl_navigation?(key, modifiers) ->
         handle_ctrl_navigation(key, modifiers)
 
       # Shift selection
-      is_shift_selection?(key, modifiers) ->
+      shift_selection?(key, modifiers) ->
         handle_shift_selection(key, modifiers)
 
       # Ctrl+Shift selection
-      is_ctrl_shift_selection?(key, modifiers) ->
+      ctrl_shift_selection?(key, modifiers) ->
         handle_ctrl_shift_selection(key, modifiers)
 
       # Special Ctrl commands
-      is_special_ctrl_command?(key, modifiers) ->
+      special_ctrl_command?(key, modifiers) ->
         handle_special_ctrl_command(key, modifiers)
 
       # Unhandled combination
@@ -233,23 +233,23 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
       (modifiers == [] and is_binary(key)) or
         key in [:backspace, :delete, :enter]
 
-  defp is_basic_navigation?(key, modifiers),
+  defp basic_navigation?(key, modifiers),
     do:
       modifiers == [] and
         key in [:left, :right, :up, :down, :home, :end, :pageup, :pagedown]
 
-  defp is_ctrl_navigation?(key, modifiers),
+  defp ctrl_navigation?(key, modifiers),
     do: modifiers == [:ctrl] and key in [:left, :right, :home, :end]
 
-  defp is_shift_selection?(key, modifiers),
+  defp shift_selection?(key, modifiers),
     do:
       modifiers == [:shift] and
         key in [:left, :right, :up, :down, :home, :end, :pageup, :pagedown]
 
-  defp is_ctrl_shift_selection?(key, modifiers),
+  defp ctrl_shift_selection?(key, modifiers),
     do: modifiers == [:shift, :ctrl] and key in [:left, :right, :home, :end]
 
-  defp is_special_ctrl_command?(key, modifiers),
+  defp special_ctrl_command?(key, modifiers),
     do: modifiers == [:ctrl] and key in [:a, :c, :x, :v]
 
   defp handle_basic_input(key, []) do

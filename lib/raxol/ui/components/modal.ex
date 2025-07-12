@@ -556,20 +556,9 @@ defmodule Raxol.UI.Components.Modal do
       "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)} with state.type: #{inspect(state.type)}"
     )
 
-    IO.inspect(state.visible, label: "Modal visible state in handle_event")
-
     if state.visible do
-      IO.inspect("Modal is visible, calling handle_visible_event")
-
-      IO.inspect(
-        "About to call handle_visible_event with event=#{inspect(event)}, state.id=#{inspect(Map.get(state, :id, nil))}"
-      )
-
-      result = handle_visible_event(event, state)
-      IO.inspect("handle_visible_event returned: #{inspect(result)}")
-      result
+      handle_visible_event(event, state)
     else
-      IO.inspect("Modal is not visible, returning unchanged state")
       {state, []}
     end
   end

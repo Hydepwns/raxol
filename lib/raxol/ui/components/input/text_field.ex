@@ -102,8 +102,30 @@ defmodule Raxol.UI.Components.Input.TextField do
      }}
   end
 
+  def update({:move_cursor_to, {_row, col}}, state) do
+    # Convert column position to cursor position, accounting for scroll offset
+    new_cursor_pos =
+      clamp(col + state.scroll_offset, 0, String.length(state.value))
+
+    width = Map.get(state, :width, 20)
+
+    new_scroll_offset =
+      adjust_scroll_offset(
+        new_cursor_pos,
+        width,
+        state.value,
+        state.scroll_offset
+      )
+
+    {:noreply,
+     %{
+       state
+       | cursor_pos: new_cursor_pos,
+         scroll_offset: new_scroll_offset
+     }}
+  end
+
   # Handle focus/blur implicitly via context for now
-  # TODO: Explicit focus messages?
   # def update(:focus, state), do: {:noreply, %{state | focused: true}}
   # def update(:blur, state), do: {:noreply, %{state | focused: false}}
 
@@ -137,7 +159,11 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, %{state | focused: false}}
   end
 
-  # TODO: Handle mouse clicks to position cursor
+  def handle_event(state, {:mouse, {:click, {_x, y}}}, _context) do
+    # Handle mouse clicks to position cursor
+    {:update, {:move_cursor_to, {0, y}}, state}
+  end
+
   def handle_event(state, _event, _context) do
     {:noreply, state}
   end
@@ -277,37 +303,48 @@ defmodule Raxol.UI.Components.Input.TextField do
   @spec render(map(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   def render(state, _context) do
+    merged_style = get_merged_style(state)
+    {visible_value, showing_placeholder} = get_visible_value(state)
+
+    text_children =
+      build_text_children(
+        state,
+        visible_value,
+        showing_placeholder,
+        merged_style
+      )
+
+    Element.new(:view, %{style: merged_style}, do: text_children)
+  end
+
+  defp get_merged_style(state) do
     theme = Map.get(state, :theme, %{})
     component_theme_style = Theme.component_style(theme, :text_field)
 
-    # Handle the case where component_theme_style is a plain map, not a Style struct
-    merged_style =
-      case component_theme_style do
-        %Raxol.Style{} = style_struct ->
-          Raxol.Style.merge(style_struct, state.style)
+    case component_theme_style do
+      %Raxol.Style{} = style_struct ->
+        Raxol.Style.merge(style_struct, state.style)
 
-        plain_map when is_map(plain_map) ->
-          # If it's a plain map, merge it directly with state.style
-          Map.merge(plain_map, state.style || %{})
+      plain_map when is_map(plain_map) ->
+        Map.merge(plain_map, state.style || %{})
 
-        _ ->
-          # Fallback to just state.style
-          state.style || %{}
-      end
+      _ ->
+        state.style || %{}
+    end
+  end
 
+  defp get_visible_value(state) do
     display_value =
       if state.secret,
         do: String.duplicate("•", String.length(state.value)),
         else: state.value
 
-    # Add placeholder if value is empty and not focused
     showing_placeholder =
       String.length(display_value) == 0 && !state.focused &&
         state.placeholder != ""
 
     final_value =
       if showing_placeholder do
-        # TODO: Style placeholder differently?
         state.placeholder
       else
         display_value
@@ -323,46 +360,64 @@ defmodule Raxol.UI.Components.Input.TextField do
         String.slice(final_value, scroll_offset, width)
       end
 
-    # Cursor rendering
-    text_children =
-      cond do
-        showing_placeholder ->
-          placeholder_style = %{
-            color: Map.get(component_theme_style, :placeholder_color, "#888"),
-            text_decoration: [:italic]
-          }
+    {visible_value, showing_placeholder}
+  end
 
-          [
-            Element.new(:text, placeholder_style, do: [])
-            |> Map.put(:content, visible_value)
-          ]
+  defp build_text_children(
+         state,
+         visible_value,
+         showing_placeholder,
+         merged_style
+       ) do
+    cond do
+      showing_placeholder ->
+        build_placeholder_children(visible_value, merged_style)
 
-        state.focused ->
-          # Cursor position relative to visible window
-          cursor_in_window = state.cursor_pos - scroll_offset
-          cursor_in_window = clamp(cursor_in_window, 0, width)
-          {left, right} = String.split_at(visible_value, cursor_in_window)
+      state.focused ->
+        build_focused_children(state, visible_value, merged_style)
 
-          cursor_style = %{
-            text_decoration: [:underline],
-            color: merged_style.color || "#fff",
-            background: merged_style.background || "#000"
-          }
+      true ->
+        build_normal_children(visible_value)
+    end
+  end
 
-          [
-            Element.new(:text, %{}, do: []) |> Map.put(:content, left),
-            Element.new(:text, cursor_style, do: []) |> Map.put(:content, "|"),
-            Element.new(:text, %{}, do: []) |> Map.put(:content, right)
-          ]
+  defp build_placeholder_children(visible_value, merged_style) do
+    placeholder_style = %{
+      color: Map.get(merged_style, :placeholder_color, "#888"),
+      text_decoration: [:italic]
+    }
 
-        true ->
-          [
-            Element.new(:text, %{}, do: [])
-            |> Map.put(:content, visible_value || "")
-          ]
-      end
+    [
+      Element.new(:text, placeholder_style, do: [])
+      |> Map.put(:content, visible_value)
+    ]
+  end
 
-    Element.new(:view, %{style: merged_style}, do: text_children)
+  defp build_focused_children(state, visible_value, merged_style) do
+    width = Map.get(state, :width, 20)
+    scroll_offset = state.scroll_offset || 0
+    cursor_in_window = state.cursor_pos - scroll_offset
+    cursor_in_window = clamp(cursor_in_window, 0, width)
+    {left, right} = String.split_at(visible_value, cursor_in_window)
+
+    cursor_style = %{
+      text_decoration: [:underline],
+      color: merged_style.color || "#fff",
+      background: merged_style.background || "#000"
+    }
+
+    [
+      Element.new(:text, %{}, do: []) |> Map.put(:content, left),
+      Element.new(:text, cursor_style, do: []) |> Map.put(:content, "|"),
+      Element.new(:text, %{}, do: []) |> Map.put(:content, right)
+    ]
+  end
+
+  defp build_normal_children(visible_value) do
+    [
+      Element.new(:text, %{}, do: [])
+      |> Map.put(:content, visible_value || "")
+    ]
   end
 
   @doc """
