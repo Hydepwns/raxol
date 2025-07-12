@@ -5,6 +5,8 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   Plugin for clipboard operations in Raxol.
   """
 
+  @behaviour Raxol.Plugins.Plugin
+
   require Raxol.Core.Runtime.Log
 
   # Alias the new consolidated module

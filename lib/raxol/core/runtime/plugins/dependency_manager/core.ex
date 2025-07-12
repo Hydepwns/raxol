@@ -179,7 +179,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour
   @doc """
   Resolves the load order for a set of plugins based on their dependencies.
   Uses Tarjan's algorithm for efficient cycle detection and component identification.
