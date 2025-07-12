@@ -34,8 +34,8 @@ defmodule Raxol.Terminal.Manager do
       defmodule MyTerminalCallback do
         @behaviour Raxol.Terminal.Manager.Callback
 
-        def focus_changed(focused, _state), do: IO.inspect({:focus, focused})
-        def resized(w, h, _state), do: IO.inspect({:resize, w, h})
+        def focus_changed(focused, _state), do: Logger.info("Focus changed: #{focused}")
+        def resized(w, h, _state), do: Logger.info("Terminal resized: #{w}x#{h}")
         # ...implement other callbacks as needed
       end
 
