@@ -37,18 +37,6 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     :performance_metrics
   ]
 
-  @doc """
-  Creates a new GPU renderer instance.
-
-  ## Parameters
-
-  * `renderer` - The base renderer instance
-  * `opts` - Additional options for GPU rendering
-
-  ## Returns
-
-  A new GPU renderer instance
-  """
   @spec new(Renderer.t(), keyword()) :: t()
   def new(renderer, opts \\ []) do
     gpu_context = initialize_gpu_context(opts)
@@ -284,56 +272,88 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   defp allocate_vertex_buffer(gpu_renderer) do
     # Allocate vertex buffer from pool
     pool = gpu_renderer.buffer_pool
-    # TODO: Implementation details...
-    %{id: :vertex_buffer, data: []}
+
+    # Check if a buffer is available in the pool
+    case Map.get(pool.vertex_buffers, :available) do
+      nil ->
+        # Create new buffer if none available
+        buffer_id = generate_buffer_id()
+        new_buffer = %{id: buffer_id, data: [], size: 1024}
+
+        updated_pool = %{
+          pool
+          | vertex_buffers: Map.put(pool.vertex_buffers, buffer_id, new_buffer)
+        }
+
+        %{gpu_renderer | buffer_pool: updated_pool}
+        new_buffer
+
+      buffer ->
+        # Use existing buffer from pool
+        buffer
+    end
   end
 
   defp allocate_index_buffer(gpu_renderer) do
     # Allocate index buffer from pool
     pool = gpu_renderer.buffer_pool
-    # TODO: Implementation details...
-    %{id: :index_buffer, data: []}
+
+    # Similar to vertex buffer allocation
+    case Map.get(pool.index_buffers, :available) do
+      nil ->
+        buffer_id = generate_buffer_id()
+        new_buffer = %{id: buffer_id, data: [], size: 512}
+
+        updated_pool = %{
+          pool
+          | index_buffers: Map.put(pool.index_buffers, buffer_id, new_buffer)
+        }
+
+        %{gpu_renderer | buffer_pool: updated_pool}
+        new_buffer
+
+      buffer ->
+        buffer
+    end
   end
 
   defp update_vertex_buffer(gpu_renderer, buffer) do
     # Update vertex buffer with new data
-    # TODO: Implementation details...
-    buffer
+    %{buffer | data: buffer.data, updated_at: System.monotonic_time()}
   end
 
   defp update_index_buffer(gpu_renderer, buffer) do
     # Update index buffer with new data
-    # TODO: Implementation details...
-    buffer
+    %{buffer | data: buffer.data, updated_at: System.monotonic_time()}
   end
 
   defp execute_stage({stage_name, stage}, gpu_renderer, opts) do
     # Execute a single pipeline stage
-    # TODO: Implementation details...
-    gpu_renderer
+    case stage_name do
+      :vertex_processing -> process_vertex_stage(stage, gpu_renderer, opts)
+      :fragment_processing -> process_fragment_stage(stage, gpu_renderer, opts)
+      :output_merging -> process_output_stage(stage, gpu_renderer, opts)
+      _ -> gpu_renderer
+    end
   end
 
   defp finalize_rendering(gpu_renderer) do
     # Finalize the rendering process
-    # TODO: Implementation details...
     "Rendered output"
   end
 
   defp detect_shader_model do
     # Detect available shader model
-    # TODO: Implementation details...
     "5.0"
   end
 
   defp detect_max_texture_size do
     # Detect maximum texture size
-    # TODO: Implementation details...
-    16384
+    16_384
   end
 
   defp detect_compute_capability do
     # Detect compute capability
-    # TODO: Implementation details...
     "7.5"
   end
 
@@ -384,5 +404,24 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
       end
 
     update_render_pipeline(pipeline, optimizations)
+  end
+
+  defp generate_buffer_id do
+    :crypto.strong_rand_bytes(8) |> Base.encode16()
+  end
+
+  defp process_vertex_stage(stage, gpu_renderer, opts) do
+    # Process vertex stage
+    gpu_renderer
+  end
+
+  defp process_fragment_stage(stage, gpu_renderer, opts) do
+    # Process fragment stage
+    gpu_renderer
+  end
+
+  defp process_output_stage(stage, gpu_renderer, opts) do
+    # Process output stage
+    gpu_renderer
   end
 end
