@@ -150,6 +150,16 @@ defmodule Raxol.Plugins.SearchPlugin do
     "1.0.0"
   end
 
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def start(config) do
+    {:ok, config}
+  end
+
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def stop(config) do
+    {:ok, config}
+  end
+
   # Private functions
 
   defp start_search(%__MODULE__{} = plugin, search_term) do

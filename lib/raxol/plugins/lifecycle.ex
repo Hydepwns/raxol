@@ -26,10 +26,16 @@ defmodule Raxol.Plugins.Lifecycle do
       when atom?(module) do
     plugin_name = get_plugin_id_from_metadata(module)
 
+    case load_plugin_internal(manager, plugin_name, module, config) do
+      {:ok, updated_manager} -> {:ok, updated_manager}
+      {:error, reason} -> {:error, format_load_error(reason, module)}
+    end
+  end
+
+  defp load_plugin_internal(manager, plugin_name, module, config) do
     with {:ok, plugin, merged_config, plugin_state} <-
            initialize_plugin_with_config(manager, plugin_name, module, config),
-         :ok <- check_for_circular_dependency(plugin, manager),
-         :ok <- check_dependencies(plugin, manager),
+         :ok <- validate_plugin_dependencies(plugin, manager),
          {:ok, updated_manager} <-
            update_manager_with_plugin(
              manager,
@@ -41,11 +47,19 @@ defmodule Raxol.Plugins.Lifecycle do
       {:ok, updated_manager}
     else
       {:error, :missing_dependencies, missing, chain} ->
-        {:error, format_missing_dependencies_error(missing, chain, module)}
+        {:error, {:missing_dependencies, missing, chain}}
 
       {:error, reason} ->
-        {:error, format_error(reason, module)}
+        {:error, reason}
     end
+  end
+
+  defp format_load_error({:missing_dependencies, missing, chain}, module) do
+    format_missing_dependencies_error(missing, chain, module)
+  end
+
+  defp format_load_error(reason, module) do
+    format_error(reason, module)
   end
 
   # --- Plugin Initialization ---
@@ -55,26 +69,29 @@ defmodule Raxol.Plugins.Lifecycle do
          {:ok, merged_config} <-
            get_and_validate_config(manager, plugin_name, module, config),
          {:ok, plugin} <- initialize_plugin(module, merged_config),
-         :ok <- validate_plugin_state(plugin),
-         :ok <- validate_plugin_compatibility(plugin, manager) do
-      # Add module reference to plugin struct and update name to use metadata ID
-      # Also promote any config keys to the top-level plugin struct
-      plugin_with_module =
-        plugin
-        |> Map.put(:name, plugin_name)
-        |> Map.merge(plugin.config)
-        # Ensure module is set after merge
-        |> Map.put(:module, module)
-
-      # Extract plugin state from the plugin struct
-      plugin_state =
-        case plugin.state do
-          s when is_struct(s) -> %{}
-          s -> s || %{}
-        end
-
-      {:ok, plugin_with_module, plugin.config, plugin_state}
+         {:ok, final_plugin, plugin_state} <-
+           prepare_plugin_for_manager(plugin, plugin_name, module) do
+      {:ok, final_plugin, merged_config, plugin_state}
     end
+  end
+
+  defp prepare_plugin_for_manager(plugin, plugin_name, module) do
+    :ok = validate_plugin_state(plugin)
+    :ok = validate_plugin_compatibility(plugin, module)
+
+    plugin_with_module =
+      plugin
+      |> Map.put(:name, plugin_name)
+      |> Map.merge(plugin.config)
+      |> Map.put(:module, module)
+
+    plugin_state =
+      case plugin.state do
+        s when is_struct(s) -> %{}
+        s -> s || %{}
+      end
+
+    {:ok, plugin_with_module, plugin_state}
   end
 
   defp validate_plugin_module(module) do
@@ -223,8 +240,8 @@ defmodule Raxol.Plugins.Lifecycle do
     end
   end
 
-  defp validate_plugin_compatibility(plugin, manager) do
-    check_api_compatibility(plugin, manager)
+  defp validate_plugin_compatibility(plugin, module) do
+    check_api_compatibility(plugin, module)
   end
 
   # --- Manager Update ---
@@ -357,17 +374,17 @@ defmodule Raxol.Plugins.Lifecycle do
     end
   end
 
-  defp check_api_compatibility(plugin, manager) do
+  defp check_api_compatibility(plugin, module) do
     PluginDependency.check_api_compatibility(
       plugin.api_version,
-      manager.api_version
+      module.api_version
     )
   end
 
-  defp check_dependencies(plugin, manager) do
+  defp check_dependencies(plugin, module) do
     # Convert list of plugins to map for dependency checking
     loaded_plugins_map =
-      Core.list_plugins(manager)
+      Core.list_plugins(module)
       |> Enum.map(fn plugin -> {plugin.name, plugin} end)
       |> Enum.into(%{})
 
@@ -377,6 +394,12 @@ defmodule Raxol.Plugins.Lifecycle do
       loaded_plugins_map,
       []
     )
+  end
+
+  defp validate_plugin_dependencies(plugin, module) do
+    :ok = check_for_circular_dependency(plugin, module)
+    :ok = check_dependencies(plugin, module)
+    :ok
   end
 
   # --- Error Handling and Logging ---
@@ -656,25 +679,12 @@ defmodule Raxol.Plugins.Lifecycle do
   @spec enable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def enable_plugin(%Core{} = manager, name) when binary?(name) do
-    case get_plugin(manager, name) do
-      {:ok, plugin} ->
-        case check_plugin_dependencies(plugin, manager) do
-          :ok ->
-            case update_and_save_config(manager, name, :enable) do
-              {:ok, updated_config} ->
-                {:ok,
-                 update_manager_state(manager, plugin, updated_config, true)}
-
-              {:error, reason} ->
-                {:error, reason}
-            end
-
-          {:error, reason} ->
-            {:error, reason}
-        end
-
-      {:error, _} ->
-        {:error, "Plugin #{name} not found"}
+    with {:ok, plugin} <- get_plugin(manager, name),
+         :ok <- check_plugin_dependencies(plugin, manager),
+         {:ok, updated_config} <- update_and_save_config(manager, name, :enable) do
+      {:ok, update_manager_state(manager, plugin, updated_config, true)}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 

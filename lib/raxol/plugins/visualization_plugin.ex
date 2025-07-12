@@ -32,6 +32,16 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   @impl Raxol.Plugins.Plugin
   def get_dependencies(), do: []
 
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def start(config) do
+    {:ok, config}
+  end
+
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def stop(config) do
+    {:ok, config}
+  end
+
   def terminate(_reason, _plugin_meta, _plugin_state) do
     :ok
   end
