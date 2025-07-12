@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
       end)
       |> (fn {lines, last_line} ->
             # Add the final line being built (if not empty)
-            if last_line != "", do: lines ++ [last_line], else: lines
+            if last_line != "", do: [last_line | lines], else: lines
           end).()
     end
   end
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
       # Case 4: Word doesn't fit on current line, start a new line
       true ->
         # Add completed line, start new one with word
-        {lines ++ [current_line], word}
+        {[current_line | lines], word}
     end
   end
 
@@ -52,10 +52,10 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
     {new_lines, remaining_part} = break_long_word(word, width)
     # Add the completed current line (if any) and the broken parts
     updated_lines =
-      if current_line != "", do: lines ++ [current_line], else: lines
+      if current_line != "", do: [current_line | lines], else: lines
 
     # Start new line with remaining part
-    {updated_lines ++ new_lines, remaining_part}
+    {new_lines ++ updated_lines, remaining_part}
   end
 
   # Private helper for wrap_line
