@@ -68,7 +68,7 @@ defmodule Raxol.UI.Layout.Table do
     Enum.map(columns, fn column ->
       # Get explicit width if specified
       case Map.get(column, :width) do
-        width when integer?(width) -> width
+        width when is_integer(width) -> width
         :auto -> calculate_auto_width(column, data)
         _ -> calculate_auto_width(column, data)
       end
