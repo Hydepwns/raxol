@@ -169,7 +169,7 @@ defmodule Raxol.I18nTestHelpers do
              "Screen reader announcement "
 
       if map_size(bindings) > 0 do
-        Enum.each(bindings, fn {key, value} ->
+        Enum.each(bindings, fn {_key, value} ->
           assert String.contains?(formatted, to_string(value)),
                  # {value}" for key "#{key}". Formatted: "#{formatted}""
                  "Screen reader announcement doesn't contain binding value "

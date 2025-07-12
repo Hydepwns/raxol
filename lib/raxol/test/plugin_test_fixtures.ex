@@ -68,9 +68,6 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  @moduledoc """
-  Broken plugin that fails to implement required functions
-  """
   defmodule BrokenPlugin do
     @moduledoc """
     Broken plugin that fails to implement required functions
@@ -128,9 +125,6 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  @moduledoc """
-  Plugin with bad return values
-  """
   defmodule BadReturnPlugin do
     @moduledoc """
     Plugin with bad return values
@@ -307,7 +301,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     def init(_opts) do
       _state_id = System.unique_integer([:positive])
 
-      raise "Plugin initialization failed: Intentional crash for testing error handling (State ID: #{_state_id})"
+      raise "Plugin initialization failed: Intentional crash for testing error handling"
     end
 
     def terminate(_reason, state) do
@@ -453,8 +447,7 @@ defmodule Raxol.Test.PluginTestFixtures do
       # Initialize with a unique state ID to track instances
       _state_id = :rand.uniform(1_000_000)
 
-      {:ok,
-       %{state_id: _state_id, dependencies: dependencies(), module: __MODULE__}}
+      {:ok, %{dependencies: dependencies(), module: __MODULE__}}
     end
 
     def terminate(_reason, state) do
@@ -545,9 +538,6 @@ defmodule Raxol.Test.PluginTestFixtures do
       do: {:error, :not_implemented, state}
   end
 
-  @moduledoc """
-  Helper function to create a unique plugin state
-  """
   def create_unique_state do
     %{
       state_id: :rand.uniform(1_000_000),
