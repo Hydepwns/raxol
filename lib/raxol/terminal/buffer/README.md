@@ -10,6 +10,7 @@ The buffer system is composed of several modules, each handling specific respons
 
 - **State (`state.ex`)**: Defines the core `State.t()` struct representing the buffer's grid (lines of Cells), dimensions, default style, scroll region, etc. Provides basic state accessors.
 - **Manager (`manager.ex`)**: A `GenServer` that coordinates the overall buffer system. It manages the active/back buffers (`State.t()`), the scrollback buffer (`Scrollback.t()`), damage tracking (`DamageTracker.t()`), cursor position, and memory usage. It orchestrates operations performed by the specialized modules below.
+- **EnhancedManager (`enhanced_manager.ex`)**: Advanced buffer manager with compression, pooling, and performance optimization features.
 - **Updater (`updater.ex`)**: Handles low-level updates to the buffer state, such as setting individual cells or entire lines.
 - **Utils (`utils.ex`)**: Provides miscellaneous helper functions used by various buffer modules (e.g., creating blank lines).
 
@@ -37,6 +38,36 @@ The buffer system is composed of several modules, each handling specific respons
 - **Cursor Manager (`cursor/manager.ex`)**: Although located in a subdirectory, the cursor manager handles cursor styles, state persistence, and animations. It interacts with the buffer manager to get/set cursor position but is managed separately.
 
 ## Usage
+
+### Enhanced Buffer Manager
+
+```elixir
+# Create a new enhanced buffer manager with compression
+manager = Raxol.Terminal.Buffer.EnhancedManager.new(80, 24, [
+  compression_algorithm: :simple,
+  compression_level: 6,
+  compression_threshold: 1024,
+  pool_size: 100
+])
+
+# Queue asynchronous updates
+update_fn = fn buffer ->
+  Raxol.Terminal.ScreenBuffer.write_char(buffer, 0, 0, "Hello")
+end
+manager = Raxol.Terminal.Buffer.EnhancedManager.queue_update(manager, update_fn)
+
+# Process all queued updates
+manager = Raxol.Terminal.Buffer.EnhancedManager.process_updates(manager)
+
+# Compress buffer to reduce memory usage
+manager = Raxol.Terminal.Buffer.EnhancedManager.compress_buffer(manager)
+
+# Get performance metrics
+metrics = Raxol.Terminal.Buffer.EnhancedManager.get_performance_metrics(manager)
+
+# Optimize based on performance data
+manager = Raxol.Terminal.Buffer.EnhancedManager.optimize(manager)
+```
 
 ### Buffer Manager
 
@@ -99,11 +130,19 @@ The buffer system includes several memory optimization features:
 
 1. **Double Buffering**: Only one buffer is actively rendered at a time, reducing memory pressure.
 2. **Damage Tracking**: Only modified regions of the screen are updated, minimizing unnecessary operations.
-3. **Buffer Compression**: The scroll buffer compresses data when memory usage exceeds limits.
-4. **Memory Limits**: Configurable memory limits prevent excessive memory usage.
+3. **Buffer Compression**: The enhanced buffer manager implements multiple compression algorithms:
+   - Simple compression for empty cell optimization
+   - Run-length encoding for repeated characters
+   - Style attribute minimization
+   - Threshold-based compression activation
+4. **Buffer Pooling**: Reuses buffer instances to reduce allocation overhead with automatic eviction when pool size limits are exceeded.
+5. **Memory Limits**: Configurable memory limits prevent excessive memory usage.
 
 ## Performance Considerations
 
+- The enhanced buffer manager uses asynchronous updates for non-blocking operations.
+- Compression algorithms are applied based on configurable thresholds.
+- Performance metrics are tracked to enable automatic optimization.
 - The buffer manager uses efficient data structures for damage tracking.
 - The scroll buffer implements virtual scrolling to handle large buffers efficiently.
 - The cursor manager uses minimal state to track cursor position and appearance.
@@ -113,6 +152,7 @@ The buffer system includes several memory optimization features:
 
 Each component includes comprehensive tests:
 
+- `test/raxol/terminal/buffer/enhanced_manager_test.exs`: Tests for the enhanced buffer manager
 - `test/raxol/terminal/buffer/manager_test.exs`: Tests for the buffer manager
 - `test/raxol/terminal/buffer/state_test.exs`: Tests for the buffer state
 - `test/raxol/terminal/buffer/updater_test.exs`: Tests for the buffer updater
@@ -144,3 +184,5 @@ Planned enhancements for the buffer system:
 3. **Lazy Loading**: Load buffer content on demand to reduce initial memory usage.
 4. **Buffer Persistence**: Save buffer state to disk for session restoration.
 5. **Buffer Search**: Efficient text search within the buffer.
+6. **LZ4 Integration**: Full LZ4 compression library integration for better compression ratios.
+7. **Adaptive Compression**: Dynamic compression algorithm selection based on content patterns.

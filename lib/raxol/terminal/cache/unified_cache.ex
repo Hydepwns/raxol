@@ -154,15 +154,6 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
     namespace_state = get_or_create_namespace(state, namespace)
     entry_size = calculate_size(value)
 
-    IO.inspect(namespace_state.size,
-      label: "[DEBUG] Cache size before eviction"
-    )
-
-    IO.inspect(
-      Enum.map(namespace_state.cache, fn {k, v} -> {k, v.access_count} end),
-      label: "[DEBUG] Cache before eviction"
-    )
-
     {evicted_cache, evicted_size} =
       if namespace_state.size + entry_size > namespace_state.max_size do
         evict_entries(
@@ -175,12 +166,6 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
       else
         {namespace_state.cache, namespace_state.size}
       end
-
-    IO.inspect(evicted_size, label: "[DEBUG] Cache size after eviction")
-
-    IO.inspect(Enum.map(evicted_cache, fn {k, v} -> {k, v.access_count} end),
-      label: "[DEBUG] Cache after eviction"
-    )
 
     # Only add the entry if there's enough space after eviction
     if evicted_size + entry_size <= namespace_state.max_size do
@@ -196,12 +181,6 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
 
       new_cache = Map.put(evicted_cache, key, entry)
       new_size = evicted_size + entry_size
-
-      IO.inspect(new_size, label: "[DEBUG] Cache size after adding new entry")
-
-      IO.inspect(Enum.map(new_cache, fn {k, v} -> {k, v.access_count} end),
-        label: "[DEBUG] Cache after adding new entry"
-      )
 
       updated_state =
         update_namespace_state(state, namespace, namespace_state, %{
@@ -315,18 +294,9 @@ defmodule Raxol.Terminal.Cache.UnifiedCache do
   end
 
   defp handle_valid_entry(entry, namespace_state, key, state, namespace) do
-    IO.inspect(entry.access_count, label: "[DEBUG] access_count before update")
     updated_entry = update_entry_access(entry)
 
-    IO.inspect(updated_entry.access_count,
-      label: "[DEBUG] access_count after update"
-    )
-
     updated_cache = Map.put(namespace_state.cache, key, updated_entry)
-
-    IO.inspect(Enum.map(updated_cache, fn {k, v} -> {k, v.access_count} end),
-      label: "[DEBUG] Cache after updating entry"
-    )
 
     updated_size =
       Enum.reduce(updated_cache, 0, fn {_k, v}, acc -> acc + v.size end)
