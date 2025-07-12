@@ -62,45 +62,141 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
   def to_escape_sequence(state, key) do
     modifiers = calculate_modifiers(state)
 
-    case key do
-      key when byte_size(key) == 1 ->
+    cond do
+      byte_size(key) == 1 ->
         <<code::utf8>> = key
-
-        # Always send the standard character code along with the calculated modifiers
-        # The modifiers string already encodes if Ctrl is pressed.
         "\e[#{modifiers}#{code}"
 
-      key when is_binary(key) ->
-        # Keep existing special key handling (Arrows, F-keys, etc.)
-        case key do
-          "ArrowUp" -> "\e[#{modifiers}A"
-          "ArrowDown" -> "\e[#{modifiers}B"
-          "ArrowRight" -> "\e[#{modifiers}C"
-          "ArrowLeft" -> "\e[#{modifiers}D"
-          "Home" -> "\e[#{modifiers}H"
-          "End" -> "\e[#{modifiers}F"
-          "PageUp" -> "\e[#{modifiers}5~"
-          "PageDown" -> "\e[#{modifiers}6~"
-          "Insert" -> "\e[#{modifiers}2~"
-          "Delete" -> "\e[#{modifiers}3~"
-          "F1" -> "\e[#{modifiers}P"
-          "F2" -> "\e[#{modifiers}Q"
-          "F3" -> "\e[#{modifiers}R"
-          "F4" -> "\e[#{modifiers}S"
-          "F5" -> "\e[#{modifiers}15~"
-          "F6" -> "\e[#{modifiers}17~"
-          "F7" -> "\e[#{modifiers}18~"
-          "F8" -> "\e[#{modifiers}19~"
-          "F9" -> "\e[#{modifiers}20~"
-          "F10" -> "\e[#{modifiers}21~"
-          "F11" -> "\e[#{modifiers}23~"
-          "F12" -> "\e[#{modifiers}24~"
-          "Tab" -> if state.ctrl, do: "\e[9", else: "\t"
-          "Enter" -> "\r"
-          "Backspace" -> "\b"
-          "Escape" -> "\e"
-          _ -> ""
-        end
+      key in [
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowRight",
+        "ArrowLeft",
+        "Home",
+        "End",
+        "PageUp",
+        "PageDown",
+        "Insert",
+        "Delete",
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12"
+      ] ->
+        get_arrow_or_function_key_sequence(key, modifiers)
+
+      key == "Tab" ->
+        if state.ctrl, do: "\e[9", else: "\t"
+
+      key == "Enter" ->
+        "\r"
+
+      key == "Backspace" ->
+        "\b"
+
+      key == "Escape" ->
+        "\e"
+
+      true ->
+        ""
+    end
+  end
+
+  @atom_key_sequences %{
+    up: "\e[A",
+    down: "\e[B",
+    right: "\e[C",
+    left: "\e[D",
+    home: "\e[H",
+    end: "\e[F",
+    page_up: "\e[5~",
+    page_down: "\e[6~",
+    f1: "\eOP",
+    f2: "\eOQ",
+    f3: "\eOR",
+    f4: "\eOS",
+    f5: "\e[15~",
+    f6: "\e[17~",
+    f7: "\e[18~",
+    f8: "\e[19~",
+    f9: "\e[20~",
+    f10: "\e[21~",
+    f11: "\e[23~",
+    f12: "\e[24~"
+  }
+
+  @doc """
+  Converts an atom key to its corresponding escape sequence.
+  """
+  def atom_to_escape_sequence(key) do
+    Map.get(@atom_key_sequences, key, "")
+  end
+
+  @doc """
+  Converts a key with modifiers to its corresponding escape sequence.
+  """
+  def key_with_modifiers_to_escape_sequence(modifier_state, key) do
+    modifier_code = calculate_modifier_code(modifier_state)
+
+    case key do
+      "ArrowUp" ->
+        "\e[#{modifier_code}A"
+
+      "ArrowDown" ->
+        "\e[#{modifier_code}B"
+
+      "ArrowRight" ->
+        "\e[#{modifier_code}C"
+
+      "ArrowLeft" ->
+        "\e[#{modifier_code}D"
+
+      _ when is_binary(key) and byte_size(key) == 1 ->
+        char_code = :binary.first(key)
+        "\e[#{modifier_code}#{char_code}"
+
+      _ ->
+        ""
+    end
+  end
+
+  defp get_arrow_or_function_key_sequence(key, modifiers) do
+    @key_sequences = %{
+      "ArrowUp" => "A",
+      "ArrowDown" => "B",
+      "ArrowRight" => "C",
+      "ArrowLeft" => "D",
+      "Home" => "H",
+      "End" => "F",
+      "PageUp" => "5~",
+      "PageDown" => "6~",
+      "Insert" => "2~",
+      "Delete" => "3~",
+      "F1" => "P",
+      "F2" => "Q",
+      "F3" => "R",
+      "F4" => "S",
+      "F5" => "15~",
+      "F6" => "17~",
+      "F7" => "18~",
+      "F8" => "19~",
+      "F9" => "20~",
+      "F10" => "21~",
+      "F11" => "23~",
+      "F12" => "24~"
+    }
+
+    case Map.get(@key_sequences, key) do
+      nil -> ""
+      suffix -> "\e[#{modifiers}#{suffix}"
     end
   end
 
@@ -114,5 +210,15 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
         if state.meta, do: 8, else: 0
 
     if modifier_value > 0, do: "#{modifier_value};", else: ""
+  end
+
+  defp calculate_modifier_code(state) do
+    code =
+      if(state.ctrl, do: 1, else: 0) +
+        if(state.shift, do: 2, else: 0) +
+        if(state.alt, do: 4, else: 0) +
+        if state.meta, do: 8, else: 0
+
+    if code > 0, do: "#{code};", else: ""
   end
 end

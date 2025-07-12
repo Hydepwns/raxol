@@ -50,22 +50,7 @@ defmodule Raxol.Terminal.Scroll.Predictor do
           avg_lines: float(),
           alternation_ratio: float()
         }
-  def analyze_patterns(%__MODULE__{history: []}),
-    do: %{avg_lines: 0.0, alternation_ratio: 0.0}
-
   def analyze_patterns(%__MODULE__{history: history}) do
-    avg_lines = Enum.sum(Enum.map(history, & &1.lines)) / length(history)
-
-    alternations =
-      history
-      |> Enum.chunk_every(2, 1, :discard)
-      |> Enum.count(fn [a, b] -> a.direction != b.direction end)
-
-    alternation_ratio =
-      if length(history) > 1,
-        do: alternations / (length(history) - 1),
-        else: 0.0
-
-    %{avg_lines: avg_lines, alternation_ratio: alternation_ratio}
+    Raxol.Terminal.Scroll.PatternAnalyzer.analyze_patterns(history)
   end
 end

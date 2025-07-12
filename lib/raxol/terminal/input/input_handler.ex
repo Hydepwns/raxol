@@ -43,32 +43,7 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec process_special_key(t(), atom()) :: t()
   def process_special_key(%__MODULE__{} = handler, key) do
-    sequence =
-      case key do
-        :up -> "\e[A"
-        :down -> "\e[B"
-        :right -> "\e[C"
-        :left -> "\e[D"
-        :home -> "\e[H"
-        :end -> "\e[F"
-        :page_up -> "\e[5~"
-        :page_down -> "\e[6~"
-        :f1 -> "\eOP"
-        :f2 -> "\eOQ"
-        :f3 -> "\eOR"
-        :f4 -> "\eOS"
-        :f5 -> "\e[15~"
-        :f6 -> "\e[17~"
-        :f7 -> "\e[18~"
-        :f8 -> "\e[19~"
-        :f9 -> "\e[20~"
-        :f10 -> "\e[21~"
-        :f11 -> "\e[23~"
-        :f12 -> "\e[24~"
-        _ -> ""
-      end
-
-    # Clear buffer and set to sequence for special keys
+    sequence = Raxol.Terminal.Input.SpecialKeys.atom_to_escape_sequence(key)
     %{handler | buffer: sequence}
   end
 
@@ -95,36 +70,11 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec process_key_with_modifiers(t(), String.t()) :: t()
   def process_key_with_modifiers(%__MODULE__{} = handler, key) do
-    # Calculate modifier code as sum of bit flags: ctrl=1, shift=2, alt=4, meta=8
-    code =
-      if(handler.modifier_state.ctrl, do: 1, else: 0) +
-        if(handler.modifier_state.shift, do: 2, else: 0) +
-        if(handler.modifier_state.alt, do: 4, else: 0) +
-        if handler.modifier_state.meta, do: 8, else: 0
-
-    modifier_code = if code > 0, do: Integer.to_string(code), else: ""
-
     sequence =
-      case key do
-        "ArrowUp" ->
-          "\e[#{modifier_code};A"
-
-        "ArrowDown" ->
-          "\e[#{modifier_code};B"
-
-        "ArrowRight" ->
-          "\e[#{modifier_code};C"
-
-        "ArrowLeft" ->
-          "\e[#{modifier_code};D"
-
-        _ when is_binary(key) and byte_size(key) == 1 ->
-          char_code = :binary.first(key)
-          "\e[#{modifier_code};#{char_code}"
-
-        _ ->
-          ""
-      end
+      Raxol.Terminal.Input.SpecialKeys.key_with_modifiers_to_escape_sequence(
+        handler.modifier_state,
+        key
+      )
 
     %{handler | buffer: sequence}
   end
