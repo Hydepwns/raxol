@@ -147,40 +147,18 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
   def handle_command(command_table, command_name_str, _namespace, args, state) do
     with {:ok, {plugin_module, handler, _arity}} <-
-           lookup_valid_command(command_table, command_name_str, args) do
-      case get_plugin_state(state, plugin_module) do
-        {:ok, plugin_id, plugin_state} ->
-          case execute_and_update_state(
-                 handler,
-                 args,
-                 plugin_state,
-                 plugin_id,
-                 state
-               ) do
-            {:ok, new_state, _result, plugin_id} ->
-              updated_plugin_states =
-                Map.put(state.plugin_states, plugin_id, new_state)
-
-              {:ok, updated_plugin_states}
-
-            {:error, :exception, new_state} ->
-              updated_plugin_states =
-                Map.put(state.plugin_states, plugin_id, new_state)
-
-              {:error, :exception, updated_plugin_states}
-
-            {:error, reason, new_state} ->
-              updated_plugin_states =
-                Map.put(state.plugin_states, plugin_id, new_state)
-
-              {:error, reason, updated_plugin_states}
-          end
-
-        {:error, :missing_plugin_state} ->
-          {:error, :missing_plugin_state, state.plugin_states}
-      end
+           lookup_valid_command(command_table, command_name_str, args),
+         {:ok, plugin_id, plugin_state} <- get_plugin_state(state, plugin_module),
+         {:ok, new_state, _result, plugin_id} <-
+           execute_and_update_state(handler, args, plugin_state, plugin_id, state) do
+      updated_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
+      {:ok, updated_plugin_states}
     else
       {:error, :not_found} -> {:error, :not_found}
+      {:error, :missing_plugin_state} -> {:error, :missing_plugin_state, state.plugin_states}
+      {:error, reason, new_state, plugin_id} ->
+        updated_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
+        {:error, reason, updated_plugin_states}
       {:error, reason} -> {:error, reason, state.plugin_states}
     end
   end
@@ -233,10 +211,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
         {:ok, new_state, result, plugin_id}
 
       {:error, :exception, new_state} ->
-        {:error, :exception, new_state}
+        {:error, :exception, new_state, plugin_id}
 
       {:error, reason, new_state} ->
-        {:error, reason, new_state}
+        {:error, reason, new_state, plugin_id}
     end
   end
 

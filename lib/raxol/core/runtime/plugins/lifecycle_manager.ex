@@ -200,7 +200,15 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   Initialize all plugins in the system.
   This function is called during system startup to initialize all loaded plugins.
   """
-  def initialize_plugins(plugins, metadata, plugin_config, plugin_states, load_order, command_registry_table, _opts) do
+  def initialize_plugins(
+        plugins,
+        metadata,
+        plugin_config,
+        plugin_states,
+        load_order,
+        command_registry_table,
+        _opts
+      ) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Initializing #{map_size(plugins)} plugins",
       %{plugin_count: map_size(plugins)}

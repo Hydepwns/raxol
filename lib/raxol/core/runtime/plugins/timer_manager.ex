@@ -59,7 +59,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
         Map.put(state, :tick_timer, nil)
 
       :error ->
-        Logger.warn(
+        Logger.warning(
           "[TimerManager] :tick_timer key missing in state: #{inspect(state)}"
         )
 
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   def cancel_periodic_tick(state) do
     require Logger
 
-    Logger.warn(
+    Logger.warning(
       "[TimerManager] cancel_periodic_tick called with non-map state: #{inspect(state)}"
     )
 

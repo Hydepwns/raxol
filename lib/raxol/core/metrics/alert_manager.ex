@@ -243,7 +243,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     now = DateTime.utc_now()
 
     in_cooldown =
-      is_in_cooldown?(alert_state.last_triggered, rule.cooldown, now)
+      in_cooldown?(alert_state.last_triggered, rule.cooldown, now)
 
     should_trigger =
       evaluate_condition(rule.condition, current_value, rule.threshold)
@@ -257,7 +257,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     {new_alert_state, should_trigger and not in_cooldown}
   end
 
-  defp is_in_cooldown?(last_triggered, cooldown, now) do
+  defp in_cooldown?(last_triggered, cooldown, now) do
     case last_triggered do
       nil -> false
       triggered -> DateTime.diff(now, triggered) < cooldown

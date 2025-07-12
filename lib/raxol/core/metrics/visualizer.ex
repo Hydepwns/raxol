@@ -427,8 +427,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
       end)
 
     [headers | rows]
-    |> Enum.map(&Enum.join(&1, ","))
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", &Enum.join(&1, ","))
   end
 
   defp export_to_png(_chart) do

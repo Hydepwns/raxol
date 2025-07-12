@@ -124,7 +124,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   Initialize the plugin system with the given configuration.
   This is a synchronous version for testing.
   """
-  def init(config) do
+  def initialize_with_config(config) do
     case GenServer.call(__MODULE__, {:init, config}) do
       {:ok, state} -> {:ok, state}
       error -> error
@@ -197,6 +197,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     case state.lifecycle_helper_module.load_plugin(plugin_id) do
       :ok ->
         {:reply, :ok, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -234,7 +235,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call(:get_loaded_plugins, _from, state) do
-    plugins = Map.keys(state)
+    plugins = Map.keys(state.plugin_states)
     {:reply, plugins, state}
   end
 
@@ -841,7 +842,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   def terminate(reason, state) do
     require Logger
 
-    Logger.warn(
+    Logger.warning(
       "[#{__MODULE__}] Terminating with non-map state: #{inspect(state)}, reason: #{inspect(reason)}"
     )
 

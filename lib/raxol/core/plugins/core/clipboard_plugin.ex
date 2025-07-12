@@ -9,7 +9,6 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
   def init(opts) do
-    # Use the configured clipboard implementation or default to Raxol.System.Clipboard
     clipboard_impl = Keyword.get(opts, :clipboard_impl, Raxol.System.Clipboard)
     {:ok, %{clipboard_impl: clipboard_impl}}
   end
@@ -70,7 +69,6 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   @spec handle_clipboard_command(list(), map()) ::
           {:ok, map(), any()} | {:error, any(), map()}
   def handle_clipboard_command([content], state) when binary?(content) do
-    # Handle clipboard_write with content
     handle_command(:clipboard_write, [content], state)
   end
 
@@ -84,7 +82,6 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   @spec handle_clipboard_command(map()) ::
           {:ok, map(), any()} | {:error, any(), map()}
   def handle_clipboard_command(state) do
-    # Handle clipboard_read with no content
     handle_command(:clipboard_read, [], state)
   end
 
