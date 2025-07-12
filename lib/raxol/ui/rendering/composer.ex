@@ -57,8 +57,12 @@ defmodule Raxol.UI.Rendering.Composer do
   defp build_new_composed_node(current_layout_node, previous_composed_node) do
     original_type = current_layout_node_type(current_layout_node)
     layout_attrs = current_layout_node[:layout_attrs]
-    properties_to_carry_forward = Map.drop(current_layout_node, [:children, :layout_attrs, :type])
-    composed_children = build_composed_children(current_layout_node, previous_composed_node)
+
+    properties_to_carry_forward =
+      Map.drop(current_layout_node, [:children, :layout_attrs, :type])
+
+    composed_children =
+      build_composed_children(current_layout_node, previous_composed_node)
 
     %{
       composed_type: :composed_element,

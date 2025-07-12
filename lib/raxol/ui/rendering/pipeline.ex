@@ -23,8 +23,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
   - Animation frame scheduling
   - Hooks for custom renderers or output backends
 
-  ## TODO
-
   - Implement diffing and minimal update computation (DELEGATED: `TreeDiffer` handles core diffing. Layout stage has partial diff-awareness. Compose and Paint stages now reuse previous results if their respective inputs are unchanged, providing a level of minimal update.)
   - Add batching/debouncing of rapid updates (partially implemented with send_after for debouncing)
   - Integrate animation frame scheduling (request_animation_frame now uses GenServer.call with deferred reply from :animation_tick; this is more robust.)
@@ -658,7 +656,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   defp execute_render_stages(
          diff_result,
          new_tree_for_reference,
-         renderer_module,
+         _renderer_module,
          previous_composed_tree,
          previous_painted_output
        ) do
@@ -673,7 +671,13 @@ defmodule Raxol.UI.Rendering.Pipeline do
             previous_composed_tree
           )
 
-        handle_composition_stage(composed_data, layout_data, previous_painted_output, previous_composed_tree, new_tree_for_reference)
+        handle_composition_stage(
+          composed_data,
+          layout_data,
+          previous_painted_output,
+          previous_composed_tree,
+          new_tree_for_reference
+        )
       else
         Raxol.Core.Runtime.Log.debug(
           "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
@@ -690,12 +694,28 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  defp handle_composition_stage(composed_data, layout_data, previous_painted_output, previous_composed_tree, new_tree_for_reference) do
+  defp handle_composition_stage(
+         composed_data,
+         layout_data,
+         previous_painted_output,
+         previous_composed_tree,
+         new_tree_for_reference
+       ) do
     if should_process_composition?(composed_data, layout_data) do
-      painted_data = Painter.paint(composed_data, new_tree_for_reference, previous_composed_tree, previous_painted_output)
+      painted_data =
+        Painter.paint(
+          composed_data,
+          new_tree_for_reference,
+          previous_composed_tree,
+          previous_painted_output
+        )
+
       {painted_data, composed_data}
     else
-      Raxol.Core.Runtime.Log.debug("Render Pipeline: Composition stage resulted in nil, skipping paint and commit.")
+      Raxol.Core.Runtime.Log.debug(
+        "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
+      )
+
       {previous_painted_output, composed_data}
     end
   end

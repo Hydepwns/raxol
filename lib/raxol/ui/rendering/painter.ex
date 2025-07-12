@@ -63,19 +63,31 @@ defmodule Raxol.UI.Rendering.Painter do
   end
 
   defp do_paint_node(composed_node, parent_x_offset, parent_y_offset) do
-    paint_ops_for_current_node = paint_current_node(composed_node, parent_x_offset, parent_y_offset)
-    children_paint_ops = paint_children(composed_node, parent_x_offset, parent_y_offset)
+    paint_ops_for_current_node =
+      paint_current_node(composed_node, parent_x_offset, parent_y_offset)
+
+    children_paint_ops =
+      paint_children(composed_node, parent_x_offset, parent_y_offset)
 
     paint_ops_for_current_node ++ children_paint_ops
   end
 
   defp paint_current_node(composed_node, parent_x_offset, parent_y_offset) do
     case composed_node[:composed_type] do
-      :composed_element -> paint_composed_element(composed_node)
-      :primitive -> paint_primitive(composed_node, parent_x_offset, parent_y_offset)
-      :unprocessed_map_wrapper -> []
+      :composed_element ->
+        paint_composed_element(composed_node)
+
+      :primitive ->
+        paint_primitive(composed_node, parent_x_offset, parent_y_offset)
+
+      :unprocessed_map_wrapper ->
+        []
+
       unknown_type ->
-        Raxol.Core.Runtime.Log.warning("Paint Stage: Unknown composed_type: #{inspect(unknown_type)}")
+        Raxol.Core.Runtime.Log.warning(
+          "Paint Stage: Unknown composed_type: #{inspect(unknown_type)}"
+        )
+
         []
     end
   end
@@ -93,10 +105,14 @@ defmodule Raxol.UI.Rendering.Painter do
       width: attrs.width,
       height: attrs.height,
       properties: properties,
-      text_content: properties[:text] || properties[:label] || properties[:value]
+      text_content:
+        properties[:text] || properties[:label] || properties[:value]
     }
 
-    Raxol.Core.Runtime.Log.debug("Paint Stage: Generated draw_element op for #{original_type}: #{inspect(paint_op)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Paint Stage: Generated draw_element op for #{original_type}: #{inspect(paint_op)}"
+    )
+
     [paint_op]
   end
 
@@ -111,18 +127,29 @@ defmodule Raxol.UI.Rendering.Painter do
       primitive_type: get_primitive_type(value)
     }
 
-    Raxol.Core.Runtime.Log.debug("Paint Stage: Generated draw_primitive op: #{inspect(paint_op)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Paint Stage: Generated draw_primitive op: #{inspect(paint_op)}"
+    )
+
     [paint_op]
   end
 
   defp get_primitive_type(value) do
-    if binary?(value), do: :text, else: if(number?(value), do: :number, else: :unknown)
+    if binary?(value),
+      do: :text,
+      else: if(number?(value), do: :number, else: :unknown)
   end
 
   defp paint_children(composed_node, parent_x_offset, parent_y_offset) do
     (composed_node[:children] || [])
     |> Enum.flat_map(fn child_node ->
-      {child_parent_x, child_parent_y} = get_child_parent_offsets(composed_node, parent_x_offset, parent_y_offset)
+      {child_parent_x, child_parent_y} =
+        get_child_parent_offsets(
+          composed_node,
+          parent_x_offset,
+          parent_y_offset
+        )
+
       do_paint_node(child_node, child_parent_x, child_parent_y)
     end)
   end
