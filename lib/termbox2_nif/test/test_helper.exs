@@ -1,6 +1,7 @@
 ExUnit.start()
 
 defmodule Termbox2NifTest do
+  @moduletag :docker
   use ExUnit.Case
 
   test "NIF loads successfully" do
