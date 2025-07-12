@@ -1,7 +1,5 @@
 defmodule Raxol.Terminal.ScreenBuffer.Mode do
-  @moduledoc """
-  Handles terminal mode state management.
-  """
+  @moduledoc false
 
   defstruct [:insert_mode, :origin_mode, :auto_wrap, :cursor_visible]
 
@@ -12,9 +10,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Mode do
           cursor_visible: boolean()
         }
 
-  @doc """
-  Initializes a new mode state.
-  """
   def init do
     %__MODULE__{
       insert_mode: false,
@@ -24,9 +19,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Mode do
     }
   end
 
-  @doc """
-  Handles mode changes.
-  """
   def handle(%__MODULE__{} = state, mode, value) do
     case mode do
       :insert_mode -> %{state | insert_mode: value}

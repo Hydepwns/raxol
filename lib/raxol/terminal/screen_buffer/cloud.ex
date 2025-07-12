@@ -45,16 +45,10 @@ defmodule Raxol.Terminal.ScreenBuffer.Cloud do
     }
   end
 
-  @doc """
-  Gets the current cloud configuration.
-  """
   def get_config do
     GenServer.call(__MODULE__, :get_config)
   end
 
-  @doc """
-  Sets new cloud configuration.
-  """
   def set_config(config) do
     GenServer.call(__MODULE__, {:set_config, config})
   end

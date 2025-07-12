@@ -1,7 +1,5 @@
 defmodule Raxol.Terminal.ScreenBuffer.State do
-  @moduledoc """
-  Handles terminal state operations for the screen buffer.
-  """
+  @moduledoc false
 
   def init do
     %{
