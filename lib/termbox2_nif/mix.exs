@@ -33,7 +33,14 @@ defmodule Termbox2Nif.MixProject do
   defp package do
     [
       name: :termbox2_nif,
-      files: ["lib", "c_src", "mix.exs", "c_src/Makefile*", "README.md", "LICENSE"],
+      files: [
+        "lib",
+        "c_src",
+        "mix.exs",
+        "c_src/Makefile*",
+        "README.md",
+        "LICENSE"
+      ],
       maintainers: ["hydepwns"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/hydepwns/termbox2_nif"}

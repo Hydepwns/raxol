@@ -93,7 +93,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     new_row = max(0, row - 1)
 
     # Use state.lines if present, otherwise split lines
-    lines = Map.get(state, :lines) || TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    lines =
+      Map.get(state, :lines) ||
+        TextHelper.split_into_lines(state.value, state.width, state.wrap)
+
     # Use desired_col if available, otherwise use current column
     desired_col = state.desired_col || col
 
@@ -110,7 +113,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   def move_cursor(state, :down) do
     {row, col} = state.cursor_pos
     # Use state.lines if present, otherwise split lines
-    lines = Map.get(state, :lines) || TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    lines =
+      Map.get(state, :lines) ||
+        TextHelper.split_into_lines(state.value, state.width, state.wrap)
+
     num_lines = length(lines)
     new_row = min(num_lines - 1, row + 1)
 

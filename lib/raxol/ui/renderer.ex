@@ -358,13 +358,16 @@ defmodule Raxol.UI.Renderer do
     attrs = Map.get(table_element, :attrs, %{})
     headers = Map.get(table_element, :headers) || Map.get(attrs, :_headers, [])
     data = Map.get(table_element, :data) || Map.get(attrs, :_data, [])
-    column_widths = Map.get(table_element, :column_widths) || Map.get(attrs, :_col_widths, [])
+
+    column_widths =
+      Map.get(table_element, :column_widths) || Map.get(attrs, :_col_widths, [])
 
     # Calculate table width if not provided
     width = calculate_table_width(headers, data, column_widths)
 
     # Build attrs with table data and custom styles
-    merged_attrs = build_table_attrs(table_element, headers, data, column_widths)
+    merged_attrs =
+      build_table_attrs(table_element, headers, data, column_widths)
 
     cells = render_table(x, y, width, 0, merged_attrs, theme)
     clip_cells_to_bounds(cells, Map.get(table_element, :clip_bounds))
@@ -381,10 +384,13 @@ defmodule Raxol.UI.Renderer do
     attrs = Map.get(table_element, :attrs, %{})
     headers = Map.get(table_element, :headers) || Map.get(attrs, :_headers, [])
     data = Map.get(table_element, :data) || Map.get(attrs, :_data, [])
-    column_widths = Map.get(table_element, :column_widths) || Map.get(attrs, :_col_widths, [])
+
+    column_widths =
+      Map.get(table_element, :column_widths) || Map.get(attrs, :_col_widths, [])
 
     # Build attrs with table data and custom styles
-    merged_attrs = build_table_attrs(table_element, headers, data, column_widths)
+    merged_attrs =
+      build_table_attrs(table_element, headers, data, column_widths)
 
     cells = render_table(x, y, w, h, merged_attrs, theme)
     clip_cells_to_bounds(cells, Map.get(table_element, :clip_bounds))
@@ -604,6 +610,7 @@ defmodule Raxol.UI.Renderer do
       else
         %{}
       end
+
     header_style = Map.get(table_styles, :header, %{})
     data_style = Map.get(table_styles, :data, %{})
 
@@ -630,14 +637,22 @@ defmodule Raxol.UI.Renderer do
 
   defp render_table_row(x, y, row, col_widths, style) do
     Enum.reduce(Enum.with_index(row), {[], x + 1}, fn {cell, index}, {acc, cur_x} ->
-      cell_text = to_string(cell)
-      col_width = Enum.at(col_widths, index, 5)
-      cell_fg = Map.get(style, :foreground, Map.get(style, :fg, :white))
-      cell_bg = Map.get(style, :background, Map.get(style, :bg, :black))
-      cell_tuple = {cur_x, y, cell_text, cell_fg, cell_bg, []}
-      {acc ++ [cell_tuple], cur_x + col_width}
+      cell_cells = render_table_cell(cell, cur_x, y, Enum.at(col_widths, index, 5), style)
+      {acc ++ cell_cells, cur_x + Enum.at(col_widths, index, 5)}
     end)
     |> elem(0)
+  end
+
+  defp render_table_cell(cell, x, y, col_width, style) do
+    cell_text = to_string(cell)
+    cell_fg = Map.get(style, :foreground, Map.get(style, :fg, :white))
+    cell_bg = Map.get(style, :background, Map.get(style, :bg, :black))
+
+    String.graphemes(cell_text)
+    |> Enum.with_index()
+    |> Enum.map(fn {char, char_index} ->
+      {x + char_index, y, char, cell_fg, cell_bg, []}
+    end)
   end
 
   defp render_horizontal_line(x, y, width, char, style, _theme) do

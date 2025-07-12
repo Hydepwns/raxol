@@ -81,7 +81,11 @@ defmodule Raxol.Terminal.Renderer.GPURendererTest do
       {_output, updated_renderer} = GPURenderer.render(gpu_renderer)
 
       # Force metrics to trigger optimization
-      updated_renderer = %{updated_renderer | performance_metrics: Map.put(updated_renderer.performance_metrics, :render_calls, 2000)}
+      updated_renderer = %{
+        updated_renderer
+        | performance_metrics:
+            Map.put(updated_renderer.performance_metrics, :render_calls, 2000)
+      }
 
       # Then optimize
       optimized_renderer = GPURenderer.optimize_pipeline(updated_renderer)

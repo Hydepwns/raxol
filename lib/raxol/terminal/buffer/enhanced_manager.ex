@@ -306,7 +306,8 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   defp update_compression_state(state, buffer) do
     # Update compression statistics
     compressed_size = calculate_buffer_size(buffer)
-    threshold = Map.get(state, :threshold, 1024)  # Default threshold if not present
+    # Default threshold if not present
+    threshold = Map.get(state, :threshold, 1024)
     compression_ratio = compressed_size / max(threshold, 1)
 
     %{
