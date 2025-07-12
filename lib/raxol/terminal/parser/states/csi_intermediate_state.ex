@@ -50,7 +50,9 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
        do: handle_can_sub(emulator, parser_state, rest)
 
   defp dispatch_input(<<ignored_byte, rest::binary>>, emulator, parser_state)
-       when ignored_byte?(ignored_byte),
+       when (ignored_byte >= 0 and ignored_byte <= 23 and ignored_byte != 0x18 and
+               ignored_byte != 0x1A) or
+              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127,
        do: handle_ignored_byte(emulator, parser_state, ignored_byte, rest)
 
   defp dispatch_input(<<unhandled_byte, rest::binary>>, emulator, parser_state),
@@ -125,11 +127,5 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
 
     next_parser_state = %{parser_state | state: :ground}
     {:continue, emulator, next_parser_state, rest}
-  end
-
-  # Guard functions
-  defp ignored_byte?(byte) do
-    (byte >= 0 and byte <= 23 and byte != 0x18 and byte != 0x1A) or
-      (byte >= 27 and byte <= 31) or byte == 127
   end
 end

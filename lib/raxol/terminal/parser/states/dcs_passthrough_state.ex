@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
     {:ok, emulator, state}
   end
 
-  defp process_input(_emulator, parser_state, <<>>) do
+  defp process_input(emulator, parser_state, <<>>) do
     Raxol.Core.Runtime.Log.debug("[Parser] Incomplete DCS string, input ended.")
     {:incomplete, emulator, parser_state}
   end
