@@ -5,11 +5,6 @@ defmodule RaxolWeb.PlaygroundLive do
   A LiveView for a code playground that allows users to write, edit, and run code snippets.
   """
 
-  # TODO: Define the functionality of this module.
-  # This file was created to address a "file not found" issue.
-  # Previous warnings indicated unused variables 'code' and 'language'
-  # in a handle_event/3 clause for "new_snippet".
-
   def mount(_params, _session, socket) do
     {:ok,
      assign(socket,
