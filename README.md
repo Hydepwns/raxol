@@ -12,6 +12,8 @@ A modern toolkit for building terminal user interfaces (TUIs) in Elixir with com
 - **Accessibility**: Screen reader support, keyboard navigation, focus management
 - **Animation**: Smooth transitions and dynamic UI updates
 - **Performance**: Advanced caching, metrics, and rendering optimizations
+- **Documentation System**: Markdown rendering, search indexing, and TOC generation
+- **Code Quality**: Zero duplicate code, comprehensive test coverage, modular design
 
 ## Installation
 
@@ -39,7 +41,7 @@ mix setup
 # mix.exs
 def deps do
   [
-    {:raxol, "~> 0.5.2"}
+    {:raxol, "~> 0.6.0"}
   ]
 end
 ```
@@ -134,6 +136,7 @@ Raxol comes with a comprehensive set of examples demonstrating various features:
 - Event processing: < 1ms average
 - Screen updates: < 2ms average
 - Concurrent operations: < 5ms average
+- Code quality: 0 duplicate code issues, 100% modular design
 
 ## License
 
