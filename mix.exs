@@ -100,8 +100,8 @@ defmodule Raxol.MixProject do
   defp deps do
     [
       # Core dependencies
-      # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2_nif)
-      {:termbox2_nif, path: "lib/termbox2_nif"},
+      # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2-nif)
+      {:termbox2_nif, "~> 2.0"},
 
       # --- Added for Tutorial Loading ---
       # Markdown parser
@@ -217,19 +217,26 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Raxol is a modern Elixir toolkit for building advanced terminal user interfaces (TUIs) with components, theming, and event handling.
+    Modern Elixir toolkit for building advanced terminal user interfaces (TUIs) with components, theming, event handling, accessibility, and high performance."
     """
   end
 
   defp package do
     [
+      name: "raxol",
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs examples),
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/Hydepwns/raxol"
-      }
+        "GitHub" => "https://github.com/Hydepwns/raxol",
+        "Documentation" => "https://hexdocs.pm/raxol",
+        "Changelog" =>
+          "https://github.com/Hydepwns/raxol/blob/master/CHANGELOG.md"
+      },
+      description: description(),
+      source_url: @source_url,
+      homepage_url: "https://github.com/Hydepwns/raxol"
     ]
   end
 
