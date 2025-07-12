@@ -540,23 +540,8 @@ defmodule Raxol.Accounts do
   # Helper functions
 
   defp authenticate_user_password(user, password) do
-    cond do
-      not user.active ->
-        {:error, :user_inactive}
-
-      user.locked_until &&
-          DateTime.compare(user.locked_until, DateTime.utc_now()) == :gt ->
-        {:error, :user_locked}
-
-      verify_password(password, user.password_hash) ->
-        # Update last login and reset failed attempts
-        update_user_login_success(user)
-
-      true ->
-        # Increment failed login attempts
-        update_user_login_failure(user)
-        {:error, :invalid_credentials}
-    end
+    # Delegate to Auth module for authentication
+    Raxol.Auth.authenticate_user_password(user, password)
   end
 
   defp verify_password(password, password_hash) do
@@ -621,19 +606,8 @@ defmodule Raxol.Accounts do
   end
 
   defp check_user_permissions(user, module, action) do
-    # Check if user has admin role (admin has all permissions)
-    if has_admin_role?(user) do
-      true
-    else
-      # Check specific permissions
-      module_str = to_string(module)
-      action_str = to_string(action)
-
-      user.permissions
-      |> Enum.any?(fn permission ->
-        permission.module == module_str && permission.action == action_str
-      end)
-    end
+    # Delegate to Auth module for permission checking
+    Raxol.Auth.check_user_permissions(user, module, action)
   end
 
   defp has_admin_role?(user) do

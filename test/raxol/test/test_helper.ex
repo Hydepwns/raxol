@@ -48,24 +48,8 @@ defmodule Raxol.Test.TestHelper do
   Generates test events for common scenarios.
   """
   def test_events do
-    %{
-      keyboard: [
-        Event.key(:enter),
-        Event.key(:esc),
-        Event.key({:char, ?a}),
-        Event.key(:tab)
-      ],
-      mouse: [
-        Event.mouse(:left, {0, 0}),
-        Event.mouse(:right, {10, 5}),
-        Event.mouse(:left, {20, 10}, drag: true)
-      ],
-      window: [
-        Event.window(80, 24, :resize),
-        Event.window(100, 30, :resize),
-        Event.window(80, 24, :focus)
-      ]
-    }
+    # Delegate to the main test helper
+    Raxol.Test.TestHelper.test_events()
   end
 
   @doc """
@@ -106,18 +90,8 @@ defmodule Raxol.Test.TestHelper do
   Captures all terminal output during a test.
   """
   def capture_terminal_output(fun) when is_function(fun, 0) do
-    original_group_leader = Process.group_leader()
-    {:ok, capture_pid} = StringIO.open("")
-    Process.group_leader(self(), capture_pid)
-
-    try do
-      fun.()
-      {_input, output} = StringIO.contents(capture_pid)
-      output
-    after
-      Process.group_leader(self(), original_group_leader)
-      StringIO.close(capture_pid)
-    end
+    # Delegate to the main test helper
+    Raxol.Test.TestHelper.capture_terminal_output(fun)
   end
 
   # Private Helpers

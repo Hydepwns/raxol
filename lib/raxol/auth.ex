@@ -368,7 +368,10 @@ defmodule Raxol.Auth do
   defp normalize_role(role) when is_binary(role), do: role
   defp normalize_role(_), do: nil
 
-  defp check_user_permissions(user, module, action) do
+  @doc """
+  Checks if a user has permission to perform an action on a module.
+  """
+  def check_user_permissions(user, module, action) do
     # Check if user has admin role (admin has all permissions)
     if has_admin_role?(user) do
       true
@@ -398,7 +401,10 @@ defmodule Raxol.Auth do
     end
   end
 
-  defp authenticate_user_password(user, password) do
+  @doc """
+  Authenticates a user with the given password.
+  """
+  def authenticate_user_password(user, password) do
     cond do
       not user.active ->
         {:error, :user_inactive}

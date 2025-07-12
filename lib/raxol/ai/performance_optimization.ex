@@ -387,17 +387,12 @@ defmodule Raxol.AI.PerformanceOptimization do
   # Private helpers
 
   defp with_state(fun) do
-    state = Process.get(@state_key) || State.new()
-
-    case fun.(state) do
-      {new_state, result} ->
-        Process.put(@state_key, new_state)
-        result
-
-      new_state ->
-        Process.put(@state_key, new_state)
-        nil
-    end
+    Raxol.Core.StateManager.with_state(@state_key, fn state ->
+      case fun.(state) do
+        {new_state, result} -> {new_state, result}
+        new_state -> {new_state, nil}
+      end
+    end)
   end
 
   defp feature_enabled?(feature, state) do

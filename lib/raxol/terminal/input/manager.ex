@@ -509,67 +509,57 @@ defmodule Raxol.Terminal.Input.Manager do
   @spec process_mouse(t(), {atom(), integer(), integer(), integer()}) :: t()
   def process_mouse(manager, {action, button, x, y}) do
     if manager.mouse_enabled do
-      case action do
-        :press ->
-          escape_sequence = "\e[<#{button};#{x + 1};#{y + 1}M"
-          char_codes = String.to_charlist(escape_sequence)
-
-          events =
-            manager.buffer.events ++
-              Enum.map(
-                char_codes,
-                &%{char: &1, timestamp: System.system_time()}
-              )
-
-          buttons = MapSet.put(manager.mouse_buttons, button)
-
-          %{
-            manager
-            | buffer: %{manager.buffer | events: events},
-              mouse_position: {x, y},
-              mouse_buttons: buttons
-          }
-
-        :release ->
-          escape_sequence = "\e[<3;#{x + 1};#{y + 1}m"
-          char_codes = String.to_charlist(escape_sequence)
-
-          events =
-            manager.buffer.events ++
-              Enum.map(
-                char_codes,
-                &%{char: &1, timestamp: System.system_time()}
-              )
-
-          buttons = MapSet.delete(manager.mouse_buttons, button)
-
-          %{
-            manager
-            | buffer: %{manager.buffer | events: events},
-              mouse_position: {x, y},
-              mouse_buttons: buttons
-          }
-
-        :scroll ->
-          escape_sequence = "\e[<64;#{x + 1};#{y + 1}M"
-          char_codes = String.to_charlist(escape_sequence)
-
-          events =
-            manager.buffer.events ++
-              Enum.map(
-                char_codes,
-                &%{char: &1, timestamp: System.system_time()}
-              )
-
-          %{
-            manager
-            | buffer: %{manager.buffer | events: events},
-              mouse_position: {x, y}
-          }
-      end
+      handle_mouse_action(manager, action, button, x, y)
     else
       manager
     end
+  end
+
+  defp handle_mouse_action(manager, :press, button, x, y) do
+    escape_sequence = "\e[<#{button};#{x + 1};#{y + 1}M"
+    buttons = MapSet.put(manager.mouse_buttons, button)
+
+    update_manager_with_escape_sequence(manager, escape_sequence, x, y, buttons)
+  end
+
+  defp handle_mouse_action(manager, :release, button, x, y) do
+    escape_sequence = "\e[<3;#{x + 1};#{y + 1}m"
+    buttons = MapSet.delete(manager.mouse_buttons, button)
+
+    update_manager_with_escape_sequence(manager, escape_sequence, x, y, buttons)
+  end
+
+  defp handle_mouse_action(manager, :scroll, _button, x, y) do
+    escape_sequence = "\e[<64;#{x + 1};#{y + 1}M"
+
+    update_manager_with_escape_sequence(
+      manager,
+      escape_sequence,
+      x,
+      y,
+      manager.mouse_buttons
+    )
+  end
+
+  defp update_manager_with_escape_sequence(
+         manager,
+         escape_sequence,
+         x,
+         y,
+         buttons
+       ) do
+    char_codes = String.to_charlist(escape_sequence)
+
+    events =
+      manager.buffer.events ++
+        Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
+    %{
+      manager
+      | buffer: %{manager.buffer | events: events},
+        mouse_position: {x, y},
+        mouse_buttons: buttons
+    }
   end
 
   @doc """
