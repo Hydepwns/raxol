@@ -205,6 +205,7 @@ jobs:
           fi
 
       - name: Run Tests
+        if: runner.os != 'macOS' || env.DOCKER_AVAILABLE == 'true'
         run: |
           # Run tests with coverage and performance monitoring
           mix test --cover --slowest 10
@@ -232,7 +233,7 @@ jobs:
       # Only run codecov on Linux runners to avoid Docker issues on macOS
       - name: Upload coverage reports (Linux)
         uses: codecov/codecov-action@v3
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && env.DOCKER_AVAILABLE == 'true'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cover/excoveralls.json
