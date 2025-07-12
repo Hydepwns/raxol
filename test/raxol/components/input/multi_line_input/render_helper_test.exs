@@ -110,7 +110,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
           theme
         )
 
-      assert Enum.count(result) == 1
+      assert length(result) == 1
       assert Enum.at(result, 0).content == "abc"
     end
 
@@ -128,7 +128,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
           theme
         )
 
-      assert Enum.count(result) == 1
+      assert length(result) == 1
       assert Enum.at(result, 0).content == "abcdef"
     end
 
@@ -148,7 +148,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
           theme
         )
 
-      assert Enum.count(result) == 1
+      assert length(result) == 1
       assert Enum.at(result, 0).content == "abcdef"
     end
 
@@ -164,7 +164,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
           theme
         )
 
-      assert Enum.count(result) == 0 or Enum.at(result, 0).content == ""
+      assert Enum.empty?(result) or Enum.at(result, 0).content == ""
     end
 
     test "out-of-bounds cursor/selection does not crash", %{theme: theme} do
@@ -199,7 +199,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
           theme
         )
 
-      assert Enum.count(result) == 1
+      assert length(result) == 1
       assert Enum.at(result, 0).content == "abcdef"
     end
   end

@@ -14,6 +14,13 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     Map.put_new(state, :type, :text_input)
   end
 
+  # Helper to setup callback testing
+  defp setup_callback_test do
+    parent_pid = self()
+    callback = fn value -> send(parent_pid, {:callback, value}) end
+    {parent_pid, callback}
+  end
+
   describe "init/1" do
     test "creates a text input with default state" do
       state = create_component_state()
@@ -44,14 +51,89 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
   end
 
   describe "update/2" do
-    # TODO: Remove tests for update/2 as it doesn't seem to exist
-    # test 'updates value from props' do ... end
-    # test 'updates props' do ... end
-    # test 'maintains cursor position when value doesn't change' do ... end
+    test "updates value from props" do
+      state = create_component_state(%{value: "Hello"})
+
+      updated_state =
+        TextInput.update({:update_props, %{value: "World"}}, state)
+
+      assert updated_state.value == "World"
+      assert updated_state.cursor_pos == 5
+    end
+
+    test "updates props" do
+      state = create_component_state(%{placeholder: "Old"})
+
+      updated_state =
+        TextInput.update({:update_props, %{placeholder: "New"}}, state)
+
+      assert updated_state.placeholder == "New"
+    end
+
+    test "maintains cursor position when value doesn't change" do
+      state = create_component_state(%{value: "Hello"})
+      state = %{state | cursor_pos: 3}
+
+      updated_state =
+        TextInput.update({:update_props, %{placeholder: "New"}}, state)
+
+      assert updated_state.cursor_pos == 3
+    end
+
+    test "clamps cursor position when value becomes shorter" do
+      state = create_component_state(%{value: "Hello"})
+      state = %{state | cursor_pos: 5}
+      updated_state = TextInput.update({:update_props, %{value: "Hi"}}, state)
+      assert updated_state.cursor_pos == 2
+    end
+
+    test "handles unknown messages gracefully" do
+      state = create_component_state(%{value: "Hello"})
+      updated_state = TextInput.update(:unknown_message, state)
+      assert updated_state == state
+    end
   end
 
   describe "handle_event/3" do
-    # TODO: ... (setup callback helper) ...
+    test "calls on_change callback when value changes" do
+      {_parent_pid, callback} = setup_callback_test()
+      state = create_component_state(%{value: "Hello", on_change: callback})
+      state = %{state | cursor_pos: 5}
+
+      {_updated_state, _commands} =
+        TextInput.handle_event(state, Event.key("X"), %{})
+
+      assert_receive {:callback, "HelloX"}
+    end
+
+    test "handles unknown events gracefully" do
+      state = create_component_state()
+
+      {updated_state, commands} =
+        TextInput.handle_event(state, %{type: :unknown_event}, %{})
+
+      assert updated_state == state
+      assert commands == []
+    end
+
+    test "handles focus event" do
+      state = create_component_state()
+
+      {updated_state, _commands} =
+        TextInput.handle_event(state, %{type: :focus}, %{})
+
+      assert updated_state.focused == true
+    end
+
+    test "handles blur event" do
+      state = create_component_state()
+      state = %{state | focused: true}
+
+      {updated_state, _commands} =
+        TextInput.handle_event(state, %{type: :blur}, %{})
+
+      assert updated_state.focused == false
+    end
 
     test "handles character input" do
       state = create_component_state(%{value: "Hello"})
@@ -194,7 +276,6 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       elements = TextInput.render(state, %{})
       assert elements.focused == true
       assert elements.cursor_pos == 3
-      # TODO: Actual cursor rendering might be handled higher up
     end
   end
 

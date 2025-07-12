@@ -385,7 +385,6 @@ defmodule Raxol.UI.Components.ModalTest do
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
     {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
-    IO.inspect(new_state.visible, label: "new_state.visible")
 
     # Modal should hide on submit
     assert new_state.visible == false
@@ -477,7 +476,7 @@ defmodule Raxol.UI.Components.ModalTest do
     # Assuming structure: column -> [row, error_row]
     field1_elements = field1_column.children
     # Row + Error Row
-    assert field1_elements |> Enum.count() == 2
+    assert length(field1_elements) == 2
     # Error is second element
     error1_row = Enum.at(field1_elements, 1)
     # Error row structure: %{type: :row, children: %{type: :label, ...}}
@@ -497,7 +496,7 @@ defmodule Raxol.UI.Components.ModalTest do
     field2_column = Enum.at(field_columns, 1)
     field2_elements = field2_column.children
     # Row + Error Row
-    assert field2_elements |> Enum.count() == 2
+    assert length(field2_elements) == 2
     error2_row = Enum.at(field2_elements, 1)
     # The label map IS the child of the row
     error2_label_map = error2_row.children

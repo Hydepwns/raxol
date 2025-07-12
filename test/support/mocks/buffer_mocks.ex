@@ -85,7 +85,7 @@ defmodule Raxol.Test.Support.Mocks.BufferQueriesMock do
   def get_text(_buffer), do: ""
   def get_line_text(_buffer, _y), do: ""
   def in_bounds?(_buffer, _x, _y), do: true
-  def is_empty?(_buffer), do: true
+  def empty?(_buffer), do: true
   def get_char(_buffer, _x, _y), do: " "
 end
 
