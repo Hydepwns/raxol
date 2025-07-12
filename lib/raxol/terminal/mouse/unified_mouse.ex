@@ -324,7 +324,9 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     case event do
       :press ->
         # Only update state if button state actually changes
-        if not Map.has_key?(mouse_state.button_state, button) do
+        if Map.has_key?(mouse_state.button_state, button) do
+          mouse_state
+        else
           %{
             mouse_state
             | position: position,
@@ -332,8 +334,6 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
               modifiers: modifiers,
               last_update: System.system_time(:millisecond)
           }
-        else
-          mouse_state
         end
 
       :release ->
