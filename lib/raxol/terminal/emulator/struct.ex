@@ -207,7 +207,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   Sets the character set for the emulator.
   """
   @spec set_charset(t(), atom()) :: {:ok, t()} | {:error, atom(), t()}
-  def set_charset(emulator, charset) do
+  def set_charset(emulator, _charset) do
     # For now, just return success
     # This is a placeholder implementation
     {:ok, emulator}
@@ -296,7 +296,7 @@ defmodule Raxol.Terminal.Emulator.Struct do
   Moves the cursor down by the specified number of lines.
   """
   @spec move_cursor_down(t(), integer(), integer(), integer()) :: t()
-  def move_cursor_down(emulator, lines, _width, height) do
+  def move_cursor_down(emulator, lines, _width, _height) do
     cursor = emulator.cursor
 
     moved_cursor =

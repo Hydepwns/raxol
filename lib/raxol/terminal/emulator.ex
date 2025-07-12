@@ -1337,4 +1337,14 @@ defmodule Raxol.Terminal.Emulator do
     # Mark emulator as stopped
     %{emulator | state: :stopped}
   end
+
+  @doc """
+  Resolves the load order for operations.
+  """
+  @spec resolve_load_order(t()) :: t()
+  def resolve_load_order(emulator) do
+    # For now, return the emulator unchanged
+    # This function may need more specific implementation based on requirements
+    emulator
+  end
 end
