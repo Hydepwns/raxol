@@ -66,7 +66,7 @@ defmodule Raxol.Terminal.Buffer do
   Creates a new buffer with default dimensions (80x24).
   """
   @spec new() :: t()
-  def new() do
+  def new do
     new({80, 24})
   end
 
