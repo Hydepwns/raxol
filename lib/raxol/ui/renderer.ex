@@ -13,7 +13,7 @@ defmodule Raxol.UI.Renderer do
   @default_fg :white
   @default_bg :black
 
-    @doc """
+  @doc """
   Renders a single element or list of elements to cells.
   This is the main public API for the renderer.
 
@@ -57,11 +57,13 @@ defmodule Raxol.UI.Renderer do
     case validate_element(element) do
       {:ok, valid_element} ->
         # Check for zero dimensions
-        if Map.get(valid_element, :width, 0) == 0 or Map.get(valid_element, :height, 0) == 0 do
+        if Map.get(valid_element, :width, 0) == 0 or
+             Map.get(valid_element, :height, 0) == 0 do
           []
         else
           render_visible_element(valid_element, theme, parent_style)
         end
+
       {:error, _reason} ->
         []
     end
@@ -76,8 +78,6 @@ defmodule Raxol.UI.Renderer do
       x >= 0 and y >= 0
     end)
   end
-
-
 
   # Validate element before rendering
   defp validate_element(element) do
@@ -178,47 +178,53 @@ defmodule Raxol.UI.Renderer do
     end
   end
 
-    defp resolve_fg_color(attrs, _component_styles, theme) do
-    result = cond do
-      Map.has_key?(attrs, :fg) and not is_nil(Map.get(attrs, :fg)) ->
-        Map.get(attrs, :fg)
+  defp resolve_fg_color(attrs, _component_styles, theme) do
+    result =
+      cond do
+        Map.has_key?(attrs, :fg) and not is_nil(Map.get(attrs, :fg)) ->
+          Map.get(attrs, :fg)
 
-      Map.has_key?(attrs, :foreground) and
-          not is_nil(Map.get(attrs, :foreground)) ->
-        Map.get(attrs, :foreground)
+        Map.has_key?(attrs, :foreground) and
+            not is_nil(Map.get(attrs, :foreground)) ->
+          Map.get(attrs, :foreground)
 
-      true ->
-        # Try to get color from theme directly first
-        case get_in(theme, [:colors, :foreground]) do
-          nil ->
-            # Fallback to ColorSystem, then :default
-            Raxol.Core.ColorSystem.get(theme.id, :foreground) || :default
-          color ->
-            color
-        end
-    end
+        true ->
+          # Try to get color from theme directly first
+          case get_in(theme, [:colors, :foreground]) do
+            nil ->
+              # Fallback to ColorSystem, then :default
+              Raxol.Core.ColorSystem.get(theme.id, :foreground) || :default
+
+            color ->
+              color
+          end
+      end
+
     result
   end
 
   defp resolve_bg_color(attrs, _component_styles, theme) do
-    result = cond do
-      Map.has_key?(attrs, :bg) and not is_nil(Map.get(attrs, :bg)) ->
-        Map.get(attrs, :bg)
+    result =
+      cond do
+        Map.has_key?(attrs, :bg) and not is_nil(Map.get(attrs, :bg)) ->
+          Map.get(attrs, :bg)
 
-      Map.has_key?(attrs, :background) and
-          not is_nil(Map.get(attrs, :background)) ->
-        Map.get(attrs, :background)
+        Map.has_key?(attrs, :background) and
+            not is_nil(Map.get(attrs, :background)) ->
+          Map.get(attrs, :background)
 
-      true ->
-        # Try to get color from theme directly first
-        case get_in(theme, [:colors, :background]) do
-          nil ->
-            # Fallback to ColorSystem, then :default
-            Raxol.Core.ColorSystem.get(theme.id, :background) || :default
-          color ->
-            color
-        end
-    end
+        true ->
+          # Try to get color from theme directly first
+          case get_in(theme, [:colors, :background]) do
+            nil ->
+              # Fallback to ColorSystem, then :default
+              Raxol.Core.ColorSystem.get(theme.id, :background) || :default
+
+            color ->
+              color
+          end
+      end
+
     result
   end
 
@@ -238,7 +244,8 @@ defmodule Raxol.UI.Renderer do
     merged_style_map = Map.merge(parent_style_map, child_style_map)
     child_other_attrs = Map.drop(child_element, [:style])
 
-    inherited_colors = inherit_colors(child_style_map, parent_element, parent_style_map)
+    inherited_colors =
+      inherit_colors(child_style_map, parent_element, parent_style_map)
 
     promoted_attrs =
       child_other_attrs
@@ -252,10 +259,20 @@ defmodule Raxol.UI.Renderer do
 
   defp inherit_colors(child_style_map, parent_element, parent_style_map) do
     %{
-      fg: Map.get(child_style_map, :foreground) || Map.get(parent_element, :foreground) || Map.get(parent_style_map, :foreground),
-      bg: Map.get(child_style_map, :background) || Map.get(parent_element, :background) || Map.get(parent_style_map, :background),
-      fg_short: Map.get(child_style_map, :fg) || Map.get(parent_element, :fg) || Map.get(parent_style_map, :fg),
-      bg_short: Map.get(child_style_map, :bg) || Map.get(parent_element, :bg) || Map.get(parent_style_map, :bg)
+      fg:
+        Map.get(child_style_map, :foreground) ||
+          Map.get(parent_element, :foreground) ||
+          Map.get(parent_style_map, :foreground),
+      bg:
+        Map.get(child_style_map, :background) ||
+          Map.get(parent_element, :background) ||
+          Map.get(parent_style_map, :background),
+      fg_short:
+        Map.get(child_style_map, :fg) || Map.get(parent_element, :fg) ||
+          Map.get(parent_style_map, :fg),
+      bg_short:
+        Map.get(child_style_map, :bg) || Map.get(parent_element, :bg) ||
+          Map.get(parent_style_map, :bg)
     }
   end
 
@@ -302,7 +319,8 @@ defmodule Raxol.UI.Renderer do
     clip_bounds = if clip_enabled, do: {x, y, x + w - 1, y + h - 1}, else: nil
 
     # Render children with clipping and style inheritance
-    children_cells = render_panel_children(children, clip_bounds, theme, merged_style)
+    children_cells =
+      render_panel_children(children, clip_bounds, theme, merged_style)
 
     # Merge cells so that children overwrite panel cells at the same coordinates
     all_cells = merge_cells(panel_box_cells, children_cells)
@@ -416,8 +434,11 @@ defmodule Raxol.UI.Renderer do
     column_max_widths = calculate_column_widths(all_rows, max_columns)
 
     # Add padding and borders
-    total_width = Enum.sum(column_max_widths) + length(column_max_widths) * 3 + 2
-    max(total_width, 20) # Minimum width of 20
+    total_width =
+      Enum.sum(column_max_widths) + length(column_max_widths) * 3 + 2
+
+    # Minimum width of 20
+    max(total_width, 20)
   end
 
   defp get_max_columns(all_rows) do
@@ -473,13 +494,22 @@ defmodule Raxol.UI.Renderer do
   end
 
   defp render_box(x, y, width, height, style, _theme) do
-    {clip_x, clip_y, clip_width, clip_height} = clip_coordinates(x, y, width, height)
+    {clip_x, clip_y, clip_width, clip_height} =
+      clip_coordinates(x, y, width, height)
 
     if clip_width == 0 or clip_height == 0 do
       []
     else
       border_chars = get_border_chars(Map.get(style, :border_style, :single))
-      render_box_borders(clip_x, clip_y, clip_width, clip_height, border_chars, style)
+
+      render_box_borders(
+        clip_x,
+        clip_y,
+        clip_width,
+        clip_height,
+        border_chars,
+        style
+      )
     end
   end
 
@@ -501,23 +531,47 @@ defmodule Raxol.UI.Renderer do
 
   defp add_horizontal_borders(cells, x, y, width, height, border_chars, style) do
     cells
-    |> add_line(render_horizontal_line(x, y, width, border_chars.horizontal, style, nil))
-    |> add_line(render_horizontal_line(x, y + height - 1, width, border_chars.horizontal, style, nil))
+    |> add_line(
+      render_horizontal_line(x, y, width, border_chars.horizontal, style, nil)
+    )
+    |> add_line(
+      render_horizontal_line(
+        x,
+        y + height - 1,
+        width,
+        border_chars.horizontal,
+        style,
+        nil
+      )
+    )
   end
 
   defp add_vertical_borders(cells, x, y, width, height, border_chars, style) do
     cells
-    |> add_line(render_vertical_line(x, y, height, border_chars.vertical, style, nil))
-    |> add_line(render_vertical_line(x + width - 1, y, height, border_chars.vertical, style, nil))
+    |> add_line(
+      render_vertical_line(x, y, height, border_chars.vertical, style, nil)
+    )
+    |> add_line(
+      render_vertical_line(
+        x + width - 1,
+        y,
+        height,
+        border_chars.vertical,
+        style,
+        nil
+      )
+    )
   end
 
   defp add_corners(cells, x, y, width, height, border_chars, style) do
-    cells ++ [
-      {x, y, border_chars.top_left, style.fg, style.bg, []},
-      {x + width - 1, y, border_chars.top_right, style.fg, style.bg, []},
-      {x, y + height - 1, border_chars.bottom_left, style.fg, style.bg, []},
-      {x + width - 1, y + height - 1, border_chars.bottom_right, style.fg, style.bg, []}
-    ]
+    cells ++
+      [
+        {x, y, border_chars.top_left, style.fg, style.bg, []},
+        {x + width - 1, y, border_chars.top_right, style.fg, style.bg, []},
+        {x, y + height - 1, border_chars.bottom_left, style.fg, style.bg, []},
+        {x + width - 1, y + height - 1, border_chars.bottom_right, style.fg,
+         style.bg, []}
+      ]
   end
 
   defp add_line(cells, line_cells), do: cells ++ line_cells
@@ -545,18 +599,20 @@ defmodule Raxol.UI.Renderer do
     cells = []
 
     # Render headers
-    cells = if headers != [] do
-      cells ++ render_table_row(x, y, headers, attrs, _theme)
-    else
-      cells
-    end
+    cells =
+      if headers != [] do
+        cells ++ render_table_row(x, y, headers, attrs, _theme)
+      else
+        cells
+      end
 
     # Render data rows
-    cells = data
-    |> Enum.with_index()
-    |> Enum.reduce(cells, fn {row, index}, acc ->
-      acc ++ render_table_row(x, y + index + 1, row, attrs, _theme)
-    end)
+    cells =
+      data
+      |> Enum.with_index()
+      |> Enum.reduce(cells, fn {row, index}, acc ->
+        acc ++ render_table_row(x, y + index + 1, row, attrs, _theme)
+      end)
 
     cells
   end

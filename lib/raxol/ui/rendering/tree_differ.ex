@@ -198,7 +198,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
 
     remove_ops = build_remove_operations(old_keys_set, new_keys_set)
 
-    add_and_update_ops ++ remove_ops
+    remove_ops ++ add_and_update_ops
   end
 
   defp build_add_and_update_operations(
@@ -256,7 +256,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
          %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
 
       true ->
-        all_ops = ops ++ [{:key_reorder, new_keys_ordered}]
+        all_ops = [{:key_reorder, new_keys_ordered} | ops]
         {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
     end
   end
