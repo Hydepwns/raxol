@@ -7,7 +7,7 @@
     "watch": "esbuild app.js --bundle --target=es2017 --outdir=../priv/static/js --watch"
   },
   "dependencies": {
-    "esbuild": "^0.19.0",
+    "esbuild": "^0.25.5",
     "phoenix": "^1.7.0",
     "phoenix_live_view": "^0.19.0"
   }
