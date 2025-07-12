@@ -11,10 +11,12 @@ tags: [installation, setup, development, contributing]
 
 This guide helps you set up your development environment for working on Raxol.
 
+_Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability. Make sure you are using the latest version for the best experience!_
+
 ## Prerequisites
 
-- Elixir 1.14 or higher
-- Erlang/OTP 24 or higher
+- Elixir 1.17.1 or higher
+- Erlang/OTP 25.3.2.7 or higher
 - Git
 - A terminal emulator with ANSI support
 
