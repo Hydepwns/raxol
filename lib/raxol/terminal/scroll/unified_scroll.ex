@@ -11,7 +11,6 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   """
 
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ANSI.TextFormatting
 
   @type t :: %__MODULE__{
           buffer: list(list(Cell.t())),
@@ -60,7 +59,6 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   def add_line(%__MODULE__{} = scroll, line) do
     new_buffer = [line | scroll.buffer]
 
-    # Trim buffer if it exceeds max height
     new_buffer =
       if length(new_buffer) > scroll.max_height do
         Enum.take(new_buffer, scroll.max_height)
@@ -68,7 +66,6 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
         new_buffer
       end
 
-    # Update memory usage and compression if needed
     new_usage = calculate_memory_usage(new_buffer)
 
     {new_buffer, new_ratio} =
@@ -78,7 +75,6 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
         {new_buffer, scroll.compression_ratio}
       end
 
-    # Clear cache when buffer changes
     %{
       scroll
       | buffer: new_buffer,
@@ -113,7 +109,6 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     new_position =
       :erlang.max(0, :erlang.min(scroll.position + amount, scroll.height))
 
-    # Clear cache when position changes
     %{scroll | position: new_position, cache: %{}}
   end
 
@@ -211,7 +206,6 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   Updates the scroll buffer with new commands.
   """
   def update(scroll_buffer, _commands) do
-    # Implementation for updating scroll buffer
     scroll_buffer
   end
 
@@ -219,11 +213,8 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   Cleans up the scroll buffer.
   """
   def cleanup(_scroll_buffer) do
-    # Implementation for cleanup
     :ok
   end
-
-  # Private Functions
 
   defp calculate_memory_usage(buffer) do
     Enum.reduce(buffer, 0, fn line, acc ->
@@ -237,19 +228,15 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   end
 
   defp compress_buffer(buffer) do
-    # Simple compression: remove empty cells and combine adjacent identical cells
     compressed =
       Enum.map(buffer, fn line ->
         Enum.chunk_by(line, &(&1.char == ""))
-        |> Enum.map(fn chunk ->
-          case chunk do
-            [cell | _] -> cell
-            [] -> Cell.new(" ")
-          end
-        end)
+        |> Enum.map(&compress_chunk/1)
       end)
 
-    # Assume 50% compression ratio
     {compressed, 0.5}
   end
+
+  defp compress_chunk([]), do: Cell.new(" ")
+  defp compress_chunk([cell | _]), do: cell
 end
