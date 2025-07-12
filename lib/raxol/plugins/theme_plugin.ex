@@ -16,7 +16,7 @@ defmodule Raxol.Plugins.ThemePlugin do
     :dependencies,
     :api_version,
     :current_theme,
-    state: %{}
+    :state
   ]
 
   alias Raxol.UI.Theming.Theme
