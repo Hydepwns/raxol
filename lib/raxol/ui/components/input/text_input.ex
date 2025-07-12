@@ -272,5 +272,3 @@ defmodule Raxol.UI.Components.Input.TextInput.EditingHandler do
     end
   end
 end
-
-

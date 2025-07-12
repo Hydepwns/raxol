@@ -156,29 +156,32 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     }
   end
 
-  defp create_render_pipeline(gpu_context) do
-    # Create the render pipeline with appropriate stages
+  defp create_render_pipeline(_gpu_context) do
+    # Create GPU render pipeline with stages
     %{
       stages: [
-        vertex_processing: create_vertex_stage(),
-        fragment_processing: create_fragment_stage(),
-        output_merging: create_output_stage()
+        {:vertex_processing, create_vertex_stage()},
+        {:fragment_processing, create_fragment_stage()},
+        {:output_merging, create_output_stage()}
       ],
-      resources: %{
-        shaders: %{},
-        buffers: %{},
-        textures: %{}
-      }
+      culling_enabled: false,
+      instanced_rendering: false,
+      batch_size: 100
     }
   end
 
-  defp initialize_buffer_pool(gpu_context) do
-    # Initialize buffer pool for efficient memory management
+  defp initialize_buffer_pool(_gpu_context) do
+    # Initialize buffer pool with empty vertex and index buffers
     %{
       vertex_buffers: %{},
       index_buffers: %{},
       uniform_buffers: %{},
-      staging_buffers: %{}
+      staging_buffers: %{},
+      max_vertex_buffers: 10,
+      max_index_buffers: 10,
+      max_uniform_buffers: 5,
+      max_staging_buffers: 5,
+      buffer_size: 1024
     }
   end
 
@@ -285,7 +288,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
           | vertex_buffers: Map.put(pool.vertex_buffers, buffer_id, new_buffer)
         }
 
-        %{gpu_renderer | buffer_pool: updated_pool}
+        # Return the buffer, not the updated renderer
         new_buffer
 
       buffer ->
@@ -304,12 +307,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
         buffer_id = generate_buffer_id()
         new_buffer = %{id: buffer_id, data: [], size: 512}
 
-        updated_pool = %{
-          pool
-          | index_buffers: Map.put(pool.index_buffers, buffer_id, new_buffer)
-        }
-
-        %{gpu_renderer | buffer_pool: updated_pool}
+        # Return the buffer, not the updated renderer
         new_buffer
 
       buffer ->
@@ -317,14 +315,44 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     end
   end
 
-  defp update_vertex_buffer(gpu_renderer, buffer) do
+  defp update_vertex_buffer(_gpu_renderer, buffer) do
     # Update vertex buffer with new data
-    %{buffer | data: buffer.data, updated_at: System.monotonic_time()}
+    case buffer do
+      %{id: id, data: data} when is_list(data) ->
+        # Validate and update buffer data
+        updated_buffer = %{buffer | data: validate_vertex_data(data)}
+        {:ok, updated_buffer}
+
+      _ ->
+        # Invalid buffer format
+        {:error, :invalid_buffer}
+    end
+  end
+
+  defp validate_vertex_data(data) do
+    # Validate vertex data format and constraints
+    data
+    |> Enum.filter(fn vertex -> is_list(vertex) and length(vertex) >= 2 end)
   end
 
   defp update_index_buffer(gpu_renderer, buffer) do
     # Update index buffer with new data
-    %{buffer | data: buffer.data, updated_at: System.monotonic_time()}
+    case buffer do
+      %{id: id, data: data} when is_list(data) ->
+        # Validate and update buffer data
+        updated_buffer = %{buffer | data: validate_index_data(data)}
+        {:ok, updated_buffer}
+
+      _ ->
+        # Invalid buffer format
+        {:error, :invalid_buffer}
+    end
+  end
+
+  defp validate_index_data(data) do
+    # Validate index data format and constraints
+    data
+    |> Enum.filter(fn index -> is_integer(index) and index >= 0 end)
   end
 
   defp execute_stage({stage_name, stage}, gpu_renderer, opts) do
@@ -338,8 +366,23 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   end
 
   defp finalize_rendering(gpu_renderer) do
-    # Finalize the rendering process
-    "Rendered output"
+    # Finalize rendering by preparing output for display
+    case gpu_renderer do
+      %{output_data: output_data} when not is_nil(output_data) ->
+        # Convert output data to display format
+        display_output = convert_to_display_format(output_data)
+        display_output
+
+      _ ->
+        # No output data available, return empty result
+        ""
+    end
+  end
+
+  defp convert_to_display_format(output_data) do
+    # Convert GPU output data to terminal display format
+    # For now, return a placeholder string
+    "GPU_RENDERED_OUTPUT"
   end
 
   defp detect_shader_model do
@@ -374,54 +417,171 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
   end
 
   defp apply_optimizations(pipeline, metrics) do
-    # Apply optimizations based on performance metrics
-    stages = pipeline.stages
+    # Apply performance optimizations based on metrics
+    case metrics do
+      %{frame_times: [latest | _]} when latest > 16 ->
+        # Frame time > 16ms, apply aggressive optimizations
+        optimize_for_performance(pipeline)
 
-    # Example optimizations based on metrics
-    optimizations =
-      cond do
-        # If render calls are high, optimize for performance
-        metrics.render_calls > 10 ->
-          %{
-            vertex_processing: %{optimization_level: :high},
-            fragment_processing: %{optimization_level: :high}
-          }
+      %{render_calls: calls} when calls > 1000 ->
+        # High render call count, optimize batching
+        optimize_batching(pipeline)
 
-        # If frame times are slow, optimize for speed
-        length(metrics.frame_times) > 0 and
-            List.first(metrics.frame_times) > 16.67 ->
-          %{
-            vertex_processing: %{optimization_level: :speed},
-            fragment_processing: %{optimization_level: :speed}
-          }
+      _ ->
+        # Default optimization
+        pipeline
+    end
+  end
 
-        # Default optimizations
-        true ->
-          %{
-            vertex_processing: %{optimization_level: :balanced},
-            fragment_processing: %{optimization_level: :balanced}
-          }
-      end
+  defp optimize_for_performance(pipeline) do
+    # Reduce shader complexity and enable culling
+    %{
+      pipeline
+      | stages: Enum.map(pipeline.stages, &simplify_stage/1),
+        culling_enabled: true
+    }
+  end
 
-    update_render_pipeline(pipeline, optimizations)
+  defp optimize_batching(pipeline) do
+    # Enable instanced rendering and reduce draw calls
+    %{pipeline | instanced_rendering: true, batch_size: 1000}
+  end
+
+  defp simplify_stage({name, stage}) do
+    {name, %{stage | shader_complexity: :low}}
   end
 
   defp generate_buffer_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16()
   end
 
-  defp process_vertex_stage(stage, gpu_renderer, opts) do
-    # Process vertex stage
-    gpu_renderer
+  defp process_vertex_stage(stage, gpu_renderer, _opts) do
+    # Process vertex data through the vertex shader
+    case stage do
+      %{shader: shader, input_layout: layout} when not is_nil(shader) ->
+        # Apply vertex transformation and pass to next stage
+        transformed_vertices = apply_vertex_shader(shader, layout, gpu_renderer)
+        %{gpu_renderer | vertex_data: transformed_vertices}
+
+      _ ->
+        # No shader available, pass through unchanged
+        gpu_renderer
+    end
   end
 
-  defp process_fragment_stage(stage, gpu_renderer, opts) do
-    # Process fragment stage
-    gpu_renderer
+  defp apply_vertex_shader(_shader, _layout, gpu_renderer) do
+    # Apply vertex transformations (identity for now)
+    gpu_renderer.vertex_data || []
   end
 
-  defp process_output_stage(stage, gpu_renderer, opts) do
-    # Process output stage
-    gpu_renderer
+  defp process_fragment_stage(stage, gpu_renderer, _opts) do
+    # Process fragment data through the fragment shader
+    case stage do
+      %{shader: shader, render_targets: targets} when not is_nil(shader) ->
+        # Apply fragment shading and pass to next stage
+        shaded_fragments = apply_fragment_shader(shader, targets, gpu_renderer)
+        %{gpu_renderer | fragment_data: shaded_fragments}
+
+      _ ->
+        # No shader available, pass through unchanged
+        gpu_renderer
+    end
+  end
+
+  defp apply_fragment_shader(_shader, _targets, gpu_renderer) do
+    # Apply fragment shading (identity for now)
+    gpu_renderer.fragment_data || []
+  end
+
+  defp process_output_stage(stage, gpu_renderer, _opts) do
+    # Process output data through the output stage
+    case stage do
+      %{
+        blend_state: blend_state,
+        depth_stencil_state: depth_stencil_state,
+        rasterizer_state: rasterizer_state
+      } ->
+        # Apply blending, depth testing, and rasterization
+        output_data =
+          apply_output_stage(
+            blend_state,
+            depth_stencil_state,
+            rasterizer_state,
+            gpu_renderer
+          )
+
+        %{gpu_renderer | output_data: output_data}
+
+      _ ->
+        # No output stage available, pass through unchanged
+        gpu_renderer
+    end
+  end
+
+  defp apply_output_stage(
+         blend_state,
+         depth_stencil_state,
+         rasterizer_state,
+         gpu_renderer
+       ) do
+    # Apply output stage processing (blending, depth testing, rasterization)
+    # For now, return a placeholder output
+    case gpu_renderer do
+      %{fragment_data: fragment_data} when not is_nil(fragment_data) ->
+        # Process fragment data through output stage
+        process_fragments_through_output_stage(
+          fragment_data,
+          blend_state,
+          depth_stencil_state,
+          rasterizer_state
+        )
+
+      _ ->
+        # No fragment data available, return empty output
+        []
+    end
+  end
+
+  defp process_fragments_through_output_stage(
+         fragment_data,
+         blend_state,
+         depth_stencil_state,
+         rasterizer_state
+       ) do
+    # Process fragments through the output stage
+    # This is a placeholder implementation
+    fragment_data
+    |> Enum.map(fn fragment ->
+      # Apply blending if enabled
+      blended_fragment = apply_blending(fragment, blend_state)
+
+      # Apply depth/stencil testing if enabled
+      tested_fragment =
+        apply_depth_stencil_testing(blended_fragment, depth_stencil_state)
+
+      # Apply rasterization
+      rasterized_fragment =
+        apply_rasterization(tested_fragment, rasterizer_state)
+
+      rasterized_fragment
+    end)
+  end
+
+  defp apply_blending(fragment, blend_state) do
+    # Apply blending operations
+    # Placeholder implementation
+    fragment
+  end
+
+  defp apply_depth_stencil_testing(fragment, depth_stencil_state) do
+    # Apply depth and stencil testing
+    # Placeholder implementation
+    fragment
+  end
+
+  defp apply_rasterization(fragment, rasterizer_state) do
+    # Apply rasterization operations
+    # Placeholder implementation
+    fragment
   end
 end

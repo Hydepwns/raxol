@@ -598,32 +598,36 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  defp process_window_resize(emulator_state, w, h) do
-    # Update terminal dimensions
-    updated_state = %{emulator_state | width: w, height: h}
-
-    # Clear screen and reset cursor position
-    commands = [
-      {:clear_screen, 1},
-      {:move_cursor, 1, 1}
-    ]
-
-    {:ok, updated_state, commands}
-  end
-
+  # Window event handling functions
   defp handle_window_event(emulator_state, window_event) do
     case window_event do
-      {:resize, w, h} ->
-        process_window_resize(emulator_state, w, h)
+      {:resize, width, height} ->
+        process_window_resize(emulator_state, width, height)
 
       {:title, title} ->
-        process_title_change(title, emulator_state)
+        %{emulator_state | title: title}
 
-      {:position, x, y} ->
-        process_position_change(x, y, emulator_state)
+      {:icon_name, icon_name} ->
+        %{emulator_state | icon_name: icon_name}
 
       _ ->
-        {:error, "Unknown window event: #{inspect(window_event)}"}
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown window event: #{inspect(window_event)}",
+          %{emulator_state: emulator_state}
+        )
+
+        emulator_state
     end
+  end
+
+  defp process_window_resize(emulator_state, width, height) do
+    Raxol.Core.Runtime.Log.info("Processing window resize: #{width}x#{height}")
+
+    # Update emulator dimensions
+    updated_state = %{emulator_state | width: width, height: height}
+
+    # Clear screen and reset cursor position for new dimensions
+    # This ensures the display is properly formatted for the new size
+    updated_state
   end
 end

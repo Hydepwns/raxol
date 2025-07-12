@@ -290,16 +290,8 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
         # Remove mouse context
         new_mice = Map.delete(state.mice, mouse_id)
 
-        # Update active mouse if needed
         new_active_mouse =
-          if state.active_mouse == mouse_id do
-            case Map.keys(new_mice) do
-              [] -> nil
-              [first_mouse | _] -> first_mouse
-            end
-          else
-            state.active_mouse
-          end
+          update_active_mouse(state.active_mouse, mouse_id, new_mice)
 
         new_state = %{state | mice: new_mice, active_mouse: new_active_mouse}
 
@@ -319,71 +311,96 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   end
 
   # Private Functions
-  defp process_event(mouse_state, event, button, position, modifiers) do
-    # Batch similar events to reduce state updates
-    case event do
-      :press ->
-        # Only update state if button state actually changes
-        if Map.has_key?(mouse_state.button_state, button) do
-          mouse_state
-        else
-          %{
-            mouse_state
-            | position: position,
-              button_state: Map.put(mouse_state.button_state, button, :pressed),
-              modifiers: modifiers,
-              last_update: System.system_time(:millisecond)
-          }
-        end
-
-      :release ->
-        # Only update state if button state actually changes
-        if Map.has_key?(mouse_state.button_state, button) do
-          %{
-            mouse_state
-            | position: position,
-              button_state: Map.delete(mouse_state.button_state, button),
-              modifiers: modifiers,
-              last_update: System.system_time(:millisecond)
-          }
-        else
-          mouse_state
-        end
-
-      :move ->
-        # Only update position if it actually changed
-        if position != mouse_state.position do
-          %{
-            mouse_state
-            | position: position,
-              modifiers: modifiers,
-              last_update: System.system_time(:millisecond)
-          }
-        else
-          mouse_state
-        end
-
-      :drag ->
-        # Only update position if it actually changed
-        if position != mouse_state.position do
-          %{
-            mouse_state
-            | position: position,
-              modifiers: modifiers,
-              last_update: System.system_time(:millisecond)
-          }
-        else
-          mouse_state
-        end
-
-      _ ->
-        %{
-          mouse_state
-          | position: position,
-            modifiers: modifiers,
-            last_update: System.system_time(:millisecond)
-        }
+  defp update_active_mouse(active_mouse, closed_mouse_id, new_mice) do
+    if active_mouse == closed_mouse_id do
+      case Map.keys(new_mice) do
+        [] -> nil
+        [first_mouse | _] -> first_mouse
+      end
+    else
+      active_mouse
     end
+  end
+
+  defp process_event(mouse_state, event, button, position, modifiers) do
+    case event do
+      :press -> handle_press_event(mouse_state, button, position, modifiers)
+      :release -> handle_release_event(mouse_state, button, position, modifiers)
+      :move -> handle_move_event(mouse_state, position, modifiers)
+      :drag -> handle_drag_event(mouse_state, position, modifiers)
+      _ -> handle_other_event(mouse_state, position, modifiers)
+    end
+  end
+
+  defp handle_press_event(mouse_state, button, position, modifiers) do
+    if Map.has_key?(mouse_state.button_state, button) do
+      mouse_state
+    else
+      update_mouse_state(
+        mouse_state,
+        position,
+        modifiers,
+        Map.put(mouse_state.button_state, button, :pressed)
+      )
+    end
+  end
+
+  defp handle_release_event(mouse_state, button, position, modifiers) do
+    if Map.has_key?(mouse_state.button_state, button) do
+      update_mouse_state(
+        mouse_state,
+        position,
+        modifiers,
+        Map.delete(mouse_state.button_state, button)
+      )
+    else
+      mouse_state
+    end
+  end
+
+  defp handle_move_event(mouse_state, position, modifiers) do
+    if position != mouse_state.position do
+      update_mouse_state(
+        mouse_state,
+        position,
+        modifiers,
+        mouse_state.button_state
+      )
+    else
+      mouse_state
+    end
+  end
+
+  defp handle_drag_event(mouse_state, position, modifiers) do
+    if position != mouse_state.position do
+      update_mouse_state(
+        mouse_state,
+        position,
+        modifiers,
+        mouse_state.button_state
+      )
+    else
+      mouse_state
+    end
+  end
+
+  defp handle_other_event(mouse_state, position, modifiers) do
+    update_mouse_state(
+      mouse_state,
+      position,
+      modifiers,
+      mouse_state.button_state
+    )
+  end
+
+  defp update_mouse_state(mouse_state, position, modifiers, button_state) do
+    %{
+      mouse_state
+      | position: position,
+        button_state: button_state,
+        modifiers: modifiers,
+        last_update: System.system_time(:millisecond)
+    }
   end
 
   defp default_config do

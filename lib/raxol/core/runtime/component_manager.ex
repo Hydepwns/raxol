@@ -360,13 +360,23 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           case component.module.update(message, component.state) do
             {new_state, _commands} when is_map(new_state) ->
               # Update component state and queue re-render
-              state = update_component_state_and_queue_render(state, component_id, new_state)
+              state =
+                update_component_state_and_queue_render(
+                  state,
+                  component_id,
+                  new_state
+                )
 
               {:noreply, state}
 
             new_state when is_map(new_state) ->
               # Handle case where update returns just state (no commands)
-              state = update_component_state_and_queue_render(state, component_id, new_state)
+              state =
+                update_component_state_and_queue_render(
+                  state,
+                  component_id,
+                  new_state
+                )
 
               {:noreply, state}
 
@@ -482,7 +492,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         state_with_updated_comp =
           put_in(state.components[id], updated_component)
 
-        update_component_state_and_queue_render(state_with_updated_comp, id, updated_comp_state)
+        update_component_state_and_queue_render(
+          state_with_updated_comp,
+          id,
+          updated_comp_state
+        )
     end
   end
 

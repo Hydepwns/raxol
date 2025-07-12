@@ -77,99 +77,116 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       "GroundState handling input: #{inspect(data)}, current parser state: #{inspect(parser_state)}"
     )
 
-    case data do
-      # ESC (C0 Code) - Transition to EscapeState
-      <<27, rest_after_esc::binary>> ->
-        Raxol.Core.Runtime.Log.debug(
-          "GroundState: ESC detected, transitioning to EscapeState."
-        )
+    dispatch_input(data, emulator, parser_state)
+  end
 
-        {new_emulator, new_parser_state, new_rest_input} =
-          Parser.transition_to_escape(emulator, rest_after_esc)
+  defp dispatch_input(<<>>, emulator, parser_state),
+    do: handle_empty_input(emulator, parser_state)
 
-        {:continue, new_emulator, new_parser_state, new_rest_input}
+  defp dispatch_input(<<27, rest::binary>>, emulator, parser_state),
+    do: handle_escape_sequence(emulator, parser_state, rest)
 
-      # LF (C0 Code)
-      <<10, rest_after_lf::binary>> ->
-        # Handle LF: move cursor down or scroll if at bottom
-        # Start Command History Logic
-        emulator_with_history = History.maybe_add_to_history(emulator, 10)
-        # End Command History Logic
+  defp dispatch_input(<<10, rest::binary>>, emulator, parser_state),
+    do: handle_line_feed(emulator, parser_state, rest)
 
-        new_emulator =
-          Raxol.Terminal.ControlCodes.handle_c0(emulator_with_history, 10)
+  defp dispatch_input(<<13, rest::binary>>, emulator, parser_state),
+    do: handle_carriage_return(emulator, parser_state, rest)
 
-        {:continue, new_emulator, parser_state, rest_after_lf}
+  defp dispatch_input(<<control_code, rest::binary>>, emulator, parser_state)
+       when control_code >= 0 and control_code <= 31 and control_code != 27,
+       do: handle_control_code(emulator, parser_state, control_code, rest)
 
-      # CR (C0 Code)
-      <<13, rest_after_cr::binary>> ->
-        # Handle CR: move cursor to beginning of line
-        new_emulator = Raxol.Terminal.ControlCodes.handle_c0(emulator, 13)
-        {:continue, new_emulator, parser_state, rest_after_cr}
+  defp dispatch_input(<<142, rest::binary>>, emulator, parser_state),
+    do: handle_ss2(emulator, parser_state, rest)
 
-      # Other C0 Codes (0-31 excluding ESC, LF, CR)
-      <<control_code, rest_after_control::binary>>
-      when control_code >= 0 and control_code <= 31 and control_code != 27 ->
-        new_emulator =
-          Raxol.Terminal.ControlCodes.handle_c0(emulator, control_code)
+  defp dispatch_input(<<143, rest::binary>>, emulator, parser_state),
+    do: handle_ss3(emulator, parser_state, rest)
 
-        {:continue, new_emulator, parser_state, rest_after_control}
+  defp dispatch_input(
+         <<char_codepoint::utf8, rest::binary>>,
+         emulator,
+         parser_state
+       ),
+       do: handle_printable_char(emulator, parser_state, char_codepoint, rest)
 
-      # SS2 (C1 Control, 0x8E)
-      <<142, rest_after_ss2::binary>> ->
-        Raxol.Core.Runtime.Log.info(
-          "[Parser] SS2 (C1, 0x8E) received - will use G2 for next char only"
-        )
+  defp dispatch_input(other, emulator, parser_state),
+    do: handle_unknown_input(emulator, parser_state, other)
 
-        {:continue, emulator, %{parser_state | single_shift: :ss2},
-         rest_after_ss2}
+  defp handle_empty_input(emulator, parser_state) do
+    {new_emulator, new_parser_state, new_rest_input} =
+      Parser.transition_to_ground(emulator)
 
-      # SS3 (C1 Control, 0x8F)
-      <<143, rest_after_ss3::binary>> ->
-        Raxol.Core.Runtime.Log.info(
-          "[Parser] SS3 (C1, 0x8F) received - will use G3 for next char only"
-        )
+    {:continue, new_emulator, new_parser_state, new_rest_input}
+  end
 
-        {:continue, emulator, %{parser_state | single_shift: :ss3},
-         rest_after_ss3}
+  defp handle_escape_sequence(emulator, parser_state, rest) do
+    Raxol.Core.Runtime.Log.debug(
+      "GroundState: ESC detected, transitioning to EscapeState."
+    )
 
-      # Printable character (UTF-8)
-      <<char_codepoint::utf8, rest::binary>> ->
-        # Process printable character
-        # Start Command History Logic
-        emulator_with_history =
-          History.maybe_add_to_history(emulator, char_codepoint)
+    {new_emulator, new_parser_state, new_rest_input} =
+      Parser.transition_to_escape(emulator, rest)
 
-        # End Command History Logic
+    {:continue, new_emulator, new_parser_state, new_rest_input}
+  end
 
-        # If single_shift is set, pass it to InputHandler and clear it after
-        {updated_emulator, _output_events} =
-          InputHandler.handle_printable_character(
-            emulator_with_history,
-            char_codepoint,
-            parser_state.params,
-            parser_state.single_shift
-          )
+  defp handle_line_feed(emulator, parser_state, rest) do
+    emulator_with_history = History.maybe_add_to_history(emulator, 10)
 
-        # Clear single_shift after use
-        next_parser_state = %{parser_state | single_shift: nil}
-        {:continue, updated_emulator, next_parser_state, rest}
+    new_emulator =
+      Raxol.Terminal.ControlCodes.handle_c0(emulator_with_history, 10)
 
-      # Empty data - no further processing needed
-      <<>> ->
-        {new_emulator, new_parser_state, new_rest_input} =
-          Parser.transition_to_ground(emulator)
+    {:continue, new_emulator, parser_state, rest}
+  end
 
-        {:continue, new_emulator, new_parser_state, new_rest_input}
+  defp handle_carriage_return(emulator, parser_state, rest) do
+    new_emulator = Raxol.Terminal.ControlCodes.handle_c0(emulator, 13)
+    {:continue, new_emulator, parser_state, rest}
+  end
 
-      # Unhandled case
-      other ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "GroundState unhandled input: #{inspect(other)} with emulator: #{inspect(emulator)}",
-          %{}
-        )
+  defp handle_control_code(emulator, parser_state, control_code, rest) do
+    new_emulator = Raxol.Terminal.ControlCodes.handle_c0(emulator, control_code)
+    {:continue, new_emulator, parser_state, rest}
+  end
 
-        {:error, :unhandled_input, emulator, parser_state}
-    end
+  defp handle_ss2(emulator, parser_state, rest) do
+    Raxol.Core.Runtime.Log.info(
+      "[Parser] SS2 (C1, 0x8E) received - will use G2 for next char only"
+    )
+
+    {:continue, emulator, %{parser_state | single_shift: :ss2}, rest}
+  end
+
+  defp handle_ss3(emulator, parser_state, rest) do
+    Raxol.Core.Runtime.Log.info(
+      "[Parser] SS3 (C1, 0x8F) received - will use G3 for next char only"
+    )
+
+    {:continue, emulator, %{parser_state | single_shift: :ss3}, rest}
+  end
+
+  defp handle_printable_char(emulator, parser_state, char_codepoint, rest) do
+    emulator_with_history =
+      History.maybe_add_to_history(emulator, char_codepoint)
+
+    {updated_emulator, _output_events} =
+      InputHandler.handle_printable_character(
+        emulator_with_history,
+        char_codepoint,
+        parser_state.params,
+        parser_state.single_shift
+      )
+
+    next_parser_state = %{parser_state | single_shift: nil}
+    {:continue, updated_emulator, next_parser_state, rest}
+  end
+
+  defp handle_unknown_input(emulator, parser_state, other) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "GroundState unhandled input: #{inspect(other)} with emulator: #{inspect(emulator)}",
+      %{}
+    )
+
+    {:error, :unhandled_input, emulator, parser_state}
   end
 end

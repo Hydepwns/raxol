@@ -54,62 +54,58 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       "EscapeState.handle: input=#{inspect(input)}, parser_state=#{inspect(parser_state)}"
     )
 
-    case input do
-      # Handle CAN/SUB bytes first (abort sequence)
-      <<ignored_byte, rest_after_ignored::binary>>
-      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
-        Raxol.Core.Runtime.Log.debug(
-          "Ignoring CAN/SUB byte during Escape state"
-        )
+    dispatch_escape_input(input, emulator, parser_state)
+  end
 
-        # Abort sequence, go to ground
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_ignored}
+  defp dispatch_escape_input(
+         <<ignored_byte, rest::binary>>,
+         emulator,
+         parser_state
+       )
+       when ignored_byte == 0x18 or ignored_byte == 0x1A do
+    Raxol.Core.Runtime.Log.debug("Ignoring CAN/SUB byte during Escape state")
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Handle DCS sequence
-      <<"P", rest_after_dcs::binary>> ->
-        next_parser_state = %{parser_state | state: :dcs_entry}
-        {:continue, emulator, next_parser_state, rest_after_dcs}
+  defp dispatch_escape_input(<<"P", rest::binary>>, emulator, parser_state) do
+    next_parser_state = %{parser_state | state: :dcs_entry}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Handle OSC sequence
-      <<"]", rest_after_osc::binary>> ->
-        next_parser_state = %{parser_state | state: :osc_string}
-        {:continue, emulator, next_parser_state, rest_after_osc}
+  defp dispatch_escape_input(<<"]", rest::binary>>, emulator, parser_state) do
+    next_parser_state = %{parser_state | state: :osc_string}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Handle PM sequence
-      <<"^", rest_after_pm::binary>> ->
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_pm}
+  defp dispatch_escape_input(<<"^", rest::binary>>, emulator, parser_state) do
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Handle APC sequence
-      <<"_", rest_after_apc::binary>> ->
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_apc}
+  defp dispatch_escape_input(<<"_", rest::binary>>, emulator, parser_state) do
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Handle SS3 sequence
-      <<"O", rest_after_ss3::binary>> ->
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_ss3}
+  defp dispatch_escape_input(<<"O", rest::binary>>, emulator, parser_state) do
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, emulator, next_parser_state, rest}
+  end
 
-      # Handle simple escape sequences (DECSC, DECRC, etc.)
-      <<byte, rest_after_byte::binary>> ->
-        # Process the escape sequence byte as a control code
-        new_emulator = Raxol.Terminal.ControlCodes.handle_escape(emulator, byte)
+  defp dispatch_escape_input(<<byte, rest::binary>>, emulator, parser_state) do
+    new_emulator = Raxol.Terminal.ControlCodes.handle_escape(emulator, byte)
+    next_parser_state = %{parser_state | state: :ground}
+    {:continue, new_emulator, next_parser_state, rest}
+  end
 
-        # Go to ground state after processing
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, new_emulator, next_parser_state, rest_after_byte}
+  defp dispatch_escape_input(<<>>, emulator, parser_state) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Incomplete escape sequence",
+      %{}
+    )
 
-      # Handle incomplete sequence
-      <<>> ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Incomplete escape sequence",
-          %{}
-        )
-
-        # Stay in escape state
-        {:incomplete, emulator, parser_state}
-    end
+    {:incomplete, emulator, parser_state}
   end
 
   @impl Raxol.Terminal.Parser.StateBehaviour
