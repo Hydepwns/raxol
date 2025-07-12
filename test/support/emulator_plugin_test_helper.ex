@@ -4,6 +4,7 @@ defmodule Raxol.EmulatorPluginTestHelper do
   Provides common setup functionality used across multiple plugin test modules.
   """
 
+  import ExUnit.Callbacks, only: [on_exit: 1]
   alias Raxol.Core.Runtime.Plugins.Manager
   alias Raxol.Terminal.Emulator
 
