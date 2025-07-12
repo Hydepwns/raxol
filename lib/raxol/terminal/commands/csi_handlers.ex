@@ -53,6 +53,23 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     66 => :application_keypad
   }
 
+  @sequence_handlers %{
+    "A" => {:cursor_up, 1},
+    "B" => {:cursor_down, 1},
+    "C" => {:cursor_forward, 1},
+    "D" => {:cursor_backward, 1},
+    "H" => {:cursor_position, []},
+    "G" => {:cursor_column, 1},
+    "J" => {:screen_clear, []},
+    "K" => {:line_clear, 0},
+    "m" => {:text_attributes, []},
+    "S" => {:scroll_up, 1},
+    "T" => {:scroll_down, 1},
+    "n" => {:device_status, []},
+    "s" => {:save_restore_cursor, []},
+    "u" => {:save_restore_cursor, []}
+  }
+
   # Cursor movement functions (defined before the map that references them)
   def handle_cursor_up(emulator, amount) do
     Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
@@ -273,40 +290,55 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     )
   end
 
-  @sequence_handlers %{
-    [?A] => {:cursor_up, 1},
-    [?B] => {:cursor_down, 1},
-    [?C] => {:cursor_forward, 1},
-    [?D] => {:cursor_backward, 1},
-    [?H] => {:cursor_position, []},
-    [?G] => {:cursor_column, 1},
-    [?J] => {:screen_clear, []},
-    [?K] => {:line_clear, []},
-    [?m] => {:text_attributes, []},
-    [?s] => {:save_restore_cursor, [?s]},
-    [?u] => {:save_restore_cursor, [?u]},
-    [?r] => {:r, []},
-    [?S] => {:scroll_up, 1},
-    [?T] => {:scroll_down, 1},
-    [?6, ?n] => {:device_status, [?6, ?n]}
-  }
+  defp csi_handlers do
+    [
+      {:cursor_up, &handle_cursor_up/2},
+      {:cursor_down, &handle_cursor_down/2},
+      {:cursor_forward, &handle_cursor_forward/2},
+      {:cursor_backward, &handle_cursor_backward/2},
+      {:cursor_position, &handle_cursor_position/2, :with_params},
+      {:cursor_column, &handle_cursor_column/2},
+      {:screen_clear, &handle_screen_clear/2, :with_params},
+      {:line_clear, &handle_erase_line/2, 0},
+      {:text_attributes, &handle_text_attributes/2, :with_params},
+      {:scroll_up, &handle_scroll_up/2},
+      {:scroll_down, &handle_scroll_down/2},
+      {:device_status, &handle_device_status/2, :with_params},
+      {:save_restore_cursor, &handle_save_restore_cursor/2, :with_params}
+    ]
+  end
 
   def csi_command_handlers do
-    %{
-      :cursor_up => &handle_cursor_up(&1, List.first(&2) || 1),
-      :cursor_down => &handle_cursor_down(&1, List.first(&2) || 1),
-      :cursor_forward => &handle_cursor_forward(&1, List.first(&2) || 1),
-      :cursor_backward => &handle_cursor_backward(&1, List.first(&2) || 1),
-      :cursor_position => &handle_cursor_position(&1, &2),
-      :cursor_column => &handle_cursor_column(&1, List.first(&2) || 1),
-      :screen_clear => &handle_screen_clear(&1, &2),
-      :line_clear => &handle_erase_line(&1, List.first(&2) || 0),
-      :text_attributes => &handle_text_attributes(&1, &2),
-      :scroll_up => &handle_scroll_up(&1, List.first(&2) || 1),
-      :scroll_down => &handle_scroll_down(&1, List.first(&2) || 1),
-      :device_status => &handle_device_status(&1, &2),
-      :save_restore_cursor => &handle_save_restore_cursor(&1, &2)
-    }
+    csi_handlers()
+    |> Enum.map(fn
+      {key, fun} -> {key, create_handler(fun)}
+      {key, fun, :with_params} -> {key, create_handler_with_params(fun)}
+      {key, fun, default} -> {key, create_handler(fun, default)}
+    end)
+    |> Map.new()
+  end
+
+  # Helper functions for creating handlers
+  defp create_handler(fun) do
+    fn emulator, params ->
+      fun.(emulator, params)
+    end
+  end
+
+  defp create_handler(fun, default) do
+    fn emulator, params ->
+      case params do
+        [] -> fun.(emulator, default)
+        [param] -> fun.(emulator, param)
+        _ -> fun.(emulator, params)
+      end
+    end
+  end
+
+  defp create_handler_with_params(fun) do
+    fn emulator, params ->
+      fun.(emulator, params)
+    end
   end
 
   def handle_basic_command(emulator, params, byte) do
@@ -350,72 +382,64 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     handle_deccusr(emulator, params)
   end
 
-  @doc """
-  Handles SCS (Select Character Set) command.
-  The final_byte parameter determines which character set to select.
-  """
-  @spec handle_scs(Emulator.t(), String.t(), integer()) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_scs(emulator, params, final_byte) do
-    # Parse the charset parameter
-    charset_code =
-      case params do
-        # Default to ASCII
-        "" -> ?B
-        <<code>> when code in ?0..?9 -> code
-        <<code>> when code in ?A..?Z -> code
-        <<code>> when code in ?a..?z -> code
-        # Default to ASCII
-        _ -> ?B
-      end
+  @charset_mapping %{
+    ?0 => :dec_special_graphics,
+    ?1 => :uk,
+    ?2 => :us_ascii,
+    ?3 => :dec_technical,
+    ?4 => :dec_special_graphics,
+    ?5 => :dec_special_graphics,
+    ?6 => :portuguese,
+    ?7 => :dec_special_graphics,
+    ?8 => :dec_special_graphics,
+    ?9 => :dec_special_graphics,
+    ?A => :uk,
+    ?B => :us_ascii,
+    ?F => :german,
+    ?D => :french,
+    ?R => :dec_technical,
+    ?' => :portuguese
+  }
 
-    # Map charset codes to character set atoms
-    charset =
-      case charset_code do
-        ?0 -> :dec_special_graphics
-        ?1 -> :uk
-        ?2 -> :us_ascii
-        ?3 -> :dec_technical
-        ?4 -> :dec_special_graphics
-        ?5 -> :dec_special_graphics
-        ?6 -> :portuguese
-        ?7 -> :dec_special_graphics
-        ?8 -> :dec_special_graphics
-        ?9 -> :dec_special_graphics
-        ?A -> :uk
-        ?B -> :us_ascii
-        ?F -> :german
-        ?D -> :french
-        ?R -> :dec_technical
-        ?' -> :portuguese
-        _ -> :us_ascii
-      end
-
-    # Determine which character set to update based on final_byte
-    case final_byte do
-      # G0
-      ?( ->
-        {:ok,
-         %{emulator | charset_state: %{emulator.charset_state | g0: charset}}}
-
-      # G1
-      ?) ->
-        {:ok,
-         %{emulator | charset_state: %{emulator.charset_state | g1: charset}}}
-
-      # G2
-      ?* ->
-        {:ok,
-         %{emulator | charset_state: %{emulator.charset_state | g2: charset}}}
-
-      # G3
-      ?+ ->
-        {:ok,
-         %{emulator | charset_state: %{emulator.charset_state | g3: charset}}}
-
-      _ ->
-        {:error, :invalid_charset_designation, emulator}
+  defp parse_charset_code(params) do
+    case params do
+      "" -> ?B
+      <<code>> when code in ?0..?9 or code in ?A..?Z or code in ?a..?z -> code
+      _ -> ?B
     end
+  end
+
+  defp get_charset(charset_code) do
+    Map.get(@charset_mapping, charset_code, :us_ascii)
+  end
+
+  defp update_charset_state(emulator, charset, final_byte) do
+    field =
+      case final_byte do
+        ?( -> :g0
+        ?) -> :g1
+        ?* -> :g2
+        ?+ -> :g3
+        _ -> nil
+      end
+
+    case field do
+      nil ->
+        {:error, :invalid_charset_designation, emulator}
+
+      field ->
+        {:ok,
+         %{
+           emulator
+           | charset_state: %{emulator.charset_state | field => charset}
+         }}
+    end
+  end
+
+  def handle_scs(emulator, params, final_byte) do
+    charset_code = parse_charset_code(params)
+    charset = get_charset(charset_code)
+    update_charset_state(emulator, charset, final_byte)
   end
 
   # Private mode handlers
@@ -432,7 +456,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
           "handle_private_mode: mode #{inspect(mode)} not found in @private_modes"
         )
 
-        {:ok, emulator}
+        emulator
 
       mode_name ->
         Logger.debug(
@@ -451,7 +475,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
               "handle_private_mode: Emulator.set_mode returned #{inspect(result)}"
             )
 
-            {:ok, result}
+            result
 
           ?l ->
             Logger.debug(
@@ -464,7 +488,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
               "handle_private_mode: Emulator.reset_mode returned #{inspect(result)}"
             )
 
-            {:ok, result}
+            result
         end
     end
   end
@@ -479,7 +503,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
     case mode_name do
       nil ->
-        {:ok, emulator}
+        emulator
 
       _ ->
         case final_byte do
@@ -494,7 +518,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
               "handle_public_mode: Unhandled final_byte #{inspect(final_byte)}"
             )
 
-            {:ok, emulator}
+            emulator
         end
     end
   end
@@ -505,14 +529,14 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
       [?B] -> handle_cursor_down(emulator, 1)
       [?C] -> handle_cursor_forward(emulator, 1)
       [?D] -> handle_cursor_backward(emulator, 1)
-      _ -> {:ok, emulator}
+      _ -> emulator
     end
   end
 
   # Mode changes
   def handle_mode_change(emulator, mode, enabled) do
     case get_mode_name(mode) do
-      nil -> {:ok, emulator}
+      nil -> emulator
       mode_name -> set_or_reset_mode(emulator, mode_name, enabled)
     end
   end
@@ -535,7 +559,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
       [] -> Screen.handle_command(emulator, [], ?r)
       [top] -> Screen.handle_command(emulator, [top], ?r)
       [top, bottom] -> Screen.handle_command(emulator, [top, bottom], ?r)
-      _ -> {:ok, emulator}
+      _ -> emulator
     end
   end
 
@@ -552,7 +576,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   def handle_sequence(emulator, sequence) do
     case Map.get(@sequence_handlers, sequence) do
       {handler, args} -> apply_handler(emulator, handler, args)
-      nil -> {:ok, emulator}
+      nil -> emulator
     end
   end
 
@@ -748,7 +772,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     handlers = csi_command_handlers()
 
     case Map.get(handlers, command) do
-      nil -> {:ok, emulator}
+      nil -> emulator
       handler -> handler.(emulator, params)
     end
   end
