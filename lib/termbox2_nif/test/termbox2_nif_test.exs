@@ -1,4 +1,5 @@
 defmodule Termbox2NifTest do
+  @moduletag :docker
   use ExUnit.Case
 
   test "termbox2_nif loads and initializes" do

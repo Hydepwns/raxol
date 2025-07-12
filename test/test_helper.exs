@@ -67,6 +67,16 @@ Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
   for: Raxol.Core.KeyboardShortcutsBehaviour
 )
 
+# --- Global Docker Test Skip Logic ---
+if System.get_env("SKIP_TERMBOX2_TESTS") == "true" do
+  IO.puts(:stderr, "[CI] Skipping Docker-dependent tests (SKIP_TERMBOX2_TESTS=true)")
+  ExUnit.configure(exclude: [docker: true])
+end
+
+# To mark a test as Docker-dependent, use:
+#   @tag :docker
+#   test "..." do ... end
+
 # Start ExUnit
 IO.puts("[TestHelper] Starting ExUnit...")
 ExUnit.start(max_failures: 10)
@@ -186,11 +196,11 @@ IO.puts("[TestHelper] Initializing EventManager...")
 Raxol.Core.Events.Manager.init()
 
 # Only start the endpoint if it's not already running
-if !Process.whereis(RaxolWeb.Endpoint) do
+if Process.whereis(RaxolWeb.Endpoint) do
+  IO.puts("[TestHelper] Endpoint already running")
+else
   {:ok, _pid} = RaxolWeb.Endpoint.start_link()
   IO.puts("[TestHelper] Endpoint started successfully")
-else
-  IO.puts("[TestHelper] Endpoint already running")
 end
 
 IO.puts("[TestHelper] Test helper setup complete!")
