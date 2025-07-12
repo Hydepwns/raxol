@@ -32,7 +32,9 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       assert_cell_at(updated_emulator, 79, 23, " ")
     end
 
-    test "erases from beginning of screen to cursor (mode 1)", %{emulator: emulator} do
+    test "erases from beginning of screen to cursor (mode 1)", %{
+      emulator: emulator
+    } do
       # Set cursor to middle of screen
       Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 5})
 

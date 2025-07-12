@@ -258,6 +258,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
             {:key_reorder, _} -> true
             _ -> false
           end)
+
         all_ops = other_ops ++ [{:key_reorder, new_keys_ordered}]
         {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
     end

@@ -462,6 +462,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
         # Apply vertex transformation and pass to next stage
         transformed_vertices = apply_vertex_shader(shader, layout, gpu_renderer)
         Map.put(gpu_renderer, :vertex_data, transformed_vertices || [])
+
       _ ->
         # No shader available, pass through unchanged, but ensure :vertex_data exists
         Map.put_new(gpu_renderer, :vertex_data, [])
@@ -480,6 +481,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
         # Apply fragment shading and pass to next stage
         shaded_fragments = apply_fragment_shader(shader, targets, gpu_renderer)
         Map.put(gpu_renderer, :fragment_data, shaded_fragments || [])
+
       _ ->
         # No shader available, pass through unchanged, but ensure :fragment_data exists
         Map.put_new(gpu_renderer, :fragment_data, [])
@@ -507,7 +509,9 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
             rasterizer_state,
             gpu_renderer
           )
+
         Map.put(gpu_renderer, :output_data, output_data || [])
+
       _ ->
         # No output stage available, pass through unchanged, but ensure :output_data exists
         Map.put_new(gpu_renderer, :output_data, [])

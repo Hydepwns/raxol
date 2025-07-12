@@ -259,12 +259,15 @@ defmodule Raxol.Terminal.Graphics.Manager do
   defp apply_dithering(image) do
     # Flatten 2D pixel array to 1D list first
     flattened_pixels = List.flatten(image.pixels)
+
     dithered_pixels =
       process_dithering_pixels(flattened_pixels, image.width, image.height)
+
     # Convert back to 2D format
     dithered_2d_pixels =
       dithered_pixels
       |> Enum.chunk_every(image.width)
+
     %{image | pixels: dithered_2d_pixels}
   end
 
