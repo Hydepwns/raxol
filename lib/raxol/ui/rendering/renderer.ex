@@ -4,7 +4,6 @@ defmodule Raxol.UI.Rendering.Renderer do
   Receives commands from the rendering pipeline and coordinates rendering actions.
   """
 
-  import Raxol.Guards
   use GenServer
   require Raxol.Core.Runtime.Log
   require Logger
@@ -59,7 +58,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   def apply_diff(:no_change, _new_tree), do: :ok
   def apply_diff({:replace, new_tree}, _new_tree), do: render(new_tree)
 
-  def apply_diff({:update, path, changes} = diff, new_tree) do
+  def apply_diff({:update, _path, _changes} = diff, new_tree) do
     GenServer.cast(__MODULE__, {:apply_diff, diff, new_tree})
   end
 
