@@ -173,34 +173,16 @@ defmodule Raxol.UI.Components.Input.Button do
   `:passthrough` if the event wasn't handled by the button.
   """
   @impl Component
+  def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
+    handle_click_event(button)
+  end
+
   def handle_event(
         button,
         %Raxol.Core.Events.Event{type: :click, data: _data},
         _context
       ) do
-    if button.disabled do
-      {:handled, button}
-    else
-      if button.on_click, do: button.on_click.()
-      updated_button = %{button | pressed: true}
-      updated_button = %{updated_button | errors: errors(updated_button)}
-
-      {:update, updated_button,
-       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
-    end
-  end
-
-  def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
-    if button.disabled do
-      {:handled, button}
-    else
-      if button.on_click, do: button.on_click.()
-      updated_button = %{button | pressed: true}
-      updated_button = %{updated_button | errors: errors(updated_button)}
-
-      {:update, updated_button,
-       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
-    end
+    handle_click_event(button)
   end
 
   def handle_event(
@@ -272,6 +254,20 @@ defmodule Raxol.UI.Components.Input.Button do
         else: Map.put(errors, :role, "Invalid role")
 
     errors
+  end
+
+  # Private helper for handling click events
+  defp handle_click_event(button) do
+    if button.disabled do
+      {:handled, button}
+    else
+      if button.on_click, do: button.on_click.()
+      updated_button = %{button | pressed: true}
+      updated_button = %{updated_button | errors: errors(updated_button)}
+
+      {:update, updated_button,
+       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+    end
   end
 
   # Private helpers

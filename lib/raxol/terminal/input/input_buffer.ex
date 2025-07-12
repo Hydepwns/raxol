@@ -241,39 +241,54 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     else
       case buffer.overflow_mode do
         :truncate ->
-          # For append/set_contents (default), take the start.
-          # For prepend, take the end.
           final_contents =
-            if operation == :prepend do
-              String.slice(
-                new_contents,
-                max(0, content_len - buffer.max_size)..-1//1
-              )
-            else
-              String.slice(new_contents, 0, buffer.max_size)
-            end
+            select_content_for_overflow(
+              new_contents,
+              content_len,
+              buffer.max_size,
+              operation,
+              :truncate
+            )
 
           %{buffer | contents: final_contents}
 
         :error ->
-          # Raise the error instead of returning the old buffer
           raise RuntimeError, "Buffer overflow"
 
         :wrap ->
-          # For append/set_contents (default), take the end.
-          # For prepend, take the start.
           final_contents =
-            if operation == :prepend do
-              String.slice(new_contents, 0, buffer.max_size)
-            else
-              String.slice(
-                new_contents,
-                max(0, content_len - buffer.max_size)..-1//1
-              )
-            end
+            select_content_for_overflow(
+              new_contents,
+              content_len,
+              buffer.max_size,
+              operation,
+              :wrap
+            )
 
           %{buffer | contents: final_contents}
       end
+    end
+  end
+
+  defp select_content_for_overflow(
+         new_contents,
+         content_len,
+         max_size,
+         operation,
+         mode
+       ) do
+    case {operation, mode} do
+      {:prepend, :truncate} ->
+        String.slice(new_contents, max(0, content_len - max_size)..-1//1)
+
+      {:prepend, :wrap} ->
+        String.slice(new_contents, 0, max_size)
+
+      {_, :truncate} ->
+        String.slice(new_contents, 0, max_size)
+
+      {_, :wrap} ->
+        String.slice(new_contents, max(0, content_len - max_size)..-1//1)
     end
   end
 
@@ -287,34 +302,13 @@ defmodule Raxol.Terminal.Input.InputBuffer do
           buffer.cursor_pos
         )
 
-      logical_lines_old = String.split(buffer.contents, "\n")
-
-      # Build mapping *during* wrapping (More Accurate Approach)
-      {wrapped_lines_new_list, {_final_wrapped_idx, line_mapping}} =
-        Enum.map_reduce(Enum.with_index(logical_lines_old), {0, %{}}, fn {line,
-                                                                          old_idx},
-                                                                         {current_wrapped_idx,
-                                                                          acc_mapping} ->
-          newly_wrapped_lines = InputBufferUtils.wrap_line(line, new_width)
-          num_lines_produced = length(newly_wrapped_lines)
-
-          indices =
-            Enum.to_list(
-              current_wrapped_idx..(current_wrapped_idx + num_lines_produced - 1)
-            )
-
-          {newly_wrapped_lines,
-           {current_wrapped_idx + num_lines_produced,
-            Map.put(acc_mapping, old_idx, indices)}}
-        end)
-
-      wrapped_lines_new = List.flatten(wrapped_lines_new_list)
-      new_contents = Enum.join(wrapped_lines_new, "\n")
+      {new_contents, line_mapping} =
+        wrap_contents_with_mapping(buffer.contents, new_width)
 
       new_cursor_pos =
         InputBufferUtils.calculate_new_cursor_pos_v2(
           line_mapping,
-          wrapped_lines_new,
+          String.split(new_contents, "\n"),
           original_logical_line_index,
           original_pos_in_line,
           new_contents
@@ -327,6 +321,30 @@ defmodule Raxol.Terminal.Input.InputBuffer do
           cursor_pos: new_cursor_pos
       }
     end
+  end
+
+  defp wrap_contents_with_mapping(contents, new_width) do
+    logical_lines_old = String.split(contents, "\n")
+
+    {wrapped_lines_new_list, {_final_wrapped_idx, line_mapping}} =
+      Enum.map_reduce(Enum.with_index(logical_lines_old), {0, %{}}, fn {line,
+                                                                        old_idx},
+                                                                       {current_wrapped_idx,
+                                                                        acc_mapping} ->
+        newly_wrapped_lines = InputBufferUtils.wrap_line(line, new_width)
+        num_lines_produced = length(newly_wrapped_lines)
+
+        indices =
+          Enum.to_list(
+            current_wrapped_idx..(current_wrapped_idx + num_lines_produced - 1)
+          )
+
+        {newly_wrapped_lines,
+         {current_wrapped_idx + num_lines_produced,
+          Map.put(acc_mapping, old_idx, indices)}}
+      end)
+
+    {Enum.join(List.flatten(wrapped_lines_new_list), "\n"), line_mapping}
   end
 
   def move_cursor_to_end_of_line(

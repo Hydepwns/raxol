@@ -444,13 +444,6 @@ defmodule Raxol.UI.Components.Table do
     end)
   end
 
-  defp compare_values(a, b) when is_number(a) and is_number(b), do: a <= b
-  defp compare_values(a, b) when is_binary(a) and is_binary(b), do: a <= b
-  defp compare_values(a, b) when is_atom(a) and is_atom(b), do: a <= b
-  defp compare_values(a, b) when is_binary(a), do: to_string(a) <= to_string(b)
-  defp compare_values(a, b) when is_binary(b), do: to_string(a) <= to_string(b)
-  defp compare_values(a, b), do: to_string(a) <= to_string(b)
-
   defp paginate_data(data, page, page_size) do
     start_index = (page - 1) * page_size
     Enum.slice(data, start_index, page_size)

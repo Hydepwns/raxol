@@ -16,16 +16,7 @@ defmodule Raxol.Terminal.Split.Manager do
   defp process_name(_), do: __MODULE__
 
   def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
-
-    name =
-      if Mix.env() == :test do
-        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-      else
-        Keyword.get(opts, :name, __MODULE__)
-      end
-
-    GenServer.start_link(__MODULE__, opts, name: name)
+    Raxol.Terminal.Split.Common.start_link(__MODULE__, opts)
   end
 
   def create_split(opts \\ %{}, process \\ __MODULE__) do

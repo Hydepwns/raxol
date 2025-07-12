@@ -342,47 +342,12 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   end
 
   defp generate_large_treemap(size) do
-    # Create a three-level hierarchy
-    num_sections = min(10, div(size, 100))
-    num_groups_per_section = min(10, div(size, 50))
-    items_per_group = div(size, num_sections * num_groups_per_section)
-
-    %{
-      name: "Root",
-      value: size * 10,
-      children:
-        for s <- 1..num_sections do
-          %{
-            name: "Section #{s}",
-            value: div(size, num_sections) * 10,
-            children:
-              for g <- 1..num_groups_per_section do
-                %{
-                  name: "Group #{s}.#{g}",
-                  value: items_per_group * 10,
-                  children:
-                    for i <- 1..items_per_group do
-                      %{
-                        name: "Item #{s}.#{g}.#{i}",
-                        value: :rand.uniform(100)
-                      }
-                    end
-                }
-              end
-          }
-        end
-    }
+    Raxol.Benchmarks.DataGenerator.generate_treemap_data(size)
   end
 
-  defp count_nodes(nil), do: 0
-  defp count_nodes(%{children: nil}), do: 1
-  defp count_nodes(%{children: []}), do: 1
-
-  defp count_nodes(%{children: children}) when list?(children) do
-    1 + Enum.sum(Enum.map(children, &count_nodes/1))
+  defp count_nodes(data) do
+    Raxol.Benchmarks.DataGenerator.count_nodes(data)
   end
-
-  defp count_nodes(_), do: 1
 
   defp calculate_stddev(values, mean) do
     variance =

@@ -71,20 +71,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
     end
   end
 
-  defp parse_rgb_hex("rgb:" <> rest) do
-    case String.split(rest, "/") do
-      [r, g, b] ->
-        with {:ok, r_val} <- parse_hex_component(r),
-             {:ok, g_val} <- parse_hex_component(g),
-             {:ok, b_val} <- parse_hex_component(b) do
-          {:ok, {r_val, g_val, b_val}}
-        else
-          _ -> {:error, :invalid_hex_component}
-        end
-
-      _ ->
-        {:error, :invalid_format}
-    end
+  defp parse_rgb_hex(spec) do
+    # Delegate to the dedicated color parser
+    Raxol.Terminal.Commands.OSCHandlers.ColorParser.parse_rgb_hex(spec)
   end
 
   defp parse_hex_color("#" <> hex) do
