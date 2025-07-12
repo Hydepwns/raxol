@@ -7,6 +7,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Performance.Analyzer
+  alias Raxol.Core.Performance.AIIntegration
 
   @doc """
   Analyzes performance metrics using AI and returns detailed insights and recommendations.
@@ -46,13 +47,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
       })
 
     # Send data to AI agent for analysis
-    # TODO: Implement actual AI integration call
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "AI analysis not implemented, falling back to mock analysis",
-      %{}
-    )
-
-    generate_mock_analysis(ai_data)
+    AIIntegration.analyze_performance(metrics, ai_data.options)
   end
 
   @doc """
@@ -185,7 +180,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
             <div class="section">
               <h2>Key Insights</h2>
               <ul>
-                #{Enum.map(analysis.insights, &"<li>#{&1}</li>") |> Enum.join("\n")}
+                #{Enum.map_join(analysis.insights, "\n", &"<li>#{&1}</li>")}
               </ul>
             </div>
 
@@ -214,8 +209,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
   end
 
   defp format_recommendations(recommendations) do
-    recommendations
-    |> Enum.map(fn rec ->
+    Enum.map_join(recommendations, "\n", fn rec ->
       """
       [#{rec.priority}] #{rec.area}
       Description: #{rec.description}
@@ -223,12 +217,10 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
       Effort: #{rec.effort}
       """
     end)
-    |> Enum.join("\n")
   end
 
   defp format_recommendations_html(recommendations) do
-    recommendations
-    |> Enum.map(fn rec ->
+    Enum.map_join(recommendations, "\n", fn rec ->
       """
       <div class="recommendation #{rec.priority}">
         <h3>[#{rec.priority}] #{rec.area}</h3>
@@ -238,7 +230,6 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
       </div>
       """
     end)
-    |> Enum.join("\n")
   end
 
   defp format_risk_assessment(risk) do
