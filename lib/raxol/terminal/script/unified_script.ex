@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   import Raxol.Guards
   require Logger
 
-  # Types
   @type script_id :: String.t()
   @type script_type :: :lua | :python | :javascript | :elixir
   @type script_state :: %{
@@ -23,7 +22,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
           metadata: map()
         }
 
-  # Client API
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -261,7 +259,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       %{output: [latest | _]} ->
-        # If latest is a string and output is a single string, return it directly
         if is_binary(latest) and length([latest | []]) == 1 do
           {:reply, {:ok, latest}, state}
         else
@@ -309,7 +306,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  # Private Functions
   defp generate_script_id do
     :crypto.strong_rand_bytes(16)
     |> Base.encode16()
@@ -377,7 +373,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp execute_elixir_script(script, args, timeout) do
-    # Wrap Elixir code in a module to handle def/2 properly
     module_name = "ScriptModule_#{generate_script_id()}"
 
     wrapped_code = """
@@ -387,10 +382,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     """
 
     try do
-      # Compile and load the module, get the module atom from the result
       [{mod, _bin}] = Code.compile_string(wrapped_code)
 
-      # Always call main/arity
       if function_exported?(mod, :main, length(args)) do
         result = apply(mod, :main, args)
         if is_binary(result), do: {:ok, result}, else: {:ok, inspect(result)}
@@ -405,7 +398,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp execute_lua_script(script, args, timeout) do
-    # Execute Lua script using Port or external Lua interpreter
     case execute_external_script("lua", script.source, args, timeout) do
       {:ok, output} -> {:ok, output}
       {:error, reason} -> {:error, reason}
@@ -413,7 +405,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp execute_python_script(script, args, timeout) do
-    # Execute Python script using Port or external Python interpreter
     case execute_external_script("python3", script.source, args, timeout) do
       {:ok, output} -> {:ok, output}
       {:error, reason} -> {:error, reason}
@@ -421,7 +412,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp execute_javascript_script(script, args, timeout) do
-    # Execute JavaScript using Node.js
     case execute_external_script("node", script.source, args, timeout) do
       {:ok, output} -> {:ok, output}
       {:error, reason} -> {:error, reason}
@@ -429,7 +419,6 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp execute_external_script(interpreter, source, args, timeout) do
-    # Create temporary file for script
     temp_file =
       Path.join(
         System.tmp_dir!(),
