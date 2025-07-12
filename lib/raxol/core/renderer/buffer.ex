@@ -59,41 +59,56 @@ defmodule Raxol.Core.Renderer.Buffer do
   Updates a cell in the back buffer and marks it as damaged.
   """
   def put_cell(buffer, pos, char, opts \\ []) do
-    # Validate position is a tuple of exactly 2 integers
-    unless is_tuple(pos) and tuple_size(pos) == 2 do
-      raise ArgumentError, "Cell coordinates must be a tuple of two integers"
+    {x, y} = validate_position!(pos)
+    _ = validate_char!(char)
+    cell = create_cell(char, opts)
+    update_back_buffer!(buffer, {x, y}, cell)
+  end
+
+  defp validate_position!(pos) do
+    case pos do
+      {x, y} when is_integer(x) and is_integer(y) ->
+        {x, y}
+
+      _ ->
+        raise ArgumentError, "Cell coordinates must be a tuple of two integers"
     end
+  end
 
-    {x, y} = pos
-
-    unless is_integer(x) and is_integer(y) do
-      raise ArgumentError, "Cell coordinates must be a tuple of two integers"
-    end
-
-    # Validate char is a string of length 1
-    unless is_binary(char) and String.length(char) == 1 do
+  defp validate_char!(char) when is_binary(char) do
+    if String.length(char) == 1 do
+      char
+    else
       raise ArgumentError, "Cell content must be a string of length 1"
     end
+  end
 
+  defp validate_char!(_) do
+    raise ArgumentError, "Cell content must be a string of length 1"
+  end
+
+  defp create_cell(char, opts) do
+    %{
+      char: char,
+      fg: Keyword.get(opts, :fg),
+      bg: Keyword.get(opts, :bg),
+      style: Keyword.get(opts, :style, [])
+    }
+  end
+
+  defp update_back_buffer!(buffer, {x, y}, cell) do
     {width, height} = buffer.back_buffer.size
 
     if x >= 0 and x < width and y >= 0 and y < height do
-      cell = %{
-        char: char,
-        fg: Keyword.get(opts, :fg),
-        bg: Keyword.get(opts, :bg),
-        style: Keyword.get(opts, :style, [])
-      }
-
       back_buffer = buffer.back_buffer
 
-      back_buffer = %{
+      updated_back_buffer = %{
         back_buffer
-        | cells: Map.put(back_buffer.cells, pos, cell),
-          damage: MapSet.put(back_buffer.damage, pos)
+        | cells: Map.put(back_buffer.cells, {x, y}, cell),
+          damage: MapSet.put(back_buffer.damage, {x, y})
       }
 
-      %{buffer | back_buffer: back_buffer}
+      %{buffer | back_buffer: updated_back_buffer}
     else
       buffer
     end
@@ -125,14 +140,12 @@ defmodule Raxol.Core.Renderer.Buffer do
     frame_time = trunc(1000 / buffer.fps)
 
     if now - buffer.last_frame_time >= frame_time do
-      # Create new empty back buffer
       new_empty_back_buffer = %{
         cells: %{},
         damage: MapSet.new([]),
         size: buffer.back_buffer.size
       }
 
-      # Deep copy the back buffer to avoid shared references
       copied_back_buffer =
         :erlang.term_to_binary(buffer.back_buffer) |> :erlang.binary_to_term()
 
@@ -167,61 +180,55 @@ defmodule Raxol.Core.Renderer.Buffer do
     old_size = buffer.back_buffer.size
     new_size = {new_width, new_height}
 
-    # Create new empty buffer
+    new_cells_map =
+      create_resized_cells_map(buffer.back_buffer.cells, old_size, new_size)
+
+    damage = create_full_damage_set(new_width, new_height)
+
     new_back_buffer = %{
       size: new_size,
-      cells: %{},
-      damage: MapSet.new()
+      cells: new_cells_map,
+      damage: damage
     }
 
-    # 1. Copy existing cells into a list-of-lists grid format
-    new_cells_grid = copy_cells(buffer.back_buffer.cells, old_size, new_size)
-
-    # 2. Convert the grid into the expected cell map format: %{{x, y} => cell}
-    new_cells_map =
-      new_cells_grid
-      |> Enum.with_index()
-      |> Enum.reduce(%{}, fn {row_cells, y}, acc_map ->
-        row_cells
-        |> Enum.with_index()
-        |> Enum.reduce(acc_map, fn {cell, x}, inner_acc_map ->
-          Map.put(inner_acc_map, {x, y}, cell)
-        end)
-      end)
-
-    # 3. Calculate damage: all cells in the new dimensions are damaged
-    damage =
-      for x <- 0..(new_width - 1),
-          y <- 0..(new_height - 1),
-          into: MapSet.new() do
-        {x, y}
-      end
-
-    # 4. Update the back buffer
-    new_back_buffer = %{new_back_buffer | cells: new_cells_map, damage: damage}
-
-    updated_buffer = %{
+    %{
       buffer
       | back_buffer: new_back_buffer,
         front_buffer: %{buffer.front_buffer | size: new_size}
     }
-
-    updated_buffer
   end
 
-  # Private Helpers
+  defp create_resized_cells_map(cells, old_size, new_size) do
+    copy_cells(cells, old_size, new_size)
+    |> grid_to_cell_map()
+  end
+
+  defp grid_to_cell_map(grid) do
+    grid
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {row_cells, y}, acc_map ->
+      row_cells
+      |> Enum.with_index()
+      |> Enum.reduce(acc_map, fn {cell, x}, inner_acc_map ->
+        Map.put(inner_acc_map, {x, y}, cell)
+      end)
+    end)
+  end
+
+  defp create_full_damage_set(width, height) do
+    for x <- 0..(width - 1),
+        y <- 0..(height - 1),
+        into: MapSet.new() do
+      {x, y}
+    end
+  end
 
   defp copy_cells(cells, {old_w, old_h}, {new_w, new_h}) do
-    # Copy cells from old dimensions to new dimensions
     for y <- 0..(new_h - 1) do
       for x <- 0..(new_w - 1) do
-        # Check if the coordinate was within the OLD bounds
         if x < old_w and y < old_h do
-          # Get the cell from the old map using the {x, y} tuple key
-          # Use default if somehow missing
           Map.get(cells, {x, y}, Raxol.Terminal.Cell.new())
         else
-          # Cell is outside the old bounds, use a new default cell
           Raxol.Terminal.Cell.new()
         end
       end

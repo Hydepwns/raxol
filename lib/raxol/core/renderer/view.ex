@@ -829,26 +829,20 @@ defmodule Raxol.Core.Renderer.View do
     }
   end
 
-  defp parse_offset(offset) do
-    case offset do
-      {x, y} when integer?(x) and integer?(y) -> {x, y}
-      {x, y} when number?(x) and number?(y) -> {trunc(x), trunc(y)}
-      str when binary?(str) -> parse_offset_string(str)
+  defp parse_offset({x, y}) when integer?(x) and integer?(y), do: {x, y}
+
+  defp parse_offset({x, y}) when number?(x) and number?(y),
+    do: {trunc(x), trunc(y)}
+
+  defp parse_offset(str) when binary?(str), do: parse_offset_string(str)
+  defp parse_offset(_), do: {1, 1}
+
+  defp parse_offset_string(str) do
+    case String.split(str, ~r/\s+/) do
+      [x_str, y_str] -> {parse_offset_value(x_str), parse_offset_value(y_str)}
       _ -> {1, 1}
     end
   end
-
-  defp parse_offset_string(str) do
-    str
-    |> String.split(~r/\s+/)
-    |> parse_offset_parts()
-  end
-
-  defp parse_offset_parts([x_str, y_str]) do
-    {parse_offset_value(x_str), parse_offset_value(y_str)}
-  end
-
-  defp parse_offset_parts(_), do: {1, 1}
 
   defp parse_offset_value(str) do
     str

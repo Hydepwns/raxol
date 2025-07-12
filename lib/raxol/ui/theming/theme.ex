@@ -31,7 +31,6 @@ defmodule Raxol.UI.Theming.Theme do
 
   @behaviour Access
 
-  # Access behaviour implementation
   @impl true
   def fetch(%__MODULE__{} = theme, key) when is_atom(key) or is_binary(key) do
     Map.fetch(theme, key)
@@ -54,22 +53,8 @@ defmodule Raxol.UI.Theming.Theme do
   def new(), do: new(default_attrs())
 
   def new(attrs) when is_map(attrs) do
-    attrs =
-      if Map.has_key?(attrs, :colors) do
-        Map.update!(attrs, :colors, fn colors ->
-          Enum.into(colors, %{}, fn
-            {k, v} when is_binary(v) ->
-              {k, Raxol.Style.Colors.Color.from_hex(v)}
+    attrs = process_colors(attrs)
 
-            {k, v} ->
-              {k, v}
-          end)
-        end)
-      else
-        attrs
-      end
-
-    # Ensure component_styles and styles are always a map
     attrs =
       attrs
       |> Map.update(:component_styles, %{}, fn
@@ -87,7 +72,6 @@ defmodule Raxol.UI.Theming.Theme do
           Map.put_new(map, :button, %{background: "#000000"})
       end)
 
-    # Always set :styles to :component_styles for compatibility
     attrs = Map.put(attrs, :styles, attrs[:component_styles])
 
     struct(__MODULE__, attrs)
@@ -273,6 +257,24 @@ defmodule Raxol.UI.Theming.Theme do
 
   # Private helpers
 
+  defp process_colors(attrs) do
+    if Map.has_key?(attrs, :colors) do
+      Map.update!(attrs, :colors, &convert_hex_colors/1)
+    else
+      attrs
+    end
+  end
+
+  defp convert_hex_colors(colors) do
+    Enum.into(colors, %{}, fn
+      {k, v} when is_binary(v) ->
+        {k, Raxol.Style.Colors.Color.from_hex(v)}
+
+      {k, v} ->
+        {k, v}
+    end)
+  end
+
   defp default_attrs do
     %{
       id: :default,
@@ -337,7 +339,6 @@ defmodule Raxol.UI.Theming.Theme do
   This should be called during application startup.
   """
   def init do
-    # Create and register the default theme
     default_theme = new()
     register(default_theme)
     :ok
@@ -380,7 +381,6 @@ defmodule Raxol.UI.Theming.Theme do
 
   def default_theme_id(), do: :default
 
-  # Implement String.Chars protocol for Theme
   if Code.ensure_loaded?(String.Chars) do
     defimpl String.Chars, for: __MODULE__ do
       def to_string(theme) do
@@ -428,7 +428,6 @@ defmodule Raxol.UI.Theming.Theme do
     merge(parent_theme, child_theme)
   end
 
-  # Private helper for deep merging maps
   defp deep_merge(map1, map2) when is_map(map1) and is_map(map2) do
     Map.merge(map1, map2, fn _key, v1, v2 ->
       if is_map(v1) and is_map(v2) do

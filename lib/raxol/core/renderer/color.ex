@@ -342,8 +342,6 @@ defmodule Raxol.Core.Renderer.Color do
     16 + 36 * ir + 6 * ig + ib
   end
 
-  # Private Helpers
-
   defp detect_background_fallback do
     case System.get_env("TERM_PROGRAM") do
       "iTerm.app" -> :black

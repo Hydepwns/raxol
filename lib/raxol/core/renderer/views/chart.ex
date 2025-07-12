@@ -299,46 +299,92 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     sy = if y1 < y2, do: 1, else: -1
     err = dx + dy
 
-    draw_bresenham(canvas, x1, y1, x2, y2, sx, sy, err, dx, dy)
+    %{
+      canvas: canvas,
+      x: x1,
+      y: y1,
+      x2: x2,
+      y2: y2,
+      sx: sx,
+      sy: sy,
+      err: err,
+      dx: dx,
+      dy: dy,
+      depth: 0
+    }
+    |> draw_bresenham()
   end
 
-  defp draw_bresenham(canvas, x, y, x2, y2, sx, sy, err, dx, dy, depth \\ 0) do
-    if depth > 10_000 do
-      canvas
-    else
-      if x < 0 or y < 0 or nil?(Enum.at(canvas, y)) or
-           nil?(Enum.at(Enum.at(canvas, y), x)) do
-        canvas
-      else
-        canvas = put_in(canvas, [Access.at(y), Access.at(x)], "•")
+  defp draw_bresenham(params) do
+    draw_bresenham_with_params(params)
+  end
 
-        if x == x2 and y == y2 do
-          canvas
-        else
-          e2 = 2 * err
-
-          {next_x, _next_err_x} =
-            if e2 >= dy, do: {x + sx, err + dy}, else: {x, err}
-
-          {next_y, next_err_y} =
-            if e2 <= dx, do: {y + sy, err + dx}, else: {y, err}
-
-          draw_bresenham(
-            canvas,
-            next_x,
-            next_y,
-            x2,
-            y2,
-            sx,
-            sy,
-            next_err_y,
-            dx,
-            dy,
-            depth + 1
-          )
-        end
-      end
+  defp draw_bresenham_with_params(%{canvas: canvas, depth: depth} = params) do
+    cond do
+      depth > 10_000 -> canvas
+      out_of_bounds?(canvas, params) -> canvas
+      reached_end?(params) -> mark_point(canvas, params)
+      true -> draw_bresenham_step(params)
     end
+  end
+
+  defp out_of_bounds?(canvas, %{x: x, y: y}) do
+    x < 0 or y < 0 or nil?(Enum.at(canvas, y)) or
+      nil?(Enum.at(Enum.at(canvas, y), x))
+  end
+
+  defp reached_end?(%{x: x, y: y, x2: x2, y2: y2}) do
+    x == x2 and y == y2
+  end
+
+  defp mark_point(canvas, %{x: x, y: y}) do
+    put_in(canvas, [Access.at(y), Access.at(x)], "•")
+  end
+
+  defp draw_bresenham_step(%{
+         canvas: canvas,
+         x: x,
+         y: y,
+         x2: x2,
+         y2: y2,
+         sx: sx,
+         sy: sy,
+         err: err,
+         dx: dx,
+         dy: dy,
+         depth: depth
+       }) do
+    canvas = mark_point(canvas, %{x: x, y: y})
+    e2 = 2 * err
+
+    {next_x, next_y, next_err} =
+      calculate_next_position(x, y, sx, sy, err, dx, dy, e2)
+
+    next_params = %{
+      canvas: canvas,
+      x: next_x,
+      y: next_y,
+      x2: x2,
+      y2: y2,
+      sx: sx,
+      sy: sy,
+      err: next_err,
+      dx: dx,
+      dy: dy,
+      depth: depth + 1
+    }
+
+    draw_bresenham_with_params(next_params)
+  end
+
+  defp calculate_next_position(x, y, sx, sy, err, dx, dy, e2) do
+    {next_x, _next_err_x} =
+      if e2 >= dy, do: {x + sx, err + dy}, else: {x, err}
+
+    {next_y, next_err_y} =
+      if e2 <= dx, do: {y + sy, err + dx}, else: {y, err}
+
+    {next_x, next_y, next_err_y}
   end
 
   defp canvas_to_view_cells(canvas, color) do

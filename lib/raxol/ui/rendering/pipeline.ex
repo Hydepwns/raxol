@@ -152,7 +152,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
     * {:replace, new_tree} if the root node differs
     * {:update, path, changes} for subtree updates (path is a list of indices)
 
-  TODO: Support keyed children, reordering, and more granular diffs.
   """
   @spec diff_trees(old_tree :: map() | nil, new_tree :: map() | nil) ::
           :no_change
@@ -663,56 +662,41 @@ defmodule Raxol.UI.Rendering.Pipeline do
          previous_composed_tree,
          previous_painted_output
        ) do
-    cond do
-      not should_process_tree?(diff_result, new_tree_for_reference) ->
+    if should_process_tree?(diff_result, new_tree_for_reference) do
+      layout_data = Layouter.layout_tree(diff_result, new_tree_for_reference)
+
+      if should_process_layout?(diff_result, layout_data) do
+        composed_data =
+          Composer.compose_render_tree(
+            layout_data,
+            new_tree_for_reference,
+            previous_composed_tree
+          )
+
+        handle_composition_stage(composed_data, layout_data, previous_painted_output, previous_composed_tree, new_tree_for_reference)
+      else
         Raxol.Core.Runtime.Log.debug(
-          "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
+          "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
         )
 
         {previous_painted_output, previous_composed_tree}
+      end
+    else
+      Raxol.Core.Runtime.Log.debug(
+        "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
+      )
 
-      true ->
-        layout_data = Layouter.layout_tree(diff_result, new_tree_for_reference)
+      {previous_painted_output, previous_composed_tree}
+    end
+  end
 
-        if not should_process_layout?(diff_result, layout_data) do
-          Raxol.Core.Runtime.Log.debug(
-            "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
-          )
-
-          {previous_painted_output, previous_composed_tree}
-        else
-          composed_data =
-            Composer.compose_render_tree(
-              layout_data,
-              new_tree_for_reference,
-              previous_composed_tree
-            )
-
-          if not should_process_composition?(composed_data, layout_data) do
-            Raxol.Core.Runtime.Log.debug(
-              "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
-            )
-
-            {previous_painted_output, composed_data}
-          else
-            painted_data =
-              Painter.paint(
-                composed_data,
-                new_tree_for_reference,
-                previous_composed_tree,
-                previous_painted_output
-              )
-
-            commit(
-              painted_data,
-              renderer_module,
-              diff_result,
-              new_tree_for_reference
-            )
-
-            {painted_data, composed_data}
-          end
-        end
+  defp handle_composition_stage(composed_data, layout_data, previous_painted_output, previous_composed_tree, new_tree_for_reference) do
+    if should_process_composition?(composed_data, layout_data) do
+      painted_data = Painter.paint(composed_data, new_tree_for_reference, previous_composed_tree, previous_painted_output)
+      {painted_data, composed_data}
+    else
+      Raxol.Core.Runtime.Log.debug("Render Pipeline: Composition stage resulted in nil, skipping paint and commit.")
+      {previous_painted_output, composed_data}
     end
   end
 

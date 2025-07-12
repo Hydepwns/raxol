@@ -115,51 +115,73 @@ defmodule Raxol.Core.Renderer.Layout do
   Calculates the layout for a single view based on its type.
   """
   def layout_single_view(view, available_space) do
-    case view do
-      %{type: :flex} = flex_view ->
-        Flex.calculate_layout(flex_view, available_space)
+    {view_type, view_data} = get_view_type(view)
+    apply_layout_by_type(view_type, view_data, available_space)
+  end
 
-      %{type: :grid} = grid_view ->
-        Grid.calculate_layout(grid_view, available_space)
+  defp apply_layout_by_type(:flex, flex_view, available_space),
+    do: Flex.calculate_layout(flex_view, available_space)
 
-      %{type: :box} = box_view ->
-        layout_box(box_view, available_space)
+  defp apply_layout_by_type(:grid, grid_view, available_space),
+    do: Grid.calculate_layout(grid_view, available_space)
 
-      %{type: :shadow_wrapper} = shadow_view ->
-        layout_shadow_wrapper(shadow_view, available_space)
+  defp apply_layout_by_type(:box, box_view, available_space),
+    do: layout_box(box_view, available_space)
 
-      %{type: :scroll} = scroll_view ->
-        layout_scroll(scroll_view, available_space)
+  defp apply_layout_by_type(:shadow_wrapper, shadow_view, available_space),
+    do: layout_shadow_wrapper(shadow_view, available_space)
 
-      %{type: :text} = text_view ->
-        layout_text(text_view, available_space)
+  defp apply_layout_by_type(:scroll, scroll_view, available_space),
+    do: layout_scroll(scroll_view, available_space)
 
-      %{type: :label} = label_view ->
-        layout_label(label_view, available_space)
+  defp apply_layout_by_type(:text, text_view, available_space),
+    do: layout_text(text_view, available_space)
 
-      %{type: :button} = button_view ->
-        layout_button(button_view, available_space)
+  defp apply_layout_by_type(:label, label_view, available_space),
+    do: layout_label(label_view, available_space)
 
-      %{type: :checkbox} = checkbox_view ->
-        layout_checkbox(checkbox_view, available_space)
+  defp apply_layout_by_type(:button, button_view, available_space),
+    do: layout_button(button_view, available_space)
 
-      %{children: children} when list?(children) ->
-        # Container with children - layout children recursively
-        children
-        |> Enum.flat_map(fn child ->
-          layout_single_view(child, available_space)
-        end)
+  defp apply_layout_by_type(:checkbox, checkbox_view, available_space),
+    do: layout_checkbox(checkbox_view, available_space)
 
-      _ ->
-        # Unknown or simple view - return as is
-        [view]
-    end
+  defp apply_layout_by_type(:container, view, available_space),
+    do: layout_container_children(view, available_space)
+
+  defp apply_layout_by_type(:unknown, view, _available_space), do: [view]
+
+  defp get_view_type(%{type: :flex} = flex_view), do: {:flex, flex_view}
+  defp get_view_type(%{type: :grid} = grid_view), do: {:grid, grid_view}
+  defp get_view_type(%{type: :box} = box_view), do: {:box, box_view}
+
+  defp get_view_type(%{type: :shadow_wrapper} = shadow_view),
+    do: {:shadow_wrapper, shadow_view}
+
+  defp get_view_type(%{type: :scroll} = scroll_view), do: {:scroll, scroll_view}
+  defp get_view_type(%{type: :text} = text_view), do: {:text, text_view}
+  defp get_view_type(%{type: :label} = label_view), do: {:label, label_view}
+  defp get_view_type(%{type: :button} = button_view), do: {:button, button_view}
+
+  defp get_view_type(%{type: :checkbox} = checkbox_view),
+    do: {:checkbox, checkbox_view}
+
+  defp get_view_type(%{children: children} = view) when list?(children),
+    do: {:container, view}
+
+  defp get_view_type(view), do: {:unknown, view}
+
+  defp layout_container_children(view, available_space) do
+    view.children
+    |> Enum.flat_map(fn child ->
+      layout_single_view(child, available_space)
+    end)
   end
 
   defp layout_shadow_wrapper(shadow_view, available_space) do
     children = shadow_view.children
     children_list = if is_list(children), do: children, else: [children]
-    # For now, just layout the children as normal
+
     Enum.flat_map(children_list, fn child ->
       layout_single_view(child, available_space)
     end)
@@ -168,7 +190,6 @@ defmodule Raxol.Core.Renderer.Layout do
   defp layout_scroll(scroll_view, available_space) do
     {offset_x, offset_y} = scroll_view.offset
 
-    # Layout the children normally first
     children = scroll_view.children
     children_list = if is_list(children), do: children, else: [children]
 
@@ -177,7 +198,6 @@ defmodule Raxol.Core.Renderer.Layout do
         layout_single_view(child, available_space)
       end)
 
-    # Apply scroll offset by subtracting from positions
     Enum.map(positioned_children, fn child ->
       {x, y} = Map.get(child, :position, {0, 0})
       Map.put(child, :position, {x - offset_x, y - offset_y})
@@ -188,41 +208,48 @@ defmodule Raxol.Core.Renderer.Layout do
   Calculates layout for a box container.
   """
   def layout_box(box, {width, height}) do
-    # Get box configuration
     children = Map.get(box, :children, [])
     padding = Map.get(box, :padding, {0, 0, 0, 0})
     margin = Map.get(box, :margin, {0, 0, 0, 0})
     border = Map.get(box, :border, false)
 
-    # Calculate box size
     box_size = calculate_box_size(box, {width, height})
 
-    # Apply margins and padding
     {content_x, content_y, content_width, content_height} =
       calculate_content_area(box_size, padding, margin, border)
 
-    # Create positioned box
     positioned_box =
       box
       |> Map.put(:position, {content_x, content_y})
       |> Map.put(:size, box_size)
 
-    # Layout children if any
     if list?(children) and children != [] do
-      child_space = {content_width, content_height}
-
-      positioned_children =
-        children
-        |> Enum.flat_map(fn child -> layout_single_view(child, child_space) end)
-        |> Enum.map(fn child ->
-          {child_x, child_y} = Map.get(child, :position, {0, 0})
-          Map.put(child, :position, {child_x + content_x, child_y + content_y})
-        end)
-
-      [positioned_box | positioned_children]
+      [
+        positioned_box
+        | position_children(
+            children,
+            {content_x, content_y},
+            {content_width, content_height}
+          )
+      ]
     else
       [positioned_box]
     end
+  end
+
+  defp position_children(
+         children,
+         {content_x, content_y},
+         {content_width, content_height}
+       ) do
+    children
+    |> Enum.flat_map(fn child ->
+      layout_single_view(child, {content_width, content_height})
+    end)
+    |> Enum.map(fn child ->
+      {child_x, child_y} = Map.get(child, :position, {0, 0})
+      Map.put(child, :position, {child_x + content_x, child_y + content_y})
+    end)
   end
 
   @doc """
@@ -292,25 +319,32 @@ defmodule Raxol.Core.Renderer.Layout do
     [positioned_checkbox]
   end
 
-  # Private helper functions
-
   defp calculate_box_size(box, {available_width, available_height}) do
-    case Map.get(box, :size) do
-      {w, h} when integer?(w) and integer?(h) ->
-        {max(0, w), max(0, h)}
+    size = Map.get(box, :size, :auto)
+    calculate_dimensions(size, available_width, available_height)
+  end
 
-      {w, :auto} when integer?(w) ->
-        {max(0, w), max(0, available_height)}
+  defp calculate_dimensions({w, h}, _available_width, _available_height)
+       when integer?(w) and integer?(h) do
+    {max(0, w), max(0, h)}
+  end
 
-      {:auto, h} when integer?(h) ->
-        {max(0, available_width), max(0, h)}
+  defp calculate_dimensions({w, :auto}, _available_width, available_height)
+       when integer?(w) do
+    {max(0, w), max(0, available_height)}
+  end
 
-      :auto ->
-        {max(0, available_width), max(0, available_height)}
+  defp calculate_dimensions({:auto, h}, available_width, _available_height)
+       when integer?(h) do
+    {max(0, available_width), max(0, h)}
+  end
 
-      _ ->
-        {max(0, available_width), max(0, available_height)}
-    end
+  defp calculate_dimensions(:auto, available_width, available_height) do
+    {max(0, available_width), max(0, available_height)}
+  end
+
+  defp calculate_dimensions(_, available_width, available_height) do
+    {max(0, available_width), max(0, available_height)}
   end
 
   defp calculate_content_area(box_size, padding, margin, border) do

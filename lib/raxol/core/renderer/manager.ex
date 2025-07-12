@@ -16,8 +16,6 @@ defmodule Raxol.Core.Renderer.Manager do
   alias Raxol.Core.Events.Manager
   alias Raxol.Core.Runtime.ComponentManager
 
-  # Client API
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -34,8 +32,6 @@ defmodule Raxol.Core.Renderer.Manager do
     GenServer.call(__MODULE__, :cleanup)
   end
 
-  # Server Callbacks
-
   @impl GenServer
   def init(_opts) do
     {:ok,
@@ -49,14 +45,11 @@ defmodule Raxol.Core.Renderer.Manager do
 
   @impl GenServer
   def handle_call({:init, opts}, _from, state) do
-    # Get terminal size
     {width, height} = get_terminal_size()
 
-    # Create buffer with specified FPS
     fps = Keyword.get(opts, :fps, 60)
     buffer = Buffer.new(width, height, fps)
 
-    # Subscribe to window events
     {:ok, _sub_ref} = Manager.subscribe([:window])
 
     {:reply, :ok, %{state | buffer: buffer, fps: fps, initialized: true}}
@@ -64,41 +57,30 @@ defmodule Raxol.Core.Renderer.Manager do
 
   @impl GenServer
   def handle_call(:cleanup, _from, state) do
-    # Clear screen and reset cursor
     IO.write([IO.ANSI.clear(), IO.ANSI.home()])
     {:reply, :ok, %{state | initialized: false}}
   end
 
   @impl GenServer
   def handle_cast(:render, %{initialized: false} = state) do
-    # If not initialized, it's a no-op, so we don't send a signal.
-    # Or, if we always expect a signal, we could send one here too.
-    # For now, assuming no signal if no actual render attempt is made.
     {:noreply, state}
   end
 
   @impl GenServer
   def handle_cast({:render, reply_to_pid_for_signal}, state) do
-    # Get component IDs that need rendering
     component_ids = ComponentManager.get_render_queue()
 
-    # Fetch component data for each ID
     components =
       Enum.map(component_ids, &ComponentManager.get_component/1)
-      # Filter out any nil results if a component disappeared
       |> Enum.reject(&nil?(&1))
 
-    # Clear back buffer
     buffer = Buffer.clear(state.buffer)
 
-    # Render each component to back buffer
     buffer = Enum.reduce(components, buffer, &render_component/2)
 
-    # Try to swap buffers (respects FPS timing)
     {buffer, should_render} = Buffer.swap_buffers(buffer)
 
     if should_render do
-      # Get damaged regions and update screen
       damage = Buffer.get_damage(buffer)
       render_damage(damage)
     end
@@ -131,7 +113,6 @@ defmodule Raxol.Core.Renderer.Manager do
 
   @impl GenServer
   def handle_info({:event, _event}, state) do
-    # Ignore other subscribed events for now
     {:noreply, state}
   end
 
@@ -190,24 +171,26 @@ defmodule Raxol.Core.Renderer.Manager do
   end
 
   defp render_damage(damage) do
-    Enum.each(damage, fn {{x, y}, cell} ->
-      case cell do
-        nil ->
-          # Empty cell, just move cursor
-          IO.write([IO.ANSI.cursor(y + 1, x + 1), " "])
+    Enum.each(damage, &render_cell/1)
+  end
 
-        %{char: char, fg: fg, bg: bg, style: style} ->
-          # Apply styles and write character
-          styles = build_styles(fg, bg, style)
+  defp render_cell({{x, y}, cell}) do
+    case cell do
+      nil ->
+        # Empty cell, just move cursor
+        IO.write([IO.ANSI.cursor(y + 1, x + 1), " "])
 
-          IO.write([
-            IO.ANSI.cursor(y + 1, x + 1),
-            styles,
-            char,
-            IO.ANSI.reset()
-          ])
-      end
-    end)
+      %{char: char, fg: fg, bg: bg, style: style} ->
+        # Apply styles and write character
+        styles = build_styles(fg, bg, style)
+
+        IO.write([
+          IO.ANSI.cursor(y + 1, x + 1),
+          styles,
+          char,
+          IO.ANSI.reset()
+        ])
+    end
   end
 
   defp build_styles(fg, bg, style) do

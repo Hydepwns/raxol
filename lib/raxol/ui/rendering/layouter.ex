@@ -14,61 +14,64 @@ defmodule Raxol.UI.Rendering.Layouter do
         Raxol.Core.Runtime.Log.debug(
           "Layout Stage: Full layout due to :replace"
         )
-
         do_layout_node_and_children(tree_to_layout, {:replace, tree_to_layout})
 
       :no_change ->
         Raxol.Core.Runtime.Log.debug(
           "Layout Stage: Layout for :no_change (processing new_tree_for_reference)"
         )
-
         do_layout_node_and_children(new_tree_for_reference, :no_change)
 
       {:update, path, child_changes_list} ->
         Raxol.Core.Runtime.Log.debug(
           "Layout Stage: Partial layout for node at path #{inspect(path)} due to child changes: #{inspect(child_changes_list)}"
         )
-
-        access_path = path_to_access_path(path)
-
-        if path == [] do
-          do_layout_node_and_children(
-            new_tree_for_reference,
-            {:update_children, child_changes_list}
-          )
-        else
-          update_in(new_tree_for_reference, access_path, fn node_at_path ->
-            if node_at_path do
-              do_layout_node_and_children(
-                node_at_path,
-                {:update_children, child_changes_list}
-              )
-            else
-              Raxol.Core.Runtime.Log.warning_with_context(
-                "Layout Stage: Node not found at access path #{inspect(access_path)} during :update. Skipping.",
-                %{}
-              )
-
-              nil
-            end
-          end)
-        end
+        handle_update_diff(path, child_changes_list, new_tree_for_reference)
 
       _otherwise ->
-        if map?(diff_result) do
-          Raxol.Core.Runtime.Log.debug(
-            "Layout Stage: Input is a map, treating as full layout: #{inspect(diff_result)}"
-          )
+        handle_otherwise_diff(diff_result)
+    end
+  end
 
-          do_layout_node_and_children(diff_result, {:replace, diff_result})
-        else
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Layout Stage: Unhandled diff_result type or non-map input: #{inspect(diff_result)}",
-            %{}
-          )
+  defp handle_update_diff([], child_changes_list, new_tree_for_reference) do
+    do_layout_node_and_children(
+      new_tree_for_reference,
+      {:update_children, child_changes_list}
+    )
+  end
 
-          diff_result
-        end
+  defp handle_update_diff(path, child_changes_list, new_tree_for_reference) do
+    access_path = path_to_access_path(path)
+    update_in(new_tree_for_reference, access_path, &update_node_at_path(&1, access_path, child_changes_list))
+  end
+
+  defp update_node_at_path(nil, access_path, _child_changes_list) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Layout Stage: Node not found at access path #{inspect(access_path)} during :update. Skipping.",
+      %{}
+    )
+    nil
+  end
+
+  defp update_node_at_path(node_at_path, _access_path, child_changes_list) do
+    do_layout_node_and_children(
+      node_at_path,
+      {:update_children, child_changes_list}
+    )
+  end
+
+  defp handle_otherwise_diff(diff_result) do
+    if map?(diff_result) do
+      Raxol.Core.Runtime.Log.debug(
+        "Layout Stage: Input is a map, treating as full layout: #{inspect(diff_result)}"
+      )
+      do_layout_node_and_children(diff_result, {:replace, diff_result})
+    else
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "Layout Stage: Unhandled diff_result type or non-map input: #{inspect(diff_result)}",
+        %{}
+      )
+      diff_result
     end
   end
 
@@ -86,78 +89,64 @@ defmodule Raxol.UI.Rendering.Layouter do
 
   defp do_layout_node_and_children(node_content, diff_for_this_node)
        when map?(node_content) do
-    current_node_actual_content =
-      case diff_for_this_node do
-        {:replace, new_content_for_this_node}
-        when map?(new_content_for_this_node) ->
-          new_content_for_this_node
+    current_node_actual_content = get_current_node_content(node_content, diff_for_this_node)
+    node_with_own_layout = add_layout_attrs(current_node_actual_content)
+    processed_children = process_children(node_with_own_layout, diff_for_this_node)
 
-        {:replace, _} ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Layout Engine: Node replaced with non-map content: #{inspect(diff_for_this_node)}. Using original node_content for safety.",
-            %{}
-          )
+    update_node_children(node_with_own_layout, processed_children)
+  end
 
-          node_content
+  defp get_current_node_content(node_content, diff_for_this_node) do
+    case diff_for_this_node do
+      {:replace, new_content_for_this_node} when map?(new_content_for_this_node) ->
+        new_content_for_this_node
+      {:replace, _} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Layout Engine: Node replaced with non-map content: #{inspect(diff_for_this_node)}. Using original node_content for safety.",
+          %{}
+        )
+        node_content
+      _ ->
+        node_content
+    end
+  end
 
-        _ ->
-          node_content
-      end
+  defp add_layout_attrs(node_content) do
+    Map.put(node_content, :layout_attrs, dummy_layout_for_node(node_content))
+  end
 
-    node_with_own_layout =
-      Map.put(
-        current_node_actual_content,
-        :layout_attrs,
-        dummy_layout_for_node(current_node_actual_content)
-      )
+  defp process_children(node_with_own_layout, diff_for_this_node) do
+    children = get_children(node_with_own_layout)
 
-    processed_children =
-      case diff_for_this_node do
-        {:replace, _} ->
-          Enum.map(
-            if(map?(node_with_own_layout),
-              do: Map.get(node_with_own_layout, :children, []),
-              else: []
-            ),
-            &do_layout_node_and_children(&1, {:replace, &1})
-          )
+    case diff_for_this_node do
+      {:replace, _} ->
+        Enum.map(children, &do_layout_node_and_children(&1, {:replace, &1}))
+      :no_change ->
+        Enum.map(children, &do_layout_node_and_children(&1, :no_change))
+      {:update_children, child_changes_list} ->
+        map_child_changes_to_new_children_list(children, child_changes_list)
+      _unknown_diff ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Layout Engine: Unhandled diff for node, doing full child relayout: #{inspect(diff_for_this_node)} on node #{inspect(get_node_type(node_with_own_layout))}",
+          %{}
+        )
+        Enum.map(children, &do_layout_node_and_children(&1, {:replace, &1}))
+    end
+  end
 
-        :no_change ->
-          Enum.map(
-            if(map?(node_with_own_layout),
-              do: Map.get(node_with_own_layout, :children, []),
-              else: []
-            ),
-            &do_layout_node_and_children(&1, :no_change)
-          )
+  defp get_children(node) do
+    if map?(node), do: Map.get(node, :children, []), else: []
+  end
 
-        {:update_children, child_changes_list} ->
-          children =
-            if map?(node_with_own_layout),
-              do: Map.get(node_with_own_layout, :children, []),
-              else: []
+  defp get_node_type(node) do
+    if map?(node), do: Map.get(node, :type, :unknown), else: :unknown
+  end
 
-          map_child_changes_to_new_children_list(children, child_changes_list)
-
-        _unknown_diff ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Layout Engine: Unhandled diff for node, doing full child relayout: #{inspect(diff_for_this_node)} on node #{inspect(if map?(node_with_own_layout), do: Map.get(node_with_own_layout, :type, :unknown), else: :unknown)}",
-            %{}
-          )
-
-          Enum.map(
-            if(map?(node_with_own_layout),
-              do: Map.get(node_with_own_layout, :children, []),
-              else: []
-            ),
-            &do_layout_node_and_children(&1, {:replace, &1})
-          )
-      end
-
-    if Map.has_key?(node_with_own_layout, :children) do
-      %{node_with_own_layout | children: processed_children}
+  defp update_node_children(node, processed_children) do
+    if Map.has_key?(node, :children) do
+      %{node | children: processed_children}
     else
-      node_with_own_layout
+      node
     end
   end
 
@@ -171,48 +160,91 @@ defmodule Raxol.UI.Rendering.Layouter do
         Enum.reduce(
           indexed_child_diffs_list,
           children_in_current_node,
-          fn {index, child_diff}, acc ->
-            case child_diff do
-              {:replace, new_child} ->
-                # Replace child at index
-                List.replace_at(
-                  acc,
-                  index,
-                  do_layout_node_and_children(new_child, {:replace, new_child})
-                )
-
-              {:update, _child_path, child_changes} ->
-                # Update child at index with partial changes
-                current_child = Enum.at(acc, index)
-
-                if current_child do
-                  updated_child =
-                    do_layout_node_and_children(
-                      current_child,
-                      {:update_children, child_changes}
-                    )
-
-                  List.replace_at(acc, index, updated_child)
-                else
-                  acc
-                end
-
-              _ ->
-                # Unknown diff type, keep original
-                acc
-            end
-          end
+          &process_indexed_child_diff/2
         )
 
-      %{type: :keyed_children, diffs: _keyed_child_diffs_list} ->
-        # TODO: Implement keyed children handling
-        children_in_current_node
+      %{type: :keyed_children, ops: keyed_child_ops} ->
+        # Process keyed child operations
+        Enum.reduce(
+          keyed_child_ops,
+          children_in_current_node,
+          &process_keyed_child_op/2
+        )
 
       _ ->
         # Unknown diff type, return original children
         children_in_current_node
     end
   end
+
+  defp process_indexed_child_diff({index, child_diff}, acc) do
+    case child_diff do
+      {:replace, new_child} ->
+        # Replace child at index
+        List.replace_at(
+          acc,
+          index,
+          do_layout_node_and_children(new_child, {:replace, new_child})
+        )
+
+      {:update, _child_path, child_changes} ->
+        # Update child at index with partial changes
+        current_child = Enum.at(acc, index)
+
+        if current_child do
+          updated_child =
+            do_layout_node_and_children(
+              current_child,
+              {:update_children, child_changes}
+            )
+
+          List.replace_at(acc, index, updated_child)
+        else
+          acc
+        end
+
+      _ ->
+        # Unknown diff type, keep original
+        acc
+    end
+  end
+
+  defp process_keyed_child_op({:key_add, key, new_child}, acc) do
+    # Add new child at the end (will be reordered by key_reorder op)
+    acc ++ [do_layout_node_and_children(new_child, {:replace, new_child})]
+  end
+
+  defp process_keyed_child_op({:key_update, key, child_diff}, acc) do
+    # Find and update existing child by key
+    Enum.map(acc, fn child ->
+      if map?(child) && Map.get(child, :key) == key do
+        do_layout_node_and_children(child, child_diff)
+      else
+        child
+      end
+    end)
+  end
+
+  defp process_keyed_child_op({:key_remove, key}, acc) do
+    # Remove child with matching key
+    Enum.reject(acc, fn child ->
+      map?(child) && Map.get(child, :key) == key
+    end)
+  end
+
+  defp process_keyed_child_op({:key_reorder, new_keys_ordered}, acc) do
+    # Reorder children according to new key order
+    children_by_key = Map.new(acc, fn child ->
+      if map?(child), do: {Map.get(child, :key), child}, else: {nil, child}
+    end)
+
+    Enum.map(new_keys_ordered, fn key ->
+      Map.get(children_by_key, key)
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp process_keyed_child_op(_unknown_op, acc), do: acc
 
   defp path_to_access_path([]), do: []
 
