@@ -39,12 +39,13 @@ mix setup
 # mix.exs
 def deps do
   [
-    {:raxol, "~> 0.5.0"}
+    {:raxol, "~> 0.5.2"}
   ]
 end
 ```
 
 ```bash
+# Enter the development environment, initialize the submodule for termbox2
 mix deps.get
 git submodule update --init --recursive
 ```
@@ -52,6 +53,31 @@ git submodule update --init --recursive
 **Note**: You'll need to install Erlang 25.3.2.7, Elixir 1.17.1, PostgreSQL, and other dependencies manually.
 
 ## Quick Start
+
+### Interactive Demo Runner
+
+The easiest way to explore Raxol is through our interactive demo runner:
+
+```bash
+# Show interactive menu to select from available demos
+mix run bin/demo.exs
+
+# Run a specific demo directly
+mix run bin/demo.exs form
+mix run bin/demo.exs accessibility
+mix run bin/demo.exs component_showcase
+
+# List all available demos
+mix run bin/demo.exs --list
+
+# Search for demos
+mix run bin/demo.exs --search "table"
+
+# Get help
+mix run bin/demo.exs --help
+```
+
+### Create Your First App
 
 ```elixir
 defmodule MyApp.Application do
@@ -68,6 +94,32 @@ defmodule MyApp.Application do
   end
 end
 ```
+
+## Available Demos
+
+Raxol comes with a comprehensive set of examples demonstrating various features:
+
+### Basic Examples
+
+- **Form**: Simple form with validation and focus management
+- **Table**: Advanced table component with sorting and filtering
+- **Component Showcase**: Complete component library demonstration
+
+### Advanced Features
+
+- **Accessibility**: Screen reader support and keyboard navigation
+- **Keyboard Shortcuts**: Custom shortcut handling and configuration
+- **UX Refinement**: Focus management and user experience improvements
+
+### Showcases
+
+- **Color System**: Comprehensive color system and theming
+- **Focus Ring**: Focus indication with various animation types
+- **Select List**: Enhanced selection with search and pagination
+
+### Work in Progress
+
+- **Integrated Accessibility**: Advanced accessibility features
 
 ## Documentation
 
