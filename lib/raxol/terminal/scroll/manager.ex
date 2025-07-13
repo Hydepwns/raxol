@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
     limit = Keyword.get(opts, :limit)
     direction = Keyword.get(opts, :direction)
 
-    case System.get(:history, namespace: :scroll) do
+    case Raxol.Terminal.Cache.System.get(:history, namespace: :scroll) do
       {:ok, history} ->
         result =
           history
@@ -128,10 +128,10 @@ defmodule Raxol.Terminal.Scroll.Manager do
   """
   @spec optimize(t()) :: t()
   def optimize(manager) do
-    case System.stats(namespace: :scroll) do
+    case Raxol.Terminal.Cache.System.stats(namespace: :scroll) do
       {:ok, stats} ->
         if stats.size > stats.max_size * 0.8 do
-          System.clear(namespace: :scroll)
+          Raxol.Terminal.Cache.System.clear(namespace: :scroll)
         end
 
       _ ->
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
   defp get_cached_scroll(_manager, direction, amount) do
     cache_key = {direction, amount}
 
-    case System.get(cache_key, namespace: :scroll) do
+    case Raxol.Terminal.Cache.System.get(cache_key, namespace: :scroll) do
       {:ok, result} -> {:hit, result}
       {:error, _} -> {:miss, nil}
     end
@@ -193,13 +193,13 @@ defmodule Raxol.Terminal.Scroll.Manager do
       options: opts
     }
 
-    case System.get(:history, namespace: :scroll) do
+    case Raxol.Terminal.Cache.System.get(:history, namespace: :scroll) do
       {:ok, history} ->
         updated_history = [scroll_entry | history]
-        System.put(:history, updated_history, namespace: :scroll)
+        Raxol.Terminal.Cache.System.put(:history, updated_history, namespace: :scroll)
 
       {:error, _} ->
-        System.put(:history, [scroll_entry], namespace: :scroll)
+        Raxol.Terminal.Cache.System.put(:history, [scroll_entry], namespace: :scroll)
     end
 
     {:ok, manager}
@@ -263,7 +263,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
   """
   @spec clear_history(t()) :: {:ok, t()}
   def clear_history(manager) do
-    case System.clear(namespace: :scroll) do
+    case Raxol.Terminal.Cache.System.clear(namespace: :scroll) do
       :ok -> {:ok, manager}
       {:error, _} -> {:ok, manager}
     end
