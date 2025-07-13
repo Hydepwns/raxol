@@ -583,7 +583,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   # Real cache wrapper functions
   defp safe_cache_get(key, namespace) do
-    case System.get(key, namespace: namespace) do
+    case Raxol.Terminal.Cache.System.get(key, namespace: namespace) do
       {:ok, value} -> {:ok, value}
       {:error, :not_found} -> {:error, :cache_miss}
       {:error, reason} -> {:error, reason}
@@ -593,7 +593,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp safe_cache_put(key, value, namespace) do
-    case System.put(key, value, namespace: namespace) do
+    case Raxol.Terminal.Cache.System.put(key, value, namespace: namespace) do
       :ok -> {:ok, value}
       {:error, reason} -> {:error, reason}
     end
@@ -602,7 +602,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp safe_cache_clear(namespace) do
-    case System.clear(namespace: namespace) do
+    case Raxol.Terminal.Cache.System.clear(namespace: namespace) do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
     end
@@ -611,7 +611,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp safe_cache_invalidate(key, namespace) do
-    case System.invalidate(key, namespace: namespace) do
+    case Raxol.Terminal.Cache.System.invalidate(key, namespace: namespace) do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
     end
