@@ -4,11 +4,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   This module now serves as a facade, delegating to specialized modules.
   """
 
-  alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.TextOperations
   alias Raxol.UI.Components.Input.MultiLineInput.TextEditing
   alias Raxol.UI.Components.Input.MultiLineInput.TextUtils
-  alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
   require Raxol.Core.Runtime.Log
 
   # --- Public API - Delegates to specialized modules ---
