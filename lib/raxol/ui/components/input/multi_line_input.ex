@@ -140,102 +140,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     end
   end
 
-  defp find_handler(msg, handlers) do
-    Enum.find_value(handlers, fn {pattern, handler} ->
-      if matches_pattern?(msg, pattern) do
-        {handler, extract_args(msg, pattern)}
-      end
-    end)
-  end
-
-  defp matches_pattern?(msg, pattern) do
-    case {msg, pattern} do
-      {msg, pattern} when msg == pattern -> true
-      {{tag, _}, {tag, :_}} -> matches_tag_pattern?(tag, msg)
-      _ -> false
-    end
-  end
-
-  defp matches_tag_pattern?(:update_props, _msg), do: true
-  defp matches_tag_pattern?(:input, _msg), do: true
-
-  defp matches_tag_pattern?(:move_cursor, {:move_cursor, direction}),
-    do: valid_cursor_direction?(direction)
-
-  defp matches_tag_pattern?(:move_cursor_page, {:move_cursor_page, direction}),
-    do: valid_page_direction?(direction)
-
-  defp matches_tag_pattern?(:move_cursor_to, _msg), do: true
-  defp matches_tag_pattern?(:select_and_move, _msg), do: true
-
-  defp matches_tag_pattern?(:clipboard_content, {:clipboard_content, content}),
-    do: is_binary(content)
-
-  defp matches_tag_pattern?(:set_shift_held, _msg), do: true
-
-  defp matches_tag_pattern?(:delete_selection, {:delete_selection, direction}),
-    do: valid_selection_direction?(direction)
-
-  defp matches_tag_pattern?(
-         :move_cursor_select,
-         {:move_cursor_select, direction}
-       ),
-       do: valid_select_direction?(direction)
-
-  defp matches_tag_pattern?(:select_to, _msg), do: true
-  defp matches_tag_pattern?(_, _), do: false
-
-  defp valid_cursor_direction?(direction),
-    do: direction in [:left, :right, :up, :down]
-
-  defp valid_page_direction?(direction), do: direction in [:up, :down]
-
-  defp valid_selection_direction?(direction),
-    do: direction in [:backward, :forward]
-
-  defp valid_select_direction?(direction),
-    do:
-      direction in [
-        :left,
-        :right,
-        :up,
-        :down,
-        :line_start,
-        :line_end,
-        :page_up,
-        :page_down,
-        :doc_start,
-        :doc_end
-      ]
-
-  defp extract_args(msg, pattern) do
-    case {msg, pattern} do
-      {{tag, arg}, {tag, :_}} -> extract_tag_args(tag, arg)
-      _ -> []
-    end
-  end
-
-  defp extract_tag_args(:update_props, new_props), do: [new_props]
-  defp extract_tag_args(:input, char_codepoint), do: [char_codepoint]
-  defp extract_tag_args(:move_cursor, direction), do: [direction]
-  defp extract_tag_args(:move_cursor_page, direction), do: [direction]
-  defp extract_tag_args(:move_cursor_to, pos), do: [pos]
-  defp extract_tag_args(:select_and_move, direction), do: [direction]
-  defp extract_tag_args(:clipboard_content, content), do: [content]
-  defp extract_tag_args(:set_shift_held, held), do: [held]
-  defp extract_tag_args(:delete_selection, direction), do: [direction]
-  defp extract_tag_args(:move_cursor_select, direction), do: [direction]
-  defp extract_tag_args(:select_to, pos), do: [pos]
-  defp extract_tag_args(_, _), do: []
-
-  defp apply_handler(handler, args, state) do
-    case length(args) do
-      0 -> handler.(state)
-      1 -> apply(handler, [Enum.at(args, 0), state])
-      2 -> apply(handler, args ++ [state])
-    end
-  end
-
   # --- Message handlers ---
   def handle_update_props(new_props, state) do
     new_state = Map.merge(state, new_props)
@@ -493,7 +397,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     {:noreply, %{state | shift_held: held}, nil}
   end
 
-  def handle_delete_selection(direction, state) do
+  def handle_delete_selection(_direction, state) do
     if elem(
          Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
            state
@@ -640,7 +544,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   defp trigger_on_change(other, _old_state), do: other
 
-  defp handle_selection_move(state, direction) do
+  def handle_selection_move(state, direction) do
     original_cursor_pos = state.cursor_pos
     moved_state = move_cursor_by_direction(state, direction)
     new_cursor_pos = moved_state.cursor_pos
