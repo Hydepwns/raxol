@@ -119,7 +119,7 @@ defmodule Raxol.UI.Layout.Table do
 
   defp calculate_column_widths_with_fallback(
          columns_config,
-         headers,
+         _headers,
          original_data
        ) do
     Enum.map(columns_config, fn col_conf ->

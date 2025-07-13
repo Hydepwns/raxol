@@ -247,7 +247,7 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   @impl GenServer
   def handle_cast(
-        {:apply_diff, {:update, path, changes} = diff, new_tree},
+        {:apply_diff, {:update, path, _changes} = diff, new_tree},
         state
       ) do
     Raxol.Core.Runtime.Log.debug(

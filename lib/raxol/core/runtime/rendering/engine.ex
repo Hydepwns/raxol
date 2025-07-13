@@ -33,7 +33,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Public API ---
 
   @doc "Starts the Rendering Engine process."
-  @impl GenServer
   def start_link(initial_state_map) when map?(initial_state_map) do
     GenServer.start_link(__MODULE__, initial_state_map, name: __MODULE__)
   end
