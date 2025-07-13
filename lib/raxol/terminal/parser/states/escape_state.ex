@@ -88,8 +88,15 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
     {:continue, emulator, next_parser_state, rest}
   end
 
+  # Handle ESC N (SS2) - Single Shift 2
+  defp dispatch_escape_input(<<"N", rest::binary>>, emulator, parser_state) do
+    next_parser_state = %{parser_state | state: :ground, single_shift: :ss2}
+    {:continue, emulator, next_parser_state, rest}
+  end
+
+  # Handle ESC O (SS3) - Single Shift 3
   defp dispatch_escape_input(<<"O", rest::binary>>, emulator, parser_state) do
-    next_parser_state = %{parser_state | state: :ground}
+    next_parser_state = %{parser_state | state: :ground, single_shift: :ss3}
     {:continue, emulator, next_parser_state, rest}
   end
 
@@ -110,41 +117,44 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
   @impl Raxol.Terminal.Parser.StateBehaviour
   def handle_byte(byte, emulator, state) do
-    case byte do
-      # CAN/SUB bytes
-      0x18..0x1A ->
-        {:ok, emulator, %{state | state: :ground}}
+    process_escape_byte(byte, emulator, state)
+  end
 
-      # CSI sequence
-      ?[ ->
-        {:ok, emulator, %{state | state: :csi_entry}}
+  defp process_escape_byte(byte, emulator, state) when byte in 0x18..0x1A do
+    {:ok, emulator, %{state | state: :ground}}
+  end
 
-      # DCS sequence
-      ?P ->
-        {:ok, emulator, %{state | state: :dcs_entry}}
+  defp process_escape_byte(?[, emulator, state) do
+    {:ok, emulator, %{state | state: :csi_entry}}
+  end
 
-      # OSC sequence
-      ?] ->
-        {:ok, emulator, %{state | state: :osc_string}}
+  defp process_escape_byte(?P, emulator, state) do
+    {:ok, emulator, %{state | state: :dcs_entry}}
+  end
 
-      # PM sequence
-      ?^ ->
-        {:ok, emulator, %{state | state: :ground}}
+  defp process_escape_byte(?], emulator, state) do
+    {:ok, emulator, %{state | state: :osc_string}}
+  end
 
-      # APC sequence
-      ?_ ->
-        {:ok, emulator, %{state | state: :ground}}
+  defp process_escape_byte(?^, emulator, state) do
+    {:ok, emulator, %{state | state: :ground}}
+  end
 
-      # SS3 sequence
-      ?O ->
-        {:ok, emulator, %{state | state: :ground}}
+  defp process_escape_byte(?_, emulator, state) do
+    {:ok, emulator, %{state | state: :ground}}
+  end
 
-      # Simple escape sequences (DECSC, DECRC, etc.)
-      byte ->
-        # Process the escape sequence byte as a control code
-        new_emulator = Raxol.Terminal.ControlCodes.handle_escape(emulator, byte)
-        {:ok, new_emulator, %{state | state: :ground}}
-    end
+  defp process_escape_byte(?N, emulator, state) do
+    {:ok, emulator, %{state | state: :ground, single_shift: :ss2}}
+  end
+
+  defp process_escape_byte(?O, emulator, state) do
+    {:ok, emulator, %{state | state: :ground, single_shift: :ss3}}
+  end
+
+  defp process_escape_byte(byte, emulator, state) do
+    new_emulator = Raxol.Terminal.ControlCodes.handle_escape(emulator, byte)
+    {:ok, new_emulator, %{state | state: :ground}}
   end
 
   @impl Raxol.Terminal.Parser.StateBehaviour

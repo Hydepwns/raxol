@@ -41,7 +41,8 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
          parser_state
        )
        when (intermediate_byte >= 0x20 and intermediate_byte <= 0x2F) or
-              intermediate_byte == ??,
+              intermediate_byte == ?? or
+              intermediate_byte == ?>,
        do: handle_intermediate(emulator, parser_state, intermediate_byte, rest)
 
   defp dispatch_input(<<final_byte, rest::binary>>, emulator, parser_state)
@@ -66,35 +67,64 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
     do: {:incomplete, emulator, parser_state}
 
   defp handle_digit(emulator, parser_state, digit, rest) do
+    Logger.debug(
+      "CSIParamState.handle_digit: digit=#{inspect(<<digit>>)}, current_params=#{inspect(parser_state.params_buffer)}"
+    )
+
     next_parser_state = %{
       parser_state
       | params_buffer: parser_state.params_buffer <> <<digit>>
     }
 
+    Logger.debug(
+      "CSIParamState.handle_digit: new_params=#{inspect(next_parser_state.params_buffer)}"
+    )
+
     {:continue, emulator, next_parser_state, rest}
   end
 
   defp handle_separator(emulator, parser_state, rest) do
+    Logger.debug(
+      "CSIParamState.handle_separator: current_params=#{inspect(parser_state.params_buffer)}"
+    )
+
     next_parser_state = %{
       parser_state
       | params_buffer: parser_state.params_buffer <> <<?;>>
     }
 
+    Logger.debug(
+      "CSIParamState.handle_separator: new_params=#{inspect(next_parser_state.params_buffer)}"
+    )
+
     {:continue, emulator, next_parser_state, rest}
   end
 
   defp handle_intermediate(emulator, parser_state, intermediate_byte, rest) do
+    Logger.debug(
+      "CSIParamState.handle_intermediate: byte=#{inspect(<<intermediate_byte>>)}, current_params=#{inspect(parser_state.params_buffer)}, current_intermediates=#{inspect(parser_state.intermediates_buffer)}"
+    )
+
     next_parser_state = %{
       parser_state
       | intermediates_buffer:
           parser_state.intermediates_buffer <> <<intermediate_byte>>,
+        params_buffer: "",
         state: :csi_intermediate
     }
+
+    Logger.debug(
+      "CSIParamState.handle_intermediate: new_intermediates=#{inspect(next_parser_state.intermediates_buffer)}, new_params=#{inspect(next_parser_state.params_buffer)}, new_state=#{inspect(next_parser_state.state)}"
+    )
 
     {:continue, emulator, next_parser_state, rest}
   end
 
   defp handle_final_byte(emulator, parser_state, final_byte, rest) do
+    Logger.debug(
+      "CSIParamState.handle_final_byte: final_byte=#{inspect(<<final_byte>>)}, params_buffer=#{inspect(parser_state.params_buffer)}, intermediates_buffer=#{inspect(parser_state.intermediates_buffer)}"
+    )
+
     final_emulator =
       Executor.execute_csi_command(
         emulator,
@@ -110,6 +140,10 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
         intermediates_buffer: "",
         final_byte: nil
     }
+
+    Logger.debug(
+      "CSIParamState.handle_final_byte: executed command, returning to ground state"
+    )
 
     {:continue, final_emulator, next_parser_state, rest}
   end

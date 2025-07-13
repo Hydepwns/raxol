@@ -674,32 +674,61 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   end
 
   defp handle_escape_state(emulator, state, input) do
-    {:continue, emulator, %{state | state: :ground}, input}
+    case input do
+      <<"N", rest::binary>> ->
+        # ESC N (SS2) - Single Shift 2
+        {:continue, emulator, %{state | state: :ground, single_shift: :ss2},
+         rest}
+
+      <<"O", rest::binary>> ->
+        # ESC O (SS3) - Single Shift 3
+        {:continue, emulator, %{state | state: :ground, single_shift: :ss3},
+         rest}
+
+      <<"[", rest::binary>> ->
+        # ESC [ - CSI entry
+        {:continue, emulator, %{state | state: :csi_entry}, rest}
+
+      _ ->
+        # Default: transition to ground state
+        {:continue, emulator, %{state | state: :ground}, input}
+    end
   end
 
   defp detect_single_shift(<<142, next::binary>>), do: {:ss2, next}
   defp detect_single_shift(<<143, next::binary>>), do: {:ss3, next}
   defp detect_single_shift(_), do: :none
 
-  defp handle_single_shift(emulator, state, shift_type, <<_char, rest::binary>>) do
-    {:continue, emulator, %{state | single_shift: nil}, rest}
+  defp handle_single_shift(emulator, state, shift_type, <<char, rest::binary>>) do
+    # When there's a character after SS2/SS3, set the shift and then process the character
+    # This matches the expected behavior: SS2/SS3 affects the next character only
+    state_with_shift = %{state | single_shift: shift_type}
+
+    handle_single_shift_consumption(
+      emulator,
+      state_with_shift,
+      <<char, rest::binary>>
+    )
   end
 
   defp handle_single_shift(emulator, state, shift_type, _) do
+    # When SS2/SS3 is at the end of input, set the shift for the next character
     {:continue, emulator, %{state | single_shift: shift_type}, ""}
   end
 
   defp handle_single_shift_consumption(emulator, state, input) do
-    case {state.single_shift, byte_size(input)} do
+    case {state.single_shift, input} do
       {nil, _} ->
         {:continue, emulator, state, input}
 
-      {_shift, 0} ->
-        {:continue, emulator, %{state | single_shift: nil}, input}
+      {_shift, <<>>} ->
+        # No input to process, keep the shift
+        {:continue, emulator, state, input}
 
-      {_shift, _size} ->
-        <<_char, rest::binary>> = input
-        {:continue, emulator, %{state | single_shift: nil}, rest}
+      {_shift, <<_byte, rest::binary>>} ->
+        # Process the first byte, clear the shift, reset state to :ground, and return the rest
+        {:continue, emulator, %{state | single_shift: nil, state: :ground},
+         rest}
     end
   end
 end

@@ -305,31 +305,85 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   def handle_call({:get_cell, x, y}, _from, state) do
-    case get_cell_at_coordinates(state, x, y) do
-      {:valid, cell} -> {:reply, {:ok, cell}, state}
-      {:invalid, cell} -> {:reply, {:ok, cell}, state}
+    cache_key = "cell_#{x}_#{y}"
+
+    case get_cell_with_cache(state, x, y, cache_key) do
+      {:ok, cell} -> {:reply, {:ok, cell}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
+  end
+
+  defp get_cell_with_cache(state, x, y, cache_key) do
+    case safe_cache_get(cache_key, :buffer) do
+      {:ok, cached_cell} -> {:ok, cached_cell}
+      {:error, :cache_miss} -> get_cell_and_cache(state, x, y, cache_key)
+      {:error, _} -> get_cell_direct(state, x, y)
+    end
+  end
+
+  defp get_cell_and_cache(state, x, y, cache_key) do
+    case get_cell_at_coordinates(state, x, y) do
+      {:valid, cell} -> cache_and_return(cache_key, cell)
+      {:invalid, cell} -> cache_and_return(cache_key, cell)
+    end
+  end
+
+  defp get_cell_direct(state, x, y) do
+    case get_cell_at_coordinates(state, x, y) do
+      {:valid, cell} -> {:ok, cell}
+      {:invalid, cell} -> {:ok, cell}
+    end
+  end
+
+  defp cache_and_return(cache_key, cell) do
+    safe_cache_put(cache_key, cell, :buffer)
+    {:ok, cell}
   end
 
   def handle_call({:set_cell, x, y, cell}, _from, state) do
     case validate_and_set_cell(state, x, y, cell) do
-      {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
-      {:invalid, state} -> {:reply, {:error, :invalid_coordinates}, state}
+      {:ok, new_state} ->
+        # Invalidate cache for this cell
+        cache_key = "cell_#{x}_#{y}"
+        safe_cache_invalidate(cache_key, :buffer)
+        {:reply, {:ok, new_state}, new_state}
+
+      {:invalid, state} ->
+        {:reply, {:error, :invalid_coordinates}, state}
     end
   end
 
   def handle_call({:fill_region, x, y, width, height, cell}, _from, state) do
-    if coordinates_valid_for_set?(state, x, y) and
-         x + width <= state.active_buffer.width and
-         y + height <= state.active_buffer.height do
+    case process_fill_region(state, x, y, width, height, cell) do
+      {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
+  end
+
+  defp process_fill_region(state, x, y, width, height, cell) do
+    if region_valid?(state, x, y, width, height) do
       new_active_buffer =
         fill_region_with_cell(state.active_buffer, x, y, width, height, cell)
 
       new_state = %{state | active_buffer: new_active_buffer}
       new_state = update_memory_usage(new_state)
-      {:reply, {:ok, new_state}, new_state}
+      invalidate_region_cache(x, y, width, height)
+      {:ok, new_state}
     else
-      {:reply, {:error, :invalid_region}, state}
+      {:error, :invalid_region}
+    end
+  end
+
+  defp region_valid?(state, x, y, width, height) do
+    coordinates_valid_for_set?(state, x, y) and
+      x + width <= state.active_buffer.width and
+      y + height <= state.active_buffer.height
+  end
+
+  defp invalidate_region_cache(x, y, width, height) do
+    for cell_x <- x..(x + width - 1), cell_y <- y..(y + height - 1) do
+      cache_key = "cell_#{cell_x}_#{cell_y}"
+      safe_cache_invalidate(cache_key, :buffer)
     end
   end
 
@@ -352,6 +406,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     new_active_buffer = ScreenBuffer.new(state.width, state.height)
     new_state = %{state | active_buffer: new_active_buffer}
     new_state = update_memory_usage(new_state)
+
+    # Clear the entire buffer cache
+    safe_cache_clear(:buffer)
+
     {:reply, {:ok, new_state}, new_state}
   end
 
@@ -933,27 +991,46 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   # Helper function to replace a region in the buffer
   defp replace_region_in_buffer(buffer, x, y, width, height, new_region_lines) do
     new_cells =
-      buffer.cells
-      |> Enum.with_index()
-      |> Enum.map(fn {row, row_y} ->
-        if row_y >= y and row_y < y + height do
-          region_row = Enum.at(new_region_lines, row_y - y)
-
-          row
-          |> Enum.with_index()
-          |> Enum.map(fn {cell, col_x} ->
-            if col_x >= x and col_x < x + width do
-              Enum.at(region_row, col_x - x)
-            else
-              cell
-            end
-          end)
-        else
-          row
-        end
-      end)
+      update_buffer_rows(buffer.cells, x, y, width, height, new_region_lines)
 
     %{buffer | cells: new_cells}
+  end
+
+  defp update_buffer_rows(cells, x, y, width, height, new_region_lines) do
+    cells
+    |> Enum.with_index()
+    |> Enum.map(fn {row, row_y} ->
+      if row_in_region?(row_y, y, height) do
+        update_row_in_region(
+          row,
+          x,
+          width,
+          Enum.at(new_region_lines, row_y - y)
+        )
+      else
+        row
+      end
+    end)
+  end
+
+  defp row_in_region?(row_y, y, height) do
+    row_y >= y and row_y < y + height
+  end
+
+  defp update_row_in_region(row, x, width, region_row) do
+    row
+    |> Enum.with_index()
+    |> Enum.map(fn {cell, col_x} ->
+      if col_in_region?(col_x, x, width) do
+        Enum.at(region_row, col_x - x)
+      else
+        cell
+      end
+    end)
+  end
+
+  defp col_in_region?(col_x, x, width) do
+    col_x >= x and col_x < x + width
   end
 
   # Private function to update state with commands (including config updates)

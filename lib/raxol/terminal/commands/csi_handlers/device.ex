@@ -25,21 +25,43 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   Handle Device Attributes (DA) command.
   Responds with terminal capabilities.
   """
-  def handle_da(emulator, _params, intermediates_buffer) do
-    case intermediates_buffer do
-      "?" ->
-        # Respond with VT100 capabilities
-        # ESC [ ? 1 ; 2 c
-        # 1 = VT100
-        # 2 = Advanced Video Option
+  def handle_da(emulator, params, intermediates_buffer) do
+    case {intermediates_buffer, params} do
+      {">", []} ->
+        # Secondary DA: CSI > c
+        updated_emulator = Emulator.write_to_output(emulator, "\e[>0;0;0c")
+        {:ok, updated_emulator}
+
+      {">", [0]} ->
+        # Secondary DA: CSI > 0 c
+        updated_emulator = Emulator.write_to_output(emulator, "\e[>0;0;0c")
+        {:ok, updated_emulator}
+
+      {">", [_]} ->
+        # Secondary DA with non-zero param - ignore
+        {:ok, emulator}
+
+      {"", []} ->
+        # Primary DA: CSI c
+        updated_emulator = Emulator.write_to_output(emulator, "\e[?6c")
+        {:ok, updated_emulator}
+
+      {"", [0]} ->
+        # Primary DA: CSI 0 c
+        updated_emulator = Emulator.write_to_output(emulator, "\e[?6c")
+        {:ok, updated_emulator}
+
+      {"", [_]} ->
+        # Primary DA with non-zero param - ignore
+        {:ok, emulator}
+
+      {"?", _} ->
+        # Private DA - ignore for now
         {:ok, emulator}
 
       _ ->
-        # Public DA - respond with standard capabilities
-        updated_emulator =
-          Emulator.write_to_output(emulator, ~c"\e[?62;1;6;9;15;22;29c")
-
-        {:ok, updated_emulator}
+        # Default case - ignore
+        {:ok, emulator}
     end
   end
 
