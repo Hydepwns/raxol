@@ -116,10 +116,24 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
   def handle_lf(%Emulator{} = emulator) do
-    emulator
-    |> handle_pending_wrap()
-    |> move_cursor_down()
-    |> clamp_to_scroll_region()
+    active_buffer = Emulator.get_active_buffer(emulator)
+    buffer_height = ScreenBuffer.get_height(active_buffer)
+
+    {_, current_row} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    last_row = buffer_height - 1
+
+    if current_row == last_row do
+      emulator
+      |> move_cursor_down()
+      |> Emulator.maybe_scroll()
+      |> reset_last_col_exceeded_after_scroll()
+    else
+      emulator
+      |> move_cursor_down()
+      |> reset_last_col_exceeded_after_scroll()
+    end
   end
 
   defp handle_pending_wrap(emulator) do
@@ -144,34 +158,94 @@ defmodule Raxol.Terminal.ControlCodes do
     {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
     cursor = emulator.cursor
 
+    {_, current_row} = Raxol.Terminal.Cursor.Manager.get_position(cursor)
+    last_row = buffer_height - 1
+
     moved_cursor =
-      cond do
-        is_pid(cursor) ->
-          # Update state inside GenServer, but keep PID as cursor
-          GenServer.call(cursor, {:move_down, 1, buffer_width, buffer_height})
-          cursor
+      move_cursor_down_if_needed(
+        cursor,
+        current_row,
+        last_row,
+        buffer_width,
+        buffer_height
+      )
 
-        is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_down(
-            cursor,
-            1,
-            buffer_width,
-            buffer_height
-          )
-      end
-
-    # Always reset column to 0 after newline
     final_cursor =
       cond do
         is_pid(moved_cursor) ->
+          # For PID cursors, just call move_to_column - the PID manages its own state
           GenServer.call(moved_cursor, {:move_to_column, 0})
           moved_cursor
 
         is_map(moved_cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, 0)
+          if Map.has_key?(moved_cursor, :row) and
+               Map.has_key?(moved_cursor, :col) do
+            Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, 0)
+          else
+            cursor
+          end
+
+        true ->
+          cursor
       end
 
+    log_cursor_position(final_cursor)
     %{emulator | cursor: final_cursor}
+  end
+
+  defp move_cursor_down_if_needed(
+         cursor,
+         current_row,
+         last_row,
+         buffer_width,
+         buffer_height
+       ) do
+    # Always move cursor down, even when at last row, to trigger scrolling
+    case cursor do
+      cursor when is_pid(cursor) ->
+        GenServer.call(cursor, {:move_down, 1, buffer_width, buffer_height})
+
+      cursor when is_map(cursor) ->
+        Raxol.Terminal.Cursor.Manager.move_down(
+          cursor,
+          1,
+          buffer_width,
+          buffer_height
+        )
+
+      _ ->
+        cursor
+    end
+  end
+
+  defp reset_cursor_column(cursor) do
+    cond do
+      is_pid(cursor) ->
+        GenServer.call(cursor, {:move_to_column, 0})
+        cursor
+
+      is_map(cursor) ->
+        if Map.has_key?(cursor, :row) and Map.has_key?(cursor, :col) do
+          Raxol.Terminal.Cursor.Manager.move_to_column(cursor, 0)
+        else
+          cursor
+        end
+
+      true ->
+        cursor
+    end
+  end
+
+  defp log_cursor_position(cursor) do
+    Raxol.Core.Runtime.Log.debug(
+      "[move_cursor_down] Final: cursor=#{inspect(Raxol.Terminal.Cursor.Manager.get_position(cursor))}"
+    )
+  end
+
+  defp reset_last_col_exceeded_after_scroll(emulator) do
+    # After a scroll, reset the last_col_exceeded flag so that the next character
+    # is written at the current row (not the next row)
+    %{emulator | last_col_exceeded: false}
   end
 
   defp clamp_to_scroll_region(emulator) do
@@ -190,7 +264,7 @@ defmodule Raxol.Terminal.ControlCodes do
     {x, y} = Raxol.Terminal.Cursor.Manager.get_position(cursor)
     clamped_y = max(scroll_top, min(y, scroll_bottom))
 
-    if y != clamped_y do
+    if y > scroll_bottom do
       log_cursor_clamp(y, clamped_y, scroll_top, scroll_bottom)
       move_cursor_to_position(emulator, x, clamped_y)
     else
@@ -207,17 +281,14 @@ defmodule Raxol.Terminal.ControlCodes do
   defp move_cursor_to_position(emulator, x, y) do
     cursor = emulator.cursor
 
-    moved_cursor =
-      cond do
-        is_pid(cursor) ->
-          GenServer.call(cursor, {:move_to, x, y})
-          cursor
+    cond do
+      is_pid(cursor) ->
+        GenServer.call(cursor, {:move_to, x, y})
+        cursor
 
-        is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
-      end
-
-    %{emulator | cursor: moved_cursor}
+      is_map(cursor) ->
+        Raxol.Terminal.Cursor.Manager.move_to(cursor, x, y)
+    end
   end
 
   defp get_scroll_region_bounds(emulator, active_buffer) do
