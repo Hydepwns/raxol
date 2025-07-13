@@ -50,49 +50,6 @@ defmodule RaxolWeb.SettingsLive do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("update_profile", %{"user" => user_params}, socket) do
-    user = socket.assigns.current_user
-    changeset = Raxol.Auth.User.changeset(user, user_params)
-
-    case Raxol.Repo.update(changeset) do
-      {:ok, updated_user} ->
-        {:noreply,
-         socket
-         |> assign(:current_user, updated_user)
-         |> put_flash(:info, "Profile updated successfully.")
-         |> assign(:changeset, changeset)}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, changeset: changeset)}
-    end
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("update_password", params, socket) do
-    user = socket.assigns.current_user
-    current_password = params["current_password"]
-    new_password = params["user"]["password"]
-    password_confirmation = params["user"]["password_confirmation"]
-
-    with {:ok, _} <- validate_current_password(current_password),
-         {:ok, _} <- validate_new_password(new_password),
-         {:ok, _} <-
-           validate_password_confirmation(new_password, password_confirmation) do
-      update_user_password(socket, user.id, current_password, new_password)
-    else
-      {:error, field, message, error_text} ->
-        {:noreply, create_error_response(socket, field, message, error_text)}
-    end
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("validate", %{"user" => user_params}, socket) do
-    user = socket.assigns.current_user
-    changeset = Raxol.Auth.User.changeset(user, user_params)
-    {:noreply, assign(socket, changeset: changeset)}
-  end
-
-  @impl Phoenix.LiveView
   def handle_event("toggle_theme", _params, socket) do
     current_theme = socket.assigns.theme
 
@@ -105,37 +62,6 @@ defmodule RaxolWeb.SettingsLive do
      socket
      |> assign(:theme, new_theme)
      |> put_flash(:info, "Theme updated successfully.")}
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("update_preferences", params, socket) do
-    preferences = socket.assigns.preferences
-
-    # Update preferences based on form data
-    updated_preferences =
-      Map.merge(preferences, %{
-        "terminal" => %{
-          "font_size" => String.to_integer(params["font_size"]),
-          "font_family" => params["font_family"],
-          "line_height" => String.to_float(params["line_height"]),
-          "cursor_style" => params["cursor_style"],
-          "scrollback_size" => String.to_integer(params["scrollback_size"])
-        },
-        "editor" => %{
-          "tab_size" => String.to_integer(params["tab_size"]),
-          "insert_spaces" => params["insert_spaces"] == "true",
-          "word_wrap" => params["word_wrap"] == "true",
-          "line_numbers" => params["line_numbers"] == "true"
-        }
-      })
-
-    # Save preferences
-    UserPreferences.set_preferences(updated_preferences)
-
-    {:noreply,
-     socket
-     |> assign(:preferences, updated_preferences)
-     |> put_flash(:info, "Preferences updated successfully.")}
   end
 
   @impl Phoenix.LiveView
@@ -156,93 +82,91 @@ defmodule RaxolWeb.SettingsLive do
   def handle_event("update_cloud_config", params, socket) do
     cloud_config = socket.assigns.cloud_config
 
-    # Update cloud config based on form data
-    updated_config =
-      Map.merge(cloud_config, %{
-        "auto_sync" => params["auto_sync"] == "true",
-        "sync_interval" => String.to_integer(params["sync_interval"]),
-        "notifications" => params["notifications"] == "true",
-        "error_reporting" => params["error_reporting"] == "true"
-      })
+    # Sanitize input
+    case RaxolWeb.InputSanitizer.sanitize_form_input(params, [
+           "auto_sync",
+           "sync_interval",
+           "notifications",
+           "error_reporting"
+         ]) do
+      {:ok, sanitized_params} ->
+        # Update cloud config based on form data
+        updated_config =
+          Map.merge(cloud_config, %{
+            "auto_sync" => sanitized_params["auto_sync"] == "true",
+            "sync_interval" =>
+              String.to_integer(sanitized_params["sync_interval"]),
+            "notifications" => sanitized_params["notifications"] == "true",
+            "error_reporting" => sanitized_params["error_reporting"] == "true"
+          })
 
-    # Save cloud config
-    Config.set_config(updated_config)
+        # Save cloud config
+        Config.set_config(updated_config)
 
-    {:noreply,
-     socket
-     |> assign(:cloud_config, updated_config)
-     |> put_flash(:info, "Cloud settings updated successfully.")}
-  end
-
-  # Extracted validation functions
-  defp validate_current_password(nil),
-    do:
-      {:error, :current_password, "Current password is required.",
-       "Current password is required"}
-
-  defp validate_current_password(""),
-    do:
-      {:error, :current_password, "Current password is required.",
-       "Current password is required"}
-
-  defp validate_current_password(_password), do: {:ok, :valid}
-
-  defp validate_new_password(nil),
-    do:
-      {:error, :password, "New password must be at least 6 characters.",
-       "Password must be at least 6 characters"}
-
-  defp validate_new_password(password) when byte_size(password) < 6,
-    do:
-      {:error, :password, "New password must be at least 6 characters.",
-       "Password must be at least 6 characters"}
-
-  defp validate_new_password(_password), do: {:ok, :valid}
-
-  defp validate_password_confirmation(password, confirmation)
-       when password != confirmation,
-       do:
-         {:error, :password_confirmation, "Passwords do not match.",
-          "Passwords do not match"}
-
-  defp validate_password_confirmation(_password, _confirmation),
-    do: {:ok, :valid}
-
-  # Handle password update logic
-  defp update_user_password(socket, user_id, current_password, new_password) do
-    case Accounts.update_password(user_id, current_password, new_password) do
-      :ok ->
         {:noreply,
          socket
-         |> put_flash(:info, "Password updated successfully")
-         |> assign(:changeset, %{})}
+         |> assign(:cloud_config, updated_config)
+         |> put_flash(:info, "Cloud settings updated successfully.")}
 
-      {:error, :invalid_current_password} ->
+      {:error, :invalid_input} ->
         {:noreply,
-         create_error_response(
-           socket,
-           :current_password,
-           "Current password is incorrect.",
-           "Invalid current password"
-         )}
-
-      {:error, reason} ->
-        {:noreply,
-         create_error_response(
-           socket,
-           :password,
-           "Failed to update password.",
-           "Failed to update password: #{inspect(reason)}"
-         )}
+         socket
+         |> put_flash(:error, "Invalid input detected.")}
     end
   end
 
-  # Common error response builder
-  defp create_error_response(socket, field, flash_message, error_message) do
-    socket
-    |> put_flash(:error, flash_message)
-    |> assign(:changeset, %{
-      errors: [{field, {error_message, []}}]
-    })
+  # Handle messages from child components
+  @impl Phoenix.LiveView
+  def handle_info({:profile_updated, updated_user}, socket) do
+    {:noreply, assign(socket, :current_user, updated_user)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_info({:preferences_updated, updated_preferences}, socket) do
+    {:noreply, assign(socket, :preferences, updated_preferences)}
+  end
+
+  @impl Phoenix.LiveView
+  def render(assigns) do
+    ~H"""
+    <div class="settings-container">
+      <div class="settings-box">
+        <h1 class="settings-title">User Settings</h1>
+
+        <.live_component
+          module={RaxolWeb.ErrorBoundaryComponent}
+          id="settings-error-boundary"
+        >
+          <.live_component
+            module={RaxolWeb.Settings.ProfileComponent}
+            id="profile"
+            current_user={@current_user}
+            changeset={@changeset}
+          />
+
+          <.live_component
+            module={RaxolWeb.Settings.PreferencesComponent}
+            id="preferences"
+            preferences={@preferences}
+          />
+        </.live_component>
+
+        <!-- Rest of your existing settings content -->
+        <div class="settings-section">
+          <h2 class="settings-section-title">Theme Settings</h2>
+          <button phx-click="toggle_theme" class="settings-button">
+            Toggle Theme
+          </button>
+        </div>
+
+        <div class="settings-section">
+          <h2 class="settings-section-title">Update Settings</h2>
+          <button phx-click="update_auto_check" phx-value-enabled="true" class="settings-button">
+            Enable Auto Updates
+          </button>
+        </div>
+      </div>
+    </div>
+    """
   end
 end

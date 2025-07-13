@@ -1,6 +1,5 @@
 defmodule RaxolWeb.UIComponentView do
   use RaxolWeb, :view
-  import Phoenix.HTML
 
   @moduledoc """
   A view for rendering UI components in the web interface.
@@ -10,8 +9,8 @@ defmodule RaxolWeb.UIComponentView do
   that can be displayed in web templates.
   """
 
-  alias Raxol.UI.Rendering.ChartRenderer
-  alias Raxol.UI.Rendering.Visualizer
+  alias Raxol.Plugins.Visualization.ChartRenderer
+  alias Raxol.Core.Metrics.Visualizer
 
   @color_map %{
     black: "#000000",
@@ -175,74 +174,51 @@ defmodule RaxolWeb.UIComponentView do
     chart_id = generate_chart_id()
 
     # Create canvas element for the chart
-    canvas_html =
-      Phoenix.HTML.Tag.content_tag(:canvas, "",
-        id: chart_id,
-        width: chart_opts[:width],
-        height: chart_opts[:height],
-        class: "chart-canvas"
-      )
+    canvas_html = """
+    <canvas id="#{chart_id}" width="#{chart_opts[:width]}" height="#{chart_opts[:height]}" class="chart-canvas"></canvas>
+    """
 
     # Create container with title
-    Phoenix.HTML.Tag.content_tag(
-      :div,
-      [
-        Phoenix.HTML.Tag.content_tag(:h3, title, class: "chart-title"),
-        Phoenix.HTML.Tag.content_tag(:div, canvas_html,
-          class: "chart-container"
-        )
-      ],
-      class: "chart-card",
-      data: [
-        chart_type: chart_opts[:type],
-        chart_data: Jason.encode!(chart_opts)
-      ]
-    )
+    """
+    <div class="chart-card" data-chart-type="#{chart_opts[:type]}" data-chart-data='#{Jason.encode!(chart_opts)}'>
+      <h3 class="chart-title">#{title}</h3>
+      <div class="chart-container">
+        #{canvas_html}
+      </div>
+    </div>
+    """
   end
 
   defp generate_metrics_chart_html(chart_data, chart_options) do
     chart_id = generate_chart_id()
 
     # Create canvas for metrics chart
-    canvas_html =
-      Phoenix.HTML.Tag.content_tag(:canvas, "",
-        id: chart_id,
-        width: chart_options.width,
-        height: chart_options.height,
-        class: "metrics-chart-canvas"
-      )
+    canvas_html = """
+    <canvas id="#{chart_id}" width="#{chart_options.width}" height="#{chart_options.height}" class="metrics-chart-canvas"></canvas>
+    """
 
     # Create container
-    Phoenix.HTML.Tag.content_tag(
-      :div,
-      [
-        Phoenix.HTML.Tag.content_tag(:h3, chart_options.title,
-          class: "metrics-chart-title"
-        ),
-        Phoenix.HTML.Tag.content_tag(:div, canvas_html,
-          class: "metrics-chart-container"
-        )
-      ],
-      class: "metrics-chart-card",
-      data: [
-        chart_data: Jason.encode!(chart_data)
-      ]
-    )
+    """
+    <div class="metrics-chart-card" data-chart-data='#{Jason.encode!(chart_data)}'>
+      <h3 class="metrics-chart-title">#{chart_options.title}</h3>
+      <div class="metrics-chart-container">
+        #{canvas_html}
+      </div>
+    </div>
+    """
   end
 
   defp convert_terminal_chart_to_html(rendered_chart, title, opts) do
     chart_rows = build_chart_rows(rendered_chart, opts[:width] || 80)
 
-    Phoenix.HTML.Tag.content_tag(
-      :div,
-      [
-        Phoenix.HTML.Tag.content_tag(:h3, title, class: "terminal-chart-title"),
-        Phoenix.HTML.Tag.content_tag(:div, chart_rows,
-          class: "terminal-chart-content"
-        )
-      ],
-      class: "terminal-chart-card"
-    )
+    """
+    <div class="terminal-chart-card">
+      <h3 class="terminal-chart-title">#{title}</h3>
+      <div class="terminal-chart-content">
+        #{chart_rows}
+      </div>
+    </div>
+    """
   end
 
   defp build_chart_rows(rendered_chart, width) do
@@ -254,33 +230,32 @@ defmodule RaxolWeb.UIComponentView do
 
   defp build_chart_cell(cell) do
     style = build_cell_style(cell)
-    Phoenix.HTML.Tag.content_tag(:span, cell.char, style: style)
+    style_attr = Enum.map_join(style, "; ", fn {k, v} -> "#{k}: #{v}" end)
+    "<span style=\"#{style_attr}\">#{cell.char}</span>"
   end
 
   defp build_chart_row(row_cells) do
-    Phoenix.HTML.Tag.content_tag(:div, row_cells, class: "chart-row")
+    "<div class=\"chart-row\">#{Enum.join(row_cells, "")}</div>"
   end
 
   defp build_cell_style(cell) do
-    style = []
-
-    # Add foreground color
-    if cell.fg do
-      style = [{"color", color_to_css(cell.fg)} | style]
-    end
-
-    # Add background color
-    if cell.bg do
-      style = [{"background-color", color_to_css(cell.bg)} | style]
-    end
-
-    # Add text styles
-    if cell.style do
-      style = apply_text_styles(cell.style, style)
-    end
-
-    style
+    []
+    |> maybe_add_color("color", cell.fg)
+    |> maybe_add_color("background-color", cell.bg)
+    |> maybe_add_styles(cell.style)
   end
+
+  defp maybe_add_color(style_list, _property, nil), do: style_list
+  defp maybe_add_color(style_list, _property, :default), do: style_list
+
+  defp maybe_add_color(style_list, property, color) do
+    [{property, color_to_css(color)} | style_list]
+  end
+
+  defp maybe_add_styles(style_list, nil), do: style_list
+
+  defp maybe_add_styles(style_list, styles),
+    do: apply_text_styles(styles, style_list)
 
   defp color_to_css(color) when is_atom(color) do
     Map.get(@color_map, color, "#000000")
@@ -323,56 +298,42 @@ defmodule RaxolWeb.UIComponentView do
     title = Map.get(widget_data, :title, "TreeMap")
     _data = Map.get(widget_data, :data, [])
 
-    Phoenix.HTML.Tag.content_tag(
-      :div,
-      [
-        Phoenix.HTML.Tag.content_tag(:h3, title, class: "treemap-title"),
-        Phoenix.HTML.Tag.content_tag(:div, "TreeMap visualization",
-          class: "treemap-placeholder"
-        )
-      ],
-      class: "treemap-widget"
-    )
+    """
+    <div class="treemap-widget">
+      <h3 class="treemap-title">#{title}</h3>
+      <div class="treemap-placeholder">TreeMap visualization</div>
+    </div>
+    """
   end
 
   defp render_info_widget(title, content, _opts) do
-    Phoenix.HTML.Tag.content_tag(
-      :div,
-      [
-        Phoenix.HTML.Tag.content_tag(:h3, title, class: "info-widget-title"),
-        Phoenix.HTML.Tag.content_tag(:div, content,
-          class: "info-widget-content"
-        )
-      ],
-      class: "info-widget"
-    )
+    """
+    <div class="info-widget">
+      <h3 class="info-widget-title">#{title}</h3>
+      <div class="info-widget-content">#{content}</div>
+    </div>
+    """
   end
 
   defp render_generic_widget(widget_data, _opts) do
     title = Map.get(widget_data, :title, "Widget")
     content = Map.get(widget_data, :content, "Generic widget content")
 
-    Phoenix.HTML.Tag.content_tag(
-      :div,
-      [
-        Phoenix.HTML.Tag.content_tag(:h3, title, class: "generic-widget-title"),
-        Phoenix.HTML.Tag.content_tag(:div, content,
-          class: "generic-widget-content"
-        )
-      ],
-      class: "generic-widget"
-    )
+    """
+    <div class="generic-widget">
+      <h3 class="generic-widget-title">#{title}</h3>
+      <div class="generic-widget-content">#{content}</div>
+    </div>
+    """
   end
 
   defp generate_error_html(message) do
-    Phoenix.HTML.Tag.content_tag(
-      :div,
-      [
-        Phoenix.HTML.Tag.content_tag(:h3, "Error", class: "error-title"),
-        Phoenix.HTML.Tag.content_tag(:div, message, class: "error-message")
-      ],
-      class: "error-widget"
-    )
+    """
+    <div class="error-widget">
+      <h3 class="error-title">Error</h3>
+      <div class="error-message">#{message}</div>
+    </div>
+    """
   end
 
   defp generate_chart_id do

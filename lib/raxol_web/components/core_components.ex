@@ -42,6 +42,9 @@ defmodule RaxolWeb.CoreComponents do
   attr :placeholder, :string, default: nil
   attr :class, :string, default: nil
   attr :disabled, :boolean, default: false
+  attr :min, :string, default: nil
+  attr :max, :string, default: nil
+  attr :step, :string, default: nil
   attr :rest, :global, include: ~w(autocomplete form required)
 
   def input(assigns) do
@@ -58,6 +61,9 @@ defmodule RaxolWeb.CoreComponents do
         @class
       ]}
       disabled={@disabled}
+      min={@min}
+      max={@max}
+      step={@step}
       {@rest}
     />
     """
@@ -94,6 +100,9 @@ defmodule RaxolWeb.CoreComponents do
   attr :placeholder, :string, default: nil
   attr :class, :string, default: nil
   attr :disabled, :boolean, default: false
+  attr :min, :string, default: nil
+  attr :max, :string, default: nil
+  attr :step, :string, default: nil
   attr :rest, :global, include: ~w(autocomplete form required)
 
   def form_group(assigns) do
@@ -106,6 +115,9 @@ defmodule RaxolWeb.CoreComponents do
         value={@value}
         placeholder={@placeholder}
         disabled={@disabled}
+        min={@min}
+        max={@max}
+        step={@step}
         {@rest}
       />
     </div>
