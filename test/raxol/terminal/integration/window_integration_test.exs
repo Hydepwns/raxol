@@ -119,11 +119,11 @@ defmodule Raxol.Terminal.Integration.WindowIntegrationTest do
 
     test "maximizes and restores window", %{state: _state} do
       {:ok, window_id} = UnifiedWindow.get_active_window()
-      :ok = UnifiedWindow.maximize(window_id)
+      :ok = UnifiedWindow.set_maximized(window_id, true)
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.maximized == true
 
-      :ok = UnifiedWindow.restore(window_id)
+      :ok = UnifiedWindow.set_maximized(window_id, false)
       {:ok, window} = UnifiedWindow.get_window_state(window_id)
       assert window.maximized == false
     end
