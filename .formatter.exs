@@ -2,8 +2,13 @@
 [
   inputs: [
     "*.{ex,exs}",
-    "{config,lib,test}/**/*.{ex,exs}",
+    "{config,lib}/**/*.{ex,exs}",
+    "test/*.exs",
+    "test/support/**/*.ex",
     "priv/*/seeds.exs"
+  ],
+  exclude: [
+    "test/fixtures"
   ],
   line_length: 80,
   locals_without_parens: [
