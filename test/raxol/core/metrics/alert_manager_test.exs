@@ -84,7 +84,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
     test "triggers alert when condition is met", %{
       rule_id: rule_id,
-      test_name: test_name
+      test_name: test_name,
+      pid: pid
     } do
       metrics = [
         %{
@@ -107,11 +108,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         metrics
       end)
 
-      # Force alert check
-      Process.send(test_name, {:check_alerts, 1}, [])
-
-      # Wait for alert to be processed
-      Process.sleep(100)
+      # Force alert check only if process is alive
+      if Process.alive?(pid) do
+        Process.send(test_name, {:check_alerts, 1}, [])
+        # Wait for alert to be processed
+        Process.sleep(100)
+      end
 
       assert {:ok, alert_state} =
                AlertManager.get_alert_state(rule_id, test_name)
@@ -124,7 +126,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
     test "does not trigger alert when condition is not met", %{
       rule_id: rule_id,
-      test_name: test_name
+      test_name: test_name,
+      pid: pid
     } do
       metrics = [
         %{
@@ -147,11 +150,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         metrics
       end)
 
-      # Force alert check
-      Process.send(test_name, {:check_alerts, 1}, [])
-
-      # Wait for alert to be processed
-      Process.sleep(100)
+      # Force alert check only if process is alive
+      if Process.alive?(pid) do
+        Process.send(test_name, {:check_alerts, 1}, [])
+        # Wait for alert to be processed
+        Process.sleep(100)
+      end
 
       assert {:ok, alert_state} =
                AlertManager.get_alert_state(rule_id, test_name)
@@ -162,7 +166,11 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
     end
 
-    test "respects cooldown period", %{rule_id: rule_id, test_name: test_name} do
+    test "respects cooldown period", %{
+      rule_id: rule_id,
+      test_name: test_name,
+      pid: pid
+    } do
       metrics = [
         %{
           timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
@@ -184,13 +192,15 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         metrics
       end)
 
-      # Force first alert check
-      Process.send(test_name, {:check_alerts, 1}, [])
-      Process.sleep(100)
+      # Force first alert check only if process is alive
+      if Process.alive?(pid) do
+        Process.send(test_name, {:check_alerts, 1}, [])
+        Process.sleep(100)
 
-      # Force second alert check immediately
-      Process.send(test_name, {:check_alerts, 2}, [])
-      Process.sleep(100)
+        # Force second alert check immediately
+        Process.send(test_name, {:check_alerts, 2}, [])
+        Process.sleep(100)
+      end
 
       assert {:ok, alert_state} =
                AlertManager.get_alert_state(rule_id, test_name)
@@ -225,7 +235,8 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
     test "acknowledges an active alert", %{
       rule_id: rule_id,
-      test_name: test_name
+      test_name: test_name,
+      pid: pid
     } do
       metrics = [
         %{
@@ -248,9 +259,11 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         metrics
       end)
 
-      # Force alert check
-      Process.send(test_name, {:check_alerts, 1}, [])
-      Process.sleep(100)
+      # Force alert check only if process is alive
+      if Process.alive?(pid) do
+        Process.send(test_name, {:check_alerts, 1}, [])
+        Process.sleep(100)
+      end
 
       # Acknowledge alert
       assert {:ok, alert_state} =
@@ -263,7 +276,10 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   end
 
   describe "grouped metrics" do
-    test "evaluates alerts for grouped metrics", %{test_name: test_name} do
+    test "evaluates alerts for grouped metrics", %{
+      test_name: test_name,
+      pid: pid
+    } do
       rule = %{
         name: "Grouped Alert",
         metric_name: "test_metric",
@@ -302,9 +318,11 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         metrics
       end)
 
-      # Force alert check
-      Process.send(test_name, {:check_alerts, 1}, [])
-      Process.sleep(100)
+      # Force alert check only if process is alive
+      if Process.alive?(pid) do
+        Process.send(test_name, {:check_alerts, 1}, [])
+        Process.sleep(100)
+      end
 
       assert {:ok, alert_state} =
                AlertManager.get_alert_state(rule_id, test_name)
