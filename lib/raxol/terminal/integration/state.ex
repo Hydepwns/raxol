@@ -270,7 +270,7 @@ defmodule Raxol.Terminal.Integration.State do
     if state.scroll_buffer, do: UnifiedScroll.cleanup(state.scroll_buffer)
     if state.renderer, do: UnifiedRenderer.cleanup(state.renderer)
     if state.io, do: UnifiedIO.cleanup(state.io)
-    if state.window_manager, do: UnifiedWindow.cleanup(state.window_manager)
+    if state.window_manager, do: UnifiedWindow.cleanup()
     :ok
   end
 end
