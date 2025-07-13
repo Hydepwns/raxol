@@ -25,7 +25,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.MultiLine do
 
     new_middle_lines =
       if replacement == "" do
-        []
+        # When replacement is empty, join the first and last line parts
+        if first_line_part == "" and last_line_part == "" do
+          []
+        else
+          [first_line_part <> last_line_part]
+        end
       else
         [first_line_part <> replacement <> last_line_part]
       end
