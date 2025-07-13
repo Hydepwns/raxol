@@ -118,7 +118,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations do
     start_col = clamp(start_col, 0, line_length)
     end_col = clamp(end_col, 0, line_length)
     before = String.slice(line, 0, start_col)
-    after_part = if end_col >= line_length - 1, do: "", else: String.slice(line, end_col, line_length - end_col)
+
+    after_part =
+      if end_col >= line_length - 1,
+        do: "",
+        else: String.slice(line, end_col, line_length - end_col)
+
     new_line = before <> replacement <> after_part
     new_lines = List.replace_at(lines_list, row, new_line)
     new_full_text = Enum.join(new_lines, "\n")
@@ -213,7 +218,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations do
       {Enum.join(new_lines, "\n"), replaced_text}
     else
       # For multi-line deletions, join prefix of first line and suffix of last line into a single line
-      joined_line = String.slice(start_line, 0, start_col) <> String.slice(end_line, end_col, String.length(end_line) - end_col)
+      joined_line =
+        String.slice(start_line, 0, start_col) <>
+          String.slice(end_line, end_col, String.length(end_line) - end_col)
+
       new_lines = lines_before ++ [joined_line] ++ lines_after
       {Enum.join(new_lines, "\n"), replaced_text}
     end

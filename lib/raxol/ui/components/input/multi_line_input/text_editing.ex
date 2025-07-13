@@ -17,9 +17,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
     char_binary = convert_to_binary(char_or_codepoint)
 
     {new_text, _} =
-      TextOperations.replace_text_range(lines, {row, col}, {row, col}, char_binary)
+      TextOperations.replace_text_range(
+        lines,
+        {row, col},
+        {row, col},
+        char_binary
+      )
 
     new_lines = String.split(new_text, "\n")
+
     {new_row, new_col} =
       calculate_new_cursor_position({row, col}, char_or_codepoint, char_binary)
 

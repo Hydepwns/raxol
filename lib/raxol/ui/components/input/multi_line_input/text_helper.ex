@@ -38,8 +38,18 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   Replaces text within a range (from start_pos_tuple to end_pos_tuple) with the given replacement string.
   Returns {new_full_text, replaced_text}.
   """
-  def replace_text_range(lines_list, start_pos_tuple, end_pos_tuple, replacement) do
-    TextOperations.replace_text_range(lines_list, start_pos_tuple, end_pos_tuple, replacement)
+  def replace_text_range(
+        lines_list,
+        start_pos_tuple,
+        end_pos_tuple,
+        replacement
+      ) do
+    TextOperations.replace_text_range(
+      lines_list,
+      start_pos_tuple,
+      end_pos_tuple,
+      replacement
+    )
   end
 
   @doc """
