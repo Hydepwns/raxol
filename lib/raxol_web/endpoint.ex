@@ -26,7 +26,23 @@ defmodule RaxolWeb.Endpoint do
     at: "/",
     from: :raxol,
     gzip: false,
-    only: RaxolWeb.static_paths()
+    only: RaxolWeb.static_paths(),
+    headers: [
+      {"content-security-policy",
+       "default-src 'self'; " <>
+         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " <>
+         "style-src 'self' 'unsafe-inline'; " <>
+         "img-src 'self' data: https:; " <>
+         "font-src 'self' data:; " <>
+         "connect-src 'self' ws: wss:; " <>
+         "frame-ancestors 'none'; " <>
+         "base-uri 'self'; " <>
+         "form-action 'self'"},
+      {"x-content-type-options", "nosniff"},
+      {"x-frame-options", "DENY"},
+      {"x-xss-protection", "1; mode=block"},
+      {"referrer-policy", "strict-origin-when-cross-origin"}
+    ]
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.

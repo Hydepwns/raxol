@@ -60,6 +60,9 @@ defmodule RaxolWeb.TerminalLive do
       "RaxolWeb.TerminalLive: mount_connected called with session: #{inspect(session)}"
     )
 
+    # Initialize cache table
+    initialize_cache()
+
     session_id = generate_session_id()
     user_id = session["user_id"] || session_id
     topic = "terminal:" <> session_id
@@ -517,10 +520,56 @@ defmodule RaxolWeb.TerminalLive do
       | screen_buffer: emulator.main_screen_buffer
     }
 
-    terminal_html = Raxol.Terminal.Renderer.render(renderer)
+    # Use caching for terminal rendering
+    terminal_html = render_terminal_with_cache(renderer, socket.assigns.theme)
     {cursor_x, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     cursor_visible = Raxol.Terminal.Emulator.get_cursor_visible(emulator)
     {terminal_html, %{x: cursor_x, y: cursor_y, visible: cursor_visible}}
+  end
+
+  # Add caching for terminal rendering
+  defp render_terminal_with_cache(renderer, theme) do
+    cache_key = generate_cache_key(renderer, theme)
+
+    case :ets.lookup(:terminal_cache, cache_key) do
+      [{^cache_key, rendered, timestamp}] ->
+        # Cache is valid for 1 second
+        if System.system_time(:second) - timestamp < 1 do
+          rendered
+        else
+          render_and_cache(renderer, cache_key)
+        end
+
+      [] ->
+        render_and_cache(renderer, cache_key)
+    end
+  end
+
+  defp generate_cache_key(renderer, theme) do
+    # Create a hash based on terminal state
+    :crypto.hash(
+      :sha256,
+      :erlang.term_to_binary({
+        renderer.screen_buffer,
+        theme
+      })
+    )
+  end
+
+  defp render_and_cache(renderer, cache_key) do
+    rendered = Raxol.Terminal.Renderer.render(renderer)
+
+    :ets.insert(
+      :terminal_cache,
+      {cache_key, rendered, System.system_time(:second)}
+    )
+
+    rendered
+  end
+
+  # Initialize cache table in mount
+  defp initialize_cache do
+    :ets.new(:terminal_cache, [:set, :public, :named_table])
   end
 
   defp broadcast_terminal_update(socket, terminal_html, cursor) do
