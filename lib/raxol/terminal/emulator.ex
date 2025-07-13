@@ -446,27 +446,99 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-  @doc """
-  Checks if scrolling is needed and performs it if necessary.
-  """
   @spec maybe_scroll(t()) :: t()
   def maybe_scroll(%__MODULE__{} = emulator) do
     {_x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
+    log_scroll_debug(_x, y, emulator.height)
+
     if y >= emulator.height do
-      # Need to scroll
-      active_buffer = get_active_buffer(emulator)
+      perform_scroll(emulator)
+    else
+      log_no_scroll_needed()
+      emulator
+    end
+  end
 
-      {scrolled_buffer, _scrolled_lines} =
-        Raxol.Terminal.ScreenBuffer.scroll_up(active_buffer, 1)
+  defp log_scroll_debug(x, y, height) do
+    Raxol.Core.Runtime.Log.debug(
+      "[maybe_scroll] Cursor position: {#{x}, #{y}}, emulator height: #{height}"
+    )
+  end
 
-      # Update the appropriate buffer
-      case emulator.active_buffer_type do
-        :main -> %{emulator | main_screen_buffer: scrolled_buffer}
-        :alternate -> %{emulator | alternate_screen_buffer: scrolled_buffer}
+  defp log_no_scroll_needed do
+    Raxol.Core.Runtime.Log.debug("[maybe_scroll] No scrolling needed")
+  end
+
+  defp perform_scroll(emulator) do
+    Raxol.Core.Runtime.Log.debug("[maybe_scroll] Scrolling needed!")
+
+    active_buffer = get_active_buffer(emulator)
+
+    {scrolled_buffer, scrolled_lines} =
+      Raxol.Terminal.ScreenBuffer.scroll_up(active_buffer, 1)
+
+    log_scroll_result(scrolled_lines)
+    updated_buffer = update_scrollback_buffer(scrolled_buffer, scrolled_lines)
+    log_buffer_update(updated_buffer)
+
+    update_emulator_buffer(emulator, updated_buffer)
+  end
+
+  defp log_scroll_result(scrolled_lines) do
+    Raxol.Core.Runtime.Log.debug(
+      "[maybe_scroll] scroll_up returned scrolled_lines: #{inspect(scrolled_lines)}"
+    )
+  end
+
+  defp update_scrollback_buffer(scrolled_buffer, scrolled_lines) do
+    if scrolled_lines && length(scrolled_lines) > 0 do
+      # Filter out lines that don't contain meaningful content
+      meaningful_lines = Enum.filter(scrolled_lines, &has_meaningful_content?/1)
+
+      if length(meaningful_lines) > 0 do
+        Raxol.Core.Runtime.Log.debug(
+          "[maybe_scroll] Adding #{length(meaningful_lines)} meaningful lines to scrollback"
+        )
+
+        Raxol.Terminal.Buffer.Scrollback.add_lines(
+          scrolled_buffer,
+          meaningful_lines
+        )
+      else
+        Raxol.Core.Runtime.Log.debug(
+          "[maybe_scroll] No meaningful lines to add to scrollback"
+        )
+
+        scrolled_buffer
       end
     else
-      emulator
+      Raxol.Core.Runtime.Log.debug("[maybe_scroll] No scrolled_lines to add")
+      scrolled_buffer
+    end
+  end
+
+  defp has_meaningful_content?(line) do
+    # Check if the line contains any non-empty cells
+    Enum.any?(line, fn cell ->
+      case cell do
+        %{char: char} when is_binary(char) -> String.length(char) > 0
+        %{char: char} when is_integer(char) -> char > 0
+        _ -> false
+      end
+    end)
+  end
+
+  defp log_buffer_update(updated_buffer) do
+    Raxol.Core.Runtime.Log.debug(
+      "[maybe_scroll] Updated buffer scrollback length: #{length(updated_buffer.scrollback)}"
+    )
+  end
+
+  defp update_emulator_buffer(emulator, updated_buffer) do
+    case emulator.active_buffer_type do
+      :main -> %{emulator | main_screen_buffer: updated_buffer}
+      :alternate -> %{emulator | alternate_screen_buffer: updated_buffer}
     end
   end
 
@@ -509,7 +581,37 @@ defmodule Raxol.Terminal.Emulator do
           "DEBUG: After parser processing, scroll_region: #{inspect(updated_emulator.scroll_region)}"
         )
 
-        {updated_emulator, output}
+        # After all input, if the cursor is past the last row, scroll until it's visible
+        final_emulator =
+          ensure_cursor_in_visible_region(updated_emulator)
+
+        {final_emulator, output}
+    end
+  end
+
+  defp ensure_cursor_in_visible_region(emulator) do
+    active_buffer = get_active_buffer(emulator)
+    buffer_height = ScreenBuffer.get_height(active_buffer)
+
+    {_, cursor_y} =
+      case emulator.cursor do
+        cursor when is_pid(cursor) ->
+          Raxol.Terminal.Cursor.Manager.get_position(cursor)
+
+        cursor when is_map(cursor) ->
+          Raxol.Terminal.Cursor.Manager.get_position(cursor)
+
+        _ ->
+          {0, 0}
+      end
+
+    if cursor_y >= buffer_height do
+      # Scroll until the cursor is in the visible region
+      ensure_cursor_in_visible_region(
+        Raxol.Terminal.Emulator.maybe_scroll(emulator)
+      )
+    else
+      emulator
     end
   end
 
