@@ -29,6 +29,8 @@ defmodule Raxol.Application do
           RaxolWeb.Endpoint,
           # Start RaxolWeb Telemetry
           RaxolWeb.Telemetry,
+          # Start Rate Limit Manager
+          RaxolWeb.RateLimitManager,
           # Start the Dynamic Supervisor for Raxol applications
           Raxol.DynamicSupervisor,
           # Start the UserPreferences GenServer
@@ -112,13 +114,17 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     # Add Web Supervisor for tests (includes Presence and Session Manager)
     web_supervisor_child_spec = Raxol.Web.Supervisor
 
+    # Add Rate Limit Manager for tests
+    rate_limit_manager_child_spec = RaxolWeb.RateLimitManager
+
     children = [
       pubsub_child_spec,
       user_preferences_child_spec,
       # accounts_child_spec,  # Temporarily commented out to debug Repo startup
       sync_system_child_spec,
       terminal_supervisor_child_spec,
-      web_supervisor_child_spec
+      web_supervisor_child_spec,
+      rate_limit_manager_child_spec
     ]
 
     # # Add repo_child_spec only if it's not nil

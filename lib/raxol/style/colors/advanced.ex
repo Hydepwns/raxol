@@ -336,19 +336,6 @@ defmodule Raxol.Style.Colors.Advanced do
     %{x: x, y: y, z: z}
   end
 
-  defp xyz_to_lab(%{x: x, y: y, z: z}) do
-    # Convert XYZ to Lab using standard conversion
-    x = if x > +0.008856, do: :math.pow(x, 1 / 3), else: 7.787 * x + 16 / 116
-    y = if y > +0.008856, do: :math.pow(y, 1 / 3), else: 7.787 * y + 16 / 116
-    z = if z > +0.008856, do: :math.pow(z, 1 / 3), else: 7.787 * z + 16 / 116
-
-    l = 116 * y - 16
-    a = 500 * (x - y)
-    b = 200 * (y - z)
-
-    %{l: l, a: a, b: b}
-  end
-
   defp maybe_preserve_brightness(color, true) do
     # Calculate perceived brightness using luminance formula
     %{l: original_l} = rgb_to_hsl(color)
