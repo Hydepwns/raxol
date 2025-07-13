@@ -762,8 +762,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def erase_all_with_scrollback(buffer), do: Eraser.clear(buffer)
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def erase_from_cursor_to_end_of_line(buffer),
-    do: Eraser.erase_from_cursor_to_end_of_line(buffer)
+  def erase_from_cursor_to_end_of_line(buffer) do
+    {x, y} = get_cursor_position(buffer)
+    Eraser.erase_line_segment(buffer, x, y)
+  end
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_of_line_to_cursor(buffer),
@@ -914,5 +916,24 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def update(buffer, changes) do
     Raxol.Terminal.Buffer.Content.update(buffer, changes)
+  end
+
+  def handle_single_line_replacement(lines_list, row, start_col, end_col, replacement) do
+    line = Selection.get_line(lines_list, row)
+    line_length = String.length(line)
+
+    # Only allow replacement if both start_col and end_col are within bounds
+    if start_col < 0 or end_col > line_length or start_col > end_col do
+      new_full_text = Enum.join(lines_list, "\n")
+      {new_full_text, ""}
+    else
+      before = String.slice(line, 0, start_col)
+      after_part = String.slice(line, end_col, line_length - end_col)
+      new_line = before <> replacement <> after_part
+      new_lines = List.replace_at(lines_list, row, new_line)
+      new_full_text = Enum.join(new_lines, "\n")
+      replaced_text = String.slice(line, start_col, end_col - start_col)
+      {new_full_text, replaced_text}
+    end
   end
 end
