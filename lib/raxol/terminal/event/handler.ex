@@ -22,79 +22,139 @@ defmodule Raxol.Terminal.Event.Handler do
   end
 
   def register_handler(emulator, event_type, handler) do
-    handlers = Map.get(emulator.event_handlers, :handlers, %{})
-    handlers = Map.put(handlers, event_type, handler)
-
-    %{
-      emulator
-      | event_handlers: %{emulator.event_handlers | handlers: handlers}
-    }
+    case emulator.event do
+      nil -> emulator
+      event_pid ->
+        GenServer.call(event_pid, {:register_handler, event_type, handler})
+        emulator
+    end
   end
 
   def unregister_handler(emulator, event_type) do
-    handlers = Map.get(emulator.event_handlers, :handlers, %{})
-    handlers = Map.delete(handlers, event_type)
-
-    %{
-      emulator
-      | event_handlers: %{emulator.event_handlers | handlers: handlers}
-    }
+    case emulator.event do
+      nil -> emulator
+      event_pid ->
+        GenServer.call(event_pid, {:unregister_handler, event_type})
+        emulator
+    end
   end
 
   def queue_event(emulator, event_type, event_data) do
-    queue = Map.get(emulator.event_handlers, :queue, [])
-    queue = queue ++ [{event_type, event_data}]
-    %{emulator | event_handlers: %{emulator.event_handlers | queue: queue}}
+    case emulator.event do
+      nil -> emulator
+      event_pid ->
+        GenServer.cast(event_pid, {:queue_event, event_type, event_data})
+        emulator
+    end
   end
 
   def process_events(emulator) do
-    queue = Map.get(emulator.event_handlers, :queue, [])
-    handlers = Map.get(emulator.event_handlers, :handlers, %{})
-
-    {_processed_events, emulator} =
-      Enum.reduce(queue, {[], emulator}, fn {event_type, event_data},
-                                            {processed, emu} ->
-        case Map.get(handlers, event_type) do
-          nil ->
-            {processed, emu}
-
-          handler ->
-            case handler.(emu, event_data) do
-              {:ok, new_emu} ->
-                {processed ++ [{event_type, event_data}], new_emu}
-
-              _ ->
-                {processed, emu}
-            end
-        end
-      end)
-
-    %{emulator | event_handlers: %{emulator.event_handlers | queue: []}}
+    case emulator.event do
+      nil -> emulator
+      event_pid ->
+        GenServer.call(event_pid, :process_events)
+        emulator
+    end
   end
 
   def get_event_queue(emulator) do
-    Map.get(emulator.event_handlers, :queue, [])
+    case emulator.event do
+      nil -> :queue.new()
+      event_pid -> GenServer.call(event_pid, :get_event_queue)
+    end
   end
 
   def clear_event_queue(emulator) do
-    %{emulator | event_handlers: %{emulator.event_handlers | queue: []}}
+    case emulator.event do
+      nil -> emulator
+      event_pid ->
+        GenServer.call(event_pid, :clear_event_queue)
+        emulator
+    end
   end
 
   def reset_event_handler(emulator) do
-    %{emulator | event_handlers: %{handlers: %{}, queue: []}}
+    case emulator.event do
+      nil -> emulator
+      event_pid ->
+        GenServer.call(event_pid, :reset)
+        emulator
+    end
   end
 
   def dispatch_event(emulator, event_type, event_data) do
-    handlers = Map.get(emulator.event_handlers, :handlers, %{})
-
-    case Map.get(handlers, event_type) do
+    case emulator.event do
       nil -> {:ok, emulator}
-      handler -> handler.(emulator, event_data)
+      event_pid -> GenServer.call(event_pid, {:dispatch_event, event_type, event_data})
     end
   end
 
   # Server Callbacks
   def init(_opts) do
     {:ok, %Event{handlers: %{}, queue: :queue.new()}}
+  end
+
+  def handle_call({:register_handler, event_type, handler}, _from, state) do
+    handlers = Map.put(state.handlers, event_type, handler)
+    {:reply, :ok, %{state | handlers: handlers}}
+  end
+
+  def handle_call({:unregister_handler, event_type}, _from, state) do
+    handlers = Map.delete(state.handlers, event_type)
+    {:reply, :ok, %{state | handlers: handlers}}
+  end
+
+  def handle_call({:dispatch_event, event_type, event_data}, _from, state) do
+    case Map.get(state.handlers, event_type) do
+      nil -> {:reply, {:ok, nil}, state}
+      handler ->
+        result = handler.(nil, event_data)
+        {:reply, result, state}
+    end
+  end
+
+  def handle_call(:get_event_queue, _from, state) do
+    {:reply, state.queue, state}
+  end
+
+  def handle_call(:clear_event_queue, _from, state) do
+    {:reply, :ok, %{state | queue: :queue.new()}}
+  end
+
+  def handle_call(:reset, _from, _state) do
+    {:reply, :ok, %Event{handlers: %{}, queue: :queue.new()}}
+  end
+
+  def handle_call(:process_events, _from, state) do
+    {processed_events, new_state} = process_queued_events(state)
+    {:reply, processed_events, new_state}
+  end
+
+  def handle_cast({:queue_event, event_type, event_data}, state) do
+    queue = :queue.in({event_type, event_data}, state.queue)
+    {:noreply, %{state | queue: queue}}
+  end
+
+  # Private functions
+  defp process_queued_events(state) do
+    case :queue.out(state.queue) do
+      {{:value, {event_type, event_data}}, remaining_queue} ->
+        case Map.get(state.handlers, event_type) do
+          nil ->
+            process_queued_events(%{state | queue: remaining_queue})
+
+          handler ->
+            case handler.(nil, event_data) do
+              {:ok, _result} ->
+                {[{event_type, event_data}], %{state | queue: remaining_queue}}
+
+              _ ->
+                process_queued_events(%{state | queue: remaining_queue})
+            end
+        end
+
+      {:empty, _} ->
+        {[], state}
+    end
   end
 end

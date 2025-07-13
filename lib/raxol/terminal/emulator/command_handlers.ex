@@ -384,7 +384,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
 
   defp handle_csi_command(final_byte, params, emulator, intermediates) do
     case csi_handlers()[final_byte] do
-      {handler, arity} -> apply(handler, [params, emulator, intermediates])
+      {handler, _arity} -> apply(handler, [params, emulator, intermediates])
       nil -> emulator
     end
   end

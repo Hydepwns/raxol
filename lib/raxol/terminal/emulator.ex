@@ -7,8 +7,6 @@ defmodule Raxol.Terminal.Emulator do
   import Raxol.Guards
 
   alias Raxol.Terminal.{
-    Buffer.Manager,
-    Command.Manager,
     Operations.CursorOperations,
     Operations.ScreenOperations,
     Operations.TextOperations,
@@ -16,7 +14,6 @@ defmodule Raxol.Terminal.Emulator do
     Operations.ScrollOperations,
     Operations.StateOperations,
     Cursor.Manager,
-    FormattingManager,
     OutputManager,
     Window.Manager,
     ScreenBuffer,
@@ -28,8 +25,7 @@ defmodule Raxol.Terminal.Emulator do
     Plugin.DependencyResolver,
     Emulator.Constructors,
     Emulator.Reset,
-    Emulator.CommandHandlers,
-    Commands.CursorHandlers
+    Emulator.CommandHandlers
   }
 
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
@@ -773,64 +769,6 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-  defp set_mode_in_manager(emulator, mode_name, value) do
-    mode_manager = emulator.mode_manager
-
-    # Update the mode manager struct directly
-    new_mode_manager = update_mode_manager_state(mode_manager, mode_name, value)
-    emulator = %{emulator | mode_manager: new_mode_manager}
-
-    # Handle screen buffer switching
-    emulator = handle_screen_buffer_switch(emulator, mode_name, value)
-
-    emulator
-  end
-
-  defp update_mode_manager_state(mode_manager, mode_name, value) do
-    case get_mode_update_function(mode_name, value) do
-      {:ok, update_fn} -> update_fn.(mode_manager)
-      :error -> mode_manager
-    end
-  end
-
-  defp get_mode_update_function(mode_name, value) do
-    case Map.fetch(ModeHandlers.mode_updates(), mode_name) do
-      {:ok, update_fn} ->
-        {:ok, fn mode_manager -> update_fn.(mode_manager, value) end}
-
-      :error ->
-        :error
-    end
-  end
-
-  defp handle_screen_buffer_switch(emulator, mode, true)
-       when mode in [:alt_screen_buffer, :dec_alt_screen_save] do
-    alt_buf =
-      emulator.alternate_screen_buffer ||
-        Raxol.Terminal.ScreenBuffer.new(emulator.width, emulator.height)
-
-    # Reset cursor position to (0, 0) when switching to alternate buffer
-    Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {0, 0})
-
-    %{
-      emulator
-      | active_buffer_type: :alternate,
-        alternate_screen_buffer: alt_buf
-    }
-  end
-
-  defp handle_screen_buffer_switch(emulator, mode, false)
-       when mode in [:alt_screen_buffer, :dec_alt_screen_save] do
-    # Reset cursor position to (0, 0) when switching back to main buffer
-    Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {0, 0})
-
-    %{emulator | active_buffer_type: :main}
-  end
-
-  defp handle_screen_buffer_switch(emulator, _mode, _value) do
-    emulator
-  end
-
   def write_to_output(emulator, data) do
     OutputManager.write(emulator, data)
   end
@@ -898,7 +836,7 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Override the delegate functions to handle PIDs properly
-  def get_cursor_position(%__MODULE__{cursor: cursor} = emulator) do
+  def get_cursor_position(%__MODULE__{cursor: cursor} = _emulator) do
     if is_pid(cursor) do
       CursorManager.get_position(cursor)
     else
@@ -1158,41 +1096,6 @@ defmodule Raxol.Terminal.Emulator do
     end
 
     emulator
-  end
-
-  defp find_matching_parser(rest) do
-    Enum.find_value(ansi_parsers(), & &1.(rest))
-  end
-
-  defp ansi_parsers do
-    get_parser_functions()
-    |> Enum.map(&Function.capture(__MODULE__, &1, 1))
-  end
-
-  defp get_parser_functions do
-    [
-      :parse_osc,
-      :parse_dcs,
-      :parse_sgr,
-      :parse_csi_cursor_pos,
-      :parse_csi_cursor_up,
-      :parse_csi_cursor_down,
-      :parse_csi_cursor_forward,
-      :parse_csi_cursor_back,
-      :parse_csi_cursor_show,
-      :parse_csi_cursor_hide,
-      :parse_csi_clear_screen,
-      :parse_csi_clear_line,
-      :parse_csi_set_scroll_region,
-      :parse_csi_set_mode,
-      :parse_csi_reset_mode,
-      :parse_csi_set_standard_mode,
-      :parse_csi_reset_standard_mode,
-      :parse_csi_general,
-      :parse_esc_equals,
-      :parse_esc_greater,
-      :parse_unknown
-    ]
   end
 
   def update_active_buffer(emulator, new_buffer) do

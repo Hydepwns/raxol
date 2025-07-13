@@ -276,7 +276,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_il(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {col, row} = Emulator.get_cursor_position(emulator)
+    {_col, row} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
@@ -293,7 +293,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_dl(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {col, row} = Emulator.get_cursor_position(emulator)
+    {_col, row} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
