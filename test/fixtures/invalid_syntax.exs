@@ -14,4 +14,3 @@
     double_buffering: true
   }
   # Missing closing brace - this will cause a syntax error
-}
