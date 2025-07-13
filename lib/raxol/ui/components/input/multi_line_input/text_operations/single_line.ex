@@ -13,22 +13,24 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.SingleLine do
     line = Selection.get_line(lines_list, row)
     line_length = String.length(line)
 
+    # Clamp positions to valid bounds
     start_col = Utils.clamp(start_col, 0, line_length)
     end_col = Utils.clamp(end_col, 0, line_length)
 
-    before = String.slice(line, 0, start_col)
+    # If start_col > end_col, no replacement should happen (invalid range)
+    if start_col > end_col do
+      new_full_text = Enum.join(lines_list, "\n")
+      {new_full_text, ""}
+    else
+      before = String.slice(line, 0, start_col)
+      after_part = String.slice(line, end_col, line_length - end_col)
+      new_line = before <> replacement <> after_part
+      new_lines = List.replace_at(lines_list, row, new_line)
+      new_full_text = Enum.join(new_lines, "\n")
+      replaced_text = String.slice(line, start_col, end_col - start_col)
 
-    after_part =
-      if end_col >= line_length - 1 and end_col < line_length,
-        do: "",
-        else: String.slice(line, end_col, line_length - end_col)
-
-    new_line = before <> replacement <> after_part
-    new_lines = List.replace_at(lines_list, row, new_line)
-    new_full_text = Enum.join(new_lines, "\n")
-    replaced_text = String.slice(line, start_col, end_col - start_col)
-
-    {new_full_text, replaced_text}
+      {new_full_text, replaced_text}
+    end
   end
 
   @doc """

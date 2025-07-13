@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   def get_cached_animation(animation_path) do
     case animation_path do
       nil -> nil
-      path -> System.get(path, namespace: :animation)
+      path -> Raxol.Terminal.Cache.System.get(path, namespace: :animation)
     end
   end
 
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     * `animation_data` - Animation data to cache
   """
   def cache_animation_data(animation_key, animation_data) do
-    case System.put(animation_key, animation_data,
+    case Raxol.Terminal.Cache.System.put(animation_key, animation_data,
            namespace: :animation,
            metadata: %{
              type: :data,
@@ -77,7 +77,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
           compressed: true
         }
 
-        case System.put(animation_path, compressed_data,
+        case Raxol.Terminal.Cache.System.put(animation_path, compressed_data,
                namespace: :animation,
                metadata: metadata
              ) do
@@ -107,7 +107,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   Gets the current cache size.
   """
   def get_cache_size do
-    case System.stats(namespace: :animation) do
+    case Raxol.Terminal.Cache.System.stats(namespace: :animation) do
       {:ok, stats} -> stats.size
       _ -> 0
     end
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   Clears the animation cache.
   """
   def clear_animation_cache do
-    System.clear(namespace: :animation)
+    Raxol.Terminal.Cache.System.clear(namespace: :animation)
     IO.puts("Animation cache cleared")
     :ok
   end
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   Gets animation cache statistics.
   """
   def get_animation_cache_stats do
-    case System.stats(namespace: :animation) do
+    case Raxol.Terminal.Cache.System.stats(namespace: :animation) do
       {:ok, stats} ->
         {:ok,
          %{

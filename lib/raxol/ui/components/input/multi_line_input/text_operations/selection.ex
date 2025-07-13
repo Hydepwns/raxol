@@ -31,7 +31,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.Selection do
   end
 
   defp extract_single_line_selection(lines_list, row, start_col, end_col) do
-    line = Utils.get_line(lines_list, row)
+    line = get_line(lines_list, row)
     line_length = String.length(line)
     start_col = Utils.clamp(start_col, 0, line_length)
     end_col = Utils.clamp(end_col, 0, line_length)
@@ -39,8 +39,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.Selection do
   end
 
   defp extract_multi_line_selection(lines_list, start_row, start_col, end_row, end_col) do
-    start_line = Utils.get_line(lines_list, start_row)
-    end_line = Utils.get_line(lines_list, end_row)
+    start_line = get_line(lines_list, start_row)
+    end_line = get_line(lines_list, end_row)
 
     start_line_part = String.slice(start_line, start_col, String.length(start_line) - start_col)
     middle_lines = Enum.slice(lines_list, start_row + 1, end_row - start_row - 1)
