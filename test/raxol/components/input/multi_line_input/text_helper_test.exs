@@ -185,15 +185,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
     end
 
     test ~c"deletes multi-line selection" do
-      # Select from "ell" in "hello" to "or" in "world"
+      # Select from "ll" in "hello" to "or" in "world"
       state = create_state(["hello", "world"], {0, 3})
-      state = %{state | selection_start: {0, 1}, selection_end: {1, 2}}
+      state = %{state | selection_start: {0, 2}, selection_end: {1, 3}}
 
       {new_state, deleted_text} = TextHelper.delete_selection(state)
 
-      assert new_state.lines == ["ho", "ld"]
-      assert deleted_text == "ell\nwo"
-      assert new_state.cursor_pos == {0, 1}
+      assert new_state.lines == ["held"]
+      assert deleted_text == "llo\nwor"
+      assert new_state.cursor_pos == {0, 2}
     end
 
     test ~c"handles invalid selection gracefully" do
@@ -245,7 +245,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
         TextHelper.replace_text_range(lines, start_pos, end_pos, replacement)
 
       assert new_text == "hexyzld\ntest"
-      assert replaced_text == "llo\nwo"
+      assert replaced_text == "llo\nwor"
     end
 
     test ~c"inserts text at cursor position" do

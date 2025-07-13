@@ -454,7 +454,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
     {new_value, _replaced} =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.replace_text_range(
-        state.value,
+        state.lines,
         start_pos,
         end_pos,
         content
@@ -477,8 +477,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
         selection_end: nil
     }
 
-    if state.on_change, do: state.on_change.(new_value)
-    new_state
+    trigger_on_change({:noreply, new_state, nil}, state)
   end
 
   def handle_focus(state) do
