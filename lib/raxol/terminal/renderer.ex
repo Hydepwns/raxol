@@ -373,12 +373,12 @@ defmodule Raxol.Terminal.Renderer do
   def get_content(renderer, opts \\ [])
 
   def get_content(%__MODULE__{} = renderer, opts) do
-    include_style = Keyword.get(opts, :include_style, true)
+    _include_style = Keyword.get(opts, :include_style, true)
     include_cursor = Keyword.get(opts, :include_cursor, true)
 
     content =
       renderer.screen_buffer
-      |> ScreenBuffer.get_content(include_style: include_style)
+      |> ScreenBuffer.get_content()
 
     if include_cursor do
       content
@@ -390,8 +390,8 @@ defmodule Raxol.Terminal.Renderer do
 
   # Handle ScreenBuffer structs
   def get_content(%Raxol.Terminal.ScreenBuffer{} = buffer, opts) do
-    include_style = Keyword.get(opts, :include_style, true)
-    content = ScreenBuffer.get_content(buffer, include_style: include_style)
+    _include_style = Keyword.get(opts, :include_style, true)
+    content = ScreenBuffer.get_content(buffer)
     {:ok, content}
   end
 

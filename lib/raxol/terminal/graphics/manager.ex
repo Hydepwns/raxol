@@ -177,7 +177,7 @@ defmodule Raxol.Terminal.Graphics.Manager do
     |> Base.encode16()
   end
 
-  defp process_image(image, opts, pipeline) do
+  defp process_image(image, opts, _pipeline) do
     # Extract scale from opts, default to 1.0
     scale = Map.get(opts, :scale, 1.0)
     # Apply pipeline transformations to the image (excluding convert_to_sixel)

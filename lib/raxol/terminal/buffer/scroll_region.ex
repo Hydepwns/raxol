@@ -192,13 +192,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_up(buffer, 1)
       iex> # Content is scrolled up within region 5-15
   """
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec scroll_up(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          {non_neg_integer(), non_neg_integer()} | nil
-        ) :: {ScreenBuffer.t(), list(list(Cell.t()))}
-  def scroll_up(buffer, lines, scroll_region_arg \\ nil) when lines > 0 do
+  def scroll_up(buffer, lines, scroll_region_arg \\ nil)
+
+  def scroll_up(buffer, lines, scroll_region_arg) when lines > 0 do
     {scroll_start, scroll_end} = get_effective_region(buffer, scroll_region_arg)
     visible_lines = scroll_end - scroll_start + 1
 
@@ -320,12 +316,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> # Content is scrolled down within region 5-15
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  @spec scroll_down(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          {non_neg_integer(), non_neg_integer()} | nil
-        ) :: ScreenBuffer.t()
-  def scroll_down(buffer, lines, scroll_region_arg \\ nil) when lines > 0 do
+  def scroll_down(buffer, lines, scroll_region_arg \\ nil)
+
+  def scroll_down(buffer, lines, scroll_region_arg) when lines > 0 do
     {scroll_start, scroll_end} = get_effective_region(buffer, scroll_region_arg)
     visible_lines = scroll_end - scroll_start + 1
 
@@ -497,7 +490,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   defp transform_line_for_up_scroll(
          idx,
          cells,
-         scroll_start,
+         _scroll_start,
          scroll_end,
          lines,
          empty_line

@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_E(emulator, params) do
     amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {_col, row} = get_cursor_position(cursor)
 
     # Move down by amount, clamp to screen height
     new_row = min(emulator.height - 1, row + amount)
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_f(emulator, params) do
     amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {_col, row} = get_cursor_position(cursor)
 
     # Move up by amount, clamp to screen top
     new_row = max(0, row - amount)
@@ -337,8 +337,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec move_cursor_to_line_start(Emulator.t()) :: Emulator.t()
   def move_cursor_to_line_start(emulator) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
-    updated_cursor = set_cursor_position(cursor, {col, 0})
+    {_col, _row} = get_cursor_position(cursor)
+    updated_cursor = set_cursor_position(cursor, {0, 0})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -353,19 +353,10 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         ) :: Emulator.t()
   def move_cursor_to_column(emulator, column, width, _height) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {_col, row} = get_cursor_position(cursor)
     new_col = max(0, min(width - 1, column))
     updated_cursor = set_cursor_position(cursor, {new_col, row})
     %{emulator | cursor: updated_cursor}
-  end
-
-  # Private helper functions
-  defp get_valid_non_neg_param(params, index, default) do
-    case Enum.at(params, index) do
-      nil -> default
-      value when integer?(value) and value >= 0 -> value
-      _ -> default
-    end
   end
 
   defp get_valid_pos_param(params, index, default) do

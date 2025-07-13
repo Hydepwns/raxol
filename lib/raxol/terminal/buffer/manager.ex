@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour}
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker}
-  alias Raxol.Terminal.{Emulator, Buffer}
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
 
@@ -97,9 +96,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:ok, state}
   end
 
-  @doc """
-  Creates a new buffer manager with specified width, height, scrollback height.
-  """
   def new(width, height, scrollback_height)
       when is_integer(scrollback_height) do
     new(width, height, scrollback_height: scrollback_height)
@@ -249,6 +245,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
     %{manager | damage_tracker: damage_tracker}
   end
 
+  # Ensure all struct-based API functions handle nil gracefully
+  def mark_damaged(nil, x, y, width, height),
+    do: new() |> mark_damaged(x, y, width, height)
+
   def get_damage_regions(pid) when is_pid(pid) or is_atom(pid) do
     GenServer.call(pid, :get_damage_regions)
   end
@@ -260,6 +260,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
     DamageTracker.get_damage_regions(manager.damage_tracker)
   end
 
+  def get_damage_regions(nil), do: []
+
+  @impl Raxol.Terminal.Buffer.Manager.Behaviour
   def clear_damage(pid) when is_pid(pid) or is_atom(pid) do
     GenServer.call(pid, :clear_damage)
   end
@@ -319,9 +322,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   # Buffer access functions for tests
   # Only match on pid or atom for process-based API
-  def get_active_buffer(pid) when is_pid(pid) or is_atom(pid) do
-    GenServer.call(pid, :get_active_buffer)
-  end
 
   def get_back_buffer(pid) when is_pid(pid) or is_atom(pid) do
     GenServer.call(pid, :get_back_buffer)
@@ -641,41 +641,16 @@ defmodule Raxol.Terminal.Buffer.Manager do
     %{state | metrics: metrics}
   end
 
-  # Struct-based set_active_buffer/2
-  @doc """
-  Sets the active buffer on the struct or emulator.
-  """
-  def set_active_buffer(nil, buffer), do: new() |> set_active_buffer(buffer)
-
-  def set_active_buffer(%__MODULE__{} = manager, buffer) do
-    %{manager | active_buffer: buffer}
+  # Grouped reset_buffer_manager/1 clauses - most specific to most general
+  def reset_buffer_manager(%TestBufferManager{} = mgr) do
+    %TestBufferManager{
+      scrollback_size: mgr.scrollback_size,
+      active: nil,
+      alternate: nil,
+      scrollback: []
+    }
   end
 
-  def set_active_buffer(%{active: _} = emulator, buffer) do
-    %{emulator | active: buffer}
-  end
-
-  def set_active_buffer(emulator, buffer) when is_map(emulator) do
-    Map.put(emulator, :active, buffer)
-  end
-
-  # Struct-based set_alternate_buffer/2
-  def set_alternate_buffer(nil, buffer),
-    do: new() |> set_alternate_buffer(buffer)
-
-  def set_alternate_buffer(%__MODULE__{} = manager, buffer) do
-    %{manager | back_buffer: buffer}
-  end
-
-  def set_alternate_buffer(%{alternate: _} = emulator, buffer) do
-    %{emulator | alternate: buffer}
-  end
-
-  def set_alternate_buffer(emulator, buffer) when is_map(emulator) do
-    Map.put(emulator, :alternate, buffer)
-  end
-
-  # Struct-based reset_buffer_manager/1
   def reset_buffer_manager(%{buffer: _} = emulator) do
     %{emulator | buffer: new()}
   end
@@ -702,11 +677,25 @@ defmodule Raxol.Terminal.Buffer.Manager do
     new()
   end
 
-  # Ensure all struct-based API functions handle nil gracefully
-  def mark_damaged(nil, x, y, width, height),
-    do: new() |> mark_damaged(x, y, width, height)
+  # Grouped add_to_scrollback/2 clauses - most specific to most general
+  def add_to_scrollback(
+        %TestBufferManager{scrollback: sb, scrollback_size: sz} = mgr,
+        buffer
+      ) do
+    %{mgr | scrollback: [buffer | sb] |> Enum.take(sz)}
+  end
 
-  def get_damage_regions(nil), do: []
+  def add_to_scrollback(%Raxol.Terminal.Emulator{} = emulator, buffer) do
+    scrollback = Map.get(emulator, :scrollback_buffer, [])
+    scrollback_size = Map.get(emulator, :scrollback_limit, 1000)
+    new_scrollback = [buffer | scrollback] |> Enum.take(scrollback_size)
+
+    %{
+      emulator
+      | scrollback_buffer: new_scrollback,
+        scrollback_limit: scrollback_size
+    }
+  end
 
   def add_to_scrollback(nil, buffer),
     do: %{scrollback: [buffer], scrollback_size: 1000}
@@ -728,12 +717,25 @@ defmodule Raxol.Terminal.Buffer.Manager do
     |> Map.put(:scrollback_size, scrollback_size)
   end
 
+  def add_to_scrollback(emulator, buffer) do
+    scrollback = [buffer | emulator.buffer.scrollback]
+    scrollback = Enum.take(scrollback, emulator.buffer.scrollback_size)
+    %{emulator | buffer: %{emulator.buffer | scrollback: scrollback}}
+  end
+
+  # Grouped get_scrollback/1 clauses - most specific to most general
+  def get_scrollback(%TestBufferManager{scrollback: sb}), do: sb
+
+  def get_scrollback(%Raxol.Terminal.Emulator{} = emulator),
+    do: Map.get(emulator, :scrollback_buffer, [])
+
   def get_scrollback(nil), do: []
   def get_scrollback(%{scrollback: scrollback}), do: scrollback
 
-  def get_scrollback(emulator) when is_map(emulator) do
-    Map.get(emulator, :scrollback, [])
-  end
+  def get_scrollback(emulator) when is_map(emulator),
+    do: Map.get(emulator, :scrollback, [])
+
+  def get_scrollback(emulator), do: emulator.buffer.scrollback
 
   def set_scrollback_size(nil, size) when is_integer(size) and size >= 0,
     do: %{scrollback: [], scrollback_size: size}
@@ -752,188 +754,91 @@ defmodule Raxol.Terminal.Buffer.Manager do
     |> Map.put(:scrollback_size, size)
   end
 
+  # Grouped get_scrollback_size/1 clauses - most specific to most general
+  def get_scrollback_size(%TestBufferManager{scrollback_size: sz}), do: sz
+
+  def get_scrollback_size(%Raxol.Terminal.Emulator{} = emulator),
+    do: Map.get(emulator, :scrollback_limit, 1000)
+
   def get_scrollback_size(nil), do: 1000
   def get_scrollback_size(%{scrollback_size: size}), do: size
 
-  def get_scrollback_size(emulator) when is_map(emulator) do
-    Map.get(emulator, :scrollback_size, 1000)
-  end
+  def get_scrollback_size(emulator) when is_map(emulator),
+    do: Map.get(emulator, :scrollback_size, 1000)
+
+  def get_scrollback_size(emulator), do: emulator.buffer.scrollback_size
+
+  # Grouped clear_scrollback/1 clauses - most specific to most general
+  def clear_scrollback(%TestBufferManager{} = mgr), do: %{mgr | scrollback: []}
+
+  def clear_scrollback(%Raxol.Terminal.Emulator{} = emulator),
+    do: %{emulator | scrollback_buffer: []}
 
   def clear_scrollback(nil), do: %{scrollback: []}
 
   def clear_scrollback(%{scrollback: _} = emulator),
     do: %{emulator | scrollback: []}
 
-  def clear_scrollback(emulator) when is_map(emulator) do
-    Map.put(emulator, :scrollback, [])
-  end
-
-  def reset_buffer_manager(emulator) when is_map(emulator) do
-    IO.puts("DEBUG: reset_buffer_manager called with: #{inspect(emulator)}")
-
-    updated =
-      emulator
-      |> Map.put(:active, nil)
-      |> Map.put(:alternate, nil)
-      |> Map.put(:scrollback, [])
-      |> Map.put(:scrollback_size, 1000)
-
-    IO.puts("DEBUG: reset_buffer_manager result: #{inspect(updated)}")
-    updated
-  end
-
-  # Emulator-based get_active_buffer/1 and get_alternate_buffer/1
-  def get_active_buffer(%{active: active}), do: active
-  def get_alternate_buffer(%{alternate: alternate}), do: alternate
-
-  def get_alternate_buffer(%__MODULE__{} = state) do
-    {:ok, state.alternate_buffer}
-  end
-
-  def get_alternate_buffer(emulator) when is_map(emulator) do
-    Map.get(emulator, :alternate, nil)
-  end
-
-  # Swaps the active and alternate buffers for emulator structs.
-  def switch_buffers(%{active: active, alternate: alternate} = emulator) do
-    %{emulator | active: alternate, alternate: active}
-  end
-
-  @doc """
-  Gets the scrollback buffer.
-  Returns the list of scrollback buffers.
-  """
-  @spec get_scrollback(Emulator.t()) :: [Buffer.t()]
-  def get_scrollback(emulator) do
-    emulator.buffer.scrollback
-  end
-
-  @doc """
-  Adds a buffer to the scrollback.
-  Returns the updated emulator.
-  """
-  @spec add_to_scrollback(Emulator.t(), Buffer.t()) :: Emulator.t()
-  def add_to_scrollback(emulator, buffer) do
-    scrollback = [buffer | emulator.buffer.scrollback]
-    scrollback = Enum.take(scrollback, emulator.buffer.scrollback_size)
-    %{emulator | buffer: %{emulator.buffer | scrollback: scrollback}}
-  end
-
-  @doc """
-  Gets the scrollback size.
-  Returns the maximum number of scrollback buffers.
-  """
-  @spec get_scrollback_size(Emulator.t()) :: non_neg_integer()
-  def get_scrollback_size(emulator) do
-    emulator.buffer.scrollback_size
-  end
-
-  @doc """
-  Sets the scrollback size.
-  Returns the updated emulator.
-  """
-  @spec set_scrollback_size(Emulator.t(), non_neg_integer()) :: Emulator.t()
-  def set_scrollback_size(emulator, size) when is_integer(size) and size >= 0 do
-    scrollback = Enum.take(emulator.buffer.scrollback, size)
-
-    %{
-      emulator
-      | buffer: %{
-          emulator.buffer
-          | scrollback: scrollback,
-            scrollback_size: size
-        }
-    }
-  end
-
-  @doc """
-  Clears the scrollback buffer.
-  Returns the updated emulator.
-  """
-  @spec clear_scrollback(Emulator.t()) :: Emulator.t()
-  def clear_scrollback(emulator) do
-    if is_pid(emulator.buffer) do
-      # If buffer is a PID, call the GenServer
-      GenServer.call(emulator.buffer, :clear_scrollback)
-    else
-      # If buffer is a map (for backward compatibility)
-      %{emulator | buffer: %{emulator.buffer | scrollback: []}}
-    end
-  end
-
-  @doc """
-  Resets the buffer manager to its initial state.
-  Returns the updated emulator.
-  """
-  @spec reset_buffer_manager(Emulator.t()) :: Emulator.t()
-  def reset_buffer_manager(emulator) do
-    %{emulator | buffer: new()}
-  end
-
-  # Emulator/struct-based scrollback functions
-  def add_to_scrollback(%Raxol.Terminal.Emulator{} = emulator, buffer) do
-    scrollback = Map.get(emulator, :scrollback_buffer, [])
-    scrollback_size = Map.get(emulator, :scrollback_limit, 1000)
-    new_scrollback = [buffer | scrollback] |> Enum.take(scrollback_size)
-
-    %{
-      emulator
-      | scrollback_buffer: new_scrollback,
-        scrollback_limit: scrollback_size
-    }
-  end
-
-  def add_to_scrollback(emulator, buffer) when is_map(emulator) do
-    scrollback = Map.get(emulator, :scrollback, [])
-    scrollback_size = Map.get(emulator, :scrollback_size, 1000)
-    new_scrollback = [buffer | scrollback] |> Enum.take(scrollback_size)
-    %{emulator | scrollback: new_scrollback, scrollback_size: scrollback_size}
-  end
-
-  def get_scrollback(%Raxol.Terminal.Emulator{} = emulator),
-    do: Map.get(emulator, :scrollback_buffer, [])
-
-  def get_scrollback(emulator) when is_map(emulator),
-    do: Map.get(emulator, :scrollback, [])
-
-  def set_scrollback_size(%Raxol.Terminal.Emulator{} = emulator, size)
-      when is_integer(size) and size >= 0 do
-    scrollback = Map.get(emulator, :scrollback_buffer, []) |> Enum.take(size)
-    %{emulator | scrollback_buffer: scrollback, scrollback_limit: size}
-  end
-
-  def set_scrollback_size(emulator, size)
-      when is_map(emulator) and is_integer(size) and size >= 0 do
-    scrollback = Map.get(emulator, :scrollback, []) |> Enum.take(size)
-    %{emulator | scrollback: scrollback, scrollback_size: size}
-  end
-
-  def get_scrollback_size(%Raxol.Terminal.Emulator{} = emulator),
-    do: Map.get(emulator, :scrollback_limit, 1000)
-
-  def get_scrollback_size(emulator) when is_map(emulator),
-    do: Map.get(emulator, :scrollback_size, 1000)
-
-  def clear_scrollback(%Raxol.Terminal.Emulator{} = emulator),
-    do: %{emulator | scrollback_buffer: []}
-
   def clear_scrollback(emulator) when is_map(emulator),
-    do: %{emulator | scrollback: []}
+    do: Map.put(emulator, :scrollback, [])
 
-  def reset_buffer_manager(emulator) when is_map(emulator) do
-    IO.puts("DEBUG: reset_buffer_manager called with: #{inspect(emulator)}")
+  def clear_scrollback(emulator),
+    do: %{emulator | buffer: %{emulator.buffer | scrollback: []}}
 
-    updated = %{
-      emulator
-      | active: nil,
-        alternate: nil,
-        scrollback: [],
-        scrollback_size: 1000
-    }
+  # Grouped get_active_buffer/1 clauses - most specific to most general
+  def get_active_buffer(%TestBufferManager{active: active}), do: active
+  def get_active_buffer(%{active: active}), do: active
 
-    IO.puts("DEBUG: reset_buffer_manager result: #{inspect(updated)}")
-    updated
-  end
+  def get_active_buffer(pid) when is_pid(pid) or is_atom(pid),
+    do: GenServer.call(pid, :get_active_buffer)
+
+  # Grouped get_alternate_buffer/1 clauses - most specific to most general
+  def get_alternate_buffer(%TestBufferManager{alternate: alternate}),
+    do: alternate
+
+  def get_alternate_buffer(%{alternate: alternate}), do: alternate
+  def get_alternate_buffer(%__MODULE__{} = state), do: {:ok, state.back_buffer}
+
+  def get_alternate_buffer(emulator) when is_map(emulator),
+    do: Map.get(emulator, :alternate, nil)
+
+  # Grouped switch_buffers/1 clauses - most specific to most general
+  def switch_buffers(%TestBufferManager{active: a, alternate: b} = mgr),
+    do: %{mgr | active: b, alternate: a}
+
+  def switch_buffers(%{active: active, alternate: alternate} = emulator),
+    do: %{emulator | active: alternate, alternate: active}
+
+  # Grouped set_active_buffer/2 clauses - most specific to most general
+  def set_active_buffer(%TestBufferManager{} = mgr, buffer),
+    do: %{mgr | active: buffer}
+
+  def set_active_buffer(nil, buffer), do: new() |> set_active_buffer(buffer)
+
+  def set_active_buffer(%__MODULE__{} = manager, buffer),
+    do: %{manager | active_buffer: buffer}
+
+  def set_active_buffer(%{active: _} = emulator, buffer),
+    do: %{emulator | active: buffer}
+
+  def set_active_buffer(emulator, buffer) when is_map(emulator),
+    do: Map.put(emulator, :active, buffer)
+
+  # Grouped set_alternate_buffer/2 clauses - most specific to most general
+  def set_alternate_buffer(%TestBufferManager{} = mgr, buffer),
+    do: %{mgr | alternate: buffer}
+
+  def set_alternate_buffer(nil, buffer),
+    do: new() |> set_alternate_buffer(buffer)
+
+  def set_alternate_buffer(%__MODULE__{} = manager, buffer),
+    do: %{manager | back_buffer: buffer}
+
+  def set_alternate_buffer(%{alternate: _} = emulator, buffer),
+    do: %{emulator | alternate: buffer}
+
+  def set_alternate_buffer(emulator, buffer) when is_map(emulator),
+    do: Map.put(emulator, :alternate, buffer)
 
   # Helper function to get the buffer manager PID
   defp get_buffer_manager_pid do
@@ -964,46 +869,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
       _ -> false
     end
   end
-
-  # Struct-based API for test struct
-  def get_active_buffer(%TestBufferManager{active: active}), do: active
-
-  def get_alternate_buffer(%TestBufferManager{alternate: alternate}),
-    do: alternate
-
-  def set_active_buffer(%TestBufferManager{} = mgr, buffer),
-    do: %{mgr | active: buffer}
-
-  def set_alternate_buffer(%TestBufferManager{} = mgr, buffer),
-    do: %{mgr | alternate: buffer}
-
-  def switch_buffers(%TestBufferManager{active: a, alternate: b} = mgr),
-    do: %{mgr | active: b, alternate: a}
-
-  def add_to_scrollback(
-        %TestBufferManager{scrollback: sb, scrollback_size: sz} = mgr,
-        buffer
-      ) do
-    %{mgr | scrollback: [buffer | sb] |> Enum.take(sz)}
-  end
-
-  def get_scrollback(%TestBufferManager{scrollback: sb}), do: sb
-
-  def set_scrollback_size(%TestBufferManager{scrollback: sb} = mgr, size)
-      when is_integer(size) and size >= 0 do
-    %{mgr | scrollback: Enum.take(sb, size), scrollback_size: size}
-  end
-
-  def get_scrollback_size(%TestBufferManager{scrollback_size: sz}), do: sz
-  def clear_scrollback(%TestBufferManager{} = mgr), do: %{mgr | scrollback: []}
-
-  def reset_buffer_manager(%TestBufferManager{} = mgr),
-    do: %TestBufferManager{
-      scrollback_size: mgr.scrollback_size,
-      active: nil,
-      alternate: nil,
-      scrollback: []
-    }
 
   defp calculate_buffer_memory(buffer) do
     case buffer do

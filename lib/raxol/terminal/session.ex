@@ -270,6 +270,31 @@ defmodule Raxol.Terminal.Session do
     {:noreply, new_state}
   end
 
+  def handle_cast(:save_session, state) do
+    Task.start(fn ->
+      try do
+        case Storage.save_session(state) do
+          :ok ->
+            Raxol.Core.Runtime.Log.info(
+              "Session saved successfully: #{state.id}"
+            )
+
+          {:error, reason} ->
+            Raxol.Core.Runtime.Log.error(
+              "Failed to save session #{state.id}: #{inspect(reason)}"
+            )
+        end
+      rescue
+        e ->
+          Raxol.Core.Runtime.Log.error(
+            "Exception saving session #{state.id}: #{inspect(e)}"
+          )
+      end
+    end)
+
+    {:noreply, state}
+  end
+
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
@@ -303,31 +328,6 @@ defmodule Raxol.Terminal.Session do
         Raxol.Core.Runtime.Log.error("Exception in save_session: #{inspect(e)}")
         {:reply, {:error, :save_failed}, state}
     end
-  end
-
-  def handle_cast(:save_session, state) do
-    Task.start(fn ->
-      try do
-        case Storage.save_session(state) do
-          :ok ->
-            Raxol.Core.Runtime.Log.info(
-              "Session saved successfully: #{state.id}"
-            )
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error(
-              "Failed to save session #{state.id}: #{inspect(reason)}"
-            )
-        end
-      rescue
-        e ->
-          Raxol.Core.Runtime.Log.error(
-            "Exception saving session #{state.id}: #{inspect(e)}"
-          )
-      end
-    end)
-
-    {:noreply, state}
   end
 
   def handle_info(:auto_save, state) do
