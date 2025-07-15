@@ -128,11 +128,33 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
           TextFormatting.new()
         )
 
+      # Reset mode manager to reset values for alternate screen buffer
+      # This ensures that modes like auto-repeat start with their reset values (false)
+      reset_mode_manager = %Raxol.Terminal.ModeManager{
+        cursor_visible: false,
+        auto_wrap: false,
+        origin_mode: false,
+        insert_mode: false,
+        line_feed_mode: false,
+        column_width_mode: :normal,
+        cursor_keys_mode: :normal,
+        screen_mode_reverse: false,
+        auto_repeat_mode: false,
+        interlacing_mode: false,
+        alternate_buffer_active: false,
+        mouse_report_mode: :none,
+        focus_events_enabled: false,
+        alt_screen_mode: nil,
+        bracketed_paste_mode: false,
+        active_buffer_type: :main
+      }
+
       {:ok,
        %{
          emulator_with_saved_state
          | alternate_screen_buffer: cleared_alt_buffer,
-           active_buffer_type: :alternate
+           active_buffer_type: :alternate,
+           mode_manager: reset_mode_manager
        }}
     end
   end
@@ -195,7 +217,7 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
       )
 
     # Restore the previous state
-    {new_stack, restored_state} =
+    {restored_state, new_stack} =
       terminal_state_module.restore_state(emulator.state_stack)
 
     if restored_state do
@@ -226,7 +248,29 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
   end
 
   defp handle_cursor_save_restore(false, emulator) do
-    # Mode 1048: Restore cursor position and attributes
-    restore_terminal_state(emulator)
+    # Mode 1048: Restore cursor position and attributes only
+    restore_cursor_only(emulator)
+  end
+
+  defp restore_cursor_only(emulator) do
+    # Get the terminal state implementation
+    terminal_state_module =
+      Application.get_env(
+        :raxol,
+        :terminal_state_impl,
+        Raxol.Terminal.ANSI.TerminalState
+      )
+
+    # Restore the previous state
+    {restored_state, new_stack} =
+      terminal_state_module.restore_state(emulator.state_stack)
+
+    # Only restore the cursor position
+    emulator =
+      terminal_state_module.apply_restored_data(emulator, restored_state, [
+        :cursor
+      ])
+
+    {:ok, %{emulator | state_stack: new_stack}}
   end
 end
