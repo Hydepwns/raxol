@@ -1,0 +1,422 @@
+defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
+  use ExUnit.Case, async: false
+
+  alias Raxol.Terminal.Buffer.BufferServerRefactored
+  alias Raxol.Terminal.Buffer, as: Buffer
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Buffer.Cell, as: BufferCell
+  alias Raxol.Terminal.ANSI.TextFormatting
+
+  setup do
+    # Start a buffer server for each test
+    {:ok, pid} = BufferServerRefactored.start_link(width: 10, height: 5)
+    %{buffer_pid: pid}
+  end
+
+  describe "basic operations" do
+    test "can set and get cells", %{buffer_pid: pid} do
+      cell = Cell.new("A", TextFormatting.new())
+
+      # Set cell asynchronously
+      :ok = BufferServerRefactored.set_cell(pid, 1, 1, cell)
+
+      # Flush to ensure operation completes
+      :ok = BufferServerRefactored.flush(pid)
+
+      # Get cell and verify
+      {:ok, retrieved_cell} = BufferServerRefactored.get_cell(pid, 1, 1)
+      assert Cell.get_char(retrieved_cell) == "A"
+    end
+
+    test "can set and get cells synchronously", %{buffer_pid: pid} do
+      cell = Cell.new("B", TextFormatting.new())
+
+      # Set cell synchronously
+      :ok = BufferServerRefactored.set_cell_sync(pid, 2, 2, cell)
+
+      # Get cell and verify
+      {:ok, retrieved_cell} = BufferServerRefactored.get_cell(pid, 2, 2)
+      assert Cell.get_char(retrieved_cell) == "B"
+    end
+
+    test "handles invalid coordinates gracefully", %{buffer_pid: pid} do
+      cell = Cell.new("X", TextFormatting.new())
+
+      # Try to set cell at invalid coordinates
+      {:error, :invalid_coordinates} =
+        BufferServerRefactored.set_cell_sync(pid, 15, 15, cell)
+
+      # Try to get cell at invalid coordinates
+      {:error, :invalid_coordinates} =
+        BufferServerRefactored.get_cell(pid, 15, 15)
+    end
+  end
+
+  describe "batch operations" do
+    test "can process batch operations", %{buffer_pid: pid} do
+      operations = [
+        {:set_cell, 0, 0, Cell.new("H", TextFormatting.new())},
+        {:set_cell, 1, 0, Cell.new("i", TextFormatting.new())},
+        {:write_string, 0, 1, "Hello"},
+        {:fill_region, 0, 2, 3, 2, Cell.new("X", TextFormatting.new())}
+      ]
+
+      # Process batch operations
+      :ok = BufferServerRefactored.batch_operations(pid, operations)
+
+      # Flush to ensure all operations complete
+      :ok = BufferServerRefactored.flush(pid)
+
+      # Verify results
+      {:ok, cell1} = BufferServerRefactored.get_cell(pid, 0, 0)
+      {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 0)
+      {:ok, cell3} = BufferServerRefactored.get_cell(pid, 0, 1)
+      {:ok, cell4} = BufferServerRefactored.get_cell(pid, 0, 2)
+
+      assert Cell.get_char(cell1) == "H"
+      assert Cell.get_char(cell2) == "i"
+      assert Cell.get_char(cell3) == "H"
+      assert Cell.get_char(cell4) == "X"
+    end
+
+    test "batch operations with mixed valid and invalid coordinates", %{
+      buffer_pid: pid
+    } do
+      operations = [
+        # Valid
+        {:set_cell, 0, 0, Cell.new("A", TextFormatting.new())},
+        # Invalid
+        {:set_cell, 15, 15, Cell.new("B", TextFormatting.new())},
+        # Valid
+        {:set_cell, 1, 1, Cell.new("C", TextFormatting.new())}
+      ]
+
+      # Process batch operations
+      :ok = BufferServerRefactored.batch_operations(pid, operations)
+      :ok = BufferServerRefactored.flush(pid)
+
+      # Verify valid operations succeeded
+      {:ok, cell1} = BufferServerRefactored.get_cell(pid, 0, 0)
+      {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 1)
+
+      assert Cell.get_char(cell1) == "A"
+      assert Cell.get_char(cell2) == "C"
+    end
+  end
+
+  describe "atomic operations" do
+    test "can perform atomic operations", %{buffer_pid: pid} do
+      # Perform atomic operation
+      :ok =
+        BufferServerRefactored.atomic_operation(pid, fn buffer ->
+          buffer
+          |> Buffer.set_cell(
+            0,
+            0,
+            BufferCell.new(
+              char: "A",
+              foreground: 7,
+              background: 0,
+              attributes: %{}
+            )
+          )
+          |> Buffer.set_cell(
+            1,
+            0,
+            BufferCell.new(
+              char: "B",
+              foreground: 7,
+              background: 0,
+              attributes: %{}
+            )
+          )
+          |> Buffer.set_cell(
+            2,
+            0,
+            BufferCell.new(
+              char: "C",
+              foreground: 7,
+              background: 0,
+              attributes: %{}
+            )
+          )
+        end)
+
+      # Verify all cells were set atomically
+      {:ok, cell1} = BufferServerRefactored.get_cell(pid, 0, 0)
+      {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 0)
+      {:ok, cell3} = BufferServerRefactored.get_cell(pid, 2, 0)
+
+      assert Cell.get_char(cell1) == "A"
+      assert Cell.get_char(cell2) == "B"
+      assert Cell.get_char(cell3) == "C"
+    end
+  end
+
+  describe "metrics tracking" do
+    test "tracks operation metrics", %{buffer_pid: pid} do
+      # Perform some operations
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          0,
+          0,
+          Cell.new("A", TextFormatting.new())
+        )
+
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          1,
+          0,
+          Cell.new("B", TextFormatting.new())
+        )
+
+      {:ok, _} = BufferServerRefactored.get_cell(pid, 0, 0)
+
+      # Get metrics
+      {:ok, metrics} = BufferServerRefactored.get_metrics(pid)
+
+      # Verify metrics are being tracked
+      assert metrics.operation_counts.writes >= 2
+      assert metrics.operation_counts.reads >= 1
+      assert metrics.total_operations >= 3
+    end
+
+    test "tracks memory usage", %{buffer_pid: pid} do
+      # Get initial memory usage
+      initial_memory = BufferServerRefactored.get_memory_usage(pid)
+      assert is_integer(initial_memory)
+      assert initial_memory > 0
+
+      # Perform operations to potentially change memory usage
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          0,
+          0,
+          Cell.new("A", TextFormatting.new())
+        )
+
+      # Get updated memory usage
+      updated_memory = BufferServerRefactored.get_memory_usage(pid)
+      assert is_integer(updated_memory)
+      assert updated_memory > 0
+    end
+  end
+
+  describe "damage tracking" do
+    test "tracks damage regions", %{buffer_pid: pid} do
+      # Perform operations that should create damage regions
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          0,
+          0,
+          Cell.new("A", TextFormatting.new())
+        )
+
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          1,
+          1,
+          Cell.new("B", TextFormatting.new())
+        )
+
+      # Get damage regions
+      damage_regions = BufferServerRefactored.get_damage_regions(pid)
+
+      # Verify damage regions are tracked
+      assert is_list(damage_regions)
+      assert length(damage_regions) > 0
+
+      # Clear damage regions
+      :ok = BufferServerRefactored.clear_damage_regions(pid)
+
+      # Verify damage regions are cleared
+      cleared_regions = BufferServerRefactored.get_damage_regions(pid)
+      assert cleared_regions == []
+    end
+  end
+
+  describe "buffer state operations" do
+    test "can get buffer dimensions", %{buffer_pid: pid} do
+      {width, height} = BufferServerRefactored.get_dimensions(pid)
+      assert width == 10
+      assert height == 5
+    end
+
+    test "can get buffer content", %{buffer_pid: pid} do
+      # Set some content
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          0,
+          0,
+          Cell.new("H", TextFormatting.new())
+        )
+
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          1,
+          0,
+          Cell.new("i", TextFormatting.new())
+        )
+
+      # Get buffer content
+      content = BufferServerRefactored.get_content(pid)
+      assert is_binary(content)
+      assert String.contains?(content, "H")
+    end
+
+    test "can resize buffer", %{buffer_pid: pid} do
+      # Set content before resize
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          0,
+          0,
+          Cell.new("A", TextFormatting.new())
+        )
+
+      # Resize buffer
+      :ok = BufferServerRefactored.resize(pid, 15, 8)
+
+      # Flush to ensure resize operation completes
+      :ok = BufferServerRefactored.flush(pid)
+
+      # Verify new dimensions
+      {width, height} = BufferServerRefactored.get_dimensions(pid)
+      assert width == 15
+      assert height == 8
+
+      # Verify content is preserved
+      {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
+      assert Cell.get_char(cell) == "A"
+    end
+  end
+
+  describe "concurrent operations" do
+    test "handles concurrent writes", %{buffer_pid: pid} do
+      # Create multiple processes writing to the buffer
+      tasks =
+        for i <- 0..9 do
+          Task.async(fn ->
+            cell = Cell.new("X#{i}", TextFormatting.new())
+            BufferServerRefactored.set_cell(pid, i, 0, cell)
+          end)
+        end
+
+      # Wait for all tasks to complete
+      Enum.each(tasks, &Task.await/1)
+
+      # Flush to ensure all operations complete
+      :ok = BufferServerRefactored.flush(pid)
+
+      # Verify all cells were written
+      for i <- 0..9 do
+        {:ok, cell} = BufferServerRefactored.get_cell(pid, i, 0)
+        assert Cell.get_char(cell) == "X#{i}"
+      end
+    end
+
+    test "handles concurrent reads and writes", %{buffer_pid: pid} do
+      # Set initial content
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          0,
+          0,
+          Cell.new("A", TextFormatting.new())
+        )
+
+      # Create tasks that read and write concurrently
+      read_tasks =
+        for _ <- 1..5 do
+          Task.async(fn ->
+            {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
+            Cell.get_char(cell)
+          end)
+        end
+
+      write_tasks =
+        for i <- 1..3 do
+          Task.async(fn ->
+            cell = Cell.new("B#{i}", TextFormatting.new())
+            BufferServerRefactored.set_cell(pid, i, 0, cell)
+          end)
+        end
+
+      # Wait for all tasks to complete
+      read_results = Enum.map(read_tasks, &Task.await/1)
+      Enum.each(write_tasks, &Task.await/1)
+
+      # Flush to ensure all writes complete
+      :ok = BufferServerRefactored.flush(pid)
+
+      # Verify read results
+      assert Enum.all?(read_results, &(&1 == "A"))
+
+      # Verify write results
+      for i <- 1..3 do
+        {:ok, cell} = BufferServerRefactored.get_cell(pid, i, 0)
+        assert Cell.get_char(cell) == "B#{i}"
+      end
+    end
+  end
+
+  describe "error handling" do
+    test "handles invalid operations gracefully", %{buffer_pid: pid} do
+      # Test with invalid cell data
+      invalid_cell = %{invalid: "data"}
+
+      # Should handle gracefully
+      result = BufferServerRefactored.set_cell_sync(pid, 0, 0, invalid_cell)
+      assert result == :ok or match?({:error, _}, result)
+    end
+
+    test "handles server shutdown gracefully", %{buffer_pid: pid} do
+      # Stop the server
+      :ok = BufferServerRefactored.stop(pid)
+
+      # Try to use the stopped server
+      result = BufferServerRefactored.get_cell(pid, 0, 0)
+      assert result == {:error, :noproc} or result == {:error, :normal}
+    end
+  end
+
+  describe "performance characteristics" do
+    test "handles large batch operations efficiently", %{buffer_pid: pid} do
+      # Create a large batch of operations
+      operations =
+        for x <- 0..9, y <- 0..4 do
+          cell = Cell.new("#{x}#{y}", TextFormatting.new())
+          {:set_cell, x, y, cell}
+        end
+
+      # Time the operation
+      start_time = System.monotonic_time(:microsecond)
+      :ok = BufferServerRefactored.batch_operations(pid, operations)
+      :ok = BufferServerRefactored.flush(pid)
+      end_time = System.monotonic_time(:microsecond)
+
+      duration = end_time - start_time
+
+      # Verify all operations completed
+      for x <- 0..9, y <- 0..4 do
+        {:ok, cell} = BufferServerRefactored.get_cell(pid, x, y)
+        assert Cell.get_char(cell) == "#{x}#{y}"
+      end
+
+      # Log performance for analysis
+      IO.puts(
+        "Large batch operation took #{duration} microseconds for #{length(operations)} operations"
+      )
+
+      # Should complete in less than 1 second
+      assert duration < 1_000_000
+    end
+  end
+end
