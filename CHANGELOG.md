@@ -1,3 +1,48 @@
+## [0.7.0] - 2025-07-15
+
+### Added
+
+- **Refactored Buffer Server Architecture:**
+
+  - Introduced `BufferServerRefactored` with modular, high-performance design
+  - Added `ConcurrentBuffer`, `MetricsTracker`, `OperationProcessor`, and `OperationQueue` modules
+  - Improved buffer management, batch operations, and performance metrics
+  - Comprehensive documentation and type specs for all new modules
+
+- **Comprehensive Test Coverage:**
+  - Added integration and unit tests for all new buffer modules
+  - Enhanced test coverage for concurrent operations, metrics, and damage tracking
+  - Improved test reliability and isolation
+
+### Fixed
+
+- **Event Handler and State Restoration:**
+
+  - Fixed event handler to properly pass emulator to handlers
+  - Corrected terminal state restoration logic and fixed KeyError
+  - Added cursor-only restoration for DEC mode 1048
+
+- **Debug Output Cleanup:**
+  - Removed excessive debug output from renderer and tests
+  - Cleaned up verbose IO/puts statements across terminal modules
+
+### Changed
+
+- **General Code and Documentation Improvements:**
+  - Updated and harmonized code formatting across all modules
+  - Improved documentation and roadmap
+  - Miscellaneous bug fixes and code cleanups
+
+### Removed
+
+- Obsolete debug scripts and legacy code
+
+### Next Focus
+
+1. Continue performance optimization
+2. Address any remaining test edge cases
+3. Further improve documentation and code quality
+
 ## [0.4.2] - 2025-06-11
 
 ### Added
