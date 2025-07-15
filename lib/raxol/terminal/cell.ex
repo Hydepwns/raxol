@@ -93,6 +93,20 @@ defmodule Raxol.Terminal.Cell do
   def get_style(%__MODULE__{style: style}), do: style
 
   @doc """
+  Gets the cell's foreground color (compatibility function).
+  """
+  def fg(%__MODULE__{style: style}) do
+    style.foreground
+  end
+
+  @doc """
+  Gets the cell's background color (compatibility function).
+  """
+  def bg(%__MODULE__{style: style}) do
+    style.background
+  end
+
+  @doc """
   Sets the character content of a cell.
 
   ## Examples

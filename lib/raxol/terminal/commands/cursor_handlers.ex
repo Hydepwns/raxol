@@ -376,6 +376,10 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     cursor.position
   end
 
+  defp set_cursor_position(%CursorManager{} = cursor, position) do
+    CursorManager.set_position(cursor, position)
+  end
+
   defp set_cursor_position(cursor, position) when is_pid(cursor) do
     CursorManager.set_position(cursor, position)
     cursor

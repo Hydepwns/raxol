@@ -81,7 +81,15 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   def reset_to_defaults_for_test!(pid_or_name \\ __MODULE__) do
-    GenServer.call(pid_or_name, :reset_to_defaults)
+    case Process.whereis(pid_or_name) do
+      nil ->
+        # Process is not alive, just return ok
+        :ok
+
+      _pid ->
+        # Process is alive, call the reset function
+        GenServer.call(pid_or_name, :reset_to_defaults)
+    end
   end
 
   @impl GenServer

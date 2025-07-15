@@ -1,3 +1,5 @@
+Code.require_file("test/raxol/terminal/driver_test_helper.exs")
+
 defmodule Raxol.Terminal.Driver.MouseEventTest do
   use ExUnit.Case
   import Mox

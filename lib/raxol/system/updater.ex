@@ -521,8 +521,6 @@ defmodule Raxol.System.Updater do
 
         Terminal.println("Update Available!", color: fg_hex, background: bg_hex)
 
-        IO.puts("Version #{version} is available.")
-        IO.puts("Run \"raxol update\" to install.")
         :ok
 
       _ ->
@@ -787,7 +785,7 @@ defmodule Raxol.System.Updater do
   end
 
   defp do_delta_update(version, delta_info) do
-    IO.puts(
+    Logger.info(
       "Delta update available (#{delta_info.savings_percent}% smaller download)"
     )
 
@@ -796,8 +794,8 @@ defmodule Raxol.System.Updater do
         :ok
 
       {:error, reason} ->
-        IO.puts("Delta update failed: #{reason}")
-        IO.puts("Falling back to full update...")
+        Logger.error("Delta update failed: #{reason}")
+        Logger.warn("Falling back to full update...")
         do_self_update(version)
     end
   end

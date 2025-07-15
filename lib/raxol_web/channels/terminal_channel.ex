@@ -118,7 +118,6 @@ defmodule RaxolWeb.TerminalChannel do
           {:reply, :ok, socket}
 
         {:error, reason} ->
-          Logger.error("Terminal input processing failed: #{inspect(reason)}")
           {:reply, {:error, %{reason: "input_processing_failed"}}, socket}
       end
     else
@@ -134,6 +133,9 @@ defmodule RaxolWeb.TerminalChannel do
   defp check_rate_limit(socket) do
     user_id = socket.assigns.user_id
     key = "rate_limit:#{user_id}"
+
+    # Ensure rate limit table exists (for testing scenarios)
+    ensure_rate_limit_table()
 
     case :ets.lookup(:rate_limit_table, key) do
       [{^key, count, timestamp}] ->
@@ -157,6 +159,16 @@ defmodule RaxolWeb.TerminalChannel do
     end
   end
 
+  defp ensure_rate_limit_table do
+    case :ets.info(:rate_limit_table) do
+      :undefined ->
+        :ets.new(:rate_limit_table, [:set, :public, :named_table])
+
+      _ ->
+        :ok
+    end
+  end
+
   defp validate_input_size(data)
        when is_binary(data) and byte_size(data) <= @max_input_size,
        do: :ok
@@ -171,7 +183,6 @@ defmodule RaxolWeb.TerminalChannel do
       {:ok, emulator_module().process_input(emulator, data)}
     rescue
       error ->
-        Logger.error("Emulator input processing error: #{inspect(error)}")
         {:error, :processing_failed}
     end
   end
@@ -306,7 +317,11 @@ defmodule RaxolWeb.TerminalChannel do
     # Clean up rate limiting data
     if socket.assigns[:terminal_state] do
       user_id = socket.assigns.terminal_state.user_id
-      :ets.delete(:rate_limit_table, "rate_limit:#{user_id}")
+      # Only delete if table exists
+      case :ets.info(:rate_limit_table) do
+        :undefined -> :ok
+        _ -> :ets.delete(:rate_limit_table, "rate_limit:#{user_id}")
+      end
     end
 
     :ok

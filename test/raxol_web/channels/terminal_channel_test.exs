@@ -292,7 +292,7 @@ defmodule RaxolWeb.TerminalChannelTest do
       {:reply, :ok, _socket_after_theme} =
         TerminalChannel.handle_in(
           "theme",
-          %{"theme" => %{"name" => "dark"}},
+          %{"theme" => "dark"},
           socket
         )
 

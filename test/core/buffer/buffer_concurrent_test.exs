@@ -1,19 +1,23 @@
 defmodule Raxol.Core.Buffer.BufferConcurrentTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.Buffer
+  alias Raxol.Terminal.Buffer.ConcurrentBuffer
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @moduledoc """
-  Tests for concurrent buffer access and operations.
+  Tests for concurrent buffer access using the BufferServer GenServer.
   These tests verify that the buffer operations are thread-safe
   and handle concurrent access correctly.
   """
 
-  describe "Concurrent Write Operations" do
-    test ~c"handles multiple concurrent writers" do
-      buffer = Buffer.new({80, 24})
+  setup do
+    # Start a buffer server for each test
+    {:ok, pid} = ConcurrentBuffer.start_server(width: 80, height: 24)
+    {:ok, %{buffer_pid: pid}}
+  end
 
+  describe "Concurrent Write Operations" do
+    test "handles multiple concurrent writers", %{buffer_pid: pid} do
       # Create multiple writer processes
       writers =
         Enum.map(1..10, fn writer_id ->
@@ -22,10 +26,11 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
             start_x = rem(writer_id, 8) * 10
             start_y = div(writer_id, 8) * 3
 
-            Enum.reduce(0..2, buffer, fn y, acc ->
-              Enum.reduce(0..9, acc, fn x, acc ->
-                cell = Cell.new("W", TextFormatting.new(fg: :red))
-                Buffer.set_cell(acc, start_x + x, start_y + y, cell)
+            Enum.each(0..2, fn y ->
+              Enum.each(0..9, fn x ->
+                cell = Cell.new("W", TextFormatting.new(foreground: :red))
+                # Write operations are now asynchronous
+                ConcurrentBuffer.set_cell(pid, start_x + x, start_y + y, cell)
               end)
             end)
           end)
@@ -36,24 +41,29 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
       # Verify all writers completed successfully
       assert Enum.all?(results, fn result ->
-               case result do
-                 %Raxol.Terminal.Buffer{} -> true
-                 _ -> false
-               end
+               result == :ok
              end)
+
+      # Flush to ensure all writes are completed
+      assert :ok = ConcurrentBuffer.flush(pid)
+
+      # Verify some of the written cells
+      # Writer 8 writes to (0, 3) through (9, 5)
+      assert {:ok, cell} = ConcurrentBuffer.get_cell(pid, 0, 3)
+      assert cell.char == "W"
+      assert cell.style.foreground == :red  # Should be :red as set in TextFormatting
     end
 
-    test ~c"handles concurrent writes to same region" do
-      buffer = Buffer.new({80, 24})
-
+    test "handles concurrent writes to same region", %{buffer_pid: pid} do
       # Create writers that write to the same region
       writers =
         Enum.map(1..5, fn writer_id ->
           Task.async(fn ->
-            Enum.reduce(0..4, buffer, fn y, acc ->
-              Enum.reduce(0..4, acc, fn x, acc ->
-                cell = Cell.new("W", TextFormatting.new(fg: :blue))
-                Buffer.set_cell(acc, x, y, cell)
+            Enum.each(0..4, fn y ->
+              Enum.each(0..4, fn x ->
+                cell = Cell.new("W", TextFormatting.new(foreground: :blue))
+                # Write operations are now asynchronous
+                ConcurrentBuffer.set_cell(pid, x, y, cell)
               end)
             end)
           end)
@@ -64,27 +74,29 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
       # Verify all writers completed successfully
       assert Enum.all?(results, fn result ->
-               case result do
-                 %Raxol.Terminal.Buffer{} -> true
-                 _ -> false
-               end
+               result == :ok
              end)
+
+      # Flush to ensure all writes are completed
+      assert :ok = BufferServer.flush(pid)
+
+      # Verify the region was written (last writer wins)
+      assert {:ok, cell} = ConcurrentBuffer.get_cell(pid, 0, 0)
+      assert cell.char == "W"
+      assert cell.style.foreground == :blue  # Should be :blue as set in TextFormatting
     end
   end
 
   describe "Concurrent Read/Write Operations" do
-    test ~c"handles concurrent reads and writes" do
-      buffer = Buffer.new({80, 24})
-
+    test "handles concurrent reads and writes", %{buffer_pid: pid} do
       # Create reader and writer processes
       readers =
         Enum.map(1..5, fn reader_id ->
           Task.async(fn ->
-            Enum.reduce(1..100, buffer, fn _, acc ->
+            Enum.each(1..100, fn _ ->
               x = :rand.uniform(80) - 1
               y = :rand.uniform(24) - 1
-              Buffer.get_cell(acc, x, y)
-              acc
+              assert {:ok, _cell} = ConcurrentBuffer.get_cell(pid, x, y)
             end)
           end)
         end)
@@ -92,11 +104,12 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       writers =
         Enum.map(1..5, fn writer_id ->
           Task.async(fn ->
-            Enum.reduce(1..100, buffer, fn i, acc ->
+            Enum.each(1..100, fn i ->
               x = :rand.uniform(80) - 1
               y = :rand.uniform(24) - 1
-              cell = Cell.new("W", TextFormatting.new(fg: :green))
-              Buffer.set_cell(acc, x, y, cell)
+              cell = Cell.new("W", TextFormatting.new(foreground: :green))
+              # Write operations are now asynchronous
+              ConcurrentBuffer.set_cell(pid, x, y, cell)
             end)
           end)
         end)
@@ -106,54 +119,54 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
       # Verify all processes completed successfully
       assert Enum.all?(results, fn result ->
-               case result do
-                 %Raxol.Terminal.Buffer{} -> true
-                 _ -> false
-               end
+               result == :ok
              end)
+
+      # Flush to ensure all writes are completed
+      assert :ok = ConcurrentBuffer.flush(pid)
     end
   end
 
   describe "Concurrent Buffer Operations" do
-    test ~c"handles concurrent buffer operations" do
-      buffer = Buffer.new({80, 24})
-
+    test "handles concurrent buffer operations", %{buffer_pid: pid} do
       # Create processes that perform different operations
       operations = [
         # Reader
         Task.async(fn ->
-          Enum.reduce(1..100, buffer, fn _, acc ->
+          Enum.each(1..100, fn _ ->
             x = :rand.uniform(80) - 1
             y = :rand.uniform(24) - 1
-            Buffer.get_cell(acc, x, y)
-            acc
+            assert {:ok, _cell} = ConcurrentBuffer.get_cell(pid, x, y)
           end)
         end),
 
         # Writer
         Task.async(fn ->
-          Enum.reduce(1..100, buffer, fn i, acc ->
+          Enum.each(1..100, fn i ->
             x = :rand.uniform(80) - 1
             y = :rand.uniform(24) - 1
-            cell = Cell.new("W", TextFormatting.new(fg: :yellow))
-            Buffer.set_cell(acc, x, y, cell)
+            cell = Cell.new("W", TextFormatting.new(foreground: :yellow))
+            # Write operations are now asynchronous
+            ConcurrentBuffer.set_cell(pid, x, y, cell)
           end)
         end),
 
         # Scroller
         Task.async(fn ->
-          Enum.reduce(1..20, buffer, fn _, acc ->
-            Buffer.scroll(acc, 1)
+          Enum.each(1..20, fn _ ->
+            # Scroll operations are now asynchronous
+            ConcurrentBuffer.scroll(pid, 1)
           end)
         end),
 
         # Region filler
         Task.async(fn ->
-          Enum.reduce(1..10, buffer, fn i, acc ->
+          Enum.each(1..10, fn i ->
             x = rem(i, 8) * 10
             y = div(i, 8) * 3
-            cell = Cell.new("F", TextFormatting.new(fg: :red))
-            Buffer.fill_region(acc, x, y, 10, 3, cell)
+            cell = Cell.new("F", TextFormatting.new(foreground: :red))
+            # Fill operations are now asynchronous
+            ConcurrentBuffer.fill_region(pid, x, y, 10, 3, cell)
           end)
         end)
       ]
@@ -163,39 +176,37 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
       # Verify all operations completed successfully
       assert Enum.all?(results, fn result ->
-               case result do
-                 %Raxol.Terminal.Buffer{} -> true
-                 _ -> false
-               end
+               result == :ok
              end)
+
+      # Flush to ensure all writes are completed
+      assert :ok = ConcurrentBuffer.flush(pid)
     end
   end
 
   describe "Stress Testing" do
-    test ~c"handles high concurrency stress test" do
-      buffer = Buffer.new({80, 24})
-
+    test "handles high concurrency stress test", %{buffer_pid: pid} do
       # Create many concurrent operations
       operations =
         Enum.flat_map(1..20, fn i ->
           [
             # Reader
             Task.async(fn ->
-              Enum.reduce(1..50, buffer, fn _, acc ->
-                x = :rand.uniform(80) - 1
-                y = :rand.uniform(24) - 1
-                Buffer.get_cell(acc, x, y)
-                acc
+              Enum.each(1..50, fn _ ->
+                              x = :rand.uniform(80) - 1
+              y = :rand.uniform(24) - 1
+              assert {:ok, _cell} = ConcurrentBuffer.get_cell(pid, x, y)
               end)
             end),
 
             # Writer
             Task.async(fn ->
-              Enum.reduce(1..50, buffer, fn j, acc ->
+              Enum.each(1..50, fn j ->
                 x = :rand.uniform(80) - 1
                 y = :rand.uniform(24) - 1
-                cell = Cell.new("W", TextFormatting.new(fg: :blue))
-                Buffer.set_cell(acc, x, y, cell)
+                cell = Cell.new("W", TextFormatting.new(foreground: :blue))
+                # Write operations are now asynchronous
+                ConcurrentBuffer.set_cell(pid, x, y, cell)
               end)
             end)
           ]
@@ -206,11 +217,52 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
       # Verify all operations completed successfully
       assert Enum.all?(results, fn result ->
-               case result do
-                 %Raxol.Terminal.Buffer{} -> true
-                 _ -> false
-               end
+               result == :ok
              end)
+
+      # Flush to ensure all writes are completed
+      assert :ok = ConcurrentBuffer.flush(pid)
+    end
+  end
+
+  describe "Batch Operations" do
+    test "handles batch operations efficiently", %{buffer_pid: pid} do
+      # Create batch operations
+      operations = [
+        {:set_cell, 0, 0, Cell.new("A", TextFormatting.new(foreground: :red))},
+        {:set_cell, 1, 0, Cell.new("B", TextFormatting.new(foreground: :green))},
+        {:set_cell, 2, 0, Cell.new("C", TextFormatting.new(foreground: :blue))},
+        {:write_string, 0, 1, "Hello"},
+        {:fill_region, 0, 2, 5, 3, Cell.new("X", TextFormatting.new(foreground: :yellow))}
+      ]
+
+      # Execute batch operations
+      BufferServer.batch_operations(pid, operations)
+
+      # Flush to ensure all operations are completed
+      assert :ok = BufferServer.flush(pid)
+
+      # Verify the operations were applied
+      assert {:ok, cell_a} = BufferServer.get_cell(pid, 0, 0)
+      assert cell_a.char == "A"
+      assert cell_a.style.foreground == :red  # Should be :red as set in TextFormatting
+
+      assert {:ok, cell_b} = BufferServer.get_cell(pid, 1, 0)
+      assert cell_b.char == "B"
+      assert cell_b.style.foreground == :green  # Should be :green as set in TextFormatting
+
+      assert {:ok, cell_c} = BufferServer.get_cell(pid, 2, 0)
+      assert cell_c.char == "C"
+      assert cell_c.style.foreground == :blue  # Should be :blue as set in TextFormatting
+
+      # Verify string was written
+      assert {:ok, cell_h} = BufferServer.get_cell(pid, 0, 1)
+      assert cell_h.char == "H"
+
+      # Verify region was filled
+      assert {:ok, cell_x} = BufferServer.get_cell(pid, 0, 2)
+      assert cell_x.char == "X"
+      assert cell_x.style.foreground == :yellow  # Should be :yellow as set in TextFormatting
     end
   end
 end

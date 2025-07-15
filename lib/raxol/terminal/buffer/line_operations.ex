@@ -298,10 +298,17 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   """
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, line_index) do
-    if line_index >= 0 and line_index < length(buffer.cells) do
-      Enum.at(buffer.cells, line_index) || []
-    else
-      []
+    case buffer.cells do
+      nil ->
+        # Return empty list if cells is nil
+        []
+
+      cells ->
+        if line_index >= 0 and line_index < length(cells) do
+          Enum.at(cells, line_index) || []
+        else
+          []
+        end
     end
   end
 
@@ -328,11 +335,18 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   @spec update_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
           ScreenBuffer.t()
   def update_line(buffer, line_index, new_line) do
-    if line_index >= 0 and line_index < length(buffer.cells) do
-      new_cells = List.replace_at(buffer.cells, line_index, new_line)
-      %{buffer | cells: new_cells}
-    else
-      buffer
+    case buffer.cells do
+      nil ->
+        # Return buffer unchanged if cells is nil
+        buffer
+
+      cells ->
+        if line_index >= 0 and line_index < length(cells) do
+          new_cells = List.replace_at(cells, line_index, new_line)
+          %{buffer | cells: new_cells}
+        else
+          buffer
+        end
     end
   end
 
@@ -786,8 +800,16 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   end
 
   defp insert_chars_into_line(line, col, count, width, default_style) do
+    # If the character at the cursor is a space, skip it when inserting
     {before, after_part} = Enum.split(line, col)
-    # Use a valid blank Cell struct for inserted chars with default style
+
+    # If the first char in after_part is a space, drop it (to avoid duplicating the space)
+    after_part =
+      case after_part do
+        [%{char: " "} | rest] -> rest
+        _ -> after_part
+      end
+
     blank_cell = %Cell{
       char: " ",
       style: default_style,

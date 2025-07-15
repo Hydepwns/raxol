@@ -230,6 +230,10 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @spec handle_printable_character(any(), integer(), map(), atom() | nil) ::
           {any(), any()}
   def handle_printable_character(emulator, char_codepoint, params, single_shift) do
+    IO.puts(
+      "DEBUG: InputHandler - Processing codepoint: #{inspect(char_codepoint)} (#{List.to_string([char_codepoint])})"
+    )
+
     # Use the CharacterProcessor to handle the printable character
     # This will write the character to the buffer and update cursor position
     updated_emulator =

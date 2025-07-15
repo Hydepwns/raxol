@@ -1,135 +1,187 @@
 defmodule Raxol.Terminal.Buffer.DamageTracker do
   @moduledoc """
-  Manages damage tracking for terminal buffers.
+  Tracks damaged regions in the buffer for efficient rendering.
 
-  Handles marking regions as damaged and merging overlapping regions
-  for efficient redrawing.
+  This module is responsible for:
+  - Tracking which regions of the buffer have changed
+  - Managing damage region limits to prevent memory bloat
+  - Providing damage information for rendering optimization
+  - Cleaning up old damage regions
   """
 
-  @type region ::
+  @type damage_region ::
           {non_neg_integer(), non_neg_integer(), non_neg_integer(),
            non_neg_integer()}
-  @type t :: %__MODULE__{
-          regions: list(region())
+  @type damage_tracker :: %{
+          damage_regions: [damage_region()],
+          max_regions: non_neg_integer()
         }
 
-  defstruct regions: []
-
   @doc """
-  Creates a new, empty damage tracker.
+  Creates a new damage tracker.
   """
-  @spec new() :: t()
-  def new(), do: %__MODULE__{regions: []}
-
-  @doc """
-  Marks a rectangular region as damaged.
-
-  Merges the new region with any existing overlapping regions.
-  """
-  @spec mark_damaged(
-          t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: t()
-  def mark_damaged(%__MODULE__{} = tracker, x1, y1, x2, y2) do
-    new_region = {x1, y1, x2, y2}
-    merged_regions = merge_damage_regions([new_region | tracker.regions])
-    %__MODULE__{tracker | regions: merged_regions}
-  end
-
-  @doc """
-  Gets the list of distinct damaged regions.
-  """
-  @spec get_regions(t()) :: list(region())
-  def get_regions(%__MODULE__{} = tracker) do
-    tracker.regions
-  end
-
-  @doc """
-  Clears all tracked damage regions.
-  """
-  @spec clear_regions(t()) :: t()
-  def clear_regions(%__MODULE__{} = tracker) do
-    %__MODULE__{tracker | regions: []}
-  end
-
-  @doc """
-  Clears all tracked damage regions (alias for clear_regions).
-  """
-  @spec clear_damage(t()) :: t()
-  def clear_damage(%__MODULE__{} = tracker) do
-    clear_regions(tracker)
-  end
-
-  @doc """
-  Gets all damage regions (alias for get_regions).
-  """
-  @spec get_damage_regions(t()) :: list(region())
-  def get_damage_regions(%__MODULE__{} = tracker) do
-    get_regions(tracker)
-  end
-
-  # --- Private Helpers ---
-
-  # Merges newly added regions by iterating through the list and combining overlaps.
-  defp merge_damage_regions(regions) do
-    # Simple iterative merging: compare each region with subsequent ones.
-    # This is O(n^2) but likely fine for typical numbers of damage regions.
-    # A more optimized approach (e.g., interval tree) could be used if needed.
-    Enum.reduce(regions, [], fn region, acc ->
-      merge_or_append(region, acc)
-    end)
-    # Reduce builds the list in reverse
-    |> Enum.reverse()
-  end
-
-  # Helper to merge a region into a list of existing non-overlapping regions
-  defp merge_or_append(new_region, existing_regions) do
-    {overlapping, non_overlapping} =
-      Enum.split_with(existing_regions, &regions_overlap?(new_region, &1))
-
-    case overlapping do
-      [] ->
-        # No overlap, just add the new region
-        [new_region | non_overlapping]
-
-      _ ->
-        # Merge the new region with all overlapping regions found
-        merged = Enum.reduce(overlapping, new_region, &merge_two_regions/2)
-        [merged | non_overlapping]
-    end
-  end
-
-  defp regions_overlap?({x1, y1, x2, y2}, {rx1, ry1, rx2, ry2}) do
-    # Check for overlap: !(left || right || above || below)
-    not (x2 < rx1 or x1 > rx2 or y2 < ry1 or y1 > ry2)
-  end
-
-  defp merge_two_regions({x1, y1, x2, y2}, {rx1, ry1, rx2, ry2}) do
-    {
-      min(x1, rx1),
-      min(y1, ry1),
-      max(x2, rx2),
-      max(y2, ry2)
+  @spec new(non_neg_integer()) :: damage_tracker()
+  def new(max_regions \\ 100) do
+    %{
+      damage_regions: [],
+      max_regions: max_regions
     }
   end
 
   @doc """
-  Gets the memory usage of the damage tracker.
+  Adds a damage region to the tracker.
   """
-  @spec get_memory_usage(t()) :: non_neg_integer()
-  def get_memory_usage(%__MODULE__{} = tracker) do
-    # Each region is a 4-tuple, roughly 32 bytes
-    length(tracker.regions) * 32
+  @spec add_damage_region(
+          damage_tracker(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: damage_tracker()
+  def add_damage_region(tracker, x, y, width, height) do
+    # Store in {x, y, width, height} format as expected by tests
+    region = {x, y, width, height}
+    damage_regions = [region | tracker.damage_regions]
+
+    # Limit damage regions to prevent memory bloat
+    limited_regions =
+      if length(damage_regions) > tracker.max_regions do
+        Enum.take(damage_regions, div(tracker.max_regions, 2))
+      else
+        damage_regions
+      end
+
+    # Merge overlapping regions for efficiency
+    merged_tracker = %{tracker | damage_regions: limited_regions}
+    merge_regions(merged_tracker)
   end
 
   @doc """
-  Cleans up the damage tracker.
+  Adds multiple damage regions at once.
   """
-  @spec cleanup(t()) :: t()
-  def cleanup(%__MODULE__{} = tracker) do
-    clear_regions(tracker)
+  @spec add_damage_regions(damage_tracker(), [damage_region()]) ::
+          damage_tracker()
+  def add_damage_regions(tracker, regions) do
+    Enum.reduce(regions, tracker, fn {x, y, width, height}, acc ->
+      add_damage_region(acc, x, y, width, height)
+    end)
+  end
+
+  @doc """
+  Gets all damage regions.
+  """
+  @spec get_damage_regions(damage_tracker()) :: [damage_region()]
+  def get_damage_regions(tracker) do
+    tracker.damage_regions
+  end
+
+  @doc """
+  Clears all damage regions.
+  """
+  @spec clear_damage(damage_tracker()) :: damage_tracker()
+  def clear_damage(tracker) do
+    %{tracker | damage_regions: []}
+  end
+
+  @doc """
+  Gets the number of damage regions.
+  """
+  @spec damage_count(damage_tracker()) :: non_neg_integer()
+  def damage_count(tracker) do
+    length(tracker.damage_regions)
+  end
+
+  @doc """
+  Checks if there are any damage regions.
+  """
+  @spec has_damage?(damage_tracker()) :: boolean()
+  def has_damage?(tracker) do
+    tracker.damage_regions != []
+  end
+
+  @doc """
+  Merges overlapping damage regions for efficiency.
+  """
+  @spec merge_regions(damage_tracker()) :: damage_tracker()
+  def merge_regions(tracker) do
+    merged_regions = merge_overlapping_regions(tracker.damage_regions)
+    %{tracker | damage_regions: merged_regions}
+  end
+
+  @doc """
+  Gets damage statistics.
+  """
+  @spec get_stats(damage_tracker()) :: map()
+  def get_stats(tracker) do
+    %{
+      damage_count: damage_count(tracker),
+      max_regions: tracker.max_regions,
+      has_damage: has_damage?(tracker),
+      regions: tracker.damage_regions
+    }
+  end
+
+  @doc """
+  Cleans up the damage tracker, clearing all damage regions.
+  """
+  @spec cleanup(damage_tracker()) :: damage_tracker()
+  def cleanup(tracker) do
+    clear_damage(tracker)
+  end
+
+  # Private helper functions
+
+  defp merge_overlapping_regions(regions) do
+    regions
+    |> Enum.sort()
+    |> merge_adjacent_regions([])
+  end
+
+  defp merge_adjacent_regions([], merged), do: Enum.reverse(merged)
+
+  defp merge_adjacent_regions([region | rest], []),
+    do: merge_adjacent_regions(rest, [region])
+
+  defp merge_adjacent_regions(
+         [{x1, y1, w1, h1} | rest],
+         [{x2, y2, w2, h2} | merged_tail] = merged
+       ) do
+    # Check if regions overlap or are adjacent
+    if regions_overlap_or_adjacent({x1, y1, w1, h1}, {x2, y2, w2, h2}) do
+      # Merge the regions
+      merged_region = merge_two_regions({x1, y1, w1, h1}, {x2, y2, w2, h2})
+      merge_adjacent_regions(rest, [merged_region | merged_tail])
+    else
+      merge_adjacent_regions(rest, [{x1, y1, w1, h1} | merged])
+    end
+  end
+
+  defp regions_overlap_or_adjacent({x1, y1, w1, h1}, {x2, y2, w2, h2}) do
+    # Check if regions overlap or are adjacent (using width/height format)
+    end_x1 = x1 + w1 - 1
+    end_y1 = y1 + h1 - 1
+    end_x2 = x2 + w2 - 1
+    end_y2 = y2 + h2 - 1
+
+    x_overlap = x1 <= end_x2 + 1 and x2 <= end_x1 + 1
+    y_overlap = y1 <= end_y2 + 1 and y2 <= end_y1 + 1
+
+    x_overlap and y_overlap
+  end
+
+  defp merge_two_regions({x1, y1, w1, h1}, {x2, y2, w2, h2}) do
+    # Find the bounding box that contains both regions
+    end_x1 = x1 + w1 - 1
+    end_y1 = y1 + h1 - 1
+    end_x2 = x2 + w2 - 1
+    end_y2 = y2 + h2 - 1
+
+    x_min = min(x1, x2)
+    y_min = min(y1, y2)
+    x_max = max(end_x1, end_x2)
+    y_max = max(end_y1, end_y2)
+
+    # Return in {x, y, width, height} format
+    {x_min, y_min, x_max - x_min + 1, y_max - y_min + 1}
   end
 end

@@ -146,6 +146,138 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
+  def handle_call(:get_active_window, _from, state) do
+    {:reply, {:ok, state.active_window}, state}
+  end
+
+  def handle_call({:get_window_state, window_id}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil -> {:reply, {:error, :window_not_found}, state}
+      window -> {:reply, {:ok, window}, state}
+    end
+  end
+
+  def handle_call({:set_title, window_id, title}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      window ->
+        updated_window = %{window | title: title}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
+        {:reply, :ok, new_state}
+    end
+  end
+
+  def handle_call({:set_icon_name, window_id, icon_name}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      window ->
+        updated_window = %{window | icon_name: icon_name}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
+        {:reply, :ok, new_state}
+    end
+  end
+
+  def handle_call({:resize, window_id, width, height}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      window ->
+        updated_window = %{window | size: {width, height}}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
+        {:reply, :ok, new_state}
+    end
+  end
+
+  def handle_call({:move, window_id, x, y}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      window ->
+        updated_window = %{window | position: {x, y}}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
+        {:reply, :ok, new_state}
+    end
+  end
+
+  def handle_call({:set_stacking_order, window_id, order}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      window ->
+        updated_window = %{window | stacking_order: order}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
+        {:reply, :ok, new_state}
+    end
+  end
+
+  def handle_call({:set_maximized, window_id, maximized}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil ->
+        {:reply, {:error, :window_not_found}, state}
+
+      window ->
+        updated_window = %{window | maximized: maximized}
+
+        new_state = %{
+          state
+          | windows: Map.put(state.windows, window_id, updated_window)
+        }
+
+        {:reply, :ok, new_state}
+    end
+  end
+
+  def handle_call({:set_active_window, window_id}, _from, state) do
+    case Map.get(state.windows, window_id) do
+      nil -> {:reply, {:error, :window_not_found}, state}
+      _window -> {:reply, :ok, %{state | active_window: window_id}}
+    end
+  end
+
+  def handle_call({:close_window, window_id}, _from, state) do
+    case do_close_window(window_id, state) do
+      {:ok, new_state} -> {:reply, :ok, new_state}
+      {:error, new_state} -> {:reply, {:error, :window_not_found}, new_state}
+    end
+  end
+
+  def handle_call({:update_config, config}, _from, state) do
+    new_state = %{state | config: Map.merge(state.config, config)}
+    {:reply, :ok, new_state}
+  end
+
   defp calculate_split_sizes({width, height}, :horizontal) do
     half = div(width, 2)
     {{half, height}, {half, height}}
@@ -158,7 +290,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   # Private helper functions
 
-  defp do_create_window(opts, state) do
+  defp do_create_window(opts, state) when is_list(opts) do
     window_id = state.next_id
 
     window = %{
@@ -176,6 +308,35 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
       buffer_id: Keyword.get(opts, :buffer_id, state.config.default_buffer_id),
       renderer_id:
         Keyword.get(opts, :renderer_id, state.config.default_renderer_id)
+    }
+
+    new_state = %{
+      state
+      | windows: Map.put(state.windows, window_id, window),
+        next_id: state.next_id + 1,
+        active_window: window_id
+    }
+
+    {window_id, new_state}
+  end
+
+  defp do_create_window(opts, state) when is_map(opts) do
+    window_id = state.next_id
+
+    window = %{
+      id: window_id,
+      title: Map.get(opts, :title),
+      icon_name: Map.get(opts, :icon_name),
+      size: Map.get(opts, :size, state.config.default_size),
+      position: Map.get(opts, :position, {0, 0}),
+      maximized: Map.get(opts, :maximized, false),
+      previous_size: nil,
+      stacking_order: window_id,
+      parent_id: Map.get(opts, :parent_id),
+      children: [],
+      split_type: nil,
+      buffer_id: Map.get(opts, :buffer_id, state.config.default_buffer_id),
+      renderer_id: Map.get(opts, :renderer_id, state.config.default_renderer_id)
     }
 
     new_state = %{

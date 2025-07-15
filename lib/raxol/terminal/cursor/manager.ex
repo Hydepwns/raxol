@@ -115,7 +115,17 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def get_position(pid \\ __MODULE__)
 
   def get_position(pid) when is_pid(pid) do
-    GenServer.call(pid, :get_position)
+    Raxol.Core.Runtime.Log.debug(
+      "get_position called with pid: #{inspect(pid)}"
+    )
+
+    result = GenServer.call(pid, :get_position)
+
+    Raxol.Core.Runtime.Log.debug(
+      "get_position(pid) returned: #{inspect(result)}"
+    )
+
+    result
   end
 
   def get_position(%__MODULE__{} = cursor) do
@@ -194,8 +204,22 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Moves the cursor up by the specified number of lines.
   """
   def move_up(cursor, lines, _width, _height) do
-    new_row = max(cursor.top_margin, cursor.row - lines)
-    %{cursor | row: new_row, position: {cursor.col, new_row}}
+    # Handle emulator cursor format (with :position field)
+    case cursor do
+      %{position: {col, row}} ->
+        # This is the emulator's cursor format
+        new_row = max(0, row - lines)
+        %{cursor | position: {col, new_row}}
+
+      %{row: row, col: col} ->
+        # This is the cursor manager format
+        new_row = max(cursor.top_margin || 0, row - lines)
+        %{cursor | row: new_row, col: col}
+
+      _ ->
+        # Fallback for other formats
+        cursor
+    end
   end
 
   @doc """
@@ -206,29 +230,87 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %{cursor | row: new_row, position: {cursor.col, new_row}}
   end
 
-  def move_down(other, _lines, _width, _height), do: other
+  def move_down(cursor, lines, _width, _height) do
+    # Handle emulator cursor format (with :position field)
+    case cursor do
+      %{position: {col, row}} ->
+        # This is the emulator's cursor format
+        new_row = row + lines
+        %{cursor | position: {col, new_row}}
+
+      %{row: row, col: col} ->
+        # This is the cursor manager format
+        new_row = min(cursor.bottom_margin || 24, row + lines)
+        %{cursor | row: new_row, col: col}
+
+      _ ->
+        # Fallback for other formats
+        cursor
+    end
+  end
 
   @doc """
   Moves the cursor left by the specified number of columns.
   """
   def move_left(cursor, cols, _width, _height) do
-    new_col = max(0, cursor.col - cols)
-    %{cursor | col: new_col, position: {new_col, cursor.row}}
+    # Handle emulator cursor format (with :position field)
+    case cursor do
+      %{position: {col, row}} ->
+        # This is the emulator's cursor format
+        new_col = max(0, col - cols)
+        %{cursor | position: {new_col, row}}
+
+      %{row: row, col: col} ->
+        # This is the cursor manager format
+        new_col = max(0, col - cols)
+        %{cursor | col: new_col, row: row}
+
+      _ ->
+        # Fallback for other formats
+        cursor
+    end
   end
 
   @doc """
   Moves the cursor right by the specified number of columns.
   """
   def move_right(cursor, cols, _width, _height) do
-    new_col = cursor.col + cols
-    %{cursor | col: new_col, position: {new_col, cursor.row}}
+    # Handle emulator cursor format (with :position field)
+    case cursor do
+      %{position: {col, row}} ->
+        # This is the emulator's cursor format
+        new_col = col + cols
+        %{cursor | position: {new_col, row}}
+
+      %{row: row, col: col} ->
+        # This is the cursor manager format
+        new_col = col + cols
+        %{cursor | col: new_col, row: row}
+
+      _ ->
+        # Fallback for other formats
+        cursor
+    end
   end
 
   @doc """
   Moves the cursor to the beginning of the line.
   """
   def move_to_line_start(cursor) do
-    %{cursor | col: 0, position: {0, cursor.row}}
+    # Handle emulator cursor format (with :position field)
+    case cursor do
+      %{position: {_col, row}} ->
+        # This is the emulator's cursor format
+        %{cursor | position: {0, row}}
+
+      %{row: row} ->
+        # This is the cursor manager format
+        %{cursor | col: 0, row: row}
+
+      _ ->
+        # Fallback for other formats
+        cursor
+    end
   end
 
   @doc """
@@ -731,6 +813,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
     )
 
     new_state = %{state | row: row, col: col, position: {col, row}}
+
+    # Debug: log the new state
+    Raxol.Core.Runtime.Log.debug(
+      "New cursor state: row=#{new_state.row}, col=#{new_state.col}, position=#{inspect(new_state.position)}"
+    )
+
     {:reply, :ok, new_state}
   end
 

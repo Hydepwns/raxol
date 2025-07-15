@@ -57,6 +57,9 @@ defmodule Raxol.Test.PluginTestFixtures do
     # Alias for backward compatibility
     def metadata, do: get_metadata()
 
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
+
     # Added Behaviour Callbacks
     def handle_input(_input, state), do: {:ok, state}
     def handle_output(_output, state), do: {:ok, state}
@@ -111,6 +114,9 @@ defmodule Raxol.Test.PluginTestFixtures do
         dependencies: []
       }
     end
+
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
 
     # Added Behaviour Callbacks
     # Or error for testing
@@ -185,6 +191,9 @@ defmodule Raxol.Test.PluginTestFixtures do
       }
     end
 
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
+
     # Added Behaviour Callbacks
     # Already had handle_input/output
     def enable(state), do: {:ok, state}
@@ -239,6 +248,9 @@ defmodule Raxol.Test.PluginTestFixtures do
       }
     end
 
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
+
     def handle_input(_input, state), do: {:ok, state}
     def handle_output(_output, state), do: {:ok, state}
     def enable(state), do: {:ok, state}
@@ -278,6 +290,9 @@ defmodule Raxol.Test.PluginTestFixtures do
         dependencies: []
       }
     end
+
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
 
     # Added Behaviour Callbacks
     def handle_input(_input, state), do: {:ok, state}
@@ -333,6 +348,9 @@ defmodule Raxol.Test.PluginTestFixtures do
         dependencies: []
       }
     end
+
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
 
     # Added Behaviour Callbacks
     # handle_input and handle_output are effectively implemented by handle_input_crash / handle_output_crash
@@ -424,6 +442,9 @@ defmodule Raxol.Test.PluginTestFixtures do
         author: nil
       }
     end
+
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
 
     # Added Behaviour Callbacks
     def handle_input(_input, state), do: {:ok, state}
@@ -526,6 +547,9 @@ defmodule Raxol.Test.PluginTestFixtures do
         dependencies: dependencies()
       }
     end
+
+    # API version function required by plugin lifecycle
+    def api_version, do: "1.0.0"
 
     # Added Behaviour Callbacks
     def handle_input(_input, state), do: {:ok, state}

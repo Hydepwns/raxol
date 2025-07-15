@@ -9,7 +9,11 @@ defmodule Raxol.Terminal.Buffer.Cell do
     :background,
     :attributes,
     :hyperlink,
-    :width
+    :width,
+    # Virtual field for backward compatibility
+    :fg,
+    # Virtual field for backward compatibility
+    :bg
   ]
 
   @type t :: %__MODULE__{
@@ -37,18 +41,29 @@ defmodule Raxol.Terminal.Buffer.Cell do
   Creates a new cell with the specified character and style.
   """
   def new(char, style) when is_binary(char) and is_map(style) do
-    %__MODULE__{
+    # IO.puts("DEBUG: Cell.new/2 - creating cell with char: #{inspect(char)}, style: #{inspect(style)}")
+    foreground = extract_foreground(style)
+    background = extract_background(style)
+
+    cell = %__MODULE__{
       char: char,
-      foreground: extract_foreground(style),
-      background: extract_background(style),
+      foreground: foreground,
+      background: background,
       attributes: extract_attributes(style),
       hyperlink: extract_hyperlink(style),
-      width: extract_width(style)
+      width: extract_width(style),
+      # Virtual field for backward compatibility
+      fg: foreground,
+      # Virtual field for backward compatibility
+      bg: background
     }
+
+    # IO.puts("DEBUG: Cell.new/2 - created cell: #{inspect(cell)}")
+    cell
   end
 
   def new(arg) when is_binary(arg) do
-    %__MODULE__{char: arg}
+    %__MODULE__{char: arg, fg: nil, bg: nil}
   end
 
   @doc """
@@ -136,6 +151,35 @@ defmodule Raxol.Terminal.Buffer.Cell do
   def set_width(%__MODULE__{} = cell, width)
       when is_integer(width) and width > 0 do
     %{cell | width: width}
+  end
+
+  # Backward compatibility functions for old :fg and :bg field names
+  @doc """
+  Gets the cell's foreground color (backward compatibility).
+  """
+  def fg(%__MODULE__{} = cell) do
+    cell.foreground
+  end
+
+  @doc """
+  Sets the cell's foreground color (backward compatibility).
+  """
+  def fg(%__MODULE__{} = cell, color) do
+    %{cell | foreground: color}
+  end
+
+  @doc """
+  Gets the cell's background color (backward compatibility).
+  """
+  def bg(%__MODULE__{} = cell) do
+    cell.background
+  end
+
+  @doc """
+  Sets the cell's background color (backward compatibility).
+  """
+  def bg(%__MODULE__{} = cell, color) do
+    %{cell | background: color}
   end
 
   @doc """
@@ -235,11 +279,8 @@ defmodule Raxol.Terminal.Buffer.Cell do
   defp extract_foreground(style) do
     case Map.get(style, :foreground) do
       nil ->
-        case style do
-          %{foreground: fg} when not is_nil(fg) -> fg
-          # Default white
-          _ -> 7
-        end
+        # Default white
+        7
 
       fg ->
         fg
@@ -249,11 +290,8 @@ defmodule Raxol.Terminal.Buffer.Cell do
   defp extract_background(style) do
     case Map.get(style, :background) do
       nil ->
-        case style do
-          %{background: bg} when not is_nil(bg) -> bg
-          # Default black
-          _ -> 0
-        end
+        # Default black
+        0
 
       bg ->
         bg
@@ -316,24 +354,38 @@ defmodule Raxol.Terminal.Buffer.Cell do
   end
 
   defp new_from_map(opts) do
+    foreground = Map.get(opts, :foreground, 7)
+    background = Map.get(opts, :background, 0)
+
     %__MODULE__{
       char: Map.get(opts, :char, " "),
-      foreground: Map.get(opts, :foreground, 7),
-      background: Map.get(opts, :background, 0),
+      foreground: foreground,
+      background: background,
       attributes: Map.get(opts, :attributes, %{}),
       hyperlink: Map.get(opts, :hyperlink, nil),
-      width: Map.get(opts, :width, 1)
+      width: Map.get(opts, :width, 1),
+      # Virtual field for backward compatibility
+      fg: foreground,
+      # Virtual field for backward compatibility
+      bg: background
     }
   end
 
   defp new_from_keyword(opts) do
+    foreground = Keyword.get(opts, :foreground, 7)
+    background = Keyword.get(opts, :background, 0)
+
     %__MODULE__{
       char: Keyword.get(opts, :char, " "),
-      foreground: Keyword.get(opts, :foreground, 7),
-      background: Keyword.get(opts, :background, 0),
+      foreground: foreground,
+      background: background,
       attributes: Keyword.get(opts, :attributes, %{}),
       hyperlink: Keyword.get(opts, :hyperlink, nil),
-      width: Keyword.get(opts, :width, 1)
+      width: Keyword.get(opts, :width, 1),
+      # Virtual field for backward compatibility
+      fg: foreground,
+      # Virtual field for backward compatibility
+      bg: background
     }
   end
 end

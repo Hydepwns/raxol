@@ -352,6 +352,9 @@ defmodule Raxol.UI.Renderer do
          theme,
          parent_style
        ) do
+    IO.puts("DEBUG: render_visible_element called for table")
+    IO.puts("DEBUG: table_element: #{inspect(table_element)}")
+
     _merged_style = flatten_merged_style(parent_style, table_element)
 
     # Extract table data from the element or attrs
@@ -362,6 +365,10 @@ defmodule Raxol.UI.Renderer do
     column_widths =
       Map.get(table_element, :column_widths) || Map.get(attrs, :_col_widths, [])
 
+    IO.puts("DEBUG: extracted headers: #{inspect(headers)}")
+    IO.puts("DEBUG: extracted data: #{inspect(data)}")
+    IO.puts("DEBUG: extracted column_widths: #{inspect(column_widths)}")
+
     # Calculate table width if not provided
     width = calculate_table_width(headers, data, column_widths)
 
@@ -369,7 +376,9 @@ defmodule Raxol.UI.Renderer do
     merged_attrs =
       build_table_attrs(table_element, headers, data, column_widths)
 
+    IO.puts("DEBUG: calling render_table with width: #{width}")
     cells = render_table(x, y, width, 0, merged_attrs, theme)
+    IO.puts("DEBUG: render_table returned #{length(cells)} cells")
     clip_cells_to_bounds(cells, Map.get(table_element, :clip_bounds))
   end
 
@@ -611,8 +620,14 @@ defmodule Raxol.UI.Renderer do
         %{}
       end
 
-    header_style = Map.get(table_styles, :header, %{})
-    data_style = Map.get(table_styles, :data, %{})
+    # Use custom styles from attrs if present, else fall back to theme
+    header_style =
+      Map.get(attrs, :header_style, %{})
+      |> Map.merge(Map.get(table_styles, :header, %{}))
+
+    data_style =
+      Map.get(attrs, :row_style, %{})
+      |> Map.merge(Map.get(table_styles, :data, %{}))
 
     cells = []
 
@@ -624,20 +639,25 @@ defmodule Raxol.UI.Renderer do
         cells
       end
 
+    # Calculate starting y position for data rows
+    data_start_y = if headers != [], do: y + 2, else: y
+
     # Render data rows
     cells =
       data
       |> Enum.with_index()
       |> Enum.reduce(cells, fn {row, index}, acc ->
-        acc ++ render_table_row(x, y + index + 2, row, col_widths, data_style)
+        row_cells =
+          render_table_row(x, data_start_y + index, row, col_widths, data_style)
+
+        acc ++ row_cells
       end)
 
     cells
   end
 
   defp render_table_row(x, y, row, col_widths, style) do
-    Enum.reduce(Enum.with_index(row), {[], x + 1}, fn {cell, index},
-                                                      {acc, cur_x} ->
+    Enum.reduce(Enum.with_index(row), {[], x}, fn {cell, index}, {acc, cur_x} ->
       cell_cells =
         render_table_cell(cell, cur_x, y, Enum.at(col_widths, index, 5), style)
 

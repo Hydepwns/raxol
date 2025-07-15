@@ -26,6 +26,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
       {norm_start, norm_end} =
         {min(start_index, end_index), max(start_index, end_index)}
 
+      # Use exclusive end position to match the fixed coordinate system
       selected_text =
         String.slice(Enum.join(lines, "\n"), norm_start, norm_end - norm_start)
 
@@ -55,6 +56,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
       {norm_start, norm_end} =
         {min(start_index, end_index), max(start_index, end_index)}
 
+      # Use exclusive end position to match the fixed coordinate system
       selected_text =
         String.slice(Enum.join(lines, "\n"), norm_start, norm_end - norm_start)
 

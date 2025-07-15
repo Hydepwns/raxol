@@ -101,7 +101,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
     header_cell = Helper.get_cell_at(cells, 0, 0)
     Helper.assert_cell_style(header_cell, :red, :black)
 
-    data_cell = Helper.get_cell_at(cells, 0, 1)
+    data_cell = Helper.get_cell_at(cells, 0, 2)
     Helper.assert_cell_style(data_cell, :green, :black)
   end
 

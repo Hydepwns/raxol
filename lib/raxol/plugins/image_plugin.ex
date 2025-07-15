@@ -111,6 +111,13 @@ defmodule Raxol.Plugins.ImagePlugin do
     "1.0.0"
   end
 
+  @doc """
+  Returns the API version for compatibility checking.
+  """
+  def api_version do
+    "1.0.0"
+  end
+
   @impl Raxol.Plugins.LifecycleBehaviour
   def start(config) do
     {:ok, config}

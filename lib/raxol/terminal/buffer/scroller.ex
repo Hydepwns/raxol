@@ -59,8 +59,8 @@ defmodule Raxol.Terminal.Buffer.Scroller do
   def scroll_entire_buffer_up(buffer, count) do
     {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
     empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
-    new_content = empty_lines ++ new_buffer.content
-    {:ok, %{new_buffer | content: new_content}}
+    new_cells = empty_lines ++ new_buffer.cells
+    {:ok, %{new_buffer | cells: new_cells}}
   end
 
   @doc """
@@ -87,8 +87,8 @@ defmodule Raxol.Terminal.Buffer.Scroller do
   def scroll_entire_buffer_down(buffer, count) do
     {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
     empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
-    new_content = new_buffer.content ++ empty_lines
-    {:ok, %{new_buffer | content: new_content}}
+    new_cells = new_buffer.cells ++ empty_lines
+    {:ok, %{new_buffer | cells: new_cells}}
   end
 
   @doc """
@@ -119,12 +119,12 @@ defmodule Raxol.Terminal.Buffer.Scroller do
           non_neg_integer()
         ) :: {:ok, ScreenBuffer.t()}
   def scroll_region_up(buffer, count, top, bottom) do
-    region_lines = Enum.slice(buffer.content, top..bottom)
+    region_lines = Enum.slice(buffer.cells, top..bottom)
     {_to_scroll, remaining} = Enum.split(region_lines, count)
     empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
     new_region = remaining ++ empty_lines
-    new_content = List.replace_at(buffer.content, top, new_region)
-    {:ok, %{buffer | content: new_content}}
+    new_cells = List.replace_at(buffer.cells, top, new_region)
+    {:ok, %{buffer | cells: new_cells}}
   end
 
   @doc """
@@ -155,12 +155,12 @@ defmodule Raxol.Terminal.Buffer.Scroller do
           non_neg_integer()
         ) :: {:ok, ScreenBuffer.t()}
   def scroll_region_down(buffer, count, top, bottom) do
-    region_lines = Enum.slice(buffer.content, top..bottom)
+    region_lines = Enum.slice(buffer.cells, top..bottom)
     {remaining, _to_scroll} = Enum.split(region_lines, -count)
     empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
     new_region = empty_lines ++ remaining
-    new_content = List.replace_at(buffer.content, top, new_region)
-    {:ok, %{buffer | content: new_content}}
+    new_cells = List.replace_at(buffer.cells, top, new_region)
+    {:ok, %{buffer | cells: new_cells}}
   end
 
   # Private helper functions
@@ -168,20 +168,28 @@ defmodule Raxol.Terminal.Buffer.Scroller do
   defp do_scroll_up(buffer, count) do
     case buffer.scroll_region do
       nil ->
-        scroll_entire_buffer_up(buffer, count)
+        {:ok, new_buffer} = scroll_entire_buffer_up(buffer, count)
+        new_buffer
 
       region ->
-        scroll_region_up(buffer, count, region.top, region.bottom)
+        {:ok, new_buffer} =
+          scroll_region_up(buffer, count, region.top, region.bottom)
+
+        new_buffer
     end
   end
 
   defp do_scroll_down(buffer, count) do
     case buffer.scroll_region do
       nil ->
-        scroll_entire_buffer_down(buffer, count)
+        {:ok, new_buffer} = scroll_entire_buffer_down(buffer, count)
+        new_buffer
 
       region ->
-        scroll_region_down(buffer, count, region.top, region.bottom)
+        {:ok, new_buffer} =
+          scroll_region_down(buffer, count, region.top, region.bottom)
+
+        new_buffer
     end
   end
 end

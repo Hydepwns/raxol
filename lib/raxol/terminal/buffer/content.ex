@@ -55,10 +55,17 @@ defmodule Raxol.Terminal.Buffer.Content do
           String.t()
   def get_char(buffer, x, y) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
-      buffer.cells
-      |> Enum.at(y)
-      |> Enum.at(x)
-      |> Cell.get_char()
+      case buffer.cells do
+        nil ->
+          # Return empty string if cells is nil
+          ""
+
+        cells ->
+          cells
+          |> Enum.at(y)
+          |> Enum.at(x)
+          |> Cell.get_char()
+      end
     else
       ""
     end
@@ -73,12 +80,17 @@ defmodule Raxol.Terminal.Buffer.Content do
     if x < buffer.width and y < buffer.height do
       case buffer.cells do
         nil ->
-          raise RuntimeError, "Buffer cells is nil"
+          # Return a default cell if cells is nil
+          Cell.new()
 
         cells ->
-          cells
-          |> Enum.at(y)
-          |> Enum.at(x)
+          row = Enum.at(cells, y)
+
+          if is_nil(row) do
+            Cell.new()
+          else
+            Enum.at(row, x) || Cell.new()
+          end
       end
     else
       Cell.new()
@@ -90,14 +102,21 @@ defmodule Raxol.Terminal.Buffer.Content do
   """
   @spec get_content(ScreenBuffer.t()) :: String.t()
   def get_content(%ScreenBuffer{cells: cells}) do
-    cells
-    |> Enum.map(fn row ->
-      row
-      |> Enum.map_join("", & &1.char)
-      |> String.trim_trailing()
-    end)
-    |> Enum.filter(&(&1 != ""))
-    |> Enum.join("\n")
+    case cells do
+      nil ->
+        # Return empty string if cells is nil
+        ""
+
+      cells ->
+        cells
+        |> Enum.map(fn row ->
+          row
+          |> Enum.map_join("", & &1.char)
+          |> String.trim_trailing()
+        end)
+        |> Enum.filter(&(&1 != ""))
+        |> Enum.join("\n")
+    end
   end
 
   @doc """
@@ -105,7 +124,14 @@ defmodule Raxol.Terminal.Buffer.Content do
   """
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
   def get_line(%ScreenBuffer{cells: cells}, line_index) when line_index >= 0 do
-    Enum.at(cells, line_index, [])
+    case cells do
+      nil ->
+        # Return empty list if cells is nil
+        []
+
+      cells ->
+        Enum.at(cells, line_index, [])
+    end
   end
 
   @doc """
@@ -144,23 +170,39 @@ defmodule Raxol.Terminal.Buffer.Content do
           list({non_neg_integer(), non_neg_integer(), Cell.t() | map()})
         ) :: ScreenBuffer.t()
   def update(%ScreenBuffer{cells: cells} = buffer, changes) do
-    new_cells =
-      Enum.reduce(changes, cells, fn {y, x, cell_or_map}, acc_cells ->
-        cell =
-          if is_map(cell_or_map),
-            do: struct(Cell, cell_or_map),
-            else: cell_or_map
+    case cells do
+      nil ->
+        # Return buffer unchanged if cells is nil
+        buffer
 
-        update_cell_at(acc_cells, x, y, cell)
-      end)
+      cells ->
+        new_cells =
+          Enum.reduce(changes, cells, fn {y, x, cell_or_map}, acc_cells ->
+            cell =
+              if is_map(cell_or_map),
+                do: struct(Cell, cell_or_map),
+                else: cell_or_map
 
-    %{buffer | cells: new_cells}
+            update_cell_at(acc_cells, x, y, cell)
+          end)
+
+        %{buffer | cells: new_cells}
+    end
   end
 
   # === Private Helper Functions ===
 
-  @doc false
-  defp update_cell_at(cells, x, y, cell) do
+  @doc """
+  Updates a cell at the specified position in the cells list.
+  """
+  @spec update_cell_at(
+          list(list(Cell.t())),
+          non_neg_integer(),
+          non_neg_integer(),
+          Cell.t()
+        ) ::
+          list(list(Cell.t()))
+  def update_cell_at(cells, x, y, cell) do
     case Enum.at(cells, y) do
       nil ->
         cells
@@ -171,10 +213,21 @@ defmodule Raxol.Terminal.Buffer.Content do
     end
   end
 
-  @doc false
-  defp get_cell_at(cells, x, y) do
-    cells
-    |> Enum.at(y)
-    |> Enum.at(x)
+  @doc """
+  Gets a cell at the specified position in the cells list.
+  """
+  @spec get_cell_at(list(list(Cell.t())), non_neg_integer(), non_neg_integer()) ::
+          Cell.t() | nil
+  def get_cell_at(cells, x, y) do
+    case cells do
+      nil ->
+        # Return nil if cells is nil
+        nil
+
+      cells ->
+        cells
+        |> Enum.at(y)
+        |> Enum.at(x)
+    end
   end
 end

@@ -139,20 +139,27 @@ defmodule Raxol.Terminal.Buffer.Selection do
   end
 
   defp extract_region_text(buffer, start_x, start_y, end_x, end_y) do
-    text =
-      for y <- start_y..end_y do
-        line = Enum.at(buffer.cells, y) || []
+    case buffer.cells do
+      nil ->
+        # Return empty string if cells is nil
+        ""
 
-        chars =
-          for x <- start_x..end_x do
-            cell = Enum.at(line, x)
-            if cell, do: cell.char, else: " "
+      cells ->
+        text =
+          for y <- start_y..end_y do
+            line = Enum.at(cells, y) || []
+
+            chars =
+              for x <- start_x..end_x do
+                cell = Enum.at(line, x)
+                if cell, do: cell.char, else: " "
+              end
+
+            Enum.join(chars)
           end
 
-        Enum.join(chars)
-      end
-
-    Enum.join(text, "\n")
+        Enum.join(text, "\n")
+    end
   end
 
   @doc """
@@ -196,6 +203,14 @@ defmodule Raxol.Terminal.Buffer.Selection do
       nil ->
         nil
     end
+  end
+
+  @doc """
+  Gets a line from a list of strings at the specified index.
+  """
+  @spec get_line(list(String.t()), non_neg_integer()) :: String.t()
+  def get_line(lines_list, row) when is_list(lines_list) and is_integer(row) do
+    Enum.at(lines_list, row, "")
   end
 
   @doc """

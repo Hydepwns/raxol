@@ -1,9 +1,10 @@
 #!/usr/bin/env elixir
 
 # Debug script for text operations
-alias Raxol.UI.Components.Input.MultiLineInput.TextOperations
+alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
 alias Raxol.UI.Components.Input.MultiLineInput.TextOperations.SingleLine
 alias Raxol.UI.Components.Input.MultiLineInput.TextOperations.Utils
+alias Raxol.UI.Components.Input.MultiLineInput.TextOperations.Selection
 
 # Test case from the failing test
 lines = ["hello", "world"]
@@ -21,15 +22,15 @@ IO.puts("Replacement bytes: #{inspect(replacement)}")
 
 # Test the main function
 {new_text, replaced_text} =
-  TextOperations.replace_text_range(lines, start_pos, end_pos, replacement)
+  TextHelper.replace_text_range(lines, start_pos, end_pos, replacement)
 
 IO.puts("=== Results ===")
 IO.puts("New text: #{inspect(new_text)}")
 IO.puts("Replaced text: #{inspect(replaced_text)}")
 
 # Test the single-line function directly
-{start_row, start_col, end_row, end_col} = {0, 1, 0, 4}
-line = Utils.get_line(lines, start_row)
+{start_row, start_col, _end_row, end_col} = {0, 1, 0, 4}
+line = Selection.get_line(lines, start_row)
 line_length = String.length(line)
 
 IO.puts("=== Single Line Debug ===")
@@ -59,5 +60,10 @@ IO.puts("Before: #{inspect(before)}")
 IO.puts("After part: #{inspect(after_part)}")
 IO.puts("New line: #{inspect(new_line)}")
 
-# Expected: "hey" (h + ey + o)
-# Actual: "heyo" (h + ey + o)
+# Test the single-line function directly
+{test_new_text, test_replaced_text} =
+  SingleLine.handle_single_line_replacement(lines, start_row, start_col, end_col, replacement)
+
+IO.puts("=== Single Line Function Results ===")
+IO.puts("New text: #{inspect(test_new_text)}")
+IO.puts("Replaced text: #{inspect(test_replaced_text)}")

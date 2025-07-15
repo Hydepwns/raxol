@@ -71,13 +71,21 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
 
   def delete_chars(emulator, count) do
     buffer = ScreenManager.get_active_buffer(emulator)
-    new_buffer = LineOperations.delete_chars(buffer, count)
+    {x, y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
+    # Update the buffer's cursor position before deleting
+    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, x, y)
+    new_buffer = LineOperations.delete_chars(buffer_with_cursor, count)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
   def insert_chars(emulator, count) do
     buffer = ScreenManager.get_active_buffer(emulator)
-    new_buffer = LineOperations.insert_chars(buffer, count)
+    {x, y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
+    # Update the buffer's cursor position before inserting
+    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, x, y)
+    new_buffer = LineOperations.insert_chars(buffer_with_cursor, count)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 

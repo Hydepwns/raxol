@@ -196,10 +196,15 @@ defmodule Raxol.Terminal.Scroll.Manager do
     case Raxol.Terminal.Cache.System.get(:history, namespace: :scroll) do
       {:ok, history} ->
         updated_history = [scroll_entry | history]
-        Raxol.Terminal.Cache.System.put(:history, updated_history, namespace: :scroll)
+
+        Raxol.Terminal.Cache.System.put(:history, updated_history,
+          namespace: :scroll
+        )
 
       {:error, _} ->
-        Raxol.Terminal.Cache.System.put(:history, [scroll_entry], namespace: :scroll)
+        Raxol.Terminal.Cache.System.put(:history, [scroll_entry],
+          namespace: :scroll
+        )
     end
 
     {:ok, manager}

@@ -101,6 +101,13 @@ defmodule Raxol.Plugins.ThemePlugin do
   @impl Raxol.Plugins.Plugin
   def get_api_version, do: "1.0.0"
 
+  @doc """
+  Returns the API version for compatibility checking.
+  """
+  def api_version do
+    "1.0.0"
+  end
+
   @impl Raxol.Plugins.Plugin
   def get_dependencies, do: []
 

@@ -18,61 +18,37 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Write some content to normal buffer
       {emulator, _} = Emulator.process_input(emulator, "ab")
+
+      # Check buffer state immediately after writing
+      buffer_after_write = Emulator.get_active_buffer(emulator)
+      cell_a_after_write = ScreenBuffer.get_cell_at(buffer_after_write, 0, 0)
+      cell_b_after_write = ScreenBuffer.get_cell_at(buffer_after_write, 1, 0)
+
+      IO.puts("DEBUG: After writing 'ab':")
+      IO.puts("  cell_a.char = #{inspect(cell_a_after_write.char)}")
+      IO.puts("  cell_b.char = #{inspect(cell_b_after_write.char)}")
+      IO.puts("  buffer_after_write type: #{inspect(buffer_after_write.__struct__)}")
+      IO.puts("  emulator.main_screen_buffer type: #{inspect(emulator.main_screen_buffer.__struct__)}")
+      IO.puts("  emulator.active_buffer_type: #{inspect(emulator.active_buffer_type)}")
+
+      # Access :char field
+      assert cell_a_after_write.char == "a"
+      # Access :char field
+      assert cell_b_after_write.char == "b"
+
       # Access screen_buffer field directly -> use main_screen_buffer
       buffer_before = Emulator.get_active_buffer(emulator)
       cell_a = ScreenBuffer.get_cell_at(buffer_before, 0, 0)
       cell_b = ScreenBuffer.get_cell_at(buffer_before, 1, 0)
-      # Access :char field
-      assert cell_a.char == "a"
-      # Access :char field
-      assert cell_b.char == "b"
 
       # Save for later comparison, access field directly -> use main_screen_buffer
       main_buffer_content = Emulator.get_active_buffer(emulator)
 
-      IO.puts("DEBUG: Before switching to alternate buffer:")
-
-      IO.puts(
-        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts(
-        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts("  active_buffer_type: #{emulator.active_buffer_type}")
-
       # Switch to alternate screen buffer
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
 
-      IO.puts("DEBUG: After switching to alternate buffer:")
-
-      IO.puts(
-        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts(
-        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts("  active_buffer_type: #{emulator.active_buffer_type}")
-
       # Write some content to alternate buffer
       {emulator, _} = Emulator.process_input(emulator, "xy")
-
-      IO.puts("DEBUG: After writing 'xy' to alternate buffer:")
-
-      IO.puts(
-        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts(
-        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts(
-        "  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}"
-      )
 
       # Check that alternate buffer has the new content
       alternate_buffer = Emulator.get_active_buffer(emulator)
@@ -85,20 +61,6 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Switch back to main screen buffer
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047l")
-
-      IO.puts("DEBUG: After switching back to main buffer:")
-
-      IO.puts(
-        "  main_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.main_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts(
-        "  alternate_buffer: #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 0, 0))}"
-      )
-
-      IO.puts(
-        "  alternate_buffer cell(1,0): #{inspect(ScreenBuffer.get_cell_at(emulator.alternate_screen_buffer, 1, 0))}"
-      )
 
       # Check that main buffer still has original content
       main_buffer = Emulator.get_active_buffer(emulator)

@@ -39,8 +39,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     emulator_after_write =
       write_character(
         emulator,
-        write_x,
-        write_y,
         char_codepoint,
         emulator.style
       )
@@ -62,22 +60,43 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     end
   end
 
-  defp maybe_advance_cursor_at_last_position(emulator, buffer_width, buffer_height) do
+  defp maybe_advance_cursor_at_last_position(
+         emulator,
+         buffer_width,
+         buffer_height
+       ) do
     {cursor_x, cursor_y} = get_cursor_position_safe(emulator.cursor)
-    Raxol.Core.Runtime.Log.debug("[maybe_advance_cursor_at_last_position] Called with cursor_x=#{cursor_x}, cursor_y=#{cursor_y}, buffer_width=#{buffer_width}, buffer_height=#{buffer_height}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "[maybe_advance_cursor_at_last_position] Called with cursor_x=#{cursor_x}, cursor_y=#{cursor_y}, buffer_width=#{buffer_width}, buffer_height=#{buffer_height}"
+    )
+
     # Trigger scroll if cursor is at the last row (not just the last column)
     if cursor_y == buffer_height - 1 do
-      Raxol.Core.Runtime.Log.debug("[maybe_advance_cursor_at_last_position] Triggering scroll!")
-      updated_emulator = case emulator.cursor do
-        cursor when is_pid(cursor) ->
-          GenServer.call(cursor, {:move_to, 0, buffer_height - 1})
-          emulator
-        cursor when is_map(cursor) ->
-          updated_cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 0, buffer_height - 1)
-          %{emulator | cursor: updated_cursor}
-        _ ->
-          emulator
-      end
+      Raxol.Core.Runtime.Log.debug(
+        "[maybe_advance_cursor_at_last_position] Triggering scroll!"
+      )
+
+      updated_emulator =
+        case emulator.cursor do
+          cursor when is_pid(cursor) ->
+            GenServer.call(cursor, {:move_to, 0, buffer_height - 1})
+            emulator
+
+          cursor when is_map(cursor) ->
+            updated_cursor =
+              Raxol.Terminal.Cursor.Manager.move_to(
+                cursor,
+                0,
+                buffer_height - 1
+              )
+
+            %{emulator | cursor: updated_cursor}
+
+          _ ->
+            emulator
+        end
+
       Emulator.maybe_scroll(updated_emulator)
     else
       emulator
@@ -97,6 +116,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   defp update_charset_state(emulator, char_codepoint) do
     {_, new_charset_state} =
       CharacterSets.translate_char(char_codepoint, emulator.charset_state)
+
     new_charset_state
   end
 
@@ -104,7 +124,8 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     char_width = CharacterHandling.get_char_width(char_codepoint)
     auto_wrap_mode = ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
 
-    {current_cursor_x, current_cursor_y} = get_cursor_position_safe(emulator.cursor)
+    {current_cursor_x, current_cursor_y} =
+      get_cursor_position_safe(emulator.cursor)
 
     {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded} =
       calculate_write_and_cursor_position(
@@ -116,7 +137,15 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         auto_wrap_mode
       )
 
-    log_cursor_positions(current_cursor_x, current_cursor_y, write_x, write_y, next_cursor_x, next_cursor_y)
+    log_cursor_positions(
+      current_cursor_x,
+      current_cursor_y,
+      write_x,
+      write_y,
+      next_cursor_x,
+      next_cursor_y
+    )
+
     {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
   end
 
@@ -156,64 +185,88 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     )
   end
 
-  defp log_cursor_positions(current_x, current_y, write_x, write_y, next_x, next_y) do
+  defp log_cursor_positions(
+         current_x,
+         current_y,
+         write_x,
+         write_y,
+         next_x,
+         next_y
+       ) do
     Raxol.Core.Runtime.Log.debug(
       "Cursor positions - Current: {#{current_x}, #{current_y}}, Write: {#{write_x}, #{write_y}}, Next: {#{next_x}, #{next_y}}"
     )
   end
 
-  defp write_character(
-         emulator,
-         write_x,
-         write_y,
-         char_codepoint,
-         style
-       ) do
-    {translated_char, _} =
-      CharacterSets.translate_char(char_codepoint, emulator.charset_state)
+  defp write_character(emulator, char_codepoint, opts \\ []) do
+    # IO.puts("DEBUG: write_character/3 called with char_codepoint: #{inspect(char_codepoint)}, opts: #{inspect(opts)}")
+    try do
+      {translated_char, new_charset_state} =
+        CharacterSets.translate_char(char_codepoint, emulator.charset_state)
 
-    # Convert codepoint to string
-    translated_char = <<translated_char::utf8>>
+      active_charset_module =
+        CharacterSets.get_active_charset(emulator.charset_state)
 
-    if not is_binary(translated_char) do
-      Raxol.Core.Runtime.Log.error(
-        "Expected translated_char to be a string, got: #{inspect(translated_char)}"
-      )
-    end
+      translated_char_str = <<translated_char::utf8>>
 
-    buffer_height = get_buffer_height(emulator)
+      # IO.puts("DEBUG: write_character - original char_codepoint: #{inspect(char_codepoint)}, translated_char: #{inspect(translated_char)}, as string: #{inspect(translated_char_str)}, active_charset_module: #{inspect(active_charset_module)}")
 
-    if write_y < buffer_height do
-      Raxol.Core.Runtime.Log.debug(
-        # {translated_char}" with style: #{inspect(emulator.style)}"
-        "[InputHandler] Writing char codepoint "
-      )
+      if not is_binary(translated_char_str) do
+        Raxol.Core.Runtime.Log.error(
+          "Expected translated_char to be a string, got: #{inspect(translated_char_str)}"
+        )
+      end
 
-      buffer_for_write = Emulator.get_active_buffer(emulator)
+      buffer_height = get_buffer_height(emulator)
 
-      IO.write(
-        :stderr,
-        "DEBUG: write_character style: #{inspect(style)}\n"
-      )
-
-      buffer_after_write =
-        Operations.write_char(
-          buffer_for_write,
-          write_x,
-          write_y,
-          translated_char,
-          style
+      {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded} =
+        calculate_positions(
+          emulator,
+          get_buffer_width(emulator),
+          char_codepoint
         )
 
-      Emulator.update_active_buffer(emulator, buffer_after_write)
-    else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "Attempted write out of bounds (y=#{write_y}, height=#{buffer_height}), skipping write.",
-        %{}
-      )
-    end
+      # IO.puts("DEBUG: write_character - write position: (#{write_x}, #{write_y})")
 
-    emulator
+      if write_y < buffer_height do
+        # IO.puts("DEBUG: character_processor - about to write char_codepoint: #{inspect(char_codepoint)}, translated_char: #{inspect(translated_char_str)}")
+        buffer_for_write = Emulator.get_active_buffer(emulator)
+        # When writing the cell, use opts directly as the style argument
+        # For example, if the function is write_char(buffer, x, y, char, style), pass opts as style
+        buffer_after_write =
+          Operations.write_char(
+            buffer_for_write,
+            write_x,
+            write_y,
+            translated_char_str,
+            opts
+          )
+
+        # IO.puts("DEBUG: character_processor - after write, cell at (#{write_x}, #{write_y}): #{inspect(ScreenBuffer.get_cell_at(buffer_after_write, write_x, write_y))}")
+        emulator = Emulator.update_active_buffer(emulator, buffer_after_write)
+
+        # IO.puts("DEBUG: After write - cell at (#{write_x}, #{write_y}): #{inspect(ScreenBuffer.get_cell_at(buffer_after_write, write_x, write_y))}")
+        # IO.puts("DEBUG: translated_char: #{inspect(translated_char_str)}, write_x: #{write_x}, write_y: #{write_y}")
+        # IO.puts("DEBUG: buffer_after_write.cells[#{write_y}][#{write_x}]: #{inspect(Enum.at(Enum.at(buffer_after_write.cells, write_y, []), write_x, %{}))}")
+        # IO.puts("DEBUG: After update_active_buffer - cell at (#{write_x}, #{write_y}): #{inspect(ScreenBuffer.get_cell_at(Emulator.get_active_buffer(emulator), write_x, write_y))}")
+
+        emulator
+      else
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Attempted write out of bounds (y=#{write_y}, height=#{buffer_height}), skipping write.",
+          %{}
+        )
+
+        emulator
+      end
+    rescue
+      exception ->
+        IO.puts(
+          "ERROR in write_character/3: #{inspect(exception)}\n#{Exception.format(:error, exception, __STACKTRACE__)}"
+        )
+
+        reraise(exception, __STACKTRACE__)
+    end
   end
 
   defp update_emulator_state(
@@ -232,6 +285,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
             cursor,
             {next_cursor_x, next_cursor_y}
           )
+
           # Don't update the emulator's cursor field - the PID is the cursor
           emulator
 

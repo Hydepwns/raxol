@@ -94,7 +94,13 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   end
 
   # Server Callbacks
-  def init(opts) do
+  def init(opts) when is_list(opts) do
+    # Convert keyword list to map
+    opts_map = Map.new(opts)
+    init(opts_map)
+  end
+
+  def init(opts) when is_map(opts) do
     state = %{
       themes: %{},
       theme_paths: Map.get(opts, :theme_paths, []),
@@ -315,7 +321,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
 
   defp validate_theme(theme_state) do
     required_fields = [
-      :id,
       :name,
       :version,
       :description,
@@ -326,7 +331,10 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
       :padding
     ]
 
-    case Enum.all?(required_fields, &Map.has_key?(theme_state, &1)) do
+    case Enum.all?(required_fields, fn field ->
+           Map.has_key?(theme_state, field) and
+             Map.get(theme_state, field) != nil
+         end) do
       true -> :ok
       false -> {:error, :invalid_theme_format}
     end
@@ -434,7 +442,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
       cursor: theme_data["cursor"],
       padding: theme_data["padding"],
       status: :active,
-      error: nil
+      error: nil,
+      config: %{}
     }
   end
 end

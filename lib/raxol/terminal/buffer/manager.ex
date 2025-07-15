@@ -240,7 +240,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
     y2 = y + height - 1
 
     damage_tracker =
-      DamageTracker.mark_damaged(manager.damage_tracker, x, y, x2, y2)
+      DamageTracker.add_damage_region(
+        manager.damage_tracker,
+        x,
+        y,
+        width,
+        height
+      )
 
     %{manager | damage_tracker: damage_tracker}
   end
@@ -267,6 +273,11 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(pid, :clear_damage)
   end
 
+  def clear_damage(%__MODULE__{} = manager) do
+    updated_damage_tracker = DamageTracker.clear_damage(manager.damage_tracker)
+    %{manager | damage_tracker: updated_damage_tracker}
+  end
+
   # Memory management functions
   # Only match on pid or atom for process-based API
   def update_memory_usage(pid) when is_pid(pid) or is_atom(pid) do
@@ -277,32 +288,32 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Updates memory usage tracking.
   """
   def update_memory_usage(%__MODULE__{} = manager) do
-    IO.puts("DEBUG: update_memory_usage called with %__MODULE__{} struct")
+    # IO.puts("DEBUG: update_memory_usage called with %__MODULE__{} struct")
     # Calculate memory usage for both buffers
     active_memory = calculate_buffer_memory(manager.active_buffer)
     back_memory = calculate_buffer_memory(manager.back_buffer)
     total_memory = active_memory + back_memory
 
-    IO.puts(
-      "DEBUG: update_memory_usage - active: #{active_memory}, back: #{back_memory}, total: #{total_memory}"
-    )
+    # IO.puts(
+    #   "DEBUG: update_memory_usage - active: #{active_memory}, back: #{back_memory}, total: #{total_memory}"
+    # )
 
-    IO.puts("DEBUG: Before update - metrics: #{inspect(manager.metrics)}")
+    # IO.puts("DEBUG: Before update - metrics: #{inspect(manager.metrics)}")
 
     metrics = Map.put(manager.metrics, :memory_usage, total_memory)
     updated_manager = %{manager | metrics: metrics}
 
-    IO.puts(
-      "DEBUG: After update - metrics: #{inspect(updated_manager.metrics)}"
-    )
+    # IO.puts(
+    #   "DEBUG: After update - metrics: #{inspect(updated_manager.metrics)}"
+    # )
 
     updated_manager
   end
 
   def update_memory_usage(manager) do
-    IO.puts(
-      "DEBUG: update_memory_usage called with other type: #{inspect(manager)}"
-    )
+    # IO.puts(
+    #   "DEBUG: update_memory_usage called with other type: #{inspect(manager)}"
+    # )
 
     manager
   end
@@ -601,7 +612,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   def handle_call({:mark_damaged, x, y, width, height}, _from, state) do
     new_damage_tracker =
-      DamageTracker.mark_damaged(state.damage_tracker, x, y, width, height)
+      DamageTracker.add_damage_region(state.damage_tracker, x, y, width, height)
 
     new_state = %{state | damage_tracker: new_damage_tracker}
     {:reply, new_state, new_state}
@@ -727,7 +738,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def get_scrollback(%TestBufferManager{scrollback: sb}), do: sb
 
   def get_scrollback(%Raxol.Terminal.Emulator{} = emulator),
-    do: Map.get(emulator, :scrollback_buffer, [])
+    do: emulator.scrollback_buffer
 
   def get_scrollback(nil), do: []
   def get_scrollback(%{scrollback: scrollback}), do: scrollback
@@ -736,6 +747,12 @@ defmodule Raxol.Terminal.Buffer.Manager do
     do: Map.get(emulator, :scrollback, [])
 
   def get_scrollback(emulator), do: emulator.buffer.scrollback
+
+  def set_scrollback_size(%Raxol.Terminal.Emulator{} = emulator, size)
+      when is_integer(size) and size >= 0 do
+    new_scrollback = Enum.take(emulator.scrollback_buffer, size)
+    %{emulator | scrollback_buffer: new_scrollback, scrollback_limit: size}
+  end
 
   def set_scrollback_size(nil, size) when is_integer(size) and size >= 0,
     do: %{scrollback: [], scrollback_size: size}
@@ -758,7 +775,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def get_scrollback_size(%TestBufferManager{scrollback_size: sz}), do: sz
 
   def get_scrollback_size(%Raxol.Terminal.Emulator{} = emulator),
-    do: Map.get(emulator, :scrollback_limit, 1000)
+    do: emulator.scrollback_limit
 
   def get_scrollback_size(nil), do: 1000
   def get_scrollback_size(%{scrollback_size: size}), do: size
@@ -789,6 +806,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def get_active_buffer(%TestBufferManager{active: active}), do: active
   def get_active_buffer(%{active: active}), do: active
 
+  def get_active_buffer(%Raxol.Terminal.Emulator{} = emulator) do
+    emulator.active
+  end
+
   def get_active_buffer(pid) when is_pid(pid) or is_atom(pid),
     do: GenServer.call(pid, :get_active_buffer)
 
@@ -799,12 +820,20 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def get_alternate_buffer(%{alternate: alternate}), do: alternate
   def get_alternate_buffer(%__MODULE__{} = state), do: {:ok, state.back_buffer}
 
+  def get_alternate_buffer(%Raxol.Terminal.Emulator{} = emulator) do
+    emulator.alternate
+  end
+
   def get_alternate_buffer(emulator) when is_map(emulator),
     do: Map.get(emulator, :alternate, nil)
 
   # Grouped switch_buffers/1 clauses - most specific to most general
   def switch_buffers(%TestBufferManager{active: a, alternate: b} = mgr),
     do: %{mgr | active: b, alternate: a}
+
+  def switch_buffers(%Raxol.Terminal.Emulator{} = emulator) do
+    %{emulator | active: emulator.alternate, alternate: emulator.active}
+  end
 
   def switch_buffers(%{active: active, alternate: alternate} = emulator),
     do: %{emulator | active: alternate, alternate: active}
@@ -817,6 +846,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   def set_active_buffer(%__MODULE__{} = manager, buffer),
     do: %{manager | active_buffer: buffer}
+
+  def set_active_buffer(%Raxol.Terminal.Emulator{} = emulator, buffer) do
+    %{emulator | active: buffer}
+  end
 
   def set_active_buffer(%{active: _} = emulator, buffer),
     do: %{emulator | active: buffer}
@@ -833,6 +866,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   def set_alternate_buffer(%__MODULE__{} = manager, buffer),
     do: %{manager | back_buffer: buffer}
+
+  def set_alternate_buffer(%Raxol.Terminal.Emulator{} = emulator, buffer) do
+    %{emulator | alternate: buffer}
+  end
 
   def set_alternate_buffer(%{alternate: _} = emulator, buffer),
     do: %{emulator | alternate: buffer}

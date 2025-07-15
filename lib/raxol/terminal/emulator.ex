@@ -54,6 +54,10 @@ defmodule Raxol.Terminal.Emulator do
     main_screen_buffer: nil,
     alternate_screen_buffer: nil,
 
+    # Buffer manager storage
+    active: nil,
+    alternate: nil,
+
     # Character set state
     charset_state: %{
       g0: :us_ascii,
@@ -107,7 +111,15 @@ defmodule Raxol.Terminal.Emulator do
     cursor_blink_rate: 0,
     cursor_style: :block,
     session_id: nil,
-    client_options: %{}
+    client_options: %{},
+
+    # Cursor operation flags
+    cursor_saved: false,
+    cursor_restored: false,
+
+    # Device status flags
+    device_status_reported: false,
+    cursor_position_reported: false
   ]
 
   @type t :: %__MODULE__{
@@ -144,7 +156,11 @@ defmodule Raxol.Terminal.Emulator do
           cursor_blink_rate: non_neg_integer(),
           cursor_style: atom(),
           session_id: any() | nil,
-          client_options: map()
+          client_options: map(),
+          cursor_saved: boolean(),
+          cursor_restored: boolean(),
+          device_status_reported: boolean(),
+          cursor_position_reported: boolean()
         }
 
   # Cursor Operations
@@ -215,8 +231,8 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate clear_scrollback(emulator), to: Reset
 
   # Constructor functions
-  defdelegate new(), to: Constructors
-  defdelegate new(width, height), to: Constructors
+  defdelegate new(), to: Raxol.Terminal.Emulator.Constructors
+  defdelegate new(width, height), to: Raxol.Terminal.Emulator.Constructors
   defdelegate new(width, height, opts), to: Constructors
   defdelegate new(opts), to: Constructors
   defdelegate new(width, height, config, options), to: Constructors
@@ -482,7 +498,25 @@ defmodule Raxol.Terminal.Emulator do
     updated_buffer = update_scrollback_buffer(scrolled_buffer, scrolled_lines)
     log_buffer_update(updated_buffer)
 
-    update_emulator_buffer(emulator, updated_buffer)
+    # Update the buffer
+    emulator_with_updated_buffer =
+      update_emulator_buffer(emulator, updated_buffer)
+
+    # Update the cursor position to stay within the visible region
+    {cursor_x, cursor_y} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    # Move cursor up by 1 line, but not below 0
+    new_cursor_y = max(0, cursor_y - 1)
+
+    # Update the cursor position
+    updated_cursor =
+      Raxol.Terminal.Cursor.Manager.set_position(
+        emulator.cursor,
+        {cursor_x, new_cursor_y}
+      )
+
+    %{emulator_with_updated_buffer | cursor: updated_cursor}
   end
 
   defp log_scroll_result(scrolled_lines) do
@@ -573,13 +607,13 @@ defmodule Raxol.Terminal.Emulator do
             input
           )
 
-        IO.puts(
-          "DEBUG: After parser processing, style: #{inspect(updated_emulator.style)}"
-        )
+        # IO.puts(
+        #   "DEBUG: After parser processing, style: #{inspect(updated_emulator.style)}"
+        # )
 
-        IO.puts(
-          "DEBUG: After parser processing, scroll_region: #{inspect(updated_emulator.scroll_region)}"
-        )
+        # IO.puts(
+        #   "DEBUG: After parser processing, scroll_region: #{inspect(updated_emulator.scroll_region)}"
+        # )
 
         # After all input, if the cursor is past the last row, scroll until it's visible
         final_emulator =
@@ -635,32 +669,32 @@ defmodule Raxol.Terminal.Emulator do
   defp handle_ansi_sequences(<<>>, emulator), do: {emulator, <<>>}
 
   defp handle_ansi_sequences(rest, emulator) do
-    IO.puts("DEBUG: handle_ansi_sequences input: #{inspect(rest)}")
+    # IO.puts("DEBUG: handle_ansi_sequences input: #{inspect(rest)}")
 
     case parse_ansi_sequence(rest) do
       {:osc, remaining, _} ->
-        IO.puts("DEBUG: handle_ansi_sequences parsed: {:osc, ...}")
+        # IO.puts("DEBUG: handle_ansi_sequences parsed: {:osc, ...}")
         handle_ansi_sequences(remaining, emulator)
 
       {:dcs, remaining, _} ->
-        IO.puts("DEBUG: handle_ansi_sequences parsed: {:dcs, ...}")
+        # IO.puts("DEBUG: handle_ansi_sequences parsed: {:dcs, ...}")
         handle_ansi_sequences(remaining, emulator)
 
       {:incomplete, _} ->
-        IO.puts("DEBUG: handle_ansi_sequences parsed: {:incomplete, ...}")
+        # IO.puts("DEBUG: handle_ansi_sequences parsed: {:incomplete, ...}")
         {emulator, rest}
 
       parsed_sequence ->
-        IO.puts(
-          "DEBUG: handle_ansi_sequences parsed: #{inspect(parsed_sequence)}"
-        )
+        # IO.puts(
+        #   "DEBUG: handle_ansi_sequences parsed: #{inspect(parsed_sequence)}"
+        # )
 
         {new_emulator, remaining} =
           handle_parsed_sequence(parsed_sequence, rest, emulator)
 
-        IO.puts(
-          "DEBUG: handle_ansi_sequences updated emulator: #{inspect(new_emulator.style)}"
-        )
+        # IO.puts(
+        #   "DEBUG: handle_ansi_sequences updated emulator: #{inspect(new_emulator.style)}"
+        # )
 
         handle_ansi_sequences(remaining, new_emulator)
     end

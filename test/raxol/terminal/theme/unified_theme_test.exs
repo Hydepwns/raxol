@@ -26,6 +26,7 @@ defmodule Raxol.Terminal.Theme.UnifiedThemeTest do
     test "initializes with custom configuration" do
       {:ok, pid} =
         UnifiedTheme.start_link(
+          name: :custom_config_test,
           theme_paths: ["custom/path"],
           auto_load: true,
           theme_config: %{custom: "config"}

@@ -1,5 +1,5 @@
 {application,termbox2_nif,
-             [{config_mtime,1752360090},
+             [{config_mtime,1752363186},
               {optional_applications,[]},
               {applications,[kernel,stdlib,elixir]},
               {description,"Termbox2 NIF for Elixir"},
