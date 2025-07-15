@@ -93,7 +93,6 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
 
       # Assert the first cell has the correct style
       first_cell = Enum.at(Enum.at(buffer.cells, 0), 0)
-      IO.puts("DEBUG: First cell: #{inspect(first_cell)}")
       assert first_cell.style.foreground == :red
       assert first_cell.style.bold == true
 
