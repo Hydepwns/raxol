@@ -130,140 +130,113 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   defp render_cell(cell, theme) do
-    # Debug: Print cell info for first few cells
-    if cell.char == "S" do
-      IO.puts("DEBUG: Cell char: '#{cell.char}', style: #{inspect(cell.style)}")
-    end
-
     style_attrs = build_style_string(cell.style, theme)
     "<span style=\"#{style_attrs}\">#{cell.char}</span>"
   end
 
   defp build_style_string(style, theme) do
-    attrs = []
+    style_map = normalize_style(style)
 
-    # Normalize style to a map
-    style_map =
-      cond do
-        is_map(style) and Map.has_key?(style, :__struct__) ->
-          Map.from_struct(style)
+    []
+    |> add_background_color(style_map, theme)
+    |> add_foreground_color(style_map, theme)
+    |> add_text_attributes(style_map)
+    |> build_style_string()
+  end
 
-        is_map(style) ->
-          style
+  defp normalize_style(style) do
+    cond do
+      is_map(style) and Map.has_key?(style, :__struct__) ->
+        Map.from_struct(style)
 
-        true ->
-          %{}
-      end
+      is_map(style) ->
+        style
 
-    # Apply background color - use cell style if present, otherwise use default from theme
-    background_color =
-      if Map.has_key?(style_map, :background) and
-           not is_nil(style_map.background) do
-        get_color(style_map.background, Map.get(theme, :background, %{}))
-      else
-        get_color(:default, Map.get(theme, :background, %{}))
-      end
+      true ->
+        %{}
+    end
+  end
 
-    attrs =
-      if background_color != "" do
-        [{"background-color", background_color} | attrs]
-      else
-        attrs
-      end
+  defp add_background_color(attrs, style_map, theme) do
+    color = get_style_color(style_map, :background, theme, :background)
+    if color != "", do: [{"background-color", color} | attrs], else: attrs
+  end
 
-    # Apply foreground color - use cell style if present, otherwise use default
-    foreground_color =
-      if Map.has_key?(style_map, :foreground) and
-           not is_nil(style_map.foreground) do
-        get_color(style_map.foreground, Map.get(theme, :foreground, %{}))
-      else
-        get_color(:default, Map.get(theme, :foreground, %{}))
-      end
+  defp add_foreground_color(attrs, style_map, theme) do
+    color = get_style_color(style_map, :foreground, theme, :foreground)
+    if color != "", do: [{"color", color} | attrs], else: attrs
+  end
 
-    attrs =
-      if foreground_color != "" do
-        [{"color", foreground_color} | attrs]
-      else
-        attrs
-      end
+  defp get_style_color(style_map, key, theme, theme_key) do
+    if Map.has_key?(style_map, key) and not is_nil(style_map[key]) do
+      get_color(style_map[key], Map.get(theme, theme_key, %{}))
+    else
+      get_color(:default, Map.get(theme, theme_key, %{}))
+    end
+  end
 
-    # Apply bold if present
-    attrs =
-      if Map.get(style_map, :bold, false) do
-        [{"font-weight", "bold"} | attrs]
-      else
-        attrs
-      end
+  defp add_text_attributes(attrs, style_map) do
+    attrs
+    |> add_if_present(style_map, :bold, "font-weight", "bold")
+    |> add_if_present(style_map, :underline, "text-decoration", "underline")
+    |> add_if_present(style_map, :italic, "font-style", "italic")
+  end
 
-    # Apply underline if present
-    attrs =
-      if Map.get(style_map, :underline, false) do
-        [{"text-decoration", "underline"} | attrs]
-      else
-        attrs
-      end
+  defp add_if_present(attrs, style_map, key, css_prop, css_value) do
+    if Map.get(style_map, key, false),
+      do: [{css_prop, css_value} | attrs],
+      else: attrs
+  end
 
-    # Apply italic if present
-    attrs =
-      if Map.get(style_map, :italic, false) do
-        [{"font-style", "italic"} | attrs]
-      else
-        attrs
-      end
-
-    # Build the style string
+  defp build_style_string(attrs) do
     attrs
     |> Enum.reverse()
-    |> Enum.map(fn {k, v} -> "#{k}: #{v}" end)
-    |> Enum.join("; ")
+    |> Enum.map_join("; ", fn {k, v} -> "#{k}: #{v}" end)
   end
 
   defp get_color(color_name, color_map) do
     case Map.get(color_map, color_name) do
-      nil ->
-        ""
-
-      color when is_binary(color) ->
-        color
-
-      color when is_map(color) ->
-        # Check if it's an RGB object
-        if Map.has_key?(color, :r) do
-          # Convert RGB object to hex string
-          r = Map.get(color, :r, 0)
-          g = Map.get(color, :g, 0)
-          b = Map.get(color, :b, 0)
-
-          "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
-        else
-          ""
-        end
-
-      color when is_atom(color) ->
-        # Handle color atoms by converting to hex
-        case color do
-          :red -> "#FF0000"
-          :green -> "#00FF00"
-          :blue -> "#0000FF"
-          :yellow -> "#FFFF00"
-          :magenta -> "#FF00FF"
-          :cyan -> "#00FFFF"
-          :white -> "#FFFFFF"
-          :black -> "#000000"
-          :bright_red -> "#FF8080"
-          :bright_green -> "#80FF80"
-          :bright_blue -> "#8080FF"
-          :bright_yellow -> "#FFFF80"
-          :bright_magenta -> "#FF80FF"
-          :bright_cyan -> "#80FFFF"
-          :bright_white -> "#FFFFFF"
-          :bright_black -> "#808080"
-          _ -> ""
-        end
-
-      _ ->
-        ""
+      nil -> ""
+      color when is_binary(color) -> color
+      color when is_map(color) -> convert_rgb_to_hex(color)
+      color when is_atom(color) -> convert_color_atom(color)
+      _ -> ""
     end
+  end
+
+  defp convert_rgb_to_hex(color) do
+    if Map.has_key?(color, :r) do
+      r = Map.get(color, :r, 0)
+      g = Map.get(color, :g, 0)
+      b = Map.get(color, :b, 0)
+
+      "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
+    else
+      ""
+    end
+  end
+
+  defp convert_color_atom(color) do
+    color_map = %{
+      red: "#FF0000",
+      green: "#00FF00",
+      blue: "#0000FF",
+      yellow: "#FFFF00",
+      magenta: "#FF00FF",
+      cyan: "#00FFFF",
+      white: "#FFFFFF",
+      black: "#000000",
+      bright_red: "#FF8080",
+      bright_green: "#80FF80",
+      bright_blue: "#8080FF",
+      bright_yellow: "#FFFF80",
+      bright_magenta: "#FF80FF",
+      bright_cyan: "#80FFFF",
+      bright_white: "#FFFFFF",
+      bright_black: "#808080"
+    }
+
+    Map.get(color_map, color, "")
   end
 
   defp apply_font_settings(content, _font_settings), do: content
@@ -411,14 +384,23 @@ defmodule Raxol.Terminal.Renderer do
   # Handle buffer manager PIDs (used by tests)
   def get_content(manager_pid, opts) when is_pid(manager_pid) do
     case Raxol.Terminal.Buffer.Manager.read(manager_pid, opts) do
-      {content, _new_buffer} when is_binary(content) -> {:ok, content}
-      {content, _new_buffer} when is_list(content) -> {:ok, content}
-      content when is_binary(content) -> {:ok, content}
-      content when is_list(content) -> {:ok, content}
+      {content, _new_buffer} -> {:ok, content}
+      content when is_binary(content) or is_list(content) -> {:ok, content}
       {:error, reason} -> {:error, reason}
       other -> {:ok, other}
     end
   end
+
+  defp handle_buffer_result({content, _new_buffer})
+       when is_binary(content) or is_list(content),
+       do: {:ok, content}
+
+  defp handle_buffer_result(content)
+       when is_binary(content) or is_list(content),
+       do: {:ok, content}
+
+  defp handle_buffer_result({:error, reason}), do: {:error, reason}
+  defp handle_buffer_result(other), do: {:ok, other}
 
   defp maybe_add_cursor(content, nil, _include_cursor), do: content
   defp maybe_add_cursor(content, cursor, true), do: {content, cursor}
