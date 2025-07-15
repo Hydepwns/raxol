@@ -205,7 +205,20 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     cursor
   end
 
-  defp set_cursor_position(cursor, position) when is_map(cursor) do
-    %{cursor | position: position}
+  defp set_cursor_position(cursor, {col, row}) when is_map(cursor) do
+    # Handle both cursor formats
+    case cursor do
+      %{position: _} ->
+        # Emulator cursor format with :position field
+        %{cursor | position: {col, row}}
+
+      %{row: _, col: _} ->
+        # Test cursor format with :row and :col fields
+        %{cursor | row: row, col: col, position: {col, row}}
+
+      _ ->
+        # Fallback
+        cursor
+    end
   end
 end

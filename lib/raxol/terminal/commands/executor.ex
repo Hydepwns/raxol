@@ -44,9 +44,9 @@ defmodule Raxol.Terminal.Commands.Executor do
         intermediates_buffer,
         final_byte
       ) do
-    Raxol.Core.Runtime.Log.debug(
-      "[Executor.execute_csi_command] BEFORE: scroll_region=#{inspect(emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
-    )
+    # Raxol.Core.Runtime.Log.debug(
+    #   "[Executor.execute_csi_command] BEFORE: scroll_region=#{inspect(emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
+    # )
 
     params = Parser.parse_params(params_buffer)
 

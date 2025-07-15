@@ -6,31 +6,38 @@ defmodule Raxol.Terminal.Cache.SystemTest do
     # Stop any existing cache system to ensure a clean state
     case GenServer.whereis(Raxol.Terminal.Cache.System) do
       nil -> :ok
-      pid -> GenServer.stop(pid)
+      pid ->
+        try do
+          GenServer.stop(pid)
+          Process.sleep(50)
+        catch
+          :exit, _ -> :ok
+        end
     end
 
-    Process.sleep(50)
     # Start the cache system with test configuration
-    {:ok, _pid} =
-      System.start_link(
-        # 1MB
-        max_size: 1024 * 1024,
-        default_ttl: 3600,
-        eviction_policy: :lru,
-        compression_enabled: true,
-        namespace_configs: %{
-          # 512KB
-          buffer: %{max_size: 512 * 1024},
-          # 256KB
-          animation: %{max_size: 256 * 1024},
-          # 128KB
-          scroll: %{max_size: 128 * 1024},
-          # 64KB
-          clipboard: %{max_size: 64 * 1024},
-          # 20KB (force eviction for test)
-          general: %{max_size: 20_000}
-        }
-      )
+    case System.start_link(
+      # 1MB
+      max_size: 1024 * 1024,
+      default_ttl: 3600,
+      eviction_policy: :lru,
+      compression_enabled: true,
+      namespace_configs: %{
+        # 512KB
+        buffer: %{max_size: 512 * 1024},
+        # 256KB
+        animation: %{max_size: 256 * 1024},
+        # 128KB
+        scroll: %{max_size: 128 * 1024},
+        # 64KB
+        clipboard: %{max_size: 64 * 1024},
+        # 20KB (force eviction for test)
+        general: %{max_size: 20_000}
+      }
+    ) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     :ok
   end

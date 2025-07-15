@@ -111,6 +111,11 @@ config :raxol, :terminal,
   enable_ansi: true,
   enable_mouse: true
 
+# Configure buffer system
+# Set to :new to use the refactored modular BufferServerRefactored
+# Set to :old to use the original monolithic BufferServer
+config :raxol, :buffer_system, :new
+
 # Configure web interface settings
 config :raxol, :web,
   default_theme: "dark",

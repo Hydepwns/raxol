@@ -10,8 +10,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   alias Raxol.Core.UserPreferences
 
   setup do
-    # Start UserPreferences in test mode
-    {:ok, _user_prefs_pid} = UserPreferences.start_link(test_mode?: true)
+    # Start UserPreferences in test mode if not already started
+    user_prefs_pid = case UserPreferences.start_link(test_mode?: true) do
+      {:ok, pid} -> pid
+      {:error, {:already_started, pid}} -> pid
+    end
 
     # Initialize dependencies
     EventManager.init()
@@ -19,7 +22,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
     # Clean up after tests
     on_exit(fn ->
       ThemeIntegration.cleanup()
-      # Stop UserPreferences
+      # Stop UserPreferences only if we started it
       if Process.whereis(UserPreferences) do
         GenServer.stop(UserPreferences)
       end

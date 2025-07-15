@@ -24,7 +24,9 @@ defmodule Raxol.Terminal.Buffer.State do
       calculate_copy_dimensions(buffer, new_width, new_height)
 
     new_grid = create_empty_grid(new_width, new_height)
-    updated_grid = copy_old_content(buffer, new_grid, copy_width, copy_height)
+
+    updated_grid =
+      copy_old_content(buffer, new_grid, copy_width, copy_height, new_width)
 
     %{
       buffer
@@ -45,18 +47,25 @@ defmodule Raxol.Terminal.Buffer.State do
     List.duplicate(List.duplicate(default_cell, width), height)
   end
 
-  defp copy_old_content(buffer, new_grid, copy_width, copy_height) do
-    Enum.reduce(0..(copy_height - 1), new_grid, fn y, current_grid ->
-      old_row_slice = buffer.cells |> Enum.at(y) |> Enum.slice(0, copy_width)
+  defp copy_old_content(buffer, new_grid, copy_width, copy_height, new_width) do
+    case buffer.cells do
+      nil ->
+        # Return new grid if cells is nil
+        new_grid
 
-      padding =
-        List.duplicate(
-          Cell.new(" ", TextFormatting.new()),
-          max(0, new_grid.width - copy_width)
-        )
+      cells ->
+        Enum.reduce(0..(copy_height - 1), new_grid, fn y, current_grid ->
+          old_row_slice = cells |> Enum.at(y) |> Enum.slice(0, copy_width)
 
-      List.update_at(current_grid, y, fn _ -> old_row_slice ++ padding end)
-    end)
+          padding =
+            List.duplicate(
+              Cell.new(" ", TextFormatting.new()),
+              max(0, new_width - copy_width)
+            )
+
+          List.update_at(current_grid, y, fn _ -> old_row_slice ++ padding end)
+        end)
+    end
   end
 
   def resize(buffer, _new_width, _new_height) when tuple?(buffer) do
@@ -106,7 +115,14 @@ defmodule Raxol.Terminal.Buffer.State do
   """
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t()) | nil
   def get_line(%{__struct__: _} = buffer, line_index) when line_index >= 0 do
-    Enum.at(buffer.cells, line_index)
+    case buffer.cells do
+      nil ->
+        # Return nil if cells is nil
+        nil
+
+      cells ->
+        Enum.at(cells, line_index)
+    end
   end
 
   def get_line(_buffer, _line_index) when tuple?(_buffer) do
@@ -121,7 +137,14 @@ defmodule Raxol.Terminal.Buffer.State do
   @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t() | nil
   def get_cell(%{__struct__: _} = buffer, x, y) when x >= 0 and y >= 0 do
-    buffer.cells |> Enum.at(y) |> Enum.at(x)
+    case buffer.cells do
+      nil ->
+        # Return nil if cells is nil
+        nil
+
+      cells ->
+        cells |> Enum.at(y) |> Enum.at(x)
+    end
   end
 
   def get_cell(_buffer, _x, _y) when tuple?(_buffer) do
@@ -197,10 +220,17 @@ defmodule Raxol.Terminal.Buffer.State do
   """
   @spec get_content(ScreenBuffer.t()) :: String.t()
   def get_content(%{__struct__: _} = buffer) do
-    buffer.cells
-    |> Enum.map_join("\n", fn row ->
-      row |> Enum.map_join("", &Cell.get_char/1) |> String.trim_trailing()
-    end)
+    case buffer.cells do
+      nil ->
+        # Return empty string if cells is nil
+        ""
+
+      cells ->
+        cells
+        |> Enum.map_join("\n", fn row ->
+          row |> Enum.map_join("", &Cell.get_char/1) |> String.trim_trailing()
+        end)
+    end
   end
 
   def get_content(buffer) when tuple?(buffer) do

@@ -244,7 +244,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
           }
       end
 
-    {:ok, %{emulator | saved_cursor: saved_cursor}}
+    {:ok, %{emulator | saved_cursor: saved_cursor, cursor_saved: true}}
   end
 
   def handle_decrc(emulator, _params) do
@@ -253,30 +253,37 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
         {:ok, emulator}
 
       saved ->
-        # Restore cursor position and style
-        {col, row} = saved.position
+        # Handle both CursorManager struct and map with position field
+        {col, row} =
+          case saved do
+            %{position: pos} when is_tuple(pos) -> pos
+            %{col: c, row: r} -> {c, r}
+            _ -> {0, 0}
+          end
 
         emulator =
           Emulator.move_cursor_to(
             emulator,
-            {row, col},
+            {col, row},
             emulator.width,
             emulator.height
           )
 
-        # Update cursor style and visibility
-        cursor = emulator.cursor
-
+        # Update cursor style and visibility on the updated cursor
         updated_cursor =
-          case cursor do
-            %{row: _, col: _, style: _, visible: _} ->
-              %{cursor | style: saved.style, visible: saved.visible}
+          case emulator.cursor do
+            %{row: _, col: _, style: _, visible: _} = cur ->
+              %{
+                cur
+                | style: Map.get(saved, :style, cur.style),
+                  visible: Map.get(saved, :visible, cur.visible)
+              }
 
             _ ->
-              cursor
+              emulator.cursor
           end
 
-        {:ok, %{emulator | cursor: updated_cursor}}
+        {:ok, %{emulator | cursor: updated_cursor, cursor_restored: true}}
     end
   end
 
@@ -340,7 +347,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
       [6] ->
         {:ok, %{emulator | cursor: %{emulator.cursor | style: :steady_bar}}}
 
+      [param] when is_integer(param) ->
+        # Invalid style code - keep current style
+        {:ok, emulator}
+
       _ ->
+        # Invalid parameter type - default to blink_block
         {:ok, %{emulator | cursor: %{emulator.cursor | style: :blink_block}}}
     end
   end

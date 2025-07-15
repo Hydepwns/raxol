@@ -1,7 +1,9 @@
 defmodule Raxol.Core.Buffer.BufferOperationsTest do
   use ExUnit.Case, async: true
   alias Raxol.Terminal.Buffer
-  alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Buffer.Cell, as: BufferCell
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Buffer.ConcurrentBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 
   describe "Edge Cases" do
@@ -10,20 +12,20 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
 
       # Test negative coordinates
       assert_raise ArgumentError, fn ->
-        Buffer.set_cell(buffer, -1, 0, Cell.new())
+        Buffer.set_cell(buffer, -1, 0, BufferCell.new())
       end
 
       assert_raise ArgumentError, fn ->
-        Buffer.set_cell(buffer, 0, -1, Cell.new())
+        Buffer.set_cell(buffer, 0, -1, BufferCell.new())
       end
 
       # Test coordinates beyond buffer dimensions
       assert_raise ArgumentError, fn ->
-        Buffer.set_cell(buffer, 81, 0, Cell.new())
+        Buffer.set_cell(buffer, 81, 0, BufferCell.new())
       end
 
       assert_raise ArgumentError, fn ->
-        Buffer.set_cell(buffer, 0, 25, Cell.new())
+        Buffer.set_cell(buffer, 0, 25, BufferCell.new())
       end
     end
 
@@ -82,7 +84,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       _buffer =
         Enum.reduce(0..99, buffer, fn y, acc ->
           Enum.reduce(0..199, acc, fn x, acc ->
-            cell = Cell.new("X", TextFormatting.new(fg: :red))
+            cell = BufferCell.new("X", TextFormatting.new(fg: :red))
             Buffer.set_cell(acc, x, y, cell)
           end)
         end)
@@ -108,7 +110,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
         Enum.reduce(1..1000, buffer, fn i, acc ->
           x = rem(i, 80)
           y = div(i, 80)
-          cell = Cell.new("X", TextFormatting.new(fg: :blue))
+          cell = BufferCell.new("X", TextFormatting.new(fg: :blue))
           Buffer.set_cell(acc, x, y, cell)
         end)
 
@@ -124,19 +126,21 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
   end
 
   describe "Concurrent Access Tests" do
-    test ~c"handles concurrent buffer access safely" do
-      buffer = Buffer.new({80, 24})
+    test "handles concurrent buffer access safely" do
+      # Start a buffer server for concurrent access
+      {:ok, pid} = ConcurrentBuffer.start_server(width: 80, height: 24)
 
       # Create multiple processes that access the buffer
       processes =
         Enum.map(1..10, fn _ ->
           Task.async(fn ->
             # Each process performs multiple operations
-            Enum.reduce(1..100, buffer, fn i, acc ->
+            Enum.each(0..99, fn i ->
               x = rem(i, 80)
               y = div(i, 80)
-              cell = Cell.new("X", TextFormatting.new(fg: :green))
-              Buffer.set_cell(acc, x, y, cell)
+              cell = BufferCell.new("X", TextFormatting.new(foreground: :green))
+              # Write operations are now asynchronous
+              ConcurrentBuffer.set_cell(pid, x, y, cell)
             end)
           end)
         end)
@@ -144,33 +148,42 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       # Wait for all processes to complete
       results = Task.await_many(processes, 5000)
 
-      # Verify all processes completed successfully (returned buffer structs)
+      # Verify all processes completed successfully
       assert Enum.all?(results, fn result ->
-               is_struct(result, Raxol.Terminal.Buffer)
+               result == :ok
              end)
+
+      # Flush to ensure all writes are completed
+      assert :ok = ConcurrentBuffer.flush(pid)
+
+      # Verify some cells were written
+      assert {:ok, cell} = ConcurrentBuffer.get_cell(pid, 0, 0)
+      assert cell.char == "X"
+      assert Cell.fg(cell) == :green
     end
 
-    test ~c"handles concurrent read/write operations" do
-      buffer = Buffer.new({80, 24})
+    test "handles concurrent read/write operations" do
+      # Start a buffer server for concurrent access
+      {:ok, pid} = ConcurrentBuffer.start_server(width: 80, height: 24)
 
       # Create reader and writer processes
       reader =
         Task.async(fn ->
-          Enum.reduce(1..1000, buffer, fn _i, acc ->
+          Enum.each(1..1000, fn _i ->
             x = :rand.uniform(80) - 1
             y = :rand.uniform(24) - 1
-            Buffer.get_cell(acc, x, y)
-            acc
+            assert {:ok, _cell} = ConcurrentBuffer.get_cell(pid, x, y)
           end)
         end)
 
       writer =
         Task.async(fn ->
-          Enum.reduce(1..1000, buffer, fn i, acc ->
+          Enum.each(1..1000, fn i ->
             x = :rand.uniform(80) - 1
             y = :rand.uniform(24) - 1
-            cell = Cell.new("X", TextFormatting.new(fg: :yellow))
-            Buffer.set_cell(acc, x, y, cell)
+            cell = BufferCell.new("X", TextFormatting.new(foreground: :yellow))
+            # Write operations are now asynchronous
+            ConcurrentBuffer.set_cell(pid, x, y, cell)
           end)
         end)
 
@@ -178,9 +191,22 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       reader_result = Task.await(reader, 5000)
       writer_result = Task.await(writer, 5000)
 
-      # Verify both processes completed successfully (returned buffer structs)
-      assert is_struct(reader_result, Raxol.Terminal.Buffer)
-      assert is_struct(writer_result, Raxol.Terminal.Buffer)
+      # Verify both processes completed successfully
+      assert reader_result == :ok
+      assert writer_result == :ok
+
+      # Flush to ensure all writes are completed
+      assert :ok = ConcurrentBuffer.flush(pid)
+
+      # Write to a specific position and verify it was written correctly
+      test_cell = BufferCell.new("X", TextFormatting.new(foreground: :yellow))
+      ConcurrentBuffer.set_cell(pid, 10, 10, test_cell)
+      assert :ok = ConcurrentBuffer.flush(pid)
+
+      # Verify the cell was written correctly
+      assert {:ok, cell} = ConcurrentBuffer.get_cell(pid, 10, 10)
+      assert cell.char == "X"
+      assert Cell.fg(cell) == :yellow
     end
   end
 

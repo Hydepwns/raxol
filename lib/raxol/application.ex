@@ -4,8 +4,6 @@ defmodule Raxol.Application do
 
   @impl Application
   def start(_type, _args) do
-    IO.puts("[Raxol.Application] === APPLICATION STARTING ===")
-
     Raxol.Core.Runtime.Log.info_with_context(
       "No preferences file found, using defaults.",
       %{}
@@ -68,8 +66,6 @@ defmodule Raxol.Test.MockApplicationSupervisor do
   require Raxol.Core.Runtime.Log
 
   def start_link(_args) do
-    IO.puts("[MockApplicationSupervisor] === MOCK SUPERVISOR STARTING ===")
-
     Raxol.Core.Runtime.Log.info_with_context(
       "Starting MockApplicationSupervisor for testing",
       %{}
@@ -80,8 +76,6 @@ defmodule Raxol.Test.MockApplicationSupervisor do
 
   @impl Supervisor
   def init(_args) do
-    IO.puts("[MockApplicationSupervisor] === INIT STARTING ===")
-
     Raxol.Core.Runtime.Log.info_with_context(
       "Initializing MockApplicationSupervisor with Phoenix PubSub and Repo",
       %{}

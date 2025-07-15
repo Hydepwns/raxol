@@ -151,6 +151,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate write_char(buffer, x, y, char, style), to: Content
 
+  def write_char(buffer, x, y, char, style) do
+    IO.puts("DEBUG: ScreenBuffer.write_char/4 called")
+    Content.write_char(buffer, x, y, char, style)
+  end
+
   def write_string(buffer, x, y, string),
     do: write_string(buffer, x, y, string, nil)
 
@@ -918,7 +923,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Raxol.Terminal.Buffer.Content.update(buffer, changes)
   end
 
-  def handle_single_line_replacement(lines_list, row, start_col, end_col, replacement) do
+  def handle_single_line_replacement(
+        lines_list,
+        row,
+        start_col,
+        end_col,
+        replacement
+      ) do
     line = Selection.get_line(lines_list, row)
     line_length = String.length(line)
 

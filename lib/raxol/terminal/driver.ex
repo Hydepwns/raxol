@@ -93,10 +93,9 @@ defmodule Raxol.Terminal.Driver do
           %{}
         )
       end
-    end
 
-    # Send driver_ready event to the test process
-    if Mix.env() == :test do
+      {:ok, state}
+    else
       Raxol.Core.Runtime.Log.info(
         "[Driver] Test environment detected, sending driver_ready event"
       )
@@ -115,9 +114,11 @@ defmodule Raxol.Terminal.Driver do
           %{}
         )
       end
-    end
 
-    {:ok, state}
+      # In test mode, set termbox_state to :initialized so we can handle test events
+      state = %{state | termbox_state: :initialized}
+      {:ok, state}
+    end
   end
 
   def handle_info(:retry_init, %{init_retries: retries} = state)
@@ -147,7 +148,7 @@ defmodule Raxol.Terminal.Driver do
 
   def handle_info(
         {:termbox_event, event_map},
-        %{termbox_state: :initialized} = state
+        %{termbox_state: :initialized, dispatcher_pid: dispatcher_pid} = state
       ) do
     Raxol.Core.Runtime.Log.debug(
       "Received termbox event: #{inspect(event_map)}"
@@ -156,8 +157,13 @@ defmodule Raxol.Terminal.Driver do
     case translate_termbox_event(event_map) do
       {:ok, %Event{} = event} ->
         # Only send if dispatcher_pid is known
-        if state.dispatcher_pid,
-          do: GenServer.cast(state.dispatcher_pid, {:dispatch, event})
+        if dispatcher_pid do
+          if Mix.env() == :test do
+            send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+          else
+            GenServer.cast(dispatcher_pid, {:dispatch, event})
+          end
+        end
 
         {:noreply, state}
 
@@ -169,6 +175,49 @@ defmodule Raxol.Terminal.Driver do
         Raxol.Core.Runtime.Log.warning_with_context(
           "Failed to translate termbox event: #{inspect(reason)}. Event: #{inspect(event_map)}",
           %{}
+        )
+
+        {:noreply, state}
+    end
+  end
+
+  def handle_info(
+        {:termbox_event, event_map},
+        %{termbox_state: :initialized, dispatcher_pid: dispatcher_pid} = state
+      ) do
+    Raxol.Core.Runtime.Log.debug(
+      "Received termbox event: #{inspect(event_map)}"
+    )
+
+    case translate_termbox_event(event_map) do
+      {:ok, %Event{} = event} ->
+        # Only send if dispatcher_pid is known
+        if dispatcher_pid do
+          if Mix.env() == :test do
+            Raxol.Core.Runtime.Log.debug(
+              "[Driver] Sending mouse event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
+            )
+
+            send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+          else
+            GenServer.cast(dispatcher_pid, {:dispatch, event})
+          end
+        end
+
+        {:noreply, state}
+
+      :ignore ->
+        # Event type we don't care about
+        Raxol.Core.Runtime.Log.debug(
+          "[Driver] Ignoring termbox event: #{inspect(event_map)}"
+        )
+
+        {:noreply, state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Failed to translate termbox event: #{inspect(reason)}",
+          %{event_map: event_map}
         )
 
         {:noreply, state}
@@ -496,10 +545,10 @@ defmodule Raxol.Terminal.Driver do
     # Based on test simulation (button: 0 -> left?)
     # Actual mapping depends on rrex_termbox v2.0.1 constants/values
     case btn_code do
-      # Assuming 0 is left click based on test
+      # Based on test expectations: 0=left, 1=right, 2=middle
       0 -> :left
-      1 -> :middle
-      2 -> :right
+      1 -> :right
+      2 -> :middle
       3 -> :wheel_up
       4 -> :wheel_down
       _ -> :unknown

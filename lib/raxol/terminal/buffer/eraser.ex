@@ -432,10 +432,17 @@ defmodule Raxol.Terminal.Buffer.Eraser do
         ) :: ScreenBuffer.t()
   def erase_chars(buffer, x, y, count) do
     if y < buffer.height do
-      line = Enum.at(buffer.cells, y, [])
-      new_line = erase_chars_in_line(line, x, count, buffer.default_style)
-      new_cells = List.replace_at(buffer.cells, y, new_line)
-      %{buffer | cells: new_cells}
+      case buffer.cells do
+        nil ->
+          # Return buffer unchanged if cells is nil
+          buffer
+
+        cells ->
+          line = Enum.at(cells, y, [])
+          new_line = erase_chars_in_line(line, x, count, buffer.default_style)
+          new_cells = List.replace_at(cells, y, new_line)
+          %{buffer | cells: new_cells}
+      end
     else
       buffer
     end

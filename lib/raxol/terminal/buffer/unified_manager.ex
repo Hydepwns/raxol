@@ -314,11 +314,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp get_cell_with_cache(state, x, y, cache_key) do
-    case safe_cache_get(cache_key, :buffer) do
-      {:ok, cached_cell} -> {:ok, cached_cell}
-      {:error, :cache_miss} -> get_cell_and_cache(state, x, y, cache_key)
-      {:error, _} -> get_cell_direct(state, x, y)
-    end
+    # Temporarily bypass cache to avoid timeout issues
+    get_cell_direct(state, x, y)
   end
 
   defp get_cell_and_cache(state, x, y, cache_key) do
@@ -652,9 +649,43 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp get_cell_from_buffer(buffer, x, y) do
-    buffer.cells
-    |> Enum.at(y, [])
-    |> Enum.at(x)
+    case buffer.cells do
+      nil ->
+        # Return a default cell if cells is nil
+        %Raxol.Terminal.Cell{
+          char: " ",
+          style: nil,
+          dirty: nil,
+          wide_placeholder: false
+        }
+
+      cells ->
+        case Enum.at(cells, y) do
+          nil ->
+            # Row doesn't exist, return default cell
+            %Raxol.Terminal.Cell{
+              char: " ",
+              style: nil,
+              dirty: nil,
+              wide_placeholder: false
+            }
+
+          row ->
+            case Enum.at(row, x) do
+              nil ->
+                # Cell doesn't exist, return default cell
+                %Raxol.Terminal.Cell{
+                  char: " ",
+                  style: nil,
+                  dirty: nil,
+                  wide_placeholder: false
+                }
+
+              cell ->
+                cell
+            end
+        end
+    end
   end
 
   defp cell_empty?(cell) do

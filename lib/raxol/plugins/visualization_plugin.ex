@@ -29,6 +29,13 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   @impl Raxol.Plugins.Plugin
   def get_api_version(), do: "0.1.0"
 
+  @doc """
+  Returns the API version for compatibility checking.
+  """
+  def api_version do
+    "0.1.0"
+  end
+
   @impl Raxol.Plugins.Plugin
   def get_dependencies(), do: []
 

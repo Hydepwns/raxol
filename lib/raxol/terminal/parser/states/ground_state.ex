@@ -166,6 +166,10 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   end
 
   defp handle_printable_char(emulator, parser_state, char_codepoint, rest) do
+    IO.puts(
+      "DEBUG: GroundState - Processing char_codepoint: #{inspect(char_codepoint)} (#{List.to_string([char_codepoint])}), rest: #{inspect(rest)}"
+    )
+
     emulator_with_history =
       History.maybe_add_to_history(emulator, char_codepoint)
 
@@ -178,12 +182,17 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       )
 
     next_parser_state = %{parser_state | single_shift: nil}
+
+    IO.puts(
+      "DEBUG: GroundState - Returning continue with rest: #{inspect(rest)}"
+    )
+
     {:continue, updated_emulator, next_parser_state, rest}
   end
 
   defp handle_unknown_input(emulator, parser_state, other) do
     Raxol.Core.Runtime.Log.warning_with_context(
-      "GroundState unhandled input: #{inspect(other)} with emulator: #{inspect(emulator)}",
+      "GroundState unhandled input: #{inspect(other)}",
       %{}
     )
 

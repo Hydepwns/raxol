@@ -65,6 +65,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
             dependencies: ["hyperlink"]
           }
         end
+
+        def api_version do
+          "1.0.0"
+        end
       end
 
       # First load the dependency
@@ -108,6 +112,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
             version: "1.0.0",
             dependencies: []
           }
+        end
+
+        def api_version do
+          "1.0.0"
         end
       end
 
@@ -234,7 +242,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         EventHandler.handle_mouse_event(
           manager_with_plugin,
           %{type: :mouse, x: 1, y: 2, button: :click, modifiers: 1},
-          emulator
+          %{}  # Empty rendered cells map
         )
 
       assert Map.has_key?(updated_manager.plugins, "hyperlink")

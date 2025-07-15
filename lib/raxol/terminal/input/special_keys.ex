@@ -168,32 +168,32 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
     end
   end
 
-  defp get_arrow_or_function_key_sequence(key, modifiers) do
-    @key_sequences = %{
-      "ArrowUp" => "A",
-      "ArrowDown" => "B",
-      "ArrowRight" => "C",
-      "ArrowLeft" => "D",
-      "Home" => "H",
-      "End" => "F",
-      "PageUp" => "5~",
-      "PageDown" => "6~",
-      "Insert" => "2~",
-      "Delete" => "3~",
-      "F1" => "P",
-      "F2" => "Q",
-      "F3" => "R",
-      "F4" => "S",
-      "F5" => "15~",
-      "F6" => "17~",
-      "F7" => "18~",
-      "F8" => "19~",
-      "F9" => "20~",
-      "F10" => "21~",
-      "F11" => "23~",
-      "F12" => "24~"
-    }
+  @key_sequences %{
+    "ArrowUp" => "A",
+    "ArrowDown" => "B",
+    "ArrowRight" => "C",
+    "ArrowLeft" => "D",
+    "Home" => "H",
+    "End" => "F",
+    "PageUp" => "5~",
+    "PageDown" => "6~",
+    "Insert" => "2~",
+    "Delete" => "3~",
+    "F1" => "P",
+    "F2" => "Q",
+    "F3" => "R",
+    "F4" => "S",
+    "F5" => "15~",
+    "F6" => "17~",
+    "F7" => "18~",
+    "F8" => "19~",
+    "F9" => "20~",
+    "F10" => "21~",
+    "F11" => "23~",
+    "F12" => "24~"
+  }
 
+  defp get_arrow_or_function_key_sequence(key, modifiers) do
     case Map.get(@key_sequences, key) do
       nil -> ""
       suffix -> "\e[#{modifiers}#{suffix}"

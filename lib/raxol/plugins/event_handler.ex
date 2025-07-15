@@ -32,7 +32,7 @@ defmodule Raxol.Plugins.EventHandler do
           plugin,
           :handle_input,
           [acc.input],
-          3,
+          2,
           acc,
           fn acc, plugin, _callback_name, result ->
             case result do
@@ -118,13 +118,36 @@ defmodule Raxol.Plugins.EventHandler do
     # Initial accumulator includes the propagation state
     initial_acc = {:ok, manager, :propagate}
 
-    dispatch_event(
-      manager,
-      :handle_mouse,
-      [event, rendered_cells],
-      initial_acc,
-      &handle_mouse_update/4
-    )
+    result =
+      dispatch_event(
+        manager,
+        :handle_mouse,
+        [event, rendered_cells],
+        initial_acc,
+        &handle_mouse_update/4
+      )
+
+    case result do
+      {:ok, _manager, _propagation} ->
+        result
+
+      {:error, _} = err ->
+        err
+
+      {:ok, mgr} ->
+        {:ok, mgr, :propagate}
+
+      mgr when is_map(mgr) ->
+        # Check if this is a manager struct (has :plugins key)
+        if Map.has_key?(mgr, :plugins) do
+          {:ok, mgr, :propagate}
+        else
+          {:ok, manager, :propagate}
+        end
+
+      _ ->
+        {:ok, manager, :propagate}
+    end
   end
 
   @doc """
@@ -367,8 +390,16 @@ defmodule Raxol.Plugins.EventHandler do
   end
 
   # Helper to extract manager from accumulator
-  defp extract_manager_from_acc(acc) do
+  defp extract_manager_from_acc(acc) when is_map(acc) do
     acc.manager
+  end
+
+  defp extract_manager_from_acc({:ok, manager, _propagation}) do
+    manager
+  end
+
+  defp extract_manager_from_acc({:ok, manager}) do
+    manager
   end
 
   # Helper to normalize plugin keys to strings
@@ -461,12 +492,43 @@ defmodule Raxol.Plugins.EventHandler do
   # Handles results for handle_mouse_event, managing :halt propagation.
   @spec handle_mouse_update(accumulator(), plugin(), callback_name(), term()) ::
           handler_result()
+  # Defensive clause: if acc is a struct (not a tuple), wrap as {:ok, acc, :propagate}
+  defp handle_mouse_update(acc, plugin, callback_name, plugin_result)
+       when is_map(acc) and not is_tuple(acc) do
+    handle_mouse_update(
+      {:ok, acc, :propagate},
+      plugin,
+      callback_name,
+      plugin_result
+    )
+  end
+
   defp handle_mouse_update(
-         {:ok, acc_manager, propagation},
+         acc,
          plugin,
          callback_name,
          plugin_result
        ) do
+    # Handle case where accumulator might be a struct instead of tuple
+    {acc_manager, propagation} =
+      case acc do
+        {:ok, manager, prop} ->
+          {manager, prop}
+
+        {:ok, manager} ->
+          {manager, :propagate}
+
+        manager when is_map(manager) ->
+          if Map.has_key?(manager, :plugins) do
+            {manager, :propagate}
+          else
+            {manager, :propagate}
+          end
+
+        _ ->
+          {acc, :propagate}
+      end
+
     case plugin_result do
       {:ok, updated_plugin} ->
         new_manager_state =
@@ -480,9 +542,22 @@ defmodule Raxol.Plugins.EventHandler do
 
         {:halt, {:ok, new_manager_state, :halt}}
 
+      {:ok, updated_plugin, new_propagation} when is_atom(new_propagation) ->
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, updated_plugin)
+
+        {:cont, {:ok, new_manager_state, new_propagation}}
+
       {:error, reason} ->
         log_plugin_error(plugin, callback_name, reason)
         {:halt, {:error, reason}}
+
+      # Defensive: if plugin_result is a struct, treat as updated_plugin
+      result when is_map(result) and not is_tuple(result) ->
+        new_manager_state =
+          update_plugin_state(acc_manager, plugin, result)
+
+        {:cont, {:ok, new_manager_state, propagation}}
 
       other ->
         log_unexpected_result(plugin, callback_name, other)
@@ -574,43 +649,25 @@ defmodule Raxol.Plugins.EventHandler do
        ) do
     plugin_key = normalize_plugin_key(plugin.name)
 
-    # Ensure the updated plugin has the required fields
-    enhanced_plugin =
+    # Use the updated plugin as-is, preserving all its fields including search_term
+    # Only ensure it has the module field for consistency
+    final_plugin =
       case updated_plugin do
-        # Already has required fields
-        %{module: mod, state: _state} = p when not is_nil(mod) ->
-          p
-
-        %{__struct__: struct_module} = p ->
-          # Extract state from the plugin struct fields
-          plugin_state = extract_state_from_plugin_struct(p)
-          Map.merge(p, %{module: struct_module, state: plugin_state})
-
-        p when is_map(p) ->
-          # If module is missing, set it to the original plugin's module
-          Map.put(p, :module, plugin.module)
-
-        _ ->
-          # Fallback: create a basic plugin struct
-          %{updated_plugin | module: plugin.module, state: %{}}
+        %{module: _} = p -> p
+        p when is_map(p) -> Map.put(p, :module, plugin.module)
+        _ -> %{updated_plugin | module: plugin.module}
       end
 
-    # Use explicit plugin state if provided, otherwise extract from enhanced plugin
+    # Extract state for the plugin_states map
     plugin_state =
       case explicit_plugin_state do
-        nil ->
-          case enhanced_plugin do
-            %{state: state} when not is_nil(state) -> state
-            _ -> %{}
-          end
-
-        state ->
-          state
+        nil -> extract_state_from_plugin_struct(final_plugin)
+        state -> state
       end
 
     %{
       acc_manager
-      | plugins: Map.put(acc_manager.plugins, plugin_key, enhanced_plugin),
+      | plugins: Map.put(acc_manager.plugins, plugin_key, final_plugin),
         plugin_states:
           if is_map(plugin_state) do
             Map.put(acc_manager.plugin_states, plugin_key, plugin_state)
@@ -630,7 +687,11 @@ defmodule Raxol.Plugins.EventHandler do
       :image_escape_sequence,
       :sequence_just_generated,
       :current_theme,
-      :enabled
+      :enabled,
+      :selection_active,
+      :selection_start,
+      :selection_end,
+      :last_cells_at_selection
     ]
 
     Enum.reduce(state_fields, %{}, fn field, acc ->

@@ -131,7 +131,9 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def write_char(buffer, x, y, char, style) do
-    cell = %{char: char, style: style}
+    IO.puts("DEBUG: Core.write_char/4 called")
+    # Create a proper Cell struct instead of using Access behavior
+    cell = Raxol.Terminal.Cell.new(char, style)
 
     case get_in(buffer.cells, [y, x]) do
       nil ->

@@ -195,8 +195,15 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   end
 
   defp can_insert_at_position?(buffer, row, col, count) do
-    col + count <= buffer.width and
-      col <= content_length(Enum.at(buffer.cells, row))
+    case buffer.cells do
+      nil ->
+        # Return false if cells is nil
+        false
+
+      cells ->
+        col + count <= buffer.width and
+          col <= content_length(Enum.at(cells, row))
+    end
   end
 
   defp valid_insert_params?(buffer, row, col, count) do
@@ -253,19 +260,26 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     if row >= buffer.height or col >= buffer.width do
       buffer
     else
-      cells =
-        List.replace_at(
-          buffer.cells,
-          row,
-          insert_into_line(
-            Enum.at(buffer.cells, row),
-            col,
-            count,
-            default_style
-          )
-        )
+      case buffer.cells do
+        nil ->
+          # Return buffer unchanged if cells is nil
+          buffer
 
-      %{buffer | cells: cells}
+        cells ->
+          new_cells =
+            List.replace_at(
+              cells,
+              row,
+              insert_into_line(
+                Enum.at(cells, row),
+                col,
+                count,
+                default_style
+              )
+            )
+
+          %{buffer | cells: new_cells}
+      end
     end
   end
 
@@ -379,19 +393,26 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     if row >= buffer.height or col >= buffer.width do
       buffer
     else
-      cells =
-        List.replace_at(
-          buffer.cells,
-          row,
-          delete_from_line(
-            Enum.at(buffer.cells, row),
-            col,
-            count,
-            default_style
-          )
-        )
+      case buffer.cells do
+        nil ->
+          # Return buffer unchanged if cells is nil
+          buffer
 
-      %{buffer | cells: cells}
+        cells ->
+          new_cells =
+            List.replace_at(
+              cells,
+              row,
+              delete_from_line(
+                Enum.at(cells, row),
+                col,
+                count,
+                default_style
+              )
+            )
+
+          %{buffer | cells: new_cells}
+      end
     end
   end
 

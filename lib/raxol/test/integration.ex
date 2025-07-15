@@ -424,36 +424,18 @@ defmodule Raxol.Test.Integration do
         Keyword.put(opts, :mount_in_manager, true)
       )
 
-    # Get the mounted state from ComponentManager
-    parent_mounted_state =
-      ComponentManager.get_component(parent_struct.state.component_manager_id).state
+    # Get the mounted components from ComponentManager
+    parent_mounted =
+      ComponentManager.get_component(parent_struct.state.component_manager_id)
 
-    child_mounted_state =
-      ComponentManager.get_component(child_struct.state.component_manager_id).state
-
-    # Update structs with mounted state from ComponentManager
-    parent_struct_with_mounted_state = %{
-      parent_struct
-      | state: parent_mounted_state
-    }
-
-    child_struct_with_mounted_state = %{
-      child_struct
-      | state: child_mounted_state
-    }
+    child_mounted =
+      ComponentManager.get_component(child_struct.state.component_manager_id)
 
     # Set up parent/child references
-    child_struct_with_parent =
-      Map.put(
-        child_struct_with_mounted_state,
-        :parent,
-        parent_struct_with_mounted_state
-      )
+    child_struct_with_parent = Map.put(child_mounted, :parent, parent_mounted)
 
     parent_struct_with_child =
-      Map.put(parent_struct_with_mounted_state, :children, [
-        child_struct_with_parent
-      ])
+      Map.put(parent_mounted, :children, [child_struct_with_parent])
 
     {:ok, parent_struct_with_child, child_struct_with_parent}
   end
@@ -595,12 +577,12 @@ defmodule Raxol.Test.Integration do
     if Map.has_key?(updated_component.state, :component_manager_id) do
       component_id = updated_component.state.component_manager_id
 
-      # Update the component in ComponentManager with the new state
-      case Raxol.Core.Runtime.ComponentManager.update(
+      # Update the component in ComponentManager with the new state using set_component_state
+      case Raxol.Core.Runtime.ComponentManager.set_component_state(
              component_id,
-             {:state_update, updated_component.state}
+             updated_component.state
            ) do
-        {:ok, _} ->
+        :ok ->
           # Successfully updated in manager
           {updated_component, commands}
 

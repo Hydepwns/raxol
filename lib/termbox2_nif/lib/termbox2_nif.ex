@@ -14,7 +14,6 @@ defmodule :termbox2_nif do
         :ok
 
       {:error, reason} ->
-        IO.puts("Failed to load Termbox2 NIF: #{inspect(reason)}")
         {:error, reason}
     end
   end

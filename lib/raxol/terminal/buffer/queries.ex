@@ -46,7 +46,14 @@ defmodule Raxol.Terminal.Buffer.Queries do
   """
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t())
   def get_line(buffer, y) when y >= 0 and y < buffer.height do
-    Enum.at(buffer.cells, y)
+    case buffer.cells do
+      nil ->
+        # Return empty list if cells is nil
+        []
+
+      cells ->
+        Enum.at(cells, y)
+    end
   end
 
   def get_line(_, _), do: []
@@ -58,9 +65,16 @@ defmodule Raxol.Terminal.Buffer.Queries do
           Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
     if x < buffer.width and y < buffer.height do
-      buffer.cells
-      |> Enum.at(y)
-      |> Enum.at(x)
+      case buffer.cells do
+        nil ->
+          # Return a default cell if cells is nil
+          Cell.new()
+
+        cells ->
+          cells
+          |> Enum.at(y)
+          |> Enum.at(x)
+      end
     else
       Cell.new()
     end
@@ -73,11 +87,18 @@ defmodule Raxol.Terminal.Buffer.Queries do
   """
   @spec get_text(ScreenBuffer.t()) :: String.t()
   def get_text(buffer) do
-    buffer.cells
-    |> Enum.map_join("\n", fn line ->
-      line
-      |> Enum.map_join("", &Cell.get_char/1)
-    end)
+    case buffer.cells do
+      nil ->
+        # Return empty string if cells is nil
+        ""
+
+      cells ->
+        cells
+        |> Enum.map_join("\n", fn line ->
+          line
+          |> Enum.map_join("", &Cell.get_char/1)
+        end)
+    end
   end
 
   @doc """
@@ -85,9 +106,16 @@ defmodule Raxol.Terminal.Buffer.Queries do
   """
   @spec get_line_text(ScreenBuffer.t(), non_neg_integer()) :: String.t()
   def get_line_text(buffer, y) when y >= 0 and y < buffer.height do
-    buffer.cells
-    |> Enum.at(y)
-    |> Enum.map_join("", &Cell.get_char/1)
+    case buffer.cells do
+      nil ->
+        # Return empty string if cells is nil
+        ""
+
+      cells ->
+        cells
+        |> Enum.at(y)
+        |> Enum.map_join("", &Cell.get_char/1)
+    end
   end
 
   def get_line_text(_, _), do: ""
@@ -122,9 +150,16 @@ defmodule Raxol.Terminal.Buffer.Queries do
   """
   @spec empty?(ScreenBuffer.t()) :: boolean()
   def empty?(buffer) do
-    Enum.all?(buffer.cells, fn line ->
-      Enum.all?(line, &Cell.empty?/1)
-    end)
+    case buffer.cells do
+      nil ->
+        # Return true if cells is nil (empty buffer)
+        true
+
+      cells ->
+        Enum.all?(cells, fn line ->
+          Enum.all?(line, &Cell.empty?/1)
+        end)
+    end
   end
 
   @doc """
