@@ -119,7 +119,10 @@ defmodule Raxol.Terminal.Emulator do
 
     # Device status flags
     device_status_reported: false,
-    cursor_position_reported: false
+    cursor_position_reported: false,
+
+    # Autowrap handling flag
+    cursor_handled_by_autowrap: false
   ]
 
   @type t :: %__MODULE__{
@@ -160,7 +163,8 @@ defmodule Raxol.Terminal.Emulator do
           cursor_saved: boolean(),
           cursor_restored: boolean(),
           device_status_reported: boolean(),
-          cursor_position_reported: boolean()
+          cursor_position_reported: boolean(),
+          cursor_handled_by_autowrap: boolean()
         }
 
   # Cursor Operations
@@ -502,21 +506,27 @@ defmodule Raxol.Terminal.Emulator do
     emulator_with_updated_buffer =
       update_emulator_buffer(emulator, updated_buffer)
 
-    # Update the cursor position to stay within the visible region
-    {cursor_x, cursor_y} =
-      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    # If cursor position was handled by autowrap, don't override it
+    if Map.get(emulator, :cursor_handled_by_autowrap, false) do
+      IO.puts("DEBUG: perform_scroll - cursor_handled_by_autowrap is true, skipping cursor adjustment")
+      emulator_with_updated_buffer
+    else
+      # Update the cursor position to stay within the visible region
+      {cursor_x, cursor_y} =
+        Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
-    # Move cursor up by 1 line, but not below 0
-    new_cursor_y = max(0, cursor_y - 1)
+      # Move cursor up by 1 line, but not below 0
+      new_cursor_y = max(0, cursor_y - 1)
 
-    # Update the cursor position
-    updated_cursor =
-      Raxol.Terminal.Cursor.Manager.set_position(
-        emulator.cursor,
-        {cursor_x, new_cursor_y}
-      )
+      # Update the cursor position
+      updated_cursor =
+        Raxol.Terminal.Cursor.Manager.set_position(
+          emulator.cursor,
+          {cursor_x, new_cursor_y}
+        )
 
-    %{emulator_with_updated_buffer | cursor: updated_cursor}
+      %{emulator_with_updated_buffer | cursor: updated_cursor}
+    end
   end
 
   defp log_scroll_result(scrolled_lines) do
@@ -624,28 +634,38 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp ensure_cursor_in_visible_region(emulator) do
-    active_buffer = get_active_buffer(emulator)
-    buffer_height = ScreenBuffer.get_height(active_buffer)
-
-    {_, cursor_y} =
-      case emulator.cursor do
-        cursor when is_pid(cursor) ->
-          Raxol.Terminal.Cursor.Manager.get_position(cursor)
-
-        cursor when is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.get_position(cursor)
-
-        _ ->
-          {0, 0}
-      end
-
-    if cursor_y >= buffer_height do
-      # Scroll until the cursor is in the visible region
-      ensure_cursor_in_visible_region(
-        Raxol.Terminal.Emulator.maybe_scroll(emulator)
-      )
+    # If cursor position was handled by autowrap, don't override it
+    if Map.get(emulator, :cursor_handled_by_autowrap, false) do
+      IO.puts("DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is true, skipping cursor adjustment")
+      # Remove the flag and return the emulator without further cursor adjustment
+      %{emulator | cursor_handled_by_autowrap: false}
     else
-      emulator
+      IO.puts("DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is false, checking cursor position")
+      active_buffer = get_active_buffer(emulator)
+      buffer_height = ScreenBuffer.get_height(active_buffer)
+
+      {_, cursor_y} =
+        case emulator.cursor do
+          cursor when is_pid(cursor) ->
+            Raxol.Terminal.Cursor.Manager.get_position(cursor)
+
+          cursor when is_map(cursor) ->
+            Raxol.Terminal.Cursor.Manager.get_position(cursor)
+
+          _ ->
+            {0, 0}
+        end
+
+      IO.puts("DEBUG: ensure_cursor_in_visible_region - cursor_y: #{cursor_y}, buffer_height: #{buffer_height}")
+
+      if cursor_y >= buffer_height do
+        # Scroll until the cursor is in the visible region
+        ensure_cursor_in_visible_region(
+          Raxol.Terminal.Emulator.maybe_scroll(emulator)
+        )
+      else
+        emulator
+      end
     end
   end
 
