@@ -83,7 +83,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
               lifecycle_helper_module:
                 Raxol.Core.Runtime.Plugins.LifecycleManager,
               tick_timer: nil,
-              file_event_timer: nil
+              file_event_timer: nil,
+              file_watcher_pid: nil
             },
             state
           )
@@ -103,7 +104,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             lifecycle_helper_module:
               Raxol.Core.Runtime.Plugins.LifecycleManager,
             tick_timer: nil,
-            file_event_timer: nil
+            file_event_timer: nil,
+            file_watcher_pid: nil
           }
       end
 
@@ -194,9 +196,28 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:load_plugin, plugin_id}, _from, state) do
-    case state.lifecycle_helper_module.load_plugin(plugin_id) do
-      :ok ->
-        {:reply, :ok, state}
+    case state.lifecycle_helper_module.load_plugin(
+           plugin_id,
+           # default config
+           %{},
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, updated_maps} ->
+        updated_state = %{
+          state
+          | plugins: updated_maps.plugins,
+            metadata: updated_maps.metadata,
+            plugin_states: updated_maps.plugin_states,
+            load_order: updated_maps.load_order,
+            plugin_config: updated_maps.plugin_config
+        }
+
+        {:reply, :ok, updated_state}
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
@@ -235,7 +256,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call(:get_loaded_plugins, _from, state) do
-    plugins = Map.keys(state.plugin_states)
+    plugins = Discovery.list_plugins(state)
     {:reply, plugins, state}
   end
 
@@ -481,23 +502,29 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:enable_plugin, plugin_id}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.LifecycleManager.enable_plugin(
+    case state.lifecycle_helper_module.enable_plugin(
            plugin_id,
            state
          ) do
-      {:ok, updated_state} -> {:reply, :ok, updated_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+      {:ok, updated_state} ->
+        {:reply, :ok, updated_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
 
   @impl GenServer
   def handle_call({:disable_plugin, plugin_id}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.LifecycleManager.disable_plugin(
+    case state.lifecycle_helper_module.disable_plugin(
            plugin_id,
            state
          ) do
-      {:ok, updated_state} -> {:reply, :ok, updated_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+      {:ok, updated_state} ->
+        {:reply, :ok, updated_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -1089,7 +1116,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   def load_plugin(name, _config) do
     # Delegate to the GenServer with the plugin name
     case GenServer.call(__MODULE__, {:load_plugin, name}) do
-      {:ok, _plugin_state} -> :ok
+      :ok -> :ok
       {:error, reason} -> {:error, reason}
     end
   end

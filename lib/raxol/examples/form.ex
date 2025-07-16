@@ -13,7 +13,8 @@ defmodule Raxol.Examples.Form do
       fields: Map.get(props, :fields, %{}),
       on_submit: Map.get(props, :on_submit, fn -> :submitted end),
       children: Map.get(props, :children, []),
-      errors: Map.get(props, :errors, %{})
+      errors: Map.get(props, :errors, %{}),
+      id: Map.get(props, :id, :form_example)
     }
   end
 

@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
   def erase_from_cursor_to_end(buffer) do
     {x, y} = buffer.cursor_position
-    clear_region(buffer, x, y, buffer.width - x, buffer.height - y)
+    erase_line_segment(buffer, x, y)
   end
 
   def erase_from_start_to_cursor(buffer) do
@@ -308,8 +308,8 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       buffer,
       0,
       0,
-      buffer.height - 1,
-      buffer.width - 1,
+      buffer.width,
+      buffer.height,
       style
     )
   end
@@ -472,12 +472,25 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   def erase_display(buffer, mode) do
     case mode do
       # From cursor to end of screen
-      0 -> erase_from_cursor_to_end(buffer)
+      0 ->
+        {x, y} = buffer.cursor_position || {0, 0}
+        clear_screen_from(buffer, y, x)
+
       # From start of screen to cursor
-      1 -> erase_from_start_to_cursor(buffer)
+      1 ->
+        {x, y} = buffer.cursor_position || {0, 0}
+        clear_screen_to(buffer, y, x)
+
       # Entire screen
-      2 -> erase_all(buffer)
-      _ -> buffer
+      2 ->
+        clear_screen(buffer)
+
+      # Clear scrollback buffer
+      3 ->
+        clear_scrollback(buffer)
+
+      _ ->
+        buffer
     end
   end
 
@@ -546,4 +559,12 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   def mark_damaged(buffer, _x, _y, _width, _height), do: buffer
 
   def get_damage_regions(_buffer), do: []
+
+  @doc """
+  Clears the scrollback buffer.
+  """
+  @spec clear_scrollback(ScreenBuffer.t()) :: ScreenBuffer.t()
+  def clear_scrollback(buffer) do
+    %{buffer | scrollback: []}
+  end
 end

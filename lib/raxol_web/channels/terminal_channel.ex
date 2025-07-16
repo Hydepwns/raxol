@@ -117,7 +117,7 @@ defmodule RaxolWeb.TerminalChannel do
 
           {:reply, :ok, socket}
 
-        {:error, reason} ->
+        {:error, _reason} ->
           {:reply, {:error, %{reason: "input_processing_failed"}}, socket}
       end
     else
@@ -182,7 +182,7 @@ defmodule RaxolWeb.TerminalChannel do
     try do
       {:ok, emulator_module().process_input(emulator, data)}
     rescue
-      error ->
+      _error ->
         {:error, :processing_failed}
     end
   end

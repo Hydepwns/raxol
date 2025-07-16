@@ -96,6 +96,7 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
     case emulator.active_buffer_type do
       :main -> emulator.main_screen_buffer
       :alternate -> emulator.alternate_screen_buffer
+      _ -> emulator.main_screen_buffer
     end
   end
 

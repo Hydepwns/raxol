@@ -37,6 +37,8 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
 
     @impl Application
     def terminate(_, _), do: :ok
+
+    def app_name, do: :test_app
   end
 
   @moduledoc false

@@ -7,8 +7,6 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   use GenServer
   require Logger
 
-  alias Raxol.Terminal.Integration.State
-
   # Types
   @type mouse_id :: non_neg_integer()
   @type mouse_button :: :left | :middle | :right | :wheel_up | :wheel_down

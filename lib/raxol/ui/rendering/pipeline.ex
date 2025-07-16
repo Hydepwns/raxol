@@ -443,6 +443,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
           state.previous_painted_output
         )
 
+      # Commit the painted output to the renderer
+      commit(
+        painted_data,
+        state.renderer_module,
+        diff_result,
+        new_tree_for_reference
+      )
+
       new_state = %{
         state
         | last_render_time: System.monotonic_time(:millisecond),
@@ -566,6 +574,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
         state.previous_painted_output
       )
 
+    # Commit the painted output to the renderer
+    commit(
+      painted_data,
+      state.renderer_module,
+      diff_result,
+      new_tree_for_reference
+    )
+
     %{
       state
       | last_render_time: System.monotonic_time(:millisecond),
@@ -607,6 +623,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
         state.previous_composed_tree,
         state.previous_painted_output
       )
+
+    # Commit the painted output to the renderer
+    commit(
+      painted_data,
+      state.renderer_module,
+      diff_result,
+      new_tree_for_reference
+    )
 
     %{
       state

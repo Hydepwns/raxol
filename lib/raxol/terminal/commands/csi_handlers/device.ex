@@ -80,10 +80,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
       [6] ->
         # Report cursor position
         # ESC [ row ; col R
-        {x, y} = Emulator.get_cursor_position(emulator)
+        {col, row} = Emulator.get_cursor_position(emulator)
 
         updated_emulator =
-          Emulator.write_to_output(emulator, "\e[#{y + 1};#{x + 1}R")
+          Emulator.write_to_output(emulator, "\e[#{row + 1};#{col + 1}R")
 
         {:ok, updated_emulator}
 

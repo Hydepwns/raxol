@@ -9,44 +9,82 @@ defmodule RaxolWeb.SettingsLive do
   import Raxol.Guards
 
   @impl Phoenix.LiveView
-  def mount(%{"token" => _token}, _session, socket) do
-    # Assume user_id is in session after login (RaxolWeb.UserAuth likely handles this)
-    # Example: Adapt to actual session key
-    # Get session data passed from connect_info
-    connect_params = get_connect_params(socket)
-    # Adjust key if needed
-    user_id = connect_params["user_id"]
+  def mount(%{"token" => token}, _session, socket) do
+    # Validate the token and get user_id
+    case Phoenix.Token.verify(RaxolWeb.Endpoint, "user socket", token,
+           max_age: 86400
+         ) do
+      {:ok, user_id} ->
+        case Accounts.get_user(user_id) do
+          {:ok, user} when not is_nil(user) ->
+            # Get user preferences
+            preferences = UserPreferences.default_preferences()
 
-    case user_id && Accounts.get_user(user_id) do
-      user when not nil?(user) ->
-        # Get user preferences
-        preferences = UserPreferences.default_preferences()
+            # Get update settings
+            update_settings =
+              case Updater.default_update_settings() do
+                {:ok, settings} -> settings
+                settings when is_map(settings) -> settings
+                _ -> %{}
+              end
 
-        # Get update settings
-        {:ok, update_settings} = Updater.default_update_settings()
+            # Get cloud config
+            cloud_config = Config.default_config()
 
-        # Get cloud config
-        cloud_config = Config.default_config()
+            # Create a valid changeset for the user
+            changeset = Raxol.Auth.User.changeset(user, %{})
 
-        socket = assign(socket, :current_user, user)
-        socket = assign(socket, :changeset, %{})
-        socket = assign(socket, :page_title, "Account Settings")
-        socket = assign(socket, :theme, Theme.current())
-        socket = assign(socket, :preferences, preferences)
-        socket = assign(socket, :update_settings, update_settings)
-        socket = assign(socket, :cloud_config, cloud_config)
-        {:ok, socket, temporary_assigns: [changeset: nil]}
+            # Create a password changeset for password updates
+            password_changeset = Raxol.Auth.User.changeset(user, %{})
 
-      nil ->
-        # Handle case where user_id is missing or user not found
+            socket = assign(socket, :current_user, user)
+            socket = assign(socket, :changeset, changeset)
+            socket = assign(socket, :password_changeset, password_changeset)
+            socket = assign(socket, :page_title, "Account Settings")
+            socket = assign(socket, :theme, Theme.current())
+            socket = assign(socket, :preferences, preferences)
+            socket = assign(socket, :preferences_changeset, %{})
+            socket = assign(socket, :update_settings, update_settings)
+            socket = assign(socket, :cloud_config, cloud_config)
+            {:ok, socket}
+
+          {:error, _reason} ->
+            updated_socket =
+              socket
+              |> put_flash(:error, "User not found.")
+              |> redirect(to: "/")
+
+            {:ok, updated_socket}
+
+          nil ->
+            updated_socket =
+              socket
+              |> put_flash(:error, "User not found.")
+              |> redirect(to: "/")
+
+            {:ok, updated_socket}
+        end
+
+      {:error, _reason} ->
+        # Handle case where token is invalid
         updated_socket =
           socket
           |> put_flash(:error, "You must be logged in to access settings.")
-          # Redirect to home or login
           |> redirect(to: "/")
 
-        {:stop, :normal, updated_socket}
+        {:ok, updated_socket}
     end
+  end
+
+  @impl Phoenix.LiveView
+  def mount(_params, _session, socket) do
+    # Handle case where no token is provided
+    updated_socket =
+      socket
+      |> put_flash(:error, "You must be logged in to access settings.")
+      |> redirect(to: "/")
+
+    {:ok, updated_socket}
   end
 
   @impl Phoenix.LiveView
@@ -115,9 +153,62 @@ defmodule RaxolWeb.SettingsLive do
     end
   end
 
+  @impl Phoenix.LiveView
+  def handle_event("update_profile", %{"user" => user_params}, socket) do
+    user = socket.assigns.current_user
+
+    # Sanitize input
+    case RaxolWeb.InputSanitizer.sanitize_form_input(user_params, [
+           "email",
+           "username"
+         ]) do
+      {:ok, sanitized_params} when map_size(sanitized_params) > 0 ->
+        changeset = Raxol.Auth.User.changeset(user, sanitized_params)
+
+        if changeset.valid? do
+          # Update the user in the agent storage
+          updated_user = %{
+            user
+            | email: sanitized_params["email"],
+              username: sanitized_params["username"]
+          }
+
+          Agent.update(Raxol.Accounts, fn users ->
+            Map.put(users, user.email, updated_user)
+          end)
+
+          {:noreply,
+           push_redirect(
+             socket |> put_flash(:info, "Profile updated successfully."),
+             to: "/settings"
+           )}
+        else
+          {:noreply, assign(socket, :changeset, changeset)}
+        end
+
+      {:ok, _empty_params} ->
+        changeset = Raxol.Auth.User.changeset(user, user_params)
+        {:noreply, assign(socket, :changeset, changeset)}
+
+      {:error, :invalid_input} ->
+        changeset = Raxol.Auth.User.changeset(user, user_params)
+        {:noreply, assign(socket, :changeset, changeset)}
+    end
+  end
+
   # Handle messages from child components
   @impl Phoenix.LiveView
   def handle_info({:profile_updated, updated_user}, socket) do
+    {:noreply, assign(socket, :current_user, updated_user)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_info(:redirect_after_profile_update, socket) do
+    {:noreply, push_navigate(socket, to: "/settings")}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_info({:password_updated, updated_user}, socket) do
     {:noreply, assign(socket, :current_user, updated_user)}
   end
 
@@ -142,12 +233,21 @@ defmodule RaxolWeb.SettingsLive do
             id="profile"
             current_user={@current_user}
             changeset={@changeset}
+            live_view_pid={self()}
+          />
+
+          <.live_component
+            module={RaxolWeb.Settings.PasswordComponent}
+            id="password"
+            current_user={@current_user}
+            password_changeset={@password_changeset}
           />
 
           <.live_component
             module={RaxolWeb.Settings.PreferencesComponent}
             id="preferences"
             preferences={@preferences}
+            preferences_changeset={@preferences_changeset}
           />
         </.live_component>
 

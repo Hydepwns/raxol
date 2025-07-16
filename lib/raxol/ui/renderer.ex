@@ -6,9 +6,6 @@ defmodule Raxol.UI.Renderer do
   including panels, boxes, text, and tables with theme support.
   """
 
-  alias Raxol.Core.ColorSystem
-  alias Raxol.UI.Theming.Theme
-
   # Default colors
   @default_fg :white
   @default_bg :black
@@ -352,9 +349,6 @@ defmodule Raxol.UI.Renderer do
          theme,
          parent_style
        ) do
-    IO.puts("DEBUG: render_visible_element called for table")
-    IO.puts("DEBUG: table_element: #{inspect(table_element)}")
-
     _merged_style = flatten_merged_style(parent_style, table_element)
 
     # Extract table data from the element or attrs
@@ -365,10 +359,6 @@ defmodule Raxol.UI.Renderer do
     column_widths =
       Map.get(table_element, :column_widths) || Map.get(attrs, :_col_widths, [])
 
-    IO.puts("DEBUG: extracted headers: #{inspect(headers)}")
-    IO.puts("DEBUG: extracted data: #{inspect(data)}")
-    IO.puts("DEBUG: extracted column_widths: #{inspect(column_widths)}")
-
     # Calculate table width if not provided
     width = calculate_table_width(headers, data, column_widths)
 
@@ -376,9 +366,7 @@ defmodule Raxol.UI.Renderer do
     merged_attrs =
       build_table_attrs(table_element, headers, data, column_widths)
 
-    IO.puts("DEBUG: calling render_table with width: #{width}")
     cells = render_table(x, y, width, 0, merged_attrs, theme)
-    IO.puts("DEBUG: render_table returned #{length(cells)} cells")
     clip_cells_to_bounds(cells, Map.get(table_element, :clip_bounds))
   end
 
@@ -666,7 +654,7 @@ defmodule Raxol.UI.Renderer do
     |> elem(0)
   end
 
-  defp render_table_cell(cell, x, y, col_width, style) do
+  defp render_table_cell(cell, x, y, _col_width, style) do
     cell_text = to_string(cell)
     cell_fg = Map.get(style, :foreground, Map.get(style, :fg, :white))
     cell_bg = Map.get(style, :background, Map.get(style, :bg, :black))

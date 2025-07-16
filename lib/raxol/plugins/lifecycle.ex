@@ -381,10 +381,10 @@ defmodule Raxol.Plugins.Lifecycle do
     )
   end
 
-  defp check_dependencies(plugin, module) do
+  defp check_dependencies(plugin, manager) do
     # Convert list of plugins to map for dependency checking
     loaded_plugins_map =
-      Core.list_plugins(module)
+      Core.list_plugins(manager)
       |> Enum.map(fn plugin -> {plugin.name, plugin} end)
       |> Enum.into(%{})
 
@@ -396,10 +396,26 @@ defmodule Raxol.Plugins.Lifecycle do
     )
   end
 
-  defp validate_plugin_dependencies(plugin, module) do
-    :ok = check_for_circular_dependency(plugin, module)
-    :ok = check_dependencies(plugin, module)
-    :ok
+  defp validate_plugin_dependencies(plugin, manager) do
+    case check_for_circular_dependency(plugin, manager) do
+      :ok ->
+        case check_dependencies(plugin, manager) do
+          :ok ->
+            :ok
+
+          {:error, :missing_dependencies, missing, chain} ->
+            {:error, :missing_dependencies, missing, chain}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, {:circular_dependency, name}} ->
+        {:error, {:circular_dependency, name}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   # --- Error Handling and Logging ---

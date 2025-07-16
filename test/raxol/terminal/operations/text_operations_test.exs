@@ -14,7 +14,9 @@ defmodule Raxol.Terminal.Operations.TextOperationsTest do
       style = %{fg: :red, bg: :blue}
       emulator = TextOperations.write_string(emulator, 0, 0, "test", style)
       cell = TextOperations.get_cell_at(emulator, 0, 0)
-      assert cell.style == style
+      # The style is converted to a TextFormatting struct, so compare the relevant fields
+      assert cell.style.foreground == style.fg
+      assert cell.style.background == style.bg
     end
 
     test "writes string at different positions" do
@@ -90,7 +92,9 @@ defmodule Raxol.Terminal.Operations.TextOperationsTest do
       emulator = TextOperations.write_string(emulator, 0, 0, "test", style)
       cell = TextOperations.get_cell_at(emulator, 0, 0)
       assert cell.char == "t"
-      assert cell.style == style
+      # The style is converted to a TextFormatting struct, so compare the relevant fields
+      assert cell.style.foreground == style.fg
+      assert cell.style.background == style.bg
     end
 
     test "returns empty cell for empty position" do

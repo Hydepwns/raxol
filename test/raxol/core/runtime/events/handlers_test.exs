@@ -214,9 +214,9 @@ defmodule Raxol.Core.Runtime.Events.HandlersTest do
         raise "Test error"
       end)
 
-      # Execute handler and capture the log
+      # Execute handler and capture the IO output
       log =
-        capture_log(fn ->
+        ExUnit.CaptureIO.capture_io(fn ->
           assert {:error, {:handler_error, _}, ^state} =
                    Handlers.execute_handlers(event, state)
         end)
@@ -231,9 +231,9 @@ defmodule Raxol.Core.Runtime.Events.HandlersTest do
         {:error, :test_error}
       end)
 
-      # Execute handler and capture the log
+      # Execute handler and capture the IO output
       log =
-        capture_log(fn ->
+        ExUnit.CaptureIO.capture_io(fn ->
           assert {:error, :test_error, ^state} =
                    Handlers.execute_handlers(event, state)
         end)

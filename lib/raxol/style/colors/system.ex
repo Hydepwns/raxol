@@ -1,42 +1,10 @@
 defmodule Raxol.Style.Colors.System do
   @moduledoc """
-  Core color system for the Raxol terminal emulator.
-
-  This module provides a robust color system that:
-  - Manages color palettes with semantic naming
-  - Provides accessible color alternatives for high contrast mode
-  - Supports theme customization
-  - Calculates contrast ratios for text/background combinations
-  - Automatically adjusts colors for optimal readability
-  - Integrates with the accessibility module
-
-  ## Usage
-
-  ```elixir
-  # Initialize the color system
-  ColorSystem.init()
-
-  # Get a semantic color (will respect accessibility settings)
-  color = ColorSystem.get_color(:primary)
-
-  # Get a specific color variation
-  hover_color = ColorSystem.get_color(:primary, :hover)
-
-  # Register a custom theme
-  ColorSystem.register_theme(%{
-    primary: "#0077CC",
-    secondary: "#00AAFF",
-    background: "#001133",
-    foreground: "#FFFFFF",
-    accent: "#FF9900"
-  })
-
-  # Apply a theme
-  ColorSystem.apply_theme(:ocean)
-  ```
+  Color system for Raxol applications.
   """
 
-  import Raxol.Guards
+  require Raxol.Core.Runtime.Log
+  require Logger
 
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Core.Events.Manager, as: EventManager

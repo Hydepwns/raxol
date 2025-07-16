@@ -26,7 +26,9 @@ defmodule Raxol.UI.Theming.Theme do
     :variants,
     :metadata,
     :fonts,
-    :ui_mappings
+    :ui_mappings,
+    :dark_mode,
+    :high_contrast
   ]
 
   @behaviour Access
@@ -443,8 +445,8 @@ defmodule Raxol.UI.Theming.Theme do
   defp normalize_key(:styles), do: :component_styles
   defp normalize_key(key), do: key
 
-  defp process_value(value, _key, _rest) when is_map(value),
-    do: ensure_button_background(value, _rest)
+  defp process_value(value, _key, rest) when is_map(value),
+    do: ensure_button_background(value, rest)
 
   defp process_value(:default, key, rest), do: handle_missing_value(key, rest)
   defp process_value(nil, key, rest), do: handle_missing_value(key, rest)

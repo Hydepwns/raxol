@@ -1,79 +1,60 @@
 defmodule RaxolWeb.Settings.ProfileComponent do
+  @moduledoc """
+  Profile component for settings page.
+  """
+
   use RaxolWeb, :live_component
-  alias Raxol.Accounts
 
   def render(assigns) do
     ~H"""
     <div class="settings-section">
       <h2 class="settings-section-title">Profile Information</h2>
-      <.form
-        for={@changeset}
+      <form
         id="profile-form"
         phx-submit="update_profile"
         phx-change="validate"
-        phx-target={@myself}
         class="settings-form"
+        autocomplete="off"
       >
-        <.form_group
-          name="email"
-          label="Email"
-          type="email"
-          value={@changeset[:email].value}
-          required
-        />
-        <.form_group
-          name="username"
-          label="Username"
-          type="text"
-          value={@changeset[:username].value}
-          required
-        />
-
-        <div class="mt-4">
-          <.button type="submit" class="settings-button">
-            Update Profile
-          </.button>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            name="user[email]"
+            value={Ecto.Changeset.get_field(@changeset, :email) || ""}
+            required
+          />
+          <%= if @changeset.errors[:email] do %>
+            <div class="error-message">
+              <%= elem(@changeset.errors[:email], 0) %>
+            </div>
+          <% end %>
         </div>
-      </.form>
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            name="user[username]"
+            value={Ecto.Changeset.get_field(@changeset, :username) || ""}
+            required
+          />
+          <%= if @changeset.errors[:username] do %>
+            <div class="error-message">
+              <%= elem(@changeset.errors[:username], 0) %>
+            </div>
+          <% end %>
+        </div>
+        <button type="submit">Update Profile</button>
+      </form>
     </div>
     """
   end
 
-  def handle_event("update_profile", %{"user" => user_params}, socket) do
-    user = socket.assigns.current_user
-
-    # Sanitize input
-    case RaxolWeb.InputSanitizer.sanitize_form_input(user_params, [
-           :email,
-           :username
-         ]) do
-      {:ok, sanitized_params} ->
-        changeset = Raxol.Auth.User.changeset(user, sanitized_params)
-
-        case Raxol.Repo.update(changeset) do
-          {:ok, updated_user} ->
-            send(self(), {:profile_updated, updated_user})
-
-            {:noreply,
-             socket
-             |> put_flash(:info, "Profile updated successfully.")
-             |> assign(:changeset, changeset)}
-
-          {:error, changeset} ->
-            {:noreply, assign(socket, changeset: changeset)}
-        end
-
-      {:error, :invalid_input} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Invalid input detected.")
-         |> assign(:changeset, %{errors: [{"email", {"Invalid input", []}}]})}
-    end
-  end
-
+  # Only keep the validate event handler
   def handle_event("validate", %{"user" => user_params}, socket) do
-    user = socket.assigns.current_user
-    changeset = Raxol.Auth.User.changeset(user, user_params)
-    {:noreply, assign(socket, changeset: changeset)}
+    changeset =
+      Raxol.Auth.User.changeset(socket.assigns.current_user, user_params)
+
+    {:noreply, assign(socket, :changeset, changeset)}
   end
 end

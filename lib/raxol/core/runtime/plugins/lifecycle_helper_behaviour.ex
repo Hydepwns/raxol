@@ -130,5 +130,21 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour do
               plugin_config :: map()
             ) :: {:ok, {map(), map(), atom()}} | {:error, any()}
 
+  @doc """
+  Enables a plugin by updating its state.
+  """
+  @callback enable_plugin(
+              plugin :: map(),
+              plugin_states :: map()
+            ) :: {:ok, map()} | {:error, any()}
+
+  @doc """
+  Disables a plugin by updating its state.
+  """
+  @callback disable_plugin(
+              plugin :: map(),
+              plugin_states :: map()
+            ) :: {:ok, map()} | {:error, any()}
+
   # Add other callbacks here if the Manager interacts with more LifecycleHelper functions
 end

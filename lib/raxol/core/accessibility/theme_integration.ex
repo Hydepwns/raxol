@@ -64,7 +64,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   def cleanup do
     if Mix.env() == :test do
-      UserPreferences.reset_to_defaults_for_test!()
+      # Only try to reset if the process exists
+      case Process.whereis(UserPreferences) do
+        nil -> :ok
+        _pid -> UserPreferences.reset_to_defaults_for_test!()
+      end
     end
 
     EventManager.unregister_handler(
@@ -121,7 +125,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
     require Raxol.Core.Runtime.Log
 
-    UserPreferences.set(pref_key(:high_contrast), enabled)
+    # Only try to set preference if the process exists
+    case Process.whereis(UserPreferences) do
+      nil -> :ok
+      _pid -> UserPreferences.set(pref_key(:high_contrast), enabled)
+    end
 
     Raxol.Core.Runtime.Log.debug(
       "ThemeIntegration handling high contrast event: #{enabled}"
@@ -140,7 +148,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   @spec get_accessibility_mode() :: atom()
   def get_accessibility_mode() do
-    high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
+    # Only try to get preference if the process exists
+    high_contrast =
+      case Process.whereis(UserPreferences) do
+        nil -> false
+        _pid -> UserPreferences.get(pref_key(:high_contrast)) || false
+      end
 
     if high_contrast do
       :high_contrast
@@ -160,7 +173,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def handle_reduced_motion({:accessibility_reduced_motion, enabled}) do
     require Raxol.Core.Runtime.Log
 
-    UserPreferences.set(pref_key(:reduced_motion), enabled)
+    # Only try to set preference if the process exists
+    case Process.whereis(UserPreferences) do
+      nil -> :ok
+      _pid -> UserPreferences.set(pref_key(:reduced_motion), enabled)
+    end
 
     Raxol.Core.Runtime.Log.debug("Restoring FocusRing config for normal motion")
 
@@ -178,7 +195,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def handle_large_text({:accessibility_large_text, enabled}) do
-    UserPreferences.set(pref_key(:large_text), enabled)
+    # Only try to set preference if the process exists
+    case Process.whereis(UserPreferences) do
+      nil -> :ok
+      _pid -> UserPreferences.set(pref_key(:large_text), enabled)
+    end
 
     EventManager.dispatch({:theme_changed, %{large_text: enabled}})
 
@@ -217,8 +238,18 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   @spec get_active_variant() :: atom()
   def get_active_variant do
-    high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
-    reduced_motion = UserPreferences.get(pref_key(:reduced_motion)) || false
+    # Only try to get preferences if the process exists
+    {high_contrast, reduced_motion} =
+      case Process.whereis(UserPreferences) do
+        nil ->
+          {false, false}
+
+        _pid ->
+          {
+            UserPreferences.get(pref_key(:high_contrast)) || false,
+            UserPreferences.get(pref_key(:reduced_motion)) || false
+          }
+      end
 
     cond do
       high_contrast -> :high_contrast

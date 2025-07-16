@@ -34,7 +34,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
 
   defp do_diff_trees(nil, nil, _path), do: :no_change
   defp do_diff_trees(nil, new, _path), do: {:replace, new}
-  defp do_diff_trees(old, nil, _path), do: {:replace, nil}
+  defp do_diff_trees(_old, nil, _path), do: {:replace, nil}
   defp do_diff_trees(old, new, _path) when old == new, do: :no_change
 
   defp do_diff_trees(%{type: t1} = _old, %{type: t2} = new, _path)
@@ -253,7 +253,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
 
       true ->
         # Partition ops so that :key_reorder is always last
-        {reorder_ops, other_ops} =
+        {_reorder_ops, other_ops} =
           Enum.split_with(ops, fn
             {:key_reorder, _} -> true
             _ -> false

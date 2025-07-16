@@ -10,10 +10,6 @@ config :raxol, Raxol.Repo,
   # pool: Ecto.Adapters.SQL.Sandbox,
   enabled: false
 
-# Configure database settings
-# Global flag to enable database for tests
-config :raxol, database_enabled: true
-
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :raxol, RaxolWeb.Endpoint,
@@ -144,7 +140,7 @@ config :raxol,
 # Configure test environment
 config :raxol,
   test_mode: true,
-  database_enabled: true
+  database_enabled: false
 
 # Configure test helpers
 config :ex_unit,

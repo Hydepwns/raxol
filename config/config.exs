@@ -42,8 +42,7 @@ config :raxol, Raxol.Repo,
   enabled: true
 
 # Configure the application
-config :raxol,
-  database_enabled: true
+# database_enabled is set per environment in dev.exs, test.exs, prod.exs
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

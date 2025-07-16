@@ -193,11 +193,14 @@ defmodule Raxol.Accounts do
 
       false ->
         # Use Agent storage when database is disabled
-        Agent.get(__MODULE__, fn users ->
-          Enum.find_value(users, fn {_email, user} ->
-            if user.id == user_id, do: user, else: nil
-          end)
-        end)
+        case Agent.get(__MODULE__, fn users ->
+               Enum.find_value(users, fn {_email, user} ->
+                 if user.id == user_id, do: user, else: nil
+               end)
+             end) do
+          nil -> {:error, :not_found}
+          user -> {:ok, user}
+        end
     end
   end
 
@@ -467,7 +470,17 @@ defmodule Raxol.Accounts do
         user_id = Ecto.UUID.generate()
         # Hash the password for security
         password_hash = hash_password(password)
-        new_user = %{id: user_id, email: email, password_hash: password_hash}
+
+        # Create a Raxol.Auth.User struct instead of a plain map
+        new_user = %Raxol.Auth.User{
+          id: user_id,
+          email: email,
+          password_hash: password_hash,
+          # Use email as username for agent-based users
+          username: email,
+          active: true,
+          failed_login_attempts: 0
+        }
 
         {{:ok, Map.take(new_user, [:id, :email])},
          Map.put(users, email, new_user)}
@@ -483,8 +496,8 @@ defmodule Raxol.Accounts do
 
         user ->
           if verify_password(password, user.password_hash) do
-            # Return only public user info on success
-            {:ok, Map.take(user, [:id, :email])}
+            # Return the full user struct on success
+            {:ok, user}
           else
             {:error, :invalid_credentials}
           end
@@ -523,11 +536,13 @@ defmodule Raxol.Accounts do
       if map_size(users) == 0 do
         admin_id = Ecto.UUID.generate()
 
-        admin_user = %{
+        admin_user = %Raxol.Auth.User{
           id: admin_id,
           email: "admin@raxol.com",
           password_hash: hash_password("admin123"),
-          role: "admin"
+          username: "admin",
+          active: true,
+          failed_login_attempts: 0
         }
 
         {{:ok, admin_user}, Map.put(users, "admin@raxol.com", admin_user)}
@@ -629,7 +644,9 @@ defmodule Raxol.Accounts do
   end
 
   defp database_enabled? do
-    Application.get_env(:raxol, :database_enabled, false)
+    enabled = Application.get_env(:raxol, :database_enabled, false)
+    IO.inspect(enabled, label: "database_enabled? result")
+    enabled
   end
 
   # Legacy User struct for backward compatibility

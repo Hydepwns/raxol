@@ -84,13 +84,7 @@ defmodule Raxol.Terminal.Buffer.Content do
           Cell.new()
 
         cells ->
-          row = Enum.at(cells, y)
-
-          if is_nil(row) do
-            Cell.new()
-          else
-            Enum.at(row, x) || Cell.new()
-          end
+          get_cell_from_row(cells, x, y)
       end
     else
       Cell.new()
@@ -178,11 +172,7 @@ defmodule Raxol.Terminal.Buffer.Content do
       cells ->
         new_cells =
           Enum.reduce(changes, cells, fn {y, x, cell_or_map}, acc_cells ->
-            cell =
-              if is_map(cell_or_map),
-                do: struct(Cell, cell_or_map),
-                else: cell_or_map
-
+            cell = convert_to_cell(cell_or_map)
             update_cell_at(acc_cells, x, y, cell)
           end)
 
@@ -191,6 +181,11 @@ defmodule Raxol.Terminal.Buffer.Content do
   end
 
   # === Private Helper Functions ===
+
+  @doc false
+  defp convert_to_cell(cell_or_map) do
+    if is_map(cell_or_map), do: struct(Cell, cell_or_map), else: cell_or_map
+  end
 
   @doc """
   Updates a cell at the specified position in the cells list.
@@ -229,5 +224,11 @@ defmodule Raxol.Terminal.Buffer.Content do
         |> Enum.at(y)
         |> Enum.at(x)
     end
+  end
+
+  @doc false
+  defp get_cell_from_row(cells, x, y) do
+    row = Enum.at(cells, y)
+    if is_nil(row), do: Cell.new(), else: Enum.at(row, x) || Cell.new()
   end
 end

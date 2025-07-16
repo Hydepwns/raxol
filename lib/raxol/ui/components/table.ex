@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Table do
   # use Surface.Component
   require Raxol.Core.Renderer.View
-  import Raxol.Core.Renderer.View, only: [flex: 1, flex: 2]
 
   @moduledoc """
   Table component for displaying and interacting with tabular data.
