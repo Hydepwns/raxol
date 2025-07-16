@@ -158,7 +158,9 @@ defmodule Raxol.Terminal.ControlCodes do
     {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
     cursor = emulator.cursor
 
-    {_, current_row} = Raxol.Terminal.Cursor.Manager.get_position(cursor)
+    {current_col, current_row} =
+      Raxol.Terminal.Cursor.Manager.get_position(cursor)
+
     last_row = buffer_height - 1
 
     moved_cursor =
@@ -170,17 +172,39 @@ defmodule Raxol.Terminal.ControlCodes do
         buffer_height
       )
 
+    # Check LNM mode to determine if we should move to column 0
+    line_feed_mode =
+      Raxol.Terminal.ModeManager.mode_enabled?(
+        emulator.mode_manager,
+        :line_feed_mode
+      )
+
     final_cursor =
       cond do
         is_pid(moved_cursor) ->
-          # For PID cursors, just call move_to_column - the PID manages its own state
-          GenServer.call(moved_cursor, {:move_to_column, 0})
+          if line_feed_mode do
+            # LNM ON: move to column 0 (carriage return behavior)
+            GenServer.call(moved_cursor, {:move_to_column, 0})
+          else
+            # LNM OFF: stay at same column position
+            GenServer.call(moved_cursor, {:move_to_column, current_col})
+          end
+
           moved_cursor
 
         is_map(moved_cursor) ->
           if Map.has_key?(moved_cursor, :row) and
                Map.has_key?(moved_cursor, :col) do
-            Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, 0)
+            if line_feed_mode do
+              # LNM ON: move to column 0 (carriage return behavior)
+              Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, 0)
+            else
+              # LNM OFF: stay at same column position
+              Raxol.Terminal.Cursor.Manager.move_to_column(
+                moved_cursor,
+                current_col
+              )
+            end
           else
             cursor
           end
