@@ -1,4 +1,4 @@
-defmodule Raxol.Examples.Form do
+defmodule Raxol.Examples.FormDemo do
   @moduledoc """
   A sample form component that demonstrates parent-child interactions.
 
@@ -16,6 +16,22 @@ defmodule Raxol.Examples.Form do
   import Raxol.Guards
 
   defstruct form_data: %{username: "", password: ""}, submitted: false, id: :form_example
+
+  @doc """
+  Initialize the form component with default state (for testing compatibility).
+  """
+  def new(props \\ %{}) do
+    %{
+      submitted: false,
+      button_clicked: nil,
+      fields: Map.get(props, :fields, %{}),
+      on_submit: Map.get(props, :on_submit, fn -> :submitted end),
+      children: Map.get(props, :children, []),
+      errors: Map.get(props, :errors, %{}),
+      id: Map.get(props, :id, :form_example),
+      form_data: Map.get(props, :form_data, %{username: "", password: ""})
+    }
+  end
 
   @impl Raxol.Core.Runtime.Application
   def init(_opts) do

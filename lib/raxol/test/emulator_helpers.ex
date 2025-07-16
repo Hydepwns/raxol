@@ -1,11 +1,13 @@
 defmodule Raxol.Test.EmulatorHelpers do
   @moduledoc """
-  Helper functions for Emulator tests.
+  Helper functions for testing terminal emulators.
   """
+
+  require Raxol.Core.Runtime.Log
+  require Logger
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  import Raxol.Guards
 
   @doc """
   Fills a region of the emulator buffer with identifiable line text.

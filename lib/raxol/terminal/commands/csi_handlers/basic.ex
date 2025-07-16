@@ -221,30 +221,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   end
 
   def handle_decsc(emulator, _params) do
-    # Save cursor position and style
-    cursor = emulator.cursor
-
-    saved_cursor =
-      case cursor do
-        %{row: row, col: col, style: style, visible: visible} ->
-          %{
-            position: {col, row},
-            style: style,
-            visible: visible,
-            attributes: %{}
-          }
-
-        _ ->
-          # Fallback for other cursor formats
-          %{
-            position: {0, 0},
-            style: :block,
-            visible: true,
-            attributes: %{}
-          }
-      end
-
-    {:ok, %{emulator | saved_cursor: saved_cursor, cursor_saved: true}}
+    # Save the full cursor struct
+    {:ok, %{emulator | saved_cursor: emulator.cursor, cursor_saved: true}}
   end
 
   def handle_decrc(emulator, _params) do
@@ -252,38 +230,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
       nil ->
         {:ok, emulator}
 
-      saved ->
-        # Handle both CursorManager struct and map with position field
-        {col, row} =
-          case saved do
-            %{position: pos} when is_tuple(pos) -> pos
-            %{col: c, row: r} -> {c, r}
-            _ -> {0, 0}
-          end
-
-        emulator =
-          Emulator.move_cursor_to(
-            emulator,
-            {col, row},
-            emulator.width,
-            emulator.height
-          )
-
-        # Update cursor style and visibility on the updated cursor
-        updated_cursor =
-          case emulator.cursor do
-            %{row: _, col: _, style: _, visible: _} = cur ->
-              %{
-                cur
-                | style: Map.get(saved, :style, cur.style),
-                  visible: Map.get(saved, :visible, cur.visible)
-              }
-
-            _ ->
-              emulator.cursor
-          end
-
-        {:ok, %{emulator | cursor: updated_cursor, cursor_restored: true}}
+      saved_cursor ->
+        # Restore the full cursor struct
+        {:ok,
+         %{
+           emulator
+           | cursor: saved_cursor,
+             saved_cursor: saved_cursor,
+             cursor_restored: true
+         }}
     end
   end
 

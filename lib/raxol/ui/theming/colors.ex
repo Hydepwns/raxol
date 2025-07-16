@@ -15,7 +15,7 @@ defmodule Raxol.UI.Theming.Colors do
 
   import Raxol.Guards
   alias Raxol.Style.Colors.{Color, Utilities}
-  alias Raxol.UI.Theming.PaletteRegistry
+  # alias Raxol.UI.Theming.PaletteRegistry # Removed unused alias
 
   # Format: "#RRGGBB" or "#RRGGBBAA"
   @type color_hex :: String.t()
@@ -510,7 +510,7 @@ defmodule Raxol.UI.Theming.Colors do
   ]
 
   # Custom palette registry
-  @custom_palettes %{}
+  # @custom_palettes %{}  # Removed unused module attribute
 
   @doc """
   Registers a custom color palette for use with convert_to_palette/2.

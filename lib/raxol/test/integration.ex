@@ -151,6 +151,16 @@ defmodule Raxol.Test.Integration do
                 "Successfully mounted child with ID: #{inspect(child_id)}"
               )
 
+              # Update child state with component_manager_id
+              updated_child_state =
+                Map.put(child_state, :component_manager_id, child_id)
+
+              # Update the child component in ComponentManager with the new state
+              Raxol.Core.Runtime.ComponentManager.set_component_state(
+                child_id,
+                updated_child_state
+              )
+
               parent_struct = %{
                 parent_struct
                 | state: Map.put(parent_state, :component_manager_id, parent_id)
@@ -158,7 +168,7 @@ defmodule Raxol.Test.Integration do
 
               child_struct = %{
                 child_struct
-                | state: Map.put(child_state, :component_manager_id, child_id)
+                | state: updated_child_state
               }
 
               {:ok, parent_struct, child_struct}
@@ -431,11 +441,34 @@ defmodule Raxol.Test.Integration do
     child_mounted =
       ComponentManager.get_component(child_struct.state.component_manager_id)
 
+    # Update parent's child_states with the child's mounted state (including component_manager_id)
+    updated_parent_state =
+      Map.put(
+        parent_mounted.state,
+        :child_states,
+        Map.put(
+          parent_mounted.state.child_states,
+          child_mounted.state.id,
+          child_mounted.state
+        )
+      )
+
+    # Update parent component in ComponentManager with the new state
+    Raxol.Core.Runtime.ComponentManager.set_component_state(
+      parent_struct.state.component_manager_id,
+      updated_parent_state
+    )
+
+    # Get the updated parent from ComponentManager
+    updated_parent_mounted =
+      ComponentManager.get_component(parent_struct.state.component_manager_id)
+
     # Set up parent/child references
-    child_struct_with_parent = Map.put(child_mounted, :parent, parent_mounted)
+    child_struct_with_parent =
+      Map.put(child_mounted, :parent, updated_parent_mounted)
 
     parent_struct_with_child =
-      Map.put(parent_mounted, :children, [child_struct_with_parent])
+      Map.put(updated_parent_mounted, :children, [child_struct_with_parent])
 
     {:ok, parent_struct_with_child, child_struct_with_parent}
   end

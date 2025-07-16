@@ -376,8 +376,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     cursor.position
   end
 
-  defp set_cursor_position(%CursorManager{} = cursor, position) do
-    CursorManager.set_position(cursor, position)
+  defp set_cursor_position(%CursorManager{} = cursor, {col, row}) do
+    %CursorManager{cursor | col: col, row: row, position: {col, row}}
   end
 
   defp set_cursor_position(cursor, position) when is_pid(cursor) do
@@ -386,6 +386,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   defp set_cursor_position(cursor, position) when is_map(cursor) do
-    %{cursor | position: position}
+    {col, row} = position
+    %{cursor | position: position, col: col, row: row}
   end
 end

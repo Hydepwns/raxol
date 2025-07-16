@@ -240,7 +240,23 @@ defmodule Raxol.Style.Colors.Adaptive do
     adapted_colors =
       theme.colors
       |> Enum.map(fn {k, v} ->
-        {k, adapt_color(Color.from_hex(v)) |> Map.get(:hex, v)}
+        # Handle both Color structs and hex strings
+        color =
+          case v do
+            %Color{} -> v
+            hex_string when is_binary(hex_string) -> Color.from_hex(hex_string)
+            _ -> v
+          end
+
+        adapted_color = adapt_color(color)
+
+        hex_value =
+          case adapted_color do
+            %Color{} -> adapted_color.hex
+            _ -> v
+          end
+
+        {k, hex_value}
       end)
       |> Enum.into(%{})
 

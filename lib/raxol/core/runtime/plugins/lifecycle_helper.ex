@@ -329,6 +329,50 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   end
 
   @doc """
+  Enables a plugin by updating its state to enabled.
+  """
+  def enable_plugin(plugin, plugin_states) do
+    # For now, just return the existing plugin state as enabled
+    # This is a simple implementation that can be enhanced later
+    plugin_id =
+      if is_map(plugin) and Map.has_key?(plugin, :name),
+        do: plugin.name,
+        else: "unknown"
+
+    case Map.get(plugin_states, plugin_id) do
+      nil ->
+        # If no state exists, create a basic enabled state
+        {:ok, %{enabled: true, name: plugin_id}}
+
+      existing_state ->
+        # Update existing state to enabled
+        {:ok, Map.put(existing_state, :enabled, true)}
+    end
+  end
+
+  @doc """
+  Disables a plugin by updating its state to disabled.
+  """
+  def disable_plugin(plugin, plugin_states) do
+    # For now, just return the existing plugin state as disabled
+    # This is a simple implementation that can be enhanced later
+    plugin_id =
+      if is_map(plugin) and Map.has_key?(plugin, :name),
+        do: plugin.name,
+        else: "unknown"
+
+    case Map.get(plugin_states, plugin_id) do
+      nil ->
+        # If no state exists, create a basic disabled state
+        {:ok, %{enabled: false, name: plugin_id}}
+
+      existing_state ->
+        # Update existing state to disabled
+        {:ok, Map.put(existing_state, :enabled, false)}
+    end
+  end
+
+  @doc """
   Catch-all for load_plugin/3. Raises a clear error if called with the wrong arity.
   """
   def load_plugin(_a, _b, _c) do

@@ -138,12 +138,15 @@ defmodule Raxol.Core.Performance.Monitor do
     memory_check_interval =
       Keyword.get(opts, :memory_check_interval, @default_memory_check_interval)
 
+    parent_pid = Keyword.get(opts, :parent_pid)
+
     state = %{
       frame_times: [],
       jank_count: 0,
       jank_threshold: jank_threshold,
       memory_check_interval: memory_check_interval,
-      last_memory_check: System.monotonic_time()
+      last_memory_check: System.monotonic_time(),
+      parent_pid: parent_pid
     }
 
     schedule_memory_check(memory_check_interval)
@@ -200,6 +203,11 @@ defmodule Raxol.Core.Performance.Monitor do
   @impl GenServer
   def handle_info(:check_memory, state) do
     memory_usage = get_memory_usage()
+    # Send memory check message to parent process if specified
+    if state.parent_pid do
+      send(state.parent_pid, {:memory_check, memory_usage})
+    end
+
     send(self(), {:memory_check, memory_usage})
     schedule_memory_check(state.memory_check_interval)
     {:noreply, %{state | last_memory_check: System.monotonic_time()}}

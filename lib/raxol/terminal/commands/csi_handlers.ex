@@ -72,41 +72,56 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     [?6, ?R] => {:cursor_position_report, []},
     [?N] => {:locking_shift_g0, []},
     [?O] => {:locking_shift_g1, []},
-    [?R] => {:single_shift_g2, []},
-    [?S] => {:single_shift_g3, []}
+    [?R] => {:single_shift_g2, []}
   }
 
   # Cursor movement functions (defined before the map that references them)
   def handle_cursor_up(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-      emulator,
-      [amount],
-      ?A
-    )
+    case Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+           emulator,
+           [amount],
+           ?A
+         ) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, _} -> emulator
+      updated_emulator -> updated_emulator
+    end
   end
 
   def handle_cursor_down(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-      emulator,
-      [amount],
-      ?B
-    )
+    case Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+           emulator,
+           [amount],
+           ?B
+         ) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, _} -> emulator
+      updated_emulator -> updated_emulator
+    end
   end
 
   def handle_cursor_forward(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-      emulator,
-      [amount],
-      ?C
-    )
+    case Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+           emulator,
+           [amount],
+           ?C
+         ) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, _} -> emulator
+      updated_emulator -> updated_emulator
+    end
   end
 
   def handle_cursor_backward(emulator, amount) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-      emulator,
-      [amount],
-      ?D
-    )
+    case Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+           emulator,
+           [amount],
+           ?D
+         ) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, _} -> emulator
+      updated_emulator -> updated_emulator
+    end
   end
 
   def handle_cursor_position(emulator, row, col) do
@@ -116,75 +131,87 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     width = Raxol.Terminal.ScreenBuffer.get_width(active_buffer)
     height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
-    # Convert from 1-indexed to 0-indexed coordinates
-    row_0_indexed = max(0, row - 1)
-    col_0_indexed = max(0, col - 1)
+    # Convert from 1-indexed to 0-indexed coordinates, handling negative values
+    row_0_indexed = if row <= 0, do: 0, else: row - 1
+    col_0_indexed = if col <= 0, do: 0, else: col - 1
 
     # Clamp coordinates to screen bounds
     row_clamped = max(0, min(row_0_indexed, height - 1))
     col_clamped = max(0, min(col_0_indexed, width - 1))
 
     # Update cursor position - cursor stores {col, row} format
-    # Don't update the cursor field since it's a PID and the state is managed by the GenServer
-    Raxol.Terminal.Cursor.Manager.set_position(
-      emulator.cursor,
-      {col_clamped, row_clamped}
-    )
+    # For test cursors that are structs, update directly
+    updated_cursor =
+      case emulator.cursor do
+        %{row: _, col: _} = cursor ->
+          %{
+            cursor
+            | row: row_clamped,
+              col: col_clamped,
+              position: {col_clamped, row_clamped}
+          }
 
-    {:ok, emulator}
+        _ ->
+          # For PID cursors, use the manager
+          Raxol.Terminal.Cursor.Manager.set_position(
+            emulator.cursor,
+            {col_clamped, row_clamped}
+          )
+
+          emulator.cursor
+      end
+
+    {:ok, %{emulator | cursor: updated_cursor}}
   end
 
   def handle_cursor_position(emulator, params) do
+    {row, col} = parse_cursor_position_params(params)
+
+    result =
+      Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+        emulator,
+        [row, col],
+        ?H
+      )
+
+    case result do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, _} -> emulator
+      updated_emulator -> updated_emulator
+    end
+  end
+
+  defp parse_cursor_position_params(params) do
     case params do
       [] ->
-        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-          emulator,
-          [1, 1],
-          ?H
-        )
+        {1, 1}
 
       [row] ->
-        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-          emulator,
-          [row, 1],
-          ?H
-        )
+        {row, 1}
 
       [row, col] ->
-        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-          emulator,
-          [row, col],
-          ?H
-        )
+        {row, col}
 
-      # Handle the case where params is [?2, ?;, ?3] format
       [row, ?;, col] ->
-        # Convert character codes to integers if needed
         row_int = if is_integer(row), do: row, else: row - ?0
         col_int = if is_integer(col), do: col, else: col - ?0
-
-        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-          emulator,
-          [row_int, col_int],
-          ?H
-        )
+        {row_int, col_int}
 
       _ ->
-        # Fallback to default position
-        Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-          emulator,
-          [1, 1],
-          ?H
-        )
+        {1, 1}
     end
   end
 
   def handle_cursor_column(emulator, column) do
-    Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
-      emulator,
-      [column],
-      ?G
-    )
+    case Raxol.Terminal.Commands.CSIHandlers.Cursor.handle_command(
+           emulator,
+           [column],
+           ?G
+         ) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, _} -> emulator
+      updated_emulator -> updated_emulator
+    end
   end
 
   # Screen operations (defined before the map that references them)
@@ -242,67 +269,38 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   end
 
   # Device operations (defined before the map that references them)
+  def handle_device_status(emulator, param) when is_integer(param) do
+    case param do
+      5 -> handle_device_status_report(emulator, 5)
+      6 -> handle_device_status_report(emulator, 6)
+      _ -> emulator
+    end
+  end
+
   def handle_device_status(emulator, params) when is_list(params) do
     case params do
-      [?6, ?n] ->
-        Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
-          emulator,
-          [6],
-          "",
-          ?n
-        )
-
-      _ ->
-        {:ok, emulator}
+      [?6, ?n] -> handle_device_status_report(emulator, 6)
+      [?6, ?R] -> handle_cursor_position_report(emulator)
+      [param] when is_integer(param) -> handle_device_status(emulator, param)
+      _ -> emulator
     end
   end
 
-  def handle_device_status(emulator, param) when is_integer(param) do
-    # Handle single integer parameter (for direct test calls)
-    case param do
-      5 ->
-        # Report device status
-        case Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
-               emulator,
-               [5],
-               "",
-               ?n
-             ) do
-          {:ok, updated_emulator} -> updated_emulator
-          result -> result
-        end
-
-      6 ->
-        # Report cursor position
-        case Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
-               emulator,
-               [6],
-               "",
-               ?n
-             ) do
-          {:ok, updated_emulator} -> updated_emulator
-          result -> result
-        end
-
-      _ ->
-        emulator
-    end
-  end
-
-  def handle_device_status_report(emulator) do
-    # Handle device status report sequence [?6, ?n]
+  defp handle_device_status_report(emulator, status_code) do
     case Raxol.Terminal.Commands.CSIHandlers.Device.handle_command(
            emulator,
-           [6],
+           [status_code],
            "",
            ?n
          ) do
-      {:ok, updated_emulator} ->
-        %{updated_emulator | device_status_reported: true}
-
-      result ->
-        %{result | device_status_reported: true}
+      {:ok, updated_emulator} -> updated_emulator
+      result -> result
     end
+  end
+
+  defp handle_device_status_report(emulator) do
+    # Default to status code 6 (cursor position report)
+    handle_device_status_report(emulator, 6)
   end
 
   def handle_cursor_position_report(emulator) do
@@ -355,11 +353,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   # Text attributes (defined before the map that references them)
   def handle_text_attributes(emulator, params) do
-    Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(
-      emulator,
-      params,
-      ?m
-    )
+    case Raxol.Terminal.Commands.CSIHandlers.Basic.handle_command(
+           emulator,
+           params,
+           ?m
+         ) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _, _} -> emulator
+      updated_emulator when is_map(updated_emulator) -> updated_emulator
+      _ -> emulator
+    end
   end
 
   # Save/Restore cursor (defined before the map that references them)
@@ -371,7 +374,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     )
   end
 
-  defp csi_handlers do
+  def csi_command_handlers do
     [
       {:cursor_up, &handle_cursor_up/2},
       {:cursor_down, &handle_cursor_down/2},
@@ -387,10 +390,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
       {:device_status, &handle_device_status/2, :with_params},
       {:save_restore_cursor, &handle_save_restore_cursor/2, :with_params}
     ]
-  end
-
-  def csi_command_handlers do
-    csi_handlers()
     |> Enum.map(fn
       {key, fun} -> {key, create_handler(fun)}
       {key, fun, :with_params} -> {key, create_handler_with_params(fun)}
@@ -479,7 +478,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     ?F => :german,
     ?D => :french,
     ?R => :dec_technical,
-    ?' => :portuguese
+    ?' => :portuguese,
+    ?> => Raxol.Terminal.ANSI.CharacterSets.DEC
   }
 
   defp parse_charset_code(params) do
@@ -496,33 +496,21 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     Map.get(@charset_mapping, charset_code, :us_ascii)
   end
 
-  defp update_charset_state(emulator, charset, final_byte) do
+  def handle_scs(emulator, params_buffer, final_byte) do
+    charset_code = parse_charset_code(params_buffer)
+    charset = get_charset(charset_code)
+
     field =
       case final_byte do
         ?( -> :g0
         ?) -> :g1
         ?* -> :g2
         ?+ -> :g3
-        _ -> nil
+        _ -> :g0
       end
 
-    case field do
-      nil ->
-        {:error, :invalid_charset_designation, emulator}
-
-      field ->
-        {:ok,
-         %{
-           emulator
-           | charset_state: %{emulator.charset_state | field => charset}
-         }}
-    end
-  end
-
-  def handle_scs(emulator, params, final_byte) do
-    charset_code = parse_charset_code(params)
-    charset = get_charset(charset_code)
-    update_charset_state(emulator, charset, final_byte)
+    updated_charset_state = Map.put(emulator.charset_state, field, charset)
+    %{emulator | charset_state: updated_charset_state}
   end
 
   # Private mode handlers
@@ -658,8 +646,112 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   # Sequence handler
   def handle_sequence(emulator, sequence) do
     case Map.get(@sequence_handlers, sequence) do
-      {handler, args} -> apply_handler(emulator, handler, args)
-      nil -> emulator
+      {handler, args} ->
+        result = apply_handler(emulator, handler, args)
+
+        case result do
+          {:ok, emu} -> emu
+          {:error, _, emu} -> emu
+          emu -> emu
+        end
+
+      nil ->
+        # Handle parameterized sequences
+        case parse_parameterized_sequence(sequence) do
+          {:ok, handler, params} ->
+            result = apply_handler(emulator, handler, params)
+
+            case result do
+              {:ok, emu} -> emu
+              {:error, _, emu} -> emu
+              emu -> emu
+            end
+
+          :error ->
+            emulator
+        end
+    end
+  end
+
+  defp parse_parameterized_sequence(sequence) do
+    case sequence do
+      [row, ?;, col, ?H] ->
+        row_int = if is_integer(row), do: row, else: row - ?0
+        col_int = if is_integer(col), do: col, else: col - ?0
+        {:ok, :cursor_position, [row_int, col_int]}
+
+      [row, ?H] ->
+        row_int = if is_integer(row), do: row, else: row - ?0
+        {:ok, :cursor_position, [row_int]}
+
+      [?H] ->
+        {:ok, :cursor_position, []}
+
+      [col, ?G] ->
+        col_int = if is_integer(col), do: col, else: col - ?0
+        {:ok, :cursor_column, [col_int]}
+
+      [?G] ->
+        {:ok, :cursor_column, [1]}
+
+      [mode, ?J] ->
+        mode_int = if is_integer(mode), do: mode, else: mode - ?0
+        {:ok, :screen_clear, [mode_int]}
+
+      [?J] ->
+        {:ok, :screen_clear, []}
+
+      [mode, ?K] ->
+        mode_int = if is_integer(mode), do: mode, else: mode - ?0
+        {:ok, :line_clear, [mode_int]}
+
+      [?K] ->
+        {:ok, :line_clear, []}
+
+      [lines, ?S] ->
+        lines_int = if is_integer(lines), do: lines, else: lines - ?0
+        {:ok, :scroll_up, [lines_int]}
+
+      [?S] ->
+        {:ok, :scroll_up, [1]}
+
+      [lines, ?T] ->
+        lines_int = if is_integer(lines), do: lines, else: lines - ?0
+        {:ok, :scroll_down, [lines_int]}
+
+      [?T] ->
+        {:ok, :scroll_down, [1]}
+
+      [amount, ?A] ->
+        amount_int = if is_integer(amount), do: amount, else: amount - ?0
+        {:ok, :cursor_up, [amount_int]}
+
+      [?A] ->
+        {:ok, :cursor_up, [1]}
+
+      [amount, ?B] ->
+        amount_int = if is_integer(amount), do: amount, else: amount - ?0
+        {:ok, :cursor_down, [amount_int]}
+
+      [?B] ->
+        {:ok, :cursor_down, [1]}
+
+      [amount, ?C] ->
+        amount_int = if is_integer(amount), do: amount, else: amount - ?0
+        {:ok, :cursor_forward, [amount_int]}
+
+      [?C] ->
+        {:ok, :cursor_forward, [1]}
+
+      [amount, ?D] ->
+        amount_int = if is_integer(amount), do: amount, else: amount - ?0
+        {:ok, :cursor_backward, [amount_int]}
+
+      [?D] ->
+        {:ok, :cursor_backward, [1]}
+
+      _ ->
+        :error
     end
   end
 

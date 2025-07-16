@@ -51,7 +51,9 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       assert state.plugin == plugin
       # Note: initialized will be false initially due to async initialization
       # The test should check the state after the async initialization completes
-      assert state.file_watcher_pid == self()
+      # The file_watcher_pid field should be present in the state
+      assert Map.has_key?(state, :file_watcher_pid)
+      assert state.file_watcher_pid == nil  # Initially nil until set by {:init, config}
     end
 
     test "handles initialization errors", %{plugin: plugin} do

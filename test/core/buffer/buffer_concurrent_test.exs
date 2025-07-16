@@ -78,7 +78,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
              end)
 
       # Flush to ensure all writes are completed
-      assert :ok = BufferServer.flush(pid)
+      assert :ok = ConcurrentBuffer.flush(pid)
 
       # Verify the region was written (last writer wins)
       assert {:ok, cell} = ConcurrentBuffer.get_cell(pid, 0, 0)
@@ -237,30 +237,30 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       ]
 
       # Execute batch operations
-      BufferServer.batch_operations(pid, operations)
+      ConcurrentBuffer.batch_operations(pid, operations)
 
       # Flush to ensure all operations are completed
-      assert :ok = BufferServer.flush(pid)
+      assert :ok = ConcurrentBuffer.flush(pid)
 
       # Verify the operations were applied
-      assert {:ok, cell_a} = BufferServer.get_cell(pid, 0, 0)
+      assert {:ok, cell_a} = ConcurrentBuffer.get_cell(pid, 0, 0)
       assert cell_a.char == "A"
       assert cell_a.style.foreground == :red  # Should be :red as set in TextFormatting
 
-      assert {:ok, cell_b} = BufferServer.get_cell(pid, 1, 0)
+      assert {:ok, cell_b} = ConcurrentBuffer.get_cell(pid, 1, 0)
       assert cell_b.char == "B"
       assert cell_b.style.foreground == :green  # Should be :green as set in TextFormatting
 
-      assert {:ok, cell_c} = BufferServer.get_cell(pid, 2, 0)
+      assert {:ok, cell_c} = ConcurrentBuffer.get_cell(pid, 2, 0)
       assert cell_c.char == "C"
       assert cell_c.style.foreground == :blue  # Should be :blue as set in TextFormatting
 
       # Verify string was written
-      assert {:ok, cell_h} = BufferServer.get_cell(pid, 0, 1)
+      assert {:ok, cell_h} = ConcurrentBuffer.get_cell(pid, 0, 1)
       assert cell_h.char == "H"
 
       # Verify region was filled
-      assert {:ok, cell_x} = BufferServer.get_cell(pid, 0, 2)
+      assert {:ok, cell_x} = ConcurrentBuffer.get_cell(pid, 0, 2)
       assert cell_x.char == "X"
       assert cell_x.style.foreground == :yellow  # Should be :yellow as set in TextFormatting
     end

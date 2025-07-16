@@ -1,17 +1,12 @@
 defmodule Raxol.UI.Layout.Grid do
   @moduledoc """
-  Handles layout calculations for grid UI elements.
-
-  This module is responsible for:
-  * Grid-based layout calculations
-  * Cell sizing and positioning
-  * Column and row spanning elements
-  * Grid-specific spacing and constraints
+  Grid layout component.
   """
 
-  import Raxol.Guards
-  alias Raxol.UI.Theming.Theme
-  alias Raxol.UI.Layout.Engine
+  use Raxol.UI.Components.Base.Component
+
+  alias Raxol.Core.Renderer.View
+  alias Raxol.UI.Layout.Grid
 
   @doc """
   Processes a grid element, calculating layout for it and its children.
@@ -27,7 +22,7 @@ defmodule Raxol.UI.Layout.Grid do
   A list of positioned elements with absolute coordinates.
   """
   def process(%{type: :grid, attrs: attrs, children: children}, space, acc)
-      when list?(children) do
+      when is_list(children) do
     # Skip if no children
     if children == [] do
       acc
@@ -71,7 +66,7 @@ defmodule Raxol.UI.Layout.Grid do
       # Process each child with its calculated space
       elements =
         Enum.map(child_positions, fn {child, child_space} ->
-          Engine.process_element(child, child_space, [])
+          Raxol.UI.Layout.Engine.process_element(child, child_space, [])
         end)
 
       # Flatten and add to accumulator
@@ -113,7 +108,7 @@ defmodule Raxol.UI.Layout.Grid do
       # Get child dimensions
       child_dimensions =
         Enum.map(children, fn child ->
-          Engine.measure_element(child, available_space)
+          Raxol.UI.Layout.Engine.measure_element(child, available_space)
         end)
 
       # Find the largest cell

@@ -34,39 +34,7 @@ defmodule Raxol.Plugins.EventHandler do
           [acc.input],
           2,
           acc,
-          fn acc, plugin, _callback_name, result ->
-            case result do
-              {:ok, updated_plugin, updated_plugin_state} ->
-                # Plugin returned both updated plugin and plugin state
-                acc_manager = extract_manager_from_acc(acc)
-
-                updated_manager =
-                  update_plugin_state(
-                    acc_manager,
-                    plugin,
-                    updated_plugin,
-                    updated_plugin_state
-                  )
-
-                {:cont, update_acc_with_manager(acc, updated_manager)}
-
-              {:ok, updated_plugin} ->
-                # Plugin returned only updated plugin
-                acc_manager = extract_manager_from_acc(acc)
-
-                updated_manager =
-                  update_plugin_state(acc_manager, plugin, updated_plugin)
-
-                {:cont, update_acc_with_manager(acc, updated_manager)}
-
-              {:error, reason} ->
-                {:halt, {:error, reason}}
-
-              _ ->
-                # Unknown result format, continue with current state
-                {:cont, acc}
-            end
-          end
+          &handle_input_result/4
         )
       end)
 
@@ -74,6 +42,37 @@ defmodule Raxol.Plugins.EventHandler do
       {:ok, result.manager}
     else
       result
+    end
+  end
+
+  defp handle_input_result(acc, plugin, _callback_name, result) do
+    case result do
+      {:ok, updated_plugin, updated_plugin_state} ->
+        updated_manager =
+          update_plugin_state(
+            extract_manager_from_acc(acc),
+            plugin,
+            updated_plugin,
+            updated_plugin_state
+          )
+
+        {:cont, update_acc_with_manager(acc, updated_manager)}
+
+      {:ok, updated_plugin} ->
+        updated_manager =
+          update_plugin_state(
+            extract_manager_from_acc(acc),
+            plugin,
+            updated_plugin
+          )
+
+        {:cont, update_acc_with_manager(acc, updated_manager)}
+
+      {:error, reason} ->
+        {:halt, {:error, reason}}
+
+      _ ->
+        {:cont, acc}
     end
   end
 
@@ -167,51 +166,7 @@ defmodule Raxol.Plugins.EventHandler do
           [acc.output],
           2,
           acc,
-          fn acc, plugin, _callback_name, result ->
-            case result do
-              {:ok, updated_plugin, transformed_output}
-              when is_binary(transformed_output) ->
-                acc_manager = extract_manager_from_acc(acc)
-
-                updated_manager =
-                  update_plugin_state(acc_manager, plugin, updated_plugin)
-
-                updated_acc = %{
-                  acc
-                  | manager: updated_manager,
-                    output: transformed_output
-                }
-
-                {:cont, updated_acc}
-
-              {:ok, updated_plugin, updated_plugin_state} ->
-                acc_manager = extract_manager_from_acc(acc)
-
-                updated_manager =
-                  update_plugin_state(
-                    acc_manager,
-                    plugin,
-                    updated_plugin,
-                    updated_plugin_state
-                  )
-
-                {:cont, update_acc_with_manager(acc, updated_manager)}
-
-              {:ok, updated_plugin} ->
-                acc_manager = extract_manager_from_acc(acc)
-
-                updated_manager =
-                  update_plugin_state(acc_manager, plugin, updated_plugin)
-
-                {:cont, update_acc_with_manager(acc, updated_manager)}
-
-              {:error, reason} ->
-                {:halt, {:error, reason}}
-
-              _ ->
-                {:cont, acc}
-            end
-          end
+          &handle_output_result/4
         )
       end)
 
@@ -219,6 +174,48 @@ defmodule Raxol.Plugins.EventHandler do
       {:ok, result.manager, result.output}
     else
       result
+    end
+  end
+
+  defp handle_output_result(acc, plugin, _callback_name, result) do
+    case result do
+      {:ok, updated_plugin, transformed_output}
+      when is_binary(transformed_output) ->
+        updated_manager =
+          update_plugin_state(
+            extract_manager_from_acc(acc),
+            plugin,
+            updated_plugin
+          )
+
+        {:cont, %{acc | manager: updated_manager, output: transformed_output}}
+
+      {:ok, updated_plugin, updated_plugin_state} ->
+        updated_manager =
+          update_plugin_state(
+            extract_manager_from_acc(acc),
+            plugin,
+            updated_plugin,
+            updated_plugin_state
+          )
+
+        {:cont, update_acc_with_manager(acc, updated_manager)}
+
+      {:ok, updated_plugin} ->
+        updated_manager =
+          update_plugin_state(
+            extract_manager_from_acc(acc),
+            plugin,
+            updated_plugin
+          )
+
+        {:cont, update_acc_with_manager(acc, updated_manager)}
+
+      {:error, reason} ->
+        {:halt, {:error, reason}}
+
+      _ ->
+        {:cont, acc}
     end
   end
 
@@ -310,78 +307,116 @@ defmodule Raxol.Plugins.EventHandler do
          acc,
          handle_result_fun
        ) do
-    if plugin.enabled do
-      # Get module from plugin struct, with fallback to __struct__
-      module =
-        case plugin do
-          %{module: mod} when not is_nil(mod) -> mod
-          %{__struct__: struct_module} -> struct_module
-          _ -> nil
-        end
-
-      if module && function_exported?(module, callback_name, required_arity) do
-        acc_manager = extract_manager_from_acc(acc)
-        plugin_key = normalize_plugin_key(plugin.name)
-
-        current_plugin_state =
-          Map.get(acc_manager.plugin_states, plugin_key, %{})
-
-        # Special case for handle_output and handle_input: only pass plugin and event
-        callback_args =
-          if (callback_name == :handle_output or callback_name == :handle_input) and
-               required_arity == 2 do
-            [plugin | event_args]
-          else
-            [plugin, current_plugin_state | event_args]
-          end
-
-        try do
-          result = apply(module, callback_name, callback_args)
-          handle_result_fun.(acc, plugin, callback_name, result)
-        rescue
-          e ->
-            stacktrace = __STACKTRACE__
-
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Plugin #{inspect(plugin.name)} raised an exception during #{callback_name} event handling",
-              e,
-              stacktrace,
-              %{
-                plugin: plugin.name,
-                callback: callback_name,
-                module: __MODULE__
-              }
-            )
-
-            exception = Exception.normalize(:error, e, stacktrace)
-            {:halt, {:error, {exception, stacktrace}}}
-        catch
-          kind, value ->
-            stacktrace = __STACKTRACE__
-
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "[#{__MODULE__}] Plugin #{inspect(plugin.name)} raised an error during #{callback_name} event handling",
-              value,
-              stacktrace,
-              %{
-                plugin: plugin.name,
-                callback: callback_name,
-                kind: kind,
-                module: __MODULE__
-              }
-            )
-
-            _ = Exception.normalize(:error, value, stacktrace)
-            {:halt, {:error, {kind, value, stacktrace}}}
-        end
-      else
-        # Plugin enabled but doesn't implement the required callback, continue
+    cond do
+      not plugin.enabled ->
         {:cont, acc}
-      end
-    else
-      # Plugin disabled, continue
-      {:cont, acc}
+
+      not has_required_callback?(plugin, callback_name, required_arity) ->
+        {:cont, acc}
+
+      true ->
+        execute_plugin_callback(
+          plugin,
+          callback_name,
+          event_args,
+          required_arity,
+          acc,
+          handle_result_fun
+        )
     end
+  end
+
+  defp has_required_callback?(plugin, callback_name, required_arity) do
+    module = extract_module(plugin)
+    module && function_exported?(module, callback_name, required_arity)
+  end
+
+  defp extract_module(plugin) do
+    case plugin do
+      %{module: mod} when not is_nil(mod) -> mod
+      %{__struct__: struct_module} -> struct_module
+      _ -> nil
+    end
+  end
+
+  defp execute_plugin_callback(
+         plugin,
+         callback_name,
+         event_args,
+         required_arity,
+         acc,
+         handle_result_fun
+       ) do
+    module = extract_module(plugin)
+    acc_manager = extract_manager_from_acc(acc)
+    plugin_key = normalize_plugin_key(plugin.name)
+    current_plugin_state = Map.get(acc_manager.plugin_states, plugin_key, %{})
+
+    callback_args =
+      build_callback_args(
+        plugin,
+        callback_name,
+        event_args,
+        required_arity,
+        current_plugin_state
+      )
+
+    try do
+      result = apply(module, callback_name, callback_args)
+      handle_result_fun.(acc, plugin, callback_name, result)
+    rescue
+      e ->
+        stacktrace = Process.info(self(), :current_stacktrace) |> elem(1)
+        handle_plugin_exception(plugin, callback_name, e, stacktrace)
+    catch
+      kind, value ->
+        stacktrace = Process.info(self(), :current_stacktrace) |> elem(1)
+        handle_plugin_error(plugin, callback_name, kind, value, stacktrace)
+    end
+  end
+
+  defp build_callback_args(
+         plugin,
+         callback_name,
+         event_args,
+         required_arity,
+         current_plugin_state
+       ) do
+    if (callback_name == :handle_output or callback_name == :handle_input) and
+         required_arity == 2 do
+      [plugin | event_args]
+    else
+      [plugin, current_plugin_state | event_args]
+    end
+  end
+
+  defp handle_plugin_exception(plugin, callback_name, e, stacktrace) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Plugin #{inspect(plugin.name)} raised an exception during #{callback_name} event handling",
+      e,
+      stacktrace,
+      %{plugin: plugin.name, callback: callback_name, module: __MODULE__}
+    )
+
+    exception = Exception.normalize(:error, e, stacktrace)
+    {:halt, {:error, {exception, stacktrace}}}
+  end
+
+  defp handle_plugin_error(plugin, callback_name, kind, value, stacktrace) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Plugin #{inspect(plugin.name)} raised an error during #{callback_name} event handling",
+      value,
+      stacktrace,
+      %{
+        plugin: plugin.name,
+        callback: callback_name,
+        kind: kind,
+        module: __MODULE__
+      }
+    )
+
+    _ = Exception.normalize(:error, value, stacktrace)
+    {:halt, {:error, {kind, value, stacktrace}}}
   end
 
   # Helper to update accumulator with new manager state
@@ -492,77 +527,119 @@ defmodule Raxol.Plugins.EventHandler do
   # Handles results for handle_mouse_event, managing :halt propagation.
   @spec handle_mouse_update(accumulator(), plugin(), callback_name(), term()) ::
           handler_result()
-  # Defensive clause: if acc is a struct (not a tuple), wrap as {:ok, acc, :propagate}
-  defp handle_mouse_update(acc, plugin, callback_name, plugin_result)
-       when is_map(acc) and not is_tuple(acc) do
-    handle_mouse_update(
-      {:ok, acc, :propagate},
+  defp handle_mouse_update(acc, plugin, callback_name, plugin_result) do
+    {acc_manager, propagation} = extract_manager_and_propagation(acc)
+
+    handle_mouse_result(
+      acc_manager,
+      propagation,
       plugin,
       callback_name,
       plugin_result
     )
   end
 
-  defp handle_mouse_update(
-         acc,
+  defp extract_manager_and_propagation(acc) do
+    case acc do
+      {:ok, manager, prop} -> {manager, prop}
+      {:ok, manager} -> {manager, :propagate}
+      manager when is_map(manager) -> {manager, :propagate}
+      _ -> {acc, :propagate}
+    end
+  end
+
+  defp handle_mouse_result(
+         acc_manager,
+         propagation,
          plugin,
          callback_name,
-         plugin_result
+         {:ok, updated_plugin}
        ) do
-    # Handle case where accumulator might be a struct instead of tuple
-    {acc_manager, propagation} =
-      case acc do
-        {:ok, manager, prop} ->
-          {manager, prop}
+    create_continue_result(acc_manager, plugin, updated_plugin, propagation)
+  end
 
-        {:ok, manager} ->
-          {manager, :propagate}
+  defp handle_mouse_result(
+         acc_manager,
+         _propagation,
+         plugin,
+         callback_name,
+         {:ok, updated_plugin, :halt}
+       ) do
+    create_halt_result(acc_manager, plugin, updated_plugin)
+  end
 
-        manager when is_map(manager) ->
-          if Map.has_key?(manager, :plugins) do
-            {manager, :propagate}
-          else
-            {manager, :propagate}
-          end
+  defp handle_mouse_result(
+         acc_manager,
+         _propagation,
+         plugin,
+         callback_name,
+         {:ok, updated_plugin, new_propagation}
+       )
+       when is_atom(new_propagation) do
+    create_continue_result(acc_manager, plugin, updated_plugin, new_propagation)
+  end
 
-        _ ->
-          {acc, :propagate}
-      end
+  defp handle_mouse_result(
+         _acc_manager,
+         _propagation,
+         plugin,
+         callback_name,
+         {:error, reason}
+       ) do
+    handle_mouse_error(plugin, callback_name, reason)
+  end
 
-    case plugin_result do
-      {:ok, updated_plugin} ->
-        new_manager_state =
-          update_plugin_state(acc_manager, plugin, updated_plugin)
+  defp handle_mouse_result(
+         acc_manager,
+         propagation,
+         plugin,
+         _callback_name,
+         result
+       )
+       when is_map(result) and not is_tuple(result) do
+    create_continue_result(acc_manager, plugin, result, propagation)
+  end
 
-        {:cont, {:ok, new_manager_state, propagation}}
+  defp handle_mouse_result(
+         acc_manager,
+         propagation,
+         plugin,
+         callback_name,
+         other
+       ) do
+    handle_mouse_unexpected(
+      plugin,
+      callback_name,
+      other,
+      acc_manager,
+      propagation
+    )
+  end
 
-      {:ok, updated_plugin, :halt} ->
-        new_manager_state =
-          update_plugin_state(acc_manager, plugin, updated_plugin)
+  defp handle_mouse_error(plugin, callback_name, reason) do
+    log_plugin_error(plugin, callback_name, reason)
+    {:halt, {:error, reason}}
+  end
 
-        {:halt, {:ok, new_manager_state, :halt}}
+  defp handle_mouse_unexpected(
+         plugin,
+         callback_name,
+         other,
+         acc_manager,
+         propagation
+       ) do
+    log_unexpected_result(plugin, callback_name, other)
+    {:cont, {:ok, acc_manager, propagation}}
+  end
 
-      {:ok, updated_plugin, new_propagation} when is_atom(new_propagation) ->
-        new_manager_state =
-          update_plugin_state(acc_manager, plugin, updated_plugin)
+  defp create_continue_result(acc_manager, plugin, updated_plugin, propagation) do
+    new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+    {:cont, {:ok, new_manager_state, propagation}}
+  end
 
-        {:cont, {:ok, new_manager_state, new_propagation}}
-
-      {:error, reason} ->
-        log_plugin_error(plugin, callback_name, reason)
-        {:halt, {:error, reason}}
-
-      # Defensive: if plugin_result is a struct, treat as updated_plugin
-      result when is_map(result) and not is_tuple(result) ->
-        new_manager_state =
-          update_plugin_state(acc_manager, plugin, result)
-
-        {:cont, {:ok, new_manager_state, propagation}}
-
-      other ->
-        log_unexpected_result(plugin, callback_name, other)
-        {:cont, {:ok, acc_manager, propagation}}
-    end
+  defp create_halt_result(acc_manager, plugin, updated_plugin) do
+    new_manager_state = update_plugin_state(acc_manager, plugin, updated_plugin)
+    {:halt, {:ok, new_manager_state, :halt}}
   end
 
   # Handles results for handle_key_event, managing commands and propagation.

@@ -986,12 +986,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     test "reports cursor position", %{emulator: emulator} do
       emulator = %{emulator | cursor: %{emulator.cursor | row: 9, col: 9}}
       result = CSIHandlers.handle_device_status(emulator, 6)
-      assert result.output_buffer =~ ~r/\x1B\[10;10R/
+      assert Raxol.Terminal.OutputManager.get_content(result) =~ ~r/\x1B\[10;10R/
     end
 
     test "reports device status", %{emulator: emulator} do
       result = CSIHandlers.handle_device_status(emulator, 5)
-      assert result.output_buffer =~ ~r/\x1B\[0n/
+      assert Raxol.Terminal.OutputManager.get_content(result) =~ ~r/\x1B\[0n/
     end
 
     test "handles invalid status codes", %{emulator: emulator} do

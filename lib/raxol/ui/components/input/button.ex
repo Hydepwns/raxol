@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Input.Button do
   @moduledoc """
-  Button component for interactive UI elements.
-
-  This component provides a clickable button with customizable appearance and behavior.
+  Button component for user input.
   """
+
+  use Raxol.UI.Components.Base.Component
 
   defstruct [
     :label,
@@ -22,9 +22,8 @@ defmodule Raxol.UI.Components.Input.Button do
     :errors
   ]
 
-  alias Raxol.UI.Components.Base.Component
   # alias Raxol.Core.Events.Event # REMOVE ALIAS
-  import Raxol.Guards
+  # import Raxol.Guards
 
   @behaviour Component
 

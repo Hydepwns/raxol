@@ -112,14 +112,14 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   defp dispatch_input(other, emulator, parser_state),
     do: handle_unknown_input(emulator, parser_state, other)
 
-  defp handle_empty_input(emulator, parser_state) do
+  defp handle_empty_input(emulator, _parser_state) do
     {new_emulator, new_parser_state, new_rest_input} =
       Parser.transition_to_ground(emulator)
 
     {:continue, new_emulator, new_parser_state, new_rest_input}
   end
 
-  defp handle_escape_sequence(emulator, parser_state, rest) do
+  defp handle_escape_sequence(emulator, _parser_state, rest) do
     Raxol.Core.Runtime.Log.debug(
       "GroundState: ESC detected, transitioning to EscapeState."
     )

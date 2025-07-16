@@ -10,7 +10,6 @@ defmodule Raxol.UI.Layout.Containers do
   """
 
   import Raxol.Guards
-  alias Raxol.UI.Theming.Theme
   alias Raxol.UI.Layout.Engine
 
   @doc """

@@ -3,6 +3,9 @@ defmodule RaxolWeb.ErrorBoundaryComponent do
   require Logger
 
   def render(assigns) do
+    error = Map.get(assigns, :error, nil)
+    assigns = Map.put(assigns, :error, error)
+
     ~H"""
     <div class="error-boundary" id={@id}>
       <%= if @error do %>

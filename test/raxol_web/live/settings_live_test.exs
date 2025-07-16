@@ -8,21 +8,48 @@ defmodule RaxolWeb.SettingsLiveTest do
   import Phoenix.LiveViewTest
   alias Raxol.Accounts
 
+  setup_all do
+    # Start the session manager if not already running
+    unless Process.whereis(Raxol.Web.Session.Manager) do
+      start_supervised!({Raxol.Web.Session.Manager, []})
+    end
+    # Start the accounts agent globally if not already running
+    unless Process.whereis(Raxol.Accounts) do
+      start_supervised!({Raxol.Accounts, []})
+    end
+    # Register the test user globally
+    Accounts.register_user(%{
+      email: "test@example.com",
+      password: "password123"
+    })
+    :ok
+  end
+
   describe "Settings page" do
     setup %{conn: conn} do
-      # Create a test user
-      {:ok, user} =
-        Accounts.register_user(%{
-          email: "test@example.com",
-          password: "password123"
-        })
+      # Check if agent is running
+      agent_pid = Process.whereis(Raxol.Accounts)
+      IO.inspect(agent_pid, label: "Agent PID")
 
+      # Register the test user in the current process
+      reg_result = Accounts.register_user(%{
+        email: "test@example.com",
+        password: "password123"
+      })
+      IO.inspect(reg_result, label: "register_user result")
+
+      # Check agent state after registration
+      agent_state = Agent.get(Raxol.Accounts, fn users -> users end)
+      IO.inspect(agent_state, label: "Agent state after registration")
+
+      # Fetch the user by email to get the correct struct and id
+      find_result = Accounts.find_user_by_email("test@example.com")
+      IO.inspect(find_result, label: "find_user_by_email result")
+      {:ok, user} = find_result
       # Log in the user using the conn from ConnCase setup
       conn = log_in_user(conn, user)
-
       # Create a token for the live view
       token = Phoenix.Token.sign(RaxolWeb.Endpoint, "user socket", user.id)
-
       %{user: user, conn: conn, token: token}
     end
 
@@ -48,7 +75,7 @@ defmodule RaxolWeb.SettingsLiveTest do
 
       # Verify the update was successful
       assert_redirect(view, "/settings")
-      updated_user = Accounts.get_user(user.id)
+      {:ok, updated_user} = Accounts.get_user(user.id)
       assert updated_user.email == "updated@example.com"
     end
 
@@ -108,8 +135,7 @@ defmodule RaxolWeb.SettingsLiveTest do
 
     test "requires authentication", %{conn: conn} do
       # Try to access settings page without token
-      {:ok, view, _html} = live(conn, "/settings")
-      assert_redirect(view, "/")
+      assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/settings")
     end
   end
 end

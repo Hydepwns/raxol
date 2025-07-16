@@ -4,12 +4,6 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
   This state is entered after receiving an ESC [ sequence.
   """
 
-  alias Raxol.Terminal.Parser.States.{
-    GroundState,
-    CSIIntermediateState,
-    CSIState
-  }
-
   @doc """
   Handles input in CSI Entry state.
   Returns the next state and any accumulated data.

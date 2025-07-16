@@ -134,10 +134,11 @@ defmodule Raxol.Plugins.PluginTest do
     test "detects dependency cycles" do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
       # CircularDependencyPlugin depends on itself
-      assert {:error, msg} =
+      assert {:error, error_msg} =
                PluginManager.load_plugin(manager, CircularDependencyPlugin)
 
-      assert msg =~ "Dependency cycle"
+      assert error_msg =~ "Dependency cycle"
+      assert error_msg =~ "circular_dependency_plugin"
     end
   end
 

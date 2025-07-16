@@ -21,8 +21,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
     Renderer
   }
 
-  alias Raxol.UI.Theming.Theme
-
   @behaviour Raxol.UI.Components.Base.Component
 
   @key_mapping %{

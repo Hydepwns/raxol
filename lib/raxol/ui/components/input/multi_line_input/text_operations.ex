@@ -10,7 +10,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
   require Logger
 
   alias Raxol.UI.Components.Input.MultiLineInput.TextOperations.Utils

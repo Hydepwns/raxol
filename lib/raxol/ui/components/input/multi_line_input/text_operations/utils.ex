@@ -8,7 +8,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.Utils do
   """
   def clamp(value, min, max) when value < min, do: min
   def clamp(value, min, max) when value > max, do: max
-  def clamp(value, min, max), do: value
+  def clamp(value, _min, _max), do: value
 
   @doc """
   Formats the result text by joining lines with newlines.
