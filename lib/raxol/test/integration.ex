@@ -151,19 +151,22 @@ defmodule Raxol.Test.Integration do
                 "Successfully mounted child with ID: #{inspect(child_id)}"
               )
 
-              # Update child state with component_manager_id
-              updated_child_state =
-                Map.put(child_state, :component_manager_id, child_id)
+              # Get the mounted states from ComponentManager
+              parent_mounted = ComponentManager.get_component(parent_id)
+              child_mounted = ComponentManager.get_component(child_id)
 
-              # Update the child component in ComponentManager with the new state
-              Raxol.Core.Runtime.ComponentManager.set_component_state(
-                child_id,
-                updated_child_state
-              )
+              # Update the mounted states with component_manager_id
+              updated_parent_state = Map.put(parent_mounted.state, :component_manager_id, parent_id)
+              updated_child_state = Map.put(child_mounted.state, :component_manager_id, child_id)
 
+              # Update the components in ComponentManager with the new states
+              ComponentManager.set_component_state(parent_id, updated_parent_state)
+              ComponentManager.set_component_state(child_id, updated_child_state)
+
+              # Update the structs with the new states
               parent_struct = %{
                 parent_struct
-                | state: Map.put(parent_state, :component_manager_id, parent_id)
+                | state: updated_parent_state
               }
 
               child_struct = %{
@@ -441,6 +444,12 @@ defmodule Raxol.Test.Integration do
     child_mounted =
       ComponentManager.get_component(child_struct.state.component_manager_id)
 
+    # Debug output
+    IO.puts("DEBUG: parent_mounted = #{inspect(parent_mounted)}")
+    IO.puts("DEBUG: child_mounted = #{inspect(child_mounted)}")
+    IO.puts("DEBUG: child_mounted.state = #{inspect(child_mounted.state)}")
+    IO.puts("DEBUG: child_mounted.state.mounted = #{inspect(child_mounted.state.mounted)}")
+
     # Update parent's child_states with the child's mounted state (including component_manager_id)
     updated_parent_state =
       Map.put(
@@ -463,12 +472,24 @@ defmodule Raxol.Test.Integration do
     updated_parent_mounted =
       ComponentManager.get_component(parent_struct.state.component_manager_id)
 
+    # Create proper child struct with mounted state
+    child_struct_with_mounted_state = %{
+      child_struct
+      | state: child_mounted.state
+    }
+
+    # Create proper parent struct with mounted state
+    parent_struct_with_mounted_state = %{
+      parent_struct
+      | state: updated_parent_mounted.state
+    }
+
     # Set up parent/child references
     child_struct_with_parent =
-      Map.put(child_mounted, :parent, updated_parent_mounted)
+      Map.put(child_struct_with_mounted_state, :parent, parent_struct_with_mounted_state)
 
     parent_struct_with_child =
-      Map.put(updated_parent_mounted, :children, [child_struct_with_parent])
+      Map.put(parent_struct_with_mounted_state, :children, [child_struct_with_parent])
 
     {:ok, parent_struct_with_child, child_struct_with_parent}
   end
@@ -616,9 +637,45 @@ defmodule Raxol.Test.Integration do
              updated_component.state
            ) do
         :ok ->
-          # Successfully updated in manager
-          {updated_component, commands}
+          # Process commands for parent notification
+          Enum.each(commands, fn
+            {:command, {:notify_parent, updated_child_state}} ->
+              parent_id = updated_child_state.parent_id
+              child_id = updated_child_state.id
+              value = updated_child_state.value
 
+              # Find parent in ComponentManager
+              parent_component =
+                if parent_id do
+                  Raxol.Core.Runtime.ComponentManager.get_all_components()
+                  |> Enum.find_value(fn {_id, comp} ->
+                    if comp.state.id == parent_id, do: comp, else: nil
+                  end)
+                else
+                  nil
+                end
+
+              if parent_component do
+                # Simulate :child_event on parent
+                {updated_parent, _parent_cmds} =
+                  Raxol.Test.Unit.simulate_event(parent_component, %{
+                    type: :child_event,
+                    child_id: child_id,
+                    value: value
+                  })
+
+                # Update parent in ComponentManager
+                if Map.has_key?(updated_parent.state, :component_manager_id) do
+                  Raxol.Core.Runtime.ComponentManager.set_component_state(
+                    updated_parent.state.component_manager_id,
+                    updated_parent.state
+                  )
+                end
+              end
+            _ ->
+              :ok
+          end)
+          {updated_component, commands}
         {:error, reason} ->
           # Log error but continue with local update
           IO.puts(

@@ -49,4 +49,49 @@ defmodule Raxol.Core.Accessibility.Mock do
   def set_option(_key, _value) do
     :ok
   end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def register_element_metadata(_element_id, _metadata) do
+    :ok
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def get_element_metadata(_element_id) do
+    nil
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def register_component_style(_component_type, _style) do
+    :ok
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def get_component_style(_component_type) do
+    %{}
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def unregister_element_metadata(_element_id) do
+    :ok
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def unregister_component_style(_component_type) do
+    :ok
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def announce(_message, _opts, _user_preferences_pid_or_name) do
+    :ok
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def get_next_announcement(_user_preferences_pid_or_name) do
+    nil
+  end
+
+  @impl Raxol.Core.Accessibility.Behaviour
+  def clear_announcements do
+    :ok
+  end
 end

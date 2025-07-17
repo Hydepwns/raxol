@@ -30,6 +30,10 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
   def analyze(metrics, options \\ %{}) do
     # Prepare data for AI analysis
     analysis_data = Analyzer.analyze(metrics)
+
+    # Ensure analysis_data has the required :trends key
+    analysis_data = Map.put_new(analysis_data, :trends, %{fps_trend: "stable", memory_trend: "stable", jank_trend: "stable"})
+
     ai_data = Analyzer.prepare_ai_data(analysis_data)
 
     # Merge with options
@@ -240,7 +244,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     #{Enum.map_join(risk.areas, "\n", fn area -> "  #{area["area"]}: #{area["level"]}" end)}
 
     Trends:
-    #{Enum.map_join(risk.trends, "\n", fn trend -> "  #{trend["area"]}: #{trend["trend"]}" end)}
+    #{Enum.map_join(risk.areas, "\n", fn area -> "  #{area["area"]}: #{area["trend"]}" end)}
     """
   end
 
@@ -255,7 +259,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
     <h3>Trends</h3>
     <ul>
-      #{Enum.map_join(risk.trends, "\n", fn trend -> "<li>#{trend["area"]}: #{trend["trend"]}</li>" end)}
+      #{Enum.map_join(risk.areas, "\n", fn area -> "<li>#{area["area"]}: #{area["trend"]}</li>" end)}
     </ul>
     """
   end
