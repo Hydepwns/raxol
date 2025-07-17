@@ -62,11 +62,13 @@ defmodule Raxol.Core.Metrics.Cloud do
   @impl GenServer
   def init(opts) do
     config = Map.merge(@default_config, Map.new(opts))
+    test_pid = Keyword.get(opts, :test_pid)
 
     state = %{
       config: config,
       metrics_buffer: [],
-      last_flush: System.system_time(:millisecond)
+      last_flush: System.system_time(:millisecond),
+      test_pid: test_pid
     }
 
     schedule_flush()
@@ -125,15 +127,30 @@ defmodule Raxol.Core.Metrics.Cloud do
     end
   end
 
+  @impl GenServer
+  def handle_info({:metrics_formatted, _formatted_metrics}, state) do
+    # Ignore metrics_formatted messages - they are sent back to the process
+    # that initiated the metrics processing for testing purposes
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_info({:metrics_sent, _result}, state) do
+    # Ignore metrics_sent messages - they are sent back to the process
+    # that initiated the metrics processing for testing purposes
+    {:noreply, state}
+  end
+
   defp flush_metrics_to_cloud(state) do
     if state.metrics_buffer == [] do
       {state, :ok}
     else
       metrics = prepare_metrics_for_cloud(state.metrics_buffer)
-      result = send_metrics_to_cloud(metrics, state.config)
+      result = send_metrics_to_cloud(metrics, state)
 
-      # Send message back to test process
-      send(self(), {:metrics_sent, result})
+      # Send message back to test process if present, else to self
+      recipient = state.test_pid || self()
+      send(recipient, {:metrics_sent, result})
 
       new_state = %{
         state
@@ -159,21 +176,23 @@ defmodule Raxol.Core.Metrics.Cloud do
     end)
   end
 
-  defp send_metrics_to_cloud(metrics, config) do
+  defp send_metrics_to_cloud(metrics, state) do
+    config = state.config
+    recipient = state.test_pid || self()
     case config.service do
       :datadog ->
         formatted = format_for_datadog(metrics)
-        send(self(), {:metrics_formatted, formatted})
+        send(recipient, {:metrics_formatted, formatted})
         send_to_datadog(config, metrics)
 
       :prometheus ->
         formatted = format_for_prometheus(metrics)
-        send(self(), {:metrics_formatted, formatted})
+        send(recipient, {:metrics_formatted, formatted})
         send_to_prometheus(config, metrics)
 
       :cloudwatch ->
         formatted = format_for_cloudwatch(metrics)
-        send(self(), {:metrics_formatted, formatted})
+        send(recipient, {:metrics_formatted, formatted})
         send_to_cloudwatch(config, metrics)
 
       _ ->

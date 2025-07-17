@@ -536,12 +536,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     operation =
       state.lifecycle_helper_module.reload_plugin(
         plugin_id,
-        state.plugins,
-        state.metadata,
-        state.plugin_states,
-        state.load_order,
-        state.command_registry_table,
-        state.plugin_config
+        state
       )
 
     handle_plugin_operation(operation, plugin_id, state, "reload")
@@ -985,6 +980,19 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             updated_states,
             updated_table
           )
+
+        {:reply, :ok, updated_state}
+
+      {:ok, mock_state} when is_map(mock_state) ->
+        # Handle the case where lifecycle manager returns a complete state map
+        updated_state = %{
+          state
+          | plugins: Map.get(mock_state, :plugins, state.plugins),
+            metadata: Map.get(mock_state, :metadata, state.metadata),
+            plugin_states: Map.get(mock_state, :plugin_states, state.plugin_states),
+            load_order: Map.get(mock_state, :load_order, state.load_order),
+            plugin_config: Map.get(mock_state, :plugin_config, state.plugin_config)
+        }
 
         {:reply, :ok, updated_state}
 

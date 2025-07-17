@@ -185,14 +185,18 @@ defmodule Raxol.Core.Runtime.Subscription do
   defp stop_interval(timer_ref) do
     case :timer.cancel(timer_ref) do
       {:ok, :cancel} -> :ok
+      {:error, :badarg} -> {:error, :subscription_not_found}
       {:error, reason} -> {:error, {:timer_cancel_error, reason}}
-      _ -> :ok
+      _ -> {:error, :subscription_not_found}
     end
   end
 
   defp stop_events(actual_id) when is_integer(actual_id) do
-    Raxol.Core.Events.Manager.unsubscribe(actual_id)
-    :ok
+    case Raxol.Core.Events.Manager.unsubscribe(actual_id) do
+      :ok -> :ok
+      {:error, :not_found} -> {:error, :subscription_not_found}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp stop_events(_actual_id) do
@@ -204,14 +208,17 @@ defmodule Raxol.Core.Runtime.Subscription do
       Process.exit(watcher_pid, :normal)
       :ok
     else
-      {:error, :process_not_alive}
+      {:error, :subscription_not_found}
     end
   end
 
   defp stop_custom(source_pid) do
-    if Process.alive?(source_pid),
-      do: Process.exit(source_pid, :normal),
-      else: {:error, :process_not_alive}
+    if Process.alive?(source_pid) do
+      Process.exit(source_pid, :normal)
+      :ok
+    else
+      {:error, :subscription_not_found}
+    end
   end
 
   # Private helpers for starting different types of subscriptions
