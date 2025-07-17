@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
 
   def scroll_up(emulator, lines) do
     buffer = get_active_buffer(emulator)
-    new_buffer = Raxol.Terminal.Buffer.ScrollRegion.scroll_up(buffer, lines)
+    {new_buffer, _scrolled_lines} = Raxol.Terminal.Buffer.ScrollRegion.scroll_up(buffer, lines)
     update_active_buffer(emulator, new_buffer)
   end
 

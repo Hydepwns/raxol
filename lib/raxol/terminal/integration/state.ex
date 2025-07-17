@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.Integration.State do
   Updates the integration state with new content.
   """
   @spec update(t(), String.t()) :: t()
-  def update(%__MODULE__{} = state, content) do
+  def update(%__MODULE__{} = state, content) when is_binary(content) do
     # Process content through IO system
     case UnifiedIO.process_output(content) do
       {:ok, commands} ->
@@ -136,6 +136,22 @@ defmodule Raxol.Terminal.Integration.State do
       {:error, _} ->
         state
     end
+  end
+
+  @doc """
+  Updates the integration state with nil content (no-op).
+  """
+  @spec update(t(), nil) :: t()
+  def update(%__MODULE__{} = state, nil) do
+    state
+  end
+
+  @doc """
+  Updates the integration state with arbitrary fields via keyword list.
+  """
+  @spec update(t(), keyword()) :: t()
+  def update(%__MODULE__{} = state, kw) when is_list(kw) do
+    Enum.reduce(kw, state, fn {k, v}, acc -> Map.put(acc, k, v) end)
   end
 
   @doc """
@@ -245,18 +261,33 @@ defmodule Raxol.Terminal.Integration.State do
   @doc """
   Resizes the terminal.
   """
-  @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
+  @spec resize(t(), integer(), integer()) :: t()
   def resize(%__MODULE__{} = state, width, height) do
-    case UnifiedWindow.get_active_window() do
-      {:ok, window_id} ->
-        # Resize the active window
-        case UnifiedWindow.resize(window_id, width, height) do
-          :ok -> state
-          {:error, _} -> state
-        end
+    # Ensure minimum dimensions
+    safe_width = max(width, 1)
+    safe_height = max(height, 1)
 
-      _ ->
-        state
+    # Update the state dimensions
+    updated_state = %{state | width: safe_width, height: safe_height}
+
+    # Try to resize the window if UnifiedWindow is available
+    case Process.whereis(UnifiedWindow) do
+      nil ->
+        # UnifiedWindow not available, just return updated state
+        updated_state
+
+      _pid ->
+        case UnifiedWindow.get_active_window() do
+          {:ok, window_id} ->
+            # Resize the active window
+            case UnifiedWindow.resize(window_id, safe_width, safe_height) do
+              :ok -> updated_state
+              {:error, _} -> updated_state
+            end
+
+          _ ->
+            updated_state
+        end
     end
   end
 

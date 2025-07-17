@@ -279,6 +279,12 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     {:reply, :ok, new_state}
   end
 
+  def handle_call(:cleanup, _from, state) do
+    # Clean up all windows
+    new_state = %{state | windows: %{}, active_window: nil}
+    {:reply, :ok, new_state}
+  end
+
   defp calculate_split_sizes({width, height}, :horizontal) do
     half = div(width, 2)
     {{half, height}, {half, height}}

@@ -202,12 +202,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
         Logger.debug("Found color {#{r}, #{g}, #{b}} for index #{color_index}")
         style = %{background: {:rgb, r, g, b}}
 
+        # Include sixel flag in the style
+        style_with_sixel = Map.put(style, :sixel, true)
         Raxol.Terminal.ScreenBuffer.write_char(
           buffer,
           screen_x,
           screen_y,
           " ",
-          style
+          style_with_sixel
         )
 
       nil ->

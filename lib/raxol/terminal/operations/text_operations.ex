@@ -24,7 +24,12 @@ defmodule Raxol.Terminal.Operations.TextOperations do
   def get_line(emulator, line) do
     buffer = ScreenManager.get_active_buffer(emulator)
     # Get the line directly from the buffer cells
-    if line >= 0 and line < buffer.height do
+    # Defensive check: ensure buffer has height field
+    height = case buffer do
+      %{height: h} when is_integer(h) -> h
+      _ -> 0
+    end
+    if line >= 0 and line < height do
       buffer.cells
       |> Enum.at(line, [])
       |> Enum.map_join("", &extract_char/1)

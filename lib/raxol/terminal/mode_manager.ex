@@ -221,11 +221,15 @@ defmodule Raxol.Terminal.ModeManager do
   end
 
   defp find_mode_in_fallback_categories(mode_name, :standard) do
-    find_mode_in_categories(mode_name, [:dec_private, :screen_buffer])
+    find_mode_in_categories(mode_name, [:dec_private, :screen_buffer, :mouse])
   end
 
   defp find_mode_in_fallback_categories(mode_name, :dec_private) do
-    find_mode_in_categories(mode_name, [:screen_buffer])
+    find_mode_in_categories(mode_name, [:screen_buffer, :mouse])
+  end
+
+  defp find_mode_in_fallback_categories(mode_name, :mouse) do
+    find_mode_in_categories(mode_name, [:dec_private, :screen_buffer])
   end
 
   defp find_mode_in_fallback_categories(_mode_name, _category) do
@@ -261,6 +265,13 @@ defmodule Raxol.Terminal.ModeManager do
       :screen_buffer ->
         Logger.debug(
           "ModeManager.apply_mode_effects: routing to DECPrivateHandler (screen_buffer)"
+        )
+
+        DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)
+
+      :mouse ->
+        Logger.debug(
+          "ModeManager.apply_mode_effects: routing to DECPrivateHandler (mouse)"
         )
 
         DECPrivateHandler.handle_mode_change(mode_def.name, value, emulator)

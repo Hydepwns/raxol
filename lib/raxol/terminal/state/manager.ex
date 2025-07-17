@@ -42,6 +42,53 @@ defmodule Raxol.Terminal.State.Manager do
     {:reply, :ok, new_state}
   end
 
+  def handle_call({:get_mode, mode}, _from, state) do
+    {:reply, get_in(state.modes, [mode]), state}
+  end
+
+  def handle_call({:set_mode, mode, value}, _from, state) do
+    new_state = %{state | modes: Map.put(state.modes, mode, value)}
+    {:reply, new_state, new_state}
+  end
+
+  def handle_call({:get_attribute, attribute}, _from, state) do
+    {:reply, get_in(state.attributes, [attribute]), state}
+  end
+
+  def handle_call({:set_attribute, attribute, value}, _from, state) do
+    new_state = %{state | attributes: Map.put(state.attributes, attribute, value)}
+    {:reply, new_state, new_state}
+  end
+
+  def handle_call(:push_state, _from, state) do
+    new_state = %{state | state_stack: [state | state.state_stack]}
+    {:reply, new_state, new_state}
+  end
+
+  def handle_call(:pop_state, _from, state) do
+    case state.state_stack do
+      [popped_state | rest] ->
+        new_state = %{state | state_stack: rest}
+        {:reply, popped_state, new_state}
+      [] ->
+        {:reply, nil, state}
+    end
+  end
+
+  def handle_call(:get_state_stack, _from, state) do
+    {:reply, state.state_stack, state}
+  end
+
+  def handle_call(:clear_state_stack, _from, state) do
+    new_state = %{state | state_stack: []}
+    {:reply, new_state, new_state}
+  end
+
+  def handle_call(:reset_state, _from, _state) do
+    new_state = new()
+    {:reply, new_state, new_state}
+  end
+
   def handle_cast({:update_state, update_fun}, state)
       when is_function(update_fun) do
     {:noreply, update_fun.(state)}
@@ -69,7 +116,19 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec get_mode(Emulator.t(), atom()) :: any()
   def get_mode(emulator, mode) do
-    get_in(emulator.state.modes, [mode])
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        get_in(state.modes, [mode])
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, {:get_mode, mode})
+
+      _ ->
+        # Fallback for other cases
+        nil
+    end
   end
 
   @doc """
@@ -78,8 +137,21 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec set_mode(Emulator.t(), atom(), any()) :: Emulator.t()
   def set_mode(emulator, mode, value) do
-    modes = Map.put(emulator.state.modes, mode, value)
-    %{emulator | state: %{emulator.state | modes: modes}}
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        modes = Map.put(state.modes, mode, value)
+        %{emulator | state: %{state | modes: modes}}
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, {:set_mode, mode, value})
+        emulator
+
+      _ ->
+        # Fallback for other cases
+        emulator
+    end
   end
 
   @doc """
@@ -88,7 +160,19 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec get_attribute(Emulator.t(), atom()) :: any()
   def get_attribute(emulator, attribute) do
-    get_in(emulator.state.attributes, [attribute])
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        get_in(state.attributes, [attribute])
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, {:get_attribute, attribute})
+
+      _ ->
+        # Fallback for other cases
+        nil
+    end
   end
 
   @doc """
@@ -97,8 +181,21 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec set_attribute(Emulator.t(), atom(), any()) :: Emulator.t()
   def set_attribute(emulator, attribute, value) do
-    attributes = Map.put(emulator.state.attributes, attribute, value)
-    %{emulator | state: %{emulator.state | attributes: attributes}}
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        attributes = Map.put(state.attributes, attribute, value)
+        %{emulator | state: %{state | attributes: attributes}}
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, {:set_attribute, attribute, value})
+        emulator
+
+      _ ->
+        # Fallback for other cases
+        emulator
+    end
   end
 
   @doc """
@@ -107,8 +204,21 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec push_state(Emulator.t()) :: Emulator.t()
   def push_state(emulator) do
-    state_stack = [emulator.state | emulator.state.state_stack]
-    %{emulator | state: %{emulator.state | state_stack: state_stack}}
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        state_stack = [state | state.state_stack]
+        %{emulator | state: %{state | state_stack: state_stack}}
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, :push_state)
+        emulator
+
+      _ ->
+        # Fallback for other cases
+        emulator
+    end
   end
 
   @doc """
@@ -117,16 +227,27 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec pop_state(Emulator.t()) :: {Emulator.t(), State.t() | nil}
   def pop_state(emulator) do
-    case emulator.state.state_stack do
-      [state | rest] ->
-        new_emulator = %{
-          emulator
-          | state: %{emulator.state | state_stack: rest}
-        }
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        case state.state_stack do
+          [popped_state | rest] ->
+            new_emulator = %{
+              emulator
+              | state: %{state | state_stack: rest}
+            }
+            {new_emulator, popped_state}
+          [] ->
+            {emulator, nil}
+        end
 
-        {new_emulator, state}
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        result = GenServer.call(state_pid, :pop_state)
+        {emulator, result}
 
-      [] ->
+      _ ->
+        # Fallback for other cases
         {emulator, nil}
     end
   end
@@ -137,7 +258,19 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec get_state_stack(Emulator.t()) :: [State.t()]
   def get_state_stack(emulator) do
-    emulator.state.state_stack
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        state.state_stack
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, :get_state_stack)
+
+      _ ->
+        # Fallback for other cases
+        []
+    end
   end
 
   @doc """
@@ -146,7 +279,20 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec clear_state_stack(Emulator.t()) :: Emulator.t()
   def clear_state_stack(emulator) do
-    %{emulator | state: %{emulator.state | state_stack: []}}
+    case emulator do
+      %{state: state} when is_map(state) ->
+        # Handle map-based emulator
+        %{emulator | state: %{state | state_stack: []}}
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, :clear_state_stack)
+        emulator
+
+      _ ->
+        # Fallback for other cases
+        emulator
+    end
   end
 
   @doc """
@@ -155,6 +301,19 @@ defmodule Raxol.Terminal.State.Manager do
   """
   @spec reset_state(Emulator.t()) :: Emulator.t()
   def reset_state(emulator) do
-    %{emulator | state: new()}
+    case emulator do
+      %{state: _state} when is_map(_state) ->
+        # Handle map-based emulator
+        %{emulator | state: new()}
+
+      %{state: state_pid} when is_pid(state_pid) ->
+        # Handle PID-based state - delegate to the state PID
+        GenServer.call(state_pid, :reset_state)
+        emulator
+
+      _ ->
+        # Fallback for other cases
+        emulator
+    end
   end
 end

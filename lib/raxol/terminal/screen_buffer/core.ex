@@ -369,8 +369,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   def set_cursor_position(buffer, x, y) do
-    put_in(buffer.terminal_state, [:cursor_x], x)
-    |> put_in([:terminal_state, :cursor_y], y)
+    %{buffer | cursor_position: {x, y}}
   end
 
   def erase_region(buffer, x, y, width, height) do
