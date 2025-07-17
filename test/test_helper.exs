@@ -55,7 +55,7 @@ Mox.defmock(Raxol.Core.ClipboardMock,
 )
 
 # Accessibility and UX mocks
-Mox.defmock(AccessibilityMock,
+Mox.defmock(Raxol.Mocks.AccessibilityMock,
   for: Raxol.Core.Accessibility.Behaviour
 )
 
