@@ -103,8 +103,8 @@ defmodule Raxol.Style.Colors.System do
       end
 
     case color do
-      %Color{} = c -> c.hex
-      hex when is_binary(hex) -> hex
+      %Color{} = c -> c
+      hex when is_binary(hex) -> Color.from_hex(hex)
       _ -> nil
     end
   end

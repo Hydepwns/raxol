@@ -189,8 +189,8 @@ defmodule Raxol.UI.Renderer do
           # Try to get color from theme directly first
           case get_in(theme, [:colors, :foreground]) do
             nil ->
-              # Fallback to ColorSystem, then :default
-              Raxol.Core.ColorSystem.get(theme.id, :foreground) || :default
+              # Fallback to default colors
+              :white
 
             color ->
               color
@@ -214,8 +214,8 @@ defmodule Raxol.UI.Renderer do
           # Try to get color from theme directly first
           case get_in(theme, [:colors, :background]) do
             nil ->
-              # Fallback to ColorSystem, then :default
-              Raxol.Core.ColorSystem.get(theme.id, :background) || :default
+              # Fallback to default colors
+              :black
 
             color ->
               color
