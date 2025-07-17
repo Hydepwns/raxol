@@ -7,6 +7,9 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
   alias Raxol.Core.Metrics.AlertManager
 
   setup do
+    # Start UnifiedCollector for metrics dependency
+    {:ok, _uc_pid} = Raxol.Core.Metrics.UnifiedCollector.start_link()
+
     # Use a unique name for each test to avoid conflicts
     test_name = String.to_atom("alert_manager_test_#{:rand.uniform(1_000_000)}")
     {:ok, pid} = AlertManager.start_link(name: test_name)

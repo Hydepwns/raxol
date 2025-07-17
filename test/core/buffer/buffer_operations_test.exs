@@ -6,6 +6,24 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
   alias Raxol.Terminal.Buffer.ConcurrentBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 
+    setup do
+    # Generate a unique name for each test to avoid conflicts
+    test_name = :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+    unique_name = :"BufferServer_#{test_name}"
+
+    # Start a buffer server with unique name
+    {:ok, pid} = ConcurrentBuffer.start_server(width: 80, height: 24, name: unique_name)
+
+    # Set up teardown to stop the server after each test
+    on_exit(fn ->
+      if Process.alive?(pid) do
+        ConcurrentBuffer.stop(pid)
+      end
+    end)
+
+    {:ok, %{buffer_pid: pid, buffer_name: unique_name}}
+  end
+
   describe "Edge Cases" do
     test ~c"handles out of bounds coordinates" do
       buffer = Buffer.new({80, 24})
@@ -80,14 +98,9 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       # Measure time for filling the entire buffer
       start_time = System.monotonic_time()
 
-      # Fill buffer with data
-      _buffer =
-        Enum.reduce(0..99, buffer, fn y, acc ->
-          Enum.reduce(0..199, acc, fn x, acc ->
-            cell = BufferCell.new("X", TextFormatting.new(fg: :red))
-            Buffer.set_cell(acc, x, y, cell)
-          end)
-        end)
+      # Fill buffer with data using efficient fill_region operation
+      cell = BufferCell.new("X", TextFormatting.new(fg: :red))
+      _buffer = Buffer.fill_region(buffer, 0, 0, 200, 100, cell)
 
       end_time = System.monotonic_time()
 
@@ -126,9 +139,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
   end
 
   describe "Concurrent Access Tests" do
-    test "handles concurrent buffer access safely" do
-      # Start a buffer server for concurrent access
-      {:ok, pid} = ConcurrentBuffer.start_server(width: 80, height: 24)
+    test "handles concurrent buffer access safely", %{buffer_pid: pid} do
 
       # Create multiple processes that access the buffer
       processes =
@@ -162,9 +173,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       assert Cell.fg(cell) == :green
     end
 
-    test "handles concurrent read/write operations" do
-      # Start a buffer server for concurrent access
-      {:ok, pid} = ConcurrentBuffer.start_server(width: 80, height: 24)
+    test "handles concurrent read/write operations", %{buffer_pid: pid} do
 
       # Create reader and writer processes
       reader =

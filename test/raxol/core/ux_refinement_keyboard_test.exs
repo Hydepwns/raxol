@@ -131,7 +131,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
   describe "component shortcuts integration" do
     test "UXRefinement.register_accessibility_metadata/2 calls Accessibility.register_element_metadata" do
-      expect(Mock, :enable, fn _, _ -> :ok end)
+      expect(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 
       stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
         :ok
@@ -143,7 +143,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       component_id = "search_button"
 
       expect(
-        Mock,
+        Raxol.Mocks.AccessibilityMock,
         :register_element_metadata,
         fn id, meta ->
           assert id == component_id
@@ -251,22 +251,21 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
   describe "events integration" do
     test "keyboard events are handled via KeyboardShortcuts and EventManager" do
-      # UXRefinement.enable_feature(:events) MUST be first
-      # Calls EventManager.init()
+      # Stub KeyboardShortcutsMock.init BEFORE enabling features
+      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+
+      # Enable events first to initialize EventManager
       UXRefinement.enable_feature(:events)
 
-      # Manually register the mock handler AFTER EventManager is initialized
+      # Enable keyboard shortcuts which should register the handler
+      UXRefinement.enable_feature(:keyboard_shortcuts)
+
+      # Manually register the mock handler for keyboard events
       EventManager.register_handler(
         :keyboard_event,
         Raxol.Mocks.KeyboardShortcutsMock,
         :handle_keyboard_event
       )
-
-      # Stub KeyboardShortcutsMock.init to be a simple :ok for this test's purpose,
-      # as we are handling its usual registration task manually above.
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
-      # Enable the feature in UXRefinement
-      UXRefinement.enable_feature(:keyboard_shortcuts)
 
       context_pid = self()
 

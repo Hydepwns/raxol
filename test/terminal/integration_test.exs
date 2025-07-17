@@ -53,10 +53,10 @@ defmodule Raxol.Terminal.IntegrationTest do
       # Verify cursor position after adding more text (0-based)
       assert Emulator.get_cursor_position(state) == {11, 0}
 
-      # Add a newline
-      {state, _output} = Emulator.process_input(state, "\n")
+      # Add a newline (carriage return + line feed)
+      {state, _output} = Emulator.process_input(state, "\r\n")
 
-      # Verify cursor moved to next line (0-based)
+      # Verify cursor moved to next line and returned to column 0 (CR+LF behavior)
       assert Emulator.get_cursor_position(state) == {0, 1}
 
       # Add text on new line
@@ -357,6 +357,11 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "sixel image rendering" do
     # Sixel sixel_data and expected_char_grid are defined in helper module
     import Raxol.Test.Terminal.SixelTestHelper
+
+    setup do
+      initial_emulator_state = Emulator.new(80, 24)
+      %{state: initial_emulator_state, ansi: %{}}
+    end
 
     test "renders sixel data to character grid with correct colors", %{
       state: initial_state

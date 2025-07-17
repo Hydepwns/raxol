@@ -8,6 +8,12 @@ defmodule Raxol.Terminal.Integration.IOIntegrationTest do
   }
 
   setup do
+    # Start the UnifiedIO process
+    {:ok, _unified_io_pid} = Raxol.Terminal.IO.UnifiedIO.start_link()
+
+    # Start the UnifiedWindow process
+    {:ok, _unified_window_pid} = Raxol.Terminal.Window.UnifiedWindow.start_link()
+
     # Start the main integration module
     {:ok, pid} = Main.start_link(%{})
     %{pid: pid}
@@ -78,7 +84,7 @@ defmodule Raxol.Terminal.Integration.IOIntegrationTest do
 
       # Verify screen is cleared
       state = Main.get_state(pid)
-      assert state.buffer_manager.get_visible_content() == []
+      assert state.buffer_manager.get_visible_content.() == []
     end
   end
 

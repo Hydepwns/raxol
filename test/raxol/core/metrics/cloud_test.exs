@@ -7,9 +7,24 @@ defmodule Raxol.Core.Metrics.CloudTest do
   alias Raxol.Core.Metrics.Cloud
 
   setup do
-    {:ok, _pid} = Cloud.start_link()
-    on_exit(fn -> Process.whereis(Cloud) |> Process.exit(:normal) end)
+    {:ok, _pid} = Cloud.start_link(test_pid: self())
+    on_exit(fn ->
+      case Process.whereis(Cloud) do
+        nil -> :ok
+        pid -> Process.exit(pid, :normal)
+      end
+    end)
     :ok
+  end
+
+  defp receive_n_msgs(n, timeout \\ 1000) do
+    Enum.map(1..n, fn _ ->
+      receive do
+        m -> m
+      after
+        timeout -> :timeout
+      end
+    end)
   end
 
   describe "configure/1" do
@@ -24,7 +39,8 @@ defmodule Raxol.Core.Metrics.CloudTest do
       }
 
       assert :ok == Cloud.configure(config)
-      assert config == Cloud.get_config()
+      returned = Cloud.get_config() |> Map.delete(:test_pid)
+      assert config == returned
     end
 
     test "rejects invalid service" do
@@ -101,8 +117,13 @@ defmodule Raxol.Core.Metrics.CloudTest do
       # Wait for metrics to be processed
       Process.sleep(100)
 
-      # Verify metrics were sent
-      assert_receive {:metrics_sent, :ok}
+      # Receive both messages in any order
+      msgs = receive_n_msgs(2)
+      assert {:metrics_sent, :ok} in msgs
+      assert Enum.any?(msgs, fn
+        {:metrics_formatted, _} -> true
+        _ -> false
+      end)
     end
 
     test "formats metrics correctly for Datadog" do
@@ -112,18 +133,24 @@ defmodule Raxol.Core.Metrics.CloudTest do
       # Wait for metrics to be processed
       Process.sleep(100)
 
-      # Verify metrics were formatted correctly
-      assert_receive {:metrics_formatted,
-                      %{
-                        series: [
-                          %{
-                            metric: "frame_time",
-                            points: [[_, 16.5]],
-                            type: "gauge",
-                            tags: [:test]
-                          }
-                        ]
-                      }}
+      # Receive both messages in any order
+      msgs = receive_n_msgs(2)
+      assert {:metrics_sent, :ok} in msgs
+      assert Enum.any?(msgs, fn
+        {:metrics_formatted,
+          %{
+            series: [
+              %{
+                metric: "frame_time",
+                points: [[_, 16.5]],
+                type: "gauge",
+                tags: [:test]
+              }
+            ]
+          }
+        } -> true
+        _ -> false
+      end)
     end
 
     test "formats metrics correctly for Prometheus" do
@@ -143,8 +170,10 @@ defmodule Raxol.Core.Metrics.CloudTest do
       # Wait for metrics to be processed
       Process.sleep(100)
 
-      # Verify metrics were formatted correctly
-      assert_receive {:metrics_formatted, "frame_time{test} 16.5 _"}
+      # Receive both messages in any order
+      msgs = receive_n_msgs(2)
+      assert {:metrics_sent, :ok} in msgs
+      assert {:metrics_formatted, "frame_time{test} 16.5 _"} in msgs
     end
 
     test "formats metrics correctly for CloudWatch" do
@@ -164,19 +193,25 @@ defmodule Raxol.Core.Metrics.CloudTest do
       # Wait for metrics to be processed
       Process.sleep(100)
 
-      # Verify metrics were formatted correctly
-      assert_receive {:metrics_formatted,
-                      %{
-                        MetricData: [
-                          %{
-                            MetricName: "frame_time",
-                            Value: 16.5,
-                            Unit: "Count",
-                            Timestamp: _,
-                            Dimensions: [%{Name: "test", Value: "true"}]
-                          }
-                        ]
-                      }}
+      # Receive both messages in any order
+      msgs = receive_n_msgs(2)
+      assert {:metrics_sent, :ok} in msgs
+      assert Enum.any?(msgs, fn
+        {:metrics_formatted,
+          %{
+            MetricData: [
+              %{
+                MetricName: "frame_time",
+                Value: 16.5,
+                Unit: "Count",
+                Timestamp: _,
+                Dimensions: [%{Name: "test", Value: "true"}]
+              }
+            ]
+          }
+        } -> true
+        _ -> false
+      end)
     end
   end
 
@@ -184,7 +219,12 @@ defmodule Raxol.Core.Metrics.CloudTest do
     test "flushes metrics immediately" do
       send(Cloud, {:metrics, :performance, :frame_time, 16, [:test]})
       assert :ok == Cloud.flush_metrics()
-      assert_receive {:metrics_sent, :ok}
+      msgs = receive_n_msgs(2)
+      assert {:metrics_sent, :ok} in msgs
+      assert Enum.any?(msgs, fn
+        {:metrics_formatted, _} -> true
+        _ -> false
+      end)
     end
 
     test "returns :ok when no metrics to flush" do

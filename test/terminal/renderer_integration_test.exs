@@ -222,20 +222,18 @@ defmodule Raxol.Terminal.RendererIntegrationTest do
       text = "Red text"
 
       buffer =
-        Enum.reduce(String.graphemes(text), buffer, fn char, acc ->
-          col =
-            String.length(text) - String.length(String.trim_leading(text, char))
-
+        Enum.reduce(Enum.with_index(String.graphemes(text)), buffer, fn {char, col}, acc ->
           ScreenBuffer.write_char(acc, col, 0, char, style)
         end)
 
-      renderer = %{renderer | screen_buffer: buffer}
+      # Enable style batching for this test
+      renderer = %{renderer | screen_buffer: buffer, style_batching: true}
       output = Renderer.render(renderer)
 
-      # Style batching is not currently implemented in the renderer
-      # Each character gets its own span with background color
+      # Style batching is now implemented in the renderer
+      # All characters with the same style should be grouped in a single span
       assert output =~
-               "<span style=\"background-color: #000000; color: #FF0000\">R</span><span style=\"background-color: #000000; color: #FF0000\">e</span><span style=\"background-color: #000000; color: #FF0000\">d</span><span style=\"background-color: #000000; color: #FF0000\"> </span><span style=\"background-color: #000000; color: #FF0000\">t</span><span style=\"background-color: #000000; color: #FF0000\">e</span><span style=\"background-color: #000000; color: #FF0000\">x</span><span style=\"background-color: #000000; color: #FF0000\">t</span>"
+               "<span style=\"background-color: #000000; color: #FF0000\">Red text</span>"
     end
   end
 

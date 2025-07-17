@@ -18,7 +18,14 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
 
     :ok = Manager.initialize()
     emulator = Emulator.new(80, 24)
-    on_exit(fn -> :ets.delete(:test_command_registry) end)
+    on_exit(fn ->
+      # Safely delete ETS table if it exists
+      try do
+        :ets.delete(:test_command_registry)
+      catch
+        :error, :badarg -> :ok  # Table doesn't exist
+      end
+    end)
     {:ok, %{emulator: emulator}}
   end
 
