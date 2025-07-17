@@ -232,17 +232,25 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     # Pre-create a single empty line to reuse
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
-    # Transform cells using helper function
-    new_cells =
-      transform_cells_for_scroll_up(
-        buffer.cells,
-        scroll_start,
-        scroll_end,
-        lines,
-        empty_line
-      )
+    # Simple direct approach: move content up by lines
+    new_cells = do_simple_scroll_up(buffer.cells, scroll_start, scroll_end, lines, empty_line)
 
     {%{buffer | cells: new_cells}, scrolled_lines}
+  end
+
+    defp do_simple_scroll_up(cells, scroll_start, scroll_end, lines, empty_line) do
+    # Split cells into before, region, and after_part
+    {before, region_and_after} = Enum.split(cells, scroll_start)
+    {region, after_part} = Enum.split(region_and_after, scroll_end - scroll_start + 1)
+
+    # Move region content up by lines
+    {scrolled_out, remaining} = Enum.split(region, lines)
+
+    # Create empty lines for the bottom
+    empty_lines = List.duplicate(empty_line, lines)
+
+    # Combine: before + (remaining + empty_lines) + after_part
+    before ++ (remaining ++ empty_lines) ++ after_part
   end
 
   defp transform_cells_for_scroll_up(

@@ -38,9 +38,9 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
           non_neg_integer(),
           non_neg_integer()
         ) :: damage_tracker()
-  def add_damage_region(tracker, x, y, width, height) do
-    # Store in {x, y, width, height} format as expected by tests
-    region = {x, y, width, height}
+  def add_damage_region(tracker, x1, y1, x2, y2) do
+    # Store in {x1, y1, x2, y2} format as expected by tests
+    region = {x1, y1, x2, y2}
     damage_regions = [region | tracker.damage_regions]
 
     # Limit damage regions to prevent memory bloat
@@ -62,8 +62,8 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
   @spec add_damage_regions(damage_tracker(), [damage_region()]) ::
           damage_tracker()
   def add_damage_regions(tracker, regions) do
-    Enum.reduce(regions, tracker, fn {x, y, width, height}, acc ->
-      add_damage_region(acc, x, y, width, height)
+    Enum.reduce(regions, tracker, fn {x1, y1, x2, y2}, acc ->
+      add_damage_region(acc, x1, y1, x2, y2)
     end)
   end
 
@@ -143,45 +143,35 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
     do: merge_adjacent_regions(rest, [region])
 
   defp merge_adjacent_regions(
-         [{x1, y1, w1, h1} | rest],
-         [{x2, y2, w2, h2} | merged_tail] = merged
+         [{x1, y1, x2, y2} | rest],
+         [{x3, y3, x4, y4} | merged_tail] = merged
        ) do
     # Check if regions overlap or are adjacent
-    if regions_overlap_or_adjacent({x1, y1, w1, h1}, {x2, y2, w2, h2}) do
+    if regions_overlap_or_adjacent({x1, y1, x2, y2}, {x3, y3, x4, y4}) do
       # Merge the regions
-      merged_region = merge_two_regions({x1, y1, w1, h1}, {x2, y2, w2, h2})
+      merged_region = merge_two_regions({x1, y1, x2, y2}, {x3, y3, x4, y4})
       merge_adjacent_regions(rest, [merged_region | merged_tail])
     else
-      merge_adjacent_regions(rest, [{x1, y1, w1, h1} | merged])
+      merge_adjacent_regions(rest, [{x1, y1, x2, y2} | merged])
     end
   end
 
-  defp regions_overlap_or_adjacent({x1, y1, w1, h1}, {x2, y2, w2, h2}) do
-    # Check if regions overlap or are adjacent (using width/height format)
-    end_x1 = x1 + w1 - 1
-    end_y1 = y1 + h1 - 1
-    end_x2 = x2 + w2 - 1
-    end_y2 = y2 + h2 - 1
-
-    x_overlap = x1 <= end_x2 + 1 and x2 <= end_x1 + 1
-    y_overlap = y1 <= end_y2 + 1 and y2 <= end_y1 + 1
+  defp regions_overlap_or_adjacent({x1, y1, x2, y2}, {x3, y3, x4, y4}) do
+    # Check if regions overlap or are adjacent (using x1,y1,x2,y2 format)
+    x_overlap = x1 <= x4 + 1 and x3 <= x2 + 1
+    y_overlap = y1 <= y4 + 1 and y3 <= y2 + 1
 
     x_overlap and y_overlap
   end
 
-  defp merge_two_regions({x1, y1, w1, h1}, {x2, y2, w2, h2}) do
+  defp merge_two_regions({x1, y1, x2, y2}, {x3, y3, x4, y4}) do
     # Find the bounding box that contains both regions
-    end_x1 = x1 + w1 - 1
-    end_y1 = y1 + h1 - 1
-    end_x2 = x2 + w2 - 1
-    end_y2 = y2 + h2 - 1
+    x_min = min(x1, x3)
+    y_min = min(y1, y3)
+    x_max = max(x2, x4)
+    y_max = max(y2, y4)
 
-    x_min = min(x1, x2)
-    y_min = min(y1, y2)
-    x_max = max(end_x1, end_x2)
-    y_max = max(end_y1, end_y2)
-
-    # Return in {x, y, width, height} format
-    {x_min, y_min, x_max - x_min + 1, y_max - y_min + 1}
+    # Return in {x1, y1, x2, y2} format
+    {x_min, y_min, x_max, y_max}
   end
 end

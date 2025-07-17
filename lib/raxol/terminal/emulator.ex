@@ -566,14 +566,22 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp has_meaningful_content?(line) do
-    # Check if the line contains any non-empty cells
-    Enum.any?(line, fn cell ->
-      case cell do
-        %{char: char} when is_binary(char) -> String.length(char) > 0
-        %{char: char} when is_integer(char) -> char > 0
-        _ -> false
-      end
-    end)
+    # Check if the line contains at least 3 non-whitespace characters
+    case line do
+      [] -> false
+      cells when is_list(cells) ->
+        non_ws_count = Enum.count(cells, fn cell ->
+          case cell do
+            %{char: char} when is_binary(char) ->
+              char != " " and char != "\t" and char != "\n" and char != "\r"
+            %{char: char} when is_integer(char) ->
+              char > 32  # ASCII space is 32, so anything above that is meaningful
+            _ -> false
+          end
+        end)
+        non_ws_count >= 3
+      _ -> false
+    end
   end
 
   defp log_buffer_update(updated_buffer) do

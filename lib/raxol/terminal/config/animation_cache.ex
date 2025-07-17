@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   """
   def get_cached_animation(animation_path) do
     case animation_path do
-      nil -> nil
+      nil -> {:error, :invalid_path}
       path -> Raxol.Terminal.Cache.System.get(path, namespace: :animation)
     end
   end

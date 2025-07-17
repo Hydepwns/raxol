@@ -128,25 +128,11 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
           TextFormatting.new()
         )
 
-      # Reset mode manager to reset values for alternate screen buffer
-      # This ensures that modes like auto-repeat start with their reset values (false)
-      reset_mode_manager = %Raxol.Terminal.ModeManager{
-        cursor_visible: false,
-        auto_wrap: false,
-        origin_mode: false,
-        insert_mode: false,
-        line_feed_mode: false,
-        column_width_mode: :normal,
-        cursor_keys_mode: :normal,
-        screen_mode_reverse: false,
-        auto_repeat_mode: false,
-        interlacing_mode: false,
-        alternate_buffer_active: false,
-        mouse_report_mode: :none,
-        focus_events_enabled: false,
-        alt_screen_mode: nil,
-        bracketed_paste_mode: false,
-        active_buffer_type: :main
+      # Preserve the current mode manager state but set alternate_buffer_active to true
+      # This ensures that modes like interlacing_mode are preserved when switching buffers
+      updated_mode_manager = %{
+        emulator_with_saved_state.mode_manager
+        | alternate_buffer_active: true
       }
 
       {:ok,
@@ -154,7 +140,7 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
          emulator_with_saved_state
          | alternate_screen_buffer: cleared_alt_buffer,
            active_buffer_type: :alternate,
-           mode_manager: reset_mode_manager
+           mode_manager: updated_mode_manager
        }}
     end
   end

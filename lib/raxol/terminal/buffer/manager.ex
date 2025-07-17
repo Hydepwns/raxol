@@ -234,8 +234,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Marks a region as damaged for rendering optimization.
   """
   def mark_damaged(%__MODULE__{} = manager, x, y, width, height) do
-    # Convert width/height to end coordinates (inclusive)
-    # DamageTracker expects {x1, y1, x2, y2} where x2 and y2 are end coordinates
+    # Convert width/height to end coordinates (inclusive) for test compatibility
+    # Tests expect {x1, y1, x2, y2} where x2 and y2 are end coordinates
     x2 = x + width - 1
     y2 = y + height - 1
 
@@ -244,8 +244,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
         manager.damage_tracker,
         x,
         y,
-        width,
-        height
+        x2,
+        y2
       )
 
     %{manager | damage_tracker: damage_tracker}

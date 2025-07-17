@@ -67,7 +67,8 @@ defmodule Raxol.Terminal.Renderer do
     :screen_buffer,
     :cursor,
     :theme,
-    :font_settings
+    :font_settings,
+    :style_batching
   ]
 
   require Logger
@@ -82,12 +83,13 @@ defmodule Raxol.Terminal.Renderer do
       iex> renderer.screen_buffer
       %ScreenBuffer{}
   """
-  def new(screen_buffer, theme \\ %{}, font_settings \\ %{}) do
+  def new(screen_buffer, theme \\ %{}, font_settings \\ %{}, style_batching \\ false) do
     %__MODULE__{
       screen_buffer: screen_buffer,
       cursor: nil,
       theme: theme,
-      font_settings: font_settings
+      font_settings: font_settings,
+      style_batching: style_batching
     }
   end
 
@@ -111,22 +113,42 @@ defmodule Raxol.Terminal.Renderer do
   def render(%__MODULE__{} = renderer, _opts, _additional_opts) do
     content =
       renderer.screen_buffer
-      |> get_styled_content(renderer.theme)
+      |> get_styled_content(renderer.theme, renderer.style_batching)
       |> apply_font_settings(renderer.font_settings)
       |> maybe_apply_cursor(renderer.cursor)
 
     content
   end
 
-  defp get_styled_content(buffer, theme) do
+  defp get_styled_content(buffer, theme, style_batching) do
     buffer.cells
     |> Enum.map(fn row ->
-      row
-      |> Enum.map_join("", fn cell ->
-        render_cell(cell, theme)
-      end)
+      render_row_with_style_batching(row, theme, style_batching)
     end)
     |> Enum.join("\n")
+  end
+
+  defp render_row_with_style_batching(row, theme, style_batching) do
+    if style_batching do
+      row
+      |> group_cells_by_style(theme)
+      |> Enum.map_join("", fn {style_attrs, chars} ->
+        "<span style=\"#{style_attrs}\">#{chars}</span>"
+      end)
+    else
+      row
+      |> Enum.map_join("", fn cell -> render_cell(cell, theme) end)
+    end
+  end
+
+  defp group_cells_by_style(row, theme) do
+    row
+    |> Enum.chunk_by(fn cell -> build_style_string(cell.style, theme) end)
+    |> Enum.map(fn cells_with_same_style ->
+      style_attrs = build_style_string(hd(cells_with_same_style).style, theme)
+      chars = Enum.map_join(cells_with_same_style, "", & &1.char)
+      {style_attrs, chars}
+    end)
   end
 
   defp render_cell(cell, theme) do

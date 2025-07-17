@@ -314,27 +314,17 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp get_cell_with_cache(state, x, y, cache_key) do
-    # Temporarily bypass cache to avoid timeout issues
+    # Temporarily bypass cache to avoid style issues
     get_cell_direct(state, x, y)
   end
 
-  defp get_cell_and_cache(state, x, y, cache_key) do
-    case get_cell_at_coordinates(state, x, y) do
-      {:valid, cell} -> cache_and_return(cache_key, cell)
-      {:invalid, cell} -> cache_and_return(cache_key, cell)
-    end
-  end
+
 
   defp get_cell_direct(state, x, y) do
     case get_cell_at_coordinates(state, x, y) do
       {:valid, cell} -> {:ok, cell}
       {:invalid, cell} -> {:ok, cell}
     end
-  end
-
-  defp cache_and_return(cache_key, cell) do
-    safe_cache_put(cache_key, cell, :buffer)
-    {:ok, cell}
   end
 
   def handle_call({:set_cell, x, y, cell}, _from, state) do
@@ -682,7 +672,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
                 }
 
               cell ->
-                cell
+                if is_list(cell) do
+                  List.first(cell) || create_default_cell()
+                else
+                  cell
+                end
             end
         end
     end
@@ -692,9 +686,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     nil?(cell) or cell == %{}
   end
 
-  defp clean_cell_style(cell) do
+  defp clean_cell_style(%Raxol.Terminal.Cell{} = cell) do
     style = if has_default_style?(cell.style), do: nil, else: cell.style
     %{cell | dirty: nil, style: style}
+  end
+
+  defp clean_cell_style(other) do
+    # Return unchanged if not a Cell struct
+    other
   end
 
   defp has_default_style?(nil), do: true

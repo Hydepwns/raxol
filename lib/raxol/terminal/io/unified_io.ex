@@ -406,6 +406,14 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
       %{type: :special_key, key: key} ->
         process_special_key(state, key)
 
+      # Invalid events - handle gracefully
+      %{type: :invalid} ->
+        {:ok, state, []}
+
+      # Unknown events - handle gracefully
+      %{type: :unknown} ->
+        {:ok, state, []}
+
       # Invalid event
       _ ->
         {:error, "Invalid event type: #{inspect(event.type)}"}
@@ -584,7 +592,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp update_mouse_buttons(buttons, event) do
-    case event.type do
+    case event.event_type || event.type do
       :press -> MapSet.put(buttons, event.button)
       :release -> MapSet.delete(buttons, event.button)
       _ -> buttons

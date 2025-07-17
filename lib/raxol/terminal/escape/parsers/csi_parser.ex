@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
   defp dispatch_csi_cursor_position(params, remaining) do
     row = BaseParser.param_at(params, 0, 1)
     col = BaseParser.param_at(params, 1, 1)
-    {:ok, {:cursor_position, {max(0, col - 1), max(0, row - 1)}}, remaining}
+    {:ok, {:cursor_position, {max(0, row - 1), max(0, col - 1)}}, remaining}
   end
 
   defp csi_dispatch_map do
@@ -169,6 +169,9 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
         dispatch_csi_unknown(params, final_byte, remaining)
 
       {:simple, handler} ->
+        handler.(params, remaining)
+
+      {:cursor_position, handler} ->
         handler.(params, remaining)
 
       {:cursor_move, handler, direction} ->
