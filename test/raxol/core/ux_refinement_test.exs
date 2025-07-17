@@ -14,7 +14,7 @@ defmodule Raxol.Core.UXRefinementTest do
 
   setup do
     # Configure the accessibility module to use the mock
-    Application.put_env(:raxol, :accessibility_impl, AccessibilityMock)
+    Application.put_env(:raxol, :accessibility_impl, Raxol.Mocks.AccessibilityMock)
     # Configure the focus manager to use the real module
     Application.put_env(:raxol, :focus_manager_impl, Raxol.Core.FocusManager)
 
@@ -81,7 +81,7 @@ defmodule Raxol.Core.UXRefinementTest do
     end
 
     test "enables accessibility feature" do
-      stub(AccessibilityMock, :enable, fn _opts,
+      stub(Raxol.Mocks.AccessibilityMock, :enable, fn _opts,
                                           _user_preferences_pid_or_name ->
         :ok
       end)
@@ -137,12 +137,12 @@ defmodule Raxol.Core.UXRefinementTest do
     end
 
     test "disables accessibility feature" do
-      stub(AccessibilityMock, :enable, fn _opts,
+      stub(Raxol.Mocks.AccessibilityMock, :enable, fn _opts,
                                           _user_preferences_pid_or_name ->
         :ok
       end)
 
-      stub(AccessibilityMock, :disable, fn _user_preferences_pid_or_name ->
+      stub(Raxol.Mocks.AccessibilityMock, :disable, fn _user_preferences_pid_or_name ->
         :ok
       end)
 

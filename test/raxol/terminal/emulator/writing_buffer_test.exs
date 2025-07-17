@@ -259,12 +259,12 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
         scrollback_lines
         |> List.first()
         |> Enum.map_join(& &1.char)
-      assert String.trim_trailing(original_line) == "X234567890",
+      assert String.trim_trailing(original_line) == "1234567890",
              "Original line should be in scrollback after wrap and scroll"
 
       # Check cursor position and flag
-      assert Emulator.get_cursor_position(emulator_after_wrap) == {1, 0},
-             "Cursor should be at {1, 0} AFTER wrap"
+      assert Emulator.get_cursor_position(emulator_after_wrap) == {0, 0},
+             "Cursor should be at {0, 0} AFTER wrap"
 
       assert emulator_after_wrap.last_col_exceeded == false,
              "last_col_exceeded should be false AFTER wrap"

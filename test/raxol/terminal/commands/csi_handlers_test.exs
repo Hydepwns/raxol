@@ -578,7 +578,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       emulator = new_emulator()
 
       state =
-        unwrap_ok(CSIHandlers.handle_cursor_position(emulator, [?2, ?;, ?3]))
+        unwrap_ok(CSIHandlers.handle_cursor_position(emulator, [2, ?;, 3]))
 
       assert state.cursor.row == 1
       assert state.cursor.col == 2
