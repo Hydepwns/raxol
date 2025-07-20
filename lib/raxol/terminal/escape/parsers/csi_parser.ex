@@ -164,23 +164,30 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
   }
 
   defp dispatch_csi(params, final_byte, remaining) do
+    IO.puts("DEBUG: dispatch_csi called with final_byte=#{inspect(final_byte)}")
     case csi_dispatch_map()[final_byte] do
       nil ->
+        IO.puts("DEBUG: dispatch_csi unknown final_byte=#{inspect(final_byte)}")
         dispatch_csi_unknown(params, final_byte, remaining)
 
       {:simple, handler} ->
+        IO.puts("DEBUG: dispatch_csi routing to simple handler for final_byte=#{inspect(final_byte)}")
         handler.(params, remaining)
 
       {:cursor_position, handler} ->
+        IO.puts("DEBUG: dispatch_csi routing to cursor_position handler for final_byte=#{inspect(final_byte)}")
         handler.(params, remaining)
 
       {:cursor_move, handler, direction} ->
+        IO.puts("DEBUG: dispatch_csi routing to cursor_move handler for final_byte=#{inspect(final_byte)}")
         handler.(params, direction, remaining)
 
       {:scroll, handler, direction} ->
+        IO.puts("DEBUG: dispatch_csi routing to scroll handler for final_byte=#{inspect(final_byte)}")
         handler.(params, direction, remaining)
 
       {:mode, handler, set?} ->
+        IO.puts("DEBUG: dispatch_csi routing to mode handler for final_byte=#{inspect(final_byte)}")
         handler.(params, :standard, set?, remaining)
     end
   end
@@ -204,6 +211,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
 
   defp dispatch_csi_cursor_horizontal_absolute(params, remaining) do
     col = BaseParser.param_at(params, 0, 1)
+    IO.puts("DEBUG: dispatch_csi_cursor_horizontal_absolute called with params=#{inspect(params)}, col=#{inspect(col)}")
     {:ok, {:cursor_horizontal_absolute, max(0, col - 1)}, remaining}
   end
 

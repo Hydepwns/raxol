@@ -316,7 +316,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_dch(emulator, params) do
     chars = Enum.at(params, 0, 1)
-    {col, row} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
 
@@ -337,7 +337,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_ich(emulator, params) do
     chars = Enum.at(params, 0, 1)
-    {col, row} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_active_buffer(emulator)
 
@@ -506,7 +506,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_decstbm(emulator, params) do
     scroll_region = parse_decstbm_params(params, emulator.height)
-    {:ok, %{emulator | scroll_region: scroll_region}}
+    buffer = Emulator.get_active_buffer(emulator)
+    new_buffer =
+      case scroll_region do
+        {top, bottom} -> Raxol.Terminal.ScreenBuffer.set_scroll_region(buffer, {top, bottom})
+        nil -> Raxol.Terminal.ScreenBuffer.reset_scroll_region(buffer)
+      end
+    {:ok, Raxol.Terminal.Emulator.update_active_buffer(%{emulator | scroll_region: scroll_region}, new_buffer)}
   end
 
   # Private helper to parse DECSTBM parameters

@@ -93,13 +93,25 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
 
   # Sixel Graphics support
   defp handle_sixel(emulator, data) do
+    Logger.debug("DCSHandlers: handle_sixel called with data: #{inspect(data)}")
+
     # Initialize sixel state if not present
     sixel_state =
       emulator.sixel_state || Raxol.Terminal.ANSI.SixelGraphics.new()
 
+    Logger.debug("DCSHandlers: sixel_state before processing: #{inspect(sixel_state)}")
+
+    # Construct the full DCS sequence for the sixel parser
+    full_dcs_sequence = "\ePq#{data}\e\\"
+    Logger.debug("DCSHandlers: Full DCS sequence: #{inspect(full_dcs_sequence)}")
+
     # Process sixel data using the proper SixelGraphics module
-    case Raxol.Terminal.ANSI.SixelGraphics.process_sequence(sixel_state, data) do
+    case Raxol.Terminal.ANSI.SixelGraphics.process_sequence(sixel_state, full_dcs_sequence) do
       {updated_sixel_state, :ok} ->
+        Logger.debug("DCSHandlers: sixel processing successful, updated_state: #{inspect(updated_sixel_state)}")
+        Logger.debug("DCSHandlers: pixel_buffer: #{inspect(updated_sixel_state.pixel_buffer)}")
+        Logger.debug("DCSHandlers: palette: #{inspect(updated_sixel_state.palette)}")
+
         # Successfully processed, update emulator with new sixel state
         # and blit the graphics to the screen buffer
         emulator_with_sixel = %{emulator | sixel_state: updated_sixel_state}
@@ -107,15 +119,20 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
         emulator_with_blit =
           blit_sixel_to_buffer(emulator_with_sixel, updated_sixel_state)
 
+        Logger.debug("DCSHandlers: blit completed, returning emulator")
         {:ok, emulator_with_blit}
 
       {_sixel_state, {:error, reason}} ->
+        Logger.debug("DCSHandlers: sixel processing failed: #{inspect(reason)}")
+
         # Processing failed, log the error but still update the sixel_state
         Logger.warning("Sixel processing failed: #{inspect(reason)}")
         # Return the original sixel_state (or new one if it was nil)
         {:ok, %{emulator | sixel_state: sixel_state}}
 
       {updated_sixel_state, _} ->
+        Logger.debug("DCSHandlers: sixel processing returned other result, updated_state: #{inspect(updated_sixel_state)}")
+
         # Any other response, use the updated state
         emulator_with_sixel = %{emulator | sixel_state: updated_sixel_state}
 
@@ -200,17 +217,16 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
     case Map.get(palette, color_index) do
       {r, g, b} ->
         Logger.debug("Found color {#{r}, #{g}, #{b}} for index #{color_index}")
-        style = %{background: {:rgb, r, g, b}}
 
-        # Include sixel flag in the style
-        style_with_sixel = Map.put(style, :sixel, true)
-        Raxol.Terminal.ScreenBuffer.write_char(
-          buffer,
-          screen_x,
-          screen_y,
-          " ",
-          style_with_sixel
-        )
+        # Create a proper TextFormatting.Core struct with the background color
+        style = Raxol.Terminal.ANSI.TextFormatting.Core.new(%{background: {:rgb, r, g, b}})
+
+        # Create a cell with the background color and sixel flag set to true
+        cell = %{Raxol.Terminal.Cell.new(" ", style) | sixel: true}
+
+        # Update the cell at the specified position using the Content module
+        updated_cells = Raxol.Terminal.Buffer.Content.update_cell_at(buffer.cells, screen_x, screen_y, cell)
+        %{buffer | cells: updated_cells}
 
       nil ->
         Logger.debug("No color found for index #{color_index}")

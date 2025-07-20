@@ -59,7 +59,11 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
 
   def erase_from_start_to_cursor(emulator) do
     buffer = ScreenManager.get_active_buffer(emulator)
-    new_buffer = ScreenBuffer.erase_from_start_to_cursor(buffer)
+    {x, y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
+    # Update the buffer's cursor position before erasing
+    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, x, y)
+    new_buffer = ScreenBuffer.erase_from_start_to_cursor(buffer_with_cursor)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 

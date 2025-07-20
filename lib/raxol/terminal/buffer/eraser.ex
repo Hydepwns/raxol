@@ -21,19 +21,19 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   end
 
   def erase_from_cursor_to_end(buffer) do
-    {x, y} = buffer.cursor_position
-    erase_line_segment(buffer, x, y)
+    {row, col} = buffer.cursor_position
+    erase_line_segment(buffer, row, col)
   end
 
   def erase_from_start_to_cursor(buffer) do
-    {x, y} = buffer.cursor_position || {0, 0}
+    {row, col} = buffer.cursor_position || {0, 0}
     empty_cell = Cell.new(" ", buffer.default_style)
 
     new_cells =
       process_lines_for_erase_from_start(
         buffer.cells,
-        x,
-        y,
+        row,
+        col,
         empty_cell,
         buffer.width
       )
@@ -41,41 +41,41 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     %{buffer | cells: new_cells}
   end
 
-  defp process_lines_for_erase_from_start(cells, x, y, empty_cell, width) do
+  defp process_lines_for_erase_from_start(cells, row, col, empty_cell, width) do
     Enum.with_index(cells)
-    |> Enum.map(fn {line, row} ->
-      process_line_for_erase_from_start(line, row, x, y, empty_cell, width)
+    |> Enum.map(fn {line, line_row} ->
+      process_line_for_erase_from_start(line, line_row, row, col, empty_cell, width)
     end)
   end
 
-  defp process_line_for_erase_from_start(line, row, x, y, empty_cell, width) do
+  defp process_line_for_erase_from_start(line, line_row, row, col, empty_cell, width) do
     cond do
-      row < y -> List.duplicate(empty_cell, width)
-      row == y -> clear_line_to_position(line, x, empty_cell)
+      line_row < row -> List.duplicate(empty_cell, width)
+      line_row == row -> clear_line_to_position(line, col, empty_cell)
       true -> line
     end
   end
 
-  defp clear_line_to_position(line, x, empty_cell) do
+  defp clear_line_to_position(line, col, empty_cell) do
     Enum.with_index(line)
-    |> Enum.map(fn {cell, col} -> if col <= x, do: empty_cell, else: cell end)
+    |> Enum.map(fn {cell, cell_col} -> if cell_col <= col, do: empty_cell, else: cell end)
   end
 
   def erase_from_start_of_line_to_cursor(buffer) do
-    {x, y} = buffer.cursor_position
-    clear_line_to(buffer, y, x)
+    {row, col} = buffer.cursor_position
+    clear_line_to(buffer, row, col)
   end
 
   def erase_line(buffer, mode) do
-    {x, y} = buffer.cursor_position
+    {row, col} = buffer.cursor_position
 
     case mode do
       # From cursor to end of line
-      0 -> clear_line_from(buffer, y, x)
+      0 -> clear_line_from(buffer, row, col)
       # From start of line to cursor
-      1 -> clear_line_to(buffer, y, x)
+      1 -> clear_line_to(buffer, row, col)
       # Entire line
-      2 -> clear_line(buffer, y)
+      2 -> clear_line(buffer, row)
       _ -> buffer
     end
   end
@@ -130,18 +130,18 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           non_neg_integer(),
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def erase_display_segment(buffer, x, y, style \\ nil)
+  def erase_display_segment(buffer, row, col, style \\ nil)
 
-  def erase_display_segment(buffer, x, y, style) do
+  def erase_display_segment(buffer, row, col, style) do
     style = style || TextFormatting.new()
     cells = buffer.cells
     empty_cell = Cell.new(" ", style)
 
     cells =
       Enum.with_index(cells)
-      |> Enum.map(fn {line, row} ->
-        if row > y or (row == y and x > 0) do
-          clear_display_line_from_position(line, row, x, y, empty_cell)
+      |> Enum.map(fn {line, line_row} ->
+        if line_row > row or (line_row == row and col > 0) do
+          clear_display_line_from_position(line, line_row, row, col, empty_cell)
         else
           line
         end
@@ -150,10 +150,10 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     %{buffer | cells: cells}
   end
 
-  defp clear_display_line_from_position(line, row, x, y, empty_cell) do
+  defp clear_display_line_from_position(line, line_row, row, col, empty_cell) do
     Enum.with_index(line)
-    |> Enum.map(fn {cell, col} ->
-      if row > y or (row == y and col >= x) do
+    |> Enum.map(fn {cell, cell_col} ->
+      if line_row > row or (line_row == row and cell_col >= col) do
         empty_cell
       else
         cell
@@ -170,18 +170,18 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           non_neg_integer(),
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def erase_line_segment(buffer, x, y, style \\ nil)
+  def erase_line_segment(buffer, row, col, style \\ nil)
 
-  def erase_line_segment(buffer, x, y, style) do
+  def erase_line_segment(buffer, row, col, style) do
     style = style || TextFormatting.new()
     cells = buffer.cells
     empty_cell = Cell.new(" ", style)
 
     cells =
       Enum.with_index(cells)
-      |> Enum.map(fn {line, row} ->
-        if row == y do
-          clear_line_from_position(line, x, empty_cell)
+      |> Enum.map(fn {line, line_row} ->
+        if line_row == row do
+          clear_line_from_position(line, col, empty_cell)
         else
           line
         end
@@ -190,10 +190,10 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     %{buffer | cells: cells}
   end
 
-  defp clear_line_from_position(line, x, empty_cell) do
+  defp clear_line_from_position(line, col, empty_cell) do
     Enum.with_index(line)
-    |> Enum.map(fn {cell, col} ->
-      if col >= x do
+    |> Enum.map(fn {cell, cell_col} ->
+      if cell_col >= col do
         empty_cell
       else
         cell
@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           integer(),
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def clear_line_from(buffer, y, x, style \\ nil)
+  def clear_line_from(buffer, row, col, style \\ nil)
 
   def clear_line_from(%ScreenBuffer{} = buffer, row, col, style) do
     style = style || TextFormatting.new()
@@ -232,7 +232,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           integer(),
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def clear_line_to(buffer, y, x, style \\ nil)
+  def clear_line_to(buffer, row, col, style \\ nil)
 
   def clear_line_to(%ScreenBuffer{} = buffer, row, col, style) do
     style = style || TextFormatting.new()
@@ -252,18 +252,18 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           non_neg_integer(),
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def clear_screen_from(buffer, y, x, style \\ nil) do
+  def clear_screen_from(buffer, row, col, style \\ nil) do
     style = style || TextFormatting.new()
     # Clear from cursor to end of line
-    buffer = clear_region(buffer, x, y, buffer.width - x, 1, style)
+    buffer = clear_region(buffer, col, row, buffer.width - col, 1, style)
     # Clear all lines below
-    if y + 1 < buffer.height do
+    if row + 1 < buffer.height do
       clear_region(
         buffer,
         0,
-        y + 1,
+        row + 1,
         buffer.width,
-        buffer.height - (y + 1),
+        buffer.height - (row + 1),
         style
       )
     else
@@ -280,17 +280,19 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           non_neg_integer(),
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
-  def clear_screen_to(buffer, y, x, style \\ nil) do
+  def clear_screen_to(buffer, row, col, style \\ nil) do
     style = style || TextFormatting.new()
 
+    # Clear all lines before the cursor's line
     buffer =
-      if y > 0 do
-        clear_region(buffer, 0, 0, buffer.width, y, style)
+      if row > 0 do
+        clear_region(buffer, 0, 0, buffer.width, row, style)
       else
         buffer
       end
 
-    clear_region(buffer, 0, y, x + 1, 1, style)
+    # Clear from start of cursor's line up to and including cursor position
+    clear_region(buffer, 0, row, col + 1, 1, style)
   end
 
   @doc """
@@ -322,7 +324,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases parts of the current line based on cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
-  Requires cursor state {col, row}.
+  Requires cursor state {row, col}.
   Delegates to specific clear_line_* functions.
   """
   @spec erase_in_line(
@@ -344,7 +346,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     end
   end
 
-  defp handle_erase_in_line(buffer, {col, row}, type, style) do
+  defp handle_erase_in_line(buffer, {row, col}, type, style) do
     case type do
       :to_end ->
         clear_line_from(buffer, row, col, style)
@@ -367,7 +369,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @doc """
   Erases parts of the display based on cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
-  Requires cursor state {col, row}.
+  Requires cursor state {row, col}.
   Delegates to specific clear_screen_* functions.
   Does not handle type 3 (scrollback) - that should be handled by the Emulator.
   """
@@ -390,7 +392,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     end
   end
 
-  defp handle_erase_in_display(buffer, {col, row}, type, style) do
+  defp handle_erase_in_display(buffer, {row, col}, type, style) do
     case type do
       :to_end ->
         clear_screen_from(buffer, row, col, style)
@@ -417,8 +419,8 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   """
   @spec erase_chars(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_chars(buffer, count) do
-    {x, y} = buffer.cursor_position
-    erase_chars(buffer, x, y, count)
+    {row, col} = buffer.cursor_position
+    erase_chars(buffer, row, col, count)
   end
 
   @doc """
@@ -430,17 +432,17 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           non_neg_integer(),
           non_neg_integer()
         ) :: ScreenBuffer.t()
-  def erase_chars(buffer, x, y, count) do
-    if y < buffer.height do
+  def erase_chars(buffer, row, col, count) do
+    if row < buffer.height do
       case buffer.cells do
         nil ->
           # Return buffer unchanged if cells is nil
           buffer
 
         cells ->
-          line = Enum.at(cells, y, [])
-          new_line = erase_chars_in_line(line, x, count, buffer.default_style)
-          new_cells = List.replace_at(cells, y, new_line)
+          line = Enum.at(cells, row, [])
+          new_line = erase_chars_in_line(line, col, count, buffer.default_style)
+          new_cells = List.replace_at(cells, row, new_line)
           %{buffer | cells: new_cells}
       end
     else
@@ -448,17 +450,17 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     end
   end
 
-  defp erase_chars_in_line(line, x, count, _default_style) do
+  defp erase_chars_in_line(line, col, count, _default_style) do
     line_length = length(line)
 
-    if x >= line_length do
+    if col >= line_length do
       line
     else
       # Get the part before the cursor
-      before_cursor = Enum.take(line, x)
+      before_cursor = Enum.take(line, col)
 
       # Get the part after the erased characters
-      after_erased = Enum.drop(line, x + count)
+      after_erased = Enum.drop(line, col + count)
 
       # Combine: before cursor + remaining text (shifted left)
       before_cursor ++ after_erased
@@ -473,13 +475,13 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     case mode do
       # From cursor to end of screen
       0 ->
-        {x, y} = buffer.cursor_position || {0, 0}
-        clear_screen_from(buffer, y, x)
+        {row, col} = buffer.cursor_position || {0, 0}
+        clear_screen_from(buffer, row, col)
 
       # From start of screen to cursor
       1 ->
-        {x, y} = buffer.cursor_position || {0, 0}
-        clear_screen_to(buffer, y, x)
+        {row, col} = buffer.cursor_position || {0, 0}
+        clear_screen_to(buffer, row, col)
 
       # Entire screen
       2 ->
@@ -500,11 +502,12 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @spec erase_line(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def erase_line(buffer, line, mode) do
+    {row, col} = buffer.cursor_position || {0, 0}
     case mode do
       # From cursor to end of line
-      0 -> clear_line_from(buffer, line, 0)
+      0 -> clear_line_from(buffer, line, col)
       # From start of line to cursor
-      1 -> clear_line_to(buffer, line, 0)
+      1 -> clear_line_to(buffer, line, col)
       # Entire line
       2 -> clear_line(buffer, line)
       _ -> buffer
@@ -525,7 +528,8 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   """
   @spec erase_in_line(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_in_line(buffer, mode) do
-    erase_line(buffer, mode)
+    {row, col} = buffer.cursor_position || {0, 0}
+    erase_line(buffer, row, mode)
   end
 
   # Private helper functions
@@ -550,7 +554,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     end
   end
 
-  def set_cursor_position(buffer, _x, _y), do: buffer
+  def set_cursor_position(buffer, row, col), do: buffer
 
   def get_cursor_position(_buffer), do: {0, 0}
 

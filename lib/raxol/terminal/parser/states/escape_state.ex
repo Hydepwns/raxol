@@ -20,14 +20,14 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
           | {:handled, Emulator.t()}
   def handle(emulator, _parser_state, <<"[", rest::binary>>) do
     require Logger
-    Logger.debug("EscapeState.handle: Detected CSI, rest=#{inspect(rest)}")
+    # Logger.debug("EscapeState.handle: Detected CSI, rest=#{inspect(rest)}")
 
     case rest do
       <<final_byte, rest2::binary>> when final_byte in ?@..?~ ->
         # No params, direct CSI final byte
-        Logger.debug(
-          "EscapeState.handle: CSI with no params, final_byte=#{inspect(final_byte)}"
-        )
+        # Logger.debug(
+        #   "EscapeState.handle: CSI with no params, final_byte=#{inspect(final_byte)}"
+        # )
 
         # Build a parser state for CSI param with empty params_buffer
         csi_parser_state = %Raxol.Terminal.Parser.State{
@@ -50,9 +50,9 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   end
 
   def handle(emulator, %State{state: :escape} = parser_state, input) do
-    Logger.debug(
-      "EscapeState.handle: input=#{inspect(input)}, parser_state=#{inspect(parser_state)}"
-    )
+    # Logger.debug(
+    #   "EscapeState.handle: input=#{inspect(input)}, parser_state=#{inspect(parser_state)}"
+    # )
 
     dispatch_escape_input(input, emulator, parser_state)
   end
@@ -69,6 +69,10 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   end
 
   defp dispatch_escape_input(<<"P", rest::binary>>, emulator, parser_state) do
+    Raxol.Core.Runtime.Log.debug(
+      "EscapeState: Found DCS final byte 'P', transitioning to dcs_entry with rest=#{inspect(rest)}"
+    )
+    IO.puts("DEBUG: EscapeState - Found DCS final byte 'P', transitioning to dcs_entry with rest=#{inspect(rest)}")
     next_parser_state = %{parser_state | state: :dcs_entry}
     {:continue, emulator, next_parser_state, rest}
   end

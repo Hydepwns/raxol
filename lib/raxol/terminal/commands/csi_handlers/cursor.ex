@@ -124,7 +124,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     height = ScreenBuffer.get_height(active_buffer)
 
     # Convert 1-indexed ANSI coordinates to 0-indexed internal coordinates
-    # ANSI CUP command expects {row, col} format, but cursor stores {col, row}
+    # ANSI CUP command expects {row, col} format, cursor stores {row, col}
     row_0 = row - 1
     col_0 = col - 1
 
@@ -132,12 +132,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     row_clamped = max(0, min(row_0, height - 1))
     col_clamped = max(0, min(col_0, width - 1))
 
-    # Update cursor position - cursor stores {col, row} format
-    # For \e[10;5H: row=10, col=5 -> row_0=9, col_0=4 -> {4, 9}
-    # The test expects {4, 9} which means {col, row} format
-    # set_position expects {col, row} format
+    # Update cursor position - cursor stores {row, col} format
+    # For \e[10;5H: row=10, col=5 -> row_0=9, col_0=4 -> {9, 4}
+    # The test expects {9, 4} which means {row, col} format
+    # set_position expects {row, col} format
     updated_cursor =
-      set_cursor_position(emulator.cursor, {col_clamped, row_clamped})
+      set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
 
     {:ok, %{emulator | cursor: updated_cursor}}
   end
@@ -205,16 +205,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     cursor
   end
 
-  defp set_cursor_position(cursor, {col, row}) when is_map(cursor) do
+  defp set_cursor_position(cursor, {row, col}) when is_map(cursor) do
     # Handle both cursor formats
     case cursor do
       %{position: _} ->
         # Emulator cursor format with :position field
-        %{cursor | position: {col, row}}
+        %{cursor | position: {row, col}}
 
       %{row: _, col: _} ->
         # Test cursor format with :row and :col fields
-        %{cursor | row: row, col: col, position: {col, row}}
+        %{cursor | row: row, col: col, position: {row, col}}
 
       _ ->
         # Fallback

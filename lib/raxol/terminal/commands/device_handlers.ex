@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     case code do
       # Report cursor position (CPR)
       6 ->
-        {col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+        {row, col} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
         # Convert to 1-based for response
         "\e[#{row + 1};#{col + 1}R"
 

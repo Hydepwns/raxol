@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
   require Logger
 
   alias Raxol.Terminal.Buffer.Operations, as: Buffer
-  alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Content
 
@@ -62,6 +62,9 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
   alias Raxol.Terminal.Buffer.OperationQueue
   alias Raxol.Terminal.Buffer.MetricsTracker
   alias Raxol.Terminal.Buffer.DamageTracker
+
+  # Refactored modules
+  alias Raxol.Terminal.Buffer.{Callbacks, Handlers, Helpers}
 
   @type t :: pid()
 
@@ -468,406 +471,27 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
   # Server Callbacks
 
   @impl GenServer
-  def init(opts) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
-    memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
-
-    # Validate dimensions
-    if width <= 0 or height <= 0 do
-      {:stop, {:invalid_dimensions, {width, height}}}
-    else
-      # Create initial buffer
-      buffer = ScreenBuffer.new(width, height)
-
-      # Initialize modular components
-      operation_queue = OperationQueue.new(50)
-      metrics = MetricsTracker.new()
-      damage_tracker = DamageTracker.new(100)
-      memory_usage = MetricsTracker.calculate_memory_usage(buffer)
-
-      # Initialize state
-      state = %State{
-        buffer: buffer,
-        operation_queue: operation_queue,
-        metrics: metrics,
-        damage_tracker: damage_tracker,
-        memory_limit: memory_limit,
-        memory_usage: memory_usage
-      }
-
-      Logger.debug(
-        "BufferServerRefactored started with dimensions #{width}x#{height}"
-      )
-
-      {:ok, state}
-    end
-  end
+  def init(opts), do: Callbacks.init(opts)
 
   @impl GenServer
-  def handle_call({:get_cell, x, y}, _from, state) do
-    start_time = System.monotonic_time()
-
-    if OperationProcessor.valid_coordinates?(state.buffer, x, y) do
-      try do
-        cell = Content.get_cell(state.buffer, x, y)
-
-        new_metrics =
-          MetricsTracker.update_metrics(state.metrics, :reads, start_time)
-
-        new_state = %{state | metrics: new_metrics}
-        {:reply, {:ok, cell}, new_state}
-      catch
-        _kind, reason ->
-          Logger.error("Failed to get cell at (#{x}, #{y}): #{inspect(reason)}")
-          {:reply, {:error, {_kind, reason}}, state}
-      end
-    else
-      {:reply, {:error, :invalid_coordinates}, state}
-    end
-  end
+  def handle_call({:get_cell, x, y}, from, state), do: Callbacks.handle_call({:get_cell, x, y}, from, state)
+  def handle_call(:flush, from, state), do: Callbacks.handle_call(:flush, from, state)
+  def handle_call(:get_dimensions, from, state), do: Callbacks.handle_call(:get_dimensions, from, state)
+  def handle_call(:get_buffer, from, state), do: Callbacks.handle_call(:get_buffer, from, state)
+  def handle_call({:atomic_operation, operation}, from, state), do: Callbacks.handle_call({:atomic_operation, operation}, from, state)
+  def handle_call({:set_cell_sync, x, y, cell}, from, state), do: Callbacks.handle_call({:set_cell_sync, x, y, cell}, from, state)
+  def handle_call(:get_metrics, from, state), do: Callbacks.handle_call(:get_metrics, from, state)
+  def handle_call(:get_memory_usage, from, state), do: Callbacks.handle_call(:get_memory_usage, from, state)
+  def handle_call(:get_damage_regions, from, state), do: Callbacks.handle_call(:get_damage_regions, from, state)
+  def handle_call(:clear_damage_regions, from, state), do: Callbacks.handle_call(:clear_damage_regions, from, state)
+  def handle_call(:get_content, from, state), do: Callbacks.handle_call(:get_content, from, state)
 
   @impl GenServer
-  def handle_call(:flush, _from, state) do
-    # Process all pending operations synchronously
-    new_state =
-      if OperationQueue.empty?(state.operation_queue) do
-        state
-      else
-        try do
-          # Get all operations and clear the queue
-          {operations, new_queue} =
-            OperationQueue.get_all(state.operation_queue)
+  def handle_cast({:set_cell, x, y, cell}, state), do: Handlers.handle_cast({:set_cell, x, y, cell}, state)
+  def handle_cast({:write_string, x, y, string}, state), do: Handlers.handle_cast({:write_string, x, y, string}, state)
+  def handle_cast({:fill_region, x, y, width, height, cell}, state), do: Handlers.handle_cast({:fill_region, x, y, width, height, cell}, state)
+  def handle_cast({:scroll, lines}, state), do: Handlers.handle_cast({:scroll, lines}, state)
+  def handle_cast({:resize, width, height}, state), do: Handlers.handle_cast({:resize, width, height}, state)
+  def handle_cast({:batch_operations, operations}, state), do: Handlers.handle_cast({:batch_operations, operations}, state)
 
-          # Track start time for metrics
-          start_time = System.monotonic_time()
-
-          # Process all operations
-          new_buffer =
-            OperationProcessor.process_all_operations(operations, state.buffer)
-
-          # Update metrics based on operation types
-          new_metrics =
-            update_metrics_for_operations(operations, state.metrics, start_time)
-
-          # Update state
-          %{
-            state
-            | buffer: new_buffer,
-              operation_queue: new_queue,
-              metrics: new_metrics
-          }
-        catch
-          _kind, reason ->
-            Logger.error(
-              "Error processing flush operations: #{inspect(reason)}"
-            )
-
-            state
-        end
-      end
-
-    {:reply, :ok, new_state}
-  end
-
-  @impl GenServer
-  def handle_call(:get_dimensions, _from, state) do
-    {:reply, {state.buffer.width, state.buffer.height}, state}
-  end
-
-  @impl GenServer
-  def handle_call(:get_buffer, _from, state) do
-    {:reply, {:ok, state.buffer}, state}
-  end
-
-  @impl GenServer
-  def handle_call({:atomic_operation, operation}, _from, state) do
-    start_time = System.monotonic_time()
-
-    try do
-      new_buffer = operation.(state.buffer)
-
-      new_metrics =
-        MetricsTracker.update_metrics(state.metrics, :writes, start_time)
-
-      new_damage_tracker =
-        DamageTracker.add_damage_region(
-          state.damage_tracker,
-          0,
-          0,
-          new_buffer.width,
-          new_buffer.height
-        )
-
-      new_state = %{
-        state
-        | buffer: new_buffer,
-          metrics: new_metrics,
-          damage_tracker: new_damage_tracker
-      }
-
-      {:reply, {:ok, new_buffer}, new_state}
-    catch
-      _kind, reason ->
-        Logger.error("Failed to perform atomic operation: #{inspect(reason)}")
-        {:reply, {:error, {_kind, reason}}, state}
-    end
-  end
-
-  @impl GenServer
-  def handle_call({:set_cell_sync, x, y, cell}, _from, state) do
-    start_time = System.monotonic_time()
-
-    if OperationProcessor.valid_coordinates?(state.buffer, x, y) do
-      try do
-        new_buffer = Content.write_char(state.buffer, x, y, cell.char, cell)
-
-        new_metrics =
-          MetricsTracker.update_metrics(state.metrics, :writes, start_time)
-
-        new_damage_tracker =
-          DamageTracker.add_damage_region(state.damage_tracker, x, y, 1, 1)
-
-        new_state = %{
-          state
-          | buffer: new_buffer,
-            metrics: new_metrics,
-            damage_tracker: new_damage_tracker
-        }
-
-        {:reply, :ok, new_state}
-      catch
-        _kind, reason ->
-          Logger.error("Failed to set cell at (#{x}, #{y}): #{inspect(reason)}")
-          {:reply, {:error, {_kind, reason}}, state}
-      end
-    else
-      {:reply, {:error, :invalid_coordinates}, state}
-    end
-  end
-
-  @impl GenServer
-  def handle_call(:get_metrics, _from, state) do
-    {:reply, {:ok, MetricsTracker.get_summary(state.metrics)}, state}
-  end
-
-  @impl GenServer
-  def handle_call(:get_memory_usage, _from, state) do
-    {:reply, state.memory_usage, state}
-  end
-
-  @impl GenServer
-  def handle_call(:get_damage_regions, _from, state) do
-    {:reply, DamageTracker.get_damage_regions(state.damage_tracker), state}
-  end
-
-  @impl GenServer
-  def handle_call(:clear_damage_regions, _from, state) do
-    new_damage_tracker = DamageTracker.clear_damage(state.damage_tracker)
-    {:reply, :ok, %{state | damage_tracker: new_damage_tracker}}
-  end
-
-  @impl GenServer
-  def handle_call(:get_content, _from, state) do
-    content = buffer_to_string(state.buffer)
-    {:reply, {:ok, content}, state}
-  end
-
-  @impl GenServer
-  def handle_cast({:set_cell, x, y, cell}, state) do
-    # Validate coordinates and add operation to queue
-    operation =
-      if OperationProcessor.valid_coordinates?(state.buffer, x, y) do
-        {:set_cell, x, y, cell}
-      else
-        {:set_cell, x, y, cell, :invalid_coordinates}
-      end
-
-    new_queue = OperationQueue.add_operation(state.operation_queue, operation)
-    new_state = %{state | operation_queue: new_queue}
-
-    # Process batch if conditions are met
-    if OperationQueue.should_process?(new_queue) do
-      new_state = process_batch(new_state)
-      {:noreply, new_state}
-    else
-      {:noreply, new_state}
-    end
-  end
-
-  @impl GenServer
-  def handle_cast({:write_string, x, y, string}, state) do
-    # Validate coordinates and add operation to queue
-    operation =
-      if OperationProcessor.valid_coordinates?(state.buffer, x, y) do
-        {:write_string, x, y, string}
-      else
-        {:write_string, x, y, string, :invalid_coordinates}
-      end
-
-    new_queue = OperationQueue.add_operation(state.operation_queue, operation)
-    new_state = %{state | operation_queue: new_queue}
-
-    # Process batch if conditions are met
-    if OperationQueue.should_process?(new_queue) do
-      new_state = process_batch(new_state)
-      {:noreply, new_state}
-    else
-      {:noreply, new_state}
-    end
-  end
-
-  @impl GenServer
-  def handle_cast({:fill_region, x, y, width, height, cell}, state) do
-    # Validate coordinates and add operation to queue
-    operation =
-      if OperationProcessor.valid_fill_region_coordinates?(
-           state.buffer,
-           x,
-           y,
-           width,
-           height
-         ) do
-        {:fill_region, x, y, width, height, cell}
-      else
-        {:fill_region, x, y, width, height, cell, :invalid_coordinates}
-      end
-
-    new_queue = OperationQueue.add_operation(state.operation_queue, operation)
-    new_state = %{state | operation_queue: new_queue}
-
-    # Process batch if conditions are met
-    if OperationQueue.should_process?(new_queue) do
-      new_state = process_batch(new_state)
-      {:noreply, new_state}
-    else
-      {:noreply, new_state}
-    end
-  end
-
-  @impl GenServer
-  def handle_cast({:scroll, lines}, state) do
-    operation = {:scroll, lines}
-    new_queue = OperationQueue.add_operation(state.operation_queue, operation)
-    new_state = %{state | operation_queue: new_queue}
-
-    # Process batch if conditions are met
-    if OperationQueue.should_process?(new_queue) do
-      new_state = process_batch(new_state)
-      {:noreply, new_state}
-    else
-      {:noreply, new_state}
-    end
-  end
-
-  @impl GenServer
-  def handle_cast({:resize, width, height}, state) do
-    operation = {:resize, width, height}
-    new_queue = OperationQueue.add_operation(state.operation_queue, operation)
-    new_state = %{state | operation_queue: new_queue}
-
-    # Process batch if conditions are met
-    if OperationQueue.should_process?(new_queue) do
-      new_state = process_batch(new_state)
-      {:noreply, new_state}
-    else
-      {:noreply, new_state}
-    end
-  end
-
-  @impl GenServer
-  def handle_cast({:batch_operations, operations}, state) do
-    new_queue = OperationQueue.add_operations(state.operation_queue, operations)
-    new_state = %{state | operation_queue: new_queue}
-
-    # Process batch if conditions are met
-    if OperationQueue.should_process?(new_queue) do
-      new_state = process_batch(new_state)
-      {:noreply, new_state}
-    else
-      {:noreply, new_state}
-    end
-  end
-
-  # Private helper functions
-
-  defp update_metrics_for_operations(operations, metrics, start_time) do
-    Enum.reduce(operations, metrics, fn operation, acc ->
-      case operation do
-        {:set_cell, _x, _y, _cell} ->
-          MetricsTracker.update_metrics(acc, :writes, start_time)
-
-        {:write_string, _x, _y, _string} ->
-          MetricsTracker.update_metrics(acc, :writes, start_time)
-
-        {:fill_region, _x, _y, _width, _height, _cell} ->
-          MetricsTracker.update_metrics(acc, :writes, start_time)
-
-        {:scroll, _lines} ->
-          MetricsTracker.update_metrics(acc, :scrolls, start_time)
-
-        {:resize, _width, _height} ->
-          MetricsTracker.update_metrics(acc, :resizes, start_time)
-
-        _ ->
-          acc
-      end
-    end)
-  end
-
-  defp buffer_to_string(buffer) do
-    buffer.cells
-    |> Enum.map_join("\n", fn row ->
-      row
-      |> Enum.map_join("", fn cell -> cell.char end)
-    end)
-  end
-
-  defp process_batch(state) do
-    if OperationQueue.empty?(state.operation_queue) do
-      state
-    else
-      # Mark as processing
-      new_queue = OperationQueue.mark_processing(state.operation_queue)
-
-      try do
-        # Get a batch of operations to process
-        {operations_to_process, remaining_queue} =
-          OperationQueue.get_batch(new_queue, new_queue.batch_size)
-
-        # Track start time for metrics
-        start_time = System.monotonic_time()
-
-        # Process the operations
-        new_buffer =
-          OperationProcessor.process_batch(operations_to_process, state.buffer)
-
-        # Update metrics based on operation types
-        new_metrics =
-          update_metrics_for_operations(
-            operations_to_process,
-            state.metrics,
-            start_time
-          )
-
-        # Update state
-        final_queue = OperationQueue.mark_not_processing(remaining_queue)
-
-        %{
-          state
-          | buffer: new_buffer,
-            operation_queue: final_queue,
-            metrics: new_metrics
-        }
-      catch
-        _kind, reason ->
-          Logger.error("Error processing batch operations: #{inspect(reason)}")
-          # Always reset processing flag, even on error
-          final_queue =
-            OperationQueue.mark_not_processing(state.operation_queue)
-
-          %{state | operation_queue: final_queue}
-      end
-    end
-  end
 end

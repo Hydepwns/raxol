@@ -2,6 +2,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   @moduledoc false
 
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Operations.CursorOperations
+  alias Raxol.Terminal.Buffer.Eraser
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   require Logger
 
   # Replace the single handle_command function with multiple pattern-matched functions
@@ -127,15 +130,28 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   defp process_sgr_parameter(_), do: :error
 
+  @doc """
+  Handles Cursor Position (CUP) command.
+  Moves cursor to the specified position.
+  """
+  @spec handle_cup(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cup(emulator, params) do
     row = Enum.at(params, 0, 1)
     col = Enum.at(params, 1, 1)
 
-    {:ok,
-     Emulator.move_cursor_to(
-       emulator,
-       {row - 1, col - 1}
-     )}
+    # Convert to 0-based coordinates
+    row_0 = row - 1
+    col_0 = col - 1
+
+    # Clamp to screen bounds
+    row_clamped = max(0, min(row_0, emulator.height - 1))
+    col_clamped = max(0, min(col_0, emulator.width - 1))
+
+    # Set cursor position - CursorManager.set_position returns :ok
+    CursorManager.set_position(emulator.cursor, {row_clamped, col_clamped})
+
+    {:ok, emulator}
   end
 
   def handle_decstbm(emulator, params) do
@@ -167,39 +183,77 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   defp parse_scroll_region(_, _), do: :error
 
+  @doc """
+  Handles Erase Display (ED) command.
+  Clears parts of the screen based on the mode.
+  """
+  @spec handle_ed(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_ed(emulator, params) do
     mode = Enum.at(params, 0, 0)
-    {x, y} = Emulator.get_cursor_position(emulator)
-    {:ok, clear_screen_by_mode(emulator, mode, x, y)}
+    clear_screen_by_mode(emulator, mode)
   end
 
-  defp clear_screen_by_mode(emulator, 0, x, y),
-    do: clear_from_cursor_to_end(emulator, x, y)
-
-  defp clear_screen_by_mode(emulator, 1, x, y),
-    do: clear_from_start_to_cursor(emulator, x, y)
-
-  defp clear_screen_by_mode(emulator, 2, _x, _y),
-    do: clear_entire_screen(emulator)
-
-  defp clear_screen_by_mode(emulator, 3, _x, _y),
-    do: clear_entire_screen_and_scrollback(emulator)
-
-  defp clear_screen_by_mode(emulator, _mode, _x, _y), do: emulator
-
-  def handle_el(emulator, params) do
-    mode = Enum.at(params, 0, 0)
-    {x, y} = Emulator.get_cursor_position(emulator)
+  defp clear_screen_by_mode(emulator, mode) do
+    {row, col} = CursorOperations.get_cursor_position(emulator)
+    buffer = Emulator.get_active_buffer(emulator)
 
     case mode do
+      # From cursor to end of screen
       0 ->
-        {:ok, clear_from_cursor_to_end_of_line(emulator, x, y)}
+        updated_buffer = Eraser.clear_screen_from(buffer, row, col)
+        {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
 
+      # From start of screen to cursor
       1 ->
-        {:ok, clear_from_start_of_line_to_cursor(emulator, x, y)}
+        updated_buffer = Eraser.clear_screen_to(buffer, row, col)
+        {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
 
+      # Entire screen
       2 ->
-        {:ok, clear_entire_line(emulator, y)}
+        updated_buffer = Eraser.clear_screen(buffer)
+        {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
+
+      # Clear scrollback buffer (mode 3)
+      3 ->
+        updated_buffer = Eraser.clear_scrollback(buffer)
+        {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
+
+      _ ->
+        {:ok, emulator}
+    end
+  end
+
+  @doc """
+  Handles Erase Line (EL) command.
+  Clears parts of the current line based on the mode.
+  """
+  @spec handle_el(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_el(emulator, params) do
+    mode = Enum.at(params, 0, 0)
+    clear_line_by_mode(emulator, mode)
+  end
+
+  defp clear_line_by_mode(emulator, mode) do
+    {row, col} = CursorOperations.get_cursor_position(emulator)
+    buffer = Emulator.get_active_buffer(emulator)
+
+    case mode do
+      # From cursor to end of line
+      0 ->
+        updated_buffer = Eraser.clear_line_from(buffer, row, col)
+        {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
+
+      # From start of line to cursor
+      1 ->
+        updated_buffer = Eraser.clear_line_to(buffer, row, col)
+        {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
+
+      # Entire line
+      2 ->
+        updated_buffer = Eraser.clear_line(buffer, row)
+        {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
 
       _ ->
         {:ok, emulator}

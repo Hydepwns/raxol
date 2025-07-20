@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   use GenServer
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour}
+  alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour, ScrollbackManager, BufferOperations, MemoryCalculator, ProcessManager}
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker}
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
@@ -40,8 +40,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
           memory_limit: non_neg_integer()
         }
 
-  # Test struct for buffer manager API compatibility
   defmodule TestBufferManager do
+    @moduledoc false
+
     defstruct active: nil, alternate: nil, scrollback: [], scrollback_size: 1000
   end
 
@@ -205,22 +206,22 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   def get_line(y) do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, {:get_line, y})
   end
 
   def set_line(y, line) do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, {:set_line, y, line})
   end
 
   def clear do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :clear)
   end
 
   def get_size do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :get_size)
   end
 
@@ -290,8 +291,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def update_memory_usage(%__MODULE__{} = manager) do
     # IO.puts("DEBUG: update_memory_usage called with %__MODULE__{} struct")
     # Calculate memory usage for both buffers
-    active_memory = calculate_buffer_memory(manager.active_buffer)
-    back_memory = calculate_buffer_memory(manager.back_buffer)
+    active_memory = MemoryCalculator.calculate_buffer_memory(manager.active_buffer)
+    back_memory = MemoryCalculator.calculate_buffer_memory(manager.back_buffer)
     total_memory = active_memory + back_memory
 
     # IO.puts(
@@ -339,12 +340,12 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   def get_cursor do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :get_cursor)
   end
 
   def set_cursor(cursor) do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, {:set_cursor, cursor})
   end
 
@@ -354,47 +355,47 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   def get_attributes do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :get_attributes)
   end
 
   def set_attributes(attributes) do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, {:set_attributes, attributes})
   end
 
   def get_mode do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :get_mode)
   end
 
   def set_mode(mode) do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, {:set_mode, mode})
   end
 
   def get_title do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :get_title)
   end
 
   def set_title(title) do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, {:set_title, title})
   end
 
   def get_icon_name do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :get_icon_name)
   end
 
   def set_icon_name(icon_name) do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, {:set_icon_name, icon_name})
   end
 
   def get_icon_title do
-    pid = get_buffer_manager_pid()
+    pid = ProcessManager.get_buffer_manager_pid()
     GenServer.call(pid, :get_icon_title)
   end
 
@@ -652,312 +653,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
     %{state | metrics: metrics}
   end
 
-  # Grouped reset_buffer_manager/1 clauses - most specific to most general
-  def reset_buffer_manager(%TestBufferManager{} = mgr) do
-    %TestBufferManager{
-      scrollback_size: mgr.scrollback_size,
-      active: nil,
-      alternate: nil,
-      scrollback: []
-    }
-  end
 
-  def reset_buffer_manager(%{buffer: _} = emulator) do
-    %{emulator | buffer: new()}
-  end
 
-  def reset_buffer_manager(%{active: _} = emulator) do
-    %{
-      emulator
-      | active: nil,
-        alternate: nil,
-        scrollback: [],
-        scrollback_size: 1000
-    }
-  end
 
-  def reset_buffer_manager(emulator) when is_map(emulator) do
-    emulator
-    |> Map.put(:active, nil)
-    |> Map.put(:alternate, nil)
-    |> Map.put(:scrollback, [])
-    |> Map.put(:scrollback_size, 1000)
-  end
 
-  def reset_buffer_manager(_manager) do
-    new()
-  end
 
-  # Grouped add_to_scrollback/2 clauses - most specific to most general
-  def add_to_scrollback(
-        %TestBufferManager{scrollback: sb, scrollback_size: sz} = mgr,
-        buffer
-      ) do
-    %{mgr | scrollback: [buffer | sb] |> Enum.take(sz)}
-  end
-
-  def add_to_scrollback(%Raxol.Terminal.Emulator{} = emulator, buffer) do
-    scrollback = Map.get(emulator, :scrollback_buffer, [])
-    scrollback_size = Map.get(emulator, :scrollback_limit, 1000)
-    new_scrollback = [buffer | scrollback] |> Enum.take(scrollback_size)
-
-    %{
-      emulator
-      | scrollback_buffer: new_scrollback,
-        scrollback_limit: scrollback_size
-    }
-  end
-
-  def add_to_scrollback(nil, buffer),
-    do: %{scrollback: [buffer], scrollback_size: 1000}
-
-  def add_to_scrollback(
-        %{scrollback: scrollback, scrollback_size: scrollback_size} = emulator,
-        buffer
-      ) do
-    new_scrollback = [buffer | scrollback] |> Enum.take(scrollback_size)
-    %{emulator | scrollback: new_scrollback}
-  end
-
-  def add_to_scrollback(emulator, buffer) when is_map(emulator) do
-    scrollback = Map.get(emulator, :scrollback, [])
-    scrollback_size = Map.get(emulator, :scrollback_size, 1000)
-    new_scrollback = [buffer | scrollback] |> Enum.take(scrollback_size)
-
-    Map.put(emulator, :scrollback, new_scrollback)
-    |> Map.put(:scrollback_size, scrollback_size)
-  end
-
-  def add_to_scrollback(emulator, buffer) do
-    scrollback = [buffer | emulator.buffer.scrollback]
-    scrollback = Enum.take(scrollback, emulator.buffer.scrollback_size)
-    %{emulator | buffer: %{emulator.buffer | scrollback: scrollback}}
-  end
-
-  # Grouped get_scrollback/1 clauses - most specific to most general
-  def get_scrollback(%TestBufferManager{scrollback: sb}), do: sb
-
-  def get_scrollback(%Raxol.Terminal.Emulator{} = emulator),
-    do: emulator.scrollback_buffer
-
-  def get_scrollback(nil), do: []
-  def get_scrollback(%{scrollback: scrollback}), do: scrollback
-
-  def get_scrollback(emulator) when is_map(emulator),
-    do: Map.get(emulator, :scrollback, [])
-
-  def get_scrollback(emulator), do: emulator.buffer.scrollback
-
-  def set_scrollback_size(%Raxol.Terminal.Emulator{} = emulator, size)
-      when is_integer(size) and size >= 0 do
-    new_scrollback = Enum.take(emulator.scrollback_buffer, size)
-    %{emulator | scrollback_buffer: new_scrollback, scrollback_limit: size}
-  end
-
-  def set_scrollback_size(nil, size) when is_integer(size) and size >= 0,
-    do: %{scrollback: [], scrollback_size: size}
-
-  def set_scrollback_size(%{scrollback: scrollback} = emulator, size)
-      when is_integer(size) and size >= 0 do
-    new_scrollback = Enum.take(scrollback, size)
-    %{emulator | scrollback: new_scrollback, scrollback_size: size}
-  end
-
-  def set_scrollback_size(emulator, size)
-      when is_map(emulator) and is_integer(size) and size >= 0 do
-    scrollback = Map.get(emulator, :scrollback, []) |> Enum.take(size)
-
-    Map.put(emulator, :scrollback, scrollback)
-    |> Map.put(:scrollback_size, size)
-  end
-
-  # Grouped get_scrollback_size/1 clauses - most specific to most general
-  def get_scrollback_size(%TestBufferManager{scrollback_size: sz}), do: sz
-
-  def get_scrollback_size(%Raxol.Terminal.Emulator{} = emulator),
-    do: emulator.scrollback_limit
-
-  def get_scrollback_size(nil), do: 1000
-  def get_scrollback_size(%{scrollback_size: size}), do: size
-
-  def get_scrollback_size(emulator) when is_map(emulator),
-    do: Map.get(emulator, :scrollback_size, 1000)
-
-  def get_scrollback_size(emulator), do: emulator.buffer.scrollback_size
-
-  # Grouped clear_scrollback/1 clauses - most specific to most general
-  def clear_scrollback(%TestBufferManager{} = mgr), do: %{mgr | scrollback: []}
-
-  def clear_scrollback(%Raxol.Terminal.Emulator{} = emulator),
-    do: %{emulator | scrollback_buffer: []}
-
-  def clear_scrollback(nil), do: %{scrollback: []}
-
-  def clear_scrollback(%{scrollback: _} = emulator),
-    do: %{emulator | scrollback: []}
-
-  def clear_scrollback(emulator) when is_map(emulator),
-    do: Map.put(emulator, :scrollback, [])
-
-  def clear_scrollback(emulator),
-    do: %{emulator | buffer: %{emulator.buffer | scrollback: []}}
-
-  # Grouped get_active_buffer/1 clauses - most specific to most general
-  def get_active_buffer(%TestBufferManager{active: active}), do: active
-  def get_active_buffer(%{active: active}), do: active
-
-  def get_active_buffer(%Raxol.Terminal.Emulator{} = emulator) do
-    emulator.active
-  end
-
-  def get_active_buffer(pid) when is_pid(pid) or is_atom(pid),
-    do: GenServer.call(pid, :get_active_buffer)
-
-  # Grouped get_alternate_buffer/1 clauses - most specific to most general
-  def get_alternate_buffer(%TestBufferManager{alternate: alternate}),
-    do: alternate
-
-  def get_alternate_buffer(%{alternate: alternate}), do: alternate
-  def get_alternate_buffer(%__MODULE__{} = state), do: {:ok, state.back_buffer}
-
-  def get_alternate_buffer(%Raxol.Terminal.Emulator{} = emulator) do
-    emulator.alternate
-  end
-
-  def get_alternate_buffer(emulator) when is_map(emulator),
-    do: Map.get(emulator, :alternate, nil)
-
-  # Grouped switch_buffers/1 clauses - most specific to most general
-  def switch_buffers(%TestBufferManager{active: a, alternate: b} = mgr),
-    do: %{mgr | active: b, alternate: a}
-
-  def switch_buffers(%Raxol.Terminal.Emulator{} = emulator) do
-    %{emulator | active: emulator.alternate, alternate: emulator.active}
-  end
-
-  def switch_buffers(%{active: active, alternate: alternate} = emulator),
-    do: %{emulator | active: alternate, alternate: active}
-
-  # Grouped set_active_buffer/2 clauses - most specific to most general
-  def set_active_buffer(%TestBufferManager{} = mgr, buffer),
-    do: %{mgr | active: buffer}
-
-  def set_active_buffer(nil, buffer), do: new() |> set_active_buffer(buffer)
-
-  def set_active_buffer(%__MODULE__{} = manager, buffer),
-    do: %{manager | active_buffer: buffer}
-
-  def set_active_buffer(%Raxol.Terminal.Emulator{} = emulator, buffer) do
-    %{emulator | active: buffer}
-  end
-
-  def set_active_buffer(%{active: _} = emulator, buffer),
-    do: %{emulator | active: buffer}
-
-  def set_active_buffer(emulator, buffer) when is_map(emulator),
-    do: Map.put(emulator, :active, buffer)
-
-  # Grouped set_alternate_buffer/2 clauses - most specific to most general
-  def set_alternate_buffer(%TestBufferManager{} = mgr, buffer),
-    do: %{mgr | alternate: buffer}
-
-  def set_alternate_buffer(nil, buffer),
-    do: new() |> set_alternate_buffer(buffer)
-
-  def set_alternate_buffer(%__MODULE__{} = manager, buffer),
-    do: %{manager | back_buffer: buffer}
-
-  def set_alternate_buffer(%Raxol.Terminal.Emulator{} = emulator, buffer) do
-    %{emulator | alternate: buffer}
-  end
-
-  def set_alternate_buffer(%{alternate: _} = emulator, buffer),
-    do: %{emulator | alternate: buffer}
-
-  def set_alternate_buffer(emulator, buffer) when is_map(emulator),
-    do: Map.put(emulator, :alternate, buffer)
-
-  # Helper function to get the buffer manager PID
-  defp get_buffer_manager_pid do
-    if Mix.env() == :test do
-      find_buffer_manager_in_test()
-    else
-      __MODULE__
-    end
-  end
-
-  defp find_buffer_manager_in_test do
-    case GenServer.whereis(__MODULE__) do
-      nil -> find_buffer_manager_by_initial_call()
-      pid -> pid
-    end
-  end
-
-  defp find_buffer_manager_by_initial_call do
-    case Process.list() |> Enum.find(&buffer_manager_process?/1) do
-      nil -> raise "No buffer manager process found in test environment"
-      pid -> pid
-    end
-  end
-
-  defp buffer_manager_process?(pid) do
-    case Process.info(pid, :initial_call) do
-      {:initial_call, {__MODULE__, :init, 1}} -> true
-      _ -> false
-    end
-  end
-
-  defp calculate_buffer_memory(buffer) do
-    case buffer do
-      %Raxol.Terminal.Buffer.Manager.BufferImpl{} ->
-        calculate_buffer_impl_memory(buffer)
-
-      _ ->
-        calculate_fallback_memory(buffer)
-    end
-  end
-
-  defp calculate_buffer_impl_memory(buffer) do
-    case buffer.cells do
-      cells when is_map(cells) ->
-        calculate_map_memory(cells)
-
-      cells when is_list(cells) ->
-        calculate_list_memory(cells)
-
-      _ ->
-        calculate_fallback_memory(buffer)
-    end
-  end
-
-  defp calculate_map_memory(cells) do
-    memory = map_size(cells) * 64
-
-    IO.puts(
-      "DEBUG: Map-based cells, size: #{map_size(cells)}, memory: #{memory}"
-    )
-
-    memory
-  end
-
-  defp calculate_list_memory(cells) do
-    total_cells = Enum.reduce(cells, 0, fn row, acc -> acc + length(row) end)
-    memory = total_cells * 64
-
-    IO.puts(
-      "DEBUG: List-based cells, total_cells: #{total_cells}, memory: #{memory}"
-    )
-
-    memory
-  end
-
-  defp calculate_fallback_memory(buffer) do
-    memory = buffer.width * buffer.height * 8
-
-    IO.puts(
-      "DEBUG: Fallback calculation, width: #{buffer.width}, height: #{buffer.height}, memory: #{memory}"
-    )
-
-    memory
-  end
 end

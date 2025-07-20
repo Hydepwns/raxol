@@ -147,12 +147,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
         %{position: _} = cursor ->
           %{
             cursor
-            | position: {col_clamped, row_clamped}
+            | position: {row_clamped, col_clamped}
           }
         _ ->
           Raxol.Terminal.Cursor.Manager.set_position(
             emulator.cursor,
-            {col_clamped, row_clamped}
+            {row_clamped, col_clamped}
           )
           emulator.cursor
       end
@@ -163,8 +163,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
   @doc """
   Handles cursor position with parameter parsing.
   """
-  def handle_cursor_position(emulator, row, col) when is_integer(row) and is_integer(col) do
-    # Handle direct row/col parameters (3-argument version for tests)
+  def handle_cursor_position(emulator, col, row) when is_integer(col) and is_integer(row) do
+    # Handle direct col/row parameters (3-argument version for tests)
     # The test calls handle_cursor_position(emulator, 5, 15) expecting col=5, row=15
     # These are already 0-indexed coordinates, so use them directly
     case emulator.cursor do
@@ -183,7 +183,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
 
       _ ->
         # For PID-based cursors, use the standard handler
-        result = Cursor.handle_command(emulator, [row, col], ?H)
+        result = Cursor.handle_command(emulator, [col, row], ?H)
         case result do
           {:ok, updated_emulator} -> updated_emulator
           {:error, _, _} -> emulator
@@ -193,7 +193,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
   end
 
   def handle_cursor_position(emulator, params) do
-    {row, col} = parse_cursor_position_params(params)
+    # The CSI parser already provides {row, col} in the correct order
+    # params is already {row, col} from the CSI parser
+    {row, col} = case params do
+      {r, c} when is_integer(r) and is_integer(c) -> {r, c}
+      [r, c] when is_integer(r) and is_integer(c) -> {r, c}
+      [r] when is_integer(r) -> {r, 1}
+      [] -> {1, 1}
+      _ -> {1, 1}
+    end
 
     # Handle both PID-based and struct-based cursors
     case emulator.cursor do
@@ -211,7 +219,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
         result =
           Cursor.handle_command(
             emulator,
-            [row, col],
+            [col, row],
             ?H
           )
 
