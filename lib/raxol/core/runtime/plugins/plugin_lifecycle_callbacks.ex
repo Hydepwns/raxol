@@ -33,15 +33,50 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycleCallbacks do
   def load_plugin_by_module(
         module,
         metadata,
-        _config,
-        _states,
-        _command_table,
-        _plugin_manager,
-        _current_metadata,
-        _opts
+        config,
+        states,
+        command_table,
+        plugin_manager,
+        current_metadata,
+        opts
       ) do
     # Implementation for load_plugin_by_module callback
-    {:ok, {module, metadata}}
+    try do
+      # Initialize the plugin module
+      case module.init(config) do
+        {:ok, plugin_state} ->
+          # Extract plugin metadata from the state
+          plugin_id = Map.get(plugin_state, :name, "unknown_plugin")
+
+          # Update metadata with the new plugin
+          updated_metadata = Map.put(current_metadata, plugin_id, plugin_state)
+
+          # Update states with the new plugin state
+          updated_states = Map.put(states, plugin_id, plugin_state)
+
+          # Handle command table - ensure it's a map
+          updated_table =
+            case command_table do
+              table when is_map(table) -> table
+              table when is_atom(table) -> %{}  # Convert atom to empty map
+              _ -> %{}
+            end
+
+          # Also add the plugin to the plugins map (this is needed for enable_plugin to work)
+          # We need to get the current plugins map from the metadata
+          current_plugins = Map.get(current_metadata, :plugins, %{})
+          updated_plugins = Map.put(current_plugins, plugin_id, module)
+          updated_metadata_with_plugins = Map.put(updated_metadata, :plugins, updated_plugins)
+
+          {:ok, {updated_metadata_with_plugins, updated_states, updated_table}}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    rescue
+      e ->
+        {:error, {:plugin_init_failed, e}}
+    end
   end
 
   @doc """

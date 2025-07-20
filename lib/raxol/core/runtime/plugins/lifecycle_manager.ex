@@ -1,353 +1,387 @@
 defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @moduledoc """
-  Handles plugin lifecycle operations including enabling, disabling, and reloading plugins.
-  This module is responsible for:
-  - Enabling plugins
-  - Disabling plugins
-  - Reloading plugins
-  - Managing plugin states during lifecycle changes
+  Handles plugin lifecycle operations including loading, unloading, enabling, and disabling plugins.
   """
 
   require Raxol.Core.Runtime.Log
 
   @doc """
-  Enables a previously disabled plugin.
+  Loads a plugin with the given configuration.
   """
-  def enable_plugin(plugin_id, state) do
-    # Handle both atom-keyed and string-keyed state maps
-    case state do
-      %{plugins: plugins, plugin_states: plugin_states} = atom_state ->
-        # Check if plugin exists, if not create a mock entry
-        case Map.get(plugins, plugin_id) || Map.get(plugins, String.to_atom(plugin_id)) do
-          nil ->
-            # Plugin doesn't exist, create a mock entry
-            mock_plugin = %{name: plugin_id, enabled: true}
-            updated_plugins = Map.put(plugins, plugin_id, mock_plugin)
-            updated_plugin_states = Map.put(plugin_states, plugin_id, %{name: plugin_id, enabled: true})
+  def load_plugin(plugin_id, config, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Loading plugin: #{plugin_id}",
+      %{plugin_id: plugin_id, config: config}
+    )
 
-            {:ok, %{atom_state | plugins: updated_plugins, plugin_states: updated_plugin_states}}
-
-          _plugin ->
-            # Plugin exists, return as-is
-            {:ok, atom_state}
-        end
-
-      _ ->
-        # State has string keys or is a simple map, return a default state
-        {:ok,
-         %{
-           plugins: %{plugin_id => %{name: plugin_id, enabled: true}},
-           plugin_states: %{plugin_id => %{name: plugin_id, enabled: true}},
-           metadata: %{plugin_id => %{name: plugin_id, version: "1.0.0"}},
-           load_order: [plugin_id],
-           plugin_config: %{}
-         }}
-    end
-  end
-
-  @doc """
-  Disables a plugin temporarily without unloading it.
-  """
-  def disable_plugin(plugin_id, state) do
-    # Handle both atom-keyed and string-keyed state maps
-    case state do
-      %{plugins: plugins, plugin_states: plugin_states} = atom_state ->
-        # Check if plugin exists, if not create a mock entry
-        case Map.get(plugins, plugin_id) || Map.get(plugins, String.to_atom(plugin_id)) do
-          nil ->
-            # Plugin doesn't exist, create a mock entry
-            mock_plugin = %{name: plugin_id, enabled: false}
-            updated_plugins = Map.put(plugins, plugin_id, mock_plugin)
-            updated_plugin_states = Map.put(plugin_states, plugin_id, %{name: plugin_id, enabled: false})
-
-            {:ok, %{atom_state | plugins: updated_plugins, plugin_states: updated_plugin_states}}
-
-          _plugin ->
-            # Plugin exists, return as-is
-            {:ok, atom_state}
-        end
-
-      _ ->
-        # State has string keys or is a simple map, return a default state
-        {:ok,
-         %{
-           plugins: %{plugin_id => %{name: plugin_id, enabled: false}},
-           plugin_states: %{plugin_id => %{name: plugin_id, enabled: false}},
-           metadata: %{plugin_id => %{name: plugin_id, version: "1.0.0"}},
-           load_order: [plugin_id],
-           plugin_config: %{}
-         }}
-    end
-  end
-
-  @doc """
-  Reloads a plugin by unloading and then loading it again.
-  """
-  def reload_plugin(plugin_id, state) do
-    # Handle both string and atom keys in plugins map
-    plugin = Map.get(state.plugins, plugin_id) || Map.get(state.plugins, String.to_atom(plugin_id))
-
-    case plugin do
-      nil ->
-        {:error, :plugin_not_found}
-
-      _plugin ->
-        Raxol.Core.Runtime.Log.info_with_context(
-          "[#{__MODULE__}] Reloading plugin: #{plugin_id}",
-          %{}
+    case Raxol.Core.Runtime.Plugins.Discovery.load_plugin(
+           plugin_id,
+           config,
+           plugins,
+           metadata,
+           plugin_states,
+           load_order,
+           command_registry_table,
+           plugin_config
+         ) do
+      {:ok, updated_maps} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully loaded plugin: #{plugin_id}",
+          %{plugin_id: plugin_id}
         )
+        {:ok, updated_maps}
 
-        do_reload_plugin(plugin_id, state)
-    end
-  end
-
-  defp do_reload_plugin(plugin_id, state) do
-    with {:ok, state_after_disable} <- disable_plugin(plugin_id, state),
-         {:ok, state_after_enable} <-
-           enable_plugin(plugin_id, state_after_disable) do
-      {:ok, state_after_enable}
-    else
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Error during plugin reload",
+          "[#{__MODULE__}] Failed to load plugin: #{plugin_id}",
           reason,
           nil,
-          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+          %{plugin_id: plugin_id, reason: reason}
         )
-
         {:error, reason}
     end
   end
 
   @doc """
-  Loads a plugin with the given configuration.
+  Loads a plugin by module.
   """
-  def load_plugin(plugin_id, config, state) do
-    log_plugin_loading(plugin_id)
-    load_and_initialize_plugin(plugin_id, config, state)
-  end
-
-  @doc """
-  Loads a plugin with the full signature expected by the manager.
-  This function handles mock plugins and delegates to the standard load_plugin/3.
-  """
-  def load_plugin(
-        plugin_id,
-        config,
-        plugins,
-        metadata,
-        plugin_states,
-        load_order,
-        command_table,
-        plugin_config
-      ) do
-    # Always return a state with atom keys, even for unknown plugin_ids
-    case plugin_id do
-      "mock_on_init_crash_plugin" ->
-        {:error, :init_crash}
-
-      "mock_on_terminate_crash_plugin" ->
-        # For terminate crash plugin, we load it but it will crash on terminate
-        mock_state = %{
-          plugins:
-            Map.put(plugins, plugin_id, Raxol.Test.MockPlugins.MockCrashyPlugin),
-          metadata:
-            Map.put(metadata, plugin_id, %{name: plugin_id, version: "1.0.0"}),
-          plugin_states: Map.put(plugin_states, plugin_id, %{name: plugin_id}),
-          load_order: [plugin_id | load_order],
-          plugin_config: plugin_config
-        }
-
-        {:ok, mock_state}
-
-      _ ->
-        # For any plugin, always return a state with atom keys
-        mock_state = %{
-          plugins: Map.put(plugins, plugin_id, %{name: plugin_id}),
-          metadata:
-            Map.put(metadata, plugin_id, %{name: plugin_id, version: "1.0.0"}),
-          plugin_states: Map.put(plugin_states, plugin_id, %{name: plugin_id}),
-          load_order: [plugin_id | load_order],
-          plugin_config: plugin_config
-        }
-
-        {:ok, mock_state}
-    end
-  end
-
-  @doc """
-  Loads a plugin with default configuration.
-  This is a convenience function for the Manager.
-  """
-  def load_plugin("mock_on_init_crash_plugin"), do: {:error, :init_crash}
-  def load_plugin(_plugin_id), do: :ok
-
-  defp log_plugin_loading(plugin_id) do
-    Raxol.Core.Runtime.Log.info_with_context(
-      "[#{__MODULE__}] Loading plugin: #{plugin_id}",
-      %{}
+  def load_plugin_by_module(module, config, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Loading plugin module: #{inspect(module)}",
+      %{module: module, config: config}
     )
-  end
 
-  defp load_and_initialize_plugin(plugin_id, config, state) do
-    case state.loader_module.load_plugin(plugin_id, config) do
-      {:ok, plugin, metadata} ->
-        initialize_and_update_state(plugin_id, plugin, metadata, config, state)
+    # Ensure plugin_states and command_registry_table are maps
+    safe_plugin_states =
+      case plugin_states do
+        states when is_map(states) -> states
+        _ -> %{}
+      end
 
-      {:error, reason} ->
-        handle_load_error(reason, plugin_id)
-    end
-  end
+    safe_command_registry_table =
+      case command_registry_table do
+        table when is_map(table) -> table
+        _ -> %{}
+      end
 
-  defp initialize_and_update_state(plugin_id, plugin, metadata, config, state) do
-    case state.lifecycle_helper_module.initialize_plugin(plugin, config) do
-      {:ok, initial_state} ->
-        {:ok,
-         update_state_with_plugin(
-           state,
-           plugin_id,
-           plugin,
+    case Raxol.Core.Runtime.Plugins.Discovery.load_plugin_by_module(
+           module,
+           config,
+           plugins,
            metadata,
-           initial_state
-         )}
+           safe_plugin_states,
+           load_order,
+           safe_command_registry_table,
+           plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully loaded plugin module: #{inspect(module)}",
+          %{module: module}
+        )
+        {:ok, {updated_metadata, updated_states, updated_table}}
 
       {:error, reason} ->
-        handle_load_error(reason, plugin_id)
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to load plugin module: #{inspect(module)}",
+          reason,
+          nil,
+          %{module: module, reason: reason}
+        )
+        {:error, reason}
     end
   end
 
-  defp update_state_with_plugin(
-         state,
-         plugin_id,
-         plugin,
-         metadata,
-         initial_state
-       ) do
-    %{
-      state
-      | plugins: Map.put(state.plugins, plugin_id, plugin),
-        metadata: Map.put(state.metadata, plugin_id, metadata),
-        plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
-        load_order: [plugin_id | state.load_order]
-    }
-  end
-
-  defp handle_load_error(reason, plugin_id) do
-    Raxol.Core.Runtime.Log.error_with_stacktrace(
-      "[#{__MODULE__}] Error loading plugin",
-      reason,
-      nil,
-      %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+  @doc """
+  Unloads a plugin.
+  """
+  def unload_plugin(plugin_id, plugins, metadata, plugin_states, command_registry_table, plugin_config) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Unloading plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
     )
 
-    {:error, reason}
+    case Raxol.Core.Runtime.Plugins.Discovery.unload_plugin(
+           plugin_id,
+           plugins,
+           metadata,
+           plugin_states,
+           command_registry_table,
+           plugin_config
+         ) do
+      :ok ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully unloaded plugin: #{plugin_id}",
+          %{plugin_id: plugin_id}
+        )
+        :ok
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to unload plugin: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, reason: reason}
+        )
+        {:error, reason}
+    end
   end
 
   @doc """
-  Initialize all plugins in the system.
-  This function is called during system startup to initialize all loaded plugins.
+  Initializes a plugin with the given configuration.
   """
-  def initialize_plugins(
-        plugins,
-        metadata,
-        plugin_config,
-        plugin_states,
-        load_order,
-        command_registry_table,
-        _opts
-      ) do
-    Raxol.Core.Runtime.Log.info_with_context(
-      "[#{__MODULE__}] Initializing #{map_size(plugins)} plugins",
+  def initialize_plugin(plugin_name, config, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Initializing plugin: #{plugin_name}",
+      %{plugin_name: plugin_name, config: config}
+    )
+
+    case Raxol.Core.Runtime.Plugins.Discovery.initialize_plugin(
+           plugin_name,
+           config,
+           plugins,
+           metadata,
+           plugin_states,
+           load_order,
+           command_registry_table,
+           plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully initialized plugin: #{plugin_name}",
+          %{plugin_name: plugin_name}
+        )
+        {:ok, {updated_metadata, updated_states, updated_table}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to initialize plugin: #{plugin_name}",
+          reason,
+          nil,
+          %{plugin_name: plugin_name, reason: reason}
+        )
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Initializes all plugins.
+  """
+  def initialize_plugins(plugins, metadata, plugin_config, plugin_states, load_order, command_registry_table, config) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Initializing all plugins",
       %{plugin_count: map_size(plugins)}
     )
 
-    # For now, return the existing state as-is
-    # This is a minimal implementation to prevent the undefined function error
-    {:ok, {metadata, plugin_states, command_registry_table}}
-  end
+    case Raxol.Core.Runtime.Plugins.Discovery.initialize_plugins(
+           plugins,
+           metadata,
+           plugin_config,
+           plugin_states,
+           load_order,
+           command_registry_table,
+           config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully initialized all plugins",
+          %{plugin_count: map_size(plugins)}
+        )
+        {:ok, {updated_metadata, updated_states, updated_table}}
 
-  def enable_plugin(_plugin_id, state) do
-    # Handle both atom-keyed and string-keyed state maps
-    case state do
-      %{plugins: _plugins, plugin_states: _plugin_states} = atom_state ->
-        # State has atom keys, return as-is
-        {:ok, atom_state}
-
-      _ ->
-        # State has string keys or is a simple map, return a default state
-        {:ok,
-         %{
-           plugins: %{},
-           plugin_states: %{},
-           metadata: %{},
-           load_order: [],
-           plugin_config: %{}
-         }}
-    end
-  end
-
-  def disable_plugin(_plugin_id, state) do
-    # Handle both atom-keyed and string-keyed state maps
-    case state do
-      %{plugins: _plugins, plugin_states: _plugin_states} = atom_state ->
-        # State has atom keys, return as-is
-        {:ok, atom_state}
-
-      _ ->
-        # State has string keys or is a simple map, return a default state
-        {:ok,
-         %{
-           plugins: %{},
-           plugin_states: %{},
-           metadata: %{},
-           load_order: [],
-           plugin_config: %{}
-         }}
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to initialize plugins",
+          reason,
+          nil,
+          %{reason: reason}
+        )
+        {:error, reason}
     end
   end
 
   @doc """
-  Reload a plugin by unloading and then loading it again.
+  Enables a plugin.
   """
-  def reload_plugin(
-        plugin_id,
-        plugins,
-        metadata,
-        plugin_states,
-        load_order,
-        command_table,
-        plugin_config
-      ) do
-    case plugin_id do
-      "mock_on_terminate_crash_plugin" ->
-        # This plugin should crash on reload
-        {:error, :terminate_crash}
+  def enable_plugin(plugin_id, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Enabling plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
 
-      _ ->
-        # For regular plugins, just return success
-        {:ok, {metadata, plugin_states, command_table}}
+    case Raxol.Core.Runtime.Plugins.Discovery.enable_plugin(plugin_id, state) do
+      {:ok, updated_state} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully enabled plugin: #{plugin_id}",
+          %{plugin_id: plugin_id}
+        )
+        {:ok, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to enable plugin: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, reason: reason}
+        )
+        {:error, reason}
     end
   end
 
   @doc """
-  Unload a plugin from the system.
+  Disables a plugin.
   """
-  def unload_plugin(
-        plugin_id,
-        plugins,
-        metadata,
-        plugin_states,
-        command_table,
-        plugin_config
-      ) do
-    case plugin_id do
-      "mock_on_terminate_crash_plugin" ->
-        # This plugin should crash on unload
-        {:error, :terminate_crash}
+  def disable_plugin(plugin_id, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Disabling plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
 
-      _ ->
-        # For regular plugins, just return success
-        :ok
+    case Raxol.Core.Runtime.Plugins.Discovery.disable_plugin(plugin_id, state) do
+      {:ok, updated_state} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully disabled plugin: #{plugin_id}",
+          %{plugin_id: plugin_id}
+        )
+        {:ok, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to disable plugin: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, reason: reason}
+        )
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Reloads a plugin.
+  """
+  def reload_plugin(plugin_id, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Reloading plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
+
+    case Raxol.Core.Runtime.Plugins.Discovery.reload_plugin(plugin_id, state) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully reloaded plugin: #{plugin_id}",
+          %{plugin_id: plugin_id}
+        )
+        {:ok, {updated_metadata, updated_states, updated_table}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to reload plugin: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, reason: reason}
+        )
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Reloads a plugin from disk.
+  """
+  def reload_plugin_from_disk(plugin_id, path, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Reloading plugin from disk: #{plugin_id}",
+      %{plugin_id: plugin_id, path: path}
+    )
+
+    case Raxol.Core.Runtime.Plugins.Discovery.reload_plugin_from_disk(
+           plugin_id,
+           path,
+           plugins,
+           metadata,
+           plugin_states,
+           load_order,
+           command_registry_table,
+           plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully reloaded plugin from disk: #{plugin_id}",
+          %{plugin_id: plugin_id, path: path}
+        )
+        {:ok, {updated_metadata, updated_states, updated_table}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to reload plugin from disk: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, path: path, reason: reason}
+        )
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Cleans up a plugin.
+  """
+  def cleanup_plugin(plugin_id, metadata) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Cleaning up plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
+
+    case Raxol.Core.Runtime.Plugins.Discovery.cleanup_plugin(plugin_id, metadata) do
+      {:ok, updated_metadata} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully cleaned up plugin: #{plugin_id}",
+          %{plugin_id: plugin_id}
+        )
+        {:ok, updated_metadata}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to cleanup plugin: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, reason: reason}
+        )
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Handles an event.
+  """
+  def handle_event(event, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Handling event: #{inspect(event)}",
+      %{event: event}
+    )
+
+    case Raxol.Core.Runtime.Plugins.Discovery.handle_event(
+           event,
+           plugins,
+           metadata,
+           plugin_states,
+           load_order,
+           command_registry_table,
+           plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully handled event: #{inspect(event)}",
+          %{event: event}
+        )
+        {:ok, {updated_metadata, updated_states, updated_table}}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to handle event: #{inspect(event)}",
+          reason,
+          nil,
+          %{event: event, reason: reason}
+        )
+        {:error, reason}
     end
   end
 end

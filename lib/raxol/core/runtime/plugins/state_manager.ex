@@ -1,96 +1,122 @@
 defmodule Raxol.Core.Runtime.Plugins.StateManager do
   @moduledoc """
-  Manages plugin state and state transitions.
+  Handles plugin state management operations including getting, setting, and updating plugin states.
   """
-
-  @behaviour Raxol.Core.Runtime.Plugins.StateManager.Behaviour
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.Runtime.Plugins.State
 
-  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
-  def update_state_maps(
-        plugin_id,
-        plugin_module,
-        plugin_metadata,
-        plugin_state,
-        config,
-        state_maps
-      ) do
-    %{
-      plugins: Map.put(state_maps.plugins, plugin_id, plugin_module),
-      metadata: Map.put(state_maps.metadata, plugin_id, plugin_metadata),
-      plugin_states: Map.put(state_maps.plugin_states, plugin_id, plugin_state),
-      load_order: [plugin_id | state_maps.load_order],
-      plugin_config: Map.put(state_maps.plugin_config, plugin_id, config)
-    }
-  end
+  @doc """
+  Sets a plugin's state directly.
+  """
+  def set_plugin_state(plugin_id, new_state, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Setting state for plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
 
-  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
-  def remove_plugin(plugin_id, state_maps) do
-    %{
-      plugins: Map.delete(state_maps.plugins, plugin_id),
-      metadata: Map.delete(state_maps.metadata, plugin_id),
-      plugin_states: Map.delete(state_maps.plugin_states, plugin_id),
-      load_order: Enum.reject(state_maps.load_order, &(&1 == plugin_id)),
-      plugin_config: Map.delete(state_maps.plugin_config, plugin_id)
-    }
-  end
-
-  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
-  def update_plugin_state(plugin_id, new_state, state_maps) do
-    %{
-      state_maps
-      | plugin_states: Map.put(state_maps.plugin_states, plugin_id, new_state)
-    }
-  end
-
-  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
-  def get_plugin_state(plugin_id, state_maps) do
-    Map.get(state_maps.plugin_states, plugin_id)
-  end
-
-  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
-  def get_plugin_module(plugin_id, state_maps) do
-    Map.get(state_maps.plugins, plugin_id)
-  end
-
-  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
-  def get_plugin_metadata(plugin_id, state_maps) do
-    Map.get(state_maps.metadata, plugin_id)
-  end
-
-  @impl Raxol.Core.Runtime.Plugins.StateManager.Behaviour
-  def get_plugin_config(plugin_id, state_maps) do
-    Map.get(state_maps.plugin_config, plugin_id)
+    updated_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
+    %{state | plugin_states: updated_plugin_states}
   end
 
   @doc """
-  Returns a new default plugin manager state struct.
+  Updates a plugin's state using a function.
   """
-  def new do
-    %State{
-      plugins: %{},
-      metadata: %{},
-      plugin_states: %{},
-      load_order: [],
-      command_registry_table: %{},
-      plugin_config: %{},
-      initialized: false,
-      plugins_dir: "priv/plugins"
+  def update_plugin_state(plugin_id, update_fun, state) when is_function(update_fun, 1) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Updating state for plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
+
+    current_state = Map.get(state.plugin_states, plugin_id, %{})
+    updated_state = update_fun.(current_state)
+    updated_plugin_states = Map.put(state.plugin_states, plugin_id, updated_state)
+    %{state | plugin_states: updated_plugin_states}
+  end
+
+  @doc """
+  Gets a plugin's current state.
+  """
+  def get_plugin_state(plugin_id, state) do
+    case Map.get(state.plugin_states, plugin_id) do
+      nil -> {:error, :plugin_not_found}
+      plugin_state -> {:ok, plugin_state}
+    end
+  end
+
+  @doc """
+  Gets a plugin's configuration.
+  """
+  def get_plugin_config(plugin_name, state) do
+    case Map.get(state.plugin_config, plugin_name) do
+      nil -> {:error, :plugin_not_found}
+      config -> {:ok, config}
+    end
+  end
+
+  @doc """
+  Updates a plugin's configuration.
+  """
+  def update_plugin_config(plugin_name, config, state) do
+    case validate_plugin_config_static(plugin_name, config) do
+      :ok ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Updating config for plugin: #{plugin_name}",
+          %{plugin_name: plugin_name}
+        )
+
+        updated_plugin_config = Map.put(state.plugin_config, plugin_name, config)
+        %{state | plugin_config: updated_plugin_config}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to update config for plugin: #{plugin_name}",
+          reason,
+          nil,
+          %{plugin_name: plugin_name, reason: reason}
+        )
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Validates a plugin's configuration.
+  """
+  def validate_plugin_config(plugin_name, config) do
+    case validate_plugin_config_static(plugin_name, config) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Updates plugin state with new metadata, states, and table.
+  """
+  def update_plugin_state(state, updated_metadata, updated_states, updated_table) do
+    %{
+      state
+      | metadata: updated_metadata,
+        plugin_states: updated_states,
+        command_registry_table: updated_table
     }
   end
 
-  @doc """
-  Sets the state for a given plugin.
-  Alias for update_plugin_state/3.
-  """
-  def set_plugin_state(plugin_id, new_state, state_maps) do
-    update_plugin_state(plugin_id, new_state, state_maps)
+  # Helper function to validate plugin configuration
+  defp validate_plugin_config_static(_plugin_name, config) when is_map(config) do
+    # Basic validation - ensure config is a map and has required fields
+    case config do
+      %{enabled: enabled} when is_boolean(enabled) ->
+        :ok
+
+      %{} ->
+        # Config is valid if it's a map, even without required fields
+        :ok
+
+      _ ->
+        {:error, :invalid_config_format}
+    end
   end
 
-  @doc """
-  Initializes the plugin state. Returns {:ok, state}.
-  """
-  def initialize(state), do: {:ok, state}
+  defp validate_plugin_config_static(_plugin_name, _config) do
+    {:error, :invalid_config_format}
+  end
 end

@@ -1,98 +1,86 @@
 defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   @moduledoc """
-  Manages timers and scheduling for plugin operations.
+  Handles timer management for plugin operations including periodic ticks and file event timers.
   """
 
   require Raxol.Core.Runtime.Log
-  require Logger
 
-  # 1 second
-  @debounce_timeout 1000
-
-  def schedule_reload(plugin_id, path, state) do
-    # Cancel any existing timer
-    state = cancel_existing_timer(state)
-
-    # Schedule new reload
-    timer_id = System.unique_integer([:positive])
-
-    Process.send_after(
-      self(),
-      {:reload_plugin_file_debounced, plugin_id, path},
-      @debounce_timeout
-    )
-
-    {:ok, %{state | file_event_timer: timer_id}}
-  end
-
+  @doc """
+  Cancels an existing timer.
+  """
   def cancel_existing_timer(state) do
-    if Map.get(state, :file_event_timer) do
-      Process.cancel_timer(Map.get(state, :file_event_timer))
-    end
+    case state.file_event_timer do
+      nil ->
+        state
 
-    Map.put(state, :file_event_timer, nil)
-  end
-
-  def schedule_periodic_tick(state, interval \\ 5000) do
-    if Map.get(state, :tick_timer) do
-      Process.cancel_timer(Map.get(state, :tick_timer))
-    end
-
-    timer_id = System.unique_integer([:positive])
-    Process.send_after(self(), {:tick, timer_id}, interval)
-    %{state | tick_timer: timer_id}
-  end
-
-  def cancel_periodic_tick(state) when is_map(state) do
-    require Logger
-
-    Logger.debug(
-      "[TimerManager] cancel_periodic_tick called with state type: #{inspect(typeof(state))}"
-    )
-
-    case Map.fetch(state, :tick_timer) do
-      {:ok, tick_timer} when not is_nil(tick_timer) ->
-        Process.cancel_timer(tick_timer)
-        Map.put(state, :tick_timer, nil)
-
-      {:ok, _} ->
-        Map.put(state, :tick_timer, nil)
-
-      :error ->
-        Logger.warning(
-          "[TimerManager] :tick_timer key missing in state: #{inspect(state)}"
+      timer_ref when is_reference(timer_ref) ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Cancelling existing file event timer",
+          %{timer_ref: timer_ref}
         )
 
-        Map.put(state, :tick_timer, nil)
+        Process.cancel_timer(timer_ref)
+        %{state | file_event_timer: nil}
+
+      _ ->
+        state
     end
   end
 
+  @doc """
+  Cancels a periodic tick timer.
+  """
   def cancel_periodic_tick(state) do
-    require Logger
+    case state.tick_timer do
+      nil ->
+        {:ok, state}
 
-    Logger.warning(
-      "[TimerManager] cancel_periodic_tick called with non-map state: #{inspect(state)}"
+      timer_ref when is_reference(timer_ref) ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Cancelling periodic tick timer",
+          %{timer_ref: timer_ref}
+        )
+
+        Process.cancel_timer(timer_ref)
+        {:ok, %{state | tick_timer: nil}}
+
+      _ ->
+        {:ok, state}
+    end
+  end
+
+  @doc """
+  Starts a periodic tick timer.
+  """
+  def start_periodic_tick(state, interval \\ 5000) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Starting periodic tick timer",
+      %{interval: interval}
     )
 
-    # Return a default state or the original state if it's not a map
-    if is_map(state) do
-      Map.put(state, :tick_timer, nil)
-    else
-      %{tick_timer: nil}
-    end
+    timer_ref = Process.send_after(self(), :tick, interval)
+    %{state | tick_timer: timer_ref}
   end
 
-  defp typeof(value) when is_map(value), do: "map"
-  defp typeof(value) when is_list(value), do: "list"
-  defp typeof(value) when is_tuple(value), do: "tuple"
-  defp typeof(value) when is_atom(value), do: "atom"
-  defp typeof(value) when is_integer(value), do: "integer"
-  defp typeof(value) when is_float(value), do: "float"
-  defp typeof(value) when is_binary(value), do: "binary"
-  defp typeof(value) when is_boolean(value), do: "boolean"
-  defp typeof(value) when is_function(value), do: "function"
-  defp typeof(value) when is_pid(value), do: "pid"
-  defp typeof(value) when is_reference(value), do: "reference"
-  defp typeof(value) when is_port(value), do: "port"
-  defp typeof(_value), do: "unknown"
+  @doc """
+  Schedules a file event timer.
+  """
+  def schedule_file_event_timer(state, plugin_id, path, interval \\ 1000) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Scheduling file event timer",
+      %{plugin_id: plugin_id, path: path, interval: interval}
+    )
+
+    # Cancel existing timer first
+    new_state = cancel_existing_timer(state)
+
+    # Schedule new timer
+    timer_ref = Process.send_after(
+      self(),
+      {:reload_plugin_file_debounced, plugin_id, path},
+      interval
+    )
+
+    %{new_state | file_event_timer: timer_ref}
+  end
 end

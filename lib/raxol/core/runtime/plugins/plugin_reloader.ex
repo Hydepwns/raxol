@@ -1,118 +1,44 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   @moduledoc """
-  Handles reloading of plugins from disk.
+  Handles plugin reloading operations including reloading by ID and from disk.
   """
-
-  alias Raxol.Core.Runtime.Plugins.PluginCommandManager
 
   require Raxol.Core.Runtime.Log
 
   @doc """
-  Reloads a plugin from disk.
-  """
-  def reload_plugin_from_disk(
-        plugin_id,
-        plugin_module,
-        plugin_path,
-        plugin_state,
-        command_table,
-        metadata,
-        _plugin_manager,
-        _opts
-      ) do
-    try do
-      with :ok <- reload_module(plugin_module),
-           {:ok, updated_state} <-
-             initialize_plugin_state(plugin_module, plugin_state),
-           {:ok, updated_table} <-
-             PluginCommandManager.update_command_table(
-               command_table,
-               plugin_module,
-               updated_state
-             ) do
-        {:ok, updated_state, updated_table,
-         update_metadata(metadata, plugin_id, plugin_path, updated_state)}
-      else
-        {:error, reason} -> handle_reload_error(reason, plugin_id)
-      end
-    rescue
-      e -> handle_reload_exception(e, plugin_id)
-    end
-  end
-
-  @doc """
-  Reloads a module from disk.
-  """
-  def reload_module(plugin_module) do
-    with :ok <- :code.purge(plugin_module),
-         {:module, ^plugin_module} <- :code.load_file(plugin_module) do
-      :ok
-    end
-  end
-
-  @doc """
-  Initializes plugin state.
-  """
-  def initialize_plugin_state(plugin_module, config) do
-    plugin_module.init(config)
-  end
-
-  @doc """
-  Updates metadata for a reloaded plugin.
-  """
-  def update_metadata(metadata, plugin_id, plugin_path, updated_state) do
-    Map.put(metadata, plugin_id, %{
-      path: plugin_path,
-      state: updated_state,
-      last_reload: System.system_time()
-    })
-  end
-
-  @doc """
-  Handles reload errors.
-  """
-  def handle_reload_error(reason, plugin_id) do
-    Raxol.Core.Runtime.Log.error_with_stacktrace(
-      "Failed to reload plugin",
-      reason,
-      nil,
-      %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
-    )
-
-    {:error, :reload_failed}
-  end
-
-  @doc """
-  Handles reload exceptions.
-  """
-  def handle_reload_exception(e, plugin_id) do
-    Raxol.Core.Runtime.Log.error(
-      "Failed to reload plugin (exception)",
-      %{module: __MODULE__, plugin_id: plugin_id, error: inspect(e)}
-    )
-
-    {:error, :reload_failed}
-  end
-
-  @doc """
-  Reloads a plugin by its ID.
+  Reloads a plugin by ID.
   """
   def reload_plugin_by_id(plugin_id_string, state) do
-    # This is a simplified implementation
-    # In a real implementation, this would reload the plugin from disk
-    case Map.get(state.plugin_states, plugin_id_string) do
-      nil ->
-        {:error, :plugin_not_found, state}
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Reloading plugin by ID: #{plugin_id_string}",
+      %{plugin_id_string: plugin_id_string}
+    )
 
-      plugin_state ->
-        # Simulate successful reload
-        updated_state = %{
-          state
-          | plugin_states:
-              Map.put(state.plugin_states, plugin_id_string, plugin_state)
-        }
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.reload_plugin(plugin_id_string, state) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
+          state,
+          updated_metadata,
+          updated_states,
+          updated_table
+        )
+
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully reloaded plugin by ID: #{plugin_id_string}",
+          %{plugin_id_string: plugin_id_string}
+        )
 
         {:ok, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to reload plugin by ID: #{plugin_id_string}",
+          reason,
+          nil,
+          %{plugin_id_string: plugin_id_string, reason: reason}
+        )
+
+        {:error, reason, state}
     end
   end
 
@@ -120,20 +46,36 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   Reloads a plugin.
   """
   def reload_plugin(plugin_id, state) do
-    # This is a simplified implementation
-    # In a real implementation, this would reload the plugin from disk
-    case Map.get(state.plugin_states, plugin_id) do
-      nil ->
-        {:error, :plugin_not_found, state}
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Reloading plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
 
-      plugin_state ->
-        # Simulate successful reload
-        updated_state = %{
-          state
-          | plugin_states: Map.put(state.plugin_states, plugin_id, plugin_state)
-        }
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.reload_plugin(plugin_id, state) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
+          state,
+          updated_metadata,
+          updated_states,
+          updated_table
+        )
+
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] Successfully reloaded plugin: #{plugin_id}",
+          %{plugin_id: plugin_id}
+        )
 
         {:ok, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to reload plugin: #{plugin_id}",
+          reason,
+          nil,
+          %{plugin_id: plugin_id, reason: reason}
+        )
+
+        {:error, reason, state}
     end
   end
 end
