@@ -70,6 +70,15 @@ defmodule Raxol.Animation.StateManager do
   end
 
   @doc """
+  Retrieves a specific active animation instance for a given element and animation name.
+  """
+  def get_active_animation(element_id, animation_name) do
+    active_animations = get_active_animations()
+    element_animations = Map.get(active_animations, element_id, %{})
+    Map.get(element_animations, animation_name)
+  end
+
+  @doc """
   Removes a completed or stopped animation instance for a specific element.
   """
   def remove_active_animation(element_id, animation_name) do

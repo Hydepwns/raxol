@@ -7,12 +7,32 @@ defmodule Raxol.UI.RendererTestHelper do
 
   alias Raxol.UI.Theming.Theme
 
-  def create_test_theme(name, colors, styles, fonts) do
+  def create_test_theme(name, arg2, arg3, arg4) do
+    {colors, styles, fonts} =
+      cond do
+        is_binary(arg2) and is_binary(arg3) and is_map(arg4) ->
+          # Called as (name, desc, desc, colors)
+          {Map.merge(%{foreground: :white, background: :black}, arg4), %{}, %{}}
+        is_map(arg2) and is_map(arg3) and (is_map(arg4) or is_nil(arg4)) ->
+          # Called as (name, colors, styles, fonts)
+          {Map.merge(%{foreground: :white, background: :black}, arg2), arg3, arg4 || %{}}
+        true ->
+          # Fallback: treat arg2 as colors if it's a map
+          {Map.merge(%{foreground: :white, background: :black}, if(is_map(arg2), do: arg2, else: %{})),
+           if(is_map(arg3), do: arg3, else: %{}),
+           if(is_map(arg4), do: arg4, else: %{})}
+      end
+
     %Raxol.UI.Theming.Theme{
+      id: :test_theme,
       name: name,
       colors: colors,
       component_styles: styles,
-      fonts: fonts
+      styles: styles,
+      fonts: fonts,
+      variants: %{},
+      metadata: %{},
+      ui_mappings: %{}
     }
   end
 
@@ -69,12 +89,8 @@ defmodule Raxol.UI.RendererTestHelper do
         :white
 
       _ ->
-        # Try to get the color from the default theme
-        case Raxol.Core.ColorSystem.get(:default, color) do
-          # Return the atom if not found
-          nil -> color
-          color_struct -> color_struct
-        end
+        # Return the atom as-is for test expectations
+        color
     end
   end
 

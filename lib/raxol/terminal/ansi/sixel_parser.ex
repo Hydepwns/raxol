@@ -54,16 +54,16 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
         {:ok, state}
 
       <<"\eP", rest::binary>> ->
-        handle_dcs_start(rest, %{state | palette: Map.new(state.palette)})
+        handle_dcs_start(rest, state)
 
       <<"\e\\", _rest::binary>> ->
         {:ok, state}
 
       <<" ", rest::binary>> ->
-        parse(rest, %{state | palette: Map.new(state.palette)})
+        parse(rest, state)
 
       _ ->
-        handle_command(data, %{state | palette: Map.new(state.palette)})
+        handle_command(data, state)
     end
   end
 
@@ -77,28 +77,22 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   defp handle_command(data, state) do
     case data do
       <<"\"", rest::binary>> ->
-        handle_raster_attributes(rest, %{
-          state
-          | palette: Map.new(state.palette)
-        })
+        handle_raster_attributes(rest, state)
 
       <<"#", rest::binary>> ->
-        handle_color_definition(rest, %{state | palette: Map.new(state.palette)})
+        handle_color_definition(rest, state)
 
       <<"!", rest::binary>> ->
-        handle_repeat_command(rest, %{state | palette: Map.new(state.palette)})
+        handle_repeat_command(rest, state)
 
       <<"$", rest::binary>> ->
-        handle_carriage_return(rest, %{state | palette: Map.new(state.palette)})
+        handle_carriage_return(rest, state)
 
       <<"-", rest::binary>> ->
-        handle_new_line(rest, %{state | palette: Map.new(state.palette)})
+        handle_new_line(rest, state)
 
       <<char_byte, remaining_data::binary>> ->
-        handle_data_character(char_byte, remaining_data, %{
-          state
-          | palette: Map.new(state.palette)
-        })
+        handle_data_character(char_byte, remaining_data, state)
     end
   end
 
@@ -260,8 +254,12 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
       "SixelParser: [handle_data_character] BEFORE pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
     )
 
+    Logger.debug("SixelParser: Processing character byte: #{char_byte} ('#{<<char_byte>>}')")
+
     case SixelPatternMap.get_pattern(char_byte) do
       pattern_int when integer?(pattern_int) ->
+        Logger.debug("SixelParser: Got pattern #{pattern_int} for character #{char_byte}")
+
         {final_buffer, final_x, final_max_x} =
           generate_repeated_pixels(
             pattern_int,
@@ -273,6 +271,9 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             state.max_x
           )
 
+        Logger.debug("SixelParser: Generated pixels, buffer size: #{map_size(final_buffer)}")
+        Logger.debug("SixelParser: Final buffer: #{inspect(final_buffer)}")
+
         Logger.debug(
           "SixelParser: [handle_data_character] AFTER pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
         )
@@ -283,18 +284,18 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             repeat_count: 1,
             pixel_buffer: final_buffer,
             max_x: final_max_x,
-            max_y: max(state.max_y, state.y + 5),
-            palette: Map.new(state.palette)
+            max_y: max(state.max_y, state.y + 5)
         })
 
       nil ->
+        Logger.debug("SixelParser: No pattern found for character #{char_byte}")
         case remaining_data do
           <<"\e\\", _::binary>> ->
-            parse(remaining_data, %{state | palette: Map.new(state.palette)})
+            parse(remaining_data, state)
 
           _ ->
             if String.contains?(remaining_data, "\e\\") do
-              parse(remaining_data, %{state | palette: Map.new(state.palette)})
+              parse(remaining_data, state)
             else
               {:error, :missing_st}
             end

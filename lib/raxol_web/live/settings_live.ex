@@ -178,7 +178,7 @@ defmodule RaxolWeb.SettingsLive do
           end)
 
           {:noreply,
-           push_redirect(
+           push_navigate(
              socket |> put_flash(:info, "Profile updated successfully."),
              to: "/settings"
            )}
