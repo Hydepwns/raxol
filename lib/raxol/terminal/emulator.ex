@@ -601,46 +601,69 @@ defmodule Raxol.Terminal.Emulator do
   def process_input(emulator, input) do
     IO.puts("DEBUG: process_input called with input: #{inspect(input)}")
 
-    # Handle character set commands first
-    case get_charset_command(input) do
-      {field, value} ->
-        IO.puts(
-          "DEBUG: process_input matched charset command: #{field} = #{value}"
-        )
+    # Check for mouse events first
+    case parse_mouse_event(input) do
+      {:mouse_event, event_data, remaining, _} ->
+        IO.puts("DEBUG: process_input matched mouse event: #{inspect(event_data)}")
 
-        # If it's a charset command, handle it completely and return
-        updated_emulator = %{
-          emulator
-          | charset_state: %{emulator.charset_state | field => value}
-        }
+        # Check if mouse reporting is enabled
+        output = if emulator.mode_manager.mouse_report_mode != :none do
+          # Echo the mouse event back when mouse reporting is enabled
+          "\e[M#{event_data}"
+        else
+          ""
+        end
 
-        {updated_emulator, ""}
+        # Process any remaining input
+        if remaining != "" do
+          {final_emulator, remaining_output} = process_input(emulator, remaining)
+          {final_emulator, output <> remaining_output}
+        else
+          {emulator, output}
+        end
 
-      :no_match ->
-        IO.puts(
-          "DEBUG: process_input no charset match, using parser-based processing"
-        )
+      nil ->
+        # Handle character set commands
+        case get_charset_command(input) do
+          {field, value} ->
+            IO.puts(
+              "DEBUG: process_input matched charset command: #{field} = #{value}"
+            )
 
-        # Use parser-based input processing for all other input
-        {updated_emulator, output} =
-          Raxol.Terminal.Input.CoreHandler.process_terminal_input(
-            emulator,
-            input
-          )
+            # If it's a charset command, handle it completely and return
+            updated_emulator = %{
+              emulator
+              | charset_state: %{emulator.charset_state | field => value}
+            }
 
-        # IO.puts(
-        #   "DEBUG: After parser processing, style: #{inspect(updated_emulator.style)}"
-        # )
+            {updated_emulator, ""}
 
-        # IO.puts(
-        #   "DEBUG: After parser processing, scroll_region: #{inspect(updated_emulator.scroll_region)}"
-        # )
+          :no_match ->
+            IO.puts(
+              "DEBUG: process_input no charset match, using parser-based processing"
+            )
 
-        # After all input, if the cursor is past the last row, scroll until it's visible
-        final_emulator =
-          ensure_cursor_in_visible_region(updated_emulator)
+            # Use parser-based input processing for all other input
+            {updated_emulator, output} =
+              Raxol.Terminal.Input.CoreHandler.process_terminal_input(
+                emulator,
+                input
+              )
 
-        {final_emulator, output}
+            # IO.puts(
+            #   "DEBUG: After parser processing, style: #{inspect(updated_emulator.style)}"
+            # )
+
+            # IO.puts(
+            #   "DEBUG: After parser processing, scroll_region: #{inspect(updated_emulator.scroll_region)}"
+            # )
+
+            # After all input, if the cursor is past the last row, scroll until it's visible
+            final_emulator =
+              ensure_cursor_in_visible_region(updated_emulator)
+
+            {final_emulator, output}
+        end
     end
   end
 
@@ -704,6 +727,19 @@ defmodule Raxol.Terminal.Emulator do
 
     Map.get(charset_commands, input, :no_match)
   end
+
+  defp parse_mouse_event(<<0x1B, ?[, ?M, rest::binary>>) do
+    # Mouse event format: ESC[M<button><x><y>
+    # where button, x, y are single bytes
+    case rest do
+      <<button, x, y, remaining::binary>> ->
+        {:mouse_event, <<button, x, y>>, remaining, nil}
+      _ ->
+        nil
+    end
+  end
+
+  defp parse_mouse_event(_), do: nil
 
   defp handle_ansi_sequences(<<>>, emulator), do: {emulator, <<>>}
 
@@ -885,6 +921,17 @@ defmodule Raxol.Terminal.Emulator do
     handle_ansi_sequences(remaining, emulator)
   end
 
+  defp handle_parsed_sequence({:mouse_event, event_data, remaining, _}, _rest, emulator) do
+    # Check if mouse reporting is enabled
+    if emulator.mode_manager.mouse_report_mode != :none do
+      # Echo the mouse event back when mouse reporting is enabled
+      # The test expects the same sequence to be output
+      mouse_sequence = "\e[M#{event_data}"
+      OutputManager.write(emulator, mouse_sequence)
+    end
+    {emulator, remaining}
+  end
+
   defp handle_parsed_sequence(
          {:csi_set_scroll_region, params, remaining, _},
          _rest,
@@ -908,11 +955,11 @@ defmodule Raxol.Terminal.Emulator do
     new_mode_manager = %{mode_manager | cursor_visible: visible}
     emulator = %{emulator | mode_manager: new_mode_manager}
 
-    # Also update the cursor manager
+    # Also update the cursor manager - use non-blocking cast for better performance
     cursor = emulator.cursor
 
     if pid?(cursor) do
-      GenServer.call(cursor, {:set_visibility, visible})
+      GenServer.cast(cursor, {:set_visibility, visible})
     end
 
     emulator
@@ -1088,7 +1135,7 @@ defmodule Raxol.Terminal.Emulator do
     # Update cursor position after writing
     cursor = get_cursor_struct(emulator)
     new_x = x + String.length(translated)
-    new_cursor = %{cursor | x: new_x, position: {new_x, y}}
+    new_cursor = %{cursor | col: new_x, row: y, position: {new_x, y}}
 
     # Update the appropriate buffer
     emulator =
@@ -1110,7 +1157,7 @@ defmodule Raxol.Terminal.Emulator do
   # Helper function to write text at current cursor position
   defp write_text_at_cursor(emulator, text) do
     cursor = get_cursor_struct(emulator)
-    {x, y} = cursor.position
+    {y, x} = cursor.position
 
     # Get the active buffer
     buffer = get_active_buffer(emulator)
@@ -1124,7 +1171,7 @@ defmodule Raxol.Terminal.Emulator do
     # Update the cursor through GenServer if it's a PID
     emulator =
       if pid?(emulator.cursor) do
-        GenServer.call(emulator.cursor, {:update_position, new_x, y})
+        GenServer.call(emulator.cursor, {:update_position, y, new_x})
         emulator
       else
         new_cursor = %{cursor | col: new_x, row: y, position: {new_x, y}}
@@ -1198,6 +1245,11 @@ defmodule Raxol.Terminal.Emulator do
       when pid?(pid) do
     cursor = get_cursor_struct(emulator)
     cursor.position
+  end
+
+  def get_cursor_position_struct(%__MODULE__{cursor: cursor_struct} = emulator)
+      when is_map(cursor_struct) do
+    cursor_struct.position
   end
 
   def get_cursor_visible_struct(%__MODULE__{cursor: pid} = emulator)
