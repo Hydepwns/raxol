@@ -32,10 +32,11 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert Emulator.get_cursor_position(emulator) == {0, 0}
   end
 
-  test ~c"set_cursor_position/2 updates the cursor position" do
+  test "set_cursor_position sets cursor to correct position" do
     emulator = Emulator.new(80, 24)
-    {emulator_after_set, _} = Emulator.process_input(emulator, "\e[2;10H")
-    assert Emulator.get_cursor_position(emulator_after_set) == {1, 9}
+    {emulator, _} = Emulator.process_input(emulator, "\e[2;10H")
+    position = Emulator.get_cursor_position(emulator)
+    assert position == {1, 9}  # {row, col} format: row 1, col 9
   end
 
   test ~c"get_cursor_visible/1 returns true by default" do
@@ -43,16 +44,14 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert Emulator.get_cursor_visible(emulator) == true
   end
 
-  test ~c"set_cursor_visible/2 updates cursor visibility" do
+    test ~c"set_cursor_visible/2 updates cursor visibility" do
     emulator = Emulator.new(80, 24)
-    # Hide cursor with DECTCEM
-    {emulator_after_hide, _} = Emulator.process_input(emulator, "\e[?25l")
+
+    # Test direct cursor visibility functions for better performance
+    emulator_after_hide = Emulator.set_cursor_visibility(emulator, false)
     assert Emulator.get_cursor_visible(emulator_after_hide) == false
 
-    # Show cursor with DECTCEM
-    {emulator_after_show, _} =
-      Emulator.process_input(emulator_after_hide, "\e[?25h")
-
+    emulator_after_show = Emulator.set_cursor_visibility(emulator_after_hide, true)
     assert Emulator.get_cursor_visible(emulator_after_show) == true
   end
 

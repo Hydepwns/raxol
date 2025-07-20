@@ -12,35 +12,35 @@ defmodule Raxol.Terminal.CursorTest do
   describe "Cursor Movement" do
     test "move_up moves cursor up" do
       cursor = Manager.new()
-      cursor = Manager.move_to(cursor, 0, 5)
-      cursor = Movement.move_up(cursor, 2)
-      assert cursor.position == {0, 3}
+      cursor = Manager.move_to(cursor, 5, 5)  # Move to row 5, col 5
+      cursor = Movement.move_up(cursor, 2, 80, 24)
+      assert cursor.position == {5, 3}  # Should move up 2 rows from row 5 to row 3
     end
 
     test "move_down moves cursor down" do
       cursor = Manager.new()
-      cursor = Movement.move_down(cursor, 2)
+      cursor = Movement.move_down(cursor, 2, 80, 24)
       assert cursor.position == {0, 2}
     end
 
     test "move_left moves cursor left" do
       cursor = Manager.new()
-      cursor = Manager.move_to(cursor, 5, 0)
-      cursor = Movement.move_left(cursor, 2)
-      assert cursor.position == {3, 0}
+      cursor = Manager.move_to(cursor, 5, 5)  # Move to row 5, col 5
+      cursor = Movement.move_left(cursor, 2, 80, 24)
+      assert cursor.position == {3, 5}  # Should move left 2 cols from col 5 to col 3
     end
 
     test "move_right moves cursor right" do
       cursor = Manager.new()
-      cursor = Movement.move_right(cursor, 2)
+      cursor = Movement.move_right(cursor, 2, 80, 24)
       assert cursor.position == {2, 0}
     end
 
     test "move_to_line_start moves cursor to beginning of line" do
       cursor = Manager.new()
-      cursor = Manager.move_to(cursor, 10, 0)
+      cursor = Manager.move_to(cursor, 10, 10)  # Move to row 10, col 10
       cursor = Movement.move_to_line_start(cursor)
-      assert cursor.position == {0, 0}
+      assert cursor.position == {0, 10}  # Should move to col 0, stay at row 10
     end
 
     test "move_to_line_end moves cursor to end of line" do
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.CursorTest do
 
     test "move_to_column moves cursor to specified column" do
       cursor = Manager.new()
-      cursor = Movement.move_to_column(cursor, 10)
+      cursor = Movement.move_to_column(cursor, 10, 80, 24)
       assert cursor.position == {10, 0}
     end
 
@@ -63,28 +63,28 @@ defmodule Raxol.Terminal.CursorTest do
 
     test "move_to_position moves cursor to specified position" do
       cursor = Manager.new()
-      cursor = Movement.move_to_position(cursor, 10, 5)
-      assert cursor.position == {10, 5}
+      cursor = Manager.move_to(cursor, 10, 5)
+      assert cursor.position == {5, 10}  # position is {col, row} format
     end
 
     test "move_home moves cursor to home position" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
-      cursor = Movement.move_home(cursor)
+      cursor = Movement.move_home(cursor, 80, 24)
       assert cursor.position == {0, 0}
     end
 
     test "move_to_next_tab moves cursor to next tab stop" do
       cursor = Manager.new()
-      cursor = Movement.move_to_next_tab(cursor, 8)
+      cursor = Movement.move_to_next_tab(cursor, 8, 80, 24)
       assert cursor.position == {8, 0}
     end
 
     test "move_to_prev_tab moves cursor to previous tab stop" do
       cursor = Manager.new()
-      cursor = Manager.move_to(cursor, 10, 0)
-      cursor = Movement.move_to_prev_tab(cursor, 8)
-      assert cursor.position == {8, 0}
+      cursor = Manager.move_to(cursor, 0, 10)  # Move to row 0, column 10
+      cursor = Movement.move_to_prev_tab(cursor, 8, 80, 24)
+      assert cursor.position == {8, 0}  # Should move to previous tab stop at column 8
     end
   end
 

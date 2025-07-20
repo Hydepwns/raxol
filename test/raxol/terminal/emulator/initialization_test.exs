@@ -45,21 +45,21 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Use the aliased Manager module function
       new_cursor = CursorManager.move_to(cursor, 10, 5)
 
-      # Use direct access
+      # Use direct access - position is {row, col} format
       assert new_cursor.position == {10, 5}
 
       # Use the aliased Manager module function
       new_cursor = CursorManager.move_to(new_cursor, 90, 30)
 
       # Use direct access - Check clamping logic (CursorManager.move_to doesn't clamp)
-      # Assert actual non-clamped values
+      # Assert actual non-clamped values - position is {row, col} format
       assert new_cursor.position == {90, 30}
 
       # Use the aliased Manager module function
       new_cursor = CursorManager.move_to(new_cursor, -5, -2)
 
       # Use direct access - move_to doesn't clamp negative, but later stages might
-      # For this test, assert the direct result of move_to
+      # For this test, assert the direct result of move_to - position is {row, col} format
       assert new_cursor.position == {-5, -2}
     end
 
@@ -69,36 +69,30 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Initial position {0, 0}
       {x, y} = cursor.position
 
-      # Test down
+      # Test down - move to row 2, col 0
       # Use the aliased Manager module function
-      new_cursor = CursorManager.move_to(cursor, x, y + 2)
+      new_cursor = CursorManager.move_to(cursor, 2, 0)
 
-      # Use direct access
-      assert new_cursor.position == {0, 2}
-      # Test right
-      # Get current pos {0, 2}
-      {x, y} = new_cursor.position
+      # Use direct access - position is {row, col} format
+      assert new_cursor.position == {2, 0}
+      # Test right - move to col 5, row 2
       # Use the aliased Manager module function
-      new_cursor = CursorManager.move_to(new_cursor, x + 5, y)
+      new_cursor = CursorManager.move_to(new_cursor, 2, 5)
 
-      # Use direct access
-      assert new_cursor.position == {5, 2}
-      # Test up
-      # Get current pos {5, 2}
-      {x, y} = new_cursor.position
+      # Use direct access - position is {row, col} format
+      assert new_cursor.position == {2, 5}
+      # Test up - move to row 1, col 5
       # Use the aliased Manager module function
-      new_cursor = CursorManager.move_to(new_cursor, x, y - 1)
+      new_cursor = CursorManager.move_to(new_cursor, 1, 5)
 
-      # Use direct access
-      assert new_cursor.position == {5, 1}
-      # Test left
-      # Get current pos {5, 1}
-      {x, y} = new_cursor.position
+      # Use direct access - position is {row, col} format
+      assert new_cursor.position == {1, 5}
+      # Test left - move to col 2, row 1
       # Use the aliased Manager module function
-      new_cursor = CursorManager.move_to(new_cursor, x - 3, y)
+      new_cursor = CursorManager.move_to(new_cursor, 1, 2)
 
-      # Use direct access
-      assert new_cursor.position == {2, 1}
+      # Use direct access - position is {row, col} format
+      assert new_cursor.position == {1, 2}
     end
   end
 end

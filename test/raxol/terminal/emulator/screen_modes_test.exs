@@ -155,24 +155,21 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
     test ~c"handles cursor visibility (DECTCEM)" do
       emulator = Emulator.new(80, 24)
-      cursor = Emulator.get_cursor_struct(emulator)
-      assert cursor.state == :visible
+      assert Emulator.cursor_visible?(emulator) == true
 
       # Hide cursor (DECRST ?25l)
       # Use process_input
       {emulator, ""} = Emulator.process_input(emulator, "\e[?25l")
       mode_manager = Emulator.get_mode_manager_struct(emulator)
       assert ModeManager.mode_enabled?(mode_manager, :dectcem) == false
-      cursor = Emulator.get_cursor_struct(emulator)
-      assert cursor.state == :hidden
+      assert Emulator.cursor_visible?(emulator) == false
 
       # Show cursor (DECSET ?25h)
       # Use process_input
       {emulator, ""} = Emulator.process_input(emulator, "\e[?25h")
       mode_manager = Emulator.get_mode_manager_struct(emulator)
       assert ModeManager.mode_enabled?(mode_manager, :dectcem) == true
-      cursor = Emulator.get_cursor_struct(emulator)
-      assert cursor.state == :visible
+      assert Emulator.cursor_visible?(emulator) == true
     end
 
     test ~c"handles application keypad mode (DECKPAM/DECKPNM)" do

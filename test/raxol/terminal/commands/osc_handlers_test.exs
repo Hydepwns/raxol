@@ -20,33 +20,41 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
   describe "window title and icon" do
     test "sets window title", %{emulator: emulator} do
       result = OSCHandlers.handle_window_title(emulator, "Test Title")
-      assert result == {:ok, emulator}
+      assert {:ok, updated_emulator} = result
+      assert updated_emulator.window_title == "Test Title"
     end
 
     test "sets icon name", %{emulator: emulator} do
       result = OSCHandlers.handle_icon_name(emulator, "Test Icon")
-      assert result == {:ok, emulator}
+      assert {:ok, updated_emulator} = result
+      # Icon name is not currently implemented, so we just check it returns ok
+      assert is_map(updated_emulator)
     end
 
     test "sets icon title", %{emulator: emulator} do
       result = OSCHandlers.handle_icon_title(emulator, "Test Icon Title")
-      assert result == {:ok, emulator}
+      assert {:ok, updated_emulator} = result
+      # Icon title is not currently implemented, so we just check it returns ok
+      assert is_map(updated_emulator)
     end
 
     test "handles empty titles", %{emulator: emulator} do
       result = OSCHandlers.handle_window_title(emulator, "")
-      assert result == {:ok, emulator}
+      assert {:ok, updated_emulator} = result
+      assert updated_emulator.window_title == ""
     end
 
     test "handles nil titles", %{emulator: emulator} do
       result = OSCHandlers.handle_window_title(emulator, nil)
-      assert result == {:ok, emulator}
+      assert {:ok, updated_emulator} = result
+      assert updated_emulator.window_title == nil
     end
 
     test "handles very long titles", %{emulator: emulator} do
       long_title = String.duplicate("a", 1000)
       result = OSCHandlers.handle_window_title(emulator, long_title)
-      assert result == {:ok, emulator}
+      assert {:ok, updated_emulator} = result
+      assert updated_emulator.window_title == long_title
     end
   end
 

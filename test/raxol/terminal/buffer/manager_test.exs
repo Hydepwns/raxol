@@ -1,6 +1,7 @@
 ExUnit.configure(max_printable_chars: 1000)
 
-alias Raxol.Terminal.Buffer.Manager
+  alias Raxol.Terminal.Buffer.Manager
+  alias Raxol.Terminal.Buffer.Manager.{BufferOperations, ScrollbackManager}
 
 defmodule Raxol.Terminal.Buffer.ManagerTest do
   use ExUnit.Case, async: false
@@ -20,14 +21,14 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   describe "get_active_buffer/1" do
     test "returns nil when no active buffer" do
       emulator = TestHelper.create_test_emulator()
-      assert Manager.get_active_buffer(emulator) == nil
+      assert BufferOperations.get_active_buffer(emulator) == nil
     end
 
     test "returns active buffer when set" do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :normal, content: "test"}
-      emulator = Manager.set_active_buffer(emulator, buffer)
-      assert Manager.get_active_buffer(emulator) == buffer
+      emulator = BufferOperations.set_active_buffer(emulator, buffer)
+      assert BufferOperations.get_active_buffer(emulator) == buffer
     end
   end
 
@@ -35,31 +36,31 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "sets active buffer" do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :normal, content: "test"}
-      emulator = Manager.set_active_buffer(emulator, buffer)
-      assert Manager.get_active_buffer(emulator) == buffer
+      emulator = BufferOperations.set_active_buffer(emulator, buffer)
+      assert BufferOperations.get_active_buffer(emulator) == buffer
     end
 
     test "updates existing active buffer" do
       emulator = TestHelper.create_test_emulator()
       buffer1 = %{type: :normal, content: "test1"}
       buffer2 = %{type: :normal, content: "test2"}
-      emulator = Manager.set_active_buffer(emulator, buffer1)
-      emulator = Manager.set_active_buffer(emulator, buffer2)
-      assert Manager.get_active_buffer(emulator) == buffer2
+      emulator = BufferOperations.set_active_buffer(emulator, buffer1)
+      emulator = BufferOperations.set_active_buffer(emulator, buffer2)
+      assert BufferOperations.get_active_buffer(emulator) == buffer2
     end
   end
 
   describe "get_alternate_buffer/1" do
     test "returns nil when no alternate buffer" do
       emulator = TestHelper.create_test_emulator()
-      assert Manager.get_alternate_buffer(emulator) == nil
+      assert BufferOperations.get_alternate_buffer(emulator) == nil
     end
 
     test "returns alternate buffer when set" do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :alternate, content: "test"}
-      emulator = Manager.set_alternate_buffer(emulator, buffer)
-      assert Manager.get_alternate_buffer(emulator) == buffer
+      emulator = BufferOperations.set_alternate_buffer(emulator, buffer)
+      assert BufferOperations.get_alternate_buffer(emulator) == buffer
     end
   end
 
@@ -67,17 +68,17 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "sets alternate buffer" do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :alternate, content: "test"}
-      emulator = Manager.set_alternate_buffer(emulator, buffer)
-      assert Manager.get_alternate_buffer(emulator) == buffer
+      emulator = BufferOperations.set_alternate_buffer(emulator, buffer)
+      assert BufferOperations.get_alternate_buffer(emulator) == buffer
     end
 
     test "updates existing alternate buffer" do
       emulator = TestHelper.create_test_emulator()
       buffer1 = %{type: :alternate, content: "test1"}
       buffer2 = %{type: :alternate, content: "test2"}
-      emulator = Manager.set_alternate_buffer(emulator, buffer1)
-      emulator = Manager.set_alternate_buffer(emulator, buffer2)
-      assert Manager.get_alternate_buffer(emulator) == buffer2
+      emulator = BufferOperations.set_alternate_buffer(emulator, buffer1)
+      emulator = BufferOperations.set_alternate_buffer(emulator, buffer2)
+      assert BufferOperations.get_alternate_buffer(emulator) == buffer2
     end
   end
 
@@ -86,43 +87,43 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       emulator = TestHelper.create_test_emulator()
       active = %{type: :normal, content: "active"}
       alternate = %{type: :alternate, content: "alternate"}
-      emulator = Manager.set_active_buffer(emulator, active)
-      emulator = Manager.set_alternate_buffer(emulator, alternate)
-      emulator = Manager.switch_buffers(emulator)
-      assert Manager.get_active_buffer(emulator) == alternate
-      assert Manager.get_alternate_buffer(emulator) == active
+      emulator = BufferOperations.set_active_buffer(emulator, active)
+      emulator = BufferOperations.set_alternate_buffer(emulator, alternate)
+      emulator = BufferOperations.switch_buffers(emulator)
+      assert BufferOperations.get_active_buffer(emulator) == alternate
+      assert BufferOperations.get_alternate_buffer(emulator) == active
     end
   end
 
   describe "scrollback operations" do
     test "get_scrollback/1 returns empty list initially" do
       emulator = TestHelper.create_test_emulator()
-      assert Manager.get_scrollback(emulator) == []
+      assert ScrollbackManager.get_scrollback(emulator) == []
     end
 
     test "add_to_scrollback/2 adds buffer to scrollback" do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :normal, content: "test"}
-      emulator = Manager.add_to_scrollback(emulator, buffer)
-      assert length(Manager.get_scrollback(emulator)) == 1
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer)
+      assert length(ScrollbackManager.get_scrollback(emulator)) == 1
     end
 
     test "add_to_scrollback/2 respects scrollback size limit" do
       emulator = TestHelper.create_test_emulator()
-      emulator = Manager.set_scrollback_size(emulator, 2)
+      emulator = ScrollbackManager.set_scrollback_size(emulator, 2)
       buffer1 = %{type: :normal, content: "test1"}
       buffer2 = %{type: :normal, content: "test2"}
       buffer3 = %{type: :normal, content: "test3"}
-      emulator = Manager.add_to_scrollback(emulator, buffer1)
-      emulator = Manager.add_to_scrollback(emulator, buffer2)
-      emulator = Manager.add_to_scrollback(emulator, buffer3)
-      assert length(Manager.get_scrollback(emulator)) == 2
-      assert hd(Manager.get_scrollback(emulator)) == buffer3
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer1)
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer2)
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer3)
+      assert length(ScrollbackManager.get_scrollback(emulator)) == 2
+      assert hd(ScrollbackManager.get_scrollback(emulator)) == buffer3
     end
 
     test "get_scrollback_size/1 returns current size" do
       emulator = TestHelper.create_test_emulator()
-      assert Manager.get_scrollback_size(emulator) == 1000
+      assert ScrollbackManager.get_scrollback_size(emulator) == 1000
     end
 
     test "set_scrollback_size/2 updates size and trims scrollback" do
@@ -130,20 +131,20 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       buffer1 = %{type: :normal, content: "test1"}
       buffer2 = %{type: :normal, content: "test2"}
       buffer3 = %{type: :normal, content: "test3"}
-      emulator = Manager.add_to_scrollback(emulator, buffer1)
-      emulator = Manager.add_to_scrollback(emulator, buffer2)
-      emulator = Manager.add_to_scrollback(emulator, buffer3)
-      emulator = Manager.set_scrollback_size(emulator, 2)
-      assert Manager.get_scrollback_size(emulator) == 2
-      assert length(Manager.get_scrollback(emulator)) == 2
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer1)
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer2)
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer3)
+      emulator = ScrollbackManager.set_scrollback_size(emulator, 2)
+      assert ScrollbackManager.get_scrollback_size(emulator) == 2
+      assert length(ScrollbackManager.get_scrollback(emulator)) == 2
     end
 
     test "clear_scrollback/1 removes all scrollback buffers" do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :normal, content: "test"}
-      emulator = Manager.add_to_scrollback(emulator, buffer)
-      emulator = Manager.clear_scrollback(emulator)
-      assert Manager.get_scrollback(emulator) == []
+      emulator = ScrollbackManager.add_to_scrollback(emulator, buffer)
+      emulator = ScrollbackManager.clear_scrollback(emulator)
+      assert ScrollbackManager.get_scrollback(emulator) == []
     end
   end
 
@@ -156,7 +157,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       assert Map.has_key?(emulator, :alternate_screen_buffer)
 
       # Reset the buffer manager
-      emulator = Manager.reset_buffer_manager(emulator)
+      emulator = BufferOperations.reset_buffer_manager(emulator)
 
       # After reset, the buffer should be reset to initial state
       # The exact behavior depends on what reset_buffer_manager should do

@@ -389,20 +389,21 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       {emulator, _output} = Emulator.process_input(emulator, input_str)
       buffer = Emulator.get_active_buffer(emulator)
 
-      # Lines 0, 1, 2 should be all spaces
-      for y <- 0..2 do
-        assert Enum.map(ScreenBuffer.get_line(buffer, y), & &1.char) ==
-                 List.duplicate(" ", buffer.width)
-      end
+      # Lines 0 should be all spaces (completely cleared)
+      assert Enum.map(ScreenBuffer.get_line(buffer, 0), & &1.char) ==
+               List.duplicate(" ", buffer.width)
 
-      # Line 3: Cursor was at (3,1). "DDDDDDDDDD" -> " DDDDDDDDD"
-      # First char (index 0) cleared, second char (index 1, cursor pos) cleared.
-      # Expected: "  DDDDDDDD"
-      line3_content = Enum.map(ScreenBuffer.get_line(buffer, 3), & &1.char)
-      expected_line3 = List.duplicate(" ", 2) ++ String.graphemes("DDDDDDDD")
-      assert line3_content == expected_line3
+      # Line 1: Cursor was at (1,3). "BBBBBBBBBB" -> "    BBBBBB"
+      # Columns 0, 1, 2, 3 cleared (inclusive), leaving columns 4-9 as "B"
+      line1_content = Enum.map(ScreenBuffer.get_line(buffer, 1), & &1.char)
+      expected_line1 = List.duplicate(" ", 4) ++ String.graphemes("BBBBBB")
+      assert line1_content == expected_line1
 
-      # Line 4 should be untouched "AAAAAAAAAA"
+      # Lines 2, 3, 4 should be untouched
+      assert Enum.map(ScreenBuffer.get_line(buffer, 2), & &1.char) ==
+               List.duplicate("C", buffer.width)
+      assert Enum.map(ScreenBuffer.get_line(buffer, 3), & &1.char) ==
+               List.duplicate("D", buffer.width)
       assert Enum.map(ScreenBuffer.get_line(buffer, 4), & &1.char) ==
                List.duplicate("A", buffer.width)
 
@@ -458,6 +459,16 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
 
       # Cursor position does not change for ED
       assert Emulator.get_cursor_position(emulator) == {1, 1}
+    end
+
+    test "ED command clears screen correctly" do
+      emulator = Emulator.new(80, 24)
+      {emulator, _} = Emulator.process_input(emulator, "Hello World")
+      {emulator, _} = Emulator.process_input(emulator, "\e[4;2H")  # Move to row 4, col 2
+      {emulator, _} = Emulator.process_input(emulator, "\e[J")     # Clear from cursor to end
+
+      position = Emulator.get_cursor_position(emulator)
+      assert position == {3, 1}  # {row, col} format: row 3, col 1
     end
   end
 end
