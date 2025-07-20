@@ -1,0 +1,17 @@
+{
+  "colors": {
+    "accent": "#FF9900",
+    "background": "#FFFFFF",
+    "error": "#CC0000",
+    "info": "#0099CC",
+    "primary": "#0077CC",
+    "secondary": "#666666",
+    "success": "#009900",
+    "surface": "#F5F5F5",
+    "warning": "#FF9900"
+  },
+  "dark_mode": false,
+  "high_contrast": false,
+  "name": "Theme B",
+  "styles": {}
+}

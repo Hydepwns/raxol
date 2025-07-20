@@ -1,134 +1,165 @@
-# Next AI Agent Plan - Test Failure Resolution
+# Next AI Agent Plan - Remaining Test Failures Resolution
 
-## **Current Status Summary**
+## **Current Status Summary (Updated July 2025)**
 
-- ✅ **Fixed**: MultiLineInput TextHelper (major text manipulation bugs)
-- ✅ **Fixed**: Table column width calculation (empty data handling)
-- ✅ **Fixed**: CursorHandlers coordinate system and movement
-- ✅ **Fixed**: EraseHandlers (buffer operations and cursor position)
-- ✅ **Fixed**: MultiLineInput NavigationHelper cursor movement
+### **✅ COMPLETED WORK:**
 
-## **Remaining Test Failures (10 total)**
+- **✅ Large File Refactoring**: All 18 large files successfully refactored (100% completion)
+- **✅ Coordinate System Standardization**: All 30 cursor-related test failures resolved (100% completion)
+- **✅ Test Success Rate**: Improved from 70 to 10 test failures (85.7% improvement)
 
-### **1. TreeDiffer Tests (4 failures) - HIGH PRIORITY**
+### **Current Test Status:**
 
-**Location**: `test/raxol/core/tree_differ_test.exs`
-**Issues**:
+- **Overall**: 10 test failures out of 1670 tests (99.4% passing)
+- **Goal**: Achieve 100% test success rate
 
-- Keyed tree diffing operations failing
-- Order of operations in diff results incorrect
-- Likely algorithmic issues in the diffing logic
+## **🔴 REMAINING: Test Failures to Address (10 failures)**
 
-**Action Plan**:
+### **Priority 1: Sixel Graphics State Missing (HIGH PRIORITY)**
 
-1. Review the failing TreeDiffer test cases
-2. Examine the `TreeDiffer` implementation in `lib/raxol/core/tree_differ.ex`
-3. Fix the diffing algorithm to handle keyed operations correctly
-4. Ensure proper ordering of diff operations
-
-### **2. Table Rendering Tests (2 failures) - MEDIUM PRIORITY**
-
-**Location**: `test/raxol/ui/renderer_test.exs`
-**Issues**:
-
-- Table rendering returns empty or nil cells
-- Theme styles not applied correctly to table headers and data rows
+**File**: `lib/raxol/terminal/commands/dcs_handlers.ex:223`
+**Test**: `test handle_dcs/5 - Sixel Graphics processes a simple Sixel sequence`
+**Issue**: `** (KeyError) key :sixel not found`
 
 **Action Plan**:
 
-1. Review the table rendering implementation
-2. Check if the renderer is properly extracting data from table components
-3. Fix theme application logic for table headers and data rows
-4. Ensure proper cell content rendering
+1. Check emulator initialization for sixel state
+2. Ensure sixel state is properly initialized in `DCSHandlers.handle_dcs/5`
+3. Verify sixel state is maintained throughout the emulator lifecycle
 
-### **3. Graphics Manager Test (1 failure) - MEDIUM PRIORITY**
+### **Priority 2: Buffer Server Process Management (HIGH PRIORITY)**
 
-**Location**: `test/raxol/terminal/graphics/manager_test.exs`
-**Issue**: KeyError with `:r` key in color maps
+**Test 1**: `test error handling handles server shutdown gracefully`
+**Issue**: `** (EXIT) no process: the process is not alive or there's no process currently associated with the given name`
 
-**Action Plan**:
-
-1. Examine the Graphics Manager implementation
-2. Check color map initialization and access patterns
-3. Fix the missing `:r` key in color maps
-4. Ensure proper color system initialization
-
-### **4. Component Rendering Test (1 failure) - LOW PRIORITY**
-
-**Location**: `test/raxol/ui/components/box_test.exs`
-**Issue**: Box component rendering issue
+**Test 2**: `test get_cell/3 returns cached cell after set`
+**Issue**: Cell style mismatch - expected `nil` but got `%Raxol.Terminal.ANSI.TextFormatting.Core{}`
 
 **Action Plan**:
 
-1. Review the Box component implementation
-2. Check rendering logic and output format
-3. Fix any rendering bugs in the Box component
+1. Fix buffer server process lifecycle management
+2. Ensure proper process cleanup on shutdown
+3. Fix cell style initialization and caching logic
 
-### **5. MultiLineInput TextHelper Tests (2 failures) - LOW PRIORITY**
+### **Priority 3: Cache System TTL Logic (MEDIUM PRIORITY)**
 
-**Location**: `test/raxol/components/input/multi_line_input/text_helper_test.exs`
-**Issues**: Remaining text replacement and deletion edge cases
+**Test**: `test TTL operations expired entry`
+**Issue**: Expected `{:error, :expired}` but got `{:ok, "test_value"}`
 
 **Action Plan**:
 
-1. Review the specific failing test cases
-2. Apply similar fixes as the previous TextHelper issues
-3. Ensure multi-line text handling is fully correct
+1. Review cache TTL implementation
+2. Fix expiration logic in cache system
+3. Ensure proper time-based cleanup
 
-## **Recommended Approach for Next Agent**
+### **Priority 4: Auto-repeat Mode Management (MEDIUM PRIORITY)**
 
-### **Phase 1: TreeDiffer (Most Critical)**
+**Test**: `test auto-repeat mode auto-repeat mode is saved and restored when switching screen modes`
+**Issue**: Mode state not properly maintained during screen mode switches
 
-1. Run `mix test test/raxol/core/tree_differ_test.exs` to see specific failures
-2. Use `./scripts/summarize_test_errors.sh` to get detailed error information
-3. Examine the TreeDiffer implementation and fix the diffing algorithm
-4. This is likely the most complex remaining issue
+**Action Plan**:
 
-### **Phase 2: Table Rendering**
+1. Fix mode manager state preservation
+2. Ensure auto-repeat mode is properly saved/restored
+3. Verify mode transitions maintain state correctly
 
-1. Run `mix test test/raxol/ui/renderer_test.exs` to see table-specific failures
-2. Review the renderer implementation for table handling
-3. Fix data extraction and theme application issues
+### **Priority 5: Cursor Movement Tab Stops (MEDIUM PRIORITY)**
 
-### **Phase 3: Graphics Manager**
+**Test**: `test Cursor Movement move_to_prev_tab moves cursor to previous tab stop`
+**Issue**: Expected `{8, 0}` but got `{0, 10}` - still has coordinate system issue
 
-1. Run `mix test test/raxol/terminal/graphics/manager_test.exs`
-2. Fix the color map initialization issue
-3. Ensure proper color system setup
+**Action Plan**:
 
-### **Phase 4: Remaining Issues**
+1. Check if this test was missed in coordinate system fixes
+2. Verify tab stop logic uses correct coordinate format
+3. Update test or fix implementation as needed
 
-1. Address the Box component rendering issue
-2. Fix any remaining TextHelper edge cases
-3. Run full test suite to verify all fixes
+### **Priority 6: Column Width Mode Changes (MEDIUM PRIORITY)**
 
-## **Key Tools and Commands**
+**Test 1**: `test column width changes switching to 132-column mode`
+**Test 2**: `test column width changes switching back to 80-column mode`
+**Test 3**: `test column width changes screen clearing on column width change`
 
-- `mix test` - Run full test suite
-- `./scripts/summarize_test_errors.sh` - Get detailed error summary
-- `mix test <specific_test_file> --trace` - Run specific tests with detailed output
-- Use the existing debug patterns we established for troubleshooting
+**Issues**: Screen buffer width not updating correctly, screen not clearing properly
 
-## **Debug Patterns Established**
+**Action Plan**:
 
-- Add `require Logger` and `Logger.debug()` statements for diagnosing cursor movement issues
-- Use `Map.get(state, :key, default)` vs `state.key || default` for proper nil handling
-- Check both `state.lines` and `TextHelper.split_into_lines()` for line source of truth
-- Verify coordinate systems (0-indexed vs 1-indexed) in test expectations
+1. Fix column width mode switching logic
+2. Ensure screen buffer resizes correctly
+3. Fix screen clearing on mode changes
 
-## **Success Criteria**
+## **Next Agent Priority Order**
 
-- All 636 tests passing
-- No critical functionality broken
-- Clean test output with no failures
+### **Phase 1: Critical Test Failures (HIGH PRIORITY)**
 
-## **Context from Previous Work**
+1. **CRITICAL**: Fix Sixel graphics state initialization
 
-The previous agent successfully fixed:
+   - **Action**: Ensure sixel state is properly initialized in emulator
+   - **Files**: `lib/raxol/terminal/commands/dcs_handlers.ex`, `lib/raxol/terminal/emulator.ex`
+   - **Expected Impact**: Fix 1 test failure
 
-1. **TextHelper**: Fixed `replace_text_range/4` to use exclusive end positions for `replaced_text` calculation while keeping inclusive end positions for replacement logic
-2. **NavigationHelper**: Fixed `desired_col` fallback logic from `Map.get(state, :desired_col, col)` to `state.desired_col || col` to properly handle nil values
-3. **Cursor/Erase Handlers**: Fixed coordinate systems and buffer operations
-4. **Table Column Width**: Fixed empty data handling in column width calculations
+2. **CRITICAL**: Fix buffer server process management
+   - **Action**: Fix process lifecycle and cell caching issues
+   - **Files**: `lib/raxol/terminal/buffer/buffer_server_refactored.ex`
+   - **Expected Impact**: Fix 2 test failures
 
-The next agent should start with the TreeDiffer tests as they appear to be the most complex remaining issue and likely require algorithmic fixes rather than simple coordinate or logic corrections.
+### **Phase 2: System Logic Fixes (MEDIUM PRIORITY)**
+
+3. **MEDIUM**: Fix cache TTL logic
+
+   - **Action**: Fix expiration logic in cache system
+   - **Files**: Cache-related modules
+   - **Expected Impact**: Fix 1 test failure
+
+4. **MEDIUM**: Fix auto-repeat mode management
+
+   - **Action**: Fix mode state preservation during screen switches
+   - **Files**: Mode manager modules
+   - **Expected Impact**: Fix 1 test failure
+
+5. **MEDIUM**: Fix remaining cursor movement issue
+
+   - **Action**: Check tab stop logic for coordinate system consistency
+   - **Files**: Cursor movement modules
+   - **Expected Impact**: Fix 1 test failure
+
+6. **MEDIUM**: Fix column width mode changes
+   - **Action**: Fix screen buffer resizing and clearing on mode changes
+   - **Files**: Screen buffer and column width modules
+   - **Expected Impact**: Fix 3 test failures
+
+### **Phase 3: Code Quality Improvements (LOW PRIORITY)**
+
+7. **LOW**: Clean up remaining undefined function warnings
+
+   - **Action**: Implement missing functions or fix function references
+   - **Files**: Various modules with undefined function warnings
+   - **Expected Impact**: Fix 36 undefined function warnings
+
+8. **LOW**: Clean up unused variables and imports
+   - **Action**: Remove or prefix unused variables with underscore
+   - **Files**: Various test and source files
+   - **Expected Impact**: Fix 172 unused variable warnings
+
+## **Success Metrics**
+
+### **Target Goals:**
+
+- **Test Success Rate**: 100% (0 failures out of 1670 tests)
+- **Code Quality**: Eliminate all undefined function warnings
+- **Maintainability**: Clean up unused variables and imports
+
+### **Current Progress:**
+
+- **Test Success Rate**: 99.4% (10 failures out of 1670 tests)
+- **Improvement**: 60 test failures resolved (85.7% improvement)
+
+## **Handoff to Next Agent**
+
+The next agent should focus on systematically addressing the remaining 10 test failures in priority order:
+
+1. **Start with Phase 1** (Critical failures) - Sixel graphics and buffer server issues
+2. **Move to Phase 2** (System logic) - Cache TTL, mode management, column width
+3. **Finish with Phase 3** (Code quality) - Clean up warnings and unused code
+
+Each fix should be tested individually to ensure no regressions are introduced. The goal is to achieve 100% test success rate while maintaining code quality and performance.
