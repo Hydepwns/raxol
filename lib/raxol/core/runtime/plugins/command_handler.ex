@@ -1,146 +1,162 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
   @moduledoc """
-  Handles command execution and management for plugins.
-  This module is responsible for:
-  - Processing command requests
-  - Executing commands through plugins
-  - Managing command results and error handling
-  - Handling clipboard-related commands
+  Handles plugin command processing and execution.
   """
 
-  alias Raxol.Core.Runtime.Plugins.CommandHelper
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-  @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
 
   @doc """
-  Handles a command request by delegating to the appropriate plugin.
-  Returns an updated state and any necessary side effects.
-  """
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
-  def handle_command(command_atom, namespace, data, dispatcher_pid, state) do
-    command_name_str = Atom.to_string(command_atom)
-
-    Raxol.Core.Runtime.Log.info(
-      "[#{__MODULE__}] Delegating command: #{inspect(command_atom)} in namespace: #{inspect(namespace)} with data: #{inspect(data)}, result_to: #{inspect(dispatcher_pid)}"
-    )
-
-    case CommandHelper.handle_command(
-           state.command_registry_table,
-           command_name_str,
-           namespace,
-           data,
-           state
-         ) do
-      {:ok, new_plugin_state, result_tuple, plugin_id} ->
-        Raxol.Core.Runtime.Log.debug(
-          "[#{__MODULE__}] Command #{inspect(command_atom)} executed by plugin #{inspect(plugin_id)}. Result: #{inspect(result_tuple)}"
-        )
-
-        updated_plugin_states =
-          Map.put(state.plugin_states, plugin_id, new_plugin_state)
-
-        result_msg = {:command_result, {command_atom, result_tuple}}
-
-        Raxol.Core.Runtime.Log.debug(
-          "[#{__MODULE__}] Sending result to #{inspect(dispatcher_pid)}: #{inspect(result_msg)}"
-        )
-
-        send(dispatcher_pid, result_msg)
-
-        {:ok, updated_plugin_states}
-
-      {:error, :not_found, _} ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[#{__MODULE__}] Command not found by CommandHelper",
-          %{
-            module: __MODULE__,
-            command_atom: command_atom,
-            namespace: namespace,
-            state: state
-          }
-        )
-
-        error_result_tuple = {:error, :command_not_found}
-
-        send(
-          dispatcher_pid,
-          {:command_result, {command_atom, error_result_tuple}}
-        )
-
-        {:error, :not_found}
-
-      {:error, reason_tuple, plugin_id} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Error executing command",
-          reason_tuple,
-          nil,
-          %{
-            module: __MODULE__,
-            command_atom: command_atom,
-            plugin_id: plugin_id,
-            namespace: namespace,
-            state: state
-          }
-        )
-
-        send(
-          dispatcher_pid,
-          {:command_result, {command_atom, {:error, reason_tuple}}}
-        )
-
-        {:error, reason_tuple}
-    end
-  end
-
-  @doc """
-  Processes a command by delegating to the appropriate handler.
-  Returns an updated state and any necessary side effects.
+  Processes a command from a plugin.
   """
   def process_command(command, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Processing command: #{inspect(command)}",
+      %{command: command}
+    )
+
     case command do
-      {command_atom, namespace, data} ->
-        handle_command(command_atom, namespace, data, self(), state)
+      :load_plugin ->
+        {:error, :plugin_id_required}
 
-      {command_atom, data} ->
-        handle_command(command_atom, :default, data, self(), state)
+      :unload_plugin ->
+        {:error, :plugin_id_required}
 
-      command_atom when atom?(command_atom) ->
-        handle_command(command_atom, :default, %{}, self(), state)
+      :get_plugin ->
+        {:error, :plugin_id_required}
+
+      :update_plugin ->
+        {:error, :plugin_id_required}
+
+      :list_plugins ->
+        plugins = Raxol.Core.Runtime.Plugins.Discovery.list_plugins(state)
+        {:ok, plugins}
+
+      :get_plugin_state ->
+        {:error, :plugin_id_required}
+
+      :set_plugin_state ->
+        {:error, :plugin_id_required}
 
       _ ->
-        {:error, :invalid_command}
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[#{__MODULE__}] Unknown command: #{inspect(command)}",
+          %{command: command}
+        )
+
+        {:error, :unknown_command}
     end
   end
 
   @doc """
-  Handles clipboard result messages.
+  Handles a command with arguments.
+  """
+  def handle_command(command_atom, namespace, data, dispatcher_pid, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Handling command: #{inspect(command_atom)}",
+      %{command_atom: command_atom, namespace: namespace, data: data}
+    )
+
+    case execute_command(command_atom, namespace, data, state) do
+      {:ok, result} ->
+        send(dispatcher_pid, {:command_result, command_atom, result})
+        {:ok, state.plugin_states}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Command failed: #{inspect(command_atom)}",
+          reason,
+          nil,
+          %{command_atom: command_atom, namespace: namespace, data: data}
+        )
+
+        send(dispatcher_pid, {:command_error, command_atom, reason})
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Handles clipboard result.
   """
   def handle_clipboard_result(pid, content) do
-    send(pid, {:command_result, {:clipboard_content, content}})
-    :ok
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Handling clipboard result",
+      %{pid: pid, content_length: byte_size(content)}
+    )
+
+    send(pid, {:clipboard_result, content})
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
-  def handle_command_result(command_atom, result, dispatcher_pid, state) do
-    send(dispatcher_pid, {:command_result, {command_atom, result}})
-    {:ok, state}
+  # Helper function to execute commands
+  defp execute_command(:load_plugin, _namespace, plugin_id, state) do
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.load_plugin(
+           plugin_id,
+           %{},
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, _updated_maps} -> {:ok, :plugin_loaded}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
-  def handle_command_error(command_atom, error, dispatcher_pid, state) do
-    send(dispatcher_pid, {:command_result, {command_atom, {:error, error}}})
-    {:ok, state}
+  defp execute_command(:unload_plugin, _namespace, plugin_id, state) do
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.unload_plugin(
+           plugin_id,
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      :ok -> {:ok, :plugin_unloaded}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
-  def handle_command_timeout(command_atom, dispatcher_pid, state) do
-    send(dispatcher_pid, {:command_result, {command_atom, {:error, :timeout}}})
-    {:ok, state}
+  defp execute_command(:get_plugin, _namespace, plugin_id, state) do
+    case Raxol.Core.Runtime.Plugins.Discovery.get_plugin(plugin_id, state) do
+      {:ok, plugin} -> {:ok, plugin}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
-  def update_command_state(state, new_state) do
-    Map.merge(state, new_state)
+  defp execute_command(:update_plugin, _namespace, {plugin_id, update_fun}, state) do
+    updated_state = Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
+      plugin_id,
+      update_fun,
+      state
+    )
+    {:ok, updated_state}
+  end
+
+  defp execute_command(:list_plugins, _namespace, _data, state) do
+    plugins = Raxol.Core.Runtime.Plugins.Discovery.list_plugins(state)
+    {:ok, plugins}
+  end
+
+  defp execute_command(:get_plugin_state, _namespace, plugin_id, state) do
+    Raxol.Core.Runtime.Plugins.StateManager.get_plugin_state(plugin_id, state)
+  end
+
+  defp execute_command(:set_plugin_state, _namespace, {plugin_id, new_state}, state) do
+    updated_state = Raxol.Core.Runtime.Plugins.StateManager.set_plugin_state(
+      plugin_id,
+      new_state,
+      state
+    )
+    {:ok, updated_state}
+  end
+
+  defp execute_command(command, namespace, data, _state) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[#{__MODULE__}] Unknown command: #{inspect(command)}",
+      %{command: command, namespace: namespace, data: data}
+    )
+
+    {:error, :unknown_command}
   end
 end

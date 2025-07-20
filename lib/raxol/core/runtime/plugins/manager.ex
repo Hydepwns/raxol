@@ -26,7 +26,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   alias Raxol.Core.Runtime.Plugins.CommandHandler
   alias Raxol.Core.Runtime.Plugins.Discovery
   alias Raxol.Core.Runtime.Plugins.FileWatcher
+  alias Raxol.Core.Runtime.Plugins.LifecycleManager
   alias Raxol.Core.Runtime.Plugins.PluginReloader
+  alias Raxol.Core.Runtime.Plugins.StateManager
   alias Raxol.Core.Runtime.Plugins.TimerManager
 
   @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
@@ -61,8 +63,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             file_watching_enabled?:
               Map.get(opts_map, :enable_plugin_reloading, false),
             initialized: false,
-            lifecycle_helper_module:
-              Raxol.Core.Runtime.Plugins.LifecycleManager,
+            lifecycle_helper_module: LifecycleManager,
             tick_timer: nil,
             file_event_timer: nil
           }
@@ -80,8 +81,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
               runtime_pid: nil,
               file_watching_enabled?: false,
               initialized: false,
-              lifecycle_helper_module:
-                Raxol.Core.Runtime.Plugins.LifecycleManager,
+              lifecycle_helper_module: LifecycleManager,
               tick_timer: nil,
               file_event_timer: nil,
               file_watcher_pid: nil
@@ -101,8 +101,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             runtime_pid: nil,
             file_watching_enabled?: false,
             initialized: false,
-            lifecycle_helper_module:
-              Raxol.Core.Runtime.Plugins.LifecycleManager,
+            lifecycle_helper_module: LifecycleManager,
             tick_timer: nil,
             file_event_timer: nil,
             file_watcher_pid: nil
@@ -169,13 +168,20 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.call(__MODULE__, {:reload_plugin, plugin_id})
   end
 
+  @doc """
+  Load a plugin by module with the given configuration.
+  """
+  def load_plugin_by_module(module, config \\ %{}) do
+    GenServer.call(__MODULE__, {:load_plugin_by_module, module, config})
+  end
+
   @impl GenServer
   def handle_call({:load_plugin, plugin_id, config}, _from, state) do
     # Send plugin load attempted event
     send(state.runtime_pid, {:plugin_load_attempted, plugin_id})
 
     operation =
-      state.lifecycle_helper_module.load_plugin(
+      LifecycleManager.load_plugin(
         plugin_id,
         config,
         state.plugins,
@@ -196,7 +202,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:load_plugin, plugin_id}, _from, state) do
-    case state.lifecycle_helper_module.load_plugin(
+    case LifecycleManager.load_plugin(
            plugin_id,
            # default config
            %{},
@@ -236,7 +242,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
         {:reply, {:error, :plugin_not_found}, state}
 
       _plugin_state ->
-        case state.lifecycle_helper_module.unload_plugin(
+        case LifecycleManager.unload_plugin(
                plugin_id,
                state.plugins,
                state.metadata,
@@ -261,8 +267,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl GenServer
-  def handle_call({:execute_command, command, arg1, arg2}, _from, state) do
-    case execute_command(command, arg1, arg2) do
+  def handle_call({:execute_command, command, _arg1, _arg2}, _from, state) do
+    case CommandHandler.process_command(command, state) do
       {:ok, result} ->
         {:reply, {:ok, result}, state}
 
@@ -273,15 +279,15 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:get_plugin_state, plugin_id}, _from, state) do
-    case Map.get(state.plugin_states, plugin_id) do
-      nil -> {:reply, {:error, :plugin_not_found}, state}
-      plugin_state -> {:reply, {:ok, plugin_state}, state}
+    case StateManager.get_plugin_state(plugin_id, state) do
+      {:ok, plugin_state} -> {:reply, {:ok, plugin_state}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
   @impl GenServer
   def handle_call({:initialize_plugin, plugin_name, config}, _from, state) do
-    case state.lifecycle_helper_module.initialize_plugin(
+    case LifecycleManager.initialize_plugin(
            plugin_name,
            config,
            state.plugins,
@@ -341,21 +347,16 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:get_plugin_config, plugin_name}, _from, state) do
-    case Map.get(state.plugin_config, plugin_name) do
-      nil -> {:reply, {:error, :plugin_not_found}, state}
-      config -> {:reply, {:ok, config}, state}
+    case StateManager.get_plugin_config(plugin_name, state) do
+      {:ok, config} -> {:reply, {:ok, config}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
   @impl GenServer
   def handle_call({:update_plugin_config, plugin_name, config}, _from, state) do
-    case validate_plugin_config_static(plugin_name, config) do
-      :ok ->
-        updated_state = %{
-          state
-          | plugin_config: Map.put(state.plugin_config, plugin_name, config)
-        }
-
+    case StateManager.update_plugin_config(plugin_name, config, state) do
+      updated_state when is_map(updated_state) ->
         {:reply, {:ok, updated_state}, updated_state}
 
       {:error, reason} ->
@@ -365,34 +366,19 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:set_plugin_state, plugin_id, new_state}, _from, state) do
-    updated_state =
-      Raxol.Core.Runtime.Plugins.StateManager.set_plugin_state(
-        plugin_id,
-        new_state,
-        state
-      )
-
+    updated_state = StateManager.set_plugin_state(plugin_id, new_state, state)
     {:reply, :ok, updated_state}
   end
 
   @impl GenServer
   def handle_call({:update_plugin_state, plugin_id, update_fun}, _from, state) do
-    updated_state =
-      Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
-        plugin_id,
-        update_fun,
-        state
-      )
-
+    updated_state = StateManager.update_plugin_state(plugin_id, update_fun, state)
     {:reply, :ok, updated_state}
   end
 
   @impl GenServer
   def handle_call({:process_command, command}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.CommandHandler.process_command(
-           command,
-           state
-         ) do
+    case CommandHandler.process_command(command, state) do
       {:ok, result} -> {:reply, {:ok, result}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
@@ -413,7 +399,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Send plugin load attempted event
     send(state.runtime_pid, {:plugin_load_attempted, module})
 
-    case state.lifecycle_helper_module.load_plugin_by_module(
+    case LifecycleManager.load_plugin_by_module(
            module,
            config,
            state.plugins,
@@ -424,9 +410,17 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
            state.plugin_config
          ) do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
+        # Extract the plugin ID from the updated states
+        plugin_id =
+          case Map.keys(updated_states) do
+            [id] -> id  # Take the first (and only) plugin ID
+            _ -> "unknown_plugin"
+          end
+
         updated_state = %{
           state
-          | metadata: updated_metadata,
+          | plugins: Map.put(state.plugins, plugin_id, module),
+            metadata: updated_metadata,
             plugin_states: updated_states,
             command_registry_table: updated_table
         }
@@ -502,10 +496,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:enable_plugin, plugin_id}, _from, state) do
-    case state.lifecycle_helper_module.enable_plugin(
-           plugin_id,
-           state
-         ) do
+    case LifecycleManager.enable_plugin(plugin_id, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
 
@@ -516,10 +507,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl GenServer
   def handle_call({:disable_plugin, plugin_id}, _from, state) do
-    case state.lifecycle_helper_module.disable_plugin(
-           plugin_id,
-           state
-         ) do
+    case LifecycleManager.disable_plugin(plugin_id, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
 
@@ -533,12 +521,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Send plugin reload attempted event
     send(state.runtime_pid, {:plugin_reload_attempted, plugin_id})
 
-    operation =
-      state.lifecycle_helper_module.reload_plugin(
-        plugin_id,
-        state
-      )
-
+    operation = LifecycleManager.reload_plugin(plugin_id, state)
     handle_plugin_operation(operation, plugin_id, state, "reload")
   end
 
@@ -645,7 +628,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     final_state =
       Enum.reduce(Enum.reverse(state.load_order), state, fn plugin_id,
                                                             acc_state ->
-        case acc_state.lifecycle_helper_module.cleanup_plugin(
+        case LifecycleManager.cleanup_plugin(
                plugin_id,
                acc_state.metadata
              ) do
@@ -673,7 +656,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       "[#{__MODULE__}] Starting internal plugin discovery and initialization."
     )
 
-    case state.lifecycle_helper_module.initialize_plugins(
+    case LifecycleManager.initialize_plugins(
            state.plugins,
            state.metadata,
            state.plugin_config,
@@ -772,7 +755,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @impl GenServer
   def handle_info({:file_event, path}, state) do
     operation =
-      state.lifecycle_helper_module.reload_plugin_from_disk(
+      LifecycleManager.reload_plugin_from_disk(
         state.plugin_id,
         path,
         state.plugins,
@@ -786,7 +769,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     case operation do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
         updated_state =
-          update_plugin_state(
+          StateManager.update_plugin_state(
             state,
             updated_metadata,
             updated_states,
@@ -929,52 +912,16 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   Validates a plugin's configuration.
   """
   def validate_plugin_config(plugin_name, config) do
-    # This is a static validation that doesn't require the manager state
-    case validate_plugin_config_static(plugin_name, config) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
-    end
+    StateManager.validate_plugin_config(plugin_name, config)
   end
 
-  # Helper functions
-  defp execute_command(command, arg1, arg2) do
-    case command do
-      :load_plugin ->
-        load_plugin(arg1)
 
-      :unload_plugin ->
-        unload_plugin(arg1)
-
-      :get_plugin ->
-        get_plugin(arg1)
-
-      :update_plugin ->
-        update_plugin(arg1, arg2)
-
-      :list_plugins ->
-        list_plugins()
-
-      :get_plugin_state ->
-        get_plugin_state(arg1)
-
-      :set_plugin_state ->
-        set_plugin_state(arg1, arg2)
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[Plugins.Manager] Unknown command: #{inspect(command)}",
-          %{command: command, arg1: arg1, arg2: arg2}
-        )
-
-        {:error, :unknown_command}
-    end
-  end
 
   defp handle_plugin_operation(operation, plugin_id, state, success_message) do
     case operation do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
         updated_state =
-          update_plugin_state(
+          StateManager.update_plugin_state(
             state,
             updated_metadata,
             updated_states,
@@ -1081,41 +1028,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  # Helper function to validate plugin configuration
-  defp validate_plugin_config_static(_plugin_name, config)
-       when is_map(config) do
-    # Basic validation - ensure config is a map and has required fields
-    case config do
-      %{enabled: enabled} when is_boolean(enabled) ->
-        :ok
 
-      %{} ->
-        # Config is valid if it's a map, even without required fields
-        :ok
-
-      _ ->
-        {:error, :invalid_config_format}
-    end
-  end
-
-  defp validate_plugin_config_static(_plugin_name, _config) do
-    {:error, :invalid_config_format}
-  end
-
-  # Helper functions for state updates
-  defp update_plugin_state(
-         state,
-         updated_metadata,
-         updated_states,
-         updated_table
-       ) do
-    %{
-      state
-      | metadata: updated_metadata,
-        plugin_states: updated_states,
-        command_registry_table: updated_table
-    }
-  end
 
   @doc """
   Loads a plugin with the given name and configuration.
@@ -1162,7 +1075,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @spec handle_event(map(), any()) :: {:ok, map()} | {:error, any()}
   def handle_event(state, event) do
     # Delegate event handling to the lifecycle helper module
-    case state.lifecycle_helper_module.handle_event(
+    case LifecycleManager.handle_event(
            event,
            state.plugins,
            state.metadata,
