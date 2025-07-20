@@ -569,7 +569,12 @@ defmodule RaxolWeb.TerminalLive do
 
   # Initialize cache table in mount
   defp initialize_cache do
-    :ets.new(:terminal_cache, [:set, :public, :named_table])
+    case :ets.info(:terminal_cache) do
+      :undefined ->
+        :ets.new(:terminal_cache, [:set, :public, :named_table])
+      _ ->
+        :ok
+    end
   end
 
   defp broadcast_terminal_update(socket, terminal_html, cursor) do

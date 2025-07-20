@@ -269,6 +269,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec process_sequence(t(), binary()) :: {t(), :ok | {:error, atom()}}
   def process_sequence(state, data) when binary?(data) do
+    Logger.debug("SixelGraphics: process_sequence called with data: #{inspect(data)}")
+
     # Ensure palette is initialized
     state_with_palette =
       if map_size(state.palette) == 0 do
@@ -287,6 +289,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
     Logger.debug(
       "SixelGraphics: Color index 1 is #{inspect(Map.get(state_with_palette.palette, 1, :not_found))}"
     )
+
+    Logger.debug("SixelGraphics: Calling SixelParser.parse with data: #{inspect(data)}")
 
     case Raxol.Terminal.ANSI.SixelParser.parse(
            data,
@@ -339,6 +343,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
         {updated_state, :ok}
 
       {:error, reason} ->
+        Logger.debug("SixelGraphics: Parser returned error: #{inspect(reason)}")
         {state_with_palette, {:error, reason}}
     end
   end

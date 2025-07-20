@@ -17,55 +17,10 @@ defmodule Raxol.Cloud.EdgeComputing do
   * Edge-to-cloud data streaming
   """
 
-  alias Raxol.Cloud.EdgeComputing.{Cache, Queue, SyncManager}
+  alias Raxol.Cloud.EdgeComputing.{Core, Execution, Connection, Cache, Queue, SyncManager}
 
-  # Edge computing state
-  defmodule State do
-    @moduledoc false
-    defstruct [
-      :mode,
-      :config,
-      :edge_status,
-      :cloud_status,
-      :sync_status,
-      :resources,
-      :metrics
-    ]
-
-    def new do
-      %__MODULE__{
-        mode: :hybrid,
-        config: %{
-          connection_check_interval: 5000,
-          sync_interval: 30000,
-          retry_limit: 5,
-          compression_enabled: true,
-          # 100MB
-          offline_cache_size: 100_000_000,
-          priority_functions: []
-        },
-        edge_status: :initialized,
-        cloud_status: :unknown,
-        sync_status: :idle,
-        resources: %{
-          cpu_available: 0,
-          memory_available: 0,
-          storage_available: 0,
-          bandwidth_available: 0
-        },
-        metrics: %{
-          edge_requests: 0,
-          cloud_requests: 0,
-          sync_operations: 0,
-          sync_failures: 0,
-          last_successful_sync: nil
-        }
-      }
-    end
-  end
-
-  # Process dictionary key for edge computing state
-  @edge_key :raxol_edge_computing_state
+  # Import State from Core module
+  alias Raxol.Cloud.EdgeComputing.Core.State
 
   @doc """
   Initializes the edge computing system.
@@ -85,70 +40,12 @@ defmodule Raxol.Cloud.EdgeComputing do
       iex> init(mode: :hybrid)
       :ok
   """
-  def init(opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
-    state = State.new()
-
-    # Override defaults with provided options
-    config =
-      Keyword.take(opts, [
-        :mode,
-        :connection_check_interval,
-        :sync_interval,
-        :retry_limit,
-        :compression_enabled,
-        :offline_cache_size,
-        :priority_functions
-      ])
-
-    # Update state with provided config
-    state = update_config(state, config)
-
-    # Initialize resources information
-    state = %{state | resources: get_resource_info()}
-
-    # Store state
-    Process.put(@edge_key, state)
-
-    # Initialize cache, queue and sync manager
-    Cache.init(state.config)
-    Queue.init(state.config)
-    SyncManager.init(state.config)
-
-    # Start connection monitoring
-    schedule_connection_check(state.config.connection_check_interval)
-
-    :ok
-  end
+  defdelegate init(opts \\ []), to: Core
 
   @doc """
   Updates the edge computing configuration.
   """
-  def update_config(state \\ nil, config) do
-    config = if map?(config), do: Enum.into(config, []), else: config
-
-    with_state(state, fn s ->
-      # Merge new config with existing config
-      updated_config =
-        s.config
-        |> Map.merge(Map.new(config))
-
-      # Update mode if specified
-      updated_state =
-        case Keyword.get(config, :mode) do
-          nil ->
-            s
-
-          mode when mode in [:edge_only, :cloud_only, :hybrid] ->
-            %{s | mode: mode}
-
-          _ ->
-            s
-        end
-
-      %{updated_state | config: updated_config}
-    end)
-  end
+  defdelegate update_config(state \\ nil, config), to: Core
 
   @doc """
   Executes a function at the edge or in the cloud based on current mode and conditions.
@@ -166,33 +63,7 @@ defmodule Raxol.Cloud.EdgeComputing do
       iex> execute(fn -> process_data(data) end)
       {:ok, result}
   """
-  def execute(func, opts \\ []) when function?(func, 0) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
-    state = get_state()
-
-    execute_location = determine_execution_location(state, opts)
-
-    case execute_location do
-      :edge ->
-        execute_at_edge(func, opts)
-
-      :cloud ->
-        execute_in_cloud(func, opts)
-
-      :hybrid ->
-        # Try edge first, fallback to cloud
-        case execute_at_edge(func, opts) do
-          {:ok, result} ->
-            {:ok, result}
-
-          {:error, _reason} ->
-            # Log the edge failure
-            record_metric(:edge_failure)
-            # Try cloud as fallback
-            execute_in_cloud(func, opts)
-        end
-    end
-  end
+  defdelegate execute(func, opts \\ []), to: Execution
 
   @doc """
   Synchronizes data between edge and cloud.
@@ -217,266 +88,34 @@ defmodule Raxol.Cloud.EdgeComputing do
   @doc """
   Checks if the system is currently operating in offline mode.
   """
-  def offline? do
-    state = get_state()
-    state.cloud_status != :connected
-  end
+  defdelegate offline?, to: Core
 
   @doc """
   Gets the current status of the edge computing system.
   """
-  def status do
-    state = get_state()
-
-    %{
-      mode: state.mode,
-      edge_status: state.edge_status,
-      cloud_status: state.cloud_status,
-      sync_status: state.sync_status,
-      metrics: state.metrics,
-      resources: state.resources,
-      queued_operations: Queue.pending_count(),
-      cache_usage: Cache.usage()
-    }
-  end
+  defdelegate status, to: Core
 
   @doc """
   Manually checks the cloud connection status and updates the system state.
   """
-  def check_connection do
-    state = get_state()
-
-    # Skip if in edge-only mode
-    if state.mode != :edge_only do
-      # Perform actual connection check
-      connection_result = perform_connection_check()
-
-      # Update state with connection result
-      with_state(fn s ->
-        %{
-          s
-          | cloud_status:
-              if(connection_result, do: :connected, else: :disconnected)
-        }
-      end)
-
-      # Process queued operations if we're connected
-      if connection_result do
-        _ = process_pending_operations()
-      end
-
-      # Reschedule the check
-      _ = schedule_connection_check(state.config.connection_check_interval)
-
-      connection_result
-    else
-      # In edge-only mode, we don't care about cloud connection
-      false
-    end
-  end
+  defdelegate check_connection, to: Connection
 
   @doc """
   Forces the system into a specific mode.
   """
-  def force_mode(mode) when mode in [:edge_only, :cloud_only, :hybrid] do
-    with_state(fn state ->
-      %{state | mode: mode}
-    end)
-
-    :ok
-  end
+  defdelegate force_mode(mode), to: Core
 
   @doc """
   Gets metrics for the edge computing system.
   """
-  def get_metrics do
-    state = get_state()
-    state.metrics
-  end
+  defdelegate get_metrics, to: Core
 
   @doc """
   Clears the edge cache.
   """
-  def clear_cache do
-    Cache.clear()
-    :ok
-  end
+  defdelegate clear_cache, to: Core
 
-  # Private functions
-
-  defp with_state(arg1, arg2 \\ nil) do
-    {state, fun} =
-      if function?(arg1) do
-        {get_state(), arg1}
-      else
-        {arg1 || get_state(), arg2}
-      end
-
-    result = fun.(state)
-
-    if map?(result) and Map.has_key?(result, :mode) do
-      # If a state map is returned, update the state
-      Process.put(@edge_key, result)
-      result
-    else
-      # Otherwise just return the result
-      result
-    end
-  end
-
-  defp get_state do
-    Process.get(@edge_key) || State.new()
-  end
-
-  defp determine_execution_location(state, opts) do
-    force_edge = Keyword.get(opts, :force_edge, false)
-    force_cloud = Keyword.get(opts, :force_cloud, false)
-
-    cond do
-      # Check forced options
-      force_edge ->
-        :edge
-
-      force_cloud ->
-        :cloud
-
-      # Check configured mode
-      state.mode == :edge_only ->
-        :edge
-
-      state.mode == :cloud_only ->
-        :cloud
-
-      # If hybrid, check cloud status
-      state.mode == :hybrid and state.cloud_status != :connected ->
-        :edge
-
-      # If hybrid, check if function is prioritized for edge
-      state.mode == :hybrid and prioritized_for_edge?(opts[:function_name]) ->
-        :edge
-
-      # If hybrid, check resource availability for optimal execution
-      state.mode == :hybrid ->
-        :hybrid
-
-      # Default to edge
-      true ->
-        :edge
-    end
-  end
-
-  defp prioritized_for_edge?(function_name) do
-    state = get_state()
-
-    function_name && function_name in state.config.priority_functions
-  end
-
-  defp execute_at_edge(func, opts) do
-    # Record metric
-    record_metric(:edge_request)
-
-    # Execute with timeout
-    timeout = Keyword.get(opts, :timeout, 5000)
-
-    task = Task.async(func)
-
-    try do
-      result = Task.await(task, timeout)
-      {:ok, result}
-    catch
-      :exit, {:timeout, _} ->
-        _ = Task.shutdown(task)
-        {:error, :timeout}
-
-      kind, reason ->
-        _ = Task.shutdown(task)
-        {:error, {kind, reason}}
-    end
-  end
-
-  defp execute_in_cloud(func, opts) do
-    # Record metric
-    record_metric(:cloud_request)
-
-    state = get_state()
-
-    # Check if we're connected to the cloud
-    if state.cloud_status == :connected do
-      # Execute the function in the cloud
-      try do
-        # Simulate cloud execution
-        _result = func.()
-        :ok
-      rescue
-        _ ->
-          # In a real implementation, we would track attempts
-          :retry
-      end
-    else
-      # We're offline, queue the operation for later
-      operation_id =
-        Queue.enqueue_operation(:function, %{function: func, options: opts})
-
-      # Return queued status
-      {:ok, %{status: :queued, operation_id: operation_id}}
-    end
-  end
-
-  defp process_pending_operations do
-    # Process operations in the queue
-    _process_result = Queue.process_pending()
-  end
-
-  defp perform_connection_check do
-    # In a real implementation, this would check actual network connectivity
-    # For now, just simulate with a high success rate
-    :rand.uniform(100) <= 95
-  end
-
-  defp schedule_connection_check(interval) do
-    # This would set up a timer in a real implementation
-    # For demo purposes, we'll just use a simple spawn
-    spawn(fn ->
-      Process.sleep(interval)
-      check_connection()
-    end)
-  end
-
-  defp get_resource_info do
-    # In a real implementation, this would check actual system resources
-    %{
-      # percentage
-      cpu_available: 80,
-      # bytes
-      memory_available: 500_000_000,
-      # bytes
-      storage_available: 1_000_000_000,
-      # bytes/s
-      bandwidth_available: 1_000_000
-    }
-  end
-
-  defp record_metric(metric_type) do
-    with_state(fn state ->
-      updated_metrics =
-        case metric_type do
-          :edge_request ->
-            Map.update!(state.metrics, :edge_requests, &(&1 + 1))
-
-          :cloud_request ->
-            Map.update!(state.metrics, :cloud_requests, &(&1 + 1))
-
-          :edge_failure ->
-            Map.update!(state.metrics, :edge_failures, &(&1 + 1))
-
-          _other ->
-            # Handle any other metric types
-            state.metrics
-        end
-
-      %{state | metrics: updated_metrics}
-    end)
-  end
+  # All private functions have been moved to focused modules
 end
 
 # Cache implementation for edge computing

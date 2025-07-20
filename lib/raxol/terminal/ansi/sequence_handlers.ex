@@ -358,6 +358,23 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
 
   def parse_unknown(_), do: nil
 
+  @doc """
+  Parses mouse event sequences in the format ESC[M<button><x><y>.
+  """
+  @spec parse_mouse_event(binary()) :: {:mouse_event, binary(), binary(), nil} | nil
+  def parse_mouse_event(<<0x1B, ?[, ?M, rest::binary>>) do
+    # Mouse event format: ESC[M<button><x><y>
+    # where button, x, y are single bytes
+    case rest do
+      <<button, x, y, remaining::binary>> ->
+        {:mouse_event, <<button, x, y>>, remaining, nil}
+      _ ->
+        nil
+    end
+  end
+
+  def parse_mouse_event(_), do: nil
+
   # Private functions
 
   defp find_matching_parser(rest) do
@@ -391,6 +408,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
       :parse_csi_general,
       :parse_esc_equals,
       :parse_esc_greater,
+      :parse_mouse_event,
       :parse_unknown
     ]
   end

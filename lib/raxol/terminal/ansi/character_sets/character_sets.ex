@@ -321,7 +321,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   def charset_code_to_module(?<), do: Raxol.Terminal.ANSI.CharacterSets.DEC
   # DEC Technical (often ?>) - Placeholder, actual module may vary
   def charset_code_to_module(?>),
-    do: Raxol.Terminal.ANSI.CharacterSets.DECTechnical
+    do: Raxol.Terminal.ANSI.CharacterSets.DEC
 
   # Add other specific mappings as needed based on actual available modules
   # For codes mentioned in tests if they differ or need specific modules:

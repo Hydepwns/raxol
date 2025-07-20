@@ -97,7 +97,7 @@ defmodule Raxol.Test.MockApplicationSupervisor do
       {Raxol.Core.UserPreferences, [test_mode?: true]}
 
     # Add Accounts for tests
-    # accounts_child_spec = Raxol.Accounts  # Temporarily commented out to debug Repo startup
+    accounts_child_spec = Raxol.Accounts
 
     # Add Terminal Sync System for tests
     sync_system_child_spec = {Raxol.Terminal.Sync.System, []}
@@ -114,7 +114,7 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     children = [
       pubsub_child_spec,
       user_preferences_child_spec,
-      # accounts_child_spec,  # Temporarily commented out to debug Repo startup
+      accounts_child_spec,
       sync_system_child_spec,
       terminal_supervisor_child_spec,
       web_supervisor_child_spec,
