@@ -99,7 +99,7 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       start_time = System.monotonic_time()
 
       # Fill buffer with data using efficient fill_region operation
-      cell = BufferCell.new("X", TextFormatting.new(fg: :red))
+      cell = BufferCell.new("X", TextFormatting.new(foreground: :red))
       _buffer = Buffer.fill_region(buffer, 0, 0, 200, 100, cell)
 
       end_time = System.monotonic_time()
@@ -118,14 +118,14 @@ defmodule Raxol.Core.Buffer.BufferOperationsTest do
       # Measure time for rapid updates
       start_time = System.monotonic_time()
 
-      # Perform 1000 rapid updates
-      _buffer =
-        Enum.reduce(1..1000, buffer, fn i, acc ->
-          x = rem(i, 80)
-          y = div(i, 80)
-          cell = BufferCell.new("X", TextFormatting.new(fg: :blue))
-          Buffer.set_cell(acc, x, y, cell)
-        end)
+              # Perform 1000 rapid updates
+        _buffer =
+          Enum.reduce(1..1000, buffer, fn i, acc ->
+            x = rem(i, 80)
+            y = div(i, 80)
+            cell = BufferCell.new("X", TextFormatting.new(foreground: :blue))
+            Buffer.set_cell(acc, x, y, cell)
+          end)
 
       end_time = System.monotonic_time()
 

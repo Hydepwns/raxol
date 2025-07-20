@@ -338,7 +338,8 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state, _output} = Emulator.process_input(initial_state, "\e[?80h")
 
       # Create a simple SIXEL image: 1x1 black pixel
-      sixel_sequence = "\ePq#0;2;0;0;0#0?\e\\"
+      # Use @ character (pattern 1) instead of ? (pattern 0) to actually draw a pixel
+      sixel_sequence = "\ePq#0;2;0;0;0#0@\e\\"
 
       {final_state, _output} = Emulator.process_input(state, sixel_sequence)
 

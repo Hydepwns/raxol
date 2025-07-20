@@ -14,7 +14,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
   defp fill_buffer(buffer, width, height, char \\ "X", color \\ :red) do
     Enum.reduce(0..(height - 1), buffer, fn y, acc ->
       Enum.reduce(0..(width - 1), acc, fn x, acc ->
-        cell = Cell.new(char, TextFormatting.new(fg: color))
+        cell = Cell.new(char, TextFormatting.new(foreground: color))
         Buffer.set_cell(acc, x, y, cell)
       end)
     end)

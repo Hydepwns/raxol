@@ -201,10 +201,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
         )
 
       assert result_portuguese.charset_state.g0 ==
-               initial_g0_for_portuguese_call
+               Raxol.Terminal.ANSI.CharacterSets.ASCII
 
       result_A = unwrap_ok(CSIHandlers.handle_scs(emulator, "A", 40))
-      assert result_A.charset_state.g0 == :uk
+      assert result_A.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.UK
     end
 
     test "handles unknown code/final_byte combination gracefully", %{
@@ -984,7 +984,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "device status" do
     test "reports cursor position", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 9, col: 9}}
+      emulator = %{emulator | cursor: %{emulator.cursor | row: 9, col: 9, position: {9, 9}}}
       result = CSIHandlers.handle_device_status(emulator, 6)
       assert Raxol.Terminal.OutputManager.get_content(result) =~ ~r/\x1B\[10;10R/
     end

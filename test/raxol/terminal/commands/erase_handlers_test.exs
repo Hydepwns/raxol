@@ -91,8 +91,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
 
   describe "handle_K/2 (Erase in Line)" do
     test "erases from cursor to end of line (mode 0)", %{emulator: emulator} do
-      # Set cursor to middle of line
-      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 0})
+      # Set cursor to middle of line (row 0, column 5)
+      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {0, 5})
 
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
@@ -111,8 +111,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
     test "erases from beginning of line to cursor (mode 1)", %{
       emulator: emulator
     } do
-      # Set cursor to middle of line
-      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 0})
+      # Set cursor to middle of line (row 0, column 5)
+      Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {0, 5})
 
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")

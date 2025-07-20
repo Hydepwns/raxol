@@ -22,10 +22,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
     # Clean up after tests
     on_exit(fn ->
       ThemeIntegration.cleanup()
-      # Stop UserPreferences only if we started it
-      if Process.whereis(UserPreferences) do
-        GenServer.stop(UserPreferences)
-      end
+      # Don't stop UserPreferences - let it be managed by the application
     end)
 
     :ok

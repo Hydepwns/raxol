@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       {emulator, _} = Emulator.process_input(emulator, "abcdef")
       # CUP to column 2 (index 1)
       {emulator, _} = Emulator.process_input(emulator, "\e[2G")
-      assert Emulator.get_cursor_position(emulator) == {1, 0}
+      assert Emulator.get_cursor_position(emulator) == {0, 1}
 
       # Insert 3 characters (CSI 3 @)
       {emulator, _} = Emulator.process_input(emulator, "\e[3@")
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       {emulator, _} = Emulator.process_input(emulator, "abcdefghij")
       # CUP to column 3 (index 2)
       {emulator, _} = Emulator.process_input(emulator, "\e[3G")
-      assert Emulator.get_cursor_position(emulator) == {2, 0}
+      assert Emulator.get_cursor_position(emulator) == {0, 2}
 
       # Delete 2 characters (CSI 2 P)
       {emulator, _} = Emulator.process_input(emulator, "\e[2P")
@@ -74,12 +74,20 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
 
       # Move cursor to row 3 (index 2, inside region)
       {emulator, _} = Emulator.process_input(emulator, "\e[3;1H")
-      assert Emulator.get_cursor_position(emulator) == {0, 2}
+      assert Emulator.get_cursor_position(emulator) == {2, 0}
 
       # Insert 2 lines (CSI 2 L)
       {emulator, _} = Emulator.process_input(emulator, "\e[2L")
 
       buffer = Emulator.get_active_buffer(emulator)
+
+      # Debug: Print actual buffer content
+      IO.puts("DEBUG: Actual buffer content after Insert Line:")
+      Enum.each(0..4, fn y ->
+        line_cells = ScreenBuffer.get_line(buffer, y)
+        line_text = Enum.map_join(line_cells, &(&1.char || " "))
+        IO.puts("DEBUG: Line #{y}: '#{line_text}'")
+      end)
 
       # Revised expected lines based on IL inserting AT cursor within region AND 5-char width truncation
       expected_lines = ["Line ", "Line ", "     ", "     ", "Line "]

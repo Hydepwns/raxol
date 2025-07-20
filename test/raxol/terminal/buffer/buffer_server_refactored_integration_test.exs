@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
   alias Raxol.Terminal.Buffer.BufferServerRefactored
   alias Raxol.Terminal.Buffer, as: Buffer
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.Buffer.Cell, as: BufferCell
   alias Raxol.Terminal.ANSI.TextFormatting
 
   setup do
@@ -25,18 +24,24 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
 
       # Get cell and verify
       {:ok, retrieved_cell} = BufferServerRefactored.get_cell(pid, 1, 1)
-      assert BufferCell.get_char(retrieved_cell) == "A"
+      assert Cell.get_char(retrieved_cell) == "A"
     end
 
-    test "can set and get cells synchronously", %{buffer_pid: pid} do
-      cell = Cell.new("B", TextFormatting.new())
+    test "can set and get cell with style", %{buffer_pid: pid} do
+      # Set a cell with style
+      :ok =
+        BufferServerRefactored.set_cell_sync(
+          pid,
+          0,
+          0,
+          Cell.new("B", TextFormatting.new())
+        )
 
-      # Set cell synchronously
-      :ok = BufferServerRefactored.set_cell_sync(pid, 2, 2, cell)
+      # Get the cell
+      {:ok, retrieved_cell} = BufferServerRefactored.get_cell(pid, 0, 0)
 
-      # Get cell and verify
-      {:ok, retrieved_cell} = BufferServerRefactored.get_cell(pid, 2, 2)
-      assert BufferCell.get_char(retrieved_cell) == "B"
+      # Verify the cell content
+      assert Cell.get_char(retrieved_cell) == "B"
     end
 
     test "handles invalid coordinates gracefully", %{buffer_pid: pid} do
@@ -73,10 +78,10 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       {:ok, cell3} = BufferServerRefactored.get_cell(pid, 0, 1)
       {:ok, cell4} = BufferServerRefactored.get_cell(pid, 0, 2)
 
-      assert BufferCell.get_char(cell1) == "H"
-      assert BufferCell.get_char(cell2) == "i"
-      assert BufferCell.get_char(cell3) == "H"
-      assert BufferCell.get_char(cell4) == "X"
+      assert Cell.get_char(cell1) == "H"
+      assert Cell.get_char(cell2) == "i"
+      assert Cell.get_char(cell3) == "H"
+      assert Cell.get_char(cell4) == "X"
     end
 
     test "batch operations with mixed valid and invalid coordinates", %{
@@ -99,8 +104,8 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       {:ok, cell1} = BufferServerRefactored.get_cell(pid, 0, 0)
       {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 1)
 
-      assert BufferCell.get_char(cell1) == "A"
-      assert BufferCell.get_char(cell2) == "C"
+      assert Cell.get_char(cell1) == "A"
+      assert Cell.get_char(cell2) == "C"
     end
   end
 
@@ -110,36 +115,9 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       :ok =
         BufferServerRefactored.atomic_operation(pid, fn buffer ->
           buffer
-          |> Buffer.set_cell(
-            0,
-            0,
-            BufferCell.new(
-              char: "A",
-              foreground: 7,
-              background: 0,
-              attributes: %{}
-            )
-          )
-          |> Buffer.set_cell(
-            1,
-            0,
-            BufferCell.new(
-              char: "B",
-              foreground: 7,
-              background: 0,
-              attributes: %{}
-            )
-          )
-          |> Buffer.set_cell(
-            2,
-            0,
-            BufferCell.new(
-              char: "C",
-              foreground: 7,
-              background: 0,
-              attributes: %{}
-            )
-          )
+          |> Raxol.Terminal.ScreenBuffer.write_char(0, 0, "A", %{foreground: 7, background: 0})
+          |> Raxol.Terminal.ScreenBuffer.write_char(1, 0, "B", %{foreground: 7, background: 0})
+          |> Raxol.Terminal.ScreenBuffer.write_char(2, 0, "C", %{foreground: 7, background: 0})
         end)
 
       # Verify all cells were set atomically
@@ -147,9 +125,9 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 0)
       {:ok, cell3} = BufferServerRefactored.get_cell(pid, 2, 0)
 
-      assert BufferCell.get_char(cell1) == "A"
-      assert BufferCell.get_char(cell2) == "B"
-      assert BufferCell.get_char(cell3) == "C"
+      assert Cell.get_char(cell1) == "A"
+      assert Cell.get_char(cell2) == "B"
+      assert Cell.get_char(cell3) == "C"
     end
   end
 
@@ -294,7 +272,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
 
       # Verify content is preserved
       {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
-      assert BufferCell.get_char(cell) == "A"
+      assert Cell.get_char(cell) == "A"
     end
   end
 
@@ -318,7 +296,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       # Verify all cells were written
       for i <- 0..9 do
         {:ok, cell} = BufferServerRefactored.get_cell(pid, i, 0)
-        assert BufferCell.get_char(cell) == "X#{i}"
+        assert Cell.get_char(cell) == "X#{i}"
       end
     end
 
@@ -337,7 +315,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         for _ <- 1..5 do
                   Task.async(fn ->
           {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
-          BufferCell.get_char(cell)
+          Cell.get_char(cell)
         end)
         end
 
@@ -362,7 +340,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       # Verify write results
       for i <- 1..3 do
         {:ok, cell} = BufferServerRefactored.get_cell(pid, i, 0)
-        assert BufferCell.get_char(cell) == "B#{i}"
+        assert Cell.get_char(cell) == "B#{i}"
       end
     end
   end
@@ -407,7 +385,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       # Verify all operations completed
       for x <- 0..9, y <- 0..4 do
         {:ok, cell} = BufferServerRefactored.get_cell(pid, x, y)
-        assert BufferCell.get_char(cell) == "#{x}#{y}"
+        assert Cell.get_char(cell) == "#{x}#{y}"
       end
 
       # Log performance for analysis

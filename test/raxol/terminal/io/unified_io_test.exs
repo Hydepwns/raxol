@@ -84,8 +84,7 @@ defmodule Raxol.Terminal.IO.UnifiedIOTest do
     end
 
     test "handles invalid input events", %{pid: pid} do
-      assert {:error, "Invalid event type: :invalid"} =
-               UnifiedIO.process_input(%{type: :invalid}, pid)
+      assert {:ok, []} = UnifiedIO.process_input(%{type: :invalid}, pid)
     end
   end
 

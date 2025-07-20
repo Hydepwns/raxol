@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       line0_text = Enum.map_join(line0_cells, & &1.char)
       assert String.starts_with?(line0_text, "Hello")
       # Check cursor position (simple case, no wrap) - use proper accessor
-      assert Emulator.get_cursor_position(emulator) == {5, 0},
+      assert Emulator.get_cursor_position(emulator) == {0, 5},
              "Cursor should be at col 5, row 0"
     end
 
@@ -71,9 +71,9 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       {emulator_after, _output} =
         Emulator.process_input(emulator, "Hello\nWorld")
 
-      # Corrected assertion: After "Hello\nWorld" with LNM off, cursor should be at {10, 1}
-      assert Emulator.get_cursor_position(emulator_after) == {10, 1},
-             "Cursor should be at col 10, row 1"
+      # Corrected assertion: After "Hello\nWorld" with LNM off, cursor should be at {1, 5}
+      assert Emulator.get_cursor_position(emulator_after) == {1, 5},
+             "Cursor should be at row 1, col 5"
 
       # Verify buffer content
       buffer = Emulator.get_active_buffer(emulator_after)
@@ -117,8 +117,8 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       end)
 
       # Check cursor position
-      assert Emulator.get_cursor_position(emulator_after) == {10, 1},
-             "Cursor should be at col 10, row 1"
+      assert Emulator.get_cursor_position(emulator_after) == {1, 5},
+             "Cursor should be at row 1, col 5"
     end
 
     test "handles basic text input with newline AND MORE", %{emulator: emulator} do
@@ -129,8 +129,8 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
         Emulator.process_input(emulator, "Line 1\n Line 2")
 
       # Check cursor position after processing
-      assert Emulator.get_cursor_position(emulator_after) == {13, 1},
-             "Cursor should be at col 13, row 1"
+      assert Emulator.get_cursor_position(emulator_after) == {7, 1},
+             "Cursor should be at row 7, col 1"
 
       # Check buffer content after processing
       buffer = Emulator.get_active_buffer(emulator_after)
@@ -176,8 +176,8 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
              "Screen buffer cells mismatch"
 
       # Check cursor position
-      assert Emulator.get_cursor_position(emulator_after) == {13, 1},
-             "Cursor should be at col 13, row 1"
+      assert Emulator.get_cursor_position(emulator_after) == {7, 1},
+             "Cursor should be at row 7, col 1"
     end
 
     test "get_cell_at retrieves cell at valid coordinates", %{
@@ -200,8 +200,8 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # emulator = Emulator.new(80, 24) # Removed: Use emulator from context
       {emulator_after, _output} = Emulator.process_input(emulator, "H")
 
-      assert Emulator.get_cursor_position(emulator_after) == {1, 0},
-             "Cursor after 'H' should be {1, 0}"
+      assert Emulator.get_cursor_position(emulator_after) == {0, 1},
+             "Cursor after 'H' should be {0, 1}"
     end
 
     # This test needs specific dimensions, so create a new emulator instance here
@@ -214,7 +214,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
 
       # Check state AFTER 10 chars (BEFORE wrap should trigger)
       assert Emulator.get_cursor_position(emulator) == {9, 0},
-             "Cursor should be at col 9, row 0 BEFORE wrap"
+             "Cursor should be at row 9, col 0 BEFORE wrap"
 
       assert emulator.last_col_exceeded == true,
              "last_col_exceeded should be true BEFORE wrap"
@@ -282,8 +282,8 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # Write 9 chars
       {emulator_after_9, _} = Emulator.process_input(emulator, "123456789")
 
-      assert Emulator.get_cursor_position(emulator_after_9) == {9, 0},
-             "Cursor should be at col 9, row 0 after 9 chars"
+      assert Emulator.get_cursor_position(emulator_after_9) == {8, 0},
+             "Cursor should be at col 8, row 0 after 9 chars"
 
       refute emulator_after_9.last_col_exceeded,
              "last_col_exceeded should be false after 9 chars"

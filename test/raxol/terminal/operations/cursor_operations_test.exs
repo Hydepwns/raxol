@@ -10,16 +10,16 @@ defmodule Raxol.Terminal.Operations.CursorOperationsTest do
 
     test "returns updated cursor position" do
       emulator = TestHelper.create_test_emulator()
-      emulator = CursorOperations.set_cursor_position(emulator, 10, 5)
-      assert CursorOperations.get_cursor_position(emulator) == {10, 5}
+      emulator = CursorOperations.set_cursor_position(emulator, 5, 10)
+      assert CursorOperations.get_cursor_position(emulator) == {5, 10}
     end
   end
 
   describe "set_cursor_position/3" do
     test "sets cursor position within bounds" do
       emulator = TestHelper.create_test_emulator()
-      emulator = CursorOperations.set_cursor_position(emulator, 10, 5)
-      assert CursorOperations.get_cursor_position(emulator) == {10, 5}
+      emulator = CursorOperations.set_cursor_position(emulator, 5, 10)
+      assert CursorOperations.get_cursor_position(emulator) == {5, 10}
     end
 
     test "clamps cursor position to screen bounds" do

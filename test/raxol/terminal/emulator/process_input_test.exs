@@ -16,11 +16,11 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       emulator = Emulator.new(80, 24)
       # Move cursor down first by processing a cursor down sequence
       {emulator, ""} = Emulator.process_input(emulator, "\e[5B")
-      assert Emulator.get_cursor_position_struct(emulator) == {0, 5}
+      assert Emulator.get_cursor_position_struct(emulator) == {5, 0}
 
       # Process CSI A (Cursor Up)
       {emulator, ""} = Emulator.process_input(emulator, "\e[A")
-      assert Emulator.get_cursor_position_struct(emulator) == {0, 4}
+      assert Emulator.get_cursor_position_struct(emulator) == {4, 0}
     end
 
     test ~c"handles parameterized CSI sequence (Cursor Down 5)" do
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
 
       # Process CSI 5 B (Cursor Down 5)
       {emulator, ""} = Emulator.process_input(emulator, "\e[5B")
-      assert Emulator.get_cursor_position_struct(emulator) == {0, 5}
+      assert Emulator.get_cursor_position_struct(emulator) == {5, 0}
     end
 
     test ~c"handles multi-parameter CSI sequence (Cursor Position 10, 20)" do
@@ -38,8 +38,8 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
 
       # Process CSI 20;10 H (Cursor Position row 20, col 10)
       {emulator, ""} = Emulator.process_input(emulator, "\e[20;10H")
-      # Remember: row/col are 1-based in sequence, state is {col, row} 0-based
-      assert Emulator.get_cursor_position_struct(emulator) == {9, 19}
+      # Remember: row/col are 1-based in sequence, state is {row, col} 0-based
+      assert Emulator.get_cursor_position_struct(emulator) == {19, 9}
     end
 
     test ~c"handles mixed printable text and CSI sequences" do
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       assert ScreenBuffer.get_cell_at(buffer, 5, 0).char == "W"
       assert ScreenBuffer.get_cell_at(buffer, 9, 0).char == "d"
       # Final cursor position
-      assert Emulator.get_cursor_position_struct(emulator) == {10, 0}
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 10}
     end
 
     test ~c"handles OSC sequence (Set Window Title)" do
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
 
       # Process ESC D (Index - move down one line, same column)
       {emulator, ""} = Emulator.process_input(emulator, "\eD")
-      assert Emulator.get_cursor_position_struct(emulator) == {5, 6}
+      assert Emulator.get_cursor_position_struct(emulator) == {6, 5}
     end
 
     test ~c"handles basic DCS sequence" do
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       # Check buffer for "Hello" and cursor position
       buffer = Emulator.get_active_buffer(emulator)
       assert ScreenBuffer.get_cell_at(buffer, 0, 0).char == "H"
-      assert Emulator.get_cursor_position_struct(emulator) == {5, 0}
+      assert Emulator.get_cursor_position_struct(emulator) == {0, 5}
     end
 
     test ~c"handles alternate screen buffer mode correctly" do
