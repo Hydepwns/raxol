@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
   """
   def handle_scs(emulator, params_buffer, final_byte) do
     charset_code = parse_charset_code(params_buffer)
-    charset = get_charset(charset_code)
+    charset = get_charset_module(charset_code)
 
     field =
       case final_byte do
@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
       "" -> ?B
       # Special case: "16" maps to DEC Special Graphics (same as "0")
       "16" -> ?0
-      <<code>> when code in ?0..?9 or code in ?A..?Z or code in ?a..?z -> code
+      <<code>> when code in ?0..?9 or code in ?A..?Z or code in ?a..?z or code in [?>, ?', ?R] -> code
       _ -> ?B
     end
   end
@@ -109,5 +109,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
   """
   defp get_charset(charset_code) do
     Map.get(@charset_mapping, charset_code, :us_ascii)
+  end
+
+  @doc """
+  Gets charset module from charset code.
+  """
+  defp get_charset_module(charset_code) do
+    Raxol.Terminal.ANSI.CharacterSets.charset_code_to_module(charset_code) ||
+    Raxol.Terminal.ANSI.CharacterSets.ASCII
   end
 end

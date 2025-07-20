@@ -36,9 +36,9 @@ defmodule Raxol.Terminal.Parser do
   end
 
   def parse_chunk(emulator, state, data) do
-    # Raxol.Core.Runtime.Log.debug(
-    #   "[Parser.parse_chunk] BEFORE: emulator.scroll_region=#{inspect(emulator.scroll_region)}"
-    # )
+    Raxol.Core.Runtime.Log.debug(
+      "[Parser.parse_chunk] Starting with state=#{inspect(state.state)}, data=#{inspect(data)}"
+    )
 
     result = parse_loop(emulator, state, data)
 

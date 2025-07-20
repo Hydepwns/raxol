@@ -104,11 +104,14 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   # Server callbacks
 
   def init(opts) do
+    # Handle both keyword lists and maps
+    opts_map = if is_map(opts), do: opts, else: Map.new(opts || [])
+
     config = %{
-      default_size: Keyword.get(opts, :default_size, {80, 24}),
-      max_size: Keyword.get(opts, :max_size, {200, 50}),
-      default_buffer_id: Keyword.get(opts, :default_buffer_id),
-      default_renderer_id: Keyword.get(opts, :default_renderer_id)
+      default_size: Map.get(opts_map, :default_size, {80, 24}),
+      max_size: Map.get(opts_map, :max_size, {200, 50}),
+      default_buffer_id: Map.get(opts_map, :default_buffer_id),
+      default_renderer_id: Map.get(opts_map, :default_renderer_id)
     }
 
     {:ok,

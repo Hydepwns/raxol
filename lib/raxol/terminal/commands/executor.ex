@@ -201,7 +201,13 @@ defmodule Raxol.Terminal.Commands.Executor do
       "Executing OSC command: #{inspect(command_string)}"
     )
 
-    handle_osc_command(emulator, command_string)
+    result = handle_osc_command(emulator, command_string)
+    case result do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _reason, updated_emulator} -> updated_emulator
+      %Raxol.Terminal.Emulator{} = updated_emulator -> updated_emulator
+      _ -> emulator
+    end
   end
 
   @spec execute_osc_command(Emulator.t(), integer(), list()) :: Emulator.t()
@@ -228,6 +234,33 @@ defmodule Raxol.Terminal.Commands.Executor do
 
   defp dispatch_osc_command(emulator, ps_code, pt) do
     OSCHandlers.handle(emulator, ps_code, pt)
+  end
+
+  @spec execute_dcs_command(
+          Emulator.t(),
+          String.t(),
+          String.t(),
+          integer(),
+          String.t()
+        ) :: Emulator.t()
+  def execute_dcs_command(
+        emulator,
+        params_buffer,
+        intermediates_buffer,
+        final_byte,
+        data_string
+      ) do
+    Raxol.Core.Runtime.Log.debug(
+      "Executing DCS command: #{inspect(data_string)} with final_byte: #{final_byte}"
+    )
+
+    handle_dcs_command(
+      emulator,
+      params_buffer,
+      intermediates_buffer,
+      final_byte,
+      data_string
+    )
   end
 
   @spec execute_dcs_command(
@@ -265,19 +298,56 @@ defmodule Raxol.Terminal.Commands.Executor do
          emulator,
          params_buffer,
          intermediates_buffer,
+         final_byte,
          data_string
        ) do
     case intermediates_buffer do
       "" ->
+        # Simple DCS command without intermediates
         DCSHandlers.handle_dcs(emulator, params_buffer, data_string)
 
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "DCS: Unhandled intermediate: \"#{intermediates_buffer}\"",
-          %{}
-        )
+        # DCS command with intermediates - pass final byte
+        DCSHandlers.handle_dcs(emulator, params_buffer, intermediates_buffer, final_byte, data_string)
+    end
+  end
 
-        {:error, :unhandled_dcs, emulator}
+  defp handle_dcs_command(
+         emulator,
+         params_buffer,
+         intermediates_buffer,
+         data_string
+       ) do
+    # Parse params_buffer to get the final byte
+    final_byte = case String.last(params_buffer) do
+      nil -> nil
+      last_char -> :binary.last(last_char)
+    end
+
+    # Remove the final byte from params_buffer to get the actual params
+    params_without_final = case String.length(params_buffer) do
+      0 -> ""
+      _ -> String.slice(params_buffer, 0, String.length(params_buffer) - 1)
+    end
+
+    case intermediates_buffer do
+      "" ->
+        # Simple DCS command without intermediates
+        DCSHandlers.handle_dcs(emulator, params_without_final, data_string)
+
+      _ ->
+        # DCS command with intermediates - need to pass final byte
+        case final_byte do
+          nil ->
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "DCS: No final byte found in params_buffer: \"#{params_buffer}\"",
+              %{}
+            )
+            {:error, :malformed_dcs, emulator}
+
+          final_byte ->
+            DCSHandlers.handle_dcs(emulator, params_without_final, intermediates_buffer, final_byte, data_string)
+        end
     end
   end
 end

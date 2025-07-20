@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.TestHelper do
       cursor: cursor,
       # No PID for testing
       window_manager: nil,
-      style: Raxol.Terminal.ANSI.TextFormatting.new(),
+      style: Raxol.Terminal.ANSI.TextFormatting.Core.new(),
       scrollback_buffer: [],
       cursor_style: :block,
       charset_state: %{

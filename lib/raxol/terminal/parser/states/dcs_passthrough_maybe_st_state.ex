@@ -23,12 +23,17 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
       # Found ST (ESC \), use literal 92 for '\'
       <<92, rest_after_st::binary>> ->
         # Completed DCS Sequence
+        Raxol.Core.Runtime.Log.debug(
+          "DCSPassthroughMaybeSTState: Found ST terminator, executing DCS command with params_buffer=#{inspect(parser_state.params_buffer)}, intermediates_buffer=#{inspect(parser_state.intermediates_buffer)}, final_byte=#{inspect(parser_state.final_byte)}, payload_buffer=#{inspect(parser_state.payload_buffer)}"
+        )
+
         # Call the dispatcher function (now imported)
         new_emulator =
           Executor.execute_dcs_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
+            parser_state.final_byte,
             parser_state.payload_buffer
           )
 

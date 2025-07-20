@@ -29,23 +29,23 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     buffer_width = get_buffer_width(emulator)
     buffer_height = get_buffer_height(emulator)
 
-    {initial_cursor_x, initial_cursor_y} = get_cursor_position_safe(emulator.cursor)
+    {initial_cursor_row, initial_cursor_col} = get_cursor_position_safe(emulator.cursor)
     char_str = <<char_codepoint::utf8>>
 
     {translated_char, new_charset_state} =
       CharacterSets.translate_char(char_codepoint, emulator.charset_state)
 
-    {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded} =
+    {write_col, write_row, next_cursor_col, next_cursor_row, next_last_col_exceeded} =
       calculate_positions(emulator, buffer_width, char_codepoint)
 
     # Check if autowrap would cause an out-of-bounds write
     auto_wrap_mode = ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
 
-    # Get the original write_y before adjustment to detect autowrap
-    {original_write_x, original_write_y, _, _, _} =
+    # Get the original write_row before adjustment to detect autowrap
+    {original_write_col, original_write_row, _, _, _} =
       calculate_write_and_cursor_position(
-        get_cursor_position_safe(emulator.cursor) |> elem(0),
-        get_cursor_position_safe(emulator.cursor) |> elem(1),
+        get_cursor_position_safe(emulator.cursor) |> elem(1), # col
+        get_cursor_position_safe(emulator.cursor) |> elem(0), # row
         buffer_width,
         CharacterHandling.get_char_width(char_codepoint),
         emulator.last_col_exceeded,
@@ -53,34 +53,34 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       )
 
     autowrap_out_of_bounds =
-      original_write_y >= buffer_height and auto_wrap_mode and
+      original_write_row >= buffer_height and auto_wrap_mode and
         emulator.last_col_exceeded
 
     # If autowrap will cause a scroll, skip the initial write and handle after scroll
-    if autowrap_out_of_bounds and original_write_y >= buffer_height do
+    if autowrap_out_of_bounds and original_write_row >= buffer_height do
       updated_emulator = update_emulator_state(
         emulator,
-        next_cursor_x,
-        next_cursor_y,
+        next_cursor_col,
+        next_cursor_row,
         next_last_col_exceeded,
         new_charset_state
       )
       # Only scroll if the cursor is actually at the bottom of the buffer
-      {current_cursor_x, current_cursor_y} = get_cursor_position_safe(updated_emulator.cursor)
-      if current_cursor_y >= buffer_height - 1 do
+      {current_cursor_row, current_cursor_col} = get_cursor_position_safe(updated_emulator.cursor)
+      if current_cursor_row >= buffer_height - 1 do
         updated_emulator_with_flag = %{
           updated_emulator
           | cursor_handled_by_autowrap: true
         }
         scrolled_emulator = Emulator.maybe_scroll(updated_emulator_with_flag)
-        new_cursor_y = buffer_height - 1
+        new_cursor_row = buffer_height - 1
         updated_cursor =
           case scrolled_emulator.cursor do
             cursor when is_pid(cursor) ->
-              Raxol.Terminal.Cursor.Manager.set_position(cursor, {0, new_cursor_y})
+              Raxol.Terminal.Cursor.Manager.set_position(cursor, {new_cursor_row, 0})
               cursor
             cursor when is_map(cursor) ->
-              Raxol.Terminal.Cursor.Manager.set_position(cursor, {0, new_cursor_y})
+              Raxol.Terminal.Cursor.Manager.set_position(cursor, {new_cursor_row, 0})
             _ ->
               scrolled_emulator.cursor
           end
@@ -88,10 +88,10 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         if char_codepoint == 10 do
           scrolled_emulator
         else
-          {current_cursor_x, current_cursor_y} = get_cursor_position_safe(scrolled_emulator.cursor)
+          {current_cursor_row, current_cursor_col} = get_cursor_position_safe(scrolled_emulator.cursor)
           char_str = <<char_codepoint::utf8>>
           buffer_for_write = Emulator.get_active_buffer(scrolled_emulator)
-          buffer_after_write = Operations.write_char(buffer_for_write, current_cursor_x, current_cursor_y, char_str, emulator.style)
+          buffer_after_write = Operations.write_char(buffer_for_write, current_cursor_col, current_cursor_row, char_str, emulator.style)
           final_emulator = Emulator.update_active_buffer(scrolled_emulator, buffer_after_write)
           final_emulator
         end
@@ -109,28 +109,28 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       updated_emulator =
         update_emulator_state(
           emulator_after_write,
-          next_cursor_x,
-          next_cursor_y,
+          next_cursor_col,
+          next_cursor_row,
           next_last_col_exceeded,
           new_charset_state
         )
-      if original_write_y >= buffer_height do
+      if original_write_row >= buffer_height do
         if autowrap_out_of_bounds do
-          {current_cursor_x, current_cursor_y} = get_cursor_position_safe(updated_emulator.cursor)
-          if current_cursor_y >= buffer_height - 1 do
+          {current_cursor_row, current_cursor_col} = get_cursor_position_safe(updated_emulator.cursor)
+          if current_cursor_row >= buffer_height - 1 do
             updated_emulator_with_flag = %{
               updated_emulator
               | cursor_handled_by_autowrap: true
             }
             scrolled_emulator = Emulator.maybe_scroll(updated_emulator_with_flag)
-            new_cursor_y = buffer_height - 1
+            new_cursor_row = buffer_height - 1
             updated_cursor =
               case scrolled_emulator.cursor do
                 cursor when is_pid(cursor) ->
-                  Raxol.Terminal.Cursor.Manager.set_position(cursor, {0, new_cursor_y})
+                  Raxol.Terminal.Cursor.Manager.set_position(cursor, {new_cursor_row, 0})
                   cursor
                 cursor when is_map(cursor) ->
-                  Raxol.Terminal.Cursor.Manager.set_position(cursor, {0, new_cursor_y})
+                  Raxol.Terminal.Cursor.Manager.set_position(cursor, {new_cursor_row, 0})
                 _ ->
                   scrolled_emulator.cursor
               end
@@ -138,10 +138,10 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
             if char_codepoint == 10 do
               scrolled_emulator
             else
-              {current_cursor_x, current_cursor_y} = get_cursor_position_safe(scrolled_emulator.cursor)
+              {current_cursor_row, current_cursor_col} = get_cursor_position_safe(scrolled_emulator.cursor)
               char_str = <<char_codepoint::utf8>>
               buffer_for_write = Emulator.get_active_buffer(scrolled_emulator)
-              buffer_after_write = Operations.write_char(buffer_for_write, current_cursor_x, current_cursor_y, char_str, emulator.style)
+              buffer_after_write = Operations.write_char(buffer_for_write, current_cursor_col, current_cursor_row, char_str, emulator.style)
               final_emulator = Emulator.update_active_buffer(scrolled_emulator, buffer_after_write)
               final_emulator
             end
@@ -162,22 +162,22 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
          buffer_width,
          buffer_height
        ) do
-    {cursor_x, cursor_y} = get_cursor_position_safe(emulator.cursor)
+    {cursor_row, cursor_col} = get_cursor_position_safe(emulator.cursor)
 
     # Trigger scroll if cursor is at the last row (not just the last column)
-    if cursor_y == buffer_height - 1 do
+    if cursor_row == buffer_height - 1 do
       updated_emulator =
         case emulator.cursor do
           cursor when is_pid(cursor) ->
-            GenServer.call(cursor, {:move_to, 0, buffer_height - 1})
+            GenServer.call(cursor, {:move_to, buffer_height - 1, 0})
             emulator
 
           cursor when is_map(cursor) ->
             updated_cursor =
               Raxol.Terminal.Cursor.Manager.move_to(
                 cursor,
-                0,
-                buffer_height - 1
+                buffer_height - 1,
+                0
               )
 
             %{emulator | cursor: updated_cursor}
@@ -214,13 +214,13 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     auto_wrap_mode = ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
     buffer_height = get_buffer_height(emulator)
 
-    {current_cursor_x, current_cursor_y} =
+    {current_cursor_row, current_cursor_col} =
       get_cursor_position_safe(emulator.cursor)
 
-    {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded} =
+    {write_col, write_row, next_cursor_col, next_cursor_row, next_last_col_exceeded} =
       calculate_write_and_cursor_position(
-        current_cursor_x,
-        current_cursor_y,
+        current_cursor_col,
+        current_cursor_row,
         buffer_width,
         char_width,
         emulator.last_col_exceeded,
@@ -229,31 +229,31 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
     # Check if autowrap would cause an out-of-bounds write
     # If so, adjust the positions to stay within bounds
-    {adjusted_write_x, adjusted_write_y, adjusted_next_cursor_x,
-     adjusted_next_cursor_y,
+    {adjusted_write_col, adjusted_write_row, adjusted_next_cursor_col,
+     adjusted_next_cursor_row,
      adjusted_next_last_col_exceeded} =
-      if write_y >= buffer_height and auto_wrap_mode and
+      if write_row >= buffer_height and auto_wrap_mode and
            emulator.last_col_exceeded do
         # Autowrap would go out of bounds, so we need to handle this specially
         # Write at the current position but move cursor to next line
         # The emulator will handle scrolling when the cursor moves out of bounds
-        {write_x, current_cursor_y, next_cursor_x, next_cursor_y,
+        {write_col, current_cursor_row, next_cursor_col, next_cursor_row,
          next_last_col_exceeded}
       else
-        {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+        {write_col, write_row, next_cursor_col, next_cursor_row, next_last_col_exceeded}
       end
 
     log_cursor_positions(
-      current_cursor_x,
-      current_cursor_y,
-      adjusted_write_x,
-      adjusted_write_y,
-      adjusted_next_cursor_x,
-      adjusted_next_cursor_y
+      current_cursor_col,
+      current_cursor_row,
+      adjusted_write_col,
+      adjusted_write_row,
+      adjusted_next_cursor_col,
+      adjusted_next_cursor_row
     )
 
-    {adjusted_write_x, adjusted_write_y, adjusted_next_cursor_x,
-     adjusted_next_cursor_y, adjusted_next_last_col_exceeded}
+    {adjusted_write_col, adjusted_write_row, adjusted_next_cursor_col,
+     adjusted_next_cursor_row, adjusted_next_last_col_exceeded}
   end
 
   defp get_cursor_position_safe(cursor) do
@@ -290,15 +290,15 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   end
 
   defp log_cursor_positions(
-         current_x,
-         current_y,
-         write_x,
-         write_y,
-         next_x,
-         next_y
+         current_col,
+         current_row,
+         write_col,
+         write_row,
+         next_col,
+         next_row
        ) do
     Raxol.Core.Runtime.Log.debug(
-      "Cursor positions - Current: {#{current_x}, #{current_y}}, Write: {#{write_x}, #{write_y}}, Next: {#{next_x}, #{next_y}}"
+      "Cursor positions - Current: {#{current_row}, #{current_col}}, Write: {#{write_row}, #{write_col}}, Next: {#{next_row}, #{next_col}}"
     )
   end
 
@@ -320,7 +320,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
       buffer_height = get_buffer_height(emulator)
 
-      {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded} =
+      {write_col, write_row, next_cursor_col, next_cursor_row, next_last_col_exceeded} =
         calculate_positions(
           emulator,
           get_buffer_width(emulator),
@@ -330,15 +330,15 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       # Check if autowrap would cause an out-of-bounds write
       auto_wrap_mode = ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
 
-      if write_y < buffer_height do
+      if write_row < buffer_height do
         buffer_for_write = Emulator.get_active_buffer(emulator)
         # When writing the cell, use opts directly as the style argument
         # For example, if the function is write_char(buffer, x, y, char, style), pass opts as style
         buffer_after_write =
           Operations.write_char(
             buffer_for_write,
-            write_x,
-            write_y,
+            write_col,
+            write_row,
             translated_char_str,
             opts
           )
@@ -348,7 +348,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         emulator
       else
         Raxol.Core.Runtime.Log.warning_with_context(
-          "Attempted write out of bounds (y=#{write_y}, height=#{buffer_height}), handling autowrap after scroll.",
+          "Attempted write out of bounds (row=#{write_row}, height=#{buffer_height}), handling autowrap after scroll.",
           %{}
         )
 
@@ -368,8 +368,8 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
   defp update_emulator_state(
          emulator,
-         next_cursor_x,
-         next_cursor_y,
+         next_cursor_col,
+         next_cursor_row,
          next_last_col_exceeded,
          new_charset_state
        ) do
@@ -380,7 +380,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
           # For PID cursors, just call set_position - the PID manages its own state
           Raxol.Terminal.Cursor.Manager.set_position(
             cursor,
-            {next_cursor_x, next_cursor_y}
+            {next_cursor_row, next_cursor_col}
           )
 
           # Don't update the emulator's cursor field - the PID is the cursor
@@ -390,7 +390,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
           updated_cursor =
             Raxol.Terminal.Cursor.Manager.set_position(
               cursor,
-              {next_cursor_x, next_cursor_y}
+              {next_cursor_row, next_cursor_col}
             )
 
           %{emulator | cursor: updated_cursor}

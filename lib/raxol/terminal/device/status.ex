@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Device.Status do
       # Report cursor position
       [6] ->
         # Get current cursor position (0-based)
-        {col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+        {row, col} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
         # Convert to 1-based for response
         response = "\x1b[#{row + 1};#{col + 1}R"
         {:ok, %{emulator | output_buffer: emulator.output_buffer <> response}}

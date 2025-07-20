@@ -124,6 +124,55 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   def scroll_down(buffer, count, _scroll_region, _blank_style) when count <= 0,
     do: buffer
 
+  @spec insert_lines(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
+
+  def insert_lines(buffer, lines, y, top, bottom)
+      when is_struct(buffer, ScreenBuffer) and
+             is_integer(lines) and is_integer(y) and lines > 0 and
+             is_integer(top) and is_integer(bottom) do
+    # Ensure y is within the scroll region
+    y = max(top, min(y, bottom))
+
+    # Create blank lines with the default style
+    blank_style = buffer.default_style || TextFormatting.new()
+    blank_cell = Cell.new(" ", blank_style)
+    blank_line = List.duplicate(blank_cell, buffer.width)
+    blank_lines_to_insert = List.duplicate(blank_line, lines)
+
+    # Split the buffer cells at the insertion row
+    {top_part, bottom_part} = Enum.split(buffer.cells, y)
+
+    # Take only the lines from the bottom part that will fit within the scroll region
+    max_lines_in_region = bottom - top + 1
+    lines_after_insertion = y - top + lines
+    lines_to_keep = max(0, max_lines_in_region - lines_after_insertion)
+
+    # Keep lines from the bottom part that fit within the scroll region
+    kept_bottom_part = Enum.take(bottom_part, lines_to_keep)
+
+    # Add blank lines at the bottom of the scroll region if needed
+    remaining_lines = max_lines_in_region - lines_after_insertion - lines_to_keep
+    additional_blank_lines = if remaining_lines > 0 do
+      List.duplicate(blank_line, remaining_lines)
+    else
+      []
+    end
+
+    # Combine the parts
+    new_cells = top_part ++ blank_lines_to_insert ++ kept_bottom_part ++ additional_blank_lines
+
+    # Ensure we don't exceed the buffer height
+    final_cells = Enum.take(new_cells, buffer.height)
+
+    %{buffer | cells: final_cells}
+  end
+
   defp get_scroll_region(buffer, scroll_region) do
     case scroll_region do
       {top, bottom}

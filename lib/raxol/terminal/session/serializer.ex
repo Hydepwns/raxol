@@ -182,6 +182,69 @@ defmodule Raxol.Terminal.Session.Serializer do
     end
   end
 
+  defp serialize_style(%Raxol.Terminal.ANSI.TextFormatting.Core{} = style) do
+    try do
+      %{
+        bold: style.bold,
+        italic: style.italic,
+        underline: style.underline,
+        blink: style.blink,
+        reverse: style.reverse,
+        foreground: style.foreground,
+        background: style.background,
+        double_width: style.double_width,
+        double_height: style.double_height,
+        faint: style.faint,
+        conceal: style.conceal,
+        strikethrough: style.strikethrough,
+        fraktur: style.fraktur,
+        double_underline: style.double_underline,
+        framed: style.framed,
+        encircled: style.encircled,
+        overlined: style.overlined,
+        hyperlink: style.hyperlink
+      }
+    rescue
+      e ->
+        Raxol.Core.Runtime.Log.error(
+          "Style serialization failed: #{inspect(e)}"
+        )
+
+        Raxol.Core.Runtime.Log.error("Style data: #{inspect(style)}")
+
+        Raxol.Core.Runtime.Log.error(
+          "Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}"
+        )
+
+        reraise e, __STACKTRACE__
+    end
+  end
+
+  # Handle nil style values
+  defp serialize_style(nil) do
+    %{
+      bold: false,
+      italic: false,
+      underline: false,
+      blink: false,
+      reverse: false,
+      foreground: nil,
+      background: nil,
+      double_width: false,
+      double_height: :none,
+      faint: false,
+      conceal: false,
+      strikethrough: false,
+      fraktur: false,
+      double_underline: false,
+      framed: false,
+      encircled: false,
+      overlined: false,
+      hyperlink: nil
+    }
+  end
+
+  # Backward compatibility for old TextFormatting struct
   defp serialize_style(%Raxol.Terminal.ANSI.TextFormatting{} = style) do
     try do
       %{
@@ -218,6 +281,16 @@ defmodule Raxol.Terminal.Session.Serializer do
 
         reraise e, __STACKTRACE__
     end
+  end
+
+  # Catch-all for any other style values
+  defp serialize_style(style) do
+    Raxol.Core.Runtime.Log.warning(
+      "Unknown style type encountered during serialization: #{inspect(style)}"
+    )
+
+    # Return default style
+    serialize_style(nil)
   end
 
   defp deserialize_emulator(emulator_data) do
@@ -288,7 +361,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       scroll_region: nil,
       scroll_position: 0,
       damage_regions: [],
-      default_style: Raxol.Terminal.ANSI.TextFormatting.new()
+      default_style: Raxol.Terminal.ANSI.TextFormatting.Core.new()
     }
 
     {:ok, screen_buffer}
@@ -338,7 +411,7 @@ defmodule Raxol.Terminal.Session.Serializer do
          overlined: overlined,
          hyperlink: hyperlink
        }) do
-    %Raxol.Terminal.ANSI.TextFormatting{
+    %Raxol.Terminal.ANSI.TextFormatting.Core{
       bold: bold,
       italic: italic,
       underline: underline,
@@ -358,5 +431,20 @@ defmodule Raxol.Terminal.Session.Serializer do
       overlined: overlined,
       hyperlink: hyperlink
     }
+  end
+
+  # Handle nil style values
+  defp deserialize_style(nil) do
+    Raxol.Terminal.ANSI.TextFormatting.Core.new()
+  end
+
+  # Catch-all for any other style values
+  defp deserialize_style(style) do
+    Raxol.Core.Runtime.Log.warning(
+      "Unknown style type encountered during deserialization: #{inspect(style)}"
+    )
+
+    # Return default style
+    Raxol.Terminal.ANSI.TextFormatting.Core.new()
   end
 end

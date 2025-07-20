@@ -21,14 +21,16 @@ defmodule Raxol.Terminal.Cell do
           char: String.t() | nil,
           style: TextFormatting.text_style() | nil,
           dirty: boolean(),
-          wide_placeholder: boolean()
+          wide_placeholder: boolean(),
+          sixel: boolean()
         }
 
   defstruct [
     :char,
     :style,
     :dirty,
-    wide_placeholder: false
+    wide_placeholder: false,
+    sixel: false
   ]
 
   @doc """
@@ -56,7 +58,8 @@ defmodule Raxol.Terminal.Cell do
       char: char || " ",
       style: style,
       dirty: false,
-      wide_placeholder: false
+      wide_placeholder: false,
+      sixel: false
     }
   end
 
@@ -70,7 +73,8 @@ defmodule Raxol.Terminal.Cell do
       char: " ",
       style: style,
       dirty: true,
-      wide_placeholder: true
+      wide_placeholder: true,
+      sixel: false
     }
   end
 
@@ -153,8 +157,8 @@ defmodule Raxol.Terminal.Cell do
       %{bold: true, underline: true} # Note: :bold remains, :underline added
   """
   def merge_style(%__MODULE__{} = cell, style_to_merge)
-      when is_struct(style_to_merge, TextFormatting) do
-    default_style = TextFormatting.new()
+      when is_struct(style_to_merge, TextFormatting.Core) do
+    default_style = TextFormatting.Core.new()
 
     # Convert both styles to maps for easier manipulation
     cell_style_map = Map.from_struct(cell.style)
@@ -172,15 +176,15 @@ defmodule Raxol.Terminal.Cell do
         end
       end)
 
-    # Convert back to TextFormatting struct
-    final_style = struct(TextFormatting, final_style_map)
+    # Convert back to TextFormatting.Core struct using new() function
+    final_style = TextFormatting.Core.new(final_style_map)
     %{cell | style: final_style}
   end
 
   def merge_style(%__MODULE__{} = cell, style_to_merge)
       when map?(style_to_merge) do
-    # Handle plain maps by converting to TextFormatting struct first
-    style_struct = struct(TextFormatting, style_to_merge)
+    # Handle plain maps by converting to TextFormatting.Core struct first
+    style_struct = TextFormatting.Core.new(style_to_merge)
     merge_style(cell, style_struct)
   end
 
@@ -272,11 +276,10 @@ defmodule Raxol.Terminal.Cell do
   """
   def with_attributes(%__MODULE__{} = cell, attributes)
       when list?(attributes) do
-    # Reduce the list of attribute atoms into the cell's *existing* style
-    # This ensures we build upon the current style, not just defaults.
+    # Apply each attribute to the cell's existing style
     new_style =
       Enum.reduce(attributes, cell.style, fn attribute, acc_style ->
-        TextFormatting.apply_attribute(acc_style, attribute)
+        TextFormatting.Attributes.apply_attribute(acc_style, attribute)
       end)
 
     %{cell | style: new_style}

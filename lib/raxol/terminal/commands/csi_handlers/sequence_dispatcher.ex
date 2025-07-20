@@ -50,8 +50,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SequenceDispatcher do
               emu -> emu
             end
 
+          {:error, :unknown_sequence, _sequence} ->
+            # Ignore unknown sequences and return emulator unchanged
+            emulator
+
           :error ->
-            {:error, :unknown_sequence, sequence}
+            # Ignore unknown sequences and return emulator unchanged
+            emulator
         end
     end
   end

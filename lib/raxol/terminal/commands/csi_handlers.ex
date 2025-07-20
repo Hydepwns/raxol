@@ -119,7 +119,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   defdelegate handle_u(emulator, params), to: TextHandlers
 
   # Sequence handler delegation
-  defdelegate handle_sequence(emulator, sequence), to: SequenceDispatcher
+  def handle_sequence(emulator, sequence) do
+    case SequenceDispatcher.handle_sequence(emulator, sequence) do
+      {:error, :unknown_sequence, _sequence} ->
+        # Ignore unknown sequences and return emulator unchanged
+        emulator
+      result ->
+        result
+    end
+  end
 
   # Window handler delegations
   defdelegate handle_window_maximize(emulator), to: WindowHandlers

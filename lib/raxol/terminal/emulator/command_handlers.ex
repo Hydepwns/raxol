@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
         row = String.to_integer(row_str)
         col = String.to_integer(col_str)
 
-        Emulator.move_cursor_to(
+        Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
           emulator,
           {row - 1, col - 1},
           emulator.width,
@@ -286,7 +286,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
       [6] ->
         # DSR 6n - Report cursor position
         # ESC [ row ; col R
-        {col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+        {row, col} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
         response = "\e[#{row + 1};#{col + 1}R"
         %{emulator | output_buffer: emulator.output_buffer <> response}
 

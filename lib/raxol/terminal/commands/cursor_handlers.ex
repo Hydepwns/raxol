@@ -20,17 +20,17 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         ) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cursor_movement(emulator, direction, amount) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
 
-    {new_col, new_row} =
+    {new_row, new_col} =
       case direction do
-        :up -> {col, max(0, row - amount)}
-        :down -> {col, min(emulator.height - 1, row + amount)}
-        :left -> {max(0, col - amount), row}
-        :right -> {min(emulator.width - 1, col + amount), row}
+        :up -> {max(0, row - amount), col}
+        :down -> {min(emulator.height - 1, row + amount), col}
+        :left -> {row, max(0, col - amount)}
+        :right -> {row, min(emulator.width - 1, col + amount)}
       end
 
-    updated_cursor = set_cursor_position(cursor, {new_col, new_row})
+    updated_cursor = set_cursor_position(cursor, {new_row, new_col})
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
@@ -38,8 +38,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_cup(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cup(emulator, params) do
-    col = get_valid_pos_param(params, 0, 1)
-    row = get_valid_pos_param(params, 1, 1)
+    row = get_valid_pos_param(params, 0, 1)
+    col = get_valid_pos_param(params, 1, 1)
 
     # Convert to 0-based coordinates
     row_0 = row - 1
@@ -49,9 +49,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     row_clamped = max(0, min(row_0, emulator.height - 1))
     col_clamped = max(0, min(col_0, emulator.width - 1))
 
-    # Position is {col, row} where col is x and row is y
+    # Pass {row, col} to match new convention
     updated_cursor =
-      set_cursor_position(emulator.cursor, {col_clamped, row_clamped})
+      set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
 
     {:ok, %{emulator | cursor: updated_cursor}}
   end
@@ -103,13 +103,13 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_E(emulator, params) do
     amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
-    {_col, row} = get_cursor_position(cursor)
+    {row, _col} = get_cursor_position(cursor)
 
     # Move down by amount, clamp to screen height
     new_row = min(emulator.height - 1, row + amount)
 
     # Move to beginning of line (column 0) at the new row
-    updated_cursor = set_cursor_position(cursor, {0, new_row})
+    updated_cursor = set_cursor_position(cursor, {new_row, 0})
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
@@ -121,13 +121,13 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_f(emulator, params) do
     amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
-    {_col, row} = get_cursor_position(cursor)
+    {row, _col} = get_cursor_position(cursor)
 
     # Move up by amount, clamp to screen top
     new_row = max(0, row - amount)
 
     # Move to beginning of line (column 0) at the new row
-    updated_cursor = set_cursor_position(cursor, {0, new_row})
+    updated_cursor = set_cursor_position(cursor, {new_row, 0})
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
@@ -146,17 +146,19 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_g(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g(emulator, params) do
-    column = Enum.at(params, 0, 1)
-    # Convert to 0-based
-    column_0 = column - 1
-
-    # Clamp to screen width
-    column_clamped = max(0, min(column_0, emulator.width - 1))
-
+    amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
-    {_, current_row} = get_cursor_position(cursor)
-    updated_cursor = set_cursor_position(cursor, {column_clamped, current_row})
+    {row, col} = get_cursor_position(cursor)
 
+    {new_row, new_col} =
+      case amount do
+        :up -> {max(0, row - amount), col}
+        :down -> {min(emulator.height - 1, row + amount), col}
+        :left -> {row, max(0, col - amount)}
+        :right -> {row, min(emulator.width - 1, col + amount)}
+      end
+
+    updated_cursor = set_cursor_position(cursor, {new_row, new_col})
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
@@ -166,7 +168,26 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_G(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_G(emulator, params) do
-    handle_g(emulator, params)
+    IO.puts("DEBUG: handle_G called with params=#{inspect(params)}, cursor=#{inspect(emulator.cursor)}")
+    column = Enum.at(params, 0, 1)
+    # Convert to 0-based
+    column_0 = column - 1
+
+    # Clamp to screen width
+    column_clamped = max(0, min(column_0, emulator.width - 1))
+
+    cursor = emulator.cursor
+    {current_row, _} = get_cursor_position(cursor)
+    updated_cursor = set_cursor_position(cursor, {current_row, column_clamped})
+
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  @doc "Handles Cursor Vertical Absolute (VPA - \'d\') - alias for handle_decvpa"
+  @spec handle_d(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_d(emulator, params) do
+    handle_decvpa(emulator, params)
   end
 
   @doc "Handles Cursor Vertical Absolute (VPA - \'d\")"
@@ -182,17 +203,12 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
 
     cursor = emulator.cursor
     {current_col, _} = get_cursor_position(cursor)
-    updated_cursor = set_cursor_position(cursor, {current_col, row_clamped})
+    updated_cursor = set_cursor_position(cursor, {row_clamped, current_col})
 
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
   @doc "Handles Cursor Vertical Absolute (VPA - 'd') - alias for handle_decvpa"
-  @spec handle_d(Emulator.t(), list(integer())) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_d(emulator, params) do
-    handle_decvpa(emulator, params)
-  end
 
   @doc """
   Moves the cursor to a specific position with width and height bounds.
@@ -204,13 +220,13 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
           integer()
         ) :: Emulator.t()
   def move_cursor_to(emulator, position, width, height) do
-    {col, row} = position
+    {row, col} = position
     # Clamp coordinates to screen bounds
-    col_clamped = max(0, min(col, width - 1))
     row_clamped = max(0, min(row, height - 1))
+    col_clamped = max(0, min(col, width - 1))
 
     updated_cursor =
-      set_cursor_position(emulator.cursor, {col_clamped, row_clamped})
+      set_cursor_position(emulator.cursor, {row_clamped, col_clamped})
 
     %{emulator | cursor: updated_cursor}
   end
@@ -229,9 +245,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec move_cursor_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_cursor_up(emulator, count \\ 1) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
     new_row = max(0, row - count)
-    updated_cursor = set_cursor_position(cursor, {col, new_row})
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -246,9 +262,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         ) :: Emulator.t()
   def move_cursor_up(emulator, count, _width, _height) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
     new_row = max(0, row - count)
-    updated_cursor = set_cursor_position(cursor, {col, new_row})
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -258,9 +274,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec move_cursor_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_cursor_down(emulator, count \\ 1) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
     new_row = min(emulator.height - 1, row + count)
-    updated_cursor = set_cursor_position(cursor, {col, new_row})
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -275,9 +291,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         ) :: Emulator.t()
   def move_cursor_down(emulator, count, _width, height) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
     new_row = min(height - 1, row + count)
-    updated_cursor = set_cursor_position(cursor, {col, new_row})
+    updated_cursor = set_cursor_position(cursor, {new_row, col})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -292,9 +308,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         ) :: Emulator.t()
   def move_cursor_left(emulator, count, _width, _height) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
     new_col = max(0, col - count)
-    updated_cursor = set_cursor_position(cursor, {new_col, row})
+    updated_cursor = set_cursor_position(cursor, {row, new_col})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -309,9 +325,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         ) :: Emulator.t()
   def move_cursor_right(emulator, count, width, _height) do
     cursor = emulator.cursor
-    {col, row} = get_cursor_position(cursor)
+    {row, col} = get_cursor_position(cursor)
     new_col = min(width - 1, col + count)
-    updated_cursor = set_cursor_position(cursor, {new_col, row})
+    updated_cursor = set_cursor_position(cursor, {row, new_col})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -337,8 +353,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec move_cursor_to_line_start(Emulator.t()) :: Emulator.t()
   def move_cursor_to_line_start(emulator) do
     cursor = emulator.cursor
-    {_col, _row} = get_cursor_position(cursor)
-    updated_cursor = set_cursor_position(cursor, {0, 0})
+    {row, _col} = get_cursor_position(cursor)
+    updated_cursor = set_cursor_position(cursor, {row, 0})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -353,9 +369,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         ) :: Emulator.t()
   def move_cursor_to_column(emulator, column, width, _height) do
     cursor = emulator.cursor
-    {_col, row} = get_cursor_position(cursor)
+    {row, _col} = get_cursor_position(cursor)
     new_col = max(0, min(width - 1, column))
-    updated_cursor = set_cursor_position(cursor, {new_col, row})
+    updated_cursor = set_cursor_position(cursor, {row, new_col})
     %{emulator | cursor: updated_cursor}
   end
 
@@ -368,16 +384,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   # Helper functions to handle both cursor structs and PIDs
-  defp get_cursor_position(cursor) when is_pid(cursor) do
-    CursorManager.get_position(cursor)
-  end
-
-  defp get_cursor_position(cursor) when is_map(cursor) do
-    cursor.position
-  end
-
-  defp set_cursor_position(%CursorManager{} = cursor, {col, row}) do
-    %CursorManager{cursor | col: col, row: row, position: {col, row}}
+  defp set_cursor_position(%CursorManager{} = cursor, {row, col}) do
+    %CursorManager{cursor | row: row, col: col, position: {row, col}}
   end
 
   defp set_cursor_position(cursor, position) when is_pid(cursor) do
@@ -386,7 +394,29 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   defp set_cursor_position(cursor, position) when is_map(cursor) do
-    {col, row} = position
-    %{cursor | position: position, col: col, row: row}
+    {row, col} = position
+    %{cursor | position: {row, col}, row: row, col: col}
+  end
+
+  defp get_cursor_position(cursor) when is_pid(cursor) do
+    CursorManager.get_position(cursor)
+  end
+
+  defp get_cursor_position(cursor) when is_map(cursor) do
+    cursor.position
+  end
+
+  # Fallback clause for any other cursor type
+  defp set_cursor_position(cursor, {row, col}) do
+    # Try to handle any cursor type that might have position, row, col fields
+    case cursor do
+      %{position: _} when is_map(cursor) ->
+        %{cursor | position: {row, col}}
+      %{row: _, col: _} when is_map(cursor) ->
+        %{cursor | row: row, col: col, position: {row, col}}
+      _ ->
+        # If we can't handle it, return the cursor unchanged
+        cursor
+    end
   end
 end

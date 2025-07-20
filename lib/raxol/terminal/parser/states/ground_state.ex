@@ -121,8 +121,9 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
 
   defp handle_escape_sequence(emulator, _parser_state, rest) do
     Raxol.Core.Runtime.Log.debug(
-      "GroundState: ESC detected, transitioning to EscapeState."
+      "GroundState: ESC detected, transitioning to EscapeState with rest=#{inspect(rest)}"
     )
+    IO.puts("DEBUG: GroundState - ESC detected, transitioning to EscapeState with rest=#{inspect(rest)}")
 
     {new_emulator, new_parser_state, new_rest_input} =
       Parser.transition_to_escape(emulator, rest)

@@ -38,8 +38,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.DeviceHandlers do
            "",
            ?n
          ) do
-      {:ok, updated_emulator} -> updated_emulator
-      result -> result
+      {:ok, updated_emulator} -> %{updated_emulator | device_status_reported: true}
+      result -> %{result | device_status_reported: true}
     end
   end
 
