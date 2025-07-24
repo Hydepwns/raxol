@@ -1,71 +1,6 @@
 IO.puts("[TestHelper] === TEST HELPER STARTING ===")
 
-# Start Mox
-IO.puts("[TestHelper] Starting Mox...")
-Application.ensure_started(:mox, :permanent)
-
-# Core runtime mocks
-Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock,
-  for: Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
-)
-
-Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock,
-  for: Raxol.Core.Runtime.Plugins.LoaderBehaviour
-)
-
-Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
-  for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
-)
-
-Mox.defmock(Raxol.Core.Runtime.Plugins.PluginEventFilterMock,
-  for: Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
-)
-
-Mox.defmock(Raxol.Core.Runtime.Plugins.PluginReloaderMock,
-  for: Raxol.Core.Runtime.Plugins.PluginReloader.Behaviour
-)
-
-Mox.defmock(Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock,
-  for: Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
-)
-
-Mox.defmock(Raxol.Core.Runtime.Plugins.TimerManagerMock,
-  for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
-)
-
-Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
-  for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
-)
-
-# System and UI mocks
-Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
-  for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour
-)
-
-Mox.defmock(SystemInteractionMock,
-  for: Raxol.System.Interaction
-)
-
-Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
-  for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
-)
-
-Mox.defmock(Raxol.Core.ClipboardMock,
-  for: Raxol.Core.Clipboard.Behaviour
-)
-
-# Accessibility and UX mocks
-Mox.defmock(Raxol.Mocks.AccessibilityMock,
-  for: Raxol.Core.Accessibility.Behaviour
-)
-
-Mox.defmock(Raxol.Mocks.FocusManagerMock,
-  for: Raxol.Core.FocusManager.Behaviour
-)
-
-Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
-  for: Raxol.Core.KeyboardShortcutsBehaviour
-)
+# Start Mox will be done after application starts
 
 # --- Global Docker Test Skip Logic ---
 if System.get_env("SKIP_TERMBOX2_TESTS") == "true" do
@@ -109,16 +44,17 @@ else
   Application.ensure_all_started(:raxol)
 end
 
+# Mox is a library, not an application - no need to start it
+
 # Note: Module redefinition warnings are expected in test environment
 # as test modules are often redefined during test runs.
 # These warnings can be safely ignored.
 
-# Load support files
+# Load support files (except clipboard_assertions which needs Mox)
 IO.puts("[TestHelper] Loading support files...")
 Code.require_file("support/test_helpers.ex", __DIR__)
 Code.require_file("support/event_macro_helpers.ex", __DIR__)
 Code.require_file("support/test_helper.ex", __DIR__)
-Code.require_file("support/clipboard_assertions.ex", __DIR__)
 
 # Set up mocks
 IO.puts("[TestHelper] Setting up mocks...")
@@ -188,6 +124,76 @@ Application.put_env(:raxol, :plugins, test_mode: true)
 IO.puts("[TestHelper] Starting endpoint globally for tests...")
 Application.ensure_all_started(:phoenix)
 Application.ensure_all_started(:plug_cowboy)
+
+# Configure Mox mocks after application is started
+IO.puts("[TestHelper] Configuring Mox mocks...")
+
+# Core runtime mocks
+Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock,
+  for: Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock,
+  for: Raxol.Core.Runtime.Plugins.LoaderBehaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
+  for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.PluginEventFilterMock,
+  for: Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.PluginReloaderMock,
+  for: Raxol.Core.Runtime.Plugins.PluginReloader.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock,
+  for: Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.TimerManagerMock,
+  for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
+  for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
+)
+
+# System and UI mocks
+Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
+  for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour
+)
+
+Mox.defmock(SystemInteractionMock,
+  for: Raxol.System.Interaction
+)
+
+Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
+  for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
+)
+
+Mox.defmock(Raxol.Core.ClipboardMock,
+  for: Raxol.Core.Clipboard.Behaviour
+)
+
+# Accessibility and UX mocks
+Mox.defmock(Raxol.Mocks.AccessibilityMock,
+  for: Raxol.Core.Accessibility.Behaviour
+)
+
+Mox.defmock(Raxol.Mocks.FocusManagerMock,
+  for: Raxol.Core.FocusManager.Behaviour
+)
+
+Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
+  for: Raxol.Core.KeyboardShortcutsBehaviour
+)
+
+# Load clipboard assertions after Mox is configured
+IO.puts("[TestHelper] Loading clipboard assertions...")
+Code.require_file("support/clipboard_assertions.ex", __DIR__)
 
 # Start the event registry for tests
 IO.puts("[TestHelper] Starting event registry...")
