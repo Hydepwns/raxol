@@ -33,13 +33,18 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
     # Split the buffer cells at the insertion row
     {top_part, bottom_part} = Enum.split(buffer.cells, eff_row)
 
-    # Take only the lines from the bottom part that will fit after insertion
-    kept_bottom_part = Enum.take(bottom_part, buffer.height - eff_row - count)
+    # Take lines from the bottom part that will fit after insertion
+    # We want to keep as many lines as possible, but ensure we don't exceed buffer height
+    max_lines_after_insertion = buffer.height - eff_row - count
+    kept_bottom_part = Enum.take(bottom_part, max_lines_after_insertion)
 
     # Combine the parts
     new_cells = top_part ++ blank_lines_to_insert ++ kept_bottom_part
 
-    %{buffer | cells: new_cells}
+    # Ensure we don't exceed the buffer height
+    final_cells = Enum.take(new_cells, buffer.height)
+
+    %{buffer | cells: final_cells}
   end
 
   def insert_lines(buffer, _row, _count, _blank_cell) when tuple?(buffer) do
