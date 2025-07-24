@@ -115,7 +115,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
   Gets charset module from charset code.
   """
   defp get_charset_module(charset_code) do
-    Raxol.Terminal.ANSI.CharacterSets.charset_code_to_module(charset_code) ||
-    Raxol.Terminal.ANSI.CharacterSets.ASCII
+    Map.get(@charset_mapping, charset_code, :us_ascii)
   end
 end
