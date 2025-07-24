@@ -6,6 +6,7 @@ config :raxol, Raxol.Repo,
   password: "postgres",
   hostname: "localhost",
   database: "raxol_dev",
+  template: "template0",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -24,12 +25,6 @@ config :raxol, RaxolWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "your-secret-key-base"
-
-# watchers: [
-#   esbuild:
-#     {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-#   sass: {DartSass, :install_and_run, [:default, ~w(--watch)]}
-# ]
 
 # Watch static and templates for browser reloading.
 config :raxol, RaxolWeb.Endpoint,

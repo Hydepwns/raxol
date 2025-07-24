@@ -5,8 +5,8 @@ let
   pinnedPkgs = import (pkgs.fetchFromGitHub {
     owner = "NixOS";
     repo = "nixpkgs";
-    rev = "23.11";  # Use a stable release
-    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";  # This will be replaced by nix
+    rev = "24.11";  # Use a more recent release with Elixir 1.17
+    sha256 = "sha256-CqCX4JG7UiHvkrBTpYC3wcEurvbtTADLbo3Ns2CEoL8=";  # Updated hash
   }) {};
 
   # Erlang and Elixir versions matching .tool-versions
@@ -81,19 +81,34 @@ in pinnedPkgs.mkShell {
     
     # Set up PostgreSQL
     export PGDATA="$PWD/.postgres"
-    export PGHOST="$PWD/.postgres"
+    export PGHOST="localhost"
     export PGPORT=5432
     
     # Create PostgreSQL data directory if it doesn't exist
     if [ ! -d "$PGDATA" ]; then
       echo "Initializing PostgreSQL database..."
       initdb -D "$PGDATA" --auth=trust --no-locale
+      
+      # Start PostgreSQL temporarily to create the postgres user
+      echo "Starting PostgreSQL to create postgres user..."
+      pg_ctl -D "$PGDATA" -o "-k /tmp/postgresql" start
+      sleep 2
+      
+      # Create the postgres user
+      createuser -s postgres || true
+      
+      # Stop PostgreSQL
+      pg_ctl -D "$PGDATA" stop
     fi
+    
+    # Create the socket directory if it doesn't exist
+    mkdir -p /tmp/postgresql
+    export PGSOCKETDIR="/tmp/postgresql"
     
     # Start PostgreSQL if not running
     if ! pg_ctl -D "$PGDATA" status > /dev/null 2>&1; then
       echo "Starting PostgreSQL..."
-      pg_ctl -D "$PGDATA" start
+      pg_ctl -D "$PGDATA" -o "-k /tmp/postgresql" start
     fi
     
     # Set up environment for termbox2_nif compilation

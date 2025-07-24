@@ -7,9 +7,8 @@
 import Config
 
 # General application configuration
-# config :raxol,
-#   ecto_repos: [Raxol.Repo],
 config :raxol,
+  ecto_repos: [Raxol.Repo],
   generators: [binary_id: true]
 
 # Configures the endpoint
@@ -29,6 +28,12 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Configure esbuild version
+config :esbuild, :version, "0.25.0"
+
+# Configure dart_sass version
+config :dart_sass, :version, "1.61.0"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
@@ -66,21 +71,7 @@ config :raxol, RaxolWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "your-secret-key-base",
-  adapter: Bandit.HTTP,
-  watchers: [
-    # Configure esbuild version
-    esbuild: {
-      Esbuild,
-      :install_and_run,
-      [:default, ~w(--sourcemap=inline --watch), version: "0.25.0"]
-    },
-    # Configure dart_sass version
-    sass: {
-      DartSass,
-      :install_and_run,
-      [:default, ~w(--watch), version: "1.61.0"]
-    }
-  ]
+  adapter: Phoenix.Endpoint.Cowboy2Adapter
 
 # Watch static and templates for browser reloading.
 config :raxol, RaxolWeb.Endpoint,
