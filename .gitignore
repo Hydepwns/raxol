@@ -46,6 +46,7 @@ raxol-*.tar
 # Database files
 *.sqlite3
 *.sqlite3-journal
+.postgres/
 
 # Node.js dependencies
 /node_modules/
