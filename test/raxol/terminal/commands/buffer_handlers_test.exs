@@ -19,9 +19,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       CursorManager.set_position(emulator.cursor, {5, 0})
 
       result_emulator = unwrap_ok(BufferHandlers.handle_L(emulator, [2]))
-      assert get_line(result_emulator, 5) == ""
-      assert get_line(result_emulator, 6) == ""
-      assert get_line(result_emulator, 7) == "Line 5"
+      assert get_line_raw(result_emulator, 5) == ""
+      assert get_line_raw(result_emulator, 6) == ""
+      assert get_line_raw(result_emulator, 7) == "Line 5"
     end
 
     test "handles missing parameter", %{emulator: emulator} do

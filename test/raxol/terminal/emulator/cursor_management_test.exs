@@ -2,7 +2,6 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
   use ExUnit.Case
 
   alias Raxol.Terminal.Emulator
-  # Keep Manager alias if used directly
   alias Raxol.Terminal.Cursor.Manager
 
   setup do
@@ -25,35 +24,30 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       # assert emulator.cursor_style == :steady_bar
 
       # Let's test setting Manager style directly if Emulator.set_cursor_style is not the target
-      emulator = %{
-        emulator
-        | cursor: Manager.set_style(emulator.cursor, :underline)
-      }
-
+      Manager.set_style(emulator.cursor, :underline)
       assert Manager.get_style(emulator.cursor) == :underline
 
-      emulator = %{emulator | cursor: Manager.set_style(emulator.cursor, :bar)}
+      Manager.set_style(emulator.cursor, :bar)
       assert Manager.get_style(emulator.cursor) == :bar
     end
 
-    test ~c"set_cursor_visible delegates to Cursor.Style" do
-      emulator = Emulator.new(80, 24)
+    test "set_cursor_visible delegates to Cursor.Manager", %{emulator: emulator} do
       # Assuming default is visible
       # Check state directly
       assert Manager.get_state(emulator.cursor) == :visible
 
-      emulator = %{
-        emulator
-        | cursor: Manager.set_state(emulator.cursor, :hidden)
-      }
+      # Debug: Check what type the cursor is
+      IO.puts("DEBUG: cursor type: #{inspect(emulator.cursor)}")
+      IO.puts("DEBUG: is_pid(cursor): #{is_pid(emulator.cursor)}")
+      IO.puts("DEBUG: Manager module: #{inspect(Manager)}")
+      IO.puts("DEBUG: Manager.set_state function: #{inspect(&Manager.set_state/2)}")
 
+      # Use full module name to avoid alias issues
+      IO.puts("DEBUG: About to call Raxol.Terminal.Cursor.Manager.set_state")
+      Raxol.Terminal.Cursor.Manager.set_state(emulator.cursor, :hidden)
       assert Manager.get_state(emulator.cursor) == :hidden
 
-      emulator = %{
-        emulator
-        | cursor: Manager.set_state(emulator.cursor, :visible)
-      }
-
+      Raxol.Terminal.Cursor.Manager.set_state(emulator.cursor, :visible)
       assert Manager.get_state(emulator.cursor) == :visible
     end
 
