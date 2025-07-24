@@ -25,6 +25,8 @@ defmodule RaxolWeb.Router do
     pipe_through(:browser)
 
     get("/", PageController, :home)
+    get("/about", PageController, :about)
+    get("/contact", PageController, :contact)
 
     # Authentication routes
     get("/register", UserRegistrationController, :new)
@@ -38,16 +40,87 @@ defmodule RaxolWeb.Router do
     live("/monitoring", MonitoringLive, :index)
   end
 
+  # Dashboard routes (protected)
+  scope "/dashboard", RaxolWeb do
+    pipe_through([:browser, :auth])
+
+    get("/", DashboardController, :index)
+    get("/overview", DashboardController, :overview)
+    get("/analytics", DashboardController, :analytics)
+  end
+
+  # User management routes (protected)
+  scope "/users", RaxolWeb do
+    pipe_through([:browser, :auth])
+
+    get("/", UserController, :index)
+    get("/profile", UserController, :profile)
+    get("/:id", UserController, :show)
+    get("/:id/edit", UserController, :edit)
+    put("/:id", UserController, :update)
+    delete("/:id", UserController, :delete)
+  end
+
+  # Project management routes (protected)
+  scope "/projects", RaxolWeb do
+    pipe_through([:browser, :auth])
+
+    get("/", ProjectController, :index)
+    get("/new", ProjectController, :new)
+    post("/", ProjectController, :create)
+    get("/:id", ProjectController, :show)
+    get("/:id/edit", ProjectController, :edit)
+    put("/:id", ProjectController, :update)
+    delete("/:id", ProjectController, :delete)
+  end
+
+  # Admin routes (protected)
+  scope "/admin", RaxolWeb do
+    pipe_through([:browser, :auth])
+
+    get("/", AdminController, :index)
+    get("/users", AdminController, :users)
+    get("/projects", AdminController, :projects)
+    get("/system", AdminController, :system)
+  end
+
   scope "/terminal", RaxolWeb do
     pipe_through([:browser, :auth])
 
     live("/:session_id", TerminalLive, :index)
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", RaxolWeb do
-  #   pipe_through :api
-  # end
+  # API routes
+  scope "/api", RaxolWeb do
+    pipe_through :api
+
+    # Public API endpoints
+    get("/health", ApiController, :health)
+    get("/status", ApiController, :status)
+
+    # Protected API endpoints
+    scope "/v1" do
+      pipe_through :auth
+
+      # User API
+      get("/users", Api.UserController, :index)
+      get("/users/:id", Api.UserController, :show)
+      post("/users", Api.UserController, :create)
+      put("/users/:id", Api.UserController, :update)
+      delete("/users/:id", Api.UserController, :delete)
+
+      # Project API
+      get("/projects", Api.ProjectController, :index)
+      get("/projects/:id", Api.ProjectController, :show)
+      post("/projects", Api.ProjectController, :create)
+      put("/projects/:id", Api.ProjectController, :update)
+      delete("/projects/:id", Api.ProjectController, :delete)
+
+      # Dashboard API
+      get("/dashboard/stats", Api.DashboardController, :stats)
+      get("/dashboard/analytics", Api.DashboardController, :analytics)
+    end
+  end
 
   # Enable LiveDashboard in development
   if Application.compile_env(:raxol, :dev_routes) do
