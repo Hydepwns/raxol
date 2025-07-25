@@ -1,18 +1,18 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  # Import the shell configuration
-  shell = import ./shell.nix { inherit pkgs; };
-  
-  # Get the same pinned packages
+  # Use same pinned packages as shell.nix
   pinnedPkgs = import (pkgs.fetchFromGitHub {
     owner = "NixOS";
     repo = "nixpkgs";
-    rev = "23.11";
-    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    rev = "24.11";
+    sha256 = "sha256-CqCX4JG7UiHvkrBTpYC3wcEurvbtTADLbo3Ns2CEoL8=";
   }) {};
 
-  # Erlang and Elixir
+  # Import shell configuration for consistency
+  shell = import ./shell.nix { pkgs = pinnedPkgs; };
+  
+  # Reuse Erlang/Elixir from shell
   erlang = pinnedPkgs.beam.interpreters.erlang_25.override {
     enableHipe = true;
     enableDebugInfo = true;
@@ -25,57 +25,38 @@ in pinnedPkgs.stdenv.mkDerivation {
   
   src = ./.;
   
-  buildInputs = shell.buildInputs;
+  buildInputs = [ erlang elixir ] ++ (with pinnedPkgs; [ gcc gnumake ]);
   
-  # Set up environment variables
+  # Production environment
+  MIX_ENV = "prod";
   ERLANG_PATH = erlang;
   ELIXIR_PATH = elixir;
   ERL_EI_INCLUDE_DIR = "${erlang}/lib/erlang/usr/include";
   ERL_EI_LIBDIR = "${erlang}/lib/erlang/usr/lib";
-  MIX_ENV = "prod";
   
   buildPhase = ''
-    # Add Erlang and Elixir to PATH
     export PATH="${erlang}/bin:${elixir}/bin:$PATH"
-    
-    # Install dependencies
-    mix deps.get
-    mix deps.compile
-    
-    # Compile the project
+    mix deps.get --only prod
     mix compile
   '';
   
   installPhase = ''
-    # Create output directory
-    mkdir -p $out
+    mkdir -p $out/{bin,lib}
+    cp -r _build lib priv mix.exs mix.lock $out/
     
-    # Copy compiled artifacts
-    cp -r _build $out/
-    cp -r lib $out/
-    cp -r priv $out/
-    cp mix.exs $out/
-    cp mix.lock $out/
-    
-    # Create a wrapper script
+    # Create launcher script
     cat > $out/bin/raxol <<EOF
-    #!${pinnedPkgs.bash}/bin/bash
-    export PATH="${erlang}/bin:${elixir}/bin:\$PATH"
-    export ERLANG_PATH="${erlang}"
-    export ELIXIR_PATH="${elixir}"
-    export ERL_EI_INCLUDE_DIR="${erlang}/lib/erlang/usr/include"
-    export ERL_EI_LIBDIR="${erlang}/lib/erlang/usr/lib"
-    cd $out
-    exec mix "\$@"
-    EOF
+#!/bin/bash
+export PATH="${erlang}/bin:${elixir}/bin:\$PATH"
+cd $out && exec mix "\$@"
+EOF
     chmod +x $out/bin/raxol
   '';
   
-  meta = {
-    description = "A modern toolkit for building terminal user interfaces (TUIs) in Elixir";
+  meta = with pinnedPkgs.lib; {
+    description = "Modern TUI framework for Elixir";
     homepage = "https://github.com/Hydepwns/raxol";
-    license = pinnedPkgs.lib.licenses.mit;
-    maintainers = ["DROO AMOR"];
-    platforms = pinnedPkgs.lib.platforms.unix;
+    license = licenses.mit;
+    platforms = platforms.unix;
   };
 } 
