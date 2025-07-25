@@ -66,12 +66,6 @@ config :raxol, :ansi_processor_test,
     :color_system
   ]
 
-# Configure Swoosh API Client adapter
-config :swoosh, :api_client, Raxol.Finch
-
-config :swoosh,
-  log_level: :warning,
-  api_client: Raxol.Finch
 
 # Configure Mox for testing behaviours
 config :mox, :exclude_compilation, false

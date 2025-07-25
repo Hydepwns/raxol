@@ -1,14 +1,14 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "0.7.0"
+  @version "0.8.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
     [
       app: :raxol,
       version: @version,
-      elixir: "~> 1.17.1",
+      elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       elixirc_options: [
         warnings_as_errors: false,
@@ -70,7 +70,6 @@ defmodule Raxol.MixProject do
           # :ecto_sql,  # Removed to prevent auto-starting Repo
           # :postgrex,  # Removed to prevent auto-starting Repo
           :runtime_tools,
-          :swoosh,
           # :termbox2_nif,  # Temporarily disabled for testing
           :toml
         ] ++ test_applications()
@@ -104,8 +103,6 @@ defmodule Raxol.MixProject do
       # {:termbox2_nif, "~> 2.0"},  # Temporarily disabled for testing
 
       # --- Added for Tutorial Loading ---
-      # Markdown parser
-      {:cmark, "~> 0.10"},
       # YAML parser for frontmatter
       {:yaml_elixir, "~> 2.11"},
       # ---------------------------------
@@ -123,7 +120,7 @@ defmodule Raxol.MixProject do
       {:phoenix_live_view, "~> 1.0.17"},
       # {:surface, "~> 0.12.1"},
       # {:sourceror, "~> 1.0.0"},
-      {:phoenix_live_dashboard, "~> 0.8.7"},
+      {:phoenix_live_dashboard, "~> 0.8.7", only: :dev},
       {:jason, "~> 1.4.4"},
 
       # Database and persistence
@@ -137,12 +134,10 @@ defmodule Raxol.MixProject do
       {:contex, "~> 0.5.0"},
 
       # Email
-      {:swoosh, "~> 1.19"},
 
       # Web interface
       {:plug_cowboy, "~> 2.7"},
       {:phoenix_html, "~> 4.0"},
-      {:phoenix_html_helpers, "~> 1.0"},
 
       # Core Plugins Dependencies
       # System clipboard access
@@ -162,8 +157,6 @@ defmodule Raxol.MixProject do
       {:mox, "~> 1.2", only: :test},
       {:meck, "~> 0.9", only: :test},
       {:elixir_make, "~> 0.9", runtime: false},
-      {:floki, "~> 0.37", only: :test},
-      {:briefly, "~> 0.5", only: :test},
 
       # Utilities
       {:uuid, "~> 1.1"},
@@ -172,9 +165,7 @@ defmodule Raxol.MixProject do
       {:telemetry_metrics_prometheus, "~> 1.1"},
       {:gettext, "~> 0.26"},
       {:dns_cluster, "~> 0.1"},
-      {:bandit, "~> 1.7"},
       {:excoveralls, "~> 0.18", only: :test},
-      {:hackney, "~> 1.24"},
       {:httpoison, "~> 2.2"},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:toml, "~> 0.7"},
@@ -211,7 +202,18 @@ defmodule Raxol.MixProject do
         "tailwind default"
       ],
       "explain.credo": ["run scripts/explain_credo_warning.exs"],
-      lint: ["credo"]
+      lint: ["credo"],
+      # Unified development commands
+      "dev.test": ["cmd scripts/dev.sh test"],
+      "dev.test-all": ["cmd scripts/dev.sh test-all"],
+      "dev.check": ["cmd scripts/dev.sh check"],
+      "dev.setup": ["cmd scripts/dev.sh setup"],
+      # Release commands
+      "release.dev": ["run scripts/release.exs --env dev"],
+      "release.prod": ["run scripts/release.exs --env prod"],
+      "release.all": ["run scripts/release.exs --env prod --all"],
+      "release.clean": ["run scripts/release.exs --clean"],
+      "release.tag": ["run scripts/release.exs --tag"]
     ]
   end
 
