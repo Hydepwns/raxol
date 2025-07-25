@@ -218,13 +218,8 @@ defmodule Raxol.Core.Config.Manager do
   defp load_config(state) do
     case load_config_file(state.config_file, state.env) do
       {:ok, config} ->
-        case maybe_validate_and_set_config(state, config) do
-          {:ok, new_state} ->
-            load_persistent_config(new_state)
-
-          {:error, reason} ->
-            {:error, reason}
-        end
+        {:ok, new_state} = maybe_validate_and_set_config(state, config)
+        load_persistent_config(new_state)
 
       {:error, reason} ->
         {:error, reason}
@@ -441,10 +436,6 @@ defmodule Raxol.Core.Config.Manager do
       {:ok, config} -> config
       _ -> %{}
     end
-  end
-
-  defp get_persistent_file_path do
-    Path.expand(@persistent_config_file)
   end
 
   defp load_persistent_file(file_path) do

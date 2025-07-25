@@ -552,7 +552,7 @@ defmodule Raxol.Plugins.EventHandler do
          acc_manager,
          propagation,
          plugin,
-         callback_name,
+         _callback_name,
          {:ok, updated_plugin}
        ) do
     create_continue_result(acc_manager, plugin, updated_plugin, propagation)
@@ -562,7 +562,7 @@ defmodule Raxol.Plugins.EventHandler do
          acc_manager,
          _propagation,
          plugin,
-         callback_name,
+         _callback_name,
          {:ok, updated_plugin, :halt}
        ) do
     create_halt_result(acc_manager, plugin, updated_plugin)
@@ -572,7 +572,7 @@ defmodule Raxol.Plugins.EventHandler do
          acc_manager,
          _propagation,
          plugin,
-         callback_name,
+         _callback_name,
          {:ok, updated_plugin, new_propagation}
        )
        when is_atom(new_propagation) do

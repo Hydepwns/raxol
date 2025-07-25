@@ -5,7 +5,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   """
 
   use GenServer
-  @behaviour Raxol.Core.Runtime.Events.DispatcherBehaviour
 
   require Raxol.Core.Runtime.Log
   require Raxol.Core.Events.Event
@@ -35,7 +34,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               command_module: Raxol.Core.Runtime.Command
   end
 
-  @impl GenServer
   def start_link(runtime_pid, initial_state, opts \\ []) do
     command_module =
       Keyword.get(opts, :command_module, Raxol.Core.Runtime.Command)
@@ -331,6 +329,15 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     process_command_result(state, full_message)
   end
 
+  def handle_info(msg, state) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Dispatcher received unhandled info message",
+      %{module: __MODULE__, message: msg, state: state}
+    )
+
+    {:noreply, state}
+  end
+
   defp process_command_result(state, message) do
     case Application.delegate_update(state.app_module, message, state.model) do
       {updated_model, commands}
@@ -384,15 +391,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       nil,
       %{module: __MODULE__}
     )
-  end
-
-  def handle_info(msg, state) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Dispatcher received unhandled info message",
-      %{module: __MODULE__, message: msg, state: state}
-    )
-
-    {:noreply, state}
   end
 
   @impl GenServer

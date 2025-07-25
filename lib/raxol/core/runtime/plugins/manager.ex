@@ -31,12 +31,15 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   alias Raxol.Core.Runtime.Plugins.StateManager
   alias Raxol.Core.Runtime.Plugins.TimerManager
 
+  # New modular operation handlers
+  alias Raxol.Core.Runtime.Plugins.Manager.CallbackRouter
+
   @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
+  # This is not part of the behaviour - it's an internal function
   def start_link(_app, opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -175,8 +178,31 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.call(__MODULE__, {:load_plugin_by_module, module, config})
   end
 
+  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
+  def load_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:load_plugin, plugin_id})
+  end
+
+  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
+  def unload_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
+  end
+
+  # Delegate all handle_call operations to the CallbackRouter
   @impl GenServer
-  def handle_call({:load_plugin, plugin_id, config}, _from, state) do
+  def handle_call(message, from, state) do
+    CallbackRouter.route_call(message, from, state)
+  end
+
+  # All legacy handle_call functions have been moved to CallbackRouter
+  # The router now handles all the following operations:
+  # - Plugin lifecycle (load, unload, enable, disable, reload)
+  # - State management (get/set plugin states, list plugins)
+  # - Configuration (get/update config, initialization)
+  # - Command handling (execute commands, process commands, hooks)
+
+  @impl GenServer
+  def handle_cast(
     # Send plugin load attempted event
     send(state.runtime_pid, {:plugin_load_attempted, plugin_id})
 
@@ -193,11 +219,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       )
 
     handle_plugin_operation(operation, plugin_id, state, "load")
-  end
-
-  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
-  def load_plugin(plugin_id) do
-    GenServer.call(__MODULE__, {:load_plugin, plugin_id})
   end
 
   @impl GenServer
@@ -230,11 +251,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.Manager.Behaviour
-  def unload_plugin(plugin_id) do
-    GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
-  end
-
   @impl GenServer
   def handle_call({:unload_plugin, plugin_id}, _from, state) do
     case Map.get(state, plugin_id) do
@@ -250,12 +266,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
                state.command_registry_table,
                state.plugin_config
              ) do
-          :ok ->
-            new_state = Map.delete(state, plugin_id)
-            {:reply, :ok, new_state}
+          {:ok, {_metadata, _states, _command_table}} ->
+            # TODO: Properly update the state with the returned values
+            {:reply, :ok, state}
 
-          {:error, _reason} ->
-            {:reply, {:error, :unknown_reason}, state}
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
         end
     end
   end

@@ -5,6 +5,8 @@ defmodule Raxol.Plugins.SearchPlugin do
   Plugin for text search functionality.
   """
 
+  @behaviour Raxol.Plugins.Plugin
+
   @type t :: %__MODULE__{
           name: String.t(),
           version: String.t(),
