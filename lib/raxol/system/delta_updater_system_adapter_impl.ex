@@ -1,7 +1,6 @@
 defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
   @behaviour Raxol.System.DeltaUpdaterSystemAdapterBehaviour
 
-  alias Raxol.System.Updater
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
   def httpc_request(method, url_with_headers, http_options, stream_options) do
@@ -50,7 +49,7 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
   def updater_do_replace_executable(current_exe, new_exe, platform) do
-    Updater.do_replace_executable(current_exe, new_exe, platform)
+    Raxol.System.Updater.Network.do_replace_executable(current_exe, new_exe, platform)
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour

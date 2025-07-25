@@ -587,27 +587,6 @@ defmodule Raxol.Accounts do
     end
   end
 
-  defp update_user_login_failure(user) do
-    failed_attempts = (user.failed_login_attempts || 0) + 1
-
-    locked_until =
-      if failed_attempts >= @max_failed_attempts,
-        do:
-          DateTime.add(DateTime.utc_now(), @lockout_duration_seconds, :second),
-        else: nil
-
-    attrs = %{
-      failed_login_attempts: failed_attempts,
-      locked_until: locked_until
-    }
-
-    case Database.update(User, user, attrs) do
-      {:ok, _updated_user} -> :ok
-      # Don't fail authentication due to update error
-      {:error, _reason} -> :ok
-    end
-  end
-
   defp update_user_password(user, new_password) do
     attrs = %{password: new_password}
 
@@ -623,15 +602,6 @@ defmodule Raxol.Accounts do
   defp check_user_permissions(user, module, action) do
     # Delegate to Auth module for permission checking
     Raxol.Auth.check_user_permissions(user, module, action)
-  end
-
-  defp has_admin_role?(user) do
-    case user.role do
-      %Role{name: "admin"} -> true
-      # For Agent-based users
-      %{role: "admin"} -> true
-      _ -> false
-    end
   end
 
   defp get_default_role_id do

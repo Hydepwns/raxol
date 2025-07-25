@@ -53,9 +53,7 @@ defmodule Raxol.Animation.Framework do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.Accessibility
   alias Raxol.Animation.StateManager
-  alias Raxol.Animation.Accessibility, as: AnimAccessibility
   alias Raxol.Animation.Processor
   alias Raxol.Animation.Lifecycle
   alias Raxol.Animation.Adaptation
