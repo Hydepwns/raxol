@@ -2,6 +2,7 @@ defmodule Raxol.System.Updater.Core do
   @moduledoc """
   Core update logic and GenServer callbacks for the Raxol System Updater.
   """
+  use GenServer
 
   require Logger
   import Raxol.Guards
