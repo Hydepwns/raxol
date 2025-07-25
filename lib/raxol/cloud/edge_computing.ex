@@ -17,10 +17,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   * Edge-to-cloud data streaming
   """
 
-  alias Raxol.Cloud.EdgeComputing.{Core, Execution, Connection, Cache, Queue, SyncManager}
-
-  # Import State from Core module
-  alias Raxol.Cloud.EdgeComputing.Core.State
+  alias Raxol.Cloud.EdgeComputing.{Core, Execution, Connection}
 
   @doc """
   Initializes the edge computing system.

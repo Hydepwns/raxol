@@ -17,6 +17,7 @@ defmodule Raxol.AI.ContentGeneration do
   """
 
   alias Raxol.Core.UXRefinement
+  alias Raxol.AI.ServiceAdapter
 
   @type generation_type :: :text | :command | :help | :docs | :tutorial | :hint
   @type generation_options :: %{
@@ -118,13 +119,10 @@ defmodule Raxol.AI.ContentGeneration do
   # Private helpers
 
   defp do_generate(:text, prompt, options) do
-    # Implementation would integrate with an AI service
-    # This is a placeholder implementation
-    text =
-      "Generated text for prompt: #{prompt}"
-      |> String.slice(0, options.max_length)
-
-    {:ok, text}
+    ServiceAdapter.generate_content(prompt, %{
+      max_tokens: options.max_length,
+      temperature: 0.7
+    })
   end
 
   defp do_generate(:command, prompt, options) do
@@ -176,9 +174,9 @@ defmodule Raxol.AI.ContentGeneration do
     {:error, "Unsupported generation type"}
   end
 
-  defp do_suggest_text(input, _options) do
-    # Placeholder: Text suggestion logic not yet implemented. Integrate with AI service here in the future.
-    {:ok, "Suggested text for: #{input}"}
+  defp do_suggest_text(input, options) do
+    context = Map.get(options, :context, %{})
+    ServiceAdapter.generate_suggestions(input, context)
   end
 
   defp do_generate_help(context, _options) do
