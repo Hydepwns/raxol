@@ -222,7 +222,7 @@ defmodule Raxol.UI.ThemeResolver do
   defp fallback_to_theme_color(color, _theme, _color_type, _default), do: color
 
   defp get_theme_color(nil, _color_type, default), do: default
-  defp get_theme_color(theme, color_type, default) when not is_map(theme), do: default
+  defp get_theme_color(theme, _color_type, default) when not is_map(theme), do: default
   defp get_theme_color(theme, color_type, default) do
     case Map.get(theme, :colors) do
       nil -> default

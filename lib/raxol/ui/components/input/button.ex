@@ -22,11 +22,6 @@ defmodule Raxol.UI.Components.Input.Button do
     :errors
   ]
 
-  # alias Raxol.Core.Events.Event # REMOVE ALIAS
-  # import Raxol.Guards
-
-  @behaviour Component
-
   @type t :: %{
           id: String.t(),
           label: String.t(),
@@ -72,7 +67,7 @@ defmodule Raxol.UI.Components.Input.Button do
   Initializes the Button component state from the given props.
   """
   @spec init(map()) :: {:ok, t()}
-  @impl Component
+  @impl true
   def init(state) do
     # Use Button.new to ensure defaults are applied from props
     initialized_state = new(state)
@@ -88,21 +83,21 @@ defmodule Raxol.UI.Components.Input.Button do
   Mounts the Button component. Performs any setup needed after initialization.
   """
   @spec mount(t()) :: t()
-  @impl Component
+  @impl true
   def mount(state), do: state
 
   @doc """
   Unmounts the Button component, performing any necessary cleanup.
   """
   @spec unmount(t()) :: t()
-  @impl Component
+  @impl true
   def unmount(state), do: state
 
   @doc """
   Updates the Button component state in response to messages or prop changes.
   """
   @spec update(t(), term()) :: {:noreply, t()}
-  @impl Component
+  @impl true
   def update(state, _message) do
     {:noreply, state}
   end
@@ -120,7 +115,7 @@ defmodule Raxol.UI.Components.Input.Button do
 
   A rendered view representation of the button.
   """
-  @impl Component
+  @impl true
   def render(button, context) do
     merged_style = build_merged_style(button, context)
     {fg, bg} = resolve_colors(button, merged_style)
@@ -171,7 +166,7 @@ defmodule Raxol.UI.Components.Input.Button do
   `{:handled, button}` if the event was handled but state didn't change,
   `:passthrough` if the event wasn't handled by the button.
   """
-  @impl Component
+  @impl true
   def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
     handle_click_event(button)
   end

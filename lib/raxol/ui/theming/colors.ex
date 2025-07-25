@@ -112,18 +112,13 @@ defmodule Raxol.UI.Theming.Colors do
   def lighten(color, amount)
       when float?(amount) and amount >= 0 and amount <= 1 do
     hex = to_hex(color)
+    {r, g, b} = hex_to_rgb(hex)
 
-    case hex_to_rgb(hex) do
-      {r, g, b} ->
-        # Simple linear interpolation with white
-        r = round(r + (255 - r) * amount)
-        g = round(g + (255 - g) * amount)
-        b = round(b + (255 - b) * amount)
-        rgb_to_hex(r, g, b)
-
-      {:error, _} = err ->
-        err
-    end
+    # Simple linear interpolation with white
+    r = round(r + (255 - r) * amount)
+    g = round(g + (255 - g) * amount)
+    b = round(b + (255 - b) * amount)
+    rgb_to_hex(r, g, b)
   end
 
   @doc """
@@ -144,18 +139,13 @@ defmodule Raxol.UI.Theming.Colors do
   def darken(color, amount)
       when float?(amount) and amount >= 0 and amount <= 1 do
     hex = to_hex(color)
+    {r, g, b} = hex_to_rgb(hex)
 
-    case hex_to_rgb(hex) do
-      {r, g, b} ->
-        # Simple linear interpolation with black
-        r = round(r * (1 - amount))
-        g = round(g * (1 - amount))
-        b = round(b * (1 - amount))
-        rgb_to_hex(r, g, b)
-
-      {:error, _} = err ->
-        err
-    end
+    # Simple linear interpolation with black
+    r = round(r * (1 - amount))
+    g = round(g * (1 - amount))
+    b = round(b * (1 - amount))
+    rgb_to_hex(r, g, b)
   end
 
   @doc """

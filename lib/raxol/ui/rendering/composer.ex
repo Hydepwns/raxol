@@ -40,6 +40,23 @@ defmodule Raxol.UI.Rendering.Composer do
     end
   end
 
+  defp do_compose_recursive(current_layout_node, _previous_composed_node)
+       when not map?(current_layout_node) do
+    Raxol.Core.Runtime.Log.debug(
+      "Composition Stage: Passing through non-map primitive node: #{inspect(current_layout_node)}"
+    )
+
+    %{composed_type: :primitive, value: current_layout_node}
+  end
+
+  defp do_compose_recursive(nil, _previous_composed_node) do
+    Raxol.Core.Runtime.Log.debug(
+      "Composition Stage: Encountered nil layout node."
+    )
+
+    nil
+  end
+
   defp can_reuse_previous_node?(current_layout_node, previous_composed_node) do
     map?(current_layout_node[:layout_attrs]) &&
       current_layout_node[:layout_attrs][:processed_with_diff] == :no_change &&
@@ -80,23 +97,6 @@ defmodule Raxol.UI.Rendering.Composer do
       prev_child_composed_node = get_previous_child(previous_composed_node, idx)
       do_compose_recursive(child_layout_node, prev_child_composed_node)
     end)
-  end
-
-  defp do_compose_recursive(current_layout_node, _previous_composed_node)
-       when not map?(current_layout_node) do
-    Raxol.Core.Runtime.Log.debug(
-      "Composition Stage: Passing through non-map primitive node: #{inspect(current_layout_node)}"
-    )
-
-    %{composed_type: :primitive, value: current_layout_node}
-  end
-
-  defp do_compose_recursive(nil, _previous_composed_node) do
-    Raxol.Core.Runtime.Log.debug(
-      "Composition Stage: Encountered nil layout node."
-    )
-
-    nil
   end
 
   defp current_layout_node_type(node) do
