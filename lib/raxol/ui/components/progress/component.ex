@@ -5,6 +5,7 @@ defmodule Raxol.UI.Components.Progress.Component do
 
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
+  require Raxol.View.Elements
 
   # NOTE: This file must be saved as UTF-8 for Unicode characters to work correctly.
   @spinner_frames [

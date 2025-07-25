@@ -4,10 +4,21 @@ defmodule Raxol.UI.StyleProcessor do
   """
 
   @doc """
-  Flattens and merges styles from parent and child elements with proper theme resolution.
+  Flattens and merges styles from parent style and child element with proper theme resolution.
   """
-  def flatten_merged_style(parent_element, child_element, theme) do
-    parent_style_map = Map.get(parent_element, :style, %{})
+  def flatten_merged_style(parent_style, child_element, theme) do
+    # Handle case where parent_style might be an element map or a style map
+    parent_style_map = case parent_style do
+      %{style: style_map} when is_map(style_map) -> 
+        # If parent_style is an element with a :style key, extract and merge with top-level properties
+        style_map 
+        |> Map.merge(Map.take(parent_style, [:foreground, :background, :fg, :bg]))
+      style_map when is_map(style_map) -> 
+        # If parent_style is already a flattened style map, use it as-is
+        style_map
+      _ -> %{}
+    end
+    
     child_style_map = Map.get(child_element, :style, %{})
     merged_style_map = Map.merge(parent_style_map, child_style_map)
     child_other_attrs = Map.drop(child_element, [:style])

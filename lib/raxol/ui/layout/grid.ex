@@ -5,8 +5,6 @@ defmodule Raxol.UI.Layout.Grid do
 
   use Raxol.UI.Components.Base.Component
 
-  alias Raxol.Core.Renderer.View
-  alias Raxol.UI.Layout.Grid
 
   @doc """
   Processes a grid element, calculating layout for it and its children.

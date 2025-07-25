@@ -55,14 +55,18 @@ defmodule Raxol.UI.Renderer do
   def render_element(element, theme, parent_style \\ %{}) do
     case validate_element(element) do
       {:ok, valid_element} ->
-        # Check for zero dimensions
-        if Map.get(valid_element, :width, 0) == 0 or
-             Map.get(valid_element, :height, 0) == 0 do
+        # Check visibility first
+        if Map.get(valid_element, :visible, true) == false do
           []
+        # Check for zero dimensions
         else
-          render_visible_element(valid_element, theme, parent_style)
+          if Map.get(valid_element, :width, 0) == 0 or
+             Map.get(valid_element, :height, 0) == 0 do
+            []
+          else
+            render_visible_element(valid_element, theme, parent_style)
+          end
         end
-
       {:error, _reason} ->
         []
     end

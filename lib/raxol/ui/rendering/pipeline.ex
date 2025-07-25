@@ -38,26 +38,13 @@ defmodule Raxol.UI.Rendering.Pipeline do
   alias Raxol.UI.Rendering.Composer
   alias Raxol.UI.Rendering.Painter
 
+  # New pipeline modules
+  alias Raxol.UI.Rendering.Pipeline.{State, Stages, Animation, Scheduler}
+
   require Raxol.Core.Runtime.Log
   require Logger
 
   @default_renderer Raxol.UI.Rendering.Renderer
-  # Animation frame timing (16ms = ~60fps)
-  @animation_tick_interval_ms if Mix.env() == :test, do: 25, else: 16
-
-  defmodule State do
-    @moduledoc false
-    defstruct current_tree: nil,
-              previous_tree: nil,
-              previous_composed_tree: nil,
-              previous_painted_output: nil,
-              renderer_module: nil,
-              animation_frame_requests: :queue.new(),
-              render_scheduled_for_next_frame: false,
-              last_render_time: nil,
-              render_timer_ref: nil,
-              animation_ticker_ref: nil
-  end
 
   # Public API
 
@@ -275,18 +262,16 @@ defmodule Raxol.UI.Rendering.Pipeline do
   @impl GenServer
   def init(opts) do
     initial_tree = Keyword.get(opts, :initial_tree, %{})
-    renderer_module = Keyword.get(opts, :renderer, get_renderer())
+    opts_with_renderer = Keyword.put(opts, :renderer, get_renderer())
+    
+    state = State.new(opts_with_renderer)
+    state_with_tree = if initial_tree != %{} do
+      State.update_tree(state, initial_tree)
+    else
+      state
+    end
 
-    state = %State{
-      current_tree: initial_tree,
-      previous_tree: nil,
-      renderer_module: renderer_module,
-      animation_frame_requests: :queue.new(),
-      # Ensure this is initialized
-      animation_ticker_ref: nil
-    }
-
-    {:ok, state}
+    {:ok, state_with_tree}
   end
 
   @impl GenServer
@@ -677,90 +662,15 @@ defmodule Raxol.UI.Rendering.Pipeline do
     if timer_ref, do: Process.cancel_timer(timer_ref)
   end
 
-  defp execute_render_stages(
-         diff_result,
-         new_tree_for_reference,
-         _renderer_module,
-         previous_composed_tree,
-         previous_painted_output
-       ) do
-    if should_process_tree?(diff_result, new_tree_for_reference) do
-      layout_data = Layouter.layout_tree(diff_result, new_tree_for_reference)
-
-      if should_process_layout?(diff_result, layout_data) do
-        composed_data =
-          Composer.compose_render_tree(
-            layout_data,
-            new_tree_for_reference,
-            previous_composed_tree
-          )
-
-        handle_composition_stage(
-          composed_data,
-          layout_data,
-          previous_painted_output,
-          previous_composed_tree,
-          new_tree_for_reference
-        )
-      else
-        Raxol.Core.Runtime.Log.debug(
-          "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
-        )
-
-        {previous_painted_output, previous_composed_tree}
-      end
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
-      )
-
-      {previous_painted_output, previous_composed_tree}
-    end
-  end
-
-  defp handle_composition_stage(
-         composed_data,
-         layout_data,
-         previous_painted_output,
-         previous_composed_tree,
-         new_tree_for_reference
-       ) do
-    if should_process_composition?(composed_data, layout_data) do
-      painted_data =
-        Painter.paint(
-          composed_data,
-          new_tree_for_reference,
-          previous_composed_tree,
-          previous_painted_output
-        )
-
-      {painted_data, composed_data}
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
-      )
-
-      {previous_painted_output, composed_data}
-    end
-  end
-
-  defp should_process_tree?(diff_result, new_tree_for_reference) do
-    is_map(new_tree_for_reference) or
-      diff_result == {:replace, nil} or
-      (is_tuple(diff_result) and elem(diff_result, 0) == :replace)
-  end
-
-  defp should_process_layout?(diff_result, layout_data) do
-    is_map(layout_data) or
-      (is_tuple(diff_result) and elem(diff_result, 0) == :replace and
-         elem(diff_result, 1) == nil)
-  end
-
-  defp should_process_composition?(composed_data, layout_data) do
-    is_map(composed_data) or
-      (is_map(layout_data) and map_size(layout_data) == 0) or
-      layout_data == nil
-  end
+  # Delegate stage execution to Stages module
+  defdelegate execute_render_stages(
+                diff_result,
+                new_tree_for_reference,
+                renderer_module,
+                previous_composed_tree,
+                previous_painted_output
+              ),
+              to: Stages
 
   defp ensure_animation_ticker_running(state) do
     if is_nil(state.animation_ticker_ref) do

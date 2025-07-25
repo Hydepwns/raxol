@@ -6,8 +6,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.Utils do
   @doc """
   Clamps a value between min and max.
   """
-  def clamp(value, min, max) when value < min, do: min
-  def clamp(value, min, max) when value > max, do: max
+  def clamp(value, min, _max) when value < min, do: min
+  def clamp(value, _min, max) when value > max, do: max
   def clamp(value, _min, _max), do: value
 
   @doc """

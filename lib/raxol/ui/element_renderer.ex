@@ -8,7 +8,7 @@ defmodule Raxol.UI.ElementRenderer do
   @doc """
   Renders a box element.
   """
-  def render_box(x, y, width, height, style, theme) do
+  def render_box(x, y, width, height, style, _theme) do
     {clip_x, clip_y, clip_width, clip_height} =
       CellManager.clip_coordinates(x, y, width, height)
 
