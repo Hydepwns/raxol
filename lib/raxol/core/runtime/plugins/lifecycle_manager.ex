@@ -109,12 +109,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
            command_registry_table,
            plugin_config
          ) do
-      :ok ->
+      {:ok, {updated_metadata, updated_states, updated_command_table}} ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully unloaded plugin: #{plugin_id}",
           %{plugin_id: plugin_id}
         )
-        :ok
+        {:ok, {updated_metadata, updated_states, updated_command_table}}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
@@ -130,28 +130,24 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Initializes a plugin with the given configuration.
   """
-  def initialize_plugin(plugin_name, config, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+  def initialize_plugin(plugin_name, _config, plugins, metadata, plugin_states, _load_order, command_registry_table, _plugin_config) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Initializing plugin: #{plugin_name}",
-      %{plugin_name: plugin_name, config: config}
+      %{plugin_name: plugin_name}
     )
 
-    case Raxol.Core.Runtime.Plugins.Discovery.initialize_plugin(
-           plugin_name,
-           config,
-           plugins,
-           metadata,
-           plugin_states,
-           load_order,
-           command_registry_table,
-           plugin_config
-         ) do
-      {:ok, {updated_metadata, updated_states, updated_table}} ->
+    state = %{
+      plugins: plugins,
+      metadata: metadata,
+      plugin_states: plugin_states
+    }
+    case Raxol.Core.Runtime.Plugins.Discovery.initialize_plugin(plugin_name, state) do
+      {:ok, updated_state} ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully initialized plugin: #{plugin_name}",
           %{plugin_name: plugin_name}
         )
-        {:ok, {updated_metadata, updated_states, updated_table}}
+        {:ok, {updated_state.metadata, updated_state.plugin_states, command_registry_table}}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(

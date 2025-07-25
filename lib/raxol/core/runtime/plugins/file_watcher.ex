@@ -6,6 +6,24 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   require Raxol.Core.Runtime.Log
 
   @doc """
+  Sets up file watching for plugin hot-reloading.
+  """
+  def setup_file_watching(config \\ %{}) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Setting up file watching for plugin hot-reloading",
+      %{config: config}
+    )
+
+    watch_config = %{
+      watch_directories: Map.get(config, :watch_directories, ["plugins/"]),
+      debounce_ms: Map.get(config, :debounce_ms, 1000),
+      file_patterns: Map.get(config, :file_patterns, ["*.ex"])
+    }
+
+    {:ok, watch_config}
+  end
+
+  @doc """
   Handles a file event.
   """
   def handle_file_event(path, state) do

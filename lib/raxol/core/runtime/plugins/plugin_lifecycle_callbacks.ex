@@ -32,13 +32,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycleCallbacks do
   """
   def load_plugin_by_module(
         module,
-        metadata,
+        _metadata,
         config,
         states,
         command_table,
-        plugin_manager,
+        _plugin_manager,
         current_metadata,
-        opts
+        _opts
       ) do
     # Implementation for load_plugin_by_module callback
     try do

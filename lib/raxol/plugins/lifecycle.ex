@@ -10,9 +10,8 @@ defmodule Raxol.Plugins.Lifecycle do
   import Raxol.Guards
 
   # Alias necessary modules
-  alias Raxol.Plugins.{PluginConfig, PluginDependency, Manager.Core}
-  alias Raxol.Core.Runtime.Plugins.DependencyManager
-  alias Raxol.Plugins.Lifecycle.{Initialization, Dependencies, ManagerUpdate, ErrorHandling, Validation}
+  alias Raxol.Plugins.{PluginConfig, Manager.Core}
+  alias Raxol.Plugins.Lifecycle.{Initialization, Dependencies, ManagerUpdate, ErrorHandling}
 
   @doc """
   Loads a single plugin module and initializes it.

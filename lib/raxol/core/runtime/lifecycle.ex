@@ -486,7 +486,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
-  def handle_error(error, context) do
+  def handle_error(error, _context) do
     # Log the error with context
     Logger.error("Application error occurred: #{inspect(error)}")
 
@@ -504,7 +504,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         Logger.info("[Lifecycle] Attempting to restore terminal")
         {:stop, :normal, %{}}
 
-      {:unknown_error, reason} ->
+      {:unknown_error, _reason} ->
         # For unknown errors, log and continue
         Logger.info("[Lifecycle] Unknown error: #{inspect(error)}")
         Logger.info("[Lifecycle] Continuing execution")

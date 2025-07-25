@@ -250,18 +250,6 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   end
 
   @doc """
-  Reloads a plugin from disk.
-  """
-  def reload_plugin_from_disk(plugin_id, path, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
-    case Raxol.Core.Runtime.Plugins.LifecycleHelper.reload_plugin_from_disk(
-           plugin_id, path, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config
-         ) do
-      {:ok, result} -> {:ok, result}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  @doc """
   Unloads a plugin.
   """
   def unload_plugin(plugin_id, plugins, metadata, plugin_states, command_registry_table, plugin_config) do
@@ -280,7 +268,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   def initialize_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil -> {:error, :not_found}
-      plugin ->
+      _plugin ->
         case Raxol.Core.Runtime.Plugins.LifecycleHelper.init_plugin(plugin_id, state.metadata) do
           {:ok, initial_state} ->
             updated_state = %{
@@ -314,10 +302,11 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
       nil -> {:error, :not_found}
       plugin ->
         case Raxol.Core.Runtime.Plugins.LifecycleHelper.enable_plugin(plugin, state.plugin_states) do
-          {:ok, updated_plugin_states} ->
+          {:ok, updated_plugin_state} ->
+            # Update the specific plugin state
+            updated_plugin_states = Map.put(state.plugin_states, plugin_id, updated_plugin_state)
             updated_state = %{state | plugin_states: updated_plugin_states}
             {:ok, updated_state}
-          {:error, reason} -> {:error, reason}
         end
     end
   end
@@ -330,11 +319,11 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
       nil -> {:error, :not_found}
       plugin ->
         case Raxol.Core.Runtime.Plugins.LifecycleHelper.disable_plugin(plugin, state.plugin_states) do
-          {:ok, updated_plugin_states} ->
-            # Merge the updated plugin states with the existing state
-            updated_state = %{state | plugin_states: Map.merge(state.plugin_states, updated_plugin_states)}
+          {:ok, updated_plugin_state} ->
+            # Update the specific plugin state
+            updated_plugin_states = Map.put(state.plugin_states, plugin_id, updated_plugin_state)
+            updated_state = %{state | plugin_states: updated_plugin_states}
             {:ok, updated_state}
-          {:error, reason} -> {:error, reason}
         end
     end
   end
@@ -345,7 +334,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   def reload_plugin(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
       nil -> {:error, :not_found}
-      plugin ->
+      _plugin ->
         case Raxol.Core.Runtime.Plugins.LifecycleHelper.reload_plugin(
                plugin_id,
                state.metadata,

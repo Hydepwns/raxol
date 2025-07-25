@@ -1,6 +1,4 @@
 defmodule Raxol.Plugins.HyperlinkPlugin do
-  import Raxol.Guards
-
   @moduledoc """
   Plugin that detects URLs in terminal output and makes them clickable.
   """
@@ -109,7 +107,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(%__MODULE__{} = plugin, rendered_cells, event, _manager) do
+  def handle_mouse(%__MODULE__{} = plugin, rendered_cells, event) do
     case event do
       %{
         type: :mouse,
@@ -184,31 +182,6 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     # OSC 8 escape sequence for hyperlinks
     # Format: \e]8;;URL\e\\text\e]8;;\e\\
     "\e]8;;#{url}\e\\#{url}\e]8;;\e\\"
-  end
-
-  # Opens the given URL using the OS-specific command.
-  defp open_url(url) do
-    command =
-      case :os.type() do
-        {:unix, :darwin} -> "open"
-        # Covers Linux and other Unix-like
-        {:unix, _} -> "xdg-open"
-        {:win32, _} -> "start"
-      end
-
-    case System.cmd(command, [url], stderr_to_stdout: true) do
-      {_output, 0} ->
-        Raxol.Core.Runtime.Log.info("[HyperlinkPlugin] Opened URL: #{url}")
-        :ok
-
-      {_output, _exit_code} ->
-        Raxol.Core.Runtime.Log.error(
-          # {url}" with command "#{command}". Exit code: #{exit_code}, Output: #{output}"
-          "[HyperlinkPlugin] Failed to open URL "
-        )
-
-        {:error, :command_failed}
-    end
   end
 
   @doc """

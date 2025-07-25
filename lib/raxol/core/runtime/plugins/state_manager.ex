@@ -6,6 +6,25 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   require Raxol.Core.Runtime.Log
 
   @doc """
+  Initializes the state manager with default plugin states.
+  """
+  def initialize(initial_state \\ %{}) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Initializing plugin state manager",
+      %{}
+    )
+
+    default_state = %{
+      plugin_states: %{},
+      plugin_config: %{},
+      metadata: %{},
+      command_registry_table: nil
+    }
+
+    Map.merge(default_state, initial_state)
+  end
+
+  @doc """
   Sets a plugin's state directly.
   """
   def set_plugin_state(plugin_id, new_state, state) do

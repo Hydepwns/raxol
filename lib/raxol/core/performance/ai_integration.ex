@@ -9,7 +9,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Core.Performance.{Analyzer, Monitor}
+  alias Raxol.Core.Performance.Analyzer
   alias Raxol.AI.{ContentGeneration, PerformanceOptimization}
 
   @type ai_service :: :openai | :anthropic | :local | :mock
@@ -113,7 +113,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
   ## Returns
     - List of optimization suggestions with priority and impact
   """
-  def get_optimization_suggestions(component_name, context, options \\ %{}) do
+  def get_optimization_suggestions(component_name, _context, _options \\ %{}) do
     # Integrate with PerformanceOptimization module
     suggestions = PerformanceOptimization.analyze_performance()
 
@@ -167,7 +167,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
   ## Returns
     - Map containing predicted issues and confidence levels
   """
-  def predict_performance_issues(metrics, historical_data \\ [], options \\ %{}) do
+  def predict_performance_issues(metrics, historical_data \\ [], _options \\ %{}) do
     # Analyze current metrics
     current_analysis = Analyzer.analyze(metrics)
 
@@ -188,7 +188,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
 
   # Private functions
 
-  defp generate_mock_analysis(ai_data) do
+  defp generate_mock_analysis(_ai_data) do
     # Enhanced mock analysis with more realistic data
     %{
       insights: [
@@ -327,7 +327,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
 
   defp parse_openai_response({:ok, %{status_code: 200, body: body}}) do
     case Jason.decode(body) do
-      {:ok, %{"choices" => [%{"message" => %{"content" => content}} | _]}} ->
+      {:ok, %{"choices" => [%{"message" => %{"content" => _content}} | _]}} ->
         # Parse the AI response and convert to our expected format
         # For now, return mock data as the response format needs to be standardized
         generate_mock_analysis(%{})
@@ -725,22 +725,22 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
-  defp predict_short_term_issues(current_analysis, trend_analysis) do
+  defp predict_short_term_issues(_current_analysis, _trend_analysis) do
     # Predict issues in the next few minutes
     []
   end
 
-  defp predict_medium_term_issues(current_analysis, trend_analysis) do
+  defp predict_medium_term_issues(_current_analysis, _trend_analysis) do
     # Predict issues in the next few hours
     []
   end
 
-  defp predict_long_term_issues(current_analysis, trend_analysis) do
+  defp predict_long_term_issues(_current_analysis, _trend_analysis) do
     # Predict issues in the next few days/weeks
     []
   end
 
-  defp calculate_prediction_confidence(current_analysis, trend_analysis) do
+  defp calculate_prediction_confidence(_current_analysis, _trend_analysis) do
     # Calculate confidence based on data quality and trend consistency
     0.75
   end

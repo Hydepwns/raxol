@@ -314,5 +314,4 @@ defmodule Raxol.Core.Events.Event do
     })
   end
 
-  defp event_conversion(_event), do: {:error, :not_implemented}
 end

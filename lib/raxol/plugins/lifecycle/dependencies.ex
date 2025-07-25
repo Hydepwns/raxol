@@ -3,7 +3,6 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
   Handles dependency validation, circular dependency checks, and load order resolution for plugin lifecycle management.
   """
 
-  alias Raxol.Plugins.PluginDependency
   alias Raxol.Core.Runtime.Plugins.DependencyManager
   alias Raxol.Plugins.Manager.Core
 

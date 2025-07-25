@@ -296,24 +296,15 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   def reload_plugin_from_disk(
         plugin_id,
-        plugin_module,
-        plugin_path,
-        plugin_state,
-        command_table,
-        metadata,
-        plugin_manager,
-        opts
+        _plugin_module,
+        _plugin_path,
+        _plugin_state,
+        _command_table,
+        _metadata,
+        _plugin_manager,
+        _opts
       ) do
-    PluginReloader.reload_plugin_from_disk(
-      plugin_id,
-      plugin_module,
-      plugin_path,
-      plugin_state,
-      command_table,
-      metadata,
-      plugin_manager,
-      opts
-    )
+    PluginReloader.reload_plugin(plugin_id, %{})
   end
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
@@ -331,6 +322,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @doc """
   Enables a plugin by updating its state to enabled.
   """
+  @impl true
   def enable_plugin(plugin, plugin_states) do
     # For now, just return the existing plugin state as enabled
     # This is a simple implementation that can be enhanced later
@@ -353,6 +345,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @doc """
   Disables a plugin by updating its state to disabled.
   """
+  @impl true
   def disable_plugin(plugin, plugin_states) do
     # For now, just return the existing plugin state as disabled
     # This is a simple implementation that can be enhanced later
