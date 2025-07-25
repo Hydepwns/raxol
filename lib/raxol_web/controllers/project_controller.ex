@@ -68,7 +68,7 @@ defmodule RaxolWeb.ProjectController do
 
   def update(conn, %{"id" => id} = params) do
     # Mock update logic
-    updated_project = %{
+    _updated_project = %{
       id: String.to_integer(id),
       name: params["name"] || "Updated Project",
       description: params["description"] || "Updated description",
@@ -80,7 +80,7 @@ defmodule RaxolWeb.ProjectController do
     |> redirect(to: ~p"/projects/#{id}")
   end
 
-  def delete(conn, %{"id" => id}) do
+  def delete(conn, %{"id" => _id}) do
     # Mock delete logic
     conn
     |> put_flash(:info, "Project deleted successfully")

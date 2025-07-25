@@ -59,7 +59,7 @@ defmodule RaxolWeb.UserController do
 
   def update(conn, %{"id" => id} = params) do
     # Mock update logic
-    updated_user = %{
+    _updated_user = %{
       id: String.to_integer(id),
       name: params["name"] || "Updated User",
       email: params["email"] || "updated@example.com",
@@ -72,7 +72,7 @@ defmodule RaxolWeb.UserController do
     |> redirect(to: ~p"/users/#{id}")
   end
 
-  def delete(conn, %{"id" => id}) do
+  def delete(conn, %{"id" => _id}) do
     # Mock delete logic
     conn
     |> put_flash(:info, "User deleted successfully")
