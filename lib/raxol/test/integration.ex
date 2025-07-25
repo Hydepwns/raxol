@@ -30,9 +30,7 @@ defmodule Raxol.Test.Integration do
   """
 
   import ExUnit.Assertions
-  alias Raxol.Core.Events.{Event, Subscription}
   import Raxol.Guards
-  alias Raxol.Core.Runtime.ComponentManager
 
   # Delegation to focused modules
   alias Raxol.Test.Integration.{HierarchySetup, EventSimulation, ComponentManagement}

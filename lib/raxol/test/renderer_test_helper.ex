@@ -8,19 +8,30 @@ defmodule Raxol.UI.RendererTestHelper do
   alias Raxol.UI.Theming.Theme
 
   def create_test_theme(name, arg2, arg3, arg4) do
-    {colors, styles, fonts} =
+    {colors, styles, fonts, variants} =
       cond do
         is_binary(arg2) and is_binary(arg3) and is_map(arg4) ->
-          # Called as (name, desc, desc, colors)
-          {Map.merge(%{foreground: :white, background: :black}, arg4), %{}, %{}}
+          # Called as (name, desc, desc, colors_or_config)
+          # Check if arg4 contains variants
+          if Map.has_key?(arg4, :variants) do
+            variants = Map.get(arg4, :variants, %{})
+            colors = Map.drop(arg4, [:variants])
+            # Don't merge defaults - let themes be partial for inheritance testing
+            {colors, %{}, %{}, variants}
+          else
+            # Don't merge defaults - let themes be partial for inheritance testing
+            {arg4, %{}, %{}, %{}}
+          end
         is_map(arg2) and is_map(arg3) and (is_map(arg4) or is_nil(arg4)) ->
           # Called as (name, colors, styles, fonts)
-          {Map.merge(%{foreground: :white, background: :black}, arg2), arg3, arg4 || %{}}
+          # Don't merge defaults - let themes be partial for inheritance testing
+          {arg2, arg3, arg4 || %{}, %{}}
         true ->
           # Fallback: treat arg2 as colors if it's a map
-          {Map.merge(%{foreground: :white, background: :black}, if(is_map(arg2), do: arg2, else: %{})),
+          {if(is_map(arg2), do: arg2, else: %{}),
            if(is_map(arg3), do: arg3, else: %{}),
-           if(is_map(arg4), do: arg4, else: %{})}
+           if(is_map(arg4), do: arg4, else: %{}),
+           %{}}
       end
 
     %Raxol.UI.Theming.Theme{
@@ -30,7 +41,7 @@ defmodule Raxol.UI.RendererTestHelper do
       component_styles: styles,
       styles: styles,
       fonts: fonts,
-      variants: %{},
+      variants: variants,
       metadata: %{},
       ui_mappings: %{}
     }

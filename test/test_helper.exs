@@ -1,6 +1,7 @@
 IO.puts("[TestHelper] === TEST HELPER STARTING ===")
 
-# Start Mox will be done after application starts
+# Start Mox
+{:ok, _} = Application.ensure_all_started(:mox)
 
 # --- Global Docker Test Skip Logic ---
 if System.get_env("SKIP_TERMBOX2_TESTS") == "true" do

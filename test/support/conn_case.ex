@@ -88,14 +88,23 @@ defmodule RaxolWeb.ConnCase do
   Mimics the behaviour of RaxolWeb.UserAuth.log_in_user/2.
   """
   def log_in_user(conn, user) do
-    ensure_test_user_exists()
+    # Skip database operations when database is disabled
+    if Application.get_env(:raxol, :database_enabled, true) do
+      ensure_test_user_exists()
+    end
     setup_user_session(conn, user)
   end
 
   defp ensure_test_user_exists do
-    case Raxol.Accounts.get_user("user") do
-      nil -> create_test_user()
-      _ -> :ok
+    # Check if Accounts process is running
+    if Process.whereis(Raxol.Accounts) do
+      case Raxol.Accounts.get_user("user") do
+        nil -> create_test_user()
+        _ -> :ok
+      end
+    else
+      # If Accounts isn't running, skip user creation
+      :ok
     end
   end
 

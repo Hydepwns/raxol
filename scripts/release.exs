@@ -47,12 +47,23 @@ defmodule Raxol.Release do
     IO.puts "Building #{@app_name} #{@version} for environment: #{env}"
     IO.puts "Target platforms: #{inspect platforms}"
 
-    for platform <- platforms do
+    # Clean previous builds for consistency
+    if opts[:clean] != false, do: clean_builds()
+
+    results = for platform <- platforms do
       build_for_platform(platform, env)
     end
 
-    IO.puts "\nBuild complete!"
+    # Summary of build results
+    successful = Enum.count(results, & &1 == :ok)
+    total = length(results)
+
+    IO.puts "\n=== Build Summary ==="
+    IO.puts "✅ Successful: #{successful}/#{total}"
+    if successful < total, do: IO.puts "❌ Failed: #{total - successful}/#{total}"
+    
     IO.puts "Release artifacts available in burrito_out/#{env}/"
+    create_artifact_manifest(env, platforms, results)
   end
 
   defp build_for_platform(platform, env) do
@@ -69,8 +80,10 @@ defmodule Raxol.Release do
     case System.cmd("sh", ["-c", command], into: IO.stream(:stdio, :line)) do
       {_, 0} ->
         IO.puts "✅ Successfully built #{@app_name} for #{platform} in #{env} mode"
+        :ok
       {_, error_code} ->
         IO.puts "❌ Failed to build #{@app_name} for #{platform} with exit code #{error_code}"
+        :error
     end
   end
 
@@ -100,25 +113,74 @@ defmodule Raxol.Release do
   defp create_version_tag do
     IO.puts "Creating git tag for version #{@version}..."
 
+    # Check if working directory is clean
+    {status_output, _} = System.cmd("git", ["status", "--porcelain"])
+    if String.trim(status_output) != "" do
+      IO.puts "⚠️  Working directory has uncommitted changes:"
+      IO.puts status_output
+      IO.puts "Please commit or stash changes before tagging."
+      System.halt(1)
+    end
+
+    # Check if tag already exists
+    case System.cmd("git", ["tag", "-l", "v#{@version}"]) do
+      {output, 0} when output != "" ->
+        IO.puts "⚠️  Tag v#{@version} already exists. Use 'git tag -d v#{@version}' to delete it first."
+        System.halt(1)
+      _ -> :ok
+    end
+
+    # Create annotated tag with release notes
+    tag_message = "Release v#{@version}\n\nBuilt with Raxol Release Script\nBuild date: #{DateTime.utc_now() |> DateTime.to_iso8601()}"
+    
     commands = [
-      "git add .",
-      "git commit -m \"Release v#{@version}\"",
-      "git tag -a v#{@version} -m \"Version #{@version}\"",
-      "git push origin v#{@version}"
+      {"git tag -a v#{@version} -m \"#{tag_message}\"", "Creating tag"},
+      {"git push origin v#{@version}", "Pushing tag to origin"}
     ]
 
-    for command <- commands do
-      IO.puts "Executing: #{command}"
-      case System.cmd("sh", ["-c", command], into: IO.stream(:stdio, :line)) do
-        {_, 0} -> :ok
-        {_, error_code} ->
-          IO.puts "❌ Command failed with exit code #{error_code}"
-          IO.puts "Aborting version tagging process."
+    for {command, description} <- commands do
+      IO.puts "#{description}..."
+      case System.cmd("sh", ["-c", command]) do
+        {_, 0} -> 
+          IO.puts "✅ #{description} completed"
+        {output, error_code} ->
+          IO.puts "❌ #{description} failed with exit code #{error_code}"
+          IO.puts "Output: #{String.trim(output)}"
           System.halt(1)
       end
     end
 
-    IO.puts "✅ Version #{@version} tagged and pushed successfully"
+    IO.puts "✅ Version v#{@version} tagged and pushed successfully"
+  end
+
+  defp create_artifact_manifest(env, platforms, results) do
+    manifest_path = "burrito_out/#{env}/MANIFEST.json"
+    
+    manifest = %{
+      app: @app_name,
+      version: @version,
+      environment: env,
+      build_time: DateTime.utc_now() |> DateTime.to_iso8601(),
+      platforms: Enum.zip(platforms, results) |> Enum.map(fn {platform, result} ->
+        %{
+          platform: platform,
+          status: if(result == :ok, do: "success", else: "failed"),
+          executable: get_executable_name(platform, env)
+        }
+      end)
+    }
+
+    File.mkdir_p!(Path.dirname(manifest_path))
+    File.write!(manifest_path, Jason.encode!(manifest, pretty: true))
+    IO.puts "📋 Build manifest created: #{manifest_path}"
+  end
+
+  defp get_executable_name(platform, env) do
+    suffix = if env == "dev", do: "_dev", else: ""
+    case platform do
+      :windows -> "raxol#{suffix}.exe"
+      _ -> "raxol#{suffix}"
+    end
   end
 
   defp print_help do

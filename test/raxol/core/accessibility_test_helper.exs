@@ -61,11 +61,18 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     # Ensure EventManager is started
     Raxol.Core.Events.Manager.init()
 
-    # Start UserPreferences with the global name for tests that need it
-    pid_of_prefs =
-      start_supervised!(
-        {UserPreferences, [test_mode?: true, name: Raxol.Core.UserPreferences]}
-      )
+    # Check if UserPreferences is already running
+    pid_of_prefs = case Process.whereis(Raxol.Core.UserPreferences) do
+      nil ->
+        # Start UserPreferences with the global name for tests that need it
+        start_supervised!(
+          {UserPreferences, [test_mode?: true, name: Raxol.Core.UserPreferences]}
+        )
+      
+      existing_pid ->
+        # If already running, use the existing process
+        existing_pid
+    end
 
     # Set up preferences
     Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, pid_of_prefs)

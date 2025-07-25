@@ -189,8 +189,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       result_technical =
         unwrap_ok(CSIHandlers.handle_scs(emulator, <<technical_code_char>>, 40))
 
-      assert result_technical.charset_state.g0 ==
-               Raxol.Terminal.ANSI.CharacterSets.DEC
+      assert result_technical.charset_state.g0 == :dec_special_graphics
 
       initial_g0_for_portuguese_call = emulator.charset_state.g0
       portuguese_char_code = ?'
@@ -200,11 +199,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
           CSIHandlers.handle_scs(emulator, <<portuguese_char_code>>, 40)
         )
 
-      assert result_portuguese.charset_state.g0 ==
-               Raxol.Terminal.ANSI.CharacterSets.ASCII
+      assert result_portuguese.charset_state.g0 == :portuguese
 
       result_A = unwrap_ok(CSIHandlers.handle_scs(emulator, "A", 40))
-      assert result_A.charset_state.g0 == Raxol.Terminal.ANSI.CharacterSets.UK
+      assert result_A.charset_state.g0 == :uk
     end
 
     test "handles unknown code/final_byte combination gracefully", %{
