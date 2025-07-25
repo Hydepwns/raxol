@@ -26,8 +26,8 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_12(emulator, data) do
     case data do
-      "?" -> handle_color_query(emulator, 12, &Manager.get_color/1)
-      color_spec -> set_color(emulator, color_spec, &Manager.set_color/2)
+      "?" -> handle_color_query(emulator, 12)
+      color_spec -> set_color(emulator, color_spec)
     end
   end
 
@@ -67,40 +67,22 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
   @spec handle_112(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_112(emulator, _data) do
-    case Manager.reset_color(emulator.cursor) do
-      {:ok, new_cursor} ->
-        {:ok, %{emulator | cursor: new_cursor}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to reset cursor color: #{inspect(reason)}"
-        )
-
-        {:error, reason, emulator}
-    end
+    new_cursor = Manager.reset_color(emulator.cursor)
+    {:ok, %{emulator | cursor: new_cursor}}
   end
 
   # Private Helpers
 
-  defp handle_color_query(emulator, command, getter_fn) do
-    case getter_fn.(emulator.cursor) do
-      {:ok, color} ->
-        response = format_color_response(command, color)
-        {:ok, %{emulator | output_buffer: response}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to get color: #{inspect(reason)}"
-        )
-
-        {:error, reason, emulator}
-    end
+  defp handle_color_query(emulator, command) do
+    color = Manager.get_color(emulator.cursor)
+    response = format_color_response(command, color)
+    {:ok, %{emulator | output_buffer: response}}
   end
 
-  defp set_color(emulator, color_spec, setter_fn) do
+  defp set_color(emulator, color_spec) do
     case ColorParser.parse(color_spec) do
       {:ok, color} ->
-        {:ok, new_cursor} = setter_fn.(emulator.cursor, color)
+        new_cursor = Manager.set_color(emulator.cursor, color)
         {:ok, %{emulator | cursor: new_cursor}}
 
       {:error, reason} ->
@@ -113,26 +95,17 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
   end
 
   defp handle_font_query(emulator) do
-    case Font.get_current(emulator.font) do
-      {:ok, font} ->
-        response = format_font_response(font)
-        {:ok, %{emulator | output_buffer: response}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning("Failed to get font: #{inspect(reason)}")
-        {:error, reason, emulator}
-    end
+    # Font.get_current returns :ok, so we'll use a default font structure
+    Font.get_current(emulator.font)
+    # Provide a default font response since Font module returns :ok
+    response = format_font_response(%{family: nil, size: nil, style: nil})
+    {:ok, %{emulator | output_buffer: response}}
   end
 
   defp handle_font_set(emulator, family, size, style) do
-    case Font.set(emulator.font, family, size, style) do
-      {:ok, new_font} ->
-        {:ok, %{emulator | font: new_font}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning("Failed to set font: #{inspect(reason)}")
-        {:error, reason, emulator}
-    end
+    # Font.set returns :ok, not a new font structure
+    Font.set(emulator.font, family, size, style)
+    {:ok, emulator}
   end
 
   defp handle_font_error(emulator, reason, data) do
@@ -140,7 +113,8 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
     {:error, reason, emulator}
   end
 
-  defp format_color_response(command, {r, g, b}) do
+  defp format_color_response(command, color) when is_tuple(color) do
+    {r, g, b} = color
     # Format: OSC command;rgb:r/g/b
     # Scale up to 16-bit range (0-65535)
     r_scaled =
@@ -153,6 +127,11 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Cursor do
       Integer.to_string(div(b * 65_535, 255), 16) |> String.pad_leading(4, "0")
 
     "\e]#{command};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}\e\\"
+  end
+
+  defp format_color_response(command, nil) do
+    # Default color response when no color is set
+    "\e]#{command};\e\\"
   end
 
   defp format_font_response(font) do

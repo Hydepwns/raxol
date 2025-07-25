@@ -6,10 +6,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
   This module handles operations like inserting, deleting, and manipulating lines.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ANSI.TextFormatting
-
   # Delegation to focused modules
   alias Raxol.Terminal.Buffer.LineOperations.{
     Insertion,

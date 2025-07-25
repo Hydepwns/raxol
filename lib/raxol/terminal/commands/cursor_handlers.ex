@@ -208,8 +208,6 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
-  @doc "Handles Cursor Vertical Absolute (VPA - 'd') - alias for handle_decvpa"
-
   @doc """
   Moves the cursor to a specific position with width and height bounds.
   """
@@ -398,14 +396,6 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     %{cursor | position: {row, col}, row: row, col: col}
   end
 
-  defp get_cursor_position(cursor) when is_pid(cursor) do
-    CursorManager.get_position(cursor)
-  end
-
-  defp get_cursor_position(cursor) when is_map(cursor) do
-    cursor.position
-  end
-
   # Fallback clause for any other cursor type
   defp set_cursor_position(cursor, {row, col}) do
     # Try to handle any cursor type that might have position, row, col fields
@@ -418,5 +408,13 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         # If we can't handle it, return the cursor unchanged
         cursor
     end
+  end
+
+  defp get_cursor_position(cursor) when is_pid(cursor) do
+    CursorManager.get_position(cursor)
+  end
+
+  defp get_cursor_position(cursor) when is_map(cursor) do
+    cursor.position
   end
 end

@@ -15,7 +15,6 @@ defmodule Raxol.Terminal.Emulator do
     Operations.StateOperations,
     Cursor.Manager,
     OutputManager,
-    Window.Manager,
     ScreenBuffer,
     ANSI.SequenceHandlers,
     ANSI.SGRProcessor,
@@ -25,7 +24,15 @@ defmodule Raxol.Terminal.Emulator do
     Plugin.DependencyResolver,
     Emulator.Constructors,
     Emulator.Reset,
-    Emulator.CommandHandlers
+    Emulator.CommandHandlers,
+    Emulator.Helpers,
+    Emulator.CursorOperations,
+    Emulator.BufferOperations,
+    Emulator.ScrollOperations,
+    Emulator.ScreenOperations,
+    Emulator.ModeOperations,
+    Emulator.Dimensions,
+    Emulator.TextOperations
   }
 
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
@@ -392,18 +399,11 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Dimension getters
-  def get_width(emulator) do
-    emulator.width
-  end
-
-  def get_height(emulator) do
-    emulator.height
-  end
+  defdelegate get_width(emulator), to: Dimensions
+  defdelegate get_height(emulator), to: Dimensions
 
   # Scroll region getter
-  def get_scroll_region(emulator) do
-    emulator.scroll_region
-  end
+  defdelegate get_scroll_region(emulator), to: ScrollOperations
 
   # Cursor visibility getter (alias for cursor_visible?)
   def get_cursor_visible(emulator) do
@@ -468,9 +468,9 @@ defmodule Raxol.Terminal.Emulator do
 
   @spec maybe_scroll(t()) :: t()
   def maybe_scroll(%__MODULE__{} = emulator) do
-    {_x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+    {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
-    log_scroll_debug(_x, y, emulator.height)
+    log_scroll_debug(x, y, emulator.height)
 
     if y >= emulator.height do
       perform_scroll(emulator)
@@ -741,255 +741,12 @@ defmodule Raxol.Terminal.Emulator do
 
   defp parse_mouse_event(_), do: nil
 
-  defp handle_ansi_sequences(<<>>, emulator), do: {emulator, <<>>}
 
-  defp handle_ansi_sequences(rest, emulator) do
-    # IO.puts("DEBUG: handle_ansi_sequences input: #{inspect(rest)}")
 
-    case parse_ansi_sequence(rest) do
-      {:osc, remaining, _} ->
-        # IO.puts("DEBUG: handle_ansi_sequences parsed: {:osc, ...}")
-        handle_ansi_sequences(remaining, emulator)
 
-      {:dcs, remaining, _} ->
-        # IO.puts("DEBUG: handle_ansi_sequences parsed: {:dcs, ...}")
-        handle_ansi_sequences(remaining, emulator)
 
-      {:incomplete, _} ->
-        # IO.puts("DEBUG: handle_ansi_sequences parsed: {:incomplete, ...}")
-        {emulator, rest}
 
-      parsed_sequence ->
-        # IO.puts(
-        #   "DEBUG: handle_ansi_sequences parsed: #{inspect(parsed_sequence)}"
-        # )
 
-        {new_emulator, remaining} =
-          handle_parsed_sequence(parsed_sequence, rest, emulator)
-
-        # IO.puts(
-        #   "DEBUG: handle_ansi_sequences updated emulator: #{inspect(new_emulator.style)}"
-        # )
-
-        handle_ansi_sequences(remaining, new_emulator)
-    end
-  end
-
-  defp handle_parsed_sequence(
-         {:osc, remaining, _},
-         _rest,
-         emulator
-       ) do
-    handle_ansi_sequences(remaining, emulator)
-  end
-
-  defp handle_parsed_sequence(
-         {:dcs, remaining, _},
-         _rest,
-         emulator
-       ) do
-    handle_ansi_sequences(remaining, emulator)
-  end
-
-  defp handle_parsed_sequence(
-         {:incomplete, _},
-         _rest,
-         emulator
-       ) do
-    {emulator, <<>>}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_cursor_pos, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_cursor_position(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_cursor_up, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_cursor_up(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_cursor_down, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_cursor_down(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_cursor_forward, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_cursor_forward(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_cursor_back, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_cursor_back(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence({:csi_cursor_show, remaining, _}, _rest, emulator) do
-    {set_cursor_visible(true, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence({:csi_cursor_hide, remaining, _}, _rest, emulator) do
-    {set_cursor_visible(false, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_clear_screen, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {clear_screen(emulator), remaining}
-  end
-
-  defp handle_parsed_sequence({:csi_clear_line, remaining, _}, _rest, emulator) do
-    {clear_line(emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_set_mode, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_set_mode(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_reset_mode, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_reset_mode(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_set_standard_mode, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_set_standard_mode(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_reset_standard_mode, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_reset_standard_mode(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence({:esc_equals, remaining, _}, _rest, emulator) do
-    {handle_esc_equals(emulator), remaining}
-  end
-
-  defp handle_parsed_sequence({:esc_greater, remaining, _}, _rest, emulator) do
-    {handle_esc_greater(emulator), remaining}
-  end
-
-  defp handle_parsed_sequence({:sgr, params, remaining, _}, _rest, emulator) do
-    IO.puts(
-      "DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}"
-    )
-
-    IO.puts(
-      "DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}"
-    )
-
-    result = {handle_sgr(params, emulator), remaining}
-
-    IO.puts(
-      "DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}"
-    )
-
-    result
-  end
-
-  defp handle_parsed_sequence({:unknown, remaining, _}, _rest, emulator) do
-    handle_ansi_sequences(remaining, emulator)
-  end
-
-  defp handle_parsed_sequence({:mouse_event, event_data, remaining, _}, _rest, emulator) do
-    # Check if mouse reporting is enabled
-    if emulator.mode_manager.mouse_report_mode != :none do
-      # Echo the mouse event back when mouse reporting is enabled
-      # The test expects the same sequence to be output
-      mouse_sequence = "\e[M#{event_data}"
-      OutputManager.write(emulator, mouse_sequence)
-    end
-    {emulator, remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_set_scroll_region, params, remaining, _},
-         _rest,
-         emulator
-       ) do
-    {handle_set_scroll_region(params, emulator), remaining}
-  end
-
-  defp handle_parsed_sequence(
-         {:csi_general, params, intermediates, final_byte, remaining},
-         _rest,
-         emulator
-       ) do
-    {handle_csi_general(params, final_byte, emulator, intermediates), remaining}
-  end
-
-  defp set_cursor_visible(visible, emulator) do
-    mode_manager = emulator.mode_manager
-
-    # Update the mode manager struct directly
-    new_mode_manager = %{mode_manager | cursor_visible: visible}
-    emulator = %{emulator | mode_manager: new_mode_manager}
-
-    # Also update the cursor manager - use non-blocking cast for better performance
-    cursor = emulator.cursor
-
-    if pid?(cursor) do
-      GenServer.cast(cursor, {:set_visibility, visible})
-    end
-
-    emulator
-  end
-
-  defp log_sgr_debug(msg) do
-    File.write!("tmp/sgr_debug.log", msg <> "\n", [:append])
-  end
-
-  defp parse_mode_params(params) do
-    params
-    |> String.split(";")
-    |> Enum.map(&String.trim/1)
-    |> Enum.filter(&(&1 != ""))
-    |> Enum.map(&String.to_integer/1)
-  end
-
-  defp lookup_mode(mode_code) do
-    case Raxol.Terminal.ModeManager.lookup_private(mode_code) do
-      nil -> :error
-      mode_name -> {:ok, mode_name}
-    end
-  end
-
-  defp lookup_standard_mode(mode_code) do
-    case Raxol.Terminal.ModeManager.lookup_standard(mode_code) do
-      nil -> :error
-      mode_name -> {:ok, mode_name}
-    end
-  end
 
   def write_to_output(emulator, data) do
     OutputManager.write(emulator, data)
@@ -1154,39 +911,6 @@ defmodule Raxol.Terminal.Emulator do
     emulator
   end
 
-  # Helper function to write text at current cursor position
-  defp write_text_at_cursor(emulator, text) do
-    cursor = get_cursor_struct(emulator)
-    {y, x} = cursor.position
-
-    # Get the active buffer
-    buffer = get_active_buffer(emulator)
-
-    # Write the text to the buffer
-    updated_buffer = ScreenBuffer.write_string(buffer, x, y, text, %{})
-
-    # Update cursor position after writing
-    new_x = x + String.length(text)
-
-    # Update the cursor through GenServer if it's a PID
-    emulator =
-      if pid?(emulator.cursor) do
-        GenServer.call(emulator.cursor, {:update_position, y, new_x})
-        emulator
-      else
-        new_cursor = %{cursor | col: new_x, row: y, position: {new_x, y}}
-        %{emulator | cursor: new_cursor}
-      end
-
-    # Update the appropriate buffer
-    case emulator.active_buffer_type do
-      :main ->
-        %{emulator | main_screen_buffer: updated_buffer}
-
-      :alternate ->
-        %{emulator | alternate_screen_buffer: updated_buffer}
-    end
-  end
 
   @doc """
   Sets a terminal mode using the mode manager.
@@ -1247,7 +971,7 @@ defmodule Raxol.Terminal.Emulator do
     cursor.position
   end
 
-  def get_cursor_position_struct(%__MODULE__{cursor: cursor_struct} = emulator)
+  def get_cursor_position_struct(%__MODULE__{cursor: cursor_struct} = _emulator)
       when is_map(cursor_struct) do
     cursor_struct.position
   end

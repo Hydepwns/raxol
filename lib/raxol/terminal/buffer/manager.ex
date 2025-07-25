@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   use GenServer
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour, ScrollbackManager, BufferOperations, MemoryCalculator, ProcessManager}
+  alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour, MemoryCalculator, ProcessManager}
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker}
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
@@ -337,6 +337,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   def get_back_buffer(pid) when is_pid(pid) or is_atom(pid) do
     GenServer.call(pid, :get_back_buffer)
+  end
+
+  def get_active_buffer(pid) when is_pid(pid) or is_atom(pid) do
+    GenServer.call(pid, :get_active_buffer)
   end
 
   def get_cursor do

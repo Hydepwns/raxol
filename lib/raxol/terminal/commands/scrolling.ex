@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.Buffer.Operations
   require Raxol.Core.Runtime.Log
 
   @spec scroll_up(

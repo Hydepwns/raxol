@@ -131,18 +131,8 @@ defmodule Raxol.Terminal.BufferManager do
   @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_up(emulator, lines) do
     buffer = get_active_buffer(emulator)
-
-    case Raxol.Terminal.Buffer.Scroller.scroll_up(buffer, lines) do
-      {:ok, new_buffer} ->
-        update_active_buffer(emulator, new_buffer)
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to scroll up: #{inspect(reason)}"
-        )
-
-        emulator
-    end
+    new_buffer = Raxol.Terminal.Buffer.Scroller.scroll_up(buffer, lines)
+    update_active_buffer(emulator, new_buffer)
   end
 
   @doc """
@@ -152,18 +142,8 @@ defmodule Raxol.Terminal.BufferManager do
   @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_down(emulator, lines) do
     buffer = get_active_buffer(emulator)
-
-    case Raxol.Terminal.Buffer.Scroller.scroll_down(buffer, lines) do
-      {:ok, new_buffer} ->
-        update_active_buffer(emulator, new_buffer)
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to scroll down: #{inspect(reason)}"
-        )
-
-        emulator
-    end
+    new_buffer = Raxol.Terminal.Buffer.Scroller.scroll_down(buffer, lines)
+    update_active_buffer(emulator, new_buffer)
   end
 
   @doc """

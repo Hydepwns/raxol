@@ -43,7 +43,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     {:ok, %{emulator | style: updated_style}}
   end
 
-  # Replace the process_sgr_parameter function with a map-based approach
   @sgr_attributes %{
     1 => :bold,
     2 => :faint,
@@ -76,59 +75,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     6 => :bright_cyan,
     7 => :bright_white
   }
-
-  defp process_sgr_parameter(0) do
-    {:ok,
-     %{
-       bold: false,
-       faint: false,
-       italic: false,
-       underline: false,
-       blink: false,
-       reverse: false,
-       conceal: false,
-       crossed_out: false,
-       foreground: nil,
-       background: nil
-     }}
-  end
-
-  defp process_sgr_parameter(n) when n in 1..9 do
-    case Map.get(@sgr_attributes, n) do
-      nil -> :error
-      attr -> {:ok, %{attr => true}}
-    end
-  end
-
-  defp process_sgr_parameter(n) when n in 30..37 do
-    case Map.get(@sgr_colors, n - 30) do
-      nil -> :error
-      color -> {:ok, %{foreground: color}}
-    end
-  end
-
-  defp process_sgr_parameter(n) when n in 40..47 do
-    case Map.get(@sgr_colors, n - 40) do
-      nil -> :error
-      color -> {:ok, %{background: color}}
-    end
-  end
-
-  defp process_sgr_parameter(n) when n in 90..97 do
-    case Map.get(@sgr_bright_colors, n - 90) do
-      nil -> :error
-      color -> {:ok, %{foreground: color}}
-    end
-  end
-
-  defp process_sgr_parameter(n) when n in 100..107 do
-    case Map.get(@sgr_bright_colors, n - 100) do
-      nil -> :error
-      color -> {:ok, %{background: color}}
-    end
-  end
-
-  defp process_sgr_parameter(_), do: :error
 
   @doc """
   Handles Cursor Position (CUP) command.
@@ -388,102 +334,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     else
       {:ok, emulator}
     end
-  end
-
-  defp get_attribute_key(n) do
-    Map.get(@sgr_attributes, n, :unknown)
-  end
-
-  defp get_color(n) do
-    Map.get(@sgr_colors, n, :default)
-  end
-
-  defp get_bright_color(n) do
-    Map.get(@sgr_bright_colors, n, :default)
-  end
-
-  defp clear_from_cursor_to_end(emulator, x, y) do
-    buffer = Emulator.get_active_buffer(emulator)
-
-    new_buffer =
-      Raxol.Terminal.ScreenBuffer.clear_region(
-        buffer,
-        x,
-        y,
-        emulator.width - 1,
-        emulator.height - 1
-      )
-
-    Emulator.update_active_buffer(emulator, new_buffer)
-  end
-
-  defp clear_from_start_to_cursor(emulator, x, y) do
-    buffer = Emulator.get_active_buffer(emulator)
-    # Clear all lines before the cursor's line
-    buffer =
-      Enum.reduce(0..(y - 1), buffer, fn row, buf ->
-        Raxol.Terminal.ScreenBuffer.clear_region(buf, 0, row, emulator.width, 1)
-      end)
-
-    # Clear from start to cursor on the cursor's line
-    buffer = Raxol.Terminal.ScreenBuffer.clear_region(buffer, 0, y, x + 1, 1)
-    Emulator.update_active_buffer(emulator, buffer)
-  end
-
-  defp clear_entire_screen(emulator) do
-    buffer = Emulator.get_active_buffer(emulator)
-
-    new_buffer =
-      Raxol.Terminal.ScreenBuffer.clear_region(
-        buffer,
-        0,
-        0,
-        emulator.width,
-        emulator.height
-      )
-
-    Emulator.update_active_buffer(emulator, new_buffer)
-  end
-
-  defp clear_entire_screen_and_scrollback(emulator) do
-    emulator = clear_entire_screen(emulator)
-    %{emulator | scrollback_buffer: []}
-  end
-
-  defp clear_from_cursor_to_end_of_line(emulator, x, y) do
-    buffer = Emulator.get_active_buffer(emulator)
-
-    new_buffer =
-      Raxol.Terminal.ScreenBuffer.clear_region(
-        buffer,
-        x,
-        y,
-        emulator.width - 1,
-        y
-      )
-
-    Emulator.update_active_buffer(emulator, new_buffer)
-  end
-
-  defp clear_from_start_of_line_to_cursor(emulator, x, y) do
-    buffer = Emulator.get_active_buffer(emulator)
-    new_buffer = Raxol.Terminal.ScreenBuffer.clear_region(buffer, 0, y, x, y)
-    Emulator.update_active_buffer(emulator, new_buffer)
-  end
-
-  defp clear_entire_line(emulator, y) do
-    buffer = Emulator.get_active_buffer(emulator)
-
-    new_buffer =
-      Raxol.Terminal.ScreenBuffer.clear_region(
-        buffer,
-        0,
-        y,
-        emulator.width - 1,
-        y
-      )
-
-    Emulator.update_active_buffer(emulator, new_buffer)
   end
 
   @private_rm_mappings %{

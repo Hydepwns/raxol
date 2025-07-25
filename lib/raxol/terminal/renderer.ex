@@ -413,16 +413,6 @@ defmodule Raxol.Terminal.Renderer do
     end
   end
 
-  defp handle_buffer_result({content, _new_buffer})
-       when is_binary(content) or is_list(content),
-       do: {:ok, content}
-
-  defp handle_buffer_result(content)
-       when is_binary(content) or is_list(content),
-       do: {:ok, content}
-
-  defp handle_buffer_result({:error, reason}), do: {:error, reason}
-  defp handle_buffer_result(other), do: {:ok, other}
 
   defp maybe_add_cursor(content, nil, _include_cursor), do: content
   defp maybe_add_cursor(content, cursor, true), do: {content, cursor}

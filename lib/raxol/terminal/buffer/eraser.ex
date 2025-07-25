@@ -502,7 +502,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @spec erase_line(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def erase_line(buffer, line, mode) do
-    {row, col} = buffer.cursor_position || {0, 0}
+    {_row, col} = buffer.cursor_position || {0, 0}
     case mode do
       # From cursor to end of line
       0 -> clear_line_from(buffer, line, col)
@@ -528,7 +528,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   """
   @spec erase_in_line(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
   def erase_in_line(buffer, mode) do
-    {row, col} = buffer.cursor_position || {0, 0}
+    {row, _col} = buffer.cursor_position || {0, 0}
     erase_line(buffer, row, mode)
   end
 
@@ -554,7 +554,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     end
   end
 
-  def set_cursor_position(buffer, row, col), do: buffer
+  def set_cursor_position(buffer, _row, _col), do: buffer
 
   def get_cursor_position(_buffer), do: {0, 0}
 

@@ -138,17 +138,11 @@ defmodule Raxol.Terminal.Integration.State do
     end
   end
 
-  @doc """
-  Updates the integration state with nil content (no-op).
-  """
   @spec update(t(), nil) :: t()
   def update(%__MODULE__{} = state, nil) do
     state
   end
 
-  @doc """
-  Updates the integration state with arbitrary fields via keyword list.
-  """
   @spec update(t(), keyword()) :: t()
   def update(%__MODULE__{} = state, kw) when is_list(kw) do
     Enum.reduce(kw, state, fn {k, v}, acc -> Map.put(acc, k, v) end)

@@ -38,6 +38,11 @@ defmodule Raxol.Terminal.Buffer.State do
     }
   end
 
+  def resize(buffer, _new_width, _new_height) when tuple?(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
   defp calculate_copy_dimensions(buffer, new_width, new_height) do
     {min(buffer.width, new_width), min(buffer.height, new_height)}
   end
@@ -66,11 +71,6 @@ defmodule Raxol.Terminal.Buffer.State do
           List.update_at(current_grid, y, fn _ -> old_row_slice ++ padding end)
         end)
     end
-  end
-
-  def resize(buffer, _new_width, _new_height) when tuple?(buffer) do
-    raise ArgumentError,
-          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """

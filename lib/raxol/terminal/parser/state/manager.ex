@@ -559,10 +559,6 @@ defmodule Raxol.Terminal.Parser.State.Manager do
     manager
   end
 
-  def set_state(_manager, new_state) do
-    new_state
-  end
-
   def transition_to(manager, :csi_entry) do
     %{
       manager
@@ -634,18 +630,6 @@ defmodule Raxol.Terminal.Parser.State.Manager do
     %{manager | designating_gset: gset}
   end
 
-  def reset(manager) do
-    %{
-      manager
-      | state: :ground,
-        params_buffer: "",
-        intermediates_buffer: "",
-        payload_buffer: "",
-        final_byte: nil,
-        designating_gset: nil,
-        single_shift: nil
-    }
-  end
 
   def process_input(emulator, state, input) do
     handler =

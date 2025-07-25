@@ -194,6 +194,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     opts[key] || default
   end
 
+  @impl true
   def handle_call({:render, state}, _from, renderer) do
     if Mix.env() != :test do
       render_to_terminal(state)
@@ -202,31 +203,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
     {:reply, :ok, renderer}
   end
 
-  defp render_to_terminal(state) do
-    :termbox2_nif.tb_init()
-    :termbox2_nif.tb_clear()
-    render_cells(state.buffer.cells)
-    render_cursor(state)
-    :termbox2_nif.tb_present()
-  end
-
-  defp render_cells(cells) do
-    Enum.each(cells, fn {row, cells} ->
-      Enum.each(cells, fn {col, cell} ->
-        render_cell(col, row, cell)
-      end)
-    end)
-  end
-
-  defp render_cursor(state) do
-    if state.cursor_visible do
-      {x, y} = Buffer.get_cursor_position(state.buffer)
-      :termbox2_nif.tb_set_cursor(x, y)
-    else
-      :termbox2_nif.tb_set_cursor(-1, -1)
-    end
-  end
-
+  @impl true
   def handle_call({:update_config, _state, config}, _from, renderer) do
     new_state = %{
       renderer
@@ -342,6 +319,31 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
         cell.style.fg,
         cell.style.bg
       )
+    end
+  end
+
+  defp render_to_terminal(state) do
+    :termbox2_nif.tb_init()
+    :termbox2_nif.tb_clear()
+    render_cells(state.buffer.cells)
+    render_cursor(state)
+    :termbox2_nif.tb_present()
+  end
+
+  defp render_cells(cells) do
+    Enum.each(cells, fn {row, cells} ->
+      Enum.each(cells, fn {col, cell} ->
+        render_cell(col, row, cell)
+      end)
+    end)
+  end
+
+  defp render_cursor(state) do
+    if state.cursor_visible do
+      {x, y} = Buffer.get_cursor_position(state.buffer)
+      :termbox2_nif.tb_set_cursor(x, y)
+    else
+      :termbox2_nif.tb_set_cursor(-1, -1)
     end
   end
 end

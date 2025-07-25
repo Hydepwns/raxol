@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   require Logger
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Cursor.{Manager, Movement, State}
+  alias Raxol.Terminal.Cursor.Movement
 
   @doc """
   Handles GenServer call for getting cursor position.

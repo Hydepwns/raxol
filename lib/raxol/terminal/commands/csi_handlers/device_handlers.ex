@@ -16,9 +16,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.DeviceHandlers do
     end
   end
 
-  @doc """
-  Handles device status with list parameters.
-  """
   def handle_device_status(emulator, params) when is_list(params) do
     case params do
       [?6, ?n] -> handle_device_status_report(emulator, 6)

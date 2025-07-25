@@ -275,7 +275,7 @@ defmodule Raxol.Terminal.Sync.Manager do
       :conflict ->
         Logger.debug("[Manager] Version conflict for #{component_id}")
         # Increment conflict count and keep existing state
-        component_with_conflict = %Component{
+        _component_with_conflict = %Component{
           existing_component
           | conflict_count: existing_component.conflict_count + 1
         }

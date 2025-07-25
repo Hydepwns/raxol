@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
   Handles character operations within lines for the screen buffer.
   """
 
-  import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
 
@@ -175,7 +174,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
     Enum.take(new_line, width)
   end
 
-  defp create_empty_line(width, style \\ nil) do
+  defp create_empty_line(width, style) do
     for _ <- 1..width do
       Cell.new(" ", style)
     end

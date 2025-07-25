@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
           {:ok, Window.t()} | {:error, :not_found}
   def update_window_property(id, property, value) do
     case get_window_by_id(id) do
-      {:ok, window} ->
+      {:ok, _window} ->
         case Registry.update_window(id, %{property => value}) do
           {:ok, updated_window} ->
             {:ok, updated_window}

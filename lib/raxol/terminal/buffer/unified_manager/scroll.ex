@@ -48,8 +48,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   """
   @spec scroll_region_up(map(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
   def scroll_region_up(buffer, x, y, width, height, amount) do
-    # Extract the region lines
-    region_lines = Enum.slice(buffer.cells, y, height)
+    # Extract only the region content from each row
+    region_lines = Enum.map(y..(y + height - 1), fn row_y ->
+      if row_y < buffer.height do
+        row = Enum.at(buffer.cells, row_y, [])
+        Enum.slice(row, x, width)
+      else
+        List.duplicate(Cell.new(), width)
+      end
+    end)
 
     # Split the region into scroll_lines (lines that will be scrolled out) and remaining (lines that will stay)
     {_scroll_lines, remaining} = Enum.split(region_lines, amount)
@@ -70,8 +77,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   """
   @spec scroll_region_down(map(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
   def scroll_region_down(buffer, x, y, width, height, amount) do
-    # Extract the region lines
-    region_lines = Enum.slice(buffer.cells, y, height)
+    # Extract only the region content from each row
+    region_lines = Enum.map(y..(y + height - 1), fn row_y ->
+      if row_y < buffer.height do
+        row = Enum.at(buffer.cells, row_y, [])
+        Enum.slice(row, x, width)
+      else
+        List.duplicate(Cell.new(), width)
+      end
+    end)
 
     # Scroll the region content down: move lines starting from 0 down by 'amount' positions
     # Lines height-amount to height-1 are lost, lines 0 to height-amount-1 move down
@@ -101,7 +115,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   end
 
   # Extract lines that are scrolled out of the region
-  defp extract_scrolled_lines(buffer, x, y, width, height, amount)
+  defp extract_scrolled_lines(buffer, x, y, width, _height, amount)
        when amount > 0 do
     # When scrolling up, the top 'amount' lines are scrolled out
     Enum.map(0..(amount - 1), fn i ->
@@ -116,12 +130,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     |> Enum.filter(fn line -> line != [] end)
   end
 
-  defp extract_scrolled_lines(buffer, x, y, width, _height, amount)
+  defp extract_scrolled_lines(buffer, x, y, width, height, amount)
        when amount < 0 do
     # When scrolling down, the bottom 'abs(amount)' lines are scrolled out
     abs_amount = abs(amount)
 
-    Enum.map((_height - abs_amount)..(_height - 1), fn i ->
+    Enum.map((height - abs_amount)..(height - 1), fn i ->
       row_y = y + i
 
       if row_y < buffer.height do
@@ -176,7 +190,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     |> Enum.with_index()
     |> Enum.map(fn {cell, col_x} ->
       if col_in_region?(col_x, x, width) do
-        Enum.at(region_row, col_x - x)
+        new_cell = Enum.at(region_row, col_x - x)
+        # Return new_cell or create empty cell if nil
+        new_cell || Cell.new()
       else
         cell
       end

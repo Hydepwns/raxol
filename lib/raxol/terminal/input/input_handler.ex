@@ -229,7 +229,7 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec handle_printable_character(any(), integer(), map(), atom() | nil) ::
           {any(), any()}
-  def handle_printable_character(emulator, char_codepoint, params, single_shift) do
+  def handle_printable_character(emulator, char_codepoint, _params, _single_shift) do
     IO.puts(
       "DEBUG: InputHandler - Processing codepoint: #{inspect(char_codepoint)} (#{List.to_string([char_codepoint])})"
     )

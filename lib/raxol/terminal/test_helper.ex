@@ -165,8 +165,27 @@ defmodule Raxol.Terminal.TestHelper do
   Creates a test plugin module for testing.
   """
   def create_test_plugin_module(name, callbacks \\ %{}) do
-    # Delegate to the main test helper
-    Raxol.Test.Support.TestHelper.create_test_plugin_module(name, callbacks)
+    module_name = String.to_atom("TestPlugin.#{name}")
+
+    # Create a module with the given callbacks
+    Module.create(
+      module_name,
+      """
+      defmodule #{module_name} do
+        @behaviour Raxol.Plugins.Plugin
+
+        #{Enum.map_join(callbacks, "\n\n", fn {callback, arity} -> """
+        @impl Raxol.Plugins.Plugin
+        def #{callback}(#{List.duplicate("_", arity) |> Enum.join(", ")}) do
+          :ok
+        end
+        """ end)}
+      end
+      """,
+      Macro.Env.location(__ENV__)
+    )
+
+    module_name
   end
 
   @doc """
@@ -196,9 +215,6 @@ defmodule Raxol.Terminal.TestHelper do
     :ok
   end
 
-  @doc """
-  Cleans up test environment with context parameter.
-  """
   def cleanup_test_env(context) when is_map(context) do
     # Extract environment from context or use default
     env = Map.get(context, :env, :default)

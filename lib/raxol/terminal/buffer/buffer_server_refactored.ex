@@ -54,17 +54,8 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
 
   alias Raxol.Terminal.Buffer.Operations, as: Buffer
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.Content
-
-  # New modular components
-  alias Raxol.Terminal.Buffer.OperationProcessor
-  alias Raxol.Terminal.Buffer.OperationQueue
-  alias Raxol.Terminal.Buffer.MetricsTracker
-  alias Raxol.Terminal.Buffer.DamageTracker
-
   # Refactored modules
-  alias Raxol.Terminal.Buffer.{Callbacks, Handlers, Helpers}
+  alias Raxol.Terminal.Buffer.{Callbacks, Handlers}
 
   @type t :: pid()
 

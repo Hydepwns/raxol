@@ -29,6 +29,12 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
 
   # Client API
 
+  # Helper function to get the process name
+  defp process_name(pid_or_name \\ __MODULE__)
+  defp process_name(pid) when is_pid(pid), do: pid
+  defp process_name(name) when is_atom(name), do: name
+  defp process_name(_), do: __MODULE__
+
   @doc """
   Starts the unified synchronization manager.
 
@@ -38,13 +44,6 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     * `:timeout` - Default synchronization timeout in milliseconds
     * `:retry_count` - Default number of retry attempts
   """
-
-  # Helper function to get the process name
-  defp process_name(pid_or_name \\ __MODULE__)
-  defp process_name(pid) when is_pid(pid), do: pid
-  defp process_name(name) when is_atom(name), do: name
-  defp process_name(_), do: __MODULE__
-
   def start_link(opts \\ []) do
     name =
       if Mix.env() == :test do

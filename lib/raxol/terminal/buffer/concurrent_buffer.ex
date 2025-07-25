@@ -371,20 +371,6 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   * `:ok` - If the server was stopped successfully
   """
-  @doc """
-  Executes a batch of operations on the buffer.
-
-  Only works with buffer server PIDs.
-
-  ## Parameters
-
-  * `pid` - The buffer server PID
-  * `operations` - List of operations to execute
-
-  ## Returns
-
-  * `:ok` - If the operations were queued successfully
-  """
   @spec batch_operations(pid(), list()) :: :ok
   def batch_operations(pid, operations)
       when is_pid(pid) and is_list(operations) do

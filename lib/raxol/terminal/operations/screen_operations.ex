@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
     {x, y} = CursorManager.get_position(emulator.cursor)
     updated_buffer = ScreenBuffer.set_cursor_position(buffer, x, y)
     # Erase from cursor to end of line
-    new_buffer = Eraser.erase_in_line(updated_buffer, {x, y}, :to_end)
+    new_buffer = Eraser.erase_in_line(updated_buffer, {y, x}, :to_end)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
@@ -59,17 +59,20 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
 
   def erase_from_start_to_cursor(emulator) do
     buffer = ScreenManager.get_active_buffer(emulator)
-    {x, y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    {x, y} = CursorManager.get_position(emulator.cursor)
 
     # Update the buffer's cursor position before erasing
-    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, x, y)
-    new_buffer = ScreenBuffer.erase_from_start_to_cursor(buffer_with_cursor)
+    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, y, x)
+    new_buffer = Eraser.erase_from_start_to_cursor(buffer_with_cursor)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 
   def erase_chars(emulator, count) do
     buffer = ScreenManager.get_active_buffer(emulator)
-    new_buffer = Eraser.erase_chars(buffer, count)
+    {x, y} = CursorManager.get_position(emulator.cursor)
+    # Update the buffer's cursor position before erasing
+    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, y, x)
+    new_buffer = Eraser.erase_chars(buffer_with_cursor, count)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 

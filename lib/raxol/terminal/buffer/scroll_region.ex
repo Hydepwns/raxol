@@ -244,63 +244,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     {region, after_part} = Enum.split(region_and_after, scroll_end - scroll_start + 1)
 
     # Move region content up by lines
-    {scrolled_out, remaining} = Enum.split(region, lines)
+    {_scrolled_out, remaining} = Enum.split(region, lines)
 
     # Create empty lines for the bottom
     empty_lines = List.duplicate(empty_line, lines)
 
     # Combine: before + (remaining + empty_lines) + after_part
     before ++ (remaining ++ empty_lines) ++ after_part
-  end
-
-  defp transform_cells_for_scroll_up(
-         cells,
-         scroll_start,
-         scroll_end,
-         lines,
-         empty_line
-       ) do
-    cells
-    |> Enum.with_index()
-    |> Enum.map(fn {line, idx} ->
-      transform_line_for_scroll_up(
-        line,
-        idx,
-        cells,
-        scroll_start,
-        scroll_end,
-        lines,
-        empty_line
-      )
-    end)
-  end
-
-  defp transform_line_for_scroll_up(
-         line,
-         idx,
-         cells,
-         scroll_start,
-         scroll_end,
-         lines,
-         empty_line
-       ) do
-    cond do
-      idx < scroll_start ->
-        line
-
-      idx >= scroll_start and idx <= scroll_end - lines ->
-        Enum.at(cells, idx + lines, empty_line)
-
-      idx > scroll_end - lines and idx <= scroll_end ->
-        empty_line
-
-      true ->
-        line
-    end
-  end
-
-  defp scroll_region_up(buffer, scroll_start, scroll_end, lines) do
-    scroll_region_direction(buffer, scroll_start, scroll_end, lines, :up)
   end
 
   @doc """

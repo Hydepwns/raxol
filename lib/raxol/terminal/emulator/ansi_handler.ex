@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
 
   A tuple {updated_emulator, remaining_input}.
   """
-  def handle_parsed_sequence(parsed_sequence, rest, emulator) do
+  def handle_parsed_sequence(parsed_sequence, _rest, emulator) do
     IO.puts("DEBUG: handle_parsed_sequence called with: #{inspect(parsed_sequence)}")
     case parsed_sequence do
       {:osc, remaining, _} ->
@@ -81,16 +81,16 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
         {CursorHandlers.handle_cup(params, emulator), remaining}
 
       {:csi_cursor_up, params, remaining, _} ->
-        {CursorHandlers.handle_cursor_up(params, emulator), remaining}
+        {CursorHandlers.handle_A(params, emulator), remaining}
 
       {:csi_cursor_down, params, remaining, _} ->
-        {CursorHandlers.handle_cursor_down(params, emulator), remaining}
+        {CursorHandlers.handle_B(params, emulator), remaining}
 
       {:csi_cursor_forward, params, remaining, _} ->
-        {CursorHandlers.handle_cursor_forward(params, emulator), remaining}
+        {CursorHandlers.handle_C(params, emulator), remaining}
 
       {:csi_cursor_back, params, remaining, _} ->
-        {CursorHandlers.handle_cursor_back(params, emulator), remaining}
+        {CursorHandlers.handle_D(params, emulator), remaining}
 
       {:csi_cursor_show, remaining, _} ->
         {set_cursor_visible(true, emulator), remaining}
@@ -191,8 +191,10 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     Enum.reduce(parsed_params, emulator, fn param, acc ->
       case lookup_standard_mode(param) do
         {:ok, mode_name} ->
-          ModeManager.set_standard_mode(acc, [mode_name])
-          acc
+          case ModeManager.set_standard_mode(acc, mode_name, true) do
+            {:ok, updated_emulator} -> updated_emulator
+            {:error, _} -> acc
+          end
         :error ->
           acc
       end
@@ -205,8 +207,10 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     Enum.reduce(parsed_params, emulator, fn param, acc ->
       case lookup_standard_mode(param) do
         {:ok, mode_name} ->
-          ModeManager.reset_standard_mode(acc, [mode_name])
-          acc
+          case ModeManager.set_standard_mode(acc, mode_name, false) do
+            {:ok, updated_emulator} -> updated_emulator
+            {:error, _} -> acc
+          end
         :error ->
           acc
       end
@@ -229,12 +233,12 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     %{emulator | style: updated_style}
   end
 
-  def handle_set_scroll_region(params, emulator) do
+  def handle_set_scroll_region(_params, emulator) do
     # Implementation for setting scroll region
     emulator
   end
 
-  def handle_csi_general(params, final_byte, emulator, intermediates) do
+  def handle_csi_general(_params, _final_byte, emulator, _intermediates) do
     # Implementation for general CSI commands
     emulator
   end

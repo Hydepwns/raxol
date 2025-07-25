@@ -7,8 +7,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
   import Raxol.Guards
   @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 
-  alias Raxol.Terminal.Buffer.Cell
-  alias Raxol.Terminal.Buffer.{Cursor, LineOperations}
   alias Raxol.Terminal.Emulator
 
   # Alias the new modules

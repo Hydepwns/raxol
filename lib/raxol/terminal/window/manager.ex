@@ -96,6 +96,12 @@ defmodule Raxol.Terminal.Window.Manager do
     :ok
   end
 
+  @spec set_window_state(window_id(), window_state()) ::
+          {:ok, Window.t()} | {:error, :not_found}
+  def set_window_state(id, state) do
+    Operations.update_window_property(id, :state, state)
+  end
+
   @doc """
   Sets the window size.
   """
@@ -111,6 +117,12 @@ defmodule Raxol.Terminal.Window.Manager do
     :ok
   end
 
+  @spec set_window_size(window_id(), integer(), integer()) ::
+          {:ok, Window.t()} | {:error, :not_found}
+  def set_window_size(id, width, height) do
+    Operations.update_window_property(id, :size, {width, height})
+  end
+
   @doc """
   Sets the window title.
   """
@@ -120,9 +132,6 @@ defmodule Raxol.Terminal.Window.Manager do
     :ok
   end
 
-  @doc """
-  Sets the window title.
-  """
   @spec set_window_title(window_id(), String.t()) ::
           {:ok, Window.t()} | {:error, :not_found}
   def set_window_title(id, title) do
@@ -136,6 +145,12 @@ defmodule Raxol.Terminal.Window.Manager do
   def set_icon_name(pid, icon_name) when is_pid(pid) do
     Process.put(:icon_name, icon_name)
     :ok
+  end
+
+  @spec set_icon_name(t(), String.t()) :: t()
+  def set_icon_name(manager, _icon_name) do
+    # For test purposes, just return the manager
+    manager
   end
 
   @doc """
@@ -209,24 +224,6 @@ defmodule Raxol.Terminal.Window.Manager do
   end
 
   @doc """
-  Sets the window size.
-  """
-  @spec set_window_size(window_id(), integer(), integer()) ::
-          {:ok, Window.t()} | {:error, :not_found}
-  def set_window_size(id, width, height) do
-    Operations.update_window_property(id, :size, {width, height})
-  end
-
-  @doc """
-  Sets the window state.
-  """
-  @spec set_window_state(window_id(), window_state()) ::
-          {:ok, Window.t()} | {:error, :not_found}
-  def set_window_state(id, state) do
-    Operations.update_window_property(id, :state, state)
-  end
-
-  @doc """
   Creates a child window.
   """
   @spec create_child_window(window_id(), Config.t()) ::
@@ -293,19 +290,10 @@ defmodule Raxol.Terminal.Window.Manager do
   end
 
   @doc """
-  Sets the icon name.
-  """
-  @spec set_icon_name(t(), String.t()) :: t()
-  def set_icon_name(manager, icon_name) do
-    # For test purposes, just return the manager
-    manager
-  end
-
-  @doc """
   Updates the window state.
   """
   @spec update_window_state(t(), atom()) :: t()
-  def update_window_state(manager, state) do
+  def update_window_state(manager, _state) do
     # For test purposes, just return the manager
     manager
   end

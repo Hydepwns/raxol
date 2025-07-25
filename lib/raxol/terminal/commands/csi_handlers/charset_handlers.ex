@@ -91,9 +91,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
     %{emulator | charset_state: updated_charset_state}
   end
 
-  @doc """
-  Parses charset code from parameters.
-  """
   defp parse_charset_code(params) do
     case params do
       "" -> ?B
@@ -104,16 +101,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
     end
   end
 
-  @doc """
-  Gets charset from charset code.
-  """
   defp get_charset(charset_code) do
     Map.get(@charset_mapping, charset_code, :us_ascii)
   end
 
-  @doc """
-  Gets charset module from charset code.
-  """
   defp get_charset_module(charset_code) do
     Map.get(@charset_mapping, charset_code, :us_ascii)
   end
