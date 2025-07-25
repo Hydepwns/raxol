@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   def reset_bold(style), do: Attributes.reset_bold(style)
 
-  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  # Note: reset_faint is not part of the behaviour
   def reset_faint(style), do: Attributes.reset_faint(style)
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
@@ -191,6 +191,6 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   def format_sgr_params(style), do: SGR.format_sgr_params(style)
 
-  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  # Note: parse_sgr_param is not part of the behaviour
   def parse_sgr_param(param, style), do: SGR.parse_sgr_param(param, style)
 end

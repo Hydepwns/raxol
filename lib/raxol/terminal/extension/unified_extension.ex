@@ -11,7 +11,6 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   alias Raxol.Terminal.Extension.LifecycleManager
   alias Raxol.Terminal.Extension.StateManager
   alias Raxol.Terminal.Extension.CommandHandler
-  alias Raxol.Terminal.Extension.Validator
   alias Raxol.Terminal.Extension.HookManager
   alias Raxol.Terminal.Extension.FileOperations
 
@@ -255,23 +254,6 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  defp handle_extension_import(extension, state) do
-    case extension.module do
-      {:error, reason} ->
-        {:reply, {:error, {:module_load_failed, reason}}, state}
-
-      {:ok, _module} ->
-        extension_id = generate_extension_id()
-        new_state = put_in(state.extensions[extension_id], extension)
-        {:reply, {:ok, extension_id}, new_state}
-
-      _ ->
-        extension_id = generate_extension_id()
-        new_state = put_in(state.extensions[extension_id], extension)
-        {:reply, {:ok, extension_id}, new_state}
-    end
-  end
-
   @impl GenServer
   def handle_call(
         {:register_hook, extension_id, hook_name, callback},
@@ -310,6 +292,23 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   # Private Functions
+  defp handle_extension_import(extension, state) do
+    case extension.module do
+      {:error, reason} ->
+        {:reply, {:error, {:module_load_failed, reason}}, state}
+
+      {:ok, _module} ->
+        extension_id = generate_extension_id()
+        new_state = put_in(state.extensions[extension_id], extension)
+        {:reply, {:ok, extension_id}, new_state}
+
+      _ ->
+        extension_id = generate_extension_id()
+        new_state = put_in(state.extensions[extension_id], extension)
+        {:reply, {:ok, extension_id}, new_state}
+    end
+  end
+
   defp generate_extension_id do
     :crypto.strong_rand_bytes(16)
     |> Base.encode16()

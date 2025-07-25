@@ -121,6 +121,8 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
+  # --- GenServer handle_info callbacks ---
+
   def handle_info(:retry_init, %{init_retries: retries} = state)
       when retries < @max_init_retries do
     case initialize_termbox() do
@@ -159,43 +161,8 @@ defmodule Raxol.Terminal.Driver do
         # Only send if dispatcher_pid is known
         if dispatcher_pid do
           if Mix.env() == :test do
-            send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-          else
-            GenServer.cast(dispatcher_pid, {:dispatch, event})
-          end
-        end
-
-        {:noreply, state}
-
-      :ignore ->
-        # Event type we don't care about or couldn't translate
-        {:noreply, state}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Failed to translate termbox event: #{inspect(reason)}. Event: #{inspect(event_map)}",
-          %{}
-        )
-
-        {:noreply, state}
-    end
-  end
-
-  def handle_info(
-        {:termbox_event, event_map},
-        %{termbox_state: :initialized, dispatcher_pid: dispatcher_pid} = state
-      ) do
-    Raxol.Core.Runtime.Log.debug(
-      "Received termbox event: #{inspect(event_map)}"
-    )
-
-    case translate_termbox_event(event_map) do
-      {:ok, %Event{} = event} ->
-        # Only send if dispatcher_pid is known
-        if dispatcher_pid do
-          if Mix.env() == :test do
             Raxol.Core.Runtime.Log.debug(
-              "[Driver] Sending mouse event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
+              "[Driver] Sending event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
             )
 
             send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
@@ -216,8 +183,8 @@ defmodule Raxol.Terminal.Driver do
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(
-          "Failed to translate termbox event: #{inspect(reason)}",
-          %{event_map: event_map}
+          "Failed to translate termbox event: #{inspect(reason)}. Event: #{inspect(event_map)}",
+          %{}
         )
 
         {:noreply, state}
@@ -240,31 +207,6 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  defp handle_termbox_recovery(reason, state) do
-    case Termbox2Nif.tb_shutdown() do
-      :ok ->
-        case initialize_termbox() do
-          :ok ->
-            Raxol.Core.Runtime.Log.info(
-              "Successfully recovered from termbox error"
-            )
-
-            {:noreply, state}
-
-          {:error, init_reason} ->
-            Raxol.Core.Runtime.Log.error(
-              "Failed to recover from termbox error: #{inspect(init_reason)}"
-            )
-
-            {:stop, {:termbox_error, reason}, state}
-        end
-
-      _ ->
-        {:stop, {:termbox_error, reason}, state}
-    end
-  end
-
-  # --- Handle dispatcher registration ---
   def handle_info({:register_dispatcher, pid}, state) when is_pid(pid) do
     Raxol.Core.Runtime.Log.info("Registering dispatcher PID: #{inspect(pid)}")
     # Send initial size event now that we have the PID
@@ -272,9 +214,6 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, %{state | dispatcher_pid: pid}}
   end
 
-  # --- Test Environment Input Simulation ---
-  # This clause is only intended for use in the :test environment
-  # to simulate raw input events without relying on the NIF.
   def handle_info({:test_input, input_data}, %{dispatcher_pid: nil} = state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Received test input before dispatcher registration: #{inspect(input_data)}",
@@ -316,6 +255,30 @@ defmodule Raxol.Terminal.Driver do
     )
 
     {:noreply, state}
+  end
+
+  defp handle_termbox_recovery(reason, state) do
+    case Termbox2Nif.tb_shutdown() do
+      :ok ->
+        case initialize_termbox() do
+          :ok ->
+            Raxol.Core.Runtime.Log.info(
+              "Successfully recovered from termbox error"
+            )
+
+            {:noreply, state}
+
+          {:error, init_reason} ->
+            Raxol.Core.Runtime.Log.error(
+              "Failed to recover from termbox error: #{inspect(init_reason)}"
+            )
+
+            {:stop, {:termbox_error, reason}, state}
+        end
+
+      _ ->
+        {:stop, {:termbox_error, reason}, state}
+    end
   end
 
   def terminate(_reason, %{termbox_state: :initialized} = _state) do

@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
   use GenServer
   require Logger
 
-  alias Raxol.Terminal.Window.UnifiedWindow
   alias Raxol.Terminal.Integration.State
 
   # Types
@@ -233,7 +232,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
 
-      tab_state ->
+      _tab_state ->
         # Get current tab order
         tab_order = Map.keys(state.tabs)
 

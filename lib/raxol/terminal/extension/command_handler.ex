@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Extension.CommandHandler do
 
         {:error, reason} ->
           new_extension = %{extension | status: :error, error: reason}
-          new_state = put_in(state.extensions[extension_id], new_extension)
+          _new_state = put_in(state.extensions[extension_id], new_extension)
           {:error, reason}
       end
     else

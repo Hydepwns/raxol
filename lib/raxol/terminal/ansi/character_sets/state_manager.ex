@@ -175,9 +175,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     end
   end
 
-  @doc """
-  Converts a G-set index to an atom, returns nil for invalid indices.
-  """
   def index_to_gset(index) when is_integer(index) do
     nil
   end

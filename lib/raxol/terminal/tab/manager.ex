@@ -305,6 +305,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     {:ok, state}
   end
 
+  @impl true
   def handle_call({:create_tab, config}, _from, state) do
     tab_id = generate_tab_id(state)
 

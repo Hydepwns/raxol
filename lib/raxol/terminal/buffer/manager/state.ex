@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Scrollback
   alias Raxol.Terminal.Buffer.DamageTracker
-  alias Raxol.Terminal.Buffer.MemoryManager
 
   defstruct [
     :active_buffer,

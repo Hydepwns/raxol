@@ -122,7 +122,6 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   def resize(emulator, params) do
     case handle_resize(emulator, params) do
       {:ok, updated_emulator} -> updated_emulator
-      {:error, _, emulator} -> emulator
     end
   end
 

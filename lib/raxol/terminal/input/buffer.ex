@@ -69,16 +69,11 @@ defmodule Raxol.Terminal.Input.Buffer do
 
   @impl GenServer
   def handle_cast({:feed_input, input}, state) do
-    case process_input(state, input) do
-      {:ok, new_state} ->
-        # Callback is already completed synchronously in process_input
-        # Now schedule delayed stop
-        Process.send_after(self(), :delayed_stop, 10)
-        {:noreply, new_state}
-
-      {:error, _reason} ->
-        {:noreply, state}
-    end
+    {:ok, new_state} = process_input(state, input)
+    # Callback is already completed synchronously in process_input
+    # Now schedule delayed stop
+    Process.send_after(self(), :delayed_stop, 10)
+    {:noreply, new_state}
   end
 
   @impl GenServer

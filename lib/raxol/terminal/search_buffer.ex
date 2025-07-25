@@ -52,10 +52,10 @@ defmodule Raxol.Terminal.SearchBuffer do
   Finds the next match in the search.
   """
   @spec find_next(t()) :: {:ok, t(), match()} | {:error, term()}
-  def find_next(%__MODULE__{matches: [], pattern: nil} = buffer),
+  def find_next(%__MODULE__{matches: [], pattern: nil} = _buffer),
     do: {:error, :no_search}
 
-  def find_next(%__MODULE__{matches: []} = buffer), do: {:error, :no_matches}
+  def find_next(%__MODULE__{matches: []} = _buffer), do: {:error, :no_matches}
 
   def find_next(%__MODULE__{matches: matches, current_index: idx} = buffer) do
     new_idx = rem(idx + 1, length(matches))
@@ -66,10 +66,10 @@ defmodule Raxol.Terminal.SearchBuffer do
   Finds the previous match in the search.
   """
   @spec find_previous(t()) :: {:ok, t(), match()} | {:error, term()}
-  def find_previous(%__MODULE__{matches: [], pattern: nil} = buffer),
+  def find_previous(%__MODULE__{matches: [], pattern: nil} = _buffer),
     do: {:error, :no_search}
 
-  def find_previous(%__MODULE__{matches: []} = buffer),
+  def find_previous(%__MODULE__{matches: []} = _buffer),
     do: {:error, :no_matches}
 
   def find_previous(%__MODULE__{matches: matches, current_index: idx} = buffer) do

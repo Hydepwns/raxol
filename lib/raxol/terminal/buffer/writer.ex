@@ -98,7 +98,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
           non_neg_integer(),
           TextFormatting.text_style()
         ) :: :ok
-  def log_char_write(char, x, y, cell_style) do
+  def log_char_write(_char, _x, _y, _cell_style) do
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.debug(

@@ -2,7 +2,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
   @moduledoc false
 
   alias Raxol.Terminal.Emulator, as: Emulator
-  alias Raxol.Terminal.Window
 
   @spec handle_0(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}

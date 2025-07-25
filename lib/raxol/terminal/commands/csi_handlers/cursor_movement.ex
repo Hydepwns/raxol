@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
       %{row: _, col: _} = cursor ->
         # For test cursors that have row/col fields (like CursorManager)
         active_buffer = Raxol.Terminal.BufferManager.get_active_buffer(emulator)
-        height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
+        _height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
         new_row = max(0, cursor.row - amount)
         updated_cursor = %{cursor | row: new_row}
@@ -197,6 +197,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
     # params is already {row, col} from the CSI parser
     {row, col} = case params do
       {r, c} when is_integer(r) and is_integer(c) -> {r, c}
+      [r, ?;, c] when is_integer(r) and is_integer(c) -> {r, c}  # Handle params with semicolon
       [r, c] when is_integer(r) and is_integer(c) -> {r, c}
       [r] when is_integer(r) -> {r, 1}
       [] -> {1, 1}
@@ -231,9 +232,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
     end
   end
 
-  @doc """
-  Parses cursor position parameters.
-  """
   defp parse_cursor_position_params(params) do
     case params do
       [] ->

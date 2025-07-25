@@ -56,9 +56,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ModeHandlers do
     end
   end
 
-  @doc """
-  Handles private mode setting/resetting.
-  """
   defp handle_private_mode(emulator, [mode], final_byte) do
     Logger.debug(
       "handle_private_mode: mode=#{inspect(mode)}, final_byte=#{inspect(final_byte)}"
@@ -107,9 +104,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ModeHandlers do
     end
   end
 
-  @doc """
-  Handles public mode setting/resetting.
-  """
   defp handle_public_mode(emulator, [mode], final_byte) do
     mode_name = Map.get(@public_modes, mode)
 
@@ -149,16 +143,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ModeHandlers do
     end
   end
 
-  @doc """
-  Gets mode name from mode number.
-  """
   defp get_mode_name(mode) do
     Map.get(@public_modes, mode) || Map.get(@private_modes, mode)
   end
 
-  @doc """
-  Sets or resets a mode based on enabled flag.
-  """
   defp set_or_reset_mode(emulator, mode_name, enabled) do
     if enabled do
       Emulator.set_mode(emulator, mode_name)

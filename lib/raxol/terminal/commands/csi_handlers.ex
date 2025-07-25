@@ -6,25 +6,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   alias Raxol.Terminal.Emulator
 
   alias Raxol.Terminal.Commands.CSIHandlers.{
-    Basic,
-    Cursor,
-    Screen,
-    Device,
     WindowHandlers,
     CursorMovement,
-    SequenceParser,
     CharsetHandlers,
     ModeHandlers,
     ScreenHandlers,
     DeviceHandlers,
     TextHandlers,
     HandlerFactory,
-    ApplyHandlers,
     SequenceDispatcher,
     CommandDelegator
   }
-
-  alias Raxol.Terminal.Commands.WindowHandlers, as: WindowHandlersBase
   require Raxol.Core.Runtime.Log
   require Logger
 

@@ -241,14 +241,4 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
     end
   end
 
-  defp process_sixel_data(sixel_state, data) do
-    # Basic sixel processing - this is a simplified implementation
-    # In a full implementation, this would parse the sixel data and update the screen buffer
-    %{
-      sixel_state
-      | data: sixel_state.data ++ [data],
-        width: max(sixel_state.width, String.length(data)),
-        height: sixel_state.height + 1
-    }
-  end
 end

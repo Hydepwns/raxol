@@ -297,9 +297,6 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     %{buffer | scrollback: []}
   end
 
-  @doc """
-  Erases from the cursor position to the end of the display.
-  """
   defp erase_from_cursor_to_end(buffer, row, col) when is_list(buffer) do
     buffer
     |> Enum.with_index()
@@ -316,9 +313,6 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     end
   end
 
-  @doc """
-  Erases from the start of the display to the cursor position.
-  """
   defp erase_from_start_to_cursor(buffer, row, col) when is_list(buffer) do
     buffer
     |> Enum.with_index()
@@ -331,17 +325,11 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     end)
   end
 
-  @doc """
-  Erases the entire display.
-  """
   defp erase_all(buffer) when is_list(buffer) do
     width = length(hd(buffer))
     List.duplicate(List.duplicate(Cell.new(" "), width), length(buffer))
   end
 
-  @doc """
-  Erases the entire display including scrollback.
-  """
   defp erase_all_with_scrollback(buffer)
        when is_struct(buffer, Raxol.Terminal.ScreenBuffer) do
     updated_cells = erase_all_with_scrollback(buffer.cells)

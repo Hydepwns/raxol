@@ -5,8 +5,6 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
 
   require Logger
 
-  alias Raxol.Terminal.Buffer.Operations, as: Buffer
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Content
 

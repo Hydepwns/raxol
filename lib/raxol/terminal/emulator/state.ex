@@ -79,16 +79,8 @@ defmodule Raxol.Terminal.Emulator.State do
   @spec push_state(EmulatorStruct.t()) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def push_state(%EmulatorStruct{} = emulator) do
-    case Raxol.Terminal.ANSI.TerminalState.push(emulator.state) do
-      {:ok, updated_state} ->
-        {:ok, %{emulator | state: updated_state}}
-
-      updated_state when is_map(updated_state) ->
-        {:ok, %{emulator | state: updated_state}}
-
-      _ ->
-        {:error, "Failed to push state"}
-    end
+    updated_state = Raxol.Terminal.ANSI.TerminalState.push(emulator.state)
+    {:ok, %{emulator | state: updated_state}}
   end
 
   @doc """

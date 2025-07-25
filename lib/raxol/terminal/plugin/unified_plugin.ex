@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         {:error, reason} -> {:error, reason}
       end
     rescue
-      e ->
+      _e ->
         # Handle compilation errors and other exceptions
         # Force the error to be caught and return reload_failed
         {:error, :reload_failed}

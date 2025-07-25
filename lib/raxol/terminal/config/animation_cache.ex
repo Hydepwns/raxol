@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   Manages caching for terminal animations using the unified caching system.
   """
 
-  alias Raxol.Terminal.Cache.System
 
   # Module attributes for preload dir
   @preload_dir "priv/animations"

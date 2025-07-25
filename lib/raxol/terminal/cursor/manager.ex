@@ -222,7 +222,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
   defdelegate save_state(state), to: State
   defdelegate restore_state(state), to: State
   defdelegate reset(state), to: State
-  defdelegate set_state(state, state_atom), to: State
+  # set_state is handled specifically below for PID and struct cases
   defdelegate set_custom_shape(state, shape, params), to: State
   defdelegate update_position_from_text(cursor, text), to: State
   defdelegate update_blink(state), to: State
@@ -409,12 +409,13 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   # PID-specific functions must come before delegation
   def get_state(pid) when is_pid(pid), do: GenServer.call(pid, :get_state_atom)
+  def get_state(%__MODULE__{} = state), do: State.get_state(state)
+
   def set_state(pid, state_atom) when is_pid(pid) do
     IO.puts("DEBUG: Manager.set_state PID clause matched for #{inspect(pid)}")
     IO.puts("DEBUG: State module: #{inspect(State)}")
     GenServer.call(pid, {:set_state_atom, state_atom})
   end
-  def get_state(%__MODULE__{} = state), do: State.get_state(state)
   def set_state(%__MODULE__{} = state, state_atom) do
     IO.puts("DEBUG: Manager.set_state struct clause matched")
     IO.puts("DEBUG: State module: #{inspect(State)}")
@@ -457,12 +458,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def handle_call({:set_visibility, visible}, _from, state) do
     {result, new_state} = Callbacks.handle_set_visibility(state, visible)
     {:reply, result, new_state}
-  end
-
-  @impl GenServer
-  def handle_cast({:set_visibility, visible}, state) do
-    {new_state} = Callbacks.handle_set_visibility_cast(state, visible)
-    {:noreply, new_state}
   end
 
   @impl GenServer
@@ -595,6 +590,12 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def handle_call(request, _from, state) do
     {result, new_state} = Callbacks.handle_unknown_request(request, state)
     {:reply, result, new_state}
+  end
+
+  @impl GenServer
+  def handle_cast({:set_visibility, visible}, state) do
+    {new_state} = Callbacks.handle_set_visibility_cast(state, visible)
+    {:noreply, new_state}
   end
 
   @impl GenServer

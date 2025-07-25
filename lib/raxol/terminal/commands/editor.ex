@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Commands.Editor do
   def erase_chars(buffer, row, col, count, default_style) do
     # Erase 'count' characters starting at {col, row} by replacing them with spaces.
     # Ensure coordinates and count are within bounds.
-    end_col = col + count - 1
+    _end_col = col + count - 1
 
     # Use Eraser.clear_region to replace the specified character cells with blanks.
     # Note: Eraser.clear_region handles clamping of coordinates internally.

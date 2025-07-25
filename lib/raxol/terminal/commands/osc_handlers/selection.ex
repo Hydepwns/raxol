@@ -19,60 +19,24 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Selection do
   end
 
   defp handle_selection_query(emulator) do
-    case Selection.get_text(emulator.screen_buffer) do
-      {:ok, text} ->
-        response = format_selection_response(text)
-        {:ok, %{emulator | output_buffer: response}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to get selection text: #{inspect(reason)}"
-        )
-
-        {:error, reason, emulator}
-    end
+    text = Selection.get_text(emulator.screen_buffer)
+    response = format_selection_response(text)
+    {:ok, %{emulator | output_buffer: response}}
   end
 
   defp handle_selection_start(emulator, x, y) do
-    case Selection.start(emulator.screen_buffer, x, y) do
-      {:ok, new_buffer} ->
-        {:ok, %{emulator | screen_buffer: new_buffer}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to set selection start: #{inspect(reason)}"
-        )
-
-        {:error, reason, emulator}
-    end
+    new_buffer = Selection.start(emulator.screen_buffer, x, y)
+    {:ok, %{emulator | screen_buffer: new_buffer}}
   end
 
   defp handle_selection_end(emulator, x, y) do
-    case Selection.update(emulator.screen_buffer, x, y) do
-      {:ok, new_buffer} ->
-        {:ok, %{emulator | screen_buffer: new_buffer}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to set selection end: #{inspect(reason)}"
-        )
-
-        {:error, reason, emulator}
-    end
+    new_buffer = Selection.update(emulator.screen_buffer, x, y)
+    {:ok, %{emulator | screen_buffer: new_buffer}}
   end
 
   defp handle_selection_clear(emulator) do
-    case Selection.clear(emulator.screen_buffer) do
-      {:ok, new_buffer} ->
-        {:ok, %{emulator | screen_buffer: new_buffer}}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning(
-          "Failed to clear selection: #{inspect(reason)}"
-        )
-
-        {:error, reason, emulator}
-    end
+    new_buffer = Selection.clear(emulator.screen_buffer)
+    {:ok, %{emulator | screen_buffer: new_buffer}}
   end
 
   defp handle_selection_text(emulator, content) do
@@ -103,13 +67,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Selection do
     # Find the content in the buffer and set selection to cover it
     case find_text_in_buffer(emulator.screen_buffer, content) do
       {:ok, start_pos, end_pos} ->
-        with {:ok, buffer1} <-
-               Selection.start(emulator.screen_buffer, start_pos.x, start_pos.y),
-             {:ok, buffer2} <- Selection.update(buffer1, end_pos.x, end_pos.y) do
-          {:ok, %{emulator | screen_buffer: buffer2}}
-        else
-          {:error, reason} -> {:error, reason}
-        end
+        buffer1 = Selection.start(emulator.screen_buffer, start_pos.x, start_pos.y)
+        buffer2 = Selection.update(buffer1, end_pos.x, end_pos.y)
+        {:ok, %{emulator | screen_buffer: buffer2}}
 
       {:error, reason} ->
         {:error, reason}

@@ -185,7 +185,7 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  defp do_reset_mode(mode_name, emulator, category \\ nil) do
+  defp do_reset_mode(mode_name, emulator, category) do
     with {:ok, mode_def} <- find_mode_definition(mode_name, category) do
       apply_mode_effects(mode_def, emulator, false)
     end
@@ -292,33 +292,6 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-  defp update_mode_manager_state(mode_manager, mode_name, value) do
-    mode_updates = %{
-      irm: %{mode_manager | insert_mode: value},
-      lnm: %{mode_manager | line_feed_mode: value},
-      deccolm_132: %{
-        mode_manager
-        | column_width_mode: if(value, do: :wide, else: :normal)
-      },
-      deccolm_80: %{
-        mode_manager
-        | column_width_mode: if(value, do: :normal, else: :wide)
-      },
-      decscnm: %{mode_manager | screen_mode_reverse: value},
-      decom: %{mode_manager | origin_mode: value},
-      decawm: %{mode_manager | auto_wrap: value},
-      decarm: %{mode_manager | auto_repeat_mode: value},
-      decinlm: %{mode_manager | interlacing_mode: value},
-      att_blink: %{mode_manager | blink_attribute: value},
-      dectcem: %{mode_manager | cursor_visible: value},
-      focus_events: %{mode_manager | focus_events_enabled: value},
-      bracketed_paste: %{mode_manager | bracketed_paste_mode: value},
-      dec_alt_screen_save: %{mode_manager | alternate_buffer_active: value},
-      alt_screen_buffer: %{mode_manager | alternate_buffer_active: value}
-    }
-
-    Map.get(mode_updates, mode_name, mode_manager)
-  end
 
   @doc """
   Creates a new mode manager with default values.

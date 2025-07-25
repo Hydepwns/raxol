@@ -300,7 +300,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
       false
   """
   @spec needs_scroll?(Raxol.Terminal.ScreenBuffer.t()) :: boolean()
-  def needs_scroll?(buffer) do
+  def needs_scroll?(_buffer) do
     false
   end
 

@@ -30,9 +30,6 @@ defmodule Raxol.Terminal.Buffer.Handlers do
     end
   end
 
-  @doc """
-  Handles asynchronous write_string operations.
-  """
   def handle_cast({:write_string, x, y, string}, state) do
     # Validate coordinates and add operation to queue
     operation =
@@ -54,9 +51,6 @@ defmodule Raxol.Terminal.Buffer.Handlers do
     end
   end
 
-  @doc """
-  Handles asynchronous fill_region operations.
-  """
   def handle_cast({:fill_region, x, y, width, height, cell}, state) do
     # Validate coordinates and add operation to queue
     operation =
@@ -84,9 +78,6 @@ defmodule Raxol.Terminal.Buffer.Handlers do
     end
   end
 
-  @doc """
-  Handles asynchronous scroll operations.
-  """
   def handle_cast({:scroll, lines}, state) do
     operation = {:scroll, lines}
     new_queue = OperationQueue.add_operation(state.operation_queue, operation)
@@ -101,9 +92,6 @@ defmodule Raxol.Terminal.Buffer.Handlers do
     end
   end
 
-  @doc """
-  Handles asynchronous resize operations.
-  """
   def handle_cast({:resize, width, height}, state) do
     operation = {:resize, width, height}
     new_queue = OperationQueue.add_operation(state.operation_queue, operation)
@@ -118,9 +106,6 @@ defmodule Raxol.Terminal.Buffer.Handlers do
     end
   end
 
-  @doc """
-  Handles asynchronous batch_operations.
-  """
   def handle_cast({:batch_operations, operations}, state) do
     new_queue = OperationQueue.add_operations(state.operation_queue, operations)
     new_state = %{state | operation_queue: new_queue}

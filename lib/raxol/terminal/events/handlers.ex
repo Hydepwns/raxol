@@ -228,7 +228,7 @@ defmodule Raxol.Terminal.Events.Handlers do
     end
   end
 
-  defp update_selection_in_state(emulator_state, start_pos, end_pos, text) do
+  defp update_selection_in_state(emulator_state, start_pos, end_pos, _text) do
     # Update the screen buffer with the new selection
     updated_buffer =
       Raxol.Terminal.Buffer.Selection.start(
