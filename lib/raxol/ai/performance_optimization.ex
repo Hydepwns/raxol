@@ -17,6 +17,7 @@ defmodule Raxol.AI.PerformanceOptimization do
   alias Raxol.Benchmarks.Performance, as: Benchmarks
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.ComponentUtils
+  alias Raxol.AI.ServiceAdapter
 
   # State for the optimization system
   defmodule State do
@@ -403,6 +404,60 @@ defmodule Raxol.AI.PerformanceOptimization do
     # This would collect system metrics to establish a baseline
     # For now, just a placeholder
     _ = Benchmarks.run_all([])
+  end
+
+  @doc """
+  Gets AI-powered optimization analysis for a component.
+  
+  ## Examples
+  
+      iex> get_ai_optimization_analysis("MyComponent", "defmodule MyComponent do...", %{avg_time: 150})
+      {:ok, [%{type: :performance, description: "...", suggestion: "..."}]}
+  """
+  def get_ai_optimization_analysis(component_name, code, metrics) do
+    if UXRefinement.feature_enabled?(:ai_performance_optimization) do
+      context = %{
+        component_type: infer_component_type(component_name),
+        metrics: metrics,
+        performance_issues: identify_performance_patterns(metrics)
+      }
+      
+      ServiceAdapter.analyze_performance(code, context)
+    else
+      {:ok, [%{
+        type: :static,
+        description: "Static analysis suggestion",
+        suggestion: get_optimization_suggestion(component_name, metrics)
+      }]}
+    end
+  end
+
+  defp infer_component_type(component_name) do
+    cond do
+      String.contains?(component_name, ["table", "list", "grid"]) -> "data_display"
+      String.contains?(component_name, ["form", "input", "field"]) -> "user_input"
+      String.contains?(component_name, ["chart", "graph", "plot"]) -> "visualization"
+      String.contains?(component_name, ["modal", "dialog", "popup"]) -> "overlay"
+      true -> "general"
+    end
+  end
+
+  defp identify_performance_patterns(metrics) do
+    patterns = []
+    
+    patterns = if metrics.avg_time > 100 do
+      ["slow_rendering" | patterns]
+    else
+      patterns
+    end
+    
+    patterns = if metrics.count > 100 and metrics.avg_time > 50 do
+      ["frequent_heavy_renders" | patterns]
+    else
+      patterns
+    end
+    
+    patterns
   end
 
   defp get_optimization_suggestion(component_name, metrics) do
