@@ -18,47 +18,39 @@ A modern toolkit for building terminal user interfaces (TUIs) in Elixir with com
 - **Performance**: Advanced caching, metrics, and rendering optimizations
 - **Documentation System**: Markdown rendering, search indexing, and TOC generation
 - **Code Quality**: Zero duplicate code, comprehensive test coverage, modular design
+- **Release Process**: Streamlined cross-platform builds with standardized workflow
 
 ## Installation
 
-### Using Nix (Recommended)
-
-For the best development experience, we recommend using Nix:
-
-```bash
-# Enter the development environment
-nix-shell
-
-# Or if you have direnv installed, just cd into the project
-cd raxol
-# direnv will automatically load the environment
-
-# Install dependencies and setup
-mix deps.get
-git submodule update --init --recursive
-mix setup
-```
-
-### Manual Installation
-
-```elixir
-# mix.exs
-def deps do
-  [
-    {:raxol, "~> 0.6.0"}
-  ]
-end
-```
-
-```bash
-# Enter the development environment, initialize the submodule for termbox2
-mix deps.get
-git submodule update --init --recursive
-```
-
-**Note**: You'll need to install Erlang 25.3.2.7, Elixir 1.17.1, PostgreSQL, and other dependencies manually.
+See [Installation Guide](docs/DEVELOPMENT.md#installation) for detailed setup instructions including:
+- Nix development environment (recommended)
+- Manual installation steps
+- Dependency requirements
 
 ## Quick Start
+
+### Release Commands
+
+Raxol includes streamlined release commands for cross-platform builds:
+
+```bash
+# Development builds (fast, unoptimized)
+mix release.dev
+
+# Production builds (optimized, signed)
+mix release.prod
+
+# Build for all platforms (macOS, Linux, Windows)
+mix release.all
+
+# Clean previous builds
+mix release.clean
+
+# Create and push version tag
+mix release.tag
+```
+
+Build artifacts are available in `burrito_out/` with detailed manifests.
 
 ### Interactive Demo Runner
 
@@ -148,12 +140,12 @@ Raxol comes with a comprehensive set of examples demonstrating various features:
 
 ## Documentation
 
-- [Quick Start](examples/guides/01_getting_started/quick_start.md)
-- [Terminal Emulator](examples/guides/02_core_concepts/terminal_emulator.md)
-- [API Reference](examples/guides/02_core_concepts/api/README.md)
-- [Components](examples/guides/03_components_and_layout/components/README.md)
-- [Snippets](examples/snippets/README.md)
-- [HexDocs for 0.6.0](https://hexdocs.pm/raxol/0.6.0)
+Complete documentation is available in the [Documentation Hub](docs/CONSOLIDATED_README.md):
+
+- [Getting Started Guide](examples/guides/01_getting_started/quick_start.md)
+- [Component System](docs/components/README.md)
+- [Examples & Snippets](examples/snippets/README.md)
+- [API Reference](https://hexdocs.pm/raxol/0.6.0)
 
 ## Performance
 
@@ -168,5 +160,5 @@ MIT License - see [LICENSE.md](LICENSE.md)
 
 ## Support
 
-- [Documentation](docs/README.md)
+- [Documentation Hub](docs/CONSOLIDATED_README.md)
 - [Issues](https://github.com/Hydepwns/raxol/issues)
