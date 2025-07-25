@@ -143,7 +143,6 @@ defmodule RaxolWeb.TerminalLive do
     {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("disconnect", _params, socket) do
     _scrollback = socket.assigns.emulator.scrollback_buffer || []
 
@@ -155,7 +154,6 @@ defmodule RaxolWeb.TerminalLive do
     }
   end
 
-  @impl Phoenix.LiveView
   def handle_event("key", %{"key" => key, "modifiers" => modifiers}, socket) do
     key_event = %Raxol.Terminal.Input.Event.KeyEvent{
       key: key,
@@ -166,7 +164,6 @@ defmodule RaxolWeb.TerminalLive do
     process_input_event(socket, key_event)
   end
 
-  @impl Phoenix.LiveView
   def handle_event(
         "mouse",
         %{"x" => x, "y" => y, "button" => button},
@@ -184,7 +181,6 @@ defmodule RaxolWeb.TerminalLive do
     process_input_event(socket, mouse_event)
   end
 
-  @impl Phoenix.LiveView
   def handle_event("resize", %{"width" => width, "height" => height}, socket) do
     socket = assign(socket, dimensions: %{width: width, height: height})
 
@@ -192,7 +188,6 @@ defmodule RaxolWeb.TerminalLive do
      push_event(socket, "terminal_resize", %{width: width, height: height})}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("scroll", %{"offset" => offset}, socket) do
     offset =
       if integer?(offset), do: offset, else: String.to_integer("#{offset}")
@@ -234,7 +229,6 @@ defmodule RaxolWeb.TerminalLive do
     {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("scroll_to_bottom", _params, socket) do
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
@@ -246,7 +240,6 @@ defmodule RaxolWeb.TerminalLive do
     end
   end
 
-  @impl Phoenix.LiveView
   def handle_event("scroll_to_top", _params, socket) do
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
@@ -258,7 +251,6 @@ defmodule RaxolWeb.TerminalLive do
     end
   end
 
-  @impl Phoenix.LiveView
   def handle_event("scroll_up", _params, socket) do
     emulator = socket.assigns.emulator
     page_size = emulator.height
@@ -266,7 +258,6 @@ defmodule RaxolWeb.TerminalLive do
     handle_scroll_update(socket, -page_size)
   end
 
-  @impl Phoenix.LiveView
   def handle_event("scroll_down", _params, socket) do
     emulator = socket.assigns.emulator
     page_size = emulator.height
@@ -274,20 +265,17 @@ defmodule RaxolWeb.TerminalLive do
     handle_scroll_update(socket, page_size)
   end
 
-  @impl Phoenix.LiveView
   def handle_event("set_scrollback_limit", %{"limit" => limit}, socket) do
     limit = if integer?(limit), do: limit, else: String.to_integer("#{limit}")
     emulator = %{socket.assigns.emulator | scrollback_limit: limit}
     {:noreply, assign(socket, emulator: emulator, scrollback_limit: limit)}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("theme", %{"theme" => theme}, socket) do
     socket = assign(socket, theme: theme)
     {:noreply, push_event(socket, "terminal_theme", %{theme: theme})}
   end
 
-  @impl Phoenix.LiveView
   def handle_event(
         "terminal_output",
         %{"html" => html, "cursor" => cursor} = payload,
@@ -303,7 +291,6 @@ defmodule RaxolWeb.TerminalLive do
     {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
   end
 
-  @impl Phoenix.LiveView
   def handle_event(
         "cursor_move",
         %{"x" => x, "y" => y, "visible" => visible},

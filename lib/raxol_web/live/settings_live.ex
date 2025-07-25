@@ -56,13 +56,6 @@ defmodule RaxolWeb.SettingsLive do
 
             {:ok, updated_socket}
 
-          nil ->
-            updated_socket =
-              socket
-              |> put_flash(:error, "User not found.")
-              |> redirect(to: "/")
-
-            {:ok, updated_socket}
         end
 
       {:error, _reason} ->
