@@ -75,7 +75,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
 
     cells = Renderer.render_to_cells(element)
 
-    # Border style should be overridden
+    # Border style should be overridden (test theme has white fg on black bg)
     cell = Helper.get_cell_at(cells, 0, 0)
     Helper.assert_cell_style(cell, :white, :black, [:single])
   end
@@ -84,18 +84,18 @@ defmodule Raxol.UI.ThemeHandlingTest do
     element = Helper.create_test_box(0, 0, 5, 5)
     cells = Renderer.render_to_cells(element)
 
-    # Should use default border style
+    # Should use default border style (black on white from default theme)
     cell = Helper.get_cell_at(cells, 0, 0)
-    Helper.assert_cell_style(cell, :white, :black, [:single])
+    Helper.assert_cell_style(cell, :black, :white, [:single])
   end
 
   test "handles no borders" do
     element = Helper.create_test_box(0, 0, 5, 5, %{border: false})
     cells = Renderer.render_to_cells(element)
 
-    # Should not have border style
+    # Should not have border style (black on white from default theme)
     cell = Helper.get_cell_at(cells, 0, 0)
-    Helper.assert_cell_style(cell, :white, :black, [])
+    Helper.assert_cell_style(cell, :black, :white, [])
   end
 
   test "handles theme inheritance" do

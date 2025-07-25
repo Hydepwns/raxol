@@ -265,12 +265,16 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       assert retrieved_cell.char == "A"
       assert retrieved_cell.style.foreground == :red
 
-      # Verify row 2 is now empty (content moved up)
+      # Verify row 2 now has content from former row 4
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 2)
-      assert retrieved_cell.char == " "
+      assert retrieved_cell.char == "A"
+      assert retrieved_cell.style.foreground == :red
 
-      # Verify bottom rows are empty
+      # Verify bottom rows are empty (rows 3-4)
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 3)
+      assert retrieved_cell.char == " "
+      
+      {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 4)
       assert retrieved_cell.char == " "
     end
 

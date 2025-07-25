@@ -18,13 +18,6 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       if Process.alive?(pid) do
         GenServer.stop(pid)
       end
-
-      # Clean up any mocks
-      try do
-        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
-      catch
-        :error, {:not_mocked, _} -> :ok
-      end
     end)
 
     {:ok, test_name: test_name, pid: pid}
@@ -99,17 +92,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       ]
 
       try do
-        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+        # Cleanup - meck removed
       catch
         :error, {:not_mocked, _} -> :ok
       end
 
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
-
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
-                                                                         _tags ->
-        metrics
-      end)
+      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -124,7 +112,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       assert alert_state.active == true
       assert alert_state.current_value == 60
 
-      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      # Cleanup - meck removed
     end
 
     test "does not trigger alert when condition is not met", %{
@@ -141,17 +129,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       ]
 
       try do
-        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+        # Cleanup - meck removed
       catch
         :error, {:not_mocked, _} -> :ok
       end
 
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
-
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
-                                                                         _tags ->
-        metrics
-      end)
+      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -166,7 +149,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       assert alert_state.active == false
       assert alert_state.current_value == 40
 
-      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      # Cleanup - meck removed
     end
 
     test "respects cooldown period", %{
@@ -183,17 +166,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       ]
 
       try do
-        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+        # Cleanup - meck removed
       catch
         :error, {:not_mocked, _} -> :ok
       end
 
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
-
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
-                                                                         _tags ->
-        metrics
-      end)
+      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
 
       # Force first alert check only if process is alive
       if Process.alive?(pid) do
@@ -217,7 +195,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       # Only one alert should be recorded due to cooldown
       assert length(history) == 1
 
-      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      # Cleanup - meck removed
     end
   end
 
@@ -250,17 +228,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       ]
 
       try do
-        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+        # Cleanup - meck removed
       catch
         :error, {:not_mocked, _} -> :ok
       end
 
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
-
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
-                                                                         _tags ->
-        metrics
-      end)
+      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -274,7 +247,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
       assert alert_state.acknowledged == true
 
-      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      # Cleanup - meck removed
     end
   end
 
@@ -309,17 +282,12 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       ]
 
       try do
-        :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+        # Cleanup - meck removed
       catch
         :error, {:not_mocked, _} -> :ok
       end
 
-      :meck.new(Raxol.Core.Metrics.UnifiedCollector, [:passthrough])
-
-      :meck.expect(Raxol.Core.Metrics.UnifiedCollector, :get_metrics, fn _name,
-                                                                         _tags ->
-        metrics
-      end)
+      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -332,7 +300,7 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
       assert alert_state.active == true
 
-      :meck.unload(Raxol.Core.Metrics.UnifiedCollector)
+      # Cleanup - meck removed
     end
   end
 

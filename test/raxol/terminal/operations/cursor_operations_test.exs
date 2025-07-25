@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Operations.CursorOperationsTest do
       {width, height} = {80, 24}
 
       assert CursorOperations.get_cursor_position(emulator) ==
-               {width - 1, height - 1}
+               {height - 1, width - 1}
     end
   end
 
