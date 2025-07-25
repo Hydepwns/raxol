@@ -1,3 +1,12 @@
+---
+title: Development Guide
+description: Setup and development workflow for Raxol
+date: 2025-07-25
+author: Raxol Team
+section: documentation
+tags: [development, setup, nix, workflow]
+---
+
 # Development Guide
 
 This guide explains how to set up and work with the Raxol development environment using Nix.

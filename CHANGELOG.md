@@ -1,3 +1,49 @@
+## [0.8.0] - 2025-07-25
+
+### Added
+
+- **Phase 8: Release Process Streamlining (COMPLETED ✅)**
+  - Simplified `burrito.exs` configuration (127→98 lines, 23% reduction)
+  - Added standardized mix aliases for release tasks:
+    - `mix release.dev` - Development builds
+    - `mix release.prod` - Production builds  
+    - `mix release.all` - All platform builds
+    - `mix release.clean` - Clean build directories
+    - `mix release.tag` - Create version tags
+  - Enhanced release script with build summaries and artifact manifests
+  - Streamlined version management with safety checks and validation
+  - Improved error handling and user feedback throughout release process
+
+### Changed
+
+- **Release Configuration Optimization:**
+  - Extracted common configurations into module attributes (`@base_steps`, `@common_config`, `@package_meta`)
+  - Eliminated code duplication between dev/prod profiles
+  - Consolidated platform-specific settings for better maintainability
+  - Unified package metadata across distribution formats
+
+- **Release Script Enhancements:**
+  - Added comprehensive build result tracking and reporting
+  - Implemented JSON manifest generation for build artifacts
+  - Enhanced git tagging with duplicate detection and clean working directory validation
+  - Improved cross-platform executable name handling
+
+### Fixed
+
+- **Release Process Reliability:**
+  - Fixed potential issues with duplicate git tags
+  - Enhanced error reporting for failed builds
+  - Improved platform detection and build consistency
+  - Added proper validation for release prerequisites
+
+### Impact
+
+- 23% reduction in release configuration complexity
+- Unified release workflow across all platforms (macOS, Linux, Windows)  
+- Enhanced artifact tracking and build management
+- Safer and more reliable version tagging process
+- Improved developer experience with clear, standardized commands
+
 ## [0.7.0] - 2025-07-15
 
 ### Added
