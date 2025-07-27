@@ -205,7 +205,6 @@ jobs:
           fi
 
       - name: Run Tests
-        if: runner.os != 'macOS' || env.DOCKER_AVAILABLE == 'true'
         run: |
           # Run tests with coverage and performance monitoring
           mix test --cover --slowest 10
