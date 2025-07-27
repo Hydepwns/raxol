@@ -1,12 +1,13 @@
 # 📚 Raxol Documentation
 
-> **Note**: This documentation has been consolidated. Please use the [Documentation Hub](CONSOLIDATED_README.md) for the complete, up-to-date documentation.
+> **Note**: Raxol is a full-stack terminal application framework. Please use the [Documentation Hub](CONSOLIDATED_README.md) for complete documentation.
 
 ## Quick Navigation
 
-- **[Documentation Hub](CONSOLIDATED_README.md)** - Complete consolidated documentation
-- **[Development Guide](DEVELOPMENT.md)** - Setup and development workflow  
-- **[Architecture](ARCHITECTURE.md)** - System design and principles
-- **[Configuration](CONFIGURATION.md)** - Settings and environment
+- **[Documentation Hub](CONSOLIDATED_README.md)** - Comprehensive framework documentation
+- **[Web Interface Guide](WEB_INTERFACE_GUIDE.md)** - Browser-based terminal access
+- **[Plugin System Guide](PLUGIN_SYSTEM_GUIDE.md)** - Extending Raxol with plugins
+- **[Architecture](ARCHITECTURE.md)** - Full system architecture
+- **[Development Guide](DEVELOPMENT.md)** - Setup and development workflow
 
-This redirect preserves existing links while directing users to the consolidated documentation structure implemented in Phase 4 of the improvement plan.
+Raxol enables you to build sophisticated terminal applications that work both locally and through web browsers, with real-time collaboration, plugins, and enterprise features.

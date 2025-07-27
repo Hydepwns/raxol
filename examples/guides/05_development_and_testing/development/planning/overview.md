@@ -9,9 +9,9 @@ tags: [planning, overview, development, roadmap, future]
 
 # Raxol: A Comprehensive TUI Framework for Elixir
 
-_Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability. Make sure you are using the latest version for the best experience!_
+_Raxol 0.8.0 is a full-stack terminal application framework with web interface support, plugin system, and enterprise features. Make sure you are using the latest version for the best experience!_
 
-This document outlines the strategic vision and development plan for Raxol, a comprehensive terminal application toolkit for Elixir, inspired by the capabilities of Charm.sh and built upon a refined Elm-style architecture. It aims to provide a robust ecosystem for building rich, interactive terminal UIs, potentially integrated with distribution via Burrito.
+This document outlines the strategic vision and development plan for Raxol, a full-stack terminal application framework for Elixir. Built upon a component-based architecture, Raxol provides a comprehensive ecosystem for building sophisticated terminal applications that can run both locally and be accessed through web browsers, with support for plugins, real-time collaboration, and enterprise features.
 
 ## Core Raxol Features (Present & Future)
 

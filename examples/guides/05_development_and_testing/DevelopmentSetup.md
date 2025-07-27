@@ -11,7 +11,7 @@ tags: [installation, setup, development, contributing]
 
 This guide helps you set up your development environment for working on Raxol.
 
-_Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability. Make sure you are using the latest version for the best experience!_
+_Raxol 0.8.0 is a full-stack terminal application framework with web interface support, plugin system, and enterprise features. Make sure you are using the latest version for the best experience!_
 
 ## Prerequisites
 

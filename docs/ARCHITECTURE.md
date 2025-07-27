@@ -11,29 +11,39 @@ tags: [architecture, documentation, design]
 
 ## System Overview
 
-Raxol is a terminal user interface toolkit built on The Elm Architecture (TEA) that provides a comprehensive set of features for building interactive terminal applications. The system uses a layered architecture with clear separation of concerns.
+Raxol is a full-stack terminal application framework that enables building sophisticated terminal applications with both local and web interfaces. The framework combines a powerful terminal emulator core with a component-based UI system, real-time web capabilities, and an extensible plugin architecture.
 
 ```mermaid
 graph TB
-    App[Application Layer]
-    View[View Layer]
-    Runtime[Runtime Layer]
-    Terminal[Terminal Layer]
+    Apps[User Applications]
+    Plugins[Plugin System]
+    Web[Web Interface Layer]
+    Components[Component Framework]
+    Runtime[Runtime Engine]
+    Terminal[Terminal Core]
+    Platform[Platform Services]
 
-    App --> View
-    View --> Runtime
+    Apps --> Components
+    Plugins --> Runtime
+    Web --> Components
+    Components --> Runtime
     Runtime --> Terminal
+    Runtime --> Platform
+    Web --> Platform
 
     classDef layer fill:#22223b,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:16px,padding:8px;
-    class App,View,Runtime,Terminal layer;
+    class Apps,Plugins,Web,Components,Runtime,Terminal,Platform layer;
 ```
 
 ### Layer Responsibilities
 
-- **Application Layer**: User-defined application logic following TEA pattern
-- **View Layer**: UI composition and rendering with components
-- **Runtime Layer**: Event handling, lifecycle management, and coordination
-- **Terminal Layer**: Low-level terminal interaction and buffer management
+- **User Applications**: Terminal apps built using Raxol's component framework
+- **Plugin System**: Runtime-loadable extensions with command registration and event hooks
+- **Web Interface Layer**: Phoenix LiveView integration for browser-based access
+- **Component Framework**: React-style UI components with state management and lifecycle
+- **Runtime Engine**: Event handling, application lifecycle, and coordination
+- **Terminal Core**: ANSI/VT100+ emulator with buffer management and rendering
+- **Platform Services**: Authentication, metrics, configuration, and persistence
 
 ## Core Subsystems
 
@@ -77,7 +87,7 @@ graph TB
 
 ### Terminal System
 
-The terminal system handles low-level terminal operations:
+The terminal system provides comprehensive terminal emulation:
 
 ```mermaid
 graph TB
@@ -85,14 +95,89 @@ graph TB
     Buffer[Buffer Manager]
     Parser[ANSI Parser]
     IO[I/O Manager]
+    Graphics[Sixel Graphics]
+    Unicode[Unicode Handler]
 
     Emulator --> Buffer
     Emulator --> Parser
     Emulator --> IO
+    Parser --> Graphics
+    Parser --> Unicode
 
     classDef component fill:#4a4e69,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
-    class Emulator,Buffer,Parser,IO component;
+    class Emulator,Buffer,Parser,IO,Graphics,Unicode component;
 ```
+
+### Web Interface Architecture
+
+The web layer enables browser-based access using Phoenix LiveView:
+
+```mermaid
+graph TB
+    Browser[Web Browser]
+    LiveView[Phoenix LiveView]
+    WebSocket[WebSocket]
+    Session[Session Manager]
+    Auth[Authentication]
+    Terminal[Terminal Instance]
+
+    Browser <--> LiveView
+    LiveView <--> WebSocket
+    WebSocket --> Session
+    Session --> Auth
+    Session --> Terminal
+    Terminal --> LiveView
+
+    classDef web fill:#5a4e8f,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
+    class Browser,LiveView,WebSocket,Session,Auth web;
+```
+
+Key features:
+- Real-time bidirectional communication via WebSockets
+- Multi-user session support with presence tracking
+- Collaborative cursor and state synchronization
+- Persistent session storage and recovery
+- Built-in authentication and authorization
+
+### Plugin System Architecture
+
+The plugin system enables runtime extensibility:
+
+```mermaid
+graph TB
+    Manager[Plugin Manager]
+    Loader[Plugin Loader]
+    Registry[Command Registry]
+    Hooks[Event Hooks]
+    Config[Configuration]
+    
+    Plugin1[Git Plugin]
+    Plugin2[Docker Plugin]
+    Plugin3[Custom Plugin]
+
+    Manager --> Loader
+    Manager --> Registry
+    Manager --> Hooks
+    Manager --> Config
+    
+    Plugin1 --> Registry
+    Plugin2 --> Registry
+    Plugin3 --> Registry
+    
+    Plugin1 --> Hooks
+    Plugin2 --> Hooks
+    Plugin3 --> Hooks
+
+    classDef plugin fill:#6a4e9f,stroke:#f8f8f2,stroke-width:2px,color:#f8f8f2,font-size:14px,padding:6px;
+    class Manager,Loader,Registry,Hooks,Config,Plugin1,Plugin2,Plugin3 plugin;
+```
+
+Plugin capabilities:
+- Runtime loading/unloading without restart
+- Command registration with the terminal
+- Event subscription and handling
+- Configuration management
+- Dependency resolution
 
 ## Application Lifecycle
 
@@ -133,33 +218,52 @@ sequenceDiagram
 - `Raxol.Core.Runtime.Lifecycle` - Application lifecycle management
 - `Raxol.Core.Runtime.Events.Dispatcher` - Event dispatching
 
-### View Layer
+### Component Framework
 
+- `Raxol.UI.Components.Base.Component` - Component behaviour and lifecycle
 - `Raxol.Core.Renderer.View` - View composition and layout
 - `Raxol.Core.Renderer.Layout` - Layout calculations
-- `Raxol.UI.Components.*` - UI component library
+- `Raxol.UI.Components.*` - Pre-built component library
 
-### Runtime Layer
+### Web Interface Layer
 
-- `Raxol.Core.Runtime.Supervisor` - Runtime supervision
-- `Raxol.Core.Runtime.Plugins.Manager` - Plugin management
-- `Raxol.Core.Runtime.Rendering.Engine` - Rendering coordination
+- `RaxolWeb.TerminalLive` - Phoenix LiveView terminal interface
+- `RaxolWeb.Channels.TerminalChannel` - WebSocket communication
+- `RaxolWeb.Presence` - Multi-user presence tracking
+- `Raxol.Accounts` - User authentication and management
 
-### Terminal Layer
+### Plugin System
 
-- `Raxol.Terminal.Emulator` - Terminal emulation
-- `Raxol.Terminal.Buffer.Manager` - Buffer management (now powered by the modular `BufferServerRefactored` system)
-- `Raxol.Terminal.ANSI.*` - ANSI sequence handling
+- `Raxol.Core.Runtime.Plugins.Manager` - Plugin lifecycle management
+- `Raxol.Core.Runtime.Plugins.Registry` - Command registration
+- `Raxol.Core.Runtime.Plugins.EventHandler` - Event hook system
+- `Raxol.Plugin` - Plugin behaviour definition
+
+### Terminal Core
+
+- `Raxol.Terminal.Emulator` - Terminal emulation engine
+- `Raxol.Terminal.Buffer.Manager` - Buffer management (powered by modular `BufferServerRefactored`)
+- `Raxol.Terminal.ANSI.*` - ANSI/VT100+ sequence handling
+- `Raxol.Terminal.Renderer` - Terminal rendering engine
+
+### Platform Services
+
+- `Raxol.Core.Config` - Configuration management
+- `Raxol.Core.Metrics` - Telemetry and monitoring
+- `Raxol.Security.*` - Authentication and security
+- `Raxol.Core.ErrorHandler` - Error handling and recovery
 
 > **Note:** The buffer management subsystem was fully migrated from a monolithic GenServer (`BufferServer`) to the new modular `BufferServerRefactored` architecture. This new system is composed of focused modules for operation processing, batching, metrics, and damage tracking, resulting in a 42,000x performance improvement and greatly improved maintainability. All legacy code has been removed.
 
 ## Design Principles
 
-- **Elm Architecture**: Model-Update-View pattern with unidirectional data flow
-- **Component-based**: Reusable UI components with consistent interfaces
-- **Performance-first**: Optimized for low-latency terminal operations
-- **Extensible**: Plugin system for custom functionality
-- **Accessible**: Built-in accessibility features and screen reader support
+- **Full-Stack Framework**: Unified architecture for terminal and web applications
+- **Component-Based Architecture**: React-style components with lifecycle management
+- **Event-Driven Design**: Unidirectional data flow with predictable state updates
+- **Performance Optimized**: Sub-millisecond local operations, minimal web latency
+- **Runtime Extensibility**: Plugin system for adding functionality without restarts
+- **Enterprise Ready**: Built-in auth, monitoring, and operational features
+- **Accessibility First**: Screen reader support and keyboard navigation throughout
 
 ## Performance Requirements
 

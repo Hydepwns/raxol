@@ -68,7 +68,7 @@ Add Raxol to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.6.0"}
+    {:raxol, "~> 0.8.0"}
   ]
 end
 ```
@@ -152,7 +152,7 @@ Raxol works best with modern terminal emulators that support True Color and Unic
 | Plugin system         | ✅    | ✅    | ✅      |
 | Improved reliability  | ✅    | ✅    | ✅      |
 
-_Note: Raxol 0.6.0 introduces an improved plugin system and enhanced terminal reliability across all platforms._
+_Note: Raxol 0.8.0 is a full-stack terminal application framework with web interface support, plugin system, and enterprise features across all platforms._
 
 ## Troubleshooting
 

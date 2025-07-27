@@ -1,11 +1,12 @@
 # Component Guide
 
-Complete guide to Raxol's component system, including architecture, patterns, and best practices.
+Complete guide to Raxol's component system for building applications that work seamlessly in both terminal and web environments.
 
 ## Quick Reference
 
-- [Architecture](#architecture) - Component system design
-- [Writing Components](#writing-components) - Creating new components
+- [Architecture](#architecture) - Component system design for terminal and web
+- [Writing Components](#writing-components) - Creating components with dual rendering
+- [Web Rendering](#web-rendering) - Components in the browser via Phoenix LiveView
 - [Testing](#testing) - Component testing patterns
 - [Style Guide](style_guide.md) - Component styling
 
@@ -28,7 +29,9 @@ graph TD
 - **Unidirectional Data Flow**: State flows down, events flow up
 - **Component Composition**: Build complex UIs from simple components
 - **Lifecycle Management**: Clear hooks for setup and cleanup
-- **Event Handling**: Consistent event system across components
+- **Event Handling**: Consistent event system across terminal and web
+- **Dual Rendering**: Components render correctly in both environments
+- **Real-Time Sync**: State synchronization across multiple clients
 
 ## Writing Components
 
@@ -155,6 +158,162 @@ def update({:set_value, value}, state) do
   ]}
 end
 ```
+
+## Web Rendering
+
+Raxol components automatically work in web browsers through Phoenix LiveView integration. The same component code runs in both terminal and web environments.
+
+### How Web Rendering Works
+
+1. **Automatic Translation**: Component render output is translated to HTML
+2. **Event Mapping**: Terminal events map to browser events
+3. **Real-Time Updates**: State changes propagate via WebSockets
+4. **Style Preservation**: Terminal styles convert to CSS
+
+### Web-Aware Component
+
+```elixir
+defmodule TodoItem do
+  @behaviour Raxol.UI.Components.Base.Component
+
+  def render(state, context) do
+    # This works in both terminal and web!
+    %{
+      type: :row,
+      style: [padding: 1, hover: true],
+      content: [
+        %{
+          type: :checkbox,
+          checked: state.completed,
+          on_change: {:toggle, state.id}
+        },
+        %{
+          type: :text,
+          content: state.text,
+          style: [strikethrough: state.completed]
+        },
+        %{
+          type: :button,
+          label: "Delete",
+          on_click: {:delete, state.id},
+          style: [color: :red]
+        }
+      ]
+    }
+  end
+end
+```
+
+### Web-Specific Features
+
+#### Responsive Design
+
+```elixir
+def render(state, context) do
+  # Access viewport information
+  is_mobile = context.viewport.width < 768
+  
+  %{
+    type: :box,
+    style: [
+      padding: if(is_mobile, do: 1, else: 2),
+      flex_direction: if(is_mobile, do: :column, else: :row)
+    ],
+    content: render_content(state, is_mobile)
+  }
+end
+```
+
+#### Collaborative Features
+
+```elixir
+def render(state, context) do
+  # Show other users' cursors
+  %{
+    type: :box,
+    content: [
+      render_content(state),
+      render_user_cursors(context.presence)
+    ]
+  }
+end
+
+defp render_user_cursors(presence) do
+  Enum.map(presence.users, fn user ->
+    %{
+      type: :cursor,
+      user_id: user.id,
+      position: user.cursor,
+      color: user.color
+    }
+  end)
+end
+```
+
+### Browser Events
+
+Components handle browser-specific events seamlessly:
+
+```elixir
+def handle_event(%{type: :mouse_enter}, state) do
+  # Works in terminal (if supported) and web
+  {Map.put(state, :hovered, true), []}
+end
+
+def handle_event(%{type: :drag_start, data: data}, state) do
+  # Drag and drop support in web
+  {Map.put(state, :dragging, data), []}
+end
+
+def handle_event(%{type: :file_drop, files: files}, state) do
+  # File upload in web
+  {state, [{:command, {:process_files, files}}]}
+end
+```
+
+### Performance in Web
+
+#### Virtual DOM Optimization
+
+```elixir
+def render(state, context) do
+  # Use keys for efficient list rendering
+  %{
+    type: :list,
+    content: Enum.map(state.items, fn item ->
+      %{
+        type: :list_item,
+        key: item.id,  # Important for web performance
+        content: render_item(item)
+      }
+    end)
+  }
+end
+```
+
+#### Lazy Loading
+
+```elixir
+def render(state, context) do
+  %{
+    type: :virtual_list,  # Only renders visible items
+    height: 500,
+    item_height: 50,
+    items: state.large_dataset,
+    render_item: &render_item/1
+  }
+end
+```
+
+### Web Deployment
+
+Components deployed to web automatically get:
+
+1. **Session Persistence**: State survives page refreshes
+2. **URL Routing**: Deep linking to component states
+3. **SEO Support**: Server-side rendering for search engines
+4. **Accessibility**: ARIA attributes and keyboard navigation
+5. **Mobile Support**: Touch events and responsive layouts
 
 ## Testing
 
