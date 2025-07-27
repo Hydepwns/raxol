@@ -2,13 +2,15 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   @moduledoc """
   A demo showcasing integrated accessibility features.
   """
+  
+  @behaviour Raxol.Core.Runtime.Application
 
   alias Raxol.Core.Renderer.View
   require Raxol.Core.Renderer.View
   # If this demo uses Accessibility features directly:
   # alias Raxol.Core.Accessibility
 
-  @impl Raxol.Core.Runtime.Application
+  @impl true
   def init(_opts) do
     model = %{
       message: "Welcome to the Accessibility Demo",
@@ -19,20 +21,20 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
     {:ok, {model, []}}
   end
 
-  @impl Raxol.Core.Runtime.Application
+  @impl true
   def update(model, {:button_clicked}) do
     {:ok, %{model | button_clicks: model.button_clicks + 1}}
   end
 
-  @impl Raxol.Core.Runtime.Application
+  @impl true
   def update(model, {:checkbox_toggled}) do
     {:ok, %{model | checkbox_checked: !model.checkbox_checked}}
   end
 
-  @impl Raxol.Core.Runtime.Application
+  @impl true
   def update(model, _event), do: {:ok, model}
 
-  @impl Raxol.Core.Runtime.Application
+  @impl true
   def handle_event(event) do
     {:ok, event}
   end

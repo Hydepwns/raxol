@@ -15,14 +15,18 @@ A modern toolkit for building terminal user interfaces (TUIs) in Elixir with com
 - **Theme Support**: Customizable styling with color system integration
 - **Accessibility**: Screen reader support, keyboard navigation, focus management
 - **Animation**: Smooth transitions and dynamic UI updates
-- **Performance**: Advanced caching, metrics, and rendering optimizations
+- **Performance**: Advanced caching, metrics, profiling, and rendering optimizations
 - **Documentation System**: Markdown rendering, search indexing, and TOC generation
 - **Code Quality**: Zero duplicate code, comprehensive test coverage, modular design
 - **Release Process**: Streamlined cross-platform builds with standardized workflow
+- **Error Handling**: Comprehensive error recovery with circuit breakers and graceful degradation
+- **Security**: Input validation, session management, and security auditing
+- **Code Standards**: Automated consistency checking and code generation templates
 
 ## Installation
 
 See [Installation Guide](docs/DEVELOPMENT.md#installation) for detailed setup instructions including:
+
 - Nix development environment (recommended)
 - Manual installation steps
 - Dependency requirements
@@ -137,6 +141,37 @@ Raxol comes with a comprehensive set of examples demonstrating various features:
 ### Work in Progress
 
 - **Integrated Accessibility**: Advanced accessibility features
+
+## Recent Improvements
+
+### Error Handling & Recovery
+
+- Comprehensive error handling framework with `ErrorHandler` module
+- Circuit breaker pattern implementation for fault tolerance
+- Retry mechanisms with exponential backoff
+- Graceful degradation strategies
+- Example: `SafeLifecycleOperations` demonstrates error handling in plugin lifecycle
+
+### Performance Optimization
+
+- Performance profiler for identifying bottlenecks
+- Optimization strategies including caching, batching, and streaming
+- Optimized terminal input processing and rendering pipeline
+- Benchmark comparison utilities
+
+### Security Enhancements
+
+- Security auditor for input validation and attack prevention
+- Secure session management with cryptographic tokens
+- Protection against SQL injection, XSS, and path traversal
+- Rate limiting and CSRF protection
+
+### Code Consistency
+
+- Automated code consistency checker
+- Standardized coding patterns and conventions
+- Code generation templates for common patterns
+- Mix task for consistency checking: `mix raxol.check_consistency`
 
 ## Documentation
 

@@ -12,45 +12,33 @@ defmodule Raxol.Examples.AccessibilityDemo do
   - Theme integration
   """
 
-  # Use the Application behaviour
   use Raxol.Core.Runtime.Application
 
-  # Add necessary aliases and requires
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
   alias Raxol.Core.Accessibility
   alias Raxol.Core.FocusManager
   alias Raxol.Core.UserPreferences
-  # Re-added alias for hints
   alias Raxol.Core.UXRefinement
   require Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.View
 
-  # Define application state
-  # Initial focus
   defstruct focused_element: "search_button",
             message: "Accessibility Demo. Press Tab/Shift+Tab, Enter/Space.",
-            # Store accessibility settings in state for display? Or read from UserPreferences?
-            # Reading directly from UserPreferences in view/update might be simpler.
             id: :accessibility_demo
-
-  # --- Application Behaviour Callbacks ---
 
   @impl Raxol.Core.Runtime.Application
   def init(_opts) do
     Raxol.Core.Runtime.Log.info("Initializing AccessibilityDemo...")
 
-    # Perform initial setup (moved from setup_demo_ui)
     setup_focus_and_hints()
 
-    # Make an initial announcement
     Accessibility.announce("Accessibility demo loaded. Use Tab to navigate.",
       [priority: :high],
       UserPreferences
     )
 
-    # Set initial focus (handled by initial state struct)
     FocusManager.set_focus("search_button")
 
     initial_state = %__MODULE__{}
@@ -59,7 +47,6 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
   @impl Raxol.Core.Runtime.Application
   def update({:keyboard_event, %{key: :tab, shift: false}}, state) do
-    # Handle Tab: Move focus forward
     current_focus = state.focused_element
     next_focus = FocusManager.get_next_focusable(current_focus)
 
@@ -73,7 +60,6 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
       {:ok, %{state | focused_element: next_focus}}
     else
-      # Cycle focus back to the first element
       first_focus = FocusManager.get_next_focusable(nil)
 
       if first_focus do
@@ -86,14 +72,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
         {%{state | focused_element: first_focus}, []}
       else
-        # No focusable elements
         {state, []}
       end
     end
   end
 
   def update({:keyboard_event, %{key: :tab, shift: true}}, state) do
-    # Handle Shift+Tab: Move focus backward
     current_focus = state.focused_element
     prev_focus = FocusManager.get_previous_focusable(current_focus)
 
@@ -107,7 +91,6 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
       {:ok, %{state | focused_element: prev_focus}}
     else
-      # Cycle focus back to the last element
       last_focus = FocusManager.get_previous_focusable(nil)
 
       if last_focus do
@@ -120,14 +103,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
         {%{state | focused_element: last_focus}, []}
       else
-        # No focusable elements
         {state, []}
       end
     end
   end
 
   def update({:keyboard_event, %{key: :enter}}, state) do
-    # Handle Enter: Activate focused button
     case state.focused_element do
       "search_button" ->
         Accessibility.announce("Search action simulated.", [priority: :high], UserPreferences)
@@ -141,15 +122,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
         Accessibility.announce("Help action simulated.", [priority: :high], UserPreferences)
         {state, []}
 
-      # Enter on checkbox does nothing here, use Space
       _ ->
         {state, []}
     end
   end
 
-  # Check for space bar
   def update({:keyboard_event, %{key: " "}}, state) do
-    # Handle Space: Toggle focused checkbox
     case state.focused_element do
       "high_contrast_toggle" ->
         toggle_accessibility_setting(:high_contrast, state)
@@ -166,7 +144,6 @@ defmodule Raxol.Examples.AccessibilityDemo do
     end
   end
 
-  # Handle custom messages from UI elements (if added later)
   def update({:toggle, setting}, state) do
     toggle_accessibility_setting(setting, state)
   end

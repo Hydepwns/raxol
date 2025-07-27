@@ -3,21 +3,17 @@ defmodule Raxol.Examples.ColorSystemDemo do
   Demonstrates the color system capabilities using the Application behaviour.
   """
 
-  # Add Application behaviour and required aliases/requires
   use Raxol.Core.Runtime.Application
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
   alias Raxol.UI.Theming.Theme
   alias Raxol.Style.Colors.{Color, Utilities}
-  # Adaptive module alias might be needed later
   alias Raxol.Style.Colors.Adaptive
   import Raxol.Guards
 
-  # Define application state to hold the demo theme
   defstruct theme: nil
 
-  # --- Application Lifecycle ---
 
   @doc """
   Starts the Color System Demo application.
@@ -30,12 +26,9 @@ defmodule Raxol.Examples.ColorSystemDemo do
   @impl Raxol.Core.Runtime.Application
   def init(_opts) do
     Raxol.Core.Runtime.Log.info("Initializing Color System Demo...")
-    # Create the demo theme during initialization
     demo_theme = create_demo_theme()
     {:ok, %__MODULE__{theme: demo_theme}}
   end
-
-  # --- Application Behaviour Callbacks ---
 
   @doc """
   Render the color system demo UI.

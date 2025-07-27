@@ -11,6 +11,30 @@ tags: [development, setup, nix, workflow]
 
 This guide explains how to set up and work with the Raxol development environment using Nix.
 
+## Recent Infrastructure Improvements
+
+### Error Handling Framework
+- **Module**: `Raxol.Core.ErrorHandler` - Centralized error handling with logging and recovery
+- **Module**: `Raxol.Core.ErrorRecovery` - Circuit breakers, retries, and graceful degradation
+- **Usage**: Wrap critical operations with `with_error_handling` macro
+- **Example**: See `SafeLifecycleOperations` for plugin lifecycle error handling
+
+### Performance Tools
+- **Module**: `Raxol.Core.Performance.Profiler` - Profile code execution and identify bottlenecks
+- **Module**: `Raxol.Core.Performance.Optimizer` - Caching, batching, and optimization utilities
+- **Usage**: Use `profile` macro to measure performance, `cached` for caching operations
+
+### Security Infrastructure
+- **Module**: `Raxol.Security.Auditor` - Input validation and security checks
+- **Module**: `Raxol.Security.SessionManager` - Secure session management
+- **Module**: `Raxol.Security.InputValidator` - Schema-based input validation
+
+### Code Standards
+- **Module**: `Raxol.Core.Standards.CodeStyle` - Coding standards and patterns
+- **Module**: `Raxol.Core.Standards.ConsistencyChecker` - Automated consistency checking
+- **Module**: `Raxol.Core.Standards.CodeGenerator` - Code generation templates
+- **Mix Task**: `mix raxol.check_consistency` - Check code consistency
+
 ## Prerequisites
 
 - [Nix](https://nixos.org/download.html) installed on your system

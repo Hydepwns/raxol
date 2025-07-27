@@ -1,5 +1,4 @@
 defmodule Raxol.Docs.InteractiveTutorial.Loader do
-  import Raxol.Guards
 
   @moduledoc """
   Handles loading and parsing of tutorials from markdown files.
@@ -16,7 +15,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     |> Path.join("**/*.md")
     |> Path.wildcard()
     |> Enum.map(&load_tutorial/1)
-    |> Enum.reject(&nil?/1)
+    |> Enum.reject(&is_nil/1)
   end
 
   @doc """

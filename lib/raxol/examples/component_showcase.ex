@@ -3,11 +3,16 @@
 # This example demonstrates various Raxol components, layouts, and features.
 
 defmodule Raxol.Examples.ComponentShowcase do
+  @moduledoc """
+  Component showcase example demonstrating Raxol UI features.
+
+  Provides interactive examples of various Raxol components, layouts,
+  and features for demonstration and testing purposes.
+  """
   use Raxol.UI.Components.Base.Component
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   import Raxol.View.Elements
-  import Raxol.Guards
 
   @impl Raxol.UI.Components.Base.Component
   def init(_props) do
@@ -185,7 +190,7 @@ defmodule Raxol.Examples.ComponentShowcase do
         end
       end
     ]
-    |> Enum.reject(&nil?/1)
+    |> Enum.reject(&is_nil/1)
   end
 
   defp style_for_tab(tab_id, active_tab, theme) do
