@@ -1,0 +1,92 @@
+# Raxol Configuration Example
+# This file shows all available configuration options with their default values
+
+[terminal]
+width = 80
+height = 24
+scrollback_size = 10000
+encoding = "UTF-8"
+bell = true
+
+[terminal.cursor]
+style = "block"  # Options: block, underline, bar
+blink = true
+blink_rate = 500  # milliseconds
+
+[terminal.colors]
+palette = "default"  # Options: default, solarized, dracula, nord, custom
+true_color = true
+
+[terminal.font]
+family = "monospace"
+size = 12
+bold = false
+
+[buffer]
+max_size = 1048576  # 1MB in bytes
+chunk_size = 4096
+compression = false
+compression_threshold = 10240
+
+[rendering]
+fps_target = 60
+max_frame_skip = 3
+enable_animations = true
+animation_duration = 200  # milliseconds
+performance_mode = false
+gpu_acceleration = true
+
+[plugins]
+enabled = true
+directory = "plugins"
+auto_reload = false  # Set to true in development
+allowed = []  # Empty list allows all plugins
+disabled = []
+load_timeout = 5000  # milliseconds
+
+[security]
+session_timeout = 1800  # 30 minutes in seconds
+max_sessions = 5
+enable_audit = true
+password_min_length = 8
+password_require_special = true
+password_require_numbers = true
+enable_2fa = false
+
+[security.rate_limiting]
+enabled = true
+window = 60000  # 1 minute in milliseconds
+max_requests = 100
+
+[performance]
+profiling_enabled = false
+benchmark_on_start = false
+cache_size = 100000
+cache_ttl = 300000  # 5 minutes in milliseconds
+worker_pool_size = 4  # Usually set to CPU core count
+
+[theme]
+name = "default"
+auto_switch = false  # Automatically switch between light/dark
+custom_themes_dir = "themes"
+
+[logging]
+level = "info"  # Options: debug, info, warning, error
+file = "logs/raxol.log"
+max_file_size = 10485760  # 10MB in bytes
+rotation_count = 5
+format = "text"  # Options: text, json
+include_metadata = true
+
+[accessibility]
+screen_reader = false
+high_contrast = false
+focus_indicators = true
+reduce_motion = false
+font_scaling = 1.0
+
+[keybindings]
+enabled = true
+config_file = "keybindings.toml"
+vim_mode = false
+emacs_mode = false

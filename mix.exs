@@ -98,87 +98,140 @@ defmodule Raxol.MixProject do
 
   defp deps do
     [
-      # Core dependencies
-      # Terminal rendering library (we maintain this fork of termbox2_nif at https://github.com/hydepwns/termbox2-nif)
-      # {:termbox2_nif, "~> 2.0"},  # Temporarily disabled for testing
+      # Core Terminal Dependencies
+      core_deps(),
 
-      # --- Added for Tutorial Loading ---
-      # YAML parser for frontmatter
+      # Phoenix Web Framework
+      phoenix_deps(),
+
+      # Database Dependencies
+      database_deps(),
+
+      # Visualization & UI
+      visualization_deps(),
+
+      # Development & Testing
+      development_deps(),
+
+      # Utilities & System
+      utility_deps(),
+
+      # Internationalization
+      i18n_deps()
+    ]
+    |> List.flatten()
+  end
+
+  defp core_deps do
+    [
+      # Terminal rendering library - maintained fork at https://github.com/hydepwns/termbox2-nif
+      # {:termbox2_nif, "~> 2.0"},  # TODO: Re-enable when testing complete
+      # Tutorial loading frontmatter parser
       {:yaml_elixir, "~> 2.11"},
-      # ---------------------------------
-
-      # --- Added for Syntax Highlighting ---
+      # Syntax highlighting core
       {:makeup, "~> 1.2"},
+      # Elixir syntax highlighting
       {:makeup_elixir, "~> 0.16"},
-      # -----------------------------------
+      # System clipboard access
+      {:clipboard, "~> 0.2.1"},
+      # Efficient circular buffer implementation
+      {:circular_buffer, "~> 0.4"}
+    ]
+  end
 
-      # Image processing
-      {:mogrify, "~> 0.9.3"},
+  defp phoenix_deps do
+    [
       {:phoenix, "~> 1.7.21"},
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_view, "~> 1.0.17"},
-      # {:surface, "~> 0.12.1"},
-      # {:sourceror, "~> 1.0.0"},
+      {:phoenix_html, "~> 4.0"},
+      {:plug_cowboy, "~> 2.7"},
       {:phoenix_live_dashboard, "~> 0.8.7", only: :dev},
-      {:jason, "~> 1.4.4"},
+      {:phoenix_live_reload, "~> 1.6", only: :dev}
+      # NOTE: surface and sourceror commented out - evaluate if needed
+      # {:surface, "~> 0.12.1"},
+      # {:sourceror, "~> 1.0.0"}
+    ]
+  end
 
-      # Database and persistence
+  defp database_deps do
+    [
       {:ecto_sql, "~> 3.12"},
       {:postgrex, "~> 0.20.0", runtime: false},
-      # For password hashing
-      {:bcrypt_elixir, "~> 3.3"},
+      # Password hashing
+      {:bcrypt_elixir, "~> 3.3"}
+    ]
+  end
 
-      # Visualization
-      # For charts and plots
-      {:contex, "~> 0.5.0"},
+  defp visualization_deps do
+    [
+      # Image processing
+      {:mogrify, "~> 0.9.3"},
+      # Charts and plots
+      {:contex, "~> 0.5.0"}
+    ]
+  end
 
-      # Email
-
-      # Web interface
-      {:plug_cowboy, "~> 2.7"},
-      {:phoenix_html, "~> 4.0"},
-
-      # Core Plugins Dependencies
-      # System clipboard access
-      {:clipboard, "~> 0.2.1"},
-      {:circular_buffer, "~> 0.4"},
-
-      # Optional Plugin Reloading
-      {:file_system, "~> 0.2", only: [:dev, :test]},
-
-      # Development tools
-      {:phoenix_live_reload, "~> 1.6", only: :dev},
+  defp development_deps do
+    [
+      # Build tools
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:dart_sass, "~> 0.7", runtime: Mix.env() == :dev},
+      {:elixir_make, "~> 0.9", runtime: false},
+
+      # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.38", only: :dev, runtime: false},
+      {:earmark, "~> 1.4", only: :dev},
 
       # Testing
       {:mox, "~> 1.2", only: :test},
       {:meck, "~> 0.9", only: :test},
-      {:elixir_make, "~> 0.9", runtime: false},
+      {:excoveralls, "~> 0.18", only: :test},
 
-      # Utilities
+      # Benchmarking suite
+      {:benchee, "~> 1.3", only: [:dev, :test]},
+      {:benchee_html, "~> 1.0", only: [:dev, :test]},
+      {:benchee_json, "~> 1.0", only: [:dev, :test]},
+
+      # Development utilities
+      {:file_system, "~> 0.2", only: [:dev, :test]}
+      # NOTE: Local JSON parser commented out - evaluate if needed
+      # {:json, path: "lib/json"}
+    ]
+  end
+
+  defp utility_deps do
+    [
+      # JSON processing
+      {:jason, "~> 1.4.4"},
+      # UUID generation
       {:uuid, "~> 1.1"},
+      # TOML configuration
+      {:toml, "~> 0.7"},
+      # MIME type detection
+      {:mimerl, "~> 1.4"},
+      # HTTP client
+      {:httpoison, "~> 2.2"},
+      # Localization
+      {:gettext, "~> 0.26"},
+      # DNS clustering
+      {:dns_cluster, "~> 0.1"},
+
+      # Telemetry & monitoring
       {:telemetry_metrics, "~> 1.1"},
       {:telemetry_poller, "~> 1.2"},
-      {:telemetry_metrics_prometheus, "~> 1.1"},
-      {:gettext, "~> 0.26"},
-      {:dns_cluster, "~> 0.1"},
-      {:excoveralls, "~> 0.18", only: :test},
-      {:httpoison, "~> 2.2"},
-      {:ex_doc, "~> 0.38", only: :dev, runtime: false},
-      {:toml, "~> 0.7"},
-      {:mimerl, "~> 1.4"},
-      # Use our local version of json parser
-      # {:json, path: "lib/json"},
+      {:telemetry_metrics_prometheus, "~> 1.1"}
+    ]
+  end
 
-      # CLDR for internationalization
+  defp i18n_deps do
+    [
       {:ex_cldr, "~> 2.15"},
       {:ex_cldr_numbers, "~> 2.12"},
       {:ex_cldr_currencies, "~> 2.5"},
-      {:ex_cldr_dates_times, "~> 2.14"},
-      {:earmark, "~> 1.4", only: :dev}
+      {:ex_cldr_dates_times, "~> 2.14"}
     ]
   end
 

@@ -1,0 +1,27 @@
+# Development Environment Configuration
+
+[terminal]
+width = 120
+height = 40
+
+[logging]
+level = "debug"
+file = "logs/dev.log"
+include_metadata = true
+
+[plugins]
+enabled = true
+auto_reload = true
+
+[performance]
+profiling_enabled = true
+benchmark_on_start = false
+cache_size = 10000
+
+[rendering]
+performance_mode = false
+enable_animations = true
+
+[security]
+session_timeout = 3600  # 1 hour for development
+enable_audit = false

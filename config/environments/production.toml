@@ -1,0 +1,35 @@
+# Production Environment Configuration
+
+[terminal]
+width = 80
+height = 24
+
+[logging]
+level = "info"
+file = "logs/prod.log"
+max_file_size = 52428800  # 50MB
+rotation_count = 10
+format = "json"
+
+[plugins]
+enabled = true
+auto_reload = false
+
+[performance]
+profiling_enabled = false
+cache_size = 1000000
+cache_ttl = 600000  # 10 minutes
+
+[rendering]
+performance_mode = true
+max_frame_skip = 5
+gpu_acceleration = true
+
+[security]
+session_timeout = 1800  # 30 minutes
+enable_audit = true
+enable_2fa = true
+
+[security.rate_limiting]
+enabled = true
+max_requests = 50  # Stricter in production
