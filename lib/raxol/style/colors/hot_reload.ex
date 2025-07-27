@@ -1,5 +1,4 @@
 defmodule Raxol.Style.Colors.HotReload do
-  import Raxol.Guards
 
   @moduledoc """
   Provides hot-reloading capabilities for color themes.
@@ -171,7 +170,7 @@ defmodule Raxol.Style.Colors.HotReload do
     files
     |> Enum.filter(&String.ends_with?(&1, ".json"))
     |> Enum.map(&get_file_mtime(path, &1))
-    |> Enum.reject(&nil?/1)
+    |> Enum.reject(&is_nil/1)
     |> Map.new()
   end
 

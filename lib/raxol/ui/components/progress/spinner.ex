@@ -33,10 +33,11 @@ defmodule Raxol.UI.Components.Progress.Spinner do
     current_time = System.monotonic_time(:millisecond)
 
     if current_time - state.last_update >= state.speed do
-      %{state |
-        frame_index: rem(state.frame_index + 1, length(state.frames)),
-        color_index: rem(state.color_index + 1, length(state.colors)),
-        last_update: current_time
+      %{
+        state
+        | frame_index: rem(state.frame_index + 1, length(state.frames)),
+          color_index: rem(state.color_index + 1, length(state.colors)),
+          last_update: current_time
       }
     else
       state
@@ -44,10 +45,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   end
 
   def update(:reset, state) do
-    %{state |
-      frame_index: 0,
-      color_index: 0
-    }
+    %{state | frame_index: 0, color_index: 0}
   end
 
   def update({:set_text, text}, state) do
@@ -56,26 +54,15 @@ defmodule Raxol.UI.Components.Progress.Spinner do
 
   def update({:set_style, style}, state) do
     frames = get_frames_for_style(style)
-    %{state |
-      style: style,
-      frames: frames,
-      frame_index: 0
-    }
+    %{state | style: style, frames: frames, frame_index: 0}
   end
 
   def update({:set_custom_frames, frames}, state) do
-    %{state |
-      style: :custom,
-      frames: frames,
-      frame_index: 0
-    }
+    %{state | style: :custom, frames: frames, frame_index: 0}
   end
 
   def update({:set_colors, colors}, state) do
-    %{state |
-      colors: colors,
-      color_index: 0
-    }
+    %{state | colors: colors, color_index: 0}
   end
 
   def update({:set_speed, speed}, state) do
@@ -85,7 +72,11 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   @doc """
   Handles events for the spinner component.
   """
-  def handle_event(%Raxol.Core.Events.Event{type: :timer, data: %{id: :spinner_timer}}, _model, state) do
+  def handle_event(
+        %Raxol.Core.Events.Event{type: :timer, data: %{id: :spinner_timer}},
+        _model,
+        state
+      ) do
     {update(:tick, state), []}
   end
 

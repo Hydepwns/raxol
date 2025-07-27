@@ -104,11 +104,20 @@ defmodule Raxol.UI.Components.Progress.Component do
   @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = _props) do
     case state.type do
-      :bar -> Raxol.UI.Components.Progress.Bar.render_bar(state)
-      :spinner -> Raxol.UI.Components.Progress.Spinner.render_spinner(state)
-      :indeterminate -> Raxol.UI.Components.Progress.Indeterminate.render_indeterminate(state)
-      :circular -> Raxol.UI.Components.Progress.Circular.render_circular(state)
-      _ -> Raxol.View.Elements.label(content: "Unknown progress type")
+      :bar ->
+        Raxol.UI.Components.Progress.Bar.render_bar(state)
+
+      :spinner ->
+        Raxol.UI.Components.Progress.Spinner.render_spinner(state)
+
+      :indeterminate ->
+        Raxol.UI.Components.Progress.Indeterminate.render_indeterminate(state)
+
+      :circular ->
+        Raxol.UI.Components.Progress.Circular.render_circular(state)
+
+      _ ->
+        Raxol.View.Elements.label(content: "Unknown progress type")
     end
   end
 

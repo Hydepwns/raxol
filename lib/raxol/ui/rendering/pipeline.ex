@@ -34,12 +34,12 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   alias Raxol.UI.Rendering.Renderer
   alias Raxol.UI.Rendering.TreeDiffer
-  alias Raxol.UI.Rendering.Layouter
-  alias Raxol.UI.Rendering.Composer
-  alias Raxol.UI.Rendering.Painter
 
   # New pipeline modules
-  alias Raxol.UI.Rendering.Pipeline.{State, Stages, Animation, Scheduler}
+  alias Raxol.UI.Rendering.Pipeline.{State, Stages}
+
+  # Animation tick interval in milliseconds
+  @animation_tick_interval_ms if Mix.env() == :test, do: 25, else: 16
 
   require Raxol.Core.Runtime.Log
   require Logger
@@ -263,13 +263,15 @@ defmodule Raxol.UI.Rendering.Pipeline do
   def init(opts) do
     initial_tree = Keyword.get(opts, :initial_tree, %{})
     opts_with_renderer = Keyword.put(opts, :renderer, get_renderer())
-    
+
     state = State.new(opts_with_renderer)
-    state_with_tree = if initial_tree != %{} do
-      State.update_tree(state, initial_tree)
-    else
-      state
-    end
+
+    state_with_tree =
+      if initial_tree != %{} do
+        State.update_tree(state, initial_tree)
+      else
+        state
+      end
 
     {:ok, state_with_tree}
   end

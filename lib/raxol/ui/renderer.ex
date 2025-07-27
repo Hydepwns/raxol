@@ -34,7 +34,12 @@ defmodule Raxol.UI.Renderer do
       elements
       |> Enum.flat_map(fn element ->
         # Use element's theme if available, otherwise use default theme
-        element_theme = ThemeResolver.resolve_element_theme_with_inheritance(element, default_theme)
+        element_theme =
+          ThemeResolver.resolve_element_theme_with_inheritance(
+            element,
+            default_theme
+          )
+
         render_element(element, element_theme, %{})
       end)
       |> CellManager.filter_valid_cells()
@@ -58,15 +63,16 @@ defmodule Raxol.UI.Renderer do
         # Check visibility first
         if Map.get(valid_element, :visible, true) == false do
           []
-        # Check for zero dimensions
+          # Check for zero dimensions
         else
           if Map.get(valid_element, :width, 0) == 0 or
-             Map.get(valid_element, :height, 0) == 0 do
+               Map.get(valid_element, :height, 0) == 0 do
             []
           else
             render_visible_element(valid_element, theme, parent_style)
           end
         end
+
       {:error, _reason} ->
         []
     end
@@ -100,7 +106,9 @@ defmodule Raxol.UI.Renderer do
          theme,
          parent_style
        ) do
-    merged_style = StyleProcessor.flatten_merged_style(parent_style, box_element, theme)
+    merged_style =
+      StyleProcessor.flatten_merged_style(parent_style, box_element, theme)
+
     cells = ElementRenderer.render_box(x, y, w, h, merged_style, theme)
     CellManager.clip_cells_to_bounds(cells, Map.get(box_element, :clip_bounds))
   end
@@ -110,7 +118,9 @@ defmodule Raxol.UI.Renderer do
          theme,
          parent_style
        ) do
-    merged_style = StyleProcessor.flatten_merged_style(parent_style, text_element, theme)
+    merged_style =
+      StyleProcessor.flatten_merged_style(parent_style, text_element, theme)
+
     cells = ElementRenderer.render_text(x, y, text_content, merged_style, theme)
     CellManager.clip_cells_to_bounds(cells, Map.get(text_element, :clip_bounds))
   end
@@ -120,7 +130,8 @@ defmodule Raxol.UI.Renderer do
          theme,
          parent_style
        ) do
-    _merged_style = StyleProcessor.flatten_merged_style(parent_style, table_element, theme)
+    _merged_style =
+      StyleProcessor.flatten_merged_style(parent_style, table_element, theme)
 
     # Extract table data from the element or attrs
     attrs = Map.get(table_element, :attrs, %{})
@@ -135,10 +146,19 @@ defmodule Raxol.UI.Renderer do
 
     # Build attrs with table data and custom styles
     merged_attrs =
-      ElementRenderer.build_table_attrs(table_element, headers, data, column_widths)
+      ElementRenderer.build_table_attrs(
+        table_element,
+        headers,
+        data,
+        column_widths
+      )
 
     cells = ElementRenderer.render_table(x, y, width, 0, merged_attrs, theme)
-    CellManager.clip_cells_to_bounds(cells, Map.get(table_element, :clip_bounds))
+
+    CellManager.clip_cells_to_bounds(
+      cells,
+      Map.get(table_element, :clip_bounds)
+    )
   end
 
   defp render_visible_element(
@@ -146,7 +166,8 @@ defmodule Raxol.UI.Renderer do
          theme,
          parent_style
        ) do
-    _merged_style = StyleProcessor.flatten_merged_style(parent_style, table_element, theme)
+    _merged_style =
+      StyleProcessor.flatten_merged_style(parent_style, table_element, theme)
 
     # Extract table data from the element or attrs
     attrs = Map.get(table_element, :attrs, %{})
@@ -158,9 +179,18 @@ defmodule Raxol.UI.Renderer do
 
     # Build attrs with table data and custom styles
     merged_attrs =
-      ElementRenderer.build_table_attrs(table_element, headers, data, column_widths)
+      ElementRenderer.build_table_attrs(
+        table_element,
+        headers,
+        data,
+        column_widths
+      )
 
     cells = ElementRenderer.render_table(x, y, w, h, merged_attrs, theme)
-    CellManager.clip_cells_to_bounds(cells, Map.get(table_element, :clip_bounds))
+
+    CellManager.clip_cells_to_bounds(
+      cells,
+      Map.get(table_element, :clip_bounds)
+    )
   end
 end

@@ -11,15 +11,21 @@ defmodule Raxol.UI.ThemeResolver do
   """
   def resolve_element_theme(element_theme, default_theme) do
     case element_theme do
-      nil -> default_theme
+      nil ->
+        default_theme
+
       theme when is_binary(theme) ->
         # Try to get theme by name, fallback to default
         case Raxol.UI.Theming.Theme.get(theme) do
           nil -> default_theme
           found_theme -> found_theme
         end
-      theme when is_map(theme) -> theme
-      _ -> default_theme
+
+      theme when is_map(theme) ->
+        theme
+
+      _ ->
+        default_theme
     end
   end
 
@@ -46,22 +52,25 @@ defmodule Raxol.UI.ThemeResolver do
   """
   def merge_themes_for_inheritance(parent_theme, child_theme) do
     # Merge colors (child overrides parent)
-    merged_colors = Map.merge(
-      Map.get(parent_theme, :colors, %{}),
-      Map.get(child_theme, :colors, %{})
-    )
+    merged_colors =
+      Map.merge(
+        Map.get(parent_theme, :colors, %{}),
+        Map.get(child_theme, :colors, %{})
+      )
 
     # Merge component styles (child overrides parent)
-    merged_component_styles = Map.merge(
-      Map.get(parent_theme, :component_styles, %{}),
-      Map.get(child_theme, :component_styles, %{})
-    )
+    merged_component_styles =
+      Map.merge(
+        Map.get(parent_theme, :component_styles, %{}),
+        Map.get(child_theme, :component_styles, %{})
+      )
 
     # Merge variants (child overrides parent)
-    merged_variants = Map.merge(
-      Map.get(parent_theme, :variants, %{}),
-      Map.get(child_theme, :variants, %{})
-    )
+    merged_variants =
+      Map.merge(
+        Map.get(parent_theme, :variants, %{}),
+        Map.get(child_theme, :variants, %{})
+      )
 
     # Create merged theme
     Map.merge(parent_theme, %{
@@ -172,22 +181,30 @@ defmodule Raxol.UI.ThemeResolver do
     end
   end
 
-  defp get_component_styles_from_map(component_styles, component_type) when is_map(component_styles) do
+  defp get_component_styles_from_map(component_styles, component_type)
+       when is_map(component_styles) do
     Map.get(component_styles, component_type, %{})
   end
+
   defp get_component_styles_from_map(_, _), do: %{}
 
   # Convert color values to atoms for test compatibility
   defp convert_color_to_atom(color) when is_atom(color), do: color
+
   defp convert_color_to_atom(color) when is_binary(color) do
     hex_to_color_atom(String.downcase(color))
   end
+
   defp convert_color_to_atom(%{r: r, g: g, b: b}) do
     # Convert RGB color struct to hex and then to atom
-    hex = "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
+    hex =
+      "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
+
     convert_color_to_atom(hex)
   end
-  defp convert_color_to_atom(_), do: :white  # Default fallback
+
+  # Default fallback
+  defp convert_color_to_atom(_), do: :white
 
   defp hex_to_color_atom("#ffffff"), do: :white
   defp hex_to_color_atom("#000000"), do: :black
@@ -197,7 +214,8 @@ defmodule Raxol.UI.ThemeResolver do
   defp hex_to_color_atom("#ffff00"), do: :yellow
   defp hex_to_color_atom("#ff00ff"), do: :magenta
   defp hex_to_color_atom("#00ffff"), do: :cyan
-  defp hex_to_color_atom(_), do: :white  # Default fallback
+  # Default fallback
+  defp hex_to_color_atom(_), do: :white
 
   defp ensure_list(value) when is_list(value), do: value
   defp ensure_list(value), do: [value]
@@ -214,15 +232,20 @@ defmodule Raxol.UI.ThemeResolver do
   defp fallback_to_variant_color(nil, attrs, theme, color_type) do
     resolve_variant_color(attrs, theme, color_type)
   end
+
   defp fallback_to_variant_color(color, _attrs, _theme, _color_type), do: color
 
   defp fallback_to_theme_color(nil, theme, color_type, default) do
     get_theme_color(theme, color_type, default)
   end
+
   defp fallback_to_theme_color(color, _theme, _color_type, _default), do: color
 
   defp get_theme_color(nil, _color_type, default), do: default
-  defp get_theme_color(theme, _color_type, default) when not is_map(theme), do: default
+
+  defp get_theme_color(theme, _color_type, default) when not is_map(theme),
+    do: default
+
   defp get_theme_color(theme, color_type, default) do
     case Map.get(theme, :colors) do
       nil -> default

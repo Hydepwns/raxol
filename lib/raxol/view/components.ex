@@ -6,8 +6,6 @@ defmodule Raxol.View.Components do
   that can be used in Raxol views.
   """
 
-  # alias Raxol.Core.Renderer.View # Unused
-
   @doc """
   Creates a text component with options for content, style, foreground, and background colors.
 

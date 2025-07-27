@@ -31,8 +31,14 @@ defmodule Raxol.Animation.Processor do
   def apply_animations_to_state(state, user_preferences_pid \\ nil) do
     # Fetch active animations before re-adaptation
     active_animations_before = StateManager.get_active_animations()
+
     # Re-adapt existing animations if settings have changed, and get any that were completed due to being disabled
-    completed_due_to_disable = Adaptation.re_adapt_animations_if_needed(user_preferences_pid, active_animations_before)
+    completed_due_to_disable =
+      Adaptation.re_adapt_animations_if_needed(
+        user_preferences_pid,
+        active_animations_before
+      )
+
     now = System.system_time(:millisecond)
 
     # After re-adaptation, fetch active animations again in case any were updated or removed
@@ -42,7 +48,8 @@ defmodule Raxol.Animation.Processor do
     state_with_elements = PathManager.ensure_state_structure(state, [:elements])
 
     # First, process completions due to re-adaptation
-    Enum.each(completed_due_to_disable, fn {element_id, animation_name, instance} ->
+    Enum.each(completed_due_to_disable, fn {element_id, animation_name,
+                                            instance} ->
       Lifecycle.handle_animation_completion(
         instance.animation,
         element_id,
@@ -50,14 +57,15 @@ defmodule Raxol.Animation.Processor do
         instance,
         user_preferences_pid
       )
+
       StateManager.remove_active_animation(element_id, animation_name)
     end)
 
     {new_state, completed} =
       Enum.reduce(active_animations, {state_with_elements, []}, fn {element_id,
-                                                      element_animations},
-                                                     {current_state,
-                                                      completed_list} ->
+                                                                    element_animations},
+                                                                   {current_state,
+                                                                    completed_list} ->
         process_element_animations(
           element_animations,
           element_id,
@@ -76,8 +84,6 @@ defmodule Raxol.Animation.Processor do
     new_state
   end
 
-
-
   defp process_element_animations(
          element_animations,
          element_id,
@@ -86,20 +92,21 @@ defmodule Raxol.Animation.Processor do
          now,
          user_preferences_pid
        ) do
-    Enum.reduce(element_animations, {current_state, completed_list}, fn {animation_name,
-                                                           instance},
-                                                          {state,
-                                                           completed} ->
-      apply_animation_to_state_internal(
-        instance,
-        animation_name,
-        element_id,
-        state,
-        completed,
-        now,
-        user_preferences_pid
-      )
-    end)
+    Enum.reduce(
+      element_animations,
+      {current_state, completed_list},
+      fn {animation_name, instance}, {state, completed} ->
+        apply_animation_to_state_internal(
+          instance,
+          animation_name,
+          element_id,
+          state,
+          completed,
+          now,
+          user_preferences_pid
+        )
+      end
+    )
   end
 
   defp apply_animation_to_state_internal(
@@ -124,7 +131,9 @@ defmodule Raxol.Animation.Processor do
       # Calculate final value and apply to state before completion
       final_progress = 1.0
       final_value = calculate_current_value(animation, final_progress)
-      updated_state = PathManager.set_in_state(state, animation.target_path, final_value)
+
+      updated_state =
+        PathManager.set_in_state(state, animation.target_path, final_value)
 
       # Handle completion for both normal and disabled animations
       Lifecycle.handle_animation_completion(
@@ -143,7 +152,8 @@ defmodule Raxol.Animation.Processor do
       current_value = calculate_current_value(animation, progress)
 
       # Apply to state
-      updated_state = PathManager.set_in_state(state, animation.target_path, current_value)
+      updated_state =
+        PathManager.set_in_state(state, animation.target_path, current_value)
 
       {updated_state, completed_list}
     end
@@ -159,23 +169,34 @@ defmodule Raxol.Animation.Processor do
 
       # Apply easing if specified
       case Map.get(animation, :easing) do
-        :ease_in_quad -> progress * progress
-        :ease_out_quad -> 1 - (1 - progress) * (1 - progress)
+        :ease_in_quad ->
+          progress * progress
+
+        :ease_out_quad ->
+          1 - (1 - progress) * (1 - progress)
+
         :ease_in_out_quad ->
           if progress < 0.5 do
             2 * progress * progress
           else
             1 - 2 * (1 - progress) * (1 - progress)
           end
-        :ease_in_cubic -> progress * progress * progress
-        :ease_out_cubic -> 1 - (1 - progress) * (1 - progress) * (1 - progress)
+
+        :ease_in_cubic ->
+          progress * progress * progress
+
+        :ease_out_cubic ->
+          1 - (1 - progress) * (1 - progress) * (1 - progress)
+
         :ease_in_out_cubic ->
           if progress < 0.5 do
             4 * progress * progress * progress
           else
             1 - 4 * (1 - progress) * (1 - progress) * (1 - progress)
           end
-        _ -> progress
+
+        _ ->
+          progress
       end
     end
   end
@@ -201,6 +222,4 @@ defmodule Raxol.Animation.Processor do
         to
     end
   end
-
-
 end

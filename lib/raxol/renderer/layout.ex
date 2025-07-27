@@ -18,8 +18,6 @@ defmodule Raxol.Renderer.Layout do
   - `Raxol.Renderer.Layout.Utils` - Utility functions
   """
 
-
-
   # Define element processors map
   @element_processors %{
     view: :process_view_element,
@@ -66,7 +64,13 @@ defmodule Raxol.Renderer.Layout do
   end
 
   defp normalize_view_for_layout(view, available_space, dimensions) do
-    normalized_views = Raxol.Renderer.Layout.Utils.deep_normalize_child(view, available_space, :box, true)
+    normalized_views =
+      Raxol.Renderer.Layout.Utils.deep_normalize_child(
+        view,
+        available_space,
+        :box,
+        true
+      )
 
     case normalized_views do
       [single_view] -> single_view
@@ -102,31 +106,61 @@ defmodule Raxol.Renderer.Layout do
   end
 
   # Delegate element processing to specialized modules
-  defdelegate process_view_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_panel_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_label_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_button_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_text_input_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_checkbox_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_table_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_shadow_wrapper_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_box_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_text_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_border_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
-  defdelegate process_grid_element(element, space, acc), to: Raxol.Renderer.Layout.Elements
+  defdelegate process_view_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_panel_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_label_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_button_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_text_input_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_checkbox_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_table_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_shadow_wrapper_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_box_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_text_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_border_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
+
+  defdelegate process_grid_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Elements
 
   # Delegate flex processing to Flex module
-  defdelegate process_flex_element(element, space, acc), to: Raxol.Renderer.Layout.Flex
+  defdelegate process_flex_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Flex
 
   # Delegate scroll processing to Scroll module
-  defdelegate process_scroll_element(element, space, acc), to: Raxol.Renderer.Layout.Scroll
+  defdelegate process_scroll_element(element, space, acc),
+    to: Raxol.Renderer.Layout.Scroll
 
   # Delegate utility functions to Utils module
   defdelegate calculate_size(size, space), to: Raxol.Renderer.Layout.Utils
-  defdelegate ensure_required_keys(child, space, default_type), to: Raxol.Renderer.Layout.Utils
+
+  defdelegate ensure_required_keys(child, space, default_type),
+    to: Raxol.Renderer.Layout.Utils
+
   defdelegate create_default_view(dimensions), to: Raxol.Renderer.Layout.Utils
   defdelegate apply_panel_layout(space, attrs), to: Raxol.Renderer.Layout.Utils
-  defdelegate create_panel_elements(space, attrs), to: Raxol.Renderer.Layout.Utils
+
+  defdelegate create_panel_elements(space, attrs),
+    to: Raxol.Renderer.Layout.Utils
 
   # Process children functions
   def process_children(children, space, acc) when list?(children) do
@@ -135,8 +169,9 @@ defmodule Raxol.Renderer.Layout do
         normalized_child =
           cond do
             # If it's already a properly formatted map, use it as-is
-            map?(child_node) and Map.has_key?(child_node, :type) and Map.has_key?(child_node, :position) and
-                 Map.has_key?(child_node, :size) ->
+            map?(child_node) and Map.has_key?(child_node, :type) and
+              Map.has_key?(child_node, :position) and
+                Map.has_key?(child_node, :size) ->
               child_node
 
             # If it's a list, process each element
@@ -159,7 +194,7 @@ defmodule Raxol.Renderer.Layout do
   def process_children(child, space, acc) when map?(child) do
     normalized_child =
       if Map.has_key?(child, :type) and Map.has_key?(child, :position) and
-         Map.has_key?(child, :size) do
+           Map.has_key?(child, :size) do
         child
       else
         ensure_required_keys(child, space, :box)
@@ -169,6 +204,4 @@ defmodule Raxol.Renderer.Layout do
   end
 
   def process_children(_other, _space, acc), do: acc
-
-
 end

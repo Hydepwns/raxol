@@ -54,7 +54,8 @@ defmodule Raxol.Animation.Lifecycle do
 
     if animation_def do
       # Generalize target_path: if it's a single property, prepend [:elements, element_id]
-      animation_def = PathManager.update_animation_path(animation_def, element_id)
+      animation_def =
+        PathManager.update_animation_path(animation_def, element_id)
 
       # Check accessibility settings via StateManager
       settings = StateManager.get_settings()
@@ -166,7 +167,10 @@ defmodule Raxol.Animation.Lifecycle do
         StateManager.remove_active_animation(element_id, animation_name)
 
         # Send completion message
-        send(instance.notify_pid, {:animation_completed, element_id, animation_name})
+        send(
+          instance.notify_pid,
+          {:animation_completed, element_id, animation_name}
+        )
 
         :ok
     end
@@ -198,7 +202,10 @@ defmodule Raxol.Animation.Lifecycle do
 
     # Send completion message to notify_pid
     if instance.notify_pid do
-      send(instance.notify_pid, {:animation_completed, element_id, animation_name})
+      send(
+        instance.notify_pid,
+        {:animation_completed, element_id, animation_name}
+      )
     end
 
     # Announce completion to screen reader if needed
@@ -250,7 +257,8 @@ defmodule Raxol.Animation.Lifecycle do
 
           current_value =
             case {from, to} do
-              {from_val, to_val} when is_number(from_val) and is_number(to_val) ->
+              {from_val, to_val}
+              when is_number(from_val) and is_number(to_val) ->
                 from_val + (to_val - from_val) * progress
 
               {from_val, to_val} when is_list(from_val) and is_list(to_val) ->

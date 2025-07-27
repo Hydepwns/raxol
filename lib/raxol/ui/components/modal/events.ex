@@ -78,25 +78,25 @@ defmodule Raxol.UI.Components.Modal.Events do
 
   @doc "Handles visible event dispatch for different event types."
   @spec handle_visible_event_dispatch(any(), map()) :: {map(), list()}
-    def handle_visible_event_dispatch(
-         %{type: :key, data: %{key: "Escape"}},
-         state
-       ) do
+  def handle_visible_event_dispatch(
+        %{type: :key, data: %{key: "Escape"}},
+        state
+      ) do
     {:button_click, find_cancel_message(state.buttons)}
   end
 
   def handle_visible_event_dispatch(
-         %Raxol.Core.Events.Event{type: :key, data: %{key: "Escape"}},
-         state
-       ) do
+        %Raxol.Core.Events.Event{type: :key, data: %{key: "Escape"}},
+        state
+      ) do
     {:button_click, find_cancel_message(state.buttons)}
   end
 
-    def handle_visible_event_dispatch(
-         %{type: :key, data: %{key: "Enter"}},
-         state
-       )
-       when state.type in [:prompt, :form] do
+  def handle_visible_event_dispatch(
+        %{type: :key, data: %{key: "Enter"}},
+        state
+      )
+      when state.type in [:prompt, :form] do
     case find_submit_message(state.buttons) do
       {_label, submit_msg} ->
         {:button_click, submit_msg}
@@ -107,10 +107,10 @@ defmodule Raxol.UI.Components.Modal.Events do
   end
 
   def handle_visible_event_dispatch(
-         %Raxol.Core.Events.Event{type: :key, data: %{key: "Enter"}},
-         state
-       )
-       when state.type in [:prompt, :form] do
+        %Raxol.Core.Events.Event{type: :key, data: %{key: "Enter"}},
+        state
+      )
+      when state.type in [:prompt, :form] do
     case find_submit_message(state.buttons) do
       {_label, submit_msg} ->
         {:button_click, submit_msg}

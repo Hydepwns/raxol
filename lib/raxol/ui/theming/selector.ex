@@ -12,8 +12,6 @@ defmodule Raxol.UI.Theming.Selector do
   use Raxol.UI.Components.Base.Component
 
   alias Raxol.UI.Theming.Theme
-  # alias Raxol.UI.Components.Input.SelectList
-  # alias Raxol.Core.Events
 
   @type props :: %{
           optional(:id) => String.t(),

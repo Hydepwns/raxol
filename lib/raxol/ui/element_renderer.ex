@@ -19,7 +19,11 @@ defmodule Raxol.UI.ElementRenderer do
       border_enabled = Map.get(style, :border, true)
 
       if border_enabled do
-        border_chars = BorderRenderer.get_border_chars(Map.get(style, :border_style, :single))
+        border_chars =
+          BorderRenderer.get_border_chars(
+            Map.get(style, :border_style, :single)
+          )
+
         BorderRenderer.render_box_borders(
           clip_x,
           clip_y,
@@ -30,7 +34,13 @@ defmodule Raxol.UI.ElementRenderer do
         )
       else
         # No borders - render empty box
-        BorderRenderer.render_empty_box(clip_x, clip_y, clip_width, clip_height, style)
+        BorderRenderer.render_empty_box(
+          clip_x,
+          clip_y,
+          clip_width,
+          clip_height,
+          style
+        )
       end
     end
   end
@@ -108,13 +118,17 @@ defmodule Raxol.UI.ElementRenderer do
   Renders a panel element with children.
   """
   def render_panel(x, y, width, height, panel_element, theme, parent_style) do
-    merged_style = StyleProcessor.flatten_merged_style(parent_style, panel_element, theme)
+    merged_style =
+      StyleProcessor.flatten_merged_style(parent_style, panel_element, theme)
+
     panel_box_cells = render_box(x, y, width, height, merged_style, theme)
     children = Map.get(panel_element, :children)
 
     # Check if clipping is enabled for this panel
     clip_enabled = Map.get(panel_element, :clip, false)
-    clip_bounds = if clip_enabled, do: {x, y, x + width - 1, y + height - 1}, else: nil
+
+    clip_bounds =
+      if clip_enabled, do: {x, y, x + width - 1, y + height - 1}, else: nil
 
     # Render children with clipping and style inheritance
     children_cells =

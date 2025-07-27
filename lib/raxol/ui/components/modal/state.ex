@@ -23,7 +23,11 @@ defmodule Raxol.UI.Components.Modal.State do
       new_form_state = %{state.form_state | fields: validated_fields}
 
       result =
-        {%Raxol.UI.Components.Modal{state | form_state: new_form_state, visible: true}, []}
+        {%Raxol.UI.Components.Modal{
+           state
+           | form_state: new_form_state,
+             visible: true
+         }, []}
 
       Raxol.Core.Runtime.Log.debug(
         "[DEBUG] handle_form_submission returning (errors): #{inspect(result)}"

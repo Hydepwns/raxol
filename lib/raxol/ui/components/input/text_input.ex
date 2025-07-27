@@ -10,9 +10,6 @@ defmodule Raxol.UI.Components.Input.TextInput do
   alias Raxol.UI.Components.Base.Component
   alias Raxol.UI.Components.Input.TextInput.CharacterHandler
   alias Raxol.UI.Components.Input.TextInput.KeyHandler
-  # alias Raxol.View
-  # alias Raxol.View.Style
-  # alias Raxol.Core.Events
 
   @behaviour Component
 

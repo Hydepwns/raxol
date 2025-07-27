@@ -52,10 +52,12 @@ defmodule Raxol.Renderer.Layout.Utils do
   """
   def ensure_required_keys(child, space, default_type \\ :box) do
     case child do
-      %{type: type, position: position, size: size} when not nil?(type) and not nil?(position) and not nil?(size) ->
+      %{type: type, position: position, size: size}
+      when not nil?(type) and not nil?(position) and not nil?(size) ->
         child
 
-      %{type: type, position: position} when not nil?(type) and not nil?(position) ->
+      %{type: type, position: position}
+      when not nil?(type) and not nil?(position) ->
         Map.put(child, :size, {space.width, space.height})
 
       %{type: type, size: size} when not nil?(type) and not nil?(size) ->
@@ -67,7 +69,8 @@ defmodule Raxol.Renderer.Layout.Utils do
           size: {space.width, space.height}
         })
 
-      %{position: position, size: size} when not nil?(position) and not nil?(size) ->
+      %{position: position, size: size}
+      when not nil?(position) and not nil?(size) ->
         Map.put(child, :type, default_type)
 
       %{position: position} when not nil?(position) ->

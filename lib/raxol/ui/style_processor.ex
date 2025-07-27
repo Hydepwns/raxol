@@ -8,17 +8,23 @@ defmodule Raxol.UI.StyleProcessor do
   """
   def flatten_merged_style(parent_style, child_element, theme) do
     # Handle case where parent_style might be an element map or a style map
-    parent_style_map = case parent_style do
-      %{style: style_map} when is_map(style_map) -> 
-        # If parent_style is an element with a :style key, extract and merge with top-level properties
-        style_map 
-        |> Map.merge(Map.take(parent_style, [:foreground, :background, :fg, :bg]))
-      style_map when is_map(style_map) -> 
-        # If parent_style is already a flattened style map, use it as-is
-        style_map
-      _ -> %{}
-    end
-    
+    parent_style_map =
+      case parent_style do
+        %{style: style_map} when is_map(style_map) ->
+          # If parent_style is an element with a :style key, extract and merge with top-level properties
+          style_map
+          |> Map.merge(
+            Map.take(parent_style, [:foreground, :background, :fg, :bg])
+          )
+
+        style_map when is_map(style_map) ->
+          # If parent_style is already a flattened style map, use it as-is
+          style_map
+
+        _ ->
+          %{}
+      end
+
     child_style_map = Map.get(child_element, :style, %{})
     merged_style_map = Map.merge(parent_style_map, child_style_map)
     child_other_attrs = Map.drop(child_element, [:style])
@@ -30,12 +36,26 @@ defmodule Raxol.UI.StyleProcessor do
     component_styles = Raxol.UI.ThemeResolver.get_component_styles(nil, theme)
 
     # Resolve colors with proper theme fallback, but allow explicit overrides
-    resolved_fg = Raxol.UI.ThemeResolver.resolve_fg_color(all_attrs, component_styles, theme)
-    resolved_bg = Raxol.UI.ThemeResolver.resolve_bg_color(all_attrs, component_styles, theme)
+    resolved_fg =
+      Raxol.UI.ThemeResolver.resolve_fg_color(
+        all_attrs,
+        component_styles,
+        theme
+      )
+
+    resolved_bg =
+      Raxol.UI.ThemeResolver.resolve_bg_color(
+        all_attrs,
+        component_styles,
+        theme
+      )
 
     # Use explicit values if provided, otherwise use resolved values
-    final_fg = Map.get(all_attrs, :foreground) || Map.get(all_attrs, :fg) || resolved_fg
-    final_bg = Map.get(all_attrs, :background) || Map.get(all_attrs, :bg) || resolved_bg
+    final_fg =
+      Map.get(all_attrs, :foreground) || Map.get(all_attrs, :fg) || resolved_fg
+
+    final_bg =
+      Map.get(all_attrs, :background) || Map.get(all_attrs, :bg) || resolved_bg
 
     promoted_attrs =
       all_attrs

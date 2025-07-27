@@ -9,26 +9,9 @@ defmodule Raxol.UI.Components.Input.Checkbox do
 
   import Raxol.Guards
 
-  # use Raxol.UI.Components.Base
-  # alias Raxol.UI.Components.Base.Component
-  # alias Raxol.UI.Style
-  # alias Raxol.UI.Element
-  # alias Raxol.UI.Theme
-  # alias Raxol.UI.Theming.Theme
-  # alias Raxol.UI.Layout.Constraints
-
-  # alias Raxol.View
-  # alias Raxol.UI.Theming.Colors
-  # alias Raxol.View.Style
-  # alias Raxol.Core.Events
-  # alias Raxol.Core.Events.{FocusEvent, KeyEvent}
-
   alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Events.Event
-
-  # alias Raxol.UI.Components.Base # Unused
-  # alias Raxol.Core.Events.ClickEvent # Unused
 
   @behaviour Raxol.UI.Components.Base.Component
 

@@ -1,5 +1,4 @@
 defmodule Raxol.Animation.Framework do
-  import Raxol.Guards
 
   @moduledoc """
   Coordinates the lifecycle of animations within Raxol.
@@ -229,10 +228,13 @@ defmodule Raxol.Animation.Framework do
         opts \\ %{},
         user_preferences_pid \\ nil
       ) do
-    Lifecycle.start_animation(animation_name, element_id, opts, user_preferences_pid)
+    Lifecycle.start_animation(
+      animation_name,
+      element_id,
+      opts,
+      user_preferences_pid
+    )
   end
-
-
 
   @doc """
   Update animations and apply their current values to the state.
@@ -249,9 +251,6 @@ defmodule Raxol.Animation.Framework do
   def apply_animations_to_state(state, user_preferences_pid \\ nil) do
     Processor.apply_animations_to_state(state, user_preferences_pid)
   end
-
-
-
 
   @doc """
   Stops a specific animation for an element.
@@ -294,8 +293,6 @@ defmodule Raxol.Animation.Framework do
       {:error, :animation_not_found} -> :not_found
     end
   end
-
-
 
   def should_reduce_motion?(user_preferences_pid \\ nil) do
     Adaptation.should_reduce_motion?(user_preferences_pid)

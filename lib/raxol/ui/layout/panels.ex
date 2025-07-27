@@ -33,109 +33,94 @@ defmodule Raxol.UI.Layout.Panels do
         space,
         acc
       ) do
-    # Measure the panel first to get its actual dimensions
     panel_dimensions = measure_panel(panel_element, space)
+    panel_box = create_panel_box(attrs, space, panel_dimensions)
+    title_elements = create_title_elements(attrs, space)
+    inner_space = calculate_inner_space(space, panel_dimensions)
 
-    # Original attributes from the panel element
-    panel_input_attrs = attrs
-    actual_border_style = Map.get(panel_input_attrs, :border, :single)
+    children_to_process = normalize_children(children_input)
+    processed_children = process_children(children_to_process, inner_space)
 
-    # Construct final attributes for the panel's box representation
-    final_box_attrs =
-      panel_input_attrs
-      # Ensure border_style is correctly set
-      |> Map.put(:border_style, actual_border_style)
-      |> then(fn current_attrs ->
-        if actual_border_style == :none do
-          # For test: attrs.border should be nil for :none style
-          Map.put(current_attrs, :border, nil)
-        else
-          # For other styles, ensure :border attribute also reflects the style
-          Map.put(current_attrs, :border, actual_border_style)
-        end
-      end)
+    [panel_box] ++ title_elements ++ processed_children ++ acc
+  end
 
-    # Create the main panel box element
-    panel_box = %{
+  defp create_panel_box(attrs, space, panel_dimensions) do
+    border_style = Map.get(attrs, :border, :single)
+
+    final_attrs =
+      attrs
+      |> Map.put(:border_style, border_style)
+      |> adjust_border_attrs(border_style)
+
+    %{
       type: :box,
       x: space.x,
       y: space.y,
       width: panel_dimensions.width,
       height: panel_dimensions.height,
-      # Use the constructed attributes
-      attrs: final_box_attrs
+      attrs: final_attrs
     }
+  end
 
-    elements = [panel_box]
+  defp adjust_border_attrs(attrs, :none), do: Map.put(attrs, :border, nil)
 
-    # Create title element if present
-    title_elements =
-      case Map.get(attrs, :title) do
-        nil ->
-          []
+  defp adjust_border_attrs(attrs, border_style),
+    do: Map.put(attrs, :border, border_style)
 
-        "" ->
-          []
+  defp create_title_elements(attrs, space) do
+    case Map.get(attrs, :title) do
+      title when title in [nil, ""] -> []
+      title_text -> [create_title_element(title_text, attrs, space)]
+    end
+  end
 
-        title_text ->
-          [
-            %{
-              type: :text,
-              # Position inside left border, after a space
-              x: space.x + 2,
-              # On the top border line
-              y: space.y,
-              # Add padding around title
-              text: " #{title_text} ",
-              # Allow styling title
-              attrs: Map.get(attrs, :title_attrs, %{})
-            }
-          ]
-      end
+  defp create_title_element(title_text, attrs, space) do
+    %{
+      type: :text,
+      x: space.x + 2,
+      y: space.y,
+      text: " #{title_text} ",
+      attrs: Map.get(attrs, :title_attrs, %{})
+    }
+  end
 
-    # Define inner space for children (inside borders)
-    inner_space = %{
+  defp calculate_inner_space(space, panel_dimensions) do
+    %{
       x: space.x + 1,
       y: space.y + 1,
       width: max(0, panel_dimensions.width - 2),
       height: max(0, panel_dimensions.height - 2)
     }
+  end
 
-    # Ensure children_input is a list for Enum.map
-    children_to_process =
-      case children_input do
-        nil ->
-          []
+  defp normalize_children(children_input) do
+    case children_input do
+      nil ->
+        []
 
-        c when list?(c) ->
-          c
+      c when list?(c) ->
+        c
 
-        # Wrap single child map in a list
-        c when map?(c) ->
-          [c]
+      c when map?(c) ->
+        [c]
 
-        _ ->
-          # Should not happen based on Panel definition if type specs are followed
-          # but good to be defensive.
-          Raxol.Core.Runtime.Log.warning(
-            "Panels.process received unexpected children format: #{inspect(children_input)}",
-            []
-          )
+      _ ->
+        log_unexpected_children_format(children_input)
+        []
+    end
+  end
 
-          []
-      end
+  defp log_unexpected_children_format(children_input) do
+    Raxol.Core.Runtime.Log.warning(
+      "Panels.process received unexpected children format: #{inspect(children_input)}",
+      []
+    )
+  end
 
-    # Process children by calling Engine.process_element for each one
-    processed_children_elements =
-      children_to_process
-      |> Enum.map(fn child_element ->
-        # Pass an empty accumulator for each child, as process_element appends to it.
-        Engine.process_element(child_element, inner_space, [])
-      end)
-      |> List.flatten()
-
-    # Combine all elements and add to accumulator
-    elements ++ title_elements ++ processed_children_elements ++ acc
+  defp process_children(children, inner_space) do
+    children
+    |> Enum.map(&Engine.process_element(&1, inner_space, []))
+    |> List.flatten()
   end
 
   @doc """
@@ -154,60 +139,72 @@ defmodule Raxol.UI.Layout.Panels do
         %{type: :panel, attrs: attrs, children: children},
         available_space
       ) do
-    # Calculate space available for content (inside borders)
-    content_available_space = %{
+    content_space = calculate_content_space(available_space)
+    children_size = measure_children_size(children, content_space)
+
+    base_dimensions =
+      calculate_base_dimensions(children_size, available_space, attrs)
+
+    final_dimensions = apply_constraints(base_dimensions, available_space)
+
+    final_dimensions
+  end
+
+  defp calculate_content_space(available_space) do
+    %{
       available_space
-      | # 1 cell border left/right
-        width: max(0, available_space.width - 2),
-        # 1 cell border top/bottom
+      | width: max(0, available_space.width - 2),
         height: max(0, available_space.height - 2)
     }
+  end
 
-    # Measure children content size (treat as a column for measurement)
-    # Ensure the map has :attrs for measure_element pattern matching
+  defp measure_children_size(children, content_space) do
     column_for_measurement = %{type: :column, attrs: %{}, children: children}
+    Engine.measure_element(column_for_measurement, content_space)
+  end
 
-    children_size =
-      Engine.measure_element(column_for_measurement, content_available_space)
-
-    # Determine base width/height from content + borders
-    # Add 2 for left/right borders
-    content_width = children_size.width + 2
-    # Add 2 for top/bottom borders
-    content_height = children_size.height + 2
-
-    # Use explicit width/height if provided, otherwise use content size or available if no content
+  defp calculate_base_dimensions(children_size, available_space, attrs) do
     explicit_width = Map.get(attrs, :width)
     explicit_height = Map.get(attrs, :height)
 
-    # Default to available space if no explicit size and no (or zero-sized) children
     base_width =
-      if children_size.width == 0 and nil?(explicit_width) do
-        available_space.width
-      else
-        content_width
-      end
+      determine_base_width(children_size, available_space, explicit_width)
 
     base_height =
-      if children_size.height == 0 and nil?(explicit_height) do
-        available_space.height
-      else
-        content_height
-      end
+      determine_base_height(children_size, available_space, explicit_height)
 
-    width = explicit_width || base_width
-    height = explicit_height || base_height
+    %{
+      width: explicit_width || base_width,
+      height: explicit_height || base_height
+    }
+  end
 
-    # Ensure minimum dimensions (e.g., for borders and minimal content)
+  defp determine_base_width(children_size, available_space, explicit_width) do
+    if children_size.width == 0 and nil?(explicit_width) do
+      available_space.width
+    else
+      # Add borders
+      children_size.width + 2
+    end
+  end
+
+  defp determine_base_height(children_size, available_space, explicit_height) do
+    if children_size.height == 0 and nil?(explicit_height) do
+      available_space.height
+    else
+      # Add borders
+      children_size.height + 2
+    end
+  end
+
+  defp apply_constraints(dimensions, available_space) do
     min_width = 4
     min_height = 3
-    width = max(width, min_width)
-    height = max(height, min_height)
 
-    # Return dimensions constrained to available space
     %{
-      width: min(width, available_space.width),
-      height: min(height, available_space.height)
+      width: dimensions.width |> max(min_width) |> min(available_space.width),
+      height:
+        dimensions.height |> max(min_height) |> min(available_space.height)
     }
   end
 

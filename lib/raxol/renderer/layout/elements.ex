@@ -56,7 +56,10 @@ defmodule Raxol.Renderer.Layout.Elements do
       when list?(children) do
     panel_space = Raxol.Renderer.Layout.apply_panel_layout(space, attrs)
     panel_elements = Raxol.Renderer.Layout.create_panel_elements(space, attrs)
-    inner_elements = Raxol.Renderer.Layout.process_children(children, panel_space, [])
+
+    inner_elements =
+      Raxol.Renderer.Layout.process_children(children, panel_space, [])
+
     [panel_elements, inner_elements | acc]
   end
 
@@ -259,10 +262,12 @@ defmodule Raxol.Renderer.Layout.Elements do
     {_offset_x, _offset_y} = offset
 
     # Process children without shadow offset (content should be at original position)
-    shadow_children = Raxol.Renderer.Layout.process_children(children, space, [])
+    shadow_children =
+      Raxol.Renderer.Layout.process_children(children, space, [])
 
     # Add shadow effect elements
-    shadow_elements = Raxol.Renderer.Layout.Scroll.create_shadow_elements(space, offset)
+    shadow_elements =
+      Raxol.Renderer.Layout.Scroll.create_shadow_elements(space, offset)
 
     shadow_children ++ shadow_elements ++ acc
   end
@@ -279,7 +284,8 @@ defmodule Raxol.Renderer.Layout.Elements do
     shadow_child = Raxol.Renderer.Layout.process_element(children, space, [])
 
     # Add shadow effect elements
-    shadow_elements = Raxol.Renderer.Layout.Scroll.create_shadow_elements(space, offset)
+    shadow_elements =
+      Raxol.Renderer.Layout.Scroll.create_shadow_elements(space, offset)
 
     shadow_child ++ shadow_elements ++ acc
   end
@@ -318,7 +324,9 @@ defmodule Raxol.Renderer.Layout.Elements do
         height: elem(size, 1)
       }
 
-      processed_children = Raxol.Renderer.Layout.process_children(children, inner_space, [])
+      processed_children =
+        Raxol.Renderer.Layout.process_children(children, inner_space, [])
+
       [Map.put(box, :children, processed_children) | acc]
     else
       [box | acc]
@@ -395,12 +403,24 @@ defmodule Raxol.Renderer.Layout.Elements do
 
         list when is_list(list) ->
           Enum.flat_map(list, fn child ->
-            normalized_child = Raxol.Renderer.Layout.Utils.ensure_required_keys(child, space, :box)
+            normalized_child =
+              Raxol.Renderer.Layout.Utils.ensure_required_keys(
+                child,
+                space,
+                :box
+              )
+
             Raxol.Renderer.Layout.process_element(normalized_child, space, [])
           end)
 
         single ->
-          normalized_child = Raxol.Renderer.Layout.Utils.ensure_required_keys(single, space, :box)
+          normalized_child =
+            Raxol.Renderer.Layout.Utils.ensure_required_keys(
+              single,
+              space,
+              :box
+            )
+
           Raxol.Renderer.Layout.process_element(normalized_child, space, [])
       end
 

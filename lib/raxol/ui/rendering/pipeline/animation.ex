@@ -44,10 +44,10 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
     if :queue.is_empty(state.animation_frame_requests) and
          not is_nil(state.animation_ticker_ref) do
       Logger.debug("Pipeline: No more animation requests, stopping ticker.")
-      
+
       # Cancel the timer
       Process.cancel_timer(state.animation_ticker_ref)
-      
+
       %{state | animation_ticker_ref: nil}
     else
       state
@@ -61,8 +61,11 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
   @spec process_animation_requests(state()) :: state()
   def process_animation_requests(state) do
     # Process all pending animation frame requests
-    {requests_to_notify, remaining_requests} = 
-      :queue.split(:queue.len(state.animation_frame_requests), state.animation_frame_requests)
+    {requests_to_notify, remaining_requests} =
+      :queue.split(
+        :queue.len(state.animation_frame_requests),
+        state.animation_frame_requests
+      )
 
     # Convert queue to list for processing
     requests_list = :queue.to_list(requests_to_notify)

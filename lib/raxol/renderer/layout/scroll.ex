@@ -104,7 +104,11 @@ defmodule Raxol.Renderer.Layout.Scroll do
 
     scrolled_children =
       Enum.flat_map(children, fn child ->
-        Raxol.Renderer.Layout.process_element(child, %{space | x: space.x - ox, y: space.y - oy}, [])
+        Raxol.Renderer.Layout.process_element(
+          child,
+          %{space | x: space.x - ox, y: space.y - oy},
+          []
+        )
       end)
 
     {content_width, content_height} =

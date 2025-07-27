@@ -5,7 +5,6 @@ defmodule Raxol.UI.Layout.Grid do
 
   use Raxol.UI.Components.Base.Component
 
-
   @doc """
   Processes a grid element, calculating layout for it and its children.
 

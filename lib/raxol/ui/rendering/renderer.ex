@@ -109,7 +109,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   defp do_partial_render(_path, updated_subtree, _updated_tree, state) do
     ops = ui_tree_to_terminal_ops_with_lines(updated_subtree)
     emulator = get_emulator(state)
-    buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
+    buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
 
     updated_buffer =
       Enum.reduce(ops, buffer, fn

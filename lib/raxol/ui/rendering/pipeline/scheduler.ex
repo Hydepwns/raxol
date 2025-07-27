@@ -19,18 +19,22 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   Implements debouncing to batch rapid updates.
   """
   @spec schedule_or_execute_render(diff_result(), tree(), state()) :: state()
-  def schedule_or_execute_render(diff_result, tree, state) do
+  def schedule_or_execute_render(_diff_result, _tree, state) do
     cond do
       # If a render is already scheduled, let it handle this update
       state.render_scheduled_for_next_frame ->
         Logger.debug(
           "Pipeline: Render already scheduled for next frame, skipping additional scheduling."
         )
+
         state
 
       # If we have a render timer pending, cancel and reschedule
       not is_nil(state.render_timer_ref) ->
-        Logger.debug("Pipeline: Cancelling existing render timer and rescheduling.")
+        Logger.debug(
+          "Pipeline: Cancelling existing render timer and rescheduling."
+        )
+
         Process.cancel_timer(state.render_timer_ref)
         schedule_render(state)
 
@@ -88,8 +92,10 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
           previous_painted_output: painted_output
       }
     else
-      Logger.debug("Pipeline: Execute render called but no current tree available.")
-      
+      Logger.debug(
+        "Pipeline: Execute render called but no current tree available."
+      )
+
       %{
         state
         | render_timer_ref: nil,
@@ -112,13 +118,18 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   @spec commit_to_renderer(term(), module()) :: :ok
   defp commit_to_renderer(painted_output, renderer_module) do
     renderer = renderer_module || Raxol.UI.Rendering.Renderer
-    
+
     try do
       renderer.render(painted_output)
-      Logger.debug("Pipeline: Committed output to renderer #{inspect(renderer)}")
+
+      Logger.debug(
+        "Pipeline: Committed output to renderer #{inspect(renderer)}"
+      )
     rescue
       error ->
-        Logger.error("Pipeline: Failed to commit to renderer: #{inspect(error)}")
+        Logger.error(
+          "Pipeline: Failed to commit to renderer: #{inspect(error)}"
+        )
     end
 
     :ok

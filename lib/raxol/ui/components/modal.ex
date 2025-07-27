@@ -156,12 +156,16 @@ defmodule Raxol.UI.Components.Modal do
       case Events.handle_visible_event(event, state) do
         {:button_click, msg} ->
           update({:button_click, msg}, state)
+
         :focus_next_field ->
           update(:focus_next_field, state)
+
         :focus_prev_field ->
           update(:focus_prev_field, state)
+
         {:input_changed, value} ->
           update({:input_changed, value}, state)
+
         nil ->
           {state, []}
       end

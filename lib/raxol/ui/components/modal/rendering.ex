@@ -117,7 +117,9 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   @doc "Renders a single form field."
   @spec render_field({map(), integer()}, map()) :: any()
   def render_field({field, index}, state) do
-    field_full_id = Raxol.UI.Components.Modal.State.get_field_full_id(field, state)
+    field_full_id =
+      Raxol.UI.Components.Modal.State.get_field_full_id(field, state)
+
     focused? = index == state.form_state.focus_index
     common_props = get_common_props(field, field_full_id, focused?)
 

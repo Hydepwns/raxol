@@ -74,8 +74,12 @@ defmodule Raxol.Animation.PathManager do
   """
   def set_in_state(state, path, value) when list?(path) do
     case path do
-      [] -> state
-      [key] -> Map.put(state, key, value)
+      [] ->
+        state
+
+      [key] ->
+        Map.put(state, key, value)
+
       [key | rest] ->
         current = Map.get(state, key, %{})
         updated = set_in_state(current, rest, value)
@@ -96,7 +100,9 @@ defmodule Raxol.Animation.PathManager do
   """
   def ensure_state_structure(state, path) do
     case path do
-      [] -> state
+      [] ->
+        state
+
       [key | rest] ->
         current = Map.get(state, key, %{})
         updated = ensure_state_structure(current, rest)

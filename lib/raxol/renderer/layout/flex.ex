@@ -165,7 +165,13 @@ defmodule Raxol.Renderer.Layout.Flex do
     needs_wrap = y > 0 and y_start + ch > space.height
 
     if needs_wrap do
-      process_wrapped_column_wrap(child, {cw, ch}, {acc, x, y, col_w}, space, gap)
+      process_wrapped_column_wrap(
+        child,
+        {cw, ch},
+        {acc, x, y, col_w},
+        space,
+        gap
+      )
     else
       process_wrapped_column_no_wrap(
         child,
@@ -224,8 +230,13 @@ defmodule Raxol.Renderer.Layout.Flex do
         {[], 0},
         fn {child, {cw, ch}}, {acc, x} ->
           x_start = x + if(x == 0, do: 0, else: gap)
-          child_space = create_child_space(space, space.x + x_start, space.y, cw, ch)
-          processed = Raxol.Renderer.Layout.process_element(child, child_space, [])
+
+          child_space =
+            create_child_space(space, space.x + x_start, space.y, cw, ch)
+
+          processed =
+            Raxol.Renderer.Layout.process_element(child, child_space, [])
+
           {[processed | acc], x_start + cw}
         end
       )
@@ -240,8 +251,13 @@ defmodule Raxol.Renderer.Layout.Flex do
         {[], 0},
         fn {child, {cw, ch}}, {acc, y} ->
           y_start = y + if(y == 0, do: 0, else: gap)
-          child_space = create_child_space(space, space.x, space.y + y_start, cw, ch)
-          processed = Raxol.Renderer.Layout.process_element(child, child_space, [])
+
+          child_space =
+            create_child_space(space, space.x, space.y + y_start, cw, ch)
+
+          processed =
+            Raxol.Renderer.Layout.process_element(child, child_space, [])
+
           {[processed | acc], y_start + ch}
         end
       )
